@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -36,7 +38,78 @@ import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static reactor.core.scheduler.Schedulers.parallel;
 
-public class FluxPeekTest {
+public class FluxPeekTest extends AbstractFluxOperatorTest<String, String> {
+
+	@Override
+	protected List<Scenario<String, String>> errorInOperatorCallback() {
+		return Arrays.asList(Scenario.from(f -> f.doOnSubscribe(s -> {
+					throw new RuntimeException("test");
+				})),
+
+				Scenario.from(f -> f.doOnRequest(s -> {
+					throw new RuntimeException("test");
+				}), Fuseable.ASYNC),
+
+				Scenario.from(f -> f.doOnNext(s -> {
+					throw new RuntimeException("test");
+				}), Fuseable.ANY),
+
+				Scenario.from(f -> f.take(0)
+				                    .doOnComplete(() -> {
+					                    throw new RuntimeException("test");
+				                    }),
+						Fuseable.NONE,
+						Flux.empty(),
+						step -> step.verifyErrorMessage("test")),
+
+				Scenario.from(f -> f.take(0).doAfterTerminate(() -> {
+					throw new RuntimeException("test");
+				}), Fuseable.SYNC, Flux.empty(), step -> {
+					try {
+						//fixme Support bubbled error verification in reactor-test
+						step.verifyErrorMessage("Multiple exceptions");
+						fail();
+					}
+					catch (Exception e) {
+						assertTrue(Exceptions.unwrap(e)
+						                     .getMessage()
+						                     .equals("test"));
+					}
+				}),
+
+				Scenario.from(f -> f.doOnCancel(() -> {
+					throw new RuntimeException("test");
+				})
+				                    .take(1), Fuseable.ANY, step -> {
+					try {
+						//fixme Support bubbled error verification in reactor-test
+						step.expectNext(droppableItem())
+						    .verifyErrorMessage("test");
+						fail();
+					}
+					catch (Exception e) {
+						assertTrue(Exceptions.unwrap(e)
+						                     .getMessage()
+						                     .equals("test"));
+					}
+
+				}));
+	}
+
+	@Override
+	protected List<Scenario<String, String>> errorFromUpstreamFailure() {
+		return Arrays.asList(Scenario.from(f -> f.doOnSubscribe(s -> {
+		})), Scenario.from(f -> f.doOnError(s -> {
+		})), Scenario.from(f -> f.doOnTerminate(() -> {
+		})), Scenario.from(f -> f.doAfterTerminate(() -> {
+		})), Scenario.from(f -> f.doOnCancel(() -> {
+		})), Scenario.from(f -> f.doOnComplete(() -> {
+		})), Scenario.from(f -> f.doOnRequest(d -> {
+		})), Scenario.from(f -> f.doOnNext(s -> {
+		})), Scenario.from(f -> f.doOnError(s -> {
+			throw new RuntimeException("test");
+		})));
+	}
 
 	@Test(expected = NullPointerException.class)
 	public void nullSource() {
@@ -55,7 +128,8 @@ public class FluxPeekTest {
 		AtomicBoolean onAfterComplete = new AtomicBoolean();
 		AtomicBoolean onCancel = new AtomicBoolean();
 
-		new FluxPeek<>(Flux.just(1).hide(),
+		new FluxPeek<>(Flux.just(1)
+		                   .hide(),
 				onSubscribe::set,
 				onNext::set,
 				onError::set,
@@ -203,7 +277,8 @@ public class FluxPeekTest {
 
 		Throwable err = new Exception("test");
 
-		Flux.just(1).hide()
+		Flux.just(1)
+		    .hide()
 		    .doOnNext(d -> {
 			    throw Exceptions.propagate(err);
 		    })
@@ -215,7 +290,8 @@ public class FluxPeekTest {
 		ts = AssertSubscriber.create();
 
 		try {
-			Flux.just(1).hide()
+			Flux.just(1)
+			    .hide()
 			    .doOnNext(d -> {
 				    throw Exceptions.bubble(err);
 			    })
@@ -234,7 +310,8 @@ public class FluxPeekTest {
 
 		Throwable err = new Exception("test");
 
-		Flux.just(1).hide()
+		Flux.just(1)
+		    .hide()
 		    .doOnComplete(() -> {
 			    throw Exceptions.propagate(err);
 		    })
@@ -246,7 +323,8 @@ public class FluxPeekTest {
 		ts = AssertSubscriber.create();
 
 		try {
-			Flux.just(1).hide()
+			Flux.just(1)
+			    .hide()
 			    .doOnComplete(() -> {
 				    throw Exceptions.bubble(err);
 			    })
@@ -263,17 +341,25 @@ public class FluxPeekTest {
 	public void errorCallbackError() {
 		IllegalStateException err = new IllegalStateException("test");
 
-		FluxPeek<String> flux = new FluxPeek<>(
-				Flux.error(new IllegalArgumentException("bar")), null, null,
-				e -> { throw err; },
-				null, null, null, null);
+		FluxPeek<String> flux =
+				new FluxPeek<>(Flux.error(new IllegalArgumentException("bar")),
+						null,
+						null,
+						e -> {
+							throw err;
+						},
+						null,
+						null,
+						null,
+						null);
 
 		AssertSubscriber<String> ts = AssertSubscriber.create();
 		flux.subscribe(ts);
 
 		ts.assertNoValues();
 		ts.assertError(IllegalStateException.class);
-		ts.assertErrorWith(e -> e.getSuppressed()[0].getMessage().equals("bar"));
+		ts.assertErrorWith(e -> e.getSuppressed()[0].getMessage()
+		                                            .equals("bar"));
 	}
 
 	//See https://github.com/reactor/reactor-core/issues/272
@@ -284,7 +370,8 @@ public class FluxPeekTest {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		Throwable err = new Exception("test");
 
-		Flux.just(1).hide()
+		Flux.just(1)
+		    .hide()
 		    .doOnNext(d -> {
 			    throw new RuntimeException();
 		    })
@@ -298,7 +385,8 @@ public class FluxPeekTest {
 
 		ts = AssertSubscriber.create();
 		try {
-			Flux.just(1).hide()
+			Flux.just(1)
+			    .hide()
 			    .doOnNext(d -> {
 				    throw new RuntimeException();
 			    })
@@ -319,7 +407,8 @@ public class FluxPeekTest {
 	public void errorCallbackErrorWithParallel() {
 		AssertSubscriber<Integer> assertSubscriber = new AssertSubscriber<>();
 
-		Mono.just(1).hide()
+		Mono.just(1)
+		    .hide()
 		    .publishOn(parallel())
 		    .doOnNext(i -> {
 			    throw new IllegalArgumentException();
@@ -329,10 +418,9 @@ public class FluxPeekTest {
 		    })
 		    .subscribe(assertSubscriber);
 
-		assertSubscriber
-				.await()
-				.assertError(IllegalStateException.class)
-				.assertNotComplete();
+		assertSubscriber.await()
+		                .assertError(IllegalStateException.class)
+		                .assertNotComplete();
 	}
 
 	@Test
@@ -340,9 +428,16 @@ public class FluxPeekTest {
 		IllegalStateException err = new IllegalStateException("test");
 		AtomicReference<Throwable> errorCallbackCapture = new AtomicReference<>();
 
-		FluxPeek<String> flux = new FluxPeek<>(
-				Flux.empty(), null, null, errorCallbackCapture::set, null,
-				() -> { throw err; }, null, null);
+		FluxPeek<String> flux = new FluxPeek<>(Flux.empty(),
+				null,
+				null,
+				errorCallbackCapture::set,
+				null,
+				() -> {
+					throw err;
+				},
+				null,
+				null);
 
 		AssertSubscriber<String> ts = AssertSubscriber.create();
 
@@ -351,7 +446,9 @@ public class FluxPeekTest {
 			fail("expected thrown exception");
 		}
 		catch (Exception e) {
-			e.getCause().getMessage().equals(err);
+			e.getCause()
+			 .getMessage()
+			 .equals(err);
 		}
 		ts.assertNoValues();
 		ts.assertComplete();
@@ -363,9 +460,16 @@ public class FluxPeekTest {
 	public void afterTerminateCallbackFatalIsThrownDirectly() {
 		AtomicReference<Throwable> errorCallbackCapture = new AtomicReference<>();
 		Error fatal = new LinkageError();
-		FluxPeek<String> flux = new FluxPeek<>(
-				Flux.empty(), null, null, errorCallbackCapture::set, null,
-				() -> { throw fatal; }, null, null);
+		FluxPeek<String> flux = new FluxPeek<>(Flux.empty(),
+				null,
+				null,
+				errorCallbackCapture::set,
+				null,
+				() -> {
+					throw fatal;
+				},
+				null,
+				null);
 
 		AssertSubscriber<String> ts = AssertSubscriber.create();
 
@@ -381,12 +485,18 @@ public class FluxPeekTest {
 
 		assertThat(errorCallbackCapture.get(), is(nullValue()));
 
-
 		//same with after error
 		errorCallbackCapture.set(null);
-		flux = new FluxPeek<>(
-				Flux.error(new NullPointerException()), null, null, errorCallbackCapture::set, null,
-				() -> { throw fatal; }, null, null);
+		flux = new FluxPeek<>(Flux.error(new NullPointerException()),
+				null,
+				null,
+				errorCallbackCapture::set,
+				null,
+				() -> {
+					throw fatal;
+				},
+				null,
+				null);
 
 		ts = AssertSubscriber.create();
 
@@ -400,7 +510,8 @@ public class FluxPeekTest {
 		ts.assertNoValues();
 		ts.assertError(NullPointerException.class);
 
-		assertThat(errorCallbackCapture.get(), is(instanceOf(NullPointerException.class)));
+		assertThat(errorCallbackCapture.get(),
+				is(instanceOf(NullPointerException.class)));
 	}
 
 	@Test
@@ -408,10 +519,11 @@ public class FluxPeekTest {
 		IllegalStateException err = new IllegalStateException("afterTerminate");
 		IllegalArgumentException err2 = new IllegalArgumentException("error");
 
-		FluxPeek<String> flux = new FluxPeek<>(
-				Flux.empty(), null, null, e -> { throw err2; },
-				null,
-				() -> { throw err; }, null, null);
+		FluxPeek<String> flux = new FluxPeek<>(Flux.empty(), null, null, e -> {
+			throw err2;
+		}, null, () -> {
+			throw err;
+		}, null, null);
 
 		AssertSubscriber<String> ts = AssertSubscriber.create();
 
@@ -430,15 +542,16 @@ public class FluxPeekTest {
 
 	@Test
 	public void afterTerminateCallbackErrorAndErrorCallbackError2() {
-		IllegalStateException afterTerminate = new IllegalStateException("afterTerminate");
+		IllegalStateException afterTerminate =
+				new IllegalStateException("afterTerminate");
 		IllegalArgumentException error = new IllegalArgumentException("error");
 		NullPointerException err = new NullPointerException();
 
-		FluxPeek<String> flux = new FluxPeek<>(
-				Flux.error(err),
-				null, null,
-				e -> { throw error; }, null, () -> { throw afterTerminate; },
-				null, null);
+		FluxPeek<String> flux = new FluxPeek<>(Flux.error(err), null, null, e -> {
+			throw error;
+		}, null, () -> {
+			throw afterTerminate;
+		}, null, null);
 
 		AssertSubscriber<String> ts = AssertSubscriber.create();
 
@@ -536,7 +649,8 @@ public class FluxPeekTest {
 
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		Flux.range(1, 2).hide()
+		Flux.range(1, 2)
+		    .hide()
 		    .doOnComplete(() -> onComplete.set(true))
 		    .subscribe(ts);
 
@@ -553,7 +667,8 @@ public class FluxPeekTest {
 
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		Flux.range(1, 2).hide()
+		Flux.range(1, 2)
+		    .hide()
 		    .doAfterTerminate(() -> onTerminate.set(true))
 		    .subscribe(ts);
 
@@ -570,7 +685,8 @@ public class FluxPeekTest {
 
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		Flux.range(1, 2).hide()
+		Flux.range(1, 2)
+		    .hide()
 		    .doOnTerminate(() -> onTerminate.set(true))
 		    .subscribe(ts);
 
@@ -587,7 +703,8 @@ public class FluxPeekTest {
 
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		Flux.empty().hide()
+		Flux.empty()
+		    .hide()
 		    .doOnTerminate(() -> onTerminate.set(true))
 		    .subscribe(ts);
 
@@ -603,7 +720,8 @@ public class FluxPeekTest {
 
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		Flux.error(new Exception("test")).hide()
+		Flux.error(new Exception("test"))
+		    .hide()
 		    .doOnTerminate(() -> onTerminate.set(true))
 		    .subscribe(ts);
 
@@ -667,26 +785,27 @@ public class FluxPeekTest {
 	}
 
 	@Test
-	public void doOnErrorPredicate(){
+	public void doOnErrorPredicate() {
 		AtomicReference<Throwable> ref = new AtomicReference<>();
 
-		StepVerifier.create(
-				Flux.error(new TestException()).doOnError(TestException.class::isInstance, ref::set))
-	                .thenAwait()
-	                .then(() -> Assertions.assertThat(ref.get()).isInstanceOf(TestException.class) )
-	                .verifyError(TestException.class);
+		StepVerifier.create(Flux.error(new TestException())
+		                        .doOnError(TestException.class::isInstance, ref::set))
+		            .thenAwait()
+		            .then(() -> Assertions.assertThat(ref.get())
+		                                  .isInstanceOf(TestException.class))
+		            .verifyError(TestException.class);
 	}
 
 	@Test
-	public void doOnErrorPredicateNot(){
+	public void doOnErrorPredicateNot() {
 		AtomicReference<Throwable> ref = new AtomicReference<>();
 
-		StepVerifier.create(
-				Flux.error(new TestException()).doOnError(RuntimeException.class::isInstance,
-						ref::set))
-	                .thenAwait()
-	                .then(() -> Assertions.assertThat(ref.get()).isNull() )
-	                .verifyError(TestException.class);
+		StepVerifier.create(Flux.error(new TestException())
+		                        .doOnError(RuntimeException.class::isInstance, ref::set))
+		            .thenAwait()
+		            .then(() -> Assertions.assertThat(ref.get())
+		                                  .isNull())
+		            .verifyError(TestException.class);
 	}
 
 }

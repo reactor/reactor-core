@@ -76,10 +76,6 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		if (source instanceof Fuseable) {
-			source.subscribe(new PeekFuseableSubscriber<>(s, this));
-			return;
-		}
 		if (s instanceof ConditionalSubscriber) {
 			@SuppressWarnings("unchecked") // javac, give reason to suppress because inference anomalies
 					ConditionalSubscriber<T> s2 = (ConditionalSubscriber<T>) s;

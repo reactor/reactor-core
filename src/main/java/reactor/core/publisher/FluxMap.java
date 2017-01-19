@@ -241,7 +241,7 @@ final class FluxMap<T, R> extends FluxSource<T, R> {
 				v = mapper.apply(t);
 			} catch (Throwable e) {
 				done = true;
-				onError(Operators.onOperatorError(s, e, t));
+				actual.onError(Operators.onOperatorError(s, e, t));
 				return true;
 			}
 
