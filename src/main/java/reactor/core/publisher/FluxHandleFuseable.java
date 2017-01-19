@@ -141,7 +141,10 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R> implements Fuseabl
 
 			int m = sourceMode;
 
-			if (m == NONE) {
+			if (m == ASYNC) {
+				actual.onNext(null);
+			}
+			else {
 				try {
 					handler.accept(t, this);
 				}
@@ -165,10 +168,6 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R> implements Fuseabl
 				else if (v == null) {
 					s.request(1L);
 				}
-
-			}
-			else if (m == ASYNC) {
-				actual.onNext(null);
 			}
 		}
 
@@ -386,7 +385,10 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R> implements Fuseabl
 
 			int m = sourceMode;
 
-			if (m == 0) {
+			if (m == ASYNC) {
+				actual.onNext(null);
+			}
+			else  {
 				try {
 					handler.accept(t, this);
 				}
@@ -410,9 +412,6 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R> implements Fuseabl
 				else if (v == null) {
 					s.request(1L);
 				}
-			}
-			else if (m == 2) {
-				actual.onNext(null);
 			}
 		}
 

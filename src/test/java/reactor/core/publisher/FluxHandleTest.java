@@ -24,6 +24,7 @@ import java.util.function.Function;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 import reactor.core.Loopback;
 import reactor.core.Producer;
@@ -1107,7 +1108,7 @@ public class FluxHandleTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void assertPrePostState() {
-		Flux<Integer> f = Flux.from(s -> {
+		Flux<Integer> f = Flux.<Integer>from(s -> {
 			Trackable t = (Trackable) s;
 			assertThat(((Receiver) s).upstream()).isNull();
 			assertThat(((Producer) s).downstream()).isNotNull();
@@ -1118,20 +1119,18 @@ public class FluxHandleTest {
 			assertThat(t.isTerminated()).isFalse();
 
 			s.onSubscribe(Operators.emptySubscription());
+			s.onSubscribe(Operators.emptySubscription()); //noop path
 			assertThat(t.isStarted()).isTrue();
-			s.onNext(1);
+			s.onNext(1); //noop path
+			((Fuseable.ConditionalSubscriber<Integer>)s).tryOnNext(1); //noop path
 			s.onComplete();
 			assertThat(t.isStarted()).isFalse();
 			assertThat(t.isTerminated()).isTrue();
-		});
+		}).handle((d, sink) -> {});
 
-		f.handle((data, sink) -> {
-		})
-		 .subscribe();
+		f.subscribe();
 
-		f.handle((data, sink) -> {
-		})
-		 .filter(d -> true)
+		f.filter(d -> true)
 		 .subscribe();
 	}
 
@@ -1139,10 +1138,16 @@ public class FluxHandleTest {
 	@SuppressWarnings("unchecked")
 	public void assertPrePostStateFused() {
 		Flux<String> f = Flux.just("test", "test2")
+		                     .doOnSubscribe(s -> {
+		                     	Trackable t = (Trackable) ((Producer)((Producer)s).downstream()).downstream();
+			                     assertThat(t.isStarted()).isFalse();
+		                     })
 		                     .handle((String data, SynchronousSink<String> sink) -> {
 		                     })
 		                     .doOnSubscribe(parent -> {
 			                     Trackable t = (Trackable) parent;
+			                     ((Subscriber<String>)t).onSubscribe(Operators.emptySubscription());//noop
+			                     // path
 			                     assertThat(((Receiver) t).upstream()).isNotNull();
 			                     assertThat(((Producer) t).downstream()).isNotNull();
 			                     assertThat(((Loopback) t).connectedInput()).isNotNull();
@@ -1152,6 +1157,7 @@ public class FluxHandleTest {
 		                     });
 
 		f.subscribe();
+
 		f.filter(t -> true)
 		 .subscribe();
 	}
@@ -1159,10 +1165,7 @@ public class FluxHandleTest {
 	StepVerifier.Step<String> operatorVerifier(Function<Flux<String>, Flux<String>> scenario) {
 		return StepVerifier.create(Flux.just("test", "test2", "test3")
 		                               .hide()
-		                               .as(scenario), 2)
-		                   .consumeSubscriptionWith(s -> {
-
-		                   });
+		                               .as(scenario), 2);
 	}
 
 	StepVerifier.Step<String> operatorVerifierFusedTryNext(Function<Flux<String>, Flux<String>> scenario) {
