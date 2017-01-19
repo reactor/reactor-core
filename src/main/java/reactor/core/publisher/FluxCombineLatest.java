@@ -165,7 +165,14 @@ extends Flux<R>
 			return;
 		}
 		if (n == 1) {
-			new FluxMap<>(a[0], (Function<T, R>) t -> combiner.apply(new Object[] { t })).subscribe(s);
+			if(a[0] instanceof Fuseable){
+				new FluxMapFuseable<>(a[0], (Function<T, R>) t -> combiner.apply(new Object[]{ t }))
+						.subscribe(s);
+			}
+			else{
+				new FluxMap<>(a[0], (Function<T, R>) t -> combiner.apply(new Object[]{ t }))
+						.subscribe(s);
+			}
 			return;
 		}
 		

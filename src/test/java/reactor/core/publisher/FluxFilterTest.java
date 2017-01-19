@@ -36,8 +36,10 @@ public class FluxFilterTest extends AbstractFluxOperatorTest<String, String> {
 	}
 
 	@Override
-	protected Flux<String> errorFromUpstreamFailure(Flux<String> f) {
-		return f.filter(d -> true);
+	protected List<Scenario<String, String>>  errorFromUpstreamFailure() {
+		return Arrays.asList(
+				Scenario.from(f -> f.filter(d -> true))
+		);
 	}
 
 	@Test(expected = NullPointerException.class)

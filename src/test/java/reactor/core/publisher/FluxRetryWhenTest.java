@@ -148,7 +148,7 @@ public class FluxRetryWhenTest {
 	public void retryErrorsInResponse() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		rangeError.retryWhen(v -> new FluxMap<>(v, a -> {
+		rangeError.retryWhen(v -> v.map(a -> {
 			throw new RuntimeException("forced failure");
 		}))
 		          .subscribe(ts);

@@ -24,10 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
-import reactor.core.Loopback;
-import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
 import reactor.core.scheduler.Schedulers;
@@ -44,25 +41,38 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 	@Override
 	protected List<Scenario<String, String>> errorInOperatorCallback() {
 		return Arrays.asList(
-						Scenario.from(f -> f.handle((s, d) -> {
-							throw new RuntimeException("test");
-						}), Fuseable.ANY),
+				Scenario.from(f -> f.handle((s, d) -> {
+					throw new RuntimeException("test");
+				}), Fuseable.ANY),
 
-						Scenario.from(f -> f.handle((s, d) -> d.error(new Exception("test"))),
-							Fuseable.ANY),
+				Scenario.from(f -> f.handle((s, d) -> d.error(new Exception("test"))),
+						Fuseable.ANY),
 
-						Scenario.from(f -> f.handle((s, d) -> {
-							d.next("test");
-							d.next("test2");
-						}), Fuseable.ANY,
-								step -> step.verifyError(IllegalStateException.class))
+				Scenario.from(f -> f.handle((s, d) -> {
+					d.next("test");
+					d.next("test2");
+				}), Fuseable.ANY, step -> step.verifyError(IllegalStateException.class)),
+
+				Scenario.from(f -> f.handle((s, d) -> {
+					d.next(null);
+				}), Fuseable.ANY, step -> step.verifyError(NullPointerException.class))
 		);
 	}
 
 	@Override
-	protected Flux<String> errorFromUpstreamFailure(Flux<String> f) {
-		return f.handle((data, s) -> {
-		});
+	protected List<Scenario<String, String>> errorFromUpstreamFailure() {
+		return Arrays.asList(
+				Scenario.from(f -> f.handle((data, s) -> {})),
+
+				Scenario.from(f -> f.handle((data, s) -> {
+					if ("test3".equals(data)) {
+						s.complete();
+					}
+					else {
+						s.next(data);
+					}
+				}))
+		);
 	}
 
 	@Test
@@ -189,23 +199,23 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 				new AtomicReference<>();
 		final AtomicReference<Object> dataInOnOperatorError = new AtomicReference<>();
 
-			Hooks.onOperatorError((t, d) -> {
-				throwableInOnOperatorError.set(t);
-				dataInOnOperatorError.set(d);
-				return t;
-			});
+		Hooks.onOperatorError((t, d) -> {
+			throwableInOnOperatorError.set(t);
+			dataInOnOperatorError.set(d);
+			return t;
+		});
 
-			AssertSubscriber<Integer> ts = AssertSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-			Flux.just(data).<Integer>handle((v, s) -> s.error(exception)).subscribe(ts);
+		Flux.just(data).<Integer>handle((v, s) -> s.error(exception)).subscribe(ts);
 
-			ts.await()
-			  .assertNoValues()
-			  .assertError(IllegalStateException.class)
-			  .assertNotComplete();
+		ts.await()
+		  .assertNoValues()
+		  .assertError(IllegalStateException.class)
+		  .assertNotComplete();
 
-			Assert.assertSame(throwableInOnOperatorError.get(), exception);
-			Assert.assertSame(dataInOnOperatorError.get(), data);
+		Assert.assertSame(throwableInOnOperatorError.get(), exception);
+		Assert.assertSame(dataInOnOperatorError.get(), data);
 	}
 
 	@Test
@@ -218,25 +228,25 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 				new AtomicReference<>();
 		final AtomicReference<Object> dataInOnOperatorError = new AtomicReference<>();
 
-			Hooks.onOperatorError((t, d) -> {
-				throwableInOnOperatorError.set(t);
-				dataInOnOperatorError.set(d);
-				return t;
-			});
+		Hooks.onOperatorError((t, d) -> {
+			throwableInOnOperatorError.set(t);
+			dataInOnOperatorError.set(d);
+			return t;
+		});
 
-			AssertSubscriber<Integer> ts = AssertSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-			Flux.just(data).<Integer>handle((v, s) -> {
-				throw exception;
-			}).subscribe(ts);
+		Flux.just(data).<Integer>handle((v, s) -> {
+			throw exception;
+		}).subscribe(ts);
 
-			ts.await()
-			  .assertNoValues()
-			  .assertError(IllegalStateException.class)
-			  .assertNotComplete();
+		ts.await()
+		  .assertNoValues()
+		  .assertError(IllegalStateException.class)
+		  .assertNotComplete();
 
-			Assert.assertSame(throwableInOnOperatorError.get(), exception);
-			Assert.assertSame(dataInOnOperatorError.get(), data);
+		Assert.assertSame(throwableInOnOperatorError.get(), exception);
+		Assert.assertSame(dataInOnOperatorError.get(), data);
 	}
 
 	@Test
@@ -248,6 +258,19 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 				                        d.complete();
 			                        }
 			                        else {
+				                        d.next(s);
+			                        }
+		                        }))
+		            .expectNext("test", "test2")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void handle2() {
+		StepVerifier.create(Flux.just("test", "test2", "test3")
+		                        .hide()
+		                        .handle((s, d) -> {
+			                        if (!"test3".equals(s)) {
 				                        d.next(s);
 			                        }
 		                        }))
@@ -273,6 +296,18 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 				                        d.complete();
 			                        }
 			                        else {
+				                        d.next(s);
+			                        }
+		                        }), 3)
+		            .expectNext("test", "test2")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void handleFusedTryNext2() {
+		StepVerifier.create(Flux.just("test", "test2", "test3")
+		                        .handle((s, d) -> {
+			                        if (!"test3".equals(s)) {
 				                        d.next(s);
 			                        }
 		                        }), 3)
@@ -488,7 +523,8 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 	@Test
 	public void dropHandleFusedSync() {
 		StepVerifier.create(Flux.just("test", "test2")
-		                        .handle((data, s) -> {})
+		                        .handle((data, s) -> {
+		                        })
 		                        .filter(t -> true))
 		            .expectFusion(Fuseable.SYNC)
 		            .verifyComplete();
@@ -534,14 +570,15 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 		up.onNext("test3");
 		StepVerifier.create(up.handle((s, d) -> {
 			d.error(new RuntimeException("test"));
-		}).filter(d -> true))
+		})
+		                      .filter(d -> true))
 		            .consumeSubscriptionWith(s -> {
 			            Fuseable.QueueSubscription<String> qs =
 					            ((Fuseable.QueueSubscription<String>) ((Receiver) s).upstream());
 			            qs.requestFusion(ASYNC);
 			            assertThat(qs.size()).isEqualTo(3);
 			            assertThat(qs.poll()).isNull();
-			            assertThat(((Trackable)qs).getError()).hasMessage("test");
+			            assertThat(((Trackable) qs).getError()).hasMessage("test");
 			            try {
 				            assertThat(qs.poll()).isNull();
 				            Assert.fail();
@@ -603,7 +640,7 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 		StepVerifier.create(Flux.just("test", "test2", "test3")
 		                        .hide()
 		                        .handle((s, d) -> {
-			                        if ("test3".equals(s)) {
+			                        if (!"test3".equals(s)) {
 				                        d.complete();
 			                        }
 			                        else {
@@ -629,10 +666,7 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 		StepVerifier.create(Flux.just("test", "test2", "test3")
 		                        .hide()
 		                        .handle((s, d) -> {
-			                        if ("test3".equals(s)) {
-				                        d.complete();
-			                        }
-			                        else {
+			                        if (!"test3".equals(s)) {
 				                        d.next(s);
 			                        }
 		                        })
@@ -649,7 +683,6 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 		            .thenCancel()
 		            .verify();
 	}
-
 
 	Flux<String> passThrough(Flux<String> f) {
 		return f.handle((a, b) -> b.next(a));
@@ -708,71 +741,6 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 				b.complete();
 			}
 		});
-	}
-
-	@Test
-	@SuppressWarnings("unchecked")
-	public void assertPrePostState() {
-		Flux<Integer> f = Flux.<Integer>from(s -> {
-			Trackable t = (Trackable) s;
-			assertThat(((Receiver) s).upstream()).isNull();
-			assertThat(((Producer) s).downstream()).isNotNull();
-			assertThat(((Receiver) s).upstream()).isNull();
-			assertThat(((Loopback) s).connectedInput()).isNotNull();
-			assertThat(t.getError()).isNull();
-			assertThat(t.isStarted()).isFalse();
-			assertThat(t.isTerminated()).isFalse();
-
-			s.onSubscribe(Operators.emptySubscription());
-			s.onSubscribe(Operators.emptySubscription()); //noop path
-			assertThat(t.isStarted()).isTrue();
-			s.onNext(1); //noop path
-			((Fuseable.ConditionalSubscriber<Integer>)s).tryOnNext(1); //noop path
-			s.onComplete();
-			assertThat(t.isStarted()).isFalse();
-			assertThat(t.isTerminated()).isTrue();
-		}).handle((d, sink) -> {});
-
-		f.subscribe();
-
-		f.filter(d -> true)
-		 .subscribe();
-	}
-
-	@Test
-	@SuppressWarnings("unchecked")
-	public void assertPrePostStateFused() {
-		AtomicReference<Trackable> ref = new AtomicReference<>();
-		Flux<String> f = Flux.just("test", "test2")
-		                     .doOnSubscribe(s -> {
-		                     	Trackable t = (Trackable) ((Producer)((Producer)s).downstream()).downstream();
-			                     ref.set(t);
-			                     assertThat(t.isStarted()).isFalse();
-		                     })
-		                     .handle((String data, SynchronousSink<String> sink) -> {
-		                     })
-		                     .doOnSubscribe(parent -> {
-			                     Trackable t = (Trackable) parent;
-			                     ((Subscriber<String>)t).onSubscribe(Operators.emptySubscription());//noop
-			                     // path
-			                     assertThat(((Receiver) t).upstream()).isNotNull();
-			                     assertThat(((Producer) t).downstream()).isNotNull();
-			                     assertThat(((Loopback) t).connectedInput()).isNotNull();
-			                     assertThat(t.getError()).isNull();
-			                     assertThat(t.isStarted()).isTrue();
-			                     assertThat(t.isTerminated()).isFalse();
-		                     })
-		                     .doOnComplete(() -> {
-			                     assertThat(ref.get()
-			                                   .isStarted()).isFalse();
-			                     assertThat(ref.get()
-			                                   .isTerminated()).isTrue();
-		                     });
-
-		f.subscribe();
-
-		f.filter(t -> true)
-		 .subscribe();
 	}
 
 }

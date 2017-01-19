@@ -147,7 +147,7 @@ public class FluxRepeatWhenTest {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 2)
-		    .repeatWhen(v -> new FluxMap<>(v, a -> {
+		    .repeatWhen(v -> v.map(a -> {
 			    throw new RuntimeException("forced failure");
 		    }))
 		    .subscribe(ts);
