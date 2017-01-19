@@ -40,27 +40,14 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 
 	final Predicate<? super T> predicate;
 
-	public FluxFilter(Publisher<? extends T> source, Predicate<? super T> predicate) {
+	FluxFilter(Publisher<? extends T> source, Predicate<? super T> predicate) {
 		super(source);
 		this.predicate = Objects.requireNonNull(predicate, "predicate");
-	}
-
-	public Predicate<? super T> predicate() {
-		return predicate;
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
-		if (source instanceof Fuseable) {
-			if (s instanceof ConditionalSubscriber) {
-				source.subscribe(new FilterFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
-						predicate));
-				return;
-			}
-			source.subscribe(new FilterFuseableSubscriber<>(s, predicate));
-			return;
-		}
 		if (s instanceof ConditionalSubscriber) {
 			source.subscribe(new FilterConditionalSubscriber<>((ConditionalSubscriber<? super T>)s, predicate));
 			return;
@@ -79,7 +66,7 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 
 		boolean done;
 
-		public FilterSubscriber(Subscriber<? super T> actual, Predicate<? super T> predicate) {
+		FilterSubscriber(Subscriber<? super T> actual, Predicate<? super T> predicate) {
 			this.actual = actual;
 			this.predicate = predicate;
 		}
@@ -131,9 +118,8 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 			}
 			if (b) {
 				actual.onNext(t);
-				return true;
 			}
-			return false;
+			return b;
 		}
 
 		@Override
@@ -203,7 +189,7 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 
 		boolean done;
 
-		public FilterConditionalSubscriber(Fuseable.ConditionalSubscriber<? super T> actual,
+		FilterConditionalSubscriber(Fuseable.ConditionalSubscriber<? super T> actual,
 				Predicate<? super T> predicate) {
 			this.actual = actual;
 			this.predicate = predicate;

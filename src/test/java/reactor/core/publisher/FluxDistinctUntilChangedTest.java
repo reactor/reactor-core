@@ -26,18 +26,19 @@ import reactor.test.subscriber.AssertSubscriber;
 public class FluxDistinctUntilChangedTest extends AbstractFluxOperatorTest<String, String> {
 
 	@Override
-	protected List<Scenario<String, String>> errorInOperatorCallback() {
+	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
 		return Arrays.asList(
 				Scenario.from(f -> f.distinctUntilChanged(d -> {
-					throw new RuntimeException("test");
+					throw exception();
 				})),
 
-				Scenario.from(f -> f.distinctUntilChanged(d -> null), Fuseable.ANY, step -> step.verifyError(NullPointerException.class))
+				Scenario.from(f -> f.distinctUntilChanged(d -> null), Fuseable.NONE,
+						step -> step.verifyError(NullPointerException.class))
 		);
 	}
 
 	@Override
-	protected List<Scenario<String, String>>  errorFromUpstreamFailure() {
+	protected List<Scenario<String, String>> scenarios_errorFromUpstreamFailure() {
 		return Arrays.asList(
 				Scenario.from(f -> f.distinctUntilChanged())
 		);

@@ -24,13 +24,13 @@ import org.junit.Test;
 import reactor.core.Fuseable;
 import reactor.test.subscriber.AssertSubscriber;
 
-public class FluxMapTest extends AbstractFluxOperatorTest<String, Integer>{
+public class FluxMapTest extends AbstractFluxOperatorTest<String, String>{
 
 	@Override
-	protected List<Scenario<String, Integer>> errorInOperatorCallback() {
+	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
 		return Arrays.asList(
 				Scenario.from(f -> f.map(d -> {
-					throw new RuntimeException("test");
+					throw exception();
 				}), Fuseable.ANY),
 
 				Scenario.from(f -> f.map(d -> null), Fuseable.ANY, step -> step.verifyError(NullPointerException.class))
@@ -38,9 +38,9 @@ public class FluxMapTest extends AbstractFluxOperatorTest<String, Integer>{
 	}
 
 	@Override
-	protected List<Scenario<String, Integer>> errorFromUpstreamFailure() {
+	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
 		return Arrays.asList(
-				Scenario.from(f -> f.map(d -> 1))
+				Scenario.from(f -> f.map(d -> d), Fuseable.ANY)
 		);
 	}
 

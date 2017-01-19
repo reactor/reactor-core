@@ -26,7 +26,6 @@ import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
-import reactor.core.Trackable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
@@ -39,18 +38,49 @@ import static reactor.core.Fuseable.SYNC;
 public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 
 	@Override
-	protected List<Scenario<String, String>> errorInOperatorCallback() {
+	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
 		return Arrays.asList(
 				Scenario.from(f -> f.handle((s, d) -> {
-					throw new RuntimeException("test");
+					if (multiItem(2).equals(s)) {
+						d.complete();
+					}
+					else {
+						d.next(s);
+					}
+				}), Fuseable.ANY, step -> step.expectNext(multiItem(0), multiItem(1))
+				                              .verifyComplete()),
+
+				Scenario.from(f -> f.handle((s, d) -> {
+					if (!multiItem(2).equals(s)) {
+						d.next(s);
+					}
+				}), Fuseable.ANY, step -> step.expectNext(multiItem(0), multiItem(1))
+				                              .verifyComplete()),
+
+				Scenario.from(f -> f.handle((s, d) -> {
+					if (multiItem(2).equals(s)) {
+						d.complete();
+					}
+					else if (multiItem(1).equals(s)) {
+						d.next(s);
+					}
+				}), Fuseable.ANY, step -> step.expectNext(multiItem(1)).verifyComplete())
+		);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
+		return Arrays.asList(
+				Scenario.from(f -> f.handle((s, d) -> {
+					throw exception();
 				}), Fuseable.ANY),
 
-				Scenario.from(f -> f.handle((s, d) -> d.error(new Exception("test"))),
+				Scenario.from(f -> f.handle((s, d) -> d.error(exception())),
 						Fuseable.ANY),
 
 				Scenario.from(f -> f.handle((s, d) -> {
-					d.next("test");
-					d.next("test2");
+					d.next(multiItem(0));
+					d.next(multiItem(1));
 				}), Fuseable.ANY, step -> step.verifyError(IllegalStateException.class)),
 
 				Scenario.from(f -> f.handle((s, d) -> {
@@ -60,15 +90,21 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 	}
 
 	@Override
-	protected List<Scenario<String, String>> errorFromUpstreamFailure() {
+	protected List<Scenario<String, String>> scenarios_errorFromUpstreamFailure() {
 		return Arrays.asList(
 				Scenario.from(f -> f.handle((data, s) -> {})),
 
 				Scenario.from(f -> f.handle((data, s) -> {
-					if ("test3".equals(data)) {
+					if (multiItem(2).equals(data)) {
 						s.complete();
 					}
 					else {
+						s.next(data);
+					}
+				})),
+
+				Scenario.from(f -> f.handle((data, s) -> {
+					if (!multiItem(2).equals(data)) {
 						s.next(data);
 					}
 				}))
@@ -250,32 +286,13 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 	}
 
 	@Test
-	public void handle() {
+	public void handleConditionalFusedCancelBoth() {
 		StepVerifier.create(Flux.just("test", "test2", "test3")
-		                        .hide()
-		                        .handle((s, d) -> {
-			                        if ("test3".equals(s)) {
-				                        d.complete();
-			                        }
-			                        else {
-				                        d.next(s);
-			                        }
-		                        }))
+		                        .as(this::passThrough)
+		                        .filter(t -> true), 2)
 		            .expectNext("test", "test2")
-		            .verifyComplete();
-	}
-
-	@Test
-	public void handle2() {
-		StepVerifier.create(Flux.just("test", "test2", "test3")
-		                        .hide()
-		                        .handle((s, d) -> {
-			                        if (!"test3".equals(s)) {
-				                        d.next(s);
-			                        }
-		                        }))
-		            .expectNext("test", "test2")
-		            .verifyComplete();
+		            .thenCancel()
+		            .verify();
 	}
 
 	@Test
@@ -288,392 +305,6 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 		            .verify();
 	}
 
-	@Test
-	public void handleFusedTryNext() {
-		StepVerifier.create(Flux.just("test", "test2", "test3")
-		                        .handle((s, d) -> {
-			                        if ("test3".equals(s)) {
-				                        d.complete();
-			                        }
-			                        else {
-				                        d.next(s);
-			                        }
-		                        }), 3)
-		            .expectNext("test", "test2")
-		            .verifyComplete();
-	}
-
-	@Test
-	public void handleFusedTryNext2() {
-		StepVerifier.create(Flux.just("test", "test2", "test3")
-		                        .handle((s, d) -> {
-			                        if (!"test3".equals(s)) {
-				                        d.next(s);
-			                        }
-		                        }), 3)
-		            .expectNext("test", "test2")
-		            .verifyComplete();
-	}
-
-	@Test
-	public void handleFused() {
-		StepVerifier.create(Flux.just("test", "test2", "test3")
-		                        .handle((s, d) -> {
-			                        if ("test3".equals(s)) {
-				                        d.complete();
-			                        }
-			                        else {
-				                        d.next(s);
-			                        }
-		                        }))
-		            .expectNext("test", "test2")
-		            .verifyComplete();
-	}
-
-	@Test
-	public void handleFusedSync() {
-		StepVerifier.create(Flux.just("test", "test2", "test3")
-		                        .handle((s, d) -> {
-			                        if ("test3".equals(s)) {
-				                        d.complete();
-			                        }
-			                        else {
-				                        d.next(s);
-			                        }
-		                        }))
-		            .expectFusion(Fuseable.SYNC)
-		            .expectNext("test", "test2")
-		            .verifyComplete();
-	}
-
-	@Test
-	public void handleFusedConditionalTargetSync() {
-		StepVerifier.create(Flux.just("test", "test2", "test3")
-		                        .handle((s, d) -> {
-			                        if ("test3".equals(s)) {
-				                        d.complete();
-			                        }
-			                        else {
-				                        d.next(s);
-			                        }
-		                        })
-		                        .filter(d -> true))
-		            .expectFusion(Fuseable.SYNC)
-		            .expectNext("test", "test2")
-		            .verifyComplete();
-	}
-
-	@Test
-	public void handleFusedAsync() {
-		UnicastProcessor<String> up = UnicastProcessor.create();
-		StepVerifier.create(up.handle((s, d) -> {
-			if ("test3".equals(s)) {
-				d.complete();
-			}
-			else {
-				d.next(s);
-			}
-		}))
-		            .expectFusion(Fuseable.ASYNC)
-		            .then(() -> {
-			            up.onNext("test");
-			            up.onNext("test2");
-			            up.onNext("test3");
-		            })
-		            .expectNext("test", "test2")
-		            .verifyComplete();
-	}
-
-	@Test
-	public void handleFusedConditionalTargetAsync() {
-		UnicastProcessor<String> up = UnicastProcessor.create();
-		StepVerifier.create(up.handle((s, d) -> {
-			if ("test3".equals(s)) {
-				d.complete();
-			}
-			else {
-				d.next(s);
-			}
-		})
-		                      .filter(d -> true))
-		            .expectFusion(Fuseable.ASYNC)
-		            .then(() -> {
-			            up.onNext("test");
-			            up.onNext("test2");
-			            up.onNext("test3");
-		            })
-		            .expectNext("test", "test2")
-		            .verifyComplete();
-	}
-
-	@Test
-	public void handleFusedConditionalFilteredTargetAsync() {
-		UnicastProcessor<String> up = UnicastProcessor.create();
-		StepVerifier.create(up.handle((s, d) -> {
-			if ("test3".equals(s)) {
-				d.complete();
-			}
-			else if ("test2".equals(s)) {
-				d.next(s);
-			}
-		})
-		                      .filter(d -> true))
-		            .expectFusion(Fuseable.ASYNC)
-		            .then(() -> {
-			            up.onNext("test");
-			            up.onNext("test2");
-			            up.onNext("test3");
-		            })
-		            .expectNext("test2")
-		            .verifyComplete();
-	}
-
-	@Test
-	public void handleFusedFilteredTargetAsync() {
-		UnicastProcessor<String> up = UnicastProcessor.create();
-		StepVerifier.create(up.handle((s, d) -> {
-			if ("test3".equals(s)) {
-				d.complete();
-			}
-			else if ("test2".equals(s)) {
-				d.next(s);
-			}
-		}))
-		            .expectFusion(Fuseable.ASYNC)
-		            .then(() -> {
-			            up.onNext("test");
-			            up.onNext("test2");
-			            up.onNext("test3");
-		            })
-		            .expectNext("test2")
-		            .verifyComplete();
-	}
-
-	@Test
-	@SuppressWarnings("unchecked")
-	public void handleFusedStateTargetAsync() {
-		UnicastProcessor<String> up = UnicastProcessor.create();
-		up.onNext("test");
-		up.onNext("test2");
-		up.onNext("test3");
-		StepVerifier.create(up.handle((s, d) -> {
-			d.complete();
-		}))
-		            .consumeSubscriptionWith(s -> {
-			            Fuseable.QueueSubscription<String> qs =
-					            ((Fuseable.QueueSubscription<String>) s);
-			            qs.requestFusion(ASYNC);
-			            assertThat(qs.size()).isEqualTo(3);
-			            assertThat(qs.poll()).isNull();
-			            assertThat(qs.poll()).isNull();
-			            assertThat(qs.size()).isEqualTo(2);
-			            qs.clear();
-			            assertThat(qs.size()).isEqualTo(0);
-		            })
-		            .thenCancel()
-		            .verify();
-	}
-
-	@Test
-	@SuppressWarnings("unchecked")
-	public void handleFusedStateTargetConditionalAsync() {
-		UnicastProcessor<String> up = UnicastProcessor.create();
-		up.onNext("test");
-		up.onNext("test2");
-		up.onNext("test3");
-		StepVerifier.create(up.handle((s, d) -> {
-			d.complete();
-		})
-		                      .filter(t -> true))
-		            .consumeSubscriptionWith(s -> {
-			            Fuseable.QueueSubscription<String> qs =
-					            ((Fuseable.QueueSubscription<String>) ((Receiver) s).upstream());
-			            qs.requestFusion(ASYNC);
-			            assertThat(qs.size()).isEqualTo(3);
-			            assertThat(qs.poll()).isNull();
-			            assertThat(qs.poll()).isNull();
-			            assertThat(qs.size()).isEqualTo(2);
-			            qs.clear();
-			            assertThat(qs.size()).isEqualTo(0);
-		            })
-		            .thenCancel()
-		            .verify();
-	}
-
-	@Test
-	public void noFusionOnConditionalThreadBarrier() {
-		StepVerifier.create(Flux.just("test", "test2")
-		                        .as(this::passThrough)
-		                        .distinct())
-		            .expectFusion(Fuseable.ANY | Fuseable.THREAD_BARRIER, Fuseable.NONE)
-		            .thenCancel()
-		            .verify();
-	}
-
-	@Test
-	public void prematureCompleteFusedSync() {
-		StepVerifier.create(Flux.just("test")
-		                        .as(this::passThrough)
-		                        .filter(t -> true))
-		            .expectFusion(Fuseable.SYNC)
-		            .expectNext("test")
-		            .verifyComplete();
-	}
-
-	@Test
-	public void dropHandleFusedSync() {
-		StepVerifier.create(Flux.just("test", "test2")
-		                        .handle((data, s) -> {
-		                        })
-		                        .filter(t -> true))
-		            .expectFusion(Fuseable.SYNC)
-		            .verifyComplete();
-	}
-
-	@Test
-	@SuppressWarnings("unchecked")
-	public void failFusedStateTargetAsync() {
-		UnicastProcessor<String> up = UnicastProcessor.create();
-		up.onNext("test");
-		up.onNext("test2");
-		up.onNext("test3");
-		StepVerifier.create(up.handle((s, d) -> {
-			d.error(new RuntimeException("test"));
-		}))
-		            .consumeSubscriptionWith(s -> {
-			            Fuseable.QueueSubscription<String> qs =
-					            ((Fuseable.QueueSubscription<String>) s);
-			            qs.requestFusion(ASYNC);
-			            assertThat(qs.size()).isEqualTo(3);
-			            assertThat(qs.poll()).isNull();
-			            try {
-				            assertThat(qs.poll()).isNull();
-				            Assert.fail();
-			            }
-			            catch (Exception e) {
-				            assertThat(e).hasMessage("test");
-			            }
-			            assertThat(qs.size()).isEqualTo(2);
-			            qs.clear();
-			            assertThat(qs.size()).isEqualTo(0);
-		            })
-		            .thenCancel()
-		            .verify();
-	}
-
-	@Test
-	@SuppressWarnings("unchecked")
-	public void failFusedStateConditionalTargetAsync() {
-		UnicastProcessor<String> up = UnicastProcessor.create();
-		up.onNext("test");
-		up.onNext("test2");
-		up.onNext("test3");
-		StepVerifier.create(up.handle((s, d) -> {
-			d.error(new RuntimeException("test"));
-		})
-		                      .filter(d -> true))
-		            .consumeSubscriptionWith(s -> {
-			            Fuseable.QueueSubscription<String> qs =
-					            ((Fuseable.QueueSubscription<String>) ((Receiver) s).upstream());
-			            qs.requestFusion(ASYNC);
-			            assertThat(qs.size()).isEqualTo(3);
-			            assertThat(qs.poll()).isNull();
-			            assertThat(((Trackable) qs).getError()).hasMessage("test");
-			            try {
-				            assertThat(qs.poll()).isNull();
-				            Assert.fail();
-			            }
-			            catch (Exception e) {
-				            assertThat(e).hasMessage("test");
-			            }
-			            assertThat(qs.size()).isEqualTo(2);
-			            qs.clear();
-			            assertThat(qs.size()).isEqualTo(0);
-		            })
-		            .thenCancel()
-		            .verify();
-	}
-
-	@Test
-	public void handleFusedCancel() {
-		StepVerifier.create(Flux.just("test", "test2", "test3")
-		                        .as(this::passThrough), 2)
-		            .expectNext("test", "test2")
-		            .thenCancel()
-		            .verify();
-	}
-
-	@Test
-	public void handleConditionalFused() {
-		StepVerifier.create(Flux.just("test", "test2", "test3")
-		                        .handle((s, d) -> {
-			                        if ("test3".equals(s)) {
-				                        d.complete();
-			                        }
-			                        else {
-				                        d.next(s);
-			                        }
-		                        })
-		                        .filter("test2"::equals))
-		            .expectNext("test2")
-		            .verifyComplete();
-	}
-
-	@Test
-	public void handleConditionalFusedTryNext() {
-		StepVerifier.create(Flux.just("test", "test2", "test3")
-		                        .handle((s, d) -> {
-			                        if ("test3".equals(s)) {
-				                        d.complete();
-			                        }
-			                        else {
-				                        d.next(s);
-			                        }
-		                        })
-		                        .filter("test2"::equals), 3)
-		            .expectNext("test2")
-		            .verifyComplete();
-	}
-
-	@Test
-	public void handleConditionalTargetCancel() {
-		StepVerifier.create(Flux.just("test", "test2", "test3")
-		                        .hide()
-		                        .handle((s, d) -> {
-			                        if (!"test3".equals(s)) {
-				                        d.complete();
-			                        }
-			                        else {
-				                        d.next(s);
-			                        }
-		                        })
-		                        .filter("test2"::equals))
-		            .thenCancel()
-		            .verify();
-	}
-
-	@Test
-	public void handleConditionalFusedCancelBoth() {
-		StepVerifier.create(Flux.just("test", "test2", "test3")
-		                        .as(this::passThrough), 2)
-		            .expectNext("test", "test2")
-		            .thenCancel()
-		            .verify();
-	}
-
-	@Test
-	public void handleConditionalTarget() {
-		StepVerifier.create(Flux.just("test", "test2", "test3")
-		                        .hide()
-		                        .handle((s, d) -> {
-			                        if (!"test3".equals(s)) {
-				                        d.next(s);
-			                        }
-		                        })
-		                        .filter("test2"::equals))
-		            .expectNext("test2")
-		            .verifyComplete();
-	}
 
 	@Test
 	public void handleConditionalFusedCancel() {
@@ -684,8 +315,15 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 		            .verify();
 	}
 
-	Flux<String> passThrough(Flux<String> f) {
-		return f.handle((a, b) -> b.next(a));
+
+
+	@Test
+	public void handleFusedCancel() {
+		StepVerifier.create(Flux.just("test", "test2", "test3")
+		                        .as(this::passThrough), 2)
+		            .expectNext("test", "test2")
+		            .thenCancel()
+		            .verify();
 	}
 
 	@Test
@@ -734,6 +372,12 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 		            .verifyComplete();
 	}
 
+	Flux<String> passThrough(Flux<String> f) {
+		return f.handle((a, b) -> b.next(a));
+	}
+
+
+
 	Flux<String> filterTest2(Flux<String> f) {
 		return f.handle((a, b) -> {
 			b.next(a);
@@ -743,4 +387,83 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 		});
 	}
 
+
+	@Test
+	public void noFusionOnConditionalThreadBarrier() {
+		StepVerifier.create(Flux.just("test", "test2")
+		                        .as(this::passThrough)
+		                        .distinct())
+		            .expectFusion(Fuseable.ANY | Fuseable.THREAD_BARRIER, Fuseable.NONE)
+		            .thenCancel()
+		            .verify();
+	}
+
+	@Test
+	public void prematureCompleteFusedSync() {
+		StepVerifier.create(Flux.just("test")
+		                        .as(this::passThrough)
+		                        .filter(t -> true))
+		            .expectFusion(Fuseable.SYNC)
+		            .expectNext("test")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void dropHandleFusedSync() {
+		StepVerifier.create(Flux.just("test", "test2")
+		                        .handle((data, s) -> {
+		                        })
+		                        .filter(t -> true))
+		            .expectFusion(Fuseable.SYNC)
+		            .verifyComplete();
+	}
+
+
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void handleFusedStateTargetAsync() {
+		UnicastProcessor<String> up = UnicastProcessor.create();
+		testUnicastSource(up);
+		StepVerifier.create(up.handle((s, d) -> {
+			d.complete();
+		}))
+		            .consumeSubscriptionWith(s -> {
+			            Fuseable.QueueSubscription<String> qs =
+					            ((Fuseable.QueueSubscription<String>) s);
+			            qs.requestFusion(ASYNC);
+			            assertThat(qs.size()).isEqualTo(3);
+			            assertThat(qs.poll()).isNull();
+			            assertThat(qs.poll()).isNull();
+			            assertThat(qs.size()).isEqualTo(2);
+			            qs.clear();
+			            assertThat(qs.size()).isEqualTo(0);
+		            })
+		            .thenCancel()
+		            .verify();
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void handleFusedStateTargetConditionalAsync() {
+		UnicastProcessor<String> up = UnicastProcessor.create();
+		testUnicastSource(up);
+		StepVerifier.create(up.handle((s, d) -> {
+			d.complete();
+		})
+		                      .filter(t -> true))
+		            .consumeSubscriptionWith(s -> {
+			            Fuseable.QueueSubscription<String> qs =
+					            ((Fuseable.QueueSubscription<String>) ((Receiver) s).upstream());
+			            qs.requestFusion(ASYNC);
+			            assertThat(qs.size()).isEqualTo(3);
+			            assertThat(qs.poll()).isNull();
+			            assertThat(qs.poll()).isNull();
+			            assertThat(qs.size()).isEqualTo(2);
+			            qs.clear();
+			            assertThat(qs.size()).isEqualTo(0);
+		            })
+		            .thenCancel()
+		            .verify();
+	}
 }

@@ -369,7 +369,7 @@ public abstract class Operators {
 				Hooks.onOperatorErrorHook;
 		if (hook == null) {
 			if (dataSignal != null) {
-				if (dataSignal instanceof Throwable) {
+				if (dataSignal != t && dataSignal instanceof Throwable) {
 					t.addSuppressed((Throwable) dataSignal);
 				}
 				//do not wrap original value to avoid strong references

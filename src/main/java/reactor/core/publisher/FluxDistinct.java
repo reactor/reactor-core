@@ -139,6 +139,14 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 				return true;
 			}
 
+			if (k == null) {
+				done = true;
+				actual.onError(Operators.onOperatorError(s,
+						new NullPointerException("The distinct extractor returned a null value."),
+						t));
+				return true;
+			}
+
 			boolean b;
 
 			try {
@@ -262,6 +270,14 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 				return;
 			}
 
+			if (k == null) {
+				done = true;
+				actual.onError(Operators.onOperatorError(s,
+						new NullPointerException("The distinct extractor returned a null value."),
+						t));
+				return;
+			}
+
 			boolean b;
 
 			try {
@@ -293,6 +309,14 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 			}
 			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t));
+				return true;
+			}
+
+			if (k == null) {
+				done = true;
+				actual.onError(Operators.onOperatorError(s,
+						new NullPointerException("The distinct extractor returned a null value."),
+						t));
 				return true;
 			}
 
@@ -429,6 +453,14 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 				return true;
 			}
 
+			if (k == null) {
+				done = true;
+				actual.onError(Operators.onOperatorError(qs,
+						new NullPointerException("The distinct extractor returned a null value."),
+						t));
+				return true;
+			}
+
 			boolean b;
 
 			try {
@@ -518,8 +550,14 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 				long dropped = 0;
 				for (; ; ) {
 					T v = qs.poll();
-
-					if (v == null || collection.add(keyExtractor.apply(v))) {
+					if(v == null){
+						return null;
+					}
+					K r = keyExtractor.apply(v);
+					if (r == null) {
+						throw new NullPointerException("The collectionSupplier returned a null collection");
+					}
+					if (collection.add(r)) {
 						if (dropped != 0) {
 							request(dropped);
 						}
@@ -531,8 +569,14 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 			else {
 				for (; ; ) {
 					T v = qs.poll();
-
-					if (v == null || collection.add(keyExtractor.apply(v))) {
+					if(v == null){
+						return null;
+					}
+					K r = keyExtractor.apply(v);
+					if (r == null) {
+						throw new NullPointerException("The collectionSupplier returned a null collection");
+					}
+					if (collection.add(r)) {
 						return v;
 					}
 				}
