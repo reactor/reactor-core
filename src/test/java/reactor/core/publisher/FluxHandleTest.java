@@ -18,9 +18,9 @@ package reactor.core.publisher;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -39,7 +39,31 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.Fuseable.ASYNC;
 import static reactor.core.Fuseable.SYNC;
 
-public class FluxHandleTest {
+public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
+
+	@Override
+	protected List<Scenario<String, String>> errorInOperatorCallback() {
+		return Arrays.asList(
+						Scenario.from(f -> f.handle((s, d) -> {
+							throw new RuntimeException("test");
+						}), Fuseable.ANY),
+
+						Scenario.from(f -> f.handle((s, d) -> d.error(new Exception("test"))),
+							Fuseable.ANY),
+
+						Scenario.from(f -> f.handle((s, d) -> {
+							d.next("test");
+							d.next("test2");
+						}), Fuseable.ANY,
+								step -> step.verifyError(IllegalStateException.class))
+		);
+	}
+
+	@Override
+	protected Flux<String> errorFromUpstreamFailure(Flux<String> f) {
+		return f.handle((data, s) -> {
+		});
+	}
 
 	@Test
 	public void normal() {
@@ -165,7 +189,6 @@ public class FluxHandleTest {
 				new AtomicReference<>();
 		final AtomicReference<Object> dataInOnOperatorError = new AtomicReference<>();
 
-		try {
 			Hooks.onOperatorError((t, d) -> {
 				throwableInOnOperatorError.set(t);
 				dataInOnOperatorError.set(d);
@@ -183,10 +206,6 @@ public class FluxHandleTest {
 
 			Assert.assertSame(throwableInOnOperatorError.get(), exception);
 			Assert.assertSame(dataInOnOperatorError.get(), data);
-		}
-		finally {
-			Hooks.resetOnOperatorError();
-		}
 	}
 
 	@Test
@@ -199,7 +218,6 @@ public class FluxHandleTest {
 				new AtomicReference<>();
 		final AtomicReference<Object> dataInOnOperatorError = new AtomicReference<>();
 
-		try {
 			Hooks.onOperatorError((t, d) -> {
 				throwableInOnOperatorError.set(t);
 				dataInOnOperatorError.set(d);
@@ -219,10 +237,6 @@ public class FluxHandleTest {
 
 			Assert.assertSame(throwableInOnOperatorError.get(), exception);
 			Assert.assertSame(dataInOnOperatorError.get(), data);
-		}
-		finally {
-			Hooks.resetOnOperatorError();
-		}
 	}
 
 	@Test
@@ -298,22 +312,6 @@ public class FluxHandleTest {
 	}
 
 	@Test
-	public void failHandleFusedSync() {
-		StepVerifier.create(Flux.just("test", "test2", "test3")
-		                        .handle((s, d) -> {
-			                        if ("test3".equals(s)) {
-				                        d.error(new RuntimeException("test"));
-			                        }
-			                        else {
-				                        d.next(s);
-			                        }
-		                        }))
-		            .expectFusion(Fuseable.SYNC)
-		            .expectNext("test", "test2")
-		            .verifyErrorMessage("test");
-	}
-
-	@Test
 	public void handleFusedConditionalTargetSync() {
 		StepVerifier.create(Flux.just("test", "test2", "test3")
 		                        .handle((s, d) -> {
@@ -328,23 +326,6 @@ public class FluxHandleTest {
 		            .expectFusion(Fuseable.SYNC)
 		            .expectNext("test", "test2")
 		            .verifyComplete();
-	}
-
-	@Test
-	public void failHandleFusedConditionalTargetSync() {
-		StepVerifier.create(Flux.just("test", "test2", "test3")
-		                        .handle((s, d) -> {
-			                        if ("test3".equals(s)) {
-				                        d.error(new RuntimeException("test"));
-			                        }
-			                        else {
-				                        d.next(s);
-			                        }
-		                        })
-		                        .filter(d -> true))
-		            .expectFusion(Fuseable.SYNC)
-		            .expectNext("test", "test2")
-		            .verifyErrorMessage("test");
 	}
 
 	@Test
@@ -366,49 +347,6 @@ public class FluxHandleTest {
 		            })
 		            .expectNext("test", "test2")
 		            .verifyComplete();
-	}
-
-	@Test
-	public void failHandleFusedAsync() {
-		UnicastProcessor<String> up = UnicastProcessor.create();
-		StepVerifier.create(up.handle((s, d) -> {
-			if ("test3".equals(s)) {
-				d.error(new Exception("test"));
-			}
-			else {
-				d.next(s);
-			}
-		}))
-		            .expectFusion(Fuseable.ASYNC)
-		            .then(() -> {
-			            up.onNext("test");
-			            up.onNext("test2");
-			            up.onNext("test3");
-		            })
-		            .expectNext("test", "test2")
-		            .verifyErrorMessage("test");
-	}
-
-	@Test
-	public void failHandleFusedConditionalAsync() {
-		UnicastProcessor<String> up = UnicastProcessor.create();
-		StepVerifier.create(up.handle((s, d) -> {
-			if ("test3".equals(s)) {
-				d.error(new Exception("test"));
-			}
-			else {
-				d.next(s);
-			}
-		})
-		                      .filter(d -> true))
-		            .expectFusion(Fuseable.ASYNC)
-		            .then(() -> {
-			            up.onNext("test");
-			            up.onNext("test2");
-			            up.onNext("test3");
-		            })
-		            .expectNext("test", "test2")
-		            .verifyErrorMessage("test");
 	}
 
 	@Test
@@ -712,238 +650,6 @@ public class FluxHandleTest {
 		            .verify();
 	}
 
-	@Test
-	public void failNextIfTerminatedHandleBothConditional() {
-		Hooks.onNextDropped(t -> assertThat(t).isEqualTo("test"));
-		TestPublisher<String> ts =
-				TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
-		StepVerifier.create(ts.flux()
-		                      .as(this::passThrough)
-		                      .filter("test2"::equals))
-		            .then(() -> {
-			            ts.complete();
-			            ts.next("test");
-		            })
-		            .verifyComplete();
-		Hooks.resetOnNextDropped();
-	}
-
-	@Test
-	public void ignoreCompleteIfTerminatedHandleFused() {
-		UnicastProcessor<String> up = UnicastProcessor.create();
-		StepVerifier.create(up.as(this::passThrough).filter(t -> true))
-		            .then(() -> {
-			            up.actual.onComplete();
-			            up.actual.onComplete();
-		            })
-		            .verifyComplete();
-	}
-
-	@Test
-	public void ignoreCompleteIfTerminatedHandleTargetConditional() {
-		TestPublisher<String> ts =
-				TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
-		StepVerifier.create(ts.flux()
-		                      .hide()
-		                      .as(this::passThrough)
-		                      .filter("test2"::equals))
-		            .then(() -> {
-			            ts.complete();
-			            ts.complete();
-		            })
-		            .verifyComplete();
-	}
-
-	@Test
-	public void failNextIfTerminatedHandleTargetConditional() {
-		Hooks.onNextDropped(t -> assertThat(t).isEqualTo("test"));
-		TestPublisher<String> ts =
-				TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
-		StepVerifier.create(ts.flux()
-		                      .hide()
-		                      .as(this::passThrough)
-		                      .filter("test2"::equals))
-		            .then(() -> {
-			            ts.complete();
-			            ts.next("test");
-		            })
-		            .verifyComplete();
-		Hooks.resetOnNextDropped();
-	}
-
-	@Test
-	public void failNextIfTerminatedHandleSourceConditional() {
-		Hooks.onNextDropped(t -> assertThat(t).isEqualTo("test"));
-		TestPublisher<String> ts =
-				TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
-		StepVerifier.create(ts.flux()
-		                      .as(this::passThrough))
-		            .then(() -> {
-			            ts.complete();
-			            ts.next("test");
-		            })
-		            .verifyComplete();
-		Hooks.resetOnNextDropped();
-	}
-
-	@Test
-	public void failNextIfTerminatedHandle() {
-		Hooks.onNextDropped(t -> assertThat(t).isEqualTo("test"));
-		TestPublisher<String> ts =
-				TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
-		StepVerifier.create(ts.flux()
-		                      .hide()
-		                      .as(this::passThrough))
-		            .then(() -> {
-			            ts.complete();
-			            ts.next("test");
-		            })
-		            .verifyComplete();
-		Hooks.resetOnNextDropped();
-	}
-
-	@Test
-	public void ignoreCompleteIfTerminatedFusedHandle() {
-		UnicastProcessor<String> up = UnicastProcessor.create();
-		StepVerifier.create(up.as(this::passThrough))
-		            .then(() -> {
-			            up.actual.onComplete();
-			            up.actual.onComplete();
-		            })
-		            .verifyComplete();
-	}
-
-	@Test
-	public void failNextIfTerminatedFusedHandle() {
-		Hooks.onNextDropped(t -> assertThat(t).isEqualTo("test"));
-		UnicastProcessor<String> up = UnicastProcessor.create();
-		StepVerifier.create(up.as(this::passThrough))
-		            .then(() -> {
-			            up.actual.onComplete();
-			            up.actual.onNext("test");
-		            })
-		            .verifyComplete();
-		Hooks.resetOnNextDropped();
-	}
-
-	@Test
-	public void failNextIfTerminatedConditionalBothFusedHandle() {
-		Hooks.onNextDropped(t -> assertThat(t).isEqualTo("test"));
-		UnicastProcessor<String> up = UnicastProcessor.create();
-		StepVerifier.create(up.as(this::passThrough)
-		                      .filter(d -> true))
-		            .then(() -> {
-			            up.actual.onComplete();
-			            up.actual.onNext("test");
-		            })
-		            .verifyComplete();
-		Hooks.resetOnNextDropped();
-	}
-
-	@Test
-	@SuppressWarnings("unchecked")
-	public void failTryNextIfTerminatedFusedHandle() {
-		Hooks.onNextDropped(t -> assertThat(t).isEqualTo("test"));
-		UnicastProcessor<String> up = UnicastProcessor.create();
-		StepVerifier.create(up.as(this::passThrough))
-		            .then(() -> {
-			            up.actual.onComplete();
-			            ((Fuseable.ConditionalSubscriber<String>) up.actual).tryOnNext(
-					            "test");
-		            })
-		            .verifyComplete();
-		Hooks.resetOnNextDropped();
-	}
-
-	@Test
-	@SuppressWarnings("unchecked")
-	public void failTryNextIfTerminatedConditionalBothFusedHandle() {
-		Hooks.onNextDropped(t -> assertThat(t).isEqualTo("test"));
-		UnicastProcessor<String> up = UnicastProcessor.create();
-		StepVerifier.create(up.as(this::passThrough)
-		                      .filter(d -> true))
-		            .then(() -> {
-			            up.actual.onComplete();
-			            ((Fuseable.ConditionalSubscriber<String>) up.actual).tryOnNext(
-					            "test");
-		            })
-		            .verifyComplete();
-		Hooks.resetOnNextDropped();
-	}
-
-	@Test
-	public void ignoreCompleteIfTerminatedHandle() {
-		TestPublisher<String> ts =
-				TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
-		StepVerifier.create(ts.flux()
-		                      .hide()
-		                      .as(this::passThrough))
-		            .then(() -> {
-			            ts.complete();
-			            ts.complete();
-		            })
-		            .verifyComplete();
-	}
-
-	@Test
-	public void failErrorIfTerminatedHandle() {
-		Hooks.onErrorDropped(t -> assertThat(t).hasMessage("test"));
-		TestPublisher<String> ts =
-				TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
-		StepVerifier.create(ts.flux()
-		                      .hide()
-		                      .as(this::passThrough))
-		            .then(() -> {
-			            ts.complete();
-			            ts.error(new Exception("test"));
-		            })
-		            .verifyComplete();
-		Hooks.resetOnErrorDropped();
-	}
-
-	@Test
-	public void failErrorIfTerminatedConditionalTargetHandle() {
-		Hooks.onErrorDropped(t -> assertThat(t).hasMessage("test"));
-		TestPublisher<String> ts =
-				TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
-		StepVerifier.create(ts.flux()
-		                      .hide()
-		                      .as(this::passThrough)
-		                      .filter(d -> true))
-		            .then(() -> {
-			            ts.complete();
-			            ts.error(new Exception("test"));
-		            })
-		            .verifyComplete();
-		Hooks.resetOnErrorDropped();
-	}
-
-	@Test
-	public void failErrorIfTerminatedFusedHandle() {
-		Hooks.onErrorDropped(t -> assertThat(t).hasMessage("test"));
-		UnicastProcessor<String> up = UnicastProcessor.create();
-		StepVerifier.create(up.as(this::passThrough))
-		            .then(() -> {
-			            up.actual.onComplete();
-			            up.actual.onError(new Exception("test"));
-		            })
-		            .verifyComplete();
-		Hooks.resetOnErrorDropped();
-	}
-
-	@Test
-	public void failErrorIfTerminatedFusedHandleTargetConditional() {
-		Hooks.onErrorDropped(t -> assertThat(t).hasMessage("test"));
-		UnicastProcessor<String> up = UnicastProcessor.create();
-		StepVerifier.create(up.as(this::passThrough)
-		                      .filter(d -> true))
-		            .then(() -> {
-			            up.actual.onComplete();
-			            up.actual.onError(new Exception("test"));
-		            })
-		            .verifyComplete();
-		Hooks.resetOnErrorDropped();
-	}
 
 	Flux<String> passThrough(Flux<String> f) {
 		return f.handle((a, b) -> b.next(a));
@@ -1001,107 +707,6 @@ public class FluxHandleTest {
 			if ("test2".equals(a)) {
 				b.complete();
 			}
-		});
-	}
-
-	@Test
-	public void failHandleError() {
-		this.operatorVerifier(this::errorHandle)
-		    .verifyErrorMessage("test");
-
-		this.operatorVerifier(this::errorHandle2)
-		    .verifyErrorMessage("test");
-
-		this.operatorVerifier(this::errorHandleDoubleNext)
-		    .verifyError(IllegalStateException.class);
-	}
-
-	@Test
-	public void failHandleFusedError() {
-		this.operatorVerifierFusedTryNext(this::errorHandle)
-		    .verifyErrorMessage("test");
-
-		this.operatorVerifierFused(this::errorHandle)
-		    .verifyErrorMessage("test");
-
-		this.operatorVerifierFusedTryNext(this::errorHandle2)
-		    .verifyErrorMessage("test");
-
-		this.operatorVerifierFused(this::errorHandle2)
-		    .verifyErrorMessage("test");
-
-		this.operatorVerifierFusedTryNext(this::errorHandleDoubleNext)
-		    .verifyError(IllegalStateException.class);
-	}
-
-	@Test
-	public void failHandleFusedBothConditionalError() {
-		this.operatorVerifierFusedBothConditionalTryNext(this::errorHandle)
-		    .verifyErrorMessage("test");
-
-		this.operatorVerifierFusedBothConditional(this::errorHandle)
-		    .verifyErrorMessage("test");
-
-		this.operatorVerifierFusedBothConditionalTryNext(this::errorHandle2)
-		    .verifyErrorMessage("test");
-
-		this.operatorVerifierFusedBothConditional(this::errorHandle2)
-		    .verifyErrorMessage("test");
-
-		this.operatorVerifierFusedBothConditionalTryNext(this::errorHandleDoubleNext)
-		    .verifyError(IllegalStateException.class);
-	}
-
-	@Test
-	public void failHandleSourceConditionalError() {
-		this.operatorVerifierSourceConditional(this::errorHandle)
-		    .verifyErrorMessage("test");
-
-		this.operatorVerifierSourceConditional(this::errorHandle2)
-		    .verifyErrorMessage("test");
-
-		this.operatorVerifierSourceConditional(this::errorHandleDoubleNext)
-		    .verifyError(IllegalStateException.class);
-	}
-
-	@Test
-	public void failHandleTargetConditionalError() {
-		this.operatorVerifierTargetConditional(this::errorHandle)
-		    .verifyErrorMessage("test");
-
-		this.operatorVerifierTargetConditional(this::errorHandle2)
-		    .verifyErrorMessage("test");
-
-		this.operatorVerifierTargetConditional(this::errorHandleDoubleNext)
-		    .verifyError(IllegalStateException.class);
-	}
-
-	@Test
-	public void failHandleBothConditionalError() {
-		this.operatorVerifierBothConditional(this::errorHandle)
-		    .verifyErrorMessage("test");
-
-		this.operatorVerifierBothConditional(this::errorHandle2)
-		    .verifyErrorMessage("test");
-
-		this.operatorVerifierBothConditional(this::errorHandleDoubleNext)
-		    .verifyError(IllegalStateException.class);
-	}
-
-	Flux<String> errorHandle(Flux<String> f) {
-		return f.handle((s, d) -> {
-			throw new RuntimeException(s);
-		});
-	}
-
-	Flux<String> errorHandle2(Flux<String> f) {
-		return f.handle((s, d) -> d.error(new Exception(s)));
-	}
-
-	Flux<String> errorHandleDoubleNext(Flux<String> f) {
-		return f.handle((s, d) -> {
-			d.next("test");
-			d.next("test2");
 		});
 	}
 
@@ -1168,58 +773,6 @@ public class FluxHandleTest {
 
 		f.filter(t -> true)
 		 .subscribe();
-	}
-
-	StepVerifier.Step<String> operatorVerifier(Function<Flux<String>, Flux<String>> scenario) {
-		return StepVerifier.create(Flux.just("test", "test2", "test3")
-		                               .hide()
-		                               .as(scenario), 2);
-	}
-
-	StepVerifier.Step<String> operatorVerifierFusedTryNext(Function<Flux<String>, Flux<String>> scenario) {
-		return StepVerifier.create(Flux.just("test", "test2", "test3")
-		                               .as(scenario), 2);
-	}
-
-	StepVerifier.Step<String> operatorVerifierFused(Function<Flux<String>, Flux<String>> scenario) {
-		return StepVerifier.create(Flux.just("test", "test2", "test3")
-		                               .as(scenario));
-	}
-
-	StepVerifier.Step<String> operatorVerifierFusedBothConditionalTryNext(Function<Flux<String>, Flux<String>> scenario) {
-		return StepVerifier.create(Flux.just("test", "test2", "test3")
-		                               .as(scenario)
-		                               .filter(d -> true), 2);
-	}
-
-	StepVerifier.Step<String> operatorVerifierFusedBothConditional(Function<Flux<String>, Flux<String>> scenario) {
-		return StepVerifier.create(Flux.just("test", "test2", "test3")
-		                               .as(scenario)
-		                               .filter(d -> true));
-	}
-
-	StepVerifier.Step<String> operatorVerifierTargetConditional(Function<Flux<String>, Flux<String>> scenario) {
-		return StepVerifier.create(Flux.just("test", "test2", "test3")
-		                               .hide()
-		                               .as(scenario)
-		                               .filter(d -> true), 2);
-	}
-
-	StepVerifier.Step<String> operatorVerifierSourceConditional(Function<Flux<String>, Flux<String>> scenario) {
-		TestPublisher<String> ts = TestPublisher.create();
-
-		return StepVerifier.create(ts.flux()
-		                             .as(scenario))
-		                   .then(() -> ts.next("test"));
-	}
-
-	StepVerifier.Step<String> operatorVerifierBothConditional(Function<Flux<String>, Flux<String>> scenario) {
-		TestPublisher<String> ts = TestPublisher.create();
-
-		return StepVerifier.create(ts.flux()
-		                             .as(scenario)
-		                             .filter(d -> true))
-		                   .then(() -> ts.next("test"));
 	}
 
 }

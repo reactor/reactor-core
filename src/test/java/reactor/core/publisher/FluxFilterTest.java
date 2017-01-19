@@ -17,12 +17,28 @@
 package reactor.core.publisher;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.junit.Test;
+import reactor.core.Fuseable;
 import reactor.test.subscriber.AssertSubscriber;
 
-public class FluxFilterTest {
+public class FluxFilterTest extends AbstractFluxOperatorTest<String, String> {
+
+	@Override
+	protected List<Scenario<String, String>> errorInOperatorCallback() {
+		return Arrays.asList(
+				Scenario.from(f -> f.filter(d -> {
+					throw new RuntimeException("test");
+				}), Fuseable.ANY)
+		);
+	}
+
+	@Override
+	protected Flux<String> errorFromUpstreamFailure(Flux<String> f) {
+		return f.filter(d -> true);
+	}
 
 	@Test(expected = NullPointerException.class)
 	public void sourceNull() {

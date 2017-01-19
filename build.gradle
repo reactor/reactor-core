@@ -140,6 +140,7 @@ project.tasks.withType(Test).all {
 	include '**/*Loop.*'
   }
   exclude '**/*Abstract*.*'
+  exclude '**/*OperatorTest*.*'
 }
 
 configure(rootProject) {
