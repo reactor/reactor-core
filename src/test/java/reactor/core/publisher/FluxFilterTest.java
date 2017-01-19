@@ -27,18 +27,18 @@ import reactor.test.subscriber.AssertSubscriber;
 public class FluxFilterTest extends AbstractFluxOperatorTest<String, String> {
 
 	@Override
-	protected List<Scenario<String, String>> errorInOperatorCallback() {
+	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
 		return Arrays.asList(
 				Scenario.from(f -> f.filter(d -> {
-					throw new RuntimeException("test");
+					throw exception();
 				}), Fuseable.ANY)
 		);
 	}
 
 	@Override
-	protected List<Scenario<String, String>>  errorFromUpstreamFailure() {
+	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
 		return Arrays.asList(
-				Scenario.from(f -> f.filter(d -> true))
+				Scenario.from(f -> f.filter(d -> true), Fuseable.ANY)
 		);
 	}
 

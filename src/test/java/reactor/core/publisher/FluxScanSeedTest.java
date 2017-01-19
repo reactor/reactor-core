@@ -16,10 +16,45 @@
 
 package reactor.core.publisher;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.junit.Test;
+import reactor.core.Fuseable;
 import reactor.test.subscriber.AssertSubscriber;
 
-public class FluxScanSeedTest {
+public class FluxScanSeedTest  extends AbstractFluxOperatorTest<String, String> {
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
+		return Arrays.asList(
+				Scenario.from(f -> f.scan(singleItem(), (a, b) -> {
+					throw exception();
+				}), Fuseable.NONE, step -> step.expectNext(singleItem())
+				                               .verifyErrorMessage("test")),
+
+				Scenario.from(f -> f.scan(singleItem(), (a, b) -> null), Fuseable.NONE, step -> step
+						.expectNext(singleItem())
+						.verifyError(NullPointerException.class)),
+
+				Scenario.from(f -> f.scanWith(() -> null, (a, b) -> b), Fuseable.NONE, step -> step
+						.verifyError(NullPointerException.class)),
+
+				Scenario.from(f -> f.scanWith(() -> {
+							throw exception();
+						},
+						(a, b) -> b), Fuseable.NONE, step -> step
+								.verifyErrorMessage("test"))
+
+		);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+		return Arrays.asList(
+				Scenario.from(f -> f.scan(singleItem(), (a, b) -> b))
+		);
+	}
 
 	@Test(expected = NullPointerException.class)
 	public void sourceNull() {

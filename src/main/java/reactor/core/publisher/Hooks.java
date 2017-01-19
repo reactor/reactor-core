@@ -43,7 +43,9 @@ public abstract class Hooks {
 	 * @param c the dropped error {@link Consumer} hook
 	 */
 	public static void onErrorDropped(Consumer<? super Throwable> c) {
-		log.info("Hooking new default : onErrorDropped");
+		if(log.isDebugEnabled()) {
+			log.debug("Hooking new default : onErrorDropped");
+		}
 		onErrorDroppedHook = Objects.requireNonNull(c, "onErrorDroppedHook");
 	}
 
@@ -54,7 +56,9 @@ public abstract class Hooks {
 	 * @param c the dropped next {@link Consumer} hook
 	 */
 	public static void onNextDropped(Consumer<Object> c) {
-		log.info("Hooking new default : onNextDropped");
+		if(log.isDebugEnabled()) {
+			log.debug("Hooking new default : onNextDropped");
+		}
 		onNextDroppedHook = Objects.requireNonNull(c, "onNextDroppedHook");
 	}
 
@@ -71,7 +75,9 @@ public abstract class Hooks {
 	 */
 	public static <T> void onOperator(Function<? super OperatorHook<T>, ? extends OperatorHook<T>>
 			newHook) {
-		log.info("Hooking new default : onOperator");
+		if(log.isDebugEnabled()) {
+			log.debug("Hooking new default : onOperator");
+		}
 		onOperatorCreate = new OnOperatorCreate<>(newHook);
 	}
 
@@ -84,7 +90,9 @@ public abstract class Hooks {
 	 */
 	public static void onOperatorError(BiFunction<? super Throwable, Object, ?
 			extends Throwable> f) {
-		log.info("Hooking new default : onOperatorError");
+		if(log.isDebugEnabled()) {
+			log.debug("Hooking new default : onOperatorError");
+		}
 		onOperatorErrorHook = Objects.requireNonNull(f, "onOperatorErrorHook");
 	}
 
@@ -92,7 +100,9 @@ public abstract class Hooks {
 	 * Reset global error dropped strategy to bubbling back the error.
 	 */
 	public static void resetOnErrorDropped() {
-		log.info("Reset to factory defaults : onErrorDropped");
+		if(log.isDebugEnabled()) {
+			log.debug("Reset to factory defaults : onErrorDropped");
+		}
 		onErrorDroppedHook = null;
 	}
 
@@ -101,7 +111,9 @@ public abstract class Hooks {
 	 * reactor.core.Exceptions#failWithCancel()}
 	 */
 	public static void resetOnNextDropped() {
-		log.info("Reset to factory defaults : onNextDropped");
+		if(log.isDebugEnabled()) {
+			log.debug("Reset to factory defaults : onNextDropped");
+		}
 		onNextDroppedHook = null;
 	}
 
@@ -109,7 +121,9 @@ public abstract class Hooks {
 	 * Reset global "assembly" hook tracking
 	 */
 	public static void resetOnOperator() {
-		log.info("Reset to factory defaults : onOperator");
+		if(log.isDebugEnabled()) {
+			log.debug("Reset to factory defaults : onOperator");
+		}
 		onOperatorCreate = null;
 	}
 
@@ -118,7 +132,9 @@ public abstract class Hooks {
 	 * driven exception or error driven exception.
 	 */
 	public static void resetOnOperatorError() {
-		log.info("Reset to factory defaults : onOperatorError");
+		if(log.isDebugEnabled()) {
+			log.debug("Reset to factory defaults : onOperatorError");
+		}
 		onOperatorErrorHook = null;
 	}
 

@@ -107,6 +107,13 @@ final class FluxDistinctUntilChanged<T, K> extends FluxSource<T, T> {
 				return true;
 			}
 
+			if (k == null) {
+				done = true;
+				actual.onError(Operators.onOperatorError(s,
+						new NullPointerException("The distinct extractor returned a null value."),
+						t));
+				return true;
+			}
 
 			if (Objects.equals(lastKey, k)) {
 				lastKey = k;
@@ -228,6 +235,13 @@ final class FluxDistinctUntilChanged<T, K> extends FluxSource<T, T> {
 			}
 			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t));
+				return true;
+			}
+			if (k == null) {
+				done = true;
+				actual.onError(Operators.onOperatorError(s,
+						new NullPointerException("The distinct extractor returned a null value."),
+						t));
 				return true;
 			}
 

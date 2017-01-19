@@ -22,7 +22,7 @@ import reactor.test.subscriber.AssertSubscriber;
 /**
  * @author Stephane Maldini
  */
-public class FluxThenMany {
+public class FluxThenManyTest {
 
 	@Test
 	public void testThenManySameType() throws InterruptedException {
