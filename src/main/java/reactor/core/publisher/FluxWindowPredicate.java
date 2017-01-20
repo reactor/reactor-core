@@ -74,11 +74,6 @@ final class FluxWindowPredicate<T>
 	}
 
 	@Override
-	public long getPrefetch() {
-		return 1; //this operator changes the downstream request to 1 in the source
-	}
-
-	@Override
 	public void subscribe(Subscriber<? super Flux<T>> s) {
 		source.subscribe(new WindowPredicateSubscriber<>(s, predicate, mode, processorQueueSupplier));
 	}
@@ -110,6 +105,8 @@ final class FluxWindowPredicate<T>
 
 		boolean newWindow;
 
+		boolean pendingEmit;
+
 		Subscription s;
 
 		UnicastProcessor<T> window;
@@ -122,6 +119,7 @@ final class FluxWindowPredicate<T>
 			this.processorQueueSupplier = processorQueueSupplier;
 			this.wip = 1;
 			this.newWindow = true;
+			this.pendingEmit = false;
 		}
 
 		@Override
@@ -179,6 +177,10 @@ final class FluxWindowPredicate<T>
 				}
 			}
 			else {
+				if (pendingEmit) {
+					pendingEmit = false;
+					actual.onNext(w);
+				}
 				w.onNext(t);
 			}
 		}
@@ -213,7 +215,14 @@ final class FluxWindowPredicate<T>
 
 			UnicastProcessor<T> w = new UnicastProcessor<>(q, this);
 			window = w;
-			actual.onNext(w);
+			if (mode == Mode.WHILE) {
+				//we're not sure there will be an element to emit in that window, let's defer
+				pendingEmit = true;
+			}
+			else {
+				//there should be at least one element in that window, let's emit it
+				actual.onNext(w);
+			}
 			return true;
 		}
 
