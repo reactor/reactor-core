@@ -864,6 +864,7 @@ final class DefaultStepVerifierBuilder<T>
 					}
 					catch (Throwable e) {
 						Exceptions.throwIfFatal(e);
+						cancel();
 						onError(Exceptions.unwrap(e));
 						return;
 					}
@@ -1396,6 +1397,7 @@ final class DefaultStepVerifierBuilder<T>
 						}
 						catch (Throwable e) {
 							Exceptions.throwIfFatal(e);
+							cancel();
 							onError(Exceptions.unwrap(e));
 							return;
 						}
