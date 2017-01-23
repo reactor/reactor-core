@@ -132,6 +132,8 @@ public class FluxPublishOnTest extends AbstractFluxOperatorTest<String, String> 
 		return Arrays.asList(
 				Scenario.from(f -> f.publishOn(Schedulers.immediate()), Fuseable.ASYNC),
 
+				Scenario.from(f -> f.publishOn(Schedulers.immediate(), false, 4), Fuseable.ASYNC),
+
 				Scenario.withPrefetch(f -> f.publishOn(Schedulers.immediate(), 1), Fuseable.ASYNC, 1),
 
 				Scenario.withPrefetch(f -> f.publishOn(Schedulers.immediate(), Integer.MAX_VALUE), Fuseable.ASYNC, Integer.MAX_VALUE)
@@ -1293,9 +1295,16 @@ public class FluxPublishOnTest extends AbstractFluxOperatorTest<String, String> 
 		@Override
 		public Worker createWorker() {
 			return new Worker() {
+
+				int invoked;
+
 				@Override
 				public Disposable schedule(Runnable task) {
-					return Scheduler.REJECTED;
+					if(++invoked > 1){
+						return Scheduler.REJECTED;
+					}
+					task.run();
+					return () -> {};
 				}
 
 				@Override

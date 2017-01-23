@@ -75,11 +75,6 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 	@Override
 	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
-
-		if (FluxSubscribeOnValue.scalarScheduleOn(source, s, scheduler)) {
-			return;
-		}
-
 		Worker worker;
 
 		try {
@@ -537,7 +532,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 
 		@Override
 		public long requestedFromDownstream() {
-			return queue == null ? 0 : (prefetch - queue.size());
+			return queue == null ? 0 : (requested - queue.size());
 		}
 
 		@Override
@@ -582,7 +577,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 
 		@Override
 		public long expectedFromUpstream() {
-			return queue == null ? prefetch : (prefetch - queue.size());
+			return queue == null ? 0 : (prefetch - queue.size());
 		}
 
 		@Override
@@ -689,7 +684,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 
 		boolean outputFused;
 
-		public PublishOnConditionalSubscriber(ConditionalSubscriber<? super T> actual,
+		PublishOnConditionalSubscriber(ConditionalSubscriber<? super T> actual,
 				Scheduler scheduler,
 				Worker worker,
 				boolean delayError,
@@ -1047,7 +1042,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 
 		@Override
 		public long expectedFromUpstream() {
-			return queue == null ? prefetch : (prefetch - queue.size());
+			return queue == null ? 0 : (prefetch - queue.size());
 		}
 
 		@Override

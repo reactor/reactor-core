@@ -153,13 +153,13 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 					if (scenario.prefetch() != Trackable.UNSPECIFIED) {
 						assertThat(t.getCapacity()).isEqualTo(scenario.prefetch());
 						if (t.expectedFromUpstream() != Trackable.UNSPECIFIED) {
-							assertThat(t.expectedFromUpstream()).isEqualTo(scenario.prefetch());
+							assertThat(t.expectedFromUpstream()).isEqualTo(0);
+						}
+						if (t.limit() != Trackable.UNSPECIFIED){
+							assertThat(t.limit()).isEqualTo(defaultLimit(scenario));
 						}
 					}
 
-					if (t.limit() != Trackable.UNSPECIFIED){
-						assertThat(t.limit()).isEqualTo(defaultLimit(scenario));
-					}
 
 					if (t.getPending() != Trackable.UNSPECIFIED) {
 						assertThat(t.getPending()).isEqualTo(3);
@@ -187,8 +187,13 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 				s.onSubscribe(Operators.emptySubscription()); //noop path
 				if (t != null) {
 					assertThat(t.isStarted()).isTrue();
-					if (scenario.prefetch() != Trackable.UNSPECIFIED && t.expectedFromUpstream() != Trackable.UNSPECIFIED) {
-						assertThat(t.expectedFromUpstream()).isEqualTo(scenario.prefetch());
+					if(scenario.prefetch() != Trackable.UNSPECIFIED ) {
+						if (t.expectedFromUpstream() != Trackable.UNSPECIFIED) {
+							assertThat(t.expectedFromUpstream()).isEqualTo(scenario.prefetch());
+						}
+					}
+					if (t.requestedFromDownstream() != Trackable.UNSPECIFIED) {
+						assertThat(t.requestedFromDownstream()).isEqualTo(Long.MAX_VALUE);
 					}
 				}
 				s.onComplete();
@@ -233,17 +238,20 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 					            if (scenario.prefetch() != Trackable.UNSPECIFIED) {
 						            assertThat(t.getCapacity()).isEqualTo(scenario.prefetch());
 						            if (t.expectedFromUpstream() != Trackable.UNSPECIFIED) {
-							            assertThat(t.expectedFromUpstream()).isEqualTo(scenario.prefetch());
+							            assertThat(t.expectedFromUpstream()).isEqualTo(0);
 						            }
-					            }
-					            if (t.limit() != Trackable.UNSPECIFIED){
-						            assertThat(t.limit()).isEqualTo(defaultLimit(scenario));
+						            if (t.limit() != Trackable.UNSPECIFIED){
+							            assertThat(t.limit()).isEqualTo(defaultLimit(scenario));
+						            }
 					            }
 					            if (t.getPending() != Trackable.UNSPECIFIED) {
 						            assertThat(t.getPending()).isEqualTo(3);
 					            }
 					            if (t.requestedFromDownstream() != Trackable.UNSPECIFIED) {
 						            assertThat(t.requestedFromDownstream()).isEqualTo(0);
+					            }
+					            if (t.expectedFromUpstream() != Trackable.UNSPECIFIED) {
+						            assertThat(t.expectedFromUpstream()).isEqualTo(0);
 					            }
 				            }
 			            })
@@ -283,6 +291,9 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 			})
 			           .doOnComplete(() -> {
 				           if (ref.get() != null) {
+					           if (ref.get().requestedFromDownstream() != Trackable.UNSPECIFIED) {
+						           assertThat(ref.get().requestedFromDownstream()).isEqualTo(Long.MAX_VALUE);
+					           }
 					           assertThat(ref.get()
 					                         .isStarted()).isFalse();
 					           assertThat(ref.get()

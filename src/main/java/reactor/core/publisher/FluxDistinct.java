@@ -402,7 +402,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 
 		int sourceMode;
 
-		public DistinctFuseableSubscriber(Subscriber<? super T> actual, C collection,
+		DistinctFuseableSubscriber(Subscriber<? super T> actual, C collection,
 				Function<? super T, ? extends K> keyExtractor) {
 			this.actual = actual;
 			this.collection = collection;
