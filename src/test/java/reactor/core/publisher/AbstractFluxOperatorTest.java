@@ -26,6 +26,7 @@ import java.util.function.Function;
 import org.junit.After;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Loopback;
 import reactor.core.Producer;
@@ -227,7 +228,14 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 
 			if (verifier == null) {
 				String m = exception().getMessage();
-				verifier = step -> step.verifyErrorMessage(m);
+				verifier = step -> {
+					try {
+						step.verifyErrorMessage(m);
+					}
+					catch (Exception e) {
+						assertThat(Exceptions.unwrap(e)).hasMessage(m);
+					}
+				};
 			}
 
 			int fusion = scenario.fusionMode();
@@ -272,7 +280,14 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 
 			if (verifier == null) {
 				String m = exception().getMessage();
-				verifier = step -> step.verifyErrorMessage(m);
+				verifier = step -> {
+					try {
+						step.verifyErrorMessage(m);
+					}
+					catch (Exception e) {
+						assertThat(Exceptions.unwrap(e)).hasMessage(m);
+					}
+				};
 			}
 
 			verifier.accept(this.operatorErrorSourceVerifier(scenario));
@@ -468,10 +483,12 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 
 			                   //verify drop path
 			                   ts.error(droppedException());
-			                   ts.next(droppedItem());
+			                   if(shouldDropNextAfterTerminate()) {
+				                   ts.next(droppedItem());
+				                   assertThat(nextDropped.get()).isTrue();
+			                   }
 			                   ts.complete();
 			                   assertThat(errorDropped.get()).isTrue();
-			                   assertThat(nextDropped.get()).isTrue();
 		                   });
 	}
 
@@ -491,8 +508,10 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 			                   ts.error(exception());
 
 			                   //verify drop path
-			                   ts.next(droppedItem());
-			                   assertThat(nextDropped.get()).isTrue();
+			                   if(shouldDropNextAfterTerminate()) {
+				                   ts.next(droppedItem());
+				                   assertThat(nextDropped.get()).isTrue();
+			                   }
 		                   });
 	}
 
@@ -669,13 +688,16 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 			                   up.actual.onError(droppedException());
 			                   assertThat(errorDropped.get()).isTrue();
 
-			                   up.actual.onNext(droppedItem());
-			                   assertThat(nextDropped.get()).isTrue();
-			                   if (up.actual instanceof Fuseable.ConditionalSubscriber) {
-				                   nextDropped.set(false);
-				                   ((Fuseable.ConditionalSubscriber<I>) up.actual).tryOnNext(
-						                   droppedItem());
+			                   if(shouldDropNextAfterTerminate()) {
+
+				                   up.actual.onNext(droppedItem());
 				                   assertThat(nextDropped.get()).isTrue();
+				                   if (up.actual instanceof Fuseable.ConditionalSubscriber) {
+					                   nextDropped.set(false);
+					                   ((Fuseable.ConditionalSubscriber<I>) up.actual).tryOnNext(
+							                   droppedItem());
+					                   assertThat(nextDropped.get()).isTrue();
+				                   }
 			                   }
 			                   up.actual.onComplete();
 		                   });
@@ -733,11 +755,17 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 
 			                   //verify drop path
 			                   ts.error(droppedException());
-			                   ts.next(droppedItem());
+			                   if(shouldDropNextAfterTerminate()) {
+				                   ts.next(droppedItem());
+				                   assertThat(nextDropped.get()).isTrue();
+			                   }
 			                   ts.complete();
 			                   assertThat(errorDropped.get()).isTrue();
-			                   assertThat(nextDropped.get()).isTrue();
 		                   });
+	}
+
+	protected boolean shouldDropNextAfterTerminate(){
+		return true;
 	}
 
 	final StepVerifier.Step<O> operatorErrorSourceVerifierConditional(Scenario<I, O> scenario) {
@@ -757,8 +785,10 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 			                   ts.error(exception());
 
 			                   //verify drop path
-			                   ts.next(droppedItem());
-			                   assertThat(nextDropped.get()).isTrue();
+			                   if(shouldDropNextAfterTerminate()) {
+				                   ts.next(droppedItem());
+				                   assertThat(nextDropped.get()).isTrue();
+			                   }
 		                   });
 	}
 
@@ -810,14 +840,16 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 			                   up.actual.onError(droppedException());
 			                   assertThat(errorDropped.get()).isTrue();
 
-			                   up.actual.onNext(droppedItem());
-			                   assertThat(nextDropped.get()).isTrue();
-
-			                   if (up.actual instanceof Fuseable.ConditionalSubscriber) {
-				                   nextDropped.set(false);
-				                   ((Fuseable.ConditionalSubscriber<I>) up.actual).tryOnNext(
-						                   droppedItem());
+			                   if(shouldDropNextAfterTerminate()) {
+				                   up.actual.onNext(droppedItem());
 				                   assertThat(nextDropped.get()).isTrue();
+
+				                   if (up.actual instanceof Fuseable.ConditionalSubscriber) {
+					                   nextDropped.set(false);
+					                   ((Fuseable.ConditionalSubscriber<I>) up.actual).tryOnNext(
+							                   droppedItem());
+					                   assertThat(nextDropped.get()).isTrue();
+				                   }
 			                   }
 			                   up.actual.onComplete();
 		                   });

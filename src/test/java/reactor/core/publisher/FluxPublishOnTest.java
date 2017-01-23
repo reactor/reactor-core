@@ -39,7 +39,10 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
+import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
@@ -54,7 +57,63 @@ import static org.junit.Assert.*;
 import static reactor.core.scheduler.Schedulers.fromExecutor;
 import static reactor.core.scheduler.Schedulers.fromExecutorService;
 
-public class FluxPublishOnTest {
+public class FluxPublishOnTest extends AbstractFluxOperatorTest<String, String> {
+
+	@Override
+	protected boolean shouldDropNextAfterTerminate() {
+		return false;
+	}
+
+	@Override
+	protected int fusionModeThreadBarrierSupport() {
+		return Fuseable.ASYNC;
+	}
+
+	@Override
+	protected RuntimeException exception() {
+		return new RejectedExecutionException("Scheduler unavailable");
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
+		return Arrays.asList(
+				Scenario.from(f -> f.publishOn(Schedulers.fromExecutor(d -> {
+					throw exception();
+				})), Fuseable.ASYNC),
+
+
+				Scenario.from(f -> f.publishOn(new FailWorkerScheduler())),
+
+				Scenario.from(f -> f.publishOn(new FailNullWorkerScheduler()), Fuseable.NONE, step -> step.verifyError(NullPointerException.class)),
+
+				Scenario.from(f -> f.publishOn(new RejectingWorkerScheduler()), Fuseable.ASYNC, step -> {
+					try {
+						step.verifyError(RejectedExecutionException.class);
+						Assert.fail();
+					}
+					catch (Exception e){
+						assertTrue(Exceptions.unwrap(e) instanceof RejectedExecutionException);
+					}
+				}),
+
+				Scenario.from(f -> f.publishOn(new RejectingWorkerScheduler()), Fuseable.NONE, Flux.empty(), step -> {
+					try {
+						step.consumeErrorWith(e -> Assert.assertTrue(Exceptions.unwrap(e)
+								instanceof RejectedExecutionException));
+					}
+					catch (Exception e){
+						assertTrue(Exceptions.unwrap(e) instanceof RejectedExecutionException);
+					}
+				})
+		);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+		return Arrays.asList(
+				Scenario.from(f -> f.publishOn(Schedulers.immediate()), Fuseable.ASYNC)
+		);
+	}
 
 	public static ExecutorService exec;
 
@@ -1166,5 +1225,54 @@ public class FluxPublishOnTest {
 		latch.await(15, TimeUnit.SECONDS);
 		assertTrue(latch.getCount() + " of " + items + " items were not counted down",
 				latch.getCount() == 0);
+	}
+
+	private static class FailNullWorkerScheduler implements Scheduler {
+
+		@Override
+		public Disposable schedule(Runnable task) {
+			return Scheduler.REJECTED;
+		}
+
+		@Override
+		public Worker createWorker() {
+			return null;
+		}
+	}
+
+	private static class RejectingWorkerScheduler implements Scheduler {
+
+		@Override
+		public Disposable schedule(Runnable task) {
+			return Scheduler.REJECTED;
+		}
+
+		@Override
+		public Worker createWorker() {
+			return new Worker() {
+				@Override
+				public Disposable schedule(Runnable task) {
+					return Scheduler.REJECTED;
+				}
+
+				@Override
+				public void shutdown() {
+
+				}
+			};
+		}
+	}
+
+	private class FailWorkerScheduler implements Scheduler {
+
+		@Override
+		public Disposable schedule(Runnable task) {
+			return Scheduler.REJECTED;
+		}
+
+		@Override
+		public Worker createWorker() {
+			throw exception();
+		}
 	}
 }

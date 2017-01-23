@@ -279,7 +279,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
         private static final long serialVersionUID = -6079491923525372331L;
 	}
 
-	static class QueueIterator<T> implements Iterator<T> {
+	static final class QueueIterator<T> implements Iterator<T> {
 
 		final Queue<T> queue;
 
