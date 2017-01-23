@@ -411,13 +411,13 @@ final class FluxTake<T> extends FluxSource<T, T> {
 
 		@Override
 		public void onNext(T t) {
-			if (done) {
-				Operators.onNextDropped(t);
-				return;
-			}
 
 			if (inputMode == Fuseable.ASYNC) {
 				actual.onNext(null);
+				return;
+			}
+			if (done) {
+				Operators.onNextDropped(t);
 				return;
 			}
 

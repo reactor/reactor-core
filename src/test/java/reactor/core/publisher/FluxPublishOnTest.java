@@ -74,6 +74,16 @@ public class FluxPublishOnTest extends AbstractFluxOperatorTest<String, String> 
 		return new RejectedExecutionException("Scheduler unavailable");
 	}
 
+	void assertRejected(StepVerifier.Step<String> step){
+		try {
+			step.consumeErrorWith(e -> Assert.assertTrue(Exceptions.unwrap(e)
+					instanceof RejectedExecutionException));
+		}
+		catch (Exception e){
+			assertTrue(Exceptions.unwrap(e) instanceof RejectedExecutionException);
+		}
+	}
+
 	@Override
 	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
 		return Arrays.asList(
@@ -86,32 +96,46 @@ public class FluxPublishOnTest extends AbstractFluxOperatorTest<String, String> 
 
 				Scenario.from(f -> f.publishOn(new FailNullWorkerScheduler()), Fuseable.NONE, step -> step.verifyError(NullPointerException.class)),
 
-				Scenario.from(f -> f.publishOn(new RejectingWorkerScheduler()), Fuseable.ASYNC, step -> {
-					try {
-						step.verifyError(RejectedExecutionException.class);
-						Assert.fail();
-					}
-					catch (Exception e){
-						assertTrue(Exceptions.unwrap(e) instanceof RejectedExecutionException);
-					}
-				}),
+				Scenario.from(f -> f.publishOn(new RejectingWorkerScheduler(false, false)),
+						Fuseable.ASYNC, this::assertRejected),
 
-				Scenario.from(f -> f.publishOn(new RejectingWorkerScheduler()), Fuseable.NONE, Flux.empty(), step -> {
-					try {
-						step.consumeErrorWith(e -> Assert.assertTrue(Exceptions.unwrap(e)
-								instanceof RejectedExecutionException));
-					}
-					catch (Exception e){
-						assertTrue(Exceptions.unwrap(e) instanceof RejectedExecutionException);
-					}
-				})
+				Scenario.from(f -> f.publishOn(new RejectingWorkerScheduler(true, false)),
+						Fuseable.ASYNC, this::assertRejected),
+
+				Scenario.from(f -> f.publishOn(new RejectingWorkerScheduler(true,
+								true)),
+						Fuseable.ASYNC, this::assertRejected),
+
+				Scenario.from(f -> f.publishOn(new RejectingWorkerScheduler(false,
+								true)),
+						Fuseable.ASYNC, this::assertRejected),
+
+				Scenario.from(f -> f.publishOn(new RejectingWorkerScheduler(false,
+								false)),
+						Fuseable.NONE, Flux.empty(), this::assertRejected),
+
+				Scenario.from(f -> f.publishOn(new RejectingWorkerScheduler(false,
+								true)),
+						Fuseable.NONE, Flux.empty(), this::assertRejected),
+
+				Scenario.from(f -> f.publishOn(new RejectingWorkerScheduler(true,
+								false)),
+						Fuseable.NONE, Flux.empty(), this::assertRejected),
+
+				Scenario.from(f -> f.publishOn(new RejectingWorkerScheduler(true, true)),
+						Fuseable.NONE, Flux.empty(), this::assertRejected)
 		);
 	}
 
 	@Override
 	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
 		return Arrays.asList(
-				Scenario.from(f -> f.publishOn(Schedulers.immediate()), Fuseable.ASYNC)
+				Scenario.from(f -> f.publishOn(Schedulers.immediate()), Fuseable.ASYNC),
+
+				Scenario.withPrefetch(f -> f.publishOn(Schedulers.immediate(), 1), Fuseable.ASYNC, 1),
+
+				Scenario.withPrefetch(f -> f.publishOn(Schedulers.immediate(), Integer.MAX_VALUE), Fuseable.ASYNC, Integer.MAX_VALUE)
+
 		);
 	}
 
@@ -125,6 +149,12 @@ public class FluxPublishOnTest extends AbstractFluxOperatorTest<String, String> 
 	@AfterClass
 	public static void after() {
 		exec.shutdownNow();
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void failPrefetch(){
+		Flux.range(1, 10)
+	        .publishOn(Schedulers.immediate(), -1);
 	}
 
 	@Test
@@ -1242,9 +1272,22 @@ public class FluxPublishOnTest extends AbstractFluxOperatorTest<String, String> 
 
 	private static class RejectingWorkerScheduler implements Scheduler {
 
+		final boolean isSchedulerTerminated;
+		final boolean isWorkerTerminated;
+
+		RejectingWorkerScheduler(boolean isSchedulerTerminated, boolean isWorkerTerminated) {
+			this.isSchedulerTerminated = isSchedulerTerminated;
+			this.isWorkerTerminated = isWorkerTerminated;
+		}
+
 		@Override
 		public Disposable schedule(Runnable task) {
 			return Scheduler.REJECTED;
+		}
+
+		@Override
+		public boolean isDisposed() {
+			return isSchedulerTerminated;
 		}
 
 		@Override
@@ -1258,6 +1301,11 @@ public class FluxPublishOnTest extends AbstractFluxOperatorTest<String, String> 
 				@Override
 				public void shutdown() {
 
+				}
+
+				@Override
+				public boolean isDisposed() {
+					return isWorkerTerminated;
 				}
 			};
 		}

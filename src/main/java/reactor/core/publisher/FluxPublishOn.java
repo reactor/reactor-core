@@ -233,14 +233,14 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 
 		@Override
 		public void onNext(T t) {
-			if (done) {
-				Operators.onNextDropped(t);
-				return;
-			}
 			if (sourceMode == Fuseable.ASYNC) {
 				if (trySchedule() == Scheduler.REJECTED) {
 					throw Operators.onRejectedExecution(this, null, t);
 				}
+				return;
+			}
+			if (done) {
+				Operators.onNextDropped(t);
 				return;
 			}
 			if (!queue.offer(t)) {
@@ -537,7 +537,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 
 		@Override
 		public long requestedFromDownstream() {
-			return queue == null ? prefetch : (prefetch - queue.size());
+			return queue == null ? 0 : (prefetch - queue.size());
 		}
 
 		@Override
@@ -763,6 +763,10 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 				if (trySchedule() == Scheduler.REJECTED) {
 					throw Operators.onRejectedExecution(this, null, t);
 				}
+				return;
+			}
+			if (done) {
+				Operators.onNextDropped(t);
 				return;
 			}
 			if (!queue.offer(t)) {
@@ -1063,7 +1067,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 
 		@Override
 		public long requestedFromDownstream() {
-			return queue == null ? requested : (requested - queue.size());
+			return queue == null ? 0 : (requested - queue.size());
 		}
 
 		void doComplete(Subscriber<?> a) {

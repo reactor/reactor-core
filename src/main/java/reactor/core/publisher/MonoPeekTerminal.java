@@ -140,15 +140,15 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T> implements Fuseable {
 
 		@Override
 		public void onNext(T t) {
-			if (done) {
-				Operators.onNextDropped(t);
-				return;
-			}
 
 			if (sourceMode == ASYNC) {
 				actual.onNext(null);
 			}
-			else if (sourceMode == NONE) {
+			else {
+				if (done) {
+					Operators.onNextDropped(t);
+					return;
+				}
 				//implementation note: this operator doesn't expect the source to be anything but a Mono
 				//so it doesn't check that valued has been set before
 				valued = true;

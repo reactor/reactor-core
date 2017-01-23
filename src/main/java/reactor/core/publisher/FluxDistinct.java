@@ -428,13 +428,13 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 
 		@Override
 		public boolean tryOnNext(T t) {
-			if (done) {
-				Operators.onNextDropped(t);
-				return true;
-			}
 
 			if (sourceMode == Fuseable.ASYNC) {
 				actual.onNext(null);
+				return true;
+			}
+			if (done) {
+				Operators.onNextDropped(t);
 				return true;
 			}
 

@@ -34,6 +34,7 @@ import reactor.core.Receiver;
 import reactor.core.Trackable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
+import reactor.util.concurrent.QueueSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.Fuseable.ASYNC;
@@ -64,12 +65,24 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 				int fusionMode,
 				Flux<I> finiteSource,
 				Consumer<StepVerifier.Step<O>> verifier) {
-			return new SimpleScenario<>(scenario, fusionMode, finiteSource, verifier);
+			return new SimpleScenario<>(scenario,
+					fusionMode,
+					finiteSource,
+					(int)Trackable.UNSPECIFIED,
+					verifier);
+		}
+
+		static <I, O> Scenario<I, O> withPrefetch(Function<Flux<I>, Flux<O>> scenario,
+				int fusionMode,
+				int prefetch) {
+			return new SimpleScenario<>(scenario, fusionMode, null, prefetch, null);
 		}
 
 		Function<Flux<I>, Flux<O>> body();
 
 		int fusionMode();
+
+		int prefetch();
 
 		Consumer<StepVerifier.Step<O>> verifier();
 
@@ -81,14 +94,15 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 		final Function<Flux<I>, Flux<O>>     scenario;
 		final int                            fusionMode;
 		final Consumer<StepVerifier.Step<O>> verifier;
+		final int                            prefetch;
 		final Flux<I>                        finiteSource;
 
 		SimpleScenario(Function<Flux<I>, Flux<O>> scenario,
-				int fusionMode,
-				Flux<I> finiteSource,
+				int fusionMode, Flux<I> finiteSource, int prefetch,
 				Consumer<StepVerifier.Step<O>> verifier) {
 			this.scenario = scenario;
 			this.fusionMode = fusionMode;
+			this.prefetch = prefetch;
 			this.verifier = verifier;
 			this.finiteSource = finiteSource;
 		}
@@ -101,6 +115,11 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 		@Override
 		public int fusionMode() {
 			return fusionMode;
+		}
+
+		@Override
+		public int prefetch() {
+			return prefetch;
 		}
 
 		@Override
@@ -129,6 +148,25 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 					assertThat(t.getError()).isNull();
 					assertThat(t.isStarted()).isFalse();
 					assertThat(t.isTerminated()).isFalse();
+					assertThat(t.isCancelled()).isFalse();
+
+					if (scenario.prefetch() != Trackable.UNSPECIFIED) {
+						assertThat(t.getCapacity()).isEqualTo(scenario.prefetch());
+						if (t.expectedFromUpstream() != Trackable.UNSPECIFIED) {
+							assertThat(t.expectedFromUpstream()).isEqualTo(scenario.prefetch());
+						}
+					}
+
+					if (t.limit() != Trackable.UNSPECIFIED){
+						assertThat(t.limit()).isEqualTo(defaultLimit(scenario));
+					}
+
+					if (t.getPending() != Trackable.UNSPECIFIED) {
+						assertThat(t.getPending()).isEqualTo(3);
+					}
+					if (t.requestedFromDownstream() != Trackable.UNSPECIFIED) {
+						assertThat(t.requestedFromDownstream()).isEqualTo(0);
+					}
 				}
 
 				if (s instanceof Receiver) {
@@ -149,6 +187,9 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 				s.onSubscribe(Operators.emptySubscription()); //noop path
 				if (t != null) {
 					assertThat(t.isStarted()).isTrue();
+					if (scenario.prefetch() != Trackable.UNSPECIFIED && t.expectedFromUpstream() != Trackable.UNSPECIFIED) {
+						assertThat(t.expectedFromUpstream()).isEqualTo(scenario.prefetch());
+					}
 				}
 				s.onComplete();
 				if (t != null) {
@@ -157,13 +198,30 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 				}
 			}).as(scenario.body());
 
+			if (scenario.prefetch() != Trackable.UNSPECIFIED) {
+				assertThat(f.getPrefetch()).isEqualTo(scenario.prefetch());
+			}
+
+			if (f instanceof Loopback){
+				assertThat(((Loopback)f).connectedInput()).isNotNull();
+			}
+
 			f.subscribe();
 
-			f.filter(d -> true)
-			 .subscribe();
+			f = f.filter(t -> true);
+
+			if (scenario.prefetch() != Trackable.UNSPECIFIED) {
+				assertThat(((Flux)(((Receiver)f).upstream())).getPrefetch()).isEqualTo(scenario.prefetch());
+			}
+
+			if (((Receiver)f).upstream() instanceof Loopback){
+				assertThat(((Loopback)(((Receiver)f).upstream())).connectedInput()).isNotNull();
+			}
+
+			f.subscribe();
 
 			AtomicReference<Trackable> ref = new AtomicReference<>();
-			f = finiteSourceOrDefault(scenario)
+			Flux<O> source = finiteSourceOrDefault(scenario)
 			            .doOnSubscribe(s -> {
 				            Object _s =
 						            ((Producer) ((Producer) s).downstream()).downstream();
@@ -171,47 +229,78 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 					            Trackable t = (Trackable) _s;
 					            ref.set(t);
 					            assertThat(t.isStarted()).isFalse();
+					            assertThat(t.isCancelled()).isFalse();
+					            if (scenario.prefetch() != Trackable.UNSPECIFIED) {
+						            assertThat(t.getCapacity()).isEqualTo(scenario.prefetch());
+						            if (t.expectedFromUpstream() != Trackable.UNSPECIFIED) {
+							            assertThat(t.expectedFromUpstream()).isEqualTo(scenario.prefetch());
+						            }
+					            }
+					            if (t.limit() != Trackable.UNSPECIFIED){
+						            assertThat(t.limit()).isEqualTo(defaultLimit(scenario));
+					            }
+					            if (t.getPending() != Trackable.UNSPECIFIED) {
+						            assertThat(t.getPending()).isEqualTo(3);
+					            }
+					            if (t.requestedFromDownstream() != Trackable.UNSPECIFIED) {
+						            assertThat(t.requestedFromDownstream()).isEqualTo(0);
+					            }
 				            }
 			            })
-			            .as(scenario.body())
-			            .doOnSubscribe(parent -> {
-				            if (parent instanceof Trackable) {
-					            Trackable t = (Trackable) parent;
-					            assertThat(t.getError()).isNull();
-					            assertThat(t.isStarted()).isTrue();
-					            assertThat(t.isTerminated()).isFalse();
-				            }
+			            .as(scenario.body());
 
-				            //noop path
-				            if (parent instanceof Subscriber) {
-					            ((Subscriber<I>) parent).onSubscribe(Operators.emptySubscription());
-				            }
+			if (scenario.prefetch() != Trackable.UNSPECIFIED) {
+				assertThat(source.getPrefetch()).isEqualTo(scenario.prefetch());
+			}
 
-				            if (parent instanceof Receiver) {
-					            assertThat(((Receiver) parent).upstream()).isNotNull();
-				            }
+			f =  source.doOnSubscribe(parent -> {
+				if (parent instanceof Trackable) {
+					Trackable t = (Trackable) parent;
+					assertThat(t.getError()).isNull();
+					assertThat(t.isStarted()).isTrue();
+					if (scenario.prefetch() != Trackable.UNSPECIFIED && t.expectedFromUpstream() != Trackable.UNSPECIFIED) {
+						assertThat(t.expectedFromUpstream()).isEqualTo(scenario.prefetch());
+					}
+					assertThat(t.isTerminated()).isFalse();
+				}
 
-				            if (parent instanceof Loopback) {
-					            assertThat(((Loopback) parent).connectedInput()).isNotNull();
-				            }
+				//noop path
+				if (parent instanceof Subscriber) {
+					((Subscriber<I>) parent).onSubscribe(Operators.emptySubscription());
+				}
 
-				            if (parent instanceof Producer) {
-					            assertThat(((Producer) parent).downstream()).isNotNull();
-				            }
-			            })
-			            .doOnComplete(() -> {
-				            if (ref.get() != null) {
-					            assertThat(ref.get()
-					                          .isStarted()).isFalse();
-					            assertThat(ref.get()
-					                          .isTerminated()).isTrue();
-				            }
-			            });
+				if (parent instanceof Receiver) {
+					assertThat(((Receiver) parent).upstream()).isNotNull();
+				}
+
+				if (parent instanceof Loopback) {
+					assertThat(((Loopback) parent).connectedInput()).isNotNull();
+				}
+
+				if (parent instanceof Producer) {
+					assertThat(((Producer) parent).downstream()).isNotNull();
+				}
+			})
+			           .doOnComplete(() -> {
+				           if (ref.get() != null) {
+					           assertThat(ref.get()
+					                         .isStarted()).isFalse();
+					           assertThat(ref.get()
+					                         .isTerminated()).isTrue();
+				           }
+			           });
 
 			f.subscribe();
 
-			f.filter(t -> true)
-			 .subscribe();
+			source = source.filter(t -> true);
+
+			if (scenario.prefetch() != Trackable.UNSPECIFIED) {
+				assertThat(((Flux)(((Receiver)source).upstream())).getPrefetch()).isEqualTo(scenario.prefetch());
+			}
+
+			f = f.filter(t -> true);
+
+			f.subscribe();
 
 			resetHooks();
 		}
@@ -370,6 +459,16 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 
 			resetHooks();
 		}
+	}
+
+	protected int defaultLimit(Scenario<I, O> scenario){
+		if(scenario.prefetch() == Trackable.UNSPECIFIED){
+			return QueueSupplier.SMALL_BUFFER_SIZE - (QueueSupplier.SMALL_BUFFER_SIZE >> 2);
+		}
+		if(scenario.prefetch() == Integer.MAX_VALUE){
+			return Integer.MAX_VALUE;
+		}
+		return scenario.prefetch() - (scenario.prefetch() >> 2);
 	}
 
 	@SuppressWarnings("unchecked") //default check identity
