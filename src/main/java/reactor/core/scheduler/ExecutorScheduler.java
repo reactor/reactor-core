@@ -40,7 +40,7 @@ final class ExecutorScheduler implements Scheduler {
 
 	volatile boolean terminated;
 
-	public ExecutorScheduler(Executor executor, boolean trampoline) {
+	ExecutorScheduler(Executor executor, boolean trampoline) {
 		this.executor = executor;
 		this.trampoline = trampoline;
 	}
@@ -104,7 +104,12 @@ final class ExecutorScheduler implements Scheduler {
 		public void run() {
 			try {
 				if (!get()) {
-					task.run();
+					try {
+						task.run();
+					}
+					finally {
+						lazySet(true);
+					}
 				}
 			}
 			catch (Throwable ex) {
@@ -120,11 +125,6 @@ final class ExecutorScheduler implements Scheduler {
 		@Override
 		public void dispose() {
 			set(true);
-		}
-
-		@Override
-		public String toString() {
-			return "ExecutorPlainRunnable[cancelled=" + get() + ", task=" + task + "]";
 		}
 	}
 
@@ -151,7 +151,7 @@ final class ExecutorScheduler implements Scheduler {
 
 		final boolean callRemoveOnFinish;
 
-		public ExecutorTrackedRunnable(Runnable task,
+		ExecutorTrackedRunnable(Runnable task,
 				WorkerDelete parent,
 				boolean callRemoveOnFinish) {
 			this.task = task;
@@ -163,7 +163,12 @@ final class ExecutorScheduler implements Scheduler {
 		public void run() {
 			try {
 				if (!get()) {
-					task.run();
+					try {
+						task.run();
+					}
+					finally {
+						lazySet(true);
+					}
 				}
 			}
 			catch (Throwable ex) {
