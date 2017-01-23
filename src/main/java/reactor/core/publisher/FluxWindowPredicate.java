@@ -20,10 +20,13 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BooleanSupplier;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -33,6 +36,9 @@ import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.core.MultiProducer;
+import reactor.core.Producer;
+import reactor.core.Receiver;
 import reactor.core.Trackable;
 import reactor.core.publisher.FluxBufferPredicate.Mode;
 
@@ -53,268 +59,268 @@ import reactor.core.publisher.FluxBufferPredicate.Mode;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxWindowPredicate<T>
-		extends FluxSource<T, Flux<T>> {
+		extends FluxSource<T, GroupedFlux<T, T>> {
 
-	final Supplier<? extends Queue<T>> processorQueueSupplier;
-
+	final Supplier<? extends Queue<T>> groupQueueSupplier;
+	
+	final Supplier<? extends Queue<GroupedFlux<T, T>>> mainQueueSupplier;
+	
+	final Mode mode;
+	
 	final Predicate<? super T> predicate;
 
-	final Mode mode;
+	final int prefetch;
 
-	public FluxWindowPredicate(Publisher<? extends T> source, Predicate<? super T> predicate,
-			Supplier<? extends Queue<T>> processorQueueSupplier, Mode mode) {
+	public FluxWindowPredicate(
+			Publisher<? extends T> source,
+			Supplier<? extends Queue<GroupedFlux<T, T>>> mainQueueSupplier,
+			Supplier<? extends Queue<T>> groupQueueSupplier,
+			int prefetch,
+			Predicate<? super T> predicate,
+			Mode mode) {
 		super(source);
+		if (prefetch <= 0) {
+			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
+		}
 		this.predicate = Objects.requireNonNull(predicate, "predicate");
-		this.processorQueueSupplier = Objects.requireNonNull(processorQueueSupplier, "processorQueueSupplier");
+		this.mainQueueSupplier = Objects.requireNonNull(mainQueueSupplier, "mainQueueSupplier");
+		this.groupQueueSupplier = Objects.requireNonNull(groupQueueSupplier, "groupQueueSupplier");
 		this.mode = mode;
+		this.prefetch = prefetch;
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super Flux<T>> s) {
-		source.subscribe(new WindowPredicateSubscriber<T>(s, predicate, mode, processorQueueSupplier));
+	public void subscribe(Subscriber<? super GroupedFlux<T, T>> s) {
+		Queue<GroupedFlux<T, T>> q;
+
+		try {
+			q = mainQueueSupplier.get();
+		} catch (Throwable ex) {
+			Operators.error(s, Operators.onOperatorError(ex));
+			return;
+		}
+
+		if (q == null) {
+			Operators.error(s, new NullPointerException("The mainQueueSupplier returned a null queue"));
+			return;
+		}
+
+		source.subscribe(new WindowPredicateMain<>(s, q, groupQueueSupplier, prefetch, predicate, mode));
 	}
 
-	static final class WindowPredicateSubscriber<T>
-			extends AbstractQueue<T>
-			implements Fuseable.ConditionalSubscriber<T>, Subscription, Trackable,
-			           BooleanSupplier, Disposable {
+	@Override
+	public long getPrefetch() {
+		return prefetch;
+	}
 
-		final Subscriber<? super Flux<T>> actual;
+	static final class WindowPredicateMain<T> implements Subscriber<T>,
+	                                                   Fuseable.QueueSubscription<GroupedFlux<T, T>>,
+	                                                   MultiProducer, Producer, Trackable,
+	                                                   Receiver {
+
+		final Subscriber<? super GroupedFlux<T, T>> actual;
+
+		final Supplier<? extends Queue<T>> groupQueueSupplier;
 
 		final Mode mode;
 
 		final Predicate<? super T> predicate;
 
-		final Supplier<? extends Queue<T>> processorQueueSupplier;
+		final int prefetch;
 
-		UnicastProcessor<T> window;
+		final Queue<GroupedFlux<T, T>> queue;
 
-		boolean done;
+		WindowGroupedFlux<T> window;
 
-		volatile int once;
-		static final AtomicIntegerFieldUpdater<WindowPredicateSubscriber>
-				ONCE =
-				AtomicIntegerFieldUpdater.newUpdater(WindowPredicateSubscriber.class, "once");
-
-		volatile boolean fastpath;
+		volatile int wip;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<WindowPredicateMain> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(WindowPredicateMain.class, "wip");
 
 		volatile long requested;
-		static final AtomicLongFieldUpdater<WindowPredicateSubscriber> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(WindowPredicateSubscriber.class, "requested");
+		@SuppressWarnings("rawtypes")
+		static final AtomicLongFieldUpdater<WindowPredicateMain> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(WindowPredicateMain.class, "requested");
 
-		volatile Subscription s;
-		static final AtomicReferenceFieldUpdater<WindowPredicateSubscriber, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(WindowPredicateSubscriber.class, Subscription.class, "s");
+		volatile boolean done;
+		volatile Throwable error;
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<WindowPredicateMain, Throwable> ERROR =
+				AtomicReferenceFieldUpdater.newUpdater(WindowPredicateMain.class, Throwable.class, "error");
 
-		WindowPredicateSubscriber(Subscriber<? super Flux<T>> actual,
-				Predicate<? super T> predicate, Mode mode,
-				Supplier<? extends Queue<T>> processorQueueSupplier) {
+		volatile int cancelled;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<WindowPredicateMain> CANCELLED =
+				AtomicIntegerFieldUpdater.newUpdater(WindowPredicateMain.class, "cancelled");
+
+		volatile int groupCount;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<WindowPredicateMain> GROUP_COUNT =
+				AtomicIntegerFieldUpdater.newUpdater(WindowPredicateMain.class, "groupCount");
+
+		Subscription s;
+
+		volatile boolean enableAsyncFusion;
+
+		public WindowPredicateMain(
+				Subscriber<? super GroupedFlux<T, T>> actual,
+				Queue<GroupedFlux<T, T>> queue,
+				Supplier<? extends Queue<T>> groupQueueSupplier,
+				int prefetch,
+				Predicate<? super T> predicate,
+				Mode mode) {
 			this.actual = actual;
-			this.processorQueueSupplier = processorQueueSupplier;
+			this.queue = queue;
+			this.groupQueueSupplier = groupQueueSupplier;
+			this.prefetch = prefetch;
 			this.predicate = predicate;
 			this.mode = mode;
-		}
-
-		@Override
-		public void request(long n) {
-			if (Operators.validate(n)) {
-				if (n == Long.MAX_VALUE) {
-					// here we request everything from the source. switching to
-					// fastpath will avoid unnecessary request(1) during filling
-					fastpath = true;
-					requested = Long.MAX_VALUE;
-					s.request(Long.MAX_VALUE);
-				}
-				else {
-					// Requesting from source may have been interrupted if downstream
-					// received enough buffer (requested == 0), so this new request for
-					// buffer should resume progressive filling from upstream. We can
-					// directly request the same as the number of needed buffers (if
-					// buffers turn out 1-sized then we'll have everything, otherwise
-					// we'll continue requesting one by one)
-//					if (!DrainUtils.postCompleteRequest(n,
-//							actual,
-//							this,
-//							REQUESTED,
-//							this,
-//							this)) {
-//						s.request(1);
-//					}
-					Operators.getAndAddCap(REQUESTED, this, n);
-					s.request(1);
-				}
-			}
-		}
-
-		@Override
-		public void cancel() {
-			Operators.terminate(S, this);
+			initializeWindow();
 		}
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (Operators.setOnce(S, this, s)) {
+			if (Operators.validate(this.s, s)) {
+				this.s = s;
 				actual.onSubscribe(this);
+				s.request(prefetch);
 			}
+		}
+
+		public void initializeWindow() {
+			T key = null;
+			Queue<T> q;
+
+			try {
+				q = groupQueueSupplier.get();
+			} catch (Throwable ex) {
+				throw Exceptions.propagate(ex);
+			}
+
+			GROUP_COUNT.getAndIncrement(this);
+			WindowGroupedFlux<T> g = new WindowGroupedFlux<>(key, q, this, prefetch);
+			window = g;
+		}
+
+		public boolean offerNewWindow(T key, T emitInNewWindow) {
+			// if the main is cancelled, don't create new groups
+			if (cancelled == 0) {
+				Queue<T> q;
+
+				try {
+					q = groupQueueSupplier.get();
+				} catch (Throwable ex) {
+					onError(Operators.onOperatorError(s, ex, key));
+					return false;
+				}
+
+				GROUP_COUNT.getAndIncrement(this);
+				WindowGroupedFlux<T> g = new WindowGroupedFlux<>(key, q, this, prefetch);
+				if (emitInNewWindow != null) {
+					g.onNext(emitInNewWindow);
+				}
+				window = g;
+
+				queue.offer(g);
+				drain();
+			}
+			return true;
 		}
 
 		@Override
 		public void onNext(T t) {
-			if (!tryOnNext(t)) {
-				s.request(1);
-			}
-		}
+//			T key; //non null triggers a new window
+//			T value; //non null triggers an emit
+//
+////
+////
+////			try {
+////				key = keySelector.apply(t);
+////				value = valueSelector.apply(t);
+////			} catch (Throwable ex) {
+////				onError(Operators.onOperatorError(s, ex, t));
+////				return;
+////			}
+////			if (key == null) {
+////				onError(Operators.onOperatorError(s, new NullPointerException("The " +
+////						"keySelector returned a null value"), t));
+////				return;
+////			}
+////			if (value == null) {
+////				onError(Operators.onOperatorError(s, new NullPointerException("The " +
+////						"valueSelector returned a null value"), t));
+////				return;
+////			}
 
-		@Override
-		public boolean tryOnNext(T t) {
-			if (done) {
-				Operators.onNextDropped(t);
-				return true;
-			}
+			WindowGroupedFlux<T> g = window;
 
-			if (ONCE.compareAndSet(this, 0, 1)) {
-				onNextNewWindow(); //create the initial buffer
-				if (window == null) {
-					//buffer creation has failed, shortcircuit
-					return true;
-				}
-			}
-
-			UnicastProcessor<T> w = window;
 			boolean match;
 			try {
 				match = predicate.test(t);
 			}
 			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t));
-				return true;
+				return;
 			}
 
-			boolean requestMore;
 			if (mode == Mode.UNTIL && match) {
-				w.onNext(t);
-				requestMore = onNextNewWindow();
+				g.onNext(t);
+				g.onComplete();
+				offerNewWindow(t,null);
 			}
 			else if (mode == Mode.UNTIL_CUT_BEFORE && match) {
-				requestMore = onNextNewWindow();
-				w = window;
-				w.onNext(t);
+				g.onComplete();
+				offerNewWindow(t, t);
 			}
 			else if (mode == Mode.WHILE && !match) {
-				requestMore = onNextNewWindow();
+				g.onComplete();
+				offerNewWindow(t, null);
 			}
 			else {
-				w.onNext(t);
-				if (!fastpath && requested != 0) {
-					requestMore = true;
-				}
-				else {
-					requestMore = false;
-				}
+				g.onNext(t);
 			}
-
-			return !requestMore;
-		}
-
-		private UnicastProcessor<T> triggerNewWindow() {
-			//we'll create a new queue for the new window
-			Queue<T> q;
-			try {
-				q = processorQueueSupplier.get();
-			}
-			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e));
-				return null;
-			}
-
-			if (q == null) {
-				cancel();
-				onError(new NullPointerException("The processorQueueSupplier returned a null queue"));
-				return null;
-			}
-
-			window = new UnicastProcessor<>(q, this);
-			return window;
-		}
-
-		/**
-		 * @return true if requests should continue to be made
-		 */
-		private boolean onNextNewWindow() {
-			UnicastProcessor<T> w = window;
-			window = null;
-			if (w != null) {
-				w.onComplete();
-			}
-			w = triggerNewWindow();
-			if (w != null) {
-				return emit(w);
-			}
-			return false;
 		}
 
 		@Override
 		public void onError(Throwable t) {
-			if (done) {
+			if (Exceptions.addThrowable(ERROR, this, t)) {
+				done = true;
+				drain();
+			} else {
 				Operators.onErrorDropped(t);
-				return;
 			}
-			done = true;
-
-			UnicastProcessor<T> w = window;
-			if (w != null) {
-				window = null;
-				w.onError(t);
-			}
-
-			actual.onError(t);
 		}
 
 		@Override
 		public void onComplete() {
-			if (done) {
-				return;
+			WindowGroupedFlux<T> g = window;
+			if (g != null) {
+				g.onComplete();
 			}
+			window = null;
+			GROUP_COUNT.decrementAndGet(this);
 			done = true;
-
-			UnicastProcessor<T> w = window;
-			if (w != null) {
-				window = null;
-				w.onComplete();
-			}
-
-			actual.onComplete();
-		}
-
-		/**
-		 * @return true if requests should continue to be made
-		 */
-		boolean emit(Flux<T> w) {
-			if (fastpath) {
-				actual.onNext(w);
-				return false;
-			}
-			long r = REQUESTED.getAndDecrement(this);
-			if (r > 0) {
-				actual.onNext(w);
-				return requested > 0;
-			}
-			cancel();
-			actual.onError(Exceptions.failWithOverflow("Could not emit buffer due to lack of requests"));
-			return false;
+			drain();
 		}
 
 		@Override
-		public void dispose() {
-			//TODO
-//			if (WIP.decrementAndGet(this) == 0) {
-//				s.cancel();
-//			}
+		public long getCapacity() {
+			return prefetch;
+		}
+
+		@Override
+		public long getPending() {
+			return queue.size();
 		}
 
 		@Override
 		public boolean isStarted() {
-			return s != null && !done;
+			return s != null && cancelled != 1 && !done;
+		}
+
+		@Override
+		public boolean isCancelled() {
+			return cancelled == 1;
 		}
 
 		@Override
@@ -323,69 +329,614 @@ final class FluxWindowPredicate<T>
 		}
 
 		@Override
-		public boolean isCancelled() {
-			return s == Operators.CancelledSubscription.INSTANCE;
+		public Throwable getError() {
+			return error;
 		}
 
 		@Override
-		public long getPending() {
-			UnicastProcessor<T> w = window;
-			return w != null ? w.size() : 0L;
+		public Iterator<?> downstreams() {
+			WindowGroupedFlux<T> g = window;
+			if (g == null)
+				return Collections.emptyList().iterator();
+			return Collections.singletonList(g).iterator();
 		}
 
 		@Override
-		public boolean getAsBoolean() {
-			return isCancelled();
+		public long downstreamCount() {
+			return GROUP_COUNT.get(this);
 		}
 
 		@Override
-		public void clear() {
-			UnicastProcessor<T> w = window;
-			if (w == null) {
+		public Object downstream() {
+			return actual;
+		}
+
+		@Override
+		public Object upstream() {
+			return s;
+		}
+
+		@Override
+		public long requestedFromDownstream() {
+			return requested;
+		}
+
+		void signalAsyncError() {
+			Throwable e = Exceptions.terminate(ERROR, this);
+			groupCount = 0;
+			WindowGroupedFlux<T> g = window;
+			if (g != null) {
+				g.onError(e);
+			}
+			actual.onError(e);
+			window = null;
+		}
+
+		@Override
+		public void request(long n) {
+			if (Operators.validate(n)) {
+				Operators.getAndAddCap(REQUESTED, this, n);
+				drain();
+			}
+		}
+
+		@Override
+		public void cancel() {
+			if (CANCELLED.compareAndSet(this, 0, 1)) {
+				if (GROUP_COUNT.decrementAndGet(this) == 0) {
+					s.cancel();
+				} else {
+					if (!enableAsyncFusion) {
+						if (WIP.getAndIncrement(this) == 0) {
+							// remove queued up but unobservable groups from the mapping
+							GroupedFlux<T, T> g;
+							while ((g = queue.poll()) != null) {
+								((WindowGroupedFlux<T>)g).cancel();
+							}
+
+							if (WIP.decrementAndGet(this) == 0) {
+								return;
+							}
+
+							drainLoop();
+						}
+					}
+				}
+			}
+		}
+
+		void groupTerminated(T key) {
+			if (groupCount == 0) {
 				return;
 			}
-			w.clear();
-		}
-
-		@Override
-		public Iterator<T> iterator() {
-			UnicastProcessor<T> w = window;
-			if (w == null) {
-				return Collections.emptyIterator();
+			WindowGroupedFlux<T> g = window;
+			//TODO check logic
+			if (g != null && Objects.equals(key, g.key())) { //key can be null
+				window = null;
 			}
-			//note: UnsupportedOperationException in UnicastProcessor
-			return w.iterator();
+			if (GROUP_COUNT.decrementAndGet(this) == 0) {
+				s.cancel();
+			}
+		}
+
+		void drain() {
+			if (WIP.getAndIncrement(this) != 0) {
+				return;
+			}
+
+			if (enableAsyncFusion) {
+				drainFused();
+			}
+			else {
+				drainLoop();
+			}
+		}
+
+		void drainFused() {
+			int missed = 1;
+
+			final Subscriber<? super GroupedFlux<T, T>> a = actual;
+			final Queue<GroupedFlux<T, T>> q = queue;
+
+			for (; ; ) {
+
+				if (cancelled != 0) {
+					q.clear();
+					return;
+				}
+
+				boolean d = done;
+
+				a.onNext(null);
+
+				if (d) {
+					Throwable ex = error;
+					if (ex != null) {
+						signalAsyncError();
+					}
+					else {
+						a.onComplete();
+					}
+					return;
+				}
+
+				missed = WIP.addAndGet(this, -missed);
+				if (missed == 0) {
+					break;
+				}
+			}
+		}
+
+		void drainLoop() {
+
+			int missed = 1;
+
+			Subscriber<? super GroupedFlux<T, T>> a = actual;
+			Queue<GroupedFlux<T, T>> q = queue;
+
+			for (;;) {
+
+				long r = requested;
+				long e = 0L;
+
+				while (e != r) {
+					boolean d = done;
+					GroupedFlux<T, T> v = q.poll();
+					boolean empty = v == null;
+
+					if (checkTerminated(d, empty, a, q)) {
+						return;
+					}
+
+					if (empty) {
+						break;
+					}
+
+					a.onNext(v);
+
+					e++;
+				}
+
+				if (e == r) {
+					if (checkTerminated(done, q.isEmpty(), a, q)) {
+						return;
+					}
+				}
+
+				if (e != 0L) {
+
+					s.request(e);
+
+					if (r != Long.MAX_VALUE) {
+						REQUESTED.addAndGet(this, -e);
+					}
+				}
+
+				missed = WIP.addAndGet(this, -missed);
+				if (missed == 0) {
+					break;
+				}
+			}
+		}
+
+		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, Queue<GroupedFlux<T, T>> q) {
+			if (d) {
+				Throwable e = error;
+				if (e != null && e != Exceptions.TERMINATED) {
+					queue.clear();
+					signalAsyncError();
+					return true;
+				} else
+				if (empty) {
+					a.onComplete();
+					return true;
+				}
+			}
+
+			return false;
 		}
 
 		@Override
-		public boolean offer(T t) {
-			UnicastProcessor<T> w = window;
-			//note: UnsupportedOperationException in UnicastProcessor
-			return w != null && w.offer(t);
-		}
-
-		@Override
-		public T poll() {
-			UnicastProcessor<T> w = window;
-			return w == null ? null : w.poll();
-		}
-
-		@Override
-		public T peek() {
-			//note: UnsupportedOperationException in UnicastProcessor
-			UnicastProcessor<T> w = window;
-			return w == null ? null : w.peek();
+		public GroupedFlux<T, T> poll() {
+			return queue.poll();
 		}
 
 		@Override
 		public int size() {
-			UnicastProcessor<T> w = window;
-			return w == null ? 0 : w.size();
+			return queue.size();
 		}
 
 		@Override
-		public String toString() {
-			return "FluxWindowPredicate";
+		public boolean isEmpty() {
+			return queue.isEmpty();
+		}
+
+		@Override
+		public void clear() {
+			queue.clear();
+		}
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			if (requestedMode == Fuseable.ANY || requestedMode == Fuseable.ASYNC) {
+				enableAsyncFusion = true;
+				return Fuseable.ASYNC;
+			}
+			return Fuseable.NONE;
+		}
+
+		void requestInner(long n) {
+			s.request(n);
 		}
 	}
+
+	static final class WindowGroupedFlux<T> extends GroupedFlux<T, T>
+			implements Fuseable, Fuseable.QueueSubscription<T>, Producer, Receiver, Trackable {
+		final T key;
+
+		final int limit;
+
+		@Override
+		public T key() {
+			return key;
+		}
+
+		final Queue<T> queue;
+
+		volatile WindowPredicateMain<T> parent;
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<WindowGroupedFlux, WindowPredicateMain> PARENT =
+				AtomicReferenceFieldUpdater.newUpdater(WindowGroupedFlux.class, WindowPredicateMain.class, "parent");
+
+		volatile boolean done;
+		Throwable error;
+
+		volatile Subscriber<? super T> actual;
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<WindowGroupedFlux, Subscriber> ACTUAL =
+				AtomicReferenceFieldUpdater.newUpdater(WindowGroupedFlux.class, Subscriber.class, "actual");
+
+		volatile boolean cancelled;
+
+		volatile int once;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<WindowGroupedFlux> ONCE =
+				AtomicIntegerFieldUpdater.newUpdater(WindowGroupedFlux.class, "once");
+
+		volatile int wip;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<WindowGroupedFlux> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(WindowGroupedFlux.class, "wip");
+
+		volatile long requested;
+		@SuppressWarnings("rawtypes")
+		static final AtomicLongFieldUpdater<WindowGroupedFlux> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(WindowGroupedFlux.class, "requested");
+
+		volatile boolean enableOperatorFusion;
+
+		int produced;
+
+		public WindowGroupedFlux(T key, Queue<T> queue, WindowPredicateMain<T> parent, int prefetch) {
+			this.key = key;
+			this.queue = queue;
+			this.parent = parent;
+			this.limit = prefetch - (prefetch >> 2);
+		}
+
+		void doTerminate() {
+			WindowPredicateMain<T> r = parent;
+			if (r != null && PARENT.compareAndSet(this, r, null)) {
+				r.groupTerminated(key);
+			}
+		}
+
+		void drainRegular(Subscriber<? super T> a) {
+			int missed = 1;
+
+			final Queue<T> q = queue;
+
+			for (;;) {
+
+				long r = requested;
+				long e = 0L;
+
+				while (r != e) {
+					boolean d = done;
+
+					T t = q.poll();
+					boolean empty = t == null;
+
+					if (checkTerminated(d, empty, a, q)) {
+						return;
+					}
+
+					if (empty) {
+						break;
+					}
+
+					a.onNext(t);
+
+					e++;
+				}
+
+				if (r == e) {
+					if (checkTerminated(done, q.isEmpty(), a, q)) {
+						return;
+					}
+				}
+
+				if (e != 0) {
+					WindowPredicateMain<T> main = parent;
+					if (main != null) {
+						main.requestInner(e);
+					}
+					if (r != Long.MAX_VALUE) {
+						REQUESTED.addAndGet(this, -e);
+					}
+				}
+
+				missed = WIP.addAndGet(this, -missed);
+				if (missed == 0) {
+					break;
+				}
+			}
+		}
+
+		void drainFused(Subscriber<? super T> a) {
+			int missed = 1;
+
+			final Queue<T> q = queue;
+
+			for (;;) {
+
+				if (cancelled) {
+					q.clear();
+					actual = null;
+					return;
+				}
+
+				boolean d = done;
+
+				a.onNext(null);
+
+				if (d) {
+					actual = null;
+
+					Throwable ex = error;
+					if (ex != null) {
+						a.onError(ex);
+					} else {
+						a.onComplete();
+					}
+					return;
+				}
+
+				missed = WIP.addAndGet(this, -missed);
+				if (missed == 0) {
+					break;
+				}
+			}
+		}
+
+		void drain() {
+			Subscriber<? super T> a = actual;
+			if (a != null) {
+				if (WIP.getAndIncrement(this) != 0) {
+					return;
+				}
+
+				if (enableOperatorFusion) {
+					drainFused(a);
+				} else {
+					drainRegular(a);
+				}
+			}
+		}
+
+		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, Queue<?> q) {
+			if (cancelled) {
+				q.clear();
+				actual = null;
+				return true;
+			}
+			if (d && empty) {
+				Throwable e = error;
+				actual = null;
+				if (e != null) {
+					a.onError(e);
+				} else {
+					a.onComplete();
+				}
+				return true;
+			}
+
+			return false;
+		}
+
+		public void onNext(T t) {
+			if (done || cancelled) {
+				return;
+			}
+
+			Subscriber<? super T> a = actual;
+
+			if (!queue.offer(t)) {
+				onError(Exceptions.failWithOverflow("The queue is full"));
+				return;
+			}
+			if (enableOperatorFusion) {
+				if (a != null) {
+					a.onNext(null); // in op-fusion, onNext(null) is the indicator of more data
+				}
+			} else {
+				drain();
+			}
+		}
+
+		public void onError(Throwable t) {
+			if (done || cancelled) {
+				return;
+			}
+
+			error = t;
+			done = true;
+
+			doTerminate();
+
+			drain();
+		}
+
+		public void onComplete() {
+			if (done || cancelled) {
+				return;
+			}
+
+			done = true;
+
+			doTerminate();
+
+			drain();
+		}
+
+		@Override
+		public void subscribe(Subscriber<? super T> s) {
+			if (once == 0 && ONCE.compareAndSet(this, 0, 1)) {
+
+				s.onSubscribe(this);
+				actual = s;
+				if (cancelled) {
+					actual = null;
+				} else {
+					drain();
+				}
+			} else {
+				s.onError(new IllegalStateException("This processor allows only a single Subscriber"));
+			}
+		}
+
+		@Override
+		public void request(long n) {
+			if (Operators.validate(n)) {
+				Operators.getAndAddCap(REQUESTED, this, n);
+				drain();
+			}
+		}
+
+		@Override
+		public void cancel() {
+			if (cancelled) {
+				return;
+			}
+			cancelled = true;
+
+			doTerminate();
+
+			if (!enableOperatorFusion) {
+				if (WIP.getAndIncrement(this) == 0) {
+					queue.clear();
+				}
+			}
+		}
+
+		@Override
+		public T poll() {
+			T v = queue.poll();
+			if (v != null) {
+				produced++;
+			} else {
+				int p = produced;
+				if (p != 0) {
+					produced = 0;
+					WindowPredicateMain<T> main = parent;
+					if (main != null) {
+						main.requestInner(p);
+					}
+				}
+			}
+			return v;
+		}
+
+		@Override
+		public int size() {
+			return queue.size();
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return queue.isEmpty();
+		}
+
+		@Override
+		public void clear() {
+			queue.clear();
+		}
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			if ((requestedMode & Fuseable.ASYNC) != 0) {
+				enableOperatorFusion = true;
+				return Fuseable.ASYNC;
+			}
+			return Fuseable.NONE;
+		}
+
+		@Override
+		public boolean isCancelled() {
+			return cancelled;
+		}
+
+		@Override
+		public boolean isStarted() {
+			return once == 1 && !done && !cancelled;
+		}
+
+		@Override
+		public boolean isTerminated() {
+			return done;
+		}
+
+		@Override
+		public Throwable getError() {
+			return error;
+		}
+
+		@Override
+		public Object downstream() {
+			return actual;
+		}
+
+		@Override
+		public Object upstream() {
+			return parent;
+		}
+
+		@Override
+		public long getCapacity() {
+			WindowPredicateMain<T> parent = this.parent;
+			return parent != null ? parent.prefetch : -1L;
+		}
+
+		@Override
+		public long getPending() {
+			return queue == null || done ? -1L : queue.size();
+		}
+
+		@Override
+		public long requestedFromDownstream() {
+			return requested;
+		}
+
+		@Override
+		public long expectedFromUpstream() {
+			return produced;
+		}
+
+		@Override
+		public long limit() {
+			return limit;
+		}
+
+	}
+
 }
