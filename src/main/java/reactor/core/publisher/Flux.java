@@ -4064,7 +4064,7 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Transform the error emitted by this {@link Flux} by applying a function if the
-	 * error matches the given type, otherwise let the error flows.
+	 * error matches the given type, otherwise let the error flow.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/maperror.png" alt="">
 	 * <p>
@@ -4083,7 +4083,7 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Transform the error emitted by this {@link Flux} by applying a function if the
-	 * error matches the given predicate, otherwise let the error flows.
+	 * error matches the given predicate, otherwise let the error flow.
 	 * <p>
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/maperror.png"
