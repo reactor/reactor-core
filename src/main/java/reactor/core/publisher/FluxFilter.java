@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Objects;
@@ -26,14 +27,13 @@ import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.Loopback;
 import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.publisher.FluxFilterFuseable.FilterFuseableConditionalSubscriber;
-import reactor.core.publisher.FluxFilterFuseable.FilterFuseableSubscriber;
 import reactor.core.Trackable;
 
 /**
  * Filters out values that make a filter function return false.
  *
  * @param <T> the value type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxFilter<T> extends FluxSource<T, T> {
@@ -49,7 +49,8 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
 		if (s instanceof ConditionalSubscriber) {
-			source.subscribe(new FilterConditionalSubscriber<>((ConditionalSubscriber<? super T>)s, predicate));
+			source.subscribe(new FilterConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
+					predicate));
 			return;
 		}
 		source.subscribe(new FilterSubscriber<>(s, predicate));
@@ -58,6 +59,7 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 	static final class FilterSubscriber<T>
 			implements Receiver, Producer, Loopback, Subscription,
 			           Fuseable.ConditionalSubscriber<T>, Trackable {
+
 		final Subscriber<? super T> actual;
 
 		final Predicate<? super T> predicate;
@@ -90,13 +92,15 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 
 			try {
 				b = predicate.test(t);
-			} catch (Throwable e) {
+			}
+			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t));
 				return;
 			}
 			if (b) {
 				actual.onNext(t);
-			} else {
+			}
+			else {
 				s.request(1);
 			}
 		}
@@ -112,7 +116,8 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 
 			try {
 				b = predicate.test(t);
-			} catch (Throwable e) {
+			}
+			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t));
 				return false;
 			}
@@ -165,12 +170,12 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 		public Object upstream() {
 			return s;
 		}
-		
+
 		@Override
 		public void request(long n) {
 			s.request(n);
 		}
-		
+
 		@Override
 		public void cancel() {
 			s.cancel();
@@ -214,13 +219,15 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 
 			try {
 				b = predicate.test(t);
-			} catch (Throwable e) {
+			}
+			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t));
 				return;
 			}
 			if (b) {
 				actual.onNext(t);
-			} else {
+			}
+			else {
 				s.request(1);
 			}
 		}
@@ -287,12 +294,12 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 		public Object upstream() {
 			return s;
 		}
-		
+
 		@Override
 		public void request(long n) {
 			s.request(n);
 		}
-		
+
 		@Override
 		public void cancel() {
 			s.cancel();

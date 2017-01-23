@@ -197,48 +197,42 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T> implements Fuseable {
 				return false;
 			}
 
-			if (sourceMode == NONE) {
-				//implementation note: this operator doesn't expect the source to be anything but a Mono
-				//so it doesn't check that valued has been set before
-				valued = true;
+			//implementation note: this operator doesn't expect the source to be anything but a Mono
+			//so it doesn't check that valued has been set before
+			valued = true;
 
-				if (parent.onTerminateCall != null) {
-					try {
-						parent.onTerminateCall.accept(t, null);
-					}
-					catch (Throwable e) {
-						onError(Operators.onOperatorError(s, e, t));
-						return false;
-					}
+			if (parent.onTerminateCall != null) {
+				try {
+					parent.onTerminateCall.accept(t, null);
 				}
-				if (parent.onSuccessCall != null) {
-					try {
-						parent.onSuccessCall.accept(t);
-					}
-					catch (Throwable e) {
-						onError(Operators.onOperatorError(s, e, t));
-						return false;
-					}
+				catch (Throwable e) {
+					onError(Operators.onOperatorError(s, e, t));
+					return false;
 				}
-
-				boolean r = actualConditional.tryOnNext(t);
-
-				if (parent.onAfterTerminateCall != null) {
-					try {
-						parent.onAfterTerminateCall.accept(t, null);
-					}
-					catch (Throwable e) {
-						//don't invoke error callback, see https://github.com/reactor/reactor-core/issues/270
-						Operators.onErrorDropped(Operators.onOperatorError(s, e, t));
-					}
-				}
-
-				return r;
 			}
-			else if (sourceMode == ASYNC) {
-				return actualConditional.tryOnNext(null);
+			if (parent.onSuccessCall != null) {
+				try {
+					parent.onSuccessCall.accept(t);
+				}
+				catch (Throwable e) {
+					onError(Operators.onOperatorError(s, e, t));
+					return false;
+				}
 			}
-			return false;
+
+			boolean r = actualConditional.tryOnNext(t);
+
+			if (parent.onAfterTerminateCall != null) {
+				try {
+					parent.onAfterTerminateCall.accept(t, null);
+				}
+				catch (Throwable e) {
+					//don't invoke error callback, see https://github.com/reactor/reactor-core/issues/270
+					Operators.onErrorDropped(Operators.onOperatorError(s, e, t));
+				}
+			}
+
+			return r;
 		}
 
 		@Override

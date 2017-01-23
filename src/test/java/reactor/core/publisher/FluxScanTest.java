@@ -18,18 +18,26 @@ package reactor.core.publisher;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.junit.Test;
 import reactor.core.Fuseable;
+import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxScanTest extends AbstractFluxOperatorTest<String, String> {
 
 	@Override
+	protected Consumer<StepVerifier.Step<String>> defaultThreeNextExpectations(Scenario<String, String> scenario) {
+		return step -> step.expectNext(item(0), item(0), item(0))
+		                   .verifyComplete();
+	}
+
+	@Override
 	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
 		return Arrays.asList(
-				Scenario.from(f -> f.scan((a, b) -> b))
+				Scenario.from(f -> f.scan((a, b) -> a))
 		);
 	}
 
@@ -38,19 +46,13 @@ public class FluxScanTest extends AbstractFluxOperatorTest<String, String> {
 		return Arrays.asList(
 				Scenario.from(f -> f.scan((a, b) -> {
 					throw exception();
-				}), Fuseable.NONE, step -> step.expectNext(singleItem())
+				}), Fuseable.NONE, step -> step.expectNext(item(0))
 				                              .verifyErrorMessage("test")),
 
 				Scenario.from(f -> f.scan((a, b) -> null), Fuseable.NONE, step -> step
-						.expectNext(singleItem())
+						.expectNext(item(0))
 				                                                                     .verifyError(NullPointerException.class))
 		);
-	}
-
-	@Override
-	protected void testPublisherSource(TestPublisher<String> ts) {
-		ts.next(multiItem(0));
-		ts.next(multiItem(1)); //make sure to trigger scan callback
 	}
 
 	@Test(expected = NullPointerException.class)

@@ -41,7 +41,7 @@ extends FluxSource<T, T> implements Fuseable {
 
 	final Supplier<C> collectionSupplier;
 
-	public FluxDistinctFuseable(Publisher<? extends T> source, Function<? super T, ? extends K> keyExtractor,
+	FluxDistinctFuseable(Publisher<? extends T> source, Function<? super T, ? extends K> keyExtractor,
 							 Supplier<C> collectionSupplier) {
 		super(source);
 		this.keyExtractor = Objects.requireNonNull(keyExtractor, "keyExtractor");

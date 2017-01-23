@@ -51,7 +51,7 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 
 	final Supplier<R> initialSupplier;
 
-	public FluxScanSeed(Publisher<? extends T> source, Supplier<R> initialSupplier,
+	FluxScanSeed(Publisher<? extends T> source, Supplier<R> initialSupplier,
 			BiFunction<R, ? super T, R> accumulator) {
 		super(source);
 		this.accumulator = Objects.requireNonNull(accumulator, "accumulator");
@@ -70,13 +70,13 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 		}
 
 		if (initialValue == null) {
-			Operators.error(s, new NullPointerException("The initial value supplied is null"));
+			Operators.error(s, Operators.onOperatorError(new NullPointerException("The " + "initial value supplied is null")));
 			return;
 		}
-		source.subscribe(new ScanSubscriber<>(s, accumulator, initialValue));
+		source.subscribe(new ScanSeedSubscriber<>(s, accumulator, initialValue));
 	}
 
-	static final class ScanSubscriber<T, R>
+	static final class ScanSeedSubscriber<T, R>
 			implements Subscriber<T>, Subscription, Producer, Receiver, Loopback,
 			           Trackable {
 
@@ -102,12 +102,12 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<ScanSubscriber> REQUESTED =
-		  AtomicLongFieldUpdater.newUpdater(ScanSubscriber.class, "requested");
+		static final AtomicLongFieldUpdater<ScanSeedSubscriber> REQUESTED =
+		  AtomicLongFieldUpdater.newUpdater(ScanSeedSubscriber.class, "requested");
 
 		long produced;
 		
-		public ScanSubscriber(Subscriber<? super R> actual, BiFunction<R, ? super T, R> accumulator,
+		ScanSeedSubscriber(Subscriber<? super R> actual, BiFunction<R, ? super T, R> accumulator,
 									   R initialValue) {
 			this.actual = actual;
 			this.accumulator = accumulator;
@@ -138,7 +138,8 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 
 			try {
 				r = accumulator.apply(r, t);
-			} catch (Throwable e) {
+			}
+			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t));
 				return;
 			}

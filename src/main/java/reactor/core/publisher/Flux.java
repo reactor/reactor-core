@@ -3026,8 +3026,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a filtering {@link Flux} with unique values
 	 */
 	public final Flux<T> distinct() {
-		return onAssembly(new FluxDistinct<>(this, hashcodeSupplier(), hashSetSupplier
-				()));
+		return distinct(hashcodeSupplier());
 	}
 
 	/**

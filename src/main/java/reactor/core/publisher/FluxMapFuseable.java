@@ -207,7 +207,7 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 		public int requestFusion(int requestedMode) {
 			int m;
 			if ((requestedMode & Fuseable.THREAD_BARRIER) != 0) {
-				m = Fuseable.NONE;
+				return Fuseable.NONE;
 			}
 			else {
 				m = s.requestFusion(requestedMode);
@@ -289,32 +289,25 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 				return true;
 			}
 
-			int m = sourceMode;
-			
-			if (m == 0) {
-				R v;
-	
-				try {
-					v = mapper.apply(t);
-				} catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, t));
-					return true;
-				}
-	
-				if (v == null) {
-					done = true;
-					actual.onError(Operators.onOperatorError(s, new
-							NullPointerException("The mapper returned a null value."),
-							t));
-					return true;
-				}
-	
-				return actual.tryOnNext(v);
-			} else
-			if (m == 2) {
-				actual.onNext(null);
+			R v;
+
+			try {
+				v = mapper.apply(t);
 			}
-			return true;
+			catch (Throwable e) {
+				onError(Operators.onOperatorError(s, e, t));
+				return true;
+			}
+
+			if (v == null) {
+				done = true;
+				actual.onError(Operators.onOperatorError(s,
+						new NullPointerException("The mapper returned a null value."),
+						t));
+				return true;
+			}
+
+			return actual.tryOnNext(v);
 		}
 
 		
@@ -402,12 +395,9 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 		public int requestFusion(int requestedMode) {
 			int m;
 			if ((requestedMode & Fuseable.THREAD_BARRIER) != 0) {
-				if ((requestedMode & Fuseable.SYNC) != 0) {
-					m = s.requestFusion(Fuseable.SYNC);
-				} else {
-					m = Fuseable.NONE;
-				}
-			} else {
+				return Fuseable.NONE;
+			}
+			else {
 				m = s.requestFusion(requestedMode);
 			}
 			sourceMode = m;

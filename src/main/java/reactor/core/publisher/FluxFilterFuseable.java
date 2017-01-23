@@ -39,14 +39,9 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T> implements Fuseable {
 
 	final Predicate<? super T> predicate;
 
-	public FluxFilterFuseable(Publisher<? extends T> source,
-			Predicate<? super T> predicate) {
+	FluxFilterFuseable(Publisher<? extends T> source, Predicate<? super T> predicate) {
 		super(source);
 		this.predicate = Objects.requireNonNull(predicate, "predicate");
-	}
-
-	public Predicate<? super T> predicate() {
-		return predicate;
 	}
 
 	@Override
@@ -96,9 +91,10 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T> implements Fuseable {
 				return;
 			}
 
-			int m = sourceMode;
-
-			if (m == 0) {
+			if (sourceMode == ASYNC) {
+				actual.onNext(null);
+			}
+			else {
 				boolean b;
 
 				try {
@@ -115,9 +111,6 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T> implements Fuseable {
 					s.request(1);
 				}
 			}
-			else if (m == 2) {
-				actual.onNext(null);
-			}
 		}
 
 		@Override
@@ -127,28 +120,20 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T> implements Fuseable {
 				return false;
 			}
 
-			int m = sourceMode;
+			boolean b;
 
-			if (m == 0) {
-				boolean b;
-
-				try {
-					b = predicate.test(t);
-				}
-				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, t));
-					return false;
-				}
-				if (b) {
-					actual.onNext(t);
-					return true;
-				}
+			try {
+				b = predicate.test(t);
+			}
+			catch (Throwable e) {
+				onError(Operators.onOperatorError(s, e, t));
 				return false;
 			}
-			else if (m == 2) {
-				actual.onNext(null);
+			if (b) {
+				actual.onNext(t);
+				return true;
 			}
-			return true;
+			return false;
 		}
 
 		@Override
@@ -246,7 +231,7 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T> implements Fuseable {
 		public int requestFusion(int requestedMode) {
 			int m;
 			if ((requestedMode & Fuseable.THREAD_BARRIER) != 0) {
-				m = Fuseable.NONE;
+				return Fuseable.NONE;
 			}
 			else {
 				m = s.requestFusion(requestedMode);
@@ -297,9 +282,10 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T> implements Fuseable {
 				return;
 			}
 
-			int m = sourceMode;
-
-			if (m == 0) {
+			if (sourceMode == ASYNC) {
+				actual.onNext(null);
+			}
+			else {
 				boolean b;
 
 				try {
@@ -316,9 +302,6 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T> implements Fuseable {
 					s.request(1);
 				}
 			}
-			else if (m == 2) {
-				actual.onNext(null);
-			}
 		}
 
 		@Override
@@ -328,24 +311,16 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T> implements Fuseable {
 				return false;
 			}
 
-			int m = sourceMode;
+			boolean b;
 
-			if (m == 0) {
-				boolean b;
-
-				try {
-					b = predicate.test(t);
-				}
-				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, t));
-					return false;
-				}
-				return b && actual.tryOnNext(t);
+			try {
+				b = predicate.test(t);
 			}
-			else if (m == 2) {
-				actual.onNext(null);
+			catch (Throwable e) {
+				onError(Operators.onOperatorError(s, e, t));
+				return false;
 			}
-			return true;
+			return b && actual.tryOnNext(t);
 		}
 
 		@Override
@@ -448,7 +423,7 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T> implements Fuseable {
 		public int requestFusion(int requestedMode) {
 			int m;
 			if ((requestedMode & Fuseable.THREAD_BARRIER) != 0) {
-				m = Fuseable.NONE;
+				return Fuseable.NONE;
 			}
 			else {
 				m = s.requestFusion(requestedMode);

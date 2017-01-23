@@ -790,16 +790,11 @@ public class FluxZipTest {
 	@Test
 	public void failCombinedFusedError() {
 		StepVerifier.create(Flux.zip(obj -> 0,
-				Flux.just(1, 2, 3)
-				    .doOnNext(d -> {
-					    if (d > 1) {
-						    throw new RuntimeException("test");
-					    }
-				    }),
+				Flux.just(1, null),
 				Flux.just(2, 3)), 0)
 		            .thenRequest(1)
 		            .expectNext(0)
-		            .verifyErrorMessage("test");
+		            .verifyError(NullPointerException.class);
 	}
 
 	@Test

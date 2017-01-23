@@ -92,6 +92,11 @@ public class FluxPeekTest extends AbstractFluxOperatorTest<String, String> {
 					throw exception();
 				})),
 
+				Scenario.from(f -> f.doOnComplete(() -> {
+					throw exception();
+				}), Fuseable.SYNC, step -> step.expectNext(item(0), item(1), item(2))
+						.verifyErrorMessage("test")),
+
 				Scenario.from(f -> f.doOnNext(s -> {
 					throw exception();
 				}), Fuseable.ANY),
