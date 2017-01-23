@@ -20,15 +20,11 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import java.util.function.Predicate;
 
-import org.junit.Ignore;
 import org.junit.Test;
-import org.reactivestreams.Subscription;
 import reactor.core.publisher.FluxBufferPredicate.Mode;
 import reactor.test.StepVerifier;
-import reactor.test.StepVerifierOptions;
 import reactor.util.concurrent.QueueSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -606,10 +602,7 @@ public class FluxWindowPredicateTest {
 		StepVerifier.create(Flux.just("red", "green", "#", "orange", "blue", "#", "black", "white")
 		                        .hide()
 		                        .windowWhile(color -> !color.equals("#"))
-		                        .flatMap(w -> w, 1),
-				new StepVerifierOptions()
-						.initialRequest(1)
-						.checkUnderRequesting(false))
+		                        .flatMap(w -> w, 1), 1)
 	                .expectNext("red")
 	                .thenRequest(1)
 	                .expectNext("green")
