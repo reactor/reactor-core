@@ -89,7 +89,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 
 		OpenHashSet<ScheduledRunnable> tasks;
 
-		public ExecutorServiceWorker(ExecutorService executor, boolean interruptOnCancel) {
+		ExecutorServiceWorker(ExecutorService executor, boolean interruptOnCancel) {
 			this.executor = executor;
 			this.interruptOnCancel = interruptOnCancel;
 			this.tasks = new OpenHashSet<>();
@@ -183,7 +183,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 		static final AtomicReferenceFieldUpdater<ScheduledRunnable, Thread> CURRENT =
 				AtomicReferenceFieldUpdater.newUpdater(ScheduledRunnable.class, Thread.class, "current");
 
-		public ScheduledRunnable(Runnable task, ExecutorServiceWorker parent) {
+		ScheduledRunnable(Runnable task, ExecutorServiceWorker parent) {
 			this.task = task;
 			this.parent = parent;
 		}

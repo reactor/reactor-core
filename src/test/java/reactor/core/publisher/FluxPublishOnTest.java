@@ -39,7 +39,6 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import reactor.core.Cancellation;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
@@ -1257,6 +1256,28 @@ public class FluxPublishOnTest extends AbstractFluxOperatorTest<String, String> 
 		latch.await(15, TimeUnit.SECONDS);
 		assertTrue(latch.getCount() + " of " + items + " items were not counted down",
 				latch.getCount() == 0);
+	}
+
+	@Test
+	public void callablePath() {
+		StepVerifier.create(Mono.fromCallable(() -> "test")
+		                        .flux()
+		                        .publishOn(Schedulers.immediate()))
+		            .expectNext("test")
+		            .verifyComplete();
+
+		StepVerifier.create(Mono.fromCallable(() -> {
+			throw new Exception("test");
+		})
+		                        .flux()
+		                        .publishOn(Schedulers.immediate()))
+		            .verifyErrorMessage("test");
+
+
+		StepVerifier.create(Mono.fromCallable(() -> null)
+		                        .flux()
+		                        .publishOn(Schedulers.immediate()))
+		            .verifyError(NullPointerException.class);
 	}
 
 	private static class FailNullWorkerScheduler implements Scheduler {
