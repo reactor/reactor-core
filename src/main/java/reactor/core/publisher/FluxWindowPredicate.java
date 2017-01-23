@@ -153,11 +153,6 @@ final class FluxWindowPredicate<T>
 		static final AtomicIntegerFieldUpdater<WindowPredicateMain> CANCELLED =
 				AtomicIntegerFieldUpdater.newUpdater(WindowPredicateMain.class, "cancelled");
 
-		volatile int groupCount;
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<WindowPredicateMain> GROUP_COUNT =
-				AtomicIntegerFieldUpdater.newUpdater(WindowPredicateMain.class, "groupCount");
-
 		Subscription s;
 
 		volatile boolean enableAsyncFusion;
@@ -183,7 +178,13 @@ final class FluxWindowPredicate<T>
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
 				actual.onSubscribe(this);
-				s.request(prefetch);
+				if (error != null) {
+					s.cancel();
+					done = true;
+					drain();
+				} else {
+					s.request(prefetch);
+				}
 			}
 		}
 
@@ -194,12 +195,18 @@ final class FluxWindowPredicate<T>
 			try {
 				q = groupQueueSupplier.get();
 			} catch (Throwable ex) {
-				throw Exceptions.propagate(ex);
+				ERROR.compareAndSet(this, null, ex);
+				return;
 			}
 
-			GROUP_COUNT.getAndIncrement(this);
+			if (q == null) {
+				ERROR.compareAndSet(this, null, new NullPointerException("The groupQueueSupplier returned a null queue"));
+				return;
+			}
+
 			WindowGroupedFlux<T> g = new WindowGroupedFlux<>(key, q, this, prefetch);
 			window = g;
+			queue.offer(g);
 		}
 
 		public boolean offerNewWindow(T key, T emitInNewWindow) {
@@ -214,7 +221,11 @@ final class FluxWindowPredicate<T>
 					return false;
 				}
 
-				GROUP_COUNT.getAndIncrement(this);
+				if (q == null) {
+					onError(Operators.onOperatorError(s, new NullPointerException("The mainQueueSupplier returned a null queue"), key));
+					return false;
+				}
+
 				WindowGroupedFlux<T> g = new WindowGroupedFlux<>(key, q, this, prefetch);
 				if (emitInNewWindow != null) {
 					g.onNext(emitInNewWindow);
@@ -229,29 +240,6 @@ final class FluxWindowPredicate<T>
 
 		@Override
 		public void onNext(T t) {
-//			T key; //non null triggers a new window
-//			T value; //non null triggers an emit
-//
-////
-////
-////			try {
-////				key = keySelector.apply(t);
-////				value = valueSelector.apply(t);
-////			} catch (Throwable ex) {
-////				onError(Operators.onOperatorError(s, ex, t));
-////				return;
-////			}
-////			if (key == null) {
-////				onError(Operators.onOperatorError(s, new NullPointerException("The " +
-////						"keySelector returned a null value"), t));
-////				return;
-////			}
-////			if (value == null) {
-////				onError(Operators.onOperatorError(s, new NullPointerException("The " +
-////						"valueSelector returned a null value"), t));
-////				return;
-////			}
-
 			WindowGroupedFlux<T> g = window;
 
 			boolean match;
@@ -298,7 +286,6 @@ final class FluxWindowPredicate<T>
 				g.onComplete();
 			}
 			window = null;
-			GROUP_COUNT.decrementAndGet(this);
 			done = true;
 			drain();
 		}
@@ -343,7 +330,7 @@ final class FluxWindowPredicate<T>
 
 		@Override
 		public long downstreamCount() {
-			return GROUP_COUNT.get(this);
+			return window == null ? 0L : 1L;
 		}
 
 		@Override
@@ -363,7 +350,6 @@ final class FluxWindowPredicate<T>
 
 		void signalAsyncError() {
 			Throwable e = Exceptions.terminate(ERROR, this);
-			groupCount = 0;
 			WindowGroupedFlux<T> g = window;
 			if (g != null) {
 				g.onError(e);
@@ -383,39 +369,15 @@ final class FluxWindowPredicate<T>
 		@Override
 		public void cancel() {
 			if (CANCELLED.compareAndSet(this, 0, 1)) {
-				if (GROUP_COUNT.decrementAndGet(this) == 0) {
 					s.cancel();
-				} else {
-					if (!enableAsyncFusion) {
-						if (WIP.getAndIncrement(this) == 0) {
-							// remove queued up but unobservable groups from the mapping
-							GroupedFlux<T, T> g;
-							while ((g = queue.poll()) != null) {
-								((WindowGroupedFlux<T>)g).cancel();
-							}
-
-							if (WIP.decrementAndGet(this) == 0) {
-								return;
-							}
-
-							drainLoop();
-						}
-					}
-				}
 			}
 		}
 
 		void groupTerminated(T key) {
-			if (groupCount == 0) {
-				return;
-			}
 			WindowGroupedFlux<T> g = window;
 			//TODO check logic
 			if (g != null && Objects.equals(key, g.key())) { //key can be null
 				window = null;
-			}
-			if (GROUP_COUNT.decrementAndGet(this) == 0) {
-				s.cancel();
 			}
 		}
 
@@ -937,6 +899,10 @@ final class FluxWindowPredicate<T>
 			return limit;
 		}
 
+		@Override
+		public String toString() {
+			return "WindowGroupedFlux[" + key + "]";
+		}
 	}
 
 }

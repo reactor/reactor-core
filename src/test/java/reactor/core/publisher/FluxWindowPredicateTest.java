@@ -17,7 +17,9 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Predicate;
 
@@ -28,7 +30,6 @@ import reactor.core.publisher.FluxBufferPredicate.Mode;
 import reactor.test.StepVerifier;
 import reactor.test.StepVerifierOptions;
 import reactor.util.concurrent.QueueSupplier;
-import reactor.util.function.Tuple2;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -127,7 +128,7 @@ public class FluxWindowPredicateTest {
 				new FluxWindowPredicate<>(source, QueueSupplier.small(), QueueSupplier.unbounded(), QueueSupplier.SMALL_BUFFER_SIZE,
 						i -> i >= 3, Mode.UNTIL);
 
-		FluxWindowPredicate<Integer> windowUntilOther =
+		FluxWindowPredicate<Integer> windowUntilCutBefore =
 				new FluxWindowPredicate<>(source, QueueSupplier.small(), QueueSupplier.unbounded(), QueueSupplier.SMALL_BUFFER_SIZE,
 						i -> i >= 3, Mode.UNTIL_CUT_BEFORE);
 
@@ -140,7 +141,7 @@ public class FluxWindowPredicateTest {
 				.expectComplete()
 				.verify();
 
-		StepVerifier.create(windowUntilOther.flatMap(Flux::collectList))
+		StepVerifier.create(windowUntilCutBefore.flatMap(Flux::collectList))
 		            .expectNext(Arrays.asList(1, 2))
 		            .expectComplete()
 		            .verify();
@@ -152,7 +153,6 @@ public class FluxWindowPredicateTest {
 	}
 
 	@Test
-	@Ignore
 	@SuppressWarnings("unchecked")
 	public void mainErrorUntilIsPropagatedToBothWindowAndMain() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
@@ -210,13 +210,13 @@ public class FluxWindowPredicateTest {
 
 	@Test
 	@SuppressWarnings("unchecked")
-	public void normalUntilOther() {
+	public void normalUntilCutBefore() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		FluxWindowPredicate<Integer> windowUntilOther = new FluxWindowPredicate<>(sp1,
+		FluxWindowPredicate<Integer> windowUntilCutBefore = new FluxWindowPredicate<>(sp1,
 				QueueSupplier.small(), QueueSupplier.unbounded(), QueueSupplier.SMALL_BUFFER_SIZE,
 				i -> i % 3 == 0, Mode.UNTIL_CUT_BEFORE);
 
-		StepVerifier.create(windowUntilOther.flatMap(Flux::materialize))
+		StepVerifier.create(windowUntilCutBefore.flatMap(Flux::materialize))
 				.expectSubscription()
 				    .then(() -> sp1.onNext(1))
 				    .expectNext(Signal.next(1))
@@ -241,15 +241,14 @@ public class FluxWindowPredicateTest {
 	}
 
 	@Test
-	@Ignore
 	@SuppressWarnings("unchecked")
-	public void mainErrorUntilOtherIsPropagatedToBothWindowAndMain() {
+	public void mainErrorUntilCutBeforeIsPropagatedToBothWindowAndMain() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		FluxWindowPredicate<Integer> windowUntilOther =
+		FluxWindowPredicate<Integer> windowUntilCutBefore =
 				new FluxWindowPredicate<>(sp1, QueueSupplier.small(), QueueSupplier.unbounded(), QueueSupplier.SMALL_BUFFER_SIZE,
 						i -> i % 3 == 0, Mode.UNTIL_CUT_BEFORE);
 
-		StepVerifier.create(windowUntilOther.flatMap(Flux::materialize))
+		StepVerifier.create(windowUntilCutBefore.flatMap(Flux::materialize))
 		            .expectSubscription()
 		            .then(() -> sp1.onNext(1))
 		            .expectNext(Signal.next(1))
@@ -270,18 +269,17 @@ public class FluxWindowPredicateTest {
 	}
 
 	@Test
-	@Ignore
 	@SuppressWarnings("unchecked")
-	public void predicateErrorUntilOther() {
+	public void predicateErrorUntilCutBefore() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		FluxWindowPredicate<Integer> windowUntilOther =
+		FluxWindowPredicate<Integer> windowUntilCutBefore =
 				new FluxWindowPredicate<>(sp1, QueueSupplier.small(), QueueSupplier.unbounded(), QueueSupplier.SMALL_BUFFER_SIZE,
 				i -> {
 					if (i == 5) throw new IllegalStateException("predicate failure");
 					return i % 3 == 0;
 				}, Mode.UNTIL_CUT_BEFORE);
 
-		StepVerifier.create(windowUntilOther.flatMap(Flux::materialize))
+		StepVerifier.create(windowUntilCutBefore.flatMap(Flux::materialize))
 					.expectSubscription()
 					.then(() -> sp1.onNext(1))
 					.expectNext(Signal.next(1))
@@ -439,7 +437,6 @@ public class FluxWindowPredicateTest {
 	}
 
 	@Test
-	@Ignore
 	public void whileStartingSeveralSeparatorsEachCreateEmptyWindow() {
 		StepVerifier.create(Flux.just("#")
 		                        .repeat(10)
@@ -495,7 +492,47 @@ public class FluxWindowPredicateTest {
 
 	@Test
 	@SuppressWarnings("unchecked")
-	public void queueSupplierThrows() {
+	public void mainQueueSupplierThrowsInitial() {
+		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(
+				sp1,
+				() -> { throw new RuntimeException("supplier failure"); },
+				QueueSupplier.unbounded(),
+				QueueSupplier.SMALL_BUFFER_SIZE,
+				i -> i % 3 == 0,
+				Mode.UNTIL);
+
+		assertThat(sp1.hasDownstreams()).isFalse();
+
+		StepVerifier.create(windowUntil)
+		            .then(() -> sp1.onNext(1))
+		            .expectErrorMessage("supplier failure")
+		            .verify();
+	}
+
+	@Test
+	public void mainQueueSupplierReturnsNull() {
+		DirectProcessor<Integer> sp1 = DirectProcessor.create();
+		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(
+				sp1,
+				() -> null,
+				QueueSupplier.unbounded(),
+				QueueSupplier.SMALL_BUFFER_SIZE,
+				i -> i % 3 == 0,
+				Mode.UNTIL);
+
+		assertThat(sp1.hasDownstreams()).isFalse();
+
+		StepVerifier.create(windowUntil)
+		            .then(() -> sp1.onNext(1))
+		            .expectErrorMatches(t -> t instanceof NullPointerException &&
+				            "The mainQueueSupplier returned a null queue".equals(t.getMessage()))
+		            .verify();
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void innerQueueSupplierThrowsInitial() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(
 				sp1,
@@ -515,7 +552,7 @@ public class FluxWindowPredicateTest {
 
 	@Test
 	@SuppressWarnings("unchecked")
-	public void queueSupplierThrowsLater() {
+	public void innerQueueSupplierThrowsLater() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		int count[] = {1};
 		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(
@@ -545,7 +582,7 @@ public class FluxWindowPredicateTest {
 	}
 
 	@Test
-	public void queueSupplierReturnsNull() {
+	public void innerQueueSupplierReturnsNull() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(
 				sp1,
@@ -560,65 +597,73 @@ public class FluxWindowPredicateTest {
 		StepVerifier.create(windowUntil)
 		            .then(() -> sp1.onNext(1))
 		            .expectErrorMatches(t -> t instanceof NullPointerException &&
-		                "The processorQueueSupplier returned a null queue".equals(t.getMessage()))
+		                "The groupQueueSupplier returned a null queue".equals(t.getMessage()))
 		            .verify();
 	}
 
-	@Test(timeout = 2000L)
+	@Test
 	public void whileRequestOneByOne() {
 		StepVerifier.create(Flux.just("red", "green", "#", "orange", "blue", "#", "black", "white")
-		                        .hide().log("upstream")
+		                        .hide()
 		                        .windowWhile(color -> !color.equals("#"))
-		                        .log("window")
-		                        .flatMap(w -> w.log("inner"), 1)
-		                                       .log("outer"),
+		                        .flatMap(w -> w, 1),
 				new StepVerifierOptions()
-						.initialRequest(3)
+						.initialRequest(1)
 						.checkUnderRequesting(false))
 	                .expectNext("red")
+	                .thenRequest(1)
 	                .expectNext("green")
 	                .thenRequest(1)
 	                .expectNext("orange")
+	                .thenRequest(1)
 	                .expectNext("blue")
 	                .thenRequest(1)
 	                .expectNext("black")
+	                .thenRequest(1)
 	                .expectNext("white")
 	                .thenRequest(1)
 	                .verifyComplete();
 	}
 
 	@Test
-	@Ignore
-	public void whileRequestOneByOne2() throws InterruptedException {
-		CountDownLatch latch = new CountDownLatch(1);
-		Flux<String> windowWhile =
-				Flux.just("red", "green", "#", "orange", "blue", "#", "black", "white")
-				    .hide()
-				    .log("colors")
-				    .windowWhile(color -> !color.equals("#"))
-				    .log("windows")
-				    .flatMap(w -> w.log("window"), 1)
-				    .log("flatmapMain");
+	public void groupsHaveCorrectKeysWhile() {
+		List<String> keys = new ArrayList<>(10);
 
-		BaseSubscriber<String> subscriber = new BaseSubscriber<String>() {
-			@Override
-			protected void hookOnSubscribe(Subscription subscription) {
-				request(1);
-			}
+		StepVerifier.create(Flux.just("red", "green", "#1", "orange", "blue", "#2", "black", "white")
+				.windowWhile(color -> !color.startsWith("#"))
+				.doOnNext(w -> keys.add(w.key()))
+				.flatMap(w -> w))
+		            .expectNext("red", "green", "orange", "blue", "black", "white")
+				    .verifyComplete();
 
-			@Override
-			protected void hookOnNext(String value) {
-				System.out.println(value);
-				request(1);
-			}
+		assertThat(keys).containsExactly(null, "#1", "#2");
+	}
 
-			@Override
-			protected void hookFinally(SignalType type) {
-				latch.countDown();
-			}
-		};
+	@Test
+	public void groupsHaveCorrectKeysUntil() {
+		List<String> keys = new ArrayList<>(10);
 
-		windowWhile.subscribe(subscriber);
-		latch.await();
+		StepVerifier.create(Flux.just("red", "green", "#1", "orange", "blue", "#2", "black", "white")
+				.windowUntil(color -> color.startsWith("#"))
+				.doOnNext(w -> keys.add(w.key()))
+				.flatMap(w -> w))
+		            .expectNext("red", "green", "#1", "orange", "blue", "#2", "black", "white")
+				    .verifyComplete();
+
+		assertThat(keys).containsExactly(null, "#1", "#2");
+	}
+	
+	@Test
+	public void groupsHaveCorrectKeysUntilCutBefore() {
+		List<String> keys = new ArrayList<>(10);
+
+		StepVerifier.create(Flux.just("red", "green", "#1", "orange", "blue", "#2", "black", "white")
+				.windowUntil(color -> color.startsWith("#"), true)
+				.doOnNext(w -> keys.add(w.key()))
+				.flatMap(w -> w))
+		            .expectNext("red", "green", "#1", "orange", "blue", "#2", "black", "white")
+				    .verifyComplete();
+
+		assertThat(keys).containsExactly(null, "#1", "#2");
 	}
 }
