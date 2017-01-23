@@ -48,7 +48,7 @@ final class FluxScan<T> extends FluxSource<T, T> {
 
 	final BiFunction<T, ? super T, T> accumulator;
 
-	public FluxScan(Publisher<? extends T> source, BiFunction<T, ? super T, T> accumulator) {
+	FluxScan(Publisher<? extends T> source, BiFunction<T, ? super T, T> accumulator) {
 		super(source);
 		this.accumulator = Objects.requireNonNull(accumulator, "accumulator");
 	}
@@ -105,7 +105,7 @@ final class FluxScan<T> extends FluxSource<T, T> {
 				if (t == null) {
 					s.cancel();
 
-					onError(new NullPointerException("The accumulator returned a null value"));
+					onError(Operators.onOperatorError(new NullPointerException("The accumulator returned a null value")));
 					return;
 				}
 			}

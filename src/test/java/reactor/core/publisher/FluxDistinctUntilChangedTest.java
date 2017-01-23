@@ -38,7 +38,7 @@ public class FluxDistinctUntilChangedTest extends AbstractFluxOperatorTest<Strin
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_errorFromUpstreamFailure() {
+	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
 		return Arrays.asList(
 				Scenario.from(f -> f.distinctUntilChanged())
 		);

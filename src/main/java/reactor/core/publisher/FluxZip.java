@@ -891,7 +891,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 				if (s instanceof Fuseable.QueueSubscription) {
 					Fuseable.QueueSubscription<T> f = (Fuseable.QueueSubscription<T>) s;
 
-					int m = f.requestFusion(Fuseable.ANY);
+					int m = f.requestFusion(Fuseable.ANY | Fuseable.THREAD_BARRIER);
 
 					if (m == Fuseable.SYNC) {
 						sourceMode = SYNC;

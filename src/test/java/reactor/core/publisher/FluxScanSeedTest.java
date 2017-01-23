@@ -18,23 +18,33 @@ package reactor.core.publisher;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.junit.Test;
 import reactor.core.Fuseable;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxScanSeedTest  extends AbstractFluxOperatorTest<String, String> {
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
-		return Arrays.asList(
-				Scenario.from(f -> f.scan(singleItem(), (a, b) -> {
-					throw exception();
-				}), Fuseable.NONE, step -> step.expectNext(singleItem())
-				                               .verifyErrorMessage("test")),
+	protected Consumer<StepVerifier.Step<String>> defaultThreeNextExpectations(Scenario<String, String> scenario) {
+		return step -> step.expectNext(item(0), item(0), item(0))
+		                   .thenRequest(1)
+		                   .expectNext(item(0))
+		                   .verifyComplete();
+	}
 
-				Scenario.from(f -> f.scan(singleItem(), (a, b) -> null), Fuseable.NONE, step -> step
-						.expectNext(singleItem())
+	@Override
+	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
+		return Arrays.asList(Scenario.from(f -> f.scan(item(0), (a, b) -> {
+					throw exception();
+				}), Fuseable.NONE, step -> step.expectNext(item(0))
+		                                       .verifyErrorMessage("test")),
+
+				Scenario.from(f -> f.scan(item(0), (a, b) -> null),
+						Fuseable.NONE,
+						step -> step.expectNext(item(0))
 						.verifyError(NullPointerException.class)),
 
 				Scenario.from(f -> f.scanWith(() -> null, (a, b) -> b), Fuseable.NONE, step -> step
@@ -51,8 +61,7 @@ public class FluxScanSeedTest  extends AbstractFluxOperatorTest<String, String> 
 
 	@Override
 	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
-		return Arrays.asList(
-				Scenario.from(f -> f.scan(singleItem(), (a, b) -> b))
+		return Arrays.asList(Scenario.from(f -> f.scan(item(0), (a, b) -> a))
 		);
 	}
 

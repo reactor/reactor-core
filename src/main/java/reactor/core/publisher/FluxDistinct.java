@@ -46,7 +46,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 
 	final Supplier<C> collectionSupplier;
 
-	public FluxDistinct(Publisher<? extends T> source, Function<? super T, ? extends K> keyExtractor,
+	FluxDistinct(Publisher<? extends T> source, Function<? super T, ? extends K> keyExtractor,
 							 Supplier<C> collectionSupplier) {
 		super(source);
 		this.keyExtractor = Objects.requireNonNull(keyExtractor, "keyExtractor");
@@ -71,12 +71,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 			return;
 		}
 
-		if (source instanceof Fuseable) {
-			source.subscribe(new DistinctFuseableSubscriber<>(s,
-					collection,
-					keyExtractor));
-		}
-		else if (s instanceof ConditionalSubscriber) {
+		if (s instanceof ConditionalSubscriber) {
 			source.subscribe(new DistinctConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
 					collection,
 					keyExtractor));
@@ -99,7 +94,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 
 		boolean done;
 
-		public DistinctSubscriber(Subscriber<? super T> actual, C collection,
+		 DistinctSubscriber(Subscriber<? super T> actual, C collection,
 										   Function<? super T, ? extends K> keyExtractor) {
 			this.actual = actual;
 			this.collection = collection;
@@ -237,7 +232,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 
 		boolean done;
 
-		public DistinctConditionalSubscriber(ConditionalSubscriber<? super T> actual,
+		 DistinctConditionalSubscriber(ConditionalSubscriber<? super T> actual,
 				C collection,
 				Function<? super T, ? extends K> keyExtractor) {
 			this.actual = actual;

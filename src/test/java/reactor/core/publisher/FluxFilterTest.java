@@ -38,6 +38,14 @@ public class FluxFilterTest extends AbstractFluxOperatorTest<String, String> {
 	@Override
 	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
 		return Arrays.asList(
+				Scenario.from(f -> f.filter(d -> true), Fuseable.ANY),
+
+				Scenario.from(f -> f.filter(d -> false), Fuseable.ANY, step -> step.verifyComplete()));
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_errorFromUpstreamFailure() {
+		return  Arrays.asList(
 				Scenario.from(f -> f.filter(d -> true), Fuseable.ANY)
 		);
 	}

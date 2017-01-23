@@ -57,7 +57,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 
 	final Runnable onCancelCall;
 
-	public FluxPeekFuseable(Publisher<? extends T> source,
+	FluxPeekFuseable(Publisher<? extends T> source,
 			Consumer<? super Subscription> onSubscribeCall,
 			Consumer<? super T> onNextCall,
 			Consumer<? super Throwable> onErrorCall,
@@ -223,7 +223,12 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 			if (done) {
 				return;
 			}
-			if (sourceMode == NONE) {
+
+			if (sourceMode == ASYNC) {
+				done = true;
+				actual.onComplete();
+			}
+			else {
 				if (parent.onCompleteCall() != null) {
 					try {
 						parent.onCompleteCall()
@@ -234,12 +239,10 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 						return;
 					}
 				}
-			}
-			done = true;
+				done = true;
 
-			actual.onComplete();
+				actual.onComplete();
 
-			if (sourceMode == NONE) {
 				if (parent.onAfterTerminateCall() != null) {
 					try {
 						parent.onAfterTerminateCall()
@@ -302,7 +305,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 		public int requestFusion(int requestedMode) {
 			int m;
 			if ((requestedMode & Fuseable.THREAD_BARRIER) != 0) {
-				m = Fuseable.NONE;
+				return Fuseable.NONE;
 			}
 			else {
 				m = s.requestFusion(requestedMode);
@@ -416,23 +419,18 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 				Operators.onNextDropped(t);
 				return false;
 			}
-			if (sourceMode == ASYNC) {
-				actual.onNext(null);
-			}
-			else {
-				if (parent.onNextCall() != null) {
-					try {
-						parent.onNextCall()
-						      .accept(t);
-					}
-					catch (Throwable e) {
-						onError(Operators.onOperatorError(s, e, t));
-						return true;
-					}
+
+			if (parent.onNextCall() != null) {
+				try {
+					parent.onNextCall()
+					      .accept(t);
 				}
-				return actual.tryOnNext(t);
+				catch (Throwable e) {
+					onError(Operators.onOperatorError(s, e, t));
+					return true;
+				}
 			}
-			return true;
+			return actual.tryOnNext(t);
 		}
 
 		@Override
@@ -478,7 +476,12 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 			if (done) {
 				return;
 			}
-			if (sourceMode == NONE) {
+
+			if (sourceMode == ASYNC) {
+				done = true;
+				actual.onComplete();
+			}
+			else {
 				if (parent.onCompleteCall() != null) {
 					try {
 						parent.onCompleteCall()
@@ -489,12 +492,9 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 						return;
 					}
 				}
-			}
-			done = true;
+				done = true;
+				actual.onComplete();
 
-			actual.onComplete();
-
-			if (sourceMode == NONE) {
 				if (parent.onAfterTerminateCall() != null) {
 					try {
 						parent.onAfterTerminateCall()
@@ -557,7 +557,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 		public int requestFusion(int requestedMode) {
 			int m;
 			if ((requestedMode & Fuseable.THREAD_BARRIER) != 0) {
-				m = Fuseable.NONE;
+				return Fuseable.NONE;
 			}
 			else {
 				m = s.requestFusion(requestedMode);
@@ -656,18 +656,20 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (parent.onSubscribeCall() != null) {
-				try {
-					parent.onSubscribeCall()
-					      .accept(s);
+			if(Operators.validate(this.s, s)) {
+				if (parent.onSubscribeCall() != null) {
+					try {
+						parent.onSubscribeCall()
+						      .accept(s);
+					}
+					catch (Throwable e) {
+						Operators.error(actual, Operators.onOperatorError(s, e));
+						return;
+					}
 				}
-				catch (Throwable e) {
-					Operators.error(actual, Operators.onOperatorError(s, e));
-					return;
-				}
+				this.s = s;
+				actual.onSubscribe(this);
 			}
-			this.s = s;
-			actual.onSubscribe(this);
 		}
 
 		@Override
@@ -695,6 +697,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 				Operators.onNextDropped(t);
 				return false;
 			}
+
 			if (parent.onNextCall() != null) {
 				try {
 					parent.onNextCall()

@@ -130,17 +130,20 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if(parent.onSubscribeCall() != null) {
-				try {
-					parent.onSubscribeCall().accept(s);
+			if(Operators.validate(this.s, s)) {
+				if (parent.onSubscribeCall() != null) {
+					try {
+						parent.onSubscribeCall()
+						      .accept(s);
+					}
+					catch (Throwable e) {
+						Operators.error(actual, Operators.onOperatorError(s, e));
+						return;
+					}
 				}
-				catch (Throwable e) {
-					Operators.error(actual, Operators.onOperatorError(s, e));
-					return;
-				}
+				this.s = s;
+				actual.onSubscribe(this);
 			}
-			this.s = s;
-			actual.onSubscribe(this);
 		}
 
 		@Override
