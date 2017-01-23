@@ -18,14 +18,16 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.function.Predicate;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import reactor.core.publisher.FluxBufferPredicate.Mode;
 import reactor.test.StepVerifier;
+import reactor.test.StepVerifierOptions;
 import reactor.util.concurrent.QueueSupplier;
 
-import static org.junit.Assert.assertFalse;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxWindowPredicateTest {
 
@@ -106,7 +108,7 @@ public class FluxWindowPredicateTest {
 		            .expectNext(Signal.complete())
 				    .verifyComplete();
 
-		assertFalse(sp1.hasDownstreams());
+		assertThat(sp1.hasDownstreams()).isFalse();
 	}
 
 	@Test
@@ -158,11 +160,11 @@ public class FluxWindowPredicateTest {
 		            .expectNext(Signal.next(4))
 		            .then(() -> sp1.onError(new RuntimeException("forced failure")))
 		            //this is the error in the window:
-		            .expectNextMatches(s -> s.isOnError() && s.getThrowable().getMessage().equals("forced failure"))
+		            .expectNextMatches(signalErrorMessage("forced failure"))
 		            //this is the error in the main:
 		            .expectErrorMessage("forced failure")
 		            .verify();
-		assertFalse(sp1.hasDownstreams());
+		assertThat(sp1.hasDownstreams()).isFalse();
 	}
 
 	@Test
@@ -176,17 +178,22 @@ public class FluxWindowPredicateTest {
 					return i % 3 == 0;
 				}, QueueSupplier.small(), Mode.UNTIL);
 
-		StepVerifier.create(windowUntil.flatMap(Flux::collectList))
+		StepVerifier.create(windowUntil.flatMap(Flux::materialize))
 					.expectSubscription()
 					.then(() -> sp1.onNext(1))
+					.expectNext(Signal.next(1))
 					.then(() -> sp1.onNext(2))
+					.expectNext(Signal.next(2))
 					.then(() -> sp1.onNext(3))
-					.expectNext(Arrays.asList(1, 2, 3))
+					.expectNext(Signal.next(3), Signal.complete())
 					.then(() -> sp1.onNext(4))
+					.expectNext(Signal.next(4))
 					.then(() -> sp1.onNext(5))
+					//error in the window:
+					.expectNextMatches(signalErrorMessage("predicate failure"))
 					.expectErrorMessage("predicate failure")
 					.verify();
-		assertFalse(sp1.hasDownstreams());
+		assertThat(sp1.hasDownstreams()).isFalse();
 	}
 
 	@Test
@@ -217,7 +224,7 @@ public class FluxWindowPredicateTest {
 				    .then(sp1::onComplete)
 				    .expectNext(Signal.complete())
 				    .verifyComplete();
-		assertFalse(sp1.hasDownstreams());
+		assertThat(sp1.hasDownstreams()).isFalse();
 	}
 
 	@Test
@@ -241,11 +248,11 @@ public class FluxWindowPredicateTest {
 		            .expectNext(Signal.next(4))
 		            .then(() -> sp1.onError(new RuntimeException("forced failure")))
 		            //this is the error in the window:
-		            .expectNextMatches(signal -> signal.isOnError() && signal.getThrowable().getMessage().equals("forced failure"))
+		            .expectNextMatches(signalErrorMessage("forced failure"))
 		            //this is the error in the main:
 		            .expectErrorMessage("forced failure")
 		            .verify();
-		assertFalse(sp1.hasDownstreams());
+		assertThat(sp1.hasDownstreams()).isFalse();
 	}
 
 	@Test
@@ -259,17 +266,28 @@ public class FluxWindowPredicateTest {
 					return i % 3 == 0;
 				}, QueueSupplier.small(), Mode.UNTIL_CUT_BEFORE);
 
-		StepVerifier.create(windowUntilOther.flatMap(Flux::collectList))
+		StepVerifier.create(windowUntilOther.flatMap(Flux::materialize))
 					.expectSubscription()
 					.then(() -> sp1.onNext(1))
+					.expectNext(Signal.next(1))
 					.then(() -> sp1.onNext(2))
+					.expectNext(Signal.next(2))
 					.then(() -> sp1.onNext(3))
-					.expectNext(Arrays.asList(1, 2))
+					.expectNext(Signal.complete(), Signal.next(3))
 					.then(() -> sp1.onNext(4))
+					.expectNext(Signal.next(4))
 					.then(() -> sp1.onNext(5))
+					//error in the window:
+					.expectNextMatches(signalErrorMessage("predicate failure"))
 					.expectErrorMessage("predicate failure")
 					.verify();
-		assertFalse(sp1.hasDownstreams());
+		assertThat(sp1.hasDownstreams()).isFalse();
+	}
+
+	private <T> Predicate<? super Signal<T>> signalErrorMessage(String expectedMessage) {
+		return signal -> signal.isOnError()
+				&& signal.getThrowable().getMessage() != null
+				&& signal.getThrowable().getMessage().equals(expectedMessage);
 	}
 
 	@Test
@@ -301,7 +319,7 @@ public class FluxWindowPredicateTest {
 		            .then(sp1::onComplete)
 		            .expectNext(Signal.complete())
 		            .verifyComplete();
-		assertFalse(sp1.hasDownstreams());
+		assertThat(sp1.hasDownstreams()).isFalse();
 	}
 
 	@Test
@@ -311,28 +329,35 @@ public class FluxWindowPredicateTest {
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
 				sp1, i -> i % 3 == 0, QueueSupplier.small(), Mode.WHILE);
 
-		StepVerifier.create(windowWhile.flatMap(Flux::collectList))
-				.expectSubscription()
-				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.onNext(1))
-				.then(() -> sp1.onNext(2))
-				.then(() -> sp1.onNext(3))
-				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.onNext(4))
-				.expectNext(Arrays.asList(3)) //emission of 4 completes the list
-				.then(() -> sp1.onNext(5))
-				.then(() -> sp1.onNext(6))
-				.expectNoEvent(Duration.ofMillis(10))
-				.then(() -> sp1.onNext(7)) // emission of 7 completes the list
-				.expectNext(Arrays.asList(6))
-				.then(() -> sp1.onNext(8))
-				.then(() -> sp1.onNext(9))
-				.expectNoEvent(Duration.ofMillis(10))
-				.then(sp1::onComplete) // completion triggers completion of the window / list
-			    .expectNext(Collections.singletonList(9))
-				.expectComplete()
-				.verify(Duration.ofSeconds(1));
-		assertFalse(sp1.hasDownstreams());
+		StepVerifier.create(windowWhile.flatMap(Flux::materialize))
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMillis(10))
+		            .then(() -> sp1.onNext(1)) //closes initial, open 2nd
+		            .expectNext(Signal.complete())
+		            .then(() -> sp1.onNext(2)) //closes second, open 3rd
+		            .expectNext(Signal.complete())
+		            .then(() -> sp1.onNext(3)) //emits 3
+		            .expectNext(Signal.next(3))
+		            .expectNoEvent(Duration.ofMillis(10))
+		            .then(() -> sp1.onNext(4)) //closes 3rd, open 4th
+		            .expectNext(Signal.complete())
+		            .then(() -> sp1.onNext(5)) //closes 4th, open 5th
+		            .expectNext(Signal.complete())
+		            .then(() -> sp1.onNext(6)) //emits 6
+		            .expectNext(Signal.next(6))
+		            .expectNoEvent(Duration.ofMillis(10))
+		            .then(() -> sp1.onNext(7)) //closes 5th, open 6th
+		            .expectNext(Signal.complete())
+		            .then(() -> sp1.onNext(8)) //closes 6th, open 7th
+		            .expectNext(Signal.complete())
+		            .then(() -> sp1.onNext(9)) //emits 9
+		            .expectNext(Signal.next(9))
+		            .expectNoEvent(Duration.ofMillis(10))
+		            .then(sp1::onComplete) // completion triggers completion of the last window (7th)
+		            .expectNext(Signal.complete())
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(1));
+		assertThat(sp1.hasDownstreams()).isFalse();
 	}
 
 	@Test
@@ -342,62 +367,80 @@ public class FluxWindowPredicateTest {
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
 				sp1, i -> i > 4, QueueSupplier.small(), Mode.WHILE);
 
-		StepVerifier.create(windowWhile.flatMap(Flux::collectList).log())
+		StepVerifier.create(windowWhile.flatMap(Flux::materialize))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofMillis(10))
 		            .then(() -> sp1.onNext(1))
+		            .expectNext(Signal.complete())
 		            .then(() -> sp1.onNext(2))
+		            .expectNext(Signal.complete())
 		            .then(() -> sp1.onNext(3))
+		            .expectNext(Signal.complete())
 		            .then(() -> sp1.onNext(4))
+		            .expectNext(Signal.complete())
 		            .expectNoEvent(Duration.ofMillis(10))
 		            .then(() -> sp1.onNext(1))
+		            .expectNext(Signal.complete())
 		            .then(() -> sp1.onNext(2))
+		            .expectNext(Signal.complete())
 		            .then(() -> sp1.onNext(3))
+		            .expectNext(Signal.complete())
 		            .then(() -> sp1.onNext(4))
+		            .expectNext(Signal.complete()) //closing window opened by 3
 		            .expectNoEvent(Duration.ofMillis(10))
 		            .then(sp1::onComplete)
+		            .expectNext(Signal.complete()) //closing window opened by 4
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(1));
-		assertFalse(sp1.hasDownstreams());
+		assertThat(sp1.hasDownstreams()).isFalse();
 	}
 
 	@Test
 	@SuppressWarnings("unchecked")
-	public void mainErrorWhile() {
+	public void mainErrorWhileIsPropagatedToBothWindowAndMain() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
 				sp1, i -> i % 3 == 0, QueueSupplier.small(), Mode.WHILE);
 
-		StepVerifier.create(windowWhile.flatMap(Flux::collectList))
+		StepVerifier.create(windowWhile.flatMap(Flux::materialize))
 		            .expectSubscription()
 		            .then(() -> sp1.onNext(1))
+		            .expectNext(Signal.complete())
 		            .then(() -> sp1.onNext(2))
-		            .then(() -> sp1.onNext(3))
+		            .expectNext(Signal.complete())
+		            .then(() -> sp1.onNext(3)) //at this point, new window, need another data to close it
 		            .then(() -> sp1.onNext(4))
-		            .expectNext(Arrays.asList(3))
+		            .expectNext(Signal.next(3), Signal.complete())
 		            .then(() -> sp1.onError(new RuntimeException("forced failure")))
+		            //this is the error in the window:
+		            .expectNextMatches(signalErrorMessage("forced failure"))
+		            //this is the error in the main:
 		            .expectErrorMessage("forced failure")
 		            .verify(Duration.ofMillis(100));
-		assertFalse(sp1.hasDownstreams());
+		assertThat(sp1.hasDownstreams()).isFalse();
 	}
 
 	@Test
-	public void whileStartingSeveralSeparatorsDontCreateWindow() {
+	public void whileStartingSeveralSeparatorsEachCreateEmptyWindow() {
 		StepVerifier.create(Flux.just("#")
 		                        .repeat(10)
 		                        .concatWith(Flux.just("other", "value"))
 		                        .windowWhile(s -> !s.equals("#"))
 		                        .flatMap(Flux::count)
 		)
+		            .expectNext(0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L)
 		            .expectNext(2L)
 		            .verifyComplete();
 	}
 
 	@Test
-	public void whileOnlySeparatorsGivesEmptySequence() {
+	public void whileOnlySeparatorsGivesSequenceOfWindows() {
 		StepVerifier.create(Flux.just("#")
 		                        .repeat(10)
-		                        .windowWhile(s -> !s.equals("#")))
+		                        .windowWhile(s -> !s.equals("#"))
+		                        .flatMap(w -> w.count()))
+		            .expectNext(0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L)
+		            .expectNext(0L) //"remainder" window
 	                .verifyComplete();
 	}
 
@@ -413,21 +456,22 @@ public class FluxWindowPredicateTest {
 					return false;
 				}, QueueSupplier.small(), Mode.WHILE);
 
-		Flux<Signal<Integer>> flux = windowWhile.flatMap(Flux::materialize)
-		                                        .log();
-
-		StepVerifier.create(flux)
+		StepVerifier.create(windowWhile.flatMap(Flux::materialize))
 					.expectSubscription()
-					.then(() -> sp1.onNext(1)) //ignored, window not emitted
-					.then(() -> sp1.onNext(2)) //ignored, window not emitted
+					.then(() -> sp1.onNext(1)) //empty window
+					.expectNext(Signal.complete())
+					.then(() -> sp1.onNext(2)) //empty window
+					.expectNext(Signal.complete())
 					.then(() -> sp1.onNext(3)) //window opens
 					.expectNext(Signal.next(3))
-					.then(() -> sp1.onNext(4)) //ignored, window closes
+					.then(() -> sp1.onNext(4)) //previous window closes, new (empty) window
 					.expectNext(Signal.complete())
-					.then(() -> sp1.onNext(5)) //fails
+					.then(() -> sp1.onNext(5)) //fails, the empty window receives onError
+					//error in the window:
+					.expectNextMatches(signalErrorMessage("predicate failure"))
 					.expectErrorMessage("predicate failure")
 					.verify(Duration.ofMillis(100));
-		assertFalse(sp1.hasDownstreams());
+		assertThat(sp1.hasDownstreams()).isFalse();
 	}
 
 	@Test
@@ -439,7 +483,7 @@ public class FluxWindowPredicateTest {
 				() -> { throw new RuntimeException("supplier failure"); },
 				Mode.UNTIL);
 
-		assertFalse("sp1 has subscribers?", sp1.hasDownstreams());
+		assertThat(sp1.hasDownstreams()).isFalse();
 
 		StepVerifier.create(windowUntil)
 		            .then(() -> sp1.onNext(1))
@@ -462,15 +506,16 @@ public class FluxWindowPredicateTest {
 				},
 				Mode.UNTIL);
 
-		assertFalse("sp1 has subscribers?", sp1.hasDownstreams());
+		assertThat(sp1.hasDownstreams()).isFalse();
 
-		StepVerifier.create(windowUntil.flatMap(Flux::collectList))
+		StepVerifier.create(windowUntil.flatMap(Flux::materialize))
 		            .then(() -> sp1.onNext(1))
+		            .expectNext(Signal.next(1))
 		            .then(() -> sp1.onNext(2))
+		            .expectNext(Signal.next(2))
 		            .expectNoEvent(Duration.ofMillis(10))
 		            .then(() -> sp1.onNext(3))
-		            .expectNext(Arrays.asList(1, 2, 3))
-		            .then(() -> sp1.onNext(4))
+		            .expectNext(Signal.next(3), Signal.complete()) //1st window closed, no new window yet, fails
 		            .expectErrorMessage("supplier failure")
 		            .verify();
 	}
@@ -483,13 +528,36 @@ public class FluxWindowPredicateTest {
 				() -> null,
 				Mode.UNTIL);
 
-		assertFalse("sp1 has subscribers?", sp1.hasDownstreams());
+		assertThat(sp1.hasDownstreams()).isFalse();
 
 		StepVerifier.create(windowUntil)
 		            .then(() -> sp1.onNext(1))
 		            .expectErrorMatches(t -> t instanceof NullPointerException &&
 		                "The processorQueueSupplier returned a null queue".equals(t.getMessage()))
 		            .verify();
+	}
+
+	@Test(timeout = 2000L)
+	public void whileRequestOneByOne() {
+		StepVerifier.create(Flux.just("red", "green", "#", "orange", "blue", "#", "black", "white")
+		                        .hide().log("upstream")
+		                        .windowWhile(color -> !color.equals("#"))
+		                        .log("window")
+		                        .flatMap(w -> w.log("inner"), 1)
+		                                       .log("outer"),
+				new StepVerifierOptions()
+						.initialRequest(1)
+						.checkUnderRequesting(false))
+	                .expectNext("red")
+	                .expectNext("green")
+	                .thenRequest(1)
+	                .expectNext("orange")
+	                .expectNext("blue")
+	                .thenRequest(1)
+	                .expectNext("black")
+	                .expectNext("white")
+	                .thenRequest(1)
+	                .verifyComplete();
 	}
 
 }
