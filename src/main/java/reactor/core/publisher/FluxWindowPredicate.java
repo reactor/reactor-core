@@ -194,7 +194,7 @@ final class FluxWindowPredicate<T>
 			}
 
 			if (q == null) {
-				ERROR.compareAndSet(this, null, new NullPointerException("The groupQueueSupplier returned a null queue"));
+				ERROR.compareAndSet(this, null, new NullPointerException("The groupQueueSupplier returned a null queue for initial window"));
 				return;
 			}
 
@@ -216,7 +216,7 @@ final class FluxWindowPredicate<T>
 				}
 
 				if (q == null) {
-					onError(Operators.onOperatorError(s, new NullPointerException("The mainQueueSupplier returned a null queue"), key));
+					onError(Operators.onOperatorError(s, new NullPointerException("The groupQueueSupplier returned a null queue for window \'" + key + "\'"), key));
 					return false;
 				}
 
