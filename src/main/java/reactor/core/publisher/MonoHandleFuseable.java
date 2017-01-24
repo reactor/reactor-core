@@ -37,7 +37,7 @@ final class MonoHandleFuseable<T, R> extends MonoSource<T, R>
 
 	final BiConsumer<? super T, SynchronousSink<R>> handler;
 
-	public MonoHandleFuseable(Publisher<? extends T> source, BiConsumer<? super T, SynchronousSink<R>> handler) {
+	MonoHandleFuseable(Publisher<? extends T> source, BiConsumer<? super T, SynchronousSink<R>> handler) {
 		super(source);
 		this.handler = Objects.requireNonNull(handler, "handler");
 	}

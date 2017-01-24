@@ -43,13 +43,9 @@ final class MonoMapFuseable<T, R> extends MonoSource<T, R>
 	 * @param mapper the mapper function
 	 * @throws NullPointerException if either {@code source} or {@code mapper} is null.
 	 */
-	public MonoMapFuseable(Publisher<? extends T> source, Function<? super T, ? extends R> mapper) {
+	MonoMapFuseable(Publisher<? extends T> source, Function<? super T, ? extends R> mapper) {
 		super(source);
 		this.mapper = Objects.requireNonNull(mapper, "mapper");
-	}
-
-	public Function<? super T, ? extends R> mapper() {
-		return mapper;
 	}
 
 	@Override

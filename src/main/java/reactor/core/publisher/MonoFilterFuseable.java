@@ -33,13 +33,9 @@ final class MonoFilterFuseable<T> extends MonoSource<T, T>
 
 	final Predicate<? super T> predicate;
 
-	public MonoFilterFuseable(Publisher<? extends T> source, Predicate<? super T> predicate) {
+	MonoFilterFuseable(Publisher<? extends T> source, Predicate<? super T> predicate) {
 		super(source);
 		this.predicate = Objects.requireNonNull(predicate, "predicate");
-	}
-
-	public Predicate<? super T> predicate() {
-		return predicate;
 	}
 
 	@Override

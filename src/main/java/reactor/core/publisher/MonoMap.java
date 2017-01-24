@@ -41,22 +41,14 @@ final class MonoMap<T, R> extends MonoSource<T, R> {
 	 * @param mapper the mapper function
 	 * @throws NullPointerException if either {@code source} or {@code mapper} is null.
 	 */
-	public MonoMap(Publisher<? extends T> source, Function<? super T, ? extends R> mapper) {
+	MonoMap(Publisher<? extends T> source, Function<? super T, ? extends R> mapper) {
 		super(source);
 		this.mapper = Objects.requireNonNull(mapper, "mapper");
-	}
-
-	public Function<? super T, ? extends R> mapper() {
-		return mapper;
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super R> s) {
-		if (source instanceof Fuseable) {
-			source.subscribe(new MapFuseableSubscriber<>(s, mapper));
-			return;
-		}
 		if (s instanceof Fuseable.ConditionalSubscriber) {
 			Fuseable.ConditionalSubscriber<? super R> cs = (Fuseable.ConditionalSubscriber<? super R>) s;
 			source.subscribe(new FluxMap.MapConditionalSubscriber<>(cs, mapper));
