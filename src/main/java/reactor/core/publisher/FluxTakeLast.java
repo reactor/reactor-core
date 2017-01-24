@@ -36,7 +36,7 @@ final class FluxTakeLast<T> extends FluxSource<T, T> {
 
 	final int n;
 
-	public FluxTakeLast(Publisher<? extends T> source, int n) {
+	FluxTakeLast(Publisher<? extends T> source, int n) {
 		super(source);
 		if (n < 0) {
 			throw new IllegalArgumentException("n >= required but it was " + n);
@@ -66,7 +66,7 @@ final class FluxTakeLast<T> extends FluxSource<T, T> {
 		
 		Subscription s;
 
-		public TakeLastZeroSubscriber(Subscriber<? super T> actual) {
+		TakeLastZeroSubscriber(Subscriber<? super T> actual) {
 			this.actual = actual;
 		}
 
@@ -118,6 +118,7 @@ final class FluxTakeLast<T> extends FluxSource<T, T> {
 	}
 
 	static final class TakeLastManySubscriber<T>
+			extends ArrayDeque<T>
 			implements Subscriber<T>, BooleanSupplier, Producer,
 			           Trackable, Subscription, Receiver {
 
@@ -129,17 +130,14 @@ final class FluxTakeLast<T> extends FluxSource<T, T> {
 
 		Subscription s;
 
-		final ArrayDeque<T> buffer;
-
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<TakeLastManySubscriber> REQUESTED =
 		  AtomicLongFieldUpdater.newUpdater(TakeLastManySubscriber.class, "requested");
 
-		public TakeLastManySubscriber(Subscriber<? super T> actual, int n) {
+		TakeLastManySubscriber(Subscriber<? super T> actual, int n) {
 			this.actual = actual;
 			this.n = n;
-			this.buffer = new ArrayDeque<>();
 		}
 
 		@Override
@@ -150,7 +148,7 @@ final class FluxTakeLast<T> extends FluxSource<T, T> {
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				DrainUtils.postCompleteRequest(n, actual, buffer, REQUESTED, this, this);
+				DrainUtils.postCompleteRequest(n, actual, this, REQUESTED, this, this);
 			}
 		}
 
@@ -173,12 +171,10 @@ final class FluxTakeLast<T> extends FluxSource<T, T> {
 
 		@Override
 		public void onNext(T t) {
-			ArrayDeque<T> bs = buffer;
-
-			if (bs.size() == n) {
-				bs.poll();
+			if (size() == n) {
+				poll();
 			}
-			bs.offer(t);
+			offer(t);
 		}
 
 		@Override
@@ -189,7 +185,7 @@ final class FluxTakeLast<T> extends FluxSource<T, T> {
 		@Override
 		public void onComplete() {
 
-			DrainUtils.postComplete(actual, buffer, REQUESTED, this, this);
+			DrainUtils.postComplete(actual, this, REQUESTED, this, this);
 		}
 
 		@Override
@@ -204,7 +200,7 @@ final class FluxTakeLast<T> extends FluxSource<T, T> {
 
 		@Override
 		public long getPending() {
-			return buffer.size();
+			return size();
 		}
 
 		@Override

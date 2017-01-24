@@ -13,20 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
-import java.util.*;
+import java.util.AbstractQueue;
+import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BooleanSupplier;
 
-import org.reactivestreams.*;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 
 /**
  * @author Stephane Maldini
  */
 final class FluxDematerialize<T> extends FluxSource<Signal<T>, T> {
 
-	public FluxDematerialize(Publisher<Signal<T>> source) {
+	FluxDematerialize(Publisher<Signal<T>> source) {
 		super(source);
 	}
 
@@ -35,150 +39,156 @@ final class FluxDematerialize<T> extends FluxSource<Signal<T>, T> {
 		source.subscribe(new DematerializeSubscriber<>(subscriber));
 	}
 
-	static final class DematerializeSubscriber<T>
-	extends AbstractQueue<T>
-	implements Subscriber<Signal<T>>, Subscription, BooleanSupplier {
+	static final class DematerializeSubscriber<T> extends AbstractQueue<T>
+			implements Subscriber<Signal<T>>, Subscription, BooleanSupplier {
 
-	    final Subscriber<? super T> actual;
-	    
-	    Subscription s;
-	    
-	    T value;
-	    
-	    boolean done;
-	    
-	    long produced;
-	    
-	    volatile long requested;
-	    @SuppressWarnings("rawtypes")
-        static final AtomicLongFieldUpdater<DematerializeSubscriber> REQUESTED =
-	            AtomicLongFieldUpdater.newUpdater(DematerializeSubscriber.class, "requested");
-	    
-	    volatile boolean cancelled;
-	    
-	    Throwable error;
-	    
-		public DematerializeSubscriber(Subscriber<? super T> subscriber) {
+		final Subscriber<? super T> actual;
+
+		Subscription s;
+
+		T value;
+
+		boolean done;
+
+		long produced;
+
+		volatile long requested;
+		@SuppressWarnings("rawtypes")
+		static final AtomicLongFieldUpdater<DematerializeSubscriber> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(DematerializeSubscriber.class,
+						"requested");
+
+		volatile boolean cancelled;
+
+		Throwable error;
+
+		DematerializeSubscriber(Subscriber<? super T> subscriber) {
 			this.actual = subscriber;
 		}
 
 		@Override
 		public void onSubscribe(Subscription s) {
-		    if (Operators.validate(this.s, s)) {
-		        this.s = s;
-		        
-		        actual.onSubscribe(this);
-		        
-		        s.request(1);
-		    }
+			if (Operators.validate(this.s, s)) {
+				this.s = s;
+
+				actual.onSubscribe(this);
+
+				s.request(1);
+			}
 		}
-		
+
 		@Override
 		public void onNext(Signal<T> t) {
-		    if (done) {
-		        Operators.onNextDropped(t);
-		        return;
-		    }
-		    if (t.isOnComplete()) {
-		        s.cancel();
-		        onComplete();
-		    } else
-		    if (t.isOnError()) {
-                s.cancel();
-		        onError(t.getThrowable());
-		    } else
-		    if (t.isOnNext()) {
-		        T v = value;
-		        value = t.get();
-		        
-		        if (v != null) {
-		            produced++;
-		            actual.onNext(v);
-		        }
-		    }
+			if (done) {
+				Operators.onNextDropped(t);
+				return;
+			}
+			if (t.isOnComplete()) {
+				s.cancel();
+				onComplete();
+			}
+			else if (t.isOnError()) {
+				s.cancel();
+				onError(t.getThrowable());
+			}
+			else if (t.isOnNext()) {
+				T v = value;
+				value = t.get();
+
+				if (v != null) {
+					produced++;
+					actual.onNext(v);
+				}
+			}
 		}
-		
+
 		@Override
 		public void onError(Throwable t) {
-		    if (done) {
-		        Operators.onErrorDropped(t);
-		        return;
-		    }
-		    done = true;
-		    error = t;
-            long p = produced;
-            if (p != 0L) {
-                REQUESTED.addAndGet(this, -p);
-            }
-            DrainUtils.postCompleteDelayError(actual, this, REQUESTED, this, this, error);
+			if (done) {
+				Operators.onErrorDropped(t);
+				return;
+			}
+			done = true;
+			error = t;
+			long p = produced;
+			if (p != 0L) {
+				REQUESTED.addAndGet(this, -p);
+			}
+			DrainUtils.postCompleteDelayError(actual, this, REQUESTED, this, this, error);
 		}
-		
+
 		@Override
 		public void onComplete() {
-		    if (done) {
-		        return;
-		    }
-		    done = true;
-		    long p = produced;
-		    if (p != 0L) {
-		        REQUESTED.addAndGet(this, -p);
-		    }
-		    DrainUtils.postCompleteDelayError(actual, this, REQUESTED, this, this, error);
+			if (done) {
+				return;
+			}
+			done = true;
+			long p = produced;
+			if (p != 0L) {
+				REQUESTED.addAndGet(this, -p);
+			}
+			DrainUtils.postCompleteDelayError(actual, this, REQUESTED, this, this, error);
 		}
-		
+
 		@Override
 		public void request(long n) {
-		    if (Operators.validate(n)) {
-    		    if (!DrainUtils.postCompleteRequestDelayError(n, actual, this, REQUESTED, this, this, error)) {
-    		        s.request(n);
-    		    }
-		    }
+			if (Operators.validate(n)) {
+				if (!DrainUtils.postCompleteRequestDelayError(n,
+						actual,
+						this,
+						REQUESTED,
+						this,
+						this,
+						error)) {
+					s.request(n);
+				}
+			}
 		}
-		
+
 		@Override
 		public void cancel() {
-		    cancelled = true;
-		    s.cancel();
+			cancelled = true;
+			s.cancel();
 		}
-		
+
 		@Override
 		public boolean getAsBoolean() {
-		    return cancelled;
+			return cancelled;
 		}
-		
+
 		@Override
 		public int size() {
-		    return value == null ? 0 : 1;
+			return value == null ? 0 : 1;
 		}
-		
+
 		@Override
 		public boolean isEmpty() {
-		    return value == null;
+			return value == null;
 		}
-		
+
 		@Override
 		public boolean offer(T e) {
-            throw new UnsupportedOperationException();
+			throw new UnsupportedOperationException();
 		}
-		
+
 		@Override
 		public T peek() {
-		    return value;
+			return value;
 		}
-		
+
 		@Override
 		public T poll() {
-		    T v = value;
-		    if (v != null) {
-		        value = null;
-		        return v;
-		    }
-		    return null;
+			T v = value;
+			if (v != null) {
+				value = null;
+				return v;
+			}
+			return null;
 		}
-		
+
 		@Override
 		public Iterator<T> iterator() {
-		    throw new UnsupportedOperationException();
+			throw new UnsupportedOperationException();
 		}
 	}
 }

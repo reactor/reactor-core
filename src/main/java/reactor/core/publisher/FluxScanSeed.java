@@ -28,6 +28,9 @@ import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
 
+import static reactor.core.publisher.DrainUtils.COMPLETED_MASK;
+import static reactor.core.publisher.DrainUtils.REQUESTED_MASK;
+
 /**
  * Aggregates the source values with the help of an accumulator function
  * and emits the intermediate results.
@@ -89,16 +92,6 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 		R value;
 
 		boolean done;
-
-		/**
-		 * Indicates the source completed and the value field is ready to be emitted.
-		 * <p>
-		 * The AtomicLong (this) holds the requested amount in bits 0..62 so there is room
-		 * for one signal bit. This also means the standard request accounting helper method doesn't work.
-		 */
-		static final long COMPLETED_MASK = 0x8000_0000_0000_0000L;
-
-		static final long REQUESTED_MASK = Long.MAX_VALUE;
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")

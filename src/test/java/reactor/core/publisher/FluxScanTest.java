@@ -23,7 +23,6 @@ import java.util.function.Consumer;
 import org.junit.Test;
 import reactor.core.Fuseable;
 import reactor.test.StepVerifier;
-import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxScanTest extends AbstractFluxOperatorTest<String, String> {
@@ -37,19 +36,19 @@ public class FluxScanTest extends AbstractFluxOperatorTest<String, String> {
 	@Override
 	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
 		return Arrays.asList(
-				Scenario.from(f -> f.scan((a, b) -> a))
+				scenario(f -> f.scan((a, b) -> a))
 		);
 	}
 
 	@Override
 	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
 		return Arrays.asList(
-				Scenario.from(f -> f.scan((a, b) -> {
+				scenario(f -> f.scan((a, b) -> {
 					throw exception();
-				}), Fuseable.NONE, step -> step.expectNext(item(0))
+				})).verifier(step -> step.expectNext(item(0))
 				                              .verifyErrorMessage("test")),
 
-				Scenario.from(f -> f.scan((a, b) -> null), Fuseable.NONE, step -> step
+				scenario(f -> f.scan((a, b) -> null)).verifier(step -> step
 						.expectNext(item(0))
 				                                                                     .verifyError(NullPointerException.class))
 		);

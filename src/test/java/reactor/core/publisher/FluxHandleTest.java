@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Fuseable;
-import reactor.core.Receiver;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
@@ -38,73 +37,77 @@ import static reactor.core.Fuseable.SYNC;
 public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 
 	@Override
+	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
+		return defaultOptions.fusionMode(Fuseable.ASYNC);
+	}
+
+	@Override
 	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
 		return Arrays.asList(
-				Scenario.from(f -> f.handle((s, d) -> {
+				scenario(f -> f.handle((s, d) -> {
 					if (item(2).equals(s)) {
 						d.complete();
 					}
 					else {
 						d.next(s);
 					}
-				}), Fuseable.ANY, step -> step.expectNext(item(0), item(1))
+				})).verifier(step -> step.expectNext(item(0), item(1))
 				                              .verifyComplete()),
 
-				Scenario.from(f -> f.handle((s, d) -> {
+				scenario(f -> f.handle((s, d) -> {
 					if (item(1).equals(s)) {
 						d.complete();
 					}
 					else {
 						d.next(s);
 					}
-				}), Fuseable.ANY, step -> step.expectNext(item(0))
+				})).verifier(step -> step.expectNext(item(0))
 				                              .verifyComplete()),
 
-				Scenario.from(f -> f.handle((s, d) -> {
+				scenario(f -> f.handle((s, d) -> {
 					if (!item(2).equals(s)) {
 						d.next(s);
 					}
-				}), Fuseable.ANY, step -> step.expectNext(item(0), item(1))
+				})).verifier(step -> step.expectNext(item(0), item(1))
 				                              .verifyComplete()),
 
-				Scenario.from(f -> f.handle((s, d) -> {
+				scenario(f -> f.handle((s, d) -> {
 					if (item(2).equals(s)) {
 						d.complete();
 					}
 					else if (item(1).equals(s)) {
 						d.next(s);
 					}
-				}), Fuseable.ANY, step -> step.expectNext(item(1)).verifyComplete())
+				})).verifier(step -> step.expectNext(item(1)).verifyComplete())
 		);
 	}
 
 	@Override
 	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
 		return Arrays.asList(
-				Scenario.from(f -> f.handle((s, d) -> {
+				scenario(f -> f.handle((s, d) -> {
 					throw exception();
-				}), Fuseable.ANY),
+				})),
 
-				Scenario.from(f -> f.handle((s, d) -> d.error(exception())),
-						Fuseable.ANY),
+				scenario(f -> f.handle((s, d) -> d.error(exception()))),
 
-				Scenario.from(f -> f.handle((s, d) -> {
+				scenario(f -> f.handle((s, d) -> {
 					d.next(item(0));
 					d.next(item(1));
-				}), Fuseable.ANY, step -> step.verifyError(IllegalStateException.class)),
+				})).verifier(step -> step.verifyError(IllegalStateException.class)),
 
-				Scenario.from(f -> f.handle((s, d) -> {
+				scenario(f -> f.handle((s, d) -> {
 					d.next(null);
-				}), Fuseable.ANY, step -> step.verifyError(NullPointerException.class))
+				})).verifier(step -> step.verifyError(NullPointerException.class))
 		);
 	}
 
 	@Override
 	protected List<Scenario<String, String>> scenarios_errorFromUpstreamFailure() {
 		return Arrays.asList(
-				Scenario.from(f -> f.handle((data, s) -> {})),
+				scenario(f -> f.handle((data, s) -> {})),
 
-				Scenario.from(f -> f.handle((data, s) -> {
+				scenario(f -> f.handle((data, s) -> {
 					if (item(2).equals(data)) {
 						s.complete();
 					}
@@ -113,7 +116,7 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 					}
 				})),
 
-				Scenario.from(f -> f.handle((data, s) -> {
+				scenario(f -> f.handle((data, s) -> {
 					if (!item(2).equals(data)) {
 						s.next(data);
 					}

@@ -38,17 +38,9 @@ final class FluxSkipWhile<T> extends FluxSource<T, T> {
 
 	final Predicate<? super T> predicate;
 
-	public FluxSkipWhile(Publisher<? extends T> source, Predicate<? super T> predicate) {
+	FluxSkipWhile(Publisher<? extends T> source, Predicate<? super T> predicate) {
 		super(source);
 		this.predicate = Objects.requireNonNull(predicate, "predicate");
-	}
-
-	public Publisher<? extends T> source() {
-		return source;
-	}
-
-	public Predicate<? super T> predicate() {
-		return predicate;
 	}
 
 	@Override
@@ -69,7 +61,7 @@ final class FluxSkipWhile<T> extends FluxSource<T, T> {
 
 		boolean skipped;
 
-		public SkipWhileSubscriber(Subscriber<? super T> actual, Predicate<? super T> predicate) {
+		SkipWhileSubscriber(Subscriber<? super T> actual, Predicate<? super T> predicate) {
 			this.actual = actual;
 			this.predicate = predicate;
 		}
@@ -97,15 +89,14 @@ final class FluxSkipWhile<T> extends FluxSource<T, T> {
 
 			try {
 				b = predicate.test(t);
-			} catch (Throwable e) {
+			}
+			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t));
-
 				return;
 			}
 
 			if (b) {
 				s.request(1);
-
 				return;
 			}
 

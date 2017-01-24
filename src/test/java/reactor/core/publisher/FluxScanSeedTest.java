@@ -37,23 +37,23 @@ public class FluxScanSeedTest  extends AbstractFluxOperatorTest<String, String> 
 
 	@Override
 	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
-		return Arrays.asList(Scenario.from(f -> f.scan(item(0), (a, b) -> {
+		return Arrays.asList(scenario(f -> f.scan(item(0), (a, b) -> {
 					throw exception();
-				}), Fuseable.NONE, step -> step.expectNext(item(0))
+				})).verifier(step -> step.expectNext(item(0))
 		                                       .verifyErrorMessage("test")),
 
-				Scenario.from(f -> f.scan(item(0), (a, b) -> null),
-						Fuseable.NONE,
-						step -> step.expectNext(item(0))
+				scenario(f -> f.scan(item(0), (a, b) -> null))
+					.verifier(step -> step.expectNext
+						(item(0))
 						.verifyError(NullPointerException.class)),
 
-				Scenario.from(f -> f.scanWith(() -> null, (a, b) -> b), Fuseable.NONE, step -> step
+				scenario(f -> f.scanWith(() -> null, (a, b) -> b)).verifier(step -> step
 						.verifyError(NullPointerException.class)),
 
-				Scenario.from(f -> f.scanWith(() -> {
+				scenario(f -> f.scanWith(() -> {
 							throw exception();
 						},
-						(a, b) -> b), Fuseable.NONE, step -> step
+						(a, b) -> b)).verifier(step -> step
 								.verifyErrorMessage("test"))
 
 		);
@@ -61,7 +61,7 @@ public class FluxScanSeedTest  extends AbstractFluxOperatorTest<String, String> 
 
 	@Override
 	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
-		return Arrays.asList(Scenario.from(f -> f.scan(item(0), (a, b) -> a))
+		return Arrays.asList(scenario(f -> f.scan(item(0), (a, b) -> a))
 		);
 	}
 

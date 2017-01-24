@@ -15,32 +15,26 @@
  */
 package reactor.core.publisher;
 
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
+import java.util.function.*;
+
+import org.reactivestreams.*;
 
 /**
- * Wraps multiple Publishers into a ParallelFlux which runs them
- * in parallel.
- * 
- * @param <T> the value type
+ * Filters each 'rail' of the source ParallelFlux with a predicate function.
+ *
+ * @param <T> the input value type
  */
-final class ParallelUnorderedFrom<T> extends ParallelFlux<T> {
-	final Publisher<T>[] sources;
+final class ParallelFilter<T> extends ParallelFlux<T> {
+
+	final ParallelFlux<T> source;
 	
-	public ParallelUnorderedFrom(Publisher<T>[] sources) {
-		this.sources = sources;
+	final Predicate<? super T> predicate;
+	
+	public ParallelFilter(ParallelFlux<T> source, Predicate<? super T> predicate) {
+		this.source = source;
+		this.predicate = predicate;
 	}
-	
-	@Override
-	public boolean isOrdered() {
-		return false;
-	}
-	
-	@Override
-	public int parallelism() {
-		return sources.length;
-	}
-	
+
 	@Override
 	public void subscribe(Subscriber<? super T>[] subscribers) {
 		if (!validate(subscribers)) {
@@ -48,9 +42,23 @@ final class ParallelUnorderedFrom<T> extends ParallelFlux<T> {
 		}
 		
 		int n = subscribers.length;
+		@SuppressWarnings("unchecked")
+		Subscriber<? super T>[] parents = new Subscriber[n];
 		
 		for (int i = 0; i < n; i++) {
-			sources[i].subscribe(subscribers[i]);
+			parents[i] = new FluxFilter.FilterSubscriber<>(subscribers[i], predicate);
 		}
+		
+		source.subscribe(parents);
+	}
+
+	@Override
+	public int parallelism() {
+		return source.parallelism();
+	}
+
+	@Override
+	public boolean isOrdered() {
+		return false;
 	}
 }

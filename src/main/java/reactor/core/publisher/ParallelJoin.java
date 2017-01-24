@@ -29,12 +29,12 @@ import reactor.core.Exceptions;
  *
  * @param <T> the value type
  */
-final class ParallelUnorderedJoin<T> extends Flux<T> {
+final class ParallelJoin<T> extends Flux<T> {
 	final ParallelFlux<? extends T> source;
 	final int prefetch;
 	final Supplier<Queue<T>> queueSupplier;
 	
-	public ParallelUnorderedJoin(ParallelFlux<? extends T> source, int prefetch, Supplier<Queue<T>> queueSupplier) {
+	public ParallelJoin(ParallelFlux<? extends T> source, int prefetch, Supplier<Queue<T>> queueSupplier) {
 		this.source = source;
 		this.prefetch = prefetch;
 		this.queueSupplier = queueSupplier;

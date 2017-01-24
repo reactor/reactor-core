@@ -27,35 +27,35 @@ import org.reactivestreams.*;
  */
 final class FluxMaterialize<T> extends FluxSource<T, Signal<T>> {
 
-	public FluxMaterialize(Publisher<T> source) {
+	FluxMaterialize(Publisher<T> source) {
 		super(source);
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super Signal<T>> subscriber) {
-		source.subscribe(new MaterializeAction<T>(subscriber));
+		source.subscribe(new MaterializeSubscriber<T>(subscriber));
 	}
 
-	final static class MaterializeAction<T>
+	final static class MaterializeSubscriber<T>
 	extends AbstractQueue<Signal<T>>
 	implements Subscriber<T>, Subscription, BooleanSupplier {
 	    
 	    final Subscriber<? super Signal<T>> actual;
 
-	    Signal<T> value;
+	    Signal<T> terminalSignal;
 	    
 	    volatile boolean cancelled;
 	    
 	    volatile long requested;
 	    @SuppressWarnings("rawtypes")
-        static final AtomicLongFieldUpdater<MaterializeAction> REQUESTED =
-	            AtomicLongFieldUpdater.newUpdater(MaterializeAction.class, "requested");
+        static final AtomicLongFieldUpdater<MaterializeSubscriber> REQUESTED =
+	            AtomicLongFieldUpdater.newUpdater(MaterializeSubscriber.class, "requested");
 	    
 	    long produced;
 	    
 	    Subscription s;
 	    
-		public MaterializeAction(Subscriber<? super Signal<T>> subscriber) {
+		MaterializeSubscriber(Subscriber<? super Signal<T>> subscriber) {
 		    this.actual = subscriber;
 		}
 
@@ -70,13 +70,21 @@ final class FluxMaterialize<T> extends FluxSource<T, Signal<T>> {
 		
 		@Override
 		public void onNext(T ev) {
+			if(terminalSignal != null){
+				Operators.onNextDropped(ev);
+				return;
+			}
 		    produced++;
 			actual.onNext(Signal.next(ev));
 		}
 
 		@Override
 		public void onError(Throwable ev) {
-			value = Signal.error(ev);
+			if(terminalSignal != null){
+				Operators.onErrorDropped(ev);
+				return;
+			}
+			terminalSignal = Signal.error(ev);
             long p = produced;
             if (p != 0L) {
                 REQUESTED.addAndGet(this, -p);
@@ -86,7 +94,10 @@ final class FluxMaterialize<T> extends FluxSource<T, Signal<T>> {
 
 		@Override
 		public void onComplete() {
-			value = Signal.complete();
+			if(terminalSignal != null){
+				return;
+			}
+			terminalSignal = Signal.complete();
             long p = produced;
             if (p != 0L) {
                 REQUESTED.addAndGet(this, -p);
@@ -105,6 +116,9 @@ final class FluxMaterialize<T> extends FluxSource<T, Signal<T>> {
 		
 		@Override
 		public void cancel() {
+			if(cancelled){
+				return;
+			}
 		    cancelled = true;
 		    s.cancel();
 		}
@@ -120,10 +134,11 @@ final class FluxMaterialize<T> extends FluxSource<T, Signal<T>> {
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public Signal<T> poll() {
-            Signal<T> v = value;
-            if (v != null) {
-                value = null;
+            Signal<T> v = terminalSignal;
+            if (v != null && v != empty) {
+	            terminalSignal = (Signal<T>)empty;
                 return v;
             }
             return null;
@@ -131,7 +146,7 @@ final class FluxMaterialize<T> extends FluxSource<T, Signal<T>> {
 
         @Override
         public Signal<T> peek() {
-            return value;
+            return empty == terminalSignal ? null : terminalSignal;
         }
 
         @Override
@@ -141,7 +156,9 @@ final class FluxMaterialize<T> extends FluxSource<T, Signal<T>> {
 
         @Override
         public int size() {
-            return value == null ? 0 : 1;
+            return terminalSignal == null || terminalSignal == empty ? 0 : 1;
         }
+
+		static final Signal empty = Signal.next(null);
 	}
 }

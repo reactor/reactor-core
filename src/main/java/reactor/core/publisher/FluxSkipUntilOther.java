@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Objects;
@@ -28,20 +29,16 @@ import org.reactivestreams.Subscription;
  *
  * @param <T> the value type of the main Publisher
  * @param <U> the value type of the other Publisher
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
 final class FluxSkipUntilOther<T, U> extends FluxSource<T, T> {
 
 	final Publisher<U> other;
 
-	public FluxSkipUntilOther(Publisher<? extends T> source, Publisher<U> other) {
+	FluxSkipUntilOther(Publisher<? extends T> source, Publisher<U> other) {
 		super(source);
 		this.other = Objects.requireNonNull(other, "other");
-	}
-
-	@Override
-	public long getPrefetch() {
-		return Long.MAX_VALUE;
 	}
 
 	@Override
@@ -56,9 +53,10 @@ final class FluxSkipUntilOther<T, U> extends FluxSource<T, T> {
 	}
 
 	static final class SkipUntilOtherSubscriber<U> implements Subscriber<U> {
+
 		final SkipUntilMainSubscriber<?> main;
 
-		public SkipUntilOtherSubscriber(SkipUntilMainSubscriber<?> main) {
+		SkipUntilOtherSubscriber(SkipUntilMainSubscriber<?> main) {
 			this.main = main;
 		}
 
@@ -84,6 +82,7 @@ final class FluxSkipUntilOther<T, U> extends FluxSource<T, T> {
 		public void onError(Throwable t) {
 			SkipUntilMainSubscriber<?> m = main;
 			if (m.gate) {
+				Operators.onErrorDropped(t);
 				return;
 			}
 			m.onError(t);
@@ -102,24 +101,29 @@ final class FluxSkipUntilOther<T, U> extends FluxSource<T, T> {
 
 	}
 
-	static final class SkipUntilMainSubscriber<T>
-	  implements Subscriber<T>, Subscription {
+	static final class SkipUntilMainSubscriber<T> implements Subscriber<T>, Subscription {
 
 		final Subscriber<T> actual;
 
 		volatile Subscription main;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<SkipUntilMainSubscriber, Subscription> MAIN =
-		  AtomicReferenceFieldUpdater.newUpdater(SkipUntilMainSubscriber.class, Subscription.class, "main");
+		static final AtomicReferenceFieldUpdater<SkipUntilMainSubscriber, Subscription>
+				MAIN =
+				AtomicReferenceFieldUpdater.newUpdater(SkipUntilMainSubscriber.class,
+						Subscription.class,
+						"main");
 
 		volatile Subscription other;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<SkipUntilMainSubscriber, Subscription> OTHER =
-		  AtomicReferenceFieldUpdater.newUpdater(SkipUntilMainSubscriber.class, Subscription.class, "other");
+		static final AtomicReferenceFieldUpdater<SkipUntilMainSubscriber, Subscription>
+				OTHER =
+				AtomicReferenceFieldUpdater.newUpdater(SkipUntilMainSubscriber.class,
+						Subscription.class,
+						"other");
 
 		volatile boolean gate;
 
-		public SkipUntilMainSubscriber(Subscriber<? super T> actual) {
+		SkipUntilMainSubscriber(Subscriber<? super T> actual) {
 			this.actual = Operators.serialize(actual);
 		}
 
@@ -137,30 +141,10 @@ final class FluxSkipUntilOther<T, U> extends FluxSource<T, T> {
 			main.request(n);
 		}
 
-		void cancelMain() {
-			Subscription s = main;
-			if (s != Operators.cancelledSubscription()) {
-				s = MAIN.getAndSet(this, Operators.cancelledSubscription());
-				if (s != null && s != Operators.cancelledSubscription()) {
-					s.cancel();
-				}
-			}
-		}
-
-		void cancelOther() {
-			Subscription s = other;
-			if (s != Operators.cancelledSubscription()) {
-				s = OTHER.getAndSet(this, Operators.cancelledSubscription());
-				if (s != null && s != Operators.cancelledSubscription()) {
-					s.cancel();
-				}
-			}
-		}
-
 		@Override
 		public void cancel() {
-			cancelMain();
-			cancelOther();
+			Operators.terminate(MAIN, this);
+			Operators.terminate(OTHER, this);
 		}
 
 		@Override
@@ -170,7 +154,8 @@ final class FluxSkipUntilOther<T, U> extends FluxSource<T, T> {
 				if (main != Operators.cancelledSubscription()) {
 					Operators.reportSubscriptionSet();
 				}
-			} else {
+			}
+			else {
 				actual.onSubscribe(this);
 			}
 		}
@@ -179,18 +164,21 @@ final class FluxSkipUntilOther<T, U> extends FluxSource<T, T> {
 		public void onNext(T t) {
 			if (gate) {
 				actual.onNext(t);
-			} else {
+			}
+			else {
 				main.request(1);
 			}
 		}
 
 		@Override
 		public void onError(Throwable t) {
-			if (main == null) {
-				if (MAIN.compareAndSet(this, null, Operators.cancelledSubscription())) {
+			if (MAIN.compareAndSet(this, null, Operators.cancelledSubscription())) {
 					Operators.error(actual, t);
 					return;
-				}
+			}
+			else if (main == Operators.cancelledSubscription()){
+				Operators.onErrorDropped(t);
+				return;
 			}
 			cancel();
 
@@ -199,7 +187,7 @@ final class FluxSkipUntilOther<T, U> extends FluxSource<T, T> {
 
 		@Override
 		public void onComplete() {
-			cancelOther();
+			Operators.terminate(OTHER, this);
 
 			actual.onComplete();
 		}

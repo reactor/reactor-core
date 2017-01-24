@@ -20,6 +20,7 @@ import java.util.Objects;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Fuseable;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
@@ -36,7 +37,7 @@ final class FluxSkip<T> extends FluxSource<T, T> {
 
 	final long n;
 
-	public FluxSkip(Publisher<? extends T> source, long n) {
+	FluxSkip(Publisher<? extends T> source, long n) {
 		super(source);
 		if (n < 0) {
 			throw new IllegalArgumentException("n >= 0 required but it was " + n);
@@ -45,33 +46,26 @@ final class FluxSkip<T> extends FluxSource<T, T> {
 		this.n = n;
 	}
 
-	public long n() {
-		return n;
-	}
-
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		if (n == 0) {
-			source.subscribe(s);
-		} else {
-			source.subscribe(new SkipSubscriber<>(s, n));
-		}
+		source.subscribe(new SkipSubscriber<>(s, n));
 	}
 
+	//Fixme Does not implement ConditionalSubscriber until the full chain of operators
+	// supports fully conditional, requesting N onSubscribe cost is offset
+
 	static final class SkipSubscriber<T>
-			implements Subscriber<T>, Receiver, Producer, Subscription, Trackable {
+			implements Subscriber<T>, Receiver,
+			           Producer, Subscription, Trackable {
 
 		final Subscriber<? super T> actual;
 
-		final long n;
-
 		long remaining;
-		
+
 		Subscription s;
 
-		public SkipSubscriber(Subscriber<? super T> actual, long n) {
+		SkipSubscriber(Subscriber<? super T> actual, long n) {
 			this.actual = actual;
-			this.n = n;
 			this.remaining = n;
 		}
 
@@ -79,9 +73,8 @@ final class FluxSkip<T> extends FluxSource<T, T> {
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
-				
+				long n = remaining;
 				actual.onSubscribe(this);
-	
 				s.request(n);
 			}
 		}
@@ -91,7 +84,8 @@ final class FluxSkip<T> extends FluxSource<T, T> {
 			long r = remaining;
 			if (r == 0L) {
 				actual.onNext(t);
-			} else {
+			}
+			else {
 				remaining = r - 1;
 			}
 		}
@@ -108,17 +102,7 @@ final class FluxSkip<T> extends FluxSource<T, T> {
 
 		@Override
 		public boolean isStarted() {
-			return remaining != n;
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return remaining == 0;
-		}
-
-		@Override
-		public long getCapacity() {
-			return n;
+			return s != null;
 		}
 
 		@Override
@@ -127,18 +111,8 @@ final class FluxSkip<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public long expectedFromUpstream() {
-			return remaining;
-		}
-
-		@Override
 		public Object upstream() {
 			return s;
-		}
-
-		@Override
-		public long limit() {
-			return 0;
 		}
 		
 		@Override

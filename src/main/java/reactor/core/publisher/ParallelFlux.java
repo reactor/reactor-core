@@ -118,7 +118,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 		Objects.requireNonNull(queueSupplier, "queueSupplier");
 		Objects.requireNonNull(source, "source");
 
-		return onAssembly(new ParallelUnorderedSource<>(source,
+		return onAssembly(new ParallelSource<>(source,
 				parallelism,
 				prefetch, queueSupplier));
 	}
@@ -137,7 +137,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 		if (publishers == null || publishers.length == 0) {
 			throw new IllegalArgumentException("Zero publishers not supported");
 		}
-		return onAssembly(new ParallelUnorderedFrom<>(publishers));
+		return onAssembly(new ParallelArraySource<>(publishers));
 	}
 
 	/**
@@ -449,7 +449,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 */
 	public final ParallelFlux<T> filter(Predicate<? super T> predicate) {
 		Objects.requireNonNull(predicate, "predicate");
-		return onAssembly(new ParallelUnorderedFilter<>(this, predicate));
+		return onAssembly(new ParallelFilter<>(this, predicate));
 	}
 
 	/**
@@ -691,7 +691,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 */
 	public final <U> ParallelFlux<U> map(Function<? super T, ? extends U> mapper) {
 		Objects.requireNonNull(mapper, "mapper");
-		return onAssembly(new ParallelUnorderedMap<>(this, mapper));
+		return onAssembly(new ParallelMap<>(this, mapper));
 	}
 
 	/**
@@ -792,7 +792,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
 		}
 		Objects.requireNonNull(scheduler, "scheduler");
-		return onAssembly(new ParallelUnorderedRunOn<>(this,
+		return onAssembly(new ParallelRunOn<>(this,
 				scheduler,
 				prefetch,
 				QueueSupplier.get(prefetch)));
@@ -828,7 +828,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
 		}
 
-		return Flux.onAssembly(new ParallelUnorderedJoin<>(this,
+		return Flux.onAssembly(new ParallelJoin<>(this,
 				prefetch,
 				QueueSupplier.get(prefetch)));
 	}
@@ -1006,7 +1006,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	final <R> ParallelFlux<R> concatMap(Function<? super T, ? extends Publisher<? extends R>> mapper,
 			int prefetch,
 			ErrorMode errorMode) {
-		return onAssembly(new ParallelUnorderedConcatMap<>(this,
+		return onAssembly(new ParallelConcatMap<>(this,
 				mapper,
 				QueueSupplier.get(prefetch),
 				prefetch,
@@ -1096,7 +1096,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 			Consumer<? super Subscription> onSubscribe,
 			LongConsumer onRequest,
 			Runnable onCancel) {
-		return onAssembly(new ParallelUnorderedPeek<>(source,
+		return onAssembly(new ParallelPeek<>(source,
 				onNext,
 				onAfterNext,
 				onError,

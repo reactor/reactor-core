@@ -228,7 +228,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 
 		@Override
 		public void onNext(T t) {
-			if (sourceMode == Fuseable.ASYNC) {
+			if (t == null) {//async fusion
 				if (trySchedule() == Scheduler.REJECTED) {
 					throw Operators.onRejectedExecution(this, null, t);
 				}
@@ -754,7 +754,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 
 		@Override
 		public void onNext(T t) {
-			if (sourceMode == Fuseable.ASYNC) {
+			if (t == null) {//async fusion
 				if (trySchedule() == Scheduler.REJECTED) {
 					throw Operators.onRejectedExecution(this, null, t);
 				}
@@ -790,6 +790,9 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 
 		@Override
 		public void onComplete() {
+			if(done){
+				return;
+			}
 			done = true;
 			if (trySchedule() == Scheduler.REJECTED && !worker.isDisposed()) {
 				throw Operators.onRejectedExecution();

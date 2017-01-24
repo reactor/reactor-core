@@ -212,7 +212,7 @@ public abstract class Hooks {
 				}
 			}
 			else if (publisher instanceof ParallelFlux){
-				Publisher<T> _p = new ParallelUnorderedPeek<>((ParallelFlux<T>) publisher,
+				Publisher<T> _p = new ParallelPeek<>((ParallelFlux<T>) publisher,
 						onNextCall, null, onErrorCall, onCompleteCall,
 						onAfterTerminateCall, onSubscribeCall, onRequestCall,
 						onCancelCall);

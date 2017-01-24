@@ -18,12 +18,18 @@ package reactor.core.publisher;
 import org.junit.Test;
 import reactor.test.StepVerifier;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class FluxTakeLastOneTest {
 
 	@Test
 	public void empty() {
-		StepVerifier.create(Flux.empty()
-		                        .takeLast(1))
+		Flux<?> f = Flux.empty()
+		                .takeLast(1);
+
+		assertThat(f.getPrefetch()).isEqualTo(Long.MAX_VALUE);
+
+		StepVerifier.create(f)
 	                .verifyComplete();
 	}
 

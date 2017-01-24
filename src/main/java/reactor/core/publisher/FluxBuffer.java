@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.ArrayDeque;
@@ -36,6 +37,7 @@ import reactor.core.Trackable;
  *
  * @param <T> the source value type
  * @param <C> the buffer collection type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T, C> {
@@ -46,11 +48,14 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 
 	final Supplier<C> bufferSupplier;
 
-	public FluxBuffer(Publisher<? extends T> source, int size, Supplier<C> bufferSupplier) {
+	FluxBuffer(Publisher<? extends T> source, int size, Supplier<C> bufferSupplier) {
 		this(source, size, size, bufferSupplier);
 	}
 
-	public FluxBuffer(Publisher<? extends T> source, int size, int skip, Supplier<C> bufferSupplier) {
+	FluxBuffer(Publisher<? extends T> source,
+			int size,
+			int skip,
+			Supplier<C> bufferSupplier) {
 		super(source);
 		if (size <= 0) {
 			throw new IllegalArgumentException("size > 0 required but it was " + size);
@@ -69,10 +74,15 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 	public void subscribe(Subscriber<? super C> s) {
 		if (size == skip) {
 			source.subscribe(new BufferExactSubscriber<>(s, size, bufferSupplier));
-		} else if (skip > size) {
+		}
+		else if (skip > size) {
 			source.subscribe(new BufferSkipSubscriber<>(s, size, skip, bufferSupplier));
-		} else {
-			source.subscribe(new BufferOverlappingSubscriber<>(s, size, skip, bufferSupplier));
+		}
+		else {
+			source.subscribe(new BufferOverlappingSubscriber<>(s,
+					size,
+					skip,
+					bufferSupplier));
 		}
 	}
 
@@ -92,7 +102,9 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 
 		boolean done;
 
-		public BufferExactSubscriber(Subscriber<? super C> actual, int size, Supplier<C> bufferSupplier) {
+		BufferExactSubscriber(Subscriber<? super C> actual,
+				int size,
+				Supplier<C> bufferSupplier) {
 			this.actual = actual;
 			this.size = size;
 			this.bufferSupplier = bufferSupplier;
@@ -131,7 +143,8 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 
 				try {
 					b = bufferSupplier.get();
-				} catch (Throwable e) {
+				}
+				catch (Throwable e) {
 					onError(Operators.onOperatorError(s, e, t));
 					return;
 				}
@@ -139,7 +152,8 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 				if (b == null) {
 					cancel();
 
-					onError(new NullPointerException("The bufferSupplier returned a null buffer"));
+					onError(Operators.onOperatorError(new NullPointerException(
+							"The bufferSupplier returned a null buffer")));
 					return;
 				}
 				buffer = b;
@@ -243,10 +257,12 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<BufferSkipSubscriber> WIP =
-		  AtomicIntegerFieldUpdater.newUpdater(BufferSkipSubscriber.class, "wip");
+				AtomicIntegerFieldUpdater.newUpdater(BufferSkipSubscriber.class, "wip");
 
-		public BufferSkipSubscriber(Subscriber<? super C> actual, int size, int skip,
-											 Supplier<C> bufferSupplier) {
+		public BufferSkipSubscriber(Subscriber<? super C> actual,
+				int size,
+				int skip,
+				Supplier<C> bufferSupplier) {
 			this.actual = actual;
 			this.size = size;
 			this.skip = skip;
@@ -262,7 +278,8 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 				long v = Operators.multiplyCap(skip - size, n - 1);
 
 				s.request(Operators.addCap(u, v));
-			} else {
+			}
+			else {
 				// n full buffer + gap
 				s.request(Operators.multiplyCap(skip, n));
 			}
@@ -305,7 +322,8 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 				if (b == null) {
 					cancel();
 
-					onError(new NullPointerException("The bufferSupplier returned a null buffer"));
+					onError(Operators.onOperatorError(new NullPointerException(
+							"The bufferSupplier returned a null buffer")));
 					return;
 				}
 
@@ -395,10 +413,11 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 		}
 	}
 
-
 	static final class BufferOverlappingSubscriber<T, C extends Collection<? super T>>
+			extends ArrayDeque<C>
 			implements Subscriber<T>, Subscription, Receiver, BooleanSupplier, Producer,
 			           Trackable, Loopback {
+
 		final Subscriber<? super C> actual;
 
 		final Supplier<C> bufferSupplier;
@@ -406,8 +425,6 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 		final int size;
 
 		final int skip;
-
-		final ArrayDeque<C> buffers;
 
 		Subscription s;
 
@@ -420,20 +437,23 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 		volatile int once;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<BufferOverlappingSubscriber> ONCE =
-		  AtomicIntegerFieldUpdater.newUpdater(BufferOverlappingSubscriber.class, "once");
+				AtomicIntegerFieldUpdater.newUpdater(BufferOverlappingSubscriber.class,
+						"once");
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<BufferOverlappingSubscriber> REQUESTED =
-		  AtomicLongFieldUpdater.newUpdater(BufferOverlappingSubscriber.class, "requested");
+				AtomicLongFieldUpdater.newUpdater(BufferOverlappingSubscriber.class,
+						"requested");
 
-		public BufferOverlappingSubscriber(Subscriber<? super C> actual, int size, int skip,
-													Supplier<C> bufferSupplier) {
+		BufferOverlappingSubscriber(Subscriber<? super C> actual,
+				int size,
+				int skip,
+				Supplier<C> bufferSupplier) {
 			this.actual = actual;
 			this.size = size;
 			this.skip = skip;
 			this.bufferSupplier = bufferSupplier;
-			this.buffers = new ArrayDeque<>();
 		}
 
 		@Override
@@ -448,7 +468,12 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 				return;
 			}
 
-			if (DrainUtils.postCompleteRequest(n, actual, buffers, REQUESTED, this, this)) {
+			if (DrainUtils.postCompleteRequest(n,
+					actual,
+					this,
+					REQUESTED,
+					this,
+					this)) {
 				return;
 			}
 
@@ -459,7 +484,8 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 				// + 1 full buffer
 				long r = Operators.addCap(size, u);
 				s.request(r);
-			} else {
+			}
+			else {
 				// n skips
 				long r = Operators.multiplyCap(skip, n);
 				s.request(r);
@@ -488,8 +514,6 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 				return;
 			}
 
-			ArrayDeque<C> bs = buffers;
-
 			long i = index;
 
 			if (i % skip == 0L) {
@@ -497,7 +521,8 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 
 				try {
 					b = bufferSupplier.get();
-				} catch (Throwable e) {
+				}
+				catch (Throwable e) {
 					onError(Operators.onOperatorError(s, e, t));
 					return;
 				}
@@ -505,17 +530,18 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 				if (b == null) {
 					cancel();
 
-					onError(new NullPointerException("The bufferSupplier returned a null buffer"));
+					onError(Operators.onOperatorError(new NullPointerException(
+							"The bufferSupplier returned a null buffer")));
 					return;
 				}
 
-				bs.offer(b);
+				offer(b);
 			}
 
-			C b = bs.peek();
+			C b = peek();
 
 			if (b != null && b.size() + 1 == size) {
-				bs.poll();
+				poll();
 
 				b.add(t);
 
@@ -526,7 +552,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 				}
 			}
 
-			for (C b0 : bs) {
+			for (C b0 : this) {
 				b0.add(t);
 			}
 
@@ -541,7 +567,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 			}
 
 			done = true;
-			buffers.clear();
+			clear();
 
 			actual.onError(t);
 		}
@@ -554,7 +580,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 
 			done = true;
 
-			DrainUtils.postComplete(actual, buffers, REQUESTED, this, this);
+			DrainUtils.postComplete(actual, this, REQUESTED, this, this);
 		}
 
 		@Override
@@ -574,7 +600,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 
 		@Override
 		public long getPending() {
-			return buffers.size()*size; //rounded max
+			return size() * size; //rounded max
 		}
 
 		@Override
@@ -595,11 +621,6 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 		@Override
 		public Object connectedInput() {
 			return bufferSupplier;
-		}
-
-		@Override
-		public Object connectedOutput() {
-			return buffers;
 		}
 
 		@Override

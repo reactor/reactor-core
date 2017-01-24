@@ -29,7 +29,7 @@ import reactor.core.scheduler.Scheduler.Worker;
  *
  * @param <T> the value type
  */
-final class ParallelUnorderedRunOn<T> extends ParallelFlux<T> implements Fuseable {
+final class ParallelRunOn<T> extends ParallelFlux<T> implements Fuseable {
 	final ParallelFlux<? extends T> source;
 	
 	final Scheduler scheduler;
@@ -38,7 +38,7 @@ final class ParallelUnorderedRunOn<T> extends ParallelFlux<T> implements Fuseabl
 
 	final Supplier<Queue<T>> queueSupplier;
 	
-	public ParallelUnorderedRunOn(ParallelFlux<? extends T> parent,
+	public ParallelRunOn(ParallelFlux<? extends T> parent,
 			Scheduler scheduler, int prefetch, Supplier<Queue<T>> queueSupplier) {
 		this.source = parent;
 		this.scheduler = scheduler;

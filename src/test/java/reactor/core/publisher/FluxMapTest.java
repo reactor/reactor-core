@@ -27,20 +27,26 @@ import reactor.test.subscriber.AssertSubscriber;
 public class FluxMapTest extends AbstractFluxOperatorTest<String, String>{
 
 	@Override
+	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
+		return defaultOptions.fusionMode(Fuseable.ANY);
+	}
+
+	@Override
 	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
 		return Arrays.asList(
-				Scenario.from(f -> f.map(d -> {
+				scenario(f -> f.map(d -> {
 					throw exception();
-				}), Fuseable.ANY),
+				})),
 
-				Scenario.from(f -> f.map(d -> null), Fuseable.ANY, step -> step.verifyError(NullPointerException.class))
+				scenario(f -> f.map(d -> null))
+						.verifier(step -> step.verifyError(NullPointerException.class))
 		);
 	}
 
 	@Override
 	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
 		return Arrays.asList(
-				Scenario.from(f -> f.map(d -> d), Fuseable.ANY)
+				scenario(f -> f.map(d -> d))
 		);
 	}
 

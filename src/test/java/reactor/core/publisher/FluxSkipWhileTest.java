@@ -16,11 +16,37 @@
 
 package reactor.core.publisher;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.junit.Test;
+import reactor.core.Fuseable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
-public class FluxSkipWhileTest {
+public class FluxSkipWhileTest extends AbstractFluxOperatorTest<String, String> {
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
+		return Arrays.asList(scenario(f -> f.skipWhile(d -> {
+				throw exception();
+			})
+		)
+		);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+		return Arrays.asList(scenario(f -> f.skipWhile(item(0)::equals))
+				.verifier(step -> step.expectNext(item(1), item(2))
+				            .verifyComplete()));
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_errorFromUpstreamFailure() {
+		return Arrays.asList(scenario(f -> f.skipWhile(item(0)::equals)));
+	}
+
 
 	@Test(expected = NullPointerException.class)
 	public void sourceNull() {

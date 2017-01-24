@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import org.junit.Test;
@@ -25,7 +26,69 @@ import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FluxBufferTest {
+public class FluxBufferTest extends AbstractFluxOperatorTest<String, List<String>> {
+
+	@Override
+	protected Scenario<String, List<String>> defaultScenarioOptions(Scenario<String, List<String>> defaultOptions) {
+		return defaultOptions.shouldAssertPostTerminateState(false);
+	}
+
+	@Override
+	protected List<Scenario<String, List<String>>> scenarios_errorInOperatorCallback() {
+		return Arrays.asList(
+				scenario(f -> f.buffer(Integer.MAX_VALUE, () -> null))
+						.verifier(step -> step.verifyError(NullPointerException.class)),
+
+				scenario(f -> f.buffer(Integer.MAX_VALUE, () -> {
+					throw exception();
+				})),
+
+				scenario(f -> f.buffer(2, 1, () -> null))
+						.verifier(step -> step.verifyError(NullPointerException.class)),
+
+				scenario(f -> f.buffer(2, 1, () -> {
+					throw exception();
+				})),
+
+				scenario(f -> f.buffer(1, 2, () -> null))
+						.verifier(step -> step.verifyError(NullPointerException.class)),
+
+				scenario(f -> f.buffer(1, 2, () -> {
+					throw exception();
+				}))
+		);
+	}
+
+	@Override
+	protected List<Scenario<String, List<String>>> scenarios_threeNextAndComplete() {
+		return Arrays.asList(
+				scenario(Flux::buffer)
+						.verifier(step -> step.assertNext(s -> assertThat(s).containsExactly(item(0), item(1), item(2)))
+						                      .verifyComplete()),
+
+				scenario(f -> f.buffer(1, 2))
+						.verifier(step -> step.assertNext(s -> assertThat(s).containsExactly(item(0)))
+						                      .assertNext(s -> assertThat(s).containsExactly(item(2)))
+						                      .verifyComplete()),
+
+				scenario(f -> f.buffer(2, 1))
+						.verifier(step -> step.assertNext(s -> assertThat(s).containsExactly(item(0), item(1)))
+						                      .assertNext(s -> assertThat(s).containsExactly(item(1), item(2)))
+						                      .assertNext(s -> assertThat(s).containsExactly(item(2)))
+						                      .verifyComplete())
+		);
+	}
+
+	@Override
+	protected List<Scenario<String, List<String>>> scenarios_errorFromUpstreamFailure() {
+		return Arrays.asList(
+				scenario(Flux::buffer),
+
+				scenario(f -> f.buffer(1, 2)),
+
+				scenario(f -> f.buffer(2, 1))
+		);
+	}
 
 	@Test(expected = NullPointerException.class)
 	public void sourceNull() {

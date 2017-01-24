@@ -23,6 +23,12 @@ import org.reactivestreams.Subscriber;
 
 abstract class DrainUtils {
 
+	/**
+	 * Indicates the source completed and the value field is ready to be emitted.
+	 * <p>
+	 * The AtomicLong (this) holds the requested amount in bits 0..62 so there is room
+	 * for one signal bit. This also means the standard request accounting helper method doesn't work.
+	 */
 	static final long COMPLETED_MASK = 0x8000_0000_0000_0000L;
 	static final long REQUESTED_MASK = 0x7FFF_FFFF_FFFF_FFFFL;
 

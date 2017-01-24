@@ -23,8 +23,9 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Disposable;
 import reactor.core.Fuseable;
-import reactor.test.publisher.TestPublisher;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.function.Tuple2;
@@ -42,61 +43,79 @@ public class FluxPublishMulticastTest extends AbstractFluxOperatorTest<String, S
 	}
 
 	@Override
-	protected boolean shouldDropNextAfterTerminate() {
-		return false;
+	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
+		return defaultOptions.prefetch(QueueSupplier.SMALL_BUFFER_SIZE);
 	}
 
 	@Override
 	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
-		return Arrays.asList(Scenario.from(f -> f.publish(p -> {
+		return Arrays.asList(
+				scenario(f -> f.publish(p -> {
 					throw exception();
 				})),
 
-				Scenario.from(f -> f.publish(p -> null),
-						Fuseable.NONE,
-						step -> step.verifyError(NullPointerException.class)),
+				scenario(f -> f.publish(p -> null))
+					.verifier(step -> step.verifyError(NullPointerException.class)),
 
-				Scenario.from(f -> f.publish(p -> Flux.<String>error(exception()))),
+				scenario(f -> f.publish(p -> Flux.error(exception()))),
 
-				Scenario.from(f -> f.publish(p -> Flux.just(item(0), null)),
-						Fuseable.SYNC,
-						step -> step.expectNext(item(0))
+				scenario(f -> f.publish(p -> Flux.just(item(0), null)))
+						.fusionMode(Fuseable.SYNC)
+						.verifier(step -> step.expectNext(item(0))
 						            .verifyError(NullPointerException.class)));
 	}
 
 	@Override
 	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
-		return Arrays.asList(Scenario.from(f -> f.publish(p -> p)),
+		return Arrays.asList(
+				scenario(f -> f.publish(p -> p)),
 
-				Scenario.from(f -> f.publish(p -> finiteSourceOrDefault(null)),
-						Fuseable.SYNC),
+				scenario(f -> f.publish(p -> finiteSourceOrDefault(null)))
+						.fusionMode(Fuseable.SYNC),
 
-				Scenario.withPrefetch(f -> f.publish(p ->
-						p.subscribeWith(UnicastProcessor.create()), 256), Fuseable.ASYNC, 256),
+				scenario(f -> f.publish(p -> p.subscribeWith(UnicastProcessor.create()), 256))
+						.fusionMode(Fuseable.ASYNC),
 
-				Scenario.from(f -> f.publish(p -> Flux.<String>empty()), Fuseable.NONE,
-						step -> step.verifyComplete()),
+				scenario(f -> f.publish(p -> Flux.empty()))
+						.verifier(step -> step.verifyComplete()),
 
-				Scenario.withPrefetch(f -> f.publish(p -> p, 1), Fuseable.NONE, 1),
+				scenario(f -> f.publish(p -> p, 1))
+						.prefetch(1),
 
-				Scenario.withPrefetch(f -> f.publish(p -> p, Integer.MAX_VALUE),
-						Fuseable.NONE,
-						Integer.MAX_VALUE)
+				scenario(f -> f.publish(p -> p, Integer.MAX_VALUE))
+						.prefetch(Integer.MAX_VALUE)
 
 		);
 	}
 
 	@Override
 	protected List<Scenario<String, String>> scenarios_errorFromUpstreamFailure() {
-		return Arrays.asList(Scenario.from(f -> f.publish(p -> p)),
+		return Arrays.asList(scenario(f -> f.publish(p -> p)),
 
-				Scenario.from(f -> f.publish(p ->
-						p.subscribeWith(UnicastProcessor.create())), Fuseable.ASYNC),
+				scenario(f -> f.publish(p ->
+						p.subscribeWith(UnicastProcessor.create())))
+						.fusionMode(Fuseable.ASYNC),
 
-				Scenario.from(f -> f.publish(p -> Flux.<String>empty()), Fuseable.NONE,
-						step -> step.verifyComplete())
+				scenario(f -> f.publish(p -> Flux.empty()))
+						.verifier(StepVerifier.LastStep::verifyComplete)
+						.shouldHitDropNextHookAfterTerminate(false),
+
+				scenario(f -> Flux.never().publish(p -> {
+					Disposable d = p.subscribe();
+					Disposable d2 = p.subscribe();
+					d.dispose();
+					d2.dispose();
+
+					return f;
+				})).shouldHitDropNextHookAfterTerminate(false)
 
 		);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void failPrefetch(){
+		Flux.never()
+	        .publish(f -> f, -1);
 	}
 
 	@Test

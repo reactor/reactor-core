@@ -15,10 +15,35 @@
  */
 package reactor.core.publisher;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.junit.Test;
 import reactor.test.StepVerifier;
 
-public class FluxSkipUntilTest {
+public class FluxSkipUntilTest extends AbstractFluxOperatorTest<String, String> {
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
+		return Arrays.asList(scenario(f -> f.skipUntil(d -> {
+					throw exception();
+				})
+				)
+		);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+		return Arrays.asList(scenario(f -> f.skipUntil(item(1)::equals)).verifier(step -> step.expectNext(
+				item(1),
+				item(2))
+				            .verifyComplete()));
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_errorFromUpstreamFailure() {
+		return Arrays.asList(scenario(f -> f.skipUntil(item(1)::equals)));
+	}
 
 	@Test
 	public void normalHidden() {

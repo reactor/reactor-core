@@ -26,7 +26,7 @@ import org.reactivestreams.Subscription;
  *
  * @param <T> the value type
  */
-final class ParallelUnorderedPeek<T> extends ParallelFlux<T> implements SignalPeek<T>{
+final class ParallelPeek<T> extends ParallelFlux<T> implements SignalPeek<T>{
 
 	final ParallelFlux<T> source;
 	
@@ -39,7 +39,7 @@ final class ParallelUnorderedPeek<T> extends ParallelFlux<T> implements SignalPe
 	final LongConsumer onRequest;
 	final Runnable onCancel;
 
-	public ParallelUnorderedPeek(ParallelFlux<T> source,
+	public ParallelPeek(ParallelFlux<T> source,
 			Consumer<? super T> onNext,
 			Consumer<? super T> onAfterNext,
 			Consumer<? super Throwable> onError,
