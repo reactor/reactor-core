@@ -6717,8 +6717,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * predicate. A new window is opened each time the predicate returns true.
 	 * <p>
 	 * If {@code cutBefore} is true, the old window will onComplete and the triggering
-	 * element will be emitted in the new window. Otherwise, the triggering element will
-	 * be emitted in the old window before it does onComplete.
+	 * element will be emitted in the new window. Note it can mean that an empty window is
+	 * sometimes emitted, eg. if the first element in the sequence immediately matches the
+	 * predicate.
+	 * <p>
+	 * Otherwise, the triggering element will be emitted in the old window before it does
+	 * onComplete, similar to {@link #windowUntil(Predicate)}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowsize.png" alt="">
@@ -6740,7 +6744,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Split this {@link Flux} sequence into multiple {@link Flux} windows that stay open
 	 * while a given predicate matches the source elements. Once the predicate returns
-	 * false, the window closes with an onComplete, the triggering element is discarded
+	 * false, the window closes with an onComplete and the triggering element is discarded.
+	 * <p>
+	 * Note that for a sequence starting with a separator, or having several subsequent
+	 * separators anywhere in the sequence, each occurrence will lead to an empty window.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowsize.png" alt="">

@@ -659,4 +659,37 @@ public class FluxWindowPredicateTest {
 
 		assertThat(keys).containsExactly(null, "#1", "#2");
 	}
+
+	@Test
+	public void mismatchAtBeginningUntil() {
+		StepVerifier.create(Flux.just("#", "red", "green")
+		                        .windowUntil(s -> s.equals("#"))
+		                        .flatMap(Flux::materialize)
+		                        .map(sig -> sig.isOnComplete() ? "END" : sig.get()))
+	                .expectNext("#", "END")
+	                .expectNext("red", "green", "END")
+	                .verifyComplete();
+	}
+
+	@Test
+	public void mismatchAtBeginningUntilCutBefore() {
+		StepVerifier.create(Flux.just("#", "red", "green")
+		                        .windowUntil(s -> s.equals("#"), true)
+		                        .flatMap(Flux::materialize)
+		                        .map(sig -> sig.isOnComplete() ? "END" : sig.get()))
+	                .expectNext("END")
+	                .expectNext("#", "red", "green", "END")
+	                .verifyComplete();
+	}
+
+	@Test
+	public void mismatchAtBeginningWhile() {
+		StepVerifier.create(Flux.just("#", "red", "green")
+		                        .windowWhile(s -> !s.equals("#"))
+		                        .flatMap(Flux::materialize)
+		                        .map(sig -> sig.isOnComplete() ? "END" : sig.get()))
+	                .expectNext("END")
+	                .expectNext("red", "green", "END")
+	                .verifyComplete();
+	}
 }
