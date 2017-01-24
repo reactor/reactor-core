@@ -18,6 +18,7 @@ import reactor.core.publisher.Operators;
  * A default implementation of a {@link TestPublisher}.
  *
  * @author Simon Baslé
+ * @author Stephane Maldini
  */
 class DefaultTestPublisher<T> extends TestPublisher<T> {
 
@@ -101,6 +102,11 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 	@SuppressWarnings("unchecked")
 	void remove(TestPublisherSubscription<T> s) {
 		TestPublisherSubscription<T>[] a = subscribers;
+
+		if (violations.contains(Violation.CLEANUP_ON_TERMINATE)) {
+			return;
+		}
+
 		if (a == TERMINATED || a == EMPTY) {
 			return;
 		}
@@ -174,8 +180,11 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 		@Override
 		public void cancel() {
 			if (!cancelled) {
-				cancelled = true;
 				DefaultTestPublisher.CANCEL_COUNT.incrementAndGet(parent);
+				if (parent.violations.contains(Violation.CLEANUP_ON_TERMINATE)) {
+					return;
+				}
+				cancelled = true;
 				parent.remove(this);
 			}
 		}
