@@ -25,7 +25,9 @@ import java.util.function.Function;
 
 import org.junit.After;
 import org.junit.Test;
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Loopback;
@@ -550,7 +552,7 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 	}
 
 	protected Flux<I> finiteSourceOrDefault(Scenario<I, O> scenario) {
-		Flux<I> source = scenario.finiteSource();
+		Flux<I> source = scenario != null ? scenario.finiteSource() : null;
 		if (source == null) {
 			return Flux.just(item(0), item(1), item(2));
 		}
@@ -560,7 +562,8 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 	final StepVerifier.Step<O> operatorNextVerifierBackpressured(Scenario<I, O> scenario) {
 		return StepVerifier.create(finiteSourceOrDefault(scenario).hide()
 		                                                          .as(scenario.body()),
-				3);
+				3)
+				.consumeSubscriptionWith(s -> s.request(0)); //request validation path
 	}
 
 	final StepVerifier.Step<O> operatorNextVerifierTryNext(Scenario<I, O> scenario) {
@@ -633,7 +636,7 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 	@SuppressWarnings("unchecked")
 	final StepVerifier.Step<O> operatorNextVerifierFusedSync(Scenario<I, O> scenario) {
 		if ((scenario.fusionMode() & Fuseable.SYNC) != 0) {
-			StepVerifier.create(finiteSourceOrDefault(scenario).as(scenario.body()))
+			StepVerifier.create(finiteSourceOrDefault(scenario).as(scenario.body()), 0)
 			            .consumeSubscriptionWith(s -> {
 				            if (s instanceof Fuseable.QueueSubscription) {
 					            Fuseable.QueueSubscription<O> qs =
@@ -654,7 +657,7 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 	final StepVerifier.Step<O> operatorNextVerifierFusedConditionalSync(Scenario<I, O> scenario) {
 		if ((scenario.fusionMode() & Fuseable.SYNC) != 0) {
 			StepVerifier.create(finiteSourceOrDefault(scenario).as(scenario.body())
-			                                                   .filter(d -> true))
+			                                                   .filter(d -> true), 0)
 			            .consumeSubscriptionWith(s -> {
 				            if (s instanceof Fuseable.QueueSubscription) {
 					            Fuseable.QueueSubscription<O> qs =
@@ -690,13 +693,13 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 	final void operatorNextVerifierFusedAsyncState(Scenario<I, O> scenario) {
 		UnicastProcessor<I> up = UnicastProcessor.create();
 		testUnicastSource(scenario, up);
-		StepVerifier.create(up.as(scenario.body()))
+		StepVerifier.create(up.as(scenario.body()), 0)
 		            .consumeSubscriptionWith(s -> {
 			            if (s instanceof Fuseable.QueueSubscription) {
 				            Fuseable.QueueSubscription<O> qs =
 						            ((Fuseable.QueueSubscription<O>) s);
 				            qs.requestFusion(ASYNC);
-				            assertThat(qs.size()).isEqualTo(3);
+				            assertThat(qs.size()).isEqualTo(up.size());
 				            try {
 				            	qs.poll();
 				            	qs.poll();
@@ -707,7 +710,7 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 				            if (qs instanceof Trackable && ((Trackable) qs).getError() != null) {
 					            assertThat(((Trackable) qs).getError()).hasMessage(
 							            exception().getMessage());
-					            assertThat(qs.size()).isEqualTo(2);
+					            assertThat(qs.size()).isEqualTo(up.size());
 				            }
 				            qs.clear();
 				            assertThat(qs.size()).isEqualTo(0);
@@ -716,8 +719,8 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 		            .thenCancel()
 		            .verify();
 
-		up = UnicastProcessor.create();
-		StepVerifier.create(up.as(scenario.body()))
+		UnicastProcessor<I> up2 = UnicastProcessor.create();
+		StepVerifier.create(up2.as(scenario.body()), 0)
 		            .consumeSubscriptionWith(s -> {
 			            if (s instanceof Fuseable.QueueSubscription) {
 				            Fuseable.QueueSubscription<O> qs =
@@ -735,13 +738,13 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 		UnicastProcessor<I> up = UnicastProcessor.create();
 		testUnicastSource(scenario, up);
 		StepVerifier.create(up.as(scenario.body())
-		                      .filter(d -> true))
+		                      .filter(d -> true), 0)
 		            .consumeSubscriptionWith(s -> {
 			            if (s instanceof Fuseable.QueueSubscription) {
 				            Fuseable.QueueSubscription<O> qs =
 						            ((Fuseable.QueueSubscription<O>) ((Receiver) s).upstream());
 				            qs.requestFusion(ASYNC);
-				            assertThat(qs.size()).isEqualTo(3);
+				            assertThat(qs.size()).isEqualTo(up.size());
 				            try {
 					            qs.poll();
 					            qs.poll();
@@ -752,7 +755,7 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 				            if (qs instanceof Trackable && ((Trackable) qs).getError() != null) {
 					            assertThat(((Trackable) qs).getError()).hasMessage(
 							            exception().getMessage());
-					            assertThat(qs.size()).isEqualTo(2);
+					            assertThat(qs.size()).isEqualTo(up.size());
 				            }
 				            qs.clear();
 				            assertThat(qs.size()).isEqualTo(0);
@@ -761,9 +764,9 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 		            .thenCancel()
 		            .verify();
 
-		up = UnicastProcessor.create();
-		StepVerifier.create(up.as(scenario.body())
-		                      .filter(d -> true))
+		UnicastProcessor<I> up2 = UnicastProcessor.create();
+		StepVerifier.create(up2.as(scenario.body())
+		                      .filter(d -> true), 0)
 		            .consumeSubscriptionWith(s -> {
 			            if (s instanceof Fuseable.QueueSubscription) {
 				            Fuseable.QueueSubscription<O> qs =
@@ -817,7 +820,7 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 		return StepVerifier.create(finiteSourceOrDefault(scenario).hide()
 		                                                          .as(scenario.body())
 		                                                          .filter(filter -> true),
-				3);
+				3).consumeSubscriptionWith(s -> s.request(0));
 	}
 
 	final StepVerifier.Step<O> operatorNextVerifierBothConditional(Scenario<I, O> scenario) {
@@ -905,14 +908,12 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 	final StepVerifier.Step<O> operatorNextVerifierFusedBothConditionalTryNext(Scenario<I, O> scenario) {
 		return StepVerifier.create(finiteSourceOrDefault(scenario).as(scenario.body())
 		                                                          .filter(filter -> true),
-				3);
+				3).consumeSubscriptionWith(s -> s.request(0));
 	}
 
 	final StepVerifier.Step<O> operatorErrorSourceVerifierFusedSync(Scenario<I, O> scenario) {
-		return StepVerifier.create(Flux.just(item(0))
-		                               .doOnNext(t -> {
-			                               throw exception();
-		                               })
+		return StepVerifier.create(Flux.just(item(0), item(1))
+		                               .as(f -> new FluxFuseableExceptionOnPoll<>(f, exception()))
 		                               .as(scenario.body()))
 		                   .expectFusion(Fuseable.SYNC);
 	}
@@ -920,9 +921,7 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 	final StepVerifier.Step<O> operatorErrorSourceVerifierFusedAsync(Scenario<I, O> scenario) {
 		UnicastProcessor<I> up = UnicastProcessor.create();
 		up.onNext(item(0));
-		return StepVerifier.create(up.doOnNext(t -> {
-			throw exception();
-		})
+		return StepVerifier.create(up.as(f -> new FluxFuseableExceptionOnPoll<>(f, exception()))
 		                             .as(scenario.body()))
 		                   .expectFusion(Fuseable.ASYNC);
 	}
@@ -972,7 +971,7 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 
 	final StepVerifier.Step<O> operatorNextVerifierFusedTryNext(Scenario<I, O> scenario) {
 		return StepVerifier.create(finiteSourceOrDefault(scenario).as(scenario.body()),
-				3);
+				3).consumeSubscriptionWith(s -> s.request(0));
 	}
 
 
@@ -982,5 +981,107 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 		Hooks.resetOnNextDropped();
 		Hooks.resetOnOperator();
 		Hooks.resetOnOperatorError();
+	}
+
+	static final class FluxFuseableExceptionOnPoll<T> extends FluxSource<T, T> implements Fuseable{
+
+		final RuntimeException exception;
+
+		FluxFuseableExceptionOnPoll(Publisher<? extends T> source, RuntimeException exception) {
+			super(source);
+			this.exception = exception;
+		}
+
+		@Override
+		public void subscribe(Subscriber<? super T> s) {
+			source.subscribe(new FuseableExceptionOnPollSubscriber<>(s, exception));
+		}
+
+		static class FuseableExceptionOnPollSubscriber<T> implements
+		                                                        QueueSubscription<T>,
+		                                                        ConditionalSubscriber<T>{
+
+			final Subscriber<? super T> actual;
+			final ConditionalSubscriber<? super T> actualConditional;
+			final RuntimeException exception;
+			QueueSubscription<T> qs;
+
+			FuseableExceptionOnPollSubscriber(Subscriber<? super T> actual,
+					RuntimeException exception) {
+				this.actual = actual;
+				this.exception = exception;
+				if(actual instanceof ConditionalSubscriber){
+					actualConditional = (ConditionalSubscriber<? super T>)actual;
+				}
+				else{
+					actualConditional = null;
+				}
+			}
+
+			@Override
+			public boolean tryOnNext(T t) {
+				if(actualConditional != null){
+					return actualConditional.tryOnNext(t);
+				}
+				actual.onNext(t);
+				return true;
+			}
+
+			@Override
+			public void onSubscribe(Subscription s) {
+				this.qs = Operators.as(s);
+				actual.onSubscribe(this);
+			}
+
+			@Override
+			public void onNext(T t) {
+				actual.onNext(t);
+			}
+
+			@Override
+			public void onError(Throwable t) {
+				actual.onError(t);
+			}
+
+			@Override
+			public void onComplete() {
+				actual.onComplete();
+			}
+
+			@Override
+			public int requestFusion(int requestedMode) {
+				return qs.requestFusion(requestedMode);
+			}
+
+			@Override
+			public T poll() {
+				throw exception;
+			}
+
+			@Override
+			public int size() {
+				return qs.size();
+			}
+
+			@Override
+			public boolean isEmpty() {
+				return qs.isEmpty();
+			}
+
+			@Override
+			public void clear() {
+				qs.clear();
+			}
+
+			@Override
+			public void request(long n) {
+				qs.request(n);
+			}
+
+			@Override
+			public void cancel() {
+				qs.cancel();
+			}
+		}
 	}
 }

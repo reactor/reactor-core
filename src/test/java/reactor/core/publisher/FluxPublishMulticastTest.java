@@ -16,18 +16,84 @@
 
 package reactor.core.publisher;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Fuseable;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
-import reactor.util.function.Tuples;
 import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 import static reactor.core.publisher.Flux.range;
 import static reactor.core.publisher.Flux.zip;
 
-public class FluxPublishMulticastTest {
+public class FluxPublishMulticastTest extends AbstractFluxOperatorTest<String, String> {
+
+	@Override
+	protected int fusionModeThreadBarrierSupport() {
+		return Fuseable.ANY;
+	}
+
+	@Override
+	protected boolean shouldDropNextAfterTerminate() {
+		return false;
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
+		return Arrays.asList(Scenario.from(f -> f.publish(p -> {
+					throw exception();
+				})),
+
+				Scenario.from(f -> f.publish(p -> null),
+						Fuseable.NONE,
+						step -> step.verifyError(NullPointerException.class)),
+
+				Scenario.from(f -> f.publish(p -> Flux.<String>error(exception()))),
+
+				Scenario.from(f -> f.publish(p -> Flux.just(item(0), null)),
+						Fuseable.SYNC,
+						step -> step.expectNext(item(0))
+						            .verifyError(NullPointerException.class)));
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+		return Arrays.asList(Scenario.from(f -> f.publish(p -> p)),
+
+				Scenario.from(f -> f.publish(p -> finiteSourceOrDefault(null)),
+						Fuseable.SYNC),
+
+//				Scenario.from(f -> f.publish(p ->
+//						p.subscribeWith(UnicastProcessor.create())), Fuseable.ASYNC),
+
+				Scenario.from(f -> f.publish(p -> Flux.<String>empty()), Fuseable.NONE,
+						step -> step.verifyComplete()),
+
+				Scenario.withPrefetch(f -> f.publish(p -> p, 1), Fuseable.NONE, 1),
+
+				Scenario.withPrefetch(f -> f.publish(p -> p, Integer.MAX_VALUE),
+						Fuseable.NONE,
+						Integer.MAX_VALUE)
+
+		);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_errorFromUpstreamFailure() {
+		return Arrays.asList(Scenario.from(f -> f.publish(p -> p)),
+
+				Scenario.from(f -> f.publish(p ->
+						p.subscribeWith(UnicastProcessor.create())), Fuseable.ASYNC)
+
+//				Scenario.from(f -> f.publish(p -> Flux.<String>empty()), Fuseable.NONE,
+//						step -> step.verifyComplete())
+
+		);
+	}
 
 	@Test
 	public void subsequentSum() {
