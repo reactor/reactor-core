@@ -25,6 +25,7 @@ import java.util.function.Predicate;
 import org.junit.Test;
 import reactor.core.publisher.FluxBufferPredicate.Mode;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.TestPublisher;
 import reactor.util.concurrent.QueueSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -722,5 +723,30 @@ public class FluxWindowPredicateTest {
 	                .expectNext("END")
 	                .expectNext("red", "green", "END")
 	                .verifyComplete();
+	}
+
+	@Test
+	public void innerCancellationCancelsMainSequence() {
+		StepVerifier.create(Flux.just("red", "green", "#", "black", "white")
+		                        .log()
+		                        .windowWhile(s -> !s.equals("#"))
+		                        .flatMap(w -> w.take(1)))
+		            .expectNext("red")
+		            .thenCancel()
+		            .verify();
+	}
+
+	@Test
+	public void prefetchIntegerMaxIsRequestUnboundedUntil() {
+		TestPublisher tp = TestPublisher.create();
+		tp.flux().windowUntil(s -> true, true, Integer.MAX_VALUE).subscribe();
+		tp.assertMinRequested(Long.MAX_VALUE);
+	}
+
+	@Test
+	public void prefetchIntegerMaxIsRequestUnboundedWhile() {
+		TestPublisher tp = TestPublisher.create();
+		tp.flux().windowWhile(s -> true, Integer.MAX_VALUE).subscribe();
+		tp.assertMinRequested(Long.MAX_VALUE);
 	}
 }

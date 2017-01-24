@@ -6733,10 +6733,36 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * on the predicate and keyed with the value that triggered the new window.
 	 */
 	public final Flux<GroupedFlux<T, T>> windowUntil(Predicate<T> boundaryTrigger, boolean cutBefore) {
+		return windowUntil(boundaryTrigger, cutBefore, QueueSupplier.SMALL_BUFFER_SIZE);
+	}
+
+	/**
+	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given
+	 * predicate and using a prefetch. A new window is opened each time the predicate
+	 * returns true.
+	 * <p>
+	 * If {@code cutBefore} is true, the old window will onComplete and the triggering
+	 * element will be emitted in the new window. Note it can mean that an empty window is
+	 * sometimes emitted, eg. if the first element in the sequence immediately matches the
+	 * predicate.
+	 * <p>
+	 * Otherwise, the triggering element will be emitted in the old window before it does
+	 * onComplete, similar to {@link #windowUntil(Predicate)}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowsize.png" alt="">
+	 *
+	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
+	 * @param cutBefore set to true to include the triggering element in the new window rather than the old.
+	 * @param prefetch the request size to use for this {@link Flux}.
+	 * @return a windowing {@link Flux} of {@link GroupedFlux} windows, bounded depending
+	 * on the predicate and keyed with the value that triggered the new window.
+	 */
+	public final Flux<GroupedFlux<T, T>> windowUntil(Predicate<T> boundaryTrigger, boolean cutBefore, int prefetch) {
 		return onAssembly(new FluxWindowPredicate<>(this,
-				QueueSupplier.small(),
+				QueueSupplier.get(prefetch),
 				QueueSupplier.unbounded(),
-				QueueSupplier.SMALL_BUFFER_SIZE,
+				prefetch,
 				boundaryTrigger,
 				cutBefore ? FluxBufferPredicate.Mode.UNTIL_CUT_BEFORE : FluxBufferPredicate.Mode.UNTIL));
 	}
@@ -6757,10 +6783,30 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * subsequent elements that all passed a predicate, and keyed with a separator element.
 	 */
 	public final Flux<GroupedFlux<T, T>> windowWhile(Predicate<T> inclusionPredicate) {
+		return windowWhile(inclusionPredicate, QueueSupplier.SMALL_BUFFER_SIZE);
+	}
+
+	/**
+	 * Split this {@link Flux} sequence into multiple {@link Flux} windows that stay open
+	 * while a given predicate matches the source elements. Once the predicate returns
+	 * false, the window closes with an onComplete and the triggering element is discarded.
+	 * <p>
+	 * Note that for a sequence starting with a separator, or having several subsequent
+	 * separators anywhere in the sequence, each occurrence will lead to an empty window.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowsize.png" alt="">
+	 *
+	 * @param inclusionPredicate a predicate that triggers the next window when it becomes false.
+	 * @param prefetch the request size to use for this {@link Flux}.
+	 * @return a windowing {@link Flux} of {@link GroupedFlux} windows, each containing
+	 * subsequent elements that all passed a predicate, and keyed with a separator element.
+	 */
+	public final Flux<GroupedFlux<T, T>> windowWhile(Predicate<T> inclusionPredicate, int prefetch) {
 		return onAssembly(new FluxWindowPredicate<>(this,
-				QueueSupplier.small(),
+				QueueSupplier.get(prefetch),
 				QueueSupplier.unbounded(),
-				QueueSupplier.SMALL_BUFFER_SIZE,
+				prefetch,
 				inclusionPredicate,
 				FluxBufferPredicate.Mode.WHILE));
 	}

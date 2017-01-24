@@ -176,8 +176,14 @@ final class FluxWindowPredicate<T>
 					s.cancel();
 					done = true;
 					drain();
-				} else {
-					s.request(prefetch);
+				}
+				else if (cancelled == 0) {
+					if (prefetch == Integer.MAX_VALUE) {
+						s.request(Long.MAX_VALUE);
+					}
+					else {
+						s.request(prefetch);
+					}
 				}
 			}
 		}
@@ -367,12 +373,8 @@ final class FluxWindowPredicate<T>
 			}
 		}
 
-		void groupTerminated(T key) {
-			WindowGroupedFlux<T> g = window;
-			//TODO check logic
-			if (g != null && Objects.equals(key, g.key())) { //key can be null
-				window = null;
-			}
+		void groupTerminated() {
+			window = null;
 		}
 
 		void drain() {
@@ -580,10 +582,17 @@ final class FluxWindowPredicate<T>
 			this.limit = prefetch - (prefetch >> 2);
 		}
 
-		void doTerminate() {
+		void propagateTerminate() {
 			WindowPredicateMain<T> r = parent;
 			if (r != null && PARENT.compareAndSet(this, r, null)) {
-				r.groupTerminated(key);
+				r.groupTerminated();
+			}
+		}
+
+		void propagateCancel() {
+			WindowPredicateMain<T> r = parent;
+			if (r != null && PARENT.compareAndSet(this, r, null)) {
+				r.cancel();
 			}
 		}
 
@@ -738,7 +747,7 @@ final class FluxWindowPredicate<T>
 			error = t;
 			done = true;
 
-			doTerminate();
+			propagateTerminate();
 
 			drain();
 		}
@@ -750,7 +759,7 @@ final class FluxWindowPredicate<T>
 
 			done = true;
 
-			doTerminate();
+			propagateTerminate();
 
 			drain();
 		}
@@ -786,7 +795,7 @@ final class FluxWindowPredicate<T>
 			}
 			cancelled = true;
 
-			doTerminate();
+			propagateCancel();
 
 			if (!enableOperatorFusion) {
 				if (WIP.getAndIncrement(this) == 0) {
