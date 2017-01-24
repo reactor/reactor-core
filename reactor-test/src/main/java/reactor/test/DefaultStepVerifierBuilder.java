@@ -172,7 +172,7 @@ final class DefaultStepVerifierBuilder<T>
 	public DefaultStepVerifierBuilder<T> consumeSubscriptionWith(
 			Consumer<? super Subscription> consumer) {
 		Objects.requireNonNull(consumer, "consumer");
-		if(script.isEmpty()) {
+		if(script.isEmpty() || (script.size() == 1 && script.get(0) == DEFAULT_ONSUBSCRIBE_STEP)) {
 			this.script.set(0, new SignalEvent<>((signal, se) -> {
 				if (!signal.isOnSubscribe()) {
 					return fail(se, "expected: onSubscribe(); actual: %s", signal);
