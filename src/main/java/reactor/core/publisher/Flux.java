@@ -2204,8 +2204,8 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Collect incoming values into multiple {@link List} that will be pushed into
-	 * the returned {@link Flux} each time the given predicate returns false. Note that
-	 * the element that triggers the predicate to return false (and thus closes a buffer)
+	 * the returned {@link Flux} each time the given predicate returns true. Note that
+	 * the element that triggers the predicate to return true (and thus closes a buffer)
 	 * is included as last element in the emitted buffer.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffersize.png"
@@ -2215,7 +2215,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * emitted. However, such a "partial" buffer isn't emitted in case of onError
 	 * termination.
 	 *
-	 * @param predicate a predicate that triggers the next buffer when it becomes false.
+	 * @param predicate a predicate that triggers the next buffer when it becomes true.
 	 * @return a microbatched {@link Flux} of {@link List}
 	 */
 	public final Flux<List<T>> bufferUntil(Predicate<? super T> predicate) {
@@ -2225,8 +2225,8 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Collect incoming values into multiple {@link List} that will be pushed into
-	 * the returned {@link Flux} each time the given predicate returns false. Note that
-	 * the buffer into which the element that triggers the predicate to return false
+	 * the returned {@link Flux} each time the given predicate returns true. Note that
+	 * the buffer into which the element that triggers the predicate to return true
 	 * (and thus closes a buffer) is included depends on the {@code cutBefore} parameter:
 	 * set it to true to include the boundary element in the newly opened buffer, false to
 	 * include it in the closed buffer (as in {@link #bufferUntil(Predicate)}).
@@ -2238,7 +2238,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * emitted. However, such a "partial" buffer isn't emitted in case of onError
 	 * termination.
 	 *
-	 * @param predicate a predicate that triggers the next buffer when it becomes false.
+	 * @param predicate a predicate that triggers the next buffer when it becomes true.
+	 * @param cutBefore set to true to include the triggering element in the new buffer rather than the old.
 	 * @return a microbatched {@link Flux} of {@link List}
 	 */
 	public final Flux<List<T>> bufferUntil(Predicate<? super T> predicate, boolean cutBefore) {
@@ -6422,7 +6423,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a windowing {@link Flux} of {@link Flux} buckets delimited by cancel
 	 * signals
+	 * @deprecated will be removed in 3.1.0. Prefer using other variants, like {@link #window(Publisher)},
 	 */
+	@Deprecated
 	public final Flux<Flux<T>> window() {
 		return onAssembly(new FluxWindowOnCancel<>(this, QueueSupplier.unbounded(
 				QueueSupplier.XS_BUFFER_SIZE)));
@@ -6689,6 +6692,122 @@ public abstract class Flux<T> implements Publisher<T> {
 	public final Flux<Flux<T>> windowMillis(int maxSize, long timespan, TimedScheduler
 			timer) {
 		return onAssembly(new FluxWindowTimeOrSize<>(this, maxSize, timespan, timer));
+	}
+
+
+	/**
+	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given
+	 * predicate. A new window is opened each time the predicate returns true, at which
+	 * point the previous window will receive the triggering element then onComplete.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowsize.png" alt="">
+	 *
+	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
+	 * @return a windowing {@link Flux} of {@link GroupedFlux} windows, bounded depending
+	 * on the predicate and keyed with the value that triggered the new window.
+	 */
+	public final Flux<GroupedFlux<T, T>> windowUntil(Predicate<T> boundaryTrigger) {
+		return windowUntil(boundaryTrigger, false);
+	}
+
+	/**
+	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given
+	 * predicate. A new window is opened each time the predicate returns true.
+	 * <p>
+	 * If {@code cutBefore} is true, the old window will onComplete and the triggering
+	 * element will be emitted in the new window. Note it can mean that an empty window is
+	 * sometimes emitted, eg. if the first element in the sequence immediately matches the
+	 * predicate.
+	 * <p>
+	 * Otherwise, the triggering element will be emitted in the old window before it does
+	 * onComplete, similar to {@link #windowUntil(Predicate)}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowsize.png" alt="">
+	 *
+	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
+	 * @param cutBefore set to true to include the triggering element in the new window rather than the old.
+	 * @return a windowing {@link Flux} of {@link GroupedFlux} windows, bounded depending
+	 * on the predicate and keyed with the value that triggered the new window.
+	 */
+	public final Flux<GroupedFlux<T, T>> windowUntil(Predicate<T> boundaryTrigger, boolean cutBefore) {
+		return windowUntil(boundaryTrigger, cutBefore, QueueSupplier.SMALL_BUFFER_SIZE);
+	}
+
+	/**
+	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given
+	 * predicate and using a prefetch. A new window is opened each time the predicate
+	 * returns true.
+	 * <p>
+	 * If {@code cutBefore} is true, the old window will onComplete and the triggering
+	 * element will be emitted in the new window. Note it can mean that an empty window is
+	 * sometimes emitted, eg. if the first element in the sequence immediately matches the
+	 * predicate.
+	 * <p>
+	 * Otherwise, the triggering element will be emitted in the old window before it does
+	 * onComplete, similar to {@link #windowUntil(Predicate)}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowsize.png" alt="">
+	 *
+	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
+	 * @param cutBefore set to true to include the triggering element in the new window rather than the old.
+	 * @param prefetch the request size to use for this {@link Flux}.
+	 * @return a windowing {@link Flux} of {@link GroupedFlux} windows, bounded depending
+	 * on the predicate and keyed with the value that triggered the new window.
+	 */
+	public final Flux<GroupedFlux<T, T>> windowUntil(Predicate<T> boundaryTrigger, boolean cutBefore, int prefetch) {
+		return onAssembly(new FluxWindowPredicate<>(this,
+				QueueSupplier.get(prefetch),
+				QueueSupplier.unbounded(),
+				prefetch,
+				boundaryTrigger,
+				cutBefore ? FluxBufferPredicate.Mode.UNTIL_CUT_BEFORE : FluxBufferPredicate.Mode.UNTIL));
+	}
+
+	/**
+	 * Split this {@link Flux} sequence into multiple {@link Flux} windows that stay open
+	 * while a given predicate matches the source elements. Once the predicate returns
+	 * false, the window closes with an onComplete and the triggering element is discarded.
+	 * <p>
+	 * Note that for a sequence starting with a separator, or having several subsequent
+	 * separators anywhere in the sequence, each occurrence will lead to an empty window.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowsize.png" alt="">
+	 *
+	 * @param inclusionPredicate a predicate that triggers the next window when it becomes false.
+	 * @return a windowing {@link Flux} of {@link GroupedFlux} windows, each containing
+	 * subsequent elements that all passed a predicate, and keyed with a separator element.
+	 */
+	public final Flux<GroupedFlux<T, T>> windowWhile(Predicate<T> inclusionPredicate) {
+		return windowWhile(inclusionPredicate, QueueSupplier.SMALL_BUFFER_SIZE);
+	}
+
+	/**
+	 * Split this {@link Flux} sequence into multiple {@link Flux} windows that stay open
+	 * while a given predicate matches the source elements. Once the predicate returns
+	 * false, the window closes with an onComplete and the triggering element is discarded.
+	 * <p>
+	 * Note that for a sequence starting with a separator, or having several subsequent
+	 * separators anywhere in the sequence, each occurrence will lead to an empty window.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowsize.png" alt="">
+	 *
+	 * @param inclusionPredicate a predicate that triggers the next window when it becomes false.
+	 * @param prefetch the request size to use for this {@link Flux}.
+	 * @return a windowing {@link Flux} of {@link GroupedFlux} windows, each containing
+	 * subsequent elements that all passed a predicate, and keyed with a separator element.
+	 */
+	public final Flux<GroupedFlux<T, T>> windowWhile(Predicate<T> inclusionPredicate, int prefetch) {
+		return onAssembly(new FluxWindowPredicate<>(this,
+				QueueSupplier.get(prefetch),
+				QueueSupplier.unbounded(),
+				prefetch,
+				inclusionPredicate,
+				FluxBufferPredicate.Mode.WHILE));
 	}
 
 	/**
