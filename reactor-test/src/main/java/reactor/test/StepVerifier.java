@@ -498,6 +498,19 @@ public interface StepVerifier {
 		Step<T> expectNextMatches(Predicate<? super T> predicate);
 
 		/**
+		 * Expect a {@link Subscription} and consume with the given consumer. Any {@code
+		 * AssertionError}s thrown by the consumer will be rethrown during {@linkplain
+		 * #verify() verification}.
+		 *
+		 * @param consumer the consumer for the {@link Subscription}
+		 *
+		 * @return this builder
+		 *
+		 * @see Subscriber#onSubscribe(Subscription)
+		 */
+		Step<T> consumeSubscriptionWith(Consumer<? super Subscription> consumer);
+
+		/**
 		 * Expect that no event has been observed by the verifier. A duration is
 		 * necessary to limit in time that "nothing" has effectively happened.
 		 *
@@ -619,19 +632,6 @@ public interface StepVerifier {
 	 * @param <T> the type of values that the subscriber contains
 	 */
 	interface FirstStep<T> extends Step<T> {
-
-		/**
-		 * Expect a {@link Subscription} and consume with the given consumer. Any {@code
-		 * AssertionError}s thrown by the consumer will be rethrown during {@linkplain
-		 * #verify() verification}.
-		 *
-		 * @param consumer the consumer for the {@link Subscription}
-		 *
-		 * @return this builder
-		 *
-		 * @see Subscriber#onSubscribe(Subscription)
-		 */
-		Step<T> consumeSubscriptionWith(Consumer<? super Subscription> consumer);
 
 		/**
 		 * Expect the source {@link Publisher} to run with Reactor Fusion flow
