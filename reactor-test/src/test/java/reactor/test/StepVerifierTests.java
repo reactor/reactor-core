@@ -742,6 +742,17 @@ public class StepVerifierTests {
 	}
 
 	@Test
+	public void verifyFusionModeExpectedCancel() {
+		Flux<String> flux = Flux.just("foo", "bar");
+
+		StepVerifier.create(flux)
+		            .expectFusion(Fuseable.SYNC, Fuseable.SYNC)
+		            .expectNext("foo")
+		            .thenCancel()
+		            .verify();
+	}
+
+	@Test
 	public void verifyFusionModeExpected2Error() {
 		Flux<String> flux = Flux.just("foo", "bar")
 		                        .publishOn(Schedulers.immediate());
@@ -1604,6 +1615,20 @@ public class StepVerifierTests {
 		            .thenRequest(1)
 		            .expectNext("test")
 		            .verifyComplete();
+	}
+
+	@Test
+	public void cancelAsyncFusion() {
+		UnicastProcessor<String> up = UnicastProcessor.create();
+		StepVerifier.create(up.take(3), 0)
+		            .expectFusion()
+		            .then(() -> up.onNext("test"))
+		            .then(() -> up.onNext("test"))
+		            .then(() -> up.onNext("test"))
+		            .thenRequest(2)
+		            .expectNext("test", "test")
+		            .thenCancel()
+					.verify();
 	}
 
 }

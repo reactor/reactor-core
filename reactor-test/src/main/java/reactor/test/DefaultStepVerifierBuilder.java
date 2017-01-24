@@ -843,7 +843,12 @@ final class DefaultStepVerifierBuilder<T>
 			for( ; ;) {
 				boolean d = done;
 				if (d && qs.isEmpty()) {
-					onExpectation(Signal.complete());
+					if(subscription.get() == Operators.cancelledSubscription()){
+						return;
+					}
+					if(errors != null){
+						onExpectation(Signal.complete());
+					}
 					this.completeLatch.countDown();
 					return;
 				}
@@ -853,6 +858,9 @@ final class DefaultStepVerifierBuilder<T>
 				}
 				long p = 0L;
 				while (p != r) {
+					if(subscription.get() == Operators.cancelledSubscription()){
+						return;
+					}
 					try {
 						t = qs.poll();
 						if (t == null) {
@@ -875,7 +883,12 @@ final class DefaultStepVerifierBuilder<T>
 					if (!checkRequestOverflow(signal)) {
 						onExpectation(signal);
 						if (d && qs.isEmpty()) {
-							onExpectation(Signal.complete());
+							if(subscription.get() == Operators.cancelledSubscription()){
+								return;
+							}
+							if(errors != null){
+								onExpectation(Signal.complete());
+							}
 							this.completeLatch.countDown();
 							return;
 						}
@@ -1392,6 +1405,9 @@ final class DefaultStepVerifierBuilder<T>
 				if (m == Fuseable.SYNC) {
 					T v;
 					for (; ; ) {
+						if(subscription.get() == Operators.cancelledSubscription()){
+							return;
+						}
 						try {
 							v = qs.poll();
 						}
