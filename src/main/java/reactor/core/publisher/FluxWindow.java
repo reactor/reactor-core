@@ -51,7 +51,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 
 	final Supplier<? extends Queue<UnicastProcessor<T>>> overflowQueueSupplier;
 
-	public FluxWindow(Publisher<? extends T> source, int size, Supplier<? extends Queue<T>> processorQueueSupplier) {
+	FluxWindow(Publisher<? extends T> source, int size, Supplier<? extends Queue<T>> processorQueueSupplier) {
 		super(source);
 		if (size <= 0) {
 			throw new IllegalArgumentException("size > 0 required but it was " + size);
@@ -62,7 +62,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		this.overflowQueueSupplier = null; // won't be needed here
 	}
 
-	public FluxWindow(Publisher<? extends T> source, int size, int skip, Supplier<? extends Queue<T>> processorQueueSupplier,
+	FluxWindow(Publisher<? extends T> source, int size, int skip, Supplier<? extends Queue<T>> processorQueueSupplier,
 			Supplier<? extends Queue<UnicastProcessor<T>>> overflowQueueSupplier) {
 		super(source);
 		if (size <= 0) {
@@ -513,6 +513,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 	}
 
 	static final class WindowOverlapSubscriber<T>
+			extends ArrayDeque<UnicastProcessor<T>>
 			implements Subscriber<T>, Subscription, Disposable, Producer, MultiProducer,
 			           Receiver, Trackable {
 
@@ -525,8 +526,6 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		final int size;
 		
 		final int skip;
-
-		final ArrayDeque<UnicastProcessor<T>> windows;
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
@@ -564,7 +563,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		
 		volatile boolean cancelled;
 		
-		public WindowOverlapSubscriber(Subscriber<? super Flux<T>> actual, int size, int skip,
+		WindowOverlapSubscriber(Subscriber<? super Flux<T>> actual, int size, int skip,
 				Supplier<? extends Queue<T>> processorQueueSupplier,
 				Queue<UnicastProcessor<T>> overflowQueue) {
 			this.actual = actual;
@@ -573,7 +572,6 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			this.processorQueueSupplier = processorQueueSupplier;
 			this.wip = 1;
 			this.queue = overflowQueue;
-			this.windows = new ArrayDeque<>();
 		}
 		
 		@Override
@@ -622,7 +620,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 
 					UnicastProcessor<T> w = new UnicastProcessor<>(q, this);
 					
-					windows.offer(w);
+					offer(w);
 					
 					queue.offer(w);
 					drain();
@@ -631,7 +629,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			
 			i++;
 
-			for (Processor<T, T> w : windows) {
+			for (Processor<T, T> w : this) {
 				w.onNext(t);
 			}
 			
@@ -639,7 +637,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			if (p == size) {
 				produced = p - skip;
 				
-				Processor<T, T> w = windows.poll();
+				Processor<T, T> w = poll();
 				if (w != null) {
 					w.onComplete();
 				}
@@ -661,10 +659,10 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				return;
 			}
 
-			for (Processor<T, T> w : windows) {
+			for (Processor<T, T> w : this) {
 				w.onError(t);
 			}
-			windows.clear();
+			clear();
 			
 			error = t;
 			done = true;
@@ -677,10 +675,10 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				return;
 			}
 
-			for (Processor<T, T> w : windows) {
+			for (Processor<T, T> w : this) {
 				w.onComplete();
 			}
-			windows.clear();
+			clear();
 			
 			done = true;
 			drain();
@@ -836,13 +834,13 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 
 		@Override
 		public Iterator<?> downstreams() {
-			return Arrays.asList(windows.toArray())
+			return Arrays.asList(toArray())
 			             .iterator();
 		}
 
 		@Override
 		public long downstreamCount() {
-			return windows.size();
+			return size();
 		}
 
 		@Override

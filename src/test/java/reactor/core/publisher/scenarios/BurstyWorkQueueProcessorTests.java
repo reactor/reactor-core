@@ -111,7 +111,7 @@ public class BurstyWorkQueueProcessorTests {
 			burstSize) {
 		return () -> {
 
-			// Let's start with some messages to keep the ringbuffer from going total empty
+			// Let's start with some messages to keep the ringbuffer scenario going total empty
 			for (int i = 0; i < INITAL_MESSAGES_COUNT; ++i) {
 				emitter.next("initial" + i);
 			}

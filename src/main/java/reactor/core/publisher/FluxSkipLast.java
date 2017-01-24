@@ -20,6 +20,7 @@ import java.util.ArrayDeque;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Fuseable;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
@@ -34,7 +35,7 @@ final class FluxSkipLast<T> extends FluxSource<T, T> {
 
 	final int n;
 
-	public FluxSkipLast(Publisher<? extends T> source, int n) {
+	FluxSkipLast(Publisher<? extends T> source, int n) {
 		super(source);
 		if (n < 0) {
 			throw new IllegalArgumentException("n >= 0 required but it was " + n);
@@ -44,27 +45,25 @@ final class FluxSkipLast<T> extends FluxSource<T, T> {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		if (n == 0) {
-			source.subscribe(s);
-		} else {
-			source.subscribe(new SkipLastSubscriber<>(s, n));
-		}
+		source.subscribe(new SkipLastSubscriber<>(s, n));
 	}
 
+	//Fixme Does not implement ConditionalSubscriber until the full chain of operators
+	// supports fully conditional, requesting N onSubscribe cost is offset
+
 	static final class SkipLastSubscriber<T>
-			implements Subscriber<T>, Receiver, Producer, Subscription, Trackable {
+			extends ArrayDeque<T>
+			implements Subscriber<T>, Receiver, Producer, Subscription,
+			           Trackable {
 		final Subscriber<? super T> actual;
 
 		final int n;
 
-		final ArrayDeque<T> buffer;
-
 		Subscription s;
 
-		public SkipLastSubscriber(Subscriber<? super T> actual, int n) {
+		SkipLastSubscriber(Subscriber<? super T> actual, int n) {
 			this.actual = actual;
 			this.n = n;
-			this.buffer = new ArrayDeque<>();
 		}
 
 		@Override
@@ -80,15 +79,10 @@ final class FluxSkipLast<T> extends FluxSource<T, T> {
 
 		@Override
 		public void onNext(T t) {
-
-			ArrayDeque<T> bs = buffer;
-
-			if (bs.size() == n) {
-				T v = bs.poll();
-
-				actual.onNext(v);
+			if (size() == n) {
+				actual.onNext(poll());
 			}
-			bs.offer(t);
+			offer(t);
 
 		}
 
@@ -104,12 +98,17 @@ final class FluxSkipLast<T> extends FluxSource<T, T> {
 
 		@Override
 		public long getPending() {
-			return buffer.size();
+			return size();
 		}
 
 		@Override
 		public long getCapacity() {
 			return n;
+		}
+
+		@Override
+		public boolean isStarted() {
+			return s != null;
 		}
 
 		@Override

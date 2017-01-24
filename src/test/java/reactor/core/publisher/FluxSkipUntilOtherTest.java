@@ -17,12 +17,51 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
 
 import org.junit.Test;
+import reactor.core.Fuseable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
-public class FluxSkipUntilOtherTest {
+public class FluxSkipUntilOtherTest extends AbstractFluxOperatorTest<String, String> {
+
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
+		return Arrays.asList(
+				scenario(f -> f.skipUntilOther(Flux.error(exception()))),
+				scenario(f -> f.skipUntilOther(Flux.from(s -> {
+					Operators.error(s, exception());
+
+					//touch dropped items
+					s.onNext(item(0));
+					s.onNext(item(0));
+					s.onComplete();
+					s.onComplete();
+				})))
+		);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+		return Arrays.asList(
+				scenario(f -> f.skipUntilOther(Flux.empty())),
+
+				scenario(f -> Flux.<String>empty().skipUntilOther(f))
+					.verifier(step -> step.verifyComplete())
+		);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_errorFromUpstreamFailure() {
+		return Arrays.asList(
+				scenario(f -> f.skipUntilOther(Flux.empty())).shouldHitDropNextHookAfterTerminate(false),
+
+				scenario(f -> Flux.<String>never().skipUntilOther(f)).shouldHitDropNextHookAfterTerminate(false)
+		);
+	}
 
 	@Test(expected = NullPointerException.class)
 	public void nullSource() {

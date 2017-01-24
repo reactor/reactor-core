@@ -42,121 +42,130 @@ import static reactor.core.scheduler.Schedulers.parallel;
 public class FluxPeekTest extends AbstractFluxOperatorTest<String, String> {
 
 	@Override
+	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
+		return defaultOptions.fusionMode(Fuseable.ANY);
+	}
+
+	@Override
 	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
-		return Arrays.asList(
-				Scenario.from(f -> f.doOnSubscribe(s -> {
-				}), Fuseable.ANY),
+		return Arrays.asList(scenario(f -> f.doOnSubscribe(s -> {
+				})),
 
-				Scenario.from(f -> f.doOnError(s -> {
-				}), Fuseable.ANY),
+				scenario(f -> f.doOnError(s -> {
+				})),
 
-				Scenario.from(f -> f.doOnTerminate(() -> {
-				}), Fuseable.ANY),
+				scenario(f -> f.doOnTerminate(() -> {
+				})),
 
-				Scenario.from(f -> f.doAfterTerminate(() -> {
-				}), Fuseable.ANY),
+				scenario(f -> f.doAfterTerminate(() -> {
+				})),
 
-				Scenario.from(f -> f.doOnCancel(() -> {
-				}), Fuseable.ANY),
+				scenario(f -> f.doOnCancel(() -> {
+				})),
 
-				Scenario.from(f -> f.doOnComplete(() -> {
-				}), Fuseable.ANY),
+				scenario(f -> f.doOnComplete(() -> {
+				})),
 
-				Scenario.from(f -> f.doOnRequest(d -> {
-				}), Fuseable.ANY),
+				scenario(f -> f.doOnRequest(d -> {
+				})),
 
-				Scenario.from(f -> f.doOnNext(s -> {
-				}), Fuseable.ANY),
+				scenario(f -> f.doOnNext(s -> {
+				})),
 
-				Scenario.from(f -> f.doOnError(s -> {
-				}), Fuseable.ANY)
-		);
+				scenario(f -> f.doOnError(s -> {
+				})));
 	}
 
 	@Override
 	protected List<Scenario<String, String>> scenarios_touchAndAssertState() {
-		return Arrays.asList(
-				Scenario.from(f -> f.doOnNext(d -> {}))
-		);
+		return Arrays.asList(scenario(f -> f.doOnNext(d -> {
+		})));
 	}
 
 	@Override
 	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
 		return Arrays.asList(
 
-				Scenario.from(f -> f.doOnSubscribe(s -> {
+				scenario(f -> f.doOnSubscribe(s -> {
+					throw exception();
+				})).fusionMode(Fuseable.NONE),
+
+				scenario(f -> f.doOnRequest(s -> {
+					throw exception();
+				})).fusionMode(Fuseable.NONE),
+
+				scenario(f -> f.doOnComplete(() -> {
+					throw exception();
+				})).fusionMode(Fuseable.SYNC)
+				   .verifier(step -> step.expectNext(item(0), item(1), item(2))
+				                         .verifyErrorMessage("test")),
+
+				scenario(f -> f.doOnNext(s -> {
 					throw exception();
 				})),
 
-				Scenario.from(f -> f.doOnRequest(s -> {
-					throw exception();
-				})),
-
-				Scenario.from(f -> f.doOnComplete(() -> {
-					throw exception();
-				}), Fuseable.SYNC, step -> step.expectNext(item(0), item(1), item(2))
-						.verifyErrorMessage("test")),
-
-				Scenario.from(f -> f.doOnNext(s -> {
-					throw exception();
-				}), Fuseable.ANY),
-
-				Scenario.from(f -> Flux.doOnSignal(f.take(0), null, null, s -> {
-							if (s.getMessage()
-							     .equals(exception().getMessage())) {
-								throw Exceptions.propagate(s);
+				scenario(f -> Flux.doOnSignal(f.take(0), null, null, s -> {
+					if (s.getMessage()
+					     .equals(exception().getMessage())) {
+						throw Exceptions.propagate(s);
 					}
-						}, () -> {
-						}, () -> {
-							throw droppedException();
-						}, null, null),
-						Fuseable.NONE, step -> {
-								//fixme Support bubbled error verification in reactor-test
-								Hooks.onErrorDropped(d -> assertTrue(d.getMessage(), d.getMessage()
-								                                                      .equals("dropped")));
-								step.verifyComplete();
+				}, () -> {
+				}, () -> {
+					throw droppedException();
+				}, null, null)).fusionMode(Fuseable.NONE).verifier(step -> {
+					//fixme Support bubbled error verification in reactor-test
+					Hooks.onErrorDropped(d -> assertTrue(d.getMessage(),
+							d.getMessage()
+							 .equals("dropped")));
+					step.verifyComplete();
 				}),
 
-				Scenario.from(f -> Flux.doOnSignal(f.take(0), null, null, s -> {
-							if (s.getMessage()
-							     .equals(exception().getMessage())) {
-								throw exception();
-							}
-						}, () -> {
-						}, () -> {
-							throw exception();
-						}, null, null),
-						Fuseable.NONE, step -> {
-								//fixme Support bubbled error verification in reactor-test
-								Hooks.onErrorDropped(d -> assertTrue(d.getMessage(), d.getMessage()
-								                                                      .equals("test")));
-								step.verifyComplete();
-						}),
-
-				Scenario.from(f -> f.take(0)
-				                    .doOnComplete(() -> {
-					                    throw exception();
-				                    }),
-						Fuseable.NONE,
-						Flux.empty(), step -> step.verifyErrorMessage("test")),
-
-				Scenario.from(f -> f.take(0).doAfterTerminate(() -> {
+				scenario(f -> Flux.doOnSignal(f.take(0), null, null, s -> {
+					if (s.getMessage()
+					     .equals(exception().getMessage())) {
+						throw exception();
+					}
+				}, () -> {
+				}, () -> {
 					throw exception();
-				}), Fuseable.NONE, Flux.empty(), step -> {
-						//fixme Support bubbled error verification in reactor-test
-						Hooks.onErrorDropped(d -> assertTrue(d.getMessage(), d.getMessage()
-						                                                      .equals("test")));
-						step.verifyComplete();
+				}, null, null)).fusionMode(Fuseable.NONE).verifier(step -> {
+					//fixme Support bubbled error verification in reactor-test
+					Hooks.onErrorDropped(d -> assertTrue(d.getMessage(),
+							d.getMessage()
+							 .equals("test")));
+					step.verifyComplete();
 				}),
 
-				Scenario.from(f -> f.doOnCancel(() -> {
+				scenario(f -> f.take(0)
+				               .doOnComplete(() -> {
+					               throw exception();
+				               })).fusionMode(Fuseable.NONE).finiteFlux(Flux.empty()),
+
+				scenario(f -> f.take(0)
+				               .doAfterTerminate(() -> {
+					               throw exception();
+				               })).fusionMode(Fuseable.NONE)
+				                  .finiteFlux(Flux.empty())
+				                  .verifier(step -> {
+					                  //fixme Support bubbled error verification in reactor-test
+					                  Hooks.onErrorDropped(d -> assertTrue(d.getMessage(),
+							                  d.getMessage()
+							                   .equals("test")));
+					                  step.verifyComplete();
+				                  }),
+
+				scenario(f -> f.doOnCancel(() -> {
 					throw exception();
-				}), Fuseable.NONE, Flux.never(), step -> {
-						//fixme Support bubbled error verification in reactor-test
-						Hooks.onErrorDropped(d -> assertTrue(d.getMessage(), d.getMessage()
-						                                                      .equals("test")));
-						step.consumeSubscriptionWith(Subscription::cancel).verifyErrorMessage("test");
-				}));
+				})).fusionMode(Fuseable.NONE)
+				   .finiteFlux(Flux.never())
+				   .verifier(step -> {
+					   //fixme Support bubbled error verification in reactor-test
+					   Hooks.onErrorDropped(d -> assertTrue(d.getMessage(),
+							   d.getMessage()
+							    .equals("test")));
+					   step.consumeSubscriptionWith(Subscription::cancel)
+					       .verifyErrorMessage("test");
+				   }));
 	}
 
 	@Override
@@ -164,53 +173,43 @@ public class FluxPeekTest extends AbstractFluxOperatorTest<String, String> {
 		List<Scenario<String, String>> combinedScenarios = new ArrayList<>();
 
 		combinedScenarios.addAll(scenarios_threeNextAndComplete());
-		combinedScenarios.addAll(Arrays.asList(
-				Scenario.from(f -> f.doAfterTerminate(() -> {
+		combinedScenarios.addAll(Arrays.asList(scenario(f -> f.doAfterTerminate(() -> {
 					throw droppedException();
-				}), Fuseable.NONE, step -> {
-					try{
+				})).fusionMode(Fuseable.NONE)
+		           .verifier(step -> {
+			           try {
 						step.verifyErrorMessage("test");
 					}
-					catch (Exception e){
-						assertTrue(Exceptions.unwrap(e).getMessage().equals("dropped"));
+			           catch (Exception e) {
+				           assertTrue(Exceptions.unwrap(e)
+				                                .getMessage()
+				                                .equals("dropped"));
 					}
 				}),
 
-				Scenario.from(f -> f.doOnNext(s -> {
+				scenario(f -> f.doOnNext(s -> {
 					throw exception();
-				}).doOnError(s -> {
-					throw Exceptions.errorCallbackNotImplemented(new Exception("unsupported"));
-				}), Fuseable.NONE, step -> {
-					try{
+				})
+				               .doOnError(s -> {
+					               throw Exceptions.errorCallbackNotImplemented(new Exception(
+							               "unsupported"));
+				               })).fusionMode(Fuseable.NONE)
+				                  .verifier(step -> {
+					                  try {
 						step.verifyErrorMessage("unsupported");
 						Assert.fail();
 					}
-					catch (Exception e){
-						assertTrue(Exceptions.unwrap(e).getCause().getMessage().equals("unsupported"));
+					                  catch (Exception e) {
+						                  assertTrue(Exceptions.unwrap(e)
+						                                       .getCause()
+						                                       .getMessage()
+						                                       .equals("unsupported"));
 					}
 				}),
 
 				//extra scenarios for coverage using specific combination of fluxpkeek
 				// not necessarily open
-				Scenario.from(f -> Flux.doOnSignal(f, null, null, s -> {
-					if (s.getMessage()
-					     .equals(exception().getMessage())) {
-						throw Exceptions.propagate(s);
-					}
-				}, null, () -> {
-					throw droppedException();
-				}, null, null).doOnError(s -> {
-										throw Exceptions.errorCallbackNotImplemented(new Exception("unsupported"));
-				}), Fuseable.NONE, step -> {
-					try{
-						step.thenCancel().verify();
-					}
-					catch (Exception e){
-						assertTrue(Exceptions.unwrap(e).getMessage().equals("dropped"));
-					}
-				}),
-
-				Scenario.from(f -> Flux.doOnSignal(f, null, null, s -> {
+				scenario(f -> Flux.doOnSignal(f, null, null, s -> {
 					if (s.getMessage()
 					     .equals(exception().getMessage())) {
 						throw Exceptions.propagate(s);
@@ -218,18 +217,22 @@ public class FluxPeekTest extends AbstractFluxOperatorTest<String, String> {
 				}, null, () -> {
 					throw droppedException();
 				}, null, null)
-				                       .doOnError(s -> {
-					                       throw Exceptions.errorCallbackNotImplemented(s);
-				                       }), Fuseable.NONE, step -> {
-					try{
-						step.thenCancel().verify();
+				                  .doOnError(s -> {
+					                  throw Exceptions.errorCallbackNotImplemented(new Exception(
+							                  "unsupported"));
+				                  })).verifier(step -> {
+					try {
+						step.thenCancel()
+						    .verify();
 					}
-					catch (Exception e){
-						assertTrue(Exceptions.unwrap(e).getMessage().equals("dropped"));
+					catch (Exception e) {
+						assertTrue(Exceptions.unwrap(e)
+						                     .getMessage()
+						                     .equals("dropped"));
 					}
 				}),
 
-				Scenario.from(f -> Flux.doOnSignal(f, null, null, s -> {
+				scenario(f -> Flux.doOnSignal(f, null, null, s -> {
 					if (s.getMessage()
 					     .equals(exception().getMessage())) {
 						throw Exceptions.propagate(s);
@@ -237,17 +240,40 @@ public class FluxPeekTest extends AbstractFluxOperatorTest<String, String> {
 				}, null, () -> {
 					throw droppedException();
 				}, null, null)
-				                       .doOnError(s -> {
-					                       throw exception();
-				                       }), Fuseable.NONE, step -> {
-					try{
+				                  .doOnError(s -> {
+					                  throw Exceptions.errorCallbackNotImplemented(s);
+				                  })).verifier(step -> {
+					try {
+						step.thenCancel()
+						    .verify();
+					}
+					catch (Exception e) {
+						assertTrue(Exceptions.unwrap(e)
+						                     .getMessage()
+						                     .equals("dropped"));
+					}
+				}),
+
+				scenario(f -> Flux.doOnSignal(f, null, null, s -> {
+					if (s.getMessage()
+					     .equals(exception().getMessage())) {
+						throw Exceptions.propagate(s);
+					}
+				}, null, () -> {
+					throw droppedException();
+				}, null, null)
+				                  .doOnError(s -> {
+					                  throw exception();
+				                  })).fusionMode(Fuseable.NONE).verifier(step -> {
+					try {
 						step.verifyErrorMessage("test");
 					}
-					catch (Exception e){
-						assertTrue(Exceptions.unwrap(e).getMessage().equals("dropped"));
+					catch (Exception e) {
+						assertTrue(Exceptions.unwrap(e)
+						                     .getMessage()
+						                     .equals("dropped"));
 					}
 				})
-
 
 		));
 		return combinedScenarios;

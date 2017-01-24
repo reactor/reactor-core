@@ -184,7 +184,10 @@ public interface Fuseable {
 
 		@Override
 		default int requestFusion(int requestedMode) {
-			return Fuseable.SYNC;
+			if(requestedMode == NONE){
+				return NONE;
+			}
+			return SYNC;
 		}
 
 	}

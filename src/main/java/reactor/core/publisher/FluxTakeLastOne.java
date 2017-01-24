@@ -27,7 +27,7 @@ import reactor.core.Fuseable;
  */
 final class FluxTakeLastOne<T> extends FluxSource<T, T> implements Fuseable {
 
-	public FluxTakeLastOne(Publisher<? extends T> source) {
+	FluxTakeLastOne(Publisher<? extends T> source) {
 		super(source);
 	}
 

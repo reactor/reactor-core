@@ -45,10 +45,10 @@ final class FluxSkipUntil<T> extends FluxSource<T, T> {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(new SkipWhileSubscriber<>(s, predicate));
+		source.subscribe(new SkipUntilSubscriber<>(s, predicate));
 	}
 
-	static final class SkipWhileSubscriber<T>
+	static final class SkipUntilSubscriber<T>
 			implements ConditionalSubscriber<T>, Receiver, Producer, Loopback,
 			           Subscription, Trackable {
 		final Subscriber<? super T> actual;
@@ -61,7 +61,7 @@ final class FluxSkipUntil<T> extends FluxSource<T, T> {
 
 		boolean skipped;
 
-		SkipWhileSubscriber(Subscriber<? super T> actual, Predicate<? super T> predicate) {
+		SkipUntilSubscriber(Subscriber<? super T> actual, Predicate<? super T> predicate) {
 			this.actual = actual;
 			this.predicate = predicate;
 		}

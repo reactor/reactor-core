@@ -28,7 +28,7 @@ import reactor.core.publisher.FluxConcatMap.ErrorMode;
  * @param <T> the input value type
  * @param <R> the output value type
  */
-final class ParallelUnorderedConcatMap<T, R> extends ParallelFlux<R> {
+final class ParallelConcatMap<T, R> extends ParallelFlux<R> {
 
 	final ParallelFlux<T> source;
 	
@@ -40,7 +40,7 @@ final class ParallelUnorderedConcatMap<T, R> extends ParallelFlux<R> {
 	
 	final ErrorMode errorMode;
 
-	public ParallelUnorderedConcatMap(
+	public ParallelConcatMap(
 			ParallelFlux<T> source,
 			Function<? super T, ? extends Publisher<? extends R>> mapper, 
 					Supplier<? extends Queue<T>> queueSupplier,

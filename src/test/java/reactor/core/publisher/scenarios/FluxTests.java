@@ -55,10 +55,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
-import reactor.core.publisher.AbstractReactorTest;
-import reactor.core.publisher.BlockingSink;
-import reactor.core.publisher.ConnectableFlux;
-import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxProcessor;
@@ -67,7 +63,6 @@ import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.Signal;
 import reactor.core.publisher.TopicProcessor;
-import reactor.core.publisher.UnicastProcessor;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
@@ -677,7 +672,7 @@ public class FluxTests extends AbstractReactorTest {
 	}
 
 	/**
-	 * original from @oiavorskyl https://github.com/eventBus/eventBus/issues/358
+	 * original scenario @oiavorskyl https://github.com/eventBus/eventBus/issues/358
 	 * @throws Exception for convenience
 	 */
 	//@Test
@@ -688,7 +683,7 @@ public class FluxTests extends AbstractReactorTest {
 	}
 
 	/**
-	 * original from @oiavorskyl https://github.com/eventBus/eventBus/issues/358
+	 * original scenario @oiavorskyl https://github.com/eventBus/eventBus/issues/358
      * @throws Exception for convenience
 	 */
 	@Test

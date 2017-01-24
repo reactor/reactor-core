@@ -33,7 +33,7 @@ import reactor.core.Fuseable;
  *
  * @param <T> the value type
  */
-final class ParallelUnorderedSource<T> extends ParallelFlux<T> {
+final class ParallelSource<T> extends ParallelFlux<T> {
 	final Publisher<? extends T> source;
 	
 	final int parallelism;
@@ -42,7 +42,7 @@ final class ParallelUnorderedSource<T> extends ParallelFlux<T> {
 	
 	final Supplier<Queue<T>> queueSupplier;
 
-	public ParallelUnorderedSource(Publisher<? extends T> source, int parallelism, int prefetch, Supplier<Queue<T>> queueSupplier) {
+	public ParallelSource(Publisher<? extends T> source, int parallelism, int prefetch, Supplier<Queue<T>> queueSupplier) {
 		this.source = source;
 		this.parallelism = parallelism;
 		this.prefetch = prefetch;

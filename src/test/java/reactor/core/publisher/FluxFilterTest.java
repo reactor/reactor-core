@@ -27,26 +27,32 @@ import reactor.test.subscriber.AssertSubscriber;
 public class FluxFilterTest extends AbstractFluxOperatorTest<String, String> {
 
 	@Override
+	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
+		return defaultOptions.fusionMode(Fuseable.ANY);
+	}
+
+	@Override
 	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
 		return Arrays.asList(
-				Scenario.from(f -> f.filter(d -> {
+				scenario(f -> f.filter(d -> {
 					throw exception();
-				}), Fuseable.ANY)
+				}))
 		);
 	}
 
 	@Override
 	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
 		return Arrays.asList(
-				Scenario.from(f -> f.filter(d -> true), Fuseable.ANY),
+				scenario(f -> f.filter(d -> true)),
 
-				Scenario.from(f -> f.filter(d -> false), Fuseable.ANY, step -> step.verifyComplete()));
+				scenario(f -> f.filter(d -> false))
+					.verifier(step -> step.verifyComplete()));
 	}
 
 	@Override
 	protected List<Scenario<String, String>> scenarios_errorFromUpstreamFailure() {
 		return  Arrays.asList(
-				Scenario.from(f -> f.filter(d -> true), Fuseable.ANY)
+				scenario(f -> f.filter(d -> true))
 		);
 	}
 

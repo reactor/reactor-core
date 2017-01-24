@@ -39,12 +39,15 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
@@ -59,8 +62,9 @@ import static reactor.core.scheduler.Schedulers.fromExecutorService;
 public class FluxPublishOnTest extends AbstractFluxOperatorTest<String, String> {
 
 	@Override
-	protected boolean shouldDropNextAfterTerminate() {
-		return false;
+	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
+		return defaultOptions.prefetch(QueueSupplier.SMALL_BUFFER_SIZE)
+		                     .fusionMode(Fuseable.ASYNC);
 	}
 
 	@Override
@@ -75,73 +79,88 @@ public class FluxPublishOnTest extends AbstractFluxOperatorTest<String, String> 
 
 	void assertRejected(StepVerifier.Step<String> step) {
 		try {
-			step.consumeErrorWith(e -> Assert.assertTrue(Exceptions.unwrap(e) instanceof RejectedExecutionException));
+			step.consumeErrorWith(e -> Assert.assertTrue(Exceptions.unwrap(e) instanceof RejectedExecutionException))
+			    .verify();
 		}
 		catch (Exception e) {
 			assertTrue(Exceptions.unwrap(e) instanceof RejectedExecutionException);
 		}
 	}
 
+	void assertNoRejected(StepVerifier.Step<String> step) {
+		try {
+			step
+					.thenAwait()
+					.consumeErrorWith(e -> Assert.assertTrue(Exceptions.unwrap(e) instanceof RejectedExecutionException))
+					.verify(Duration.ofMillis(1));
+		}
+		catch (Exception e) {
+			assertTrue(Exceptions.unwrap(e) instanceof RejectedExecutionException);
+		}
+		catch (AssertionError e){
+			assertTrue(e.getMessage().contains("timed out"));
+		}
+	}
+
 	@Override
 	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
-		return Arrays.asList(Scenario.from(f -> f.publishOn(Schedulers.fromExecutor(d -> {
+		return Arrays.asList(scenario(f -> f.publishOn(Schedulers.fromExecutor(d -> {
 					throw exception();
-				})), Fuseable.ASYNC),
+				}))),
 
-				Scenario.from(f -> f.publishOn(new FailWorkerScheduler())),
+				scenario(f -> f.publishOn(new FailWorkerScheduler()))
+						.fusionMode(Fuseable.NONE),
 
-				Scenario.from(f -> f.publishOn(new FailNullWorkerScheduler()),
-						Fuseable.NONE,
-						step -> step.verifyError(NullPointerException.class)),
+				scenario(f -> f.publishOn(new FailNullWorkerScheduler()))
+						.fusionMode(Fuseable.NONE)
+						.verifier(step -> step.verifyError(NullPointerException.class)),
 
-				Scenario.from(f -> f.publishOn(new RejectingWorkerScheduler(false,
-						false)), Fuseable.ASYNC, this::assertRejected),
+				scenario(f -> {
+					RejectingWorkerScheduler rs = new RejectingWorkerScheduler(false, false);
+					return f.publishOn(rs);
+				})
+						.verifier(this::assertNoRejected),
 
-				Scenario.from(f -> f.publishOn(new RejectingWorkerScheduler(true, false)),
-						Fuseable.ASYNC,
-						this::assertRejected),
+				scenario(f -> f.publishOn(new RejectingWorkerScheduler(true, false)))
+						.verifier(this::assertRejected),
 
-				Scenario.from(f -> f.publishOn(new RejectingWorkerScheduler(true, true)),
-						Fuseable.ASYNC,
-						this::assertRejected),
+				scenario(f -> f.publishOn(new RejectingWorkerScheduler(true, true)))
+						.verifier(this::assertNoRejected),
 
-				Scenario.from(f -> f.publishOn(new RejectingWorkerScheduler(false, true)),
-						Fuseable.ASYNC,
-						this::assertRejected),
+				scenario(f -> f.publishOn(new RejectingWorkerScheduler(false, true)))
+						.verifier(this::assertNoRejected),
 
-				Scenario.from(f -> f.publishOn(new RejectingWorkerScheduler(false,
-						false)), Fuseable.NONE, Flux.empty(), this::assertRejected),
+				scenario(f -> f.publishOn(new RejectingWorkerScheduler(false, false)))
+						.verifier(this::assertNoRejected)
+						.finiteFlux(Flux.empty()),
 
-				Scenario.from(f -> f.publishOn(new RejectingWorkerScheduler(false, true)),
-						Fuseable.NONE,
-						Flux.empty(),
-						this::assertRejected),
+				scenario(f -> f.publishOn(new RejectingWorkerScheduler(false, true)))
+						.verifier(this::assertNoRejected)
+						.finiteFlux(Flux.empty()),
 
-				Scenario.from(f -> f.publishOn(new RejectingWorkerScheduler(true, false)),
-						Fuseable.NONE,
-						Flux.empty(),
-						this::assertRejected),
+				scenario(f -> f.publishOn(new RejectingWorkerScheduler(true, false)))
+						.verifier(this::assertRejected)
+						.finiteFlux(Flux.empty()),
 
-				Scenario.from(f -> f.publishOn(new RejectingWorkerScheduler(true, true)),
-						Fuseable.NONE,
-						Flux.empty(),
-						this::assertRejected));
+				scenario(f -> f.publishOn(new RejectingWorkerScheduler(true, true)))
+						.verifier(this::assertNoRejected)
+						.finiteFlux(Flux.empty())
+		);
 	}
 
 	@Override
 	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
-		return Arrays.asList(Scenario.from(f -> f.publishOn(Schedulers.immediate()),
-				Fuseable.ASYNC),
+		return Arrays.asList(
+ 				scenario(f -> f.publishOn(Schedulers.immediate())),
 
-				Scenario.from(f -> f.publishOn(Schedulers.immediate(), false, 4),
-						Fuseable.ASYNC),
+				scenario(f -> f.publishOn(Schedulers.immediate(), false, 4))
+						.prefetch(4),
 
-				Scenario.withPrefetch(f -> f.publishOn(Schedulers.immediate(), 1),
-						Fuseable.ASYNC,
-						1),
+				scenario(f -> f.publishOn(Schedulers.immediate(), 1))
+						.prefetch(1),
 
-				Scenario.withPrefetch(f -> f.publishOn(Schedulers.immediate(),
-						Integer.MAX_VALUE), Fuseable.ASYNC, Integer.MAX_VALUE)
+				scenario(f -> f.publishOn(Schedulers.immediate(), Integer.MAX_VALUE))
+						.prefetch(Integer.MAX_VALUE)
 
 		);
 	}
@@ -1277,16 +1296,9 @@ public class FluxPublishOnTest extends AbstractFluxOperatorTest<String, String> 
 		public Worker createWorker() {
 			return new Worker() {
 
-				int invoked;
-
 				@Override
 				public Disposable schedule(Runnable task) {
-					if (++invoked > 1) {
-						return Scheduler.REJECTED;
-					}
-					task.run();
-					return () -> {
-					};
+					return Scheduler.REJECTED;
 				}
 
 				@Override

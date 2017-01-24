@@ -28,19 +28,19 @@ public class FluxDistinctUntilChangedTest extends AbstractFluxOperatorTest<Strin
 	@Override
 	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
 		return Arrays.asList(
-				Scenario.from(f -> f.distinctUntilChanged(d -> {
+				scenario(f -> f.distinctUntilChanged(d -> {
 					throw exception();
 				})),
 
-				Scenario.from(f -> f.distinctUntilChanged(d -> null), Fuseable.NONE,
-						step -> step.verifyError(NullPointerException.class))
+				scenario(f -> f.distinctUntilChanged(d -> null))
+						.verifier(step -> step.verifyError(NullPointerException.class))
 		);
 	}
 
 	@Override
 	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
 		return Arrays.asList(
-				Scenario.from(f -> f.distinctUntilChanged())
+				scenario(f -> f.distinctUntilChanged())
 		);
 	}
 

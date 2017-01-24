@@ -37,13 +37,9 @@ final class FluxTakeWhile<T> extends FluxSource<T, T> {
 
 	final Predicate<? super T> predicate;
 
-	public FluxTakeWhile(Publisher<? extends T> source, Predicate<? super T> predicate) {
+	FluxTakeWhile(Publisher<? extends T> source, Predicate<? super T> predicate) {
 		super(source);
 		this.predicate = Objects.requireNonNull(predicate, "predicate");
-	}
-
-	public Predicate<? super T> predicate() {
-		return predicate;
 	}
 
 	@Override

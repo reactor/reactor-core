@@ -23,7 +23,6 @@ import java.util.concurrent.CountDownLatch;
 import org.junit.Test;
 import reactor.core.Disposable;
 import reactor.util.Loggers;
-import reactor.core.publisher.AbstractReactorTest;
 import reactor.core.publisher.Flux;
 import reactor.util.function.Tuples;
 

@@ -17,8 +17,6 @@
 package reactor.core.publisher;
 
 import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Consumer;
@@ -70,12 +68,12 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 	}
 
 	static final class BackpressureBufferDropOldestSubscriber<T>
+			extends ArrayDeque<T>
 			implements Subscriber<T>, Subscription, Trackable, Producer,
 			           Receiver {
 
 		final Subscriber<? super T>  actual;
 		final int                    bufferSize;
-		final Deque<T>               queue;
 		final Consumer<? super T>    onOverflow;
 		final boolean                delayError;
 		final BufferOverflowStrategy overflowStrategy;
@@ -97,7 +95,7 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 				AtomicLongFieldUpdater.newUpdater(BackpressureBufferDropOldestSubscriber.class,
 						"requested");
 
-		public BackpressureBufferDropOldestSubscriber(Subscriber<? super T> actual,
+		BackpressureBufferDropOldestSubscriber(Subscriber<? super T> actual,
 				int bufferSize,
 				boolean delayError,
 				Consumer<? super T> onOverflow,
@@ -107,7 +105,6 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 			this.onOverflow = onOverflow;
 			this.overflowStrategy = overflowStrategy;
 			this.bufferSize = bufferSize;
-			this.queue = new ArrayDeque<>(bufferSize);
 		}
 
 		@Override
@@ -129,14 +126,13 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 			boolean callOnOverflow = false;
 			boolean callOnError = false;
 			T overflowElement = t;
-			Deque<T> dq = queue;
-			synchronized (dq) {
-				if (dq.size() == bufferSize) {
+			synchronized(this) {
+				if (size() == bufferSize) {
 					callOnOverflow = true;
 					switch (overflowStrategy) {
 						case DROP_OLDEST:
-							overflowElement = dq.pollFirst();
-							dq.offer(t);
+							overflowElement = pollFirst();
+							offer(t);
 							break;
 						case DROP_LATEST:
 							//do nothing
@@ -148,7 +144,7 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 					}
 				}
 				else {
-					dq.offer(t);
+					offer(t);
 				}
 			}
 
@@ -217,8 +213,6 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 		void innerDrain(Subscriber<? super T> a) {
 			int missed = 1;
 
-			final Queue<T> q = queue;
-
 			for (; ; ) {
 
 				long r = requested;
@@ -228,8 +222,8 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 					boolean d = done;
 
 					T t;
-					synchronized (q) {
-						t = q.poll();
+					synchronized (this) {
+						t = poll();
 					}
 					boolean empty = t == null;
 
@@ -248,8 +242,8 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 
 				if (r == e) {
 					boolean empty;
-					synchronized (q) {
-						empty = q.isEmpty();
+					synchronized (this) {
+						empty = isEmpty();
 					}
 					if (checkTerminated(done, empty, a)) {
 						return;
@@ -283,7 +277,9 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 				s.cancel();
 
 				if (WIP.getAndIncrement(this) == 0) {
-					clear(queue);
+					synchronized (this) {
+						clear();
+					}
 				}
 			}
 		}
@@ -325,7 +321,7 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 
 		@Override
 		public long getPending() {
-			return queue.size();
+			return size();
 		}
 
 		@Override
@@ -336,7 +332,9 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 		boolean checkTerminated(boolean d, boolean empty, Subscriber<? super T> a) {
 			if (cancelled) {
 				s.cancel();
-				clear(queue);
+				synchronized (this) {
+					clear();
+				}
 				return true;
 			}
 			if (d) {
@@ -355,7 +353,9 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 				else {
 					Throwable e = error;
 					if (e != null) {
-						clear(queue);
+						synchronized (this) {
+							clear();
+						}
 						a.onError(e);
 						return true;
 					}
@@ -366,12 +366,6 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 				}
 			}
 			return false;
-		}
-
-		void clear(Deque<T> dq) {
-			synchronized (dq) {
-				dq.clear();
-			}
 		}
 
 	}

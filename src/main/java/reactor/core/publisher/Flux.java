@@ -5302,11 +5302,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a dropping {@link Flux} until the specified skipped number of elements
 	 */
 	public final Flux<T> skip(long skipped) {
-		if (skipped > 0) {
-			return onAssembly(new FluxSkip<>(this, skipped));
+		if (skipped == 0L) {
+			return this;
 		}
 		else {
-			return this;
+			return onAssembly(new FluxSkip<>(this, skipped));
 		}
 	}
 
@@ -5336,6 +5336,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 */
 	public final Flux<T> skipLast(int n) {
+		if (n == 0) {
+			return this;
+		}
 		return onAssembly(new FluxSkipLast<>(this, n));
 	}
 

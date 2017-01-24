@@ -23,13 +23,9 @@ final class FluxTakeUntil<T> extends FluxSource<T, T> {
 
 	final Predicate<? super T> predicate;
 
-	public FluxTakeUntil(Publisher<? extends T> source, Predicate<? super T> predicate) {
+	FluxTakeUntil(Publisher<? extends T> source, Predicate<? super T> predicate) {
 		super(source);
 		this.predicate = Objects.requireNonNull(predicate, "predicate");
-	}
-
-	public Predicate<? super T> predicate() {
-		return predicate;
 	}
 
 	@Override

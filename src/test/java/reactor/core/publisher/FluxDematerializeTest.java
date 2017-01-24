@@ -15,11 +15,101 @@
  */
 package reactor.core.publisher;
 
+import java.util.Arrays;
+import java.util.List;
+
+import org.junit.Assert;
 import org.junit.Test;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
-public class FluxDematerializeTest {
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class FluxDematerializeTest extends AbstractFluxOperatorTest<Signal<String>, String> {
+
+	@Override
+	@SuppressWarnings("unchecked")
+	protected List<Scenario<Signal<String>, String>> scenarios_threeNextAndComplete() {
+		return Arrays.asList(
+				scenario(Flux::<String>dematerialize)
+					.finiteFlux(Flux.just(Signal.complete()))
+					.verifier(step -> step.verifyComplete()),
+
+				scenario(Flux::<String>dematerialize)
+						.finiteFlux(Flux.just(Signal.subscribe(Operators.emptySubscription())))
+						.verifier(step -> step.verifyComplete()),
+
+				scenario(Flux::<String>dematerialize)
+						.verifier(step -> step.expectNext("test")
+						                      .expectNext("test1")
+						                      .consumeSubscriptionWith(s -> {
+							                      if(s instanceof FluxDematerialize.DematerializeSubscriber) {
+								                      FluxDematerialize.DematerializeSubscriber m =
+										                      (FluxDematerialize.DematerializeSubscriber) s;
+
+								                      m.peek();
+								                      m.poll();
+								                      m.size();
+							                      }
+						                      })
+						                      .expectNext("test2")
+						                      .consumeSubscriptionWith(s -> {
+							                      if(s instanceof FluxDematerialize.DematerializeSubscriber){
+								                      FluxDematerialize.DematerializeSubscriber m =
+										                      (FluxDematerialize.DematerializeSubscriber)s;
+
+								                      m.peek();
+								                      m.poll();
+								                      m.size();
+
+								                      try{
+									                      m.offer(null);
+									                      Assert.fail();
+								                      }
+								                      catch (UnsupportedOperationException u){
+									                      //ignore
+								                      }
+
+								                      try{
+									                      m.iterator();
+									                      Assert.fail();
+								                      }
+								                      catch (UnsupportedOperationException u){
+									                      //ignore
+								                      }
+							                      }
+						                      })
+						                      .verifyComplete())
+		);
+	}
+
+	@Override
+	protected List<Scenario<Signal<String>, String>> scenarios_errorInOperatorCallback() {
+		return Arrays.asList(
+				scenario(Flux::<String>dematerialize)
+					.finiteFlux(Flux.error(exception()))
+		);
+	}
+
+	@Override
+	protected List<Scenario<Signal<String>, String>> scenarios_errorFromUpstreamFailure() {
+		return Arrays.asList(
+				scenario(Flux::<String>dematerialize)
+		);
+	}
+
+	@Override
+	protected Signal<String> droppedItem() {
+		return Signal.next("dropped");
+	}
+
+	@Override
+	protected Signal<String> item(int i) {
+		if (i == 0) {
+			return Signal.next("test");
+		}
+		return Signal.next("test" + i);
+	}
 
 	Signal<Integer> error = Signal.error(new RuntimeException("Forced failure"));
 

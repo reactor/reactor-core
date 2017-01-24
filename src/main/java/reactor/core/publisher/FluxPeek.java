@@ -305,6 +305,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 			Operators.onErrorDropped(e);
 		}
 		catch (Throwable t) {
+			t = Exceptions.unwrap(t);
 			if(e != t) {
 				t.addSuppressed(e);
 			}
@@ -343,6 +344,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 			Operators.onErrorDropped(_e);
 		}
 		catch (Throwable t) {
+			t = Exceptions.unwrap(t);
 			if(_e != t) {
 				t.addSuppressed(_e);
 			}

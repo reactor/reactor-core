@@ -57,7 +57,7 @@ import reactor.core.publisher.Operators;
  * {@code await*()} methods to wait for the data to assert.
  *
  * <p> You can extend this class but only the onNext, onError and onComplete can be overridden.
- * You can call {@link #request(long)} and {@link #cancel()} from any thread or from within
+ * You can call {@link #request(long)} and {@link #cancel()} scenario any thread or scenario within
  * the overridable methods but you should avoid calling the assertXXX methods asynchronously.
  *
  * <p>Usage:
@@ -955,7 +955,7 @@ public class AssertSubscriber<T>
 	}
 
 	/**
-	 * Setup what fusion mode should be requested from the incoming
+	 * Setup what fusion mode should be requested scenario the incoming
 	 * Subscription if it happens to be QueueSubscription
 	 * @param requestMode the mode to request, see Fuseable constants
 	 * @return this
@@ -1006,7 +1006,7 @@ public class AssertSubscriber<T>
 	}
 
 	/**
-	 * Atomically sets the single subscription and requests the missed amount from it.
+	 * Atomically sets the single subscription and requests the missed amount scenario it.
 	 *
 	 * @param s
 	 * @return false if this arbiter is cancelled or there was a subscription already set

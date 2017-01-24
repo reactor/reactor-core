@@ -25,13 +25,13 @@ import org.reactivestreams.*;
  * @param <T> the input value type
  * @param <R> the output value type
  */
-final class ParallelUnorderedMap<T, R> extends ParallelFlux<R> {
+final class ParallelMap<T, R> extends ParallelFlux<R> {
 
 	final ParallelFlux<T> source;
 	
 	final Function<? super T, ? extends R> mapper;
 	
-	public ParallelUnorderedMap(ParallelFlux<T> source, Function<? super T, ? extends R> mapper) {
+	public ParallelMap(ParallelFlux<T> source, Function<? super T, ? extends R> mapper) {
 		this.source = source;
 		this.mapper = mapper;
 	}

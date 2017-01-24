@@ -16,10 +16,35 @@
 
 package reactor.core.publisher;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.junit.Test;
+import reactor.core.Fuseable;
 import reactor.test.subscriber.AssertSubscriber;
 
-public class FluxSkipLastTest {
+public class FluxSkipLastTest extends AbstractFluxOperatorTest<String, String> {
+	@Override
+	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
+		return defaultOptions.shouldAssertPostTerminateState(false)
+		                     .shouldHitDropErrorHookAfterTerminate(false)
+		                     .shouldHitDropNextHookAfterTerminate(false);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+		return Arrays.asList(
+
+				scenario(f -> f.skipLast(1))
+						.verifier(step -> step.expectNext(item(0), item(1))
+				               .verifyComplete()));
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_errorFromUpstreamFailure() {
+		return Arrays.asList(scenario(f -> f.skipLast(1)));
+	}
+
 
 	@Test(expected = NullPointerException.class)
 	public void sourceNull() {

@@ -27,29 +27,38 @@ import reactor.test.subscriber.AssertSubscriber;
 public class FluxDistinctTest extends AbstractFluxOperatorTest<String, String> {
 
 	@Override
+	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
+		return defaultOptions.fusionMode(Fuseable.ANY);
+	}
+
+	@Override
 	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
 		return Arrays.asList(
-				Scenario.from(f -> f.distinct(d -> {
+				scenario(f -> f.distinct(d -> {
 					throw exception();
-				}), Fuseable.ANY),
+				})),
 
-				Scenario.from(f -> f.distinct(d -> null), Fuseable.ANY, step -> step.verifyError(NullPointerException.class))
+				scenario(f -> f.distinct(d -> null))
+						.verifier(step -> step.verifyError(NullPointerException.class))
 		);
 	}
 
 	@Override
 	protected List<Scenario<String, String>> scenarios_errorFromUpstreamFailure() {
 		return Arrays.asList(
-				Scenario.from(f -> f.distinct()));
+				scenario(f -> f.distinct()));
 	}
 
 	@Override
 	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
 		return Arrays.asList(
-				Scenario.from(f -> f.distinct(), Fuseable.ANY),
+				scenario(f -> f.distinct()),
 
-				Scenario.from(f -> f.distinct(), Fuseable.ANY, Flux.just(item(0), item
-						(0), item(0)), step -> step.expectNext(item(0)).verifyComplete())
+				scenario(f -> f.distinct()).finiteFlux(Flux.just(item(0),
+						                           item(0),
+						                           item(0)))
+				                           .verifier(step -> step.expectNext(item(0))
+				                                                 .verifyComplete())
 		);
 	}
 

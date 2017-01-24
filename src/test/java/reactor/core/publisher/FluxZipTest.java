@@ -44,8 +44,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class FluxZipTest extends AbstractFluxOperatorTest<String, String> {
 
 	@Override
-	protected boolean shouldDropNextAfterTerminate() {
-		return false;
+	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
+		return defaultOptions.shouldHitDropNextHookAfterTerminate(false);
 	}
 
 	@Override
@@ -55,10 +55,12 @@ public class FluxZipTest extends AbstractFluxOperatorTest<String, String> {
 
 	@Override
 	protected List<Scenario<String, String>> scenarios_errorFromUpstreamFailure() {
-		return Arrays.asList(Scenario.withPrefetch(f -> f.zipWith(finiteSourceOrDefault(
-				null), 3, (a, b) -> a), Fuseable.NONE, 3),
+		return Arrays.asList(
 
-				Scenario.from(f -> f.zipWith(Flux.<String>error(exception()),
+				scenario(f -> f.zipWith(finiteSourceOrDefault(null), 3, (a, b) -> a))
+					.prefetch(3),
+
+				scenario(f -> f.zipWith(Flux.<String>error(exception()),
 						(a, b) -> a)));
 	}
 
@@ -466,14 +468,14 @@ public class FluxZipTest extends AbstractFluxOperatorTest<String, String> {
 		source2.onNext(3);
 		source2.onNext(4);
 
-//		then: "the values are all collected from source1 flux"
+//		then: "the values are all collected scenario source1 flux"
 		assertThat(tap.get()).isEqualTo(3);
 
 //		when: "the sources accept the missing value"
 		source2.onNext(5);
 		source1.onNext(6);
 
-//		then: "the values are all collected from source1 flux"
+//		then: "the values are all collected scenario source1 flux"
 		assertThat(tap.get()).isEqualTo(9);
 	}
 
@@ -489,7 +491,7 @@ public class FluxZipTest extends AbstractFluxOperatorTest<String, String> {
 				Flux.zip(odds, even, (t1, t2) -> Arrays.asList(t1, t2));
 		Mono<List<List<Integer>>> tap = zippedFlux.collectList();
 
-//		then: "the values are all collected from source1 flux"
+//		then: "the values are all collected scenario source1 flux"
 		assertThat(tap.block()).containsExactly(Arrays.asList(1, 2),
 				Arrays.asList(3, 4),
 				Arrays.asList(5, 6));
@@ -500,7 +502,7 @@ public class FluxZipTest extends AbstractFluxOperatorTest<String, String> {
 				(t1, t2) -> Arrays.asList(t1, t2)));
 		tap = zippedFlux.collectList();
 
-//		then: "the values are all collected from source1 flux"
+//		then: "the values are all collected scenario source1 flux"
 		assertThat(tap.block()).containsExactly(Arrays.asList(1, 2),
 				Arrays.asList(3, 2),
 				Arrays.asList(5, 2),
