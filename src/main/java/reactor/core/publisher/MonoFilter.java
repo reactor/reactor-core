@@ -34,27 +34,14 @@ final class MonoFilter<T> extends MonoSource<T, T> {
 
 	final Predicate<? super T> predicate;
 
-	public MonoFilter(Publisher<? extends T> source, Predicate<? super T> predicate) {
+	MonoFilter(Publisher<? extends T> source, Predicate<? super T> predicate) {
 		super(source);
 		this.predicate = Objects.requireNonNull(predicate, "predicate");
-	}
-
-	public Predicate<? super T> predicate() {
-		return predicate;
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
-		if (source instanceof Fuseable) {
-			if (s instanceof ConditionalSubscriber) {
-				source.subscribe(new FilterFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
-						predicate));
-				return;
-			}
-			source.subscribe(new FilterFuseableSubscriber<>(s, predicate));
-			return;
-		}
 		if (s instanceof ConditionalSubscriber) {
 			source.subscribe(new FluxFilter.FilterConditionalSubscriber<>((ConditionalSubscriber<? super T>)s, predicate));
 			return;

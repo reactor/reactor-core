@@ -39,7 +39,9 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
+import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
@@ -54,7 +56,95 @@ import static org.junit.Assert.*;
 import static reactor.core.scheduler.Schedulers.fromExecutor;
 import static reactor.core.scheduler.Schedulers.fromExecutorService;
 
-public class FluxPublishOnTest {
+public class FluxPublishOnTest extends AbstractFluxOperatorTest<String, String> {
+
+	@Override
+	protected boolean shouldDropNextAfterTerminate() {
+		return false;
+	}
+
+	@Override
+	protected int fusionModeThreadBarrierSupport() {
+		return Fuseable.ASYNC;
+	}
+
+	@Override
+	protected RuntimeException exception() {
+		return new RejectedExecutionException("Scheduler unavailable");
+	}
+
+	void assertRejected(StepVerifier.Step<String> step) {
+		try {
+			step.consumeErrorWith(e -> Assert.assertTrue(Exceptions.unwrap(e) instanceof RejectedExecutionException));
+		}
+		catch (Exception e) {
+			assertTrue(Exceptions.unwrap(e) instanceof RejectedExecutionException);
+		}
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
+		return Arrays.asList(Scenario.from(f -> f.publishOn(Schedulers.fromExecutor(d -> {
+					throw exception();
+				})), Fuseable.ASYNC),
+
+				Scenario.from(f -> f.publishOn(new FailWorkerScheduler())),
+
+				Scenario.from(f -> f.publishOn(new FailNullWorkerScheduler()),
+						Fuseable.NONE,
+						step -> step.verifyError(NullPointerException.class)),
+
+				Scenario.from(f -> f.publishOn(new RejectingWorkerScheduler(false,
+						false)), Fuseable.ASYNC, this::assertRejected),
+
+				Scenario.from(f -> f.publishOn(new RejectingWorkerScheduler(true, false)),
+						Fuseable.ASYNC,
+						this::assertRejected),
+
+				Scenario.from(f -> f.publishOn(new RejectingWorkerScheduler(true, true)),
+						Fuseable.ASYNC,
+						this::assertRejected),
+
+				Scenario.from(f -> f.publishOn(new RejectingWorkerScheduler(false, true)),
+						Fuseable.ASYNC,
+						this::assertRejected),
+
+				Scenario.from(f -> f.publishOn(new RejectingWorkerScheduler(false,
+						false)), Fuseable.NONE, Flux.empty(), this::assertRejected),
+
+				Scenario.from(f -> f.publishOn(new RejectingWorkerScheduler(false, true)),
+						Fuseable.NONE,
+						Flux.empty(),
+						this::assertRejected),
+
+				Scenario.from(f -> f.publishOn(new RejectingWorkerScheduler(true, false)),
+						Fuseable.NONE,
+						Flux.empty(),
+						this::assertRejected),
+
+				Scenario.from(f -> f.publishOn(new RejectingWorkerScheduler(true, true)),
+						Fuseable.NONE,
+						Flux.empty(),
+						this::assertRejected));
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+		return Arrays.asList(Scenario.from(f -> f.publishOn(Schedulers.immediate()),
+				Fuseable.ASYNC),
+
+				Scenario.from(f -> f.publishOn(Schedulers.immediate(), false, 4),
+						Fuseable.ASYNC),
+
+				Scenario.withPrefetch(f -> f.publishOn(Schedulers.immediate(), 1),
+						Fuseable.ASYNC,
+						1),
+
+				Scenario.withPrefetch(f -> f.publishOn(Schedulers.immediate(),
+						Integer.MAX_VALUE), Fuseable.ASYNC, Integer.MAX_VALUE)
+
+		);
+	}
 
 	public static ExecutorService exec;
 
@@ -66,6 +156,12 @@ public class FluxPublishOnTest {
 	@AfterClass
 	public static void after() {
 		exec.shutdownNow();
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void failPrefetch() {
+		Flux.range(1, 10)
+		    .publishOn(Schedulers.immediate(), -1);
 	}
 
 	@Test
@@ -292,7 +388,7 @@ public class FluxPublishOnTest {
 		            .expectNextCount(250_000)
 		            .thenRequest(500_000)
 		            .expectNextCount(750_000)
-					.verifyComplete();
+		            .verifyComplete();
 	}
 
 	@Test
@@ -616,110 +712,64 @@ public class FluxPublishOnTest {
 
 	@Test
 	public void crossRangeHidden() {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-
 		int count = 1000000;
 
-		Flux.range(1, count)
-		    .hide()
-		    .flatMap(v -> Flux.range(v, 2)
-		                      .hide(), false, 128, 1)
-		    .hide()
-		    .publishOn(Schedulers.fromExecutorService(exec))
-		    .subscribe(ts);
-
-		if (!ts.await(Duration.ofSeconds(5))
-		       .isTerminated()) {
-			ts.cancel();
-		}
-
-		ts.assertValueCount(count * 2)
-		  .assertNoError()
-		  .assertComplete();
+		StepVerifier.create(Flux.range(1, count)
+		                        .hide()
+		                        .flatMap(v -> Flux.range(v, 2)
+		                                          .hide(), false, 128, 1)
+		                        .hide()
+		                        .publishOn(Schedulers.fromExecutorService(exec)))
+		            .expectNextCount(2 * count)
+		            .verifyComplete();
 	}
 
 	@Test
 	public void crossRange() {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-
 		int count = 1000000;
 
-		Flux.range(1, count)
-		    .flatMap(v -> Flux.range(v, 2), false, 128, 1)
-		    .publishOn(Schedulers.fromExecutorService(exec))
-		    .subscribe(ts);
-
-		if (!ts.await(Duration.ofSeconds(10))
-		       .isTerminated()) {
-			ts.cancel();
-		}
-
-		ts.assertValueCount(count * 2)
-		  .assertNoError()
-		  .assertComplete();
+		StepVerifier.create(Flux.range(1, count)
+		                        .flatMap(v -> Flux.range(v, 2), false, 128, 1)
+		                        .publishOn(Schedulers.fromExecutorService(exec)))
+		            .expectNextCount(2 * count)
+		            .verifyComplete();
 	}
 
 	@Test
 	public void crossRangeMaxHidden() throws Exception {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-
 		int count = 1000000;
 
-		Flux.range(1, count)
-		    .hide()
-		    .flatMap(v -> Flux.range(v, 2)
-		                      .hide(), false, 4, 32)
-		    .hide()
-		    .publishOn(Schedulers.fromExecutorService(exec))
-		    .subscribe(ts);
+		StepVerifier.create(Flux.range(1, count)
+		                        .hide()
+		                        .flatMap(v -> Flux.range(v, 2)
+		                                          .hide(), false, 4, 32)
+		                        .hide()
+		                        .publishOn(Schedulers.fromExecutorService(exec)))
+		            .expectNextCount(2 * count)
+		            .verifyComplete();
 
-		ts.await(Duration.ofSeconds(10))
-		  .assertTerminated()
-		  .assertValueCount(count * 2)
-		  .assertNoError()
-		  .assertComplete();
 	}
 
 	@Test
 	public void crossRangeMax() {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-
 		int count = 1000000;
 
-		Flux.range(1, count)
-		    .flatMap(v -> Flux.range(v, 2), false, 128, 32)
-		    .publishOn(Schedulers.fromExecutorService(exec))
-		    .subscribe(ts);
-
-		if (!ts.await(Duration.ofSeconds(10))
-		       .isTerminated()) {
-			ts.cancel();
-		}
-
-		ts.assertValueCount(count * 2)
-		  .assertNoError()
-		  .assertComplete();
+		StepVerifier.create(Flux.range(1, count)
+		                        .flatMap(v -> Flux.range(v, 2), false, 128, 32)
+		                        .publishOn(Schedulers.fromExecutorService(exec)))
+		            .expectNextCount(2 * count)
+		            .verifyComplete();
 	}
 
 	@Test
 	public void crossRangeMaxUnbounded() {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-
 		int count = 1000000;
 
-		Flux.range(1, count)
-		    .flatMap(v -> Flux.range(v, 2))
-		    .publishOn(Schedulers.fromExecutorService(exec))
-		    .subscribe(ts);
-
-		if (!ts.await(Duration.ofSeconds(10))
-		       .isTerminated()) {
-			ts.cancel();
-		}
-
-		ts.assertValueCount(count * 2)
-		  .assertNoError()
-		  .assertComplete();
+		StepVerifier.create(Flux.range(1, count)
+		                        .flatMap(v -> Flux.range(v, 2))
+		                        .publishOn(Schedulers.fromExecutorService(exec)))
+		            .expectNextCount(2 * count)
+		            .verifyComplete();
 	}
 
 	@Test
@@ -1166,5 +1216,102 @@ public class FluxPublishOnTest {
 		latch.await(15, TimeUnit.SECONDS);
 		assertTrue(latch.getCount() + " of " + items + " items were not counted down",
 				latch.getCount() == 0);
+	}
+
+	@Test
+	public void callablePath() {
+		StepVerifier.create(Mono.fromCallable(() -> "test")
+		                        .flux()
+		                        .publishOn(Schedulers.immediate()))
+		            .expectNext("test")
+		            .verifyComplete();
+
+		StepVerifier.create(Mono.fromCallable(() -> {
+			throw new Exception("test");
+		})
+		                        .flux()
+		                        .publishOn(Schedulers.immediate()))
+		            .verifyErrorMessage("test");
+
+		StepVerifier.create(Mono.fromCallable(() -> null)
+		                        .flux()
+		                        .publishOn(Schedulers.immediate()))
+		            .verifyError(NullPointerException.class);
+	}
+
+	private static class FailNullWorkerScheduler implements Scheduler {
+
+		@Override
+		public Disposable schedule(Runnable task) {
+			return Scheduler.REJECTED;
+		}
+
+		@Override
+		public Worker createWorker() {
+			return null;
+		}
+	}
+
+	private static class RejectingWorkerScheduler implements Scheduler {
+
+		final boolean isSchedulerTerminated;
+		final boolean isWorkerTerminated;
+
+		RejectingWorkerScheduler(boolean isSchedulerTerminated,
+				boolean isWorkerTerminated) {
+			this.isSchedulerTerminated = isSchedulerTerminated;
+			this.isWorkerTerminated = isWorkerTerminated;
+		}
+
+		@Override
+		public Disposable schedule(Runnable task) {
+			return Scheduler.REJECTED;
+		}
+
+		@Override
+		public boolean isDisposed() {
+			return isSchedulerTerminated;
+		}
+
+		@Override
+		public Worker createWorker() {
+			return new Worker() {
+
+				int invoked;
+
+				@Override
+				public Disposable schedule(Runnable task) {
+					if (++invoked > 1) {
+						return Scheduler.REJECTED;
+					}
+					task.run();
+					return () -> {
+					};
+				}
+
+				@Override
+				public void shutdown() {
+
+				}
+
+				@Override
+				public boolean isDisposed() {
+					return isWorkerTerminated;
+				}
+			};
+		}
+	}
+
+	private class FailWorkerScheduler implements Scheduler {
+
+		@Override
+		public Disposable schedule(Runnable task) {
+			return Scheduler.REJECTED;
+		}
+
+		@Override
+		public Worker createWorker() {
+			throw exception();
+		}
 	}
 }

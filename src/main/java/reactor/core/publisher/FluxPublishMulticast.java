@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Objects;
@@ -33,22 +34,24 @@ import reactor.core.Fuseable;
  * Shares a sequence for the duration of a function that may transform it and
  * consume it as many times as necessary without causing multiple subscriptions
  * to the upstream.
- * 
+ *
  * @param <T> the source value type
  * @param <R> the output value type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fuseable {
 
 	final Function<? super Flux<T>, ? extends Publisher<? extends R>> transform;
-	
+
 	final Supplier<? extends Queue<T>> queueSupplier;
-	
+
 	final int prefetch;
 
-	public FluxPublishMulticast(Publisher<? extends T> source,
+	FluxPublishMulticast(Publisher<? extends T> source,
 			Function<? super Flux<T>, ? extends Publisher<? extends R>> transform,
-			int prefetch, Supplier<? extends Queue<T>> queueSupplier) {
+			int prefetch,
+			Supplier<? extends Queue<T>> queueSupplier) {
 		super(source);
 		if (prefetch < 1) {
 			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
@@ -65,155 +68,164 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 
 	@Override
 	public void subscribe(Subscriber<? super R> s) {
-		
-		FluxPublishMulticaster<T, R> multicast = new FluxPublishMulticaster<>(prefetch, queueSupplier);
-		
+
+		FluxPublishMulticaster<T, R> multicast =
+				new FluxPublishMulticaster<>(prefetch, queueSupplier);
+
 		Publisher<? extends R> out;
-		
+
 		try {
 			out = transform.apply(multicast);
-		} catch (Throwable ex) {
+		}
+		catch (Throwable ex) {
 			Operators.error(s, Operators.onOperatorError(ex));
 			return;
 		}
-		
+
 		if (out == null) {
-			Operators.error(s, new NullPointerException("The transform returned a null Publisher"));
+			Operators.error(s,
+					new NullPointerException("The transform returned a null Publisher"));
 			return;
 		}
-		
+
 		if (out instanceof Fuseable) {
 			out.subscribe(new CancelFuseableMulticaster<>(s, multicast));
-		} else {
+		}
+		else {
 			out.subscribe(new CancelMulticaster<>(s, multicast));
 		}
-		
+
 		source.subscribe(multicast);
 	}
 
-	static final class FluxPublishMulticaster<T, R> extends Flux<T> implements Subscriber<T> {
-		
+	static final class FluxPublishMulticaster<T, R> extends Flux<T>
+			implements Subscriber<T> {
+
 		final int limit;
-		
+
 		final int prefetch;
-		
+
 		final Supplier<? extends Queue<T>> queueSupplier;
-		
+
 		Queue<T> queue;
-		
+
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<FluxPublishMulticaster, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(FluxPublishMulticaster.class, Subscription.class, "s");
+				AtomicReferenceFieldUpdater.newUpdater(FluxPublishMulticaster.class,
+						Subscription.class,
+						"s");
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<FluxPublishMulticaster> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(FluxPublishMulticaster.class, "wip");
-		
+
 		volatile PublishClientSubscription<T>[] subscribers;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<FluxPublishMulticaster, PublishClientSubscription[]> SUBSCRIBERS =
-				AtomicReferenceFieldUpdater.newUpdater(FluxPublishMulticaster.class, PublishClientSubscription[].class, "subscribers");
-		
+		static final AtomicReferenceFieldUpdater<FluxPublishMulticaster, PublishClientSubscription[]>
+				SUBSCRIBERS = AtomicReferenceFieldUpdater.newUpdater(
+				FluxPublishMulticaster.class,
+				PublishClientSubscription[].class,
+				"subscribers");
+
 		@SuppressWarnings("rawtypes")
 		static final PublishClientSubscription[] EMPTY = new PublishClientSubscription[0];
 
 		@SuppressWarnings("rawtypes")
-		static final PublishClientSubscription[] TERMINATED = new PublishClientSubscription[0];
+		static final PublishClientSubscription[] TERMINATED =
+				new PublishClientSubscription[0];
 
 		volatile boolean done;
 
 		volatile boolean connected;
-		
+
 		volatile boolean cancelled;
-		
+
 		Throwable error;
 
 		int produced;
-		
+
 		int sourceMode;
-		
+
 		@SuppressWarnings("unchecked")
-		public FluxPublishMulticaster(int prefetch, Supplier<? extends Queue<T>> queueSupplier) {
+		FluxPublishMulticaster(int prefetch, Supplier<? extends Queue<T>> queueSupplier) {
 			this.prefetch = prefetch;
 			this.limit = prefetch - (prefetch >> 2);
 			this.queueSupplier = queueSupplier;
 			this.subscribers = EMPTY;
 		}
-		
+
 		@Override
 		public void subscribe(Subscriber<? super T> s) {
 			PublishClientSubscription<T> pcs = new PublishClientSubscription<>(this, s);
 			s.onSubscribe(pcs);
-			
+
 			if (add(pcs)) {
 				if (pcs.once != 0) {
 					removeAndDrain(pcs);
-				} else {
+				}
+				else {
 					drain();
 				}
-			} else {
+			}
+			else {
 				Throwable ex = error;
 				if (ex != null) {
 					s.onError(ex);
-				} else {
+				}
+				else {
 					s.onComplete();
 				}
 			}
 		}
-		
+
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.setOnce(S, this, s)) {
-				
+
 				if (s instanceof QueueSubscription) {
-					@SuppressWarnings("unchecked")
-					QueueSubscription<T> qs = (QueueSubscription<T>) s;
-					
+					@SuppressWarnings("unchecked") QueueSubscription<T> qs =
+							(QueueSubscription<T>) s;
+
 					int m = qs.requestFusion(Fuseable.ANY);
 					if (m == Fuseable.SYNC) {
 						sourceMode = m;
-						
+
 						queue = qs;
 						done = true;
 						connected = true;
-						
+
 						drain();
-						
+
 						return;
-					} else
-					if (m == Fuseable.ASYNC) {
+					}
+					else if (m == Fuseable.ASYNC) {
 						sourceMode = m;
-						
+
 						queue = qs;
 						connected = true;
 
 						s.request(prefetch);
-						
+
 						return;
 					}
 				}
-				
-				try {
-					queue = queueSupplier.get();
-				} catch (Throwable ex) {
-					onError(Operators.onOperatorError(s, ex));
-					return;
-				}
+
+				queue = queueSupplier.get();
 				connected = true;
-				
+
 				s.request(prefetch);
 			}
 		}
-		
+
 		@Override
 		public void onNext(T t) {
 			if (done) {
 				Operators.onNextDropped(t);
 				return;
 			}
-			
+
 			if (sourceMode != Fuseable.ASYNC) {
 				if (!queue.offer(t)) {
 					onError(Operators.onOperatorError(s,
@@ -224,7 +236,7 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 			}
 			drain();
 		}
-		
+
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
@@ -235,65 +247,67 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 			done = true;
 			drain();
 		}
-		
+
 		@Override
 		public void onComplete() {
 			done = true;
 			drain();
 		}
-		
+
 		void drain() {
 			if (WIP.getAndIncrement(this) != 0) {
 				return;
 			}
-			
+
 			if (sourceMode == Fuseable.SYNC) {
 				drainSync();
-			} else {
+			}
+			else {
 				drainAsync();
 			}
 		}
-		
+
 		@SuppressWarnings("unchecked")
 		void drainSync() {
 			int missed = 1;
-			
-			for (;;) {
-				
+
+			for (; ; ) {
+
 				if (connected) {
-					
+
 					if (cancelled) {
 						queue.clear();
 						return;
 					}
 
 					final Queue<T> queue = this.queue;
-					
+
 					PublishClientSubscription<T>[] a = subscribers;
 					int n = a.length;
-					
+
 					if (n != 0) {
-						
+
 						long r = Long.MAX_VALUE;
-						
+
 						for (int i = 0; i < n; i++) {
 							r = Math.min(r, a[i].requested);
 						}
-						
+
 						long e = 0L;
-						
+
 						while (e != r) {
-							
+
 							if (cancelled) {
 								queue.clear();
 								return;
 							}
-							
+
 							T v;
-							
+
 							try {
 								v = queue.poll();
-							} catch (Throwable ex) {
+							}
+							catch (Throwable ex) {
 								error = Operators.onOperatorError(s, ex);
 								queue.clear();
 								a = SUBSCRIBERS.getAndSet(this, TERMINATED);
@@ -302,7 +316,7 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 								}
 								return;
 							}
-							
+
 							if (v == null) {
 								a = SUBSCRIBERS.getAndSet(this, TERMINATED);
 								for (int i = 0; i < n; i++) {
@@ -310,11 +324,11 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 								}
 								return;
 							}
-							
+
 							for (int i = 0; i < n; i++) {
 								a[i].actual.onNext(v);
 							}
-							
+
 							e++;
 						}
 
@@ -325,7 +339,8 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 						boolean empty;
 						try {
 							empty = queue.isEmpty();
-						} catch (Throwable ex) {
+						}
+						catch (Throwable ex) {
 							queue.clear();
 							error = Operators.onOperatorError(s, ex);
 							a = SUBSCRIBERS.getAndSet(this, TERMINATED);
@@ -350,22 +365,22 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 						}
 					}
 				}
-				
+
 				missed = WIP.addAndGet(this, -missed);
 				if (missed == 0) {
 					break;
 				}
 			}
 		}
-		
+
 		@SuppressWarnings("unchecked")
 		void drainAsync() {
 			int missed = 1;
-			
+
 			int p = produced;
-			
-			for (;;) {
-				
+
+			for (; ; ) {
+
 				if (connected) {
 					if (cancelled) {
 						queue.clear();
@@ -373,33 +388,34 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 					}
 
 					final Queue<T> queue = this.queue;
-					
+
 					PublishClientSubscription<T>[] a = subscribers;
 					int n = a.length;
-					
+
 					if (n != 0) {
-						
+
 						long r = Long.MAX_VALUE;
-						
+
 						for (int i = 0; i < n; i++) {
 							r = Math.min(r, a[i].requested);
 						}
-						
+
 						long e = 0L;
-						
+
 						while (e != r) {
 							if (cancelled) {
 								queue.clear();
 								return;
 							}
-							
+
 							boolean d = done;
-							
+
 							T v;
-							
+
 							try {
 								v = queue.poll();
-							} catch (Throwable ex) {
+							}
+							catch (Throwable ex) {
 								queue.clear();
 								error = Operators.onOperatorError(s, ex);
 								a = SUBSCRIBERS.getAndSet(this, TERMINATED);
@@ -408,9 +424,9 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 								}
 								return;
 							}
-							
+
 							boolean empty = v == null;
-							
+
 							if (d) {
 								Throwable ex = error;
 								if (ex != null) {
@@ -420,8 +436,8 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 										a[i].actual.onError(ex);
 									}
 									return;
-								} else
-								if (empty) {
+								}
+								else if (empty) {
 									a = SUBSCRIBERS.getAndSet(this, TERMINATED);
 									for (int i = 0; i < n; i++) {
 										a[i].actual.onComplete();
@@ -429,35 +445,36 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 									return;
 								}
 							}
-							
+
 							if (empty) {
 								break;
 							}
-							
+
 							for (int i = 0; i < n; i++) {
 								a[i].actual.onNext(v);
 							}
-							
+
 							e++;
-							
+
 							if (++p == limit) {
 								s.request(p);
 								p = 0;
 							}
 						}
-						
+
 						if (e == r) {
 							if (cancelled) {
 								queue.clear();
 								return;
 							}
-							
+
 							boolean d = done;
-							
+
 							boolean empty;
 							try {
 								empty = queue.isEmpty();
-							} catch (Throwable ex) {
+							}
+							catch (Throwable ex) {
 								queue.clear();
 								error = Operators.onOperatorError(s, ex);
 								a = SUBSCRIBERS.getAndSet(this, TERMINATED);
@@ -476,8 +493,8 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 										a[i].actual.onError(ex);
 									}
 									return;
-								} else
-								if (empty) {
+								}
+								else if (empty) {
 									a = SUBSCRIBERS.getAndSet(this, TERMINATED);
 									for (int i = 0; i < n; i++) {
 										a[i].actual.onComplete();
@@ -487,37 +504,37 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 							}
 
 						}
-						
+
 						if (e != 0L) {
 							for (int i = 0; i < n; i++) {
 								a[i].produced(e);
 							}
 						}
 					}
-					
+
 				}
-				
+
 				produced = p;
-				
+
 				missed = WIP.addAndGet(this, -missed);
 				if (missed == 0) {
 					break;
 				}
 			}
 		}
-		
+
 		boolean add(PublishClientSubscription<T> s) {
-			for (;;) {
+			for (; ; ) {
 				PublishClientSubscription<T>[] a = subscribers;
 
 				if (a == TERMINATED) {
 					return false;
 				}
-				
+
 				int n = a.length;
-				
-				@SuppressWarnings("unchecked")
-				PublishClientSubscription<T>[] b = new PublishClientSubscription[n + 1];
+
+				@SuppressWarnings("unchecked") PublishClientSubscription<T>[] b =
+						new PublishClientSubscription[n + 1];
 				System.arraycopy(a, 0, b, 0, n);
 				b[n] = s;
 				if (SUBSCRIBERS.compareAndSet(this, a, b)) {
@@ -525,34 +542,35 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 				}
 			}
 		}
-		
+
 		@SuppressWarnings("unchecked")
 		void removeAndDrain(PublishClientSubscription<T> s) {
-			for (;;) {
+			for (; ; ) {
 				PublishClientSubscription<T>[] a = subscribers;
 
 				if (a == TERMINATED || a == EMPTY) {
 					return;
 				}
-				
+
 				int n = a.length;
 				int j = -1;
-				
+
 				for (int i = 0; i < n; i++) {
 					if (a[i] == s) {
 						j = i;
 						break;
 					}
 				}
-				
+
 				if (j < 0) {
 					return;
 				}
-				
+
 				PublishClientSubscription<T>[] b;
 				if (n == 1) {
 					b = EMPTY;
-				} else {
+				}
+				else {
 					b = new PublishClientSubscription[n - 1];
 					System.arraycopy(a, 0, b, 0, j);
 					System.arraycopy(a, j + 1, b, j, n - j - 1);
@@ -563,44 +581,49 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 				}
 			}
 		}
-		
+
 		void cancel() {
 			if (!cancelled) {
 				cancelled = true;
 				terminate();
 			}
 		}
-		
+
 		@SuppressWarnings("unchecked")
-		void terminate() {
-			Operators.terminate(S, this);
-			subscribers = TERMINATED;
-			if (WIP.getAndIncrement(this) == 0) {
-				if (connected) {
-					queue.clear();
+		boolean terminate() {
+			if(Operators.replace(S, this, Operators.cancelledSubscription())) {
+				subscribers = TERMINATED;
+				if (WIP.getAndIncrement(this) == 0) {
+					if (connected) {
+						queue.clear();
+					}
 				}
+				return true;
 			}
+			return false;
 		}
 	}
-	
-	static final class PublishClientSubscription<T> 
-	implements Subscription {
-		
+
+	static final class PublishClientSubscription<T> implements Subscription {
+
 		final FluxPublishMulticaster<T, ?> parent;
-		
+
 		final Subscriber<? super T> actual;
-		
+
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<PublishClientSubscription> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(PublishClientSubscription.class, "requested");
+				AtomicLongFieldUpdater.newUpdater(PublishClientSubscription.class,
+						"requested");
 
 		volatile int once;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<PublishClientSubscription> ONCE =
-				AtomicIntegerFieldUpdater.newUpdater(PublishClientSubscription.class, "once");
+				AtomicIntegerFieldUpdater.newUpdater(PublishClientSubscription.class,
+						"once");
 
-		public PublishClientSubscription(FluxPublishMulticaster<T, ?> parent, Subscriber<? super T> actual) {
+		public PublishClientSubscription(FluxPublishMulticaster<T, ?> parent,
+				Subscriber<? super T> actual) {
 			this.parent = parent;
 			this.actual = actual;
 		}
@@ -612,29 +635,32 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 				parent.drain();
 			}
 		}
-		
+
 		@Override
 		public void cancel() {
 			if (ONCE.compareAndSet(this, 0, 1)) {
 				parent.removeAndDrain(this);
 			}
 		}
-		
+
 		void produced(long n) {
 			if (requested != Long.MAX_VALUE) {
 				REQUESTED.addAndGet(this, -n);
 			}
 		}
 	}
-	
-	static final class CancelMulticaster<T> implements Subscriber<T>, QueueSubscription<T> {
+
+	static final class CancelMulticaster<T>
+			implements Subscriber<T>, QueueSubscription<T> {
+
 		final Subscriber<? super T> actual;
-		
+
 		final FluxPublishMulticaster<?, ?> parent;
 
 		Subscription s;
-		
-		public CancelMulticaster(Subscriber<? super T> actual, FluxPublishMulticaster<?, ?> parent) {
+
+		public CancelMulticaster(Subscriber<? super T> actual,
+				FluxPublishMulticaster<?, ?> parent) {
 			this.actual = actual;
 			this.parent = parent;
 		}
@@ -652,8 +678,10 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			this.s = s;
-			actual.onSubscribe(this);
+			if(Operators.validate(this.s, s)) {
+				this.s = s;
+				actual.onSubscribe(this);
+			}
 		}
 
 		@Override
@@ -663,38 +691,42 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 
 		@Override
 		public void onError(Throwable t) {
-			parent.terminate();
+			if(!parent.terminate()){
+				Operators.onErrorDropped(t);
+				return;
+			}
 			actual.onError(t);
 		}
 
 		@Override
 		public void onComplete() {
-			parent.terminate();
-			actual.onComplete();
+			if(parent.terminate()) {
+				actual.onComplete();
+			}
 		}
-		
+
 		@Override
 		public int requestFusion(int requestedMode) {
 			return NONE;
 		}
-		
+
 		@Override
 		public void clear() {
 			// should not be called because fusion is always rejected
 		}
-		
+
 		@Override
 		public boolean isEmpty() {
 			// should not be called because fusion is always rejected
 			return false;
 		}
-		
+
 		@Override
 		public int size() {
 			// should not be called because fusion is always rejected
 			return 0;
 		}
-		
+
 		@Override
 		public T poll() {
 			// should not be called because fusion is always rejected
@@ -702,14 +734,17 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 		}
 	}
 
-	static final class CancelFuseableMulticaster<T> implements Subscriber<T>, QueueSubscription<T> {
+	static final class CancelFuseableMulticaster<T>
+			implements Subscriber<T>, QueueSubscription<T> {
+
 		final Subscriber<? super T> actual;
-		
+
 		final FluxPublishMulticaster<?, ?> parent;
 
 		QueueSubscription<T> s;
-		
-		public CancelFuseableMulticaster(Subscriber<? super T> actual, FluxPublishMulticaster<?, ?> parent) {
+
+		public CancelFuseableMulticaster(Subscriber<? super T> actual,
+				FluxPublishMulticaster<?, ?> parent) {
 			this.actual = actual;
 			this.parent = parent;
 		}
@@ -728,8 +763,10 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 		@SuppressWarnings("unchecked")
 		@Override
 		public void onSubscribe(Subscription s) {
-			this.s = (QueueSubscription<T>)s;
-			actual.onSubscribe(this);
+			if(Operators.validate(this.s, s)) {
+				this.s = Operators.as(s);
+				actual.onSubscribe(this);
+			}
 		}
 
 		@Override
@@ -739,36 +776,40 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 
 		@Override
 		public void onError(Throwable t) {
-			parent.terminate();
+			if(!parent.terminate()){
+				Operators.onErrorDropped(t);
+				return;
+			}
 			actual.onError(t);
 		}
 
 		@Override
 		public void onComplete() {
-			parent.terminate();
-			actual.onComplete();
+			if(parent.terminate()){
+				actual.onComplete();
+			}
 		}
-		
+
 		@Override
 		public int requestFusion(int requestedMode) {
 			return s.requestFusion(requestedMode);
 		}
-		
+
 		@Override
 		public T poll() {
 			return s.poll();
 		}
-		
+
 		@Override
 		public boolean isEmpty() {
 			return s.isEmpty();
 		}
-		
+
 		@Override
 		public int size() {
 			return s.size();
 		}
-		
+
 		@Override
 		public void clear() {
 			s.clear();

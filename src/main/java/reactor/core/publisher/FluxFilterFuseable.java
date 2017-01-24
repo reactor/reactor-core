@@ -86,15 +86,15 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T> implements Fuseable {
 
 		@Override
 		public void onNext(T t) {
-			if (done) {
-				Operators.onNextDropped(t);
-				return;
-			}
 
 			if (sourceMode == ASYNC) {
 				actual.onNext(null);
 			}
 			else {
+				if (done) {
+					Operators.onNextDropped(t);
+					return;
+				}
 				boolean b;
 
 				try {
@@ -277,15 +277,15 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T> implements Fuseable {
 
 		@Override
 		public void onNext(T t) {
-			if (done) {
-				Operators.onNextDropped(t);
-				return;
-			}
 
 			if (sourceMode == ASYNC) {
 				actual.onNext(null);
 			}
 			else {
+				if (done) {
+					Operators.onNextDropped(t);
+					return;
+				}
 				boolean b;
 
 				try {

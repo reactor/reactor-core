@@ -51,7 +51,7 @@ extends Mono<T>
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		s.onSubscribe(new Operators.ScalarSubscription<>(s, value));
+		s.onSubscribe(Operators.scalarSubscription(s, value));
 	}
 
 	@Override

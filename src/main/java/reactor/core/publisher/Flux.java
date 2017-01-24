@@ -4604,13 +4604,39 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} producing asynchronously
 	 */
 	public final Flux<T> publishOn(Scheduler scheduler, int prefetch) {
-		if (this instanceof Fuseable.ScalarCallable) {
-			@SuppressWarnings("unchecked") T value = ((Fuseable.ScalarCallable<T>) this).call();
-			return onAssembly(new FluxSubscribeOnValue<>(value, scheduler));
+		return publishOn(scheduler, true, prefetch);
+	}
+
+	/**
+	 * Run onNext, onComplete and onError on a supplied {@link Scheduler}
+	 * {@link reactor.core.scheduler.Scheduler.Worker}.
+	 *
+	 * <p>
+	 * Typically used for fast publisher, slow consumer(s) scenarios.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/publishon.png" alt="">
+	 * <p>
+	 * {@code flux.publishOn(Schedulers.single()).subscribe() }
+	 *
+	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
+	 * @param delayError should the buffer be consumed before forwarding any error
+	 * @param prefetch the asynchronous boundary capacity
+	 *
+	 * @return a {@link Flux} producing asynchronously
+	 */
+	public final Flux<T> publishOn(Scheduler scheduler, boolean delayError, int prefetch) {
+		if (this instanceof Callable) {
+			if (this instanceof Fuseable.ScalarCallable) {
+				@SuppressWarnings("unchecked") T value =
+						((Fuseable.ScalarCallable<T>) this).call();
+				return onAssembly(new FluxSubscribeOnValue<>(value, scheduler));
+			}
+			@SuppressWarnings("unchecked")
+			Callable<T> c = (Callable<T>)this;
+			return onAssembly(new FluxSubscribeOnCallable<>(c, scheduler));
 		}
 
-		return onAssembly(new FluxPublishOn<>(this, scheduler, true, prefetch,
-				QueueSupplier.get(prefetch)));
+		return onAssembly(new FluxPublishOn<>(this, scheduler, delayError, prefetch, QueueSupplier.get(prefetch)));
 	}
 
 	/**

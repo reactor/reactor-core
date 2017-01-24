@@ -40,7 +40,7 @@ final class ExecutorScheduler implements Scheduler {
 
 	volatile boolean terminated;
 
-	public ExecutorScheduler(Executor executor, boolean trampoline) {
+	ExecutorScheduler(Executor executor, boolean trampoline) {
 		this.executor = executor;
 		this.trampoline = trampoline;
 	}
@@ -96,20 +96,23 @@ final class ExecutorScheduler implements Scheduler {
 
 		final Runnable task;
 
-		public ExecutorPlainRunnable(Runnable task) {
+		ExecutorPlainRunnable(Runnable task) {
 			this.task = task;
 		}
 
 		@Override
 		public void run() {
-			try {
 				if (!get()) {
-					task.run();
+					try {
+						task.run();
+					}
+					catch (Throwable ex) {
+						Schedulers.handleError(ex);
+					}
+					finally {
+						lazySet(true);
+					}
 				}
-			}
-			catch (Throwable ex) {
-				Schedulers.handleError(ex);
-			}
 		}
 
 		@Override
@@ -120,11 +123,6 @@ final class ExecutorScheduler implements Scheduler {
 		@Override
 		public void dispose() {
 			set(true);
-		}
-
-		@Override
-		public String toString() {
-			return "ExecutorPlainRunnable[cancelled=" + get() + ", task=" + task + "]";
 		}
 	}
 
@@ -151,7 +149,7 @@ final class ExecutorScheduler implements Scheduler {
 
 		final boolean callRemoveOnFinish;
 
-		public ExecutorTrackedRunnable(Runnable task,
+		ExecutorTrackedRunnable(Runnable task,
 				WorkerDelete parent,
 				boolean callRemoveOnFinish) {
 			this.task = task;
@@ -161,19 +159,22 @@ final class ExecutorScheduler implements Scheduler {
 
 		@Override
 		public void run() {
-			try {
 				if (!get()) {
-					task.run();
+					try {
+						task.run();
+					}
+					catch (Throwable ex) {
+						Schedulers.handleError(ex);
+					}
+					finally {
+						if (callRemoveOnFinish) {
+							dispose();
+						}
+						else {
+							lazySet(true);
+						}
+					}
 				}
-			}
-			catch (Throwable ex) {
-				Schedulers.handleError(ex);
-			}
-			finally {
-				if (callRemoveOnFinish) {
-					dispose();
-				}
-			}
 		}
 
 		@Override
@@ -205,7 +206,7 @@ final class ExecutorScheduler implements Scheduler {
 
 		OpenHashSet<ExecutorTrackedRunnable> tasks;
 
-		public ExecutorSchedulerWorker(Executor executor) {
+		ExecutorSchedulerWorker(Executor executor) {
 			this.executor = executor;
 			this.tasks = new OpenHashSet<>();
 		}
@@ -228,12 +229,13 @@ final class ExecutorScheduler implements Scheduler {
 			try {
 				executor.execute(r);
 			}
-			catch (RejectedExecutionException ex) {
+			catch (Throwable ex) {
 				synchronized (this) {
 					if (!terminated) {
 						tasks.remove(r);
 					}
 				}
+				Schedulers.handleError(ex);
 				return REJECTED;
 			}
 
@@ -327,8 +329,9 @@ final class ExecutorScheduler implements Scheduler {
 				try {
 					executor.execute(this);
 				}
-				catch (RejectedExecutionException ex) {
+				catch (Throwable ex) {
 					r.dispose();
+					Schedulers.handleError(ex);
 					return REJECTED;
 				}
 			}

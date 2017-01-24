@@ -411,13 +411,13 @@ final class FluxTake<T> extends FluxSource<T, T> {
 
 		@Override
 		public void onNext(T t) {
-			if (done) {
-				Operators.onNextDropped(t);
-				return;
-			}
 
 			if (inputMode == Fuseable.ASYNC) {
 				actual.onNext(null);
+				return;
+			}
+			if (done) {
+				Operators.onNextDropped(t);
 				return;
 			}
 
@@ -527,8 +527,16 @@ final class FluxTake<T> extends FluxSource<T, T> {
 				return null;
 			}
 			long r = remaining;
-
 			T v = qs.poll();
+			if (r == 0L) {
+				done = true;
+				if (inputMode == Fuseable.ASYNC) {
+					qs.cancel();
+					actual.onComplete();
+				}
+				return null;
+			}
+
 
 			if (v != null) {
 				remaining = --r;

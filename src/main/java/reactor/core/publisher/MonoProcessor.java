@@ -401,7 +401,7 @@ public final class MonoProcessor<O> extends Mono<O>
 				return;
 			}
 			else if (endState == STATE_SUCCESS_VALUE) {
-				subscriber.onSubscribe(new Operators.ScalarSubscription<>(subscriber, value));
+				subscriber.onSubscribe(Operators.scalarSubscription(subscriber, value));
 				return;
 			}
 			else if (endState == STATE_ERROR) {

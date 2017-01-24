@@ -68,15 +68,6 @@ final class MonoPeek<T> extends MonoSource<T, T> implements SignalPeek<T> {
 	@Override
 	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
-		if (source instanceof Fuseable) {
-			if (s instanceof ConditionalSubscriber) {
-				source.subscribe(new PeekFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
-						this));
-				return;
-			}
-			source.subscribe(new PeekFuseableSubscriber<>(s, this));
-			return;
-		}
 		if (s instanceof ConditionalSubscriber) {
 			source.subscribe(new PeekConditionalSubscriber<>(
 					(ConditionalSubscriber<? super T>)s, this));

@@ -157,14 +157,14 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 
 		@Override
 		public void onNext(T t) {
-			if (done) {
-				Operators.onNextDropped(t);
-				return;
-			}
 			if (sourceMode == ASYNC) {
 				actual.onNext(null);
 			}
 			else {
+				if (done) {
+					Operators.onNextDropped(t);
+					return;
+				}
 				if (parent.onNextCall() != null) {
 					try {
 						parent.onNextCall()
@@ -391,14 +391,14 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 
 		@Override
 		public void onNext(T t) {
-			if (done) {
-				Operators.onNextDropped(t);
-				return;
-			}
 			if (sourceMode == ASYNC) {
 				actual.onNext(null);
 			}
 			else {
+				if (done) {
+					Operators.onNextDropped(t);
+					return;
+				}
 				if (parent.onNextCall() != null) {
 					try {
 						parent.onNextCall()

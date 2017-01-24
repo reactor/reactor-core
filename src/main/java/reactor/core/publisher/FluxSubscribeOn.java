@@ -23,13 +23,11 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Fuseable;
 import reactor.core.Loopback;
 import reactor.core.Producer;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
 
-import static reactor.core.publisher.FluxSubscribeOnValue.scalarScheduleOn;
 
 /**
  * Subscribes to the source Publisher asynchronously through a scheduler function or
@@ -42,7 +40,7 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 
 	final Scheduler scheduler;
 	
-	public FluxSubscribeOn(
+	FluxSubscribeOn(
 			Publisher<? extends T> source, 
 			Scheduler scheduler) {
 		super(source);
@@ -52,13 +50,6 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 	@Override
 	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
-		if (source instanceof Fuseable.ScalarCallable) {
-			if (!scalarScheduleOn(source, s, scheduler)) {
-				MonoSubscribeOnCallable.subscribe((Callable<T>) source, s, scheduler);
-			}
-			return;
-		}
-		
 		Worker worker;
 		
 		try {
@@ -85,11 +76,6 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 	@Override
 	public Object connectedInput() {
 		return scheduler;
-	}
-
-	@Override
-	public Object connectedOutput() {
-		return null;
 	}
 
 	static final class SubscribeOnSubscriber<T>
@@ -123,7 +109,7 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> implements Loopback {
 						Thread.class,
 						"thread");
 
-		public SubscribeOnSubscriber(Publisher<? extends T> source, Subscriber<? super
+		SubscribeOnSubscriber(Publisher<? extends T> source, Subscriber<? super
 				T> actual, Worker worker) {
 			this.actual = actual;
 			this.worker = worker;

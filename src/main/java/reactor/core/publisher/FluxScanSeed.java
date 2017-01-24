@@ -240,7 +240,7 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public long requestedFromDownstream() {
-			return requested - produced;
+			return requested;
 		}
 
 		@Override

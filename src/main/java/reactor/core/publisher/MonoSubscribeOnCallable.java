@@ -36,19 +36,13 @@ final class MonoSubscribeOnCallable<T> extends Mono<T> implements Fuseable {
 
 	final Scheduler scheduler;
 
-	public MonoSubscribeOnCallable(Callable<? extends T> callable, Scheduler scheduler) {
+	MonoSubscribeOnCallable(Callable<? extends T> callable, Scheduler scheduler) {
 		this.callable = Objects.requireNonNull(callable, "callable");
 		this.scheduler = Objects.requireNonNull(scheduler, "scheduler");
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		subscribe(callable, s, scheduler);
-	}
-
-	public static <T> void subscribe(Callable<T> callable,
-			Subscriber<? super T> s,
-			Scheduler scheduler) {
 		FluxSubscribeOnCallable.CallableSubscribeOnSubscription<T> parent =
 				new FluxSubscribeOnCallable.CallableSubscribeOnSubscription<>(s, callable, scheduler);
 		s.onSubscribe(parent);

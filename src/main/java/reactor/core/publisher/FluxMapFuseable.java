@@ -92,14 +92,14 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 
 		@Override
 		public void onNext(T t) {
-			if (done) {
-				Operators.onNextDropped(t);
-				return;
+			if (sourceMode == ASYNC) {
+				actual.onNext(null);
 			}
-
-			int m = sourceMode;
-			
-			if (m == NONE) {
+			else {
+				if (done) {
+					Operators.onNextDropped(t);
+					return;
+				}
 				R v;
 	
 				try {
@@ -117,9 +117,6 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 				}
 	
 				actual.onNext(v);
-			} else
-			if (m == ASYNC) {
-				actual.onNext(null);
 			}
 		}
 
@@ -250,16 +247,19 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 
 		@Override
 		public void onNext(T t) {
-			if (done) {
-				Operators.onNextDropped(t);
-				return;
-			}
 
 			int m = sourceMode;
-			
-			if (m == 0) {
+			if (sourceMode == ASYNC){
+				actual.onNext(null);
+			}
+			else {
+				if (done) {
+					Operators.onNextDropped(t);
+					return;
+				}
+
 				R v;
-	
+
 				try {
 					v = mapper.apply(t);
 				} catch (Throwable e) {
@@ -276,9 +276,6 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 				}
 	
 				actual.onNext(v);
-			} else
-			if (m == 2) {
-				actual.onNext(null);
 			}
 		}
 

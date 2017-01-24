@@ -145,7 +145,7 @@ final class MonoFlatMap<T, R> extends Flux<R> {
                 if (v == null) {
                     actual.onComplete();
                 } else {
-                    onSubscribeInner(new Operators.ScalarSubscription<>(actual, v));
+                    onSubscribeInner(Operators.scalarSubscription(actual, v));
                 }
                 
                 return;

@@ -1597,7 +1597,7 @@ public abstract class Operators {
 		static final AtomicIntegerFieldUpdater<ScalarSubscription> ONCE =
 				AtomicIntegerFieldUpdater.newUpdater(ScalarSubscription.class, "once");
 
-		public ScalarSubscription(Subscriber<? super T> actual, T value) {
+		ScalarSubscription(Subscriber<? super T> actual, T value) {
 			this.value = Objects.requireNonNull(value, "value");
 			this.actual = Objects.requireNonNull(actual, "actual");
 		}

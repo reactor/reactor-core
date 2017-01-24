@@ -65,36 +65,6 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 		}
 	}
 
-	public static <T> boolean scalarScheduleOn(Publisher<? extends T> source,
-			Subscriber<? super T> s,
-			Scheduler scheduler) {
-		if (source instanceof ScalarCallable) {
-			@SuppressWarnings("unchecked") ScalarCallable<T> supplier =
-					(ScalarCallable<T>) source;
-
-			T v = supplier.call();
-
-			if (v == null) {
-				ScheduledEmpty parent = new ScheduledEmpty(s);
-				s.onSubscribe(parent);
-				Cancellation f = scheduler.schedule(parent);
-				if (f == Scheduler.REJECTED) {
-					if (parent.future != ScheduledEmpty.CANCELLED) {
-						s.onError(Operators.onRejectedExecution());
-					}
-				}
-				else {
-					parent.setFuture(f);
-				}
-			}
-			else {
-				s.onSubscribe(new ScheduledScalar<>(s, v, scheduler));
-			}
-			return true;
-		}
-		return false;
-	}
-
 	static final class ScheduledScalar<T>
 			implements QueueSubscription<T>, Runnable, Producer, Loopback {
 

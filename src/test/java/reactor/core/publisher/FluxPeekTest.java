@@ -151,12 +151,11 @@ public class FluxPeekTest extends AbstractFluxOperatorTest<String, String> {
 
 				Scenario.from(f -> f.doOnCancel(() -> {
 					throw exception();
-				})
-				                    .take(1).take(0), Fuseable.NONE, step -> {
+				}), Fuseable.NONE, Flux.never(), step -> {
 						//fixme Support bubbled error verification in reactor-test
 						Hooks.onErrorDropped(d -> assertTrue(d.getMessage(), d.getMessage()
 						                                                      .equals("test")));
-						step.verifyErrorMessage("test");
+						step.consumeSubscriptionWith(Subscription::cancel).verifyErrorMessage("test");
 				}));
 	}
 

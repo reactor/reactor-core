@@ -134,17 +134,14 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R> implements Fuseabl
 
 		@Override
 		public void onNext(T t) {
-			if (done) {
-				Operators.onNextDropped(t);
-				return;
-			}
-
-			int m = sourceMode;
-
-			if (m == ASYNC) {
+			if (sourceMode == ASYNC) {
 				actual.onNext(null);
 			}
 			else {
+				if (done) {
+					Operators.onNextDropped(t);
+					return;
+				}
 				try {
 					handler.accept(t, this);
 				}
@@ -378,17 +375,15 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R> implements Fuseabl
 
 		@Override
 		public void onNext(T t) {
-			if (done) {
-				Operators.onNextDropped(t);
-				return;
-			}
 
-			int m = sourceMode;
-
-			if (m == ASYNC) {
+			if (sourceMode == ASYNC) {
 				actual.onNext(null);
 			}
 			else  {
+				if (done) {
+					Operators.onNextDropped(t);
+					return;
+				}
 				try {
 					handler.accept(t, this);
 				}

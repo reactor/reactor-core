@@ -34,7 +34,7 @@ final class MonoSubscribeOnValue<T> extends Mono<T> {
 	
 	final Scheduler scheduler;
 
-	public MonoSubscribeOnValue(T value, 
+	MonoSubscribeOnValue(T value,
 			Scheduler scheduler) {
 		this.value = value;
 		this.scheduler = Objects.requireNonNull(scheduler, "scheduler");

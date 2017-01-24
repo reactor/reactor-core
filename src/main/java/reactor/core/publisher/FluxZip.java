@@ -156,7 +156,14 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 				}
 
 				if (v == null) {
-					Operators.complete(s);
+					if(p instanceof Fuseable.ScalarCallable){
+						Operators.complete(s);
+					}
+					else {
+						Operators.error(s,
+								Operators.onOperatorError(new NullPointerException(
+										"The callable source returned null")));
+					}
 					return;
 				}
 
@@ -232,7 +239,14 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 				}
 
 				if (v == null) {
-					Operators.complete(s);
+					if(p instanceof Fuseable.ScalarCallable){
+						Operators.complete(s);
+					}
+					else {
+						Operators.error(s,
+								Operators.onOperatorError(new NullPointerException(
+										"The callable source returned null")));
+					}
 					return;
 				}
 
@@ -923,6 +937,10 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 
 		@Override
 		public void onError(Throwable t) {
+			if(done){
+				Operators.onErrorDropped(t);
+				return;
+			}
 			done = true;
 			parent.error(t, index);
 		}
