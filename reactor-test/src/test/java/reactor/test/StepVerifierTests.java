@@ -634,6 +634,17 @@ public class StepVerifierTests {
 	}
 
 	@Test
+	public void verifyConsumeSubscriptionAfterFirst() {
+		Mono<String> flux = Mono.just("foo");
+
+		StepVerifier.create(flux)
+		            .expectNext("foo")
+		            .consumeSubscriptionWith(s -> assertThat(s).isInstanceOf(Fuseable.QueueSubscription.class))
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
 	public void verifyConsumeSubscriptionError() {
 		Mono<String> flux = Mono.just("foo");
 

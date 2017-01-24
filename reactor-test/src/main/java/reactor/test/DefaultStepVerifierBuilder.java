@@ -172,15 +172,21 @@ final class DefaultStepVerifierBuilder<T>
 	public DefaultStepVerifierBuilder<T> consumeSubscriptionWith(
 			Consumer<? super Subscription> consumer) {
 		Objects.requireNonNull(consumer, "consumer");
-		this.script.set(0, new SignalEvent<>((signal, se) -> {
-			if (!signal.isOnSubscribe()) {
-				return fail(se, "expected: onSubscribe(); actual: %s", signal);
-			}
-			else {
-				consumer.accept(signal.getSubscription());
-				return Optional.empty();
-			}
-		}, "consumeSubscriptionWith"));
+		if(script.isEmpty()) {
+			this.script.set(0, new SignalEvent<>((signal, se) -> {
+				if (!signal.isOnSubscribe()) {
+					return fail(se, "expected: onSubscribe(); actual: %s", signal);
+				}
+				else {
+					consumer.accept(signal.getSubscription());
+					return Optional.empty();
+				}
+			}, "consumeSubscriptionWith"));
+		}
+		else {
+			this.script.add(new SubscriptionConsumerEvent<>(consumer,
+					"consumeSubscriptionWith"));
+		}
 		return this;
 	}
 
@@ -1643,6 +1649,21 @@ final class DefaultStepVerifierBuilder<T>
 
 		void run(DefaultVerifySubscriber<T> parent) throws Exception {
 			task.run();
+		}
+	}
+
+	static final class SubscriptionConsumerEvent<T> extends TaskEvent<T> {
+
+		final Consumer<? super Subscription> task;
+
+		SubscriptionConsumerEvent(Consumer<? super Subscription> task, String desc) {
+			super(null, desc);
+			this.task = task;
+		}
+
+		@Override
+		void run(DefaultVerifySubscriber<T> parent) throws Exception {
+			task.accept(parent.subscription.get());
 		}
 	}
 
