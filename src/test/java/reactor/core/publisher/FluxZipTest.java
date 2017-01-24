@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Arrays;
@@ -27,6 +28,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import reactor.core.Exceptions;
+import reactor.core.Fuseable;
 import reactor.core.MultiReceiver;
 import reactor.core.Trackable;
 import reactor.test.StepVerifier;
@@ -39,7 +41,26 @@ import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FluxZipTest {
+public class FluxZipTest extends AbstractFluxOperatorTest<String, String> {
+
+	@Override
+	protected boolean shouldDropNextAfterTerminate() {
+		return false;
+	}
+
+	@Override
+	protected RuntimeException droppedException() {
+		return exception(); //pass concurrent source error
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_errorFromUpstreamFailure() {
+		return Arrays.asList(Scenario.withPrefetch(f -> f.zipWith(finiteSourceOrDefault(
+				null), 3, (a, b) -> a), Fuseable.NONE, 3),
+
+				Scenario.from(f -> f.zipWith(Flux.<String>error(exception()),
+						(a, b) -> a)));
+	}
 
 	/*@Test
 	public void constructors() {
@@ -63,11 +84,12 @@ public class FluxZipTest {
 		Flux<Integer> flux4 = Flux.just(4);
 		List<Object> expected = Arrays.asList(1, 2, 3, 4);
 
-		Flux<List<Object>> zipped = Flux.zip(Arrays.asList(flux1, flux2, flux3, flux4),
-				Arrays::asList);
+		Flux<List<Object>> zipped =
+				Flux.zip(Arrays.asList(flux1, flux2, flux3, flux4), Arrays::asList);
 
 		StepVerifier.create(zipped)
-		            .consumeNextWith(t -> Assertions.assertThat(t).containsExactlyElementsOf(expected))
+		            .consumeNextWith(t -> Assertions.assertThat(t)
+		                                            .containsExactlyElementsOf(expected))
 		            .expectComplete()
 		            .verify();
 	}
@@ -99,211 +121,230 @@ public class FluxZipTest {
 		Flux<Tuple2> zipped = Flux.zip(map, t -> t);
 		StepVerifier.create(zipped)
 		            .consumeNextWith(t -> Assertions.assertThat((Iterable<?>) t)
-				            .isEqualTo(Tuples.of(1, 2, 3, 4, 5, 6, 7))
-				            .isExactlyInstanceOf(Tuple7.class))
+		                                            .isEqualTo(Tuples.of(1,
+				                                            2,
+				                                            3,
+				                                            4,
+				                                            5,
+				                                            6,
+				                                            7))
+		                                            .isExactlyInstanceOf(Tuple7.class))
 		            .expectComplete()
 		            .verify();
 	}
 
 	@Test
 	public void sameLength() {
-		
+
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		
+
 		Flux<Integer> source = Flux.fromIterable(Arrays.asList(1, 2));
-		source.zipWith(source, (a, b) -> a + b).subscribe(ts);
-		
+		source.zipWith(source, (a, b) -> a + b)
+		      .subscribe(ts);
+
 		ts.assertValues(2, 4)
-		.assertNoError()
-		.assertComplete();
+		  .assertNoError()
+		  .assertComplete();
 	}
 
 	@Test
 	public void sameLengthOptimized() {
-		
+
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		
+
 		Flux<Integer> source = Flux.just(1, 2);
-		source.zipWith(source, (a, b) -> a + b).subscribe(ts);
-		
+		source.zipWith(source, (a, b) -> a + b)
+		      .subscribe(ts);
+
 		ts.assertValues(2, 4)
-		.assertNoError()
-		.assertComplete();
+		  .assertNoError()
+		  .assertComplete();
 	}
 
 	@Test
 	public void sameLengthBackpressured() {
-		
+
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
-		
+
 		Flux<Integer> source = Flux.fromIterable(Arrays.asList(1, 2));
-		source.zipWith(source, (a, b) -> a + b).subscribe(ts);
-		
+		source.zipWith(source, (a, b) -> a + b)
+		      .subscribe(ts);
+
 		ts.assertNoValues()
-		.assertNoError()
-		.assertNotComplete();
-		
+		  .assertNoError()
+		  .assertNotComplete();
+
 		ts.request(1);
 
 		ts.assertValues(2)
-		.assertNoError()
-		.assertNotComplete();
+		  .assertNoError()
+		  .assertNotComplete();
 
 		ts.request(2);
-		
+
 		ts.assertValues(2, 4)
-		.assertNoError()
-		.assertComplete();
+		  .assertNoError()
+		  .assertComplete();
 	}
 
 	@Test
 	public void sameLengthOptimizedBackpressured() {
-		
+
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
-		
+
 		Flux<Integer> source = Flux.just(1, 2);
-		source.zipWith(source, (a, b) -> a + b).subscribe(ts);
-		
+		source.zipWith(source, (a, b) -> a + b)
+		      .subscribe(ts);
+
 		ts.assertNoValues()
-		.assertNoError()
-		.assertNotComplete();
-		
+		  .assertNoError()
+		  .assertNotComplete();
+
 		ts.request(1);
 
 		ts.assertValues(2)
-		.assertNoError()
-		.assertNotComplete();
+		  .assertNoError()
+		  .assertNotComplete();
 
 		ts.request(2);
-		
+
 		ts.assertValues(2, 4)
-		.assertNoError()
-		.assertComplete();
+		  .assertNoError()
+		  .assertComplete();
 	}
 
 	@Test
 	public void differentLength() {
-		
+
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		
+
 		Flux<Integer> source1 = Flux.fromIterable(Arrays.asList(1, 2));
 		Flux<Integer> source2 = Flux.just(1, 2, 3);
-		source1.zipWith(source2, (a, b) -> a + b).subscribe(ts);
-		
+		source1.zipWith(source2, (a, b) -> a + b)
+		       .subscribe(ts);
+
 		ts.assertValues(2, 4)
-		.assertNoError()
-		.assertComplete();
+		  .assertNoError()
+		  .assertComplete();
 	}
-	
+
 	@Test
 	public void differentLengthOpt() {
-		
+
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		
+
 		Flux<Integer> source1 = Flux.fromIterable(Arrays.asList(1, 2));
 		Flux<Integer> source2 = Flux.just(1, 2, 3);
-		source1.zipWith(source2, (a, b) -> a + b).subscribe(ts);
-		
+		source1.zipWith(source2, (a, b) -> a + b)
+		       .subscribe(ts);
+
 		ts.assertValues(2, 4)
-		.assertNoError()
-		.assertComplete();
+		  .assertNoError()
+		  .assertComplete();
 	}
-	
+
 	@Test
 	public void emptyNonEmpty() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		
+
 		Flux<Integer> source1 = Flux.fromIterable(Collections.emptyList());
 		Flux<Integer> source2 = Flux.just(1, 2, 3);
-		source1.zipWith(source2, (a, b) -> a + b).subscribe(ts);
-		
+		source1.zipWith(source2, (a, b) -> a + b)
+		       .subscribe(ts);
+
 		ts.assertNoValues()
-		.assertNoError()
-		.assertComplete();
+		  .assertNoError()
+		  .assertComplete();
 	}
-	
+
 	@Test
 	public void nonEmptyAndEmpty() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		
+
 		Flux<Integer> source1 = Flux.just(1, 2, 3);
 		Flux<Integer> source2 = Flux.fromIterable(Collections.emptyList());
-		source1.zipWith(source2, (a, b) -> a + b).subscribe(ts);
-		
+		source1.zipWith(source2, (a, b) -> a + b)
+		       .subscribe(ts);
+
 		ts.assertNoValues()
-		.assertNoError()
-		.assertComplete();
+		  .assertNoError()
+		  .assertComplete();
 	}
-	
+
 	@Test
 	public void scalarNonScalar() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		
+
 		Flux<Integer> source1 = Flux.just(1);
 		Flux<Integer> source2 = Flux.just(1, 2, 3);
-		source1.zipWith(source2, (a, b) -> a + b).subscribe(ts);
-		
+		source1.zipWith(source2, (a, b) -> a + b)
+		       .subscribe(ts);
+
 		ts.assertValues(2)
-		.assertNoError()
-		.assertComplete();
+		  .assertNoError()
+		  .assertComplete();
 	}
-	
+
 	@Test
 	public void scalarNonScalarBackpressured() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
-		
+
 		Flux<Integer> source1 = Flux.just(1);
 		Flux<Integer> source2 = Flux.just(1, 2, 3);
-		source1.zipWith(source2, (a, b) -> a + b).subscribe(ts);
-		
+		source1.zipWith(source2, (a, b) -> a + b)
+		       .subscribe(ts);
+
 		ts.assertNoValues()
-		.assertNoError()
-		.assertNotComplete();
-		
+		  .assertNoError()
+		  .assertNotComplete();
+
 		ts.request(1);
-		
+
 		ts.assertValues(2)
-		.assertNoError()
-		.assertComplete();
+		  .assertNoError()
+		  .assertComplete();
 	}
-	
+
 	@Test
 	public void scalarNonScalarOpt() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		
+
 		Flux<Integer> source1 = Flux.just(1);
 		Flux<Integer> source2 = Flux.just(1, 2, 3);
-		source1.zipWith(source2, (a, b) -> a + b).subscribe(ts);
-		
+		source1.zipWith(source2, (a, b) -> a + b)
+		       .subscribe(ts);
+
 		ts.assertValues(2)
-		.assertNoError()
-		.assertComplete();
+		  .assertNoError()
+		  .assertComplete();
 	}
-	
+
 	@Test
 	public void scalarScalar() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		
+
 		Flux<Integer> source1 = Flux.just(1);
 		Flux<Integer> source2 = Flux.just(1);
-		source1.zipWith(source2, (a, b) -> a + b).subscribe(ts);
-		
+		source1.zipWith(source2, (a, b) -> a + b)
+		       .subscribe(ts);
+
 		ts.assertValues(2)
-		.assertNoError()
-		.assertComplete();
+		  .assertNoError()
+		  .assertComplete();
 	}
-	
+
 	@Test
 	public void emptyScalar() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		
+
 		Flux<Integer> source1 = Flux.empty();
 		Flux<Integer> source2 = Flux.just(1);
-		source1.zipWith(source2, (a, b) -> a + b).subscribe(ts);
-		
+		source1.zipWith(source2, (a, b) -> a + b)
+		       .subscribe(ts);
+
 		ts.assertNoValues()
-		.assertNoError()
-		.assertComplete();
+		  .assertNoError()
+		  .assertComplete();
 	}
 
 	@Test
@@ -311,11 +352,13 @@ public class FluxZipTest {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.fromIterable(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
-		    .zipWith(Flux.fromIterable(Arrays.asList(1, 2)).map(v -> v == 2 ? null : v), (a, b) -> a + b).subscribe(ts);
-		
+		    .zipWith(Flux.fromIterable(Arrays.asList(1, 2))
+		                 .map(v -> v == 2 ? null : v), (a, b) -> a + b)
+		    .subscribe(ts);
+
 		ts.assertValues(2)
-		.assertError(NullPointerException.class)
-		.assertNotComplete();
+		  .assertError(NullPointerException.class)
+		  .assertNotComplete();
 	}
 
 	@Test
@@ -335,8 +378,8 @@ public class FluxZipTest {
 				 .getT2() + t.getT2()));
 
 		ff.subscribeWith(AssertSubscriber.create())
-		 .assertValues(Tuples.of(1, "testtest2"))
-		 .assertComplete();
+		  .assertValues(Tuples.of(1, "testtest2"))
+		  .assertComplete();
 	}
 
 	@Test
@@ -350,13 +393,10 @@ public class FluxZipTest {
 		Assert.assertTrue(s.sources != null);
 		Assert.assertTrue(s.sources.length == 2);
 
-		Flux<Tuple2<Integer, String>> ff = f.map(t -> Tuples.of(t
-		                                                         .getT1()
+		Flux<Tuple2<Integer, String>> ff = f.map(t -> Tuples.of(t.getT1()
 		                                                         .getT1(),
-				t
-				 .getT1()
-				 .getT2() + t
-				             .getT2()));
+				t.getT1()
+				 .getT2() + t.getT2()));
 
 		ff.subscribeWith(AssertSubscriber.create())
 		  .assertValues(Tuples.of(1, "testtest2"))
@@ -368,7 +408,9 @@ public class FluxZipTest {
 		AtomicLong ref = new AtomicLong();
 		Flux<Tuple2<Tuple2<Integer, String>, String>> f =
 				Flux.zip(Flux.just(1), Flux.just("test"))
-				    .zipWith(Flux.just("test2").hide().doOnRequest(ref::set), 1);
+				    .zipWith(Flux.just("test2")
+				                 .hide()
+				                 .doOnRequest(ref::set), 1);
 
 		Assert.assertTrue(f instanceof FluxZip);
 		FluxZip<?, ?> s = (FluxZip<?, ?>) f;
@@ -381,15 +423,16 @@ public class FluxZipTest {
 				 .getT2() + t.getT2()));
 
 		ff.subscribeWith(AssertSubscriber.create())
-		 .assertValues(Tuples.of(1, "testtest2"))
-		 .assertComplete();
+		  .assertValues(Tuples.of(1, "testtest2"))
+		  .assertComplete();
 		Assert.assertTrue(ref.get() == 1);
 	}
 
 	@Test
 	public void pairWise2() {
 		Flux<Tuple2<Tuple2<Integer, String>, String>> f =
-				Flux.zip(Arrays.asList(Flux.just(1), Flux.just("test")), obj -> Tuples.of((int)obj[0], (String)obj[1]))
+				Flux.zip(Arrays.asList(Flux.just(1), Flux.just("test")),
+						obj -> Tuples.of((int) obj[0], (String) obj[1]))
 				    .zipWith(Flux.just("test2"));
 
 		Assert.assertTrue(f instanceof FluxZip);
@@ -407,15 +450,13 @@ public class FluxZipTest {
 		  .assertComplete();
 	}
 
-
 	@Test
 	public void multipleStreamValuesCanBeZipped() {
 //		"Multiple Stream"s values can be zipped"
 //		given: "source composables to merge, buffer and tap"
 		EmitterProcessor<Integer> source1 = EmitterProcessor.<Integer>create().connect();
 		EmitterProcessor<Integer> source2 = EmitterProcessor.<Integer>create().connect();
-		Flux<Integer> zippedFlux = Flux
-				.zip(source1, source2, (t1, t2) -> t1 + t2);
+		Flux<Integer> zippedFlux = Flux.zip(source1, source2, (t1, t2) -> t1 + t2);
 		AtomicReference<Integer> tap = new AtomicReference<>();
 		zippedFlux.subscribe(it -> tap.set(it));
 
@@ -444,26 +485,23 @@ public class FluxZipTest {
 		Flux<Integer> even = Flux.just(2, 4, 6);
 
 //		when: "the sources are zipped"
-		Flux<List<Integer>> zippedFlux = Flux.zip(odds,
-				even,
-				(t1, t2) -> Arrays.asList(t1, t2));
-		Mono<List<List<Integer>>> tap = zippedFlux
-		                                          .collectList();
+		Flux<List<Integer>> zippedFlux =
+				Flux.zip(odds, even, (t1, t2) -> Arrays.asList(t1, t2));
+		Mono<List<List<Integer>>> tap = zippedFlux.collectList();
 
 //		then: "the values are all collected from source1 flux"
-		assertThat(tap.block()).containsExactly(
-				Arrays.asList(1, 2),
+		assertThat(tap.block()).containsExactly(Arrays.asList(1, 2),
 				Arrays.asList(3, 4),
 				Arrays.asList(5, 6));
 
 //		when: "the sources are zipped in a flat map"
-		zippedFlux = odds.flatMap(it -> Flux.zip(Flux.just(it), even, (t1, t2) -> Arrays.asList(t1, t2)));
+		zippedFlux = odds.flatMap(it -> Flux.zip(Flux.just(it),
+				even,
+				(t1, t2) -> Arrays.asList(t1, t2)));
 		tap = zippedFlux.collectList();
 
-
 //		then: "the values are all collected from source1 flux"
-		assertThat(tap.block()).containsExactly(
-				Arrays.asList(1, 2),
+		assertThat(tap.block()).containsExactly(Arrays.asList(1, 2),
 				Arrays.asList(3, 2),
 				Arrays.asList(5, 2),
 				Arrays.asList(7, 2),
@@ -533,14 +571,14 @@ public class FluxZipTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void zip6() {
-		StepVerifier.create(
-				Flux.zip(Flux.just(1),
-						Flux.just(2),
-						Flux.just(3),
-						Flux.just(4),
-						Flux.just(5),
-						Flux.just(6))).expectNext(Tuples.of(1, 2, 3, 4, 5, 6))
-		                              .verifyComplete();
+		StepVerifier.create(Flux.zip(Flux.just(1),
+				Flux.just(2),
+				Flux.just(3),
+				Flux.just(4),
+				Flux.just(5),
+				Flux.just(6)))
+		            .expectNext(Tuples.of(1, 2, 3, 4, 5, 6))
+		            .verifyComplete();
 	}
 
 	@Test
@@ -551,11 +589,11 @@ public class FluxZipTest {
 		assertThat(f.getPrefetch()).isEqualTo(123);
 
 		assertThat(f instanceof Trackable).isTrue();
-		Trackable t = (Trackable)f;
+		Trackable t = (Trackable) f;
 		assertThat(t.getCapacity()).isEqualTo(123);
 
 		assertThat(f instanceof MultiReceiver).isTrue();
-		MultiReceiver mr = (MultiReceiver)f;
+		MultiReceiver mr = (MultiReceiver) f;
 		assertThat(mr.upstreamCount()).isEqualTo(2);
 
 		Iterator<?> it = mr.upstreams();
@@ -572,11 +610,11 @@ public class FluxZipTest {
 		assertThat(f.getPrefetch()).isEqualTo(123);
 
 		assertThat(f instanceof Trackable).isTrue();
-		Trackable t = (Trackable)f;
+		Trackable t = (Trackable) f;
 		assertThat(t.getCapacity()).isEqualTo(123);
 
 		assertThat(f instanceof MultiReceiver).isTrue();
-		MultiReceiver mr = (MultiReceiver)f;
+		MultiReceiver mr = (MultiReceiver) f;
 		assertThat(mr.upstreamCount()).isEqualTo(-1);
 
 		Iterator<?> it = mr.upstreams();
@@ -610,10 +648,16 @@ public class FluxZipTest {
 	}
 
 	@Test
-	public void prematureCompleteIterableCallableNull() {
+	public void failIterableCallableNull() {
 		StepVerifier.create(Flux.zip(Arrays.asList(Flux.just(1),
 				Mono.fromCallable(() -> null)), obj -> 0))
-		            .verifyComplete(); //FIXME Should fail ?
+		            .verifyError(NullPointerException.class);
+	}
+
+	@Test
+	public void prematureCompleteIterableEmptyScalarSource() {
+		StepVerifier.create(Flux.zip(Arrays.asList(Flux.just(1), Mono.empty()), obj -> 0))
+		            .verifyComplete();
 	}
 
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
@@ -659,11 +703,15 @@ public class FluxZipTest {
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
 	public void failDoubleError3() {
 		try {
-			StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1).hide(), Flux.never(), s -> {
-				s.onSubscribe(Operators.emptySubscription());
-				s.onError(new Exception("test"));
-				s.onError(new Exception("test2"));
-			}))
+			StepVerifier.create(Flux.zip(obj -> 0,
+					Flux.just(1)
+					    .hide(),
+					Flux.never(),
+					s -> {
+						s.onSubscribe(Operators.emptySubscription());
+						s.onError(new Exception("test"));
+						s.onError(new Exception("test2"));
+					}))
 			            .verifyErrorMessage("test");
 			Assert.fail();
 		}
@@ -688,12 +736,15 @@ public class FluxZipTest {
 	@Test //FIXME use Violation.NO_CLEANUP_ON_TERMINATE
 	public void failDoubleErrorHide() {
 		try {
-			StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1).hide(), Flux.never(), s
-					-> {
-				s.onSubscribe(Operators.emptySubscription());
-				s.onError(new Exception("test"));
-				s.onError(new Exception("test2"));
-			}))
+			StepVerifier.create(Flux.zip(obj -> 0,
+					Flux.just(1)
+					    .hide(),
+					Flux.never(),
+					s -> {
+						s.onSubscribe(Operators.emptySubscription());
+						s.onError(new Exception("test"));
+						s.onError(new Exception("test2"));
+					}))
 			            .verifyErrorMessage("test");
 			Assert.fail();
 		}
@@ -709,8 +760,9 @@ public class FluxZipTest {
 		});
 		try {
 			StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1), d1, s -> {
-				Subscriber<?> a = ((DirectProcessor.DirectProcessorSubscription)
-						d1.downstreams().next()).actual;
+				Subscriber<?> a =
+						((DirectProcessor.DirectProcessorSubscription) d1.downstreams()
+						                                                 .next()).actual;
 
 				s.onSubscribe(Operators.emptySubscription());
 				s.onComplete();
@@ -776,7 +828,7 @@ public class FluxZipTest {
 
 	@Test
 	public void ignoreRequestZeroHideAll() {
-		StepVerifier.create(Flux.zip(obj -> (int)obj[0] + (int)obj[1],
+		StepVerifier.create(Flux.zip(obj -> (int) obj[0] + (int) obj[1],
 				Flux.just(1)
 				    .hide(),
 				Flux.just(2)
@@ -784,14 +836,12 @@ public class FluxZipTest {
 		            .consumeSubscriptionWith(s -> s.request(0))
 		            .thenRequest(1)
 		            .expectNext(3)
-		.verifyComplete();
+		            .verifyComplete();
 	}
 
 	@Test
 	public void failCombinedFusedError() {
-		StepVerifier.create(Flux.zip(obj -> 0,
-				Flux.just(1, null),
-				Flux.just(2, 3)), 0)
+		StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1, null), Flux.just(2, 3)), 0)
 		            .thenRequest(1)
 		            .expectNext(0)
 		            .verifyError(NullPointerException.class);
@@ -800,7 +850,7 @@ public class FluxZipTest {
 	@Test
 	public void backpressuredAsyncFusedCancelled() {
 		UnicastProcessor<Integer> up = UnicastProcessor.create();
-		StepVerifier.create(Flux.zip(obj -> (int)obj[0] + (int)obj[1],
+		StepVerifier.create(Flux.zip(obj -> (int) obj[0] + (int) obj[1],
 				1,
 				up,
 				Flux.just(2, 3, 5)), 0)
@@ -817,7 +867,7 @@ public class FluxZipTest {
 	@Test
 	public void backpressuredAsyncFusedCancelled2() {
 		UnicastProcessor<Integer> up = UnicastProcessor.create();
-		StepVerifier.create(Flux.zip(obj -> (int)obj[0] + (int)obj[1],
+		StepVerifier.create(Flux.zip(obj -> (int) obj[0] + (int) obj[1],
 				1,
 				up,
 				Flux.just(2, 3, 5)), 0)
@@ -891,7 +941,7 @@ public class FluxZipTest {
 	@Test
 	public void backpressuredAsyncFusedComplete() {
 		UnicastProcessor<Integer> up = UnicastProcessor.create();
-		StepVerifier.create(Flux.zip(obj -> (int)obj[0] + (int)obj[1],
+		StepVerifier.create(Flux.zip(obj -> (int) obj[0] + (int) obj[1],
 				1,
 				up,
 				Flux.just(2, 3, 5)), 0)
@@ -951,30 +1001,45 @@ public class FluxZipTest {
 	}
 
 	@Test
-	public void prematureCompleteCallableNull() {
+	public void failCallableNull() {
 		StepVerifier.create(Flux.zip(obj -> 0,
 				Flux.just(1),
 				Mono.fromCallable(() -> null)))
-		            .verifyComplete(); //FIXME Should fail ?
+		            .verifyError(NullPointerException.class);
 	}
 
 	@Test
-	public void prematureCompleteCallableNullHide() {
+	public void failCallableNullHide() {
 		StepVerifier.create(Flux.zip(obj -> 0,
 				Flux.just(1)
 				    .hide(),
 				Mono.fromCallable(() -> null)))
-		            .verifyComplete(); //FIXME Should fail ?
+		            .verifyError(NullPointerException.class);
 	}
 
 	@Test
-	public void prematureCompleteCallableNullHideAll() {
+	public void failCallableNullHideAll() {
 		StepVerifier.create(Flux.zip(obj -> 0,
 				Flux.just(1)
 				    .hide(),
 				Mono.fromCallable(() -> null)
 				    .hide()))
 		            .verifyError(NullPointerException.class);
+	}
+
+	@Test
+	public void prematureCompleteEmptySource() {
+		StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1), Mono.empty()))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void prematureCompleteEmptySourceHide() {
+		StepVerifier.create(Flux.zip(obj -> 0,
+				Flux.just(1)
+				    .hide(),
+				Mono.empty()))
+		            .verifyComplete();
 	}
 
 	@Test
@@ -989,16 +1054,15 @@ public class FluxZipTest {
 	@Test
 	public void prematureCompleteSourceEmptyDouble() {
 		DirectProcessor<Integer> d = DirectProcessor.create();
-		StepVerifier.create(Flux.zip(obj -> 0,
-				d,
-				s -> {
-					Subscriber<?> a = ((DirectProcessor.DirectProcessorSubscription)
-							d.downstreams().next()).actual;
+		StepVerifier.create(Flux.zip(obj -> 0, d, s -> {
+			Subscriber<?> a =
+					((DirectProcessor.DirectProcessorSubscription) d.downstreams()
+					                                                .next()).actual;
 
-					Operators.complete(s);
+			Operators.complete(s);
 
-					a.onComplete();
-				}, Mono.just(1)))
+			a.onComplete();
+		}, Mono.just(1)))
 		            .verifyComplete();
 	}
 
@@ -1037,7 +1101,11 @@ public class FluxZipTest {
 				Flux.just(2),
 				Flux.just(3),
 				Flux.just(4),
-				Flux.just(5), Flux.just(6), Flux.just(7), Flux.just(8), Flux.just(9)),
+				Flux.just(5),
+				Flux.just(6),
+				Flux.just(7),
+				Flux.just(8),
+				Flux.just(9)),
 				obj -> (int) obj[0] + (int) obj[1] + (int) obj[2] + (int) obj[3] + (int) obj[4] + (int) obj[5] + (int) obj[6] + (int) obj[7] + (int) obj[8]))
 		            .expectNext(45)
 		            .verifyComplete();
@@ -1049,13 +1117,14 @@ public class FluxZipTest {
 				Flux.just(2),
 				Flux.just(3),
 				Flux.just(4),
-				Flux.just(5), Flux.just(6), Flux.just(7), Flux.just(8)),
-				obj -> (int) obj[0] + (int) obj[1] + (int) obj[2] + (int) obj[3] +
-						(int) obj[4] + (int) obj[5] + (int) obj[6] + (int) obj[7]))
+				Flux.just(5),
+				Flux.just(6),
+				Flux.just(7),
+				Flux.just(8)),
+				obj -> (int) obj[0] + (int) obj[1] + (int) obj[2] + (int) obj[3] + (int) obj[4] + (int) obj[5] + (int) obj[6] + (int) obj[7]))
 		            .expectNext(36)
 		            .verifyComplete();
 	}
-
 
 	@Test
 	@SuppressWarnings("unchecked")
@@ -1168,9 +1237,12 @@ public class FluxZipTest {
 				Flux.defer(() -> {
 					ref.get()
 					   .cancel();
-					assertThat(ref.get().getPending()).isEqualTo(1);
-					assertThat(ref.get().isCancelled()).isTrue();
-					assertThat(ref.get().isTerminated()).isFalse();
+					assertThat(ref.get()
+					              .getPending()).isEqualTo(1);
+					assertThat(ref.get()
+					              .isCancelled()).isTrue();
+					assertThat(ref.get()
+					              .isTerminated()).isFalse();
 					return Flux.just(3);
 				}),
 				Flux.just(3)

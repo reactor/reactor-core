@@ -399,11 +399,12 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 			verifier.accept(this.operatorErrorSourceVerifierConditionalTryNext(scenario));
 			verifier.accept(this.operatorErrorSourceVerifierFusedBothConditional(scenario));
 
-			if ((fusion & Fuseable.SYNC) != 0) {
+			if(scenario.prefetch() != Trackable.UNSPECIFIED ||
+					(scenario.fusionMode() & Fuseable.SYNC) != 0) {
 				verifier.accept(this.operatorErrorSourceVerifierFusedSync(scenario));
 			}
-
-			if ((fusion & Fuseable.ASYNC) != 0) {
+			if(scenario.prefetch() != Trackable.UNSPECIFIED ||
+					(scenario.fusionMode() & Fuseable.ASYNC) != 0) {
 				verifier.accept(this.operatorErrorSourceVerifierFusedAsync(scenario));
 			}
 
@@ -699,7 +700,12 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 				            Fuseable.QueueSubscription<O> qs =
 						            ((Fuseable.QueueSubscription<O>) s);
 				            qs.requestFusion(ASYNC);
-				            assertThat(qs.size()).isEqualTo(up.size());
+				            if(scenario.prefetch() != Trackable.UNSPECIFIED){
+				            	qs.size(); //touch undeterministic
+				            }
+				            else {
+					            assertThat(qs.size()).isEqualTo(up.size());
+				            }
 				            try {
 				            	qs.poll();
 				            	qs.poll();
@@ -710,7 +716,12 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 				            if (qs instanceof Trackable && ((Trackable) qs).getError() != null) {
 					            assertThat(((Trackable) qs).getError()).hasMessage(
 							            exception().getMessage());
-					            assertThat(qs.size()).isEqualTo(up.size());
+					            if(scenario.prefetch() != Trackable.UNSPECIFIED){
+						            qs.size(); //touch undeterministic
+					            }
+					            else {
+						            assertThat(qs.size()).isEqualTo(up.size());
+					            }
 				            }
 				            qs.clear();
 				            assertThat(qs.size()).isEqualTo(0);
@@ -744,7 +755,12 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 				            Fuseable.QueueSubscription<O> qs =
 						            ((Fuseable.QueueSubscription<O>) ((Receiver) s).upstream());
 				            qs.requestFusion(ASYNC);
-				            assertThat(qs.size()).isEqualTo(up.size());
+				            if(scenario.prefetch() != Trackable.UNSPECIFIED){
+					            qs.size(); //touch undeterministic
+				            }
+				            else {
+					            assertThat(qs.size()).isEqualTo(up.size());
+				            }
 				            try {
 					            qs.poll();
 					            qs.poll();
@@ -755,7 +771,12 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 				            if (qs instanceof Trackable && ((Trackable) qs).getError() != null) {
 					            assertThat(((Trackable) qs).getError()).hasMessage(
 							            exception().getMessage());
-					            assertThat(qs.size()).isEqualTo(up.size());
+					            if(scenario.prefetch() != Trackable.UNSPECIFIED){
+						            qs.size(); //touch undeterministic
+					            }
+					            else {
+						            assertThat(qs.size()).isEqualTo(up.size());
+					            }
 				            }
 				            qs.clear();
 				            assertThat(qs.size()).isEqualTo(0);
@@ -795,24 +816,26 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 		});
 		return StepVerifier.create(up.as(scenario.body()))
 		                   .then(() -> {
-			                   up.actual.onError(exception());
+			if(up.actual != null) {
+				up.actual.onError(exception());
 
-			                   //verify drop path
-			                   up.actual.onError(droppedException());
-			                   assertThat(errorDropped.get()).isTrue();
+				//verify drop path
+				up.actual.onError(droppedException());
+				assertThat(errorDropped.get()).isTrue();
 
-			                   if(shouldDropNextAfterTerminate()) {
+				if (shouldDropNextAfterTerminate()) {
 
-				                   up.actual.onNext(droppedItem());
-				                   assertThat(nextDropped.get()).isTrue();
-				                   if (up.actual instanceof Fuseable.ConditionalSubscriber) {
-					                   nextDropped.set(false);
-					                   ((Fuseable.ConditionalSubscriber<I>) up.actual).tryOnNext(
-							                   droppedItem());
-					                   assertThat(nextDropped.get()).isTrue();
-				                   }
-			                   }
-			                   up.actual.onComplete();
+					up.actual.onNext(droppedItem());
+					assertThat(nextDropped.get()).isTrue();
+					if (up.actual instanceof Fuseable.ConditionalSubscriber) {
+						nextDropped.set(false);
+						((Fuseable.ConditionalSubscriber<I>) up.actual).tryOnNext(
+								droppedItem());
+						assertThat(nextDropped.get()).isTrue();
+					}
+				}
+				up.actual.onComplete();
+			}
 		                   });
 	}
 
@@ -915,7 +938,7 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 		return StepVerifier.create(Flux.just(item(0), item(1))
 		                               .as(f -> new FluxFuseableExceptionOnPoll<>(f, exception()))
 		                               .as(scenario.body()))
-		                   .expectFusion(Fuseable.SYNC);
+		                   .expectFusion(scenario.fusionMode() & Fuseable.SYNC);
 	}
 
 	final StepVerifier.Step<O> operatorErrorSourceVerifierFusedAsync(Scenario<I, O> scenario) {
@@ -923,7 +946,7 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 		up.onNext(item(0));
 		return StepVerifier.create(up.as(f -> new FluxFuseableExceptionOnPoll<>(f, exception()))
 		                             .as(scenario.body()))
-		                   .expectFusion(Fuseable.ASYNC);
+		                   .expectFusion(scenario.fusionMode() & ASYNC);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -943,24 +966,26 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 		return StepVerifier.create(up.as(scenario.body())
 		                             .filter(filter -> true))
 		                   .then(() -> {
-			                   up.actual.onError(exception());
+			                   if(up.actual != null) {
+				                   up.actual.onError(exception());
 
-			                   //verify drop path
-			                   up.actual.onError(droppedException());
-			                   assertThat(errorDropped.get()).isTrue();
+				                   //verify drop path
+				                   up.actual.onError(droppedException());
+				                   assertThat(errorDropped.get()).isTrue();
 
-			                   if(shouldDropNextAfterTerminate()) {
-				                   up.actual.onNext(droppedItem());
-				                   assertThat(nextDropped.get()).isTrue();
-
-				                   if (up.actual instanceof Fuseable.ConditionalSubscriber) {
-					                   nextDropped.set(false);
-					                   ((Fuseable.ConditionalSubscriber<I>) up.actual).tryOnNext(
-							                   droppedItem());
+				                   if (shouldDropNextAfterTerminate()) {
+					                   up.actual.onNext(droppedItem());
 					                   assertThat(nextDropped.get()).isTrue();
+
+					                   if (up.actual instanceof Fuseable.ConditionalSubscriber) {
+						                   nextDropped.set(false);
+						                   ((Fuseable.ConditionalSubscriber<I>) up.actual).tryOnNext(
+								                   droppedItem());
+						                   assertThat(nextDropped.get()).isTrue();
+					                   }
 				                   }
+				                   up.actual.onComplete();
 			                   }
-			                   up.actual.onComplete();
 		                   });
 	}
 

@@ -21,12 +21,16 @@ import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static reactor.core.publisher.Flux.range;
 import static reactor.core.publisher.Flux.zip;
 
@@ -67,8 +71,8 @@ public class FluxPublishMulticastTest extends AbstractFluxOperatorTest<String, S
 				Scenario.from(f -> f.publish(p -> finiteSourceOrDefault(null)),
 						Fuseable.SYNC),
 
-//				Scenario.from(f -> f.publish(p ->
-//						p.subscribeWith(UnicastProcessor.create())), Fuseable.ASYNC),
+				Scenario.withPrefetch(f -> f.publish(p ->
+						p.subscribeWith(UnicastProcessor.create()), 256), Fuseable.ASYNC, 256),
 
 				Scenario.from(f -> f.publish(p -> Flux.<String>empty()), Fuseable.NONE,
 						step -> step.verifyComplete()),
@@ -87,10 +91,10 @@ public class FluxPublishMulticastTest extends AbstractFluxOperatorTest<String, S
 		return Arrays.asList(Scenario.from(f -> f.publish(p -> p)),
 
 				Scenario.from(f -> f.publish(p ->
-						p.subscribeWith(UnicastProcessor.create())), Fuseable.ASYNC)
+						p.subscribeWith(UnicastProcessor.create())), Fuseable.ASYNC),
 
-//				Scenario.from(f -> f.publish(p -> Flux.<String>empty()), Fuseable.NONE,
-//						step -> step.verifyComplete())
+				Scenario.from(f -> f.publish(p -> Flux.<String>empty()), Fuseable.NONE,
+						step -> step.verifyComplete())
 
 		);
 	}
@@ -206,5 +210,43 @@ public class FluxPublishMulticastTest extends AbstractFluxOperatorTest<String, S
 		  .assertValues(1, 2, 3, 4, 5)
 		  .assertComplete()
 		  .assertNoError();
+	}
+
+	@Test
+	public void suppressedSubscriber() {
+		Subscriber<Integer> s = new Subscriber<Integer>() {
+			@Override
+			public void onSubscribe(
+					Subscription s) {
+				s.request(Long.MAX_VALUE);
+			}
+
+			@Override
+			public void onNext(
+					Integer integer) {
+
+			}
+
+			@Override
+			public void onError(
+					Throwable t) {
+
+			}
+
+			@Override
+			public void onComplete() {
+
+			}
+		};
+
+		FluxPublishMulticast.CancelMulticaster<Integer> sfs = new FluxPublishMulticast.CancelMulticaster<>(s, null);
+
+
+		assertThat(sfs.size()).isEqualTo(0);
+		assertThat(sfs.isEmpty()).isFalse();
+		assertThat(sfs.poll()).isNull();
+		assertThat(sfs.requestFusion(Fuseable.ANY)).isEqualTo(Fuseable.NONE);
+
+		sfs.clear(); //NOOP
 	}
 }

@@ -57,7 +57,7 @@ final class FluxRange extends Flux<Integer>
 			return;
 		} else
 		if (st + 1 == en) {
-			s.onSubscribe(new Operators.ScalarSubscription<>(s, (int)st));
+			s.onSubscribe(Operators.scalarSubscription(s, (int)st));
 			return;
 		}
 		

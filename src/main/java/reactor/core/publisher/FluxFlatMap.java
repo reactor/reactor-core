@@ -165,7 +165,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 				}
 
 				if (v != null) {
-					s.onSubscribe(new Operators.ScalarSubscription<>(s, v));
+					s.onSubscribe(Operators.scalarSubscription(s, v));
 				}
 				else {
 					Operators.complete(s);
