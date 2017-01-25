@@ -770,4 +770,18 @@ public class FluxGroupByTest {
 		assertThat(initialRequest.get()).isEqualTo(11);
 	}
 
+	@Test
+	public void prefetchMaxRequestsUnbounded() {
+		AtomicLong initialRequest = new AtomicLong();
+
+		StepVerifier.create(Flux.range(1, 10)
+		                        .doOnRequest(r -> initialRequest.compareAndSet(0L, r))
+		                        .groupBy(i -> i % 5, Integer.MAX_VALUE)
+		                        .concatMap(v -> v))
+		            .expectNextCount(10)
+		            .verifyComplete();
+
+		assertThat(initialRequest.get()).isEqualTo(Long.MAX_VALUE);
+	}
+
 }

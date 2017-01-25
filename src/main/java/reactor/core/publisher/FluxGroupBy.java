@@ -170,7 +170,12 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
 				actual.onSubscribe(this);
-				s.request(prefetch);
+				if (prefetch == Integer.MAX_VALUE) {
+					s.request(Long.MAX_VALUE);
+				}
+				else {
+					s.request(prefetch);
+				}
 			}
 		}
 		
