@@ -19,7 +19,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
@@ -1611,6 +1610,14 @@ public class StepVerifierTests {
 				.isThrownBy(() -> validSoFar.thenConsumeWhile(s -> s == 1))
 				.withMessageStartingWith("The scenario will hang at thenConsumeWhile due to too little request being performed for the expectations to finish; ")
 	            .withMessageEndingWith("request remaining since last step: 0, expected: at least 1 (best effort estimation)");
+	}
+
+	@Test(timeout = 1000L)
+	public void lowRequestCheckCanBeDisabled() {
+		StepVerifier.create(Flux.just(1, 2),
+				StepVerifierOptions.create().initialRequest(1).checkUnderRequesting(false))
+		            .expectNext(1)
+		            .thenConsumeWhile(s -> s == 1); //don't verify, this alone would throw an exception if check activated
 	}
 
 	@Test

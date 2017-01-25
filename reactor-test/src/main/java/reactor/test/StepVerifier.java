@@ -101,7 +101,25 @@ public interface StepVerifier {
 	 */
 	static <T> FirstStep<T> create(Publisher<? extends T> publisher,
 			long n) {
-		return DefaultStepVerifierBuilder.newVerifier(n, () -> publisher, null);
+		return create(publisher, StepVerifierOptions.create().initialRequest(n));
+	}
+
+	/**
+	 * Prepare a new {@code StepVerifier} in an uncontrolled environment: Expect non-virtual
+	 * blocking wait via {@link Step#thenAwait}. Each {@link #verify()} will fully (re)play the
+	 * scenario. The verification will request a specified amount of values according to
+	 * the {@link StepVerifierOptions options} passed.
+	 *
+	 * @param publisher the publisher to subscribe to
+	 * @param options the options for the verification
+	 *
+	 * @return the {@link Duration} of the verification
+	 *
+	 * @throws AssertionError in case of expectation failures, or when the verification
+	 *                        times out
+	 */
+	static <T> FirstStep<T> create(Publisher<? extends T> publisher, StepVerifierOptions options) {
+		return DefaultStepVerifierBuilder.newVerifier(options, () -> publisher);
 	}
 
 	/**
@@ -158,9 +176,11 @@ public interface StepVerifier {
 		Objects.requireNonNull(scenarioSupplier, "scenarioSupplier");
 		Objects.requireNonNull(vtsLookup, "vtsLookup");
 
-		return DefaultStepVerifierBuilder.newVerifier(n,
-				scenarioSupplier,
-				vtsLookup);
+		StepVerifierOptions options = StepVerifierOptions.create()
+				.initialRequest(n)
+				.virtualTimeSchedulerSupplier(vtsLookup);
+		return DefaultStepVerifierBuilder.newVerifier(options,
+				scenarioSupplier);
 	}
 
 	/**
@@ -182,13 +202,34 @@ public interface StepVerifier {
 			Supplier<? extends Publisher<? extends T>> scenarioSupplier,
 			Supplier<? extends VirtualTimeScheduler> vtsLookup,
 			long n) {
-		DefaultStepVerifierBuilder.checkPositive(n);
-		Objects.requireNonNull(scenarioSupplier, "scenarioSupplier");
-		Objects.requireNonNull(vtsLookup, "vtsLookup");
+		return withVirtualTime(scenarioSupplier, StepVerifierOptions.create()
+				.initialRequest(n)
+				.virtualTimeSchedulerSupplier(vtsLookup));
+	}
 
-		return DefaultStepVerifierBuilder.newVerifier(n,
-				scenarioSupplier,
-				vtsLookup);
+	/**
+	 * Create a new {@code StepVerifier} in a parameterized environment using
+	 * passed {@link VirtualTimeScheduler} to schedule and expect virtual wait via
+	 * {@link Step#thenAwait}. Each {@link #verify()} will fully (re)play the
+	 * scenario. The verification will request a specified amount of values according to
+	 * the provided {@link StepVerifierOptions options}.
+	 *
+	 * @param scenarioSupplier a mandatory supplier of the {@link Publisher} to test
+	 * @param options the verification options, including a mandatory
+	 *      {@link VirtualTimeScheduler} lookup to use in {@code thenAwait}
+	 * @param <T> the type of the subscriber
+	 *
+	 * @return a builder for setting up value expectations
+	 */
+	static <T> FirstStep<T> withVirtualTime(
+			Supplier<? extends Publisher<? extends T>> scenarioSupplier,
+			StepVerifierOptions options) {
+		DefaultStepVerifierBuilder.checkPositive(options.getInitialRequest());
+		Objects.requireNonNull(options.getVirtualTimeSchedulerSupplier(), "vtsLookup");
+		Objects.requireNonNull(scenarioSupplier, "scenarioSupplier");
+
+		return DefaultStepVerifierBuilder.newVerifier(options,
+				scenarioSupplier);
 	}
 
 	/**

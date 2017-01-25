@@ -75,14 +75,12 @@ final class DefaultStepVerifierBuilder<T>
 		}
 	}
 
-	static <T> StepVerifier.FirstStep<T> newVerifier(long n,
-			Supplier<? extends Publisher<? extends T>> scenarioSupplier,
-			Supplier<? extends VirtualTimeScheduler> vtsLookup){
-		DefaultStepVerifierBuilder.checkPositive(n);
+	static <T> StepVerifier.FirstStep<T> newVerifier(StepVerifierOptions options,
+			Supplier<? extends Publisher<? extends T>> scenarioSupplier) {
+		DefaultStepVerifierBuilder.checkPositive(options.getInitialRequest());
 		Objects.requireNonNull(scenarioSupplier, "scenarioSupplier");
 
-		return new DefaultStepVerifierBuilder<>
-				(n, scenarioSupplier, vtsLookup);
+		return new DefaultStepVerifierBuilder<>(options, scenarioSupplier);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -94,16 +92,17 @@ final class DefaultStepVerifierBuilder<T>
 	final long                                       initialRequest;
 	final Supplier<? extends VirtualTimeScheduler>   vtsLookup;
 	final Supplier<? extends Publisher<? extends T>> sourceSupplier;
+	private final StepVerifierOptions options;
 
 	long hangCheckRequested;
 	int  requestedFusionMode = -1;
 	int  expectedFusionMode  = -1;
 
-	DefaultStepVerifierBuilder(long initialRequest,
-			Supplier<? extends Publisher<? extends T>> sourceSupplier,
-			Supplier<? extends VirtualTimeScheduler> vtsLookup) {
-		this.initialRequest = initialRequest;
-		this.vtsLookup = vtsLookup;
+	DefaultStepVerifierBuilder(StepVerifierOptions options,
+			Supplier<? extends Publisher<? extends T>> sourceSupplier) {
+		this.initialRequest = options.getInitialRequest();
+		this.options = options;
+		this.vtsLookup = options.getVirtualTimeSchedulerSupplier();
 		this.sourceSupplier = sourceSupplier;
 		this.script = new ArrayList<>();
 		this.script.add(defaultFirstStep());
@@ -505,6 +504,10 @@ final class DefaultStepVerifierBuilder<T>
 	}
 
 	private void checkPotentialHang(long expectedAmount, String stepDescription) {
+		if (!options.isCheckUnderRequesting()) {
+			return;
+		}
+
 		boolean bestEffort = false;
 		if (expectedAmount == -1) {
 			bestEffort = true;
