@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Iterator;
@@ -29,12 +30,12 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.MultiProducer;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.core.Exceptions;
 
 /**
  * Groups upstream items into their own Publisher sequence based on a key selector.
@@ -42,6 +43,7 @@ import reactor.core.Exceptions;
  * @param <T> the source value type
  * @param <K> the key value type
  * @param <V> the group item value type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
@@ -57,12 +59,11 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 
 	final int prefetch;
 
-	FluxGroupBy(
-			Publisher<? extends T> source, 
+	FluxGroupBy(Publisher<? extends T> source,
 			Function<? super T, ? extends K> keySelector,
 			Function<? super T, ? extends V> valueSelector,
 			Supplier<? extends Queue<GroupedFlux<K, V>>> mainQueueSupplier,
-			Supplier<? extends Queue<V>> groupQueueSupplier, 
+			Supplier<? extends Queue<V>> groupQueueSupplier,
 			int prefetch) {
 		super(source);
 		if (prefetch <= 0) {
@@ -70,33 +71,40 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 		}
 		this.keySelector = Objects.requireNonNull(keySelector, "keySelector");
 		this.valueSelector = Objects.requireNonNull(valueSelector, "valueSelector");
-		this.mainQueueSupplier = Objects.requireNonNull(mainQueueSupplier, "mainQueueSupplier");
-		this.groupQueueSupplier = Objects.requireNonNull(groupQueueSupplier, "groupQueueSupplier");
+		this.mainQueueSupplier =
+				Objects.requireNonNull(mainQueueSupplier, "mainQueueSupplier");
+		this.groupQueueSupplier =
+				Objects.requireNonNull(groupQueueSupplier, "groupQueueSupplier");
 		this.prefetch = prefetch;
 	}
-	
+
 	@Override
 	public void subscribe(Subscriber<? super GroupedFlux<K, V>> s) {
-		source.subscribe(new GroupByMain<>(s, mainQueueSupplier.get(), groupQueueSupplier, prefetch, keySelector, valueSelector));
+		source.subscribe(new GroupByMain<>(s,
+				mainQueueSupplier.get(),
+				groupQueueSupplier,
+				prefetch,
+				keySelector,
+				valueSelector));
 	}
 
 	@Override
 	public long getPrefetch() {
 		return prefetch;
 	}
-	
-	static final class GroupByMain<T, K, V> implements Subscriber<T>,
-	                                                   QueueSubscription<GroupedFlux<K, V>>,
-	                                                   MultiProducer, Producer, Trackable, Receiver {
+
+	static final class GroupByMain<T, K, V>
+			implements Subscriber<T>, QueueSubscription<GroupedFlux<K, V>>, MultiProducer,
+			           Producer, Trackable, Receiver {
 
 		final Function<? super T, ? extends K> keySelector;
-		
+
 		final Function<? super T, ? extends V> valueSelector;
-		
+
 		final Subscriber<? super GroupedFlux<K, V>> actual;
 
 		final Queue<GroupedFlux<K, V>> queue;
-		
+
 		final Supplier<? extends Queue<V>> groupQueueSupplier;
 
 		final int prefetch;
@@ -107,40 +115,40 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<GroupByMain> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(GroupByMain.class, "wip");
-		
+
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<GroupByMain> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(GroupByMain.class, "requested");
-		
-		volatile boolean done;
+
+		volatile boolean   done;
 		volatile Throwable error;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<GroupByMain, Throwable> ERROR =
-				AtomicReferenceFieldUpdater.newUpdater(GroupByMain.class, Throwable.class, "error");
-		
+				AtomicReferenceFieldUpdater.newUpdater(GroupByMain.class,
+						Throwable.class,
+						"error");
+
 		volatile int cancelled;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<GroupByMain> CANCELLED =
 				AtomicIntegerFieldUpdater.newUpdater(GroupByMain.class, "cancelled");
-		
+
 		volatile int groupCount;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<GroupByMain> GROUP_COUNT =
 				AtomicIntegerFieldUpdater.newUpdater(GroupByMain.class, "groupCount");
 
 		Subscription s;
-		
+
 		volatile boolean enableAsyncFusion;
-		
-		public GroupByMain(
-				Subscriber<? super GroupedFlux<K, V>> actual,
+
+		public GroupByMain(Subscriber<? super GroupedFlux<K, V>> actual,
 				Queue<GroupedFlux<K, V>> queue,
-				Supplier<? extends Queue<V>> groupQueueSupplier, 
+				Supplier<? extends Queue<V>> groupQueueSupplier,
 				int prefetch,
 				Function<? super T, ? extends K> keySelector,
-				Function<? super T, ? extends V> valueSelector
-				) {
+				Function<? super T, ? extends V> valueSelector) {
 			this.actual = actual;
 			this.queue = queue;
 			this.groupQueueSupplier = groupQueueSupplier;
@@ -164,32 +172,40 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 				}
 			}
 		}
-		
+
 		@Override
 		public void onNext(T t) {
+			if(done){
+				Operators.onNextDropped(t);
+				return;
+			}
+
 			K key;
 			V value;
-			
+
 			try {
 				key = keySelector.apply(t);
 				value = valueSelector.apply(t);
-			} catch (Throwable ex) {
+			}
+			catch (Throwable ex) {
 				onError(Operators.onOperatorError(s, ex, t));
 				return;
 			}
 			if (key == null) {
-				onError(Operators.onOperatorError(s, new NullPointerException("The " +
-						"keySelector returned a null value"), t));
+				onError(Operators.onOperatorError(s,
+						new NullPointerException("The " + "keySelector returned a null value"),
+						t));
 				return;
 			}
 			if (value == null) {
-				onError(Operators.onOperatorError(s, new NullPointerException("The " +
-						"valueSelector returned a null value"), t));
+				onError(Operators.onOperatorError(s,
+						new NullPointerException("The " + "valueSelector returned a null value"),
+						t));
 				return;
 			}
-			
+
 			UnicastGroupedFlux<K, V> g = groupMap.get(key);
-			
+
 			if (g == null) {
 				// if the main is cancelled, don't create new groups
 				if (cancelled == 0) {
@@ -199,27 +215,32 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 					g = new UnicastGroupedFlux<>(key, q, this, prefetch);
 					g.onNext(value);
 					groupMap.put(key, g);
-					
+
 					queue.offer(g);
 					drain();
 				}
-			} else {
+			}
+			else {
 				g.onNext(value);
 			}
 		}
-		
+
 		@Override
 		public void onError(Throwable t) {
 			if (Exceptions.addThrowable(ERROR, this, t)) {
 				done = true;
 				drain();
-			} else {
+			}
+			else {
 				Operators.onErrorDropped(t);
 			}
 		}
 
 		@Override
 		public void onComplete() {
+			if(done){
+				return;
+			}
 			for (UnicastGroupedFlux<K, V> g : groupMap.values()) {
 				g.onComplete();
 			}
@@ -261,7 +282,8 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 
 		@Override
 		public Iterator<?> downstreams() {
-			return groupMap.values().iterator();
+			return groupMap.values()
+			               .iterator();
 		}
 
 		@Override
@@ -293,7 +315,7 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 			actual.onError(e);
 			groupMap.clear();
 		}
-		
+
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
@@ -301,32 +323,31 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 				drain();
 			}
 		}
-		
+
 		@Override
 		public void cancel() {
 			if (CANCELLED.compareAndSet(this, 0, 1)) {
 				if (GROUP_COUNT.decrementAndGet(this) == 0) {
 					s.cancel();
-				} else {
-					if (!enableAsyncFusion) {
+				}
+				else if (!enableAsyncFusion) {
 						if (WIP.getAndIncrement(this) == 0) {
 							// remove queued up but unobservable groups from the mapping
 							GroupedFlux<K, V> g;
 							while ((g = queue.poll()) != null) {
-								((UnicastGroupedFlux<K, V>)g).cancel();
+								((UnicastGroupedFlux<K, V>) g).cancel();
 							}
-							
+
 							if (WIP.decrementAndGet(this) == 0) {
 								return;
 							}
-							
+
 							drainLoop();
 						}
-					}
 				}
 			}
 		}
-		
+
 		void groupTerminated(K key) {
 			if (groupCount == 0) {
 				return;
@@ -336,7 +357,7 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 				s.cancel();
 			}
 		}
-		
+
 		void drain() {
 			if (WIP.getAndIncrement(this) != 0) {
 				return;
@@ -386,71 +407,74 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 		}
 
 		void drainLoop() {
-			
+
 			int missed = 1;
-			
+
 			Subscriber<? super GroupedFlux<K, V>> a = actual;
 			Queue<GroupedFlux<K, V>> q = queue;
-			
-			for (;;) {
-				
+
+			for (; ; ) {
+
 				long r = requested;
 				long e = 0L;
-				
+
 				while (e != r) {
 					boolean d = done;
 					GroupedFlux<K, V> v = q.poll();
 					boolean empty = v == null;
-					
+
 					if (checkTerminated(d, empty, a, q)) {
 						return;
 					}
-					
+
 					if (empty) {
 						break;
 					}
-					
+
 					a.onNext(v);
-					
+
 					e++;
 				}
-				
+
 				if (e == r) {
 					if (checkTerminated(done, q.isEmpty(), a, q)) {
 						return;
 					}
 				}
-				
+
 				if (e != 0L) {
-					
+
 					s.request(e);
-					
+
 					if (r != Long.MAX_VALUE) {
 						REQUESTED.addAndGet(this, -e);
 					}
 				}
-				
+
 				missed = WIP.addAndGet(this, -missed);
 				if (missed == 0) {
 					break;
 				}
 			}
 		}
-		
-		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, Queue<GroupedFlux<K, V>> q) {
+
+		boolean checkTerminated(boolean d,
+				boolean empty,
+				Subscriber<?> a,
+				Queue<GroupedFlux<K, V>> q) {
 			if (d) {
 				Throwable e = error;
 				if (e != null && e != Exceptions.TERMINATED) {
 					queue.clear();
 					signalAsyncError();
 					return true;
-				} else
-				if (empty) {
+				}
+				else if (empty) {
 					a.onComplete();
 					return true;
 				}
 			}
-			
+
 			return false;
 		}
 
@@ -476,46 +500,47 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 
 		@Override
 		public int requestFusion(int requestedMode) {
-			if (requestedMode == Fuseable.ANY || requestedMode == Fuseable.ASYNC) {
+			if ((requestedMode & Fuseable.ASYNC) != 0) {
 				enableAsyncFusion = true;
 				return Fuseable.ASYNC;
 			}
 			return Fuseable.NONE;
 		}
-		
-		void requestInner(long n) {
-			s.request(n);
-		}
 	}
 
 	static final class UnicastGroupedFlux<K, V> extends GroupedFlux<K, V>
 			implements Fuseable, QueueSubscription<V>, Producer, Receiver, Trackable {
+
 		final K key;
-		
+
 		final int limit;
 
 		@Override
 		public K key() {
 			return key;
 		}
-		
+
 		final Queue<V> queue;
-		
+
 		volatile GroupByMain<?, K, V> parent;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<UnicastGroupedFlux, GroupByMain> PARENT =
-				AtomicReferenceFieldUpdater.newUpdater(UnicastGroupedFlux.class, GroupByMain.class, "parent");
-		
+				AtomicReferenceFieldUpdater.newUpdater(UnicastGroupedFlux.class,
+						GroupByMain.class,
+						"parent");
+
 		volatile boolean done;
 		Throwable error;
-		
+
 		volatile Subscriber<? super V> actual;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<UnicastGroupedFlux, Subscriber> ACTUAL =
-				AtomicReferenceFieldUpdater.newUpdater(UnicastGroupedFlux.class, Subscriber.class, "actual");
-		
+				AtomicReferenceFieldUpdater.newUpdater(UnicastGroupedFlux.class,
+						Subscriber.class,
+						"actual");
+
 		volatile boolean cancelled;
-		
+
 		volatile int once;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<UnicastGroupedFlux> ONCE =
@@ -530,18 +555,21 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<UnicastGroupedFlux> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(UnicastGroupedFlux.class, "requested");
-		
-		volatile boolean enableOperatorFusion;
+
+		volatile boolean outputFused;
 
 		int produced;
-		
-		public UnicastGroupedFlux(K key, Queue<V> queue, GroupByMain<?, K, V> parent, int prefetch) {
+
+		UnicastGroupedFlux(K key,
+				Queue<V> queue,
+				GroupByMain<?, K, V> parent,
+				int prefetch) {
 			this.key = key;
 			this.queue = queue;
 			this.parent = parent;
 			this.limit = prefetch - (prefetch >> 2);
 		}
-		
+
 		void doTerminate() {
 			GroupByMain<?, K, V> r = parent;
 			if (r != null && PARENT.compareAndSet(this, r, null)) {
@@ -554,7 +582,7 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 
 			final Queue<V> q = queue;
 
-			for (;;) {
+			for (; ; ) {
 
 				long r = requested;
 				long e = 0L;
@@ -587,7 +615,7 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 				if (e != 0) {
 					GroupByMain<?, K, V> main = parent;
 					if (main != null) {
-						main.requestInner(e);
+						main.s.request(e);
 					}
 					if (r != Long.MAX_VALUE) {
 						REQUESTED.addAndGet(this, -e);
@@ -606,7 +634,7 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 
 			final Queue<V> q = queue;
 
-			for (;;) {
+			for (; ; ) {
 
 				if (cancelled) {
 					q.clear();
@@ -624,7 +652,8 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 					Throwable ex = error;
 					if (ex != null) {
 						a.onError(ex);
-					} else {
+					}
+					else {
 						a.onComplete();
 					}
 					return;
@@ -644,9 +673,10 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 					return;
 				}
 
-				if (enableOperatorFusion) {
+				if (outputFused) {
 					drainFused(a);
-				} else {
+				}
+				else {
 					drainRegular(a);
 				}
 			}
@@ -663,7 +693,8 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 				actual = null;
 				if (e != null) {
 					a.onError(e);
-				} else {
+				}
+				else {
 					a.onComplete();
 				}
 				return true;
@@ -673,30 +704,23 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 		}
 
 		public void onNext(V t) {
-			if (done || cancelled) {
-				return;
-			}
-
 			Subscriber<? super V> a = actual;
 
 			if (!queue.offer(t)) {
 				onError(Exceptions.failWithOverflow("The queue is full"));
 				return;
 			}
-			if (enableOperatorFusion) {
+			if (outputFused) {
 				if (a != null) {
 					a.onNext(null); // in op-fusion, onNext(null) is the indicator of more data
 				}
-			} else {
+			}
+			else {
 				drain();
 			}
 		}
 
 		public void onError(Throwable t) {
-			if (done || cancelled) {
-				return;
-			}
-
 			error = t;
 			done = true;
 
@@ -706,10 +730,6 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 		}
 
 		public void onComplete() {
-			if (done || cancelled) {
-				return;
-			}
-
 			done = true;
 
 			doTerminate();
@@ -720,16 +740,13 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 		@Override
 		public void subscribe(Subscriber<? super V> s) {
 			if (once == 0 && ONCE.compareAndSet(this, 0, 1)) {
-
 				s.onSubscribe(this);
-				actual = s;
-				if (cancelled) {
-					actual = null;
-				} else {
-					drain();
-				}
-			} else {
-				s.onError(new IllegalStateException("This processor allows only a single Subscriber"));
+				ACTUAL.lazySet(this, s);
+				drain();
+			}
+			else {
+				s.onError(new IllegalStateException(
+						"GroupedFlux allows only one Subscriber"));
 			}
 		}
 
@@ -740,7 +757,7 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 				drain();
 			}
 		}
-		
+
 		@Override
 		public void cancel() {
 			if (cancelled) {
@@ -750,25 +767,26 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 
 			doTerminate();
 
-			if (!enableOperatorFusion) {
+			if (!outputFused) {
 				if (WIP.getAndIncrement(this) == 0) {
 					queue.clear();
 				}
 			}
 		}
-		
+
 		@Override
 		public V poll() {
 			V v = queue.poll();
 			if (v != null) {
 				produced++;
-			} else {
+			}
+			else {
 				int p = produced;
 				if (p != 0) {
 					produced = 0;
 					GroupByMain<?, K, V> main = parent;
 					if (main != null) {
-						main.requestInner(p);
+						main.s.request(p);
 					}
 				}
 			}
@@ -793,12 +811,12 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 		@Override
 		public int requestFusion(int requestedMode) {
 			if ((requestedMode & Fuseable.ASYNC) != 0) {
-				enableOperatorFusion = true;
+				outputFused = true;
 				return Fuseable.ASYNC;
 			}
 			return Fuseable.NONE;
 		}
-		
+
 		@Override
 		public boolean isCancelled() {
 			return cancelled;

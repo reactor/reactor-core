@@ -17,6 +17,8 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -24,13 +26,65 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Fuseable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.concurrent.QueueSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FluxGroupByTest {
+public class FluxGroupByTest extends AbstractFluxOperatorTest<String, GroupedFlux<Integer, String>>{
+
+	@Override
+	protected Scenario<String, GroupedFlux<Integer, String>> defaultScenarioOptions(Scenario<String, GroupedFlux<Integer, String>> defaultOptions) {
+		return defaultOptions.fusionMode(Fuseable.ASYNC)
+		                     .prefetch(QueueSupplier.SMALL_BUFFER_SIZE)
+		                     .shouldAssertPostTerminateState(false);
+	}
+
+	@Override
+	protected int fusionModeThreadBarrierSupport() {
+		return Fuseable.ANY;
+	}
+
+	@Override
+	protected List<Scenario<String, GroupedFlux<Integer, String>>> scenarios_errorFromUpstreamFailure() {
+		return Arrays.asList(
+				scenario(f -> f.groupBy(String::hashCode))
+		);
+	}
+
+	@Override
+	protected List<Scenario<String, GroupedFlux<Integer, String>>> scenarios_threeNextAndComplete() {
+		return Arrays.asList(
+				scenario(f -> f.groupBy(String::hashCode))
+					.verifier(step ->
+							step.assertNext(g -> assertThat(g.key()).isEqualTo(g.blockFirst().hashCode()))
+							    .assertNext(g -> assertThat(g.key()).isEqualTo(g.blockFirst().hashCode()))
+							    .assertNext(g -> assertThat(g.key()).isEqualTo(g.blockFirst().hashCode()))
+							    .verifyComplete())
+		);
+	}
+
+	@Override
+	protected List<Scenario<String, GroupedFlux<Integer, String>>> scenarios_errorInOperatorCallback() {
+		return Arrays.asList(
+				scenario(f -> f.groupBy(String::hashCode, s -> {
+					throw exception();
+				})),
+
+				scenario(f -> f.groupBy(s -> {
+					throw exception();
+				})),
+
+				scenario(f -> f.groupBy(String::hashCode, s -> null))
+						.verifier(step -> step.verifyError(NullPointerException.class)),
+
+				scenario(f -> f.groupBy(k -> null))
+						.verifier(step -> step.verifyError(NullPointerException.class))
+		);
+	}
 
 	@Test
 	public void normal() {

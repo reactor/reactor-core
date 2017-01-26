@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -32,6 +33,8 @@ import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Loopback;
+import reactor.core.MultiProducer;
+import reactor.core.MultiReceiver;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
@@ -199,13 +202,6 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 								assertThat(t.limit()).isEqualTo(defaultLimit(scenario));
 							}
 						}
-						else {
-							t.getCapacity();
-							t.expectedFromUpstream();
-							t.getPending();
-							t.limit();
-							t.requestedFromDownstream();
-						}
 
 						if (t.getPending() != UNSPECIFIED && scenario.shouldAssertPostTerminateState()) {
 							assertThat(t.getPending()).isEqualTo(3);
@@ -219,15 +215,7 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 						assertThat(((Receiver) s).upstream()).isNull();
 					}
 
-					if (s instanceof Loopback) {
-						assertThat(((Loopback) s).connectedInput()).isNotNull();
-						//touch connectedOutput
-						((Loopback) s).connectedOutput();
-					}
-
-					if (s instanceof Producer) {
-						assertThat(((Producer) s).downstream()).isNotNull();
-					}
+					touchTreeState(s);
 
 					s.onSubscribe(Operators.emptySubscription());
 					s.onSubscribe(Operators.emptySubscription()); //noop path
@@ -246,18 +234,8 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 					}
 					s.onComplete();
 					if (t != null) {
-						if (!scenario.shouldAssertPostTerminateState()) {
-							t.isStarted();
-							t.isTerminated();
-							t.getPending();
-							t.getCapacity();
-							t.getError();
-							t.isCancelled();
-							t.limit();
-							t.requestedFromDownstream();
-							t.expectedFromUpstream();
-						}
-						else {
+						touchTreeState(s);
+						if (scenario.shouldAssertPostTerminateState()) {
 							assertThat(t.isStarted()).isFalse();
 							assertThat(t.isTerminated()).isTrue();
 						}
@@ -344,13 +322,7 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 						assertThat(((Receiver) parent).upstream()).isNotNull();
 					}
 
-					if (parent instanceof Loopback) {
-						assertThat(((Loopback) parent).connectedInput()).isNotNull();
-					}
-
-					if (parent instanceof Producer) {
-						assertThat(((Producer) parent).downstream()).isNotNull();
-					}
+					touchTreeState(parent);
 				})
 				          .doOnComplete(() -> {
 					          if (ref.get() != null) {
@@ -359,25 +331,15 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 							          assertThat(t.requestedFromDownstream()).isEqualTo(
 									          Long.MAX_VALUE);
 						          }
-						          if (!scenario.shouldAssertPostTerminateState()) {
-							          t.isStarted();
-							          t.isTerminated();
-							          t.getPending();
-							          t.getCapacity();
-							          t.getError();
-							          t.isCancelled();
-							          t.limit();
-							          t.requestedFromDownstream();
-							          t.expectedFromUpstream();
-						          }
-						          else {
+						          if (scenario.shouldAssertPostTerminateState()) {
 							          assertThat(t.isStarted()).isFalse();
 							          assertThat(t.isTerminated()).isTrue();
 						          }
+						          touchTreeState(ref.get());
 					          }
 				          });
 
-				f.subscribe();
+				f.subscribe(r -> touchTreeState(ref.get()));
 
 				source = source.filter(t -> true);
 
@@ -388,7 +350,7 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 
 				f = f.filter(t -> true);
 
-				f.subscribe();
+				f.subscribe(r -> touchTreeState(ref.get()));
 			}
 			catch (Error | RuntimeException e){
 				if (scenario.stack != null) {
@@ -1188,6 +1150,67 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 	final StepVerifier.Step<O> operatorNextVerifierFusedTryNext(Scenario<I, O> scenario) {
 		return StepVerifier.create(finiteSourceOrDefault(scenario).as(scenario.body()),
 				3).consumeSubscriptionWith(s -> s.request(0));
+	}
+
+	@SuppressWarnings("unchecked")
+	final void touchTreeState(Object parent){
+		if (parent == null) {
+			return;
+		}
+
+		if (parent instanceof Loopback) {
+			assertThat(((Loopback) parent).connectedInput()).isNotNull();
+			((Loopback) parent).connectedOutput();
+		}
+
+		if (parent instanceof Producer) {
+			assertThat(((Producer) parent).downstream()).isNotNull();
+		}
+
+		if (parent instanceof MultiProducer){
+			MultiProducer p = ((MultiProducer)parent);
+			if(p.downstreamCount() != 0 || p.hasDownstreams()){
+				Iterator<?> it = p.downstreams();
+				while(it.hasNext()){
+					touchInner(it.next());
+				}
+			}
+		}
+
+		if(parent instanceof MultiReceiver){
+			MultiReceiver p = ((MultiReceiver)parent);
+			if(p.upstreamCount() != 0){
+				Iterator<?> it = p.upstreams();
+				while(it.hasNext()){
+					touchInner(it.next());
+				}
+			}
+		}
+	}
+
+	final void touchInner(Object t){
+		if(t instanceof Trackable){
+			Trackable o = (Trackable)t;
+			o.requestedFromDownstream();
+			o.expectedFromUpstream();
+			o.getPending();
+			o.getCapacity();
+			o.getError();
+			o.limit();
+			o.isTerminated();
+			o.isStarted();
+			o.isCancelled();
+		}
+		if(t instanceof Producer){
+			((Producer)t).downstream();
+		}
+		if(t instanceof Loopback){
+			((Loopback)t).connectedInput();
+			((Loopback)t).connectedOutput();
+		}
+		if(t instanceof Receiver){
+			((Receiver)t).upstream();
+		}
 	}
 
 	@After
