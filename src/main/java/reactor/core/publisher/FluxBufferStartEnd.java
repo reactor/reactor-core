@@ -72,19 +72,7 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 	@Override
 	public void subscribe(Subscriber<? super C> s) {
 		
-		Queue<C> q;
-		
-		try {
-			q = queueSupplier.get();
-		} catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
-			return;
-		}
-		
-		if (q == null) {
-			Operators.error(s, new NullPointerException("The queueSupplier returned a null queue"));
-			return;
-		}
+		Queue<C> q = queueSupplier.get();
 		
 		BufferStartEndMainSubscriber<T, U, V, C> parent = new BufferStartEndMainSubscriber<>(s, bufferSupplier, q, end);
 		

@@ -50,7 +50,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 	
 	final Supplier<? extends Queue<T>> processorQueueSupplier;
 
-	public FluxWindowStartEnd(Publisher<? extends T> source, Publisher<U> start,
+	FluxWindowStartEnd(Publisher<? extends T> source, Publisher<U> start,
 			Function<? super U, ? extends Publisher<V>> end, Supplier<? extends Queue<Object>> drainQueueSupplier,
 			Supplier<? extends Queue<T>> processorQueueSupplier) {
 		super(source);
@@ -68,21 +68,8 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 	@Override
 	public void subscribe(Subscriber<? super Flux<T>> s) {
 
-		Queue<Object> q;
-		
-		try {
-			q = drainQueueSupplier.get();
-		} catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
-			return;
-		}
-		
-		if (q == null) {
-			Operators.error(s, Operators.onOperatorError(new
-					NullPointerException("The drainQueueSupplier returned a null queue")));
-			return;
-		}
-		
+		Queue<Object> q = drainQueueSupplier.get();
+
 		WindowStartEndMainSubscriber<T, U, V>
 				main = new WindowStartEndMainSubscriber<>(s, q, end, processorQueueSupplier);
 		
@@ -144,7 +131,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 		static final AtomicReferenceFieldUpdater<WindowStartEndMainSubscriber, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(WindowStartEndMainSubscriber.class, Throwable.class,  "error");
 
-		public WindowStartEndMainSubscriber(Subscriber<? super Flux<T>> actual, Queue<Object> queue,
+		WindowStartEndMainSubscriber(Subscriber<? super Flux<T>> actual, Queue<Object> queue,
 				Function<? super U, ? extends Publisher<V>> end,
 				Supplier<? extends Queue<T>> processorQueueSupplier) {
 			this.actual = actual;
@@ -348,24 +335,8 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 							@SuppressWarnings("unchecked")
 							NewWindow<U> newWindow = (NewWindow<U>) o;
 							
-							Queue<T> pq;
-							
-							try {
-								pq = processorQueueSupplier.get();
-							} catch (Throwable ex) {
-								Exceptions.addThrowable(ERROR, this, Operators
-										.onOperatorError(s, ex, newWindow.value));
-								continue;
-							}
-							
-							if (pq == null) {
-								Exceptions.addThrowable(ERROR, this, Operators
-										.onOperatorError(s, new NullPointerException
-												("The processorQueueSupplier returned a" +
-														" null queue"), newWindow.value));
-								continue;
-							}
-							
+							Queue<T> pq = processorQueueSupplier.get();
+
 							Publisher<V> p;
 							
 							try {

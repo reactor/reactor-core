@@ -37,7 +37,7 @@ extends Mono<T>
 
 	final Callable<? extends T> callable;
 
-	public MonoCallable(Callable<? extends T> callable) {
+	MonoCallable(Callable<? extends T> callable) {
 		this.callable = Objects.requireNonNull(callable, "callable");
 	}
 
@@ -61,7 +61,8 @@ extends Mono<T>
 		T t;
 		try {
 			t = callable.call();
-		} catch (Throwable e) {
+		}
+		catch (Throwable e) {
 			s.onError(Operators.onOperatorError(e));
 			return;
 		}
@@ -83,8 +84,13 @@ extends Mono<T>
 	@Override
 	public T blockMillis(long m) {
 		try {
-			return callable.call();
-		} catch (Throwable e) {
+			T t = callable.call();
+			if(t == null){
+				throw new NullPointerException("The callable source returned null");
+			}
+			return t;
+		}
+		catch (Throwable e) {
 			if (e instanceof RuntimeException) {
 				throw (RuntimeException)e;
 			}
@@ -94,6 +100,10 @@ extends Mono<T>
 
 	@Override
 	public T call() throws Exception {
-		return callable.call();
+		T t = callable.call();
+		if(t == null){
+			throw new NullPointerException("The callable source returned null");
+		}
+		return t;
 	}
 }

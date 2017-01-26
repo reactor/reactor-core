@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.*;
 import java.util.function.Function;
 
 import org.reactivestreams.*;
+import reactor.core.Fuseable;
 
 final class MonoFlatMap<T, R> extends Flux<R> {
     final Mono<? extends T> source;
@@ -137,14 +138,16 @@ final class MonoFlatMap<T, R> extends Flux<R> {
                 
                 try {
                     v = ((Callable<R>)p).call();
-                } catch (Throwable ex) {
+                }
+                catch (Throwable ex) {
                     actual.onError(Operators.onOperatorError(this, ex, t));
                     return;
                 }
                 
                 if (v == null) {
-                    actual.onComplete();
-                } else {
+		                actual.onComplete();
+                }
+                else {
                     onSubscribeInner(Operators.scalarSubscription(actual, v));
                 }
                 

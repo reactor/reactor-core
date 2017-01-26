@@ -67,22 +67,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 			return;
 		}
 
-		Queue<Object> q;
-		
-		try {
-			q = queueSupplier.get();
-		} catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
-			return;
-		}
-		
-		if (q == null) {
-			Operators.error(s, Operators.onOperatorError(new
-					NullPointerException("The queueSupplier returned a null queue")));
-			return;
-		}
-		
-		source.subscribe(new SwitchMapMain<T, R>(s, mapper, q, bufferSize));
+		source.subscribe(new SwitchMapMain<T, R>(s, mapper, queueSupplier.get(), bufferSize));
 	}
 	
 	static final class SwitchMapMain<T, R> implements Subscriber<T>, Subscription {

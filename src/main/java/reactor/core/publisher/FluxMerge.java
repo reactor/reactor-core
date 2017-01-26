@@ -46,7 +46,7 @@ final class FluxMerge<T> extends Flux<T> implements MultiReceiver, Trackable {
 	
 	final Supplier<? extends Queue<T>> innerQueueSupplier;
 	
-	public FluxMerge(Publisher<? extends T>[] sources,
+	FluxMerge(Publisher<? extends T>[] sources,
 			boolean delayError, int maxConcurrency, 
 			Supplier<? extends Queue<T>> mainQueueSupplier, 
 					int prefetch, Supplier<? extends Queue<T>> innerQueueSupplier) {

@@ -60,38 +60,8 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 
 	@Override
 	public void subscribe(Subscriber<? super Flux<T>> s) {
-
-		Queue<T> q;
-
-		try {
-			q = processorQueueSupplier.get();
-		} catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
-			return;
-		}
-
-		if (q == null) {
-			Operators.error(s, Operators.onOperatorError(new
-					NullPointerException("The processorQueueSupplier returned a null queue")));
-			return;
-		}
-
-		Queue<Object> dq;
-
-		try {
-			dq = drainQueueSupplier.get();
-		} catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
-			return;
-		}
-
-		if (dq == null) {
-			Operators.error(s, Operators.onOperatorError(new
-					NullPointerException("The drainQueueSupplier returned a null queue")));
-			return;
-		}
-
-		WindowBoundaryMain<T, U> main = new WindowBoundaryMain<>(s, processorQueueSupplier, q, dq);
+		WindowBoundaryMain<T, U> main = new WindowBoundaryMain<>(s,
+				processorQueueSupplier, processorQueueSupplier.get(), drainQueueSupplier.get());
 
 		s.onSubscribe(main);
 
@@ -299,28 +269,8 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 						
 						if (once == 0) {
 							if (requested != 0L) {
-								Queue<T> pq;
-	
-								try {
-									pq = processorQueueSupplier.get();
-								} catch (Throwable e) {
-									q.clear();
-									cancelMain();
-									boundary.cancel();
-									
-									a.onError(e);
-									return;
-								}
-	
-								if (pq == null) {
-									q.clear();
-									cancelMain();
-									boundary.cancel();
-									
-									a.onError(new NullPointerException("The processorQueueSupplier returned a null queue"));
-									return;
-								}
-								
+								Queue<T> pq = processorQueueSupplier.get();
+
 								OPEN.getAndIncrement(this);
 
 								w = new UnicastProcessor<>(pq, this);

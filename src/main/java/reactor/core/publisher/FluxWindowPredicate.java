@@ -85,21 +85,7 @@ final class FluxWindowPredicate<T>
 
 	@Override
 	public void subscribe(Subscriber<? super GroupedFlux<T, T>> s) {
-		Queue<GroupedFlux<T, T>> q;
-
-		try {
-			q = mainQueueSupplier.get();
-		} catch (Throwable ex) {
-			Operators.error(s, Operators.onOperatorError(ex));
-			return;
-		}
-
-		if (q == null) {
-			Operators.error(s, new NullPointerException("The mainQueueSupplier returned a null queue"));
-			return;
-		}
-
-		source.subscribe(new WindowPredicateMain<>(s, q, groupQueueSupplier, prefetch, predicate, mode));
+		source.subscribe(new WindowPredicateMain<>(s, mainQueueSupplier.get(), groupQueueSupplier, prefetch, predicate, mode));
 	}
 
 	@Override
@@ -189,22 +175,7 @@ final class FluxWindowPredicate<T>
 		}
 
 		public void initializeWindow() {
-			T key = null;
-			Queue<T> q;
-
-			try {
-				q = groupQueueSupplier.get();
-			} catch (Throwable ex) {
-				ERROR.compareAndSet(this, null, ex);
-				return;
-			}
-
-			if (q == null) {
-				ERROR.compareAndSet(this, null, new NullPointerException("The groupQueueSupplier returned a null queue for initial window"));
-				return;
-			}
-
-			WindowGroupedFlux<T> g = new WindowGroupedFlux<>(key, q, this, prefetch);
+			WindowGroupedFlux<T> g = new WindowGroupedFlux<>(null, groupQueueSupplier.get(), this, prefetch);
 			window = g;
 			queue.offer(g);
 		}
