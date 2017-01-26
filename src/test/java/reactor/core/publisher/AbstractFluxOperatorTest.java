@@ -789,8 +789,14 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 				            if (s instanceof Fuseable.QueueSubscription) {
 					            Fuseable.QueueSubscription<O> qs =
 							            ((Fuseable.QueueSubscription<O>) s);
+
 					            assertThat(qs.requestFusion(Fuseable.SYNC | THREAD_BARRIER)).isEqualTo(
 							            fusionModeThreadBarrierSupport() & Fuseable.SYNC);
+
+					            qs.size();
+					            qs.isEmpty();
+					            qs.clear();
+					            assertThat(qs.isEmpty()).isTrue();
 				            }
 			            })
 			            .thenCancel()
@@ -821,8 +827,14 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 				            if (s instanceof Fuseable.QueueSubscription) {
 					            Fuseable.QueueSubscription<O> qs =
 							            ((Fuseable.QueueSubscription<O>) ((Receiver) s).upstream());
+
 					            assertThat(qs.requestFusion(Fuseable.SYNC | THREAD_BARRIER)).isEqualTo(
 							            fusionModeThreadBarrierSupport() & Fuseable.SYNC);
+
+					            qs.size();
+					            qs.isEmpty();
+					            qs.clear();
+					            assertThat(qs.isEmpty()).isTrue();
 				            }
 			            })
 			            .thenCancel()

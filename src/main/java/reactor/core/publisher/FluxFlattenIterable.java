@@ -154,7 +154,7 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 
 		int fusionMode;
 
-		public FlattenIterableSubscriber(Subscriber<? super R> actual,
+		FlattenIterableSubscriber(Subscriber<? super R> actual,
 				Function<? super T, ? extends Iterable<? extends R>> mapper,
 				int prefetch,
 				Supplier<Queue<T>> queueSupplier) {
@@ -355,6 +355,11 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 							continue;
 						}
 
+						if (v == null) {
+							onError(Operators.onOperatorError(s, new NullPointerException("iterator returned null")));
+							continue;
+						}
+
 						a.onNext(v);
 
 						if (cancelled) {
@@ -512,6 +517,13 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 							return;
 						}
 
+						if(v == null){
+							current = null;
+							a.onError(Operators.onOperatorError(s, new
+									NullPointerException("iterator returned null")));
+							return;
+						}
+
 						a.onNext(v);
 
 						if (cancelled) {
@@ -528,8 +540,9 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 							b = it.hasNext();
 						}
 						catch (Throwable exc) {
-							onError(Operators.onOperatorError(s, exc));
-							continue;
+							current = null;
+							a.onError(Operators.onOperatorError(s, exc));
+							return;
 						}
 
 						if (!b) {
@@ -621,8 +634,15 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 					}
 					current = it;
 				}
+				else if (!it.hasNext()) {
+					it = null;
+					continue;
+				}
 
 				R r = it.next();
+				if(r == null){
+					throw new NullPointerException("iterator returned null");
+				}
 
 				if (!it.hasNext()) {
 					current = null;
