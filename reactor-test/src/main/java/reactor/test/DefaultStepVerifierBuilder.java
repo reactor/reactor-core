@@ -16,16 +16,21 @@
 
 package reactor.test;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.TimeZone;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -34,7 +39,9 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -47,11 +54,14 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
+import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Operators;
 import reactor.core.publisher.Signal;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.util.Logger;
 import reactor.util.Loggers;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 /**
  * Default implementation of {@link StepVerifier.Step} and
@@ -568,6 +578,34 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		@Override
+		public StepVerifierAssertions verifyThenAssertThat() {
+			//plug in the correct hooks
+			Queue<Object> droppedElements = new ConcurrentLinkedQueue<>();
+			Queue<Throwable> droppedErrors = new ConcurrentLinkedQueue<>();
+			Queue<Tuple2<Throwable, ?>> operatorErrors = new ConcurrentLinkedQueue<>();
+			Hooks.onErrorDropped(droppedErrors::offer);
+			Hooks.onNextDropped(droppedElements::offer);
+			Hooks.onOperatorError((t, d) -> {
+				operatorErrors.offer(Tuples.of(t, d));
+				return t;
+			});
+
+			try {
+				//trigger the verify
+				Duration time = verify();
+
+				//return the assertion API
+				return new DefaultStepVerifierAssertions(droppedElements, droppedErrors, operatorErrors, time);
+			}
+			finally {
+				//unplug the hooks
+				Hooks.resetOnNextDropped();
+				Hooks.resetOnErrorDropped();
+				Hooks.resetOnOperatorError();
+			}
+		}
+
+		@Override
 		public Duration verify() {
 			return verify(Duration.ZERO);
 		}
@@ -640,6 +678,7 @@ final class DefaultStepVerifierBuilder<T>
 					this.debugEnabled,
 					vts);
 		}
+
 	}
 
 	final static class DefaultVerifySubscriber<T>
@@ -936,6 +975,34 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		@Override
+		public StepVerifierAssertions verifyThenAssertThat() {
+			//plug in the correct hooks
+			Queue<Object> droppedElements = new ConcurrentLinkedQueue<>();
+			Queue<Throwable> droppedErrors = new ConcurrentLinkedQueue<>();
+			Queue<Tuple2<Throwable, ?>> operatorErrors = new ConcurrentLinkedQueue<>();
+			Hooks.onErrorDropped(droppedErrors::offer);
+			Hooks.onNextDropped(droppedElements::offer);
+			Hooks.onOperatorError((t, d) -> {
+				operatorErrors.offer(Tuples.of(t, d));
+				return t;
+			});
+
+			try {
+				//trigger the verify
+				Duration time = verify();
+
+				//return the assertion API
+				return new DefaultStepVerifierAssertions(droppedElements, droppedErrors, operatorErrors, time);
+			}
+			finally {
+				//unplug the hooks
+				Hooks.resetOnNextDropped();
+				Hooks.resetOnErrorDropped();
+				Hooks.resetOnOperatorError();
+			}
+		}
+
+		@Override
 		public Duration verify() {
 			return verify(Duration.ZERO);
 		}
@@ -953,7 +1020,6 @@ final class DefaultStepVerifierBuilder<T>
 			}
 			validate();
 			return Duration.between(now, Instant.now());
-
 		}
 
 		/**
@@ -1485,6 +1551,203 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 	}
+
+	static class DefaultStepVerifierAssertions implements
+	                                            StepVerifier.StepVerifierAssertions {
+
+		private final Queue<Object> droppedElements;
+		private final Queue<Throwable> droppedErrors;
+		private final Queue<Tuple2<Throwable, ?>> operatorErrors;
+		private final Duration duration;
+
+		DefaultStepVerifierAssertions(Queue<Object> droppedElements,
+				Queue<Throwable> droppedErrors,
+				Queue<Tuple2<Throwable, ?>> operatorErrors,
+				Duration duration) {
+			this.droppedElements = droppedElements;
+			this.droppedErrors = droppedErrors;
+			this.operatorErrors = operatorErrors;
+			this.duration = duration;
+		}
+
+		private StepVerifier.StepVerifierAssertions satisfies(BooleanSupplier check, Supplier<String> message) {
+			if (!check.getAsBoolean()) {
+				throw new AssertionError(message.get());
+			}
+			return this;
+		}
+
+		@Override
+		public StepVerifier.StepVerifierAssertions hasDroppedElements() {
+			return satisfies(() -> !droppedElements.isEmpty(), () -> "Expected dropped elements, none found.");
+		}
+
+		@Override
+		public StepVerifier.StepVerifierAssertions hasDropped(Object... values) {
+			satisfies(() -> values != null && values.length > 0, () -> "Require non-empty values");
+			List<Object> valuesList = Arrays.asList(values);
+			return satisfies(() -> droppedElements.containsAll(valuesList),
+					() -> String.format("Expected dropped elements to contain <%s>, was <%s>.", valuesList, droppedElements));
+		}
+
+		@Override
+		public StepVerifier.StepVerifierAssertions hasDroppedExactly(Object... values) {
+			satisfies(() -> values != null && values.length > 0, () -> "Require non-empty values");
+			List<Object> valuesList = Arrays.asList(values);
+			return satisfies(() -> droppedElements.containsAll(valuesList)
+							&& droppedElements.size() == valuesList.size(),
+					() -> String.format("Expected dropped elements to contain exactly <%s>, was <%s>.", valuesList, droppedElements));
+		}
+
+		@Override
+		public StepVerifier.StepVerifierAssertions hasDroppedErrors() {
+			return satisfies(() -> !droppedErrors.isEmpty(),
+					() -> "Expected at least 1 dropped error, none found.");
+		}
+		@Override
+		public StepVerifier.StepVerifierAssertions hasDroppedErrors(int size) {
+			return satisfies(() -> droppedErrors.size() == size,
+					() -> String.format("Expected exactly %d dropped errors, %d found.", size, droppedErrors.size()));
+		}
+
+		@Override
+		public StepVerifier.StepVerifierAssertions hasDroppedErrorOfType(Class<? extends Throwable> clazz) {
+			satisfies(() -> clazz != null, () -> "Require non-null clazz");
+			hasDroppedErrors(1);
+			return satisfies(() -> clazz.isInstance(droppedErrors.peek()),
+					() -> String.format("Expected dropped error to be of type %s, was %s.", clazz.getCanonicalName(), droppedErrors.peek().getClass().getCanonicalName()));
+		}
+
+		@Override
+		public StepVerifier.StepVerifierAssertions hasDroppedErrorMatching(Predicate<Throwable> matcher) {
+			satisfies(() -> matcher != null, () -> "Require non-null matcher");
+			hasDroppedErrors(1);
+			return satisfies(() -> matcher.test(droppedErrors.peek()),
+					() -> String.format("Expected dropped error matching the given predicate, did not match: <%s>.", droppedErrors.peek()));
+		}
+
+		@Override
+		public StepVerifier.StepVerifierAssertions hasDroppedErrorWithMessage(String message) {
+			satisfies(() -> message != null, () -> "Require non-null message");
+			hasDroppedErrors(1);
+			String actual = droppedErrors.peek().getMessage();
+			return satisfies(() -> message.equals(actual),
+					() -> String.format("Expected dropped error with message <\"%s\">, was <\"%s\">.", message, actual));
+		}
+
+		@Override
+		public StepVerifier.StepVerifierAssertions hasDroppedErrorWithMessageContaining(
+				String messagePart) {
+			satisfies(() -> messagePart != null, () -> "Require non-null messagePart");
+			hasDroppedErrors(1);
+			String actual = droppedErrors.peek().getMessage();
+			return satisfies(() -> actual != null && actual.contains(messagePart),
+					() -> String.format("Expected dropped error with message containing <\"%s\">, was <\"%s\">.", messagePart, actual));
+		}
+
+		@Override
+		public StepVerifier.StepVerifierAssertions hasDroppedErrorsMatching(Predicate<Collection<Throwable>> matcher) {
+			satisfies(() -> matcher != null, () -> "Require non-null matcher");
+			hasDroppedErrors();
+			return satisfies(() -> matcher.test(droppedErrors),
+					() -> String.format("Expected collection of dropped errors matching the given predicate, did not match: <%s>.", droppedErrors));
+		}
+
+		@Override
+		public StepVerifier.StepVerifierAssertions hasDroppedErrorsSatisfying(Consumer<Collection<Throwable>> asserter) {
+			satisfies(() -> asserter != null, () -> "Require non-null asserter");
+			hasDroppedErrors();
+			asserter.accept(droppedErrors);
+			return this;
+		}
+
+		@Override
+		public StepVerifier.StepVerifierAssertions hasOperatorErrors() {
+			return satisfies(() -> !operatorErrors.isEmpty(),
+					() -> "Expected at least 1 operator error, none found.");
+		}
+		@Override
+		public StepVerifier.StepVerifierAssertions hasOperatorErrors(int size) {
+			return satisfies(() -> operatorErrors.size() == size,
+					() -> String.format("Expected exactly %d operator errors, %d found.", size, operatorErrors.size()));
+		}
+
+		StepVerifier.StepVerifierAssertions hasOneOperatorErrorWithError() {
+			satisfies(() -> operatorErrors.size() == 1,
+					() -> String.format("Expected exactly one operator error, %d found.", operatorErrors.size()));
+			satisfies(() -> operatorErrors.peek().getT1() != null,
+					() -> "Expected exactly one operator error with an actual throwable content, no throwable found.");
+			return this;
+		}
+
+		@Override
+		public StepVerifier.StepVerifierAssertions hasOperatorErrorOfType(Class<? extends Throwable> clazz) {
+			satisfies(() -> clazz != null, () -> "Require non-null clazz");
+			hasOneOperatorErrorWithError();
+			return satisfies(() -> clazz.isInstance(operatorErrors.peek().getT1()),
+					() -> String.format("Expected operator error to be of type %s, was %s.",
+							clazz.getCanonicalName(), operatorErrors.peek().getT1().getClass().getCanonicalName()));
+		}
+
+		@Override
+		public StepVerifier.StepVerifierAssertions hasOperatorErrorMatching(Predicate<Throwable> matcher) {
+			satisfies(() -> matcher != null, () -> "Require non-null matcher");
+			hasOneOperatorErrorWithError();
+			return satisfies(() -> matcher.test(operatorErrors.peek().getT1()),
+					() -> String.format("Expected operator error matching the given predicate, did not match: <%s>.", operatorErrors.peek()));
+		}
+
+		@Override
+		public StepVerifier.StepVerifierAssertions hasOperatorErrorWithMessage(String message) {
+			satisfies(() -> message != null, () -> "Require non-null message");
+			hasOneOperatorErrorWithError();
+			String actual = operatorErrors.peek().getT1().getMessage();
+			return satisfies(() -> message.equals(actual),
+					() -> String.format("Expected operator error with message <\"%s\">, was <\"%s\">.", message, actual));
+		}
+
+		@Override
+		public StepVerifier.StepVerifierAssertions hasOperatorErrorWithMessageContaining(
+				String messagePart) {
+			satisfies(() -> messagePart != null, () -> "Require non-null messagePart");
+			hasOneOperatorErrorWithError();
+			String actual = operatorErrors.peek().getT1().getMessage();
+			return satisfies(() -> actual != null && actual.contains(messagePart),
+					() -> String.format("Expected operator error with message containing <\"%s\">, was <\"%s\">.", messagePart, actual));
+		}
+
+		@Override
+		public StepVerifier.StepVerifierAssertions hasOperatorErrorsMatching(Predicate<Collection<Tuple2<Throwable, ?>>> matcher) {
+			satisfies(() -> matcher != null, () -> "Require non-null matcher");
+			hasOperatorErrors();
+			return satisfies(() -> matcher.test(operatorErrors),
+					() -> String.format("Expected collection of operator errors matching the given predicate, did not match: <%s>.", operatorErrors));
+		}
+
+		@Override
+		public StepVerifier.StepVerifierAssertions hasOperatorErrorsSatisfying(Consumer<Collection<Tuple2<Throwable, ?>>> asserter) {
+			satisfies(() -> asserter != null, () -> "Require non-null asserter");
+			hasOperatorErrors();
+			asserter.accept(operatorErrors);
+			return this;
+		}
+
+		@Override
+		public StepVerifier.StepVerifierAssertions tookLessThan(Duration d) {
+			return satisfies(() -> duration.compareTo(d) <= 0,
+					() -> String.format("Expected scenario to be verified in less than %sms, took %sms.",
+							d.toMillis(), duration.toMillis()));
+		}
+
+		@Override
+		public StepVerifier.StepVerifierAssertions tookMoreThan(Duration d) {
+			return satisfies(() -> duration.compareTo(d) >= 0,
+					() -> String.format("Expected scenario to be verified in more than %sms, took %sms.",
+							d.toMillis(), duration.toMillis()));
+		}
+	}
+
+
 
 	interface EagerEvent<T> extends Event<T> {
 
