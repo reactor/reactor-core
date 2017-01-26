@@ -33,7 +33,10 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 * that never does anything: `never`
 * that is decided at subscription: `defer`
 * that depends on a disposable resource: `using`
-//TODO create and generate?
+* that generates events programmatically (can use state)...
+** synchronously and one-by-one: `Flux#generate`
+** asynchronously (can also be sync), multiple emissions possible in one pass: `Flux#create`
+(`Flux#Mono` as well, without the multiple emission aspect)
 
 [[which.values]]
 === An existing sequence
@@ -41,6 +44,7 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 ** on a 1-to-1 basis (eg. strings to their length): `map`
 *** ...by just casting it: `cast`
 ** on a 1-to-n basis (eg. strings to their characters): `flatMap` + use a factory method
+** on a 1-to-n basis with programmatic behavior for each source element and/or state: `handle`
 ** running an asynchronous task for each source item (eg. urls to http request): `flatMap` + an async `Publisher`-returning method
 *** ...ignoring some data: conditionally return a `Mono.empty()` in the flatMap lambda
 *** ...retaining the original sequence order: `Flux#flatMapSequential` (this triggers the async processes immediately but reorders the results)
