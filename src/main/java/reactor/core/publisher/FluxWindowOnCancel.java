@@ -100,7 +100,6 @@ final class FluxWindowOnCancel<T> extends FluxSource<T, Flux<T>> {
 				Operators.onNextDropped(t);
 				return;
 			}
-
 			UnicastProcessor<T> w = window;
 			if (w == null || w.cancelled) {
 				WIP.getAndIncrement(this);
@@ -120,6 +119,7 @@ final class FluxWindowOnCancel<T> extends FluxSource<T, Flux<T>> {
 				Operators.onErrorDropped(t);
 				return;
 			}
+			done = true;
 			Processor<T, T> w = window;
 			if (w != null) {
 				window = null;
@@ -134,7 +134,7 @@ final class FluxWindowOnCancel<T> extends FluxSource<T, Flux<T>> {
 			if (done) {
 				return;
 			}
-
+			done = true;
 			Processor<T, T> w = window;
 			if (w != null) {
 				window = null;

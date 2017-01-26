@@ -75,6 +75,12 @@ public class FluxBufferTest extends AbstractFluxOperatorTest<String, List<String
 						.verifier(step -> step.assertNext(s -> assertThat(s).containsExactly(item(0), item(1)))
 						                      .assertNext(s -> assertThat(s).containsExactly(item(1), item(2)))
 						                      .assertNext(s -> assertThat(s).containsExactly(item(2)))
+						                      .verifyComplete()),
+
+				scenario(f -> f.buffer(1))
+						.verifier(step -> step.assertNext(s -> assertThat(s).containsExactly(item(0)))
+						                      .assertNext(s -> assertThat(s).containsExactly(item(1)))
+						                      .assertNext(s -> assertThat(s).containsExactly(item(2)))
 						                      .verifyComplete())
 		);
 	}

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Collections;
@@ -40,33 +41,32 @@ import reactor.core.publisher.FluxBufferPredicate.Mode;
  * Cut a sequence into non-overlapping windows where each window boundary is determined by
  * a {@link Predicate} on the values. The predicate can be used in several modes:
  * <ul>
- *     <li>{@code Until}: A new window starts when the predicate returns true. The
- *     element that just matched the predicate is the last in the previous window.</li>
- *     <li>{@code UntilOther}: A new window starts when the predicate returns true. The
- *     element that just matched the predicate is the first in the new window.</li>
- *     <li>{@code While}: A new window starts when the predicate stops matching. The
- *     non-matching elements that delimit each window are simply discarded, and the
- *     windows are not emitted before an inner element is pushed</li>
+ * <li>{@code Until}: A new window starts when the predicate returns true. The
+ * element that just matched the predicate is the last in the previous window.</li>
+ * <li>{@code UntilOther}: A new window starts when the predicate returns true. The
+ * element that just matched the predicate is the first in the new window.</li>
+ * <li>{@code While}: A new window starts when the predicate stops matching. The
+ * non-matching elements that delimit each window are simply discarded, and the
+ * windows are not emitted before an inner element is pushed</li>
  * </ul>
  *
  * @param <T> the source and window value type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxWindowPredicate<T>
-		extends FluxSource<T, GroupedFlux<T, T>> {
+final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>> implements Fuseable{
 
 	final Supplier<? extends Queue<T>> groupQueueSupplier;
-	
+
 	final Supplier<? extends Queue<GroupedFlux<T, T>>> mainQueueSupplier;
-	
+
 	final Mode mode;
-	
+
 	final Predicate<? super T> predicate;
 
 	final int prefetch;
 
-	public FluxWindowPredicate(
-			Publisher<? extends T> source,
+	FluxWindowPredicate(Publisher<? extends T> source,
 			Supplier<? extends Queue<GroupedFlux<T, T>>> mainQueueSupplier,
 			Supplier<? extends Queue<T>> groupQueueSupplier,
 			int prefetch,
@@ -77,15 +77,22 @@ final class FluxWindowPredicate<T>
 			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
 		}
 		this.predicate = Objects.requireNonNull(predicate, "predicate");
-		this.mainQueueSupplier = Objects.requireNonNull(mainQueueSupplier, "mainQueueSupplier");
-		this.groupQueueSupplier = Objects.requireNonNull(groupQueueSupplier, "groupQueueSupplier");
+		this.mainQueueSupplier =
+				Objects.requireNonNull(mainQueueSupplier, "mainQueueSupplier");
+		this.groupQueueSupplier =
+				Objects.requireNonNull(groupQueueSupplier, "groupQueueSupplier");
 		this.mode = mode;
 		this.prefetch = prefetch;
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super GroupedFlux<T, T>> s) {
-		source.subscribe(new WindowPredicateMain<>(s, mainQueueSupplier.get(), groupQueueSupplier, prefetch, predicate, mode));
+		source.subscribe(new WindowPredicateMain<>(s,
+				mainQueueSupplier.get(),
+				groupQueueSupplier,
+				prefetch,
+				predicate,
+				mode));
 	}
 
 	@Override
@@ -93,10 +100,9 @@ final class FluxWindowPredicate<T>
 		return prefetch;
 	}
 
-	static final class WindowPredicateMain<T> implements Subscriber<T>,
-	                                                   Fuseable.QueueSubscription<GroupedFlux<T, T>>,
-	                                                   MultiProducer, Producer, Trackable,
-	                                                   Receiver {
+	static final class WindowPredicateMain<T>
+			implements Subscriber<T>, Fuseable.QueueSubscription<GroupedFlux<T, T>>,
+			           MultiProducer, Producer, Trackable, Receiver {
 
 		final Subscriber<? super GroupedFlux<T, T>> actual;
 
@@ -122,23 +128,25 @@ final class FluxWindowPredicate<T>
 		static final AtomicLongFieldUpdater<WindowPredicateMain> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(WindowPredicateMain.class, "requested");
 
-		volatile boolean done;
+		volatile boolean   done;
 		volatile Throwable error;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<WindowPredicateMain, Throwable> ERROR =
-				AtomicReferenceFieldUpdater.newUpdater(WindowPredicateMain.class, Throwable.class, "error");
+				AtomicReferenceFieldUpdater.newUpdater(WindowPredicateMain.class,
+						Throwable.class,
+						"error");
 
 		volatile int cancelled;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<WindowPredicateMain> CANCELLED =
-				AtomicIntegerFieldUpdater.newUpdater(WindowPredicateMain.class, "cancelled");
+				AtomicIntegerFieldUpdater.newUpdater(WindowPredicateMain.class,
+						"cancelled");
 
 		Subscription s;
 
-		volatile boolean enableAsyncFusion;
+		volatile boolean outputFused;
 
-		public WindowPredicateMain(
-				Subscriber<? super GroupedFlux<T, T>> actual,
+		WindowPredicateMain(Subscriber<? super GroupedFlux<T, T>> actual,
 				Queue<GroupedFlux<T, T>> queue,
 				Supplier<? extends Queue<T>> groupQueueSupplier,
 				int prefetch,
@@ -174,26 +182,33 @@ final class FluxWindowPredicate<T>
 			}
 		}
 
-		public void initializeWindow() {
-			WindowGroupedFlux<T> g = new WindowGroupedFlux<>(null, groupQueueSupplier.get(), this, prefetch);
+		void initializeWindow() {
+			WindowGroupedFlux<T> g = new WindowGroupedFlux<>(null,
+					groupQueueSupplier.get(),
+					this,
+					prefetch);
 			window = g;
 			queue.offer(g);
 		}
 
-		public boolean offerNewWindow(T key, T emitInNewWindow) {
+		boolean offerNewWindow(T key, T emitInNewWindow) {
 			// if the main is cancelled, don't create new groups
 			if (cancelled == 0) {
 				Queue<T> q;
 
 				try {
 					q = groupQueueSupplier.get();
-				} catch (Throwable ex) {
+				}
+				catch (Throwable ex) {
 					onError(Operators.onOperatorError(s, ex, key));
 					return false;
 				}
 
 				if (q == null) {
-					onError(Operators.onOperatorError(s, new NullPointerException("The groupQueueSupplier returned a null queue for window \'" + key + "\'"), key));
+					onError(Operators.onOperatorError(s,
+							new NullPointerException(
+									"The groupQueueSupplier returned a null queue for window \'" + key + "\'"),
+							key));
 					return false;
 				}
 
@@ -211,6 +226,10 @@ final class FluxWindowPredicate<T>
 
 		@Override
 		public void onNext(T t) {
+			if (done) {
+				Operators.onNextDropped(t);
+				return;
+			}
 			WindowGroupedFlux<T> g = window;
 
 			boolean match;
@@ -225,7 +244,7 @@ final class FluxWindowPredicate<T>
 			if (mode == Mode.UNTIL && match) {
 				g.onNext(t);
 				g.onComplete();
-				offerNewWindow(t,null);
+				offerNewWindow(t, null);
 			}
 			else if (mode == Mode.UNTIL_CUT_BEFORE && match) {
 				g.onComplete();
@@ -245,13 +264,18 @@ final class FluxWindowPredicate<T>
 			if (Exceptions.addThrowable(ERROR, this, t)) {
 				done = true;
 				drain();
-			} else {
+			}
+			else {
 				Operators.onErrorDropped(t);
 			}
 		}
 
 		@Override
 		public void onComplete() {
+			if(done){
+				return;
+			}
+
 			WindowGroupedFlux<T> g = window;
 			if (g != null) {
 				g.onComplete();
@@ -294,9 +318,12 @@ final class FluxWindowPredicate<T>
 		@Override
 		public Iterator<?> downstreams() {
 			WindowGroupedFlux<T> g = window;
-			if (g == null)
-				return Collections.emptyList().iterator();
-			return Collections.singletonList(g).iterator();
+			if (g == null) {
+				return Collections.emptyList()
+				                  .iterator();
+			}
+			return Collections.singletonList(g)
+			                  .iterator();
 		}
 
 		@Override
@@ -340,7 +367,7 @@ final class FluxWindowPredicate<T>
 		@Override
 		public void cancel() {
 			if (CANCELLED.compareAndSet(this, 0, 1)) {
-					s.cancel();
+				s.cancel();
 			}
 		}
 
@@ -353,7 +380,7 @@ final class FluxWindowPredicate<T>
 				return;
 			}
 
-			if (enableAsyncFusion) {
+			if (outputFused) {
 				drainFused();
 			}
 			else {
@@ -403,7 +430,7 @@ final class FluxWindowPredicate<T>
 			Subscriber<? super GroupedFlux<T, T>> a = actual;
 			Queue<GroupedFlux<T, T>> q = queue;
 
-			for (;;) {
+			for (; ; ) {
 
 				long r = requested;
 				long e = 0L;
@@ -448,15 +475,23 @@ final class FluxWindowPredicate<T>
 			}
 		}
 
-		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, Queue<GroupedFlux<T, T>> q) {
+		boolean checkTerminated(boolean d,
+				boolean empty,
+				Subscriber<?> a,
+				Queue<GroupedFlux<T, T>> q) {
+
+			if (cancelled != 0) {
+				q.clear();
+				return true;
+			}
 			if (d) {
 				Throwable e = error;
 				if (e != null && e != Exceptions.TERMINATED) {
 					queue.clear();
 					signalAsyncError();
 					return true;
-				} else
-				if (empty) {
+				}
+				else if (empty) {
 					a.onComplete();
 					return true;
 				}
@@ -487,20 +522,18 @@ final class FluxWindowPredicate<T>
 
 		@Override
 		public int requestFusion(int requestedMode) {
-			if (requestedMode == Fuseable.ANY || requestedMode == Fuseable.ASYNC) {
-				enableAsyncFusion = true;
+			if ((requestedMode & Fuseable.ASYNC) != 0) {
+				outputFused = true;
 				return Fuseable.ASYNC;
 			}
 			return Fuseable.NONE;
 		}
-
-		void requestInner(long n) {
-			s.request(n);
-		}
 	}
 
 	static final class WindowGroupedFlux<T> extends GroupedFlux<T, T>
-			implements Fuseable, Fuseable.QueueSubscription<T>, Producer, Receiver, Trackable {
+			implements Fuseable, Fuseable.QueueSubscription<T>, Producer, Receiver,
+			           Trackable {
+
 		final T key;
 
 		final int limit;
@@ -514,8 +547,10 @@ final class FluxWindowPredicate<T>
 
 		volatile WindowPredicateMain<T> parent;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<WindowGroupedFlux, WindowPredicateMain> PARENT =
-				AtomicReferenceFieldUpdater.newUpdater(WindowGroupedFlux.class, WindowPredicateMain.class, "parent");
+		static final AtomicReferenceFieldUpdater<WindowGroupedFlux, WindowPredicateMain>
+				PARENT = AtomicReferenceFieldUpdater.newUpdater(WindowGroupedFlux.class,
+				WindowPredicateMain.class,
+				"parent");
 
 		volatile boolean done;
 		Throwable error;
@@ -523,7 +558,9 @@ final class FluxWindowPredicate<T>
 		volatile Subscriber<? super T> actual;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<WindowGroupedFlux, Subscriber> ACTUAL =
-				AtomicReferenceFieldUpdater.newUpdater(WindowGroupedFlux.class, Subscriber.class, "actual");
+				AtomicReferenceFieldUpdater.newUpdater(WindowGroupedFlux.class,
+						Subscriber.class,
+						"actual");
 
 		volatile boolean cancelled;
 
@@ -546,7 +583,10 @@ final class FluxWindowPredicate<T>
 
 		int produced;
 
-		public WindowGroupedFlux(T key, Queue<T> queue, WindowPredicateMain<T> parent, int prefetch) {
+		public WindowGroupedFlux(T key,
+				Queue<T> queue,
+				WindowPredicateMain<T> parent,
+				int prefetch) {
 			this.key = key;
 			this.queue = queue;
 			this.parent = parent;
@@ -572,7 +612,7 @@ final class FluxWindowPredicate<T>
 
 			final Queue<T> q = queue;
 
-			for (;;) {
+			for (; ; ) {
 
 				long r = requested;
 				long e = 0L;
@@ -605,7 +645,7 @@ final class FluxWindowPredicate<T>
 				if (e != 0) {
 					WindowPredicateMain<T> main = parent;
 					if (main != null) {
-						main.requestInner(e);
+						main.s.request(e);
 					}
 					if (r != Long.MAX_VALUE) {
 						REQUESTED.addAndGet(this, -e);
@@ -624,7 +664,7 @@ final class FluxWindowPredicate<T>
 
 			final Queue<T> q = queue;
 
-			for (;;) {
+			for (; ; ) {
 
 				if (cancelled) {
 					q.clear();
@@ -642,7 +682,8 @@ final class FluxWindowPredicate<T>
 					Throwable ex = error;
 					if (ex != null) {
 						a.onError(ex);
-					} else {
+					}
+					else {
 						a.onComplete();
 					}
 					return;
@@ -664,7 +705,8 @@ final class FluxWindowPredicate<T>
 
 				if (enableOperatorFusion) {
 					drainFused(a);
-				} else {
+				}
+				else {
 					drainRegular(a);
 				}
 			}
@@ -681,7 +723,8 @@ final class FluxWindowPredicate<T>
 				actual = null;
 				if (e != null) {
 					a.onError(e);
-				} else {
+				}
+				else {
 					a.onComplete();
 				}
 				return true;
@@ -691,10 +734,6 @@ final class FluxWindowPredicate<T>
 		}
 
 		public void onNext(T t) {
-			if (done || cancelled) {
-				return;
-			}
-
 			Subscriber<? super T> a = actual;
 
 			if (!queue.offer(t)) {
@@ -705,16 +744,13 @@ final class FluxWindowPredicate<T>
 				if (a != null) {
 					a.onNext(null); // in op-fusion, onNext(null) is the indicator of more data
 				}
-			} else {
+			}
+			else {
 				drain();
 			}
 		}
 
 		public void onError(Throwable t) {
-			if (done || cancelled) {
-				return;
-			}
-
 			error = t;
 			done = true;
 
@@ -724,12 +760,7 @@ final class FluxWindowPredicate<T>
 		}
 
 		public void onComplete() {
-			if (done || cancelled) {
-				return;
-			}
-
 			done = true;
-
 			propagateTerminate();
 
 			drain();
@@ -740,14 +771,12 @@ final class FluxWindowPredicate<T>
 			if (once == 0 && ONCE.compareAndSet(this, 0, 1)) {
 
 				s.onSubscribe(this);
-				actual = s;
-				if (cancelled) {
-					actual = null;
-				} else {
-					drain();
-				}
-			} else {
-				s.onError(new IllegalStateException("This processor allows only a single Subscriber"));
+				ACTUAL.lazySet(this, s);
+				drain();
+			}
+			else {
+				s.onError(new IllegalStateException(
+						"This processor allows only a single Subscriber"));
 			}
 		}
 
@@ -780,13 +809,14 @@ final class FluxWindowPredicate<T>
 			T v = queue.poll();
 			if (v != null) {
 				produced++;
-			} else {
+			}
+			else {
 				int p = produced;
 				if (p != 0) {
 					produced = 0;
 					WindowPredicateMain<T> main = parent;
 					if (main != null) {
-						main.requestInner(p);
+						main.s.request(p);
 					}
 				}
 			}

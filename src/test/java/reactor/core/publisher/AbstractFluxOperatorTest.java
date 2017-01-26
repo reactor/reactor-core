@@ -717,7 +717,8 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 
 	final StepVerifier.Step<O> operatorErrorSourceVerifier(Scenario<I, O> scenario) {
 		TestPublisher<I> ts =
-				TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
+				TestPublisher.createNoncompliant(TestPublisher.Violation
+						.CLEANUP_ON_TERMINATE, TestPublisher.Violation.REQUEST_OVERFLOW);
 		AtomicBoolean nextDropped = new AtomicBoolean();
 
 		Hooks.onNextDropped(d -> {

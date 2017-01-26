@@ -193,6 +193,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				Operators.onErrorDropped(t);
 				return;
 			}
+			done = true;
 			Processor<T, T> w = window;
 			if (w != null) {
 				window = null;
@@ -207,7 +208,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			if (done) {
 				return;
 			}
-
+			done = true;
 			Processor<T, T> w = window;
 			if (w != null) {
 				window = null;
@@ -382,6 +383,8 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				Operators.onErrorDropped(t);
 				return;
 			}
+			done = true;
+
 			Processor<T, T> w = window;
 			if (w != null) {
 				window = null;
@@ -396,6 +399,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			if (done) {
 				return;
 			}
+			done = true;
 
 			Processor<T, T> w = window;
 			if (w != null) {
@@ -608,6 +612,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				Operators.onErrorDropped(t);
 				return;
 			}
+			done = true;
 
 			for (Processor<T, T> w : this) {
 				w.onError(t);
@@ -615,7 +620,6 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			clear();
 
 			error = t;
-			done = true;
 			drain();
 		}
 
@@ -624,13 +628,13 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			if (done) {
 				return;
 			}
+			done = true;
 
 			for (Processor<T, T> w : this) {
 				w.onComplete();
 			}
 			clear();
 
-			done = true;
 			drain();
 		}
 
