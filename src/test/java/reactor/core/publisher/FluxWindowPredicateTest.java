@@ -489,66 +489,6 @@ public class FluxWindowPredicateTest {
 
 	@Test
 	@SuppressWarnings("unchecked")
-	public void mainQueueSupplierThrowsInitial() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(
-				sp1,
-				() -> { throw new RuntimeException("supplier failure"); },
-				QueueSupplier.unbounded(),
-				QueueSupplier.SMALL_BUFFER_SIZE,
-				i -> i % 3 == 0,
-				Mode.UNTIL);
-
-		assertThat(sp1.hasDownstreams()).isFalse();
-
-		StepVerifier.create(windowUntil)
-		            .then(() -> sp1.onNext(1))
-		            .expectErrorMessage("supplier failure")
-		            .verify();
-	}
-
-	@Test
-	public void mainQueueSupplierReturnsNull() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(
-				sp1,
-				() -> null,
-				QueueSupplier.unbounded(),
-				QueueSupplier.SMALL_BUFFER_SIZE,
-				i -> i % 3 == 0,
-				Mode.UNTIL);
-
-		assertThat(sp1.hasDownstreams()).isFalse();
-
-		StepVerifier.create(windowUntil)
-		            .then(() -> sp1.onNext(1))
-		            .expectErrorMatches(t -> t instanceof NullPointerException &&
-				            "The mainQueueSupplier returned a null queue".equals(t.getMessage()))
-		            .verify();
-	}
-
-	@Test
-	@SuppressWarnings("unchecked")
-	public void innerQueueSupplierThrowsInitial() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(
-				sp1,
-				QueueSupplier.small(),
-				() -> { throw new RuntimeException("supplier failure"); },
-				QueueSupplier.SMALL_BUFFER_SIZE,
-				i -> i % 3 == 0,
-				Mode.UNTIL);
-
-		assertThat(sp1.hasDownstreams()).isFalse();
-
-		StepVerifier.create(windowUntil)
-		            .then(() -> sp1.onNext(1))
-		            .expectErrorMessage("supplier failure")
-		            .verify();
-	}
-
-	@Test
-	@SuppressWarnings("unchecked")
 	public void innerQueueSupplierThrowsLater() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		int count[] = {1};
@@ -575,26 +515,6 @@ public class FluxWindowPredicateTest {
 		            .then(() -> sp1.onNext(3))
 		            .expectNext(Signal.next(3), Signal.complete()) //1st window closed, no new window yet, fails
 		            .expectErrorMessage("supplier failure")
-		            .verify();
-	}
-
-	@Test
-	public void innerQueueSupplierReturnsNull() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(
-				sp1,
-				QueueSupplier.small(),
-				() -> null,
-				QueueSupplier.SMALL_BUFFER_SIZE,
-				i -> i % 3 == 0,
-				Mode.UNTIL);
-
-		assertThat(sp1.hasDownstreams()).isFalse();
-
-		StepVerifier.create(windowUntil)
-		            .then(() -> sp1.onNext(1))
-		            .expectErrorMatches(t -> t instanceof NullPointerException &&
-		                "The groupQueueSupplier returned a null queue for initial window".equals(t.getMessage()))
 		            .verify();
 	}
 

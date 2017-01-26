@@ -16,11 +16,14 @@
 
 package reactor.core.publisher;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
 import org.junit.Test;
+import reactor.core.Fuseable;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
@@ -30,8 +33,14 @@ public class FluxFlattenIterableTest extends AbstractFluxOperatorTest<String, St
 
 	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
-		return defaultOptions.prefetch(QueueSupplier.SMALL_BUFFER_SIZE)
+		return defaultOptions.fusionMode(Fuseable.SYNC)
+		                     .prefetch(QueueSupplier.SMALL_BUFFER_SIZE)
 		                     .shouldHitDropNextHookAfterTerminate(false);
+	}
+
+	@Override
+	protected int fusionModeThreadBarrierSupport() {
+		return Fuseable.ANY;
 	}
 
 	@Override
@@ -40,7 +49,47 @@ public class FluxFlattenIterableTest extends AbstractFluxOperatorTest<String, St
 				scenario(f -> f.flatMapIterable(s -> null))
 						.verifier(step -> step.verifyError(NullPointerException.class)),
 
+				scenario(f -> f.flatMapIterable(s -> Arrays.asList(s, null)))
+						.verifier(step -> step.expectNext(item(0)).verifyError(NullPointerException.class)),
+
+				scenario(f -> f.flatMapIterable(s -> null))
+		             .verifier(step -> step.verifyError(NullPointerException.class))
+		             .fusionMode(Fuseable.NONE)
+		             .finiteFlux(Mono.fromCallable(() -> item(0)).flux()),
+
+				scenario(f -> f.flatMapIterable(s -> null))
+		             .verifier(step -> step.verifyError(NullPointerException.class))
+		             .fusionMode(Fuseable.NONE)
+		             .finiteFlux(Mono.fromCallable(() -> (String)null).flux()),
+
 				scenario(f -> f.flatMapIterable(s -> () -> null))
+						.verifier(step -> step.verifyError(NullPointerException.class)),
+
+				scenario(f -> f.flatMapIterable(s -> () -> null))
+						.fusionMode(Fuseable.NONE)
+						.finiteFlux(Mono.fromCallable(() -> item(0)).flux())
+						.verifier(step -> step.verifyError(NullPointerException.class)),
+
+				scenario(f -> f.flatMapIterable(s -> () -> null))
+						.fusionMode(Fuseable.NONE)
+						.finiteFlux(Mono.fromCallable(() -> (String)null).flux())
+						.verifier(step -> step.verifyError(NullPointerException.class)),
+
+				scenario(f -> f.flatMapIterable(s -> {
+					throw exception();
+				})),
+
+				scenario(f -> f.flatMapIterable(s -> {
+					throw exception();
+				}))
+						.fusionMode(Fuseable.NONE)
+						.finiteFlux(Mono.fromCallable(() -> item(0)).flux()),
+
+				scenario(f -> f.flatMapIterable(s -> {
+					throw exception();
+				}))
+						.fusionMode(Fuseable.NONE)
+						.finiteFlux(Mono.fromCallable(() -> (String)null).flux())
 						.verifier(step -> step.verifyError(NullPointerException.class)),
 
 				scenario(f -> f.flatMapIterable(s -> () -> new Iterator<String>() {
@@ -58,6 +107,33 @@ public class FluxFlattenIterableTest extends AbstractFluxOperatorTest<String, St
 				scenario(f -> f.flatMapIterable(s -> () -> new Iterator<String>() {
 					@Override
 					public boolean hasNext() {
+						throw exception();
+					}
+
+					@Override
+					public String next() {
+						return null;
+					}
+				})).fusionMode(Fuseable.NONE)
+				   .finiteFlux(Mono.fromCallable(() -> item(0)).flux()),
+
+				scenario(f -> f.flatMapIterable(s -> () -> new Iterator<String>() {
+					@Override
+					public boolean hasNext() {
+						throw exception();
+					}
+
+					@Override
+					public String next() {
+						return null;
+					}
+				})).fusionMode(Fuseable.NONE)
+				   .finiteFlux(Mono.fromCallable(() -> (String)null).flux())
+				   .verifier(step -> step.verifyError(NullPointerException.class)),
+
+				scenario(f -> f.flatMapIterable(s -> () -> new Iterator<String>() {
+					@Override
+					public boolean hasNext() {
 						return true;
 					}
 
@@ -65,13 +141,67 @@ public class FluxFlattenIterableTest extends AbstractFluxOperatorTest<String, St
 					public String next() {
 						throw exception();
 					}
+				})),
+
+				scenario(f -> f.flatMapIterable(s -> () -> new Iterator<String>() {
+					boolean invoked;
+					@Override
+					public boolean hasNext() {
+						if(!invoked){
+							return true;
+						}
+						throw exception();
+					}
+
+					@Override
+					public String next() {
+						invoked = true;
+						return item(0);
+					}
 				}))
+						.fusionMode(Fuseable.NONE)
+						.verifier(step -> step.expectNext(item(0)).verifyErrorMessage("test")),
+
+				scenario(f -> f.flatMapIterable(s -> () -> new Iterator<String>() {
+					@Override
+					public boolean hasNext() {
+						return true;
+					}
+
+					@Override
+					public String next() {
+						throw exception();
+					}
+				})).fusionMode(Fuseable.NONE)
+				   .finiteFlux(Mono.fromCallable(() -> item(0)).flux()),
+
+				scenario(f -> f.flatMapIterable(s -> () -> new Iterator<String>() {
+					@Override
+					public boolean hasNext() {
+						return true;
+					}
+
+					@Override
+					public String next() {
+						throw exception();
+					}
+				})).fusionMode(Fuseable.NONE)
+				   .finiteFlux(Mono.fromCallable(() -> (String)null).flux())
+				   .verifier(step -> step.verifyError(NullPointerException.class))
 		);
 	}
 
 	@Override
 	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
 		return Arrays.asList(
+				scenario(f -> f.flatMapIterable(s -> Arrays.asList(s))),
+
+				scenario(f -> f.flatMapIterable(s -> Arrays.asList(s), 1))
+					.prefetch(1),
+
+				scenario(f -> f.flatMapIterable(s -> new ArrayList<>()))
+					.verifier(step -> step.verifyComplete()),
+
 				scenario(f -> f.flatMapIterable(s -> Arrays.asList(s, s + s)))
 						.verifier(step -> step.expectNext(item(0), item(0)+item(0))
 						                      .thenRequest(3)
@@ -86,6 +216,12 @@ public class FluxFlattenIterableTest extends AbstractFluxOperatorTest<String, St
 		return Arrays.asList(
 				scenario(f -> f.flatMapIterable(s -> Arrays.asList(s, s + s)))
 		);
+	}
+
+	@Test(expected=IllegalArgumentException.class)
+	public void failPrefetch(){
+		Flux.never()
+	        .flatMapIterable(t -> null, -1);
 	}
 
 	@Test
