@@ -115,7 +115,8 @@ final class MonoThenMap<T, R> extends MonoSource<T, R> implements Fuseable {
                 R v;
                 try {
                     v = c.call();
-                } catch (Throwable ex) {
+                }
+                catch (Throwable ex) {
                     actual.onError(Operators.onOperatorError(s, ex, t));
                     return;
                 }

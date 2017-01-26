@@ -35,7 +35,7 @@ extends Mono<T>
 
 	final Supplier<? extends T> supplier;
 
-	public MonoSupplier(Supplier<? extends T> callable) {
+	MonoSupplier(Supplier<? extends T> callable) {
 		this.supplier = Objects.requireNonNull(callable, "callable");
 	}
 
@@ -59,14 +59,15 @@ extends Mono<T>
 		T t;
 		try {
 			t = supplier.get();
-		} catch (Throwable e) {
+		}
+		catch (Throwable e) {
 			s.onError(Operators.onOperatorError(e));
 			return;
 		}
 
 		if (t == null) {
-			s.onError(Operators.onOperatorError(new NullPointerException("The " +
-					"callable returned null")));
+			s.onError(Operators.onOperatorError(
+					new NullPointerException("The supplier source returned null")));
 			return;
 		}
 
@@ -75,16 +76,24 @@ extends Mono<T>
 	
 	@Override
 	public T blockMillis(long m) {
-        return supplier.get();
+		T t = supplier.get();
+		if(t == null){
+			throw new NullPointerException("The supplier source returned null");
+		}
+		return t;
 	}
 
 	@Override
 	public T block() {
-		return supplier.get();
+		return blockMillis(-1);
 	}
 	
 	@Override
 	public T call() throws Exception {
-	    return supplier.get();
+		T t = supplier.get();
+		if(t == null){
+			throw new NullPointerException("The supplier source returned null");
+		}
+		return t;
 	}
 }

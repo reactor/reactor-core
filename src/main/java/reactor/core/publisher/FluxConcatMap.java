@@ -362,7 +362,8 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 								
 								try {
 									vr = callable.call();
-								} catch (Throwable e) {
+								}
+								catch (Throwable e) {
 									actual.onError(Operators.onOperatorError(s, e, v));
 									return;
 								}
@@ -676,7 +677,8 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 								
 								try {
 									vr = supplier.call();
-								} catch (Throwable e) {
+								}
+								catch (Throwable e) {
 									actual.onError(Operators.onOperatorError(s, e, v));
 									return;
 								}

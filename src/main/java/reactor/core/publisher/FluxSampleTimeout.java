@@ -42,7 +42,7 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 	
 	final Supplier<Queue<Object>> queueSupplier;
 
-	public FluxSampleTimeout(Publisher<? extends T> source,
+	FluxSampleTimeout(Publisher<? extends T> source,
 			Function<? super T, ? extends Publisher<U>> throttler,
 					Supplier<Queue<Object>> queueSupplier) {
 		super(source);
@@ -59,20 +59,7 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 		
-		Queue<ThrottleTimeoutOther<T, U>> q;
-		
-		try {
-			q = (Queue)queueSupplier.get();
-		} catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
-			return;
-		}
-		
-		if (q == null) {
-			Operators.error(s, Operators.onOperatorError(new
-					NullPointerException("The queueSupplier returned a null queue")));
-			return;
-		}
+		Queue<ThrottleTimeoutOther<T, U>> q = (Queue)queueSupplier.get();
 		
 		ThrottleTimeoutMain<T, U> main = new ThrottleTimeoutMain<>(s, throttler, q);
 		

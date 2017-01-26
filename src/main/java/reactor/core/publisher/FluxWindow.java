@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.ArrayDeque;
@@ -37,32 +38,39 @@ import reactor.core.Trackable;
 
 /**
  * Splits the source sequence into possibly overlapping publishers.
- * 
+ *
  * @param <T> the value type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
 final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 
 	final int size;
-	
+
 	final int skip;
-	
+
 	final Supplier<? extends Queue<T>> processorQueueSupplier;
 
 	final Supplier<? extends Queue<UnicastProcessor<T>>> overflowQueueSupplier;
 
-	FluxWindow(Publisher<? extends T> source, int size, Supplier<? extends Queue<T>> processorQueueSupplier) {
+	FluxWindow(Publisher<? extends T> source,
+			int size,
+			Supplier<? extends Queue<T>> processorQueueSupplier) {
 		super(source);
 		if (size <= 0) {
 			throw new IllegalArgumentException("size > 0 required but it was " + size);
 		}
 		this.size = size;
 		this.skip = size;
-		this.processorQueueSupplier = Objects.requireNonNull(processorQueueSupplier, "processorQueueSupplier");
+		this.processorQueueSupplier =
+				Objects.requireNonNull(processorQueueSupplier, "processorQueueSupplier");
 		this.overflowQueueSupplier = null; // won't be needed here
 	}
 
-	FluxWindow(Publisher<? extends T> source, int size, int skip, Supplier<? extends Queue<T>> processorQueueSupplier,
+	FluxWindow(Publisher<? extends T> source,
+			int size,
+			int skip,
+			Supplier<? extends Queue<T>> processorQueueSupplier,
 			Supplier<? extends Queue<UnicastProcessor<T>>> overflowQueueSupplier) {
 		super(source);
 		if (size <= 0) {
@@ -73,45 +81,42 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		}
 		this.size = size;
 		this.skip = skip;
-		this.processorQueueSupplier = Objects.requireNonNull(processorQueueSupplier, "processorQueueSupplier");
-		this.overflowQueueSupplier = Objects.requireNonNull(overflowQueueSupplier, "overflowQueueSupplier");
+		this.processorQueueSupplier =
+				Objects.requireNonNull(processorQueueSupplier, "processorQueueSupplier");
+		this.overflowQueueSupplier =
+				Objects.requireNonNull(overflowQueueSupplier, "overflowQueueSupplier");
 	}
-	
+
 	@Override
 	public void subscribe(Subscriber<? super Flux<T>> s) {
 		if (skip == size) {
-			source.subscribe(new WindowExactSubscriber<>(s, size, processorQueueSupplier));
-		} else
-		if (skip > size) {
-			source.subscribe(new WindowSkipSubscriber<>(s, size, skip, processorQueueSupplier));
-		} else {
-			Queue<UnicastProcessor<T>> overflowQueue;
-			
-			try {
-				overflowQueue = overflowQueueSupplier.get();
-			} catch (Throwable e) {
-				Operators.error(s, Operators.onOperatorError(e));
-				return;
-			}
-			
-			if (overflowQueue == null) {
-				Operators.error(s, Operators.onOperatorError(new
-						NullPointerException("The overflowQueueSupplier returned a null queue")));
-				return;
-			}
-			
-			source.subscribe(new WindowOverlapSubscriber<>(s, size, skip, processorQueueSupplier, overflowQueue));
+			source.subscribe(new WindowExactSubscriber<>(s,
+					size,
+					processorQueueSupplier));
+		}
+		else if (skip > size) {
+			source.subscribe(new WindowSkipSubscriber<>(s,
+					size,
+					skip,
+					processorQueueSupplier));
+		}
+		else {
+			source.subscribe(new WindowOverlapSubscriber<>(s,
+					size,
+					skip,
+					processorQueueSupplier,
+					overflowQueueSupplier.get()));
 		}
 	}
 
 	static final class WindowExactSubscriber<T>
 			implements Subscriber<T>, Subscription, Disposable, Producer, Receiver,
 			           MultiProducer, Trackable {
-		
+
 		final Subscriber<? super Flux<T>> actual;
 
 		final Supplier<? extends Queue<T>> processorQueueSupplier;
-		
+
 		final int size;
 
 		volatile int wip;
@@ -125,21 +130,22 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				AtomicIntegerFieldUpdater.newUpdater(WindowExactSubscriber.class, "once");
 
 		int index;
-		
+
 		Subscription s;
 
 		UnicastProcessor<T> window;
-		
+
 		boolean done;
-		
-		public WindowExactSubscriber(Subscriber<? super Flux<T>> actual, int size,
+
+		public WindowExactSubscriber(Subscriber<? super Flux<T>> actual,
+				int size,
 				Supplier<? extends Queue<T>> processorQueueSupplier) {
 			this.actual = actual;
 			this.size = size;
 			this.processorQueueSupplier = processorQueueSupplier;
 			this.wip = 1;
 		}
-		
+
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
@@ -147,62 +153,40 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				actual.onSubscribe(this);
 			}
 		}
-		
+
 		@Override
 		public void onNext(T t) {
 			if (done) {
 				Operators.onNextDropped(t);
 				return;
 			}
-			
+
 			int i = index;
 
 			UnicastProcessor<T> w = window;
 			if (i == 0) {
 				WIP.getAndIncrement(this);
-				
-				
-				Queue<T> q;
-				
-				try {
-					q = processorQueueSupplier.get();
-				} catch (Throwable ex) {
-					WIP.decrementAndGet(this);
-					done = true;
-					cancel();
-					
-					actual.onError(ex);
-					return;
-				}
-				
-				if (q == null) {
-					WIP.decrementAndGet(this);
-					done = true;
-					cancel();
-					
-					actual.onError(new NullPointerException("The processorQueueSupplier returned a null queue"));
-					return;
-				}
 
-				w = new UnicastProcessor<>(q, this);
+				w = new UnicastProcessor<>(processorQueueSupplier.get(), this);
 				window = w;
-				
+
 				actual.onNext(w);
 			}
-			
+
 			i++;
-			
+
 			w.onNext(t);
-			
+
 			if (i == size) {
 				index = 0;
 				window = null;
 				w.onComplete();
-			} else {
+			}
+			else {
 				index = i;
 			}
 		}
-		
+
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
@@ -214,10 +198,10 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				window = null;
 				w.onError(t);
 			}
-			
+
 			actual.onError(t);
 		}
-		
+
 		@Override
 		public void onComplete() {
 			if (done) {
@@ -229,10 +213,10 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				window = null;
 				w.onComplete();
 			}
-			
+
 			actual.onComplete();
 		}
-		
+
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
@@ -240,7 +224,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				s.request(u);
 			}
 		}
-		
+
 		@Override
 		public void cancel() {
 			if (ONCE.compareAndSet(this, 0, 1)) {
@@ -300,13 +284,13 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 	static final class WindowSkipSubscriber<T>
 			implements Subscriber<T>, Subscription, Disposable, Receiver, MultiProducer,
 			           Producer, Trackable {
-		
+
 		final Subscriber<? super Flux<T>> actual;
 
 		final Supplier<? extends Queue<T>> processorQueueSupplier;
-		
+
 		final int size;
-		
+
 		final int skip;
 
 		volatile int wip;
@@ -322,17 +306,20 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		volatile int firstRequest;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<WindowSkipSubscriber> FIRST_REQUEST =
-				AtomicIntegerFieldUpdater.newUpdater(WindowSkipSubscriber.class, "firstRequest");
+				AtomicIntegerFieldUpdater.newUpdater(WindowSkipSubscriber.class,
+						"firstRequest");
 
 		int index;
-		
+
 		Subscription s;
 
 		UnicastProcessor<T> window;
-		
+
 		boolean done;
-		
-		public WindowSkipSubscriber(Subscriber<? super Flux<T>> actual, int size, int skip,
+
+		public WindowSkipSubscriber(Subscriber<? super Flux<T>> actual,
+				int size,
+				int skip,
 				Supplier<? extends Queue<T>> processorQueueSupplier) {
 			this.actual = actual;
 			this.size = size;
@@ -340,7 +327,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			this.processorQueueSupplier = processorQueueSupplier;
 			this.wip = 1;
 		}
-		
+
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
@@ -348,69 +335,47 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				actual.onSubscribe(this);
 			}
 		}
-		
+
 		@Override
 		public void onNext(T t) {
 			if (done) {
 				Operators.onNextDropped(t);
 				return;
 			}
-			
+
 			int i = index;
 
 			UnicastProcessor<T> w = window;
 			if (i == 0) {
 				WIP.getAndIncrement(this);
-				
-				
-				Queue<T> q;
-				
-				try {
-					q = processorQueueSupplier.get();
-				} catch (Throwable ex) {
-					WIP.decrementAndGet(this);
-					done = true;
-					cancel();
-					
-					actual.onError(ex);
-					return;
-				}
-				
-				if (q == null) {
-					WIP.decrementAndGet(this);
-					done = true;
-					cancel();
-					
-					actual.onError(new NullPointerException("The processorQueueSupplier returned a null queue"));
-					return;
-				}
 
-				w = new UnicastProcessor<>(q, this);
+				w = new UnicastProcessor<>(processorQueueSupplier.get(), this);
 				window = w;
-				
+
 				actual.onNext(w);
 			}
-			
+
 			i++;
-			
+
 			if (w != null) {
 				w.onNext(t);
 			}
-			
+
 			if (i == size) {
 				window = null;
-				if(w != null){
+				if (w != null) {
 					w.onComplete();
 				}
 			}
-			
+
 			if (i == skip) {
 				index = 0;
-			} else {
+			}
+			else {
 				index = i;
 			}
 		}
-		
+
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
@@ -422,10 +387,10 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				window = null;
 				w.onError(t);
 			}
-			
+
 			actual.onError(t);
 		}
-		
+
 		@Override
 		public void onComplete() {
 			if (done) {
@@ -437,10 +402,10 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				window = null;
 				w.onComplete();
 			}
-			
+
 			actual.onComplete();
 		}
-		
+
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
@@ -449,13 +414,14 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 					long v = Operators.multiplyCap(skip - size, n - 1);
 					long w = Operators.addCap(u, v);
 					s.request(w);
-				} else {
+				}
+				else {
 					long u = Operators.multiplyCap(skip, n);
 					s.request(u);
 				}
 			}
 		}
-		
+
 		@Override
 		public void cancel() {
 			if (ONCE.compareAndSet(this, 0, 1)) {
@@ -512,8 +478,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		}
 	}
 
-	static final class WindowOverlapSubscriber<T>
-			extends ArrayDeque<UnicastProcessor<T>>
+	static final class WindowOverlapSubscriber<T> extends ArrayDeque<UnicastProcessor<T>>
 			implements Subscriber<T>, Subscription, Disposable, Producer, MultiProducer,
 			           Receiver, Trackable {
 
@@ -522,30 +487,34 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		final Supplier<? extends Queue<T>> processorQueueSupplier;
 
 		final Queue<UnicastProcessor<T>> queue;
-		
+
 		final int size;
-		
+
 		final int skip;
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<WindowOverlapSubscriber> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(WindowOverlapSubscriber.class, "wip");
+				AtomicIntegerFieldUpdater.newUpdater(WindowOverlapSubscriber.class,
+						"wip");
 
 		volatile int once;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<WindowOverlapSubscriber> ONCE =
-				AtomicIntegerFieldUpdater.newUpdater(WindowOverlapSubscriber.class, "once");
+				AtomicIntegerFieldUpdater.newUpdater(WindowOverlapSubscriber.class,
+						"once");
 
 		volatile int firstRequest;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<WindowOverlapSubscriber> FIRST_REQUEST =
-				AtomicIntegerFieldUpdater.newUpdater(WindowOverlapSubscriber.class, "firstRequest");
+				AtomicIntegerFieldUpdater.newUpdater(WindowOverlapSubscriber.class,
+						"firstRequest");
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<WindowOverlapSubscriber> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(WindowOverlapSubscriber.class, "requested");
+				AtomicLongFieldUpdater.newUpdater(WindowOverlapSubscriber.class,
+						"requested");
 
 		volatile int dw;
 		@SuppressWarnings("rawtypes")
@@ -553,17 +522,19 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				AtomicIntegerFieldUpdater.newUpdater(WindowOverlapSubscriber.class, "dw");
 
 		int index;
-		
+
 		int produced;
-		
+
 		Subscription s;
-		
+
 		volatile boolean done;
 		Throwable error;
-		
+
 		volatile boolean cancelled;
-		
-		WindowOverlapSubscriber(Subscriber<? super Flux<T>> actual, int size, int skip,
+
+		WindowOverlapSubscriber(Subscriber<? super Flux<T>> actual,
+				int size,
+				int skip,
 				Supplier<? extends Queue<T>> processorQueueSupplier,
 				Queue<UnicastProcessor<T>> overflowQueue) {
 			this.actual = actual;
@@ -573,7 +544,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			this.wip = 1;
 			this.queue = overflowQueue;
 		}
-		
+
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
@@ -581,77 +552,56 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				actual.onSubscribe(this);
 			}
 		}
-		
+
 		@Override
 		public void onNext(T t) {
 			if (done) {
 				Operators.onNextDropped(t);
 				return;
 			}
-			
+
 			int i = index;
-			
+
 			if (i == 0) {
 				if (!cancelled) {
 					WIP.getAndIncrement(this);
-					
-					
-					Queue<T> q;
-					
-					try {
-						q = processorQueueSupplier.get();
-					} catch (Throwable ex) {
-						WIP.decrementAndGet(this);
-						done = true;
-						cancel();
-						
-						actual.onError(ex);
-						return;
-					}
-					
-					if (q == null) {
-						WIP.decrementAndGet(this);
-						done = true;
-						cancel();
-						
-						actual.onError(new NullPointerException("The processorQueueSupplier returned a null queue"));
-						return;
-					}
 
-					UnicastProcessor<T> w = new UnicastProcessor<>(q, this);
-					
+					UnicastProcessor<T> w = new UnicastProcessor<>(processorQueueSupplier.get(), this);
+
 					offer(w);
-					
+
 					queue.offer(w);
 					drain();
 				}
 			}
-			
+
 			i++;
 
 			for (Processor<T, T> w : this) {
 				w.onNext(t);
 			}
-			
+
 			int p = produced + 1;
 			if (p == size) {
 				produced = p - skip;
-				
+
 				Processor<T, T> w = poll();
 				if (w != null) {
 					w.onComplete();
 				}
-			} else {
+			}
+			else {
 				produced = p;
 			}
-			
+
 			if (i == skip) {
 				index = 0;
-			} else {
+			}
+			else {
 				index = i;
 			}
 		}
-		
+
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
@@ -663,12 +613,12 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				w.onError(t);
 			}
 			clear();
-			
+
 			error = t;
 			done = true;
 			drain();
 		}
-		
+
 		@Override
 		public void onComplete() {
 			if (done) {
@@ -679,7 +629,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				w.onComplete();
 			}
 			clear();
-			
+
 			done = true;
 			drain();
 		}
@@ -688,76 +638,76 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			if (DW.getAndIncrement(this) != 0) {
 				return;
 			}
-			
+
 			final Subscriber<? super Flux<T>> a = actual;
 			final Queue<UnicastProcessor<T>> q = queue;
 			int missed = 1;
-			
-			for (;;) {
-				
+
+			for (; ; ) {
+
 				long r = requested;
 				long e = 0;
-				
+
 				while (e != r) {
 					boolean d = done;
 
 					UnicastProcessor<T> t = q.poll();
-					
+
 					boolean empty = t == null;
-					
+
 					if (checkTerminated(d, empty, a, q)) {
 						return;
 					}
-					
+
 					if (empty) {
 						break;
 					}
-					
+
 					a.onNext(t);
-					
+
 					e++;
 				}
-				
+
 				if (e == r) {
 					if (checkTerminated(done, q.isEmpty(), a, q)) {
 						return;
 					}
 				}
-				
+
 				if (e != 0L && r != Long.MAX_VALUE) {
 					REQUESTED.addAndGet(this, -e);
 				}
-				
+
 				missed = DW.addAndGet(this, -missed);
 				if (missed == 0) {
 					break;
 				}
 			}
 		}
-		
+
 		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, Queue<?> q) {
 			if (cancelled) {
 				q.clear();
 				return true;
 			}
-			
+
 			if (d) {
 				Throwable e = error;
-				
+
 				if (e != null) {
 					q.clear();
 					a.onError(e);
 					return true;
-				} else
-				if (empty) {
+				}
+				else if (empty) {
 					a.onComplete();
 					return true;
 				}
 			}
-			
+
 			return false;
 		}
-		
+
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
@@ -768,7 +718,8 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 					long u = Operators.multiplyCap(skip, n - 1);
 					long v = Operators.addCap(size, u);
 					s.request(v);
-				} else {
+				}
+				else {
 					long u = Operators.multiplyCap(skip, n);
 					s.request(u);
 				}
@@ -776,7 +727,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				drain();
 			}
 		}
-		
+
 		@Override
 		public void cancel() {
 			cancelled = true;

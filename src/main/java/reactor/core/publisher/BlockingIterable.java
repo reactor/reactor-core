@@ -52,7 +52,7 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Trackable {
 	
 	final Supplier<Queue<T>> queueSupplier;
 
-	public BlockingIterable(Publisher<? extends T> source, long batchSize, Supplier<Queue<T>> queueSupplier) {
+	BlockingIterable(Publisher<? extends T> source, long batchSize, Supplier<Queue<T>> queueSupplier) {
 		if (batchSize <= 0) {
 			throw new IllegalArgumentException("batchSize > 0 required but it was " + batchSize);
 		}

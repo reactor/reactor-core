@@ -205,14 +205,7 @@ final class FluxPublish<T> extends ConnectableFlux<T>
 					}
 				}
 				
-				try {
-					queue = parent.queueSupplier.get(); 
-				} catch (Throwable ex) {
-					error = Operators.onOperatorError(s, ex);
-					done = true;
-					drain();
-					return;
-				}
+				queue = parent.queueSupplier.get();
 				
 				s.request(prefetch);
 			}

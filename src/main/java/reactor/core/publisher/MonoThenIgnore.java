@@ -132,14 +132,16 @@ final class MonoThenIgnore<T> extends Mono<T> implements Fuseable, MultiReceiver
                             T v;
                             try {
                                 v = ((Callable<T>)m).call();
-                            } catch (Throwable ex) {
+                            }
+                            catch (Throwable ex) {
 	                            actual.onError(Operators.onOperatorError(ex));
 	                            return;
                             }
                             
                             if (v == null) {
-	                            actual.onComplete();
-                            } else {
+                                actual.onComplete();
+                            }
+                            else {
                                 complete(v);
                             }
                             return;
@@ -154,7 +156,8 @@ final class MonoThenIgnore<T> extends Mono<T> implements Fuseable, MultiReceiver
                         if (m instanceof Callable) {
                             try {
                                 ((Callable<?>)m).call();
-                            } catch (Throwable ex) {
+                            }
+                            catch (Throwable ex) {
 	                            actual.onError(Operators.onOperatorError(ex));
 	                            return;
                             }

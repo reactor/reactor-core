@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Iterator;
@@ -28,25 +29,28 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Fuseable;
 import reactor.core.Exceptions;
+import reactor.core.Fuseable;
 
 /**
  * Concatenates values from Iterable sequences generated via a mapper function.
+ *
  * @param <T> the input value type
  * @param <R> the value type of the iterables and the result type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseable {
 
 	final Function<? super T, ? extends Iterable<? extends R>> mapper;
-	
+
 	final int prefetch;
-	
+
 	final Supplier<Queue<T>> queueSupplier;
-	
-	public FluxFlattenIterable(Publisher<? extends T> source,
-			Function<? super T, ? extends Iterable<? extends R>> mapper, int prefetch,
+
+	FluxFlattenIterable(Publisher<? extends T> source,
+			Function<? super T, ? extends Iterable<? extends R>> mapper,
+			int prefetch,
 			Supplier<Queue<T>> queueSupplier) {
 		super(source);
 		if (prefetch <= 0) {
@@ -67,32 +71,34 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 	public void subscribe(Subscriber<? super R> s) {
 		if (source instanceof Callable) {
 			T v;
-			
+
 			try {
-				v = ((Callable<T>)source).call();
-			} catch (Throwable ex) {
+				v = ((Callable<T>) source).call();
+			}
+			catch (Throwable ex) {
 				Operators.error(s, Operators.onOperatorError(ex));
 				return;
 			}
-			
+
 			if (v == null) {
 				Operators.complete(s);
 				return;
 			}
-			
+
 			Iterator<? extends R> it;
-			
+
 			try {
 				Iterable<? extends R> iter = mapper.apply(v);
-				
+
 				it = iter.iterator();
-			} catch (Throwable ex) {
+			}
+			catch (Throwable ex) {
 				Operators.error(s, Operators.onOperatorError(ex));
 				return;
 			}
-			
+
 			FluxIterable.subscribe(s, it);
-			
+
 			return;
 		}
 		source.subscribe(new FlattenIterableSubscriber<>(s,
@@ -102,16 +108,16 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 	}
 
 	static final class FlattenIterableSubscriber<T, R>
-	implements Subscriber<T>, QueueSubscription<R> {
-		
+			implements Subscriber<T>, QueueSubscription<R> {
+
 		final Subscriber<? super R> actual;
-		
+
 		final Function<? super T, ? extends Iterable<? extends R>> mapper;
-		
+
 		final int prefetch;
-		
+
 		final int limit;
-		
+
 		final Supplier<Queue<T>> queueSupplier;
 
 		volatile int wip;
@@ -119,19 +125,19 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 		static final AtomicIntegerFieldUpdater<FlattenIterableSubscriber> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(FlattenIterableSubscriber.class,
 						"wip");
-		
+
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<FlattenIterableSubscriber> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(FlattenIterableSubscriber.class,
 						"requested");
-		
+
 		Subscription s;
-		
+
 		Queue<T> queue;
-		
+
 		volatile boolean done;
-		
+
 		volatile boolean cancelled;
 
 		volatile Throwable error;
@@ -143,13 +149,14 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 						"error");
 
 		Iterator<? extends R> current;
-		
+
 		int consumed;
-		
+
 		int fusionMode;
 
 		public FlattenIterableSubscriber(Subscriber<? super R> actual,
-				Function<? super T, ? extends Iterable<? extends R>> mapper, int prefetch,
+				Function<? super T, ? extends Iterable<? extends R>> mapper,
+				int prefetch,
 				Supplier<Queue<T>> queueSupplier) {
 			this.actual = actual;
 			this.mapper = mapper;
@@ -157,51 +164,46 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 			this.queueSupplier = queueSupplier;
 			this.limit = prefetch - (prefetch >> 2);
 		}
-		
+
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
-				
+
 				if (s instanceof QueueSubscription) {
-					@SuppressWarnings("unchecked")
-					QueueSubscription<T> qs = (QueueSubscription<T>) s;
-					
+					@SuppressWarnings("unchecked") QueueSubscription<T> qs =
+							(QueueSubscription<T>) s;
+
 					int m = qs.requestFusion(Fuseable.ANY);
-					
+
 					if (m == Fuseable.SYNC) {
 						fusionMode = m;
 						this.queue = qs;
 						done = true;
-						
+
 						actual.onSubscribe(this);
-						
+
 						return;
-					} else
-					if (m == Fuseable.ASYNC) {
+					}
+					else if (m == Fuseable.ASYNC) {
 						fusionMode = m;
 						this.queue = qs;
-						
+
 						actual.onSubscribe(this);
-						
+
 						s.request(prefetch);
 						return;
 					}
 				}
-				
-				try {
-					queue = queueSupplier.get();
-				} catch (Throwable ex) {
-					Operators.error(actual, Operators.onOperatorError(s, ex));
-					return;
-				}
+
+				queue = queueSupplier.get();
 
 				actual.onSubscribe(this);
-				
+
 				s.request(prefetch);
 			}
 		}
-		
+
 		@Override
 		public void onNext(T t) {
 			if (fusionMode != Fuseable.ASYNC) {
@@ -212,23 +214,24 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 			}
 			drain();
 		}
-		
+
 		@Override
 		public void onError(Throwable t) {
 			if (Exceptions.addThrowable(ERROR, this, t)) {
 				done = true;
 				drain();
-			} else {
+			}
+			else {
 				Operators.onErrorDropped(t);
 			}
 		}
-		
+
 		@Override
 		public void onComplete() {
 			done = true;
 			drain();
 		}
-		
+
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
@@ -236,7 +239,7 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 				drain();
 			}
 		}
-		
+
 		@Override
 		public void cancel() {
 			if (!cancelled) {
@@ -255,10 +258,10 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 			final Queue<T> q = queue;
 
 			int missed = 1;
-			
+
 			Iterator<? extends R> it = current;
 
-			for (;;) {
+			for (; ; ) {
 
 				if (it == null) {
 
@@ -277,11 +280,11 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 					}
 
 					boolean d = done;
-					
+
 					T t;
-					
+
 					t = q.poll();
-					
+
 					boolean empty = t == null;
 
 					if (d && empty) {
@@ -291,14 +294,14 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 
 					if (!empty) {
 						Iterable<? extends R> iterable;
-						
+
 						boolean b;
-						
+
 						try {
 							iterable = mapper.apply(t);
-	
+
 							it = iterable.iterator();
-							
+
 							b = it.hasNext();
 						}
 						catch (Throwable exc) {
@@ -306,7 +309,7 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 							onError(Operators.onOperatorError(s, exc, t));
 							continue;
 						}
-						
+
 						if (!b) {
 							it = null;
 							int c = consumed + 1;
@@ -321,11 +324,11 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 						}
 					}
 				}
-				
+
 				if (it != null) {
 					long r = requested;
 					long e = 0L;
-					
+
 					while (e != r) {
 						if (cancelled) {
 							current = null;
@@ -343,7 +346,7 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 						}
 
 						R v;
-						
+
 						try {
 							v = it.next();
 						}
@@ -351,7 +354,7 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 							onError(Operators.onOperatorError(s, exc));
 							continue;
 						}
-						
+
 						a.onNext(v);
 
 						if (cancelled) {
@@ -361,9 +364,9 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 						}
 
 						e++;
-						
+
 						boolean b;
-						
+
 						try {
 							b = it.hasNext();
 						}
@@ -371,7 +374,7 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 							onError(Operators.onOperatorError(s, exc));
 							continue;
 						}
-						
+
 						if (!b) {
 							int c = consumed + 1;
 							if (c == limit) {
@@ -386,7 +389,7 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 							break;
 						}
 					}
-					
+
 					if (e == r) {
 						if (cancelled) {
 							current = null;
@@ -412,13 +415,13 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 							return;
 						}
 					}
-					
+
 					if (e != 0L) {
 						if (r != Long.MAX_VALUE) {
 							REQUESTED.addAndGet(this, -e);
 						}
 					}
-					
+
 					if (it == null) {
 						continue;
 					}
@@ -584,13 +587,13 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 				drainAsync();
 			}
 		}
-		
+
 		@Override
 		public void clear() {
 			current = null;
 			queue.clear();
 		}
-		
+
 		@Override
 		public boolean isEmpty() {
 			Iterator<? extends R> it = current;
@@ -599,35 +602,36 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 			}
 			return queue.isEmpty(); // estimate
 		}
-		
+
 		@Override
 		public R poll() {
 			Iterator<? extends R> it = current;
-			for (;;) {
+			for (; ; ) {
 				if (it == null) {
 					T v = queue.poll();
 					if (v == null) {
 						return null;
 					}
-					
-					it = mapper.apply(v).iterator();
-					
+
+					it = mapper.apply(v)
+					           .iterator();
+
 					if (!it.hasNext()) {
 						continue;
 					}
 					current = it;
 				}
-				
+
 				R r = it.next();
-				
+
 				if (!it.hasNext()) {
 					current = null;
 				}
-				
+
 				return r;
 			}
 		}
-		
+
 		@Override
 		public int requestFusion(int requestedMode) {
 			if ((requestedMode & SYNC) != 0 && fusionMode == SYNC) {
@@ -635,7 +639,7 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 			}
 			return NONE;
 		}
-		
+
 		@Override
 		public int size() {
 			return queue.size(); // estimate

@@ -17,11 +17,76 @@
 package reactor.core.publisher;
 
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 
 import org.junit.Test;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.concurrent.QueueSupplier;
 
-public class FluxFlattenIterableTest {
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class FluxFlattenIterableTest extends AbstractFluxOperatorTest<String, String>{
+
+	@Override
+	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
+		return defaultOptions.prefetch(QueueSupplier.SMALL_BUFFER_SIZE)
+		                     .shouldHitDropNextHookAfterTerminate(false);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
+		return Arrays.asList(
+				scenario(f -> f.flatMapIterable(s -> null))
+						.verifier(step -> step.verifyError(NullPointerException.class)),
+
+				scenario(f -> f.flatMapIterable(s -> () -> null))
+						.verifier(step -> step.verifyError(NullPointerException.class)),
+
+				scenario(f -> f.flatMapIterable(s -> () -> new Iterator<String>() {
+					@Override
+					public boolean hasNext() {
+						throw exception();
+					}
+
+					@Override
+					public String next() {
+						return null;
+					}
+				})),
+
+				scenario(f -> f.flatMapIterable(s -> () -> new Iterator<String>() {
+					@Override
+					public boolean hasNext() {
+						return true;
+					}
+
+					@Override
+					public String next() {
+						throw exception();
+					}
+				}))
+		);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+		return Arrays.asList(
+				scenario(f -> f.flatMapIterable(s -> Arrays.asList(s, s + s)))
+						.verifier(step -> step.expectNext(item(0), item(0)+item(0))
+						                      .thenRequest(3)
+						                      .expectNext(item(1), item(1)+item(1))
+						                      .expectNext(item(2), item(2)+item(2))
+						                      .verifyComplete())
+		);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_errorFromUpstreamFailure() {
+		return Arrays.asList(
+				scenario(f -> f.flatMapIterable(s -> Arrays.asList(s, s + s)))
+		);
+	}
 
 	@Test
 	public void normal() {

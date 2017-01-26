@@ -176,21 +176,8 @@ extends Flux<R>
 			return;
 		}
 		
-		Queue<SourceAndArray> queue;
-		
-		try {
-			queue = queueSupplier.get();
-		} catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
-			return;
-		}
-		
-		if (queue == null) {
-			Operators.error(s, Operators.onOperatorError(new
-					NullPointerException("The queueSupplier returned a null queue")));
-			return;
-		}
-		
+		Queue<SourceAndArray> queue = queueSupplier.get();
+
 		CombineLatestCoordinator<T, R> coordinator = 
 				new CombineLatestCoordinator<>(s, combiner, n, queue, bufferSize);
 		

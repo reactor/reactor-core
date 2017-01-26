@@ -57,7 +57,7 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 
 	final int prefetch;
 
-	public FluxGroupBy(
+	FluxGroupBy(
 			Publisher<? extends T> source, 
 			Function<? super T, ? extends K> keySelector,
 			Function<? super T, ? extends V> valueSelector,
@@ -77,21 +77,7 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 	
 	@Override
 	public void subscribe(Subscriber<? super GroupedFlux<K, V>> s) {
-		Queue<GroupedFlux<K, V>> q;
-		
-		try {
-			q = mainQueueSupplier.get();
-		} catch (Throwable ex) {
-			Operators.error(s, Operators.onOperatorError(ex));
-			return;
-		}
-		
-		if (q == null) {
-			Operators.error(s, new NullPointerException("The mainQueueSupplier returned a null queue"));
-			return;
-		}
-		
-		source.subscribe(new GroupByMain<>(s, q, groupQueueSupplier, prefetch, keySelector, valueSelector));
+		source.subscribe(new GroupByMain<>(s, mainQueueSupplier.get(), groupQueueSupplier, prefetch, keySelector, valueSelector));
 	}
 
 	@Override
@@ -207,15 +193,8 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 			if (g == null) {
 				// if the main is cancelled, don't create new groups
 				if (cancelled == 0) {
-					Queue<V> q;
-					
-					try {
-						q = groupQueueSupplier.get();
-					} catch (Throwable ex) {
-						onError(Operators.onOperatorError(s, ex, t));
-						return;
-					}
-					
+					Queue<V> q = groupQueueSupplier.get();
+
 					GROUP_COUNT.getAndIncrement(this);
 					g = new UnicastGroupedFlux<>(key, q, this, prefetch);
 					g.onNext(value);

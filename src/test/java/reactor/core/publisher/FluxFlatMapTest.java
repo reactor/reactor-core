@@ -562,9 +562,16 @@ public class FluxFlatMapTest {
 	}
 
 	@Test
-	public void prematureScalarMapCallableNullComplete() {
+	public void failMapCallableNullError() {
 		StepVerifier.create(Mono.just(1)
 		                        .flatMap(f -> Mono.fromCallable(() -> null)))
+		            .verifyError(NullPointerException.class);
+	}
+
+	@Test
+	public void prematureScalarMapCallableNullComplete() {
+		StepVerifier.create(Mono.just(1)
+		                        .flatMap(f -> Mono.empty()))
 		            .verifyComplete();
 	}
 

@@ -105,29 +105,7 @@ final class FluxWindowOnCancel<T> extends FluxSource<T, Flux<T>> {
 			if (w == null || w.cancelled) {
 				WIP.getAndIncrement(this);
 
-				Queue<T> q;
-
-				try {
-					q = processorQueueSupplier.get();
-				}
-				catch (Throwable ex) {
-					done = true;
-					cancel();
-
-					actual.onError(ex);
-					return;
-				}
-
-				if (q == null) {
-					done = true;
-					cancel();
-
-					actual.onError(new NullPointerException(
-							"The processorQueueSupplier returned a null queue"));
-					return;
-				}
-
-				w = new UnicastProcessor<>(q, this);
+				w = new UnicastProcessor<>(processorQueueSupplier.get(), this);
 				window = w;
 
 				actual.onNext(w);
