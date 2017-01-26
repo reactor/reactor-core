@@ -23,6 +23,8 @@ include::operatorChoice.adoc[]
 
 include::testing.adoc[]
 
+include::producing.adoc[]
+
 include::advancedFeatures.adoc[]
 
 include::faq.adoc[]

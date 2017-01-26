@@ -1,21 +1,190 @@
 [[producing]]
-= Producing API
-TODO
+== Programmatically creating a sequence
+In this section, we'll introduce means of creating a `Flux` (or `Mono`) by
+programmatically defining its associated events (onNext, onError, onComplete).
+All these methods share the fact that they expose an API to trigger
+the events that we call a **sink**. There are actually a few sink variants, as
+you will discover below.
 
-[[mono-generators]]
-== Mono Generators
-TODO
+[[producing.generate]]
+=== Generate
+The simplest form of programmatic creation of a `Flux` is through the `generate`
+method, which takes a generator function.
 
-=== Custom
-TODO
+This is for **synchronous** and **one-by-one** emissions, meaning that
+the sink is a `SynchronousSink` and that its `next()` method can only be called
+at most once per callback invocation. You can then additionally call `error(Throwable)`
+or `complete()`.
 
-[[flux-generators]]
-== Flux Generators
-TODO
+The most useful variant is probably the one that also allow you to keep a state
+that you can refer to in your sink usage to decide what to emit next. The generator
+function then becomes a `BiFunction<S, SynchronousSink<T>, S>`, with `<S>` the
+type of the state object. You have to provide a `Supplier<S>` for the initial
+state, and your generator function now returns a new state on each round.
 
-=== Custom
-TODO
+For instance, you could simply use an `int` as the state:
 
-[[custom-producing]]
-== Custom Publishers
-TODO
+.Example of state-based `generate`
+[source,java]
+----
+Flux<String> flux = Flux.generate(
+    () -> 0, <1>
+    (state, sink) -> {
+      sink.next("3 x " + state + " = " + 3*state); <2>
+      if (state == 10) sink.complete(); <3>
+      return state + 1; <4>
+    });
+----
+<1> we supply the initial state value of 0
+<2> we use the state to choose what to emit (a row in the multiplication table of 3)
+<3> we also use it to choose when to stop (multiplication tables traditionally stop at times ten)
+<4> we return a new state that will be used in next invocation (unless the sequence terminated in this one)
+
+The code above generates the table of 3, as the following sequence:
+
+----
+3 x 0 = 0
+3 x 1 = 3
+3 x 2 = 6
+3 x 3 = 9
+3 x 4 = 12
+3 x 5 = 15
+3 x 6 = 18
+3 x 7 = 21
+3 x 8 = 24
+3 x 9 = 27
+3 x 10 = 30
+----
+
+You can also use a mutable `<S>`. The example above could for instance be rewritten
+using a single `AtomicLong` as the state, mutating it on each round:
+
+.Mutable state variant
+[source,java]
+----
+Flux<String> flux = Flux.generate(
+    AtomicLong::new, <1>
+    (state, sink) -> {
+      long i = state.getAndIncrement(); <2>
+      sink.next("3 x " + i + " = " + 3*i);
+      if (i == 10) sink.complete();
+      return state; <3>
+    });
+----
+<1> this time we generate a mutable object as the state
+<2> we mutate the state here
+<3> we return the *same* instance as the new state
+
+TIP: If your state object needs to clean up some resources, use the
+`generate(Supplier<S>, BiFunction, Consumer<S>)` variant to clean up the last
+state instance.
+
+[[producing.create]]
+=== Create
+The more advanced form of programmatic creation of a `Flux`, `create` can both
+work asynchronously or synchronously and is suitable for multiple emissions per
+round.
+
+It exposes a `FluxSink`, with its `next`/`error`/`complete` methods. Contrary
+to generate, it doesn't have a state-based variant, but on the other hand it
+can trigger multiple events in the callback (and even from any thread at a later
+point in time).
+
+TIP: `create` can be very useful to bridge an existing API with the reactive
+world. For instance, an asynchronous API based on listeners.
+
+Imagine that you use an API that is listener-based. It processes data by chunks
+and has two events: (1) a chunk of data is ready and (2) the processing is
+complete (terminal event), as represented in the `MyEventListener` interface:
+
+[source,java]
+----
+interface MyEventListener<T> {
+    void onDataChunk(List<T> chunk);
+    void processComplete();
+}
+----
+
+You can use `create` to bridge this into a `Flux<T>`:
+
+[source,java]
+----
+Flux<String> bridge = Flux.create(sink -> {
+    myEventProcessor.register( <4>
+      new MyEventListener<String>() { <1>
+
+        public void onDataChunk(List<String> chunk) {
+          for(String s : chunk) {
+            sink.next(s); <2>
+          }
+        }
+
+        public void processComplete() {
+            sink.complete(); <3>
+        }
+    });
+});
+----
+<1> we bridge to the `MyEventListener` API
+<2> each element in a chunk becomes an element in the `Flux`.
+<3> the processComplete event is translated to an `onComplete`
+<4> all of this is done asynchronously whenever the myEventProcessor executes
+
+TIP: Note that `Mono` also has a `create` generator. As you should expect, the
+`MonoSink` of Mono's create doesn't allow several emissions. It will drop all
+signals subsequent to the first one.
+
+
+=== Handle
+Both present in `Mono` and `Flux`, `handle` is a tiny bit different. It is an
+instance method, meaning that it is chained on an existing source like common
+operators.
+
+It is close to `generate`, in the sense that it uses a `SynchronousSink` and
+only allows one-by-one emissions.
+
+But `handle` can be used to generate an arbitrary value out of each source
+element, possibly skipping some elements. In that sense, it can serve as a
+combination of `map` and `filter`.
+
+As such, the signature of handle is `handle(BiConsumer<T, SynchronousSink<R>>)`.
+
+Let's take an example: the reactive streams specification disallows `null`
+values in a sequence. What if you want to perform a `map` but you want to use
+a preexisting method as the map function, and said method sometimes returns null?
+
+For instance, the following method:
+[source,java]
+----
+public String alphabet(int letterNumber) {
+	if (letterNumber < 1 || letterNumber > 26) {
+		return null;
+	}
+	int letterIndexAscii = 'A' + letterNumber - 1;
+	return "" + (char) letterIndexAscii;
+}
+----
+
+Can be applied safely to a source of integers:
+.Using `handle` for a "map and eliminate nulls" scenario
+[source,java]
+----
+Flux<String> alphabet = Flux.just(-1, 30, 13, 9, 20)
+    .handle((i, sink) -> {
+        String letter = alphabet(i); <1>
+        if (letter != null) <2>
+            sink.next(letter); <3>
+    });
+
+alphabet.subscribe(System.out::println);
+----
+<1> map to letters
+<2> but if the "map function" returns null...
+<3> ...filter it out by not calling `sink.next`
+
+Which will print out:
+----
+M
+I
+T
+----
