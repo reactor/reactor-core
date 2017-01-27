@@ -128,7 +128,7 @@ public final class UnicastProcessor<T>
 	static final AtomicLongFieldUpdater<UnicastProcessor> REQUESTED =
 			AtomicLongFieldUpdater.newUpdater(UnicastProcessor.class, "requested");
 
-	volatile boolean enableOperatorFusion;
+	volatile boolean outputFused;
 
 	public UnicastProcessor(Queue<T> queue) {
 		this.queue = Objects.requireNonNull(queue, "queue");
@@ -250,7 +250,7 @@ public final class UnicastProcessor<T>
 			Subscriber<? super T> a = actual;
 			if (a != null) {
 
-				if (enableOperatorFusion) {
+				if (outputFused) {
 					drainFused(a);
 				} else {
 					drainRegular(a);
@@ -384,7 +384,7 @@ public final class UnicastProcessor<T>
 
 		doTerminate();
 
-		if (!enableOperatorFusion) {
+		if (!outputFused) {
 			if (WIP.getAndIncrement(this) == 0) {
 				queue.clear();
 			}
@@ -414,7 +414,7 @@ public final class UnicastProcessor<T>
 	@Override
 	public int requestFusion(int requestedMode) {
 		if ((requestedMode & Fuseable.ASYNC) != 0) {
-			enableOperatorFusion = true;
+			outputFused = true;
 			return Fuseable.ASYNC;
 		}
 		return Fuseable.NONE;

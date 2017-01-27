@@ -1307,7 +1307,11 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 
 			@Override
 			public T poll() {
-				throw exception;
+				T t = qs.poll();
+				if(t != null) {
+					throw exception;
+				}
+				return null;
 			}
 
 			@Override

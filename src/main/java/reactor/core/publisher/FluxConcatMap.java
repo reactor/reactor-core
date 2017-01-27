@@ -32,42 +32,48 @@ import reactor.core.Fuseable;
 /**
  * Maps each upstream value into a Publisher and concatenates them into one
  * sequence of items.
- * 
+ *
  * @param <T> the source value type
  * @param <R> the output value type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxConcatMap<T, R> extends FluxSource<T, R> {
-	
+
 	final Function<? super T, ? extends Publisher<? extends R>> mapper;
-	
+
 	final Supplier<? extends Queue<T>> queueSupplier;
-	
+
 	final int prefetch;
-	
+
 	final ErrorMode errorMode;
-	
+
 	/**
 	 * Indicates when an error from the main source should be reported.
 	 */
 	public enum ErrorMode {
-		/** Report the error immediately, cancelling the active inner source. */
-		IMMEDIATE,
-		/** Report error after an inner source terminated. */
-		BOUNDARY,
-		/** Report the error after all sources terminated. */
+		/**
+		 * Report the error immediately, cancelling the active inner source.
+		 */
+		IMMEDIATE, /**
+		 * Report error after an inner source terminated.
+		 */
+		BOUNDARY, /**
+		 * Report the error after all sources terminated.
+		 */
 		END
 	}
 
-	public static <T, R> Subscriber<T> subscriber(Subscriber<? super R> s, Function<?
-			super T, ? extends Publisher<? extends R>> mapper,
+	public static <T, R> Subscriber<T> subscriber(Subscriber<? super R> s,
+			Function<? super T, ? extends Publisher<? extends R>> mapper,
 			Supplier<? extends Queue<T>> queueSupplier,
-			int prefetch, ErrorMode errorMode) {
+			int prefetch,
+			ErrorMode errorMode) {
 		Subscriber<T> parent;
 		switch (errorMode) {
 			case BOUNDARY:
-				parent = new ConcatMapDelayed<>(s, mapper, queueSupplier, prefetch,
-						false);
+				parent =
+						new ConcatMapDelayed<>(s, mapper, queueSupplier, prefetch, false);
 				break;
 			case END:
 				parent = new ConcatMapDelayed<>(s, mapper, queueSupplier, prefetch, true);
@@ -78,10 +84,11 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 		return parent;
 	}
 
-	public FluxConcatMap(Publisher<? extends T> source,
-			Function<? super T, ? extends Publisher<? extends R>> mapper, 
+	FluxConcatMap(Publisher<? extends T> source,
+			Function<? super T, ? extends Publisher<? extends R>> mapper,
 			Supplier<? extends Queue<T>> queueSupplier,
-			int prefetch, ErrorMode errorMode) {
+			int prefetch,
+			ErrorMode errorMode) {
 		super(source);
 		if (prefetch <= 0) {
 			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
@@ -93,22 +100,28 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 	}
 
 	@Override
+	public long getPrefetch() {
+		return prefetch;
+	}
+
+	@Override
 	public void subscribe(Subscriber<? super R> s) {
 
 		if (FluxFlatMap.trySubscribeScalarMap(source, s, mapper, false)) {
 			return;
 		}
-		
+
 		Subscriber<T> parent;
 		switch (errorMode) {
-		case BOUNDARY:
-			parent = new ConcatMapDelayed<>(s, mapper, queueSupplier, prefetch, false);
-			break;
-		case END:
-			parent = new ConcatMapDelayed<>(s, mapper, queueSupplier, prefetch, true);
-			break;
-		default:
-			parent = new ConcatMapImmediate<>(s, mapper, queueSupplier, prefetch);
+			case BOUNDARY:
+				parent =
+						new ConcatMapDelayed<>(s, mapper, queueSupplier, prefetch, false);
+				break;
+			case END:
+				parent = new ConcatMapDelayed<>(s, mapper, queueSupplier, prefetch, true);
+				break;
+			default:
+				parent = new ConcatMapImmediate<>(s, mapper, queueSupplier, prefetch);
 		}
 		source.subscribe(parent);
 	}
@@ -117,34 +130,36 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 			implements Subscriber<T>, FluxConcatMapSupport<R>, Subscription {
 
 		final Subscriber<? super R> actual;
-		
+
 		final ConcatMapInner<R> inner;
-		
+
 		final Function<? super T, ? extends Publisher<? extends R>> mapper;
-		
+
 		final Supplier<? extends Queue<T>> queueSupplier;
-		
+
 		final int prefetch;
 
 		final int limit;
-		
+
 		Subscription s;
 
 		int consumed;
-		
+
 		volatile Queue<T> queue;
-		
+
 		volatile boolean done;
-		
+
 		volatile boolean cancelled;
-		
+
 		volatile Throwable error;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<ConcatMapImmediate, Throwable> ERROR =
-				AtomicReferenceFieldUpdater.newUpdater(ConcatMapImmediate.class, Throwable.class, "error");
-		
+				AtomicReferenceFieldUpdater.newUpdater(ConcatMapImmediate.class,
+						Throwable.class,
+						"error");
+
 		volatile boolean active;
-		
+
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<ConcatMapImmediate> WIP =
@@ -156,10 +171,11 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 				AtomicIntegerFieldUpdater.newUpdater(ConcatMapImmediate.class, "guard");
 
 		int sourceMode;
-		
-		public ConcatMapImmediate(Subscriber<? super R> actual,
+
+		ConcatMapImmediate(Subscriber<? super R> actual,
 				Function<? super T, ? extends Publisher<? extends R>> mapper,
-				Supplier<? extends Queue<T>> queueSupplier, int prefetch) {
+				Supplier<? extends Queue<T>> queueSupplier,
+				int prefetch) {
 			this.actual = actual;
 			this.mapper = mapper;
 			this.queueSupplier = queueSupplier;
@@ -170,85 +186,78 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s))  {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
 				if (s instanceof Fuseable.QueueSubscription) {
-					@SuppressWarnings("unchecked") Fuseable.QueueSubscription<T> f = (Fuseable.QueueSubscription<T>)s;
+					@SuppressWarnings("unchecked") Fuseable.QueueSubscription<T> f =
+							(Fuseable.QueueSubscription<T>) s;
 					int m = f.requestFusion(Fuseable.ANY);
-					if (m == Fuseable.SYNC){
+					if (m == Fuseable.SYNC) {
 						sourceMode = Fuseable.SYNC;
 						queue = f;
 						done = true;
-						
+
 						actual.onSubscribe(this);
-						
+
 						drain();
 						return;
-					} else 
-					if (m == Fuseable.ASYNC) {
+					}
+					else if (m == Fuseable.ASYNC) {
 						sourceMode = Fuseable.ASYNC;
 						queue = f;
-					} else {
-						try {
-							queue = queueSupplier.get();
-						} catch (Throwable ex) {
-							Operators.error(actual, Operators.onOperatorError(s, ex));
-							return;
-						}
 					}
-				} else {
-					try {
+					else {
 						queue = queueSupplier.get();
-					} catch (Throwable ex) {
-						s.cancel();
-
-						Operators.error(actual, ex);
-						return;
 					}
 				}
-				
+				else {
+					queue = queueSupplier.get();
+				}
+
 				actual.onSubscribe(this);
-				
+
 				s.request(prefetch);
 			}
 		}
-		
+
 		@Override
 		public void onNext(T t) {
 			if (sourceMode == Fuseable.ASYNC) {
 				drain();
-			} else
-			if (!queue.offer(t)) {
+			}
+			else if (!queue.offer(t)) {
 				s.cancel();
 				onError(Exceptions.failWithOverflow("Queue full?!"));
-			} else {
+			}
+			else {
 				drain();
 			}
 		}
-		
+
 		@Override
 		public void onError(Throwable t) {
 			if (Exceptions.addThrowable(ERROR, this, t)) {
 				inner.cancel();
-				
+
 				if (GUARD.getAndIncrement(this) == 0) {
 					t = Exceptions.terminate(ERROR, this);
 					if (t != Exceptions.TERMINATED) {
 						actual.onError(t);
 					}
 				}
-			} else {
+			}
+			else {
 				Operators.onErrorDropped(t);
 			}
 		}
-		
+
 		@Override
 		public void onComplete() {
 			done = true;
 			drain();
 		}
-		
+
 		@Override
 		public void innerNext(R value) {
 			if (guard == 0 && GUARD.compareAndSet(this, 0, 1)) {
@@ -262,104 +271,107 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 				}
 			}
 		}
-		
+
 		@Override
 		public void innerComplete() {
 			active = false;
 			drain();
 		}
-		
+
 		@Override
 		public void innerError(Throwable e) {
 			if (Exceptions.addThrowable(ERROR, this, e)) {
 				s.cancel();
-				
+
 				if (GUARD.getAndIncrement(this) == 0) {
 					e = Exceptions.terminate(ERROR, this);
 					if (e != Exceptions.TERMINATED) {
 						actual.onError(e);
 					}
 				}
-			} else {
+			}
+			else {
 				Operators.onErrorDropped(e);
 			}
 		}
-		
+
 		@Override
 		public void request(long n) {
 			inner.request(n);
 		}
-		
+
 		@Override
 		public void cancel() {
 			if (!cancelled) {
 				cancelled = true;
-				
+
 				inner.cancel();
 				s.cancel();
 			}
 		}
-		
+
 		void drain() {
 			if (WIP.getAndIncrement(this) == 0) {
-				for (;;) {
+				for (; ; ) {
 					if (cancelled) {
 						return;
 					}
-					
+
 					if (!active) {
 						boolean d = done;
-						
+
 						T v;
-						
+
 						try {
 							v = queue.poll();
-						} catch (Throwable e) {
+						}
+						catch (Throwable e) {
 							actual.onError(Operators.onOperatorError(s, e));
 							return;
 						}
-						
+
 						boolean empty = v == null;
-						
+
 						if (d && empty) {
 							actual.onComplete();
 							return;
 						}
-						
+
 						if (!empty) {
 							Publisher<? extends R> p;
-							
+
 							try {
 								p = mapper.apply(v);
-							} catch (Throwable e) {
+							}
+							catch (Throwable e) {
 								actual.onError(Operators.onOperatorError(s, e, v));
 								return;
 							}
-							
+
 							if (p == null) {
 								actual.onError(Operators.onOperatorError(s,
 										new NullPointerException("The mapper returned a " + "null Publisher"),
 										v));
 								return;
 							}
-							
+
 							if (sourceMode != Fuseable.SYNC) {
 								int c = consumed + 1;
 								if (c == limit) {
 									consumed = 0;
 									s.request(c);
-								} else {
+								}
+								else {
 									consumed = c;
 								}
 							}
 
-
 							if (p instanceof Callable) {
 								@SuppressWarnings("unchecked") Callable<R> callable =
 										(Callable<R>) p;
-								
+
 								R vr;
-								
+
 								try {
 									vr = callable.call();
 								}
@@ -367,17 +379,17 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 									actual.onError(Operators.onOperatorError(s, e, v));
 									return;
 								}
-								
-								
+
 								if (vr == null) {
 									continue;
 								}
-								
+
 								if (inner.isUnbounded()) {
 									if (guard == 0 && GUARD.compareAndSet(this, 0, 1)) {
 										actual.onNext(vr);
 										if (!GUARD.compareAndSet(this, 1, 0)) {
-											Throwable e = Exceptions.terminate(ERROR, this);
+											Throwable e =
+													Exceptions.terminate(ERROR, this);
 											if (e != Exceptions.TERMINATED) {
 												actual.onError(e);
 											}
@@ -385,12 +397,14 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 										}
 									}
 									continue;
-								} else {
+								}
+								else {
 									active = true;
 									inner.set(new WeakScalarSubscription<>(vr, inner));
 								}
-								
-							} else {
+
+							}
+							else {
 								active = true;
 								p.subscribe(inner);
 							}
@@ -403,17 +417,18 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 			}
 		}
 	}
-	
+
 	static final class WeakScalarSubscription<T> implements Subscription {
+
 		final Subscriber<? super T> actual;
-		final T value;
+		final T                     value;
 		boolean once;
 
-		public WeakScalarSubscription(T value, Subscriber<? super T> actual) {
+		WeakScalarSubscription(T value, Subscriber<? super T> actual) {
 			this.value = value;
 			this.actual = actual;
 		}
-		
+
 		@Override
 		public void request(long n) {
 			if (n > 0 && !once) {
@@ -423,10 +438,10 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 				a.onComplete();
 			}
 		}
-		
+
 		@Override
 		public void cancel() {
-			
+
 		}
 	}
 
@@ -434,46 +449,50 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 			implements Subscriber<T>, FluxConcatMapSupport<R>, Subscription {
 
 		final Subscriber<? super R> actual;
-		
+
 		final ConcatMapInner<R> inner;
-		
+
 		final Function<? super T, ? extends Publisher<? extends R>> mapper;
-		
+
 		final Supplier<? extends Queue<T>> queueSupplier;
-		
+
 		final int prefetch;
 
 		final int limit;
-		
+
 		final boolean veryEnd;
-		
+
 		Subscription s;
 
 		int consumed;
-		
+
 		volatile Queue<T> queue;
-		
+
 		volatile boolean done;
-		
+
 		volatile boolean cancelled;
-		
+
 		volatile Throwable error;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<ConcatMapDelayed, Throwable> ERROR =
-				AtomicReferenceFieldUpdater.newUpdater(ConcatMapDelayed.class, Throwable.class, "error");
-		
+				AtomicReferenceFieldUpdater.newUpdater(ConcatMapDelayed.class,
+						Throwable.class,
+						"error");
+
 		volatile boolean active;
-		
+
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<ConcatMapDelayed> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(ConcatMapDelayed.class, "wip");
 
 		int sourceMode;
-		
+
 		public ConcatMapDelayed(Subscriber<? super R> actual,
 				Function<? super T, ? extends Publisher<? extends R>> mapper,
-				Supplier<? extends Queue<T>> queueSupplier, int prefetch, boolean veryEnd) {
+				Supplier<? extends Queue<T>> queueSupplier,
+				int prefetch,
+				boolean veryEnd) {
 			this.actual = actual;
 			this.mapper = mapper;
 			this.queueSupplier = queueSupplier;
@@ -485,90 +504,85 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s))  {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
 				if (s instanceof Fuseable.QueueSubscription) {
-					@SuppressWarnings("unchecked") Fuseable.QueueSubscription<T> f = (Fuseable.QueueSubscription<T>)s;
-					
+					@SuppressWarnings("unchecked") Fuseable.QueueSubscription<T> f =
+							(Fuseable.QueueSubscription<T>) s;
+
 					int m = f.requestFusion(Fuseable.ANY);
-					
-					if (m == Fuseable.SYNC){
+
+					if (m == Fuseable.SYNC) {
 						sourceMode = Fuseable.SYNC;
 						queue = f;
 						done = true;
-						
+
 						actual.onSubscribe(this);
-						
+
 						drain();
 						return;
-					} else 
-					if (m == Fuseable.ASYNC) {
+					}
+					else if (m == Fuseable.ASYNC) {
 						sourceMode = Fuseable.ASYNC;
 						queue = f;
-					} else {
-						try {
-							queue = queueSupplier.get();
-						} catch (Throwable ex) {
-							Operators.error(actual, Operators.onOperatorError(s, ex));
-							return;
-						}
 					}
-				} else {
-					try {
+					else {
 						queue = queueSupplier.get();
-					} catch (Throwable ex) {
-						Operators.error(actual, Operators.onOperatorError(s, ex));
-						return;
 					}
 				}
-				
+				else {
+					queue = queueSupplier.get();
+				}
+
 				actual.onSubscribe(this);
-				
+
 				s.request(prefetch);
 			}
 		}
-		
+
 		@Override
 		public void onNext(T t) {
 			if (sourceMode == Fuseable.ASYNC) {
 				drain();
-			} else
-			if (!queue.offer(t)) {
+			}
+			else if (!queue.offer(t)) {
 				s.cancel();
 				onError(Exceptions.failWithOverflow("Queue full?!"));
-			} else {
+			}
+			else {
 				drain();
 			}
 		}
-		
+
 		@Override
 		public void onError(Throwable t) {
 			if (Exceptions.addThrowable(ERROR, this, t)) {
 				done = true;
 				drain();
-			} else {
+			}
+			else {
 				Operators.onErrorDropped(t);
 			}
 		}
-		
+
 		@Override
 		public void onComplete() {
 			done = true;
 			drain();
 		}
-		
+
 		@Override
 		public void innerNext(R value) {
 			actual.onNext(value);
 		}
-		
+
 		@Override
 		public void innerComplete() {
 			active = false;
 			drain();
 		}
-		
+
 		@Override
 		public void innerError(Throwable e) {
 			if (Exceptions.addThrowable(ERROR, this, e)) {
@@ -578,38 +592,39 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 				}
 				active = false;
 				drain();
-			} else {
+			}
+			else {
 				Operators.onErrorDropped(e);
 			}
 		}
-		
+
 		@Override
 		public void request(long n) {
 			inner.request(n);
 		}
-		
+
 		@Override
 		public void cancel() {
 			if (!cancelled) {
 				cancelled = true;
-				
+
 				inner.cancel();
 				s.cancel();
 			}
 		}
-		
+
 		void drain() {
 			if (WIP.getAndIncrement(this) == 0) {
-				
-				for (;;) {
+
+				for (; ; ) {
 					if (cancelled) {
 						return;
 					}
-					
+
 					if (!active) {
-						
+
 						boolean d = done;
-						
+
 						if (d && !veryEnd) {
 							Throwable ex = error;
 							if (ex != null) {
@@ -620,61 +635,65 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 								return;
 							}
 						}
-						
+
 						T v;
-						
+
 						try {
 							v = queue.poll();
-						} catch (Throwable e) {
+						}
+						catch (Throwable e) {
 							actual.onError(Operators.onOperatorError(s, e));
 							return;
 						}
-						
+
 						boolean empty = v == null;
-						
+
 						if (d && empty) {
 							Throwable ex = Exceptions.terminate(ERROR, this);
 							if (ex != null && ex != Exceptions.TERMINATED) {
 								actual.onError(ex);
-							} else {
+							}
+							else {
 								actual.onComplete();
 							}
 							return;
 						}
-						
+
 						if (!empty) {
 							Publisher<? extends R> p;
-							
+
 							try {
 								p = mapper.apply(v);
-							} catch (Throwable e) {
+							}
+							catch (Throwable e) {
 								actual.onError(Operators.onOperatorError(s, e, v));
 								return;
 							}
-							
+
 							if (p == null) {
 								actual.onError(Operators.onOperatorError(s,
 										new NullPointerException("The mapper returned a " + "null Publisher"),
 										v));
 								return;
 							}
-							
+
 							if (sourceMode != Fuseable.SYNC) {
 								int c = consumed + 1;
 								if (c == limit) {
 									consumed = 0;
 									s.request(c);
-								} else {
+								}
+								else {
 									consumed = c;
 								}
 							}
-							
+
 							if (p instanceof Callable) {
-								@SuppressWarnings("unchecked")
-								Callable<R> supplier = (Callable<R>) p;
-								
+								@SuppressWarnings("unchecked") Callable<R> supplier =
+										(Callable<R>) p;
+
 								R vr;
-								
+
 								try {
 									vr = supplier.call();
 								}
@@ -682,19 +701,21 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 									actual.onError(Operators.onOperatorError(s, e, v));
 									return;
 								}
-								
+
 								if (vr == null) {
 									continue;
 								}
-								
+
 								if (inner.isUnbounded()) {
 									actual.onNext(vr);
 									continue;
-								} else {
+								}
+								else {
 									active = true;
 									inner.set(new WeakScalarSubscription<>(vr, inner));
 								}
-							} else {
+							}
+							else {
 								active = true;
 								p.subscribe(inner);
 							}
@@ -709,14 +730,14 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 	}
 
 	interface FluxConcatMapSupport<T> {
-		
+
 		void innerNext(T value);
-		
+
 		void innerComplete();
-		
+
 		void innerError(Throwable e);
 	}
-	
+
 	static final class ConcatMapInner<R>
 			extends Operators.MultiSubscriptionSubscriber<R, R> {
 
@@ -724,7 +745,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 
 		long produced;
 
-		public ConcatMapInner(FluxConcatMapSupport<R> parent) {
+		ConcatMapInner(FluxConcatMapSupport<R> parent) {
 			super(null);
 			this.parent = parent;
 		}
@@ -732,14 +753,14 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 		@Override
 		public void onNext(R t) {
 			produced++;
-			
+
 			parent.innerNext(t);
 		}
-		
+
 		@Override
 		public void onError(Throwable t) {
 			long p = produced;
-			
+
 			if (p != 0L) {
 				produced = 0L;
 				produced(p);
@@ -747,11 +768,11 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 
 			parent.innerError(t);
 		}
-		
+
 		@Override
 		public void onComplete() {
 			long p = produced;
-			
+
 			if (p != 0L) {
 				produced = 0L;
 				produced(p);
