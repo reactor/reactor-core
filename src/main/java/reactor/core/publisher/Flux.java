@@ -2031,9 +2031,46 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timespan the timeout to use to release a buffered list
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
+	 * @deprecated use {@link #bufferTimeout(int, Duration)} instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Flux<List<T>> buffer(int maxSize, Duration timespan) {
-		return buffer(maxSize, timespan, listSupplier());
+		return bufferTimeout(maxSize, timespan);
+	}
+
+	/**
+	 * Collect incoming values into a {@link Collection} that will be pushed into the returned {@link Flux} every timespan OR
+	 * maxSize items.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffertimespansize.png"
+	 * alt="">
+	 *
+	 * @param maxSize the max collected size
+	 * @param timespan the timeout to use to release a buffered list
+	 * @param bufferSupplier the collection to use for each data segment
+	 * @param <C> the supplied {@link Collection} type
+	 * @return a microbatched {@link Flux} of {@link Collection} delimited by given size or a given period timeout
+	 * @deprecated use {@link #bufferTimeout(int, Duration, Supplier)} instead, will be removed in 3.1.0
+	 */
+	@Deprecated
+	public final <C extends Collection<? super T>> Flux<C> buffer(int maxSize, Duration timespan, Supplier<C> bufferSupplier) {
+		return bufferTimeout(maxSize, timespan, bufferSupplier);
+	}
+
+	/**
+	 * Collect incoming values into a {@link List} that will be pushed into the returned {@link Flux} every timespan OR
+	 * maxSize items.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffertimespansize.png"
+	 * alt="">
+	 *
+	 * @param maxSize the max collected size
+	 * @param timespan the timeout to use to release a buffered list
+	 *
+	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
+	 */
+	public final Flux<List<T>> bufferTimeout(int maxSize, Duration timespan) {
+		return bufferTimeout(maxSize, timespan, listSupplier());
 	}
 
 	/**
@@ -2049,11 +2086,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <C> the supplied {@link Collection} type
 	 * @return a microbatched {@link Flux} of {@link Collection} delimited by given size or a given period timeout
 	 */
-	public final <C extends Collection<? super T>> Flux<C> buffer(int maxSize, Duration timespan, Supplier<C> bufferSupplier) {
-		return bufferMillis(maxSize, timespan.toMillis(), Schedulers.timer(),
+	public final <C extends Collection<? super T>> Flux<C> bufferTimeout(int maxSize, Duration timespan, Supplier<C> bufferSupplier) {
+		return bufferTimeoutMillis(maxSize, timespan.toMillis(), Schedulers.timer(),
 				bufferSupplier);
 	}
-	
+
 	/**
 	 * Collect incoming values into multiple {@link List} that will be pushed into the returned {@link Flux} every
 	 * timespan.
@@ -2161,9 +2198,67 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timespan the timeout in milliseconds to use to release a buffered list
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
+	 * @deprecated use {@link #bufferTimeoutMillis(int, long)} instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Flux<List<T>> bufferMillis(int maxSize, long timespan) {
-		return bufferMillis(maxSize, timespan, Schedulers.timer());
+		return bufferTimeoutMillis(maxSize, timespan);
+	}
+
+	/**
+	 * Collect incoming values into a {@link List} that will be pushed into the returned {@link Flux} every timespan OR
+	 * maxSize items
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffertimespansize.png"
+	 * alt="">
+	 *
+	 * @param maxSize the max collected size
+	 * @param timespan the timeout to use to release a buffered list
+	 * @param timer the {@link TimedScheduler} to run on
+	 *
+	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
+	 * @deprecated use {@link #bufferTimeoutMillis(int, long, TimedScheduler)} instead, will be removed in 3.1.0
+	 */
+	@Deprecated
+	public final Flux<List<T>> bufferMillis(int maxSize, long timespan, TimedScheduler timer) {
+		return bufferTimeoutMillis(maxSize, timespan, timer);
+	}
+
+	/**
+	 * Collect incoming values into a {@link Collection} that will be pushed into the returned {@link Flux} every timespan OR
+	 * maxSize items
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffertimespansize.png"
+	 * alt="">
+	 *
+	 * @param maxSize the max collected size
+	 * @param timespan the timeout to use to release a buffered collection
+	 * @param timer the {@link TimedScheduler} to run on
+	 * @param bufferSupplier the collection to use for each data segment
+	 * @param <C> the supplied {@link Collection} type
+	 * @return a microbatched {@link Flux} of {@link Collection} delimited by given size or a given period timeout
+	 * @deprecated use {@link #bufferTimeoutMillis(int, long, TimedScheduler, Supplier)} instead, will be removed in 3.1.0
+	 */
+	@Deprecated
+	public final <C extends Collection<? super T>> Flux<C> bufferMillis(int maxSize, long timespan, TimedScheduler
+			timer, Supplier<C> bufferSupplier) {
+		return bufferTimeoutMillis(maxSize, timespan, timer, bufferSupplier);
+	}
+
+	/**
+	 * Collect incoming values into a {@link List} that will be pushed into the returned {@link Flux} every timespan OR
+	 * maxSize items.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/buffertimespansize.png"
+	 * alt="">
+	 *
+	 * @param maxSize the max collected size
+	 * @param timespan the timeout in milliseconds to use to release a buffered list
+	 *
+	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
+	 */
+	public final Flux<List<T>> bufferTimeoutMillis(int maxSize, long timespan) {
+		return bufferTimeoutMillis(maxSize, timespan, Schedulers.timer());
 	}
 
 	/**
@@ -2179,8 +2274,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
 	 */
-	public final Flux<List<T>> bufferMillis(int maxSize, long timespan, TimedScheduler timer) {
-		return bufferMillis(maxSize, timespan, timer, listSupplier());
+	public final Flux<List<T>> bufferTimeoutMillis(int maxSize, long timespan, TimedScheduler timer) {
+		return bufferTimeoutMillis(maxSize, timespan, timer, listSupplier());
 	}
 
 	/**
@@ -2197,7 +2292,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <C> the supplied {@link Collection} type
 	 * @return a microbatched {@link Flux} of {@link Collection} delimited by given size or a given period timeout
 	 */
-	public final  <C extends Collection<? super T>> Flux<C> bufferMillis(int maxSize, long timespan, TimedScheduler
+	public final  <C extends Collection<? super T>> Flux<C> bufferTimeoutMillis(int maxSize, long timespan, TimedScheduler
 			timer, Supplier<C> bufferSupplier) {
 		return onAssembly(new FluxBufferTimeOrSize<>(this, maxSize, timespan, timer, bufferSupplier));
 	}
@@ -6619,9 +6714,28 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timespan the timeout to use to onComplete a given window if size is not counted yet
 	 *
 	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
+	 * @deprecated use {@link #windowTimeout(int, Duration)} instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Flux<Flux<T>> window(int maxSize, Duration timespan) {
-		return windowMillis(maxSize, timespan.toMillis() , Schedulers.timer());
+		return windowTimeout(maxSize, timespan);
+	}
+
+	/**
+	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code maxSize} number
+	 * of items, starting from the first item. {@link Flux} windows will onComplete after a given
+	 * timespan occurs and the number of items has not be counted.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowsizetimeout.png" alt="">
+	 *
+	 * @param maxSize the maximum {@link Flux} window items to count before onComplete
+	 * @param timespan the timeout to use to onComplete a given window if size is not counted yet
+	 *
+	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
+	 */
+	public final Flux<Flux<T>> windowTimeout(int maxSize, Duration timespan) {
+		return windowTimeoutMillis(maxSize, timespan.toMillis() , Schedulers.timer());
 	}
 
 	/**
@@ -6699,9 +6813,49 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timespan the timeout to use to onComplete a given window if size is not counted yet
 	 *
 	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
+	 * @deprecated use {@link #windowTimeoutMillis(int, long)} instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Flux<Flux<T>> windowMillis(int maxSize, long timespan) {
-		return windowMillis(maxSize, timespan, Schedulers.timer());
+		return windowTimeoutMillis(maxSize, timespan);
+	}
+
+	/**
+	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code maxSize} number
+	 * of items, starting from the first item. {@link Flux} windows will onComplete after a given
+	 * timespan occurs and the number of items has not be counted.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowsizetimeout.png" alt="">
+	 *
+	 * @param maxSize the maximum {@link Flux} window items to count before onComplete
+	 * @param timespan the timeout to use to onComplete a given window if size is not counted yet
+	 * @param timer the {@link TimedScheduler} to run on
+	 *
+	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
+	 * @deprecated use {@link #windowTimeoutMillis(int, long, TimedScheduler)} instead, will be removed in 3.1.0
+	 */
+	@Deprecated
+	public final Flux<Flux<T>> windowMillis(int maxSize, long timespan, TimedScheduler
+			timer) {
+		return windowTimeoutMillis(maxSize, timespan, timer);
+	}
+
+	/**
+	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code maxSize} number
+	 * of items, starting from the first item. {@link Flux} windows will onComplete after a given
+	 * timespan occurs and the number of items has not be counted.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/windowsizetimeout.png" alt="">
+	 *
+	 * @param maxSize the maximum {@link Flux} window items to count before onComplete
+	 * @param timespan the timeout to use to onComplete a given window if size is not counted yet
+	 *
+	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
+	 */
+	public final Flux<Flux<T>> windowTimeoutMillis(int maxSize, long timespan) {
+		return windowTimeoutMillis(maxSize, timespan, Schedulers.timer());
 	}
 
 	/**
@@ -6718,11 +6872,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
 	 */
-	public final Flux<Flux<T>> windowMillis(int maxSize, long timespan, TimedScheduler
+	public final Flux<Flux<T>> windowTimeoutMillis(int maxSize, long timespan, TimedScheduler
 			timer) {
 		return onAssembly(new FluxWindowTimeOrSize<>(this, maxSize, timespan, timer));
 	}
-
 
 	/**
 	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given
