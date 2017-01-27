@@ -933,8 +933,8 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the {@link ParallelFlux} returned by the function
 	 */
-	public final <U> ParallelFlux<U> transform(Function<? super ParallelFlux<T>, ParallelFlux<U>> composer) {
-		return as(composer);
+	public final <U> ParallelFlux<U> transform(Function<? super ParallelFlux<T>, ? extends Publisher<U>> composer) {
+		return from(composer.apply(this));
 	}
 
 	/**
