@@ -765,9 +765,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 				return;
 			}
 			if (!queue.offer(t)) {
-				s.cancel();
-
-				error = Exceptions.failWithOverflow("Queue is full?!");
+				error = Operators.onOperatorError(s, Exceptions.failWithOverflow("Queue is full?!"), t);
 				done = true;
 			}
 			if (trySchedule() == Scheduler.REJECTED) {

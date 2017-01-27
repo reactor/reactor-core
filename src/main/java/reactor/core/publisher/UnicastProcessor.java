@@ -307,7 +307,8 @@ public final class UnicastProcessor<T>
 		}
 
 		if (!queue.offer(t)) {
-			Throwable ex = Exceptions.failWithOverflow();
+			Throwable ex = Operators.onOperatorError(null,
+					Exceptions.failWithOverflow(), t);
 			if(onOverflow != null) {
 				try {
 					onOverflow.accept(t);

@@ -27,7 +27,10 @@ import org.reactivestreams.Subscriber;
 final class ParallelArraySource<T> extends ParallelFlux<T> {
 	final Publisher<T>[] sources;
 	
-	public ParallelArraySource(Publisher<T>[] sources) {
+	ParallelArraySource(Publisher<T>[] sources) {
+		if (sources == null || sources.length == 0) {
+			throw new IllegalArgumentException("Zero publishers not supported");
+		}
 		this.sources = sources;
 	}
 	

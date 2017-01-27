@@ -108,13 +108,6 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 			int parallelism,
 			int prefetch,
 			Supplier<Queue<T>> queueSupplier) {
-		if (parallelism <= 0) {
-			throw new IllegalArgumentException("parallelism > 0 required but it was " + parallelism);
-		}
-		if (prefetch <= 0) {
-			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
-		}
-
 		Objects.requireNonNull(queueSupplier, "queueSupplier");
 		Objects.requireNonNull(source, "source");
 
@@ -134,9 +127,6 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 */
 	@SafeVarargs
 	public static <T> ParallelFlux<T> from(Publisher<T>... publishers) {
-		if (publishers == null || publishers.length == 0) {
-			throw new IllegalArgumentException("Zero publishers not supported");
-		}
 		return onAssembly(new ParallelArraySource<>(publishers));
 	}
 
@@ -165,8 +155,8 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new {@link ParallelFlux} instance
 	 */
-	public final <C> ParallelFlux<C> collect(Supplier<C> collectionSupplier,
-			BiConsumer<C, T> collector) {
+	public final <C> ParallelFlux<C> collect(Supplier<? extends C> collectionSupplier,
+			BiConsumer<? super C, ? super T> collector) {
 		return onAssembly(new ParallelCollect<>(this, collectionSupplier, collector));
 	}
 
@@ -734,7 +724,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @return the new {@link ParallelFlux} instance
 	 */
 	public final <R> ParallelFlux<R> reduce(Supplier<R> initialSupplier,
-			BiFunction<R, T, R> reducer) {
+			BiFunction<R, ? super T, R> reducer) {
 		Objects.requireNonNull(initialSupplier, "initialSupplier");
 		Objects.requireNonNull(reducer, "reducer");
 		return onAssembly(new ParallelReduce<>(this, initialSupplier, reducer));
@@ -788,9 +778,6 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @return the new {@link ParallelFlux} instance
 	 */
 	public final ParallelFlux<T> runOn(Scheduler scheduler, int prefetch) {
-		if (prefetch <= 0) {
-			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
-		}
 		Objects.requireNonNull(scheduler, "scheduler");
 		return onAssembly(new ParallelRunOn<>(this,
 				scheduler,
@@ -824,10 +811,6 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @return the new Flux instance
 	 */
 	public final Flux<T> sequential(int prefetch) {
-		if (prefetch <= 0) {
-			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
-		}
-
 		return Flux.onAssembly(new ParallelJoin<>(this,
 				prefetch,
 				QueueSupplier.get(prefetch)));
@@ -982,9 +965,10 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	protected final boolean validate(Subscriber<?>[] subscribers) {
 		int p = parallelism();
 		if (subscribers.length != p) {
+			IllegalArgumentException iae = new IllegalArgumentException("parallelism = " +
+					"" + p + ", subscribers = " + subscribers.length);
 			for (Subscriber<?> s : subscribers) {
-				Operators.error(s,
-						new IllegalArgumentException("parallelism = " + p + ", subscribers = " + subscribers.length));
+				Operators.error(s, iae);
 			}
 			return false;
 		}

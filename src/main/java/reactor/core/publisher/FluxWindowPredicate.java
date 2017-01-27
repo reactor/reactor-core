@@ -737,7 +737,7 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>> impl
 			Subscriber<? super T> a = actual;
 
 			if (!queue.offer(t)) {
-				onError(Exceptions.failWithOverflow("The queue is full"));
+				onError(Operators.onOperatorError(null, Exceptions.failWithOverflow("Queue is full?!"), t));
 				return;
 			}
 			if (enableOperatorFusion) {

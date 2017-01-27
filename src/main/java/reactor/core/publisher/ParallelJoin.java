@@ -34,7 +34,10 @@ final class ParallelJoin<T> extends Flux<T> {
 	final int prefetch;
 	final Supplier<Queue<T>> queueSupplier;
 	
-	public ParallelJoin(ParallelFlux<? extends T> source, int prefetch, Supplier<Queue<T>> queueSupplier) {
+	ParallelJoin(ParallelFlux<? extends T> source, int prefetch, Supplier<Queue<T>> queueSupplier) {
+		if (prefetch <= 0) {
+			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
+		}
 		this.source = source;
 		this.prefetch = prefetch;
 		this.queueSupplier = queueSupplier;

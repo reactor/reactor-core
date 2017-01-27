@@ -42,7 +42,13 @@ final class ParallelSource<T> extends ParallelFlux<T> {
 	
 	final Supplier<Queue<T>> queueSupplier;
 
-	public ParallelSource(Publisher<? extends T> source, int parallelism, int prefetch, Supplier<Queue<T>> queueSupplier) {
+	ParallelSource(Publisher<? extends T> source, int parallelism, int prefetch, Supplier<Queue<T>> queueSupplier) {
+		if (parallelism <= 0) {
+			throw new IllegalArgumentException("parallelism > 0 required but it was " + parallelism);
+		}
+		if (prefetch <= 0) {
+			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
+		}
 		this.source = source;
 		this.parallelism = parallelism;
 		this.prefetch = prefetch;
@@ -213,8 +219,7 @@ final class ParallelSource<T> extends ParallelFlux<T> {
 			}
 			if (sourceMode == Fuseable.NONE) {
 				if (!queue.offer(t)) {
-					cancel();
-					onError(Exceptions.failWithOverflow("Queue is full?"));
+					onError(Operators.onOperatorError(s, Exceptions.failWithOverflow("Queue is full?!"), t));
 					return;
 				}
 			}

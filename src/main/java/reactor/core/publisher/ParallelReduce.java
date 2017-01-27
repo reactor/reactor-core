@@ -32,9 +32,9 @@ final class ParallelReduce<T, R> extends ParallelFlux<R> implements Fuseable {
 	
 	final Supplier<R> initialSupplier;
 	
-	final BiFunction<R, T, R> reducer;
+	final BiFunction<R, ? super T, R> reducer;
 	
-	public ParallelReduce(ParallelFlux<? extends T> source, Supplier<R> initialSupplier, BiFunction<R, T, R> reducer) {
+	ParallelReduce(ParallelFlux<? extends T> source, Supplier<R> initialSupplier, BiFunction<R, ? super T, R> reducer) {
 		this.source = source;
 		this.initialSupplier = initialSupplier;
 		this.reducer = reducer;
@@ -96,7 +96,7 @@ final class ParallelReduce<T, R> extends ParallelFlux<R> implements Fuseable {
 	static final class ParallelReduceSubscriber<T, R> extends
 	                                                  Operators.MonoSubscriber<T, R> {
 
-		final BiFunction<R, T, R> reducer;
+		final BiFunction<R, ? super T, R> reducer;
 
 		R accumulator;
 		
@@ -104,7 +104,7 @@ final class ParallelReduce<T, R> extends ParallelFlux<R> implements Fuseable {
 
 		boolean done;
 		
-		public ParallelReduceSubscriber(Subscriber<? super R> subscriber, R initialValue, BiFunction<R, T, R> reducer) {
+		ParallelReduceSubscriber(Subscriber<? super R> subscriber, R initialValue, BiFunction<R, ? super T, R> reducer) {
 			super(subscriber);
 			this.accumulator = initialValue;
 			this.reducer = reducer;

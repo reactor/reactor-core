@@ -208,7 +208,7 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 		public void onNext(T t) {
 			if (fusionMode != Fuseable.ASYNC) {
 				if (!queue.offer(t)) {
-					onError(Exceptions.failWithOverflow("Queue is full?!"));
+					onError(Operators.onOperatorError(s,Exceptions.failWithOverflow("Queue is full?!")));
 					return;
 				}
 			}

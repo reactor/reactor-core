@@ -38,8 +38,11 @@ final class ParallelRunOn<T> extends ParallelFlux<T> implements Fuseable {
 
 	final Supplier<Queue<T>> queueSupplier;
 	
-	public ParallelRunOn(ParallelFlux<? extends T> parent,
+	ParallelRunOn(ParallelFlux<? extends T> parent,
 			Scheduler scheduler, int prefetch, Supplier<Queue<T>> queueSupplier) {
+		if (prefetch <= 0) {
+			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
+		}
 		this.source = parent;
 		this.scheduler = scheduler;
 		this.prefetch = prefetch;

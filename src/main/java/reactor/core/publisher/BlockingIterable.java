@@ -222,7 +222,7 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Trackable {
 			if (!queue.offer(t)) {
 				Operators.terminate(S, this);
 				
-				onError(Exceptions.failWithOverflow("Queue full?!"));
+				onError(Operators.onOperatorError(null, Exceptions.failWithOverflow("Queue is full?!"), t));
 			} else {
 				signalConsumer();
 			}

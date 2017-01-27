@@ -13,11 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
-import java.util.function.*;
+import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 
-import org.reactivestreams.*;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 
 /**
@@ -27,15 +30,16 @@ import reactor.core.Fuseable;
  * @param <C> the collection type
  */
 final class ParallelCollect<T, C> extends ParallelFlux<C> implements Fuseable {
-	
+
 	final ParallelFlux<? extends T> source;
-	
-	final Supplier<C> initialCollection;
-	
-	final BiConsumer<C, T> collector;
-	
-	public ParallelCollect(ParallelFlux<? extends T> source, 
-			Supplier<C> initialCollection, BiConsumer<C, T> collector) {
+
+	final Supplier<? extends C> initialCollection;
+
+	final BiConsumer<? super C, ? super T> collector;
+
+	ParallelCollect(ParallelFlux<? extends T> source,
+			Supplier<? extends C> initialCollection,
+			BiConsumer<? super C, ? super T> collector) {
 		this.source = source;
 		this.initialCollection = initialCollection;
 		this.collector = collector;
@@ -51,33 +55,37 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Fuseable {
 		if (!validate(subscribers)) {
 			return;
 		}
-		
+
 		int n = subscribers.length;
-		@SuppressWarnings("unchecked")
-		Subscriber<T>[] parents = new Subscriber[n];
-		
+		@SuppressWarnings("unchecked") Subscriber<T>[] parents = new Subscriber[n];
+
 		for (int i = 0; i < n; i++) {
-			
+
 			C initialValue;
-			
+
 			try {
 				initialValue = initialCollection.get();
-			} catch (Throwable ex) {
+			}
+			catch (Throwable ex) {
 				reportError(subscribers, Operators.onOperatorError(ex));
 				return;
 			}
-			
+
 			if (initialValue == null) {
-				reportError(subscribers, new NullPointerException("The initialSupplier returned a null value"));
+				reportError(subscribers,
+						new NullPointerException(
+								"The initialSupplier returned a null value"));
 				return;
 			}
-			
-			parents[i] = new ParallelCollectSubscriber<>(subscribers[i], initialValue, collector);
+
+			parents[i] = new ParallelCollectSubscriber<>(subscribers[i],
+					initialValue,
+					collector);
 		}
-		
+
 		source.subscribe(parents);
 	}
-	
+
 	void reportError(Subscriber<?>[] subscribers, Throwable ex) {
 		for (Subscriber<?> s : subscribers) {
 			Operators.error(s, ex);
@@ -94,49 +102,51 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Fuseable {
 		return false;
 	}
 
-	static final class ParallelCollectSubscriber<T, C> extends
-	                                                   Operators.MonoSubscriber<T, C> {
+	static final class ParallelCollectSubscriber<T, C>
+			extends Operators.MonoSubscriber<T, C> {
 
-		final BiConsumer<C, T> collector;
+		final BiConsumer<? super C, ? super T> collector;
 
 		C collection;
-		
+
 		Subscription s;
 
 		boolean done;
-		
-		public ParallelCollectSubscriber(Subscriber<? super C> subscriber, 
-				C initialValue, BiConsumer<C, T> collector) {
+
+		ParallelCollectSubscriber(Subscriber<? super C> subscriber,
+				C initialValue,
+				BiConsumer<? super C, ? super T> collector) {
 			super(subscriber);
 			this.collection = initialValue;
 			this.collector = collector;
 		}
-		
+
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
 				actual.onSubscribe(this);
-				
+
 				s.request(Long.MAX_VALUE);
 			}
 		}
-		
+
 		@Override
 		public void onNext(T t) {
 			if (done) {
 				Operators.onNextDropped(t);
 				return;
 			}
-			
+
 			try {
 				collector.accept(collection, t);
-			} catch (Throwable ex) {
+			}
+			catch (Throwable ex) {
 				onError(Operators.onOperatorError(this, ex, t));
 			}
 		}
-		
+
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
@@ -147,7 +157,7 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Fuseable {
 			collection = null;
 			actual.onError(t);
 		}
-		
+
 		@Override
 		public void onComplete() {
 			if (done) {
@@ -158,7 +168,7 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Fuseable {
 			collection = null;
 			complete(c);
 		}
-		
+
 		@Override
 		public void cancel() {
 			super.cancel();
