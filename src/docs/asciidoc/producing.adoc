@@ -130,7 +130,18 @@ Flux<String> bridge = Flux.create(sink -> {
 <3> the processComplete event is translated to an `onComplete`
 <4> all of this is done asynchronously whenever the myEventProcessor executes
 
-TIP: Note that `Mono` also has a `create` generator. As you should expect, the
+Additionally, since `create` can be asynchrounous and manages backpressure, you
+can refine how to behave backpressure-wise, by indicating an `OverflowStrategy`:
+
+ - `IGNORE` to Completely ignore downstream backpressure requests.
+This may yield `IllegalStateException` when queues get full downstream.
+ - `ERROR` to signal an `IllegalStateException` when the downstream can't keep up
+ - `DROP` to drop the incoming signal if the downstream is not ready to receive it.
+ - `LATEST` to let downstream only get the latest signals from upstream.
+ - `BUFFER` (the default) to buffer all signals if the downstream can't keep up.
+ (this does unbounded buffering and may lead to `OutOfMemoryError`)
+
+NOTE: `Mono` also has a `create` generator. As you should expect, the
 `MonoSink` of Mono's create doesn't allow several emissions. It will drop all
 signals subsequent to the first one.
 
