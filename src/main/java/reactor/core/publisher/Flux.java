@@ -2399,7 +2399,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Mono} sequence of the collected value on complete
 	 *
 	 */
-	public final <R, A> Mono<R> collect(Collector<T, A, R> collector) {
+	public final <R, A> Mono<R> collect(Collector<? super T, A, ? extends R> collector) {
 		return Mono.onAssembly(new MonoStreamCollector<>(this, collector));
 	}
 
