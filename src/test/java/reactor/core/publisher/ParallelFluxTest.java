@@ -24,13 +24,16 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Supplier;
 
 import org.assertj.core.api.Assertions;
+import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -1044,5 +1047,49 @@ public class ParallelFluxTest {
 
 		assertThat(result)
 				.containsExactly(2, 4, 5, 6);
+	}
+
+
+	@Test
+	public void testParallelism() throws Exception
+	{
+		Flux<Integer> flux = Flux.just(1, 2, 3);
+
+		Set<String> threadNames = Collections.synchronizedSet(new TreeSet<>());
+		AtomicInteger count = new AtomicInteger();
+
+		CountDownLatch latch = new CountDownLatch(3);
+
+		flux
+				// Uncomment line below for failure
+				.cache(1)
+				.parallel()
+				.runOn(Schedulers.newElastic("TEST"))
+				.subscribe(i ->
+				{
+					threadNames.add(Thread.currentThread()
+					                      .getName());
+					count.incrementAndGet();
+					latch.countDown();
+
+					tryToSleep(1000);
+				});
+
+		latch.await(3, TimeUnit.SECONDS);
+
+		Assert.assertEquals("Multithreaded count", 3, count.get());
+		Assert.assertEquals("Multithreaded threads", 3, threadNames.size());
+	}
+
+	private void tryToSleep(long value)
+	{
+		try
+		{
+			Thread.sleep(value);
+		}
+		catch(InterruptedException e)
+		{
+			e.printStackTrace();
+		}
 	}
 }

@@ -513,7 +513,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		public boolean isEmpty() {
 			State<T> p = parent;
 			if(p != null) {
-				p.buffer.isEmpty(this);
+				return p.buffer.isEmpty(this);
 			}
 			return true;
 		}
@@ -522,7 +522,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		public int size() {
 			State<T> p = parent;
 			if(p != null) {
-				p.buffer.size(this);
+				return p.buffer.size(this);
 			}
 			return 0;
 		}
