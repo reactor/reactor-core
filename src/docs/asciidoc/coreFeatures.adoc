@@ -236,5 +236,258 @@ to `publishOn`: they will still switch the execution context for the part of the
 chain after them. Also, only the earliest `subscribeOn` call in the chain is
 actually taken into account.
 
+=== Handling Errors
+TIP: For a quick look at the available operators for error handling, see
+<<which.errors,the relevant operator decision tree>>.
+
+In Reactive Streams, errors are terminal events. As soon as an error occurs, it
+stop the sequence and gets propagated down the chain of operators to the last
+step, the `Subscriber` you defined and its `onError` method.
+
+Such errors should still be dealt with at the application level, for instance
+by displaying an error notification in a UI, or sending a meaningful error
+payload in a REST endpoint, so the subscriber's `onError` method should always
+be defined.
+
+WARNING: If not defined, `onError` will throw an `UnsupportedOperationException`.
+You can further detect and triage it by the `Exceptions.isErrorCallbackNotImplemented`
+method.
+
+But Reactor also offers alternative means of dealing with errors in the middle
+of the chain, as error-handling operators. While the *upstream of the sequence
+will still have been terminated*, these operators allow to continue a separate
+fallback sequence downstream.
+
+Let's go through each mean of error handling one-by-one. When relevant we'll
+make a parallel with imperative world's `try` patterns.
+
+==== Error handling operators
+The `onError` at the end of the chain is akin to a `try/catch` block. There,
+execution skips to the catch in case an Exception is thrown:
+[source,java]
+----
+Flux<String> s = Flux.range(1, 10)
+    .map(v -> doSomethingDangerous(v)) <1>
+    .map(v -> doSecondTransform(v)); <2>
+s.subscribe(value -> System.out.println("RECEIVED " + value), <3>
+    error -> System.err.println("CAUGHT " + error) <4>
+);
+----
+<1> a transformation is performed that can throw an exception.
+<2> if everything went well, a second transformation is performed.
+<3> each successfully transformed value is printed out.
+<4> in case of an error, the sequence terminates and an error message is displayed.
+
+This is conceptually similar to the following try/catch block:
+[source,java]
+----
+try {
+  for (int i = 1; i < 11; i++) {
+    String v1 = doSomethingDangerous(i); <1>
+    String v2 = doSecondTransform(v1); <2>
+    System.out.println("RECEIVED " + v2);
+  }
+} catch (Throwable t) {
+  System.err.println("CAUGHT " + t); <3>
+}
+----
+<1> if an exception is thrown here...
+<2> ...the rest of the loops is skipped...
+<3> ...and the execution goes straight to here.
+
+Now that we've established a parallel, you may be familiar with several ways of
+dealing with exceptions in a try/catch block. Most notably:
+
+ 1. catch and return a default value
+ 2. catch and execute an alternative path (fallback method)
+ 3. catch, wrap to a `BusinessException` and re-throw
+ 4. catch, log an error specific message and re-throw
+ 5. the `finally` block to clean up resources, or a Java 7's "try-with-resource" construct
+
+All of these have equivalent in Reactor, in the form of error handling operators.
+
+The equivalent of **(1)** is `onErrorReturn`:
+[source,java]
+----
+Flux.just(10)
+    .map(this::doSomethingDangerous)
+    .onErrorReturn("DEFAULT_VALUE");
+----
+
+You also have the option of dynamically choosing the single value depending on
+the exception that occurred:
+[source,java]
+----
+Flux.just(10)
+    .map(this::doSomethingDangerous)
+    .onErrorReturn(e -> valueForError(e));
+----
+
+If you want more than a single default value and you have an alternative safer
+way of processing your data, you can use `switchOnError`. This would be the
+equivalent of *(2)*.
+
+For example, if your nominal process is fetching data from an external
+unreliable service, but you also keep a local cache of the same data that _can_
+be a bit more out of date but is more reliable, you could do the following:
+[source,java]
+----
+Flux.just("key1", "key2")
+    .flatMap(k ->
+        callExternalService(k) <1>
+          .switchOnError(getFromCache(k)) <2>
+    );
+----
+<1> for each key, we asynchronously call the external service.
+<2> if the external service call fails, we fallback to the cache for that key.
+
+Unlike `onErrorReturn`, `switchOnError` always falls back to the same sequence.
+However it has variants that let you filter which exceptions to fallback on,
+based either on the exception's class or a `Predicate`.
+
+For more dynamic options, `onErrorResumeWith` is the more advanced alternative.
+It takes a `Function` that maps the error to the fallback sequence to switch to:
+[source,java]
+----
+Flux.just("key1", "key2")
+    .flatMap(k ->
+        callExternalService(k)
+          .onErrorResumeWith(error -> { <1>
+            if (error instanceof TimeoutException) <2>
+              return getFromCache(k);
+            else if (error instanceof UnknownKeyException)  <3>
+              return registerNewEntry(k, "DEFAULT");
+            else
+              return Flux.error(error); <4>
+          })
+    );
+----
+<1> The function allows to dynamically choose how to continue.
+<2> If the source times out, let's hit the local cache.
+<3> If the source says the key is unknown, let's create a new entry.
+<4> In all other cases, "re-throw".
+
+That last line inside the `flatMap` gives us an hint as to how item *(3)* (catch
+wrap and rethrow) could be achieved:
+[source,java]
+----
+Flux.just("key1")
+    .flatMap(k -> callExternalService(k)
+        .onErrorResumeWith(original -> Flux.error(
+            new BusinessException("oops", original))
+        )
+    );
+----
+
+For cases where you want the error to continue propagating, but you still want
+to react to it without modifying the sequence (for instance logging it like in
+item *(4)*), there is the `doOnError` operator. This operator as well as all
+`doOn` prefixed operators are sometimes referred to as a "side-effect". That is
+because they allow to peek inside the sequence's events without modifying them.
+
+The example below makes use of that to ensure that when we fallback to the cache,
+we at least log that the external service had a failure. We could also imagine
+we have statistic counters to increment as an error side-effect...
+[source,java]
+----
+Flux.just("key1")
+    .flatMap(k -> callExternalService(k) <1>
+        .doOnError(e -> log("uh oh, falling back, service failed for key " + k)) <2>
+        .switchOnError(getFromCache(k)) <3>
+    );
+----
+<1> the external service call that can fail...
+<2> is decorated with a logging side-effect...
+<3> and then protected with the cache fallback.
+
+The last parallel to draw with the imperative world is the cleaning up that can
+be done either via a Java 7 "try-with-resources" construct or the use of the
+`finally` block (*(5)*). Both have their Reactor equivalent, actually: `using`
+and `doFinally`:
+[source,java]
+----
+Flux.using(
+    () -> getDisposableResource(), <1>
+    disposable -> Flux.just(disposable.toString()), <2>
+    Disposable::dipose <2>
+);
+----
+<1> The first lambda generates the resource. Let's assume this returns a `Disposable`.
+<2> The second lambda processes the resource, returning a `Flux<T>`.
+<3> The third lambda is called when the flux from 2) terminates or is cancelled, to clean up resources.
+
+On the other hand, `doFinally` is about side-effects that you want to be executed
+whenever the sequence terminates, either with onComplete, onError or a cancel.
+It gives you a hint as to what kind of termination triggered the side-effect:
+[source,java]
+----
+Flux.just("foo")
+    .doFinally(type -> {
+      if (type == SignalType.CANCEL) <1>
+        Statistics.incrementCancelCount(); <2>
+    });
+----
+<1> `doFinally` consumes a `SignalType` for the type of termination.
+<2> here we increment statistics in case of cancellation only.
+
+//TODO talk about how the upstream is still terminated (example of an `interval` not ticking anymore)
+//TODO talk about retry, and its caveats (re-subscription, example of an `interval` ticking back from 0)
+
+==== How are exceptions in operators or functions handled?
+In general, all operators can themselves contain code that potentially trigger
+an exception, or calls a user-defined callback that similarly can fail, so they
+all contain some form of error handling.
+
+As a rule of thumb, an **Unchecked Exception** will always be propagated through
+`onError`. For instance, throwing a `RuntimeException` inside a `map` function
+will translate to an `onError` event:
+
+[source,java]
+----
+Flux.just("foo")
+    .map(s -> { throw new IllegalArgumentException(s); })
+    .subscribe(v -> System.out.println("GOT VALUE"),
+               e -> System.out.println("ERROR: " + e));
+----
+
+This would print out:
+----
+ERROR: java.lang.IllegalArgumentException: foo
+----
+
+Reactor however defines a set of exceptions that are always
+deemed **fatal**footnote:[think `OutOfMemoryError`. Have a look at the `Exceptions.throwIfFatal` method for details]
+, meaning that Reactor cannot keep operating. These are thrown rather than
+propagated.
+
+NOTE: *Internally* There are also cases where an unchecked exception still
+cannot be propagated, most notably during the subscribe and request phases, due
+to concurrency races that could lead to double onError/onComplete. When these
+races happen, the error that cannot be propagated is "dropped". These cases can
+still be managed to some extent, as the error goes through the
+`Hooks.onErrorDropped` customizable hook.
+
+You may wonder, what about **Checked Exceptions**?
+
+If, say, you need to call some method that declares it `throws` exceptions, you
+will still have to deal with said exceptions in a `try/catch` block. You have
+several options, though:
+
+ 1. catch the exception and recover from it, the sequence continues normally.
+ 2. catch the exception and wrap it into an _unchecked_ one, then throw it
+    (interrupting the sequence). The `Exceptions` utility class can help you
+    with that (see below).
+ 3. if you're expected to return a `Flux` (eg. you're in a `flatMap`), just wrap
+    the exception into an erroring flux: `return Flux.error(checkedException)`.
+    (the sequence also terminates)
+
+Reactor has an `Exceptions` utility class that you can use, notably to ensure
+that exceptions are wrapped only if they are checked exceptions:
+
+ - use the `Exceptions.propagate` method to wrap exceptions if necessary. It will also call
+   `throwIfFatal` first, and won't wrap `RuntimeException`.
+ - use the `Exceptions.unwrap` method to get the original unwrapped exception (going back to
+   the root cause of a hierarchy of reactor-specific exceptions).
+
 === Processor
 ==== Do I need a Processor?
