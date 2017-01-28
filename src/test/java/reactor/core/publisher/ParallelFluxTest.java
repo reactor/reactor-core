@@ -1063,7 +1063,7 @@ public class ParallelFluxTest {
 		flux
 				// Uncomment line below for failure
 				.cache(1)
-				.parallel()
+				.parallel(3)
 				.runOn(Schedulers.newElastic("TEST"))
 				.subscribe(i ->
 				{
