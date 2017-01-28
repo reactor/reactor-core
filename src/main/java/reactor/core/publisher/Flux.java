@@ -2573,11 +2573,7 @@ public abstract class Flux<T> implements Publisher<T> {
 		Objects.requireNonNull(mapSupplier, "Map supplier is null");
 		return collect(mapSupplier, (m, d) -> {
 			K key = keyExtractor.apply(d);
-			Collection<V> values = m.get(key);
-			if(values == null){
-				values = new ArrayList<>();
-				m.put(key, values);
-			}
+			Collection<V> values = m.computeIfAbsent(key, k -> new ArrayList<>());
 			values.add(valueExtractor.apply(d));
 		});
 	}
