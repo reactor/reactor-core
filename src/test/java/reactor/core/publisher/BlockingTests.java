@@ -96,7 +96,7 @@ public class BlockingTests {
 		    .blockFirst();
 	}
 
-	@Test
+	@Test(expected = RuntimeException.class)
 	public void blockingFirstError2() {
 		Flux.error(new RuntimeException("test"))
 		    .publishOn(scheduler)
