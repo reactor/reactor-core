@@ -96,11 +96,25 @@ public class BlockingTests {
 		    .blockFirst();
 	}
 
+	@Test
+	public void blockingFirstError2() {
+		Flux.error(new RuntimeException("test"))
+		    .publishOn(scheduler)
+		    .blockFirst(Duration.ofSeconds(1));
+	}
+
 	@Test(expected = RuntimeException.class)
 	public void blockingLastError() {
 		Flux.defer(() -> Mono.error(new RuntimeException("test")))
 		    .subscribeOn(scheduler)
 		    .blockLast();
+	}
+
+	@Test(expected = RuntimeException.class)
+	public void blockingLastError2() {
+		Flux.defer(() -> Mono.error(new RuntimeException("test")))
+		    .subscribeOn(scheduler)
+		    .blockLast(Duration.ofSeconds(1));
 	}
 
 	@Test

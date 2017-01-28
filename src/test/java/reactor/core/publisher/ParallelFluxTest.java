@@ -1075,7 +1075,7 @@ public class ParallelFluxTest {
 					tryToSleep(1000);
 				});
 
-		latch.await(3, TimeUnit.SECONDS);
+		latch.await();
 
 		Assert.assertEquals("Multithreaded count", 3, count.get());
 		Assert.assertEquals("Multithreaded threads", 3, threadNames.size());

@@ -277,9 +277,9 @@ public class HooksTest {
 		Hooks.onOperator(hooks -> hooks.operatorStacktrace());
 		try {
 			Mono.just(1)
-			    .then(d -> {
-				    throw new RuntimeException();
-			    })
+			    .then(d ->
+				    Mono.error(new RuntimeException())
+			    )
 			    .filter(d -> true)
 			    .doOnNext(d -> System.currentTimeMillis())
 			    .map(d -> d)
