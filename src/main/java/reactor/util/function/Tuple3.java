@@ -16,9 +16,6 @@
 
 package reactor.util.function;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**

@@ -34,15 +34,15 @@ import reactor.core.Fuseable;
  * methods)</li> <li>Tomcat worker thread entries</li> <li>JUnit setup</li> </ul>
  *
  * @param <T> the value type passing through
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
 final class MonoCallableOnAssembly<T> extends MonoSource<T, T>
-		implements Fuseable, Callable<T>, AssemblyOp {
+		implements Callable<T>, AssemblyOp {
 
-	final Exception
-			stacktrace;
+	final Exception stacktrace;
 
-	public MonoCallableOnAssembly(Publisher<? extends T> source) {
+	MonoCallableOnAssembly(Publisher<? extends T> source) {
 		super(source);
 		this.stacktrace = new Exception();
 	}
@@ -56,19 +56,17 @@ final class MonoCallableOnAssembly<T> extends MonoSource<T, T>
 	@SuppressWarnings("unchecked")
 	public T blockMillis(long timeout) {
 		try {
-			return ((Callable<T>)source).call();
-		} catch (Throwable e) {
-			if (e instanceof RuntimeException) {
-				throw (RuntimeException)e;
-			}
-			throw Exceptions.bubble(e);
+			return ((Callable<T>) source).call();
+		}
+		catch (Throwable e) {
+			throw Exceptions.propagate(e);
 		}
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
-		FluxOnAssembly.subscribe(s, source, stacktrace, this);
+		FluxOnAssembly.subscribe(s, source, stacktrace);
 	}
 
 	@SuppressWarnings("unchecked")

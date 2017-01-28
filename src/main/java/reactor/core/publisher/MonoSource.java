@@ -47,9 +47,9 @@ public class MonoSource<I, O> extends Mono<O> implements Receiver{
 	 */
 	public static <I> Mono<I> wrap(Publisher<? extends I> source){
 		if(source instanceof Fuseable){
-			return onAssembly(new FuseableMonoSource<>(source));
+			return new FuseableMonoSource<>(source);
 		}
-		return onAssembly(new MonoSource<>(source));
+		return new MonoSource<>(source);
 	}
 
 	protected MonoSource(Publisher<? extends I> source) {

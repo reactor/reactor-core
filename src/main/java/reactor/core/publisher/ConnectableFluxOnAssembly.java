@@ -46,14 +46,14 @@ final class ConnectableFluxOnAssembly<T> extends ConnectableFlux<T> implements
 
 	final Exception stacktrace;
 
-	public ConnectableFluxOnAssembly(ConnectableFlux<T> source) {
+	ConnectableFluxOnAssembly(ConnectableFlux<T> source) {
 		this.source = source;
 		this.stacktrace = new Exception();
 	}
 	
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		FluxOnAssembly.subscribe(s, source, stacktrace, this);
+		FluxOnAssembly.subscribe(s, source, stacktrace);
 	}
 
 	@Override

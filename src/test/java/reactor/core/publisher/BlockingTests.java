@@ -98,8 +98,8 @@ public class BlockingTests {
 
 	@Test(expected = RuntimeException.class)
 	public void blockingLastError() {
-		Flux.error(new RuntimeException("test"))
-		    .publishOn(scheduler)
+		Flux.defer(() -> Mono.error(new RuntimeException("test")))
+		    .subscribeOn(scheduler)
 		    .blockLast();
 	}
 

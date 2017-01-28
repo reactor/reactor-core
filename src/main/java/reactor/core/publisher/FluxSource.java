@@ -41,9 +41,9 @@ public class FluxSource<I, O> extends Flux<O> implements Receiver {
 	 */
 	public static <I> Flux<I> wrap(Publisher<? extends I> source){
 		if(source instanceof Fuseable){
-			return onAssembly(new FuseableFluxSource<>(source));
+			return new FuseableFluxSource<>(source);
 		}
-		return onAssembly(new FluxSource<>(source));
+		return new FluxSource<>(source);
 	}
 	
 	protected FluxSource(Publisher<? extends I> source) {

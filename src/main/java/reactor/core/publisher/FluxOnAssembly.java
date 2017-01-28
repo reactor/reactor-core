@@ -15,10 +15,8 @@
  */
 package reactor.core.publisher;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.LinkedTransferQueue;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -26,7 +24,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
-import reactor.util.function.Tuple2;
+import reactor.util.function.Tuple3;
 import reactor.util.function.Tuples;
 
 /**
@@ -59,29 +57,12 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 			"reactor.trace.assembly.fullstacktrace",
 			"false"));
 
-	public FluxOnAssembly(Publisher<? extends T> source) {
+	FluxOnAssembly(Publisher<? extends T> source) {
 		super(source);
 		this.snapshotStack = new Exception();
 	}
 
-	static Publisher<?> getParentOrThis(Publisher<?> parent) {
-		Object next = parent;
-
-		for (; ; ) {
-			if (next instanceof Receiver) {
-				Receiver r = (Receiver) next;
-				next = r.upstream();
-				if (next instanceof AssemblyOp) {
-					return (Publisher<?>) next;
-				}
-				continue;
-			}
-			break;
-		}
-		return parent;
-	}
-
-	static String takeStacktrace(Publisher<?> source, Exception snapshotStack) {
+	static String getStacktrace(Publisher<?> source, Exception snapshotStack) {
 		StackTraceElement[] stes = snapshotStack.getStackTrace();
 
 		StringBuilder sb =
@@ -173,17 +154,16 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 
 	@SuppressWarnings("unchecked")
 	static <T> void subscribe(Subscriber<? super T> s, Publisher<? extends T> source,
-			Exception snapshotStack, Publisher<T> parent){
+			Exception snapshotStack) {
 
 		if(snapshotStack != null) {
 			if (s instanceof ConditionalSubscriber) {
 				ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) s;
 				source.subscribe(new OnAssemblyConditionalSubscriber<>(cs,
-						snapshotStack,
-						parent));
+						snapshotStack, source));
 			}
 			else {
-				source.subscribe(new OnAssemblySubscriber<>(s, snapshotStack, parent));
+				source.subscribe(new OnAssemblySubscriber<>(s, snapshotStack, source));
 			}
 		}
 	}
@@ -204,7 +184,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 				usercode = s.substring(s.indexOf('('));
 				break;
 			}
-			else {
+			else if(last == null){
 				last = s.replace("reactor.core.publisher.", "");
 				last = last.substring(0, last.indexOf("("));
 			}
@@ -215,7 +195,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		subscribe(s, source, snapshotStack, this);
+		subscribe(s, source, snapshotStack);
 	}
 
 	/**
@@ -223,44 +203,14 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 	 */
 	static final class OnAssemblyException extends RuntimeException {
 
-		final Publisher<?> parent;
-		final Map<Integer, Map<Integer, String>> stackByPublisher = new HashMap<>();
+		final List<Tuple3<Integer, String, Integer>> chainOrder = new LinkedList<>();
 
 		/** */
 		private static final long serialVersionUID = 5278398300974016773L;
 
-		public OnAssemblyException(String message, Publisher<?> parent) {
+		OnAssemblyException(String message, Publisher<?> parent) {
 			super(message);
-			Map<Integer, String> thiz = new HashMap<>();
-			thiz.put(parent.hashCode(), extract(message, true));
-			stackByPublisher.put(0, thiz);
-			this.parent = parent;
-		}
-
-		@Override
-		public String getMessage() {
-			StringBuilder sb = new StringBuilder(super.getMessage()).append(
-					"Composition chain until failing Operator :\n");
-
-			Map<Integer, String> op;
-			Tuple2<Integer, Integer> next;
-			Queue<Tuple2<Integer, Integer>> nexts = new LinkedTransferQueue<>();
-			nexts.add(Tuples.of(0, 0));
-
-			synchronized (stackByPublisher) {
-				while ((next = nexts.poll()) != null) {
-					op = stackByPublisher.get(next.getT2());
-					if (op != null) {
-						int i = next.getT1();
-						for (Map.Entry<Integer, String> entry : op.entrySet()) {
-							mapLine(i, sb, entry.getValue());
-							nexts.add(Tuples.of(i, entry.getKey()));
-							i++;
-						}
-					}
-				}
-			}
-			return sb.toString();
+			chainOrder.add(Tuples.of(parent.hashCode(), extract(message, true), 0));
 		}
 
 		void mapLine(int indent, StringBuilder sb, String s) {
@@ -279,17 +229,66 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 
 		void add(Publisher<?> parent, String stacktrace) {
 			int key = getParentOrThis(parent).hashCode();
-			synchronized (stackByPublisher) {
-				stackByPublisher.compute(key, (k, s) -> {
-					if (s == null) {
-						s = new HashMap<>();
+			synchronized (chainOrder) {
+				int i = 0;
+
+				int n = chainOrder.size();
+				int j = n - 1;
+				Tuple3<Integer, String, Integer> tmp;
+				while(j >= 0){
+					tmp = chainOrder.get(j);
+					if(tmp.getT1() == key){
+						i = tmp.getT3();
+						break;
 					}
-					//only one publisher occurence possible?
-					s.put(parent.hashCode(), extract(stacktrace, true));
-					return s;
-				});
+					j--;
+				}
+
+
+				for(;;){
+					Tuple3<Integer, String, Integer> t =
+							Tuples.of(
+									parent.hashCode(),
+									extract(stacktrace, true), i);
+
+					if(!chainOrder.contains(t)){
+						chainOrder.add(t);
+						break;
+					}
+					i++;
+				}
 			}
 		}
+
+		@Override
+		public String getMessage() {
+			StringBuilder sb = new StringBuilder(super.getMessage()).append(
+					"Observed operator chain, starting from the origin :\n");
+
+			synchronized (chainOrder) {
+				for(Tuple3<Integer, String, Integer> t : chainOrder) {
+					mapLine(t.getT3(), sb, t.getT2());
+				}
+			}
+			return sb.toString();
+		}
+	}
+
+	static Publisher<?> getParentOrThis(Publisher<?> parent) {
+		Object next = parent;
+
+		for (; ; ) {
+			if (next instanceof Receiver) {
+				Receiver r = (Receiver) next;
+				next = r.upstream();
+				if (next instanceof AssemblyOp) {
+					continue;
+				}
+				return (Publisher<?>) next;
+			}
+			break;
+		}
+		return parent;
 	}
 
 	static class OnAssemblySubscriber<T> implements Subscriber<T>, QueueSubscription<T> {
@@ -345,14 +344,15 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 				for (Throwable e : t.getSuppressed()) {
 					if (e instanceof OnAssemblyException) {
 						OnAssemblyException oae = ((OnAssemblyException) e);
-						oae.add(parent, takeStacktrace(parent, snapshotStack));
+						oae.add(parent, getStacktrace(parent, snapshotStack));
 						set = true;
 						break;
 					}
 				}
 			}
 			if (!set) {
-				t.addSuppressed(new OnAssemblyException(takeStacktrace(parent, snapshotStack), parent));
+				t.addSuppressed(new OnAssemblyException(getStacktrace(parent,
+						snapshotStack), parent));
 			}
 
 		}

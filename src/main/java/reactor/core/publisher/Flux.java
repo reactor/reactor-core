@@ -686,7 +686,7 @@ public abstract class Flux<T> implements Publisher<T> {
             }
 			return empty();
 		}
-		return FluxSource.wrap(source);
+		return onAssembly(FluxSource.wrap(source));
 	}
 	
 	/**
@@ -3750,10 +3750,10 @@ public abstract class Flux<T> implements Publisher<T> {
 			Function<? super TRight, ? extends Publisher<TRightEnd>> rightEnd,
 			BiFunction<? super T, ? super Flux<TRight>, ? extends R> resultSelector
 	) {
-		return new FluxGroupJoin<T, TRight, TLeftEnd, TRightEnd, R>(
+		return onAssembly(new FluxGroupJoin<T, TRight, TLeftEnd, TRightEnd, R>(
 				this, other, leftEnd, rightEnd, resultSelector,
 				QueueSupplier.unbounded(QueueSupplier.XS_BUFFER_SIZE),
-				QueueSupplier.unbounded(QueueSupplier.XS_BUFFER_SIZE));
+				QueueSupplier.unbounded(QueueSupplier.XS_BUFFER_SIZE)));
 	}
 
 	/**
@@ -3863,8 +3863,9 @@ public abstract class Flux<T> implements Publisher<T> {
 			Function<? super TRight, ? extends Publisher<TRightEnd>> rightEnd,
 			BiFunction<? super T, ? super TRight, ? extends R> resultSelector
 	) {
-		return new FluxJoin<T, TRight, TLeftEnd, TRightEnd, R>(
-				this, other, leftEnd, rightEnd, resultSelector, QueueSupplier.unbounded(QueueSupplier.XS_BUFFER_SIZE));
+		return onAssembly(new FluxJoin<T, TRight, TLeftEnd, TRightEnd, R>(
+				this, other, leftEnd, rightEnd, resultSelector, QueueSupplier
+				.unbounded(QueueSupplier.XS_BUFFER_SIZE)));
 	}
 
 	/**
@@ -4918,7 +4919,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 */
 	public final Flux<T> retry(long numRetries) {
-		return new FluxRetry<>(this, numRetries);
+		return onAssembly(new FluxRetry<>(this, numRetries));
 	}
 
 	/**
@@ -6084,9 +6085,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * sequence
 	 */
 	public final Mono<Void> thenEmpty(Publisher<Void> other) {
-		MonoIgnoreEmpty<T> ignored = new MonoIgnoreEmpty<>(this);
-		Mono<Void> then = ignored.then(MonoSource.wrap(other));
-		return Mono.onAssembly(then);
+		return new MonoIgnoreEmpty<>(this).then(MonoSource.wrap(other));
 	}
 
 	/**

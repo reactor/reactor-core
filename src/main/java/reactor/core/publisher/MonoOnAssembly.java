@@ -37,13 +37,13 @@ final class MonoOnAssembly<T> extends MonoSource<T, T> implements Fuseable, Asse
 
 	final Exception stacktrace;
 
-	public MonoOnAssembly(Publisher<? extends T> source) {
+	MonoOnAssembly(Publisher<? extends T> source) {
 		super(source);
 		this.stacktrace = new Exception();
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		FluxOnAssembly.subscribe(s, source, stacktrace, this);
+		FluxOnAssembly.subscribe(s, source, stacktrace);
 	}
 }

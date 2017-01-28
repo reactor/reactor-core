@@ -73,17 +73,15 @@ final class ParallelFluxOnAssembly<T> extends ParallelFlux<T>
 		Subscriber<? super T> s;
 		for (int i = 0; i < n; i++) {
 			s = subscribers[i];
-			if (stacktrace != null) {
-				if (s instanceof ConditionalSubscriber) {
-					ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<?
-							super T>) s;
-					s = new FluxOnAssembly.OnAssemblyConditionalSubscriber<>(cs,
-							stacktrace,
-							source);
-				}
-				else {
-					s = new FluxOnAssembly.OnAssemblySubscriber<>(s, stacktrace, source);
-				}
+			if (s instanceof ConditionalSubscriber) {
+				ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<?
+						super T>) s;
+				s = new FluxOnAssembly.OnAssemblyConditionalSubscriber<>(cs,
+						stacktrace,
+						source);
+			}
+			else {
+				s = new FluxOnAssembly.OnAssemblySubscriber<>(s, stacktrace, source);
 			}
 			parents[i] = s;
 		}

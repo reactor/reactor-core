@@ -40,7 +40,7 @@ final class FluxCallableOnAssembly<T> extends FluxSource<T, T>
 
 	final Exception stacktrace;
 
-	public FluxCallableOnAssembly(Publisher<? extends T> source) {
+	FluxCallableOnAssembly(Publisher<? extends T> source) {
 		super(source);
 		this.stacktrace = new Exception();
 	}
@@ -48,7 +48,7 @@ final class FluxCallableOnAssembly<T> extends FluxSource<T, T>
 	@Override
 	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
-		FluxOnAssembly.subscribe(s, source, stacktrace, this);
+		FluxOnAssembly.subscribe(s, source, stacktrace);
 	}
 
 	@SuppressWarnings("unchecked")

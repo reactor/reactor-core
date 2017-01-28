@@ -24,11 +24,15 @@ import java.util.logging.Level;
 
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.core.publisher.ConnectableFlux;
+import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.Operators;
 import reactor.core.publisher.ParallelFlux;
+import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.SignalType;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -258,7 +262,7 @@ public class HooksTest {
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
 					("HooksTest.java:"));
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tFlux" +
-					".share" +
+					".publish" +
 					"(HooksTest.java:"));
 			return;
 		}
@@ -266,6 +270,88 @@ public class HooksTest {
 			Hooks.resetOnOperator();
 		}
 		throw new IllegalStateException();
+	}
+
+	@Test
+	public void testTraceComposed() throws Exception {
+		Hooks.onOperator(hooks -> hooks.operatorStacktrace());
+		try {
+			Mono.just(1)
+			    .then(d -> {
+				    throw new RuntimeException();
+			    })
+			    .filter(d -> true)
+			    .doOnNext(d -> System.currentTimeMillis())
+			    .map(d -> d)
+			    .block();
+		}
+		catch(Exception e){
+			e.printStackTrace();
+			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
+					("HooksTest.java:"));
+			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tMono" +
+					".then" +
+					"(HooksTest.java:"));
+			return;
+		}
+		finally {
+			Hooks.resetOnOperator();
+		}
+		throw new IllegalStateException();
+	}
+
+	@Test
+	public void testTraceComposed2() throws Exception {
+		Hooks.onOperator(hooks -> hooks.operatorStacktrace());
+		try {
+			Flux.just(1)
+			    .flatMap(d -> {
+				    throw new RuntimeException();
+			    })
+			    .filter(d -> true)
+			    .doOnNext(d -> System.currentTimeMillis())
+			    .map(d -> d)
+			    .blockLast();
+		}
+		catch(Exception e){
+			e.printStackTrace();
+			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
+					("HooksTest.java:"));
+			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tFlux" +
+					".flatMap" +
+					"(HooksTest.java:"));
+			return;
+		}
+		finally {
+			Hooks.resetOnOperator();
+		}
+		throw new IllegalStateException();
+	}
+
+	@Test
+	public void testMultiReceiver() throws Exception {
+		Hooks.onOperator(hooks -> hooks.operatorStacktrace());
+		try {
+
+			ConnectableFlux<?> t = Flux.empty()
+			    .then(() -> {
+				    throw new RuntimeException();
+			    }).flux().publish();
+
+			t.map(d -> d).subscribe(null,
+					e -> Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
+							("\t|_\tFlux.publish")));
+
+			t.filter(d -> true).subscribe(null, e -> Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
+					("\t\t|_\tFlux.publish")));
+			t.distinct().subscribe(null, e -> Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
+					("\t\t\t|_\tFlux.publish")));
+
+			t.connect();
+		}
+		finally {
+			Hooks.resetOnOperator();
+		}
 	}
 
 }

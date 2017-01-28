@@ -170,10 +170,9 @@ public final class MonoProcessor<O> extends Mono<O>
 					case STATE_SUCCESS_VALUE:
 						return value;
 					case STATE_ERROR:
-						if (error instanceof RuntimeException) {
-							throw (RuntimeException) error;
-						}
-						throw Exceptions.propagate(error);
+						RuntimeException re = Exceptions.propagate(error);
+						re.addSuppressed(new Exception("Mono#block terminated with an error"));
+						throw re;
 					case STATE_COMPLETE_NO_VALUE:
 						return null;
 				}
@@ -365,13 +364,9 @@ public final class MonoProcessor<O> extends Mono<O>
 			return value;
 		}
 		else if (endState == STATE_ERROR) {
-			if (error instanceof RuntimeException) {
-				throw (RuntimeException) error;
-			}
-			else {
-				Operators.onErrorDropped(error);
-				return null;
-			}
+			RuntimeException re = Exceptions.propagate(error);
+			re.addSuppressed(new Exception("Mono#peek terminated with an error"));
+			throw re;
 		}
 		else {
 			return null;
