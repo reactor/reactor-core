@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.time.Duration;
@@ -38,25 +39,27 @@ import reactor.util.concurrent.QueueSupplier;
 
 /**
  * Replays all or the last N items to Subscribers.
- *
- * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitterreplay.png" alt="">
  * <p>
- * 
+ * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitterreplay.png"
+ * alt="">
+ * <p>
+ *
  * @param <T> the value type
  */
-public final class ReplayProcessor<T> 
-extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
+public final class ReplayProcessor<T> extends FluxProcessor<T, T>
+		implements Fuseable, MultiProducer, Receiver {
 
 	/**
-	 * Create a {@link ReplayProcessor} from hot-cold {@link ReplayProcessor#create ReplayProcessor}  that will not
-	 * propagate
-	 * cancel upstream if {@link Subscription} has been set. The last emitted item will be replayable to late {@link Subscriber}
+	 * Create a {@link ReplayProcessor} from hot-cold {@link ReplayProcessor#create
+	 * ReplayProcessor}  that will not propagate cancel upstream if {@link Subscription}
+	 * has been set. The last emitted item will be replayable to late {@link Subscriber}
 	 * (buffer and history size of 1).
-	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/replaylast.png" alt="">
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/replaylast.png"
+	 * alt="">
 	 *
-	 * @param <T>  the relayed type
+	 * @param <T> the relayed type
 	 *
 	 * @return a non interruptable last item cached pub-sub {@link ReplayProcessor}
 	 */
@@ -65,12 +68,14 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 	}
 
 	/**
-	 * Create a {@link ReplayProcessor} from hot-cold {@link ReplayProcessor#create ReplayProcessor}  that will not
-	 * propagate
-	 * cancel upstream if {@link Subscription} has been set. The last emitted item will be replayable to late {@link Subscriber} (buffer and history size of 1).
-	 *
+	 * Create a {@link ReplayProcessor} from hot-cold {@link ReplayProcessor#create
+	 * ReplayProcessor}  that will not propagate cancel upstream if {@link Subscription}
+	 * has been set. The last emitted item will be replayable to late {@link Subscriber}
+	 * (buffer and history size of 1).
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/replaylastd.png" alt="">
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/replaylastd.png"
+	 * alt="">
 	 *
 	 * @param value a default value to start the sequence with
 	 * @param <T> the relayed type
@@ -79,16 +84,18 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 	 */
 	public static <T> ReplayProcessor<T> cacheLastOrDefault(T value) {
 		ReplayProcessor<T> b = create(1);
-		if(value != null){
+		if (value != null) {
 			b.onNext(value);
 		}
 		return b;
 	}
 
 	/**
-	 * Create a new {@link ReplayProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size, blockingWait
-	 * Strategy and auto-cancel.
+	 * Create a new {@link ReplayProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE}
+	 * backlog size, blockingWait Strategy and auto-cancel.
+	 *
 	 * @param <E> Type of processed signals
+	 *
 	 * @return a fresh processor
 	 */
 	public static <E> ReplayProcessor<E> create() {
@@ -100,8 +107,8 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 	 * Strategy and auto-cancel.
 	 *
 	 * @param historySize the backlog size, ie. maximum items retained
-	 *
 	 * @param <E> Type of processed signals
+	 *
 	 * @return a fresh processor
 	 */
 	public static <E> ReplayProcessor<E> create(int historySize) {
@@ -113,9 +120,9 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 	 * Strategy and auto-cancel.
 	 *
 	 * @param historySize maximum items retained if bounded, or link size if unbounded
-	 * @param  unbounded true if "unlimited" data store must be supplied
-	 *
+	 * @param unbounded true if "unlimited" data store must be supplied
 	 * @param <E> Type of processed signals
+	 *
 	 * @return a fresh processor
 	 */
 	public static <E> ReplayProcessor<E> create(int historySize, boolean unbounded) {
@@ -132,16 +139,15 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 	/**
 	 * Creates a time-bounded replay processor.
 	 * <p>
-	 * In this setting, the {@code ReplayProcessor} internally tags each observed item 
-	 * with
-	 * a timestamp value supplied by the {@link Schedulers#timer()} and keeps only those whose
-	 * age
-	 * is less than the supplied time value converted to milliseconds. For example, an
-	 * item arrives at T=0 and the max age is set to 5; at T&gt;=5 this first item is then
-	 * evicted by any subsequent item or termination signal, leaving the buffer empty.
+	 * In this setting, the {@code ReplayProcessor} internally tags each observed item
+	 * with a timestamp value supplied by the {@link Schedulers#timer()} and keeps only
+	 * those whose age is less than the supplied time value converted to milliseconds. For
+	 * example, an item arrives at T=0 and the max age is set to 5; at T&gt;=5 this first
+	 * item is then evicted by any subsequent item or termination signal, leaving the
+	 * buffer empty.
 	 * <p>
-	 * Once the processor is terminated, subscribers subscribing to it will receive items that
-	 * remained in the buffer after the terminal signal, regardless of their age.
+	 * Once the processor is terminated, subscribers subscribing to it will receive items
+	 * that remained in the buffer after the terminal signal, regardless of their age.
 	 * <p>
 	 * If an subscriber subscribes while the {@code ReplayProcessor} is active, it will
 	 * observe only those items from within the buffer that have an age less than the
@@ -152,8 +158,8 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 	 * <p>
 	 * Note that terminal signals ({@code onError} and {@code onComplete}) trigger
 	 * eviction as well. For example, with a max age of 5, the first item is observed at
-	 * T=0, then an {@code onComplete} signal arrives at T=10. If an subscriber
-	 * subscribes at T=11, it will find an empty {@code ReplayProcessor} with just an {@code
+	 * T=0, then an {@code onComplete} signal arrives at T=10. If an subscriber subscribes
+	 * at T=11, it will find an empty {@code ReplayProcessor} with just an {@code
 	 * onCompleted} signal.
 	 *
 	 * @param <T> the type of items observed and emitted by the Processor
@@ -279,7 +285,8 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 			throw new IllegalArgumentException("size > 0 required but it was " + size);
 		}
 		return new ReplayProcessor<>(new SizeAndTimeBoundReplayBuffer<>(size,
-				maxAge, scheduler));
+				maxAge,
+				scheduler));
 	}
 
 	final ReplayBuffer<T> buffer;
@@ -289,18 +296,20 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 	volatile ReplaySubscription<T>[] subscribers;
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<ReplayProcessor, ReplaySubscription[]>
-			SUBSCRIBERS = AtomicReferenceFieldUpdater.newUpdater(ReplayProcessor.class, ReplaySubscription[].class, "subscribers");
-	
+			SUBSCRIBERS = AtomicReferenceFieldUpdater.newUpdater(ReplayProcessor.class,
+			ReplaySubscription[].class,
+			"subscribers");
+
 	@SuppressWarnings("rawtypes")
 	static final ReplaySubscription[] EMPTY      = new ReplaySubscription[0];
 	@SuppressWarnings("rawtypes")
 	static final ReplaySubscription[] TERMINATED = new ReplaySubscription[0];
-	
+
 	ReplayProcessor(ReplayBuffer<T> buffer) {
 		this.buffer = buffer;
 		SUBSCRIBERS.lazySet(this, EMPTY);
 	}
-	
+
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 
@@ -318,7 +327,8 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 
 	@Override
 	public Iterator<?> downstreams() {
-		return Arrays.asList(subscribers).iterator();
+		return Arrays.asList(subscribers)
+		             .iterator();
 	}
 
 	@Override
@@ -347,15 +357,15 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 	}
 
 	boolean add(ReplaySubscription<T> rs) {
-		for (;;) {
+		for (; ; ) {
 			ReplaySubscription<T>[] a = subscribers;
 			if (a == TERMINATED) {
 				return false;
 			}
 			int n = a.length;
-			
-			@SuppressWarnings("unchecked")
-			ReplaySubscription<T>[] b = new ReplayProcessorSubscription[n + 1];
+
+			@SuppressWarnings("unchecked") ReplaySubscription<T>[] b =
+					new ReplayProcessorSubscription[n + 1];
 			System.arraycopy(a, 0, b, 0, n);
 			b[n] = rs;
 			if (SUBSCRIBERS.compareAndSet(this, a, b)) {
@@ -363,37 +373,38 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 			}
 		}
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	void remove(ReplaySubscription<T> rs) {
 		outer:
-		for (;;) {
+		for (; ; ) {
 			ReplaySubscription<T>[] a = subscribers;
 			if (a == TERMINATED || a == EMPTY) {
 				return;
 			}
 			int n = a.length;
-			
+
 			for (int i = 0; i < n; i++) {
 				if (a[i] == rs) {
 					ReplaySubscription<T>[] b;
-					
+
 					if (n == 1) {
 						b = EMPTY;
-					} else {
+					}
+					else {
 						b = new ReplayProcessorSubscription[n - 1];
 						System.arraycopy(a, 0, b, 0, i);
 						System.arraycopy(a, i + 1, b, i, n - i - 1);
 					}
-					
+
 					if (SUBSCRIBERS.compareAndSet(this, a, b)) {
 						return;
 					}
-					
+
 					continue outer;
 				}
 			}
-			
+
 			break;
 		}
 	}
@@ -402,11 +413,8 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 	public void onSubscribe(Subscription s) {
 		if (buffer.isDone()) {
 			s.cancel();
-		} else {
-			if(!Operators.validate(subscription, s)) {
-				s.cancel();
-				return;
-			}
+		}
+		else if (Operators.validate(subscription, s)) {
 			subscription = s;
 			s.request(Long.MAX_VALUE);
 		}
@@ -439,10 +447,10 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		}
 		else {
 			b.onError(t);
-			
+
 			@SuppressWarnings("unchecked") ReplaySubscription<T>[] a =
 					SUBSCRIBERS.getAndSet(this, TERMINATED);
-			
+
 			for (ReplaySubscription<T> rs : a) {
 				b.replay(rs);
 			}
@@ -454,9 +462,9 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		ReplayBuffer<T> b = buffer;
 		if (!b.isDone()) {
 			b.onComplete();
-			
-			@SuppressWarnings("unchecked")
-			ReplaySubscription<T>[] a = SUBSCRIBERS.getAndSet(this, TERMINATED);
+
+			@SuppressWarnings("unchecked") ReplaySubscription<T>[] a =
+					SUBSCRIBERS.getAndSet(this, TERMINATED);
 
 			for (ReplaySubscription<T> rs : a) {
 				b.replay(rs);
@@ -477,17 +485,17 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		void onError(Throwable ex);
 
 		Throwable getError();
-		
+
 		void onComplete();
 
 		void replay(ReplaySubscription<T> rs);
-		
+
 		boolean isDone();
 
 		T poll(ReplaySubscription<T> rs);
 
 		void clear(ReplaySubscription<T> rs);
-		
+
 		boolean isEmpty(ReplaySubscription<T> rs);
 
 		int size(ReplaySubscription<T> rs);
@@ -539,7 +547,8 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 				tailIndex = 1;
 				a[i] = b;
 				tail = b;
-			} else {
+			}
+			else {
 				a[i] = value;
 				tailIndex = i + 1;
 			}
@@ -559,7 +568,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 
 		void replayNormal(ReplaySubscription<T> rs) {
 			int missed = 1;
-			
+
 			final Subscriber<? super T> a = rs.downstream();
 			final int n = batchSize;
 
@@ -574,13 +583,13 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 				}
 				int tailIndex = rs.tailIndex();
 				int index = rs.index();
-				
+
 				while (e != r) {
 					if (rs.isCancelled()) {
 						rs.node(null);
 						return;
 					}
-					
+
 					boolean d = done;
 					boolean empty = index == size;
 
@@ -589,31 +598,31 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 						Throwable ex = error;
 						if (ex != null) {
 							a.onError(ex);
-						} else {
+						}
+						else {
 							a.onComplete();
 						}
 						return;
 					}
-					
+
 					if (empty) {
 						break;
 					}
-					
+
 					if (tailIndex == n) {
-						node = (Object[])node[tailIndex];
+						node = (Object[]) node[tailIndex];
 						tailIndex = 0;
 					}
-					
-					@SuppressWarnings("unchecked")
-					T v = (T)node[tailIndex];
-					
+
+					@SuppressWarnings("unchecked") T v = (T) node[tailIndex];
+
 					a.onNext(v);
-					
+
 					e++;
 					tailIndex++;
 					index++;
 				}
-				
+
 				if (e == r) {
 					if (rs.isCancelled()) {
 						rs.node(null);
@@ -652,23 +661,23 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 				}
 			}
 		}
-		
+
 		void replayFused(ReplaySubscription<T> rs) {
 			int missed = 1;
-			
+
 			final Subscriber<? super T> a = rs.downstream();
-			
-			for (;;) {
-				
+
+			for (; ; ) {
+
 				if (rs.isCancelled()) {
 					rs.node(null);
 					return;
 				}
-				
+
 				boolean d = done;
-				
+
 				a.onNext(null);
-				
+
 				if (d) {
 					Throwable ex = error;
 					if (ex != null) {
@@ -695,7 +704,8 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 
 			if (rs.fusionMode() == NONE) {
 				replayNormal(rs);
-			} else {
+			}
+			else {
 				replayFused(rs);
 			}
 		}
@@ -721,8 +731,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 				node = (Object[]) node[tailIndex];
 				tailIndex = 0;
 			}
-			@SuppressWarnings("unchecked")
-			T v = (T)node[tailIndex];
+			@SuppressWarnings("unchecked") T v = (T) node[tailIndex];
 			rs.index(index + 1);
 			rs.tailIndex(tailIndex + 1);
 			return v;
@@ -753,7 +762,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 	static final class SizeBoundReplayBuffer<T> implements ReplayBuffer<T> {
 
 		final int limit;
-		
+
 		volatile Node<T> head;
 
 		Node<T> tail;
@@ -805,13 +814,12 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 
 			int missed = 1;
 
-			for (;;) {
+			for (; ; ) {
 
 				long r = rs.requestedFromDownstream();
 				long e = 0L;
 
-				@SuppressWarnings("unchecked")
-				Node<T> node = (Node<T>)rs.node();
+				@SuppressWarnings("unchecked") Node<T> node = (Node<T>) rs.node();
 				if (node == null) {
 					node = head;
 				}
@@ -831,7 +839,8 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 						Throwable ex = error;
 						if (ex != null) {
 							a.onError(ex);
-						} else {
+						}
+						else {
 							a.onComplete();
 						}
 						return;
@@ -861,7 +870,8 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 						Throwable ex = error;
 						if (ex != null) {
 							a.onError(ex);
-						} else {
+						}
+						else {
 							a.onComplete();
 						}
 						return;
@@ -885,20 +895,20 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 
 		void replayFused(ReplaySubscription<T> rs) {
 			int missed = 1;
-			
+
 			final Subscriber<? super T> a = rs.downstream();
-			
-			for (;;) {
-				
+
+			for (; ; ) {
+
 				if (rs.isCancelled()) {
 					rs.node(null);
 					return;
 				}
-				
+
 				boolean d = done;
-				
+
 				a.onNext(null);
-				
+
 				if (d) {
 					Throwable ex = error;
 					if (ex != null) {
@@ -922,10 +932,11 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 			if (!rs.enter()) {
 				return;
 			}
-			
+
 			if (rs.fusionMode() == NONE) {
 				replayNormal(rs);
-			} else {
+			}
+			else {
 				replayFused(rs);
 			}
 		}
@@ -939,13 +950,14 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		public boolean isDone() {
 			return done;
 		}
-		
+
 		static final class Node<T> extends AtomicReference<Node<T>> {
+
 			/** */
 			private static final long serialVersionUID = 3713592843205853725L;
-			
+
 			final T value;
-			
+
 			public Node(T value) {
 				this.value = value;
 			}
@@ -953,19 +965,18 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 
 		@Override
 		public T poll(ReplaySubscription<T> rs) {
-			@SuppressWarnings("unchecked")
-			Node<T> node = (Node<T>)rs.node();
+			@SuppressWarnings("unchecked") Node<T> node = (Node<T>) rs.node();
 			if (node == null) {
 				node = head;
 				rs.node(node);
 			}
-			
+
 			Node<T> next = node.get();
 			if (next == null) {
 				return null;
 			}
 			rs.node(next);
-			
+
 			return next.value;
 		}
 
@@ -976,8 +987,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 
 		@Override
 		public boolean isEmpty(ReplaySubscription<T> rs) {
-			@SuppressWarnings("unchecked")
-			Node<T> node = (Node<T>)rs.node();
+			@SuppressWarnings("unchecked") Node<T> node = (Node<T>) rs.node();
 			if (node == null) {
 				node = head;
 				rs.node(node);
@@ -987,8 +997,7 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 
 		@Override
 		public int size(ReplaySubscription<T> rs) {
-			@SuppressWarnings("unchecked")
-			Node<T> node = (Node<T>)rs.node();
+			@SuppressWarnings("unchecked") Node<T> node = (Node<T>) rs.node();
 			if (node == null) {
 				node = head;
 			}
@@ -1060,7 +1069,8 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 			final Subscriber<? super T> a = rs.downstream();
 
 			for (; ; ) {
-				@SuppressWarnings("unchecked") TimedNode<T> node = (TimedNode<T>) rs.node();
+				@SuppressWarnings("unchecked") TimedNode<T> node =
+						(TimedNode<T>) rs.node();
 				if (node == null) {
 					node = head;
 					if (!done) {
@@ -1209,8 +1219,8 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		TimedNode<T> latestHead(ReplaySubscription<T> rs) {
 			long now = scheduler.now(TimeUnit.MILLISECONDS) - maxAge;
 
-			TimedNode<T> h = (TimedNode<T>)rs.node();
-			if(h == null){
+			TimedNode<T> h = (TimedNode<T>) rs.node();
+			if (h == null) {
 				h = head;
 			}
 			TimedNode<T> n;
@@ -1339,34 +1349,38 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 			}
 		}
 	}
-	
+
 	interface ReplaySubscription<T> extends Producer, Trackable, QueueSubscription<T> {
 
 		@Override
 		Subscriber<? super T> downstream();
-		
+
 		boolean enter();
+
 		int leave(int missed);
+
 		void produced(long n);
 
 		void node(Object node);
+
 		Object node();
 
 		int tailIndex();
+
 		void tailIndex(int tailIndex);
+
 		int index();
+
 		void index(int index);
 
 		int fusionMode();
 	}
 
-	static final class ReplayProcessorSubscription<T> implements QueueSubscription<T>, 
-	                                                             Producer,
-	                                                             ReplaySubscription<T>,
-	                                                             Receiver {
+	static final class ReplayProcessorSubscription<T>
+			implements QueueSubscription<T>, Producer, ReplaySubscription<T>, Receiver {
 
 		final Subscriber<? super T> actual;
-		
+
 		final ReplayProcessor<T> parent;
 
 		final ReplayBuffer<T> buffer;
@@ -1376,22 +1390,25 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		int tailIndex;
 
 		Object node;
-		
+
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<ReplayProcessorSubscription> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(ReplayProcessorSubscription.class, "wip");
+				AtomicIntegerFieldUpdater.newUpdater(ReplayProcessorSubscription.class,
+						"wip");
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<ReplayProcessorSubscription> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(ReplayProcessorSubscription.class, "requested");
-		
+				AtomicLongFieldUpdater.newUpdater(ReplayProcessorSubscription.class,
+						"requested");
+
 		volatile boolean cancelled;
-		
+
 		int fusionMode;
 
-		public ReplayProcessorSubscription(Subscriber<? super T> actual, ReplayProcessor<T> parent) {
+		public ReplayProcessorSubscription(Subscriber<? super T> actual,
+				ReplayProcessor<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
 			this.buffer = parent.buffer;
@@ -1425,22 +1442,22 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 			}
 			return NONE;
 		}
-		
+
 		@Override
 		public T poll() {
 			return buffer.poll(this);
 		}
-		
+
 		@Override
 		public void clear() {
 			buffer.clear(this);
 		}
-		
+
 		@Override
 		public boolean isEmpty() {
 			return buffer.isEmpty(this);
 		}
-		
+
 		@Override
 		public int size() {
 			return buffer.size(this);
@@ -1455,14 +1472,14 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 				buffer.replay(this);
 			}
 		}
-		
+
 		@Override
 		public void cancel() {
 			if (!cancelled) {
 				cancelled = true;
 
 				parent.remove(this);
-				
+
 				if (enter()) {
 					node = null;
 				}
@@ -1478,8 +1495,6 @@ extends FluxProcessor<T, T> implements Fuseable, MultiProducer, Receiver {
 		public int fusionMode() {
 			return fusionMode;
 		}
-
-
 
 		@Override
 		public Object node() {

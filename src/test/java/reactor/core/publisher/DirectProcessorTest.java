@@ -25,22 +25,22 @@ public class DirectProcessorTest {
 
     @Test(expected = NullPointerException.class)
     public void onNextNull() {
-        new DirectProcessor<Integer>().onNext(null);
+	    DirectProcessor.create().onNext(null);
     }
 
     @Test(expected = NullPointerException.class)
     public void onErrorNull() {
-        new DirectProcessor<Integer>().onError(null);
+	    DirectProcessor.create().onError(null);
     }
 
     @Test(expected = NullPointerException.class)
     public void onSubscribeNull() {
-        new DirectProcessor<Integer>().onSubscribe(null);
+        DirectProcessor.create().onSubscribe(null);
     }
 
     @Test(expected = NullPointerException.class)
     public void subscribeNull() {
-        new DirectProcessor<Integer>().subscribe((Subscriber<Object>)null);
+	    DirectProcessor.create().subscribe((Subscriber<Object>)null);
     }
 
     @Test

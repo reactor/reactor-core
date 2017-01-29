@@ -17,10 +17,16 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import reactor.core.Fuseable;
+import reactor.test.StepVerifier;
+import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class ReplayProcessorTest {
 
@@ -176,176 +182,230 @@ public class ReplayProcessorTest {
     @Test
     public void boundedLong() {
 	    ReplayProcessor<Integer> rp = ReplayProcessor.create(16, false);
-
-	    AssertSubscriber<Integer> ts = AssertSubscriber.create(0L);
-
-	    for (int i = 0; i < 256; i++) {
-            rp.onNext(i);
-        }
-        rp.onComplete();
-
-        rp.subscribe(ts);
-
-        Assert.assertFalse("Has subscribers?", rp.hasDownstreams());
-
-        ts.assertNoValues();
-        
-        ts.request(Long.MAX_VALUE);
-        
-        ts.assertValueCount(16)
-        .assertNoError()
-        .assertComplete();
-    }
-
-    @Test
-    public void fusedUnboundedAfterLong() {
-	    ReplayProcessor<Integer> rp = ReplayProcessor.create(16, true);
-
-	    AssertSubscriber<Integer> ts = AssertSubscriber.create();
-	    ts.requestedFusionMode(Fuseable.ASYNC);
-        
-        for (int i = 0; i < 256; i++) {
-            rp.onNext(i);
-        }
-        rp.onComplete();
-
-        rp.subscribe(ts);
-
-        Assert.assertFalse("Has subscribers?", rp.hasDownstreams());
-
-        ts
-        .assertFuseableSource()
-        .assertFusionMode(Fuseable.ASYNC)
-        .assertValueCount(256)
-        .assertNoError()
-        .assertComplete();
-    }
-
-    @Test
-    public void fusedUnboundedLong() {
-	    ReplayProcessor<Integer> rp = ReplayProcessor.create(16, true);
-
-	    AssertSubscriber<Integer> ts = AssertSubscriber.create();
-	    ts.requestedFusionMode(Fuseable.ASYNC);
-
-        rp.subscribe(ts);
-
-        for (int i = 0; i < 256; i++) {
-            rp.onNext(i);
-        }
-        rp.onComplete();
-
-
-        Assert.assertFalse("Has subscribers?", rp.hasDownstreams());
-
-        ts
-        .assertFuseableSource()
-        .assertFusionMode(Fuseable.ASYNC)
-        .assertValueCount(256)
-        .assertNoError()
-        .assertComplete();
-    }
-
-    @Test
-    public void fusedBoundedAfterLong() {
-	    ReplayProcessor<Integer> rp = ReplayProcessor.create(16, false);
-
-	    AssertSubscriber<Integer> ts = AssertSubscriber.create();
-	    ts.requestedFusionMode(Fuseable.ASYNC);
-        
-        for (int i = 0; i < 256; i++) {
-            rp.onNext(i);
-        }
-        rp.onComplete();
-
-        rp.subscribe(ts);
-
-        Assert.assertFalse("Has subscribers?", rp.hasDownstreams());
-
-        ts
-        .assertFuseableSource()
-        .assertFusionMode(Fuseable.ASYNC)
-        .assertValueCount(16)
-        .assertNoError()
-        .assertComplete();
-    }
-
-    @Test
-    public void fusedBoundedLong() {
-	    ReplayProcessor<Integer> rp = ReplayProcessor.create(16, false);
-
-	    AssertSubscriber<Integer> ts = AssertSubscriber.create();
-	    ts.requestedFusionMode(Fuseable.ASYNC);
-
-	    rp.subscribe(ts);
-
 	    for (int i = 0; i < 256; i++) {
 		    rp.onNext(i);
 	    }
 	    rp.onComplete();
-
-	    Assert.assertFalse("Has subscribers?", rp.hasDownstreams());
-
-	    ts.assertFuseableSource()
-	      .assertFusionMode(Fuseable.ASYNC)
-	      .assertValueCount(256)
-	      .assertNoError()
-	      .assertComplete();
+	    StepVerifier.create(rp.hide())
+	                .expectNextCount(16)
+	                .verifyComplete();
     }
 
-	@Test
-	public void timedFused() throws Exception {
-		ReplayProcessor<Integer> rp =
-				ReplayProcessor.createTimeout(Duration.ofSeconds(1));
+    @Test
+    public void boundedLongError() {
+	    ReplayProcessor<Integer> rp = ReplayProcessor.create(16, false);
+	    for (int i = 0; i < 256; i++) {
+		    rp.onNext(i);
+	    }
+	    rp.onError(new Exception("test"));
+	    StepVerifier.create(rp.hide())
+	                .expectNextCount(16)
+	                .verifyErrorMessage("test");
+    }
 
-		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		ts.requestedFusionMode(Fuseable.ASYNC);
+    @Test
+    public void unboundedFused() {
+	    ReplayProcessor<Integer> rp = ReplayProcessor.create(16, true);
+	    for (int i = 0; i < 256; i++) {
+		    rp.onNext(i);
+	    }
+	    rp.onComplete();
+	    StepVerifier.create(rp)
+	                .expectFusion(Fuseable.ASYNC)
+	                .expectNextCount(256)
+	                .verifyComplete();
+    }
 
-		for (int i = 0; i < 5; i++) {
-			rp.onNext(i);
-		}
-		Thread.sleep(2000);
-		for (int i = 5; i < 10; i++) {
-			rp.onNext(i);
-		}
-		rp.onComplete();
+    @Test
+    public void unboundedFusedError() {
+	    ReplayProcessor<Integer> rp = ReplayProcessor.create(16, true);
+	    for (int i = 0; i < 256; i++) {
+		    rp.onNext(i);
+	    }
+	    rp.onError(new Exception("test"));
+	    StepVerifier.create(rp)
+	                .expectFusion(Fuseable.ASYNC)
+	                .expectNextCount(256)
+	                .verifyErrorMessage("test");
+    }
 
-		rp.log().subscribe(ts);
+    @Test
+    public void boundedFused() {
+	    ReplayProcessor<Integer> rp = ReplayProcessor.create(16, false);
+	    for (int i = 0; i < 256; i++) {
+		    rp.onNext(i);
+	    }
+	    rp.onComplete();
+	    StepVerifier.create(rp)
+	                .expectFusion(Fuseable.ASYNC)
+	                .expectNextCount(256)
+	                .verifyComplete();
+    }
 
-		Assert.assertFalse("Has subscribers?", rp.hasDownstreams());
+    @Test
+    public void boundedFusedError() {
+	    ReplayProcessor<Integer> rp = ReplayProcessor.create(16, false);
+	    for (int i = 0; i < 256; i++) {
+		    rp.onNext(i);
+	    }
+	    rp.onError(new Exception("test"));
+	    StepVerifier.create(rp)
+	                .expectFusion(Fuseable.ASYNC)
+	                .expectNextCount(16)
+	                .verifyErrorMessage("test");
+    }
 
-		ts.assertFuseableSource()
-		  .assertFusionMode(Fuseable.ASYNC)
-		  .assertValueCount(5)
-		  .assertValues(5,6,7,8,9)
-		  .assertNoError()
-		  .assertComplete();
-	}
+    @Test
+    public void boundedFusedAfter() {
+	    ReplayProcessor<Integer> rp = ReplayProcessor.create(16, false);
+
+	    StepVerifier.create(rp)
+	                .expectFusion(Fuseable.ASYNC)
+	                .then(() -> {
+		                for (int i = 0; i < 256; i++) {
+			                rp.onNext(i);
+		                }
+		                rp.onComplete();
+	                })
+	                .expectNextCount(256)
+	                .verifyComplete();
+    }
 
 	@Test
 	public void timed() throws Exception {
 		ReplayProcessor<Integer> rp =
 				ReplayProcessor.createTimeout(Duration.ofSeconds(1));
 
-		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-
 		for (int i = 0; i < 5; i++) {
 			rp.onNext(i);
 		}
-		Thread.sleep(2000);
+
+		VirtualTimeScheduler.get().advanceTimeBy(Duration.ofSeconds(2));
+
 		for (int i = 5; i < 10; i++) {
 			rp.onNext(i);
 		}
 		rp.onComplete();
 
-		rp.subscribe(ts);
+		StepVerifier.create(rp.hide())
+		            .expectFusion(Fuseable.NONE)
+		            .expectNext(5,6,7,8,9)
+		            .verifyComplete();
+	}
 
-		Assert.assertFalse("Has subscribers?", rp.hasDownstreams());
+	@Test
+	public void timedError() throws Exception {
+		ReplayProcessor<Integer> rp =
+				ReplayProcessor.createTimeout(Duration.ofSeconds(1));
 
-		ts.assertValueCount(5)
-		  .assertNoError()
-		  .assertValues(5,6,7,8,9)
-		  .assertComplete();
+		for (int i = 0; i < 5; i++) {
+			rp.onNext(i);
+		}
+
+		VirtualTimeScheduler.get().advanceTimeBy(Duration.ofSeconds(2));
+
+		for (int i = 5; i < 10; i++) {
+			rp.onNext(i);
+		}
+		rp.onError(new Exception("test"));
+
+		StepVerifier.create(rp.hide())
+		            .expectNext(5,6,7,8,9)
+		            .verifyErrorMessage("test");
+	}
+
+
+
+	@Test
+	public void timedAfter() throws Exception {
+		ReplayProcessor<Integer> rp =
+				ReplayProcessor.createTimeout(Duration.ofSeconds(1));
+
+		StepVerifier.create(rp.hide())
+		            .expectFusion(Fuseable.NONE)
+		            .then(() -> {
+			            for (int i = 0; i < 5; i++) {
+				            rp.onNext(i);
+			            }
+
+			            VirtualTimeScheduler.get().advanceTimeBy(Duration.ofSeconds(2));
+
+			            for (int i = 5; i < 10; i++) {
+				            rp.onNext(i);
+			            }
+			            rp.onComplete();
+		            })
+		            .expectNext(0,1,2,3,4,5,6,7,8,9)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void timedFused() throws Exception {
+		ReplayProcessor<Integer> rp =
+				ReplayProcessor.createTimeout(Duration.ofSeconds(1));
+
+
+		for (int i = 0; i < 5; i++) {
+			rp.onNext(i);
+		}
+
+		VirtualTimeScheduler.get().advanceTimeBy(Duration.ofSeconds(2));
+
+		for (int i = 5; i < 10; i++) {
+			rp.onNext(i);
+		}
+		rp.onComplete();
+
+		StepVerifier.create(rp)
+		            .expectFusion(Fuseable.NONE)
+		            .expectNext(5,6,7,8,9)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void timedFusedError() throws Exception {
+		ReplayProcessor<Integer> rp =
+				ReplayProcessor.createTimeout(Duration.ofSeconds(1));
+
+
+		for (int i = 0; i < 5; i++) {
+			rp.onNext(i);
+		}
+
+		VirtualTimeScheduler.get().advanceTimeBy(Duration.ofSeconds(2));
+
+		for (int i = 5; i < 10; i++) {
+			rp.onNext(i);
+		}
+		rp.onError(new Exception("test"));
+
+		StepVerifier.create(rp)
+		            .expectFusion(Fuseable.NONE)
+		            .expectNext(5,6,7,8,9)
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void timedFusedAfter() throws Exception {
+		ReplayProcessor<Integer> rp =
+				ReplayProcessor.createTimeout(Duration.ofSeconds(1));
+
+		StepVerifier.create(rp)
+		            .expectFusion(Fuseable.NONE)
+		            .then(() -> {
+			            for (int i = 0; i < 5; i++) {
+				            rp.onNext(i);
+			            }
+
+			            VirtualTimeScheduler.get().advanceTimeBy(Duration.ofSeconds(2));
+
+			            for (int i = 5; i < 10; i++) {
+				            rp.onNext(i);
+			            }
+			            rp.onComplete();
+		            })
+		            .expectNext(0,1,2,3,4,5,6,7,8,9)
+		            .verifyComplete();
 	}
 
 	@Test
@@ -353,28 +413,74 @@ public class ReplayProcessorTest {
 		ReplayProcessor<Integer> rp =
 				ReplayProcessor.createSizeAndTimeout(5, Duration.ofSeconds(1));
 
-		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		for (int i = 0; i < 10; i++) {
 			rp.onNext(i);
 		}
-		System.out.println("----");
-		Thread.sleep(2000);
+
+		VirtualTimeScheduler.get().advanceTimeBy(Duration.ofSeconds(2));
+
 		for (int i = 10; i < 20; i++) {
 			rp.onNext(i);
 		}
 		rp.onComplete();
 
-		rp.log()
-		  .subscribe(ts);
+		StepVerifier.create(rp.hide())
+		            .expectFusion(Fuseable.NONE)
+		            .expectNext(15,16,17,18,19)
+		            .verifyComplete();
+
+		Assert.assertFalse("Has subscribers?", rp.hasDownstreams());
+    }
+
+	@Test
+	public void timedAndBoundError() throws Exception {
+		ReplayProcessor<Integer> rp =
+				ReplayProcessor.createSizeAndTimeout(5, Duration.ofSeconds(1));
 
 
-        Assert.assertFalse("Has subscribers?", rp.hasDownstreams());
+		for (int i = 0; i < 10; i++) {
+			rp.onNext(i);
+		}
 
-        ts.assertValueCount(5)
-          .assertValues(15,16,17,18,19)
-          .assertNoError()
-          .assertComplete();
+		VirtualTimeScheduler.get().advanceTimeBy(Duration.ofSeconds(2));
+
+		for (int i = 10; i < 20; i++) {
+			rp.onNext(i);
+		}
+		rp.onError(new Exception("test"));
+
+		StepVerifier.create(rp.hide())
+		            .expectFusion(Fuseable.NONE)
+		            .expectNext(15,16,17,18,19)
+		            .verifyErrorMessage("test");
+
+		Assert.assertFalse("Has subscribers?", rp.hasDownstreams());
+    }
+
+	@Test
+	public void timedAndBoundAfter() throws Exception {
+		ReplayProcessor<Integer> rp =
+				ReplayProcessor.createSizeAndTimeout(5, Duration.ofSeconds(1));
+
+		StepVerifier.create(rp.hide())
+		            .expectFusion(Fuseable.NONE)
+		            .then(() -> {
+			            for (int i = 0; i < 10; i++) {
+				            rp.onNext(i);
+			            }
+
+			            VirtualTimeScheduler.get().advanceTimeBy(Duration.ofSeconds(2));
+
+			            for (int i = 10; i < 20; i++) {
+				            rp.onNext(i);
+			            }
+			            rp.onComplete();
+		            })
+		            .expectNextCount(20)
+		            .verifyComplete();
+
+		Assert.assertFalse("Has subscribers?", rp.hasDownstreams());
     }
 
 	@Test
@@ -382,30 +488,72 @@ public class ReplayProcessorTest {
 		ReplayProcessor<Integer> rp =
 				ReplayProcessor.createSizeAndTimeout(5, Duration.ofSeconds(1));
 
-		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		ts.requestedFusionMode(Fuseable.ASYNC);
 
 		for (int i = 0; i < 10; i++) {
 			rp.onNext(i);
 		}
-		System.out.println("----");
-		Thread.sleep(2000);
+
+		VirtualTimeScheduler.get().advanceTimeBy(Duration.ofSeconds(2));
+
 		for (int i = 10; i < 20; i++) {
 			rp.onNext(i);
 		}
 		rp.onComplete();
 
-		rp.log()
-		  .subscribe(ts);
+		StepVerifier.create(rp)
+		            .expectFusion(Fuseable.ASYNC)
+		            .expectNext(15,16,17,18,19)
+		            .verifyComplete();
 
 		Assert.assertFalse("Has subscribers?", rp.hasDownstreams());
-
-		ts.assertFuseableSource()
-		  .assertFusionMode(Fuseable.ASYNC)
-		  .assertValueCount(5)
-		  .assertValues(15,16,17,18,19)
-		  .assertNoError()
-		  .assertComplete();
 	}
 
+	@Test
+	public void timedAndBoundFusedError() throws Exception {
+		ReplayProcessor<Integer> rp =
+				ReplayProcessor.createSizeAndTimeout(5, Duration.ofSeconds(1));
+
+
+		for (int i = 0; i < 10; i++) {
+			rp.onNext(i);
+		}
+
+		VirtualTimeScheduler.get().advanceTimeBy(Duration.ofSeconds(2));
+
+		for (int i = 10; i < 20; i++) {
+			rp.onNext(i);
+		}
+		rp.onError(new Exception("test"));
+
+		StepVerifier.create(rp)
+		            .expectFusion(Fuseable.ASYNC)
+		            .expectNext(15,16,17,18,19)
+		            .verifyErrorMessage("test");
+
+		Assert.assertFalse("Has subscribers?", rp.hasDownstreams());
+	}
+
+	@Test
+	public void onSubscribeAndState(){
+    	ReplayProcessor<?> rp = ReplayProcessor.create(1);
+
+    	assertThat(rp.isStarted()).isFalse();
+    	assertThat(rp.getCapacity()).isEqualTo(1);
+    	rp.connect();
+		assertThat(rp.connectSink().isCancelled()).isTrue();
+		rp.onComplete();
+		assertThat(rp.connectSink().isCancelled()).isTrue();
+		assertThat(rp.isStarted()).isTrue();
+
+	}
+
+	@Before
+	public void virtualTime(){
+    	VirtualTimeScheduler.getOrSet(false);
+	}
+
+	@After
+	public void teardownVirtualTime(){
+		VirtualTimeScheduler.reset();
+	}
 }
