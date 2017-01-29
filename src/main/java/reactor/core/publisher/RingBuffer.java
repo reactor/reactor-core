@@ -103,7 +103,7 @@ abstract class RingBuffer<E> implements LongSupplier {
 			Runnable spinObserver) {
 		SingleProducerSequencer sequencer = new SingleProducerSequencer(bufferSize, waitStrategy, spinObserver);
 
-		if (hasUnsafe()) {
+		if (hasUnsafe() && QueueSupplier.isPowerOfTwo(bufferSize)) {
 			return new UnsafeRingBuffer<>(factory, sequencer);
 		}
 		else {
