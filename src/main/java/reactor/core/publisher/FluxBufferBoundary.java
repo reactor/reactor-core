@@ -114,7 +114,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 		BufferBoundaryMain(Subscriber<? super C> actual,
 				C buffer,
 				Supplier<C> bufferSupplier) {
-			this.actual = actual;
+			this.actual = Operators.serialize(actual);
 			this.buffer = buffer;
 			this.bufferSupplier = bufferSupplier;
 		}

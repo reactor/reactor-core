@@ -15,11 +15,14 @@
  */
 package reactor.core.publisher;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Exceptions;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -147,6 +150,170 @@ public class FluxCreateTest {
 		            .verifyComplete();
 	}
 
+
+	@Test
+	public void fluxCreateSerialized() {
+		Flux<String> created = Flux.create(s -> {
+			s = s.serialize();
+			s.next("test1");
+			s.next("test2");
+			s.next("test3");
+			s.complete();
+		});
+
+		assertThat(created.getPrefetch()).isEqualTo(-1);
+
+		StepVerifier.create(created)
+		            .expectNext("test1", "test2", "test3")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void fluxCreateSerialized2(){
+		StepVerifier.create(Flux.create(s -> {
+			s = s.serialize();
+			s.next("test1");
+			s.next("test2");
+			s.next("test3");
+			s.complete();
+		}).publishOn(Schedulers.parallel()))
+		            .expectNext("test1", "test2", "test3")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void fluxCreateSerializedError() {
+		Flux<String> created = Flux.create(s -> {
+			s = s.serialize();
+			s.next("test1");
+			s.next("test2");
+			s.next("test3");
+			s.error(new Exception("test"));
+		});
+
+		StepVerifier.create(created)
+		            .expectNext("test1", "test2", "test3")
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void fluxCreateSerializedError2() {
+		Flux<String> created = Flux.create(s -> {
+			s = s.serialize();
+			s.error(new Exception("test"));
+		});
+
+		StepVerifier.create(created)
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void fluxCreateSerializedEmpty() {
+		Flux<String> created = Flux.create(s ->{
+			s = s.serialize();
+			s.complete();
+		});
+
+		StepVerifier.create(created)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void fluxCreateSerializedCancelled() {
+		AtomicBoolean invoked = new AtomicBoolean();
+		Flux<String> created = Flux.create(s -> {
+			s = s.serialize();
+			s.setCancellation(() -> invoked.set(true));
+			s.next("test1");
+			s.next("test2");
+			s.next("test3");
+			assertThat(s.isCancelled()).isTrue();
+			s.complete();
+		});
+
+		StepVerifier.create(created)
+		            .expectNext("test1", "test2", "test3")
+		            .thenCancel()
+		            .verify();
+
+		assertThat(invoked.get()).isTrue();
+	}
+
+	@Test
+	public void fluxCreateSerializedBackpressured() {
+		Flux<String> created = Flux.create(s -> {
+			s = s.serialize();
+			assertThat(s.requestedFromDownstream()).isEqualTo(1);
+			s.next("test1");
+			s.next("test2");
+			s.next("test3");
+			s.complete();
+		});
+
+		StepVerifier.create(created, 1)
+		            .expectNext("test1")
+		            .thenAwait()
+		            .thenRequest(2)
+		            .expectNext("test2", "test3")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void fluxCreateSerializedConcurrent() {
+		Scheduler.Worker w1 = Schedulers.parallel().createWorker();
+		Scheduler.Worker w2 = Schedulers.parallel().createWorker();
+		CountDownLatch latch = new CountDownLatch(1);
+		CountDownLatch latch2 = new CountDownLatch(1);
+		AtomicReference<Thread> ref = new AtomicReference<>();
+
+		ref.set(Thread.currentThread());
+
+		Flux<String> created = Flux.create(s -> {
+			FluxSink<String> serialized = s.serialize();
+			w1.schedule(() -> serialized.next("test1"));
+			try {
+				latch2.await();
+			}
+			catch (InterruptedException e) {
+				Assert.fail();
+			}
+			w2.schedule(() -> {
+				serialized.next("test2");
+				serialized.next("test3");
+				serialized.complete();
+				latch.countDown();
+			});
+		}, FluxSink.OverflowStrategy.IGNORE);
+
+		try {
+			StepVerifier.create(created)
+			            .assertNext(s -> {
+				            assertThat(s).isEqualTo("test1");
+				            assertThat(ref.get()).isNotEqualTo(Thread.currentThread());
+				            ref.set(Thread.currentThread());
+				            latch2.countDown();
+				            try {
+					            latch.await();
+				            }
+				            catch (InterruptedException e) {
+					            Assert.fail();
+				            }
+			            })
+			            .assertNext(s -> {
+			            	assertThat(ref.get()).isEqualTo(Thread.currentThread());
+				            assertThat(s).isEqualTo("test2");
+			            })
+			            .assertNext(s -> {
+			            	assertThat(ref.get()).isEqualTo(Thread.currentThread());
+				            assertThat(s).isEqualTo("test3");
+			            })
+			            .verifyComplete();
+		}
+		finally {
+			w1.dispose();
+			w2.dispose();
+		}
+	}
 
 	@Test
 	public void fluxCreateLatest() {
