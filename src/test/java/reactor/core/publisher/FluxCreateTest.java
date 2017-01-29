@@ -260,8 +260,8 @@ public class FluxCreateTest {
 
 	@Test
 	public void fluxCreateSerializedConcurrent() {
-		Scheduler.Worker w1 = Schedulers.parallel().createWorker();
-		Scheduler.Worker w2 = Schedulers.parallel().createWorker();
+		Scheduler.Worker w1 = Schedulers.elastic().createWorker();
+		Scheduler.Worker w2 = Schedulers.elastic().createWorker();
 		CountDownLatch latch = new CountDownLatch(1);
 		CountDownLatch latch2 = new CountDownLatch(1);
 		AtomicReference<Thread> ref = new AtomicReference<>();
