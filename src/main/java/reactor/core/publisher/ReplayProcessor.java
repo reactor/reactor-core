@@ -422,7 +422,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 	@Override
 	public long getPrefetch() {
-		return Long.MAX_VALUE;
+		return Integer.MAX_VALUE;
 	}
 
 	@Override
@@ -958,7 +958,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 			final T value;
 
-			public Node(T value) {
+			Node(T value) {
 				this.value = value;
 			}
 		}
@@ -1034,7 +1034,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 			final T    value;
 			final long time;
 
-			public TimedNode(T value, long time) {
+			TimedNode(T value, long time) {
 				this.value = value;
 				this.time = time;
 			}
@@ -1052,7 +1052,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		Throwable error;
 		volatile boolean done;
 
-		public SizeAndTimeBoundReplayBuffer(int limit,
+		SizeAndTimeBoundReplayBuffer(int limit,
 				long maxAge,
 				TimedScheduler scheduler) {
 			this.limit = limit;
@@ -1407,7 +1407,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 		int fusionMode;
 
-		public ReplayProcessorSubscription(Subscriber<? super T> actual,
+		ReplayProcessorSubscription(Subscriber<? super T> actual,
 				ReplayProcessor<T> parent) {
 			this.actual = actual;
 			this.parent = parent;

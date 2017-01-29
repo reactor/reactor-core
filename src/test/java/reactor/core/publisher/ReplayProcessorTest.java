@@ -16,11 +16,14 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.Iterator;
 
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import reactor.core.Disposable;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.test.StepVerifier;
 import reactor.test.scheduler.VirtualTimeScheduler;
@@ -534,17 +537,64 @@ public class ReplayProcessorTest {
 	}
 
 	@Test
-	public void onSubscribeAndState(){
-    	ReplayProcessor<?> rp = ReplayProcessor.create(1);
+	public void timedAndBoundedOnSubscribeAndState(){
+		testReplayProcessorState(ReplayProcessor.createSizeAndTimeout(1, Duration.ofSeconds(1)));
+	}
 
-    	assertThat(rp.isStarted()).isFalse();
-    	assertThat(rp.getCapacity()).isEqualTo(1);
-    	rp.connect();
+	@Test
+	public void timedOnSubscribeAndState(){
+		testReplayProcessorState(ReplayProcessor.createTimeout(Duration.ofSeconds(1)));
+	}
+
+	@Test
+	public void unboundedOnSubscribeAndState(){
+		testReplayProcessorState(ReplayProcessor.create(1, true));
+	}
+
+	@Test
+	public void boundedOnSubscribeAndState(){
+    	testReplayProcessorState(ReplayProcessor.cacheLast());
+	}
+
+	@SuppressWarnings("unchecked")
+	void testReplayProcessorState(ReplayProcessor<String> rp){
+		Disposable d1 = rp.subscribe();
+
+		rp.subscribe();
+
+		ReplayProcessor.ReplayProcessorSubscription<String> s =
+				((Iterator<ReplayProcessor.ReplayProcessorSubscription>)rp
+						.downstreams()).next();
+
+		assertThat(d1).isEqualTo(s.downstream());
+
+		assertThat(s.isEmpty()).isTrue();
+		assertThat(s.isCancelled()).isFalse();
+		assertThat(s.isCancelled()).isFalse();
+
+		assertThat(rp.isStarted()).isFalse();
+		assertThat(rp.getPrefetch()).isEqualTo(Integer.MAX_VALUE);
+		if(rp.getCapacity() != Integer.MAX_VALUE) {
+			assertThat(rp.getCapacity()).isEqualTo(1);
+		}
+		BlockingSink<String> sink = rp.connectSink();
 		assertThat(rp.connectSink().isCancelled()).isTrue();
 		rp.onComplete();
 		assertThat(rp.connectSink().isCancelled()).isTrue();
 		assertThat(rp.isStarted()).isTrue();
 
+		rp.onComplete();
+
+		assertThat(sink.emit("test").isCancelled()).isTrue();
+
+		Exception e = new RuntimeException("test");
+		try{
+			rp.onError(e);
+			Assert.fail();
+		}
+		catch (Exception t){
+			assertThat(Exceptions.unwrap(t)).isEqualTo(e);
+		}
 	}
 
 	@Before
