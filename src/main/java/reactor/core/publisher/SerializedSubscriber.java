@@ -55,7 +55,7 @@ final class SerializedSubscriber<T> implements Subscriber<T>, Subscription, Rece
 
 	Subscription s;
 
-	public SerializedSubscriber(Subscriber<? super T> actual) {
+	SerializedSubscriber(Subscriber<? super T> actual) {
 		this.actual = actual;
 	}
 

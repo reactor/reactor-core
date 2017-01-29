@@ -243,7 +243,8 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 				}).as(scenario.body());
 
 				if (scenario.prefetch() != UNSPECIFIED) {
-					assertThat(f.getPrefetch()).isEqualTo(scenario.prefetch());
+					assertThat(Math.min(f.getPrefetch(), Integer.MAX_VALUE)).isEqualTo
+							(scenario.prefetch());
 				}
 
 				if (f instanceof Loopback) {
@@ -255,8 +256,9 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 				f = f.filter(t -> true);
 
 				if (scenario.prefetch() != UNSPECIFIED) {
-					assertThat(((Flux) (((Receiver) f).upstream())).getPrefetch()).isEqualTo(
-							scenario.prefetch());
+					assertThat(Math.min(((Flux) (((Receiver) f).upstream()))
+							.getPrefetch(), Integer.MAX_VALUE)).isEqualTo(scenario
+							.prefetch());
 				}
 
 				if (((Receiver) f).upstream() instanceof Loopback) {
@@ -298,7 +300,7 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 				                                                .as(scenario.body());
 
 				if (source.getPrefetch() != UNSPECIFIED) {
-					assertThat(source.getPrefetch()).isEqualTo(scenario.prefetch());
+					assertThat(Math.min(source.getPrefetch(), Integer.MAX_VALUE)).isEqualTo(scenario.prefetch());
 				}
 
 				f = source.doOnSubscribe(parent -> {
@@ -344,7 +346,8 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 				source = source.filter(t -> true);
 
 				if (scenario.prefetch() != UNSPECIFIED) {
-					assertThat(((Flux) (((Receiver) source).upstream())).getPrefetch()).isEqualTo(
+					assertThat(Math.min(((Flux) (((Receiver) source).upstream()))
+							.getPrefetch(), Integer.MAX_VALUE)).isEqualTo(
 							scenario.prefetch());
 				}
 
@@ -386,6 +389,7 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 						step.verifyErrorMessage(m);
 					}
 					catch (Exception e) {
+						e.printStackTrace();
 						assertThat(Exceptions.unwrap(e)).hasMessage(m);
 					}
 				};

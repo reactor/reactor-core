@@ -547,6 +547,7 @@ public abstract class Operators {
 			return false;
 		}
 		if (a != null) {
+			a.cancel();
 			reportSubscriptionSet();
 			return false;
 		}
@@ -567,6 +568,29 @@ public abstract class Operators {
 		return false;
 	}
 
+	/**
+	 * Atomically terminates the subscription if it is not already a
+	 * {@link #cancelledSubscription()}, cancelling the subscription and setting the field
+	 * to the singleton {@link #cancelledSubscription()}.
+	 *
+	 * @param <F> the instance type containing the field
+	 * @param field the field accessor
+	 * @param instance the parent instance
+	 * @return true if terminated or null, false if the subscription was already
+	 * terminated
+	 */
+	public static <F> boolean setTerminated(AtomicReferenceFieldUpdater<F,
+			Subscription> field,
+			F instance) {
+		Subscription a = field.get(instance);
+		if (a != CancelledSubscription.INSTANCE) {
+			a = field.getAndSet(instance, CancelledSubscription.INSTANCE);
+			if (a == null || a != CancelledSubscription.INSTANCE) {
+				return true;
+			}
+		}
+		return false;
+	}
 	/**
 	 * Cap a substraction to 0
 	 *
@@ -802,10 +826,10 @@ public abstract class Operators {
 
 			if (a != cancelledSubscription()) {
 				s.cancel();
+				reportSubscriptionSet();
 				return false;
 			}
 
-			reportSubscriptionSet();
 			return false;
 		}
 

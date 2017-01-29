@@ -29,7 +29,42 @@ import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FluxBufferBoundaryTest {
+public class FluxBufferBoundaryTest
+		extends AbstractFluxOperatorTest<String, List<String>> {
+
+	@Override
+	protected Scenario<String, List<String>> defaultScenarioOptions(Scenario<String, List<String>> defaultOptions) {
+		return defaultOptions.prefetch(Integer.MAX_VALUE);
+	}
+
+	@Override
+	protected List<Scenario<String, List<String>>> scenarios_errorInOperatorCallback() {
+		return Arrays.asList(
+
+				scenario(f -> f.buffer(Flux.never(),
+						() -> null)).verifier(step -> step.verifyError(
+						NullPointerException.class)),
+
+				scenario(f -> f.buffer(Flux.never(), () -> {
+					throw exception();
+				})));
+	}
+
+	@Override
+	protected List<Scenario<String, List<String>>> scenarios_threeNextAndComplete() {
+		return Arrays.asList(scenario(f -> f.buffer(Mono.never())).verifier(step -> step
+						.assertNext(s -> assertThat(s).containsExactly(item(0), item(1), item(2)))
+						.verifyComplete()),
+
+				scenario(f -> f.buffer(Mono.just(1))).verifier(step -> step
+						.verifyComplete())
+		);
+	}
+
+	@Override
+	protected List<Scenario<String, List<String>>> scenarios_errorFromUpstreamFailure() {
+		return Arrays.asList(scenario(f -> f.buffer(Flux.never())));
+	}
 
 	@Test
 	public void normal() {
