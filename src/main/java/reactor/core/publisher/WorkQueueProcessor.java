@@ -635,7 +635,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 	@Override
 	public long getPending() {
-		return ringBuffer.remainingCapacity() + claimedDisposed.size();
+		return (getCapacity() - getPending()) + claimedDisposed.size();
 	}
 
 	@Override
@@ -885,7 +885,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 								return !processor.alive();
 							}
 
-							barrier.waitFor(cursor);
+							barrier.waitFor(cursor, waiter);
 
 							v = processor.ringBuffer.get(cursor).value;
 

@@ -194,12 +194,12 @@ abstract class RingBuffer<E> implements LongSupplier {
 	 * the list of gating sequences and not RESET to the current ringbuffer cursor.
 	 * @param gatingSequence The sequences to add.
 	 */
-	abstract public void addGatingSequence(Sequence gatingSequence);
+	abstract void addGatingSequence(Sequence gatingSequence);
 
 	/**
 	 * @return the fixed buffer size
 	 */
-	abstract public int bufferSize();
+	abstract int bufferSize();
 
 	/**
 	 * <p>Get the event for a given sequence in the RingBuffer.</p>
@@ -209,12 +209,13 @@ abstract class RingBuffer<E> implements LongSupplier {
 	 * RingBuffer#publish(long)}.</p>
 	 *
 	 * <p>Secondly use this call when consuming data from the ring buffer.  After calling {@link
-	 * Reader#waitFor(long)} call this method with any value greater than that your current consumer sequence
-	 * and less than or equal to the value returned from the {@link Reader#waitFor(long)} method.</p>
+	 * Reader#waitFor)} call this method with any value greater than that your
+	 * current consumer sequence
+	 * and less than or equal to the value returned from the {@link Reader#waitFor)} method.</p>
 	 * @param sequence for the event
 	 * @return the event for the given sequence
 	 */
-	abstract public E get(long sequence);
+	abstract E get(long sequence);
 
 	@Override
 	public long getAsLong() {
@@ -229,42 +230,32 @@ abstract class RingBuffer<E> implements LongSupplier {
      * See {@code SingleProducerSequencer}
 	 * @return the current cursor value
 	 */
-	abstract public long getCursor();
+	abstract long getCursor();
 
 	/**
 	 * Get the minimum sequence value from all of the gating sequences added to this ringBuffer.
 	 * @return The minimum gating sequence or the cursor sequence if no sequences have been added.
 	 */
-	abstract public long getMinimumGatingSequence();
+	abstract long getMinimumGatingSequence();
 
 	/**
 	 * Get the minimum sequence value from all of the gating sequences added to this ringBuffer.
 	 * @param sequence the target sequence
 	 * @return The minimum gating sequence or the cursor sequence if no sequences have been added.
 	 */
-	abstract public long getMinimumGatingSequence(Sequence sequence);
+	abstract long getMinimumGatingSequence(Sequence sequence);
 
 	/**
 	 * Get the buffered count
 	 * @return the buffered count
 	 */
-	abstract public int getPending();
-
-	/**
-	 * Get the current cursor value for the ring buffer.  The actual value recieved will depend on the type of {@code
-	 * RingBufferProducer} that is being used.
-     * <p>
-     * See {@code MultiProducerRingBuffer}.
-     * See {@code SingleProducerSequencer}.
-	 * @return the current cursor sequence
-	 */
-	abstract public Sequence getSequence();
+	abstract int getPending();
 
 	/**
 	 *
 	 * @return the current list of read cursors
 	 */
-	public Sequence[] getSequenceReceivers() {
+	Sequence[] getSequenceReceivers() {
 		return getSequencer().getGatingSequences();
 	}
 
@@ -276,7 +267,7 @@ abstract class RingBuffer<E> implements LongSupplier {
 	 * @return A sequence barrier that will track the ringbuffer.
 	 * @see Reader
 	 */
-	abstract public Reader newReader();
+	abstract Reader newReader();
 
 	/**
 	 * Increment and return the next sequence for the ring buffer.  Calls of this method should ensure that they always
@@ -294,7 +285,7 @@ abstract class RingBuffer<E> implements LongSupplier {
 	 * @see RingBuffer#publish(long)
 	 * @see RingBuffer#get(long)
 	 */
-	abstract public long next();
+	abstract long next();
 
 	/**
 	 * The same functionality as {@link RingBuffer#next()}, but allows the caller to claim the next n sequences.
@@ -303,35 +294,19 @@ abstract class RingBuffer<E> implements LongSupplier {
 	 * @param n number of slots to claim
 	 * @return sequence number of the highest slot claimed
 	 */
-	abstract public long next(int n);
+	abstract long next(int n);
 
 	/**
 	 * Publish the specified sequence.  This action marks this particular message as being available to be read.
 	 * @param sequence the sequence to publish.
 	 */
-	abstract public void publish(long sequence);
-
-	/**
-	 * Publish the specified sequences.  This action marks these particular messages as being available to be read.
-	 * <p>
-     * See {@code RingBufferProducer.next(int)}
-	 * @param lo the lowest sequence number to be published
-	 * @param hi the highest sequence number to be published
-	 */
-	abstract public void publish(long lo, long hi);
-
-	/**
-	 * Get the remaining capacity for this ringBuffer.
-	 * @return The number of slots remaining.
-	 */
-	abstract public long remainingCapacity();
-
+	abstract void publish(long sequence);
 	/**
 	 * Remove the specified sequence from this ringBuffer.
 	 * @param sequence to be removed.
 	 * @return <tt>true</tt> if this sequence was found, <tt>false</tt> otherwise.
 	 */
-	abstract public boolean removeGatingSequence(Sequence sequence);
+	abstract boolean removeGatingSequence(Sequence sequence);
 
 	abstract RingBufferProducer getSequencer();/*
 
@@ -348,19 +323,9 @@ abstract class RingBuffer<E> implements LongSupplier {
 	static boolean hasUnsafe0() {
 
 		try {
-			return !isAndroid() && UnsafeSupport.hasUnsafe();
+			return UnsafeSupport.hasUnsafe();
 		} catch (Throwable t) {
 			// Probably failed to initialize Reactor0.
-			return false;
-		}
-	}
-
-	static boolean isAndroid() {
-		try {
-			Class.forName("android.app.Application", false, UnsafeSupport.getSystemClassLoader());
-			return true;
-		} catch (Exception e) {
-			// Failed to load the class uniquely available in Android.
 			return false;
 		}
 	}
@@ -375,7 +340,7 @@ abstract class RingBuffer<E> implements LongSupplier {
 	 * <p>Also attempts to be more efficient with regards to false
 	 * sharing by adding padding around the volatile field.
 	 */
-	public interface Sequence extends LongSupplier
+	interface Sequence extends LongSupplier
 	{
 	    long INITIAL_VALUE = -1L;
 
@@ -397,16 +362,6 @@ abstract class RingBuffer<E> implements LongSupplier {
 	    void set(long value);
 
 	    /**
-	     * Performs a volatile write of this sequence.  The intent is
-	     * a Store/Store barrier between this write and any previous
-	     * write and a Store/Load barrier between this write and any
-	     * subsequent volatile read.
-	     *
-	     * @param value The new value for the sequence.
-	     */
-	    void setVolatile(long value);
-
-	    /**
 	     * Perform a compare and set operation on the sequence.
 	     *
 	     * @param expectedValue The expected current value.
@@ -415,27 +370,13 @@ abstract class RingBuffer<E> implements LongSupplier {
 	     */
 	    boolean compareAndSet(long expectedValue, long newValue);
 
-	    /**
-	     * Atomically increment the sequence by one.
-	     *
-	     * @return The value after the increment
-	     */
-	    long incrementAndGet();
-
-	    /**
-	     * Atomically add the supplied value.
-	     *
-	     * @param increment The value to add to the sequence.
-	     * @return The value after the increment.
-	     */
-	    long addAndGet(final long increment);
 	}
 
 	/**
 	 * Used for Gating ringbuffer consumers on a cursor sequence and optional dependent ringbuffer consumer(s),
 	 * using the given WaitStrategy.
 	 */
-	static final class Reader implements Runnable, LongSupplier {
+	static final class Reader {
 	    private final WaitStrategy waitStrategy;
 	    private volatile boolean alerted = false;
 	    private final Sequence cursorSequence;
@@ -452,34 +393,17 @@ abstract class RingBuffer<E> implements LongSupplier {
 	    /**
 	     * Wait for the given sequence to be available for consumption.
 	     *
-	     * @param sequence to wait for
-	     * @return the sequence up to which is available
-	     * @throws InterruptedException if the thread needs awaking on a condition variable.
-	     */
-	    public long waitFor(final long sequence)
-			    throws InterruptedException {
-	        checkAlert();
-
-	        long availableSequence = waitStrategy.waitFor(sequence, cursorSequence, this);
-
-	        if (availableSequence < sequence) {
-	            return availableSequence;
-	        }
-
-	        return sequenceProducer.getHighestPublishedSequence(sequence, availableSequence);
-	    }
-
-	    /**
-	     * Wait for the given sequence to be available for consumption.
-	     *
 	     * @param consumer a spin observer to invoke when nothing is available to read
 	     * @param sequence to wait for
 	     * @return the sequence up to which is available
 	     * @throws InterruptedException if the thread needs awaking on a condition variable.
 	     */
-	    public long waitFor(final long sequence, Runnable consumer)
+	    long waitFor(final long sequence, Runnable consumer)
 			    throws InterruptedException {
-	        checkAlert();
+		    if (alerted)
+		    {
+			    WaitStrategy.alert();
+		    }
 
 	        long availableSequence = waitStrategy.waitFor(sequence, cursorSequence, consumer);
 
@@ -494,14 +418,14 @@ abstract class RingBuffer<E> implements LongSupplier {
 	         *
 	         * @return true if in alert otherwise false.
 	         */
-	    public boolean isAlerted() {
+	    boolean isAlerted() {
 	        return alerted;
 	    }
 
 	    /**
 	         * Alert the ringbuffer consumers of a status change and stay in this status until cleared.
 	         */
-	    public void alert() {
+	    void alert() {
 	        alerted = true;
 	        waitStrategy.signalAllWhenBlocking();
 	    }
@@ -509,35 +433,15 @@ abstract class RingBuffer<E> implements LongSupplier {
 	    /**
 	         * Signal the ringbuffer consumers.
 	         */
-	    public void signal() {
+	    void signal() {
 	        waitStrategy.signalAllWhenBlocking();
 	    }
 
 	    /**
 	         * Clear the current alert status.
 	         */
-	    public void clearAlert() {
+	    void clearAlert() {
 	        alerted = false;
-	    }
-
-	    /**
-	     * Check if an alert has been raised and throw an if it has.
-	     */
-	    public void checkAlert() {
-	        if (alerted)
-	        {
-	            WaitStrategy.alert();
-	        }
-	    }
-
-	    @Override
-	    public long getAsLong() {
-	        return cursorSequence.getAsLong();
-	    }
-
-	    @Override
-	    public void run() {
-	        checkAlert();
 	    }
 	}
 }
@@ -606,10 +510,6 @@ abstract class UnsafeSupport {
 		return UNSAFE != null;
 	}
 
-
-	UnsafeSupport() {
-	}
-
 	private static final Unsafe UNSAFE;
 }
 /**
@@ -635,11 +535,7 @@ abstract class RingBufferProducer {
 	 * @param waitStrategy The {@link WaitStrategy} to use.
 	 * @param spinObserver an iteration observer
 	 */
-	public RingBufferProducer(int bufferSize, WaitStrategy waitStrategy, Runnable spinObserver) {
-		if (bufferSize < 1) {
-			throw new IllegalArgumentException("bufferSize must not be less than 1");
-		}
-
+	RingBufferProducer(int bufferSize, WaitStrategy waitStrategy, Runnable spinObserver) {
 		this.spinObserver = spinObserver;
 		this.bufferSize = bufferSize;
 		this.waitStrategy = waitStrategy;
@@ -650,17 +546,8 @@ abstract class RingBufferProducer {
 	 *
 	 * @return current cursor value
 	 */
-	public final long getCursor() {
+	final long getCursor() {
 		return cursor.getAsLong();
-	}
-
-	/**
-	 * Get the current cursor value.
-	 *
-	 * @return current cursor value
-	 */
-	public final RingBuffer.Sequence getSequence() {
-		return cursor;
 	}
 
 	/**
@@ -668,7 +555,7 @@ abstract class RingBufferProducer {
 	 *
 	 * @return the size of the RingBuffer.
 	 */
-	public final int getBufferSize() {
+	final int getBufferSize() {
 		return bufferSize;
 	}
 
@@ -678,7 +565,7 @@ abstract class RingBufferProducer {
 	 *
 	 * @param gatingSequence The sequences to add.
 	 */
-	public final void addGatingSequence(RingBuffer.Sequence gatingSequence) {
+	final void addGatingSequence(RingBuffer.Sequence gatingSequence) {
 		SequenceGroups.addSequence(this, SEQUENCE_UPDATER, gatingSequence);
 	}
 
@@ -688,7 +575,7 @@ abstract class RingBufferProducer {
 	 * @param sequence to be removed.
 	 * @return <tt>true</tt> if this sequence was found, <tt>false</tt> otherwise.
 	 */
-	public boolean removeGatingSequence(RingBuffer.Sequence sequence) {
+	boolean removeGatingSequence(RingBuffer.Sequence sequence) {
 		return SequenceGroups.removeSequence(this, SEQUENCE_UPDATER, sequence);
 	}
 
@@ -700,7 +587,7 @@ abstract class RingBufferProducer {
 	 * @return The minimum gating sequence or the cursor sequence if
 	 * no sequences have been added.
 	 */
-	public long getMinimumSequence(RingBuffer.Sequence excludeSequence) {
+	long getMinimumSequence(RingBuffer.Sequence excludeSequence) {
 		return RingBuffer.getMinimumSequence(excludeSequence, gatingSequences, cursor.getAsLong());
 	}
 
@@ -711,17 +598,9 @@ abstract class RingBufferProducer {
 	 * @see RingBuffer.Reader
 	 * @return A sequence barrier that will track the specified sequences.
 	 */
-	public RingBuffer.Reader newBarrier() {
+	RingBuffer.Reader newBarrier() {
 		return new RingBuffer.Reader(this, waitStrategy, cursor);
 	}
-
-	/**
-	 * Confirms if a sequence is published and the event is available for use; non-blocking.
-	 *
-	 * @param sequence of the buffer to check
-	 * @return true if the sequence is available for use, false if not
-	 */
-	public abstract boolean isAvailable(long sequence);
 
 	/**
 	 * Get the highest sequence number that can be safely read from the ring buffer.  Depending
@@ -735,25 +614,19 @@ abstract class RingBufferProducer {
 	 * @param availableSequence The sequence to scan to.
 	 * @return The highest value that can be safely read, will be at least <code>nextSequence - 1</code>.
 	 */
-	public abstract long getHighestPublishedSequence(long nextSequence, long availableSequence);
-
-		/**
-	 * Get the remaining capacity for this sequencer.
-	 * @return The number of slots remaining.
-	 */
-	public abstract long remainingCapacity();
+	abstract long getHighestPublishedSequence(long nextSequence, long availableSequence);
 
 	/**
 	 * Get the pending capacity for this sequencer.
 	 * @return The number of slots pending consuming.
 	 */
-	public abstract long getPending();
+	abstract long getPending();
 
 	/**
 	 * Claim the next event in sequence for publishing.
 	 * @return the claimed sequence value
 	 */
-	public abstract long next();
+	abstract long next();
 
 	/**
 	 * Claim the next n events in sequence for publishing.  This is for batch event producing.  Using batch producing
@@ -771,28 +644,20 @@ abstract class RingBufferProducer {
 	 * @param n the number of sequences to claim
 	 * @return the highest claimed sequence value
 	 */
-	public abstract long next(int n);
+	abstract long next(int n);
 
 	/**
 	 * Publishes a sequence. Call when the event has been filled.
 	 *
 	 * @param sequence the sequence number to be published
 	 */
-	public abstract void publish(long sequence);
-
-	/**
-	 * Batch publish sequences.  Called when all of the events have been filled.
-	 *
-	 * @param lo first sequence number to publish
-	 * @param hi last sequence number to publish
-	 */
-	public abstract void publish(long lo, long hi);
+	abstract void publish(long sequence);
 
 	/**
 	 *
 	 * @return the gating sequences array
 	 */
-	public RingBuffer.Sequence[] getGatingSequences() {
+	RingBuffer.Sequence[] getGatingSequences() {
 		return gatingSequences;
 	}
 }
@@ -864,7 +729,7 @@ final class SequenceGroups {
 abstract class SingleProducerSequencerPad extends RingBufferProducer
 {
 	protected long p1, p2, p3, p4, p5, p6, p7;
-	public SingleProducerSequencerPad(int bufferSize, WaitStrategy waitStrategy, Runnable spinObserver)
+	SingleProducerSequencerPad(int bufferSize, WaitStrategy waitStrategy, Runnable spinObserver)
 	{
 		super(bufferSize, waitStrategy, spinObserver);
 	}
@@ -872,7 +737,7 @@ abstract class SingleProducerSequencerPad extends RingBufferProducer
 
 abstract class SingleProducerSequencerFields extends SingleProducerSequencerPad
 {
-	public SingleProducerSequencerFields(int bufferSize, WaitStrategy waitStrategy, Runnable spinObserver)
+	SingleProducerSequencerFields(int bufferSize, WaitStrategy waitStrategy, Runnable spinObserver)
 	{
 		super(bufferSize, waitStrategy, spinObserver);
 	}
@@ -900,7 +765,7 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields {
 	 * @param waitStrategy for those waiting on sequences.
 	 * @param spinObserver the runnable to call on a spin-wait
 	 */
-	public SingleProducerSequencer(int bufferSize, final WaitStrategy waitStrategy, Runnable spinObserver) {
+	SingleProducerSequencer(int bufferSize, final WaitStrategy waitStrategy, Runnable spinObserver) {
 		super(bufferSize, waitStrategy, spinObserver);
 	}
 
@@ -908,7 +773,7 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields {
 	 * See {@code RingBufferProducer.next()}.
 	 */
 	@Override
-	public long next() {
+	long next() {
 		return next(1);
 	}
 
@@ -916,12 +781,7 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields {
 	 * See {@code RingBufferProducer.next(int)}.
 	 */
 	@Override
-	public long next(int n) {
-		if (n < 1)
-		{
-			throw new IllegalArgumentException("n must be > 0");
-		}
-
+	long next(int n) {
 		long nextValue = this.nextValue;
 
 		long nextSequence = nextValue + n;
@@ -948,14 +808,6 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields {
 	}
 
 	/**
-	 * See {@code RingBufferProducer.remainingCapacity()}.
-	 */
-	@Override
-	public long remainingCapacity() {
-		return getBufferSize() - getPending();
-	}
-
-	/**
 	 * See {@code RingBufferProducer.getPending()}.
 	 */
 	@Override
@@ -971,29 +823,13 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields {
 	 * See {@code RingBufferProducer.publish(long)}.
 	 */
 	@Override
-	public void publish(long sequence) {
+	void publish(long sequence) {
 		cursor.set(sequence);
 		waitStrategy.signalAllWhenBlocking();
 	}
 
-	/**
-	 * See {@code RingBufferProducer.publish(long, long)}.
-	 */
 	@Override
-	public void publish(long lo, long hi) {
-		publish(hi);
-	}
-
-	/**
-	 * See {@code RingBufferProducer.isAvailable(long)}.
-	 */
-	@Override
-	public boolean isAvailable(long sequence) {
-		return sequence <= cursor.getAsLong();
-	}
-
-	@Override
-	public long getHighestPublishedSequence(long lowerBound, long availableSequence) {
+	long getHighestPublishedSequence(long lowerBound, long availableSequence) {
 		return availableSequence;
 	}
 }
@@ -1002,20 +838,14 @@ abstract class NotFunRingBufferFields<E> extends RingBuffer<E>
 {
 	private final   long               indexMask;
 	private final   Object[]           entries;
-	protected final int                bufferSize;
-	protected final RingBufferProducer sequenceProducer;
+	final int                bufferSize;
+	final RingBufferProducer sequenceProducer;
 
 	NotFunRingBufferFields(Supplier<E> eventFactory,
 			RingBufferProducer sequenceProducer)
 	{
 		this.sequenceProducer = sequenceProducer;
 		this.bufferSize = sequenceProducer.getBufferSize();
-
-		if (bufferSize < 1)
-		{
-			throw new IllegalArgumentException("bufferSize must not be less than 1");
-		}
-
 		this.indexMask = bufferSize - 1;
 		this.entries   = new Object[sequenceProducer.getBufferSize()];
 		fill(eventFactory);
@@ -1030,7 +860,7 @@ abstract class NotFunRingBufferFields<E> extends RingBuffer<E>
 	}
 
 	@SuppressWarnings("unchecked")
-	protected final E elementAt(long sequence)
+	final E elementAt(long sequence)
 	{
 		return (E) entries[(int) (sequence & indexMask)];
 	}
@@ -1058,96 +888,78 @@ final class NotFunRingBuffer<E> extends NotFunRingBufferFields<E>
 	}
 
 	@Override
-	public E get(long sequence)
+	E get(long sequence)
 	{
 		return elementAt(sequence);
 	}
 
 	@Override
-	public long next()
+	long next()
 	{
-		return sequenceProducer.next();
+		return next(1);
 	}
 
 	@Override
-	public long next(int n)
+	long next(int n)
 	{
 		return sequenceProducer.next(n);
 	}
 
 	@Override
-	public void addGatingSequence(Sequence gatingSequence)
+	void addGatingSequence(Sequence gatingSequence)
 	{
 		sequenceProducer.addGatingSequence(gatingSequence);
 	}
 
 	@Override
-	public long getMinimumGatingSequence()
+	long getMinimumGatingSequence()
 	{
 		return getMinimumGatingSequence(null);
 	}
 
 	@Override
-	public long getMinimumGatingSequence(Sequence sequence)
+	long getMinimumGatingSequence(Sequence sequence)
 	{
 		return sequenceProducer.getMinimumSequence(sequence);
 	}
 
 	@Override
-	public boolean removeGatingSequence(Sequence sequence)
+	boolean removeGatingSequence(Sequence sequence)
 	{
 		return sequenceProducer.removeGatingSequence(sequence);
 	}
 
 	@Override
-	public Reader newReader()
+	Reader newReader()
 	{
 		return sequenceProducer.newBarrier();
 	}
 
 	@Override
-	public long getCursor()
+	long getCursor()
 	{
 		return sequenceProducer.getCursor();
 	}
 
 	@Override
-	public Sequence getSequence()
-	{
-		return sequenceProducer.getSequence();
-	}
-
-	@Override
-	public int bufferSize()
+	int bufferSize()
 	{
 		return bufferSize;
 	}
 
 	@Override
-	public void publish(long sequence)
+	void publish(long sequence)
 	{
 		sequenceProducer.publish(sequence);
 	}
 
 	@Override
-	public void publish(long lo, long hi)
-	{
-		sequenceProducer.publish(lo, hi);
-	}
-
-	@Override
-	public long remainingCapacity()
-	{
-		return sequenceProducer.remainingCapacity();
-	}
-
-	@Override
-	public int getPending() {
+	int getPending() {
 		return (int)sequenceProducer.getPending();
 	}
 
 	@Override
-	public RingBufferProducer getSequencer() {
+	RingBufferProducer getSequencer() {
 		return sequenceProducer;
 	}
 }
@@ -1180,43 +992,9 @@ final class AtomicSequence extends RhsPadding implements LongSupplier, RingBuffe
 	}
 
 	@Override
-	public void setVolatile(final long value)
-	{
-		UPDATER.lazySet(this, value);
-	}
-
-	@Override
 	public boolean compareAndSet(final long expectedValue, final long newValue)
 	{
 		return UPDATER.compareAndSet(this, expectedValue, newValue);
-	}
-
-	@Override
-	public long incrementAndGet()
-	{
-		return addAndGet(1L);
-	}
-
-	@Override
-	public long addAndGet(final long increment)
-	{
-		long currentValue;
-		long newValue;
-
-		do
-		{
-			currentValue = getAsLong();
-			newValue = currentValue + increment;
-		}
-		while (!compareAndSet(currentValue, newValue));
-
-		return newValue;
-	}
-
-	@Override
-	public String toString()
-	{
-		return Long.toString(getAsLong());
 	}
 }
 abstract class RingBufferPad<E> extends RingBuffer<E>
@@ -1254,15 +1032,6 @@ abstract class RingBufferFields<E> extends RingBufferPad<E>
 			RingBufferProducer sequenceProducer) {
 		this.sequenceProducer = sequenceProducer;
 		this.bufferSize = sequenceProducer.getBufferSize();
-
-		if (bufferSize < 1) {
-			throw new IllegalArgumentException("bufferSize must not be less than 1");
-		}
-		if (!QueueSupplier.isPowerOfTwo(bufferSize))
-		{
-			throw new IllegalArgumentException("bufferSize must be a power of 2");
-		}
-
 		this.indexMask = bufferSize - 1;
 		this.entries   = new Object[sequenceProducer.getBufferSize() + 2 * BUFFER_PAD];
 		fill(eventFactory);
@@ -1277,7 +1046,7 @@ abstract class RingBufferFields<E> extends RingBufferPad<E>
 	}
 
 	@SuppressWarnings("unchecked")
-	protected final E elementAt(long sequence)
+	final E elementAt(long sequence)
 	{
 		return (E) UNSAFE.getObject(entries, REF_ARRAY_BASE + ((sequence & indexMask) << REF_ELEMENT_SHIFT));
 	}
@@ -1307,96 +1076,78 @@ final class UnsafeRingBuffer<E> extends RingBufferFields<E>
 	}
 
 	@Override
-	public E get(long sequence)
+	E get(long sequence)
 	{
 		return elementAt(sequence);
 	}
 
 	@Override
-	public long next()
+	long next()
 	{
 		return sequenceProducer.next();
 	}
 
 	@Override
-	public long next(int n)
+	long next(int n)
 	{
 		return sequenceProducer.next(n);
 	}
 
 	@Override
-	public void addGatingSequence(Sequence gatingSequence)
+	void addGatingSequence(Sequence gatingSequence)
 	{
 		sequenceProducer.addGatingSequence(gatingSequence);
 	}
 
 	@Override
-	public long getMinimumGatingSequence()
+	long getMinimumGatingSequence()
 	{
 		return getMinimumGatingSequence(null);
 	}
 
 	@Override
-	public long getMinimumGatingSequence(Sequence sequence)
+	long getMinimumGatingSequence(Sequence sequence)
 	{
 		return sequenceProducer.getMinimumSequence(sequence);
 	}
 
 	@Override
-	public boolean removeGatingSequence(Sequence sequence)
+	boolean removeGatingSequence(Sequence sequence)
 	{
 		return sequenceProducer.removeGatingSequence(sequence);
 	}
 
 	@Override
-	public Reader newReader()
+	Reader newReader()
 	{
 		return sequenceProducer.newBarrier();
 	}
 
 	@Override
-	public long getCursor()
+	long getCursor()
 	{
 		return sequenceProducer.getCursor();
 	}
 
 	@Override
-	public Sequence getSequence()
-	{
-		return sequenceProducer.getSequence();
-	}
-
-	@Override
-	public int bufferSize()
+	int bufferSize()
 	{
 		return bufferSize;
 	}
 
 	@Override
-	public void publish(long sequence)
+	void publish(long sequence)
 	{
 		sequenceProducer.publish(sequence);
 	}
 
 	@Override
-	public void publish(long lo, long hi)
-	{
-		sequenceProducer.publish(lo, hi);
-	}
-
-	@Override
-	public int getPending() {
+	int getPending() {
 		return (int)sequenceProducer.getPending();
 	}
 
 	@Override
-	public long remainingCapacity()
-	{
-		return sequenceProducer.remainingCapacity();
-	}
-
-	@Override
-	public RingBufferProducer getSequencer() {
+	RingBufferProducer getSequencer() {
 		return sequenceProducer;
 	}
 
@@ -1467,43 +1218,9 @@ final class UnsafeSequence extends RhsPadding implements RingBuffer.Sequence, Lo
 	}
 
 	@Override
-	public void setVolatile(final long value)
-	{
-		UNSAFE.putLongVolatile(this, VALUE_OFFSET, value);
-	}
-
-	@Override
 	public boolean compareAndSet(final long expectedValue, final long newValue)
 	{
 		return UNSAFE.compareAndSwapLong(this, VALUE_OFFSET, expectedValue, newValue);
-	}
-
-	@Override
-	public long incrementAndGet()
-	{
-		return addAndGet(1L);
-	}
-
-	@Override
-	public long addAndGet(final long increment)
-	{
-		long currentValue;
-		long newValue;
-
-		do
-		{
-			currentValue = getAsLong();
-			newValue = currentValue + increment;
-		}
-		while (!compareAndSet(currentValue, newValue));
-
-		return newValue;
-	}
-
-	@Override
-	public String toString()
-	{
-		return Long.toString(getAsLong());
 	}
 
 }
@@ -1538,11 +1255,6 @@ final class MultiProducerRingBuffer extends RingBufferProducer
 	 */
 	MultiProducerRingBuffer(int bufferSize, final WaitStrategy waitStrategy, Runnable spinObserver) {
 		super(bufferSize, waitStrategy, spinObserver);
-
-		if (!QueueSupplier.isPowerOfTwo(bufferSize)) {
-			throw new IllegalArgumentException("bufferSize must be a power of 2");
-		}
-
 		availableBuffer = new int[bufferSize];
 		indexMask = bufferSize - 1;
 		indexShift = RingBuffer.log2(bufferSize);
@@ -1553,7 +1265,7 @@ final class MultiProducerRingBuffer extends RingBufferProducer
 	 * See {@code RingBufferProducer.next()}.
 	 */
 	@Override
-	public long next()
+	long next()
 	{
 		return next(1);
 	}
@@ -1562,7 +1274,7 @@ final class MultiProducerRingBuffer extends RingBufferProducer
 	 * See {@code RingBufferProducer.next(int)}.
 	 */
 	@Override
-	public long next(int n)
+	long next(int n)
 	{
 		long current;
 		long next;
@@ -1601,18 +1313,10 @@ final class MultiProducerRingBuffer extends RingBufferProducer
 	}
 
 	/**
-	 * See {@code RingBufferProducer.remainingCapacity()}.
-	 */
-	@Override
-	public long remainingCapacity()
-	{
-		return getBufferSize() - getPending();
-	}
-	/**
 	 * See {@code RingBufferProducer.getPending()}.
 	 */
 	@Override
-	public long getPending()
+	long getPending()
 	{
 		long consumed = RingBuffer.getMinimumSequence(gatingSequences, cursor.getAsLong());
 		long produced = cursor.getAsLong();
@@ -1633,22 +1337,9 @@ final class MultiProducerRingBuffer extends RingBufferProducer
 	 * See {@code RingBufferProducer.publish(long)}.
 	 */
 	@Override
-	public void publish(final long sequence)
+	void publish(final long sequence)
 	{
 		setAvailable(sequence);
-		waitStrategy.signalAllWhenBlocking();
-	}
-
-	/**
-	 * See {@code RingBufferProducer.publish(long, long)}.
-	 */
-	@Override
-	public void publish(long lo, long hi)
-	{
-		for (long l = lo; l <= hi; l++)
-		{
-			setAvailable(l);
-		}
 		waitStrategy.signalAllWhenBlocking();
 	}
 
@@ -1685,8 +1376,7 @@ final class MultiProducerRingBuffer extends RingBufferProducer
 	/**
 	 * See {@code RingBufferProducer.isAvailable(long)}
 	 */
-	@Override
-	public boolean isAvailable(long sequence)
+	boolean isAvailable(long sequence)
 	{
 		int index = calculateIndex(sequence);
 		int flag = calculateAvailabilityFlag(sequence);
@@ -1695,7 +1385,7 @@ final class MultiProducerRingBuffer extends RingBufferProducer
 	}
 
 	@Override
-	public long getHighestPublishedSequence(long lowerBound, long availableSequence)
+	long getHighestPublishedSequence(long lowerBound, long availableSequence)
 	{
 		for (long sequence = lowerBound; sequence <= availableSequence; sequence++)
 		{

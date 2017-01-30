@@ -413,4 +413,14 @@ public class WorkQueueProcessorTest {
 			es.shutdown();
 		}
 	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void failNullBufferSize() {
+		WorkQueueProcessor.create("test", 0);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void failNegativeBufferSize() {
+		WorkQueueProcessor.create("test", -1);
+	}
 }

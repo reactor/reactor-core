@@ -150,13 +150,9 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 			while (pendingRequest.getAsLong() <= 0L) {
 				//pause until first request
 				waitedSequence = nextSequence.getAsLong() + 1;
-				if (waiter != null) {
-					waiter.run();
-					barrier.waitFor(waitedSequence, waiter);
-				}
-				else {
-					barrier.waitFor(waitedSequence);
-				}
+				waiter.run();
+				barrier.waitFor(waitedSequence, waiter);
+
 				if (!isRunning.get()) {
 					throw Exceptions.failWithCancel();
 				}
@@ -284,6 +280,11 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 			throw new IllegalArgumentException("bufferSize must be a power of 2 : " + bufferSize);
 		}
 
+		if (bufferSize < 1){
+			throw new IllegalArgumentException("bufferSize must be strictly positive, " +
+					"was: "+bufferSize);
+		}
+
 		this.autoCancel = autoCancel;
 
 		contextClassLoader = new EventLoopContext();
@@ -374,7 +375,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	 * @return a snapshot number of available onNext before starving the resource
 	 */
 	public long getAvailableCapacity() {
-		return ringBuffer.remainingCapacity();
+		return getCapacity() - getPending();
 	}
 
 
@@ -696,23 +697,8 @@ final class Wrapped<E> implements RingBuffer.Sequence, Producer {
 	}
 
 	@Override
-	public void setVolatile(long value) {
-		sequence.setVolatile(value);
-	}
-
-	@Override
 	public boolean compareAndSet(long expectedValue, long newValue) {
 		return sequence.compareAndSet(expectedValue, newValue);
-	}
-
-	@Override
-	public long incrementAndGet() {
-		return sequence.incrementAndGet();
-	}
-
-	@Override
-	public long addAndGet(long increment) {
-		return sequence.addAndGet(increment);
 	}
 
 	@Override

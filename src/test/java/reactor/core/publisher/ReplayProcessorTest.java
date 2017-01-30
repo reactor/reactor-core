@@ -597,6 +597,16 @@ public class ReplayProcessorTest {
 		}
 	}
 
+	@Test(expected = IllegalArgumentException.class)
+	public void failNegativeBufferSizeBounded() {
+		ReplayProcessor.create(-1);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void failNegativeBufferBoundedAndTimed() {
+		ReplayProcessor.createSizeAndTimeout(-1, Duration.ofSeconds(1));
+	}
+
 	@Before
 	public void virtualTime(){
     	VirtualTimeScheduler.getOrSet(false);

@@ -243,4 +243,14 @@ public class EmitterProcessorTest {
 		Assert.assertTrue("Not completed?", tp.isTerminated());
 		Assert.assertNull("Has error?", tp.getError());
 	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void failNullBufferSize() {
+		EmitterProcessor.create(0);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void failNegativeBufferSize() {
+		EmitterProcessor.create(-1);
+	}
 }
