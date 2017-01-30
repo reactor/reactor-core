@@ -30,7 +30,7 @@ extends Mono<T>
 
 	final T value;
 
-	public MonoJust(T value) {
+	MonoJust(T value) {
 		this.value = Objects.requireNonNull(value, "value");
 	}
 

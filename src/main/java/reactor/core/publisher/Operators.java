@@ -547,6 +547,7 @@ public abstract class Operators {
 			return false;
 		}
 		if (a != null) {
+			a.cancel();
 			reportSubscriptionSet();
 			return false;
 		}
@@ -637,6 +638,30 @@ public abstract class Operators {
 			reportBadRequest(n); //log instead of failure?
 		}
 		return true;
+	}
+
+	/**
+	 * Atomically terminates the subscription if it is not already a
+	 * {@link #cancelledSubscription()}, cancelling the subscription and setting the field
+	 * to the singleton {@link #cancelledSubscription()}.
+	 *
+	 * @param <F> the instance type containing the field
+	 * @param field the field accessor
+	 * @param instance the parent instance
+	 * @return true if terminated or null, false if the subscription was already
+	 * terminated
+	 */
+	static <F> boolean setTerminated(AtomicReferenceFieldUpdater<F,
+			Subscription> field,
+			F instance) {
+		Subscription a = field.get(instance);
+		if (a != CancelledSubscription.INSTANCE) {
+			a = field.getAndSet(instance, CancelledSubscription.INSTANCE);
+			if (a == null || a != CancelledSubscription.INSTANCE) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	Operators() {
@@ -802,10 +827,10 @@ public abstract class Operators {
 
 			if (a != cancelledSubscription()) {
 				s.cancel();
+				reportSubscriptionSet();
 				return false;
 			}
 
-			reportSubscriptionSet();
 			return false;
 		}
 
@@ -1056,6 +1081,8 @@ public abstract class Operators {
 		static final AtomicIntegerFieldUpdater<MonoSubscriber> STATE =
 				AtomicIntegerFieldUpdater.newUpdater(MonoSubscriber.class, "state");
 	}
+
+
 
 	/**
 	 * A {@link Subscriber} with an asymetric typed wrapped subscriber. Yet it represents a unique relationship between

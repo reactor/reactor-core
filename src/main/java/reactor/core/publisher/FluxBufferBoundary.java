@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Collection;
@@ -33,16 +34,19 @@ import reactor.core.Exceptions;
  * @param <T> the source value type
  * @param <U> the element type of the boundary publisher (irrelevant)
  * @param <C> the output collection type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 		extends FluxSource<T, C> {
 
 	final Publisher<U> other;
-	
+
 	final Supplier<C> bufferSupplier;
 
-	public FluxBufferBoundary(Publisher<? extends T> source, Publisher<U> other, Supplier<C> bufferSupplier) {
+	FluxBufferBoundary(Publisher<? extends T> source,
+			Publisher<U> other,
+			Supplier<C> bufferSupplier) {
 		super(source);
 		this.other = Objects.requireNonNull(other, "other");
 		this.bufferSupplier = Objects.requireNonNull(bufferSupplier, "bufferSupplier");
@@ -52,62 +56,69 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 	public long getPrefetch() {
 		return Long.MAX_VALUE;
 	}
-	
+
 	@Override
 	public void subscribe(Subscriber<? super C> s) {
 		C buffer;
-		
+
 		try {
 			buffer = bufferSupplier.get();
-		} catch (Throwable e) {
+		}
+		catch (Throwable e) {
 			Operators.error(s, Operators.onOperatorError(e));
 			return;
 		}
-		
+
 		if (buffer == null) {
-			Operators.error(s, new NullPointerException("The bufferSupplier returned a null buffer"));
+			Operators.error(s,
+					Operators.onOperatorError(new NullPointerException("The bufferSupplier returned a null buffer")));
 			return;
 		}
-		
-		BufferBoundaryMain<T, U, C> parent = new BufferBoundaryMain<>(s, buffer, bufferSupplier);
-		
+
+		BufferBoundaryMain<T, U, C> parent =
+				new BufferBoundaryMain<>(s, buffer, bufferSupplier);
+
 		BufferBoundaryOther<U> boundary = new BufferBoundaryOther<>(parent);
 		parent.other = boundary;
-		
+
 		s.onSubscribe(parent);
-		
+
 		other.subscribe(boundary);
-		
+
 		source.subscribe(parent);
 	}
-	
+
 	static final class BufferBoundaryMain<T, U, C extends Collection<? super T>>
-	implements Subscriber<T>, Subscription {
+			implements Subscriber<T>, Subscription {
 
 		final Subscriber<? super C> actual;
-		
+
 		final Supplier<C> bufferSupplier;
-		
+
 		BufferBoundaryOther<U> other;
-		
+
 		C buffer;
-		
+
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<BufferBoundaryMain, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(BufferBoundaryMain.class, Subscription.class, "s");
-		
+				AtomicReferenceFieldUpdater.newUpdater(BufferBoundaryMain.class,
+						Subscription.class,
+						"s");
+
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<BufferBoundaryMain> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(BufferBoundaryMain.class, "requested");
-		
-		public BufferBoundaryMain(Subscriber<? super C> actual, C buffer, Supplier<C> bufferSupplier) {
-			this.actual = actual;
+
+		BufferBoundaryMain(Subscriber<? super C> actual,
+				C buffer,
+				Supplier<C> bufferSupplier) {
+			this.actual = Operators.serialize(actual);
 			this.buffer = buffer;
 			this.bufferSupplier = bufferSupplier;
 		}
-		
+
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
@@ -115,13 +126,9 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 			}
 		}
 
-		void cancelMain() {
-			Operators.terminate(S, this);
-		}
-		
 		@Override
 		public void cancel() {
-			cancelMain();
+			Operators.terminate(S, this);
 			other.cancel();
 		}
 
@@ -141,110 +148,113 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 					return;
 				}
 			}
-			
+
 			Operators.onNextDropped(t);
 		}
 
 		@Override
 		public void onError(Throwable t) {
-			Subscription s = this.s;
-			if(s != null){
-				this.s = null;
-			}
-			else{
-				Operators.onErrorDropped(t);
-			}
-			boolean report;
-
-			synchronized (this) {
-				C b = buffer;
-				
-				if (b != null) {
+			if(Operators.setTerminated(S, this)) {
+				synchronized (this) {
 					buffer = null;
-					report = true;
-				} else {
-					report = false;
 				}
-			}
-			
-			if (report) {
+
 				other.cancel();
-				
 				actual.onError(t);
-			} else {
-				Operators.onErrorDropped(t);
+				return;
 			}
+			Operators.onErrorDropped(t);
 		}
 
 		@Override
 		public void onComplete() {
-			Subscription s = this.s;
-			if(s != null){
-				this.s = null;
-			}
-			else{
-				return;
-			}
+			if(Operators.setTerminated(S, this)) {
+				C b;
+				synchronized (this) {
+					b = buffer;
+					buffer = null;
+				}
 
-			C b;
-			synchronized (this) {
-				b = buffer;
-				buffer = null;
-			}
-
-			other.cancel();
-			if (b != null && !b.isEmpty()) {
-				if (emit(b)) {
+				other.cancel();
+				if (!b.isEmpty()) {
+					if (emit(b)) {
+						actual.onComplete();
+					}
+				}
+				else {
 					actual.onComplete();
 				}
 			}
-			else {
-				actual.onComplete();
+		}
+		void otherComplete() {
+			Subscription s = S.getAndSet(this, Operators.cancelledSubscription());
+			if(s != Operators.cancelledSubscription()) {
+				C b;
+				synchronized (this) {
+					b = buffer;
+					buffer = null;
+				}
+
+				if(s != null){
+					s.cancel();
+				}
+
+				if (b != null && !b.isEmpty()) {
+					if (emit(b)) {
+						actual.onComplete();
+					}
+				}
+				else {
+					actual.onComplete();
+				}
 			}
 		}
-		
+
+		void otherError(Throwable t){
+			Subscription s = S.getAndSet(this, Operators.cancelledSubscription());
+			if(s != Operators.cancelledSubscription()) {
+				synchronized (this) {
+					buffer = null;
+				}
+
+				if(s != null){
+					s.cancel();
+				}
+
+				actual.onError(t);
+				return;
+			}
+			Operators.onErrorDropped(t);
+		}
 		void otherNext() {
 			C c;
-			
+
 			try {
 				c = bufferSupplier.get();
-			} catch (Throwable e) {
+			}
+			catch (Throwable e) {
 				otherError(Operators.onOperatorError(other, e));
 				return;
 			}
-			
-			if (c == null) {
-				other.cancel();
 
-				otherError(new NullPointerException("The bufferSupplier returned a null buffer"));
+			if (c == null) {
+				otherError(Operators.onOperatorError(other, new NullPointerException("The bufferSupplier returned a null buffer")));
 				return;
 			}
-			
+
 			C b;
 			synchronized (this) {
 				b = buffer;
 				buffer = c;
 			}
 
-			if (b.isEmpty()) {
+			if (b == null || b.isEmpty()) {
 				return;
 			}
 
 			emit(b);
 		}
-		
-		void otherError(Throwable e) {
-			cancelMain();
-			
-			onError(e);
-		}
-		
-		void otherComplete() {
-			cancelMain();
 
-			onComplete();
-		}
-		
 		boolean emit(C b) {
 			long r = requested;
 			if (r != 0L) {
@@ -253,42 +263,42 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 					REQUESTED.decrementAndGet(this);
 				}
 				return true;
-			} else {
-				cancel();
-				
-				actual.onError(Exceptions.failWithOverflow("Could not emit buffer due to lack of requests"));
+			}
+			else {
+				actual.onError(Operators.onOperatorError(this, Exceptions
+						.failWithOverflow(), b));
 
 				return false;
 			}
 		}
 	}
-	
+
 	static final class BufferBoundaryOther<U> extends Operators.DeferredSubscription
-	implements Subscriber<U> {
-		
+			implements Subscriber<U> {
+
 		final BufferBoundaryMain<?, U, ?> main;
-		
-		public BufferBoundaryOther(BufferBoundaryMain<?, U, ?> main) {
+
+		BufferBoundaryOther(BufferBoundaryMain<?, U, ?> main) {
 			this.main = main;
 		}
-		
+
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (set(s)) {
 				s.request(Long.MAX_VALUE);
 			}
 		}
-		
+
 		@Override
 		public void onNext(U t) {
 			main.otherNext();
 		}
-		
+
 		@Override
 		public void onError(Throwable t) {
 			main.otherError(t);
 		}
-		
+
 		@Override
 		public void onComplete() {
 			main.otherComplete();

@@ -46,7 +46,7 @@ abstract class RingBuffer<E> implements LongSupplier {
 	/**
 	 * Set to -1 as sequence starting point
 	 */
-	public static final long     INITIAL_CURSOR_VALUE = -1L;
+	static final long     INITIAL_CURSOR_VALUE = -1L;
 
 	/**
 	 * Create a new multiple producer RingBuffer with the specified wait strategy.
@@ -58,20 +58,17 @@ abstract class RingBuffer<E> implements LongSupplier {
 	 * @param spinObserver the Runnable to call on a spin loop wait
 	 * @return the new RingBuffer instance
 	 */
-	public static <E> RingBuffer<E> createMultiProducer(Supplier<E> factory,
+	static <E> RingBuffer<E> createMultiProducer(Supplier<E> factory,
 			int bufferSize,
 			WaitStrategy waitStrategy, Runnable spinObserver) {
 
-		if (hasUnsafe() && QueueSupplier.isPowerOfTwo(bufferSize)) {
+		if (hasUnsafe()) {
 			MultiProducerRingBuffer sequencer = new MultiProducerRingBuffer(bufferSize, waitStrategy, spinObserver);
 
 			return new UnsafeRingBuffer<>(factory, sequencer);
 		}
 		else {
-			NotFunMultiProducer sequencer =
-					new NotFunMultiProducer(bufferSize, waitStrategy, spinObserver);
-
-			return new NotFunRingBuffer<>(factory, sequencer);
+			throw new IllegalStateException("This JVM does not support sun.misc.Unsafe");
 		}
 	}
 
@@ -84,7 +81,7 @@ abstract class RingBuffer<E> implements LongSupplier {
 	 * @param waitStrategy used to determine how to wait for new elements to become available.
 	 * @return the new RingBuffer instance
 	 */
-	public static <E> RingBuffer<E> createSingleProducer(Supplier<E> factory,
+	static <E> RingBuffer<E> createSingleProducer(Supplier<E> factory,
 			int bufferSize,
 			WaitStrategy waitStrategy) {
 		return createSingleProducer(factory, bufferSize, waitStrategy, null);
@@ -100,7 +97,7 @@ abstract class RingBuffer<E> implements LongSupplier {
 	 * @param spinObserver called each time the next claim is spinning and waiting for a slot
      * @return the new RingBuffer instance
 	 */
-	public static <E> RingBuffer<E> createSingleProducer(Supplier<E> factory,
+	static <E> RingBuffer<E> createSingleProducer(Supplier<E> factory,
 			int bufferSize,
 			WaitStrategy waitStrategy,
 			Runnable spinObserver) {
@@ -122,7 +119,7 @@ abstract class RingBuffer<E> implements LongSupplier {
 	 *
 	 * @return the minimum sequence found or Long.MAX_VALUE if the array is empty.
 	 */
-	public static long getMinimumSequence(final Sequence[] sequences, long minimum) {
+	static long getMinimumSequence(final Sequence[] sequences, long minimum) {
 		for (int i = 0, n = sequences.length; i < n; i++) {
 			long value = sequences[i].getAsLong();
 			minimum = Math.min(minimum, value);
@@ -140,7 +137,7 @@ abstract class RingBuffer<E> implements LongSupplier {
 	 *
 	 * @return the minimum sequence found or Long.MAX_VALUE if the array is empty.
 	 */
-	public static long getMinimumSequence(Sequence excludeSequence, final Sequence[] sequences, long minimum) {
+	static long getMinimumSequence(Sequence excludeSequence, final Sequence[] sequences, long minimum) {
 		for (int i = 0, n = sequences.length; i < n; i++) {
 			if (excludeSequence == null || sequences[i] != excludeSequence) {
 				long value = sequences[i].getAsLong();
@@ -170,7 +167,7 @@ abstract class RingBuffer<E> implements LongSupplier {
 	 *
 	 * @return The log2 value
 	 */
-	public static int log2(int i) {
+	static int log2(int i) {
 		int r = 0;
 		while ((i >>= 1) != 0) {
 			++r;
@@ -183,7 +180,7 @@ abstract class RingBuffer<E> implements LongSupplier {
 	 *
 	 * @return a safe or unsafe sequence set to the passed init value
 	 */
-	public static Sequence newSequence(long init) {
+	static Sequence newSequence(long init) {
 		if (hasUnsafe()) {
 			return new UnsafeSequence(init);
 		}
@@ -438,7 +435,7 @@ abstract class RingBuffer<E> implements LongSupplier {
 	 * Used for Gating ringbuffer consumers on a cursor sequence and optional dependent ringbuffer consumer(s),
 	 * using the given WaitStrategy.
 	 */
-	public static final class Reader implements Runnable, LongSupplier {
+	static final class Reader implements Runnable, LongSupplier {
 	    private final WaitStrategy waitStrategy;
 	    private volatile boolean alerted = false;
 	    private final Sequence cursorSequence;
@@ -492,16 +489,6 @@ abstract class RingBuffer<E> implements LongSupplier {
 
 	        return sequenceProducer.getHighestPublishedSequence(sequence, availableSequence);
 	    }
-
-	    /**
-	         * Get the current cursor value that can be read.
-	         *
-	         * @return value of the cursor for entries that have been published.
-	         */
-	    public long getCursor() {
-	        return cursorSequence.getAsLong();
-	    }
-
 	    /**
 	         * The current alert status for the barrier.
 	         *
@@ -611,7 +598,7 @@ abstract class UnsafeSupport {
 		}
 	}
 
-	public static Unsafe getUnsafe(){
+	static Unsafe getUnsafe(){
 		return UNSAFE;
 	}
 
@@ -1162,226 +1149,6 @@ final class NotFunRingBuffer<E> extends NotFunRingBufferFields<E>
 	@Override
 	public RingBufferProducer getSequencer() {
 		return sequenceProducer;
-	}
-}
-/**
- * <p>Coordinator for claiming sequences for access to a data structure while tracking dependent {@link RingBuffer.Sequence}s.
- * Suitable for use for sequencing across multiple publisher threads.</p>
- *
- * <p> * <p>Note on {@code RingBufferProducer.getCursor()}:  With this sequencer the cursor value is updated after the call
- * to {@code RingBufferProducer.next()}, to determine the highest available sequence that can be read, then
- * {@code RingBufferProducer.getHighestPublishedSequence(long, long)} should be used.
- */
-final class NotFunMultiProducer extends RingBufferProducer
-{
-	private final RingBuffer.Sequence gatingSequenceCache = new AtomicSequence(RingBuffer.INITIAL_CURSOR_VALUE);
-
-	// availableBuffer tracks the state of each ringbuffer slot
-	// see below for more details on the approach
-	private final int[] availableBuffer;
-	private final int   indexMask;
-	private final int   indexShift;
-
-	/**
-	 * Construct a Sequencer with the selected wait strategy and buffer size.
-	 *
-	 * @param bufferSize the size of the buffer that this will sequence over.
-	 * @param waitStrategy for those waiting on sequences.
-	 */
-	NotFunMultiProducer(int bufferSize, final WaitStrategy waitStrategy, Runnable spinObserver) {
-		super(bufferSize, waitStrategy, spinObserver);
-		availableBuffer = new int[bufferSize];
-		indexMask = bufferSize - 1;
-		indexShift = RingBuffer.log2(bufferSize);
-		initialiseAvailableBuffer();
-	}
-
-	private boolean hasAvailableCapacity(RingBuffer.Sequence[] gatingSequences, final int requiredCapacity, long cursorValue) {
-		long wrapPoint = (cursorValue + requiredCapacity) - bufferSize;
-		long cachedGatingSequence = gatingSequenceCache.getAsLong();
-
-		if (wrapPoint > cachedGatingSequence || cachedGatingSequence > cursorValue) {
-			long minSequence = RingBuffer.getMinimumSequence(gatingSequences, cursorValue);
-			gatingSequenceCache.set(minSequence);
-
-			if (wrapPoint > minSequence) {
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-	/**
-	 * See {@code RingBufferProducer.next()}.
-	 */
-	@Override
-	public long next()
-	{
-		return next(1);
-	}
-
-	/**
-	 * See {@code RingBufferProducer.next(int)}.
-	 */
-	@Override
-	public long next(int n)
-	{
-		if (n < 1)
-		{
-			throw new IllegalArgumentException("n must be > 0");
-		}
-
-		long current;
-		long next;
-
-		do
-		{
-			current = cursor.getAsLong();
-			next = current + n;
-
-			long wrapPoint = next - bufferSize;
-			long cachedGatingSequence = gatingSequenceCache.getAsLong();
-
-			if (wrapPoint > cachedGatingSequence || cachedGatingSequence > current)
-			{
-				long gatingSequence = RingBuffer.getMinimumSequence(gatingSequences, current);
-
-				if (wrapPoint > gatingSequence)
-				{
-					if(spinObserver != null) {
-						spinObserver.run();
-					}
-					LockSupport.parkNanos(1); // TODO, should we spin based on the wait strategy?
-					continue;
-				}
-
-				gatingSequenceCache.set(gatingSequence);
-			}
-			else if (cursor.compareAndSet(current, next))
-			{
-				break;
-			}
-		}
-		while (true);
-
-		return next;
-	}
-
-	/**
-	 * See {@code RingBufferProducer.remainingCapacity()}.
-	 */
-	@Override
-	public long remainingCapacity()
-	{
-		return getBufferSize() - getPending();
-	}
-	/**
-	 * See {@code RingBufferProducer.getPending()}.
-	 */
-	@Override
-	public long getPending()
-	{
-		long consumed = RingBuffer.getMinimumSequence(gatingSequences, cursor.getAsLong());
-		long produced = cursor.getAsLong();
-		return produced - consumed;
-	}
-
-	private void initialiseAvailableBuffer()
-	{
-		for (int i = availableBuffer.length - 1; i != 0; i--)
-		{
-			setAvailableBufferValue(i, -1);
-		}
-
-		setAvailableBufferValue(0, -1);
-	}
-
-	/**
-	 * See {@code RingBufferProducer.publish(long)}.
-	 */
-	@Override
-	public void publish(final long sequence)
-	{
-		setAvailable(sequence);
-		waitStrategy.signalAllWhenBlocking();
-	}
-
-	/**
-	 * See {@code RingBufferProducer.publish(long, long)}.
-	 */
-	@Override
-	public void publish(long lo, long hi)
-	{
-		for (long l = lo; l <= hi; l++)
-		{
-			setAvailable(l);
-		}
-		waitStrategy.signalAllWhenBlocking();
-	}
-
-	/**
-	 * The below methods work on the availableBuffer flag.
-	 *
-	 * The prime reason is to avoid a shared sequence object between publisher threads.
-	 * (Keeping single pointers tracking start and end would require coordination
-	 * between the threads).
-	 *
-	 * --  Firstly we have the constraint that the delta between the cursor and minimum
-	 * gating sequence will never be larger than the buffer size (the code in
-	 * next/tryNext in the Sequence takes care of that).
-	 * -- Given that; take the sequence value and mask off the lower portion of the
-	 * sequence as the index into the buffer (indexMask). (aka modulo operator)
-	 * -- The upper portion of the sequence becomes the value to check for availability.
-	 * ie: it tells us how many times around the ring buffer we've been (aka division)
-	 * -- Because we can't wrap without the gating sequences moving forward (i.e. the
-	 * minimum gating sequence is effectively our last available position in the
-	 * buffer), when we have new data and successfully claimed a slot we can simply
-	 * write over the top.
-	 */
-	private void setAvailable(final long sequence)
-	{
-		setAvailableBufferValue(calculateIndex(sequence), calculateAvailabilityFlag(sequence));
-	}
-
-	private void setAvailableBufferValue(int index, int flag)
-	{
-		availableBuffer[index] = flag;
-	}
-
-	/**
-	 * See {@code RingBufferProducer.isAvailable(long)}.
-	 */
-	@Override
-	public boolean isAvailable(long sequence)
-	{
-		int index = calculateIndex(sequence);
-		int flag = calculateAvailabilityFlag(sequence);
-		return availableBuffer[index] == flag;
-	}
-
-	@Override
-	public long getHighestPublishedSequence(long lowerBound, long availableSequence)
-	{
-		for (long sequence = lowerBound; sequence <= availableSequence; sequence++)
-		{
-			if (!isAvailable(sequence))
-			{
-				return sequence - 1;
-			}
-		}
-
-		return availableSequence;
-	}
-
-	private int calculateAvailabilityFlag(final long sequence)
-	{
-		return (int) (sequence >>> indexShift);
-	}
-
-	private int calculateIndex(final long sequence)
-	{
-		return ((int) sequence) & indexMask;
 	}
 }
 final class AtomicSequence extends RhsPadding implements LongSupplier, RingBuffer.Sequence

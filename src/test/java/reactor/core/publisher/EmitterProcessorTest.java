@@ -21,11 +21,13 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
 
 /**
  * @author Stephane Maldini
@@ -140,5 +142,105 @@ public class EmitterProcessorTest {
 
 		stream.onComplete();
 
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void onNextNull() {
+		EmitterProcessor.create().onNext(null);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void onErrorNull() {
+		EmitterProcessor.create().onError(null);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void onSubscribeNull() {
+		EmitterProcessor.create().onSubscribe(null);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void subscribeNull() {
+		EmitterProcessor.create().subscribe((Subscriber<Object>)null);
+	}
+
+	@Test
+	public void normal() {
+		EmitterProcessor<Integer> tp = EmitterProcessor.create();
+		tp.connect();
+		StepVerifier.create(tp)
+		            .then(() -> {
+			            Assert.assertTrue("No subscribers?", tp.hasDownstreams());
+			            Assert.assertFalse("Completed?", tp.isTerminated());
+			            Assert.assertNull("Has error?", tp.getError());
+			            Assert.assertTrue("Started?", tp.isStarted());
+			            Assert.assertNotNull("No upstream?", tp.upstream());
+		            })
+		            .then(() -> {
+			            tp.onNext(1);
+			            tp.onNext(2);
+		            })
+		            .expectNext(1, 2)
+		            .then(() -> {
+			            tp.onNext(3);
+			            tp.onComplete();
+		            })
+		            .expectNext(3)
+		            .expectComplete()
+		            .verify();
+
+		Assert.assertFalse("Subscribers present?", tp.hasDownstreams());
+		Assert.assertTrue("Not completed?", tp.isTerminated());
+		Assert.assertNull("Has error?", tp.getError());
+	}
+
+	@Test
+	public void normalBackpressured() {
+		EmitterProcessor<Integer> tp = EmitterProcessor.create();
+		tp.connect();
+		StepVerifier.create(tp, 0L)
+		            .then(() -> {
+			            Assert.assertTrue("No subscribers?", tp.hasDownstreams());
+			            Assert.assertFalse("Completed?", tp.isTerminated());
+			            Assert.assertNull("Has error?", tp.getError());
+		            })
+		            .then(() -> {
+			            tp.onNext(1);
+			            tp.onNext(2);
+			            tp.onComplete();
+		            })
+		            .thenRequest(10L)
+		            .expectNext(1, 2)
+		            .expectComplete()
+		            .verify();
+
+		Assert.assertFalse("Subscribers present?", tp.hasDownstreams());
+		Assert.assertTrue("Not completed?", tp.isTerminated());
+		Assert.assertNull("Has error?", tp.getError());
+	}
+
+	@Test
+	public void normalAtomicRingBufferBackpressured() {
+		EmitterProcessor<Integer> tp = EmitterProcessor.create(100);
+		tp.connect();
+		StepVerifier.create(tp, 0L)
+		            .then(() -> {
+			            Assert.assertTrue("No subscribers?", tp.hasDownstreams());
+			            Assert.assertFalse("Completed?", tp.isTerminated());
+			            Assert.assertNull("Has error?", tp.getError());
+		            })
+		            .then(() -> {
+			            tp.onNext(1);
+			            tp.onNext(2);
+			            tp.onComplete();
+		            })
+		            .thenRequest(10L)
+		            .expectNext(1, 2)
+		            .expectComplete()
+		            .verify();
+
+		Assert.assertFalse("Subscribers present?", tp.hasDownstreams());
+		Assert.assertTrue("Not completed?", tp.isTerminated());
+		Assert.assertNull("Has error?", tp.getError());
 	}
 }

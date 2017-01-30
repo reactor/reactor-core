@@ -45,7 +45,7 @@ final class FluxCreate<T> extends Flux<T> {
 
 	final OverflowStrategy backpressure;
 
-	public FluxCreate(Consumer<? super FluxSink<T>> source,
+	FluxCreate(Consumer<? super FluxSink<T>> source,
 			FluxSink.OverflowStrategy backpressure) {
 		this.source = Objects.requireNonNull(source, "source");
 		this.backpressure = Objects.requireNonNull(backpressure, "backpressure");
