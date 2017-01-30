@@ -169,6 +169,10 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	boolean firstDrain = true;
 
 	EmitterProcessor(boolean autoCancel, int maxConcurrency, int bufferSize) {
+		if (bufferSize < 1){
+			throw new IllegalArgumentException("bufferSize must be strictly positive, " +
+					"was: "+bufferSize);
+		}
 		this.autoCancel = autoCancel;
 		this.maxConcurrency = maxConcurrency;
 		this.bufferSize = bufferSize;

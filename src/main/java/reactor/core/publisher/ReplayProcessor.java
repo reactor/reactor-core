@@ -772,7 +772,10 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		volatile boolean done;
 		Throwable error;
 
-		public SizeBoundReplayBuffer(int limit) {
+		SizeBoundReplayBuffer(int limit) {
+			if(limit < 0){
+				throw new IllegalArgumentException("Limit cannot be negative");
+			}
 			this.limit = limit;
 			Node<T> n = new Node<>(null);
 			this.tail = n;

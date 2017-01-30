@@ -241,4 +241,16 @@ public class TopicProcessorTest {
 			es.shutdown();
 		}
 	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void failNullBufferSize() {
+		TopicProcessor.create("test", 0);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void failNegativeBufferSize() {
+		TopicProcessor.create("test", -1);
+	}
+
+
 }
