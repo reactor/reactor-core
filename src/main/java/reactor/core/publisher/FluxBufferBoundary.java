@@ -76,7 +76,9 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 		}
 
 		BufferBoundaryMain<T, U, C> parent =
-				new BufferBoundaryMain<>(s, buffer, bufferSupplier);
+				new BufferBoundaryMain<>(
+						source instanceof FluxInterval ? s : Operators.serialize(s),
+						buffer, bufferSupplier);
 
 		BufferBoundaryOther<U> boundary = new BufferBoundaryOther<>(parent);
 		parent.other = boundary;
@@ -114,7 +116,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 		BufferBoundaryMain(Subscriber<? super C> actual,
 				C buffer,
 				Supplier<C> bufferSupplier) {
-			this.actual = Operators.serialize(actual);
+			this.actual = actual;
 			this.buffer = buffer;
 			this.bufferSupplier = bufferSupplier;
 		}

@@ -375,7 +375,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	 * @return a snapshot number of available onNext before starving the resource
 	 */
 	public long getAvailableCapacity() {
-		return getCapacity() - getPending();
+		return ringBuffer.bufferSize() - ringBuffer.getPending();
 	}
 
 

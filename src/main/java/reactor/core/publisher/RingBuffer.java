@@ -342,15 +342,7 @@ abstract class RingBuffer<E> implements LongSupplier {
 	 */
 	interface Sequence extends LongSupplier
 	{
-	    long INITIAL_VALUE = -1L;
-
-	    /**
-	     * Perform a volatile read of this sequence's value.
-	     *
-	     * @return The current value of the sequence.
-	     */
-	    @Override
-	    long getAsLong();
+	    long INITIAL_VALUE = INITIAL_CURSOR_VALUE;
 
 	    /**
 	     * Perform an ordered write of this sequence.  The intent is
