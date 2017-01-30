@@ -23,6 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
@@ -34,6 +35,7 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Schedulers;
 import reactor.core.scheduler.TimedScheduler;
+import reactor.test.StepVerifier;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.concurrent.WaitStrategy;
@@ -201,7 +203,7 @@ public class WorkQueueProcessorTest {
 
 		d.dispose();
 
-		while (wq.downstreamCount() != 0) {
+		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
 		}
 	}
 
@@ -215,7 +217,64 @@ public class WorkQueueProcessorTest {
 
 		wq.onComplete();
 
-		while (wq.downstreamCount() != 0) {
+		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
+		}
+	}
+
+	@Test(timeout = 15000L)
+	public void disposeSubscribeNoThreadLeak() throws Exception {
+		WorkQueueProcessor<String> wq = WorkQueueProcessor.create(false);
+
+		Disposable d = wq.subscribe();
+		d.dispose();
+		d = wq.subscribe();
+		d.dispose();
+		d = wq.subscribe();
+		d.dispose();
+
+		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
+		}
+	}
+
+	@Test
+	public void retryErrorPropagatedFromWorkQueueSubscriber() throws Exception {
+		AtomicInteger errors = new AtomicInteger(3);
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+
+		StepVerifier.create(wq.log().<Integer>handle((s1, sink) -> {
+			if (errors.decrementAndGet() > 0) {
+				sink.error(new RuntimeException());
+			}
+			else {
+				sink.next(s1);
+			}
+		}).retry())
+		            .then(() -> {
+			            wq.onNext(1);
+			            wq.onNext(2);
+			            wq.onNext(3);
+			            wq.onComplete();
+		            })
+		            .expectNext(2, 3)
+		            .verifyComplete();
+
+		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
+		}
+	}
+
+	@Test()
+	public void retryNoThreadLeak() throws Exception {
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+
+		wq.handle((integer, sink) -> sink.error(new RuntimeException()))
+		  .retry(10)
+		  .subscribe();
+		wq.onNext(1);
+		wq.onNext(2);
+		wq.onNext(3);
+		wq.onComplete();
+
+		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
 		}
 	}
 

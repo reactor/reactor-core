@@ -765,6 +765,9 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 						// this prevents the sequence getting too far forward if an error
 						// is thrown from the WorkHandler
 						if (processedSequence) {
+							if(isCancelled()){
+								throw Exceptions.failWithCancel();
+							}
 							processedSequence = false;
 							do {
 								nextSequence = processor.workSequence.getAsLong() + 1L;
@@ -874,7 +877,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 						if (v == null) {
 							processor.readWait.signalAllWhenBlocking();
-							return !processor.alive();
+							return !processor.alive() && getPending() == 0;
 						}
 
 						if (v instanceof RingBuffer.Sequence) {
@@ -882,7 +885,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 							long cursor = s.getAsLong() + 1L;
 							if(cursor > processor.ringBuffer.getAsLong()){
 								processor.readWait.signalAllWhenBlocking();
-								return !processor.alive();
+								return !processor.alive() && getPending() == 0;
 							}
 
 							barrier.waitFor(cursor, waiter);
@@ -922,7 +925,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 				}
 			}
 			else {
-				return !processor.alive();
+				return !processor.alive() && getPending() == 0;
 			}
 		}
 

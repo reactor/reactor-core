@@ -103,11 +103,11 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 				actual.onNext(v);
 			}
 			if(stop){
-				s.cancel();
 				if(error != null){
 					onError(Operators.onOperatorError(s, error, t));
 					return;
 				}
+				s.cancel();
 				onComplete();
 			}
 			else if(v == null){
@@ -135,11 +135,11 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 				actual.onNext(v);
 			}
 			if(stop){
-				s.cancel();
 				if(error != null){
 					onError(Operators.onOperatorError(s, error, t));
 				}
 				else {
+					s.cancel();
 					onComplete();
 				}
 				return true;

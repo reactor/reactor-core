@@ -111,11 +111,11 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R> implements Fuseabl
 				actual.onNext(v);
 			}
 			if (done) {
-				s.cancel();
 				if (error != null) {
 					actual.onError(Operators.onOperatorError(s, error, t));
 				}
 				else {
+					s.cancel();
 					actual.onComplete();
 				}
 				return true;
@@ -155,11 +155,11 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R> implements Fuseabl
 					actual.onNext(v);
 				}
 				if (done) {
-					s.cancel();
 					if (error != null) {
 						actual.onError(Operators.onOperatorError(s, error, t));
 						return;
 					}
+					s.cancel();
 					actual.onComplete();
 				}
 				else if (v == null) {
@@ -243,11 +243,11 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R> implements Fuseabl
 						u = data;
 						data = null;
 						if (done) {
-							s.cancel();
 							if (error != null) {
 								actual.onError(Operators.onOperatorError(s, error, v));
 							}
 							else {
+								s.cancel();
 								actual.onComplete();
 							}
 							return u;
@@ -397,11 +397,11 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R> implements Fuseabl
 					actual.onNext(v);
 				}
 				if (done) {
-					s.cancel();
 					if (error != null) {
 						actual.onError(Operators.onOperatorError(s, error, t));
 						return;
 					}
+					s.cancel();
 					actual.onComplete();
 				}
 				else if (v == null) {
@@ -431,11 +431,11 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R> implements Fuseabl
 				emit = actual.tryOnNext(v);
 			}
 			if (done) {
-				s.cancel();
 				if (error != null) {
 					actual.onError(Operators.onOperatorError(s, error, t));
 				}
 				else {
+					s.cancel();
 					actual.onComplete();
 				}
 				return true;
@@ -542,11 +542,11 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R> implements Fuseabl
 						u = data;
 						data = null;
 						if (done) {
-							s.cancel();
 							if (error != null) {
 								actual.onError(Operators.onOperatorError(s, error, v));
 							}
 							else {
+								s.cancel();
 								actual.onComplete();
 							}
 							return u;
