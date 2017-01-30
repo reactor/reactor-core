@@ -20,14 +20,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Disposable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.util.concurrent.QueueSupplier;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Stephane Maldini
@@ -244,13 +249,143 @@ public class EmitterProcessorTest {
 		Assert.assertNull("Has error?", tp.getError());
 	}
 
+	@Test
+	public void state(){
+		EmitterProcessor<Integer> tp = EmitterProcessor.create();
+		assertThat(tp.getPending()).isEqualTo(-1L);
+
+		tp.onNext(1);
+		assertThat(tp.getPending()).isEqualTo(0);
+		assertThat(tp.limit()).isEqualTo(Math.max(1, QueueSupplier.SMALL_BUFFER_SIZE / 2));
+		assertThat(tp.getCapacity()).isEqualTo(QueueSupplier.SMALL_BUFFER_SIZE);
+		assertThat(tp.expectedFromUpstream()).isEqualTo(QueueSupplier.SMALL_BUFFER_SIZE);
+		assertThat(tp.isCancelled()).isFalse();
+		assertThat(tp.isStarted()).isFalse();
+		assertThat(tp.downstreams()).isEmpty();
+
+		Disposable d1 = tp.subscribe();
+		assertThat(tp.downstreams()).hasSize(1);
+
+		BlockingSink<Integer> s = tp.connectSink();
+		assertThat(tp.isStarted()).isTrue();
+
+		s.accept(2);
+		s.accept(3);
+		s.accept(4);
+		assertThat(tp.getPending()).isEqualTo(0);
+		AtomicReference<Subscription> d2 = new AtomicReference<>();
+		tp.subscribe(new Subscriber<Integer>() {
+			@Override
+			public void onSubscribe(Subscription s) {
+				d2.set(s);
+			}
+
+			@Override
+			public void onNext(Integer integer) {
+
+			}
+
+			@Override
+			public void onError(Throwable t) {
+
+			}
+
+			@Override
+			public void onComplete() {
+
+			}
+		});
+		s.accept(5);
+		s.accept(6);
+		assertThat(tp.expectedFromUpstream()).isEqualTo(QueueSupplier.SMALL_BUFFER_SIZE - 5);
+		s.accept(7);
+		assertThat(tp.getPending()).isEqualTo(3);
+		assertThat(tp.isTerminated()).isFalse();
+		s.complete();
+		assertThat(tp.isTerminated()).isFalse();
+		d1.dispose();
+		d2.get().cancel();
+		assertThat(tp.isTerminated()).isTrue();
+
+		StepVerifier.create(tp)
+	                .verifyComplete();
+
+		tp.onNext(8); //noop
+		EmitterProcessor<Void> empty = EmitterProcessor.create();
+		empty.onComplete();
+		assertThat(empty.isTerminated()).isTrue();
+
+	}
+
+
 	@Test(expected = IllegalArgumentException.class)
 	public void failNullBufferSize() {
 		EmitterProcessor.create(0);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void failNullNext() {
+		EmitterProcessor.create().onNext(null);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void failNullError() {
+		EmitterProcessor.create().onError(null);
+	}
+
+	@Test
+	public void failDoubleError() {
+		EmitterProcessor<Integer> ep = EmitterProcessor.create();
+		ep.connect();
+		StepVerifier.create(ep)
+	                .then(() -> {
+		                assertThat(ep.getError()).isNull();
+		                assertThat(ep.toString()).doesNotContain("error");
+						ep.onError(new Exception("test"));
+						assertThat(ep.getError()).hasMessage("test");
+		                assertThat(ep.toString()).contains("error");
+						ep.onError(new Exception("test2"));
+	                })
+	                .expectErrorMessage("test")
+	                .verifyThenAssertThat()
+	                .hasDroppedErrorWithMessage("test2");
+	}
+
+	@Test
+	public void failCompleteThenError() {
+		EmitterProcessor<Integer> ep = EmitterProcessor.create();
+		ep.connect();
+		StepVerifier.create(ep)
+	                .then(() -> {
+						ep.onComplete();
+						ep.onComplete();//noop
+						ep.onError(new Exception("test"));
+						ep.cancel(); //noop
+	                })
+	                .expectComplete()
+	                .verifyThenAssertThat()
+	                .hasDroppedErrorWithMessage("test");
+	}
+
+	@Test
+	public void ignoreDoubleOnSubscribe() {
+		EmitterProcessor<Integer> ep = EmitterProcessor.create();
+		ep.connectSink();
+		assertThat(ep.connectSink().isCancelled()).isTrue();
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void failNegativeBufferSize() {
 		EmitterProcessor.create(-1);
 	}
+
+	@Test(expected = IllegalStateException.class)
+	public void failTooMuchSubscribers() {
+		EmitterProcessor<Integer> ep = EmitterProcessor.create(32, 2);
+		ep.subscribe();
+		ep.subscribe();
+		ep.subscribe();
+	}
+
+
 }

@@ -185,18 +185,13 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	public void subscribe(Subscriber<? super T> s) {
 		super.subscribe(s);
 		EmitterSubscriber<T> inner = new EmitterSubscriber<>(this, s);
-		try {
-			addInner(inner);
+		if(addInner(inner)) {
 			if (upstreamSubscription != null) {
 				inner.start();
 			}
 		}
-		catch (Throwable t) {
-			if(Exceptions.isCancel(t)){
-				return;
-			}
-			removeInner(inner, EMPTY);
-			Operators.error(s, t);
+		else{
+			Operators.complete(inner.actual);
 		}
 	}
 
@@ -220,7 +215,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		}
 
 		EmitterSubscriber<?>[] inner = subscribers;
-		if (autoCancel && inner == CANCELLED) {
+		if (inner == CANCELLED) {
 			//FIXME should entorse to the spec and throw Exceptions.failWithCancel
 			return;
 		}
@@ -300,7 +295,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		if (t == null) {
 			throw Exceptions.argumentIsNullException();
 		}
-		if (autoCancel && done) {
+		if (done) {
 			Operators.onErrorDropped(t);
 		}
 		reportError(t);
@@ -321,16 +316,11 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	public void onSubscribe(final Subscription s) {
 		if (Operators.validate(upstreamSubscription, s)) {
 			this.upstreamSubscription = s;
-			try {
-				EmitterSubscriber<?>[] innerSubscribers = subscribers;
-				if (innerSubscribers != CANCELLED && innerSubscribers.length != 0) {
-					for (int i = 0; i < innerSubscribers.length; i++) {
-						innerSubscribers[i].start();
-					}
+			EmitterSubscriber<?>[] innerSubscribers = subscribers;
+			if (innerSubscribers != CANCELLED && innerSubscribers.length != 0) {
+				for (int i = 0; i < innerSubscribers.length; i++) {
+					innerSubscribers[i].start();
 				}
-			}
-			catch (Throwable t) {
-				onError(Operators.onOperatorError(s, t));
 			}
 		}
 	}
@@ -342,7 +332,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 	@Override
 	public boolean isCancelled() {
-		return autoCancel && subscribers == CANCELLED;
+		return subscribers == CANCELLED;
 	}
 
 	@Override
@@ -527,11 +517,11 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		ERROR.compareAndSet(this, null, t);
 	}
 
-	final void addInner(EmitterSubscriber<T> inner) {
+	final boolean addInner(EmitterSubscriber<T> inner) {
 		for (; ; ) {
 			EmitterSubscriber<?>[] a = subscribers;
 			if (a == CANCELLED) {
-				Flux.<T>empty().subscribe(inner.actual);
+				return false;
 			}
 			int n = a.length;
 			if (n + 1 > maxConcurrency) {
@@ -541,7 +531,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 			System.arraycopy(a, 0, b, 0, n);
 			b[n] = inner;
 			if (SUBSCRIBERS.compareAndSet(this, a, b)) {
-				return;
+				return true;
 			}
 		}
 	}
@@ -553,15 +543,12 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 				return;
 			}
 			int n = a.length;
-			int j = -1;
+			int j = 0;
 			for (int i = 0; i < n; i++) {
 				if (a[i] == inner) {
 					j = i;
 					break;
 				}
-			}
-			if (j < 0) {
-				return;
 			}
 			EmitterSubscriber<?>[] b;
 			if (n == 1) {
