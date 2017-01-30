@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -276,14 +277,16 @@ public class WorkQueueProcessorTest {
 			else {
 				sink.next(s1);
 			}
-		}).retry().take(2))
+		}).retry())
 		            .then(() -> {
 			            wq.onNext(1);
 			            wq.onNext(2);
 			            wq.onNext(3);
 		            })
-		            .expectNext(2, 3)
-		            .verifyComplete();
+		            .expectNextMatches(d -> d == 1 || d == 2)
+		            .expectNextMatches(d -> d == 2 || d == 3)
+		            .thenCancel()
+		            .verify();
 
 		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
 		}
