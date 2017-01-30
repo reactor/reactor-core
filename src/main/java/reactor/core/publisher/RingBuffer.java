@@ -43,6 +43,64 @@ import static java.util.Arrays.copyOf;
  */
 abstract class RingBuffer<E> implements LongSupplier {
 
+	static <T> void addSequence(final T holder,
+			final AtomicReferenceFieldUpdater<T, Sequence[]> updater,
+			final Sequence sequence) {
+
+		Sequence[] updatedSequences;
+		Sequence[] currentSequences;
+
+		do {
+			currentSequences = updater.get(holder);
+			updatedSequences = copyOf(currentSequences, currentSequences.length + 1);
+
+			updatedSequences[currentSequences.length] = sequence;
+		}
+		while (!updater.compareAndSet(holder, currentSequences, updatedSequences));
+	}
+
+	private static <T> int countMatching(T[] values, final T toMatch) {
+		int numToRemove = 0;
+		for (T value : values) {
+			if (value == toMatch) // Specifically uses identity
+			{
+				numToRemove++;
+			}
+		}
+		return numToRemove;
+	}
+
+	static <T> boolean removeSequence(final T holder,
+			final AtomicReferenceFieldUpdater<T, Sequence[]> sequenceUpdater,
+			final Sequence sequence) {
+		int numToRemove;
+		Sequence[] oldSequences;
+		Sequence[] newSequences;
+
+		do {
+			oldSequences = sequenceUpdater.get(holder);
+
+			numToRemove = countMatching(oldSequences, sequence);
+
+			if (0 == numToRemove) {
+				break;
+			}
+
+			final int oldSize = oldSequences.length;
+			newSequences = new Sequence[oldSize - numToRemove];
+
+			for (int i = 0, pos = 0; i < oldSize; i++) {
+				final Sequence testSequence = oldSequences[i];
+				if (sequence != testSequence) {
+					newSequences[pos++] = testSequence;
+				}
+			}
+		}
+		while (!sequenceUpdater.compareAndSet(holder, oldSequences, newSequences));
+
+		return numToRemove != 0;
+	}
+
 	/**
 	 * Set to -1 as sequence starting point
 	 */
@@ -321,13 +379,7 @@ abstract class RingBuffer<E> implements LongSupplier {
 	}
 
 	static boolean hasUnsafe0() {
-
-		try {
-			return UnsafeSupport.hasUnsafe();
-		} catch (Throwable t) {
-			// Probably failed to initialize Reactor0.
-			return false;
-		}
+		return UnsafeSupport.hasUnsafe();
 	}
 
 	private static final boolean HAS_UNSAFE = hasUnsafe0();
@@ -439,7 +491,8 @@ abstract class RingBuffer<E> implements LongSupplier {
 }
 
 //
-abstract class UnsafeSupport {
+enum  UnsafeSupport {
+	;
 	static {
 		ByteBuffer direct = ByteBuffer.allocateDirect(1);
 		Field addressField;
@@ -484,14 +537,6 @@ abstract class UnsafeSupport {
 		}
 
 		UNSAFE = unsafe;
-	}
-
-	static ClassLoader getSystemClassLoader() {
-		if (System.getSecurityManager() == null) {
-			return ClassLoader.getSystemClassLoader();
-		} else {
-			return AccessController.doPrivileged((PrivilegedAction<ClassLoader>) ClassLoader::getSystemClassLoader);
-		}
 	}
 
 	static Unsafe getUnsafe(){
@@ -558,7 +603,7 @@ abstract class RingBufferProducer {
 	 * @param gatingSequence The sequences to add.
 	 */
 	final void addGatingSequence(RingBuffer.Sequence gatingSequence) {
-		SequenceGroups.addSequence(this, SEQUENCE_UPDATER, gatingSequence);
+		RingBuffer.addSequence(this, SEQUENCE_UPDATER, gatingSequence);
 	}
 
 	/**
@@ -568,7 +613,7 @@ abstract class RingBufferProducer {
 	 * @return <tt>true</tt> if this sequence was found, <tt>false</tt> otherwise.
 	 */
 	boolean removeGatingSequence(RingBuffer.Sequence sequence) {
-		return SequenceGroups.removeSequence(this, SEQUENCE_UPDATER, sequence);
+		return RingBuffer.removeSequence(this, SEQUENCE_UPDATER, sequence);
 	}
 
 	/**
@@ -651,70 +696,6 @@ abstract class RingBufferProducer {
 	 */
 	RingBuffer.Sequence[] getGatingSequences() {
 		return gatingSequences;
-	}
-}
-
-/**
- * Provides static methods for managing a {@link RingBuffer.Sequence} object.
- */
-final class SequenceGroups {
-
-	static <T> void addSequence(final T holder,
-			final AtomicReferenceFieldUpdater<T, RingBuffer.Sequence[]> updater,
-			final RingBuffer.Sequence sequence) {
-
-		RingBuffer.Sequence[] updatedSequences;
-		RingBuffer.Sequence[] currentSequences;
-
-		do {
-			currentSequences = updater.get(holder);
-			updatedSequences = copyOf(currentSequences, currentSequences.length + 1);
-
-			updatedSequences[currentSequences.length] = sequence;
-		}
-		while (!updater.compareAndSet(holder, currentSequences, updatedSequences));
-	}
-
-	static <T> boolean removeSequence(final T holder,
-			final AtomicReferenceFieldUpdater<T, RingBuffer.Sequence[]> sequenceUpdater,
-			final RingBuffer.Sequence sequence) {
-		int numToRemove;
-		RingBuffer.Sequence[] oldSequences;
-		RingBuffer.Sequence[] newSequences;
-
-		do {
-			oldSequences = sequenceUpdater.get(holder);
-
-			numToRemove = countMatching(oldSequences, sequence);
-
-			if (0 == numToRemove) {
-				break;
-			}
-
-			final int oldSize = oldSequences.length;
-			newSequences = new RingBuffer.Sequence[oldSize - numToRemove];
-
-			for (int i = 0, pos = 0; i < oldSize; i++) {
-				final RingBuffer.Sequence testSequence = oldSequences[i];
-				if (sequence != testSequence) {
-					newSequences[pos++] = testSequence;
-				}
-			}
-		}
-		while (!sequenceUpdater.compareAndSet(holder, oldSequences, newSequences));
-
-		return numToRemove != 0;
-	}
-
-	private static <T> int countMatching(T[] values, final T toMatch) {
-		int numToRemove = 0;
-		for (T value : values) {
-			if (value == toMatch) // Specifically uses identity
-			{
-				numToRemove++;
-			}
-		}
-		return numToRemove;
 	}
 }
 
