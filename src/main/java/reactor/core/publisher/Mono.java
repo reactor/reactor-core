@@ -2986,7 +2986,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @see #as for a loose conversion to an arbitrary type
 	 */
 	public final <V> Mono<V> transform(Function<? super Mono<T>, ? extends Publisher<V>> transformer) {
-		return from(transformer.apply(this));
+		return onAssembly(from(transformer.apply(this)));
 	}
 
 	/**

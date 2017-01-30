@@ -6529,7 +6529,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @see #as for a loose conversion to an arbitrary type
 	 */
 	public final <V> Flux<V> transform(Function<? super Flux<T>, ? extends Publisher<V>> transformer) {
-		return from(transformer.apply(this));
+		return onAssembly(from(transformer.apply(this)));
 	}
 
 	/**
