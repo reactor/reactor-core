@@ -704,11 +704,6 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	}
 
 	@Override
-	public long downstreamCount() {
-		return ringBuffer.getSequenceReceivers().length - (isStarted() ? 1 : 0);
-	}
-
-	@Override
 	public void run() {
 		if (!alive() && SUBSCRIBER_COUNT.get(TopicProcessor.this) == 0) {
 			WaitStrategy.throwAlert();

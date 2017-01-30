@@ -639,11 +639,6 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	}
 
 	@Override
-	public long downstreamCount() {
-		return ringBuffer.getSequenceReceivers().length - 1;
-	}
-
-	@Override
 	public void run() {
 		if (!alive()) {
 			WaitStrategy.throwAlert();

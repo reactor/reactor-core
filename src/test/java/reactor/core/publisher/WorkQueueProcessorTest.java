@@ -193,7 +193,7 @@ public class WorkQueueProcessorTest {
 		TimeUnit.SECONDS.sleep(1);
 	}
 
-	@Test(timeout = 3000L)
+	@Test(timeout = 15000L)
 	public void cancelDoesNotHang() throws Exception {
 		WorkQueueProcessor<String> wq = WorkQueueProcessor.create();
 
@@ -203,11 +203,11 @@ public class WorkQueueProcessorTest {
 
 		d.dispose();
 
-		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
+		while (wq.downstreamCount() != 0 && Thread.activeCount() > 2) {
 		}
 	}
 
-	@Test(timeout = 3000L)
+	@Test(timeout = 15000L)
 	public void completeDoesNotHang() throws Exception {
 		WorkQueueProcessor<String> wq = WorkQueueProcessor.create();
 
@@ -217,7 +217,7 @@ public class WorkQueueProcessorTest {
 
 		wq.onComplete();
 
-		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
+		while (wq.downstreamCount() != 0 && Thread.activeCount() > 2) {
 		}
 	}
 
@@ -232,12 +232,12 @@ public class WorkQueueProcessorTest {
 		d = wq.subscribe();
 		d.dispose();
 
-		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
+		while (wq.downstreamCount() != 0 && Thread.activeCount() > 2) {
 		}
 	}
 
 	@Test
-	public void retryErrorPropagatedFromWorkQueueSubscriber() throws Exception {
+	public void retryErrorPropagatedFromWorkQueueSubscriberCold() throws Exception {
 		AtomicInteger errors = new AtomicInteger(3);
 		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
 
@@ -254,6 +254,33 @@ public class WorkQueueProcessorTest {
 			            wq.onNext(2);
 			            wq.onNext(3);
 			            wq.onComplete();
+		            })
+		            .expectNext(2, 3)
+		            .verifyComplete();
+
+		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
+		}
+	}
+
+
+
+	@Test
+	public void retryErrorPropagatedFromWorkQueueSubscriberHot() throws Exception {
+		AtomicInteger errors = new AtomicInteger(3);
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+
+		StepVerifier.create(wq.log().<Integer>handle((s1, sink) -> {
+			if (errors.decrementAndGet() > 0) {
+				sink.error(new RuntimeException());
+			}
+			else {
+				sink.next(s1);
+			}
+		}).retry().take(2))
+		            .then(() -> {
+			            wq.onNext(1);
+			            wq.onNext(2);
+			            wq.onNext(3);
 		            })
 		            .expectNext(2, 3)
 		            .verifyComplete();

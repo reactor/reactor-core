@@ -592,6 +592,11 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		}
 	}
 
+	@Override
+	public long downstreamCount() {
+		return subscriberCount;
+	}
+
 	abstract void doError(Throwable throwable);
 
 	final boolean incrementSubscribers() {
