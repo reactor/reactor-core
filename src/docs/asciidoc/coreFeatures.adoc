@@ -322,16 +322,16 @@ The equivalent of **(1)** is `onErrorReturn`:
 ----
 Flux.just(10)
     .map(this::doSomethingDangerous)
-    .onErrorReturn("DEFAULT_VALUE");
+    .onErrorReturn("RECOVERED");
 ----
 
-You also have the option of dynamically choosing the single value depending on
-the exception that occurred:
+You also have the option of filtering when to recover with a default value vs
+letting the error propagate, depending on the exception that occurred:
 [source,java]
 ----
 Flux.just(10)
     .map(this::doSomethingDangerous)
-    .onErrorReturn(e -> valueForError(e));
+    .onErrorReturn(e -> e.getMessage().equals("boom10"), "recovered10");
 ----
 
 If you want more than a single default value and you have an alternative safer
@@ -360,7 +360,7 @@ For more dynamic options, `onErrorResumeWith` is the more advanced alternative.
 It takes a `Function` that maps the error to the fallback sequence to switch to:
 [source,java]
 ----
-Flux.just("key1", "key2")
+Flux.just("timeout1", "unknown", "key2")
     .flatMap(k ->
         callExternalService(k)
           .onErrorResumeWith(error -> { <1>
@@ -382,10 +382,10 @@ That last line inside the `flatMap` gives us an hint as to how item *(3)* (catch
 wrap and rethrow) could be achieved:
 [source,java]
 ----
-Flux.just("key1")
+Flux.just("timeout1")
     .flatMap(k -> callExternalService(k)
         .onErrorResumeWith(original -> Flux.error(
-            new BusinessException("oops", original))
+            new BusinessException("oops, SLA exceeded", original))
         )
     );
 ----
@@ -401,10 +401,15 @@ we at least log that the external service had a failure. We could also imagine
 we have statistic counters to increment as an error side-effect...
 [source,java]
 ----
-Flux.just("key1")
-    .flatMap(k -> callExternalService(k) <1>
-        .doOnError(e -> log("uh oh, falling back, service failed for key " + k)) <2>
-        .switchOnError(getFromCache(k)) <3>
+LongAdder failureStat = new LongAdder();
+Flux<String> flux =
+Flux.just("unknown")
+    .flatMap(k -> callExternalService(k) // <1>
+		    .doOnError(e -> {
+		    	failureStat.increment();
+		    	log("uh oh, falling back, service failed for key " + k); // <2>
+		    })
+        .switchOnError(getFromCache(k)) // <3>
     );
 ----
 <1> the external service call that can fail...
