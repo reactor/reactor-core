@@ -254,9 +254,14 @@ You can further detect and triage it by the `Exceptions.isErrorCallbackNotImplem
 method.
 
 But Reactor also offers alternative means of dealing with errors in the middle
-of the chain, as error-handling operators. While the *upstream of the sequence
-will still have been terminated*, these operators allow to continue a separate
-fallback sequence downstream.
+of the chain, as error-handling operators.
+
+IMPORTANT: Before you learn about error-handling operators, you must keep in
+mind that *any error in a reactive sequence is a terminal event*. Even if an
+error-handling operator is used, it doesn't allow the *original* sequence to
+continue, but rather converts the `onError` signal into the start of a *new*
+sequence (the fallback one). As such it replaces the terminated sequence
+_upstream_.
 
 Let's go through each mean of error handling one-by-one. When relevant we'll
 make a parallel with imperative world's `try` patterns.
@@ -430,8 +435,80 @@ Flux.just("foo")
 <1> `doFinally` consumes a `SignalType` for the type of termination.
 <2> here we increment statistics in case of cancellation only.
 
-//TODO talk about how the upstream is still terminated (example of an `interval` not ticking anymore)
-//TODO talk about retry, and its caveats (re-subscription, example of an `interval` ticking back from 0)
+In order to demonstrate that all these operators don't prevent the upstream
+original sequence to terminate when the error happens, let's take a more visual
+example with a `Flux.interval`. The interval operator ticks every x units of time
+with an increasing `Long`:
+[source,java]
+----
+Flux.intervalMillis(250)
+    .map(input -> {
+        if (input < 3) return "tick " + input;
+        throw new RuntimeException("boom");
+    })
+    .onErrorReturn("Uh oh")
+    .subscribe(System.out::println);
+
+Thread.sleep(2100); <1>
+----
+<1> Note that `intervalMillis` executes on the *timer* `Scheduler` by default.
+Assuming we'd want to run that example in a main class, we add a sleep here so
+that the application doesn't exit immediately without any value being produced.
+
+This prints out, one line every 250ms:
+----
+tick 0
+tick 1
+tick 2
+Uh oh
+----
+
+Even with one extra second of runtime, no more tick comes in from the `interval`.
+The sequence was indeed terminated by the error.
+
+There is another operator of interest with regards to error handling, and you
+might be tempted to use it in the case above. `retry`, as its mame indicates,
+allows to retry an erroring sequence.
+
+But the caveat is that it works by *re-subscribing* to the upstream `Flux`. So
+this is still in effect a different sequence, and the original one is still
+terminated. To verify that, we can re-use the previous example and append a
+`retry(1)` to retry once instead of the onErrorReturn:
+[source,java]
+----
+Flux.intervalMillis(250)
+    .map(input -> {
+        if (input < 3) return "tick " + input;
+        throw new RuntimeException("boom");
+    })
+    .elapsed() <1>
+    .retry(1)
+    .subscribe(System.out::println,
+      System.err::println); <2>
+
+Thread.sleep(2100); <3>
+----
+<1> `elapsed` will associate each value with the duration since previous value
+was emitted.
+<2> We also want to see when there is an `onError`
+<3> We have enough time for our 4x2 ticks
+
+This prints out:
+----
+259,tick 0
+249,tick 1
+251,tick 2
+506,tick 0 <1>
+248,tick 1
+253,tick 2
+java.lang.RuntimeException: boom
+----
+<1> Here a new `interval` started, from tick 0. The additional 250ms duration is
+coming from the 4th tick, the one that causes the exception and subsequent retry
+
+As you can see above, `retry(1)` merely re-subscribed to the original `interval`
+once, restarting the tick from 0. The second time around, since the exception
+still occurs, it gives up and propagate it downstream.
 
 ==== How are exceptions in operators or functions handled?
 In general, all operators can themselves contain code that potentially trigger
@@ -488,6 +565,48 @@ that exceptions are wrapped only if they are checked exceptions:
    `throwIfFatal` first, and won't wrap `RuntimeException`.
  - use the `Exceptions.unwrap` method to get the original unwrapped exception (going back to
    the root cause of a hierarchy of reactor-specific exceptions).
+
+Let's take the example of a `map` that uses a conversion method that can throw
+an `IOException`:
+[source,java]
+----
+public String convert(int i) throws IOException {
+	if (i > 3) {
+		throw new IOException("boom " + i);
+	}
+	return "OK " + i;
+}
+----
+
+Now imagine you want to use that method in a `map`. You now have to explicitly
+catch the exception, and your map function cannot re-throw it. So you can
+propagate it to map's `onError` as a `RuntimeException`:
+[source,java]
+----
+Flux<String> converted = Flux
+    .range(1, 10)
+    .map(i -> {
+      try { return convert(i); }
+      catch (IOException e) { throw Exceptions.propagate(e); }
+    });
+----
+
+Later on, when subscribing to the above flux and reacting to errors, eg. in the
+UI, you could revert back to the original exception in case you want to do
+something special for IOExceptions:
+[source,java]
+----
+converted.subscribe(
+    v -> System.out.println("RECEIVED: " + v),
+    e -> {
+      if (Exceptions.unwrap(e) instanceof IOException) {
+        System.out.println("Something bad happened with I/O");
+      } else {
+        System.out.println("Something bad happened");
+      }
+    }
+);
+----
 
 === Processor
 ==== Do I need a Processor?
