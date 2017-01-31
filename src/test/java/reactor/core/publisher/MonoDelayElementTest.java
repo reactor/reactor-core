@@ -161,7 +161,7 @@ public class MonoDelayElementTest {
 		catch (Throwable e) {
 			Throwable t = Exceptions.unwrap(e);
 
-			assertThat(t).isNotEqualTo(e)
+			assertThat(t).isEqualTo(e)
 		                 .isInstanceOf(RejectedExecutionException.class)
 		                 .hasMessage("Scheduler unavailable");
 
