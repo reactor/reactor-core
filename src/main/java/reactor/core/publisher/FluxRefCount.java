@@ -15,6 +15,7 @@
  */
 package reactor.core.publisher;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -38,7 +39,7 @@ import reactor.core.Receiver;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxRefCount<T> extends Flux<T>
-		implements Receiver, Loopback, Fuseable {
+		implements Receiver, Producer, Fuseable {
 
 	final ConnectableFlux<? extends T> source;
 	
@@ -49,12 +50,17 @@ final class FluxRefCount<T> extends Flux<T>
 	static final AtomicReferenceFieldUpdater<FluxRefCount, State> CONNECTION =
 			AtomicReferenceFieldUpdater.newUpdater(FluxRefCount.class, State.class, "connection");
 
-	public FluxRefCount(ConnectableFlux<? extends T> source, int n) {
+	FluxRefCount(ConnectableFlux<? extends T> source, int n) {
 		if (n <= 0) {
 			throw new IllegalArgumentException("n > 0 required but it was " + n);
 		}
 		this.source = Objects.requireNonNull(source, "source");
 		this.n = n;
+	}
+
+	@Override
+	public long getPrefetch() {
+		return source.getPrefetch();
 	}
 	
 	@Override
@@ -80,7 +86,7 @@ final class FluxRefCount<T> extends Flux<T>
 
 
 	@Override
-	public Object connectedOutput() {
+	public Object downstream() {
 		return connection;
 	}
 
@@ -89,7 +95,7 @@ final class FluxRefCount<T> extends Flux<T>
 		return source;
 	}
 
-	static final class State<T> implements Consumer<Disposable>, MultiProducer, Receiver {
+	static final class State<T> implements Consumer<Disposable>, Receiver {
 		
 		final int n;
 		
@@ -107,7 +113,7 @@ final class FluxRefCount<T> extends Flux<T>
 		
 		static final Disposable DISCONNECTED = () -> { };
 
-		public State(int n, FluxRefCount<? extends T> parent) {
+		State(int n, FluxRefCount<? extends T> parent) {
 			this.n = n;
 			this.parent = parent;
 		}
@@ -158,16 +164,6 @@ final class FluxRefCount<T> extends Flux<T>
 		}
 
 		@Override
-		public Iterator<?> downstreams() {
-			return null;
-		}
-
-		@Override
-		public long downstreamCount() {
-			return subscribers;
-		}
-
-		@Override
 		public Object upstream() {
 			return parent;
 		}
@@ -175,7 +171,7 @@ final class FluxRefCount<T> extends Flux<T>
 		static final class InnerSubscriber<T> implements Subscriber<T>,
 		                                                 QueueSubscription<T>,
 		                                                 Receiver,
-		                                                 Producer, Loopback {
+		                                                 Producer {
 
 			final Subscriber<? super T> actual;
 			
@@ -232,16 +228,6 @@ final class FluxRefCount<T> extends Flux<T>
 
 			@Override
 			public Object upstream() {
-				return s;
-			}
-
-			@Override
-			public Object connectedInput() {
-				return null;
-			}
-
-			@Override
-			public Object connectedOutput() {
 				return s;
 			}
 
