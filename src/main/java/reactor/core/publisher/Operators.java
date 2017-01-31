@@ -395,9 +395,9 @@ public abstract class Operators {
 			ree.addSuppressed(suppressed);
 		}
 		if (dataSignal != null) {
-			return Exceptions.bubble(Operators.onOperatorError(subscription, ree, dataSignal));
+			return Exceptions.propagate(Operators.onOperatorError(subscription, ree, dataSignal));
 		}
-		return Exceptions.bubble(Operators.onOperatorError(subscription, ree));
+		return Exceptions.propagate(Operators.onOperatorError(subscription, ree));
 	}
 
 	/**

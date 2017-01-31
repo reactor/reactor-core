@@ -39,15 +39,12 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
-import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
@@ -1013,51 +1010,43 @@ public class FluxPublishOnTest extends AbstractFluxOperatorTest<String, String> 
 	public void rejectedExecutionExceptionOnDataSignalExecutorService()
 			throws InterruptedException {
 
-		final AtomicReference<Throwable> throwableInOnOperatorError =
-				new AtomicReference<>();
-		final AtomicReference<Object> dataInOnOperatorError = new AtomicReference<>();
+		CountDownLatch hookLatch = new CountDownLatch(1);
+
+		Hooks.onOperatorError((t, d) -> {
+			assertTrue(t instanceof RejectedExecutionException);
+			assertTrue(d != null);
+			hookLatch.countDown();
+			return t;
+		});
 
 		try {
-
-			CountDownLatch hookLatch = new CountDownLatch(1);
-
-			Hooks.onOperatorError((t, d) -> {
-				throwableInOnOperatorError.set(t);
-				dataInOnOperatorError.set(d);
-				hookLatch.countDown();
-				return t;
-			});
-
 			ExecutorService executor = newCachedThreadPool();
-			CountDownLatch latch = new CountDownLatch(1);
-
-			AssertSubscriber<Integer> assertSubscriber = new AssertSubscriber<>();
-			Flux.range(0, 5)
-			    .publishOn(fromExecutorService(executor))
-			    .doOnNext(s -> {
-				    try {
-					    latch.await();
-				    }
-				    catch (InterruptedException e) {
-				    }
-			    })
-			    .publishOn(fromExecutorService(executor))
-			    .subscribe(assertSubscriber);
-
-			executor.shutdownNow();
-
-			assertSubscriber.assertNoValues()
-			                .assertNoError()
-			                .assertNotComplete();
-
-			hookLatch.await();
-
-			Assert.assertThat(throwableInOnOperatorError.get(),
-					CoreMatchers.instanceOf(RejectedExecutionException.class));
-			Assert.assertSame(dataInOnOperatorError.get(), 0);
+			StepVerifier.create(Flux.range(0, 5)
+			                        .log()
+			                        .publishOn(Schedulers.elastic())
+			                        .doOnRequest(n -> executor.shutdownNow())
+			                        .publishOn(fromExecutorService(executor))
+			                        .doOnNext(this::infiniteBlock))
+			            .then(() -> {
+				            try {
+					            hookLatch.await();
+				            }
+				            catch (InterruptedException e) {
+				            }
+			            })
+			            .thenCancel()
+			            .verify();
 		}
 		finally {
 			Hooks.resetOnOperatorError();
+		}
+	}
+
+	void infiniteBlock(Integer t) {
+		try {
+			new CountDownLatch(1).await();
+		}
+		catch (InterruptedException e) {
 		}
 	}
 
