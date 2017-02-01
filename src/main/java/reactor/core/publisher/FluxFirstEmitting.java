@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Arrays;
@@ -32,11 +33,10 @@ import reactor.core.Trackable;
  * subscriber which responds first with any signal.
  *
  * @param <T> the value type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxFirstEmitting<T>
-extends Flux<T>
-		implements MultiReceiver {
+final class FluxFirstEmitting<T> extends Flux<T> implements MultiReceiver {
 
 	final Publisher<? extends T>[] array;
 
@@ -55,7 +55,8 @@ extends Flux<T>
 
 	@Override
 	public Iterator<?> upstreams() {
-		return iterable != null ? iterable.iterator() : Arrays.asList(array).iterator();
+		return iterable != null ? iterable.iterator() : Arrays.asList(array)
+		                                                      .iterator();
 	}
 
 	@Override
@@ -75,17 +76,13 @@ extends Flux<T>
 			Iterator<? extends Publisher<? extends T>> it;
 
 			try {
-				it = iterable.iterator();
-			} catch (Throwable e) {
+				it = Objects.requireNonNull(iterable.iterator(),
+						"The iterator returned is null");
+			}
+			catch (Throwable e) {
 				Operators.error(s, Operators.onOperatorError(e));
 				return;
 			}
-
-			if (it == null) {
-				Operators.error(s, new NullPointerException("The iterator returned is null"));
-				return;
-			}
-
 
 			for (; ; ) {
 
@@ -93,7 +90,8 @@ extends Flux<T>
 
 				try {
 					b = it.hasNext();
-				} catch (Throwable e) {
+				}
+				catch (Throwable e) {
 					Operators.error(s, Operators.onOperatorError(e));
 					return;
 				}
@@ -106,13 +104,16 @@ extends Flux<T>
 
 				try {
 					p = it.next();
-				} catch (Throwable e) {
+				}
+				catch (Throwable e) {
 					Operators.error(s, Operators.onOperatorError(e));
 					return;
 				}
 
 				if (p == null) {
-					Operators.error(s, new NullPointerException("The Publisher returned by the iterator is " + "null"));
+					Operators.error(s,
+							new NullPointerException(
+									"The Publisher returned by the iterator is " + "null"));
 					return;
 				}
 
@@ -124,7 +125,8 @@ extends Flux<T>
 				a[n++] = p;
 			}
 
-		} else {
+		}
+		else {
 			n = a.length;
 		}
 
@@ -136,8 +138,10 @@ extends Flux<T>
 			Publisher<? extends T> p = a[0];
 
 			if (p == null) {
-				Operators.error(s, new NullPointerException("The single source Publisher is null"));
-			} else {
+				Operators.error(s,
+						new NullPointerException("The single source Publisher is null"));
+			}
+			else {
 				p.subscribe(s);
 			}
 			return;
@@ -155,13 +159,14 @@ extends Flux<T>
 	 * This operation doesn't change the current FluxFirstEmitting instance.
 	 *
 	 * @param source the new source to merge with the others
+	 *
 	 * @return the new FluxFirstEmitting instance or null if the Amb runs with an Iterable
 	 */
 	public FluxFirstEmitting<T> ambAdditionalSource(Publisher<? extends T> source) {
 		if (array != null) {
 			int n = array.length;
-			@SuppressWarnings("unchecked")
-			Publisher<? extends T>[] newArray = new Publisher[n + 1];
+			@SuppressWarnings("unchecked") Publisher<? extends T>[] newArray =
+					new Publisher[n + 1];
 			System.arraycopy(array, 0, newArray, 0, n);
 			newArray[n] = source;
 
@@ -180,7 +185,7 @@ extends Flux<T>
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<RaceCoordinator> WIP =
-		  AtomicIntegerFieldUpdater.newUpdater(RaceCoordinator.class, "wip");
+				AtomicIntegerFieldUpdater.newUpdater(RaceCoordinator.class, "wip");
 
 		@SuppressWarnings("unchecked")
 		public RaceCoordinator(int n) {
@@ -188,7 +193,9 @@ extends Flux<T>
 			wip = Integer.MIN_VALUE;
 		}
 
-		void subscribe(Publisher<? extends T>[] sources, int n, Subscriber<? super T> actual) {
+		void subscribe(Publisher<? extends T>[] sources,
+				int n,
+				Subscriber<? super T> actual) {
 			FirstEmittingSubscriber<T>[] a = subscribers;
 
 			for (int i = 0; i < n; i++) {
@@ -222,7 +229,8 @@ extends Flux<T>
 				int w = wip;
 				if (w >= 0) {
 					subscribers[w].request(n);
-				} else {
+				}
+				else {
 					for (FirstEmittingSubscriber<T> s : subscribers) {
 						s.request(n);
 					}
@@ -240,7 +248,8 @@ extends Flux<T>
 			int w = wip;
 			if (w >= 0) {
 				subscribers[w].cancel();
-			} else {
+			}
+			else {
 				for (FirstEmittingSubscriber<T> s : subscribers) {
 					s.cancel();
 				}
@@ -273,7 +282,8 @@ extends Flux<T>
 
 		@Override
 		public Iterator<?> upstreams() {
-			return Arrays.asList(subscribers).iterator();
+			return Arrays.asList(subscribers)
+			             .iterator();
 		}
 
 		@Override
@@ -283,8 +293,7 @@ extends Flux<T>
 	}
 
 	static final class FirstEmittingSubscriber<T> extends Operators.DeferredSubscription
-		implements Subscriber<T>, Producer
-	{
+			implements Subscriber<T>, Producer {
 
 		final RaceCoordinator<T> parent;
 
@@ -294,7 +303,9 @@ extends Flux<T>
 
 		boolean won;
 
-		public FirstEmittingSubscriber(Subscriber<? super T> actual, RaceCoordinator<T> parent, int index) {
+		public FirstEmittingSubscriber(Subscriber<? super T> actual,
+				RaceCoordinator<T> parent,
+				int index) {
 			this.actual = actual;
 			this.parent = parent;
 			this.index = index;
@@ -314,7 +325,8 @@ extends Flux<T>
 		public void onNext(T t) {
 			if (won) {
 				actual.onNext(t);
-			} else if (parent.tryWin(index)) {
+			}
+			else if (parent.tryWin(index)) {
 				won = true;
 				actual.onNext(t);
 			}
@@ -324,7 +336,8 @@ extends Flux<T>
 		public void onError(Throwable t) {
 			if (won) {
 				actual.onError(t);
-			} else if (parent.tryWin(index)) {
+			}
+			else if (parent.tryWin(index)) {
 				won = true;
 				actual.onError(t);
 			}
@@ -334,7 +347,8 @@ extends Flux<T>
 		public void onComplete() {
 			if (won) {
 				actual.onComplete();
-			} else if (parent.tryWin(index)) {
+			}
+			else if (parent.tryWin(index)) {
 				won = true;
 				actual.onComplete();
 			}

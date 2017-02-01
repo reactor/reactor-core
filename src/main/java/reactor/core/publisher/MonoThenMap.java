@@ -97,17 +97,11 @@ final class MonoThenMap<T, R> extends MonoSource<T, R> implements Fuseable {
 			Mono<? extends R> m;
 
 			try {
-				m = mapper.apply(t);
+				m = Objects.requireNonNull(mapper.apply(t),
+						"The mapper returned a null Mono");
 			}
 			catch (Throwable ex) {
 				actual.onError(Operators.onOperatorError(s, ex, t));
-				return;
-			}
-
-			if (m == null) {
-				actual.onError(Operators.onOperatorError(s,
-						new NullPointerException("The mapper " + "returned a null Mono"),
-						t));
 				return;
 			}
 

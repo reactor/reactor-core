@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.util.Collection;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
@@ -46,17 +47,11 @@ final class MonoCollectList<T, C extends Collection<? super T>> extends MonoSour
 		C collection;
 
 		try {
-			collection = collectionSupplier.get();
+			collection = Objects.requireNonNull(collectionSupplier.get(),
+					"The collectionSupplier returned a null collection");
 		}
 		catch (Throwable ex) {
 			Operators.error(s, Operators.onOperatorError(ex));
-			return;
-		}
-
-		if (collection == null) {
-			Operators.error(s, Operators.onOperatorError(new NullPointerException("The " +
-					"collectionSupplier " +
-					"returned a null collection")));
 			return;
 		}
 

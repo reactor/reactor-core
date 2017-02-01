@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Objects;
@@ -31,6 +32,7 @@ import reactor.core.Receiver;
  *
  * @param <T> the source value type
  * @param <R> the accumulated result type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoReduceSeed<T, R> extends MonoSource<T, R> implements Fuseable {
@@ -39,8 +41,9 @@ final class MonoReduceSeed<T, R> extends MonoSource<T, R> implements Fuseable {
 
 	final BiFunction<R, ? super T, R> accumulator;
 
-	public MonoReduceSeed(Publisher<? extends T> source, Supplier<R> initialSupplier,
-						   BiFunction<R, ? super T, R> accumulator) {
+	public MonoReduceSeed(Publisher<? extends T> source,
+			Supplier<R> initialSupplier,
+			BiFunction<R, ? super T, R> accumulator) {
 		super(source);
 		this.initialSupplier = Objects.requireNonNull(initialSupplier, "initialSupplier");
 		this.accumulator = Objects.requireNonNull(accumulator, "accumulator");
@@ -51,23 +54,18 @@ final class MonoReduceSeed<T, R> extends MonoSource<T, R> implements Fuseable {
 		R initialValue;
 
 		try {
-			initialValue = initialSupplier.get();
-		} catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
-			return;
+			initialValue = Objects.requireNonNull(initialSupplier.get(),
+					"The initial value supplied is null");
 		}
-
-		if (initialValue == null) {
-			Operators.error(s, Operators.onOperatorError(new
-					NullPointerException("The initial value supplied is null")));
+		catch (Throwable e) {
+			Operators.error(s, Operators.onOperatorError(e));
 			return;
 		}
 
 		source.subscribe(new ReduceSubscriber<>(s, accumulator, initialValue));
 	}
 
-	static final class ReduceSubscriber<T, R>
-			extends Operators.MonoSubscriber<T, R>
+	static final class ReduceSubscriber<T, R> extends Operators.MonoSubscriber<T, R>
 			implements Receiver {
 
 		final BiFunction<R, ? super T, R> accumulator;
@@ -76,8 +74,9 @@ final class MonoReduceSeed<T, R> extends MonoSource<T, R> implements Fuseable {
 
 		boolean done;
 
-		public ReduceSubscriber(Subscriber<? super R> actual, BiFunction<R, ? super T, R> accumulator,
-										 R value) {
+		public ReduceSubscriber(Subscriber<? super R> actual,
+				BiFunction<R, ? super T, R> accumulator,
+				R value) {
 			super(actual);
 			this.accumulator = accumulator;
 			this.value = value;
@@ -111,14 +110,16 @@ final class MonoReduceSeed<T, R> extends MonoSource<T, R> implements Fuseable {
 
 			try {
 				v = accumulator.apply(value, t);
-			} catch (Throwable e) {
+			}
+			catch (Throwable e) {
 				onError(Operators.onOperatorError(this, e, t));
 				return;
 			}
 
 			if (v == null) {
-				onError(Operators.onOperatorError(this, new NullPointerException("The" +
-						" accumulator returned a null value"), t));
+				onError(Operators.onOperatorError(this,
+						new NullPointerException("The" + " accumulator returned a null value"),
+						t));
 				return;
 			}
 

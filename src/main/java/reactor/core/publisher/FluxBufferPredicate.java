@@ -81,15 +81,11 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 		C initialBuffer;
 
 		try {
-			initialBuffer = bufferSupplier.get();
+			initialBuffer = Objects.requireNonNull(bufferSupplier.get(),
+					"The bufferSupplier returned a null initial buffer");
 		}
 		catch (Throwable e) {
 			Operators.error(s, Operators.onOperatorError(e));
-			return;
-		}
-
-		if (initialBuffer == null) {
-			Operators.error(s, new NullPointerException("The bufferSupplier returned a null initial buffer"));
 			return;
 		}
 
@@ -220,10 +216,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 			}
 			else {
 				b.add(t);
-				if (!fastpath && requested != 0) {
-					return false;
-				}
-				return true;
+				return !(!fastpath && requested != 0);
 			}
 
 			return !requestMore;
@@ -241,16 +234,11 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 			C c;
 
 			try {
-				c = bufferSupplier.get();
+				c = Objects.requireNonNull(bufferSupplier.get(),
+						"The bufferSupplier returned a null buffer");
 			}
 			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e));
-				return null;
-			}
-
-			if (c == null) {
-				cancel();
-				onError(new NullPointerException("The bufferSupplier returned a null buffer"));
 				return null;
 			}
 

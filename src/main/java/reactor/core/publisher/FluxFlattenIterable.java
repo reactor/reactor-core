@@ -348,15 +348,11 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 						R v;
 
 						try {
-							v = it.next();
+							v = Objects.requireNonNull(it.next(),
+									"iterator returned null");
 						}
 						catch (Throwable exc) {
 							onError(Operators.onOperatorError(s, exc));
-							continue;
-						}
-
-						if (v == null) {
-							onError(Operators.onOperatorError(s, new NullPointerException("iterator returned null")));
 							continue;
 						}
 
@@ -509,18 +505,12 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 						R v;
 
 						try {
-							v = it.next();
+							v = Objects.requireNonNull(it.next(),
+									"iterator returned null");
 						}
 						catch (Throwable exc) {
 							current = null;
 							a.onError(Operators.onOperatorError(s, exc));
-							return;
-						}
-
-						if(v == null){
-							current = null;
-							a.onError(Operators.onOperatorError(s, new
-									NullPointerException("iterator returned null")));
 							return;
 						}
 

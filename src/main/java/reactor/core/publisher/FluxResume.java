@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Objects;
@@ -28,6 +29,7 @@ import reactor.core.Loopback;
  * a function for the particular failure exception.
  *
  * @param <T> the value type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxResume<T> extends FluxSource<T, T> {
@@ -35,7 +37,7 @@ final class FluxResume<T> extends FluxSource<T, T> {
 	final Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory;
 
 	public FluxResume(Publisher<? extends T> source,
-						   Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory) {
+			Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory) {
 		super(source);
 		this.nextFactory = Objects.requireNonNull(nextFactory, "nextFactory");
 	}
@@ -45,15 +47,15 @@ final class FluxResume<T> extends FluxSource<T, T> {
 		source.subscribe(new ResumeSubscriber<>(s, nextFactory));
 	}
 
-	static final class ResumeSubscriber<T> extends Operators.MultiSubscriptionSubscriber<T, T>
-			implements Loopback {
+	static final class ResumeSubscriber<T>
+			extends Operators.MultiSubscriptionSubscriber<T, T> implements Loopback {
 
 		final Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory;
 
 		boolean second;
 
 		public ResumeSubscriber(Subscriber<? super T> actual,
-										 Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory) {
+				Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory) {
 			super(actual);
 			this.nextFactory = nextFactory;
 		}
@@ -83,23 +85,20 @@ final class FluxResume<T> extends FluxSource<T, T> {
 				Publisher<? extends T> p;
 
 				try {
-					p = nextFactory.apply(t);
-				} catch (Throwable e) {
+					p = Objects.requireNonNull(nextFactory.apply(t),
+					"The nextFactory returned a null Publisher");
+				}
+				catch (Throwable e) {
 					Throwable _e = Operators.onOperatorError(e);
-					if(t != _e) {
-					  _e.addSuppressed(t);
+					if (t != _e) {
+						_e.addSuppressed(t);
 					}
 					subscriber.onError(_e);
 					return;
 				}
-				if (p == null) {
-					NullPointerException t2 = new NullPointerException("The nextFactory returned a null Publisher");
-					t2.addSuppressed(t);
-					subscriber.onError(t2);
-				} else {
-					p.subscribe(this);
-				}
-			} else {
+				p.subscribe(this);
+			}
+			else {
 				subscriber.onError(t);
 			}
 		}

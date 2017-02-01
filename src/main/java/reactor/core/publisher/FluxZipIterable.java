@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Arrays;
@@ -34,6 +35,7 @@ import reactor.core.Trackable;
  * @param <T> the main source value type
  * @param <U> the iterable source value type
  * @param <R> the result type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
@@ -42,67 +44,67 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 
 	final BiFunction<? super T, ? super U, ? extends R> zipper;
 
-	public FluxZipIterable(Publisher<? extends T> source, Iterable<? extends U> other,
+	FluxZipIterable(Publisher<? extends T> source,
+			Iterable<? extends U> other,
 			BiFunction<? super T, ? super U, ? extends R> zipper) {
 		super(source);
 		this.other = Objects.requireNonNull(other, "other");
 		this.zipper = Objects.requireNonNull(zipper, "zipper");
 	}
-	
+
 	@Override
 	public void subscribe(Subscriber<? super R> s) {
 		Iterator<? extends U> it;
-		
+
 		try {
-			it = other.iterator();
-		} catch (Throwable e) {
+			it = Objects.requireNonNull(other.iterator(),
+					"The other iterable produced a null iterator");
+		}
+		catch (Throwable e) {
 			Operators.error(s, Operators.onOperatorError(e));
 			return;
 		}
-		
-		if (it == null) {
-			Operators.error(s, new NullPointerException("The other iterable produced a null iterator"));
-			return;
-		}
-		
+
 		boolean b;
-		
+
 		try {
 			b = it.hasNext();
-		} catch (Throwable e) {
+		}
+		catch (Throwable e) {
 			Operators.error(s, Operators.onOperatorError(e));
 			return;
 		}
-		
+
 		if (!b) {
 			Operators.complete(s);
 			return;
 		}
-		
+
 		source.subscribe(new ZipSubscriber<>(s, it, zipper));
 	}
 
-	static final class ZipSubscriber<T, U, R> implements Subscriber<T>, Producer, MultiReceiver,
-	                                                     Receiver, Subscription,
-	                                                     Trackable {
-		
+	static final class ZipSubscriber<T, U, R>
+			implements Subscriber<T>, Producer, MultiReceiver, Receiver, Subscription,
+			           Trackable {
+
 		final Subscriber<? super R> actual;
-		
+
 		final Iterator<? extends U> it;
-		
+
 		final BiFunction<? super T, ? super U, ? extends R> zipper;
-		
+
 		Subscription s;
-		
+
 		boolean done;
 
-		public ZipSubscriber(Subscriber<? super R> actual, Iterator<? extends U> it,
+		ZipSubscriber(Subscriber<? super R> actual,
+				Iterator<? extends U> it,
 				BiFunction<? super T, ? super U, ? extends R> zipper) {
 			this.actual = actual;
 			this.it = it;
 			this.zipper = zipper;
 		}
-		
+
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
@@ -110,7 +112,7 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 				actual.onSubscribe(this);
 			}
 		}
-		
+
 		@Override
 		public void onNext(T t) {
 			if (done) {
@@ -119,53 +121,48 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 			}
 
 			U u;
-			
+
 			try {
 				u = it.next();
-			} catch (Throwable e) {
-				done = true;
-				actual.onError(Operators.onOperatorError(s, e, t));
-				return;
 			}
-			
-			R r;
-			
-			try {
-				r = zipper.apply(t, u);
-			} catch (Throwable e) {
+			catch (Throwable e) {
 				done = true;
 				actual.onError(Operators.onOperatorError(s, e, t));
 				return;
 			}
 
-			
-			if (r == null) {
-				done = true;
-				actual.onError(Operators.onOperatorError(s, new NullPointerException
-						("The zipper " +
-						"returned a null value"), t));
-				return;
-			}
-			
-			actual.onNext(r);
-			
-			boolean b;
-			
+			R r;
+
 			try {
-				b = it.hasNext();
-			} catch (Throwable e) {
+				r = Objects.requireNonNull(zipper.apply(t, u),
+						"The zipper returned a null value");
+			}
+			catch (Throwable e) {
 				done = true;
 				actual.onError(Operators.onOperatorError(s, e, t));
 				return;
 			}
-			
+
+			actual.onNext(r);
+
+			boolean b;
+
+			try {
+				b = it.hasNext();
+			}
+			catch (Throwable e) {
+				done = true;
+				actual.onError(Operators.onOperatorError(s, e, t));
+				return;
+			}
+
 			if (!b) {
 				done = true;
 				s.cancel();
 				actual.onComplete();
 			}
 		}
-		
+
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
@@ -174,7 +171,7 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 			}
 			actual.onError(t);
 		}
-		
+
 		@Override
 		public void onComplete() {
 			if (done) {
@@ -205,19 +202,20 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 
 		@Override
 		public Iterator<?> upstreams() {
-			return isStarted() ? Arrays.asList(s, it).iterator() : null;
+			return isStarted() ? Arrays.asList(s, it)
+			                           .iterator() : null;
 		}
 
 		@Override
 		public long upstreamCount() {
 			return isStarted() ? 2 : 1;
 		}
-		
+
 		@Override
 		public void request(long n) {
 			s.request(n);
 		}
-		
+
 		@Override
 		public void cancel() {
 			s.cancel();

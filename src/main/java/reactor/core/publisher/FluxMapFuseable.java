@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Objects;
@@ -31,13 +32,13 @@ import reactor.core.Trackable;
  * Maps the values of the source publisher one-on-one via a mapper function.
  * <p>
  * This variant allows composing fuseable stages.
- * 
+ *
  * @param <T> the source value type
  * @param <R> the result value type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxMapFuseable<T, R> extends FluxSource<T, R>
-		implements Fuseable {
+final class FluxMapFuseable<T, R> extends FluxSource<T, R> implements Fuseable {
 
 	final Function<? super T, ? extends R> mapper;
 
@@ -46,9 +47,11 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 	 *
 	 * @param source the source Publisher instance
 	 * @param mapper the mapper function
+	 *
 	 * @throws NullPointerException if either {@code source} or {@code mapper} is null.
 	 */
-	FluxMapFuseable(Publisher<? extends T> source, Function<? super T, ? extends R> mapper) {
+	FluxMapFuseable(Publisher<? extends T> source,
+			Function<? super T, ? extends R> mapper) {
 		super(source);
 		this.mapper = Objects.requireNonNull(mapper, "mapper");
 	}
@@ -67,7 +70,8 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 	static final class MapFuseableSubscriber<T, R>
 			implements Subscriber<T>, Receiver, Producer, Loopback, Subscription,
 			           SynchronousSubscription<R>, Trackable {
-		final Subscriber<? super R>			actual;
+
+		final Subscriber<? super R>            actual;
 		final Function<? super T, ? extends R> mapper;
 
 		boolean done;
@@ -76,7 +80,8 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 
 		int sourceMode;
 
-		public MapFuseableSubscriber(Subscriber<? super R> actual, Function<? super T, ? extends R> mapper) {
+		public MapFuseableSubscriber(Subscriber<? super R> actual,
+				Function<? super T, ? extends R> mapper) {
 			this.actual = actual;
 			this.mapper = mapper;
 		}
@@ -85,7 +90,7 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
-				this.s = (QueueSubscription<T>)s;
+				this.s = (QueueSubscription<T>) s;
 				actual.onSubscribe(this);
 			}
 		}
@@ -101,21 +106,16 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 					return;
 				}
 				R v;
-	
+
 				try {
-					v = mapper.apply(t);
-				} catch (Throwable e) {
+					v = Objects.requireNonNull(mapper.apply(t),
+							"The mapper returned a null value.");
+				}
+				catch (Throwable e) {
 					onError(Operators.onOperatorError(s, e, t));
 					return;
 				}
-	
-				if (v == null) {
-					onError(Operators.onOperatorError(s,
-							new NullPointerException("The mapper returned a null value."),
-							t));
-					return;
-				}
-	
+
 				actual.onNext(v);
 			}
 		}
@@ -166,12 +166,12 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 		public Object upstream() {
 			return s;
 		}
-		
+
 		@Override
 		public void request(long n) {
 			s.request(n);
 		}
-		
+
 		@Override
 		public void cancel() {
 			s.cancel();
@@ -222,7 +222,8 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 	static final class MapFuseableConditionalSubscriber<T, R>
 			implements ConditionalSubscriber<T>, Receiver, Producer, Loopback,
 			           SynchronousSubscription<R>, Trackable {
-		final ConditionalSubscriber<? super R>			actual;
+
+		final ConditionalSubscriber<? super R> actual;
 		final Function<? super T, ? extends R> mapper;
 
 		boolean done;
@@ -231,7 +232,8 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 
 		int sourceMode;
 
-		public MapFuseableConditionalSubscriber(ConditionalSubscriber<? super R> actual, Function<? super T, ? extends R> mapper) {
+		public MapFuseableConditionalSubscriber(ConditionalSubscriber<? super R> actual,
+				Function<? super T, ? extends R> mapper) {
 			this.actual = actual;
 			this.mapper = mapper;
 		}
@@ -240,7 +242,7 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
-				this.s = (QueueSubscription<T>)s;
+				this.s = (QueueSubscription<T>) s;
 				actual.onSubscribe(this);
 			}
 		}
@@ -249,7 +251,7 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 		public void onNext(T t) {
 
 			int m = sourceMode;
-			if (sourceMode == ASYNC){
+			if (sourceMode == ASYNC) {
 				actual.onNext(null);
 			}
 			else {
@@ -261,20 +263,14 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 				R v;
 
 				try {
-					v = mapper.apply(t);
-				} catch (Throwable e) {
+					v = Objects.requireNonNull(mapper.apply(t),
+							"The mapper returned a null value.");
+				}
+				catch (Throwable e) {
 					onError(Operators.onOperatorError(s, e, t));
 					return;
 				}
-	
-				if (v == null) {
-					done = true;
-					actual.onError(Operators.onOperatorError(s,
-							new NullPointerException("The mapper returned a null value."),
-							t));
-					return;
-				}
-	
+
 				actual.onNext(v);
 			}
 		}
@@ -289,25 +285,17 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 			R v;
 
 			try {
-				v = mapper.apply(t);
+				v = Objects.requireNonNull(mapper.apply(t),
+						"The mapper returned a null value.");
 			}
 			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t));
 				return true;
 			}
 
-			if (v == null) {
-				done = true;
-				actual.onError(Operators.onOperatorError(s,
-						new NullPointerException("The mapper returned a null value."),
-						t));
-				return true;
-			}
-
 			return actual.tryOnNext(v);
 		}
 
-		
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
@@ -354,12 +342,12 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R>
 		public Object upstream() {
 			return s;
 		}
-		
+
 		@Override
 		public void request(long n) {
 			s.request(n);
 		}
-		
+
 		@Override
 		public void cancel() {
 			s.cancel();

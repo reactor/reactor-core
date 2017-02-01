@@ -13,197 +13,202 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
+import java.util.Objects;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 
-import org.reactivestreams.*;
-import reactor.core.Fuseable;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 
 final class MonoFlatMap<T, R> extends Flux<R> {
-    final Mono<? extends T> source;
-    
-    final Function<? super T, ? extends Publisher<? extends R>> mapper;
-    
-    public MonoFlatMap(Mono<? extends T> source, Function<? super T, ? extends Publisher<? extends R>> mapper) {
-        this.source = source;
-        this.mapper = mapper;
-    }
 
-    @Override
-    public void subscribe(Subscriber<? super R> s) {
-        if (FluxFlatMap.trySubscribeScalarMap(source, s, mapper, false)) {
-            return;
-        }
-        source.subscribe(new FlattenSubscriber<T, R>(s, mapper));
-    }
-    
-    static final class FlattenSubscriber<T, R> implements Subscriber<T>, Subscription {
-        final Subscriber<? super R> actual;
-        
-        final Function<? super T, ? extends Publisher<? extends R>> mapper;
+	final Mono<? extends T> source;
 
-        Subscription main;
-        
-        volatile Subscription inner;
-        @SuppressWarnings("rawtypes")
-        static final AtomicReferenceFieldUpdater<FlattenSubscriber, Subscription> INNER =
-                AtomicReferenceFieldUpdater.newUpdater(FlattenSubscriber.class, Subscription.class, "inner");
-        
-        volatile long requested;
-        @SuppressWarnings("rawtypes")
-        static final AtomicLongFieldUpdater<FlattenSubscriber> REQUESTED =
-                AtomicLongFieldUpdater.newUpdater(FlattenSubscriber.class, "requested");
-        
-        boolean hasValue;
-        
-        public FlattenSubscriber(Subscriber<? super R> actual,
-                Function<? super T, ? extends Publisher<? extends R>> mapper) {
-            this.actual = actual;
-            this.mapper = mapper;
-        }
+	final Function<? super T, ? extends Publisher<? extends R>> mapper;
 
-        @Override
-        public void request(long n) {
-            Subscription a = inner;
-            if (a != null) {
-                a.request(n);
-            } else {
-                if (Operators.validate(n)) {
-                    Operators.getAndAddCap(REQUESTED, this, n);
-                    a = inner;
-                    if (a != null) {
-                        n = REQUESTED.getAndSet(this, 0L);
-                        if (n != 0L) {
-                            a.request(n);
-                        }
-                    }
-                }
-            }
-        }
+	public MonoFlatMap(Mono<? extends T> source,
+			Function<? super T, ? extends Publisher<? extends R>> mapper) {
+		this.source = source;
+		this.mapper = mapper;
+	}
 
-        @Override
-        public void cancel() {
-            main.cancel();
-            Operators.terminate(INNER, this);
-        }
+	@Override
+	public void subscribe(Subscriber<? super R> s) {
+		if (FluxFlatMap.trySubscribeScalarMap(source, s, mapper, false)) {
+			return;
+		}
+		source.subscribe(new FlattenSubscriber<T, R>(s, mapper));
+	}
 
-        @Override
-        public void onSubscribe(Subscription s) {
-            if (Operators.validate(this.main, s)) {
-                this.main = s;
-                
-                actual.onSubscribe(this);
-                
-                s.request(Long.MAX_VALUE);
-            }
-        }
-        
-        void onSubscribeInner(Subscription s) {
-            if (Operators.setOnce(INNER, this, s)) {
-                
-                long r = REQUESTED.getAndSet(this, 0L);
-                if (r != 0) {
-                    s.request(r);
-                }
-            }
-        }
+	static final class FlattenSubscriber<T, R> implements Subscriber<T>, Subscription {
 
-        @SuppressWarnings("unchecked")
-        @Override
-        public void onNext(T t) {
-            hasValue = true;
-            
-            Publisher<? extends R> p;
-            
-            try {
-                p = mapper.apply(t);
-            } catch (Throwable ex) {
-                actual.onError(Operators.onOperatorError(this, ex, t));
-                return;
-            }
-            
-            if (p == null) {
-                actual.onError(Operators.onOperatorError(this, new NullPointerException
-                        ("The mapper returned" +
-                        " a null " +
-                        "Publisher."), t));
-                return;
-            }
-            
-            if (p instanceof Callable) {
-                R v;
-                
-                try {
-                    v = ((Callable<R>)p).call();
-                }
-                catch (Throwable ex) {
-                    actual.onError(Operators.onOperatorError(this, ex, t));
-                    return;
-                }
-                
-                if (v == null) {
-		                actual.onComplete();
-                }
-                else {
-                    onSubscribeInner(Operators.scalarSubscription(actual, v));
-                }
-                
-                return;
-            }
-            
-            p.subscribe(new InnerSubscriber<>(this, actual));
-        }
+		final Subscriber<? super R> actual;
 
-        @Override
-        public void onError(Throwable t) {
-            if (hasValue) {
-                Operators.onErrorDropped(t);
-                return;
-            }
-            actual.onError(t);
-        }
+		final Function<? super T, ? extends Publisher<? extends R>> mapper;
 
-        @Override
-        public void onComplete() {
-            if (!hasValue) {
-                actual.onComplete();
-            }
-        }
-        
-        static final class InnerSubscriber<R> implements Subscriber<R> {
+		Subscription main;
 
-            final FlattenSubscriber<?, R> parent;
-            
-            final Subscriber<? super R> actual;
-            
-            public InnerSubscriber(FlattenSubscriber<?, R> parent, Subscriber<? super R> actual) {
-                this.parent = parent;
-                this.actual = actual;
-            }
+		volatile Subscription inner;
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<FlattenSubscriber, Subscription> INNER =
+				AtomicReferenceFieldUpdater.newUpdater(FlattenSubscriber.class,
+						Subscription.class,
+						"inner");
 
-            @Override
-            public void onSubscribe(Subscription s) {
-                parent.onSubscribeInner(s);
-            }
+		volatile long requested;
+		@SuppressWarnings("rawtypes")
+		static final AtomicLongFieldUpdater<FlattenSubscriber> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(FlattenSubscriber.class, "requested");
 
-            @Override
-            public void onNext(R t) {
-                actual.onNext(t);
-            }
+		boolean hasValue;
 
-            @Override
-            public void onError(Throwable t) {
-                actual.onError(t);
-            }
+		public FlattenSubscriber(Subscriber<? super R> actual,
+				Function<? super T, ? extends Publisher<? extends R>> mapper) {
+			this.actual = actual;
+			this.mapper = mapper;
+		}
 
-            @Override
-            public void onComplete() {
-                actual.onComplete();
-            }
-            
-        }
-    }
+		@Override
+		public void request(long n) {
+			Subscription a = inner;
+			if (a != null) {
+				a.request(n);
+			}
+			else {
+				if (Operators.validate(n)) {
+					Operators.getAndAddCap(REQUESTED, this, n);
+					a = inner;
+					if (a != null) {
+						n = REQUESTED.getAndSet(this, 0L);
+						if (n != 0L) {
+							a.request(n);
+						}
+					}
+				}
+			}
+		}
+
+		@Override
+		public void cancel() {
+			main.cancel();
+			Operators.terminate(INNER, this);
+		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			if (Operators.validate(this.main, s)) {
+				this.main = s;
+
+				actual.onSubscribe(this);
+
+				s.request(Long.MAX_VALUE);
+			}
+		}
+
+		void onSubscribeInner(Subscription s) {
+			if (Operators.setOnce(INNER, this, s)) {
+
+				long r = REQUESTED.getAndSet(this, 0L);
+				if (r != 0) {
+					s.request(r);
+				}
+			}
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public void onNext(T t) {
+			hasValue = true;
+
+			Publisher<? extends R> p;
+
+			try {
+				p = Objects.requireNonNull(mapper.apply(t),
+						"The mapper returned a null Publisher.");
+			}
+			catch (Throwable ex) {
+				actual.onError(Operators.onOperatorError(this, ex, t));
+				return;
+			}
+
+			if (p instanceof Callable) {
+				R v;
+
+				try {
+					v = ((Callable<R>) p).call();
+				}
+				catch (Throwable ex) {
+					actual.onError(Operators.onOperatorError(this, ex, t));
+					return;
+				}
+
+				if (v == null) {
+					actual.onComplete();
+				}
+				else {
+					onSubscribeInner(Operators.scalarSubscription(actual, v));
+				}
+
+				return;
+			}
+
+			p.subscribe(new InnerSubscriber<>(this, actual));
+		}
+
+		@Override
+		public void onError(Throwable t) {
+			if (hasValue) {
+				Operators.onErrorDropped(t);
+				return;
+			}
+			actual.onError(t);
+		}
+
+		@Override
+		public void onComplete() {
+			if (!hasValue) {
+				actual.onComplete();
+			}
+		}
+
+		static final class InnerSubscriber<R> implements Subscriber<R> {
+
+			final FlattenSubscriber<?, R> parent;
+
+			final Subscriber<? super R> actual;
+
+			public InnerSubscriber(FlattenSubscriber<?, R> parent,
+					Subscriber<? super R> actual) {
+				this.parent = parent;
+				this.actual = actual;
+			}
+
+			@Override
+			public void onSubscribe(Subscription s) {
+				parent.onSubscribeInner(s);
+			}
+
+			@Override
+			public void onNext(R t) {
+				actual.onNext(t);
+			}
+
+			@Override
+			public void onError(Throwable t) {
+				actual.onError(t);
+			}
+
+			@Override
+			public void onComplete() {
+				actual.onComplete();
+			}
+
+		}
+	}
 }

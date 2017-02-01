@@ -31,11 +31,6 @@ import reactor.util.concurrent.QueueSupplier;
 public class FluxPublishTest extends AbstractFluxOperatorTest<String, String> {
 
 	@Override
-	protected int fusionModeThreadBarrierSupport() {
-		return Fuseable.ANY;
-	}
-
-	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
 		return defaultOptions.prefetch(QueueSupplier.SMALL_BUFFER_SIZE);
 	}

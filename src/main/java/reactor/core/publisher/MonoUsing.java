@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Objects;
@@ -38,6 +39,7 @@ import reactor.core.Receiver;
  *
  * @param <T> the value type streamed
  * @param <S> the resource type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoUsing<T, S> extends Mono<T> implements Receiver, Fuseable {
@@ -51,10 +53,11 @@ final class MonoUsing<T, S> extends Mono<T> implements Receiver, Fuseable {
 	final boolean eager;
 
 	public MonoUsing(Callable<S> resourceSupplier,
-			Function<? super S, ? extends Publisher<? extends T>> sourceFactory, Consumer<? super S>
-			resourceCleanup,
+			Function<? super S, ? extends Publisher<? extends T>> sourceFactory,
+			Consumer<? super S> resourceCleanup,
 			boolean eager) {
-		this.resourceSupplier = Objects.requireNonNull(resourceSupplier, "resourceSupplier");
+		this.resourceSupplier =
+				Objects.requireNonNull(resourceSupplier, "resourceSupplier");
 		this.sourceFactory = Objects.requireNonNull(sourceFactory, "sourceFactory");
 		this.resourceCleanup = Objects.requireNonNull(resourceCleanup, "resourceCleanup");
 		this.eager = eager;
@@ -72,7 +75,8 @@ final class MonoUsing<T, S> extends Mono<T> implements Receiver, Fuseable {
 
 		try {
 			resource = resourceSupplier.call();
-		} catch (Throwable e) {
+		}
+		catch (Throwable e) {
 			Operators.error(s, Operators.onOperatorError(e));
 			return;
 		}
@@ -80,12 +84,15 @@ final class MonoUsing<T, S> extends Mono<T> implements Receiver, Fuseable {
 		Publisher<? extends T> p;
 
 		try {
-			p = sourceFactory.apply(resource);
-		} catch (Throwable e) {
+			p = Objects.requireNonNull(sourceFactory.apply(resource),
+					"The sourceFactory returned a null value");
+		}
+		catch (Throwable e) {
 
 			try {
 				resourceCleanup.accept(resource);
-			} catch (Throwable ex) {
+			}
+			catch (Throwable ex) {
 				ex.addSuppressed(Operators.onOperatorError(ex));
 				e = ex;
 			}
@@ -94,29 +101,23 @@ final class MonoUsing<T, S> extends Mono<T> implements Receiver, Fuseable {
 			return;
 		}
 
-		if (p == null) {
-			Throwable e = new NullPointerException("The sourceFactory returned a null value");
-			try {
-				resourceCleanup.accept(resource);
-			} catch (Throwable ex) {
-				Throwable _ex = Operators.onOperatorError(ex);
-				_ex.addSuppressed(e);
-				e = _ex;
-			}
-
-			Operators.error(s, Operators.onOperatorError(e));
-			return;
-		}
-
 		if (p instanceof Fuseable) {
-			p.subscribe(new FluxUsing.UsingFuseableSubscriber<>(s, resourceCleanup,
+			p.subscribe(new FluxUsing.UsingFuseableSubscriber<>(s,
+					resourceCleanup,
 					resource,
 					eager));
-		} else
-		if (s instanceof ConditionalSubscriber) {
-			p.subscribe(new FluxUsing.UsingConditionalSubscriber<>((ConditionalSubscriber<? super T>)s, resourceCleanup, resource, eager));
-		} else {
-			p.subscribe(new FluxUsing.UsingSubscriber<>(s, resourceCleanup, resource, eager));
+		}
+		else if (s instanceof ConditionalSubscriber) {
+			p.subscribe(new FluxUsing.UsingConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
+					resourceCleanup,
+					resource,
+					eager));
+		}
+		else {
+			p.subscribe(new FluxUsing.UsingSubscriber<>(s,
+					resourceCleanup,
+					resource,
+					eager));
 		}
 	}
 }

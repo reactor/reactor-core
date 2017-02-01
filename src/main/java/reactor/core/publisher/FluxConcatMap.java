@@ -340,17 +340,11 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 							Publisher<? extends R> p;
 
 							try {
-								p = mapper.apply(v);
+								p = Objects.requireNonNull(mapper.apply(v),
+								"The mapper returned a null Publisher");
 							}
 							catch (Throwable e) {
 								actual.onError(Operators.onOperatorError(s, e, v));
-								return;
-							}
-
-							if (p == null) {
-								actual.onError(Operators.onOperatorError(s,
-										new NullPointerException("The mapper returned a " + "null Publisher"),
-										v));
 								return;
 							}
 
@@ -661,17 +655,11 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 							Publisher<? extends R> p;
 
 							try {
-								p = mapper.apply(v);
+								p = Objects.requireNonNull(mapper.apply(v),
+										"The mapper returned a null Publisher");
 							}
 							catch (Throwable e) {
 								actual.onError(Operators.onOperatorError(s, e, v));
-								return;
-							}
-
-							if (p == null) {
-								actual.onError(Operators.onOperatorError(s,
-										new NullPointerException("The mapper returned a " + "null Publisher"),
-										v));
 								return;
 							}
 

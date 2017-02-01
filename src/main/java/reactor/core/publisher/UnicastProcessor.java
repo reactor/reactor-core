@@ -364,7 +364,8 @@ public final class UnicastProcessor<T>
 				drain();
 			}
 		} else {
-			Operators.error(s, new IllegalStateException("This processor allows only a single Subscriber"));
+			Operators.error(s, new IllegalStateException("UnicastProcessor " +
+					"allows only a single Subscriber"));
 		}
 	}
 

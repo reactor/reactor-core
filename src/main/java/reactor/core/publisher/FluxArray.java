@@ -379,10 +379,7 @@ extends Flux<T>
 			int i = index;
 			T[] a = array;
 			if (i != a.length) {
-				T t = a[i];
-				if (t == null) {
-					throw new NullPointerException();
-				}
+				T t = Objects.requireNonNull(a[i], "Array returned null value");
 				index = i + 1;
 				return t;
 			}

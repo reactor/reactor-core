@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Objects;
@@ -26,15 +27,14 @@ import reactor.core.Receiver;
  * Defers the creation of the actual Publisher the Subscriber will be subscribed to.
  *
  * @param <T> the value type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoDefer<T>
-extends Mono<T>
-		implements Receiver {
+final class MonoDefer<T> extends Mono<T> implements Receiver {
 
 	final Supplier<? extends Publisher<? extends T>> supplier;
 
-	public MonoDefer(Supplier<? extends Publisher<? extends T>> supplier) {
+	MonoDefer(Supplier<? extends Publisher<? extends T>> supplier) {
 		this.supplier = Objects.requireNonNull(supplier, "supplier");
 	}
 
@@ -48,15 +48,11 @@ extends Mono<T>
 		Publisher<? extends T> p;
 
 		try {
-			p = supplier.get();
-		} catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
-			return;
+			p = Objects.requireNonNull(supplier.get(),
+					"The Producer returned by the supplier is null");
 		}
-
-		if (p == null) {
-			Operators.error(s, Operators.onOperatorError(new
-					NullPointerException("The Producer returned by the supplier is null")));
+		catch (Throwable e) {
+			Operators.error(s, Operators.onOperatorError(e));
 			return;
 		}
 

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Collection;
@@ -35,28 +36,31 @@ import reactor.core.Exceptions;
 
 /**
  * buffers elements into possibly overlapping buffers whose boundaries are determined
-  by a start Publisher's element and a signal of a derived Publisher
+ * by a start Publisher's element and a signal of a derived Publisher
  *
  * @param <T> the source value type
  * @param <U> the value type of the publisher opening the buffers
  * @param <V> the value type of the publisher closing the individual buffers
  * @param <C> the collection type that holds the buffered values
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 		extends FluxSource<T, C> {
 
 	final Publisher<U> start;
-	
+
 	final Function<? super U, ? extends Publisher<V>> end;
-	
+
 	final Supplier<C> bufferSupplier;
-	
+
 	final Supplier<? extends Queue<C>> queueSupplier;
 
-	public FluxBufferStartEnd(Publisher<? extends T> source, Publisher<U> start,
-			Function<? super U, ? extends Publisher<V>> end, Supplier<C> bufferSupplier,
-					Supplier<? extends Queue<C>> queueSupplier) {
+	public FluxBufferStartEnd(Publisher<? extends T> source,
+			Publisher<U> start,
+			Function<? super U, ? extends Publisher<V>> end,
+			Supplier<C> bufferSupplier,
+			Supplier<? extends Queue<C>> queueSupplier) {
 		super(source);
 		this.start = Objects.requireNonNull(start, "start");
 		this.end = Objects.requireNonNull(end, "end");
@@ -71,67 +75,80 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 
 	@Override
 	public void subscribe(Subscriber<? super C> s) {
-		
+
 		Queue<C> q = queueSupplier.get();
-		
-		BufferStartEndMainSubscriber<T, U, V, C> parent = new BufferStartEndMainSubscriber<>(s, bufferSupplier, q, end);
-		
+
+		BufferStartEndMainSubscriber<T, U, V, C> parent =
+				new BufferStartEndMainSubscriber<>(s, bufferSupplier, q, end);
+
 		s.onSubscribe(parent);
-		
+
 		start.subscribe(parent.starter);
-		
+
 		source.subscribe(parent);
 	}
-	
+
 	static final class BufferStartEndMainSubscriber<T, U, V, C extends Collection<? super T>>
-	implements Subscriber<T>, Subscription {
-		
+			implements Subscriber<T>, Subscription {
+
 		final Subscriber<? super C> actual;
-		
+
 		final Supplier<C> bufferSupplier;
-		
+
 		final Queue<C> queue;
-		
+
 		final Function<? super U, ? extends Publisher<V>> end;
-		
+
 		Set<Subscription> endSubscriptions;
-		
+
 		final BufferStartEndStarter<U> starter;
 
 		Map<Long, C> buffers;
-		
+
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<BufferStartEndMainSubscriber, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(BufferStartEndMainSubscriber.class, Subscription.class, "s");
-		
+		static final AtomicReferenceFieldUpdater<BufferStartEndMainSubscriber, Subscription>
+				S =
+				AtomicReferenceFieldUpdater.newUpdater(BufferStartEndMainSubscriber.class,
+						Subscription.class,
+						"s");
+
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<BufferStartEndMainSubscriber> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(BufferStartEndMainSubscriber.class, "requested");
+				AtomicLongFieldUpdater.newUpdater(BufferStartEndMainSubscriber.class,
+						"requested");
 
 		long index;
-		
+
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<BufferStartEndMainSubscriber> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(BufferStartEndMainSubscriber.class, "wip");
-		
+				AtomicIntegerFieldUpdater.newUpdater(BufferStartEndMainSubscriber.class,
+						"wip");
+
 		volatile Throwable error;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<BufferStartEndMainSubscriber, Throwable> ERROR =
-				AtomicReferenceFieldUpdater.newUpdater(BufferStartEndMainSubscriber.class, Throwable.class, "error");
-		
+		static final AtomicReferenceFieldUpdater<BufferStartEndMainSubscriber, Throwable>
+				ERROR = AtomicReferenceFieldUpdater.newUpdater(
+				BufferStartEndMainSubscriber.class,
+				Throwable.class,
+				"error");
+
 		volatile boolean done;
-		
+
 		volatile boolean cancelled;
 
 		volatile int open;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<BufferStartEndMainSubscriber> OPEN =
-				AtomicIntegerFieldUpdater.newUpdater(BufferStartEndMainSubscriber.class, "open");
+				AtomicIntegerFieldUpdater.newUpdater(BufferStartEndMainSubscriber.class,
+						"open");
 
-		public BufferStartEndMainSubscriber(Subscriber<? super C> actual, Supplier<C> bufferSupplier, Queue<C> queue, Function<? super U, ? extends Publisher<V>> end) {
+		public BufferStartEndMainSubscriber(Subscriber<? super C> actual,
+				Supplier<C> bufferSupplier,
+				Queue<C> queue,
+				Function<? super U, ? extends Publisher<V>> end) {
 			this.actual = actual;
 			this.bufferSupplier = bufferSupplier;
 			this.buffers = new HashMap<>();
@@ -141,14 +158,14 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 			this.open = 1;
 			this.starter = new BufferStartEndStarter<>(this);
 		}
-		
+
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.setOnce(S, this, s)) {
 				s.request(Long.MAX_VALUE);
 			}
 		}
-		
+
 		@Override
 		public void onNext(T t) {
 			synchronized (this) {
@@ -160,10 +177,10 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 					return;
 				}
 			}
-			
+
 			Operators.onNextDropped(t);
 		}
-		
+
 		@Override
 		public void onError(Throwable t) {
 			boolean report;
@@ -172,74 +189,76 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 				if (set != null) {
 					buffers = null;
 					report = true;
-				} else {
+				}
+				else {
 					report = false;
 				}
 			}
-			
+
 			if (report) {
 				anyError(t);
-			} else {
+			}
+			else {
 				Operators.onErrorDropped(t);
 			}
 		}
-		
+
 		@Override
 		public void onComplete() {
 			Map<Long, C> set;
-			
+
 			synchronized (this) {
 				set = buffers;
 				if (set == null) {
 					return;
 				}
 			}
-			
+
 			cancelStart();
 			cancelEnds();
-			
+
 			for (C b : set.values()) {
 				queue.offer(b);
 			}
 			done = true;
 			drain();
 		}
-		
+
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
 				Operators.getAndAddCap(REQUESTED, this, n);
 			}
 		}
-		
+
 		void cancelMain() {
 			Operators.terminate(S, this);
 		}
-		
+
 		void cancelStart() {
 			starter.cancel();
 		}
-		
+
 		void cancelEnds() {
 			Set<Subscription> set;
 			synchronized (starter) {
 				set = endSubscriptions;
-				
+
 				if (set == null) {
 					return;
 				}
 				endSubscriptions = null;
 			}
-			
+
 			for (Subscription s : set) {
 				s.cancel();
 			}
 		}
-		
+
 		boolean addEndSubscription(Subscription s) {
 			synchronized (starter) {
 				Set<Subscription> set = endSubscriptions;
-				
+
 				if (set != null) {
 					set.add(s);
 					return true;
@@ -248,16 +267,16 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 			s.cancel();
 			return false;
 		}
-		
+
 		@Override
 		public void cancel() {
 			if (!cancelled) {
 				cancelled = true;
-				
+
 				cancelMain();
-				
+
 				cancelStart();
-				
+
 				cancelEnds();
 			}
 		}
@@ -273,80 +292,72 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 			}
 			else {
 
-				actual.onError(Exceptions.failWithOverflow("Could not emit buffer due to lack of requests"));
+				actual.onError(Exceptions.failWithOverflow(
+						"Could not emit buffer due to lack of requests"));
 
 				return false;
 			}
 		}
-		
+
 		void anyError(Throwable t) {
 			if (Exceptions.addThrowable(ERROR, this, t)) {
 				done = true;
 				drain();
-			} else {
+			}
+			else {
 				Operators.onErrorDropped(t);
 			}
 		}
-		
+
 		void startNext(U u) {
-			
+
 			long idx = index;
 			index = idx + 1;
-			
+
 			C b;
 
 			try {
-				b = bufferSupplier.get();
-			} catch (Throwable e) {
+				b = Objects.requireNonNull(bufferSupplier.get(),
+				"The bufferSupplier returned a null buffer");
+			}
+			catch (Throwable e) {
 				anyError(Operators.onOperatorError(starter, e, u));
 				return;
 			}
-			
-			if (b == null) {
-				cancelStart();
 
-				anyError(new NullPointerException("The bufferSupplier returned a null buffer"));
-				return;
-			}
-			
 			synchronized (this) {
 				Map<Long, C> set = buffers;
 				if (set == null) {
 					return;
 				}
-				
+
 				set.put(idx, b);
 			}
-			
+
 			Publisher<V> p;
-			
+
 			try {
-				p = end.apply(u);
-			} catch (Throwable e) {
+				p = Objects.requireNonNull(end.apply(u),
+				"The end returned a null publisher");
+			}
+			catch (Throwable e) {
 				anyError(Operators.onOperatorError(starter, e, u));
 				return;
 			}
-			
-			if (p == null) {
-				cancelStart();
 
-				anyError(new NullPointerException("The end returned a null publisher"));
-				return;
-			}
-			
 			BufferStartEndEnder<T, V, C> end = new BufferStartEndEnder<>(this, b, idx);
-			
+
 			if (addEndSubscription(end)) {
 				OPEN.getAndIncrement(this);
-				
+
 				p.subscribe(end);
 			}
 		}
-		
+
 		void startError(Throwable e) {
 			anyError(e);
 		}
-		
+
 		void startComplete() {
 			if (OPEN.decrementAndGet(this) == 0) {
 				cancelAll();
@@ -354,27 +365,27 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 				drain();
 			}
 		}
-		
+
 		void cancelAll() {
 			cancelMain();
-			
+
 			cancelStart();
-			
+
 			cancelEnds();
 		}
-		
+
 		void endSignal(BufferStartEndEnder<T, V, C> ender) {
 			synchronized (this) {
 				Map<Long, C> set = buffers;
-				
+
 				if (set == null) {
 					return;
 				}
-				
+
 				if (set.remove(ender.index) == null) {
 					return;
 				}
-				
+
 				queue.offer(ender.buffer);
 			}
 			if (OPEN.decrementAndGet(this) == 0) {
@@ -383,62 +394,64 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 			}
 			drain();
 		}
-		
+
 		void endError(Throwable e) {
 			anyError(e);
 		}
-		
+
 		void drain() {
 			if (WIP.getAndIncrement(this) != 0) {
 				return;
 			}
-			
+
 			final Subscriber<? super C> a = actual;
 			final Queue<C> q = queue;
-			
+
 			int missed = 1;
-			
-			for (;;) {
-				
-				for (;;) {
+
+			for (; ; ) {
+
+				for (; ; ) {
 					boolean d = done;
-					
+
 					C b = q.poll();
-					
+
 					boolean empty = b == null;
-					
+
 					if (checkTerminated(d, empty, a, q)) {
 						return;
 					}
-					
+
 					if (empty) {
 						break;
 					}
-					
+
 					long r = requested;
 					if (r != 0L) {
 						actual.onNext(b);
 						if (r != Long.MAX_VALUE) {
 							REQUESTED.decrementAndGet(this);
 						}
-					} else {
-						anyError(Exceptions.failWithOverflow("Could not emit buffer due to lack of requests"));
+					}
+					else {
+						anyError(Exceptions.failWithOverflow(
+								"Could not emit buffer due to lack of requests"));
 					}
 				}
-				
+
 				missed = WIP.addAndGet(this, -missed);
 				if (missed == 0) {
 					break;
 				}
 			}
 		}
-		
+
 		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, Queue<?> q) {
 			if (cancelled) {
 				queue.clear();
 				return true;
 			}
-			
+
 			if (d) {
 				Throwable e = Exceptions.terminate(ERROR, this);
 				if (e != null && e != Exceptions.TERMINATED) {
@@ -446,8 +459,8 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 					queue.clear();
 					a.onError(e);
 					return true;
-				} else
-				if (empty) {
+				}
+				else if (empty) {
 					a.onComplete();
 					return true;
 				}
@@ -455,48 +468,51 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 			return false;
 		}
 	}
-	
+
 	static final class BufferStartEndStarter<U> extends Operators.DeferredSubscription
-	implements Subscriber<U> {
+			implements Subscriber<U> {
+
 		final BufferStartEndMainSubscriber<?, U, ?, ?> main;
-		
+
 		public BufferStartEndStarter(BufferStartEndMainSubscriber<?, U, ?, ?> main) {
 			this.main = main;
 		}
-		
+
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (set(s)) {
 				s.request(Long.MAX_VALUE);
 			}
 		}
-		
+
 		@Override
 		public void onNext(U t) {
 			main.startNext(t);
 		}
-		
+
 		@Override
 		public void onError(Throwable t) {
 			main.startError(t);
 		}
-		
+
 		@Override
 		public void onComplete() {
 			main.startComplete();
 		}
 	}
-	
-	static final class BufferStartEndEnder<T, V, C extends Collection<? super T>> extends
-	                                                                              Operators.DeferredSubscription
-	implements Subscriber<V> {
+
+	static final class BufferStartEndEnder<T, V, C extends Collection<? super T>>
+			extends Operators.DeferredSubscription implements Subscriber<V> {
+
 		final BufferStartEndMainSubscriber<T, ?, V, C> main;
 
 		final C buffer;
-		
+
 		final long index;
-		
-		public BufferStartEndEnder(BufferStartEndMainSubscriber<T, ?, V, C> main, C buffer, long index) {
+
+		public BufferStartEndEnder(BufferStartEndMainSubscriber<T, ?, V, C> main,
+				C buffer,
+				long index) {
 			this.main = main;
 			this.buffer = buffer;
 			this.index = index;
@@ -513,7 +529,7 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 		public void onNext(V t) {
 			if (!isCancelled()) {
 				cancel();
-				
+
 				main.endSignal(this);
 			}
 		}
@@ -529,6 +545,6 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 				main.endSignal(this);
 			}
 		}
-		
+
 	}
 }

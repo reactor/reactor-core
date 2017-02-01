@@ -78,16 +78,11 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 		Worker worker;
 
 		try {
-			worker = scheduler.createWorker();
+			worker = Objects.requireNonNull(scheduler.createWorker(),
+					"The scheduler returned a null worker");
 		}
 		catch (Throwable e) {
 			Operators.error(s, Operators.onOperatorError(e));
-			return;
-		}
-
-		if (worker == null) {
-			Operators.error(s,
-					new NullPointerException("The scheduler returned a null Function"));
 			return;
 		}
 

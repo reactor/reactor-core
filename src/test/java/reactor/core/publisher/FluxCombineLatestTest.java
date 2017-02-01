@@ -16,14 +16,121 @@
 
 package reactor.core.publisher;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 import org.junit.Test;
+import org.reactivestreams.Publisher;
 import reactor.core.Fuseable;
+import reactor.core.Trackable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.concurrent.QueueSupplier;
 
-public class FluxCombineLatestTest {
+public class FluxCombineLatestTest extends AbstractFluxOperatorTest<String, String> {
+
+	@Override
+	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
+		return defaultOptions.fusionMode(Fuseable.ASYNC)
+		                     .prefetch(QueueSupplier.XS_BUFFER_SIZE);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
+		return Arrays.asList(scenario(f -> Flux.combineLatest(o -> null,
+				f,
+				Flux.just(1))).verifier(step -> step.verifyError(NullPointerException.class)),
+
+				scenario(f -> Flux.combineLatest(o -> {
+					throw exception();
+				}, f, Flux.just(1))),
+
+				scenario(f -> Flux.combineLatest(() -> {
+					throw exception();
+				}, o -> (String) o[0])).fusionMode(Fuseable.NONE),
+
+				scenario(f -> Flux.combineLatest(() -> null,
+						o -> (String) o[0])).fusionMode(Fuseable.NONE)
+				                            .verifier(step -> step.verifyError(
+						                            NullPointerException.class)),
+
+				scenario(f -> Flux.combineLatest(() -> new Iterator<Publisher<?>>() {
+					@Override
+					public boolean hasNext() {
+						throw exception();
+					}
+
+					@Override
+					public Publisher<?> next() {
+						return null;
+					}
+				}, o -> (String) o[0])).fusionMode(Fuseable.NONE),
+
+				scenario(f -> Flux.combineLatest(() -> new Iterator<Publisher<?>>() {
+					@Override
+					public boolean hasNext() {
+						return true;
+					}
+
+					@Override
+					public Publisher<?> next() {
+						throw exception();
+					}
+				}, o -> (String) o[0])).fusionMode(Fuseable.NONE),
+
+				scenario(f -> Flux.combineLatest(() -> new Iterator<Publisher<?>>() {
+					@Override
+					public boolean hasNext() {
+						return true;
+					}
+
+					@Override
+					public Publisher<?> next() {
+						return null;
+					}
+				}, o -> (String) o[0])).fusionMode(Fuseable.NONE)
+				                       .verifier(step -> step.verifyError(
+						                       NullPointerException.class)));
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_errorFromUpstreamFailure() {
+		return Arrays.asList(scenario(f -> Flux.combineLatest(o -> (String) o[0],
+				f)).prefetch((int) Trackable.UNSPECIFIED),
+
+				scenario(f -> Flux.combineLatest(o -> (String) o[0],
+						f,
+						Flux.never())).shouldHitDropNextHookAfterTerminate(false));
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+		return Arrays.asList(scenario(f -> Flux.combineLatest(o -> (String) o[0],
+				f)).prefetch((int) Trackable.UNSPECIFIED),
+
+				scenario(f -> Flux.combineLatest(o -> (String) o[1],
+						f,
+						Flux.just(item(0), item(1), item(2)),
+						Flux.just(item(0),
+								item(1),
+								item(2)))).verifier(step -> step.expectNext(item(2),
+						item(2),
+						item(2))
+				                                                .verifyComplete()),
+
+				scenario(f -> Flux.combineLatest(o -> (String) o[2],
+						1,
+						f,
+						Flux.just(item(0), item(1), item(2)),
+						Flux.just(item(0), item(1), item(2)))).prefetch(1)
+				                                              .verifier(step -> step.expectNext(
+						                                              item(2),
+						                                              item(2),
+						                                              item(2)))
+		);
+	}
 
 	@Test
 	public void singleSourceIsMapped() {

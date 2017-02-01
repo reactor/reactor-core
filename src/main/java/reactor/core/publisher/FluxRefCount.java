@@ -15,8 +15,6 @@
  */
 package reactor.core.publisher;
 
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -26,8 +24,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
-import reactor.core.Loopback;
-import reactor.core.MultiProducer;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 
@@ -180,7 +176,7 @@ final class FluxRefCount<T> extends Flux<T>
 			Subscription s;
 			QueueSubscription<T> qs;
 			
-			public InnerSubscriber(Subscriber<? super T> actual, State<T> parent) {
+			InnerSubscriber(Subscriber<? super T> actual, State<T> parent) {
 				this.actual = actual;
 				this.parent = parent;
 			}

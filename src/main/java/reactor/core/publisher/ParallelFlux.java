@@ -934,7 +934,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @return the {@link ParallelFlux} returned by the function
 	 */
 	public final <U> ParallelFlux<U> transform(Function<? super ParallelFlux<T>, ParallelFlux<U>> composer) {
-		return as(composer);
+		return onAssembly(as(composer));
 	}
 
 	/**

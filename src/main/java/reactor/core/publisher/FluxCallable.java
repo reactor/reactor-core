@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.util.Objects;
 import java.util.concurrent.Callable;
 
 import org.reactivestreams.Subscriber;
@@ -23,42 +24,36 @@ import reactor.core.Fuseable;
 
 /**
  * For each subscriber, a Supplier is invoked and the returned value emitted.
+ *
  * @param <T> the value type;
  */
 final class FluxCallable<T> extends Flux<T> implements Callable<T>, Fuseable {
 
-    final Callable<T> callable;
-    
-    FluxCallable(Callable<T> callable) {
-        this.callable = callable;
-    }
+	final Callable<T> callable;
 
-    @Override
-    public void subscribe(Subscriber<? super T> s) {
-        Operators.MonoSubscriber<T, T>
-                wrapper = new Operators.MonoSubscriber<>(s);
-        s.onSubscribe(wrapper);
-        
-        T v;
-        try {
-            v = callable.call();
-        }
-        catch (Throwable ex) {
-            s.onError(Operators.onOperatorError(ex));
-            return;
-        }
+	FluxCallable(Callable<T> callable) {
+		this.callable = callable;
+	}
 
-        if (v == null) {
-            s.onError(Operators.onOperatorError(new NullPointerException("The " +
-                    "callable returned null")));
-            return;
-        }
-        
-        wrapper.complete(v);
-    }
+	@Override
+	public void subscribe(Subscriber<? super T> s) {
+		Operators.MonoSubscriber<T, T> wrapper = new Operators.MonoSubscriber<>(s);
+		s.onSubscribe(wrapper);
 
-    @Override
-    public T call() throws Exception {
-        return callable.call();
-    }
+		T v;
+		try {
+			v = Objects.requireNonNull(callable.call(), "callable returned null");
+		}
+		catch (Throwable ex) {
+			s.onError(Operators.onOperatorError(ex));
+			return;
+		}
+
+		wrapper.complete(v);
+	}
+
+	@Override
+	public T call() throws Exception {
+		return callable.call();
+	}
 }

@@ -13,11 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
-import java.util.function.*;
+import java.util.Objects;
+import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
-import org.reactivestreams.*;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 
 /**
@@ -27,14 +31,16 @@ import reactor.core.Fuseable;
  * @param <R> the result value type
  */
 final class ParallelReduce<T, R> extends ParallelFlux<R> implements Fuseable {
-	
+
 	final ParallelFlux<? extends T> source;
-	
+
 	final Supplier<R> initialSupplier;
-	
+
 	final BiFunction<R, ? super T, R> reducer;
-	
-	ParallelReduce(ParallelFlux<? extends T> source, Supplier<R> initialSupplier, BiFunction<R, ? super T, R> reducer) {
+
+	ParallelReduce(ParallelFlux<? extends T> source,
+			Supplier<R> initialSupplier,
+			BiFunction<R, ? super T, R> reducer) {
 		this.source = source;
 		this.initialSupplier = initialSupplier;
 		this.reducer = reducer;
@@ -50,33 +56,36 @@ final class ParallelReduce<T, R> extends ParallelFlux<R> implements Fuseable {
 		if (!validate(subscribers)) {
 			return;
 		}
-		
+
 		int n = subscribers.length;
-		@SuppressWarnings("unchecked")
-		Subscriber<T>[] parents = new Subscriber[n];
-		
+		@SuppressWarnings("unchecked") Subscriber<T>[] parents = new Subscriber[n];
+
 		for (int i = 0; i < n; i++) {
-			
+
 			R initialValue;
-			
+
 			try {
 				initialValue = initialSupplier.get();
-			} catch (Throwable ex) {
+			}
+			catch (Throwable ex) {
 				reportError(subscribers, Operators.onOperatorError(ex));
 				return;
 			}
-			
+
 			if (initialValue == null) {
-				reportError(subscribers, new NullPointerException("The initialSupplier returned a null value"));
+				reportError(subscribers,
+						new NullPointerException(
+								"The initialSupplier returned a null value"));
 				return;
 			}
-			
-			parents[i] = new ParallelReduceSubscriber<>(subscribers[i], initialValue, reducer);
+
+			parents[i] =
+					new ParallelReduceSubscriber<>(subscribers[i], initialValue, reducer);
 		}
-		
+
 		source.subscribe(parents);
 	}
-	
+
 	void reportError(Subscriber<?>[] subscribers, Throwable ex) {
 		for (Subscriber<?> s : subscribers) {
 			Operators.error(s, ex);
@@ -93,59 +102,56 @@ final class ParallelReduce<T, R> extends ParallelFlux<R> implements Fuseable {
 		return false;
 	}
 
-	static final class ParallelReduceSubscriber<T, R> extends
-	                                                  Operators.MonoSubscriber<T, R> {
+	static final class ParallelReduceSubscriber<T, R>
+			extends Operators.MonoSubscriber<T, R> {
 
 		final BiFunction<R, ? super T, R> reducer;
 
 		R accumulator;
-		
+
 		Subscription s;
 
 		boolean done;
-		
-		ParallelReduceSubscriber(Subscriber<? super R> subscriber, R initialValue, BiFunction<R, ? super T, R> reducer) {
+
+		ParallelReduceSubscriber(Subscriber<? super R> subscriber,
+				R initialValue,
+				BiFunction<R, ? super T, R> reducer) {
 			super(subscriber);
 			this.accumulator = initialValue;
 			this.reducer = reducer;
 		}
-		
+
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
 
 				actual.onSubscribe(this);
-				
+
 				s.request(Long.MAX_VALUE);
 			}
 		}
-		
+
 		@Override
 		public void onNext(T t) {
 			if (done) {
 				Operators.onNextDropped(t);
 				return;
 			}
-			
+
 			R v;
-			
+
 			try {
-				v = reducer.apply(accumulator, t);
-			} catch (Throwable ex) {
+				v = Objects.requireNonNull(reducer.apply(accumulator, t), "The reducer returned a null value");
+			}
+			catch (Throwable ex) {
 				onError(Operators.onOperatorError(this, ex, t));
 				return;
 			}
-			
-			if (v == null) {
-				onError(Operators.onOperatorError(this, new NullPointerException("The" +
-						" reducer returned a null value"), t));
-				return;
-			}
-			
+
 			accumulator = v;
 		}
-		
+
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
@@ -156,19 +162,19 @@ final class ParallelReduce<T, R> extends ParallelFlux<R> implements Fuseable {
 			accumulator = null;
 			actual.onError(t);
 		}
-		
+
 		@Override
 		public void onComplete() {
 			if (done) {
 				return;
 			}
 			done = true;
-			
+
 			R a = accumulator;
 			accumulator = null;
 			complete(a);
 		}
-		
+
 		@Override
 		public void cancel() {
 			super.cancel();

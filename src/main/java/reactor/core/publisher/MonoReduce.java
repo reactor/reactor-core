@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Objects;
@@ -27,6 +28,7 @@ import reactor.core.Fuseable;
  * Aggregates the source items with an aggregator function and returns the last result.
  *
  * @param <T> the input and output value type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoReduce<T> extends MonoSource<T, T> implements Fuseable {
@@ -37,22 +39,24 @@ final class MonoReduce<T> extends MonoSource<T, T> implements Fuseable {
 		super(source);
 		this.aggregator = Objects.requireNonNull(aggregator, "aggregator");
 	}
-	
+
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 		source.subscribe(new AggregateSubscriber<>(s, aggregator));
 	}
-	
+
 	static final class AggregateSubscriber<T> extends Operators.MonoSubscriber<T, T> {
+
 		final BiFunction<T, T, T> aggregator;
 
 		Subscription s;
-		
+
 		T result;
-		
+
 		boolean done;
-		
-		public AggregateSubscriber(Subscriber<? super T> actual, BiFunction<T, T, T> aggregator) {
+
+		public AggregateSubscriber(Subscriber<? super T> actual,
+				BiFunction<T, T, T> aggregator) {
 			super(actual);
 			this.aggregator = aggregator;
 		}
@@ -75,25 +79,19 @@ final class MonoReduce<T> extends MonoSource<T, T> implements Fuseable {
 			T r = result;
 			if (r == null) {
 				result = t;
-			} else {
+			}
+			else {
 				try {
-					r = aggregator.apply(r, t);
-				} catch (Throwable ex) {
+					r = Objects.requireNonNull(aggregator.apply(r, t),
+							"The aggregator returned a null value");
+				}
+				catch (Throwable ex) {
 					result = null;
 					done = true;
 					actual.onError(Operators.onOperatorError(s, ex, t));
 					return;
 				}
-				
-				if (r == null) {
-					result = null;
-					done = true;
-					actual.onError(Operators.onOperatorError(s, new
-							NullPointerException("The aggregator returned a null " +
-							"value"), t));
-					return;
-				}
-				
+
 				result = r;
 			}
 		}
@@ -116,11 +114,12 @@ final class MonoReduce<T> extends MonoSource<T, T> implements Fuseable {
 			T r = result;
 			if (r != null) {
 				complete(r);
-			} else {
+			}
+			else {
 				actual.onComplete();
 			}
 		}
-		
+
 		@Override
 		public void cancel() {
 			super.cancel();
