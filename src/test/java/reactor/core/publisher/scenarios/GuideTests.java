@@ -21,6 +21,10 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -543,6 +547,7 @@ public class GuideTests {
 	private MyEventProcessor myEventProcessor = new MyEventProcessor() {
 
 		private MyEventListener<String> eventListener;
+		private ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
 		@Override
 		public void register(MyEventListener<String> eventListener) {
@@ -551,12 +556,14 @@ public class GuideTests {
 
 		@Override
 		public void dataChunk(String... values) {
-			eventListener.onDataChunk(Arrays.asList(values));
+			executor.schedule(() -> eventListener.onDataChunk(Arrays.asList(values)),
+					500, TimeUnit.MILLISECONDS);
 		}
 
 		@Override
 		public void processComplete() {
-			eventListener.processComplete();
+			executor.schedule(() -> eventListener.processComplete(),
+					500, TimeUnit.MILLISECONDS);
 		}
 	};
 
