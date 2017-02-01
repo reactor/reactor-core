@@ -1,11 +1,11 @@
-== Reactor Documentation
+== About the Documentation
 This section provides a brief overview of Reactor reference documentation.
 You can read this reference guide in a linear fashion, or you can skip
 sections if something doesn’t interest you.
 
-=== About the documentation
+=== Latest version & Copyright Notice
 The Reactor reference guide is available as html documents. The latest copy is
-available at http://docs.projectreactor.io/current/reference.
+available at http://projectreactor.io/docs/core/release/reference/docs/index.html
 
 Copies of this document may be made for your own use and for distribution to
 others, provided that you do not charge any fee for such copies and further
