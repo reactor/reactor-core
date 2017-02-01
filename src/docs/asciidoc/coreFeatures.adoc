@@ -318,6 +318,7 @@ dealing with exceptions in a try/catch block. Most notably:
 
 All of these have equivalent in Reactor, in the form of error handling operators.
 
+===== Default value
 The equivalent of **(1)** is `onErrorReturn`:
 [source,java]
 ----
@@ -335,6 +336,7 @@ Flux.just(10)
     .onErrorReturn(e -> e.getMessage().equals("boom10"), "recovered10");
 ----
 
+===== Fallback method
 If you want more than a single default value and you have an alternative safer
 way of processing your data, you can use `switchOnError`. This would be the
 equivalent of *(2)*.
@@ -379,8 +381,9 @@ Flux.just("timeout1", "unknown", "key2")
 <3> If the source says the key is unknown, let's create a new entry.
 <4> In all other cases, "re-throw".
 
-That last line inside the `flatMap` gives us an hint as to how item *(3)* (catch
-wrap and rethrow) could be achieved:
+===== Catch and rethrow
+That last line inside the previous `flatMap` gives us an hint as to how item
+*(3)* (catch wrap and rethrow) could be achieved:
 [source,java]
 ----
 Flux.just("timeout1")
@@ -391,6 +394,7 @@ Flux.just("timeout1")
     );
 ----
 
+===== Log or react on the side
 For cases where you want the error to continue propagating, but you still want
 to react to it without modifying the sequence (for instance logging it like in
 item *(4)*), there is the `doOnError` operator. This operator as well as all
@@ -417,6 +421,7 @@ Flux.just("unknown")
 <2> is decorated with a logging side-effect...
 <3> and then protected with the cache fallback.
 
+===== Using resources and the finally block
 The last parallel to draw with the imperative world is the cleaning up that can
 be done either via a Java 7 "try-with-resources" construct or the use of the
 `finally` block (*(5)*). Both have their Reactor equivalent, actually: `using`
@@ -468,6 +473,7 @@ Flux.just("foo", "bar")
 <3> Here we increment statistics in case of cancellation only.
 <4> `take(1)` will cancel after 1 item is emitted.
 
+===== Demonstrating the terminal aspect of `onError`
 In order to demonstrate that all these operators don't prevent the upstream
 original sequence to terminate when the error happens, let's take a more visual
 example with a `Flux.interval`. The interval operator ticks every x units of time
@@ -500,6 +506,7 @@ Uh oh
 Even with one extra second of runtime, no more tick comes in from the `interval`.
 The sequence was indeed terminated by the error.
 
+===== Retrying
 There is another operator of interest with regards to error handling, and you
 might be tempted to use it in the case above. `retry`, as its mame indicates,
 allows to retry an erroring sequence.
@@ -543,6 +550,48 @@ coming from the 4th tick, the one that causes the exception and subsequent retry
 As you can see above, `retry(1)` merely re-subscribed to the original `interval`
 once, restarting the tick from 0. The second time around, since the exception
 still occurs, it gives up and propagate it downstream.
+
+There is a more advanced version of `retry` that uses a "companion" flux to tell
+whether or not a particular failure should retry: `retryWhen`. This companion
+flux is created by the operator but decorated by the user, in order to customize
+the retry condition.
+
+The companion flux is a `Flux<Throwable>` that gets passed to a `Function`, the
+sole parameter of retryWhen. As the user, you define that function and make it
+return a new `Publisher<?>`. Retry cycles will go like this:
+
+ 1. each time an error happens (potential for a retry), the error is emitted into
+ the companion flux. That flux has been originally decorated by your function.
+ 2. If the companion flux emits something, a retry happens.
+ 3. If the companion flux completes, the retry cycle stops and the original
+ sequence *completes* too.
+ 4. If the companion flux errors, the retry cycle stops and the original
+ sequence *stops* too. or completes, the error causes the original
+ sequence to fail and terminate.
+
+The distinction between the last two cases is important. Simply completing the
+companion would effectively swallow an error. Consider the following attempt
+at emulating `retry(3)` using `retryWhen`:
+[source,java]
+----
+Flux<String> flux =
+Flux.<String>error(new IllegalArgumentException()) // <1>
+    .doOnError(System.out::println) // <2>
+    .retryWhen(companion -> companion.take(3)); // <3>
+----
+<1> This continuously errors, calling for retry attempts
+<2> `doOnError` *before* the retry will let us see all failures
+<3> Here we just consider the first 3 errors as retry-able (`take(3)`), then give up.
+
+In effect, this results in an *empty* flux, but that completes *successfully*.
+Since `retry(3)` on the same flux would have terminated with the latest error,
+this is not entirely the same...
+
+Getting to the same behavior involves a few additional tricks:
+include::snippetRetryWhenRetry.adoc[]
+
+TIP: A similar code can be used to implement an _exponential backoff and retry_
+pattern, as shown in the <<faq.exponentialBackoff,FAQ>>.
 
 ==== How are exceptions in operators or functions handled?
 In general, all operators can themselves contain code that potentially trigger
@@ -605,10 +654,10 @@ an `IOException`:
 [source,java]
 ----
 public String convert(int i) throws IOException {
-	if (i > 3) {
-		throw new IOException("boom " + i);
-	}
-	return "OK " + i;
+  if (i > 3) {
+    throw new IOException("boom " + i);
+  }
+  return "OK " + i;
 }
 ----
 

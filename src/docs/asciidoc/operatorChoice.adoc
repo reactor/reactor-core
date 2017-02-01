@@ -177,6 +177,7 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 ** by falling back: `Flux#onErrorReturn`, `Flux#onErrorResumeWith`
 *** ...but from a Mono: `Mono#otherwiseReturn`, `Mono#otherwise`
 ** by retrying: `retry`
+*** ...triggered by a companion control Flux: `retryWhen`
 ** by switching to another `Flux` depending on the error type: `switchOnError`
 
 * I want to deal with backpressure "errors"footnote:[request max from upstream and apply the strategy when downstream doesn't produce enough request]...
