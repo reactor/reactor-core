@@ -37,7 +37,7 @@ final class ParallelReduceFull<T> extends Mono<T> implements Fuseable {
 
 	final BiFunction<T, T, T> reducer;
 
-	public ParallelReduceFull(ParallelFlux<? extends T> source,
+	ParallelReduceFull(ParallelFlux<? extends T> source,
 			BiFunction<T, T, T> reducer) {
 		this.source = source;
 		this.reducer = reducer;

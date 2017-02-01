@@ -58,16 +58,11 @@ extends Mono<T>
 
 		T t;
 		try {
-			t = supplier.get();
+			t = Objects.requireNonNull(supplier.get(),
+					"The supplier source returned null");
 		}
 		catch (Throwable e) {
 			s.onError(Operators.onOperatorError(e));
-			return;
-		}
-
-		if (t == null) {
-			s.onError(Operators.onOperatorError(
-					new NullPointerException("The supplier source returned null")));
 			return;
 		}
 
@@ -76,11 +71,8 @@ extends Mono<T>
 	
 	@Override
 	public T blockMillis(long m) {
-		T t = supplier.get();
-		if(t == null){
-			throw new NullPointerException("The supplier source returned null");
-		}
-		return t;
+		return Objects.requireNonNull(supplier.get(),
+				"The supplier source returned null");
 	}
 
 	@Override
@@ -90,10 +82,7 @@ extends Mono<T>
 	
 	@Override
 	public T call() throws Exception {
-		T t = supplier.get();
-		if(t == null){
-			throw new NullPointerException("The supplier source returned null");
-		}
-		return t;
+		return Objects.requireNonNull(supplier.get(),
+				"The supplier source returned null");
 	}
 }

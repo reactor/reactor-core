@@ -109,17 +109,12 @@ final class MonoReduceSeed<T, R> extends MonoSource<T, R> implements Fuseable {
 			R v;
 
 			try {
-				v = accumulator.apply(value, t);
+				v = Objects.requireNonNull(accumulator.apply(value, t),
+						"The accumulator returned a null value");
+
 			}
 			catch (Throwable e) {
 				onError(Operators.onOperatorError(this, e, t));
-				return;
-			}
-
-			if (v == null) {
-				onError(Operators.onOperatorError(this,
-						new NullPointerException("The" + " accumulator returned a null value"),
-						t));
 				return;
 			}
 

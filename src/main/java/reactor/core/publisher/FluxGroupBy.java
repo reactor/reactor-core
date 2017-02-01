@@ -184,23 +184,11 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 			V value;
 
 			try {
-				key = keySelector.apply(t);
-				value = valueSelector.apply(t);
+				key = Objects.requireNonNull(keySelector.apply(t), "The keySelector returned a null value");
+				value = Objects.requireNonNull(valueSelector.apply(t), "The valueSelector returned a null value");
 			}
 			catch (Throwable ex) {
 				onError(Operators.onOperatorError(s, ex, t));
-				return;
-			}
-			if (key == null) {
-				onError(Operators.onOperatorError(s,
-						new NullPointerException("The " + "keySelector returned a null value"),
-						t));
-				return;
-			}
-			if (value == null) {
-				onError(Operators.onOperatorError(s,
-						new NullPointerException("The " + "valueSelector returned a null value"),
-						t));
 				return;
 			}
 

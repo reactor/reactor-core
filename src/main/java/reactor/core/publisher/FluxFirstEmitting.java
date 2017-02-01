@@ -103,17 +103,11 @@ final class FluxFirstEmitting<T> extends Flux<T> implements MultiReceiver {
 				Publisher<? extends T> p;
 
 				try {
-					p = it.next();
+					p = Objects.requireNonNull(it.next(),
+							"The Publisher returned by the iterator is null");
 				}
 				catch (Throwable e) {
 					Operators.error(s, Operators.onOperatorError(e));
-					return;
-				}
-
-				if (p == null) {
-					Operators.error(s,
-							new NullPointerException(
-									"The Publisher returned by the iterator is " + "null"));
 					return;
 				}
 

@@ -92,11 +92,6 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Fuseable {
 		return source.parallelism();
 	}
 
-	@Override
-	public boolean isOrdered() {
-		return false;
-	}
-
 	static final class ParallelCollectSubscriber<T, C>
 			extends Operators.MonoSubscriber<T, C> {
 

@@ -556,8 +556,14 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * Returns true if the parallel sequence has to be ordered when joining back.
 	 *
 	 * @return true if the parallel sequence has to be ordered when joining back
+	 * @deprecated This accessor was initially exposed to introspect the internal
+	 * ordering scenario for parallel rails. In effect reactor 3.0 and 3.1 only offer
+	 * non ordered merge at the end and therefore this should always returns false;
 	 */
-	public abstract boolean isOrdered();
+	@Deprecated
+	public boolean isOrdered(){
+		return false;
+	}
 
 	/**
 	 * Observe all Reactive Streams signals and use {@link Logger} support to handle trace

@@ -36,7 +36,7 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements Fu
 
 	final ParallelFlux<? extends T> source;
 
-	public ParallelGroup(ParallelFlux<? extends T> source) {
+	ParallelGroup(ParallelFlux<? extends T> source) {
 		this.source = source;
 	}
 	

@@ -39,7 +39,7 @@ final class ParallelPeek<T> extends ParallelFlux<T> implements SignalPeek<T>{
 	final LongConsumer onRequest;
 	final Runnable onCancel;
 
-	public ParallelPeek(ParallelFlux<T> source,
+	ParallelPeek(ParallelFlux<T> source,
 			Consumer<? super T> onNext,
 			Consumer<? super T> onAfterNext,
 			Consumer<? super Throwable> onError,
@@ -86,11 +86,6 @@ final class ParallelPeek<T> extends ParallelFlux<T> implements SignalPeek<T>{
 	@Override
 	public long getPrefetch() {
 		return source.getPrefetch();
-	}
-
-	@Override
-	public boolean isOrdered() {
-		return source.isOrdered();
 	}
 
 	@Override

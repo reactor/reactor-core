@@ -91,10 +91,7 @@ extends Mono<T>
 
 	@Override
 	public T call() throws Exception {
-		T t = callable.call();
-		if(t == null){
-			throw new NullPointerException("The callable source returned null");
-		}
-		return t;
+		return Objects.requireNonNull(callable.call(),
+				"The callable source returned null");
 	}
 }

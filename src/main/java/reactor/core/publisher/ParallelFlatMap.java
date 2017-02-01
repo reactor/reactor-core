@@ -63,11 +63,6 @@ final class ParallelFlatMap<T, R> extends ParallelFlux<R> {
 	}
 
 	@Override
-	public boolean isOrdered() {
-		return false;
-	}
-	
-	@Override
 	public int parallelism() {
 		return source.parallelism();
 	}

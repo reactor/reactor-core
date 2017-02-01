@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Iterator;
@@ -38,7 +39,7 @@ import reactor.core.Trackable;
 
 /**
  * An iterable that consumes a Publisher in a blocking fashion.
- * 
+ * <p>
  * <p> It also implements methods to stream the contents via Stream
  * that also supports cancellation.
  *
@@ -47,12 +48,14 @@ import reactor.core.Trackable;
 final class BlockingIterable<T> implements Iterable<T>, Receiver, Trackable {
 
 	final Publisher<? extends T> source;
-	
+
 	final long batchSize;
-	
+
 	final Supplier<Queue<T>> queueSupplier;
 
-	BlockingIterable(Publisher<? extends T> source, long batchSize, Supplier<Queue<T>> queueSupplier) {
+	BlockingIterable(Publisher<? extends T> source,
+			long batchSize,
+			Supplier<Queue<T>> queueSupplier) {
 		if (batchSize <= 0) {
 			throw new IllegalArgumentException("batchSize > 0 required but it was " + batchSize);
 		}
@@ -60,13 +63,13 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Trackable {
 		this.batchSize = batchSize;
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
 	}
-	
+
 	@Override
 	public Iterator<T> iterator() {
 		SubscriberIterator<T> it = createIterator();
-		
+
 		source.subscribe(it);
-		
+
 		return it;
 	}
 
@@ -76,7 +79,8 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Trackable {
 	}
 
 	/**
-	 * @return a {@link Stream} of unknown size with onClose attached to {@link Subscription#cancel()}
+	 * @return a {@link Stream} of unknown size with onClose attached to {@link
+	 * Subscription#cancel()}
 	 */
 	public Stream<T> stream() {
 		SubscriberIterator<T> it = createIterator();
@@ -84,22 +88,21 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Trackable {
 
 		Spliterator<T> sp = Spliterators.spliteratorUnknownSize(it, 0);
 
-		return StreamSupport.stream(sp, false).onClose(it);
+		return StreamSupport.stream(sp, false)
+		                    .onClose(it);
 	}
 
 	SubscriberIterator<T> createIterator() {
 		Queue<T> q;
-		
+
 		try {
-			q = queueSupplier.get();
-		} catch (Throwable e) {
+			q = Objects.requireNonNull(queueSupplier.get(),
+					"The queueSupplier returned a null queue");
+		}
+		catch (Throwable e) {
 			throw Exceptions.propagate(e);
 		}
-		
-		if (q == null) {
-			throw new NullPointerException("The queueSupplier returned a null queue");
-		}
-		
+
 		return new SubscriberIterator<>(q, batchSize);
 	}
 
@@ -122,28 +125,30 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Trackable {
 			implements Subscriber<T>, Iterator<T>, Runnable, Receiver, Trackable {
 
 		final Queue<T> queue;
-		
+
 		final long batchSize;
-		
+
 		final long limit;
-		
+
 		final Lock lock;
-		
+
 		final Condition condition;
-		
+
 		long produced;
-		
+
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SubscriberIterator, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(SubscriberIterator.class, Subscription.class, "s");
-		
+				AtomicReferenceFieldUpdater.newUpdater(SubscriberIterator.class,
+						Subscription.class,
+						"s");
+
 		volatile boolean done;
 		Throwable error;
 
 		volatile boolean cancelled;
-		
-		public SubscriberIterator(Queue<T> queue, long batchSize) {
+
+		 SubscriberIterator(Queue<T> queue, long batchSize) {
 			this.queue = queue;
 			this.batchSize = batchSize;
 			this.limit = batchSize - (batchSize >> 2);
@@ -153,7 +158,7 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Trackable {
 
 		@Override
 		public boolean hasNext() {
-			for (;;) {
+			for (; ; ) {
 				if (cancelled) {
 					return false;
 				}
@@ -163,8 +168,8 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Trackable {
 					Throwable e = error;
 					if (e != null) {
 						throw Exceptions.propagate(e);
-					} else
-					if (empty) {
+					}
+					else if (empty) {
 						return false;
 					}
 				}
@@ -174,13 +179,16 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Trackable {
 						while (!cancelled && !done && queue.isEmpty()) {
 							condition.await();
 						}
-					} catch (InterruptedException ex) {
+					}
+					catch (InterruptedException ex) {
 						run();
 						throw Exceptions.propagate(ex);
-					} finally {
+					}
+					finally {
 						lock.unlock();
 					}
-				} else {
+				}
+				else {
 					return true;
 				}
 			}
@@ -190,21 +198,22 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Trackable {
 		public T next() {
 			if (hasNext()) {
 				T v = queue.poll();
-				
+
 				if (v == null) {
 					run();
-					
+
 					throw new IllegalStateException("Queue empty?!");
 				}
-				
+
 				long p = produced + 1;
 				if (p == limit) {
 					produced = 0;
 					s.request(p);
-				} else {
+				}
+				else {
 					produced = p;
 				}
-				
+
 				return v;
 			}
 			throw new NoSuchElementException();
@@ -221,9 +230,12 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Trackable {
 		public void onNext(T t) {
 			if (!queue.offer(t)) {
 				Operators.terminate(S, this);
-				
-				onError(Operators.onOperatorError(null, Exceptions.failWithOverflow("Queue is full?!"), t));
-			} else {
+
+				onError(Operators.onOperatorError(null,
+						Exceptions.failWithOverflow("Queue is full?!"),
+						t));
+			}
+			else {
 				signalConsumer();
 			}
 		}
@@ -240,12 +252,13 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Trackable {
 			done = true;
 			signalConsumer();
 		}
-		
+
 		void signalConsumer() {
 			lock.lock();
 			try {
 				condition.signalAll();
-			} finally {
+			}
+			finally {
 				lock.unlock();
 			}
 		}

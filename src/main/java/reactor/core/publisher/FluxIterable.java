@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Iterator;
@@ -30,11 +31,10 @@ import reactor.core.Trackable;
  * Emits the contents of an Iterable source.
  *
  * @param <T> the value type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxIterable<T> 
-extends Flux<T>
-		implements Receiver, Fuseable {
+final class FluxIterable<T> extends Flux<T> implements Receiver, Fuseable {
 
 	final Iterable<? extends T> iterable;
 
@@ -48,7 +48,8 @@ extends Flux<T>
 
 		try {
 			it = iterable.iterator();
-		} catch (Throwable e) {
+		}
+		catch (Throwable e) {
 			Operators.error(s, Operators.onOperatorError(e));
 			return;
 		}
@@ -78,7 +79,8 @@ extends Flux<T>
 
 		try {
 			b = it.hasNext();
-		} catch (Throwable e) {
+		}
+		catch (Throwable e) {
 			Operators.error(s, Operators.onOperatorError(e));
 			return;
 		}
@@ -88,8 +90,10 @@ extends Flux<T>
 		}
 
 		if (s instanceof ConditionalSubscriber) {
-			s.onSubscribe(new IterableSubscriptionConditional<>((ConditionalSubscriber<? super T>)s, it));
-		} else {
+			s.onSubscribe(new IterableSubscriptionConditional<>((ConditionalSubscriber<? super T>) s,
+					it));
+		}
+		else {
 			s.onSubscribe(new IterableSubscription<>(s, it));
 		}
 	}
@@ -106,22 +110,33 @@ extends Flux<T>
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<IterableSubscription> REQUESTED =
-		  AtomicLongFieldUpdater.newUpdater(IterableSubscription.class, "requested");
+				AtomicLongFieldUpdater.newUpdater(IterableSubscription.class,
+						"requested");
 
 		int state;
-		
-		/** Indicates that the iterator's hasNext returned true before but the value is not yet retrieved. */
-		static final int STATE_HAS_NEXT_NO_VALUE = 0;
-		/** Indicates that there is a value available in current. */
+
+		/**
+		 * Indicates that the iterator's hasNext returned true before but the value is not
+		 * yet retrieved.
+		 */
+		static final int STATE_HAS_NEXT_NO_VALUE  = 0;
+		/**
+		 * Indicates that there is a value available in current.
+		 */
 		static final int STATE_HAS_NEXT_HAS_VALUE = 1;
-		/** Indicates that there are no more values available. */
-		static final int STATE_NO_NEXT = 2;
-		/** Indicates that the value has been consumed and a new value should be retrieved. */
-		static final int STATE_CALL_HAS_NEXT = 3;
-		
+		/**
+		 * Indicates that there are no more values available.
+		 */
+		static final int STATE_NO_NEXT            = 2;
+		/**
+		 * Indicates that the value has been consumed and a new value should be retrieved.
+		 */
+		static final int STATE_CALL_HAS_NEXT      = 3;
+
 		T current;
-		
-		public IterableSubscription(Subscriber<? super T> actual, Iterator<? extends T> iterator) {
+
+		public IterableSubscription(Subscriber<? super T> actual,
+				Iterator<? extends T> iterator) {
 			this.actual = actual;
 			this.iterator = iterator;
 		}
@@ -132,7 +147,8 @@ extends Flux<T>
 				if (Operators.getAndAddCap(REQUESTED, this, n) == 0) {
 					if (n == Long.MAX_VALUE) {
 						fastPath();
-					} else {
+					}
+					else {
 						slowPath(n);
 					}
 				}
@@ -151,18 +167,15 @@ extends Flux<T>
 					T t;
 
 					try {
-						t = a.next();
-					} catch (Throwable ex) {
+						t = Objects.requireNonNull(a.next(),
+								"The iterator returned a null value");
+					}
+					catch (Throwable ex) {
 						s.onError(ex);
 						return;
 					}
 
 					if (cancelled) {
-						return;
-					}
-
-					if (t == null) {
-						s.onError(new NullPointerException("The iterator returned a null value"));
 						return;
 					}
 
@@ -176,7 +189,8 @@ extends Flux<T>
 
 					try {
 						b = a.hasNext();
-					} catch (Throwable ex) {
+					}
+					catch (Throwable ex) {
 						s.onError(ex);
 						return;
 					}
@@ -218,18 +232,15 @@ extends Flux<T>
 				T t;
 
 				try {
-					t = a.next();
-				} catch (Exception ex) {
+					t = Objects.requireNonNull(a.next(),
+							"The iterator returned a null value");
+				}
+				catch (Exception ex) {
 					s.onError(ex);
 					return;
 				}
 
 				if (cancelled) {
-					return;
-				}
-
-				if (t == null) {
-					s.onError(new NullPointerException("The iterator returned a null value"));
 					return;
 				}
 
@@ -243,7 +254,8 @@ extends Flux<T>
 
 				try {
 					b = a.hasNext();
-				} catch (Exception ex) {
+				}
+				catch (Exception ex) {
 					s.onError(ex);
 					return;
 				}
@@ -293,43 +305,44 @@ extends Flux<T>
 		public void clear() {
 			// no op
 		}
-		
+
 		@Override
 		public boolean isEmpty() {
-		   int s = state;
-		   if (s == STATE_NO_NEXT) {
-			   return true;
-		   } else
-		   if (s == STATE_HAS_NEXT_HAS_VALUE || s == STATE_HAS_NEXT_NO_VALUE) {
-			   return false;
-		   } else
-		   if (iterator.hasNext()) {
-			   state = STATE_HAS_NEXT_NO_VALUE;
-			   return false;
-		   }
-		   state = STATE_NO_NEXT;
-		   return true;
+			int s = state;
+			if (s == STATE_NO_NEXT) {
+				return true;
+			}
+			else if (s == STATE_HAS_NEXT_HAS_VALUE || s == STATE_HAS_NEXT_NO_VALUE) {
+				return false;
+			}
+			else if (iterator.hasNext()) {
+				state = STATE_HAS_NEXT_NO_VALUE;
+				return false;
+			}
+			state = STATE_NO_NEXT;
+			return true;
 		}
-		
+
 		@Override
 		public T poll() {
 			if (!isEmpty()) {
 				T c;
 				if (state == STATE_HAS_NEXT_NO_VALUE) {
 					c = iterator.next();
-				} else {
+				}
+				else {
 					c = current;
 					current = null;
 				}
 				state = STATE_CALL_HAS_NEXT;
 				if (c == null) {
-					throw new NullPointerException();
+					throw new NullPointerException("The iterator returned a null value");
 				}
 				return c;
 			}
 			return null;
 		}
-		
+
 		@Override
 		public int size() {
 			if (state == STATE_NO_NEXT) {
@@ -340,8 +353,7 @@ extends Flux<T>
 	}
 
 	static final class IterableSubscriptionConditional<T>
-			implements Producer, Trackable, Subscription,
-			           SynchronousSubscription<T> {
+			implements Producer, Trackable, Subscription, SynchronousSubscription<T> {
 
 		final ConditionalSubscriber<? super T> actual;
 
@@ -352,22 +364,33 @@ extends Flux<T>
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<IterableSubscriptionConditional> REQUESTED =
-		  AtomicLongFieldUpdater.newUpdater(IterableSubscriptionConditional.class, "requested");
+				AtomicLongFieldUpdater.newUpdater(IterableSubscriptionConditional.class,
+						"requested");
 
 		int state;
-		
-		/** Indicates that the iterator's hasNext returned true before but the value is not yet retrieved. */
-		static final int STATE_HAS_NEXT_NO_VALUE = 0;
-		/** Indicates that there is a value available in current. */
+
+		/**
+		 * Indicates that the iterator's hasNext returned true before but the value is not
+		 * yet retrieved.
+		 */
+		static final int STATE_HAS_NEXT_NO_VALUE  = 0;
+		/**
+		 * Indicates that there is a value available in current.
+		 */
 		static final int STATE_HAS_NEXT_HAS_VALUE = 1;
-		/** Indicates that there are no more values available. */
-		static final int STATE_NO_NEXT = 2;
-		/** Indicates that the value has been consumed and a new value should be retrieved. */
-		static final int STATE_CALL_HAS_NEXT = 3;
-		
+		/**
+		 * Indicates that there are no more values available.
+		 */
+		static final int STATE_NO_NEXT            = 2;
+		/**
+		 * Indicates that the value has been consumed and a new value should be retrieved.
+		 */
+		static final int STATE_CALL_HAS_NEXT      = 3;
+
 		T current;
-		
-		public IterableSubscriptionConditional(ConditionalSubscriber<? super T> actual, Iterator<? extends T> iterator) {
+
+		public IterableSubscriptionConditional(ConditionalSubscriber<? super T> actual,
+				Iterator<? extends T> iterator) {
 			this.actual = actual;
 			this.iterator = iterator;
 		}
@@ -378,7 +401,8 @@ extends Flux<T>
 				if (Operators.getAndAddCap(REQUESTED, this, n) == 0) {
 					if (n == Long.MAX_VALUE) {
 						fastPath();
-					} else {
+					}
+					else {
 						slowPath(n);
 					}
 				}
@@ -397,18 +421,15 @@ extends Flux<T>
 					T t;
 
 					try {
-						t = a.next();
-					} catch (Throwable ex) {
+						t = Objects.requireNonNull(a.next(),
+								"The iterator returned a null value");
+					}
+					catch (Throwable ex) {
 						s.onError(ex);
 						return;
 					}
 
 					if (cancelled) {
-						return;
-					}
-
-					if (t == null) {
-						s.onError(new NullPointerException("The iterator returned a null value"));
 						return;
 					}
 
@@ -422,7 +443,8 @@ extends Flux<T>
 
 					try {
 						b = a.hasNext();
-					} catch (Throwable ex) {
+					}
+					catch (Throwable ex) {
 						s.onError(ex);
 						return;
 					}
@@ -466,18 +488,15 @@ extends Flux<T>
 				T t;
 
 				try {
-					t = a.next();
-				} catch (Exception ex) {
+					t = Objects.requireNonNull(a.next(),
+							"The iterator returned a null value");
+				}
+				catch (Exception ex) {
 					s.onError(ex);
 					return;
 				}
 
 				if (cancelled) {
-					return;
-				}
-
-				if (t == null) {
-					s.onError(new NullPointerException("The iterator returned a null value"));
 					return;
 				}
 
@@ -491,7 +510,8 @@ extends Flux<T>
 
 				try {
 					b = a.hasNext();
-				} catch (Exception ex) {
+				}
+				catch (Exception ex) {
 					s.onError(ex);
 					return;
 				}
@@ -541,31 +561,32 @@ extends Flux<T>
 		public void clear() {
 			// no op
 		}
-		
+
 		@Override
 		public boolean isEmpty() {
-		   int s = state;
-		   if (s == STATE_NO_NEXT) {
-			   return true;
-		   } else
-		   if (s == STATE_HAS_NEXT_HAS_VALUE || s == STATE_HAS_NEXT_NO_VALUE) {
-			   return false;
-		   } else
-		   if (iterator.hasNext()) {
-			   state = STATE_HAS_NEXT_NO_VALUE;
-			   return false;
-		   }
-		   state = STATE_NO_NEXT;
-		   return true;
+			int s = state;
+			if (s == STATE_NO_NEXT) {
+				return true;
+			}
+			else if (s == STATE_HAS_NEXT_HAS_VALUE || s == STATE_HAS_NEXT_NO_VALUE) {
+				return false;
+			}
+			else if (iterator.hasNext()) {
+				state = STATE_HAS_NEXT_NO_VALUE;
+				return false;
+			}
+			state = STATE_NO_NEXT;
+			return true;
 		}
-		
+
 		@Override
 		public T poll() {
 			if (!isEmpty()) {
 				T c;
 				if (state == STATE_HAS_NEXT_NO_VALUE) {
 					c = iterator.next();
-				} else {
+				}
+				else {
 					c = current;
 					current = null;
 				}
@@ -574,7 +595,7 @@ extends Flux<T>
 			}
 			return null;
 		}
-		
+
 		@Override
 		public int size() {
 			if (state == STATE_NO_NEXT) {

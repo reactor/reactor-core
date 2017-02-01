@@ -65,20 +65,13 @@ final class ParallelReduce<T, R> extends ParallelFlux<R> implements Fuseable {
 			R initialValue;
 
 			try {
-				initialValue = initialSupplier.get();
+				initialValue = Objects.requireNonNull(initialSupplier.get(),
+						"The initialSupplier returned a null value");
 			}
 			catch (Throwable ex) {
 				reportError(subscribers, Operators.onOperatorError(ex));
 				return;
 			}
-
-			if (initialValue == null) {
-				reportError(subscribers,
-						new NullPointerException(
-								"The initialSupplier returned a null value"));
-				return;
-			}
-
 			parents[i] =
 					new ParallelReduceSubscriber<>(subscribers[i], initialValue, reducer);
 		}
@@ -97,10 +90,6 @@ final class ParallelReduce<T, R> extends ParallelFlux<R> implements Fuseable {
 		return source.parallelism();
 	}
 
-	@Override
-	public boolean isOrdered() {
-		return false;
-	}
 
 	static final class ParallelReduceSubscriber<T, R>
 			extends Operators.MonoSubscriber<T, R> {

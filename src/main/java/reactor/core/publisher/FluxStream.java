@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Iterator;
@@ -27,14 +28,14 @@ import reactor.core.Receiver;
  * Emits the contents of a Stream source.
  *
  * @param <T> the value type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxStream<T> extends Flux<T>
-		implements Receiver, Fuseable {
+final class FluxStream<T> extends Flux<T> implements Receiver, Fuseable {
 
 	final Stream<? extends T> stream;
 
-	public FluxStream(Stream<? extends T> iterable) {
+	FluxStream(Stream<? extends T> iterable) {
 		this.stream = Objects.requireNonNull(iterable, "stream");
 	}
 
@@ -49,7 +50,8 @@ final class FluxStream<T> extends Flux<T>
 
 		try {
 			it = stream.iterator();
-		} catch (Throwable e) {
+		}
+		catch (Throwable e) {
 			Operators.error(s, Operators.onOperatorError(e));
 			return;
 		}

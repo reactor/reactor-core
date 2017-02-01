@@ -41,7 +41,7 @@ final class ParallelSortedJoin<T> extends Flux<T> {
 
 	final Comparator<? super T> comparator;
 
-	public ParallelSortedJoin(ParallelFlux<List<T>> source,
+	ParallelSortedJoin(ParallelFlux<List<T>> source,
 			Comparator<? super T> comparator) {
 		this.source = source;
 		this.comparator = comparator;

@@ -40,7 +40,7 @@ final class ParallelFluxOnAssembly<T> extends ParallelFlux<T>
 
 	final Exception stacktrace;
 
-	public ParallelFluxOnAssembly(ParallelFlux<T> source) {
+	ParallelFluxOnAssembly(ParallelFlux<T> source) {
 		this.source = source;
 		this.stacktrace = new Exception();
 	}
@@ -48,11 +48,6 @@ final class ParallelFluxOnAssembly<T> extends ParallelFlux<T>
 	@Override
 	public long getPrefetch() {
 		return source.getPrefetch();
-	}
-
-	@Override
-	public boolean isOrdered() {
-		return source.isOrdered();
 	}
 
 	@Override

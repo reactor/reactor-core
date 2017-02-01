@@ -31,7 +31,7 @@ final class ParallelMap<T, R> extends ParallelFlux<R> {
 	
 	final Function<? super T, ? extends R> mapper;
 	
-	public ParallelMap(ParallelFlux<T> source, Function<? super T, ? extends R> mapper) {
+	ParallelMap(ParallelFlux<T> source, Function<? super T, ? extends R> mapper) {
 		this.source = source;
 		this.mapper = mapper;
 	}
@@ -58,8 +58,4 @@ final class ParallelMap<T, R> extends ParallelFlux<R> {
 		return source.parallelism();
 	}
 
-	@Override
-	public boolean isOrdered() {
-		return false;
-	}
 }
