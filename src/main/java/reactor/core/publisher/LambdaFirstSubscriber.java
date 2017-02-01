@@ -59,7 +59,7 @@ final class LambdaFirstSubscriber<T>
 	 * @param subscriptionConsumer A {@link Consumer} called with the
 	 * {@link Subscription} to perform initial request, or null to request max
 	 */
-	public LambdaFirstSubscriber(Consumer<? super T> consumer,
+	LambdaFirstSubscriber(Consumer<? super T> consumer,
 			Consumer<? super Throwable> errorConsumer,
 			Runnable completeConsumer,
 			Consumer<? super Subscription> subscriptionConsumer) {
@@ -105,8 +105,7 @@ final class LambdaFirstSubscriber<T>
 				completeConsumer.run();
 			}
 			catch (Throwable t) {
-				Exceptions.throwIfFatal(t);
-				onError(t);
+				Operators.onErrorDropped(t);
 			}
 		}
 	}
@@ -121,6 +120,10 @@ final class LambdaFirstSubscriber<T>
 			Operators.onErrorDropped(t);
 			return;
 		}
+		doError(t);
+	}
+
+	void doError(Throwable t){
 		if (errorConsumer != null) {
 			errorConsumer.accept(t);
 		}
@@ -147,8 +150,7 @@ final class LambdaFirstSubscriber<T>
 				consumer.accept(x);
 			}
 			catch (Throwable t) {
-				Exceptions.throwIfFatal(t);
-				onError(t);
+				Operators.onErrorDropped(t);
 				return;
 			}
 		}
@@ -157,8 +159,7 @@ final class LambdaFirstSubscriber<T>
 				completeConsumer.run();
 			}
 			catch (Throwable t) {
-				Exceptions.throwIfFatal(t);
-				onError(t);
+				Operators.onErrorDropped(t);
 			}
 		}
 	}

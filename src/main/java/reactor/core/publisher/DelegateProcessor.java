@@ -33,15 +33,14 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 
 	private final Publisher<OUT> downstream;
 	private final Subscriber<IN> upstream;
-	Subscription upstreamSubscription;
 
-	public DelegateProcessor(Publisher<OUT> downstream, Subscriber<IN> upstream) {
+	DelegateProcessor(Publisher<OUT> downstream, Subscriber<IN> upstream) {
 		this.downstream = Objects.requireNonNull(downstream, "Downstream must not be null");
 		this.upstream = Objects.requireNonNull(upstream, "Upstream must not be null");
 	}
 
 	@Override
-	public Subscriber<? super IN> downstream() {
+	public Subscriber<IN> downstream() {
 		return upstream;
 	}
 
@@ -80,7 +79,7 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 	}
 
 	@Override
-	public Subscription upstream() {
-		return upstreamSubscription;
+	public Publisher<OUT> upstream() {
+		return downstream;
 	}
 }

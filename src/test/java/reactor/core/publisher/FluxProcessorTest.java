@@ -21,11 +21,81 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxProcessorTest {
 
+	@Test(expected = NullPointerException.class)
+	@SuppressWarnings("unchecked")
+	public void failNullSubscriber(){
+		FluxProcessor.wrap(UnicastProcessor.create(), UnicastProcessor.create())
+	                 .subscribe((Subscriber)null);
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void normalBlackboxProcessor(){
+		UnicastProcessor<Integer> upstream = UnicastProcessor.create();
+		FluxProcessor<Integer, Integer> processor =
+				FluxProcessor.wrap(upstream, upstream.map(i -> i + 1)
+				                                     .filter(i -> i % 2 == 0));
+
+		DelegateProcessor<Integer, Integer> delegateProcessor =
+				(DelegateProcessor<Integer, Integer>)processor;
+
+		assertThat(delegateProcessor.downstream()).isEqualTo(upstream);
+		assertThat(delegateProcessor.upstream()).isInstanceOf(FluxFilterFuseable.class);
+
+
+		StepVerifier.create(processor)
+		            .then(() -> upstream.onNext(1))
+		            .expectNext(2)
+		            .then(() -> upstream.onNext(2))
+		            .then(() -> upstream.onNext(3))
+		            .expectNext(4)
+		            .then(() -> upstream.onComplete())
+		            .verifyComplete();
+	}
+
+	@Test
+	public void disconnectedBlackboxProcessor(){
+		UnicastProcessor<Integer> upstream = UnicastProcessor.create();
+		FluxProcessor<Integer, Integer> processor =
+				FluxProcessor.wrap(upstream, Flux.just(1));
+
+		StepVerifier.create(processor)
+	                .expectNext(1)
+	                .verifyComplete();
+	}
+
+	@Test
+	public void symmetricBlackboxProcessor(){
+		UnicastProcessor<Integer> upstream = UnicastProcessor.create();
+		FluxProcessor<Integer, Integer> processor =
+				FluxProcessor.wrap(upstream, upstream);
+
+		StepVerifier.create(processor)
+	                .then(() -> upstream.onNext(1))
+	                .expectNext(1)
+	                .then(() -> upstream.onComplete())
+	                .verifyComplete();
+	}
+
+	@Test
+	public void errorSymmetricBlackboxProcessor(){
+		UnicastProcessor<Integer> upstream = UnicastProcessor.create();
+		FluxProcessor<Integer, Integer> processor =
+				FluxProcessor.wrap(upstream, upstream);
+
+		StepVerifier.create(processor)
+	                .then(() -> upstream.onError(new Exception("test")))
+	                .verifyErrorMessage("test");
+	}
 
 	@Test
 	public void testSubmitSession() throws Exception {

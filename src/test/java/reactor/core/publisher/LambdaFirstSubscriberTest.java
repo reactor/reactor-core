@@ -22,8 +22,7 @@ import org.junit.Test;
 import org.reactivestreams.Subscription;
 
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class LambdaFirstSubscriberTest {
 
@@ -180,6 +179,54 @@ public class LambdaFirstSubscriberTest {
 		assertThat("unexpected onError", errorHolder.get(), is(nullValue()));
 		assertThat("subscription has not been cancelled on fatal exception",
 				testSubscription.isCancelled, is(true));
+	}
+
+	@Test
+	public void emptyMonoState(){
+		assertTrue(MonoSource.wrap(s -> {
+			assertTrue(s instanceof LambdaFirstSubscriber);
+			LambdaFirstSubscriber<?> bfs = (LambdaFirstSubscriber<?>)s;
+			assertTrue(bfs.upstream() == null);
+			assertTrue(bfs.getCapacity() == Long.MAX_VALUE);
+			assertFalse(bfs.isTerminated());
+			assertFalse(bfs.isStarted());
+			bfs.onSubscribe(Operators.emptySubscription());
+			bfs.onSubscribe(Operators.emptySubscription()); // noop
+			assertTrue(bfs.isStarted());
+			assertTrue(bfs.upstream() != null);
+			s.onComplete();
+			assertTrue(bfs.isTerminated());
+			bfs.dispose();
+			bfs.dispose();
+		}).subscribe(s -> {}, null, () -> {}).isDisposed());
+
+		assertFalse(Mono.never().subscribe(null, null, () -> {}).isDisposed());
+	}
+
+	@Test
+	public void errorMonoState(){
+		Hooks.onErrorDropped(e -> assertTrue(e.getMessage().equals("test2")));
+		Hooks.onNextDropped(d -> assertTrue(d.equals("test2")));
+		try {
+			MonoSource.wrap(s -> {
+				assertTrue(s instanceof LambdaFirstSubscriber);
+				LambdaFirstSubscriber<?> bfs = (LambdaFirstSubscriber<?>) s;
+				Operators.error(s, new Exception("test"));
+				s.onComplete();
+				s.onError(new Exception("test2"));
+				s.onNext("test2");
+				assertTrue(bfs.isTerminated());
+				bfs.dispose();
+			})
+			          .subscribe(s -> {
+			          }, e -> {
+			          }, () -> {
+			          });
+		}
+		finally {
+			Hooks.resetOnErrorDropped();
+			Hooks.resetOnNextDropped();
+		}
 	}
 
 	private static class TestSubscription implements Subscription {
