@@ -30,7 +30,7 @@ import reactor.core.Fuseable;
  * @param <T> the input value type
  * @param <R> the result value type
  */
-final class ParallelReduce<T, R> extends ParallelFlux<R> implements Fuseable {
+final class ParallelReduceSeed<T, R> extends ParallelFlux<R> implements Fuseable {
 
 	final ParallelFlux<? extends T> source;
 
@@ -38,7 +38,7 @@ final class ParallelReduce<T, R> extends ParallelFlux<R> implements Fuseable {
 
 	final BiFunction<R, ? super T, R> reducer;
 
-	ParallelReduce(ParallelFlux<? extends T> source,
+	ParallelReduceSeed(ParallelFlux<? extends T> source,
 			Supplier<R> initialSupplier,
 			BiFunction<R, ? super T, R> reducer) {
 		this.source = source;
@@ -73,7 +73,7 @@ final class ParallelReduce<T, R> extends ParallelFlux<R> implements Fuseable {
 				return;
 			}
 			parents[i] =
-					new ParallelReduceSubscriber<>(subscribers[i], initialValue, reducer);
+					new ParallelReduceSeedSubscriber<>(subscribers[i], initialValue, reducer);
 		}
 
 		source.subscribe(parents);
@@ -91,7 +91,7 @@ final class ParallelReduce<T, R> extends ParallelFlux<R> implements Fuseable {
 	}
 
 
-	static final class ParallelReduceSubscriber<T, R>
+	static final class ParallelReduceSeedSubscriber<T, R>
 			extends Operators.MonoSubscriber<T, R> {
 
 		final BiFunction<R, ? super T, R> reducer;
@@ -102,7 +102,7 @@ final class ParallelReduce<T, R> extends ParallelFlux<R> implements Fuseable {
 
 		boolean done;
 
-		ParallelReduceSubscriber(Subscriber<? super R> subscriber,
+		ParallelReduceSeedSubscriber(Subscriber<? super R> subscriber,
 				R initialValue,
 				BiFunction<R, ? super T, R> reducer) {
 			super(subscriber);

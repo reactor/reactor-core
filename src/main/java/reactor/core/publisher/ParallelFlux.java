@@ -711,7 +711,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 */
 	public final Mono<T> reduce(BiFunction<T, T, T> reducer) {
 		Objects.requireNonNull(reducer, "reducer");
-		return Mono.onAssembly(new ParallelReduceFull<>(this, reducer));
+		return Mono.onAssembly(new ParallelMergeReduce<>(this, reducer));
 	}
 
 	/**
@@ -733,7 +733,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 			BiFunction<R, ? super T, R> reducer) {
 		Objects.requireNonNull(initialSupplier, "initialSupplier");
 		Objects.requireNonNull(reducer, "reducer");
-		return onAssembly(new ParallelReduce<>(this, initialSupplier, reducer));
+		return onAssembly(new ParallelReduceSeed<>(this, initialSupplier, reducer));
 	}
 
 	/**
@@ -817,7 +817,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @return the new Flux instance
 	 */
 	public final Flux<T> sequential(int prefetch) {
-		return Flux.onAssembly(new ParallelJoin<>(this,
+		return Flux.onAssembly(new ParallelMergeSequential<>(this,
 				prefetch,
 				QueueSupplier.get(prefetch)));
 	}
@@ -858,7 +858,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 			return list;
 		});
 
-		return Flux.onAssembly(new ParallelSortedJoin<>(railSorted, comparator));
+		return Flux.onAssembly(new ParallelMergeSort<>(railSorted, comparator));
 	}
 
 	/**

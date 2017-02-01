@@ -31,13 +31,13 @@ import reactor.core.Fuseable;
  *
  * @param <T> the value type
  */
-final class ParallelReduceFull<T> extends Mono<T> implements Fuseable {
+final class ParallelMergeReduce<T> extends Mono<T> implements Fuseable {
 
 	final ParallelFlux<? extends T> source;
 
 	final BiFunction<T, T, T> reducer;
 
-	ParallelReduceFull(ParallelFlux<? extends T> source,
+	ParallelMergeReduce(ParallelFlux<? extends T> source,
 			BiFunction<T, T, T> reducer) {
 		this.source = source;
 		this.reducer = reducer;
@@ -45,50 +45,51 @@ final class ParallelReduceFull<T> extends Mono<T> implements Fuseable {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		ParallelReduceFullMainSubscriber<T> parent =
-				new ParallelReduceFullMainSubscriber<>(s, source.parallelism(), reducer);
+		ParallelMergeReduceSubscriber<T> parent =
+				new ParallelMergeReduceSubscriber<>(s, source.parallelism(), reducer);
 		s.onSubscribe(parent);
 
 		source.subscribe(parent.subscribers);
 	}
 
-	static final class ParallelReduceFullMainSubscriber<T>
+	static final class ParallelMergeReduceSubscriber<T>
 			extends Operators.MonoSubscriber<T, T> {
 
-		final ParallelReduceFullInnerSubscriber<T>[] subscribers;
+		final MergeReduceInnerSubscriber<T>[] subscribers;
 
 		final BiFunction<T, T, T> reducer;
 
 		volatile SlotPair<T> current;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ParallelReduceFullMainSubscriber, SlotPair>
+		static final AtomicReferenceFieldUpdater<ParallelMergeReduceSubscriber, SlotPair>
 				CURRENT = AtomicReferenceFieldUpdater.newUpdater(
-				ParallelReduceFullMainSubscriber.class,
+				ParallelMergeReduceSubscriber.class,
 				SlotPair.class,
 				"current");
 
 		volatile int remaining;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<ParallelReduceFullMainSubscriber>
+		static final AtomicIntegerFieldUpdater<ParallelMergeReduceSubscriber>
 				REMAINING = AtomicIntegerFieldUpdater.newUpdater(
-				ParallelReduceFullMainSubscriber.class,
+				ParallelMergeReduceSubscriber.class,
 				"remaining");
 
-		volatile int errorOnce;
+		volatile Throwable error;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<ParallelReduceFullMainSubscriber>
-				ERROR_ONCE = AtomicIntegerFieldUpdater.newUpdater(
-				ParallelReduceFullMainSubscriber.class,
-				"errorOnce");
+		static final AtomicReferenceFieldUpdater<ParallelMergeReduceSubscriber, Throwable>
+				ERROR = AtomicReferenceFieldUpdater.newUpdater(
+				ParallelMergeReduceSubscriber.class,
+				Throwable.class,
+				"error");
 
-		public ParallelReduceFullMainSubscriber(Subscriber<? super T> subscriber,
+		ParallelMergeReduceSubscriber(Subscriber<? super T> subscriber,
 				int n,
 				BiFunction<T, T, T> reducer) {
 			super(subscriber);
-			@SuppressWarnings("unchecked") ParallelReduceFullInnerSubscriber<T>[] a =
-					new ParallelReduceFullInnerSubscriber[n];
+			@SuppressWarnings("unchecked") MergeReduceInnerSubscriber<T>[] a =
+					new MergeReduceInnerSubscriber[n];
 			for (int i = 0; i < n; i++) {
-				a[i] = new ParallelReduceFullInnerSubscriber<>(this, reducer);
+				a[i] = new MergeReduceInnerSubscriber<>(this, reducer);
 			}
 			this.subscribers = a;
 			this.reducer = reducer;
@@ -128,17 +129,17 @@ final class ParallelReduceFull<T> extends Mono<T> implements Fuseable {
 
 		@Override
 		public void cancel() {
-			for (ParallelReduceFullInnerSubscriber<T> inner : subscribers) {
+			for (MergeReduceInnerSubscriber<T> inner : subscribers) {
 				inner.cancel();
 			}
 		}
 
 		void innerError(Throwable ex) {
-			if (ERROR_ONCE.compareAndSet(this, 0, 1)) {
+			if(ERROR.compareAndSet(this, null, ex)){
 				cancel();
 				actual.onError(ex);
 			}
-			else {
+			else if(error != ex) {
 				Operators.onErrorDropped(ex);
 			}
 		}
@@ -179,17 +180,17 @@ final class ParallelReduceFull<T> extends Mono<T> implements Fuseable {
 		}
 	}
 
-	static final class ParallelReduceFullInnerSubscriber<T> implements Subscriber<T> {
+	static final class MergeReduceInnerSubscriber<T> implements Subscriber<T> {
 
-		final ParallelReduceFullMainSubscriber<T> parent;
+		final ParallelMergeReduceSubscriber<T> parent;
 
 		final BiFunction<T, T, T> reducer;
 
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ParallelReduceFullInnerSubscriber, Subscription>
+		static final AtomicReferenceFieldUpdater<MergeReduceInnerSubscriber, Subscription>
 				S = AtomicReferenceFieldUpdater.newUpdater(
-				ParallelReduceFullInnerSubscriber.class,
+				MergeReduceInnerSubscriber.class,
 				Subscription.class,
 				"s");
 
@@ -197,7 +198,7 @@ final class ParallelReduceFull<T> extends Mono<T> implements Fuseable {
 
 		boolean done;
 
-		public ParallelReduceFullInnerSubscriber(ParallelReduceFullMainSubscriber<T> parent,
+		public MergeReduceInnerSubscriber(ParallelMergeReduceSubscriber<T> parent,
 				BiFunction<T, T, T> reducer) {
 			this.parent = parent;
 			this.reducer = reducer;
