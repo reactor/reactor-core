@@ -242,6 +242,7 @@ to `publishOn`: they will still switch the execution context for the part of the
 chain after them. Also, only the earliest `subscribeOn` call in the chain is
 actually taken into account.
 
+[[error.handling]]
 === Handling Errors
 TIP: For a quick look at the available operators for error handling, see
 <<which.errors,the relevant operator decision tree>>.
