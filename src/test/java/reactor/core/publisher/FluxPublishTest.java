@@ -15,15 +15,40 @@
  */
 package reactor.core.publisher;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CancellationException;
 
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Disposable;
+import reactor.core.Fuseable;
+import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
-public class FluxPublishTest {
+public class FluxPublishTest extends AbstractFluxOperatorTest<String, String> {
+
+	@Override
+	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
+		return defaultOptions.prefetch(QueueSupplier.SMALL_BUFFER_SIZE);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+		return Arrays.asList(
+				scenario(f -> f.publish().autoConnect()),
+
+				scenario(f -> f.publish().refCount())
+		);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void failPrefetch(){
+		Flux.never()
+		    .publish( -1);
+	}
 
 	/*@Test
 	public void constructors() {

@@ -256,4 +256,16 @@ public class FluxSwitchMapTest {
 		            .expectNext(1, 2, 3, 2, 3, 4, 3, 4, 5)
 		            .verifyComplete();
 	}
+
+	@Test
+	public void switchOnNextDynamicallyOnNext() {
+		UnicastProcessor<Flux<Integer>> up = UnicastProcessor.create();
+		up.onNext(Flux.range(1, 3));
+		up.onNext(Flux.range(2, 3).concatWith(Mono.never()));
+		up.onNext(Flux.range(4, 3));
+		up.onComplete();
+		StepVerifier.create(Flux.switchOnNext(up))
+		            .expectNext(1, 2, 3, 2, 3, 4, 4, 5, 6)
+		            .verifyComplete();
+	}
 }

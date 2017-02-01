@@ -13,13 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
-import java.util.concurrent.atomic.*;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
 
-import org.reactivestreams.*;
-
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 
 /**
@@ -28,54 +31,65 @@ import reactor.core.Fuseable;
  *
  * @param <T> the value type
  */
-final class ParallelReduceFull<T> extends Mono<T> implements Fuseable {
+final class ParallelMergeReduce<T> extends Mono<T> implements Fuseable {
 
 	final ParallelFlux<? extends T> source;
-	
+
 	final BiFunction<T, T, T> reducer;
-	
-	public ParallelReduceFull(ParallelFlux<? extends T> source, BiFunction<T, T, T> reducer) {
+
+	ParallelMergeReduce(ParallelFlux<? extends T> source,
+			BiFunction<T, T, T> reducer) {
 		this.source = source;
 		this.reducer = reducer;
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		ParallelReduceFullMainSubscriber<T> parent = new ParallelReduceFullMainSubscriber<>(s, source.parallelism(), reducer);
+		ParallelMergeReduceSubscriber<T> parent =
+				new ParallelMergeReduceSubscriber<>(s, source.parallelism(), reducer);
 		s.onSubscribe(parent);
-		
+
 		source.subscribe(parent.subscribers);
 	}
 
-	static final class ParallelReduceFullMainSubscriber<T> extends
-	                                                       Operators.MonoSubscriber<T, T> {
+	static final class ParallelMergeReduceSubscriber<T>
+			extends Operators.MonoSubscriber<T, T> {
 
-		final ParallelReduceFullInnerSubscriber<T>[] subscribers;
-		
+		final MergeReduceInnerSubscriber<T>[] subscribers;
+
 		final BiFunction<T, T, T> reducer;
-		
+
 		volatile SlotPair<T> current;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ParallelReduceFullMainSubscriber, SlotPair> CURRENT =
-				AtomicReferenceFieldUpdater.newUpdater(ParallelReduceFullMainSubscriber.class, SlotPair.class, "current");
-		
+		static final AtomicReferenceFieldUpdater<ParallelMergeReduceSubscriber, SlotPair>
+				CURRENT = AtomicReferenceFieldUpdater.newUpdater(
+				ParallelMergeReduceSubscriber.class,
+				SlotPair.class,
+				"current");
+
 		volatile int remaining;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<ParallelReduceFullMainSubscriber> REMAINING =
-				AtomicIntegerFieldUpdater.newUpdater(ParallelReduceFullMainSubscriber.class, "remaining");
+		static final AtomicIntegerFieldUpdater<ParallelMergeReduceSubscriber>
+				REMAINING = AtomicIntegerFieldUpdater.newUpdater(
+				ParallelMergeReduceSubscriber.class,
+				"remaining");
 
-		volatile int errorOnce;
+		volatile Throwable error;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<ParallelReduceFullMainSubscriber> ERROR_ONCE =
-				AtomicIntegerFieldUpdater.newUpdater(ParallelReduceFullMainSubscriber.class, "errorOnce");
-		
-		
-		public ParallelReduceFullMainSubscriber(Subscriber<? super T> subscriber, int n, BiFunction<T, T, T> reducer) {
+		static final AtomicReferenceFieldUpdater<ParallelMergeReduceSubscriber, Throwable>
+				ERROR = AtomicReferenceFieldUpdater.newUpdater(
+				ParallelMergeReduceSubscriber.class,
+				Throwable.class,
+				"error");
+
+		ParallelMergeReduceSubscriber(Subscriber<? super T> subscriber,
+				int n,
+				BiFunction<T, T, T> reducer) {
 			super(subscriber);
-			@SuppressWarnings("unchecked")
-			ParallelReduceFullInnerSubscriber<T>[] a = new ParallelReduceFullInnerSubscriber[n];
+			@SuppressWarnings("unchecked") MergeReduceInnerSubscriber<T>[] a =
+					new MergeReduceInnerSubscriber[n];
 			for (int i = 0; i < n; i++) {
-				a[i] = new ParallelReduceFullInnerSubscriber<>(this, reducer);
+				a[i] = new MergeReduceInnerSubscriber<>(this, reducer);
 			}
 			this.subscribers = a;
 			this.reducer = reducer;
@@ -83,16 +97,16 @@ final class ParallelReduceFull<T> extends Mono<T> implements Fuseable {
 		}
 
 		SlotPair<T> addValue(T value) {
-			for (;;) {
+			for (; ; ) {
 				SlotPair<T> curr = current;
-				
+
 				if (curr == null) {
 					curr = new SlotPair<>();
 					if (!CURRENT.compareAndSet(this, null, curr)) {
 						continue;
 					}
 				}
-				
+
 				int c = curr.tryAcquireSlot();
 				if (c < 0) {
 					CURRENT.compareAndSet(this, curr, null);
@@ -100,10 +114,11 @@ final class ParallelReduceFull<T> extends Mono<T> implements Fuseable {
 				}
 				if (c == 0) {
 					curr.first = value;
-				} else {
+				}
+				else {
 					curr.second = value;
 				}
-				
+
 				if (curr.releaseSlot()) {
 					CURRENT.compareAndSet(this, curr, null);
 					return curr;
@@ -111,86 +126,91 @@ final class ParallelReduceFull<T> extends Mono<T> implements Fuseable {
 				return null;
 			}
 		}
-		
+
 		@Override
 		public void cancel() {
-			for (ParallelReduceFullInnerSubscriber<T> inner : subscribers) {
+			for (MergeReduceInnerSubscriber<T> inner : subscribers) {
 				inner.cancel();
 			}
 		}
-		
+
 		void innerError(Throwable ex) {
-			if (ERROR_ONCE.compareAndSet(this, 0, 1)) {
+			if(ERROR.compareAndSet(this, null, ex)){
 				cancel();
 				actual.onError(ex);
-			} else {
+			}
+			else if(error != ex) {
 				Operators.onErrorDropped(ex);
 			}
 		}
-		
+
 		void innerComplete(T value) {
 			if (value != null) {
-				for (;;) {
+				for (; ; ) {
 					SlotPair<T> sp = addValue(value);
-					
+
 					if (sp != null) {
-						
+
 						try {
-							value = reducer.apply(sp.first, sp.second);
-						} catch (Throwable ex) {
+							value = Objects.requireNonNull(reducer.apply(sp.first,
+									sp.second), "The reducer returned a null value");
+						}
+						catch (Throwable ex) {
 							innerError(Operators.onOperatorError(this, ex));
 							return;
 						}
-						
-						if (value == null) {
-							innerError(new NullPointerException("The reducer returned a null value"));
-							return;
-						}
-					} else {
+					}
+					else {
 						break;
 					}
 				}
 			}
-			
+
 			if (REMAINING.decrementAndGet(this) == 0) {
 				SlotPair<T> sp = current;
 				CURRENT.lazySet(this, null);
-				
+
 				if (sp != null) {
 					complete(sp.first);
-				} else {
+				}
+				else {
 					actual.onComplete();
 				}
 			}
 		}
 	}
-	
-	static final class ParallelReduceFullInnerSubscriber<T> implements Subscriber<T> {
-		final ParallelReduceFullMainSubscriber<T> parent;
-		
+
+	static final class MergeReduceInnerSubscriber<T> implements Subscriber<T> {
+
+		final ParallelMergeReduceSubscriber<T> parent;
+
 		final BiFunction<T, T, T> reducer;
-		
+
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ParallelReduceFullInnerSubscriber, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(ParallelReduceFullInnerSubscriber.class, Subscription.class, "s");
-		
+		static final AtomicReferenceFieldUpdater<MergeReduceInnerSubscriber, Subscription>
+				S = AtomicReferenceFieldUpdater.newUpdater(
+				MergeReduceInnerSubscriber.class,
+				Subscription.class,
+				"s");
+
 		T value;
-		
+
 		boolean done;
 
-		public ParallelReduceFullInnerSubscriber(ParallelReduceFullMainSubscriber<T> parent, BiFunction<T, T, T> reducer) {
+		public MergeReduceInnerSubscriber(ParallelMergeReduceSubscriber<T> parent,
+				BiFunction<T, T, T> reducer) {
 			this.parent = parent;
 			this.reducer = reducer;
 		}
-		
+
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.setOnce(S, this, s)) {
 				s.request(Long.MAX_VALUE);
 			}
 		}
-		
+
 		@Override
 		public void onNext(T t) {
 			if (done) {
@@ -198,30 +218,24 @@ final class ParallelReduceFull<T> extends Mono<T> implements Fuseable {
 				return;
 			}
 			T v = value;
-			
+
 			if (v == null) {
 				value = t;
-			} else {
-				
+			}
+			else {
+
 				try {
-					v = reducer.apply(v, t);
-				} catch (Throwable ex) {
+					v = Objects.requireNonNull(reducer.apply(v, t), "The reducer returned a null value");
+				}
+				catch (Throwable ex) {
 					onError(Operators.onOperatorError(s, ex, t));
 					return;
 				}
-				
-				if (v == null) {
-					onError(Operators.onOperatorError(s, new NullPointerException
-							("The reducer returned a" +
-							" null " +
-							"value"), t));
-					return;
-				}
-				
+
 				value = v;
 			}
 		}
-		
+
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
@@ -231,7 +245,7 @@ final class ParallelReduceFull<T> extends Mono<T> implements Fuseable {
 			done = true;
 			parent.innerError(t);
 		}
-		
+
 		@Override
 		public void onComplete() {
 			if (done) {
@@ -240,42 +254,41 @@ final class ParallelReduceFull<T> extends Mono<T> implements Fuseable {
 			done = true;
 			parent.innerComplete(value);
 		}
-		
+
 		void cancel() {
 			Operators.terminate(S, this);
 		}
 	}
-	
+
 	static final class SlotPair<T> {
-		
+
 		T first;
-		
+
 		T second;
-		
+
 		volatile int acquireIndex;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<SlotPair> ACQ =
 				AtomicIntegerFieldUpdater.newUpdater(SlotPair.class, "acquireIndex");
-		
-		
+
 		volatile int releaseIndex;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<SlotPair> REL =
 				AtomicIntegerFieldUpdater.newUpdater(SlotPair.class, "releaseIndex");
-		
+
 		int tryAcquireSlot() {
-			for (;;) {
+			for (; ; ) {
 				int acquired = acquireIndex;
 				if (acquired >= 2) {
 					return -1;
 				}
-				
+
 				if (ACQ.compareAndSet(this, acquired, acquired + 1)) {
 					return acquired;
 				}
 			}
 		}
-		
+
 		boolean releaseSlot() {
 			return REL.incrementAndGet(this) == 2;
 		}

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Objects;
@@ -27,11 +28,13 @@ import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 
 /**
- * Takes a value from upstream then uses the duration provided by a 
+ * Takes a value from upstream then uses the duration provided by a
  * generated Publisher to skip other values until that other Publisher signals.
  *
  * @param <T> the source and output value type
- * @param <U> the value type of the publisher signalling the end of the throttling duration
+ * @param <U> the value type of the publisher signalling the end of the throttling
+ * duration
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxSampleFirst<T, U> extends FluxSource<T, T> {
@@ -43,13 +46,13 @@ final class FluxSampleFirst<T, U> extends FluxSource<T, T> {
 		super(source);
 		this.throttler = Objects.requireNonNull(throttler, "throttler");
 	}
-	
+
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 		ThrottleFirstMain<T, U> main = new ThrottleFirstMain<>(s, throttler);
-		
+
 		s.onSubscribe(main);
-		
+
 		source.subscribe(main);
 	}
 
@@ -57,25 +60,28 @@ final class FluxSampleFirst<T, U> extends FluxSource<T, T> {
 	public long getPrefetch() {
 		return Long.MAX_VALUE;
 	}
-	
-	static final class ThrottleFirstMain<T, U> 
-	implements Subscriber<T>, Subscription {
+
+	static final class ThrottleFirstMain<T, U> implements Subscriber<T>, Subscription {
 
 		final Subscriber<? super T> actual;
-		
+
 		final Function<? super T, ? extends Publisher<U>> throttler;
-		
+
 		volatile boolean gate;
-		
+
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<ThrottleFirstMain, Subscription> S =
-			AtomicReferenceFieldUpdater.newUpdater(ThrottleFirstMain.class, Subscription.class, "s");
+				AtomicReferenceFieldUpdater.newUpdater(ThrottleFirstMain.class,
+						Subscription.class,
+						"s");
 
 		volatile Subscription other;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<ThrottleFirstMain, Subscription> OTHER =
-			AtomicReferenceFieldUpdater.newUpdater(ThrottleFirstMain.class, Subscription.class, "other");
+				AtomicReferenceFieldUpdater.newUpdater(ThrottleFirstMain.class,
+						Subscription.class,
+						"other");
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
@@ -90,7 +96,9 @@ final class FluxSampleFirst<T, U> extends FluxSource<T, T> {
 		volatile Throwable error;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<ThrottleFirstMain, Throwable> ERROR =
-			AtomicReferenceFieldUpdater.newUpdater(ThrottleFirstMain.class, Throwable.class, "error");
+				AtomicReferenceFieldUpdater.newUpdater(ThrottleFirstMain.class,
+						Throwable.class,
+						"error");
 
 		public ThrottleFirstMain(Subscriber<? super T> actual,
 				Function<? super T, ? extends Publisher<U>> throttler) {
@@ -122,36 +130,32 @@ final class FluxSampleFirst<T, U> extends FluxSource<T, T> {
 		public void onNext(T t) {
 			if (!gate) {
 				gate = true;
-				
+
 				if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
 					actual.onNext(t);
 					if (WIP.decrementAndGet(this) != 0) {
 						handleTermination();
 						return;
 					}
-				} else {
+				}
+				else {
 					return;
 				}
-				
+
 				Publisher<U> p;
-				
+
 				try {
-					p = throttler.apply(t);
-				} catch (Throwable e) {
+					p = Objects.requireNonNull(throttler.apply(t),
+							"The throttler returned a null publisher");
+				}
+				catch (Throwable e) {
 					Operators.terminate(S, this);
 					error(Operators.onOperatorError(null, e, t));
 					return;
 				}
-				
-				if (p == null) {
-					Operators.terminate(S, this);
-					
-					error(new NullPointerException("The throttler returned a null publisher"));
-					return;
-				}
-				
+
 				ThrottleFirstOther<U> other = new ThrottleFirstOther<>(this);
-				
+
 				if (Operators.replace(OTHER, this, other)) {
 					p.subscribe(other);
 				}
@@ -162,58 +166,59 @@ final class FluxSampleFirst<T, U> extends FluxSource<T, T> {
 			Throwable e = Exceptions.terminate(ERROR, this);
 			if (e != null && e != Exceptions.TERMINATED) {
 				actual.onError(e);
-			} else {
+			}
+			else {
 				actual.onComplete();
 			}
 		}
-		
+
 		void error(Throwable e) {
 			if (Exceptions.addThrowable(ERROR, this, e)) {
 				if (WIP.getAndIncrement(this) == 0) {
 					handleTermination();
 				}
-			} else {
+			}
+			else {
 				Operators.onErrorDropped(e);
 			}
 		}
-		
+
 		@Override
 		public void onError(Throwable t) {
 			Operators.terminate(OTHER, this);
-			
+
 			error(t);
 		}
 
 		@Override
 		public void onComplete() {
 			Operators.terminate(OTHER, this);
-			
+
 			if (WIP.getAndIncrement(this) == 0) {
 				handleTermination();
 			}
 		}
-		
+
 		void otherNext() {
 			gate = false;
 		}
-		
+
 		void otherError(Throwable e) {
 			Operators.terminate(S, this);
-			
+
 			error(e);
 		}
 	}
-	
-	static final class ThrottleFirstOther<U>
-			extends Operators.DeferredSubscription
-	implements Subscriber<U> {
+
+	static final class ThrottleFirstOther<U> extends Operators.DeferredSubscription
+			implements Subscriber<U> {
 
 		final ThrottleFirstMain<?, U> main;
-		
+
 		public ThrottleFirstOther(ThrottleFirstMain<?, U> main) {
 			this.main = main;
 		}
-		
+
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (set(s)) {
@@ -224,7 +229,7 @@ final class FluxSampleFirst<T, U> extends FluxSource<T, T> {
 		@Override
 		public void onNext(U t) {
 			cancel();
-			
+
 			main.otherNext();
 		}
 
@@ -237,6 +242,6 @@ final class FluxSampleFirst<T, U> extends FluxSource<T, T> {
 		public void onComplete() {
 			main.otherNext();
 		}
-		
+
 	}
 }

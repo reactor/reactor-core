@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Objects;
@@ -34,17 +35,18 @@ import reactor.core.Exceptions;
  *
  * @param <T> the source value type
  * @param <U> the value type of the duration publisher
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 
 	final Function<? super T, ? extends Publisher<U>> throttler;
-	
+
 	final Supplier<Queue<Object>> queueSupplier;
 
 	FluxSampleTimeout(Publisher<? extends T> source,
 			Function<? super T, ? extends Publisher<U>> throttler,
-					Supplier<Queue<Object>> queueSupplier) {
+			Supplier<Queue<Object>> queueSupplier) {
 		super(source);
 		this.throttler = Objects.requireNonNull(throttler, "throttler");
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
@@ -54,38 +56,41 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 	public long getPrefetch() {
 		return Long.MAX_VALUE;
 	}
-	
-	@SuppressWarnings({ "rawtypes", "unchecked" })
+
+	@SuppressWarnings({"rawtypes", "unchecked"})
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		
-		Queue<ThrottleTimeoutOther<T, U>> q = (Queue)queueSupplier.get();
-		
+
+		Queue<ThrottleTimeoutOther<T, U>> q = (Queue) queueSupplier.get();
+
 		ThrottleTimeoutMain<T, U> main = new ThrottleTimeoutMain<>(s, throttler, q);
-		
+
 		s.onSubscribe(main);
-		
+
 		source.subscribe(main);
 	}
-	
-	static final class ThrottleTimeoutMain<T, U>
-	implements Subscriber<T>, Subscription {
-		
+
+	static final class ThrottleTimeoutMain<T, U> implements Subscriber<T>, Subscription {
+
 		final Subscriber<? super T> actual;
-		
+
 		final Function<? super T, ? extends Publisher<U>> throttler;
-		
+
 		final Queue<ThrottleTimeoutOther<T, U>> queue;
 
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<ThrottleTimeoutMain, Subscription> S =
-			AtomicReferenceFieldUpdater.newUpdater(ThrottleTimeoutMain.class, Subscription.class, "s");
+				AtomicReferenceFieldUpdater.newUpdater(ThrottleTimeoutMain.class,
+						Subscription.class,
+						"s");
 
 		volatile Subscription other;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ThrottleTimeoutMain, Subscription> OTHER =
-			AtomicReferenceFieldUpdater.newUpdater(ThrottleTimeoutMain.class, Subscription.class, "other");
+		static final AtomicReferenceFieldUpdater<ThrottleTimeoutMain, Subscription>
+				OTHER = AtomicReferenceFieldUpdater.newUpdater(ThrottleTimeoutMain.class,
+				Subscription.class,
+				"other");
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
@@ -100,12 +105,14 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 		volatile Throwable error;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<ThrottleTimeoutMain, Throwable> ERROR =
-			AtomicReferenceFieldUpdater.newUpdater(ThrottleTimeoutMain.class, Throwable.class, "error");
+				AtomicReferenceFieldUpdater.newUpdater(ThrottleTimeoutMain.class,
+						Throwable.class,
+						"error");
 
 		volatile boolean done;
-		
+
 		volatile boolean cancelled;
-		
+
 		volatile long index;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<ThrottleTimeoutMain> INDEX =
@@ -113,7 +120,7 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 
 		public ThrottleTimeoutMain(Subscriber<? super T> actual,
 				Function<? super T, ? extends Publisher<U>> throttler,
-						Queue<ThrottleTimeoutOther<T, U>> queue) {
+				Queue<ThrottleTimeoutOther<T, U>> queue) {
 			this.actual = actual;
 			this.throttler = throttler;
 			this.queue = queue;
@@ -149,24 +156,20 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 			if (!Operators.set(OTHER, this, Operators.emptySubscription())) {
 				return;
 			}
-			
+
 			Publisher<U> p;
-			
+
 			try {
-				p = throttler.apply(t);
-			} catch (Throwable e) {
+				p = Objects.requireNonNull(throttler.apply(t),
+						"throttler returned a null publisher");
+			}
+			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t));
 				return;
 			}
 
-			if (p == null) {
-				onError(Operators.onOperatorError(s, new NullPointerException("The " +
-						"throttler returned a null publisher"), t));
-				return;
-			}
-			
 			ThrottleTimeoutOther<T, U> os = new ThrottleTimeoutOther<>(this, t, idx);
-			
+
 			if (Operators.replace(OTHER, this, os)) {
 				p.subscribe(os);
 			}
@@ -176,15 +179,16 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 			if (Exceptions.addThrowable(ERROR, this, t)) {
 				done = true;
 				drain();
-			} else {
+			}
+			else {
 				Operators.onErrorDropped(t);
 			}
 		}
-		
+
 		@Override
 		public void onError(Throwable t) {
 			Operators.terminate(OTHER, this);
-			
+
 			error(t);
 		}
 
@@ -199,49 +203,50 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 			done = true;
 			drain();
 		}
-		
+
 		void otherNext(ThrottleTimeoutOther<T, U> other) {
 			queue.offer(other);
 			drain();
 		}
-		
+
 		void otherError(long idx, Throwable e) {
 			if (idx == index) {
 				Operators.terminate(S, this);
-				
+
 				error(e);
-			} else {
+			}
+			else {
 				Operators.onErrorDropped(e);
 			}
 		}
-		
+
 		void drain() {
 			if (WIP.getAndIncrement(this) != 0) {
 				return;
 			}
-			
+
 			final Subscriber<? super T> a = actual;
 			final Queue<ThrottleTimeoutOther<T, U>> q = queue;
-			
+
 			int missed = 1;
-			
-			for (;;) {
-				
-				for (;;) {
+
+			for (; ; ) {
+
+				for (; ; ) {
 					boolean d = done;
-					
+
 					ThrottleTimeoutOther<T, U> o = q.poll();
-					
+
 					boolean empty = o == null;
-					
+
 					if (checkTerminated(d, empty, a, q)) {
 						return;
 					}
-					
+
 					if (empty) {
 						break;
 					}
-					
+
 					if (o.index == index) {
 						long r = requested;
 						if (r != 0) {
@@ -249,28 +254,30 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 							if (r != Long.MAX_VALUE) {
 								REQUESTED.decrementAndGet(this);
 							}
-						} else {
+						}
+						else {
 							cancel();
-							
+
 							q.clear();
-							
-							Throwable e = Exceptions.failWithOverflow("Could not emit value due to lack of requests");
+
+							Throwable e = Exceptions.failWithOverflow(
+									"Could not emit value due to lack of requests");
 							Exceptions.addThrowable(ERROR, this, e);
 							e = Exceptions.terminate(ERROR, this);
-							
+
 							a.onError(e);
 							return;
 						}
 					}
 				}
-				
+
 				missed = WIP.addAndGet(this, -missed);
 				if (missed == 0) {
 					break;
 				}
 			}
 		}
-		
+
 		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, Queue<?> q) {
 			if (cancelled) {
 				q.clear();
@@ -280,14 +287,14 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 				Throwable e = Exceptions.terminate(ERROR, this);
 				if (e != null && e != Exceptions.TERMINATED) {
 					cancel();
-					
+
 					q.clear();
-					
+
 					a.onError(e);
 					return true;
-				} else
-				if (empty) {
-					
+				}
+				else if (empty) {
+
 					a.onComplete();
 					return true;
 				}
@@ -295,20 +302,20 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 			return false;
 		}
 	}
-	
+
 	static final class ThrottleTimeoutOther<T, U> extends Operators.DeferredSubscription
-	implements Subscriber<U> {
+			implements Subscriber<U> {
+
 		final ThrottleTimeoutMain<T, U> main;
-		
+
 		final T value;
-		
+
 		final long index;
-		
+
 		volatile int once;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<ThrottleTimeoutOther> ONCE =
 				AtomicIntegerFieldUpdater.newUpdater(ThrottleTimeoutOther.class, "once");
-		
 
 		public ThrottleTimeoutOther(ThrottleTimeoutMain<T, U> main, T value, long index) {
 			this.main = main;
@@ -327,7 +334,7 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 		public void onNext(U t) {
 			if (ONCE.compareAndSet(this, 0, 1)) {
 				cancel();
-				
+
 				main.otherNext(this);
 			}
 		}
@@ -336,7 +343,8 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 		public void onError(Throwable t) {
 			if (ONCE.compareAndSet(this, 0, 1)) {
 				main.otherError(index, t);
-			} else {
+			}
+			else {
 				Operators.onErrorDropped(t);
 			}
 		}

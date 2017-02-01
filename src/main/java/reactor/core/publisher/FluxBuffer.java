@@ -140,20 +140,12 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 
 			C b = buffer;
 			if (b == null) {
-
 				try {
-					b = bufferSupplier.get();
+					b = Objects.requireNonNull(bufferSupplier.get(),
+							"The bufferSupplier returned a null buffer");
 				}
 				catch (Throwable e) {
 					onError(Operators.onOperatorError(s, e, t));
-					return;
-				}
-
-				if (b == null) {
-					cancel();
-
-					onError(Operators.onOperatorError(new NullPointerException(
-							"The bufferSupplier returned a null buffer")));
 					return;
 				}
 				buffer = b;
@@ -312,18 +304,11 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 
 			if (i % skip == 0L) {
 				try {
-					b = bufferSupplier.get();
+					b = Objects.requireNonNull(bufferSupplier.get(),
+							"The bufferSupplier returned a null buffer");
 				}
 				catch (Throwable e) {
 					onError(Operators.onOperatorError(s, e, t));
-					return;
-				}
-
-				if (b == null) {
-					cancel();
-
-					onError(Operators.onOperatorError(new NullPointerException(
-							"The bufferSupplier returned a null buffer")));
 					return;
 				}
 
@@ -520,18 +505,11 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 				C b;
 
 				try {
-					b = bufferSupplier.get();
+					b = Objects.requireNonNull(bufferSupplier.get(),
+							"The bufferSupplier returned a null buffer");
 				}
 				catch (Throwable e) {
 					onError(Operators.onOperatorError(s, e, t));
-					return;
-				}
-
-				if (b == null) {
-					cancel();
-
-					onError(Operators.onOperatorError(new NullPointerException(
-							"The bufferSupplier returned a null buffer")));
 					return;
 				}
 

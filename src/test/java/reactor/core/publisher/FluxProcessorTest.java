@@ -21,11 +21,121 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.Trackable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxProcessorTest {
 
+	@Test(expected = NullPointerException.class)
+	@SuppressWarnings("unchecked")
+	public void failNullSubscriber(){
+		FluxProcessor.wrap(UnicastProcessor.create(), UnicastProcessor.create())
+	                 .subscribe((Subscriber)null);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void failNullUpstream(){
+		FluxProcessor.wrap(null, UnicastProcessor.create());
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void failNullDownstream(){
+		FluxProcessor.wrap(UnicastProcessor.create(), null);
+	}
+
+	@Test
+	public void testCapacity(){
+		assertThat(FluxProcessor.wrap(UnicastProcessor.create(), UnicastProcessor
+				.create()).getCapacity())
+				.isEqualTo(Long.MAX_VALUE);
+	}
+
+	@Test
+	public void testCapacityNoTrackable(){
+		assertThat(FluxProcessor.wrap(new Subscriber<Object>() {
+			@Override
+			public void onSubscribe(Subscription s) {
+
+			}
+
+			@Override
+			public void onNext(Object o) {
+
+			}
+
+			@Override
+			public void onError(Throwable t) {
+
+			}
+
+			@Override
+			public void onComplete() {
+
+			}
+		}, UnicastProcessor.create()).getCapacity())
+				.isEqualTo(Trackable.UNSPECIFIED);
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void normalBlackboxProcessor(){
+		UnicastProcessor<Integer> upstream = UnicastProcessor.create();
+		FluxProcessor<Integer, Integer> processor =
+				FluxProcessor.wrap(upstream, upstream.map(i -> i + 1)
+				                                     .filter(i -> i % 2 == 0));
+
+		DelegateProcessor<Integer, Integer> delegateProcessor =
+				(DelegateProcessor<Integer, Integer>)processor;
+
+		assertThat(delegateProcessor.downstream()).isEqualTo(upstream);
+		assertThat(delegateProcessor.upstream()).isInstanceOf(FluxFilterFuseable.class);
+
+
+		StepVerifier.create(processor)
+		            .then(() -> Flux.just(1, 2, 3).subscribe(upstream))
+		            .expectNext(2, 4)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void disconnectedBlackboxProcessor(){
+		UnicastProcessor<Integer> upstream = UnicastProcessor.create();
+		FluxProcessor<Integer, Integer> processor =
+				FluxProcessor.wrap(upstream, Flux.just(1));
+
+		StepVerifier.create(processor)
+	                .expectNext(1)
+	                .verifyComplete();
+	}
+
+	@Test
+	public void symmetricBlackboxProcessor(){
+		UnicastProcessor<Integer> upstream = UnicastProcessor.create();
+		FluxProcessor<Integer, Integer> processor =
+				FluxProcessor.wrap(upstream, upstream);
+
+		StepVerifier.create(processor)
+	                .then(() -> Flux.just(1).subscribe(upstream))
+	                .expectNext(1)
+	                .verifyComplete();
+	}
+
+	@Test
+	public void errorSymmetricBlackboxProcessor(){
+		UnicastProcessor<Integer> upstream = UnicastProcessor.create();
+		FluxProcessor<Integer, Integer> processor =
+				FluxProcessor.wrap(upstream, upstream);
+
+		StepVerifier.create(processor)
+	                .then(() -> Flux.<Integer>error(new Exception("test")).subscribe(upstream))
+	                .verifyErrorMessage("test");
+	}
 
 	@Test
 	public void testSubmitSession() throws Exception {

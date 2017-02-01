@@ -75,16 +75,11 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 		Publisher<? extends R> out;
 
 		try {
-			out = transform.apply(multicast);
+			out = Objects.requireNonNull(transform.apply(multicast),
+					"The transform returned a null Publisher");
 		}
 		catch (Throwable ex) {
 			Operators.error(s, Operators.onOperatorError(ex));
-			return;
-		}
-
-		if (out == null) {
-			Operators.error(s,
-					new NullPointerException("The transform returned a null Publisher"));
 			return;
 		}
 

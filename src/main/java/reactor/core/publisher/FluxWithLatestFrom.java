@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Objects;
@@ -36,15 +37,18 @@ import org.reactivestreams.Subscription;
  * @param <T> the main source type
  * @param <U> the alternate source type
  * @param <R> the output type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
+
 	final Publisher<? extends U> other;
 
 	final BiFunction<? super T, ? super U, ? extends R> combiner;
 
-	public FluxWithLatestFrom(Publisher<? extends T> source, Publisher<? extends U> other,
-								   BiFunction<? super T, ? super U, ? extends R> combiner) {
+	public FluxWithLatestFrom(Publisher<? extends T> source,
+			Publisher<? extends U> other,
+			BiFunction<? super T, ? super U, ? extends R> combiner) {
 		super(source);
 		this.other = Objects.requireNonNull(other, "other");
 		this.combiner = Objects.requireNonNull(combiner, "combiner");
@@ -54,9 +58,11 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 	public void subscribe(Subscriber<? super R> s) {
 		Subscriber<R> serial = Operators.serialize(s);
 
-		WithLatestFromSubscriber<T, U, R> main = new WithLatestFromSubscriber<>(serial, combiner);
+		WithLatestFromSubscriber<T, U, R> main =
+				new WithLatestFromSubscriber<>(serial, combiner);
 
-		WithLatestFromOtherSubscriber<U> secondary = new WithLatestFromOtherSubscriber<>(main);
+		WithLatestFromOtherSubscriber<U> secondary =
+				new WithLatestFromOtherSubscriber<>(main);
 
 		other.subscribe(secondary);
 
@@ -64,25 +70,32 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 	}
 
 	static final class WithLatestFromSubscriber<T, U, R>
-	  implements Subscriber<T>, Subscription {
+			implements Subscriber<T>, Subscription {
+
 		final Subscriber<? super R> actual;
 
 		final BiFunction<? super T, ? super U, ? extends R> combiner;
 
 		volatile Subscription main;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<WithLatestFromSubscriber, Subscription> MAIN =
-		  AtomicReferenceFieldUpdater.newUpdater(WithLatestFromSubscriber.class, Subscription.class, "main");
+		static final AtomicReferenceFieldUpdater<WithLatestFromSubscriber, Subscription>
+				MAIN =
+				AtomicReferenceFieldUpdater.newUpdater(WithLatestFromSubscriber.class,
+						Subscription.class,
+						"main");
 
 		volatile Subscription other;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<WithLatestFromSubscriber, Subscription> OTHER =
-		  AtomicReferenceFieldUpdater.newUpdater(WithLatestFromSubscriber.class, Subscription.class, "other");
+		static final AtomicReferenceFieldUpdater<WithLatestFromSubscriber, Subscription>
+				OTHER =
+				AtomicReferenceFieldUpdater.newUpdater(WithLatestFromSubscriber.class,
+						Subscription.class,
+						"other");
 
 		volatile U otherValue;
 
 		public WithLatestFromSubscriber(Subscriber<? super R> actual,
-												 BiFunction<? super T, ? super U, ? extends R> combiner) {
+				BiFunction<? super T, ? super U, ? extends R> combiner) {
 			this.actual = actual;
 			this.combiner = combiner;
 		}
@@ -134,7 +147,8 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 				if (main != Operators.cancelledSubscription()) {
 					Operators.reportSubscriptionSet();
 				}
-			} else {
+			}
+			else {
 				actual.onSubscribe(this);
 			}
 		}
@@ -147,21 +161,17 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 				R r;
 
 				try {
-					r = combiner.apply(t, u);
-				} catch (Throwable e) {
+					r = Objects.requireNonNull(combiner.apply(t, u),
+					"The combiner returned a null value");
+				}
+				catch (Throwable e) {
 					onError(Operators.onOperatorError(this, e, t));
 					return;
 				}
 
-				if (r == null) {
-					onError(Operators.onOperatorError(this, new NullPointerException
-							("The" +
-							" combiner returned a null value"), t));
-					return;
-				}
-
 				actual.onNext(r);
-			} else {
+			}
+			else {
 				main.request(1);
 			}
 		}
@@ -200,15 +210,17 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 				}
 			}
 			cancelMain();
-			
+
 			otherValue = null;
 			actual.onError(t);
 		}
-		
+
 		void otherComplete() {
 			if (otherValue == null) {
 				if (main == null) {
-					if (MAIN.compareAndSet(this, null, Operators.cancelledSubscription())) {
+					if (MAIN.compareAndSet(this,
+							null,
+							Operators.cancelledSubscription())) {
 						cancelMain();
 
 						Operators.complete(actual);
@@ -216,13 +228,14 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 					}
 				}
 				cancelMain();
-				
+
 				actual.onComplete();
 			}
 		}
 	}
 
 	static final class WithLatestFromOtherSubscriber<U> implements Subscriber<U> {
+
 		final WithLatestFromSubscriber<?, U, ?> main;
 
 		public WithLatestFromOtherSubscriber(WithLatestFromSubscriber<?, U, ?> main) {

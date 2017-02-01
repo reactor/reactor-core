@@ -96,16 +96,11 @@ final class FluxScan<T> extends FluxSource<T, T> {
 
 			if (v != null) {
 				try {
-					t = accumulator.apply(v, t);
+					t = Objects.requireNonNull(accumulator.apply(v, t),
+							"The accumulator returned a null value");
 				}
 				catch (Throwable e) {
 					onError(Operators.onOperatorError(s, e, t));
-					return;
-				}
-				if (t == null) {
-					s.cancel();
-
-					onError(Operators.onOperatorError(new NullPointerException("The accumulator returned a null value")));
 					return;
 				}
 			}

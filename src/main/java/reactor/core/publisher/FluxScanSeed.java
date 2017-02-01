@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Objects;
@@ -46,6 +47,7 @@ import static reactor.core.publisher.DrainUtils.REQUESTED_MASK;
  *
  * @param <T> the source value type
  * @param <R> the aggregate type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxScanSeed<T, R> extends FluxSource<T, R> {
@@ -54,7 +56,8 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 
 	final Supplier<R> initialSupplier;
 
-	FluxScanSeed(Publisher<? extends T> source, Supplier<R> initialSupplier,
+	FluxScanSeed(Publisher<? extends T> source,
+			Supplier<R> initialSupplier,
 			BiFunction<R, ? super T, R> accumulator) {
 		super(source);
 		this.accumulator = Objects.requireNonNull(accumulator, "accumulator");
@@ -66,14 +69,11 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 		R initialValue;
 
 		try {
-			initialValue = initialSupplier.get();
-		} catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
-			return;
+			initialValue = Objects.requireNonNull(initialSupplier.get(),
+					"The initial value supplied is null");
 		}
-
-		if (initialValue == null) {
-			Operators.error(s, Operators.onOperatorError(new NullPointerException("The " + "initial value supplied is null")));
+		catch (Throwable e) {
+			Operators.error(s, Operators.onOperatorError(e));
 			return;
 		}
 		source.subscribe(new ScanSeedSubscriber<>(s, accumulator, initialValue));
@@ -96,12 +96,13 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<ScanSeedSubscriber> REQUESTED =
-		  AtomicLongFieldUpdater.newUpdater(ScanSeedSubscriber.class, "requested");
+				AtomicLongFieldUpdater.newUpdater(ScanSeedSubscriber.class, "requested");
 
 		long produced;
-		
-		ScanSeedSubscriber(Subscriber<? super R> actual, BiFunction<R, ? super T, R> accumulator,
-									   R initialValue) {
+
+		ScanSeedSubscriber(Subscriber<? super R> actual,
+				BiFunction<R, ? super T, R> accumulator,
+				R initialValue) {
 			this.actual = actual;
 			this.accumulator = accumulator;
 			this.value = initialValue;
@@ -126,21 +127,15 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 			R r = value;
 
 			produced++;
-			
+
 			actual.onNext(r);
 
 			try {
-				r = accumulator.apply(r, t);
+				r = Objects.requireNonNull(accumulator.apply(r, t),
+						"The accumulator returned a null value");
 			}
 			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t));
-				return;
-			}
-
-			if (r == null) {
-				s.cancel();
-
-				onError(new NullPointerException("The accumulator returned a null value"));
 				return;
 			}
 
@@ -165,7 +160,7 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 			done = true;
 
 			R v = value;
-			
+
 			long p = produced;
 			long r = requested;
 			if (r != Long.MAX_VALUE && p != 0L) {
@@ -183,7 +178,7 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 				if (REQUESTED.compareAndSet(this, 0, COMPLETED_MASK)) {
 					return;
 				}
-				
+
 				r = requested;
 			}
 		}
@@ -191,7 +186,7 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				for (;;) {
+				for (; ; ) {
 
 					long r = requested;
 
@@ -199,7 +194,9 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 					if (r == COMPLETED_MASK) {
 						// any positive request value will do here
 						// transition to HAS_REQUEST_HAS_VALUE
-						if (REQUESTED.compareAndSet(this, COMPLETED_MASK, COMPLETED_MASK | 1)) {
+						if (REQUESTED.compareAndSet(this,
+								COMPLETED_MASK,
+								COMPLETED_MASK | 1)) {
 							actual.onNext(value);
 							actual.onComplete();
 						}

@@ -18,6 +18,7 @@ import org.reactivestreams.Subscription;
  * @param <T> the main source type
  * @param <U> the value type for the timeout for the very first item
  * @param <V> the value type for the timeout for the subsequent items
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
@@ -28,16 +29,19 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 
 	final Publisher<? extends T> other;
 
-	public FluxTimeout(Publisher<? extends T> source, Publisher<U> firstTimeout,
-							Function<? super T, ? extends Publisher<V>> itemTimeout) {
+	FluxTimeout(Publisher<? extends T> source,
+			Publisher<U> firstTimeout,
+			Function<? super T, ? extends Publisher<V>> itemTimeout) {
 		super(source);
 		this.firstTimeout = Objects.requireNonNull(firstTimeout, "firstTimeout");
 		this.itemTimeout = Objects.requireNonNull(itemTimeout, "itemTimeout");
 		this.other = null;
 	}
 
-	public FluxTimeout(Publisher<? extends T> source, Publisher<U> firstTimeout,
-							Function<? super T, ? extends Publisher<V>> itemTimeout, Publisher<? extends T> other) {
+	FluxTimeout(Publisher<? extends T> source,
+			Publisher<U> firstTimeout,
+			Function<? super T, ? extends Publisher<V>> itemTimeout,
+			Publisher<? extends T> other) {
 		super(source);
 		this.firstTimeout = Objects.requireNonNull(firstTimeout, "firstTimeout");
 		this.itemTimeout = Objects.requireNonNull(itemTimeout, "itemTimeout");
@@ -49,7 +53,8 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 
 		Subscriber<T> serial = Operators.serialize(s);
 
-		TimeoutMainSubscriber<T, V> main = new TimeoutMainSubscriber<>(serial, itemTimeout, other);
+		TimeoutMainSubscriber<T, V> main =
+				new TimeoutMainSubscriber<>(serial, itemTimeout, other);
 
 		serial.onSubscribe(main);
 
@@ -62,8 +67,8 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 		source.subscribe(main);
 	}
 
-	static final class TimeoutMainSubscriber<T, V> extends
-	                                               Operators.MultiSubscriptionSubscriber<T, T> {
+	static final class TimeoutMainSubscriber<T, V>
+			extends Operators.MultiSubscriptionSubscriber<T, T> {
 
 		final Function<? super T, ? extends Publisher<V>> itemTimeout;
 
@@ -73,18 +78,20 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 
 		volatile IndexedCancellable timeout;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<TimeoutMainSubscriber, IndexedCancellable> TIMEOUT =
-		  AtomicReferenceFieldUpdater.newUpdater(TimeoutMainSubscriber.class, IndexedCancellable.class,
-			"timeout");
+		static final AtomicReferenceFieldUpdater<TimeoutMainSubscriber, IndexedCancellable>
+				TIMEOUT =
+				AtomicReferenceFieldUpdater.newUpdater(TimeoutMainSubscriber.class,
+						IndexedCancellable.class,
+						"timeout");
 
 		volatile long index;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<TimeoutMainSubscriber> INDEX =
-		  AtomicLongFieldUpdater.newUpdater(TimeoutMainSubscriber.class, "index");
+				AtomicLongFieldUpdater.newUpdater(TimeoutMainSubscriber.class, "index");
 
-		public TimeoutMainSubscriber(Subscriber<? super T> actual,
-											  Function<? super T, ? extends Publisher<V>> itemTimeout,
-											  Publisher<? extends T> other) {
+		TimeoutMainSubscriber(Subscriber<? super T> actual,
+				Function<? super T, ? extends Publisher<V>> itemTimeout,
+				Publisher<? extends T> other) {
 			super(actual);
 			this.itemTimeout = itemTimeout;
 			this.other = other;
@@ -127,16 +134,11 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 			Publisher<? extends V> p;
 
 			try {
-				p = itemTimeout.apply(t);
-			} catch (Throwable e) {
-				subscriber.onError(Operators.onOperatorError(this, e, t));
-				return;
+				p = Objects.requireNonNull(itemTimeout.apply(t),
+						"The itemTimeout returned a null Publisher");
 			}
-
-			if (p == null) {
-				subscriber.onError(Operators.onOperatorError(this, new
-						NullPointerException("The itemTimeout returned a null " +
-						"Publisher"), t));
+			catch (Throwable e) {
+				subscriber.onError(Operators.onOperatorError(this, e, t));
 				return;
 			}
 
@@ -241,7 +243,8 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 				super.cancel();
 
 				subscriber.onError(new TimeoutException());
-			} else {
+			}
+			else {
 				set(Operators.emptySubscription());
 
 				other.subscribe(new TimeoutOtherSubscriber<>(subscriber, this));
@@ -255,8 +258,8 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 
 		final Operators.MultiSubscriptionSubscriber<T, T> arbiter;
 
-		public TimeoutOtherSubscriber(Subscriber<? super T> actual, Operators.MultiSubscriptionSubscriber<T, T>
-		  arbiter) {
+		TimeoutOtherSubscriber(Subscriber<? super T> actual,
+				Operators.MultiSubscriptionSubscriber<T, T> arbiter) {
 			this.actual = actual;
 			this.arbiter = arbiter;
 		}
@@ -283,6 +286,7 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 	}
 
 	interface IndexedCancellable {
+
 		long index();
 
 		void cancel();
@@ -303,7 +307,8 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 
 	}
 
-	static final class TimeoutTimeoutSubscriber implements Subscriber<Object>, IndexedCancellable {
+	static final class TimeoutTimeoutSubscriber
+			implements Subscriber<Object>, IndexedCancellable {
 
 		final TimeoutMainSubscriber<?, ?> main;
 
@@ -311,10 +316,12 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 
 		volatile Subscription s;
 
-		static final AtomicReferenceFieldUpdater<TimeoutTimeoutSubscriber, Subscription> S =
-		  AtomicReferenceFieldUpdater.newUpdater(TimeoutTimeoutSubscriber.class, Subscription.class, "s");
+		static final AtomicReferenceFieldUpdater<TimeoutTimeoutSubscriber, Subscription>
+				S = AtomicReferenceFieldUpdater.newUpdater(TimeoutTimeoutSubscriber.class,
+				Subscription.class,
+				"s");
 
-		public TimeoutTimeoutSubscriber(TimeoutMainSubscriber<?, ?> main, long index) {
+		TimeoutTimeoutSubscriber(TimeoutMainSubscriber<?, ?> main, long index) {
 			this.main = main;
 			this.index = index;
 		}
@@ -326,7 +333,8 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 				if (this.s != Operators.cancelledSubscription()) {
 					Operators.reportSubscriptionSet();
 				}
-			} else {
+			}
+			else {
 				s.request(Long.MAX_VALUE);
 			}
 		}

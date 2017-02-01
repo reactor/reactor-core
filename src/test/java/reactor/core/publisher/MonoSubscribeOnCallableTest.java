@@ -25,15 +25,8 @@ import reactor.test.StepVerifier;
 public class MonoSubscribeOnCallableTest {
 
 	@Test
-	public void callableReturnsNull() {
-		StepVerifier.create(new MonoSubscribeOnCallable<>(() -> null, Schedulers.single()))
-		            .expectError(NullPointerException.class)
-		            .verify();
-	}
-
-	@Test
 	public void normal() {
-		StepVerifier.create(new MonoSubscribeOnCallable<>(() -> 1, Schedulers.single()))
+		StepVerifier.create(Mono.fromCallable(() -> 1).subscribeOn(Schedulers.single()))
 		            .expectNext(1)
 		            .expectComplete()
 		            .verify();
@@ -41,8 +34,8 @@ public class MonoSubscribeOnCallableTest {
 
 	@Test
 	public void normalBackpressured() {
-		StepVerifier.withVirtualTime( () -> new MonoSubscribeOnCallable<>(() -> 1,
-				Schedulers.single()), 0)
+		StepVerifier.withVirtualTime( () ->
+				Mono.fromCallable(() -> 1).subscribeOn(Schedulers.single()), 0)
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofSeconds(1))
 		            .thenRequest(1)
@@ -53,9 +46,9 @@ public class MonoSubscribeOnCallableTest {
 
 	@Test
 	public void callableThrows() {
-		StepVerifier.create(new MonoSubscribeOnCallable<>(() -> {
+		StepVerifier.create(Mono.fromCallable(() -> {
 			throw new IOException("forced failure");
-		}, Schedulers.single()))
+		}).subscribeOn(Schedulers.single()))
 		            .expectErrorMatches(e -> e instanceof IOException
 				            && e.getMessage().equals("forced failure"))
 		            .verify();

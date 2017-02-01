@@ -30,24 +30,15 @@ import reactor.core.Exceptions;
  */
 final class MonoError<T> extends Mono<T> implements Trackable {
 
-	final Supplier<? extends Throwable> supplier;
+	final Throwable error;
 
-	public MonoError(Throwable error) {
-		this(create(error));
-	}
-
-	static Supplier<Throwable> create(final Throwable error) {
-		Objects.requireNonNull(error);
-		return () -> error;
-	}
-
-	public MonoError(Supplier<? extends Throwable> supplier) {
-		this.supplier = Objects.requireNonNull(supplier);
+	MonoError(Throwable error) {
+		this.error = Objects.requireNonNull(error, "error");
 	}
 
 	@Override
 	public Throwable getError() {
-		return supplier.get();
+		return error;
 	}
 
 	@Override
@@ -62,19 +53,7 @@ final class MonoError<T> extends Mono<T> implements Trackable {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		Throwable e;
-
-		try {
-			e = supplier.get();
-		} catch (Throwable ex) {
-			e = ex;
-		}
-
-		if (e == null) {
-			e = new NullPointerException("The Throwable returned by the supplier is null");
-		}
-
-		Operators.error(s, Operators.onOperatorError(e));
+		Operators.error(s, Operators.onOperatorError(error));
 	}
 
 	@Override

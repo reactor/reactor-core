@@ -58,11 +58,6 @@ final class ParallelConcatMap<T, R> extends ParallelFlux<R> {
 	}
 
 	@Override
-	public boolean isOrdered() {
-		return false;
-	}
-	
-	@Override
 	public int parallelism() {
 		return source.parallelism();
 	}

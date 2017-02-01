@@ -194,25 +194,7 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>> impl
 		boolean offerNewWindow(T key, T emitInNewWindow) {
 			// if the main is cancelled, don't create new groups
 			if (cancelled == 0) {
-				Queue<T> q;
-
-				try {
-					q = groupQueueSupplier.get();
-				}
-				catch (Throwable ex) {
-					onError(Operators.onOperatorError(s, ex, key));
-					return false;
-				}
-
-				if (q == null) {
-					onError(Operators.onOperatorError(s,
-							new NullPointerException(
-									"The groupQueueSupplier returned a null queue for window \'" + key + "\'"),
-							key));
-					return false;
-				}
-
-				WindowGroupedFlux<T> g = new WindowGroupedFlux<>(key, q, this, prefetch);
+				WindowGroupedFlux<T> g = new WindowGroupedFlux<>(key, groupQueueSupplier.get(), this, prefetch);
 				if (emitInNewWindow != null) {
 					g.onNext(emitInNewWindow);
 				}

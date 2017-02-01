@@ -83,9 +83,4 @@ final class ParallelRunOn<T> extends ParallelFlux<T> implements Fuseable {
 	public int parallelism() {
 		return source.parallelism();
 	}
-
-	@Override
-	public boolean isOrdered() {
-		return source.isOrdered();
-	}
 }

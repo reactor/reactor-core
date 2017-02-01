@@ -140,16 +140,11 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 			Publisher<? extends R> p;
 
 			try {
-				p = mapper.apply(t);
+				p = Objects.requireNonNull(mapper.apply(t),
+						"The mapper returned a null Publisher");
 			}
 			catch (Throwable e) {
 				Operators.error(s, Operators.onOperatorError(e));
-				return true;
-			}
-
-			if (p == null) {
-				Operators.error(s,
-						new NullPointerException("The mapper returned a null Publisher"));
 				return true;
 			}
 
@@ -334,17 +329,11 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 			Publisher<? extends R> p;
 
 			try {
-				p = mapper.apply(t);
+				p = Objects.requireNonNull(mapper.apply(t),
+				"The mapper returned a null Publisher");
 			}
 			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t));
-				return;
-			}
-
-			if (p == null) {
-				onError(Operators.onOperatorError(s,
-						new NullPointerException("The " + "mapper returned a null Publisher"),
-						t));
 				return;
 			}
 

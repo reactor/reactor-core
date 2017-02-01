@@ -556,8 +556,14 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * Returns true if the parallel sequence has to be ordered when joining back.
 	 *
 	 * @return true if the parallel sequence has to be ordered when joining back
+	 * @deprecated This accessor was initially exposed to introspect the internal
+	 * ordering scenario for parallel rails. In effect reactor 3.0 and 3.1 only offer
+	 * non ordered merge at the end and therefore this should always returns false;
 	 */
-	public abstract boolean isOrdered();
+	@Deprecated
+	public boolean isOrdered(){
+		return false;
+	}
 
 	/**
 	 * Observe all Reactive Streams signals and use {@link Logger} support to handle trace
@@ -705,7 +711,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 */
 	public final Mono<T> reduce(BiFunction<T, T, T> reducer) {
 		Objects.requireNonNull(reducer, "reducer");
-		return Mono.onAssembly(new ParallelReduceFull<>(this, reducer));
+		return Mono.onAssembly(new ParallelMergeReduce<>(this, reducer));
 	}
 
 	/**
@@ -727,7 +733,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 			BiFunction<R, ? super T, R> reducer) {
 		Objects.requireNonNull(initialSupplier, "initialSupplier");
 		Objects.requireNonNull(reducer, "reducer");
-		return onAssembly(new ParallelReduce<>(this, initialSupplier, reducer));
+		return onAssembly(new ParallelReduceSeed<>(this, initialSupplier, reducer));
 	}
 
 	/**
@@ -811,7 +817,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @return the new Flux instance
 	 */
 	public final Flux<T> sequential(int prefetch) {
-		return Flux.onAssembly(new ParallelJoin<>(this,
+		return Flux.onAssembly(new ParallelMergeSequential<>(this,
 				prefetch,
 				QueueSupplier.get(prefetch)));
 	}
@@ -852,7 +858,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 			return list;
 		});
 
-		return Flux.onAssembly(new ParallelSortedJoin<>(railSorted, comparator));
+		return Flux.onAssembly(new ParallelMergeSort<>(railSorted, comparator));
 	}
 
 	/**
@@ -934,7 +940,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @return the {@link ParallelFlux} returned by the function
 	 */
 	public final <U> ParallelFlux<U> transform(Function<? super ParallelFlux<T>, ParallelFlux<U>> composer) {
-		return as(composer);
+		return onAssembly(as(composer));
 	}
 
 	/**

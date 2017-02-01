@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Arrays;
@@ -39,11 +40,12 @@ import reactor.core.Receiver;
 import reactor.core.Trackable;
 
 /**
- * Repeatedly takes one item from all source Publishers and 
+ * Repeatedly takes one item from all source Publishers and
  * runs it through a function to produce the output item.
  *
  * @param <T> the common input type
  * @param <R> the output value type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
@@ -87,7 +89,9 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 	}
 
 	public FluxZip(Iterable<? extends Publisher<? extends T>> sourcesIterable,
-			Function<? super Object[], ? extends R> zipper, Supplier<? extends Queue<T>> queueSupplier, int prefetch) {
+			Function<? super Object[], ? extends R> zipper,
+			Supplier<? extends Queue<T>> queueSupplier,
+			int prefetch) {
 		if (prefetch <= 0) {
 			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
 		}
@@ -124,13 +128,15 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 		Publisher<? extends T>[] srcs = sources;
 		if (srcs != null) {
 			handleArrayMode(s, srcs);
-		} else {
+		}
+		else {
 			handleIterableMode(s, sourcesIterable);
 		}
 	}
 
 	@SuppressWarnings("unchecked")
-	void handleIterableMode(Subscriber<? super R> s, Iterable<? extends Publisher<? extends T>> sourcesIterable) {
+	void handleIterableMode(Subscriber<? super R> s,
+			Iterable<? extends Publisher<? extends T>> sourcesIterable) {
 		Object[] scalars = new Object[8];
 		Publisher<? extends T>[] srcs = new Publisher[8];
 
@@ -139,7 +145,9 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 
 		for (Publisher<? extends T> p : sourcesIterable) {
 			if (p == null) {
-				Operators.error(s, new NullPointerException("The sourcesIterable returned a null Publisher"));
+				Operators.error(s,
+						Operators.onOperatorError(new NullPointerException(
+								"The sourcesIterable returned a null Publisher")));
 				return;
 			}
 
@@ -175,7 +183,8 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 
 				scalars[n] = v;
 				sc++;
-			} else {
+			}
+			else {
 				if (n == srcs.length) {
 					Object[] b = new Object[n + (n >> 1)];
 					System.arraycopy(scalars, 0, b, 0, n);
@@ -218,7 +227,8 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 			Publisher<? extends T> p = srcs[j];
 
 			if (p == null) {
-				Operators.error(s, new NullPointerException("The sources contained a null Publisher"));
+				Operators.error(s,
+						new NullPointerException("The sources contained a null Publisher"));
 				return;
 			}
 
@@ -226,7 +236,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 				Object v;
 
 				try {
-					v = ((Callable<? extends T>)p).call();
+					v = ((Callable<? extends T>) p).call();
 				}
 				catch (Throwable e) {
 					Operators.error(s, Operators.onOperatorError(e));
@@ -250,7 +260,11 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 		handleBoth(s, srcs, scalars, n, sc);
 	}
 
-	void handleBoth(Subscriber<? super R> s, Publisher<? extends T>[] srcs, Object[] scalars, int n, int sc) {
+	void handleBoth(Subscriber<? super R> s,
+			Publisher<? extends T>[] srcs,
+			Object[] scalars,
+			int n,
+			int sc) {
 		if (sc != 0) {
 			if (n != sc) {
 				ZipSingleCoordinator<T, R> coordinator =
@@ -259,30 +273,28 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 				s.onSubscribe(coordinator);
 
 				coordinator.subscribe(n, sc, srcs);
-			} else {
-				Operators.MonoSubscriber<R, R>
-						sds = new Operators.MonoSubscriber<>(s);
+			}
+			else {
+				Operators.MonoSubscriber<R, R> sds = new Operators.MonoSubscriber<>(s);
 
 				s.onSubscribe(sds);
 
 				R r;
 
 				try {
-					r = zipper.apply(scalars);
-				} catch (Throwable e) {
-					s.onError(Operators.onOperatorError(e));
-					return;
+					r = Objects.requireNonNull(zipper.apply(scalars),
+							"The zipper returned a null value");
 				}
-
-				if (r == null) {
-					s.onError(Operators.onOperatorError(new NullPointerException("The zipper returned a null value")));
+				catch (Throwable e) {
+					s.onError(Operators.onOperatorError(e));
 					return;
 				}
 
 				sds.complete(r);
 			}
 
-		} else {
+		}
+		else {
 
 			ZipCoordinator<T, R> coordinator =
 					new ZipCoordinator<>(s, zipper, n, queueSupplier, prefetch);
@@ -295,7 +307,8 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 
 	@Override
 	public Iterator<?> upstreams() {
-		return sources == null ? sourcesIterable.iterator() : Arrays.asList(sources).iterator();
+		return sources == null ? sourcesIterable.iterator() : Arrays.asList(sources)
+		                                                            .iterator();
 	}
 
 	@Override
@@ -360,19 +373,15 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 				R r;
 
 				try {
-					r = zipper.apply(a);
-				} catch (Throwable e) {
+					r = Objects.requireNonNull(zipper.apply(a),
+							"The zipper returned a null value");
+				}
+				catch (Throwable e) {
 					actual.onError(Operators.onOperatorError(this, e, value));
 					return;
 				}
 
-				if (r == null) {
-					actual.onError(Operators.onOperatorError(this, new
-							NullPointerException("The zipper returned a null value"),
-							value));
-				} else {
-					complete(r);
-				}
+				complete(r);
 			}
 		}
 
@@ -380,7 +389,8 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 			if (WIP.getAndSet(this, 0) > 0) {
 				cancelAll();
 				actual.onError(e);
-			} else {
+			}
+			else {
 				Operators.onErrorDropped(e);
 			}
 		}
@@ -410,7 +420,8 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 
 		@Override
 		public Iterator<?> upstreams() {
-			return Arrays.asList(subscribers).iterator();
+			return Arrays.asList(subscribers)
+			             .iterator();
 		}
 
 		@Override
@@ -448,7 +459,6 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 			this.index = index;
 		}
 
-
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.setOnce(S, this, s)) {
@@ -456,7 +466,6 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 				s.request(Long.MAX_VALUE);
 			}
 		}
-
 
 		@Override
 		public void onNext(T t) {
@@ -469,7 +478,6 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 			parent.next(t, index);
 		}
 
-
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
@@ -479,7 +487,6 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 			done = true;
 			parent.error(t, index);
 		}
-
 
 		@Override
 		public void onComplete() {
@@ -559,7 +566,8 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 		public ZipCoordinator(Subscriber<? super R> actual,
 				Function<? super Object[], ? extends R> zipper,
 				int n,
-				Supplier<? extends Queue<T>> queueSupplier, int prefetch) {
+				Supplier<? extends Queue<T>> queueSupplier,
+				int prefetch) {
 			this.actual = actual;
 			this.zipper = zipper;
 			@SuppressWarnings("unchecked") ZipInner<T>[] a = new ZipInner[n];
@@ -605,8 +613,8 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 		@Override
 		public long getPending() {
 			int nonEmpties = 0;
-			for(int i =0; i < subscribers.length; i++){
-				if(subscribers[i].queue != null && !subscribers[i].queue .isEmpty()){
+			for (int i = 0; i < subscribers.length; i++) {
+				if (subscribers[i].queue != null && !subscribers[i].queue.isEmpty()) {
 					nonEmpties++;
 				}
 			}
@@ -625,7 +633,8 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 
 		@Override
 		public Iterator<?> upstreams() {
-			return Arrays.asList(subscribers).iterator();
+			return Arrays.asList(subscribers)
+			             .iterator();
 		}
 
 		@Override
@@ -734,28 +743,14 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 					R v;
 
 					try {
-						v = zipper.apply(values.clone());
+						v = Objects.requireNonNull(zipper.apply(values.clone()),
+								"The zipper returned a null value");
 					}
 					catch (Throwable ex) {
 
 						ex = Operators.onOperatorError(null, ex, values.clone());
 						cancelAll();
 
-						Exceptions.addThrowable(ERROR, this, ex);
-						ex = Exceptions.terminate(ERROR, this);
-
-						a.onError(ex);
-
-						return;
-					}
-
-					if (v == null) {
-
-						Throwable ex = Operators.onOperatorError(null, new
-								NullPointerException(
-								"The zipper returned a null value"), values.clone());
-
-						cancelAll();
 						Exceptions.addThrowable(ERROR, this, ex);
 						ex = Exceptions.terminate(ERROR, this);
 
@@ -870,9 +865,13 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 
 		int sourceMode;
 
-		/** Running with a source that implements SynchronousSource. */
-		static final int SYNC = 1;
-		/** Running with a source that implements AsynchronousSource. */
+		/**
+		 * Running with a source that implements SynchronousSource.
+		 */
+		static final int SYNC  = 1;
+		/**
+		 * Running with a source that implements AsynchronousSource.
+		 */
 		static final int ASYNC = 2;
 
 		public ZipInner(ZipCoordinator<T, ?> parent,
@@ -905,11 +904,13 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 					else if (m == Fuseable.ASYNC) {
 						sourceMode = ASYNC;
 						queue = f;
-					} else {
+					}
+					else {
 						queue = queueSupplier.get();
 					}
-				} else {
-						queue = queueSupplier.get();
+				}
+				else {
+					queue = queueSupplier.get();
 				}
 				s.request(prefetch);
 			}
@@ -925,7 +926,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 
 		@Override
 		public void onError(Throwable t) {
-			if(done){
+			if (done) {
 				Operators.onErrorDropped(t);
 				return;
 			}
@@ -989,7 +990,8 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 				if (p >= limit) {
 					produced = 0L;
 					s.request(p);
-				} else {
+				}
+				else {
 					produced = p;
 				}
 			}
@@ -998,6 +1000,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 
 	@SuppressWarnings({"unchecked", "rawtypes"})
 	static final class PairwiseZipper<R> implements Function<Object[], R> {
+
 		final BiFunction[] zippers;
 
 		public PairwiseZipper(BiFunction[] zippers) {

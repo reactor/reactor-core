@@ -28,18 +28,13 @@ final class ParallelFluxHide<T> extends ParallelFlux<T> {
 
 	final ParallelFlux<T> source;
 
-	public ParallelFluxHide(ParallelFlux<T> source) {
+	ParallelFluxHide(ParallelFlux<T> source) {
 		this.source = source;
 	}
 
 	@Override
 	public long getPrefetch() {
 		return source.getPrefetch();
-	}
-
-	@Override
-	public boolean isOrdered() {
-		return source.isOrdered();
 	}
 
 	@Override

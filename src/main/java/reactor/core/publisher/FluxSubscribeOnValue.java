@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Loopback;
 import reactor.core.Producer;
@@ -39,7 +40,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 	
 	final Scheduler scheduler;
 
-	public FluxSubscribeOnValue(T value, 
+	FluxSubscribeOnValue(T value,
 			Scheduler scheduler) {
 		this.value = value;
 		this.scheduler = Objects.requireNonNull(scheduler, "scheduler");
@@ -53,7 +54,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 			s.onSubscribe(parent);
 			Cancellation f = scheduler.schedule(parent);
 			if (f == Scheduler.REJECTED) {
-				if (parent.future != ScheduledEmpty.CANCELLED) {
+				if (parent.future != Flux.CANCELLED) {
 					s.onError(Operators.onRejectedExecution());
 				}
 			}
@@ -86,20 +87,16 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 						Cancellation.class,
 						"future");
 
-		static final Cancellation CANCELLED = () -> {
-		};
-
 		static final Cancellation FINISHED = () -> {
 		};
 
 		int fusionState;
 
-		static final int NOT_FUSED = 0;
 		static final int NO_VALUE  = 1;
 		static final int HAS_VALUE = 2;
 		static final int COMPLETE  = 3;
 
-		public ScheduledScalar(Subscriber<? super T> actual,
+		ScheduledScalar(Subscriber<? super T> actual,
 				T value,
 				Scheduler scheduler) {
 			this.actual = actual;
@@ -211,13 +208,10 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 						Cancellation.class,
 						"future");
 
-		static final Cancellation CANCELLED = () -> {
+		static final Disposable FINISHED = () -> {
 		};
 
-		static final Cancellation FINISHED = () -> {
-		};
-
-		public ScheduledEmpty(Subscriber<?> actual) {
+		ScheduledEmpty(Subscriber<?> actual) {
 			this.actual = actual;
 		}
 
@@ -257,11 +251,6 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 		}
 
 		@Override
-		public Object connectedInput() {
-			return null;
-		}
-
-		@Override
 		public Object downstream() {
 			return actual;
 		}
@@ -278,7 +267,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 
 		@Override
 		public boolean isEmpty() {
-			return false;
+			return true;
 		}
 
 		@Override

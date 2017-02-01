@@ -30,7 +30,7 @@ final class ParallelFilter<T> extends ParallelFlux<T> {
 	
 	final Predicate<? super T> predicate;
 	
-	public ParallelFilter(ParallelFlux<T> source, Predicate<? super T> predicate) {
+	ParallelFilter(ParallelFlux<T> source, Predicate<? super T> predicate) {
 		this.source = source;
 		this.predicate = predicate;
 	}
@@ -57,8 +57,4 @@ final class ParallelFilter<T> extends ParallelFlux<T> {
 		return source.parallelism();
 	}
 
-	@Override
-	public boolean isOrdered() {
-		return false;
-	}
 }

@@ -216,16 +216,11 @@ final class MonoWhen<T, R> extends Mono<R> {
             } else {
 	            R r;
 	            try {
-		            r = zipper.apply(o);
+		            r = Objects.requireNonNull(zipper.apply(o),
+				            "zipper produced a null value");
 	            }
 	            catch (Throwable t) {
 		            actual.onError(Operators.onOperatorError(null, t, o));
-		            return;
-	            }
-	            if (r == null) {
-		            actual.onError(Operators.onOperatorError(null,
-				            new NullPointerException("zipper produced a null value"),
-				            o));
 		            return;
 	            }
 	            complete(r);

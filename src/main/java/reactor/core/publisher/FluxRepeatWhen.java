@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Objects;
@@ -25,13 +26,15 @@ import org.reactivestreams.Subscription;
 import reactor.core.Loopback;
 
 /**
- * Repeats a source when a companion sequence
- * signals an item in response to the main's completion signal
+ * Repeats a source when a companion sequence signals an item in response to the main's
+ * completion signal
  * <p>
- * <p>If the companion sequence signals when the main source is active, the repeat
- * attempt is suppressed and any terminal signal will terminate the main source with the same signal immediately.
+ * <p>If the companion sequence signals when the main source is active, the repeat attempt
+ * is suppressed and any terminal signal will terminate the main source with the same
+ * signal immediately.
  *
  * @param <T> the source value type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxRepeatWhen<T> extends FluxSource<T, T> {
@@ -39,9 +42,10 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 	final Function<? super Flux<Long>, ? extends Publisher<?>> whenSourceFactory;
 
 	public FluxRepeatWhen(Publisher<? extends T> source,
-							   Function<? super Flux<Long>, ? extends Publisher<?>> whenSourceFactory) {
+			Function<? super Flux<Long>, ? extends Publisher<?>> whenSourceFactory) {
 		super(source);
-		this.whenSourceFactory = Objects.requireNonNull(whenSourceFactory, "whenSourceFactory");
+		this.whenSourceFactory =
+				Objects.requireNonNull(whenSourceFactory, "whenSourceFactory");
 	}
 
 	@Override
@@ -54,7 +58,8 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 
 		Subscriber<T> serial = Operators.serialize(s);
 
-		RepeatWhenMainSubscriber<T> main = new RepeatWhenMainSubscriber<>(serial, signaller, source);
+		RepeatWhenMainSubscriber<T> main =
+				new RepeatWhenMainSubscriber<>(serial, signaller, source);
 		other.main = main;
 
 		serial.onSubscribe(main);
@@ -62,15 +67,11 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 		Publisher<?> p;
 
 		try {
-			p = whenSourceFactory.apply(other);
-		} catch (Throwable e) {
-			s.onError(Operators.onOperatorError(e));
-			return;
+			p = Objects.requireNonNull(whenSourceFactory.apply(other),
+					"The whenSourceFactory returned a null Publisher");
 		}
-
-		if (p == null) {
-			s.onError(Operators.onOperatorError(new NullPointerException("The " +
-					"whenSourceFactory returned a null Publisher")));
+		catch (Throwable e) {
+			s.onError(Operators.onOperatorError(e));
 			return;
 		}
 
@@ -81,8 +82,8 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 		}
 	}
 
-	static final class RepeatWhenMainSubscriber<T> extends
-	                                               Operators.MultiSubscriptionSubscriber<T, T> {
+	static final class RepeatWhenMainSubscriber<T>
+			extends Operators.MultiSubscriptionSubscriber<T, T> {
 
 		final Operators.DeferredSubscription otherArbiter;
 
@@ -93,14 +94,16 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<RepeatWhenMainSubscriber> WIP =
-		  AtomicIntegerFieldUpdater.newUpdater(RepeatWhenMainSubscriber.class, "wip");
+				AtomicIntegerFieldUpdater.newUpdater(RepeatWhenMainSubscriber.class,
+						"wip");
 
 		volatile boolean cancelled;
 
 		long produced;
 
-		public RepeatWhenMainSubscriber(Subscriber<? super T> actual, Subscriber<Long> signaller,
-												 Publisher<? extends T> source) {
+		public RepeatWhenMainSubscriber(Subscriber<? super T> actual,
+				Subscriber<Long> signaller,
+				Publisher<? extends T> source) {
 			super(actual);
 			this.signaller = signaller;
 			this.source = source;
@@ -162,7 +165,8 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 
 					source.subscribe(this);
 
-				} while (WIP.decrementAndGet(this) != 0);
+				}
+				while (WIP.decrementAndGet(this) != 0);
 			}
 		}
 
@@ -182,7 +186,8 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 	}
 
 	static final class RepeatWhenOtherSubscriber extends Flux<Long>
-	implements Subscriber<Object>, Loopback {
+			implements Subscriber<Object>, Loopback {
+
 		RepeatWhenMainSubscriber<?> main;
 
 		final DirectProcessor<Long> completionSignal = new DirectProcessor<>();

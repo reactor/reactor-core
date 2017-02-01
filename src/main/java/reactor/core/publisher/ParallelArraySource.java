@@ -33,12 +33,7 @@ final class ParallelArraySource<T> extends ParallelFlux<T> {
 		}
 		this.sources = sources;
 	}
-	
-	@Override
-	public boolean isOrdered() {
-		return false;
-	}
-	
+
 	@Override
 	public int parallelism() {
 		return sources.length;

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Collection;
@@ -32,20 +33,23 @@ import reactor.core.publisher.FluxDistinct.DistinctFuseableSubscriber;
  * @param <T> the source value type
  * @param <K> the key extracted from the source value to be used for duplicate testing
  * @param <C> the collection type whose add() method is used for testing for duplicates
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxDistinctFuseable<T, K, C extends Collection<? super K>> 
-extends FluxSource<T, T> implements Fuseable {
+final class FluxDistinctFuseable<T, K, C extends Collection<? super K>>
+		extends FluxSource<T, T> implements Fuseable {
 
 	final Function<? super T, ? extends K> keyExtractor;
 
 	final Supplier<C> collectionSupplier;
 
-	FluxDistinctFuseable(Publisher<? extends T> source, Function<? super T, ? extends K> keyExtractor,
-							 Supplier<C> collectionSupplier) {
+	FluxDistinctFuseable(Publisher<? extends T> source,
+			Function<? super T, ? extends K> keyExtractor,
+			Supplier<C> collectionSupplier) {
 		super(source);
 		this.keyExtractor = Objects.requireNonNull(keyExtractor, "keyExtractor");
-		this.collectionSupplier = Objects.requireNonNull(collectionSupplier, "collectionSupplier");
+		this.collectionSupplier =
+				Objects.requireNonNull(collectionSupplier, "collectionSupplier");
 	}
 
 	@Override
@@ -53,18 +57,14 @@ extends FluxSource<T, T> implements Fuseable {
 		C collection;
 
 		try {
-			collection = collectionSupplier.get();
-		} catch (Throwable e) {
+			collection = Objects.requireNonNull(collectionSupplier.get(),
+					"The collectionSupplier returned a null collection");
+		}
+		catch (Throwable e) {
 			Operators.error(s, Operators.onOperatorError(e));
 			return;
 		}
 
-		if (collection == null) {
-			Operators.error(s, Operators.onOperatorError(new
-					NullPointerException("The collectionSupplier returned a null collection")));
-			return;
-		}
-		
 		source.subscribe(new DistinctFuseableSubscriber<>(s, collection, keyExtractor));
 	}
 }

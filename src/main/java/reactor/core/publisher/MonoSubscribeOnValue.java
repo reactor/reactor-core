@@ -48,7 +48,7 @@ final class MonoSubscribeOnValue<T> extends Mono<T> {
 			s.onSubscribe(parent);
 			Cancellation f = scheduler.schedule(parent);
 			if (f == Scheduler.REJECTED) {
-				if(parent.future != ScheduledEmpty.CANCELLED) {
+				if(parent.future != Flux.CANCELLED) {
 					s.onError(Operators.onRejectedExecution());
 				}
 			}

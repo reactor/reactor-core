@@ -29,12 +29,12 @@ import reactor.core.Exceptions;
  *
  * @param <T> the value type
  */
-final class ParallelJoin<T> extends Flux<T> {
+final class ParallelMergeSequential<T> extends Flux<T> {
 	final ParallelFlux<? extends T> source;
 	final int prefetch;
 	final Supplier<Queue<T>> queueSupplier;
 	
-	ParallelJoin(ParallelFlux<? extends T> source, int prefetch, Supplier<Queue<T>> queueSupplier) {
+	ParallelMergeSequential(ParallelFlux<? extends T> source, int prefetch, Supplier<Queue<T>> queueSupplier) {
 		if (prefetch <= 0) {
 			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
 		}
@@ -45,48 +45,48 @@ final class ParallelJoin<T> extends Flux<T> {
 	
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		JoinSubscription<T> parent = new JoinSubscription<>(s, source.parallelism(), prefetch, queueSupplier);
+		MergeSequentialSubscription<T> parent = new MergeSequentialSubscription<>(s, source.parallelism(), prefetch, queueSupplier);
 		s.onSubscribe(parent);
 		source.subscribe(parent.subscribers);
 	}
 	
-	static final class JoinSubscription<T> implements Subscription {
+	static final class MergeSequentialSubscription<T> implements Subscription {
 		final Subscriber<? super T> actual;
 		
-		final JoinInnerSubscriber<T>[] subscribers;
+		final MergeSequentialInnerSubscriber<T>[] subscribers;
 		
 		final Supplier<Queue<T>> queueSupplier;
 		
 		volatile Throwable error;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<JoinSubscription, Throwable> ERROR =
-				AtomicReferenceFieldUpdater.newUpdater(JoinSubscription.class, Throwable.class, "error");
+		static final AtomicReferenceFieldUpdater<MergeSequentialSubscription, Throwable> ERROR =
+				AtomicReferenceFieldUpdater.newUpdater(MergeSequentialSubscription.class, Throwable.class, "error");
 		
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<JoinSubscription> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(JoinSubscription.class, "wip");
+		static final AtomicIntegerFieldUpdater<MergeSequentialSubscription> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(MergeSequentialSubscription.class, "wip");
 		
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<JoinSubscription> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(JoinSubscription.class, "requested");
+		static final AtomicLongFieldUpdater<MergeSequentialSubscription> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(MergeSequentialSubscription.class, "requested");
 		
 		volatile boolean cancelled;
 
 		volatile int done;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<JoinSubscription> DONE =
-				AtomicIntegerFieldUpdater.newUpdater(JoinSubscription.class, "done");
+		static final AtomicIntegerFieldUpdater<MergeSequentialSubscription> DONE =
+				AtomicIntegerFieldUpdater.newUpdater(MergeSequentialSubscription.class, "done");
 
-		public JoinSubscription(Subscriber<? super T> actual, int n, int prefetch, Supplier<Queue<T>> queueSupplier) {
+		public MergeSequentialSubscription(Subscriber<? super T> actual, int n, int prefetch, Supplier<Queue<T>> queueSupplier) {
 			this.actual = actual;
 			this.queueSupplier = queueSupplier;
 			@SuppressWarnings("unchecked")
-			JoinInnerSubscriber<T>[] a = new JoinInnerSubscriber[n];
+			MergeSequentialInnerSubscriber<T>[] a = new MergeSequentialInnerSubscriber[n];
 			
 			for (int i = 0; i < n; i++) {
-				a[i] = new JoinInnerSubscriber<>(this, prefetch);
+				a[i] = new MergeSequentialInnerSubscriber<>(this, prefetch);
 			}
 			
 			this.subscribers = a;
@@ -115,18 +115,18 @@ final class ParallelJoin<T> extends Flux<T> {
 		}
 		
 		void cancelAll() {
-			for (JoinInnerSubscriber<T> s : subscribers) {
+			for (MergeSequentialInnerSubscriber<T> s : subscribers) {
 				s.cancel();
 			}
 		}
 		
 		void cleanup() {
-			for (JoinInnerSubscriber<T> s : subscribers) {
+			for (MergeSequentialInnerSubscriber<T> s : subscribers) {
 				s.queue = null; 
 			}
 		}
 		
-		void onNext(JoinInnerSubscriber<T> inner, T value) {
+		void onNext(MergeSequentialInnerSubscriber<T> inner, T value) {
 			if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
 				if (requested != 0) {
 					actual.onNext(value);
@@ -157,12 +157,13 @@ final class ParallelJoin<T> extends Flux<T> {
 			drainLoop();
 		}
 		
-		void onError(Throwable e) {
-			if (Exceptions.addThrowable(ERROR, this, e)) {
+		void onError(Throwable ex) {
+			if(ERROR.compareAndSet(this, null, ex)){
 				cancelAll();
 				drain();
-			} else {
-				Operators.onErrorDropped(e);
+			}
+			else if(error != ex) {
+				Operators.onErrorDropped(ex);
 			}
 		}
 		
@@ -184,7 +185,7 @@ final class ParallelJoin<T> extends Flux<T> {
 		void drainLoop() {
 			int missed = 1;
 			
-			JoinInnerSubscriber<T>[] s = this.subscribers;
+			MergeSequentialInnerSubscriber<T>[] s = this.subscribers;
 			int n = s.length;
 			Subscriber<? super T> a = this.actual;
 			
@@ -202,7 +203,6 @@ final class ParallelJoin<T> extends Flux<T> {
 					
 					Throwable ex = error;
 					if (ex != null) {
-						ex = Exceptions.terminate(ERROR, this);
 						cleanup();
 						a.onError(ex);
 						return;
@@ -213,7 +213,7 @@ final class ParallelJoin<T> extends Flux<T> {
 					boolean empty = true;
 					
 					for (int i = 0; i < n; i++) {
-						JoinInnerSubscriber<T> inner = s[i];
+						MergeSequentialInnerSubscriber<T> inner = s[i];
 						
 						Queue<T> q = inner.queue;
 						if (q != null) {
@@ -248,7 +248,6 @@ final class ParallelJoin<T> extends Flux<T> {
 					
 					Throwable ex = error;
 					if (ex != null) {
-						ex = Exceptions.terminate(ERROR, this);
 						cleanup();
 						a.onError(ex);
 						return;
@@ -259,7 +258,7 @@ final class ParallelJoin<T> extends Flux<T> {
 					boolean empty = true;
 					
 					for (int i = 0; i < n; i++) {
-						JoinInnerSubscriber<T> inner = s[i];
+						MergeSequentialInnerSubscriber<T> inner = s[i];
 						
 						Queue<T> q = inner.queue;
 						if (q != null && !q.isEmpty()) {
@@ -291,9 +290,9 @@ final class ParallelJoin<T> extends Flux<T> {
 		}
 	}
 	
-	static final class JoinInnerSubscriber<T> implements Subscriber<T> {
+	static final class MergeSequentialInnerSubscriber<T> implements Subscriber<T> {
 		
-		final JoinSubscription<T> parent;
+		final MergeSequentialSubscription<T> parent;
 		
 		final int prefetch;
 		
@@ -303,14 +302,14 @@ final class ParallelJoin<T> extends Flux<T> {
 		
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<JoinInnerSubscriber, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(JoinInnerSubscriber.class, Subscription.class, "s");
+		static final AtomicReferenceFieldUpdater<MergeSequentialInnerSubscriber, Subscription> S =
+				AtomicReferenceFieldUpdater.newUpdater(MergeSequentialInnerSubscriber.class, Subscription.class, "s");
 		
 		volatile Queue<T> queue;
 		
 		volatile boolean done;
 		
-		public JoinInnerSubscriber(JoinSubscription<T> parent, int prefetch) {
+		public MergeSequentialInnerSubscriber(MergeSequentialSubscription<T> parent, int prefetch) {
 			this.parent = parent;
 			this.prefetch = prefetch ;
 			this.limit = prefetch - (prefetch >> 2);
@@ -338,7 +337,7 @@ final class ParallelJoin<T> extends Flux<T> {
 			parent.onComplete();
 		}
 		
-		public void requestOne() {
+		void requestOne() {
 			long p = produced + 1;
 			if (p == limit) {
 				produced = 0;

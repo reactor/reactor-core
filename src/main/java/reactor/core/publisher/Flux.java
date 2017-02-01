@@ -7318,4 +7318,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	static final Function        HASHCODE_EXTRACTOR      = Object::hashCode;
 	@SuppressWarnings("rawtypes")
     static final Function        IDENTITY_FUNCTION       = Function.identity();
+
+	static final Disposable CANCELLED = () -> {
+	};
 }

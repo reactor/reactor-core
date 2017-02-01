@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import java.util.AbstractQueue;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
@@ -58,7 +59,7 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
             Supplier<? extends R>            mapperComplete) {
         super(source);
 	    if(mapperNext == null && mapperError == null && mapperComplete == null){
-		    throw new NullPointerException("Map Signal needs at least one valid mapper");
+		    throw new IllegalArgumentException("Map Signal needs at least one valid mapper");
 	    }
 
         this.mapperNext = mapperNext;
@@ -94,7 +95,7 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
         
         long produced;
         
-        public FluxMapSignalSubscriber(Subscriber<? super R> actual, FluxMapSignal<T, R> parent) {
+        FluxMapSignalSubscriber(Subscriber<? super R> actual, FluxMapSignal<T, R> parent) {
             this.actual = actual;
             this.parent = parent;
         }
@@ -118,18 +119,12 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
             R v;
 
             try {
-                v = parent.mapperNext.apply(t);
+                v = Objects.requireNonNull(parent.mapperNext.apply(t),
+		                "The mapper returned a null value.");
             }
             catch (Throwable e) {
 	            done = true;
 	            actual.onError(Operators.onOperatorError(s, e, t));
-                return;
-            }
-
-            if (v == null) {
-	            done = true;
-	            actual.onError(Operators.onOperatorError(s, new NullPointerException
-			            ("The mapper returned a null value."), t));
                 return;
             }
 
@@ -154,17 +149,12 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
 	        R v;
 
 	        try {
-		        v = parent.mapperError.apply(t);
+		        v = Objects.requireNonNull(parent.mapperError.apply(t),
+				        "The mapper returned a null value.");
 	        }
 	        catch (Throwable e) {
 		        done = true;
 		        actual.onError(Operators.onOperatorError(s, e, t));
-		        return;
-	        }
-
-	        if (v == null) {
-		        done = true;
-		        actual.onError(Operators.onOperatorError(s, new NullPointerException("The mapper returned a null value."), t));
 		        return;
 	        }
 
@@ -191,17 +181,12 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
 	        R v;
 
 	        try {
-		        v = parent.mapperComplete.get();
+		        v = Objects.requireNonNull(parent.mapperComplete.get(),
+				        "The mapper returned a null value.");
 	        }
 	        catch (Throwable e) {
 		        done = true;
 		        actual.onError(Operators.onOperatorError(s, e));
-		        return;
-	        }
-
-	        if (v == null) {
-		        done = true;
-		        actual.onError(Operators.onOperatorError(s, new NullPointerException("The mapper returned a null value.")));
 		        return;
 	        }
 

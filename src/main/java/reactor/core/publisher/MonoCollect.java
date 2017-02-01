@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Objects;
@@ -32,6 +33,7 @@ import reactor.core.Receiver;
  *
  * @param <T> the source value type
  * @param <R> the container value type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoCollect<T, R> extends MonoSource<T, R> implements Fuseable {
@@ -40,8 +42,9 @@ final class MonoCollect<T, R> extends MonoSource<T, R> implements Fuseable {
 
 	final BiConsumer<? super R, ? super T> action;
 
-	public MonoCollect(Publisher<? extends T> source, Supplier<R> supplier,
-							BiConsumer<? super R, ? super T> action) {
+	MonoCollect(Publisher<? extends T> source,
+			Supplier<R> supplier,
+			BiConsumer<? super R, ? super T> action) {
 		super(source);
 		this.supplier = Objects.requireNonNull(supplier, "supplier");
 		this.action = Objects.requireNonNull(action);
@@ -52,23 +55,18 @@ final class MonoCollect<T, R> extends MonoSource<T, R> implements Fuseable {
 		R container;
 
 		try {
-			container = supplier.get();
-		} catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
-			return;
+			container = Objects.requireNonNull(supplier.get(),
+					"The supplier returned a null container");
 		}
-
-		if (container == null) {
-			Operators.error(s, Operators.onOperatorError(new
-					NullPointerException("The supplier returned a null container")));
+		catch (Throwable e) {
+			Operators.error(s, Operators.onOperatorError(e));
 			return;
 		}
 
 		source.subscribe(new CollectSubscriber<>(s, action, container));
 	}
 
-	static final class CollectSubscriber<T, R>
-			extends Operators.MonoSubscriber<T, R>
+	static final class CollectSubscriber<T, R> extends Operators.MonoSubscriber<T, R>
 			implements Receiver {
 
 		final BiConsumer<? super R, ? super T> action;
@@ -77,8 +75,9 @@ final class MonoCollect<T, R> extends MonoSource<T, R> implements Fuseable {
 
 		boolean done;
 
-		public CollectSubscriber(Subscriber<? super R> actual, BiConsumer<? super R, ? super T> action,
-										  R container) {
+		CollectSubscriber(Subscriber<? super R> actual,
+				BiConsumer<? super R, ? super T> action,
+				R container) {
 			super(actual);
 			this.action = action;
 			this.value = container;
@@ -110,7 +109,8 @@ final class MonoCollect<T, R> extends MonoSource<T, R> implements Fuseable {
 
 			try {
 				action.accept(value, t);
-			} catch (Throwable e) {
+			}
+			catch (Throwable e) {
 				onError(Operators.onOperatorError(this, e, t));
 			}
 		}

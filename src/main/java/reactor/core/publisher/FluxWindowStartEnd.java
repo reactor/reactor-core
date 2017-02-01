@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.HashSet;
@@ -32,32 +33,37 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 
 /**
- * Splits the source sequence into potentially overlapping windowEnds controlled by items of a 
- * start Publisher and end Publishers derived from the start values.
+ * Splits the source sequence into potentially overlapping windowEnds controlled by items
+ * of a start Publisher and end Publishers derived from the start values.
  *
  * @param <T> the source value type
  * @param <U> the window starter value type
  * @param <V> the window end value type (irrelevant)
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 
 	final Publisher<U> start;
-	
+
 	final Function<? super U, ? extends Publisher<V>> end;
-	
+
 	final Supplier<? extends Queue<Object>> drainQueueSupplier;
-	
+
 	final Supplier<? extends Queue<T>> processorQueueSupplier;
 
-	FluxWindowStartEnd(Publisher<? extends T> source, Publisher<U> start,
-			Function<? super U, ? extends Publisher<V>> end, Supplier<? extends Queue<Object>> drainQueueSupplier,
+	FluxWindowStartEnd(Publisher<? extends T> source,
+			Publisher<U> start,
+			Function<? super U, ? extends Publisher<V>> end,
+			Supplier<? extends Queue<Object>> drainQueueSupplier,
 			Supplier<? extends Queue<T>> processorQueueSupplier) {
 		super(source);
 		this.start = Objects.requireNonNull(start, "start");
 		this.end = Objects.requireNonNull(end, "end");
-		this.drainQueueSupplier = Objects.requireNonNull(drainQueueSupplier, "drainQueueSupplier");
-		this.processorQueueSupplier = Objects.requireNonNull(processorQueueSupplier, "processorQueueSupplier");
+		this.drainQueueSupplier =
+				Objects.requireNonNull(drainQueueSupplier, "drainQueueSupplier");
+		this.processorQueueSupplier =
+				Objects.requireNonNull(processorQueueSupplier, "processorQueueSupplier");
 	}
 
 	@Override
@@ -70,68 +76,79 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 
 		Queue<Object> q = drainQueueSupplier.get();
 
-		WindowStartEndMainSubscriber<T, U, V>
-				main = new WindowStartEndMainSubscriber<>(s, q, end, processorQueueSupplier);
-		
+		WindowStartEndMainSubscriber<T, U, V> main =
+				new WindowStartEndMainSubscriber<>(s, q, end, processorQueueSupplier);
+
 		s.onSubscribe(main);
-		
+
 		start.subscribe(main.starter);
-		
+
 		source.subscribe(main);
 	}
-	
+
 	static final class WindowStartEndMainSubscriber<T, U, V>
-	implements Subscriber<T>, Subscription, Disposable {
-		
+			implements Subscriber<T>, Subscription, Disposable {
+
 		final Subscriber<? super Flux<T>> actual;
-		
+
 		final Queue<Object> queue;
-		
+
 		final WindowStartEndStarter<T, U, V> starter;
-		
+
 		final Function<? super U, ? extends Publisher<V>> end;
-		
+
 		final Supplier<? extends Queue<T>> processorQueueSupplier;
-		
+
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<WindowStartEndMainSubscriber> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(WindowStartEndMainSubscriber.class, "requested");
-		
+				AtomicLongFieldUpdater.newUpdater(WindowStartEndMainSubscriber.class,
+						"requested");
+
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<WindowStartEndMainSubscriber> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(WindowStartEndMainSubscriber.class, "wip");
-		
+				AtomicIntegerFieldUpdater.newUpdater(WindowStartEndMainSubscriber.class,
+						"wip");
+
 		volatile boolean cancelled;
-		
+
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<WindowStartEndMainSubscriber, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(WindowStartEndMainSubscriber.class, Subscription.class,  "s");
-		
+		static final AtomicReferenceFieldUpdater<WindowStartEndMainSubscriber, Subscription>
+				S =
+				AtomicReferenceFieldUpdater.newUpdater(WindowStartEndMainSubscriber.class,
+						Subscription.class,
+						"s");
+
 		volatile int once;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<WindowStartEndMainSubscriber> ONCE =
-				AtomicIntegerFieldUpdater.newUpdater(WindowStartEndMainSubscriber.class, "once");
-		
+				AtomicIntegerFieldUpdater.newUpdater(WindowStartEndMainSubscriber.class,
+						"once");
+
 		volatile int open;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<WindowStartEndMainSubscriber> OPEN =
-				AtomicIntegerFieldUpdater.newUpdater(WindowStartEndMainSubscriber.class, "open");
-		
+				AtomicIntegerFieldUpdater.newUpdater(WindowStartEndMainSubscriber.class,
+						"open");
+
 		Set<WindowStartEndEnder<T, V>> windowEnds;
 
 		Set<UnicastProcessor<T>> windows;
 
 		volatile boolean mainDone;
-		
+
 		volatile Throwable error;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<WindowStartEndMainSubscriber, Throwable> ERROR =
-				AtomicReferenceFieldUpdater.newUpdater(WindowStartEndMainSubscriber.class, Throwable.class,  "error");
+		static final AtomicReferenceFieldUpdater<WindowStartEndMainSubscriber, Throwable>
+				ERROR = AtomicReferenceFieldUpdater.newUpdater(
+				WindowStartEndMainSubscriber.class,
+				Throwable.class,
+				"error");
 
-		WindowStartEndMainSubscriber(Subscriber<? super Flux<T>> actual, Queue<Object> queue,
+		WindowStartEndMainSubscriber(Subscriber<? super Flux<T>> actual,
+				Queue<Object> queue,
 				Function<? super U, ? extends Publisher<V>> end,
 				Supplier<? extends Queue<T>> processorQueueSupplier) {
 			this.actual = actual;
@@ -143,14 +160,14 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 			this.processorQueueSupplier = processorQueueSupplier;
 			this.open = 1;
 		}
-		
+
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.setOnce(S, this, s)) {
 				s.request(Long.MAX_VALUE);
 			}
 		}
-		
+
 		@Override
 		public void onNext(T t) {
 			synchronized (this) {
@@ -158,40 +175,41 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 			}
 			drain();
 		}
-		
+
 		@Override
 		public void onError(Throwable t) {
 			if (Exceptions.addThrowable(ERROR, this, t)) {
 				drain();
-			} else {
+			}
+			else {
 				Operators.onErrorDropped(t);
 			}
 		}
-		
+
 		@Override
 		public void onComplete() {
 			closeMain();
 			starter.cancel();
 			mainDone = true;
-			
+
 			drain();
 		}
-		
+
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
 				Operators.getAndAddCap(REQUESTED, this, n);
 			}
 		}
-		
+
 		@Override
 		public void cancel() {
 			cancelled = true;
-			
+
 			starter.cancel();
 			closeMain();
 		}
-		
+
 		void starterNext(U u) {
 			NewWindow<U> nw = new NewWindow<>(u);
 			synchronized (this) {
@@ -199,20 +217,21 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 			}
 			drain();
 		}
-		
+
 		void starterError(Throwable e) {
 			if (Exceptions.addThrowable(ERROR, this, e)) {
 				drain();
-			} else {
+			}
+			else {
 				Operators.onErrorDropped(e);
 			}
 		}
-		
+
 		void starterComplete() {
 			closeMain();
 			drain();
 		}
-		
+
 		void endSignal(WindowStartEndEnder<T, V> end) {
 			remove(end);
 			synchronized (this) {
@@ -220,28 +239,29 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 			}
 			drain();
 		}
-		
+
 		void endError(Throwable e) {
 			if (Exceptions.addThrowable(ERROR, this, e)) {
 				drain();
-			} else {
+			}
+			else {
 				Operators.onErrorDropped(e);
 			}
 		}
-		
+
 		void closeMain() {
 			if (ONCE.compareAndSet(this, 0, 1)) {
 				dispose();
 			}
 		}
-		
+
 		@Override
 		public void dispose() {
 			if (OPEN.decrementAndGet(this) == 0) {
 				Operators.terminate(S, this);
 			}
 		}
-		
+
 		boolean add(WindowStartEndEnder<T, V> ender) {
 			synchronized (starter) {
 				Set<WindowStartEndEnder<T, V>> set = windowEnds;
@@ -253,7 +273,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 			ender.cancel();
 			return false;
 		}
-		
+
 		void remove(WindowStartEndEnder<T, V> ender) {
 			synchronized (starter) {
 				Set<WindowStartEndEnder<T, V>> set = windowEnds;
@@ -262,7 +282,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 				}
 			}
 		}
-		
+
 		void removeAll() {
 			Set<WindowStartEndEnder<T, V>> set;
 			synchronized (starter) {
@@ -272,12 +292,12 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 				}
 				windowEnds = null;
 			}
-			
+
 			for (Subscription s : set) {
 				s.cancel();
 			}
 		}
-		
+
 		void drain() {
 			if (WIP.getAndIncrement(this) != 0) {
 				return;
@@ -285,12 +305,12 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 
 			final Subscriber<? super UnicastProcessor<T>> a = actual;
 			final Queue<Object> q = queue;
-			
+
 			int missed = 1;
-			
-			for (;;) {
-				
-				for (;;) {
+
+			for (; ; ) {
+
+				for (; ; ) {
 					Throwable e = error;
 					if (e != null) {
 						e = Exceptions.terminate(ERROR, this);
@@ -303,15 +323,15 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 								w.onError(e);
 							}
 							windows = null;
-							
+
 							q.clear();
-							
+
 							a.onError(e);
 						}
-						
+
 						return;
 					}
-					
+
 					if (mainDone || open == 0) {
 						removeAll();
 
@@ -319,38 +339,35 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 							w.onComplete();
 						}
 						windows = null;
-						
+
 						a.onComplete();
 						return;
 					}
-					
+
 					Object o = q.poll();
-					
+
 					if (o == null) {
 						break;
 					}
-					
+
 					if (o instanceof NewWindow) {
 						if (!cancelled && open != 0 && !mainDone) {
-							@SuppressWarnings("unchecked")
-							NewWindow<U> newWindow = (NewWindow<U>) o;
-							
+							@SuppressWarnings("unchecked") NewWindow<U> newWindow =
+									(NewWindow<U>) o;
+
 							Queue<T> pq = processorQueueSupplier.get();
 
 							Publisher<V> p;
-							
-							try {
-								p = end.apply(newWindow.value);
-							} catch (Throwable ex) {
-								Exceptions.addThrowable(ERROR, this, Operators
-										.onOperatorError(s, ex, newWindow.value));
-								continue;
-							}
 
-							if (p == null) {
-								Exceptions.addThrowable(ERROR, this, Operators
-										.onOperatorError(s, new NullPointerException
-												("The end returned a null publisher"),
+							try {
+								p = Objects.requireNonNull(end.apply(newWindow.value),
+										"The end returned a null publisher");
+							}
+							catch (Throwable ex) {
+								Exceptions.addThrowable(ERROR,
+										this,
+										Operators.onOperatorError(s,
+												ex,
 												newWindow.value));
 								continue;
 							}
@@ -358,42 +375,48 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 							OPEN.getAndIncrement(this);
 
 							UnicastProcessor<T> w = new UnicastProcessor<>(pq, this);
-							
-							WindowStartEndEnder<T, V> end = new WindowStartEndEnder<>(this, w);
-							
+
+							WindowStartEndEnder<T, V> end =
+									new WindowStartEndEnder<>(this, w);
+
 							windows.add(w);
-							
+
 							if (add(end)) {
-								
+
 								long r = requested;
 								if (r != 0L) {
 									a.onNext(w);
 									if (r != Long.MAX_VALUE) {
 										REQUESTED.decrementAndGet(this);
 									}
-								} else {
-									Exceptions.addThrowable(ERROR, this, Exceptions.failWithOverflow("Could not emit window due to lack of requests"));
+								}
+								else {
+									Exceptions.addThrowable(ERROR,
+											this,
+											Exceptions.failWithOverflow(
+													"Could not emit window due to lack of requests"));
 									continue;
 								}
-								
+
 								p.subscribe(end);
 							}
 						}
-					} else
-					if (o instanceof WindowStartEndEnder) {
-						@SuppressWarnings("unchecked") WindowStartEndEnder<T, V> end = (WindowStartEndEnder<T, V>) o;
-						
+					}
+					else if (o instanceof WindowStartEndEnder) {
+						@SuppressWarnings("unchecked") WindowStartEndEnder<T, V> end =
+								(WindowStartEndEnder<T, V>) o;
+
 						end.window.onComplete();
-					} else {
-						@SuppressWarnings("unchecked")
-						T v = (T)o;
+					}
+					else {
+						@SuppressWarnings("unchecked") T v = (T) o;
 
 						for (UnicastProcessor<T> w : windows) {
 							w.onNext(v);
 						}
 					}
 				}
-				
+
 				missed = WIP.addAndGet(this, -missed);
 				if (missed == 0) {
 					break;
@@ -401,13 +424,12 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 			}
 		}
 	}
-	
+
 	static final class WindowStartEndStarter<T, U, V>
-			extends Operators.DeferredSubscription
-	implements Subscriber<U> {
+			extends Operators.DeferredSubscription implements Subscriber<U> {
 
 		final WindowStartEndMainSubscriber<T, U, V> main;
-		
+
 		public WindowStartEndStarter(WindowStartEndMainSubscriber<T, U, V> main) {
 			this.main = main;
 		}
@@ -433,22 +455,22 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 		public void onComplete() {
 			main.starterComplete();
 		}
-		
+
 	}
-	
-	static final class WindowStartEndEnder<T, V>
-			extends Operators.DeferredSubscription
-	implements Subscriber<V> {
+
+	static final class WindowStartEndEnder<T, V> extends Operators.DeferredSubscription
+			implements Subscriber<V> {
 
 		final WindowStartEndMainSubscriber<T, ?, V> main;
 
 		final UnicastProcessor<T> window;
 
-		public WindowStartEndEnder(WindowStartEndMainSubscriber<T, ?, V> main, UnicastProcessor<T> window) {
+		public WindowStartEndEnder(WindowStartEndMainSubscriber<T, ?, V> main,
+				UnicastProcessor<T> window) {
 			this.main = main;
 			this.window = window;
 		}
-		
+
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (set(s)) {
@@ -459,7 +481,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 		@Override
 		public void onNext(V t) {
 			cancel();
-			
+
 			main.endSignal(this);
 		}
 
@@ -472,11 +494,13 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 		public void onComplete() {
 			main.endSignal(this);
 		}
-		
+
 	}
-	
+
 	static final class NewWindow<U> {
+
 		final U value;
+
 		public NewWindow(U value) {
 			this.value = value;
 		}

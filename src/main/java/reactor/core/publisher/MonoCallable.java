@@ -60,16 +60,10 @@ extends Mono<T>
 
 		T t;
 		try {
-			t = callable.call();
+			t = Objects.requireNonNull(callable.call(), "callable returned null");
 		}
 		catch (Throwable e) {
 			s.onError(Operators.onOperatorError(e));
-			return;
-		}
-
-		if (t == null) {
-			s.onError(Operators.onOperatorError(new NullPointerException("The " +
-					"callable returned null")));
 			return;
 		}
 
@@ -84,26 +78,20 @@ extends Mono<T>
 	@Override
 	public T blockMillis(long m) {
 		try {
-			T t = callable.call();
-			if(t == null){
-				throw new NullPointerException("The callable source returned null");
-			}
-			return t;
+			return Objects.requireNonNull(callable.call(),
+					"The callable source returned null");
 		}
 		catch (Throwable e) {
 			if (e instanceof RuntimeException) {
 				throw (RuntimeException)e;
 			}
-			throw Exceptions.bubble(e);
+			throw Exceptions.propagate(e);
 		}
 	}
 
 	@Override
 	public T call() throws Exception {
-		T t = callable.call();
-		if(t == null){
-			throw new NullPointerException("The callable source returned null");
-		}
-		return t;
+		return Objects.requireNonNull(callable.call(),
+				"The callable source returned null");
 	}
 }

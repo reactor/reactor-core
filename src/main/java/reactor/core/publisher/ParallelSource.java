@@ -64,11 +64,7 @@ final class ParallelSource<T> extends ParallelFlux<T> {
 	public int parallelism() {
 		return parallelism;
 	}
-	
-	@Override
-	public boolean isOrdered() {
-		return false;
-	}
+
 	
 	@Override
 	public void subscribe(Subscriber<? super T>[] subscribers) {

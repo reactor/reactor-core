@@ -35,13 +35,13 @@ import reactor.core.Exceptions;
  *
  * @param <T> the value type
  */
-final class ParallelSortedJoin<T> extends Flux<T> {
+final class ParallelMergeSort<T> extends Flux<T> {
 
 	final ParallelFlux<List<T>> source;
 
 	final Comparator<? super T> comparator;
 
-	public ParallelSortedJoin(ParallelFlux<List<T>> source,
+	ParallelMergeSort(ParallelFlux<List<T>> source,
 			Comparator<? super T> comparator) {
 		this.source = source;
 		this.comparator = comparator;
@@ -54,18 +54,18 @@ final class ParallelSortedJoin<T> extends Flux<T> {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		SortedJoinSubscription<T> parent =
-				new SortedJoinSubscription<>(s, source.parallelism(), comparator);
+		MergeSortSubscription<T> parent =
+				new MergeSortSubscription<>(s, source.parallelism(), comparator);
 		s.onSubscribe(parent);
 
 		source.subscribe(parent.subscribers);
 	}
 
-	static final class SortedJoinSubscription<T> implements Subscription {
+	static final class MergeSortSubscription<T> implements Subscription {
 
 		final Subscriber<? super T> actual;
 
-		final SortedJoinInnerSubscriber<T>[] subscribers;
+		final MergeSortInnerSubscriber<T>[] subscribers;
 
 		final List<T>[] lists;
 
@@ -75,42 +75,42 @@ final class ParallelSortedJoin<T> extends Flux<T> {
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<SortedJoinSubscription> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(SortedJoinSubscription.class, "wip");
+		static final AtomicIntegerFieldUpdater<MergeSortSubscription> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(MergeSortSubscription.class, "wip");
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<SortedJoinSubscription> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(SortedJoinSubscription.class,
+		static final AtomicLongFieldUpdater<MergeSortSubscription> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(MergeSortSubscription.class,
 						"requested");
 
 		volatile boolean cancelled;
 
 		volatile int remaining;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<SortedJoinSubscription> REMAINING =
-				AtomicIntegerFieldUpdater.newUpdater(SortedJoinSubscription.class,
+		static final AtomicIntegerFieldUpdater<MergeSortSubscription> REMAINING =
+				AtomicIntegerFieldUpdater.newUpdater(MergeSortSubscription.class,
 						"remaining");
 
 		volatile Throwable error;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<SortedJoinSubscription, Throwable>
+		static final AtomicReferenceFieldUpdater<MergeSortSubscription, Throwable>
 				ERROR =
-				AtomicReferenceFieldUpdater.newUpdater(SortedJoinSubscription.class,
+				AtomicReferenceFieldUpdater.newUpdater(MergeSortSubscription.class,
 						Throwable.class,
 						"error");
 
 		@SuppressWarnings("unchecked")
-		public SortedJoinSubscription(Subscriber<? super T> actual,
+		MergeSortSubscription(Subscriber<? super T> actual,
 				int n,
 				Comparator<? super T> comparator) {
 			this.actual = actual;
 			this.comparator = comparator;
 
-			SortedJoinInnerSubscriber<T>[] s = new SortedJoinInnerSubscriber[n];
+			MergeSortInnerSubscriber<T>[] s = new MergeSortInnerSubscriber[n];
 
 			for (int i = 0; i < n; i++) {
-				s[i] = new SortedJoinInnerSubscriber<>(this, i);
+				s[i] = new MergeSortInnerSubscriber<>(this, i);
 			}
 			this.subscribers = s;
 			this.lists = new List[n];
@@ -140,7 +140,7 @@ final class ParallelSortedJoin<T> extends Flux<T> {
 		}
 
 		void cancelAll() {
-			for (SortedJoinInnerSubscriber<T> s : subscribers) {
+			for (MergeSortInnerSubscriber<T> s : subscribers) {
 				s.cancel();
 			}
 		}
@@ -152,12 +152,13 @@ final class ParallelSortedJoin<T> extends Flux<T> {
 			}
 		}
 
-		void innerError(Throwable e) {
-			if (Exceptions.addThrowable(ERROR, this, e)) {
+		void innerError(Throwable ex) {
+			if(ERROR.compareAndSet(this, null, ex)){
+				cancelAll();
 				drain();
 			}
-			else {
-				Operators.onErrorDropped(e);
+			else if(error != ex) {
+				Operators.onErrorDropped(ex);
 			}
 		}
 
@@ -185,7 +186,6 @@ final class ParallelSortedJoin<T> extends Flux<T> {
 
 					Throwable ex = error;
 					if (ex != null) {
-						ex = Exceptions.terminate(ERROR, this);
 						cancelAll();
 						Arrays.fill(lists, null);
 						a.onError(ex);
@@ -235,7 +235,6 @@ final class ParallelSortedJoin<T> extends Flux<T> {
 
 					Throwable ex = error;
 					if (ex != null) {
-						ex = Exceptions.terminate(ERROR, this);
 						cancelAll();
 						Arrays.fill(lists, null);
 						a.onError(ex);
@@ -276,21 +275,21 @@ final class ParallelSortedJoin<T> extends Flux<T> {
 		}
 	}
 
-	static final class SortedJoinInnerSubscriber<T> implements Subscriber<List<T>> {
+	static final class MergeSortInnerSubscriber<T> implements Subscriber<List<T>> {
 
-		final SortedJoinSubscription<T> parent;
+		final MergeSortSubscription<T> parent;
 
 		final int index;
 
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<SortedJoinInnerSubscriber, Subscription>
+		static final AtomicReferenceFieldUpdater<MergeSortInnerSubscriber, Subscription>
 				S =
-				AtomicReferenceFieldUpdater.newUpdater(SortedJoinInnerSubscriber.class,
+				AtomicReferenceFieldUpdater.newUpdater(MergeSortInnerSubscriber.class,
 						Subscription.class,
 						"s");
 
-		public SortedJoinInnerSubscriber(SortedJoinSubscription<T> parent, int index) {
+		MergeSortInnerSubscriber(MergeSortSubscription<T> parent, int index) {
 			this.parent = parent;
 			this.index = index;
 		}

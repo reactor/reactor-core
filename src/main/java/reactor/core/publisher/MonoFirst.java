@@ -85,16 +85,10 @@ final class MonoFirst<T> extends Mono<T> implements MultiReceiver {
 			Iterator<? extends Publisher<? extends T>> it;
 
 			try {
-				it = iterable.iterator();
+				it = Objects.requireNonNull(iterable.iterator(), "The iterator returned is null");
 			}
 			catch (Throwable e) {
 				Operators.error(s, Operators.onOperatorError(e));
-				return;
-			}
-
-			if (it == null) {
-				Operators.error(s,
-						new NullPointerException("The iterator returned is null"));
 				return;
 			}
 
@@ -117,17 +111,11 @@ final class MonoFirst<T> extends Mono<T> implements MultiReceiver {
 				Publisher<? extends T> p;
 
 				try {
-					p = it.next();
+					p = Objects.requireNonNull(it.next(),
+					"The Publisher returned by the iterator is null");
 				}
 				catch (Throwable e) {
 					Operators.error(s, Operators.onOperatorError(e));
-					return;
-				}
-
-				if (p == null) {
-					Operators.error(s,
-							new NullPointerException(
-									"The Publisher returned by the iterator is " + "null"));
 					return;
 				}
 
@@ -153,7 +141,7 @@ final class MonoFirst<T> extends Mono<T> implements MultiReceiver {
 
 			if (p == null) {
 				Operators.error(s,
-						new NullPointerException("The single source Publisher is null"));
+						Operators.onOperatorError(new NullPointerException("The single source Publisher is null")));
 			}
 			else {
 				p.subscribe(s);

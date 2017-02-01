@@ -44,7 +44,7 @@ final class FluxAutoConnectFuseable<T> extends Flux<T>
 			AtomicIntegerFieldUpdater.newUpdater(FluxAutoConnectFuseable.class, "remaining");
 
 
-	public FluxAutoConnectFuseable(ConnectableFlux<? extends T> source,
+	FluxAutoConnectFuseable(ConnectableFlux<? extends T> source,
 			int n, Consumer<? super Disposable> cancelSupport) {
 		if (n <= 0) {
 			throw new IllegalArgumentException("n > required but it was " + n);
@@ -60,6 +60,11 @@ final class FluxAutoConnectFuseable<T> extends Flux<T>
 		if (remaining > 0 && REMAINING.decrementAndGet(this) == 0) {
 			source.connect(cancelSupport);
 		}
+	}
+
+	@Override
+	public long getPrefetch() {
+		return source.getPrefetch();
 	}
 
 	@Override

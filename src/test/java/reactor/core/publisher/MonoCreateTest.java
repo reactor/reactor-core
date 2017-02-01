@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
+import org.reactivestreams.Subscription;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
@@ -50,6 +51,7 @@ public class MonoCreateTest {
 		AtomicInteger cancelled = new AtomicInteger();
 		StepVerifier.create(Mono.create(s -> s.setCancellation(cancelled::getAndIncrement)))
 		            .thenAwait()
+		            .consumeSubscriptionWith(Subscription::cancel)
 		            .thenCancel()
 		            .verify();
 		assertThat(cancelled.get()).isEqualTo(1);

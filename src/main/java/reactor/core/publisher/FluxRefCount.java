@@ -15,7 +15,6 @@
  */
 package reactor.core.publisher;
 
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -25,8 +24,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
-import reactor.core.Loopback;
-import reactor.core.MultiProducer;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 
@@ -38,7 +35,7 @@ import reactor.core.Receiver;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxRefCount<T> extends Flux<T>
-		implements Receiver, Loopback, Fuseable {
+		implements Receiver, Producer, Fuseable {
 
 	final ConnectableFlux<? extends T> source;
 	
@@ -49,12 +46,17 @@ final class FluxRefCount<T> extends Flux<T>
 	static final AtomicReferenceFieldUpdater<FluxRefCount, State> CONNECTION =
 			AtomicReferenceFieldUpdater.newUpdater(FluxRefCount.class, State.class, "connection");
 
-	public FluxRefCount(ConnectableFlux<? extends T> source, int n) {
+	FluxRefCount(ConnectableFlux<? extends T> source, int n) {
 		if (n <= 0) {
 			throw new IllegalArgumentException("n > 0 required but it was " + n);
 		}
 		this.source = Objects.requireNonNull(source, "source");
 		this.n = n;
+	}
+
+	@Override
+	public long getPrefetch() {
+		return source.getPrefetch();
 	}
 	
 	@Override
@@ -80,7 +82,7 @@ final class FluxRefCount<T> extends Flux<T>
 
 
 	@Override
-	public Object connectedOutput() {
+	public Object downstream() {
 		return connection;
 	}
 
@@ -89,7 +91,7 @@ final class FluxRefCount<T> extends Flux<T>
 		return source;
 	}
 
-	static final class State<T> implements Consumer<Disposable>, MultiProducer, Receiver {
+	static final class State<T> implements Consumer<Disposable>, Receiver {
 		
 		final int n;
 		
@@ -105,9 +107,7 @@ final class FluxRefCount<T> extends Flux<T>
 		static final AtomicReferenceFieldUpdater<State, Disposable> DISCONNECT =
 				AtomicReferenceFieldUpdater.newUpdater(State.class, Disposable.class, "disconnect");
 		
-		static final Disposable DISCONNECTED = () -> { };
-
-		public State(int n, FluxRefCount<? extends T> parent) {
+		State(int n, FluxRefCount<? extends T> parent) {
 			this.n = n;
 			this.parent = parent;
 		}
@@ -132,16 +132,16 @@ final class FluxRefCount<T> extends Flux<T>
 		
 		void doDisconnect() {
 			Disposable a = disconnect;
-			if (a != DISCONNECTED) {
-				a = DISCONNECT.getAndSet(this, DISCONNECTED);
-				if (a != null && a != DISCONNECTED) {
+			if (a != Flux.CANCELLED) {
+				a = DISCONNECT.getAndSet(this, Flux.CANCELLED);
+				if (a != null && a != Flux.CANCELLED) {
 					a.dispose();
 				}
 			}
 		}
 		
 		boolean isDisconnected() {
-			return disconnect == DISCONNECTED;
+			return disconnect == Flux.CANCELLED;
 		}
 		
 		void innerCancelled() {
@@ -152,19 +152,9 @@ final class FluxRefCount<T> extends Flux<T>
 		
 		void upstreamFinished() {
 			Disposable a = disconnect;
-			if (a != DISCONNECTED) {
-				DISCONNECT.getAndSet(this, DISCONNECTED);
+			if (a != Flux.CANCELLED) {
+				DISCONNECT.getAndSet(this, Flux.CANCELLED);
 			}
-		}
-
-		@Override
-		public Iterator<?> downstreams() {
-			return null;
-		}
-
-		@Override
-		public long downstreamCount() {
-			return subscribers;
 		}
 
 		@Override
@@ -175,7 +165,7 @@ final class FluxRefCount<T> extends Flux<T>
 		static final class InnerSubscriber<T> implements Subscriber<T>,
 		                                                 QueueSubscription<T>,
 		                                                 Receiver,
-		                                                 Producer, Loopback {
+		                                                 Producer {
 
 			final Subscriber<? super T> actual;
 			
@@ -184,7 +174,7 @@ final class FluxRefCount<T> extends Flux<T>
 			Subscription s;
 			QueueSubscription<T> qs;
 			
-			public InnerSubscriber(Subscriber<? super T> actual, State<T> parent) {
+			InnerSubscriber(Subscriber<? super T> actual, State<T> parent) {
 				this.actual = actual;
 				this.parent = parent;
 			}
@@ -232,16 +222,6 @@ final class FluxRefCount<T> extends Flux<T>
 
 			@Override
 			public Object upstream() {
-				return s;
-			}
-
-			@Override
-			public Object connectedInput() {
-				return null;
-			}
-
-			@Override
-			public Object connectedOutput() {
 				return s;
 			}
 

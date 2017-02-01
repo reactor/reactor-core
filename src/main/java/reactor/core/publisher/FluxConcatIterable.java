@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Iterator;
@@ -27,10 +28,10 @@ import reactor.core.MultiReceiver;
  * Concatenates a fixed array of Publishers' values.
  *
  * @param <T> the value type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxConcatIterable<T> extends Flux<T>
-		implements MultiReceiver {
+final class FluxConcatIterable<T> extends Flux<T> implements MultiReceiver {
 
 	final Iterable<? extends Publisher<? extends T>> iterable;
 
@@ -49,15 +50,11 @@ final class FluxConcatIterable<T> extends Flux<T>
 		Iterator<? extends Publisher<? extends T>> it;
 
 		try {
-			it = iterable.iterator();
-		} catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
-			return;
+			it = Objects.requireNonNull(iterable.iterator(),
+					"The Iterator returned is null");
 		}
-
-		if (it == null) {
-			Operators.error(s, Operators.onOperatorError(new
-					NullPointerException("The Iterator returned is null")));
+		catch (Throwable e) {
+			Operators.error(s, Operators.onOperatorError(e));
 			return;
 		}
 
@@ -78,12 +75,13 @@ final class FluxConcatIterable<T> extends Flux<T>
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<ConcatIterableSubscriber> WIP =
-		  AtomicIntegerFieldUpdater.newUpdater(ConcatIterableSubscriber.class, "wip");
+				AtomicIntegerFieldUpdater.newUpdater(ConcatIterableSubscriber.class,
+						"wip");
 
 		long produced;
 
-		public ConcatIterableSubscriber(Subscriber<? super T> actual, Iterator<? extends Publisher<? extends
-		  T>> it) {
+		public ConcatIterableSubscriber(Subscriber<? super T> actual,
+				Iterator<? extends Publisher<? extends T>> it) {
 			super(actual);
 			this.it = it;
 		}
@@ -108,7 +106,8 @@ final class FluxConcatIterable<T> extends Flux<T>
 
 					try {
 						b = a.hasNext();
-					} catch (Throwable e) {
+					}
+					catch (Throwable e) {
 						onError(Operators.onOperatorError(this, e));
 						return;
 					}
@@ -116,7 +115,6 @@ final class FluxConcatIterable<T> extends Flux<T>
 					if (isCancelled()) {
 						return;
 					}
-
 
 					if (!b) {
 						subscriber.onComplete();
@@ -126,20 +124,15 @@ final class FluxConcatIterable<T> extends Flux<T>
 					Publisher<? extends T> p;
 
 					try {
-						p = it.next();
-					} catch (Throwable e) {
+						p = Objects.requireNonNull(it.next(),
+								"The Publisher returned by the iterator is null");
+					}
+					catch (Throwable e) {
 						subscriber.onError(Operators.onOperatorError(this, e));
 						return;
 					}
 
 					if (isCancelled()) {
-						return;
-					}
-
-					if (p == null) {
-						subscriber.onError(Operators.onOperatorError(this, new
-								NullPointerException("The Publisher returned by the " +
-								"iterator is null")));
 						return;
 					}
 
@@ -155,7 +148,8 @@ final class FluxConcatIterable<T> extends Flux<T>
 						return;
 					}
 
-				} while (WIP.decrementAndGet(this) != 0);
+				}
+				while (WIP.decrementAndGet(this) != 0);
 			}
 
 		}

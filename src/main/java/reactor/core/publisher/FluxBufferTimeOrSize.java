@@ -87,7 +87,8 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 			synchronized (this) {
 				C v = values;
 				if(v == null) {
-					v = bufferSupplier.get();
+					v = Objects.requireNonNull(bufferSupplier.get(),
+							"The bufferSupplier returned a null buffer");
 					values = v;
 				}
 				v.add(value);

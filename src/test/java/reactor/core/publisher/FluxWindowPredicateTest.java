@@ -578,67 +578,6 @@ public class FluxWindowPredicateTest extends AbstractFluxOperatorTest<String, Gr
 		assertThat(sp1.hasDownstreams()).isFalse();
 	}
 
-	@Test
-	@SuppressWarnings("unchecked")
-	public void innerQueueSupplierThrowsLater() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		int count[] = {1};
-		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(
-				sp1, QueueSupplier.small(),
-				() -> {
-					if (count[0]-- > 0) {
-						return QueueSupplier.<Integer>small().get();
-					}
-					throw new RuntimeException("supplier failure");
-				},
-				QueueSupplier.SMALL_BUFFER_SIZE,
-				i -> i % 3 == 0,
-				Mode.UNTIL);
-
-		assertThat(sp1.hasDownstreams()).isFalse();
-
-		StepVerifier.create(windowUntil.flatMap(Flux::materialize))
-		            .then(() -> sp1.onNext(1))
-		            .expectNext(Signal.next(1))
-		            .then(() -> sp1.onNext(2))
-		            .expectNext(Signal.next(2))
-		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(() -> sp1.onNext(3))
-		            .expectNext(Signal.next(3), Signal.complete()) //1st window closed, no new window yet, fails
-		            .expectErrorMessage("supplier failure")
-		            .verify();
-	}
-
-	@Test
-	@SuppressWarnings("unchecked")
-	public void innerQueueSupplierReturnsNullLater() {
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		int count[] = {1};
-		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(
-				sp1, QueueSupplier.small(),
-				() -> {
-					if (count[0]-- > 0) {
-						return QueueSupplier.<Integer>small().get();
-					}
-					return null;
-				},
-				QueueSupplier.SMALL_BUFFER_SIZE,
-				i -> i % 3 == 0,
-				Mode.UNTIL);
-
-		assertThat(sp1.hasDownstreams()).isFalse();
-
-		StepVerifier.create(windowUntil.flatMap(Flux::materialize))
-		            .then(() -> sp1.onNext(1))
-		            .expectNext(Signal.next(1))
-		            .then(() -> sp1.onNext(2))
-		            .expectNext(Signal.next(2))
-		            .expectNoEvent(Duration.ofMillis(10))
-		            .then(() -> sp1.onNext(3))
-		            .expectNext(Signal.next(3), Signal.complete()) //1st window closed, no new window yet, fails
-		            .expectErrorMessage("The groupQueueSupplier returned a null queue for window \'3\'")
-		            .verify();
-	}
 
 	@Test
 	public void whileRequestOneByOne() {
@@ -749,14 +688,14 @@ public class FluxWindowPredicateTest extends AbstractFluxOperatorTest<String, Gr
 
 	@Test
 	public void prefetchIntegerMaxIsRequestUnboundedUntil() {
-		TestPublisher tp = TestPublisher.create();
+		TestPublisher<?> tp = TestPublisher.create();
 		tp.flux().windowUntil(s -> true, true, Integer.MAX_VALUE).subscribe();
 		tp.assertMinRequested(Long.MAX_VALUE);
 	}
 
 	@Test
 	public void prefetchIntegerMaxIsRequestUnboundedWhile() {
-		TestPublisher tp = TestPublisher.create();
+		TestPublisher<?> tp = TestPublisher.create();
 		tp.flux().windowWhile(s -> true, Integer.MAX_VALUE).subscribe();
 		tp.assertMinRequested(Long.MAX_VALUE);
 	}

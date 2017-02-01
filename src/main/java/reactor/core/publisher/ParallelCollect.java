@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
@@ -64,17 +65,11 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Fuseable {
 			C initialValue;
 
 			try {
-				initialValue = initialCollection.get();
+				initialValue = Objects.requireNonNull(initialCollection.get(),
+						"The initialSupplier returned a null value");
 			}
 			catch (Throwable ex) {
 				reportError(subscribers, Operators.onOperatorError(ex));
-				return;
-			}
-
-			if (initialValue == null) {
-				reportError(subscribers,
-						new NullPointerException(
-								"The initialSupplier returned a null value"));
 				return;
 			}
 
@@ -95,11 +90,6 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Fuseable {
 	@Override
 	public int parallelism() {
 		return source.parallelism();
-	}
-
-	@Override
-	public boolean isOrdered() {
-		return false;
 	}
 
 	static final class ParallelCollectSubscriber<T, C>
