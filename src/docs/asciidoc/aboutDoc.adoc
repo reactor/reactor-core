@@ -38,4 +38,7 @@ https://github.com/reactor/reactor-core/blob/master/CONTRIBUTING.md[get involved
  relevant operator, maybe the <<which-operator>> section in there could help?
  ** Learn more about Reactor's reactive types in the "<<flux>>" and "<<mono>>" sections
  ** Switch threading contexts using <<schedulers,a Scheduler>>.
+ ** Learn how to handle errors in the <<error.handling>> section.
  * Unit testing? Yes it is possible with the `reactor-test` project! See <<testing>>.
+ * <<producing>> is possible for more advanced creation of reactive sources.
+ 
