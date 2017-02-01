@@ -28,11 +28,11 @@ For instance, you could simply use an `int` as the state:
 [source,java]
 ----
 Flux<String> flux = Flux.generate(
-    () -> 0, <1>
+    () -> 0, // <1>
     (state, sink) -> {
-      sink.next("3 x " + state + " = " + 3*state); <2>
-      if (state == 10) sink.complete(); <3>
-      return state + 1; <4>
+      sink.next("3 x " + state + " = " + 3*state); // <2>
+      if (state == 10) sink.complete(); // <3>
+      return state + 1; // <4>
     });
 ----
 <1> we supply the initial state value of 0
@@ -63,12 +63,12 @@ using a single `AtomicLong` as the state, mutating it on each round:
 [source,java]
 ----
 Flux<String> flux = Flux.generate(
-    AtomicLong::new, <1>
+    AtomicLong::new, // <1>
     (state, sink) -> {
-      long i = state.getAndIncrement(); <2>
+      long i = state.getAndIncrement(); // <2>
       sink.next("3 x " + i + " = " + 3*i);
       if (i == 10) sink.complete();
-      return state; <3>
+      return state; // <3>
     });
 ----
 <1> this time we generate a mutable object as the state
@@ -110,17 +110,17 @@ You can use `create` to bridge this into a `Flux<T>`:
 [source,java]
 ----
 Flux<String> bridge = Flux.create(sink -> {
-    myEventProcessor.register( <4>
-      new MyEventListener<String>() { <1>
+    myEventProcessor.register( // <4>
+      new MyEventListener<String>() { // <1>
 
         public void onDataChunk(List<String> chunk) {
           for(String s : chunk) {
-            sink.next(s); <2>
+            sink.next(s); // <2>
           }
         }
 
         public void processComplete() {
-            sink.complete(); <3>
+            sink.complete(); // <3>
         }
     });
 });
@@ -182,9 +182,9 @@ Can be applied safely to a source of integers:
 ----
 Flux<String> alphabet = Flux.just(-1, 30, 13, 9, 20)
     .handle((i, sink) -> {
-        String letter = alphabet(i); <1>
-        if (letter != null) <2>
-            sink.next(letter); <3>
+        String letter = alphabet(i); // <1>
+        if (letter != null) // <2>
+            sink.next(letter); // <3>
     });
 
 alphabet.subscribe(System.out::println);
