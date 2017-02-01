@@ -194,7 +194,8 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 						assertThat(t.isCancelled()).isFalse();
 
 						if (scenario.prefetch() != UNSPECIFIED) {
-							assertThat(t.getCapacity()).isEqualTo(scenario.prefetch());
+							assertThat(Math.min(Integer.MAX_VALUE,t.getCapacity()))
+									.isEqualTo(scenario.prefetch());
 							if (t.expectedFromUpstream() != UNSPECIFIED &&
 									t.expectedFromUpstream() != t.limit()) {
 								assertThat(t.expectedFromUpstream()).isEqualTo(0);
@@ -279,7 +280,9 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 							assertThat(t.isStarted()).isFalse();
 							assertThat(t.isCancelled()).isFalse();
 							if (scenario.prefetch() != UNSPECIFIED) {
-								assertThat(t.getCapacity()).isEqualTo(scenario.prefetch());
+								assertThat(Math.min(Integer.MAX_VALUE,t.getCapacity()))
+								               .isEqualTo
+										(scenario.prefetch());
 								if (t.expectedFromUpstream() != UNSPECIFIED && t.limit
 										() != t.expectedFromUpstream()) {
 									assertThat(t.expectedFromUpstream()).isEqualTo(0);

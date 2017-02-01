@@ -17,6 +17,8 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
 
 import org.junit.After;
 import org.junit.Before;
@@ -24,9 +26,38 @@ import org.junit.Test;
 import reactor.core.Fuseable;
 import reactor.test.StepVerifier;
 import reactor.test.scheduler.VirtualTimeScheduler;
+import reactor.util.concurrent.QueueSupplier;
 import reactor.util.function.Tuple2;
 
-public class FluxReplayTest {
+public class FluxReplayTest extends AbstractFluxOperatorTest<String, String> {
+
+	@Override
+	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
+		return defaultOptions.prefetch(Integer.MAX_VALUE)
+				.shouldAssertPostTerminateState(false);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+		return Arrays.asList(
+				scenario(f -> f.replay().autoConnect()),
+
+				scenario(f -> f.replay().refCount())
+		);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_touchAndAssertState() {
+		return Arrays.asList(
+				scenario(f -> f.replay().autoConnect())
+		);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void failPrefetch(){
+		Flux.never()
+		    .replay( -1);
+	}
 
 	VirtualTimeScheduler vts;
 

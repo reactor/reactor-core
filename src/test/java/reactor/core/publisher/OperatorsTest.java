@@ -247,4 +247,9 @@ public class OperatorsTest {
 		assertThat(p.getError()).hasMessage(Exceptions.nullOrNegativeRequestException(-1)
 		                                              .getMessage());
 	}
+
+	@Test
+	public void noopFluxCancelled(){
+		Flux.CANCELLED.dispose(); //noop
+	}
 }

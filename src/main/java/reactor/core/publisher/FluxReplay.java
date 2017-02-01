@@ -62,11 +62,19 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			TimedScheduler scheduler) {
 		this.source = Objects.requireNonNull(source, "source");
 		this.history = history;
+		if(history < 0){
+			throw new IllegalArgumentException("History cannot be negativ : "+history);
+		}
 		if (scheduler != null && ttl < 0) {
 			throw new IllegalArgumentException("TTL cannot be negative : " + ttl);
 		}
 		this.ttl = ttl;
 		this.scheduler = scheduler;
+	}
+
+	@Override
+	public long getPrefetch() {
+		return history;
 	}
 
 	@Override
@@ -402,7 +410,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 	}
 
 	static final class InnerSubscription<T>
-			implements ReplayProcessor.ReplaySubscription<T>, Receiver {
+			implements ReplayProcessor.ReplaySubscription<T> {
 
 		final Subscriber<? super T> actual;
 
@@ -433,7 +441,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 				AtomicIntegerFieldUpdater.newUpdater(InnerSubscription.class,
 						"cancelled");
 
-		public InnerSubscription(Subscriber<? super T> actual) {
+		InnerSubscription(Subscriber<? super T> actual) {
 			this.actual = actual;
 		}
 
@@ -474,13 +482,18 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		@Override
-		public Subscriber<? super T> downstream() {
-			return actual;
+		public boolean isStarted() {
+			return !isCancelled();
 		}
 
 		@Override
-		public Object upstream() {
-			return parent;
+		public boolean isTerminated() {
+			return parent != null && parent.isTerminated();
+		}
+
+		@Override
+		public Subscriber<? super T> downstream() {
+			return actual;
 		}
 
 		@Override
