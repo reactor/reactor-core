@@ -143,19 +143,19 @@ class, which offers convenience methods for that:
 Flux<String> source = someStringSource();
 
 source.map(String::toUpperCase)
-      .subscribe(new BaseSubscriber<String>() { <1>
-          @Override
-          protected void hookOnSubscribe(Subscription subscription) {
-            <2>
-	          request(1); <3>
-          }
+      .subscribe(new BaseSubscriber<String>() { // <1>
+	      @Override
+	      protected void hookOnSubscribe(Subscription subscription) {
+		      // <2>
+		      request(1); // <3>
+	      }
 
-          @Override
-          protected void hookOnNext(String value) {
-            request(1); <4>
-          }
+	      @Override
+	      protected void hookOnNext(String value) {
+		      request(1); // <4>
+	      }
 
-          <5>
+	      //<5>
       });
 ----
 <1> The `BaseSubscriber` is an abstract class so we create an anonymous
@@ -278,10 +278,10 @@ execution skips to the catch in case an Exception is thrown:
 [source,java]
 ----
 Flux<String> s = Flux.range(1, 10)
-    .map(v -> doSomethingDangerous(v)) <1>
-    .map(v -> doSecondTransform(v)); <2>
-s.subscribe(value -> System.out.println("RECEIVED " + value), <3>
-    error -> System.err.println("CAUGHT " + error) <4>
+    .map(v -> doSomethingDangerous(v)) // <1>
+    .map(v -> doSecondTransform(v)); // <2>
+s.subscribe(value -> System.out.println("RECEIVED " + value), // <3>
+    error -> System.err.println("CAUGHT " + error) // <4>
 );
 ----
 <1> a transformation is performed that can throw an exception.
@@ -294,12 +294,12 @@ This is conceptually similar to the following try/catch block:
 ----
 try {
   for (int i = 1; i < 11; i++) {
-    String v1 = doSomethingDangerous(i); <1>
-    String v2 = doSecondTransform(v1); <2>
+    String v1 = doSomethingDangerous(i); // <1>
+    String v2 = doSecondTransform(v1); // <2>
     System.out.println("RECEIVED " + v2);
   }
 } catch (Throwable t) {
-  System.err.println("CAUGHT " + t); <3>
+  System.err.println("CAUGHT " + t); // <3>
 }
 ----
 <1> if an exception is thrown here...
@@ -345,8 +345,8 @@ be a bit more out of date but is more reliable, you could do the following:
 ----
 Flux.just("key1", "key2")
     .flatMap(k ->
-        callExternalService(k) <1>
-          .switchOnError(getFromCache(k)) <2>
+        callExternalService(k) // <1>
+          .switchOnError(getFromCache(k)) // <2>
     );
 ----
 <1> for each key, we asynchronously call the external service.
@@ -363,13 +363,13 @@ It takes a `Function` that maps the error to the fallback sequence to switch to:
 Flux.just("timeout1", "unknown", "key2")
     .flatMap(k ->
         callExternalService(k)
-          .onErrorResumeWith(error -> { <1>
-            if (error instanceof TimeoutException) <2>
+          .onErrorResumeWith(error -> { // <1>
+            if (error instanceof TimeoutException) // <2>
               return getFromCache(k);
-            else if (error instanceof UnknownKeyException)  <3>
+            else if (error instanceof UnknownKeyException)  // <3>
               return registerNewEntry(k, "DEFAULT");
             else
-              return Flux.error(error); <4>
+              return Flux.error(error); // <4>
           })
     );
 ----
@@ -422,29 +422,50 @@ be done either via a Java 7 "try-with-resources" construct or the use of the
 and `doFinally`:
 [source,java]
 ----
+AtomicBoolean isDisposed = new AtomicBoolean();
+Disposable disposableInstance = new Disposable() {
+	@Override
+	public void dispose() {
+		isDisposed.set(true); // <4>
+	}
+
+	@Override
+	public String toString() {
+		return "DISPOSABLE";
+	}
+};
+
+Flux<String> flux =
 Flux.using(
-    () -> getDisposableResource(), <1>
-    disposable -> Flux.just(disposable.toString()), <2>
-    Disposable::dipose <2>
+		() -> disposableInstance, // <1>
+		disposable -> Flux.just(disposable.toString()), // <2>
+		Disposable::dispose // <3>
 );
 ----
-<1> The first lambda generates the resource. Let's assume this returns a `Disposable`.
+<1> The first lambda generates the resource. Here we return our mock `Disposable`.
 <2> The second lambda processes the resource, returning a `Flux<T>`.
 <3> The third lambda is called when the flux from 2) terminates or is cancelled, to clean up resources.
+<4> After subscription and execution of the sequence, the `isDisposed` atomic boolean would become `true`.
 
 On the other hand, `doFinally` is about side-effects that you want to be executed
 whenever the sequence terminates, either with onComplete, onError or a cancel.
 It gives you a hint as to what kind of termination triggered the side-effect:
 [source,java]
 ----
-Flux.just("foo")
+LongAdder statsCancel = new LongAdder(); // <1>
+
+Flux<String> flux =
+Flux.just("foo", "bar")
     .doFinally(type -> {
-      if (type == SignalType.CANCEL) <1>
-        Statistics.incrementCancelCount(); <2>
-    });
+      if (type == SignalType.CANCEL) // <2>
+        statsCancel.increment(); // <3>
+    })
+    .take(1); // <4>
 ----
-<1> `doFinally` consumes a `SignalType` for the type of termination.
-<2> here we increment statistics in case of cancellation only.
+<1> We assume we want to gather statistics, here we use a `LongAdder`.
+<2> `doFinally` consumes a `SignalType` for the type of termination.
+<3> Here we increment statistics in case of cancellation only.
+<4> `take(1)` will cancel after 1 item is emitted.
 
 In order to demonstrate that all these operators don't prevent the upstream
 original sequence to terminate when the error happens, let's take a more visual
@@ -452,15 +473,16 @@ example with a `Flux.interval`. The interval operator ticks every x units of tim
 with an increasing `Long`:
 [source,java]
 ----
+Flux<String> flux =
 Flux.intervalMillis(250)
     .map(input -> {
-        if (input < 3) return "tick " + input;
-        throw new RuntimeException("boom");
+	    if (input < 3) return "tick " + input;
+	    throw new RuntimeException("boom");
     })
-    .onErrorReturn("Uh oh")
-    .subscribe(System.out::println);
+    .onErrorReturn("Uh oh");
 
-Thread.sleep(2100); <1>
+flux.subscribe(System.out::println);
+Thread.sleep(2100); // <1>
 ----
 <1> Note that `intervalMillis` executes on the *timer* `Scheduler` by default.
 Assuming we'd want to run that example in a main class, we add a sleep here so
@@ -492,12 +514,12 @@ Flux.intervalMillis(250)
         if (input < 3) return "tick " + input;
         throw new RuntimeException("boom");
     })
-    .elapsed() <1>
+    .elapsed() // <1>
     .retry(1)
     .subscribe(System.out::println,
-      System.err::println); <2>
+      System.err::println); // <2>
 
-Thread.sleep(2100); <3>
+Thread.sleep(2100); // <3>
 ----
 <1> `elapsed` will associate each value with the duration since previous value
 was emitted.
