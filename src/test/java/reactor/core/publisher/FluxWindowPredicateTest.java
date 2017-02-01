@@ -688,14 +688,14 @@ public class FluxWindowPredicateTest extends AbstractFluxOperatorTest<String, Gr
 
 	@Test
 	public void prefetchIntegerMaxIsRequestUnboundedUntil() {
-		TestPublisher tp = TestPublisher.create();
+		TestPublisher<?> tp = TestPublisher.create();
 		tp.flux().windowUntil(s -> true, true, Integer.MAX_VALUE).subscribe();
 		tp.assertMinRequested(Long.MAX_VALUE);
 	}
 
 	@Test
 	public void prefetchIntegerMaxIsRequestUnboundedWhile() {
-		TestPublisher tp = TestPublisher.create();
+		TestPublisher<?> tp = TestPublisher.create();
 		tp.flux().windowWhile(s -> true, Integer.MAX_VALUE).subscribe();
 		tp.assertMinRequested(Long.MAX_VALUE);
 	}

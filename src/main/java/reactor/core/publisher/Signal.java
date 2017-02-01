@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Objects;
@@ -27,9 +28,9 @@ import org.reactivestreams.Subscription;
  * There are 4 distinct signals and their possible sequence is defined as such:
  * onError | (onSubscribe onNext* (onError | onComplete)?)
  *
- * @author Stephane Maldini
- * 
  * @param <T> the value type
+ *
+ * @author Stephane Maldini
  */
 public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super T>> {
 
@@ -38,6 +39,7 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 
 	/**
 	 * Creates and returns a {@code Signal} of variety {@code Type.COMPLETE}.
+	 *
 	 * @param <T> the value type
 	 *
 	 * @return an {@code OnCompleted} variety of {@code Signal}
@@ -48,10 +50,12 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	}
 
 	/**
-	 * Creates and returns a {@code Signal} of variety {@code Type.FAILED}, and assigns it an error.
+	 * Creates and returns a {@code Signal} of variety {@code Type.FAILED}, and assigns it
+	 * an error.
 	 *
 	 * @param <T> the value type
 	 * @param e the error to assign to the signal
+	 *
 	 * @return an {@code OnError} variety of {@code Signal}
 	 */
 	public static <T> Signal<T> error(Throwable e) {
@@ -59,10 +63,12 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	}
 
 	/**
-	 * Creates and returns a {@code Signal} of variety {@code Type.NEXT}, and assigns it a value.
+	 * Creates and returns a {@code Signal} of variety {@code Type.NEXT}, and assigns it a
+	 * value.
 	 *
 	 * @param <T> the value type
 	 * @param t the item to assign to the signal as its value
+	 *
 	 * @return an {@code OnNext} variety of {@code Signal}
 	 */
 	public static <T> Signal<T> next(T t) {
@@ -71,18 +77,20 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 
 	/**
 	 * @param o is the given object a complete {@link Signal}
+	 *
 	 * @return true if completion signal
 	 */
-	public static boolean isComplete(Object o){
+	public static boolean isComplete(Object o) {
 		return o == ON_COMPLETE;
 	}
 
 	/**
 	 * @param o is the given object a complete {@link Signal}
+	 *
 	 * @return true if completion signal
 	 */
-	public static boolean isError(Object o){
-		return o instanceof Signal && ((Signal)o).getType() == SignalType.ON_ERROR;
+	public static boolean isError(Object o) {
+		return o instanceof Signal && ((Signal) o).getType() == SignalType.ON_ERROR;
 	}
 
 	/**
@@ -90,6 +98,7 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	 *
 	 * @param <T> the value type
 	 * @param subscription the subscription
+	 *
 	 * @return an {@code OnCompleted} variety of {@code Signal}
 	 */
 	public static <T> Signal<T> subscribe(Subscription subscription) {
@@ -121,7 +130,8 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	/**
 	 * Has this signal an item associated with it ?
 	 *
-	 * @return a boolean indicating whether or not this signal has an item associated with it
+	 * @return a boolean indicating whether or not this signal has an item associated with
+	 * it
 	 */
 	public boolean hasValue() {
 		return isOnNext() && get() != null;
@@ -137,7 +147,8 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	}
 
 	/**
-	 * Read the type of this signal: {@code Subscribe}, {@code Next}, {@code Error}, or {@code Complete}
+	 * Read the type of this signal: {@code Subscribe}, {@code Next}, {@code Error}, or
+	 * {@code Complete}
 	 *
 	 * @return the type of the signal
 	 */
@@ -146,7 +157,8 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	/**
 	 * Indicates whether this signal represents an {@code onError} event.
 	 *
-	 * @return a boolean indicating whether this signal represents an {@code onError} event
+	 * @return a boolean indicating whether this signal represents an {@code onError}
+	 * event
 	 */
 	public boolean isOnError() {
 		return getType() == SignalType.ON_ERROR;
@@ -155,7 +167,8 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	/**
 	 * Indicates whether this signal represents an {@code onComplete} event.
 	 *
-	 * @return a boolean indicating whether this signal represents an {@code onSubscribe} event
+	 * @return a boolean indicating whether this signal represents an {@code onSubscribe}
+	 * event
 	 */
 	public boolean isOnComplete() {
 		return getType() == SignalType.ON_COMPLETE;
@@ -164,7 +177,8 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	/**
 	 * Indicates whether this signal represents an {@code onSubscribe} event.
 	 *
-	 * @return a boolean indicating whether this signal represents an {@code onSubscribe} event
+	 * @return a boolean indicating whether this signal represents an {@code onSubscribe}
+	 * event
 	 */
 	public boolean isOnSubscribe() {
 		return getType() == SignalType.ON_SUBSCRIBE;
@@ -183,11 +197,14 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	public void accept(Subscriber<? super T> observer) {
 		if (isOnNext()) {
 			observer.onNext(get());
-		} else if (isOnComplete()) {
+		}
+		else if (isOnComplete()) {
 			observer.onComplete();
-		} else if (isOnError()) {
+		}
+		else if (isOnError()) {
 			observer.onError(getThrowable());
-		} else if (isOnSubscribe()) {
+		}
+		else if (isOnSubscribe()) {
 			observer.onSubscribe(getSubscription());
 		}
 	}
@@ -215,10 +232,10 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 		if (isOnSubscribe()) {
 			return Objects.equals(this.getSubscription(), signal.getSubscription());
 		}
-		else if (isOnError()) {
+		if (isOnError()) {
 			return Objects.equals(this.getThrowable(), signal.getThrowable());
 		}
-		else if (isOnNext()) {
+		if (isOnNext()) {
 			return Objects.equals(this.get(), signal.get());
 		}
 		return false;
@@ -227,12 +244,17 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	@Override
 	public final int hashCode() {
 		int result = getType() != null ? getType().hashCode() : 0;
-		if (isOnError())
-			result = 31 * result + (getThrowable() != null ? getThrowable().hashCode() : 0);
-		if (isOnNext())
-			result = 31 * result + (get() != null ? get().hashCode() : 0);
-		if (isOnComplete())
-			result = 31 * result + (getSubscription() != null ? getSubscription().hashCode() : 0);
+		if (isOnError()) {
+			return  31 * result + (getThrowable() != null ? getThrowable().hashCode() :
+					0);
+		}
+		if (isOnNext()) {
+			return  31 * result + (get() != null ? get().hashCode() : 0);
+		}
+		if (isOnSubscribe()) {
+			return  31 * result + (getSubscription() != null ?
+					getSubscription().hashCode() : 0);
+		}
 		return result;
 	}
 

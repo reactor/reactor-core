@@ -33,7 +33,7 @@ final class FluxElapsed<T> extends FluxSource<T, Tuple2<Long, T>> implements Fus
 
 	final TimedScheduler scheduler;
 
-	public FluxElapsed(Publisher<T> source, TimedScheduler scheduler) {
+	FluxElapsed(Publisher<T> source, TimedScheduler scheduler) {
 		super(source);
 		this.scheduler = scheduler;
 	}
@@ -54,7 +54,7 @@ final class FluxElapsed<T> extends FluxSource<T, Tuple2<Long, T>> implements Fus
 
 		long lastTime;
 
-		public ElapsedSubscriber(Subscriber<? super Tuple2<Long, T>> actual,
+		ElapsedSubscriber(Subscriber<? super Tuple2<Long, T>> actual,
 				TimedScheduler scheduler) {
 			this.actual = actual;
 			this.scheduler = scheduler;
@@ -71,6 +71,10 @@ final class FluxElapsed<T> extends FluxSource<T, Tuple2<Long, T>> implements Fus
 
 		@Override
 		public void onNext(T t) {
+			if(t == null){
+				actual.onNext(null);
+				return;
+			}
 			actual.onNext(snapshot(t));
 		}
 

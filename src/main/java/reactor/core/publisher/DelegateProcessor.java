@@ -47,7 +47,7 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 	@Override
 	public long getCapacity() {
 		return Trackable.class.isAssignableFrom(upstream.getClass()) ?
-				((Trackable) upstream).getCapacity() : Long.MAX_VALUE;
+				((Trackable) upstream).getCapacity() : Trackable.UNSPECIFIED;
 	}
 
 	@Override

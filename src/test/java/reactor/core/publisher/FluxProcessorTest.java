@@ -22,6 +22,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.Trackable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
@@ -35,6 +37,49 @@ public class FluxProcessorTest {
 	public void failNullSubscriber(){
 		FluxProcessor.wrap(UnicastProcessor.create(), UnicastProcessor.create())
 	                 .subscribe((Subscriber)null);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void failNullUpstream(){
+		FluxProcessor.wrap(null, UnicastProcessor.create());
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void failNullDownstream(){
+		FluxProcessor.wrap(UnicastProcessor.create(), null);
+	}
+
+	@Test
+	public void testCapacity(){
+		assertThat(FluxProcessor.wrap(UnicastProcessor.create(), UnicastProcessor
+				.create()).getCapacity())
+				.isEqualTo(Long.MAX_VALUE);
+	}
+
+	@Test
+	public void testCapacityNoTrackable(){
+		assertThat(FluxProcessor.wrap(new Subscriber<Object>() {
+			@Override
+			public void onSubscribe(Subscription s) {
+
+			}
+
+			@Override
+			public void onNext(Object o) {
+
+			}
+
+			@Override
+			public void onError(Throwable t) {
+
+			}
+
+			@Override
+			public void onComplete() {
+
+			}
+		}, UnicastProcessor.create()).getCapacity())
+				.isEqualTo(Trackable.UNSPECIFIED);
 	}
 
 	@Test
@@ -53,12 +98,8 @@ public class FluxProcessorTest {
 
 
 		StepVerifier.create(processor)
-		            .then(() -> upstream.onNext(1))
-		            .expectNext(2)
-		            .then(() -> upstream.onNext(2))
-		            .then(() -> upstream.onNext(3))
-		            .expectNext(4)
-		            .then(() -> upstream.onComplete())
+		            .then(() -> Flux.just(1, 2, 3).subscribe(upstream))
+		            .expectNext(2, 4)
 		            .verifyComplete();
 	}
 
@@ -80,9 +121,8 @@ public class FluxProcessorTest {
 				FluxProcessor.wrap(upstream, upstream);
 
 		StepVerifier.create(processor)
-	                .then(() -> upstream.onNext(1))
+	                .then(() -> Flux.just(1).subscribe(upstream))
 	                .expectNext(1)
-	                .then(() -> upstream.onComplete())
 	                .verifyComplete();
 	}
 
@@ -93,7 +133,7 @@ public class FluxProcessorTest {
 				FluxProcessor.wrap(upstream, upstream);
 
 		StepVerifier.create(processor)
-	                .then(() -> upstream.onError(new Exception("test")))
+	                .then(() -> Flux.<Integer>error(new Exception("test")).subscribe(upstream))
 	                .verifyErrorMessage("test");
 	}
 
