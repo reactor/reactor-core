@@ -18,10 +18,9 @@ package reactor.core.publisher.scenarios;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.time.LocalTime;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -31,22 +30,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
-import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Operators;
+import reactor.core.publisher.Mono;
 import reactor.core.publisher.SignalType;
 import reactor.core.publisher.UnicastProcessor;
 import reactor.test.StepVerifier;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.util.function.Tuple2;
-import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -445,6 +441,56 @@ public class GuideTests {
 		            .expectNextMatches(t -> t.getT2().equals("tick 1"))
 		            .expectNextMatches(t -> t.getT2().equals("tick 2"))
 		            .verifyErrorMessage("boom");
+	}
+
+	@Test
+	public void errorHandlingRetryWhenApproximateRetry() {
+		Flux<String> flux =
+		Flux.<String>error(new IllegalArgumentException()) // <1>
+				.doOnError(System.out::println) // <2>
+				.retryWhen(companion -> companion.take(3)); // <3>
+
+		StepVerifier.create(flux)
+	                .verifyComplete();
+
+		StepVerifier.create(Flux.<String>error(new IllegalArgumentException()).retry(3))
+	                .verifyError();
+	}
+
+	@Test
+	public void errorHandlingRetryWhenEquatesRetry() {
+		Flux<String> flux =
+		Flux.<String>error(new IllegalArgumentException())
+				.retryWhen(companion -> companion
+						.zipWith(Flux.range(1, 4), (error, index) -> { // <1>
+							if (index < 4) return index; // <2>
+							else throw Exceptions.propagate(error); // <3>
+						})
+				);
+
+		StepVerifier.create(flux)
+	                .verifyError(IllegalArgumentException.class);
+
+		StepVerifier.create(Flux.<String>error(new IllegalArgumentException()).retry(3))
+	                .verifyError();
+	}
+
+	@Test
+	public void errorHandlingRetryWhenExponential() {
+		Flux<String> flux =
+		Flux.<String>error(new IllegalArgumentException())
+				.retryWhen(companion -> companion
+						.doOnNext(s -> System.out.println(s + " at " + LocalTime.now())) // <1>
+						.zipWith(Flux.range(1, 4), (error, index) -> { // <2>
+							if (index < 4) return index;
+							else throw Exceptions.propagate(error);
+						})
+						.flatMap(index -> Mono.delayMillis(index * 100)) // <3>
+						.doOnNext(s -> System.out.println("retried at " + LocalTime.now())) // <4>
+				);
+
+		StepVerifier.create(flux)
+		            .verifyError(IllegalArgumentException.class);
 	}
 
 	public String convert(int i) throws IOException {

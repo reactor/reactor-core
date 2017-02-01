@@ -1,0 +1,18 @@
+[source,java]
+----
+Flux<String> flux =
+Flux.<String>error(new IllegalArgumentException())
+    .retryWhen(companion -> companion
+    .zipWith(Flux.range(1, 4), // <1>
+          (error, index) -> { // <2>
+            if (index < 4) return index; // <3>
+            else throw Exceptions.propagate(error); // <4>
+          })
+    );
+----
+<1> Trick one: use `zip` and a `range` of "number of acceptable retries + 1"...
+<2> The zip function will allow to count the retries while keeping track of the
+original error.
+<3> To allow for 3 retries, indexes before 4 return a value to emit...
+<4> ...but in order to terminate the sequence in error, we throw the original
+exception after these 3 retries.

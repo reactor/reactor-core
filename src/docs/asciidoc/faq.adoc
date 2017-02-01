@@ -84,5 +84,54 @@ myMethod.process("a")
         .subscribe();
 ----
 
+[[faq.retryWhen]]
+=== How to use `retryWhen` to emulate `retry(3)`?
+The `retryWhen` operator can be quite complex. Hopefully this snippet of code
+can help you understand how it works by attempting to emulate a simpler
+`retry(3)`:
+include::snippetRetryWhenRetry.adoc[]
+
+[[faq.exponentialBackoff]]
+=== How to use `retryWhen` for exponential backoff?
+Exponential backoff produces retry attempts with a growing delay between each of
+the attempts, so as not to overload the source systems and risk an all out
+crash. The rationale is that if the source errors, it is already in an unstable
+state, and not likely to immediately recover from it. So blindly retrying
+immediately is likely to produce yet another error and add to the instability.
+
+Here is how to implement an exponential backoff that delays retries and increase
+the delay between each attempt (delay == attempt number * 100 milliseconds):
+[source,java]
+----
+Flux<String> flux =
+Flux.<String>error(new IllegalArgumentException())
+    .retryWhen(companion -> companion
+        .doOnNext(s -> System.out.println(s + " at " + LocalTime.now())) // <1>
+        .zipWith(Flux.range(1, 4), (error, index) -> { // <2>
+          if (index < 4) return index;
+          else throw Exceptions.propagate(error);
+        })
+        .flatMap(index -> Mono.delayMillis(index * 100)) // <3>
+        .doOnNext(s -> System.out.println("retried at " + LocalTime.now())) // <4>
+    );
+----
+<1> We log the time of errors
+<2> We use the `retryWhen` + `zipWith` trick to propagate the error after 3 retries.
+<3> Through `flatMap`, we cause a delay that depends on the attempt's index.
+<4> We also log the time at which the retry effectively occurs.
+
+When subscribed to, this fails and terminates after printing out:
+----
+java.lang.IllegalArgumentException at 18:02:29.338
+retried at 18:02:29.459 <1>
+java.lang.IllegalArgumentException at 18:02:29.460
+retried at 18:02:29.663 <2>
+java.lang.IllegalArgumentException at 18:02:29.663
+retried at 18:02:29.964 <3>
+java.lang.IllegalArgumentException at 18:02:29.964
+----
+<1> first retry after about 100ms
+<2> second retry after about 200ms
+<3> third retry after about 300ms
 
 //TODO reactive gems
