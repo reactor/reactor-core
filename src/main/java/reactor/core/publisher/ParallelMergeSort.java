@@ -49,7 +49,7 @@ final class ParallelMergeSort<T> extends Flux<T> {
 
 	@Override
 	public long getPrefetch() {
-		return Long.MAX_VALUE;
+		return Integer.MAX_VALUE;
 	}
 
 	@Override

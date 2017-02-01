@@ -26,7 +26,6 @@ import org.junit.Test;
 import reactor.core.Fuseable;
 import reactor.test.StepVerifier;
 import reactor.test.scheduler.VirtualTimeScheduler;
-import reactor.util.concurrent.QueueSupplier;
 import reactor.util.function.Tuple2;
 
 public class FluxReplayTest extends AbstractFluxOperatorTest<String, String> {

@@ -53,7 +53,7 @@ public class FluxProcessorTest {
 	public void testCapacity(){
 		assertThat(FluxProcessor.wrap(UnicastProcessor.create(), UnicastProcessor
 				.create()).getCapacity())
-				.isEqualTo(Long.MAX_VALUE);
+				.isEqualTo(Integer.MAX_VALUE);
 	}
 
 	@Test
@@ -98,7 +98,7 @@ public class FluxProcessorTest {
 
 
 		StepVerifier.create(processor)
-		            .then(() -> Flux.just(1, 2, 3).subscribe(upstream))
+		            .then(() -> Flux.just(1, 2, 3).subscribe(processor))
 		            .expectNext(2, 4)
 		            .verifyComplete();
 	}
@@ -121,7 +121,7 @@ public class FluxProcessorTest {
 				FluxProcessor.wrap(upstream, upstream);
 
 		StepVerifier.create(processor)
-	                .then(() -> Flux.just(1).subscribe(upstream))
+	                .then(() -> Flux.just(1).subscribe(processor))
 	                .expectNext(1)
 	                .verifyComplete();
 	}
@@ -133,7 +133,7 @@ public class FluxProcessorTest {
 				FluxProcessor.wrap(upstream, upstream);
 
 		StepVerifier.create(processor)
-	                .then(() -> Flux.<Integer>error(new Exception("test")).subscribe(upstream))
+	                .then(() -> Flux.<Integer>error(new Exception("test")).subscribe(processor))
 	                .verifyErrorMessage("test");
 	}
 

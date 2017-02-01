@@ -48,7 +48,7 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Fuseable {
 
 	@Override
 	public long getPrefetch() {
-		return Long.MAX_VALUE;
+		return Integer.MAX_VALUE;
 	}
 
 	@Override

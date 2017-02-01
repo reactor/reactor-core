@@ -27,7 +27,7 @@ public class FluxTakeLastOneTest {
 		Flux<?> f = Flux.empty()
 		                .takeLast(1);
 
-		assertThat(f.getPrefetch()).isEqualTo(Long.MAX_VALUE);
+		assertThat(f.getPrefetch()).isEqualTo(Integer.MAX_VALUE);
 
 		StepVerifier.create(f)
 	                .verifyComplete();

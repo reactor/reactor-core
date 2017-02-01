@@ -536,7 +536,7 @@ public class FluxTakeTest {
 		assertThat(Flux.just("test", "test2", "test3")
 		               .hide()
 		               .take(2)
-		               .getPrefetch()).isEqualTo(Long.MAX_VALUE);
+		               .getPrefetch()).isEqualTo(Integer.MAX_VALUE);
 	}
 
 	@Test

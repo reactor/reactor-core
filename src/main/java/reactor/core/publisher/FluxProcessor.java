@@ -109,7 +109,7 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 
 	@Override
 	public long getCapacity() {
-		return Long.MAX_VALUE;
+		return Integer.MAX_VALUE;
 	}
 
 	/**

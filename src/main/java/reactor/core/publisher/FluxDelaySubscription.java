@@ -41,7 +41,7 @@ final class FluxDelaySubscription<T, U> extends FluxSource<T, T> {
 
 	@Override
 	public long getPrefetch() {
-		return Long.MAX_VALUE;
+		return Integer.MAX_VALUE;
 	}
 
 	@Override
