@@ -16,14 +16,71 @@
 
 package reactor.core.publisher;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.core.Fuseable;
 import reactor.test.subscriber.AssertSubscriber;
 
-public class FluxUsingTest {
+public class FluxUsingTest extends AbstractFluxOperatorTest<String, String> {
+
+	@Override
+	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
+		return defaultOptions.fusionMode(Fuseable.ANY)
+				.shouldHitDropNextHookAfterTerminate(false)
+				.shouldHitDropErrorHookAfterTerminate(false);
+	}
+
+	@Override
+	protected int fusionModeThreadBarrierSupport() {
+		return Fuseable.ANY;
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
+		return Arrays.asList(
+				scenario(f -> Flux.using(() -> {
+					throw exception();
+				}, c -> f, c -> {}))
+						.fusionMode(Fuseable.NONE),
+
+				scenario(f -> Flux.using(() -> 0, c -> null, c -> {}))
+						.fusionMode(Fuseable.NONE)
+						.verifier(step -> step.verifyError(NullPointerException.class)),
+
+				scenario(f -> Flux.using(() -> 0, c -> {
+					throw exception();
+				}, c -> {}))
+						.fusionMode(Fuseable.NONE)
+
+				/*scenario(f -> Flux.using(() -> 0, c -> f, c -> {
+					throw exception();
+				}))
+				.verifier(step -> {
+					try {
+						step.expectNext(item(0), item(1), item(2)).verifyErrorMessage
+								("test");
+					}
+					catch (Exception t){
+						assertThat(Exceptions.unwrap(t)).hasMessage("test");
+					}
+				})*/
+
+		);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+		return Arrays.asList(
+				scenario(f -> Flux.using(() -> 0, c -> f, c -> {})),
+
+				scenario(f -> Flux.using(() -> 0, c -> f, c -> {}, false))
+		);
+	}
 
 	@Test(expected = NullPointerException.class)
 	public void resourceSupplierNull() {

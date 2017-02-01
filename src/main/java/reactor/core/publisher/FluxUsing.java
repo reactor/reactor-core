@@ -54,7 +54,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 
 	final boolean eager;
 
-	public FluxUsing(Callable<S> resourceSupplier,
+	FluxUsing(Callable<S> resourceSupplier,
 			Function<? super S, ? extends Publisher<? extends T>> sourceFactory,
 			Consumer<? super S> resourceCleanup,
 			boolean eager) {
@@ -237,7 +237,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 		@Override
 		public boolean isEmpty() {
 			// ignoring fusion methods
-			return wip != 0;
+			return true;
 		}
 
 		@Override
@@ -272,7 +272,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 
 		int mode;
 
-		public UsingFuseableSubscriber(Subscriber<? super T> actual,
+		UsingFuseableSubscriber(Subscriber<? super T> actual,
 				Consumer<? super S> resourceCleanup,
 				S resource,
 				boolean eager) {
@@ -413,7 +413,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 				AtomicIntegerFieldUpdater.newUpdater(UsingConditionalSubscriber.class,
 						"wip");
 
-		public UsingConditionalSubscriber(ConditionalSubscriber<? super T> actual,
+		UsingConditionalSubscriber(ConditionalSubscriber<? super T> actual,
 				Consumer<? super S> resourceCleanup,
 				S resource,
 				boolean eager) {
@@ -517,7 +517,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 		@Override
 		public boolean isEmpty() {
 			// ignoring fusion methods
-			return wip != 0;
+			return true;
 		}
 
 		@Override

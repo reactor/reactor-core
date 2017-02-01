@@ -27,6 +27,8 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class ParallelReduceSeedTest {
 
 	@Test
@@ -193,5 +195,13 @@ public class ParallelReduceSeedTest {
 		                        	throw new RuntimeException("test");
 		                        }))
 		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void testPrefetch() {
+		assertThat(Flux.range(1, 10)
+		               .parallel(3)
+		               .reduce(() -> 0, (a, b) -> a + b)
+		               .getPrefetch()).isEqualTo(Long.MAX_VALUE);
 	}
 }

@@ -196,24 +196,6 @@ public class ParallelFluxTest {
 	}
 
 	@Test
-	public void collect() {
-		Supplier<List<Integer>> as = () -> new ArrayList<>();
-
-		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		Flux.range(1, 10)
-		    .parallel()
-		    .collect(as, (a, b) -> a.add(b))
-		    .sequential()
-		    .flatMapIterable(v -> v)
-		    .log()
-		    .subscribe(ts);
-
-		ts.assertContainValues(new HashSet<>(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)))
-		  .assertNoError()
-		  .assertComplete();
-	}
-
-	@Test
 	public void groupMerge() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
