@@ -583,7 +583,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 
 		@Override
 		public long getCapacity() {
-			return Long.MAX_VALUE;
+			return Integer.MAX_VALUE;
 		}
 
 		@Override

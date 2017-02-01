@@ -70,7 +70,7 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 
 	@Override
 	public long getPrefetch() {
-		return Long.MAX_VALUE;
+		return Integer.MAX_VALUE;
 	}
 
 	@Override

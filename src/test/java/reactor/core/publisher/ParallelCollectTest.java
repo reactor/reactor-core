@@ -84,6 +84,6 @@ public class ParallelCollectTest {
 		assertThat(Flux.range(1, 10)
 		               .parallel(3)
 		               .collect(ArrayList::new, List::add)
-		               .getPrefetch()).isEqualTo(Long.MAX_VALUE);
+		               .getPrefetch()).isEqualTo(Integer.MAX_VALUE);
 	}
 }

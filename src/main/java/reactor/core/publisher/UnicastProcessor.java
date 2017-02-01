@@ -296,7 +296,7 @@ public final class UnicastProcessor<T>
 
 	@Override
 	public long getPrefetch() {
-		return Long.MAX_VALUE;
+		return Integer.MAX_VALUE;
 	}
 
 	@Override
@@ -454,7 +454,7 @@ public final class UnicastProcessor<T>
 
 	@Override
 	public long getCapacity() {
-		return Long.MAX_VALUE;
+		return Integer.MAX_VALUE;
 	}
 
 	@Override

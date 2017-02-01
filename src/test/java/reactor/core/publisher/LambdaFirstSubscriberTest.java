@@ -187,7 +187,7 @@ public class LambdaFirstSubscriberTest {
 			assertTrue(s instanceof LambdaFirstSubscriber);
 			LambdaFirstSubscriber<?> bfs = (LambdaFirstSubscriber<?>)s;
 			assertTrue(bfs.upstream() == null);
-			assertTrue(bfs.getCapacity() == Long.MAX_VALUE);
+			assertTrue(bfs.getCapacity() == Integer.MAX_VALUE);
 			assertFalse(bfs.isTerminated());
 			assertFalse(bfs.isStarted());
 			bfs.onSubscribe(Operators.emptySubscription());

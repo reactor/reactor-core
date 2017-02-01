@@ -58,7 +58,7 @@ final class FluxSampleFirst<T, U> extends FluxSource<T, T> {
 
 	@Override
 	public long getPrefetch() {
-		return Long.MAX_VALUE;
+		return Integer.MAX_VALUE;
 	}
 
 	static final class ThrottleFirstMain<T, U> implements Subscriber<T>, Subscription {

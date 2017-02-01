@@ -62,7 +62,7 @@ final class FluxTake<T> extends FluxSource<T, T> {
 
 	@Override
 	public long getPrefetch() {
-		return Long.MAX_VALUE;
+		return Integer.MAX_VALUE;
 	}
 
 	static final class TakeSubscriber<T>

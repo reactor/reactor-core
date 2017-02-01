@@ -38,7 +38,7 @@ final class FluxTakeLastOne<T> extends FluxSource<T, T> implements Fuseable {
 
 	@Override
 	public long getPrefetch() {
-		return Long.MAX_VALUE;
+		return Integer.MAX_VALUE;
 	}
 
 }

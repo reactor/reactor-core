@@ -54,7 +54,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 
 	@Override
 	public long getPrefetch() {
-		return Long.MAX_VALUE;
+		return Integer.MAX_VALUE;
 	}
 
 	@Override

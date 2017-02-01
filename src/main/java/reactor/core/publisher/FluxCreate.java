@@ -319,7 +319,7 @@ final class FluxCreate<T> extends Flux<T> {
 
 		@Override
 		public long getCapacity() {
-			return Long.MAX_VALUE;
+			return Integer.MAX_VALUE;
 		}
 
 		void onCancel() {

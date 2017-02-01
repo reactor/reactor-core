@@ -202,6 +202,6 @@ public class ParallelReduceSeedTest {
 		assertThat(Flux.range(1, 10)
 		               .parallel(3)
 		               .reduce(() -> 0, (a, b) -> a + b)
-		               .getPrefetch()).isEqualTo(Long.MAX_VALUE);
+		               .getPrefetch()).isEqualTo(Integer.MAX_VALUE);
 	}
 }

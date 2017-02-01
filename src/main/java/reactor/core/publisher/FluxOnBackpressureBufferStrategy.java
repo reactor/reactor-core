@@ -64,7 +64,7 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 
 	@Override
 	public long getPrefetch() {
-		return Long.MAX_VALUE;
+		return Integer.MAX_VALUE;
 	}
 
 	static final class BackpressureBufferDropOldestSubscriber<T>
@@ -316,7 +316,7 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 
 		@Override
 		public long getCapacity() {
-			return Long.MAX_VALUE;
+			return Integer.MAX_VALUE;
 		}
 
 		@Override

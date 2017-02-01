@@ -68,7 +68,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 
 	@Override
 	public long getPrefetch() {
-		return Long.MAX_VALUE;
+		return Integer.MAX_VALUE;
 	}
 
 	@Override
