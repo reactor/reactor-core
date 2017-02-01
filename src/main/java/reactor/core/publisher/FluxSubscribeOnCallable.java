@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 
@@ -51,7 +52,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 
 		Cancellation f = scheduler.schedule(parent);
 		if (f == Scheduler.REJECTED) {
-			if(parent.state != CallableSubscribeOnSubscription.CANCELLED) {
+			if(parent.state != CallableSubscribeOnSubscription.HAS_CANCELLED) {
 				s.onError(Operators.onRejectedExecution());
 			}
 		}
@@ -76,15 +77,13 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 						"state");
 
 		T value;
-		static final int NO_REQUEST_NO_VALUE   = 0;
 		static final int NO_REQUEST_HAS_VALUE  = 1;
 		static final int HAS_REQUEST_NO_VALUE  = 2;
 		static final int HAS_REQUEST_HAS_VALUE = 3;
-		static final int CANCELLED             = 4;
+		static final int HAS_CANCELLED         = 4;
 
 		int fusionState;
 
-		static final int NOT_FUSED = 0;
 		static final int NO_VALUE  = 1;
 		static final int HAS_VALUE = 2;
 		static final int COMPLETE  = 3;
@@ -105,9 +104,6 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 				Cancellation.class,
 				"requestFuture");
 
-		static final Cancellation CANCEL = () -> {
-		};
-
 		CallableSubscribeOnSubscription(Subscriber<? super T> actual,
 				Callable<? extends T> callable,
 				Scheduler scheduler) {
@@ -118,19 +114,19 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 
 		@Override
 		public void cancel() {
-			state = CANCELLED;
+			state = HAS_CANCELLED;
 			fusionState = COMPLETE;
 			Cancellation a = mainFuture;
-			if (a != CANCEL) {
-				a = MAIN_FUTURE.getAndSet(this, CANCEL);
-				if (a != null && a != CANCEL) {
+			if (a != CANCELLED) {
+				a = MAIN_FUTURE.getAndSet(this, CANCELLED);
+				if (a != null && a != CANCELLED) {
 					a.dispose();
 				}
 			}
 			a = requestFuture;
-			if (a != CANCEL) {
-				a = REQUEST_FUTURE.getAndSet(this, CANCEL);
-				if (a != null && a != CANCEL) {
+			if (a != CANCELLED) {
+				a = REQUEST_FUTURE.getAndSet(this, CANCELLED);
+				if (a != null && a != CANCELLED) {
 					a.dispose();
 				}
 			}
@@ -144,7 +140,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 
 		@Override
 		public boolean isEmpty() {
-			return fusionState != HAS_VALUE;
+			return fusionState == COMPLETE;
 		}
 
 		@Override
@@ -173,7 +169,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 		void setMainFuture(Cancellation c) {
 			for (; ; ) {
 				Cancellation a = mainFuture;
-				if (a == CANCEL) {
+				if (a == CANCELLED) {
 					c.dispose();
 					return;
 				}
@@ -186,7 +182,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 		void setRequestFuture(Cancellation c) {
 			for (; ; ) {
 				Cancellation a = requestFuture;
-				if (a == CANCEL) {
+				if (a == CANCELLED) {
 					c.dispose();
 					return;
 				}
@@ -201,8 +197,8 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 			T v;
 
 			try {
-				v = callable.call();
-
+				v = Objects.requireNonNull(callable.call(),
+				"The callable returned null");
 			}
 			catch (Throwable ex) {
 				actual.onError(Operators.onOperatorError(this, ex));
@@ -211,7 +207,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 
 			for (; ; ) {
 				int s = state;
-				if (s == CANCELLED || s == HAS_REQUEST_HAS_VALUE || s == NO_REQUEST_HAS_VALUE) {
+				if (s == HAS_CANCELLED || s == HAS_REQUEST_HAS_VALUE || s == NO_REQUEST_HAS_VALUE) {
 					return;
 				}
 				if (s == HAS_REQUEST_NO_VALUE) {
@@ -220,7 +216,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 						this.fusionState = HAS_VALUE;
 					}
 					actual.onNext(v);
-					if (state != CANCELLED) {
+					if (state != HAS_CANCELLED) {
 						actual.onComplete();
 					}
 					return;
@@ -237,7 +233,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 			if (Operators.validate(n)) {
 				for (; ; ) {
 					int s = state;
-					if (s == CANCELLED || s == HAS_REQUEST_NO_VALUE || s == HAS_REQUEST_HAS_VALUE) {
+					if (s == HAS_CANCELLED || s == HAS_REQUEST_NO_VALUE || s == HAS_REQUEST_HAS_VALUE) {
 						return;
 					}
 					if (s == NO_REQUEST_HAS_VALUE) {
@@ -263,8 +259,10 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 			if (fusionState == NO_VALUE) {
 				this.fusionState = HAS_VALUE;
 			}
-			actual.onNext(value);
-			if (state != CANCELLED) {
+			T v = value;
+			clear();
+			actual.onNext(v);
+			if (state != HAS_CANCELLED) {
 				actual.onComplete();
 			}
 		}

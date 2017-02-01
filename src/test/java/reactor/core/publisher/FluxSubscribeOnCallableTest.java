@@ -19,18 +19,20 @@ import java.io.IOException;
 import java.time.Duration;
 
 import org.junit.Test;
+import reactor.core.Fuseable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxSubscribeOnCallableTest {
 
 	@Test
 	public void callableReturnsNull() {
-		StepVerifier.create(Mono.fromCallable(() -> null)
+		StepVerifier.create(Mono.empty()
 		                        .flux()
 		                        .subscribeOn(Schedulers.single()))
-		            .expectError(NullPointerException.class)
-		            .verify();
+		            .verifyComplete();
 	}
 
 	@Test
@@ -54,6 +56,57 @@ public class FluxSubscribeOnCallableTest {
 		            .thenRequest(1)
 		            .expectNext(1)
 		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
+	public void callableReturnsNullFused() {
+		StepVerifier.create(Mono.empty()
+		                        .flux()
+		                        .subscribeOn(Schedulers.single()))
+		            .expectFusion(Fuseable.ASYNC)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void normalFused() {
+		StepVerifier.create(Mono.fromCallable(() -> 1)
+		                        .flux()
+		                        .subscribeOn(Schedulers.single()))
+		            .expectFusion(Fuseable.ASYNC)
+		            .expectNext(1)
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
+	public void normalBackpressuredFused() {
+		StepVerifier.withVirtualTime(() -> Mono.fromCallable(() -> 1)
+		                                       .flux()
+		                                       .subscribeOn(
+				Schedulers.single()), 0)
+		            .expectFusion(Fuseable.ASYNC)
+		            .thenAwait()
+		            .consumeSubscriptionWith(s -> {
+		            	assertThat(FluxSubscribeOnCallable
+					            .CallableSubscribeOnSubscription.class.cast(s)
+			            .size()).isEqualTo(1);
+		            })
+		            .thenRequest(1)
+		            .expectNext(1)
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
+	public void normalBackpressuredFusedCancelled() {
+		StepVerifier.withVirtualTime(() -> Mono.fromCallable(() -> 1)
+		                                       .flux()
+		                                       .subscribeOn(
+				Schedulers.single()), 0)
+		            .expectFusion(Fuseable.ASYNC)
+		            .thenAwait()
+		            .thenCancel()
 		            .verify();
 	}
 

@@ -107,8 +107,6 @@ final class FluxRefCount<T> extends Flux<T>
 		static final AtomicReferenceFieldUpdater<State, Disposable> DISCONNECT =
 				AtomicReferenceFieldUpdater.newUpdater(State.class, Disposable.class, "disconnect");
 		
-		static final Disposable DISCONNECTED = () -> { };
-
 		State(int n, FluxRefCount<? extends T> parent) {
 			this.n = n;
 			this.parent = parent;
@@ -134,16 +132,16 @@ final class FluxRefCount<T> extends Flux<T>
 		
 		void doDisconnect() {
 			Disposable a = disconnect;
-			if (a != DISCONNECTED) {
-				a = DISCONNECT.getAndSet(this, DISCONNECTED);
-				if (a != null && a != DISCONNECTED) {
+			if (a != Flux.CANCELLED) {
+				a = DISCONNECT.getAndSet(this, Flux.CANCELLED);
+				if (a != null && a != Flux.CANCELLED) {
 					a.dispose();
 				}
 			}
 		}
 		
 		boolean isDisconnected() {
-			return disconnect == DISCONNECTED;
+			return disconnect == Flux.CANCELLED;
 		}
 		
 		void innerCancelled() {
@@ -154,8 +152,8 @@ final class FluxRefCount<T> extends Flux<T>
 		
 		void upstreamFinished() {
 			Disposable a = disconnect;
-			if (a != DISCONNECTED) {
-				DISCONNECT.getAndSet(this, DISCONNECTED);
+			if (a != Flux.CANCELLED) {
+				DISCONNECT.getAndSet(this, Flux.CANCELLED);
 			}
 		}
 

@@ -61,9 +61,6 @@ final class MonoPublishOn<T> extends MonoSource<T, T> {
 						Cancellation.class,
 						"future");
 
-		static final Cancellation CANCELLED = () -> {
-		};
-
 		T         value;
 		Throwable error;
 
@@ -101,7 +98,7 @@ final class MonoPublishOn<T> extends MonoSource<T, T> {
 		@Override
 		public void onComplete() {
 			if (value == null) {
-				if (schedule() == Scheduler.REJECTED && future != CANCELLED) {
+				if (schedule() == Scheduler.REJECTED && future != Flux.CANCELLED) {
 					throw Operators.onRejectedExecution();
 				}
 			}
@@ -126,9 +123,9 @@ final class MonoPublishOn<T> extends MonoSource<T, T> {
 		@Override
 		public void cancel() {
 			Cancellation c = future;
-			if (c != CANCELLED) {
-				c = FUTURE.getAndSet(this, CANCELLED);
-				if (c != null && c != CANCELLED) {
+			if (c != Flux.CANCELLED) {
+				c = FUTURE.getAndSet(this, Flux.CANCELLED);
+				if (c != null && c != Flux.CANCELLED) {
 					c.dispose();
 				}
 			}
@@ -137,7 +134,7 @@ final class MonoPublishOn<T> extends MonoSource<T, T> {
 
 		@Override
 		public void run() {
-			if (future == CANCELLED) {
+			if (future == Flux.CANCELLED) {
 				return;
 			}
 			T v = value;
@@ -146,7 +143,7 @@ final class MonoPublishOn<T> extends MonoSource<T, T> {
 				actual.onNext(v);
 			}
 
-			if (future == CANCELLED) {
+			if (future == Flux.CANCELLED) {
 				return;
 			}
 			Throwable e = error;

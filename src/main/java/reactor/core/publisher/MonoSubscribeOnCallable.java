@@ -49,7 +49,7 @@ final class MonoSubscribeOnCallable<T> extends Mono<T> implements Fuseable {
 
 		Cancellation f = scheduler.schedule(parent);
 		if (f == Scheduler.REJECTED) {
-			if(parent.state != FluxSubscribeOnCallable.CallableSubscribeOnSubscription.CANCELLED) {
+			if(parent.state != FluxSubscribeOnCallable.CallableSubscribeOnSubscription.HAS_CANCELLED) {
 				s.onError(Operators.onRejectedExecution());
 			}
 		}

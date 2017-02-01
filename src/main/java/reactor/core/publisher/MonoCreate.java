@@ -66,20 +66,18 @@ final class MonoCreate<T> extends Mono<T> {
 
         T value;
         
-        static final Disposable CANCELLED = () -> { };
-
         static final int NO_REQUEST_HAS_VALUE = 1;
         static final int HAS_REQUEST_NO_VALUE = 2;
         static final int HAS_REQUEST_HAS_VALUE = 3;
         
-        public DefaultMonoSink(Subscriber<? super T> actual) {
+        DefaultMonoSink(Subscriber<? super T> actual) {
             this.actual = actual;
         }
 
         @Override
         public void success() {
             if (STATE.getAndSet(this, HAS_REQUEST_HAS_VALUE) != HAS_REQUEST_HAS_VALUE) {
-	            disposable = CANCELLED;
+	            disposable = Flux.CANCELLED;
                 actual.onComplete();
             }
         }
@@ -97,7 +95,7 @@ final class MonoCreate<T> extends Mono<T> {
                 }
                 if (s == HAS_REQUEST_NO_VALUE) {
                     if (STATE.compareAndSet(this, s, HAS_REQUEST_HAS_VALUE)) {
-	                    disposable = CANCELLED;
+	                    disposable = Flux.CANCELLED;
                         actual.onNext(value);
                         actual.onComplete();
                     }
@@ -113,7 +111,7 @@ final class MonoCreate<T> extends Mono<T> {
         @Override
         public void error(Throwable e) {
             if (STATE.getAndSet(this, HAS_REQUEST_HAS_VALUE) != HAS_REQUEST_HAS_VALUE) {
-	            disposable = CANCELLED;
+	            disposable = Flux.CANCELLED;
                 actual.onError(e);
             } else {
                 Operators.onErrorDropped(e);
@@ -123,7 +121,7 @@ final class MonoCreate<T> extends Mono<T> {
         @Override
         public void setCancellation(Cancellation c) {
             if (!CANCELLATION.compareAndSet(this, null, c)) {
-                if (disposable != CANCELLED && c != null) {
+                if (disposable != Flux.CANCELLED && c != null) {
                     c.dispose();
                 }
             }
@@ -139,7 +137,7 @@ final class MonoCreate<T> extends Mono<T> {
                     }
                     if (s == NO_REQUEST_HAS_VALUE) {
                         if (STATE.compareAndSet(this, s, HAS_REQUEST_HAS_VALUE)) {
-	                        disposable = CANCELLED;
+	                        disposable = Flux.CANCELLED;
                             actual.onNext(value);
                             actual.onComplete();
                         }
@@ -158,9 +156,9 @@ final class MonoCreate<T> extends Mono<T> {
                 value = null;
             }
 	        Cancellation c = disposable;
-            if (c != CANCELLED) {
-                c = CANCELLATION.getAndSet(this, CANCELLED);
-                if (c != null && c != CANCELLED) {
+            if (c != Flux.CANCELLED) {
+                c = CANCELLATION.getAndSet(this, Flux.CANCELLED);
+                if (c != null && c != Flux.CANCELLED) {
                     c.dispose();
                 }
             }

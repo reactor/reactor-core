@@ -49,7 +49,8 @@ final class FluxStream<T> extends Flux<T> implements Receiver, Fuseable {
 		Iterator<? extends T> it;
 
 		try {
-			it = stream.iterator();
+			it = Objects.requireNonNull(stream.iterator(),
+			"The stream returned a null Iterator");
 		}
 		catch (Throwable e) {
 			Operators.error(s, Operators.onOperatorError(e));

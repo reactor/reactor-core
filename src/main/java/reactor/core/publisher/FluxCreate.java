@@ -266,10 +266,7 @@ final class FluxCreate<T> extends Flux<T> {
 		static final AtomicLongFieldUpdater<BaseSink> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(BaseSink.class, "requested");
 
-		static final Cancellation CANCELLED = () -> {
-		};
-
-		public BaseSink(Subscriber<? super T> actual) {
+		BaseSink(Subscriber<? super T> actual) {
 			this.actual = actual;
 		}
 

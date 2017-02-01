@@ -905,7 +905,7 @@ public abstract class Operators {
 					return;
 				}
 
-				// if state is >= CANCELLED or bit zero is set (*_HAS_VALUE) case, return
+				// if state is >= HAS_CANCELLED or bit zero is set (*_HAS_VALUE) case, return
 				if ((state & ~HAS_REQUEST_NO_VALUE) != 0) {
 					return;
 				}

@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.TimedScheduler;
@@ -40,7 +41,7 @@ final class MonoDelay extends Mono<Long> {
 
 	final TimeUnit unit;
 
-	public MonoDelay(long delay, TimeUnit unit, TimedScheduler timedScheduler) {
+	MonoDelay(long delay, TimeUnit unit, TimedScheduler timedScheduler) {
 		this.delay = delay;
 		this.unit = Objects.requireNonNull(unit, "unit");
 		this.timedScheduler = Objects.requireNonNull(timedScheduler, "timedScheduler");
@@ -54,7 +55,7 @@ final class MonoDelay extends Mono<Long> {
 
 		Cancellation f = timedScheduler.schedule(r, delay, unit);
 		if (f == Scheduler.REJECTED) {
-			if(r.cancel != MonoDelayRunnable.CANCELLED &&
+			if(r.cancel != Flux.CANCELLED &&
 					r.cancel != MonoDelayRunnable.FINISHED) {
 				s.onError(Operators.onRejectedExecution(r, null, null));
 			}
@@ -75,8 +76,7 @@ final class MonoDelay extends Mono<Long> {
 
 		volatile boolean requested;
 
-		static final Cancellation CANCELLED = () -> { };
-		static final Cancellation FINISHED  = () -> { };
+		static final Disposable FINISHED = () -> { };
 
 		public MonoDelayRunnable(Subscriber<? super Long> s) {
 			this.s = s;
@@ -92,10 +92,10 @@ final class MonoDelay extends Mono<Long> {
 		public void run() {
 			if (requested) {
 				try {
-				if (CANCEL.getAndSet(this, FINISHED) != CANCELLED) {
+				if (CANCEL.getAndSet(this, FINISHED) != Flux.CANCELLED) {
 					s.onNext(0L);
 				}
-				if (cancel != CANCELLED) {
+				if (cancel != Flux.CANCELLED) {
 					s.onComplete();
 				}
 				}
@@ -110,9 +110,9 @@ final class MonoDelay extends Mono<Long> {
 		@Override
 		public void cancel() {
 			Cancellation c = cancel;
-			if (c != CANCELLED && c != FINISHED) {
-				c =  CANCEL.getAndSet(this, CANCELLED);
-				if (c != null && c != CANCELLED && c != FINISHED) {
+			if (c != Flux.CANCELLED && c != FINISHED) {
+				c =  CANCEL.getAndSet(this, Flux.CANCELLED);
+				if (c != null && c != Flux.CANCELLED && c != FINISHED) {
 					c.dispose();
 				}
 			}
