@@ -55,10 +55,13 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 			Disposable d = (Disposable)s.schedule(() -> Flux.never().blockFirst());
 			assertThat(d.isDisposed()).isFalse();
 			d.dispose();
-			while(((ElasticScheduler)s).cache.peek() == null);
+			while(((ElasticScheduler)s).cache.peek() == null){
+				Thread.sleep(100);
+			}
 
 			while(((ElasticScheduler)s).cache.peek() != null){
 				((ElasticScheduler)s).eviction();
+				Thread.sleep(100);
 			}
 		}
 		finally {
