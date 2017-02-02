@@ -80,6 +80,9 @@ final class ElasticScheduler implements Scheduler, Supplier<ExecutorService> {
 	volatile boolean shutdown;
 
 	ElasticScheduler(ThreadFactory factory, int ttlSeconds) {
+		if (ttlSeconds < 0) {
+			throw new IllegalArgumentException("ttlSeconds must be positive, was: " + ttlSeconds);
+		}
 		this.ttlSeconds = ttlSeconds;
 		this.factory = factory;
 		this.cache = new ConcurrentLinkedQueue<>();

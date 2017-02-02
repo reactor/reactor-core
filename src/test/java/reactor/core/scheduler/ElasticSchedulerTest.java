@@ -32,8 +32,13 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Test(expected = UnsupportedOperationException.class)
-	public void unsupportedStart() throws Exception {
+	public void unsupportedStart() {
 		Schedulers.elastic().start();
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void negativeTime() throws Exception {
+		Schedulers.newElastic("test", -1);
 	}
 
 	@Override
@@ -42,15 +47,19 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Test(timeout = 10000)
-	public void recycle() throws Exception {
+	public void eviction() throws Exception {
 		Scheduler s = Schedulers.newElastic("test-recycle", 1);
+		((ElasticScheduler)s).evictor.shutdownNow();
 
 		try{
 			Disposable d = (Disposable)s.schedule(() -> Flux.never().blockFirst());
 			assertThat(d.isDisposed()).isFalse();
 			d.dispose();
 			while(((ElasticScheduler)s).cache.isEmpty());
-			while(!((ElasticScheduler)s).cache.isEmpty());
+
+			while(!((ElasticScheduler)s).cache.isEmpty()){
+				((ElasticScheduler)s).eviction();
+			}
 		}
 		finally {
 			s.shutdown();
