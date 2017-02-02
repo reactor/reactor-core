@@ -113,3 +113,6 @@ image::https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/ma
 === Backpressure and the associated rules
 
 === Global hooks
+
+=== Debugging Reactor
+include::debugging.adoc[leveloffset=2]

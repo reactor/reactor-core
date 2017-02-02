@@ -31,12 +31,17 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.SignalType;
 import reactor.core.publisher.UnicastProcessor;
@@ -52,6 +57,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Stephane Maldini
  * @author Simon Baslé
  */
+
 public class GuideTests {
 
 	@Test
@@ -665,4 +671,79 @@ public class GuideTests {
 	                .verifyComplete();
 	}
 
+	private Flux<String> urls() {
+		return Flux.range(1, 5)
+		           .map(i -> "http://mysite.io/quote/" + i);
+	}
+
+	private Flux<String> doRequest(String url) {
+		return Flux.just("{\"quote\": \"inspiring quote from " + url + "\"}");
+	}
+
+	private Mono<String> scatterAndGather(Flux<String> urls) {
+		return urls.flatMap(url -> doRequest(url))
+		           .single();
+	}
+
+	@Rule
+	public TestName testName = new TestName();
+
+	@Before
+	public void populateDebug() {
+		if (testName.getMethodName().equals("debuggingCommonStacktrace")) {
+			toDebug = scatterAndGather(urls());
+		}
+		else if (testName.getMethodName().equals("debuggingActivatedForSpecific")) {
+			Hooks.onOperator(hook -> hook
+					.ifNameContains("single")
+					.operatorStacktrace());
+			toDebug = scatterAndGather(urls());
+		}
+		else if (testName.getMethodName().startsWith("debuggingActivated")) {
+			Hooks.onOperator(Hooks.OperatorHook::operatorStacktrace);
+			toDebug = scatterAndGather(urls());
+		}
+	}
+
+	@After
+	public void removeHooks() {
+		if (testName.getMethodName().startsWith("debuggingActivated")) {
+			Hooks.resetOnOperator();
+		}
+	}
+
+	public Mono<String> toDebug; //please overlook the public class attribute :p
+
+	private void printAndAssert(Throwable t, boolean checkForAssemblySuppressed) {
+		t.printStackTrace();
+		assertThat(t)
+				.isInstanceOf(IndexOutOfBoundsException.class)
+				.hasMessage("Source emitted more than one item");
+		if (!checkForAssemblySuppressed) {
+			assertThat(t).hasNoSuppressedExceptions();
+		}
+		else {
+			assertThat(t).satisfies(withSuppressed -> {
+				assertThat(withSuppressed.getSuppressed()).hasSize(1);
+				assertThat(withSuppressed.getSuppressed()[0])
+						.hasMessageStartingWith("\nAssembly trace from producer [reactor.core.publisher.MonoSingle] :")
+						.hasMessageEndingWith("Flux.single(TestWatcher.java:55)\n");
+			});
+		}
+	}
+
+	@Test
+	public void debuggingCommonStacktrace() {
+		toDebug.subscribe(System.out::println, t -> printAndAssert(t, false));
+	}
+
+	@Test
+	public void debuggingActivated() {
+		toDebug.subscribe(System.out::println, t -> printAndAssert(t, true));
+	}
+
+	@Test
+	public void debuggingActivatedForSpecific() {
+		toDebug.subscribe(System.out::println, t -> printAndAssert(t, true));
+	}
 }
