@@ -29,7 +29,7 @@ final class SingleWorkerScheduler implements Scheduler, Executor {
 
     final Worker main;
     
-    public SingleWorkerScheduler(Scheduler actual) {
+    SingleWorkerScheduler(Scheduler actual) {
         this.main = actual.createWorker();
     }
 

@@ -29,7 +29,7 @@ final class MonoElapsed<T> extends MonoSource<T, Tuple2<Long, T>> implements Fus
 
 	final TimedScheduler scheduler;
 
-	public MonoElapsed(Publisher<T> source, TimedScheduler scheduler) {
+	MonoElapsed(Publisher<T> source, TimedScheduler scheduler) {
 		super(source);
 		this.scheduler = scheduler;
 	}

@@ -188,11 +188,6 @@ final class ExecutorScheduler implements Scheduler {
 		public boolean isDisposed() {
 			return get();
 		}
-
-		@Override
-		public String toString() {
-			return "ExecutorTrackedRunnable[cancelled=" + get() + ", task=" + task + "]";
-		}
 	}
 
 	/**
@@ -305,7 +300,7 @@ final class ExecutorScheduler implements Scheduler {
 				AtomicIntegerFieldUpdater.newUpdater(ExecutorSchedulerTrampolineWorker.class,
 						"wip");
 
-		public ExecutorSchedulerTrampolineWorker(Executor executor) {
+		ExecutorSchedulerTrampolineWorker(Executor executor) {
 			this.executor = executor;
 			this.queue = new ConcurrentLinkedQueue<>();
 		}

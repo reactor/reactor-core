@@ -247,20 +247,6 @@ final class ParallelScheduler implements Scheduler, Supplier<ExecutorService> {
             }
         }
         
-        int pendingTasks() {
-            if (shutdown) {
-                return 0;
-            }
-            
-            synchronized (this) {
-                OpenHashSet<?> set = tasks;
-                if (set != null) {
-                    return set.size();
-                }
-                return 0;
-            }
-        }
-        
         static final class ParallelWorkerTask implements Runnable, Disposable {
             final Runnable run;
             
