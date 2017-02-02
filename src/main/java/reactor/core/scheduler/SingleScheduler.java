@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.scheduler;
 
 import java.util.concurrent.CompletableFuture;
@@ -34,38 +35,41 @@ import reactor.util.concurrent.OpenHashSet;
  */
 final class SingleScheduler implements Scheduler, Supplier<ExecutorService> {
 
-    static final AtomicLong COUNTER = new AtomicLong();
+	static final AtomicLong COUNTER = new AtomicLong();
 
-    final ThreadFactory factory;
+	final ThreadFactory factory;
 
-    volatile ExecutorService executor;
-    static final AtomicReferenceFieldUpdater<SingleScheduler, ExecutorService> EXECUTORS =
-            AtomicReferenceFieldUpdater.newUpdater(SingleScheduler.class, ExecutorService.class, "executor");
+	volatile ExecutorService executor;
+	static final AtomicReferenceFieldUpdater<SingleScheduler, ExecutorService> EXECUTORS =
+			AtomicReferenceFieldUpdater.newUpdater(SingleScheduler.class,
+					ExecutorService.class,
+					"executor");
 
-    static final ExecutorService TERMINATED;
-    static {
-        TERMINATED = Executors.newSingleThreadExecutor();
-        TERMINATED.shutdownNow();
-    }
+	static final ExecutorService TERMINATED;
 
-    public SingleScheduler(ThreadFactory factory) {
-        this.factory = factory;
-        init();
-    }
+	static {
+		TERMINATED = Executors.newSingleThreadExecutor();
+		TERMINATED.shutdownNow();
+	}
 
-    /**
-     * Instantiates the default {@link ExecutorService} for the SingleScheduler
-     * ({@code Executors.newSingleThreadExecutor}).
-     */
-    @Override
-    public ExecutorService get() {
-        return Executors.newSingleThreadExecutor(factory);
-    }
+	SingleScheduler(ThreadFactory factory) {
+		this.factory = factory;
+		init();
+	}
 
-    private void init() {
-        EXECUTORS.lazySet(this, Schedulers.decorateExecutorService(
-                Schedulers.SINGLE, this));
-    }
+	/**
+	 * Instantiates the default {@link ExecutorService} for the SingleScheduler
+	 * ({@code Executors.newSingleThreadExecutor}).
+	 */
+	@Override
+	public ExecutorService get() {
+		return Executors.newSingleThreadExecutor(factory);
+	}
+
+	private void init() {
+		EXECUTORS.lazySet(this,
+				Schedulers.decorateExecutorService(Schedulers.SINGLE, this));
+	}
 
 	@Override
 	public boolean isDisposed() {
@@ -73,250 +77,245 @@ final class SingleScheduler implements Scheduler, Supplier<ExecutorService> {
 	}
 
 	@Override
-    public void start() {
-        ExecutorService b = null;
-        for (;;) {
-            ExecutorService a = executor;
-            if (a != TERMINATED) {
-                if (b != null) {
-                    b.shutdownNow();
-                }
-                return;
-            }
+	public void start() {
+		ExecutorService b = null;
+		for (; ; ) {
+			ExecutorService a = executor;
+			if (a != TERMINATED) {
+				if (b != null) {
+					b.shutdownNow();
+				}
+				return;
+			}
 
-            if (b == null) {
-                b = Schedulers.decorateExecutorService(
-                        Schedulers.SINGLE, this);
-            }
+			if (b == null) {
+				b = Schedulers.decorateExecutorService(Schedulers.SINGLE, this);
+			}
 
-            if (EXECUTORS.compareAndSet(this, a, b)) {
-                return;
-            }
-        }
-    }
+			if (EXECUTORS.compareAndSet(this, a, b)) {
+				return;
+			}
+		}
+	}
 
-    @Override
-    public void shutdown() {
-        dispose();
-    }
+	@Override
+	public void shutdown() {
+		dispose();
+	}
 
-    @Override
-    public void dispose() {
-        ExecutorService a = executor;
-        if (a != TERMINATED) {
-            a = EXECUTORS.getAndSet(this, TERMINATED);
-            if (a != TERMINATED) {
-                Schedulers.executorServiceShutdown(a, Schedulers.SINGLE);
-            }
-        }
-    }
+	@Override
+	public void dispose() {
+		ExecutorService a = executor;
+		if (a != TERMINATED) {
+			a = EXECUTORS.getAndSet(this, TERMINATED);
+			if (a != TERMINATED) {
+				Schedulers.executorServiceShutdown(a, Schedulers.SINGLE);
+			}
+		}
+	}
 
-    @Override
-    public Disposable schedule(Runnable task) {
-        try {
-            Future<?> f = executor.submit(task);
-            return () -> f.cancel(executor == TERMINATED);
-        } catch (RejectedExecutionException ex) {
-            return REJECTED;
-        }
-    }
+	@Override
+	public Disposable schedule(Runnable task) {
+		try {
+			Future<?> f = executor.submit(task);
+			return () -> f.cancel(executor == TERMINATED);
+		}
+		catch (RejectedExecutionException ex) {
+			return REJECTED;
+		}
+	}
 
-    @Override
-    public Worker createWorker() {
-        return new SingleWorker(executor);
-    }
+	@Override
+	public Worker createWorker() {
+		return new SingleWorker(executor);
+	}
 
-    static final class SingleWorker implements Worker {
-        final ExecutorService exec;
+	static final class SingleWorker implements Worker {
 
-        OpenHashSet<SingleWorkerTask> tasks;
+		final ExecutorService exec;
 
-        volatile boolean shutdown;
+		OpenHashSet<SingleWorkerTask> tasks;
 
-        public SingleWorker(ExecutorService exec) {
-            this.exec = exec;
-            this.tasks = new OpenHashSet<>();
-        }
+		volatile boolean shutdown;
 
-        @Override
-        public Disposable schedule(Runnable task) {
-            if (shutdown) {
-                return REJECTED;
-            }
+		SingleWorker(ExecutorService exec) {
+			this.exec = exec;
+			this.tasks = new OpenHashSet<>();
+		}
 
-            SingleWorkerTask pw = new SingleWorkerTask(task, this);
+		@Override
+		public Disposable schedule(Runnable task) {
+			if (shutdown) {
+				return REJECTED;
+			}
 
-            synchronized (this) {
-                if (shutdown) {
-                    return REJECTED;
-                }
-                tasks.add(pw);
-            }
+			SingleWorkerTask pw = new SingleWorkerTask(task, this);
 
-            Future<?> f;
-            try {
-                f = exec.submit(pw);
-            } catch (RejectedExecutionException ex) {
-                return REJECTED;
-            }
+			synchronized (this) {
+				if (shutdown) {
+					return REJECTED;
+				}
+				tasks.add(pw);
+			}
 
-	        if (shutdown){
-		        f.cancel(true);
-		        return pw;
-	        }
+			Future<?> f;
+			try {
+				f = exec.submit(pw);
+			}
+			catch (RejectedExecutionException ex) {
+				return REJECTED;
+			}
 
-            pw.setFuture(f);
+			if (shutdown) {
+				f.cancel(true);
+				return pw;
+			}
 
-            return pw;
-        }
+			pw.setFuture(f);
 
-        @Override
-        public void shutdown() {
-            dispose();
-        }
+			return pw;
+		}
 
-        @Override
-        public void dispose() {
-            if (shutdown) {
-                return;
-            }
-            shutdown = true;
-            OpenHashSet<SingleWorkerTask> set;
-            synchronized (this) {
-                set = tasks;
-                tasks = null;
-            }
+		@Override
+		public void shutdown() {
+			dispose();
+		}
 
-            if (set != null && !set.isEmpty()) {
-                Object[] a = set.keys();
-                for (Object o : a) {
-                    if (o != null) {
-                        ((SingleWorkerTask)o).cancelFuture();
-                    }
-                }
-            }
-        }
+		@Override
+		public void dispose() {
+			if (shutdown) {
+				return;
+			}
+			shutdown = true;
+			OpenHashSet<SingleWorkerTask> set;
+			synchronized (this) {
+				set = tasks;
+				tasks = null;
+			}
 
-        @Override
-        public boolean isDisposed() {
-            return shutdown;
-        }
+			if (set != null && !set.isEmpty()) {
+				Object[] a = set.keys();
+				for (Object o : a) {
+					if (o != null) {
+						((SingleWorkerTask) o).cancelFuture();
+					}
+				}
+			}
+		}
 
-        void remove(SingleWorkerTask task) {
-            if (shutdown) {
-                return;
-            }
+		@Override
+		public boolean isDisposed() {
+			return shutdown;
+		}
 
-            synchronized (this) {
-                if (shutdown) {
-                    return;
-                }
-                tasks.remove(task);
-            }
-        }
+		void remove(SingleWorkerTask task) {
+			if (shutdown) {
+				return;
+			}
 
-        int pendingTasks() {
-            if (shutdown) {
-                return 0;
-            }
+			synchronized (this) {
+				if (shutdown) {
+					return;
+				}
+				tasks.remove(task);
+			}
+		}
 
-            synchronized (this) {
-                OpenHashSet<?> set = tasks;
-                if (set != null) {
-                    return set.size();
-                }
-                return 0;
-            }
-        }
+		static final class SingleWorkerTask implements Runnable, Disposable {
 
-        static final class SingleWorkerTask implements Runnable, Disposable {
-            final Runnable run;
+			final Runnable run;
 
-            final SingleWorker parent;
+			final SingleWorker parent;
 
-            volatile boolean cancelled;
+			volatile boolean cancelled;
 
-            volatile Future<?> future;
-            @SuppressWarnings("rawtypes")
-            static final AtomicReferenceFieldUpdater<SingleWorkerTask, Future> FUTURE =
-                    AtomicReferenceFieldUpdater.newUpdater(SingleWorkerTask.class, Future.class, "future");
+			volatile Future<?> future;
+			@SuppressWarnings("rawtypes")
+			static final AtomicReferenceFieldUpdater<SingleWorkerTask, Future> FUTURE =
+					AtomicReferenceFieldUpdater.newUpdater(SingleWorkerTask.class,
+							Future.class,
+							"future");
 
-            static final Future<Object> FINISHED = CompletableFuture.completedFuture(null);
-            static final Future<Object> CANCELLED = CompletableFuture.completedFuture(null);
+			static final Future<Object> FINISHED  =
+					CompletableFuture.completedFuture(null);
+			static final Future<Object> CANCELLED =
+					CompletableFuture.completedFuture(null);
 
-            public SingleWorkerTask(Runnable run, SingleWorker parent) {
-                this.run = run;
-                this.parent = parent;
-            }
+			SingleWorkerTask(Runnable run, SingleWorker parent) {
+				this.run = run;
+				this.parent = parent;
+			}
 
-            @Override
-            public void run() {
-                if (cancelled || parent.shutdown) {
-                    return;
-                }
-                try {
-                    try {
-                        run.run();
-                    } catch (Throwable ex) {
-                        Schedulers.handleError(ex);
-                    }
-                } finally {
-                    for (;;) {
-                        Future<?> f = future;
-                        if (f == CANCELLED) {
-                            break;
-                        }
-                        if (FUTURE.compareAndSet(this, f, FINISHED)) {
-                            parent.remove(this);
-                            break;
-                        }
-                    }
-                }
-            }
+			@Override
+			public void run() {
+				if (cancelled || parent.shutdown) {
+					return;
+				}
+				try {
+					try {
+						run.run();
+					}
+					catch (Throwable ex) {
+						Schedulers.handleError(ex);
+					}
+				}
+				finally {
+					for (; ; ) {
+						Future<?> f = future;
+						if (f == CANCELLED) {
+							break;
+						}
+						if (FUTURE.compareAndSet(this, f, FINISHED)) {
+							parent.remove(this);
+							break;
+						}
+					}
+				}
+			}
 
-	        @Override
-	        public boolean isDisposed() {
-		        Future<?> a = future;
-		        return FINISHED == a || CANCELLED == a;
-	        }
+			@Override
+			public boolean isDisposed() {
+				Future<?> a = future;
+				return FINISHED == a || CANCELLED == a;
+			}
 
-            @Override
-            public void dispose() {
-                if (!cancelled) {
-                    cancelled = true;
+			@Override
+			public void dispose() {
+				if (!cancelled) {
+					cancelled = true;
 
-                    Future<?> f = future;
-                    if (f != CANCELLED && f != FINISHED) {
-                        f = FUTURE.getAndSet(this, CANCELLED);
-                        if (f != CANCELLED && f != FINISHED) {
-                            if (f != null) {
-                                f.cancel(parent.shutdown);
-                            }
+					Future<?> f = future;
+					if (f != CANCELLED && f != FINISHED) {
+						f = FUTURE.getAndSet(this, CANCELLED);
+						if (f != CANCELLED && f != FINISHED) {
+							if (f != null) {
+								f.cancel(parent.shutdown);
+							}
 
-                            parent.remove(this);
-                        }
-                    }
-                }
-            }
+							parent.remove(this);
+						}
+					}
+				}
+			}
 
-            void setFuture(Future<?> f) {
-                if (future != null || !FUTURE.compareAndSet(this, null, f)) {
-                    if (future != FINISHED) {
-                        f.cancel(parent.shutdown);
-                    }
-                }
-            }
+			void setFuture(Future<?> f) {
+				if (future != null || !FUTURE.compareAndSet(this, null, f)) {
+					if (future != FINISHED) {
+						f.cancel(parent.shutdown);
+					}
+				}
+			}
 
-            void cancelFuture() {
-                Future<?> f = future;
-                if (f != CANCELLED && f != FINISHED) {
-                    f = FUTURE.getAndSet(this, CANCELLED);
-                    if (f != null && f != CANCELLED && f != FINISHED) {
-                        f.cancel(true);
-                    }
-                }
-            }
+			void cancelFuture() {
+				Future<?> f = future;
+				if (f != CANCELLED && f != FINISHED) {
+					f = FUTURE.getAndSet(this, CANCELLED);
+					if (f != null && f != CANCELLED && f != FINISHED) {
+						f.cancel(true);
+					}
+				}
+			}
 
-        }
-    }
+		}
+	}
 }

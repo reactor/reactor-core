@@ -395,6 +395,9 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 				verifier = step -> {
 					try {
 						step.verifyErrorMessage(m);
+//						step.expectErrorMessage(m)
+//						.verifyThenAssertThat()
+//						.hasOperatorErrorWithMessage(m);
 					}
 					catch (Exception e) {
 						e.printStackTrace();

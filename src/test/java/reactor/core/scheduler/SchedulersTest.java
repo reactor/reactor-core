@@ -35,6 +35,8 @@ import reactor.core.Cancellation;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.publisher.DirectProcessor;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -51,7 +53,7 @@ public class SchedulersTest {
 				Schedulers.Factory.super.newParallel(1, Thread::new);
 		final TimedScheduler timer    = Schedulers.Factory.super.newTimer(Thread::new);
 
-		public TestSchedulers(boolean disposeOnInit) {
+		TestSchedulers(boolean disposeOnInit) {
 			if (disposeOnInit) {
 				elastic.dispose();
 				single.dispose();
@@ -61,14 +63,17 @@ public class SchedulersTest {
 		}
 
 		public final Scheduler newElastic(int ttlSeconds, ThreadFactory threadFactory) {
+			assertThat(((Schedulers.SchedulerThreadFactory)threadFactory).get()).isEqualTo("unused");
 			return elastic;
 		}
 
 		public final Scheduler newParallel(int parallelism, ThreadFactory threadFactory) {
+			assertThat(((Schedulers.SchedulerThreadFactory)threadFactory).get()).isEqualTo("unused");
 			return parallel;
 		}
 
 		public final Scheduler newSingle(ThreadFactory threadFactory) {
+			assertThat(((Schedulers.SchedulerThreadFactory)threadFactory).get()).isEqualTo("unused");
 			return single;
 		}
 
@@ -658,6 +663,163 @@ public class SchedulersTest {
 		}
 		finally {
 			s.dispose();
+		}
+	}
+
+	@Test
+	public void restartParallel() {
+		restart(Schedulers.newParallel("test"));
+	}
+
+//	@Test
+//	public void restartTimer() {
+//		restart(Schedulers.newTimer("test"));
+//	}
+//
+//	@Test
+//	public void restartElastic() {
+//		restart(Schedulers.newElastic("test"));
+//	}
+
+	@Test
+	public void restartSingle(){
+		restart(Schedulers.newSingle("test"));
+	}
+
+	void restart(Scheduler s){
+		Thread t = Mono.fromCallable(Thread::currentThread)
+		               .subscribeOn(s)
+		               .block();
+
+		s.shutdown();
+		s.start();
+
+		Thread t2 = Mono.fromCallable(Thread::currentThread)
+		                .subscribeOn(s)
+		                .block();
+
+		assertThat(t).isNotEqualTo(Thread.currentThread());
+		assertThat(t).isNotEqualTo(t2);
+	}
+
+	@Test
+	public void testDefaultMethods(){
+		EmptyScheduler s = new EmptyScheduler();
+
+		s.dispose();
+		assertThat(s.disposeCalled).isTrue();
+
+		EmptyScheduler.EmptyWorker w = s.createWorker();
+		w.dispose();
+		assertThat(w.disposeCalled).isTrue();
+
+
+		EmptyTimedScheduler ts = new EmptyTimedScheduler();
+		ts.dispose();//noop
+		ts.start();
+		EmptyTimedScheduler.EmptyTimedWorker tw = ts.createWorker();
+		tw.dispose();
+
+		long before = System.currentTimeMillis();
+
+		assertThat(ts.now(TimeUnit.MILLISECONDS)).isGreaterThanOrEqualTo(before)
+		                                         .isLessThanOrEqualTo(System.currentTimeMillis());
+
+		assertThat(tw.now(TimeUnit.MILLISECONDS)).isGreaterThanOrEqualTo(before)
+		                                        .isLessThanOrEqualTo(System.currentTimeMillis());
+
+		//noop
+		new Schedulers(){
+
+		};
+
+		//noop
+		Schedulers.elastic().shutdown();
+	}
+
+	final static class EmptyScheduler implements Scheduler {
+
+		boolean disposeCalled;
+
+		@Override
+		public void shutdown() {
+			disposeCalled = true;
+		}
+
+		@Override
+		public Cancellation schedule(Runnable task) {
+			return null;
+		}
+
+		@Override
+		public EmptyWorker createWorker() {
+			return new EmptyWorker();
+		}
+
+		static class EmptyWorker implements Worker {
+
+			boolean disposeCalled;
+
+			@Override
+			public Cancellation schedule(Runnable task) {
+				return null;
+			}
+
+			@Override
+			public void shutdown() {
+				disposeCalled = true;
+			}
+		}
+	}
+
+	final static class EmptyTimedScheduler implements TimedScheduler {
+
+		@Override
+		public Cancellation schedule(Runnable task) {
+			return null;
+		}
+
+		@Override
+		public Cancellation schedule(Runnable task, long delay, TimeUnit unit) {
+			return null;
+		}
+
+		@Override
+		public Cancellation schedulePeriodically(Runnable task,
+				long initialDelay,
+				long period,
+				TimeUnit unit) {
+			return null;
+		}
+
+		@Override
+		public EmptyTimedWorker createWorker() {
+			return new EmptyTimedWorker();
+		}
+
+		static class EmptyTimedWorker implements TimedWorker {
+
+			@Override
+			public Cancellation schedule(Runnable task) {
+				return null;
+			}
+
+			@Override
+			public Cancellation schedule(Runnable task, long delay, TimeUnit unit) {
+				return null;
+			}
+
+			@Override
+			public Cancellation schedulePeriodically(Runnable task,
+					long initialDelay,
+					long period,
+					TimeUnit unit) {
+				return null;
+			}
+
+			@Override
+			public void shutdown() {
+			}
 		}
 	}
 }

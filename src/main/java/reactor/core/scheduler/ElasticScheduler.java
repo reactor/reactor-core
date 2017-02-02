@@ -23,7 +23,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -34,6 +33,9 @@ import java.util.function.Supplier;
 
 import reactor.core.Disposable;
 import reactor.util.concurrent.OpenHashSet;
+
+import static reactor.core.scheduler.ExecutorServiceScheduler.CANCELLED;
+import static reactor.core.scheduler.ExecutorServiceScheduler.FINISHED;
 
 /**
  * Dynamically creates ExecutorService-based Workers and caches the thread pools, reusing
@@ -77,7 +79,7 @@ final class ElasticScheduler implements Scheduler, Supplier<ExecutorService> {
 
 	volatile boolean shutdown;
 
-	public ElasticScheduler(ThreadFactory factory, int ttlSeconds) {
+	ElasticScheduler(ThreadFactory factory, int ttlSeconds) {
 		this.ttlSeconds = ttlSeconds;
 		this.factory = factory;
 		this.cache = new ConcurrentLinkedQueue<>();
@@ -215,7 +217,7 @@ final class ElasticScheduler implements Scheduler, Supplier<ExecutorService> {
 		final ExecutorService executor;
 		final long            expireMillis;
 
-		public ExecutorServiceExpiry(ExecutorService executor, long expireMillis) {
+		ExecutorServiceExpiry(ExecutorService executor, long expireMillis) {
 			this.executor = executor;
 			this.expireMillis = expireMillis;
 		}
@@ -231,7 +233,7 @@ final class ElasticScheduler implements Scheduler, Supplier<ExecutorService> {
 
 		OpenHashSet<CachedTask> tasks;
 
-		public CachedWorker(ExecutorService executor, ElasticScheduler parent) {
+		CachedWorker(ExecutorService executor, ElasticScheduler parent) {
 			this.executor = executor;
 			this.parent = parent;
 			this.tasks = new OpenHashSet<>();
@@ -328,13 +330,7 @@ final class ElasticScheduler implements Scheduler, Supplier<ExecutorService> {
 
 			volatile boolean cancelled;
 
-			static final FutureTask<Object> CANCELLED = new FutureTask<>(() -> {
-			}, null);
-
-			static final FutureTask<Object> FINISHED = new FutureTask<>(() -> {
-			}, null);
-
-			public CachedTask(Runnable run, CachedWorker parent) {
+			CachedTask(Runnable run, CachedWorker parent) {
 				this.run = run;
 				this.parent = parent;
 			}

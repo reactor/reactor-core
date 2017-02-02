@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.scheduler;
 
 import java.util.concurrent.ExecutorService;
@@ -20,29 +21,27 @@ import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import reactor.core.Disposable;
 import reactor.util.concurrent.OpenHashSet;
 
 /**
- * A simple {@link Scheduler} which uses a backing {@link ExecutorService} to schedule Runnables for async operators.
+ * A simple {@link Scheduler} which uses a backing {@link ExecutorService} to schedule
+ * Runnables for async operators.
  */
 final class ExecutorServiceScheduler implements Scheduler {
 
-	static final Runnable EMPTY = () -> {
-
+	static final Runnable  EMPTY     = () -> {
 	};
-
-	static final Future<?> CANCELLED_FUTURE = new FutureTask<>(EMPTY, null);
-
-	static final Future<?> FINISHED = new FutureTask<>(EMPTY, null);
+	static final Future<?> CANCELLED = new FutureTask<>(EMPTY, null);
+	static final Future<?> FINISHED  = new FutureTask<>(EMPTY, null);
 
 	final ExecutorService executor;
-	final boolean interruptOnCancel;
+	final boolean         interruptOnCancel;
 
-	public ExecutorServiceScheduler(ExecutorService executorService, boolean interruptOnCancel) {
-		this.executor = Schedulers.decorateExecutorService("ExecutorService", () -> executorService);
+	ExecutorServiceScheduler(ExecutorService executorService, boolean interruptOnCancel) {
+		this.executor = Schedulers.decorateExecutorService("ExecutorService",
+				() -> executorService);
 		this.interruptOnCancel = interruptOnCancel;
 	}
 
@@ -74,16 +73,17 @@ final class ExecutorServiceScheduler implements Scheduler {
 
 	@Override
 	public void dispose() {
-		if(interruptOnCancel) {
-			executor.submit(EMPTY).cancel(true);
+		if (interruptOnCancel) {
+			executor.submit(EMPTY)
+			        .cancel(true);
 		}
-		Schedulers.executorServiceShutdown(executor,"ExecutorService");
+		Schedulers.executorServiceShutdown(executor, "ExecutorService");
 	}
 
 	static final class ExecutorServiceWorker implements Worker {
 
 		final ExecutorService executor;
-		final boolean interruptOnCancel;
+		final boolean         interruptOnCancel;
 
 		volatile boolean terminated;
 
@@ -102,13 +102,13 @@ final class ExecutorServiceScheduler implements Scheduler {
 				if (add(sr)) {
 					Future<?> f = executor.submit(sr);
 					sr.setFuture(f);
+					return sr;
 				}
-				return sr;
 			}
 			catch (RejectedExecutionException ree) {
 				delete(sr);
-				return REJECTED;
 			}
+			return REJECTED;
 		}
 
 		boolean add(ScheduledRunnable sr) {
@@ -155,7 +155,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 					Object[] a = coll.keys();
 					for (Object o : a) {
 						if (o != null) {
-							((ScheduledRunnable)o).cancelFuture();
+							((ScheduledRunnable) o).cancelFuture();
 						}
 					}
 				}
@@ -168,20 +168,15 @@ final class ExecutorServiceScheduler implements Scheduler {
 		}
 	}
 
-	static final class ScheduledRunnable
-			extends AtomicReference<Future<?>>
+	static final class ScheduledRunnable extends AtomicReference<Future<?>>
 			implements Runnable, Disposable {
+
 		/** */
 		private static final long serialVersionUID = 2284024836904862408L;
 
 		final Runnable task;
 
 		final ExecutorServiceWorker parent;
-
-		@SuppressWarnings("unused")
-		volatile Thread current;
-		static final AtomicReferenceFieldUpdater<ScheduledRunnable, Thread> CURRENT =
-				AtomicReferenceFieldUpdater.newUpdater(ScheduledRunnable.class, Thread.class, "current");
 
 		ScheduledRunnable(Runnable task, ExecutorServiceWorker parent) {
 			this.task = task;
@@ -190,17 +185,18 @@ final class ExecutorServiceScheduler implements Scheduler {
 
 		@Override
 		public void run() {
-			CURRENT.lazySet(this, Thread.currentThread());
 			try {
 				try {
 					task.run();
-				} catch (Throwable e) {
+				}
+				catch (Throwable e) {
 					Schedulers.handleError(e);
 				}
-			} finally {
-				for (;;) {
+			}
+			finally {
+				for (; ; ) {
 					Future<?> a = get();
-					if (a == CANCELLED_FUTURE) {
+					if (a == CANCELLED) {
 						break;
 					}
 					if (compareAndSet(a, FINISHED)) {
@@ -208,21 +204,20 @@ final class ExecutorServiceScheduler implements Scheduler {
 						break;
 					}
 				}
-				CURRENT.lazySet(this, null);
 			}
 		}
 
 		void doCancel(Future<?> a) {
-			a.cancel(parent.interruptOnCancel);
+			a.cancel(parent.interruptOnCancel || parent.terminated);
 		}
 
 		void cancelFuture() {
-			for (;;) {
+			for (; ; ) {
 				Future<?> a = get();
 				if (a == FINISHED) {
 					return;
 				}
-				if (compareAndSet(a, CANCELLED_FUTURE)) {
+				if (compareAndSet(a, CANCELLED)) {
 					if (a != null) {
 						doCancel(a);
 					}
@@ -234,17 +229,17 @@ final class ExecutorServiceScheduler implements Scheduler {
 		@Override
 		public boolean isDisposed() {
 			Future<?> a = get();
-			return FINISHED == a || CANCELLED_FUTURE == a;
+			return FINISHED == a || CANCELLED == a;
 		}
 
 		@Override
 		public void dispose() {
-			for (;;) {
+			for (; ; ) {
 				Future<?> a = get();
 				if (a == FINISHED) {
 					return;
 				}
-				if (compareAndSet(a, CANCELLED_FUTURE)) {
+				if (compareAndSet(a, CANCELLED)) {
 					if (a != null) {
 						doCancel(a);
 					}
@@ -254,14 +249,13 @@ final class ExecutorServiceScheduler implements Scheduler {
 			}
 		}
 
-
 		void setFuture(Future<?> f) {
-			for (;;) {
+			for (; ; ) {
 				Future<?> a = get();
 				if (a == FINISHED) {
 					return;
 				}
-				if (a == CANCELLED_FUTURE) {
+				if (a == CANCELLED) {
 					doCancel(a);
 					return;
 				}
@@ -269,11 +263,6 @@ final class ExecutorServiceScheduler implements Scheduler {
 					return;
 				}
 			}
-		}
-
-		@Override
-		public String toString() {
-			return "ScheduledRunnable[cancelled=" + get() + ", task=" + task + "]";
 		}
 	}
 }

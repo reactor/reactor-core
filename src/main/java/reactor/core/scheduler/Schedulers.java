@@ -50,7 +50,7 @@ import static reactor.core.Exceptions.unwrap;
  *
  * @author Stephane Maldini
  */
-public class Schedulers {
+public abstract class Schedulers {
 
 	/**
 	 * Default number of processors available to the runtime on init (min 4)
@@ -72,9 +72,6 @@ public class Schedulers {
 	 * @return a new {@link Scheduler}
 	 */
 	public static Scheduler fromExecutor(Executor executor) {
-		if(executor instanceof ExecutorService){
-			return fromExecutorService((ExecutorService)executor);
-		}
 		return fromExecutor(executor, false);
 	}
 
@@ -89,8 +86,8 @@ public class Schedulers {
 	 * @return a new {@link Scheduler}
 	 */
 	public static Scheduler fromExecutor(Executor executor, boolean trampoline) {
-		if(executor instanceof ExecutorService){
-			return fromExecutorService((ExecutorService)executor, trampoline);
+		if(!trampoline && executor instanceof ExecutorService){
+			return fromExecutorService((ExecutorService)executor, false);
 		}
 		return new ExecutorScheduler(executor, trampoline);
 	}
@@ -739,26 +736,6 @@ public class Schedulers {
 
 		TimedScheduler asTimedScheduler() {
 			throw new UnsupportedOperationException("Scheduler is not Timed");
-		}
-
-		@Override
-		public boolean equals(Object o) {
-			if (this == o) {
-				return true;
-			}
-			if (o == null || getClass() != o.getClass()) {
-				return false;
-			}
-
-			CachedScheduler scheduler = (CachedScheduler) o;
-
-			return cached.equals(scheduler.cached);
-
-		}
-
-		@Override
-		public int hashCode() {
-			return cached.hashCode();
 		}
 	}
 
