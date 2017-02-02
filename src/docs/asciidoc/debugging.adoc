@@ -1,0 +1,240 @@
+Switching from an imperative and synchronous programming paradigm to a reactive
+and asynchronous one can sometimes be daunting. One of the steepest steps in the
+learning curve is how to analyze and debug when something goes wrong.
+
+In the imperative world, this is usually pretty straightforward nowadays: just
+read the stacktrace and you'll spot where the problem originated, and more: was
+it entirely a failure of your code? Did the failure occur in some library code?
+If so, what part of your code called the library, potentially passing in
+improper parameters that ultimately caused the failure? (I'm looking at you,
+`null`!)
+
+== The typical Reactor stack trace
+But as soon as you shift to asynchronous code, things can get much more
+complicated...
+
+Consider the following stacktrace:
+
+.A typically scary Reactor stacktrace
+[source]
+----
+java.lang.IndexOutOfBoundsException: Source emitted more than one item
+	at reactor.core.publisher.MonoSingle$SingleSubscriber.onNext(MonoSingle.java:120)
+	at reactor.core.publisher.FluxFlatMap$FlatMapMain.emitScalar(FluxFlatMap.java:380)
+	at reactor.core.publisher.FluxFlatMap$FlatMapMain.onNext(FluxFlatMap.java:349)
+	at reactor.core.publisher.FluxMapFuseable$MapFuseableSubscriber.onNext(FluxMapFuseable.java:119)
+	at reactor.core.publisher.FluxRange$RangeSubscription.slowPath(FluxRange.java:144)
+	at reactor.core.publisher.FluxRange$RangeSubscription.request(FluxRange.java:99)
+	at reactor.core.publisher.FluxMapFuseable$MapFuseableSubscriber.request(FluxMapFuseable.java:172)
+	at reactor.core.publisher.FluxFlatMap$FlatMapMain.onSubscribe(FluxFlatMap.java:316)
+	at reactor.core.publisher.FluxMapFuseable$MapFuseableSubscriber.onSubscribe(FluxMapFuseable.java:94)
+	at reactor.core.publisher.FluxRange.subscribe(FluxRange.java:68)
+	at reactor.core.publisher.FluxMapFuseable.subscribe(FluxMapFuseable.java:67)
+	at reactor.core.publisher.FluxFlatMap.subscribe(FluxFlatMap.java:98)
+	at reactor.core.publisher.MonoSingle.subscribe(MonoSingle.java:58)
+	at reactor.core.publisher.Mono.subscribeWith(Mono.java:2668)
+	at reactor.core.publisher.Mono.subscribe(Mono.java:2629)
+	at reactor.core.publisher.Mono.subscribe(Mono.java:2604)
+	at reactor.core.publisher.Mono.subscribe(Mono.java:2582)
+	at reactor.core.publisher.scenarios.GuideTests.debuggingCommonStacktrace(GuideTests.java:722)
+----
+
+There is a lot going on there! We get an `IndexOutOfBoundsException` which tell
+us that a "*source emitted* _more than one item_".
+
+We can probably quickly come to assume that this source is a Flux/Mono, as
+confirmed by the line below that mentions `MonoSingle`. So it appears to be some
+sort of complaint from a `single` operator.
+
+Referring to the javadoc for `Mono#single` operator, we indeed remember that
+`single` has a contract: the source must emit exactly one element. It appears
+we had a source that emitted more than one and thus violated that contract.
+
+Can we dig deeper and identify that source? The following rows don't seem very
+helpful. They take us on a travel inside the internals of what seems to be a
+reactive chain, through `subscribes` and `requests`...
+
+By skimming over these rows, we can at least start to form a picture of the kind
+of chain that went wrong: it seems to involve a `MonoSingle`, a `FluxFlatMap`
+and a `FluxRange` (each get several rows in the trace, but overall these 3
+classes are involved). So a `range().flatMap().single()` chain maybe?
+
+But what if we use that pattern a lot in our application? This still doesn't
+tell us much, and simply searching for `single` isn't going to cut it. Then the
+last line refers to some of our code. Finally!
+
+Hold on... When we go to the source file, all we see is that a pre-existing
+`Flux` is subscribed to:
+[source,java]
+----
+toDebug.subscribe(System.out::println, Throwable::printStackTrace);
+----
+
+All of this happened at subscription time, but the `Flux` itself wasn't
+_declared_ there. Worse, when we go to where the variable is declared, we see:
+[source,java]
+----
+public Mono<String> toDebug; //please overlook the public class attribute :p
+----
+
+The variable isn't even _instantiated_ where it is declared. Let's assume a
+worst case scenario where we find out there could be a few different codepath
+that set it in the application... So we're still unsure of which one caused the
+issue.
+
+NOTE: This is kind of the Reactor equivalent of a runtime error, as opposed to a
+compilation error.
+
+What we want to find out more easily is where the operator was added into the
+chain, where the `Flux` was declared. We usually refer to that as the *assembly*
+of the Flux.
+
+== Activating debug mode
+Even though the stacktrace was still able to convey some information for someone
+with a bit of experience, we can see that it is not ideal by itself in more
+advanced cases.
+
+Fortunately, Reactor comes with a debugging-oriented capability of
+*assembly-time instrumentation*.
+
+This is done by customizing the `Hook.onOperator` hook *at application start*
+(or at least before the incriminated flux or mono can be instantiated), like so:
+[source,java]
+----
+Hooks.onOperator(providedHook -> providedHook.operatorStackTrace());
+----
+
+The idea is that this will start instrumenting the calls to `Flux` (and
+`Mono`)'s operator methods (where they are assembled into the chain) by wrapping
+the construction of the operator and capturing a stacktrace there. Since this is
+done when the operator chain is declared, the hook should be activate *before*
+that, so the safest way is to activate it right at the start of your
+application.
+
+Later on, if an exception occurs, the failing operator will be able to refer
+to that capture and append it to the stacktrace.
+
+.Cost of debug mode
+****
+We are dealing with a form of instrumentation here, and creating a
+stacktrace is costly. That is why this debugging feature should only be
+activated in a controlled manner, as a last resort.
+There are ways of limiting the impact of that feature by restricting the hook to
+the type of operator that is causing an issue. For instance in our case we could
+only instrument `single`:
+
+[source,java]
+----
+Hooks.onOperator(providedHook -> providedHook.ifName("single") <1>
+                                             .operatorStackTrace());
+----
+<1> Only activate for operator classes named "single", ignoring case and the
+"Flux" or "Mono" prefixes, as well as "Fuseable" suffix (as seen in stacktrace)
+****
+
+In the next section, we'll see how it differs and how to interpret that new
+information.
+
+== Reading a stack trace in debug mode
+Reusing the example from above, but activating the `operatorStackTrace` debug
+feature, here is the stack we now get:
+
+[source]
+----
+java.lang.IndexOutOfBoundsException: Source emitted more than one item
+	at reactor.core.publisher.MonoSingle$SingleSubscriber.onNext(MonoSingle.java:120)
+	at reactor.core.publisher.FluxOnAssembly$OnAssemblySubscriber.onNext(FluxOnAssembly.java:314) <1>
+...
+<2>
+...
+	at reactor.core.publisher.Mono.subscribeWith(Mono.java:2668)
+	at reactor.core.publisher.Mono.subscribe(Mono.java:2629)
+	at reactor.core.publisher.Mono.subscribe(Mono.java:2604)
+	at reactor.core.publisher.Mono.subscribe(Mono.java:2582)
+	at reactor.core.publisher.scenarios.GuideTests.debuggingActivated(GuideTests.java:727)
+	Suppressed: reactor.core.publisher.FluxOnAssembly$OnAssemblyException: <3>
+Assembly trace from producer [reactor.core.publisher.MonoSingle] : <4>
+	reactor.core.publisher.Flux.single(Flux.java:5335)
+	reactor.core.publisher.scenarios.GuideTests.scatterAndGather(GuideTests.java:689)
+	reactor.core.publisher.scenarios.GuideTests.populateDebug(GuideTests.java:702)
+	org.junit.rules.TestWatcher$1.evaluate(TestWatcher.java:55)
+	org.junit.rules.RunRules.evaluate(RunRules.java:20)
+Observed operator chain, starting from the origin : <5>
+	|_	Flux.single(TestWatcher.java:55) <6>
+----
+<1> This is new: what we see here is the wrapper operator that captures the
+stack.
+<2> Apart from that, the first section of the stacktrace is still the same for
+the most part,showing a bit of operators internals (so we removed a bit of the
+snippet here)
+<3> This is where the new stuff from debugging mode starts appearing.
+<4> First we get some details on where the operator was assembled, hurray!
+<5> We also get a traceback of the error as it propagated through the operator
+chain, from first to last (error site to subscribe site).
+<6> Each operator that saw the error is mentioned along with the class and line
+where it originated. If an operator is assembled from within Reactor code, the
+later would be omitted.
+
+As you can see, the captured stacktrace is appended to the original error as a
+suppressed `OnAssemblyException`. There are two parts to it, but the first
+section is the most interesting. It shows the path of construction for the
+operator that triggered the exception. Here it shows that the `single` that
+caused our issue was created in the `scatterAndGather` method, itself called
+from a `populateDebug` method that got executed through JUnit.
+
+We are now armed with enough information to find the culprit, let's have a look
+at that `scatterAndGather` method:
+[source,java]
+----
+private Mono<String> scatterAndGather(Flux<String> urls) {
+    return urls.flatMap(url -> doRequest(url))
+           .single(); <1>
+}
+----
+<1> Sure enough, here is our `single`.
+
+Now we can see what the root cause of the error was: a `flatMap` that performs
+several HTTP calls to a few urls is chained with `single`, which seem a bit too
+restrictive. After a short `git blame` and a quick discussion with the author of
+that line, we find out he meant to use the less restrictive `take(1)` instead...
+
+Congratulations, *we solved our problem*!
+
+That second part of the debug stacktrace was not necessarily very interesting in
+this particular example, because the error was actually happening in the last
+operator in the chain (the one closest to `subscribe`). Taking another example
+might make it clearer:
+[source,java]
+----
+FakeRepository.findAllUserByName(Flux.just("pedro", "simon", "stephane"))
+              .transform(FakeUtils1.applyFilters)
+              .transform(FakeUtils2.enrichUser)
+              .blockLast();
+----
+
+Now imagine that inside `findAllUserByName` there is a `map` that fails. Here we
+would see the following final traceback:
+[source,java]
+----
+Observed operator chain, starting from the origin :
+	|_	Flux.map(FakeRepository.java:27)
+	|_	Flux.map(FakeRepository.java:28)
+	|_	Flux.filter(FakeUtils1.java:29)
+	|_	Flux.transform(GuideDebuggingExtraTests.java:41)
+	|_	Flux.elapsed(FakeUtils2.java:30)
+	|_	Flux.transform(GuideDebuggingExtraTests.java:42)
+----
+
+This correspond to a flattened out version of the chain of operators, or rather
+of the section of the chain that gets notified of the error:
+
+ 1. the exception originates in the first `map`
+ 2. it is seen by a second `map` (both in fact correspond to the
+    `findAllUserByName` method)
+ 3. then is is seen by a `filter` and a `transfom`, which indicates us that part of
+    the chain is constructed via a reusable transformation function (here, the
+    `applyFilters` utility method).
+ 4. finally it is seen by an `elapsed` and a `transform`. Once again, elapsed is
+    what is applied by the transformation function of that second transform.
+
+== Logging a stream
