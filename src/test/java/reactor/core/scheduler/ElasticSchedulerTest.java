@@ -52,15 +52,7 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 		((ElasticScheduler)s).evictor.shutdownNow();
 
 		try{
-			Disposable d = (Disposable)s.schedule(() -> {
-				try {
-					Thread.sleep(10000);
-				}
-				catch (InterruptedException e) {
-					System.out.println("interrupted");
-					Thread.currentThread().interrupt();
-				}
-			});
+			Disposable d = (Disposable)s.schedule(() -> {});
 			assertThat(d.isDisposed()).isFalse();
 			d.dispose();
 			while(((ElasticScheduler)s).cache.peek() == null){
