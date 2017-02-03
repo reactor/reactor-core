@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package reactor.misc;
+package reactor.guide;
 
-import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
@@ -51,9 +50,9 @@ public class GuideDebuggingExtraTests {
 							+ "\t|_\tFlux.map(FakeRepository.java:27)\n"
 							+ "\t|_\tFlux.map(FakeRepository.java:28)\n"
 							+ "\t|_\tFlux.filter(FakeUtils1.java:29)\n"
-							+ "\t|_\tFlux.transform(GuideDebuggingExtraTests.java:41)\n"
+							+ "\t|_\tFlux.transform(GuideDebuggingExtraTests.java:40)\n"
 							+ "\t|_\tFlux.elapsed(FakeUtils2.java:30)\n"
-							+ "\t|_\tFlux.transform(GuideDebuggingExtraTests.java:42)\n\n");
+							+ "\t|_\tFlux.transform(GuideDebuggingExtraTests.java:41)\n\n");
 
 			System.out.println(debugStack);
 		}
