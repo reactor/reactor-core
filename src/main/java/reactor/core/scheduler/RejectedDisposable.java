@@ -29,6 +29,11 @@ final class RejectedDisposable implements Disposable {
 	}
 
 	@Override
+	public boolean isDisposed() {
+		return true;
+	}
+
+	@Override
 	public String toString() {
 		return "Rejected task";
 	}

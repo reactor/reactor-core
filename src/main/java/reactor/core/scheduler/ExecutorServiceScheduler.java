@@ -53,8 +53,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 	@Override
 	public Disposable schedule(Runnable task) {
 		try {
-			Future<?> f = executor.submit(task);
-			return () -> f.cancel(interruptOnCancel);
+			return new DisposableFuture(executor.submit(task), interruptOnCancel);
 		}
 		catch (RejectedExecutionException ree) {
 			return REJECTED;
@@ -73,11 +72,28 @@ final class ExecutorServiceScheduler implements Scheduler {
 
 	@Override
 	public void dispose() {
-		if (interruptOnCancel) {
-			executor.submit(EMPTY)
-			        .cancel(true);
-		}
 		Schedulers.executorServiceShutdown(executor, "ExecutorService");
+	}
+
+	static final class DisposableFuture implements Disposable {
+
+		final Future<?> f;
+		final boolean   interruptOnCancel;
+
+		DisposableFuture(Future<?> f, boolean interruptOnCancel) {
+			this.f = f;
+			this.interruptOnCancel = interruptOnCancel;
+		}
+
+		@Override
+		public void dispose() {
+			f.cancel(interruptOnCancel);
+		}
+
+		@Override
+		public boolean isDisposed() {
+			return f.isCancelled() || f.isDone();
+		}
 	}
 
 	static final class ExecutorServiceWorker implements Worker {

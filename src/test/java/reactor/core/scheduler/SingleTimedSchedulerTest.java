@@ -75,7 +75,7 @@ public class SingleTimedSchedulerTest extends AbstractSchedulerTest {
 			d = (Disposable) c;
 			assertThat(d.isDisposed()).isFalse();
 			d.dispose();
-			assertThat(d.isDisposed()).isFalse();
+			assertThat(d.isDisposed()).isTrue();
 		}
 		finally {
 			s.shutdown();
@@ -118,9 +118,9 @@ public class SingleTimedSchedulerTest extends AbstractSchedulerTest {
 			assertThat(c).isEqualTo(Scheduler.REJECTED);
 
 			d = (Disposable) c;
-			assertThat(d.isDisposed()).isFalse();
+			assertThat(d.isDisposed()).isTrue();
 			d.dispose();
-			assertThat(d.isDisposed()).isFalse();
+			assertThat(d.isDisposed()).isTrue();
 		}
 		finally {
 			s.shutdown();
@@ -164,7 +164,7 @@ public class SingleTimedSchedulerTest extends AbstractSchedulerTest {
 			d = (Disposable) c;
 			assertThat(d.isDisposed()).isFalse();
 			d.dispose();
-			assertThat(d.isDisposed()).isFalse();
+			assertThat(d.isDisposed()).isTrue();
 		}
 		finally {
 			s.shutdown();
@@ -207,9 +207,9 @@ public class SingleTimedSchedulerTest extends AbstractSchedulerTest {
 			assertThat(c).isEqualTo(Scheduler.REJECTED);
 
 			d = (Disposable) c;
-			assertThat(d.isDisposed()).isFalse();
+			assertThat(d.isDisposed()).isTrue();
 			d.dispose();
-			assertThat(d.isDisposed()).isFalse();
+			assertThat(d.isDisposed()).isTrue();
 		}
 		finally {
 			s.shutdown();

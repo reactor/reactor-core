@@ -100,17 +100,27 @@ public abstract class AbstractSchedulerTest {
 
 			s.shutdown();
 			s.dispose();//noop
-			if(shouldCheckDisposeTask()) {
-				assertThat(s.isDisposed()).isFalse();
+
+			if(s == ImmediateScheduler.instance()){
+				return;
 			}
+			if(unwrapped == null) {
+				assertThat(s.isDisposed()).isTrue();
+			}
+
 
 			c = s.schedule(() -> {
 			});
 
 			d = (Disposable) c;
-			assertThat(d.isDisposed()).isFalse();
+			if(unwrapped != null) {
+				assertThat(d.isDisposed()).isFalse();
+			}
+			else{
+				assertThat(c).isEqualTo(Scheduler.REJECTED);
+			}
 			d.dispose();
-			assertThat(d.isDisposed()).isFalse();
+			assertThat(d.isDisposed()).isTrue();
 		}
 		finally {
 			s.shutdown();
@@ -187,13 +197,10 @@ public abstract class AbstractSchedulerTest {
 			}
 
 			c = w.schedule(() -> {});
+			d = (Disposable) c;
 
 			assertThat(c).isEqualTo(Scheduler.REJECTED);
-
-			d = (Disposable) c;
-			assertThat(d.isDisposed()).isFalse();
-			d.dispose();
-			assertThat(d.isDisposed()).isFalse();
+			assertThat(d.isDisposed()).isTrue();
 		}
 		finally {
 			s.shutdown();

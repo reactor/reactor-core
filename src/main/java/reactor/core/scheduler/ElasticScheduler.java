@@ -178,7 +178,7 @@ final class ElasticScheduler implements Scheduler, Supplier<ExecutorService> {
 		catch (RejectedExecutionException ex) {
 			return REJECTED;
 		}
-		return () -> f.cancel(true);
+		return new ExecutorServiceScheduler.DisposableFuture(f, true);
 	}
 
 	@Override
