@@ -162,7 +162,6 @@ public class SingleTimedSchedulerTest extends AbstractSchedulerTest {
 			});
 
 			d = (Disposable) c;
-			assertThat(d.isDisposed()).isFalse();
 			d.dispose();
 			assertThat(d.isDisposed()).isTrue();
 		}

@@ -15,11 +15,8 @@
  */
 package reactor.core.scheduler;
 
-import java.util.concurrent.TimeUnit;
-
 import org.junit.Test;
 import reactor.core.Disposable;
-import reactor.core.publisher.Flux;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -50,15 +47,20 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 
 	@Test(timeout = 10000)
 	public void eviction() throws Exception {
-		Scheduler s = Schedulers.newElastic("test-recycle", 1);
+		Scheduler s = Schedulers.newElastic("test-recycle", 2);
 		((ElasticScheduler)s).evictor.shutdownNow();
 
 		try{
-			s.schedule(() -> {});
+			Disposable d = (Disposable)s.schedule(() -> {
+				try {
+					Thread.sleep(10000);
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+			});
 
-			while(((ElasticScheduler)s).cache.peek() == null){
-				Thread.sleep(100);
-			}
+			d.dispose();
 
 			while(((ElasticScheduler)s).cache.peek() != null){
 				((ElasticScheduler)s).eviction();
