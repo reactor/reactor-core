@@ -15,6 +15,8 @@
  */
 package reactor.core.scheduler;
 
+import java.util.concurrent.TimeUnit;
+
 import org.junit.Test;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
@@ -54,7 +56,6 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 		try{
 			Disposable d = (Disposable)s.schedule(() -> {});
 			assertThat(d.isDisposed()).isFalse();
-			d.dispose();
 			while(((ElasticScheduler)s).cache.peek() == null){
 				Thread.sleep(100);
 			}
