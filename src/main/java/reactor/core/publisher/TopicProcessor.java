@@ -26,10 +26,10 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.core.Exceptions;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.WaitStrategy;
 
@@ -645,7 +645,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 
 		}
 		catch (Throwable t) {
-			ringBuffer.removeGatingSequence(signalProcessor.getSequence());
+			ringBuffer.removeGatingSequence(signalProcessor.sequence);
 			decrementSubscribers();
 			if (!alive() && RejectedExecutionException.class.isAssignableFrom(t.getClass())){
 				coldSource(ringBuffer, t, error, minimum).subscribe(subscriber);
@@ -717,21 +717,21 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * @param <T> event implementation storing the data for sharing during exchange or
 	 * parallel coordination of an event.
 	 */
-	private final static class TopicSubscriberLoop<T>
+	final static class TopicSubscriberLoop<T>
 			implements Runnable, Producer, Receiver, Trackable, Subscription {
 
-		private final AtomicBoolean running = new AtomicBoolean(false);
+		final AtomicBoolean running = new AtomicBoolean(true);
 
-		private final RingBuffer.Sequence sequence =
+		final RingBuffer.Sequence sequence =
 				wrap(RingBuffer.INITIAL_CURSOR_VALUE, this);
 
-		private final TopicProcessor<T> processor;
+		final TopicProcessor<T> processor;
 
-		private final RingBuffer.Sequence pendingRequest;
+		final RingBuffer.Sequence pendingRequest;
 
-		private final Subscriber<? super T> subscriber;
+		final Subscriber<? super T> subscriber;
 
-		private final Runnable waiter = new Runnable() {
+		final Runnable waiter = new Runnable() {
 			@Override
 			public void run() {
 				if (!running.get() || processor.isTerminated()) {
@@ -748,7 +748,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 		 * @param pendingRequest holder for the number of pending requests
 		 * @param subscriber the output Subscriber instance
 		 */
-		public TopicSubscriberLoop(TopicProcessor<T> processor,
+		TopicSubscriberLoop(TopicProcessor<T> processor,
 		                            RingBuffer.Sequence pendingRequest,
 		                            Subscriber<? super T> subscriber) {
 			this.processor = processor;
@@ -756,11 +756,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 			this.subscriber = subscriber;
 		}
 
-		public RingBuffer.Sequence getSequence() {
-			return sequence;
-		}
-
-		public void halt() {
+		void halt() {
 			running.set(false);
 			processor.barrier.alert();
 		}
@@ -771,14 +767,9 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 		@Override
 		public void run() {
 			try {
-				if (!running.compareAndSet(false, true)) {
-					Operators.error(subscriber, new IllegalStateException("Thread is already running"));
-					return;
-				}
-
-				if(!processor.startSubscriber(subscriber, this)){
-					return;
-				}
+				Thread.currentThread()
+				      .setContextClassLoader(processor.contextClassLoader);
+				subscriber.onSubscribe(this);
 
 				if (!EventLoopProcessor
 						.waitRequestOrTerminalEvent(pendingRequest, processor.barrier, running, sequence, waiter)) {
@@ -833,11 +824,6 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 							processor.readWait.signalAllWhenBlocking();
 						}
 					}
-
-					catch (final InterruptedException ex) {
-						Thread.currentThread().interrupt();
-						break;
-					}
 					catch (Throwable ex) {
 						if(WaitStrategy.isAlert(ex) || Exceptions.isCancel(ex)) {
 
@@ -862,11 +848,10 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 								}
 								processor.barrier.clearAlert();
 							}
-							continue;
 						}
-						subscriber.onError(Operators.onOperatorError(ex));
-						sequence.set(nextSequence);
-						nextSequence++;
+						else {
+							throw Exceptions.propagate(ex);
+						}
 					}
 				}
 			}

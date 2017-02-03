@@ -117,8 +117,9 @@ final class SingleScheduler implements Scheduler, Supplier<ExecutorService> {
 	@Override
 	public Disposable schedule(Runnable task) {
 		try {
-			Future<?> f = executor.submit(task);
-			return () -> f.cancel(executor == TERMINATED);
+			return new ExecutorServiceScheduler.DisposableFuture(
+					executor.submit(task),
+					false);
 		}
 		catch (RejectedExecutionException ex) {
 			return REJECTED;

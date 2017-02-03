@@ -48,7 +48,7 @@ public abstract class AbstractSchedulerTest {
 	@Test(timeout = 10000)
 	final public void directScheduleAndDispose() throws Exception {
 		Scheduler s = scheduler();
-		Scheduler unwrapped = null;
+		Scheduler unwrapped;
 		if(s instanceof Schedulers.CachedScheduler){
 			unwrapped = ((Schedulers.CachedScheduler)s).get();
 			assertThat(unwrapped).isNotNull();
@@ -61,6 +61,9 @@ public abstract class AbstractSchedulerTest {
 					assertThat(e).hasMessage("Scheduler is not Timed");
 				}
 			}
+		}
+		else {
+			unwrapped = null;
 		}
 
 		try {
@@ -100,17 +103,32 @@ public abstract class AbstractSchedulerTest {
 
 			s.shutdown();
 			s.dispose();//noop
-			if(shouldCheckDisposeTask()) {
-				assertThat(s.isDisposed()).isFalse();
+
+			if(s == ImmediateScheduler.instance()){
+				return;
+			}
+			if(unwrapped == null) {
+				assertThat(s.isDisposed()).isTrue();
 			}
 
+
 			c = s.schedule(() -> {
+				if(unwrapped == null && shouldCheckInterrupted()){
+					try {
+						Thread.sleep(10000);
+					}
+					catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+					}
+				}
 			});
 
 			d = (Disposable) c;
-			assertThat(d.isDisposed()).isFalse();
+			if(unwrapped == null) {
+				assertThat(c).isEqualTo(Scheduler.REJECTED);
+			}
 			d.dispose();
-			assertThat(d.isDisposed()).isFalse();
+			assertThat(d.isDisposed()).isTrue();
 		}
 		finally {
 			s.shutdown();
@@ -187,13 +205,10 @@ public abstract class AbstractSchedulerTest {
 			}
 
 			c = w.schedule(() -> {});
+			d = (Disposable) c;
 
 			assertThat(c).isEqualTo(Scheduler.REJECTED);
-
-			d = (Disposable) c;
-			assertThat(d.isDisposed()).isFalse();
-			d.dispose();
-			assertThat(d.isDisposed()).isFalse();
+			assertThat(d.isDisposed()).isTrue();
 		}
 		finally {
 			s.shutdown();

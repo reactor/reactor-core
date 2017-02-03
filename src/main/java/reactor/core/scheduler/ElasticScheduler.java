@@ -161,12 +161,10 @@ final class ElasticScheduler implements Scheduler, Supplier<ExecutorService> {
 
 		Runnable wrapper = () -> {
 			try {
-				try {
-					task.run();
-				}
-				catch (Throwable ex) {
-					Schedulers.handleError(ex);
-				}
+				task.run();
+			}
+			catch (Throwable ex) {
+				Schedulers.handleError(ex);
 			}
 			finally {
 				release(exec);
@@ -180,7 +178,7 @@ final class ElasticScheduler implements Scheduler, Supplier<ExecutorService> {
 		catch (RejectedExecutionException ex) {
 			return REJECTED;
 		}
-		return () -> f.cancel(true);
+		return new ExecutorServiceScheduler.DisposableFuture(f, true);
 	}
 
 	@Override

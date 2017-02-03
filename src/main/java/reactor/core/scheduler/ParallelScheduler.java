@@ -149,8 +149,14 @@ final class ParallelScheduler implements Scheduler, Supplier<ExecutorService> {
     @Override
     public Disposable schedule(Runnable task) {
         ExecutorService exec = pick();
-        Future<?> f = exec.submit(task);
-        return () -> f.cancel(executors == SHUTDOWN);
+	    try {
+		    return new ExecutorServiceScheduler.DisposableFuture(
+				    exec.submit(task),
+				    false);
+	    }
+	    catch (RejectedExecutionException ex) {
+		    return REJECTED;
+	    }
     }
 
     @Override

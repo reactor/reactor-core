@@ -248,6 +248,11 @@ public class TopicProcessorTest {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
+	public void failNonPowerOfTwo() {
+		TopicProcessor.create("test", 3);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
 	public void failNegativeBufferSize() {
 		TopicProcessor.create("test", -1);
 	}

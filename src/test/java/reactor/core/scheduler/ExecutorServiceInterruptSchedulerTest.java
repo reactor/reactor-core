@@ -15,6 +15,7 @@
  */
 package reactor.core.scheduler;
 
+import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 
 import org.junit.Test;
@@ -26,7 +27,7 @@ public class ExecutorServiceInterruptSchedulerTest extends AbstractSchedulerTest
 
 	@Override
 	protected Scheduler scheduler() {
-		return Schedulers.fromExecutorService(ForkJoinPool.commonPool(), true);
+		return Schedulers.fromExecutorService(Executors.newSingleThreadExecutor(), true);
 	}
 
 	@Override

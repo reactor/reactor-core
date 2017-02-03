@@ -483,7 +483,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	}
 
 	@SuppressWarnings("rawtypes")
-    private static final Supplier FACTORY = (Supplier<Slot>) Slot::new;
+    static final Supplier FACTORY = (Supplier<Slot>) Slot::new;
 
 	/**
 	 * Instance
@@ -655,20 +655,20 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	final static class QueueSubscriberLoop<T>
 			implements Runnable, Producer, Trackable, Subscription, Receiver {
 
-		private final AtomicBoolean running = new AtomicBoolean(false);
+		final AtomicBoolean running = new AtomicBoolean(true);
 
-		private final RingBuffer.Sequence
+		final RingBuffer.Sequence
 				sequence = wrap(RingBuffer.INITIAL_CURSOR_VALUE, this);
 
-		private final RingBuffer.Sequence pendingRequest = RingBuffer.newSequence(0);
+		final RingBuffer.Sequence pendingRequest = RingBuffer.newSequence(0);
 
-		private final RingBuffer.Reader barrier;
+		final RingBuffer.Reader barrier;
 
-		private final WorkQueueProcessor<T> processor;
+		final WorkQueueProcessor<T> processor;
 
-		private final Subscriber<? super T> subscriber;
+		final Subscriber<? super T> subscriber;
 
-		private final Runnable waiter = new Runnable() {
+		final Runnable waiter = new Runnable() {
 			@Override
 			public void run() {
 				if (barrier.isAlerted() || !isRunning() ||
@@ -684,7 +684,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		 * @param subscriber the output Subscriber instance
 		 * @param processor the source processor
 		 */
-		public QueueSubscriberLoop(Subscriber<? super T> subscriber,
+		QueueSubscriberLoop(Subscriber<? super T> subscriber,
 				WorkQueueProcessor<T> processor) {
 			this.processor = processor;
 			this.subscriber = subscriber;
@@ -692,16 +692,12 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 			this.barrier = processor.ringBuffer.newReader();
 		}
 
-		public RingBuffer.Sequence getSequence() {
-			return sequence;
-		}
-
-		public void halt() {
+		void halt() {
 			running.set(false);
 			barrier.alert();
 		}
 
-		public boolean isRunning() {
+		boolean isRunning() {
 			return running.get() && (processor.terminated == 0 || processor.error == null &&
 					processor.ringBuffer.getAsLong() > sequence.getAsLong());
 		}
@@ -716,15 +712,11 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 			boolean processedSequence = true;
 
 			try {
-				if (!running.compareAndSet(false, true)) {
-					Operators.error(subscriber, new IllegalStateException("Thread is already running"));
-					return;
-				}
 
 				//while(processor.alive() && processor.upstreamSubscription == null);
-				if(!processor.startSubscriber(subscriber, this)){
-					return;
-				}
+				Thread.currentThread()
+				      .setContextClassLoader(processor.contextClassLoader);
+				subscriber.onSubscribe(this);
 
 				long cachedAvailableSequence = Long.MIN_VALUE;
 				nextSequence = sequence.getAsLong();
@@ -804,13 +796,13 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 						}
 
 					}
-					catch (RuntimeException ce) {
+					catch (InterruptedException | RuntimeException ce) {
 						if (Exceptions.isCancel(ce)){
 							reschedule(event);
 							break;
 						}
 						if (!WaitStrategy.isAlert(ce)) {
-							throw ce;
+							throw Exceptions.propagate(ce);
 						}
 
 						barrier.clearAlert();
@@ -833,11 +825,6 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 						//continue event-loop
 
 					}
-					catch (Throwable ex) {
-						reschedule(event);
-						subscriber.onError(ex);
-						break;
-					}
 				}
 			}
 			finally {
@@ -857,7 +844,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		}
 
 		@SuppressWarnings("unchecked")
-		private boolean replay(final boolean unbounded) {
+		boolean replay(final boolean unbounded) {
 			if (REPLAYING.compareAndSet(processor, 0, 1)) {
 				try {
 					RingBuffer.Sequence s = null;
@@ -924,7 +911,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 			}
 		}
 
-		private boolean reschedule(Slot<T> event) {
+		boolean reschedule(Slot<T> event) {
 			if (event != null &&
 					event.value != null) {
 				processor.claimedDisposed.add(event.value);
@@ -935,7 +922,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 			return false;
 		}
 
-		private void readNextEvent(final boolean unbounded) {
+		void readNextEvent(final boolean unbounded) {
 				//pause until request
 			while ((!unbounded && getAndSub(pendingRequest, 1L) == 0L)) {
 				if (!isRunning()) {

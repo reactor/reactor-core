@@ -57,8 +57,9 @@ final class SingleTimedScheduler implements TimedScheduler {
 	@Override
 	public Disposable schedule(Runnable task) {
 		try {
-			Future<?> f = executor.submit(task);
-			return () -> f.cancel(false);
+			return new ExecutorServiceScheduler.DisposableFuture(
+					executor.submit(task),
+					false);
 		}
 		catch (RejectedExecutionException ex) {
 			return REJECTED;
@@ -68,8 +69,9 @@ final class SingleTimedScheduler implements TimedScheduler {
 	@Override
 	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 		try {
-			Future<?> f = executor.schedule(task, delay, unit);
-			return () -> f.cancel(false);
+			return new ExecutorServiceScheduler.DisposableFuture(
+					executor.schedule(task, delay, unit),
+					false);
 		}
 		catch (RejectedExecutionException ex) {
 			return REJECTED;
@@ -82,8 +84,9 @@ final class SingleTimedScheduler implements TimedScheduler {
 			long period,
 			TimeUnit unit) {
 		try {
-			Future<?> f = executor.scheduleAtFixedRate(task, initialDelay, period, unit);
-			return () -> f.cancel(false);
+			return new ExecutorServiceScheduler.DisposableFuture(
+					executor.scheduleAtFixedRate(task, initialDelay, period, unit),
+					false);
 		}
 		catch (RejectedExecutionException ex) {
 			return REJECTED;

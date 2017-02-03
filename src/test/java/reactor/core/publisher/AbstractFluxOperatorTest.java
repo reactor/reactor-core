@@ -307,7 +307,7 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 				})
 				                                                .as(scenario.body());
 
-				if (source.getPrefetch() != UNSPECIFIED) {
+				if (source.getPrefetch() != UNSPECIFIED && scenario.prefetch() != UNSPECIFIED) {
 					assertThat(Math.min(source.getPrefetch(), Integer.MAX_VALUE)).isEqualTo(scenario.prefetch());
 				}
 
@@ -674,7 +674,7 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 		return new RuntimeException("test");
 	}
 
-	protected Flux<I> finiteSourceOrDefault(Scenario<I, O> scenario) {
+	final Flux<I> finiteSourceOrDefault(Scenario<I, O> scenario) {
 		Flux<I> source = scenario != null ? scenario.finiteFlux() : null;
 		if (source == null) {
 			return Flux.just(item(0), item(1), item(2));
