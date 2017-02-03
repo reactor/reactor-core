@@ -16,7 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.function.BiFunction;
@@ -24,7 +23,6 @@ import java.util.function.BiFunction;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.MultiReceiver;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
@@ -84,7 +82,7 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 	}
 
 	static final class ZipSubscriber<T, U, R>
-			implements Subscriber<T>, Producer, MultiReceiver, Receiver, Subscription,
+			implements Subscriber<T>, Producer, Receiver, Subscription,
 			           Trackable {
 
 		final Subscriber<? super R> actual;
@@ -169,6 +167,7 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 				Operators.onErrorDropped(t);
 				return;
 			}
+			done = true;
 			actual.onError(t);
 		}
 
@@ -177,6 +176,7 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 			if (done) {
 				return;
 			}
+			done = true;
 			actual.onComplete();
 		}
 
@@ -198,17 +198,6 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 		@Override
 		public Object upstream() {
 			return s;
-		}
-
-		@Override
-		public Iterator<?> upstreams() {
-			return isStarted() ? Arrays.asList(s, it)
-			                           .iterator() : null;
-		}
-
-		@Override
-		public long upstreamCount() {
-			return isStarted() ? 2 : 1;
 		}
 
 		@Override
