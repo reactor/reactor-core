@@ -746,4 +746,15 @@ public class GuideTests {
 	public void debuggingActivatedForSpecific() {
 		toDebug.subscribe(System.out::println, t -> printAndAssert(t, true));
 	}
+
+	@Test
+	public void debuggingLogging() {
+		Flux<Integer> flux = Flux.range(1, 10)
+		                         .log()
+		                         .take(3);
+		//flux.subscribe();
+
+		//nothing much to test, but...
+		StepVerifier.create(flux).expectNext(1, 2, 3).verifyComplete();
+	}
 }

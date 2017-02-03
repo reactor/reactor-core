@@ -238,3 +238,60 @@ of the section of the chain that gets notified of the error:
     what is applied by the transformation function of that second transform.
 
 == Logging a stream
+Additionally to stacktrace debugging and analysis, another powerful tool to have
+in your toolbelt is the capability to trace and log events in an asynchronous
+sequence.
+
+The `log()` operator can do just that. Chained inside a sequence, it will peek
+at every event of the Flux/Mono upstream of it (including `onNext`, `onError`
+and `onComplete` of course, but also _subscriptions_, _cancellation_ and
+_requests_).
+
+The operator picks up common logging frameworks like Log4J and Logback through
+*SLF4J*, and will default to the JDK Logger in case none can be found.
+
+For instance, supposing we have _logback_ activated and configured, and a chain
+like `range(1,10).take(3)`. By placing a `log()` just before the _take_, we can
+get some insight as to how it works and what kind of events it propagates
+upstream to the _range_:
+[source,java]
+----
+Flux<Integer> flux = Flux.range(1, 10)
+                         .log()
+                         .take(3);
+flux.subscribe();
+----
+
+This prints out (through the logger's console appender):
+----
+10:45:20.200 [main] INFO  reactor.Flux.Range.1 - | onSubscribe([Synchronous Fuseable] FluxRange.RangeSubscription) <1>
+10:45:20.205 [main] INFO  reactor.Flux.Range.1 - | request(unbounded) <2>
+10:45:20.205 [main] INFO  reactor.Flux.Range.1 - | onNext(1) <3>
+10:45:20.205 [main] INFO  reactor.Flux.Range.1 - | onNext(2)
+10:45:20.205 [main] INFO  reactor.Flux.Range.1 - | onNext(3)
+10:45:20.205 [main] INFO  reactor.Flux.Range.1 - | cancel() <4>
+----
+
+Here, additionally to the logger's own formatter (time, thread, level, message),
+the `log()` operator outputs a few things in its own format:
+
+ * `reactor.Flux.Range.1` is an automatic _category_ for the log, in case you
+ use the operator several times in a chain. It allows you to distinguish which
+ operator's events are being logged (here, the `range`). This can be overwritten
+ with your own custom category using the `log(String)` signature.
+ * After the few separating characters, the actual event gets printed: here we
+ get `onSubscribe`, `request`, 3 `onNext` and a `cancel`...
+ * For the first line, `onSubscribe`, we get the implementation of the
+ `Subscriber`, that usually correspond to the operator-specific implementation.
+ Between square brackets, we get additional information if the operator can be
+ automatically optimized via synchronous or asynchronous fusion (see the
+ appendix on <<microfusion>>).
+ * on the second line *(2)* we can see that an unbounded request was propagated
+ up from downstream.
+ * Then the range sends three values in a row (*(3)*)...
+ * On the last line we see a cancel.
+
+The last line *(4)* is the most interesting: we can see the `take` in action
+there: it operates by cutting the sequence short after it has seen enough
+elements emitted. In a word, `take` simply `cancel()` the source once it has
+emitted the user-requested amount!
