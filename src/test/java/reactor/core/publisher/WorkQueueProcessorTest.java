@@ -504,6 +504,11 @@ public class WorkQueueProcessorTest {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
+	public void failNonPowerOfTwo() {
+		TopicProcessor.create("test", 3);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
 	public void failNullBufferSize() {
 		WorkQueueProcessor.create("test", 0);
 	}

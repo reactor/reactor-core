@@ -522,7 +522,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 
 		final int prefetch;
 
-		public RequestTask(Subscription upstream,
+		 RequestTask(Subscription upstream,
 				Runnable stopCondition,
 				Consumer<Long> postWaitCallback,
 				LongSupplier readCount,
@@ -601,20 +601,6 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 
 	final boolean incrementSubscribers() {
 		return SUBSCRIBER_COUNT.getAndIncrement(this) == 0;
-	}
-
-	final boolean startSubscriber(Subscriber<? super IN> subscriber,
-			Subscription subscription) {
-		try {
-			Thread.currentThread()
-			      .setContextClassLoader(contextClassLoader);
-			subscriber.onSubscribe(subscription);
-			return true;
-		}
-		catch (Throwable t) {
-			Operators.error(subscriber, t);
-			return false;
-		}
 	}
 
 	final static class EventLoopContext extends ClassLoader {
