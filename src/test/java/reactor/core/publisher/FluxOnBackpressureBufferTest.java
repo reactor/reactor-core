@@ -15,15 +15,44 @@
  */
 package reactor.core.publisher;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 import reactor.core.Exceptions;
+import reactor.core.Fuseable;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FluxOnBackpressureBufferTest {
+public class FluxOnBackpressureBufferTest
+		extends AbstractFluxOperatorTest<String, String> {
+
+	@Test(expected = IllegalArgumentException.class)
+	public void failNegativeHistory(){
+		Flux.never().onBackpressureBuffer(-1);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+		return Arrays.asList(
+				scenario(Flux::onBackpressureBuffer),
+
+				scenario(f -> f.onBackpressureBuffer(4, d -> {}))
+		);
+	}
+
+	@Override
+	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
+		return defaultOptions.fusionMode(Fuseable.ASYNC)
+		                     .prefetch(Integer.MAX_VALUE);
+	}
+
+	@Override
+	protected int fusionModeThreadBarrierSupport() {
+		return Fuseable.ASYNC;
+	}
 
 	@Test
 	public void onBackpressureBuffer() {

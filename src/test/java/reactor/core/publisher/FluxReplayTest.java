@@ -58,6 +58,12 @@ public class FluxReplayTest extends AbstractFluxOperatorTest<String, String> {
 		    .replay( -1);
 	}
 
+	@Test(expected = IllegalArgumentException.class)
+	public void failTime(){
+		Flux.never()
+		    .replay( Duration.ofDays(-1));
+	}
+
 	VirtualTimeScheduler vts;
 
 	@Before

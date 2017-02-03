@@ -41,11 +41,14 @@ final class FluxOnBackpressureBuffer<O> extends FluxSource<O, O> implements Fuse
 	final boolean             unbounded;
 	final boolean             delayError;
 
-	public FluxOnBackpressureBuffer(Publisher<? extends O> source,
+	FluxOnBackpressureBuffer(Publisher<? extends O> source,
 			int bufferSize,
 			boolean unbounded,
 			Consumer<? super O> onOverflow) {
 		super(source);
+		if (bufferSize < 1) {
+			throw new IllegalArgumentException("Buffer Size must be strictly positive");
+		}
 		this.bufferSize = bufferSize;
 		this.unbounded = unbounded;
 		this.onOverflow = onOverflow;
@@ -94,7 +97,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxSource<O, O> implements Fuse
 				AtomicLongFieldUpdater.newUpdater(BackpressureBufferSubscriber.class,
 						"requested");
 
-		public BackpressureBufferSubscriber(Subscriber<? super T> actual,
+		BackpressureBufferSubscriber(Subscriber<? super T> actual,
 				int bufferSize,
 				boolean unbounded,
 				boolean delayError,
@@ -335,7 +338,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxSource<O, O> implements Fuse
 
 		@Override
 		public boolean isStarted() {
-			return s != null;
+			return s != null && !isTerminated() && !isCancelled();
 		}
 
 		@Override

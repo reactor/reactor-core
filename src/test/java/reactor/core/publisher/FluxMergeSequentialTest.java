@@ -31,7 +31,7 @@ import java.util.function.Supplier;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.reactivestreams.Publisher;
+import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
@@ -58,21 +58,34 @@ public class FluxMergeSequentialTest {
 
 	@Test
 	public void normal() {
-		Flux.range(1, 5)
-		        .flatMapSequential(new Function<Integer, Publisher<Integer>>() {
-			        @Override
-			        public Publisher<Integer> apply(Integer t) {
-				        return Flux.range(t, 2);
-			        }
-		        })
-		        .subscribeWith(AssertSubscriber.create())
-		        .assertComplete()
-		    .assertValues(1, 2, 2, 3, 3, 4, 4, 5, 5, 6);
+		StepVerifier.create(Flux.range(1, 5)
+		                        .hide()
+		                        .flatMapSequential(t -> Flux.range(t, 2)))
+		            .expectNext(1, 2, 2, 3, 3, 4, 4, 5, 5, 6)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void normalFusedSync() {
+		StepVerifier.create(Flux.range(1, 5)
+		                        .flatMapSequential(t -> Flux.range(t, 2)))
+		            .expectNext(1, 2, 2, 3, 3, 4, 4, 5, 5, 6)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void normalFusedAsync() {
+		StepVerifier.create(Flux.range(1, 5)
+		                        .subscribeWith(UnicastProcessor.create())
+		                        .flatMapSequential(t -> Flux.range(t, 2)))
+		            .expectNext(1, 2, 2, 3, 3, 4, 4, 5, 5, 6)
+		            .verifyComplete();
 	}
 
 	@Test
 	public void normalBackpressured() {
 		AssertSubscriber<Integer> ts = Flux.range(1, 5)
+		                                   .hide()
 		                                   .flatMapSequential(t -> Flux.range(t, 2))
 		                                   .subscribeWith(AssertSubscriber.create(3));
 

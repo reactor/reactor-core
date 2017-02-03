@@ -53,7 +53,7 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 
 	final Supplier<Queue<MergeSequentialInner<R>>> queueSupplier;
 
-	public FluxMergeSequential(Publisher<? extends T> source,
+	FluxMergeSequential(Publisher<? extends T> source,
 			Function<? super T, ? extends Publisher<? extends R>> mapper,
 			int maxConcurrency, int prefetch, ErrorMode errorMode) {
 		this(source, mapper, maxConcurrency, prefetch, errorMode,
@@ -371,7 +371,8 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 							}
 							catch (Throwable ex) {
 								current = null;
-								ex = Operators.onOperatorError(inner, ex);
+								inner.cancel();
+								ex = Operators.onOperatorError(ex);
 								cancelAll();
 								a.onError(ex);
 								return;
@@ -452,7 +453,7 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 	 * order can be restored.
 	 * @param <R> the type of objects emitted by the inner flux
 	 */
-	static final class MergeSequentialInner<R> implements Subscriber<R>, Subscription {
+	static final class MergeSequentialInner<R> implements Subscriber<R>{
 
 		final FluxMergeSequentialSupport<R> parent;
 
@@ -474,7 +475,7 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 
 		int fusionMode;
 
-		public MergeSequentialInner(FluxMergeSequentialSupport<R> parent, int prefetch) {
+		MergeSequentialInner(FluxMergeSequentialSupport<R> parent, int prefetch) {
 			this.parent = parent;
 			this.prefetch = prefetch;
 			this.limit = prefetch - (prefetch >> 2);
@@ -528,20 +529,7 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 			parent.innerComplete(this);
 		}
 
-		@Override
-		public void request(long n) {
-			if (fusionMode != Fuseable.SYNC) {
-				long p = produced + n;
-				if (p >= limit) {
-					produced = 0L;
-					subscription.request(p);
-				} else {
-					produced = p;
-				}
-			}
-		}
-
-		public void requestOne() {
+		void requestOne() {
 			if (fusionMode != Fuseable.SYNC) {
 				long p = produced + 1;
 				if (p == limit) {
@@ -553,8 +541,8 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 			}
 		}
 
-		@Override
-		public void cancel() {
+
+		void cancel() {
 			Operators.set(SUBSCRIPTION, this, Operators.cancelledSubscription());
 		}
 
