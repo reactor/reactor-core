@@ -48,7 +48,7 @@ public abstract class AbstractSchedulerTest {
 	@Test(timeout = 10000)
 	final public void directScheduleAndDispose() throws Exception {
 		Scheduler s = scheduler();
-		Scheduler unwrapped = null;
+		Scheduler unwrapped;
 		if(s instanceof Schedulers.CachedScheduler){
 			unwrapped = ((Schedulers.CachedScheduler)s).get();
 			assertThat(unwrapped).isNotNull();
@@ -61,6 +61,9 @@ public abstract class AbstractSchedulerTest {
 					assertThat(e).hasMessage("Scheduler is not Timed");
 				}
 			}
+		}
+		else {
+			unwrapped = null;
 		}
 
 		try {
@@ -110,13 +113,18 @@ public abstract class AbstractSchedulerTest {
 
 
 			c = s.schedule(() -> {
+				if(unwrapped == null && shouldCheckInterrupted()){
+					try {
+						Thread.sleep(10000);
+					}
+					catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+					}
+				}
 			});
 
 			d = (Disposable) c;
-			if(unwrapped != null) {
-				assertThat(d.isDisposed()).isFalse();
-			}
-			else{
+			if(unwrapped == null) {
 				assertThat(c).isEqualTo(Scheduler.REJECTED);
 			}
 			d.dispose();
