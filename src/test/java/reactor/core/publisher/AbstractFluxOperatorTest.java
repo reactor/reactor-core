@@ -307,7 +307,7 @@ public abstract class AbstractFluxOperatorTest<I, O> {
 				})
 				                                                .as(scenario.body());
 
-				if (source.getPrefetch() != UNSPECIFIED) {
+				if (source.getPrefetch() != UNSPECIFIED && scenario.prefetch() != UNSPECIFIED) {
 					assertThat(Math.min(source.getPrefetch(), Integer.MAX_VALUE)).isEqualTo(scenario.prefetch());
 				}
 

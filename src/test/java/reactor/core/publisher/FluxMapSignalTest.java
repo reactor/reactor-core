@@ -15,12 +15,48 @@
  */
 package reactor.core.publisher;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.junit.Test;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
-public class FluxMapSignalTest {
-    @Test
+public class FluxMapSignalTest extends AbstractFluxOperatorTest<String, String> {
+
+	@Test(expected = IllegalArgumentException.class)
+	public void allNull(){
+		Flux.never().flatMap(null, null, null);
+	}
+
+	@Override
+	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
+		return defaultOptions.shouldAssertPostTerminateState(false);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+		return Arrays.asList(
+				scenario(f -> f.flatMap(Flux::just, Flux::error, Flux::empty)),
+
+				scenario(f -> f.flatMap(Flux::just, Flux::error, null)),
+
+				scenario(f -> f.flatMap(Flux::just, null, null))
+		);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
+		return Arrays.asList(
+				scenario(f -> f.flatMap(d -> null, null, null))
+				.verifier(step -> step.verifyError(NullPointerException.class)),
+
+				scenario(f -> f.flatMap(null, null, () -> null))
+						.verifier(step -> step.verifyError(NullPointerException.class))
+		);
+	}
+
+	@Test
     public void completeOnlyBackpressured() {
         AssertSubscriber<Integer> ts = AssertSubscriber.create(0L);
         

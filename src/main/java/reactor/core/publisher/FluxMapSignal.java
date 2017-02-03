@@ -53,7 +53,7 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
      *
      * @throws NullPointerException if either {@code source} or {@code mapper} is null.
      */
-    public FluxMapSignal(Publisher<? extends T> source,
+    FluxMapSignal(Publisher<? extends T> source,
             Function<? super T, ? extends R> mapperNext,
             Function<Throwable, ? extends R> mapperError,
             Supplier<? extends R>            mapperComplete) {
@@ -106,15 +106,23 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
                 this.s = s;
 
                 actual.onSubscribe(this);
-            }
+
+                if (parent.mapperNext == null) {
+		            s.request(Long.MAX_VALUE);
+	            }
+	        }
         }
 
         @Override
         public void onNext(T t) {
-            if (done || parent.mapperNext == null) {
-                Operators.onNextDropped(t);
+	        if (done) {
+	            Operators.onNextDropped(t);
                 return;
             }
+
+	        if (parent.mapperNext == null) {
+		        return;
+		    }
 
             R v;
 
@@ -242,7 +250,12 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
             return null;
         }
 
-        @Override
+	    @Override
+	    public boolean isCancelled() {
+		    return cancelled;
+	    }
+
+	    @Override
         public R peek() {
             return value;
         }
