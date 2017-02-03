@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.misc;
+package reactor.guide;
 
 import reactor.core.publisher.Flux;
 

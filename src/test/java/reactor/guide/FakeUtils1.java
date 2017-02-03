@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.misc;
+package reactor.guide;
 
 import java.util.function.Function;
 
