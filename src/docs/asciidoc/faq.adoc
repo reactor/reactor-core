@@ -1,6 +1,6 @@
-== FAQ, best practices and other "How do I...?"
+= FAQ, best practices and other "How do I...?"
 [[faq.chain]]
-=== I just used an operator on my `Flux` but it doesn't seem to apply... What gives?
+== I just used an operator on my `Flux` but it doesn't seem to apply... What gives?
 
 Check you have affected the result of the operator to the variable you `.subscribe()` to.
 
@@ -56,7 +56,7 @@ Received: *****
 ----
 
 [[faq.monoThen]]
-=== My `Mono` continuation (`then` or `and`) is never called
+== My `Mono` continuation (`then` or `and`) is never called
 
 .example
 [source,java]
@@ -85,14 +85,14 @@ myMethod.process("a")
 ----
 
 [[faq.retryWhen]]
-=== How to use `retryWhen` to emulate `retry(3)`?
+== How to use `retryWhen` to emulate `retry(3)`?
 The `retryWhen` operator can be quite complex. Hopefully this snippet of code
 can help you understand how it works by attempting to emulate a simpler
 `retry(3)`:
 include::snippetRetryWhenRetry.adoc[]
 
 [[faq.exponentialBackoff]]
-=== How to use `retryWhen` for exponential backoff?
+== How to use `retryWhen` for exponential backoff?
 Exponential backoff produces retry attempts with a growing delay between each of
 the attempts, so as not to overload the source systems and risk an all out
 crash. The rationale is that if the source errors, it is already in an unstable

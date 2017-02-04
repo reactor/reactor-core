@@ -1,5 +1,5 @@
 [[core-features]]
-== Reactor Core Features
+= Reactor Core Features
 `reactor-core` is the main artifact of the project, a reactive library that
 focuses on the Reactive Streams specification and targets Java 8.
 
@@ -20,7 +20,7 @@ will also switch to the relevant type. For instance the `count` operator exists
 in `Flux`, but returns a `Mono<Long>`.
 
 [[flux]]
-=== `Flux`, an asynchronous sequence of 0-n items
+== `Flux`, an asynchronous sequence of 0-n items
 
 image::https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/flux.png[Flux]
 
@@ -40,7 +40,7 @@ sequences are not necessarily empty: `Flux.interval(Duration)` produces a
 `Flux<Long>` that is infinite and emits regular ticks from a clock.
 
 [[mono]]
-=== `Mono`, an asynchronous 0-1 result
+== `Mono`, an asynchronous 0-1 result
 image::https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/mono.png[Mono]
 
 A `Mono<T>` is a specialized `Publisher<T>` that emits at most one item then
@@ -54,7 +54,7 @@ Note that a `Mono` can be used to represent no-value asynchronous processes that
 only have the concept of completion (think `Runnable`): just use an empty
 `Mono<Void>`.
 
-=== Simple ways to create a Flux/Mono and to subscribe to it
+== Simple ways to create a Flux/Mono and to subscribe to it
 The easiest way to get started with `Flux` and `Mono` is to use one of the
 numerous factory methods found in their respective classes.
 
@@ -177,8 +177,11 @@ enough demand for the sequence to advance or your Flux will get "stuck". That is
 the reason why `BaseSubscriber` forces you to implement the subscription and
 onNext hooks, where you should usually call `request` at least once.
 
+//the leveloffset seems to be absolute from root
+include::producing.adoc[leveloffset=2]
+
 [[schedulers]]
-=== `Schedulers`
+== `Schedulers`
 Reactor, like RxJava, can be considered **concurrency agnostic**. It doesn't
 enforce a concurrency model but rather leave you, the developer, in command.
 
@@ -243,7 +246,7 @@ chain after them. Also, only the earliest `subscribeOn` call in the chain is
 actually taken into account.
 
 [[error.handling]]
-=== Handling Errors
+== Handling Errors
 TIP: For a quick look at the available operators for error handling, see
 <<which.errors,the relevant operator decision tree>>.
 
@@ -273,7 +276,7 @@ _upstream_.
 Let's go through each mean of error handling one-by-one. When relevant we'll
 make a parallel with imperative world's `try` patterns.
 
-==== Error handling operators
+=== Error handling operators
 The `onError` at the end of the chain is akin to a `try/catch` block. There,
 execution skips to the catch in case an Exception is thrown:
 [source,java]
@@ -318,7 +321,7 @@ dealing with exceptions in a try/catch block. Most notably:
 
 All of these have equivalent in Reactor, in the form of error handling operators.
 
-===== Default value
+==== Default value
 The equivalent of **(1)** is `onErrorReturn`:
 [source,java]
 ----
@@ -336,7 +339,7 @@ Flux.just(10)
     .onErrorReturn(e -> e.getMessage().equals("boom10"), "recovered10");
 ----
 
-===== Fallback method
+==== Fallback method
 If you want more than a single default value and you have an alternative safer
 way of processing your data, you can use `switchOnError`. This would be the
 equivalent of *(2)*.
@@ -381,7 +384,7 @@ Flux.just("timeout1", "unknown", "key2")
 <3> If the source says the key is unknown, let's create a new entry.
 <4> In all other cases, "re-throw".
 
-===== Catch and rethrow
+==== Catch and rethrow
 That last line inside the previous `flatMap` gives us an hint as to how item
 *(3)* (catch wrap and rethrow) could be achieved:
 [source,java]
@@ -394,7 +397,7 @@ Flux.just("timeout1")
     );
 ----
 
-===== Log or react on the side
+==== Log or react on the side
 For cases where you want the error to continue propagating, but you still want
 to react to it without modifying the sequence (for instance logging it like in
 item *(4)*), there is the `doOnError` operator. This operator as well as all
@@ -421,7 +424,7 @@ Flux.just("unknown")
 <2> is decorated with a logging side-effect...
 <3> and then protected with the cache fallback.
 
-===== Using resources and the finally block
+==== Using resources and the finally block
 The last parallel to draw with the imperative world is the cleaning up that can
 be done either via a Java 7 "try-with-resources" construct or the use of the
 `finally` block (*(5)*). Both have their Reactor equivalent, actually: `using`
@@ -473,7 +476,7 @@ Flux.just("foo", "bar")
 <3> Here we increment statistics in case of cancellation only.
 <4> `take(1)` will cancel after 1 item is emitted.
 
-===== Demonstrating the terminal aspect of `onError`
+==== Demonstrating the terminal aspect of `onError`
 In order to demonstrate that all these operators don't prevent the upstream
 original sequence to terminate when the error happens, let's take a more visual
 example with a `Flux.interval`. The interval operator ticks every x units of time
@@ -506,7 +509,7 @@ Uh oh
 Even with one extra second of runtime, no more tick comes in from the `interval`.
 The sequence was indeed terminated by the error.
 
-===== Retrying
+==== Retrying
 There is another operator of interest with regards to error handling, and you
 might be tempted to use it in the case above. `retry`, as its mame indicates,
 allows to retry an erroring sequence.
@@ -593,7 +596,7 @@ include::snippetRetryWhenRetry.adoc[]
 TIP: A similar code can be used to implement an _exponential backoff and retry_
 pattern, as shown in the <<faq.exponentialBackoff,FAQ>>.
 
-==== How are exceptions in operators or functions handled?
+=== How are exceptions in operators or functions handled?
 In general, all operators can themselves contain code that potentially trigger
 an exception, or calls a user-defined callback that similarly can fail, so they
 all contain some form of error handling.
@@ -691,5 +694,5 @@ converted.subscribe(
 );
 ----
 
-=== Processor
-==== Do I need a Processor?
+== Processor
+=== Do I need a Processor?

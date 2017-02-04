@@ -1,6 +1,6 @@
 [[getting-started]]
-== Getting started
-=== Introducing Reactor
+= Getting started
+== Introducing Reactor
 //TODO flesh out, reword. could also be updated on the website
 Reactor is a fully non-blocking reactive programming foundation for the JVM,
 with efficient demand management (backpressure). It integrates directly with
@@ -13,7 +13,7 @@ Suited for Microservices Architecture, Reactor IPC offers backpressure-ready
 network engines for HTTP (including Websockets), TCP and UDP. Reactive Encoding/
 Decoding is fully supported.
 
-=== The BOM
+== The BOM
 Reactor 3 uses a BOMfootnote:['Bill Of Materials', a curated list of versioned compatible artifacts]
 model since `reactor-core 3.0.4`, with the `Aluminium` release train.
 
@@ -41,7 +41,7 @@ The qualifiers are (in chronological order):
    PATCH number, SR stands for "Service Release").
 
 
-=== Getting Reactor
+== Getting Reactor
 As mentioned above, the easiest way to use Reactor in your core is to use
 the BOM and add the relevant dependencies to your project. Note that when adding
 such a dependency, you omit the version so that it gets picked up from the BOM.
@@ -51,7 +51,7 @@ specify it when adding your dependency, as you usually would. You can also of
 course forgo the BOM entirely and always specify dependencies with their artifact
 versions.
 
-==== Maven installation
+=== Maven installation
 The BOM concept is natively supported by Maven. First, you'll need to import the
 BOM by adding the following to your `pom.xml`:footnote:[if the top section already exist in your pom, just append the contents]
 
@@ -94,7 +94,7 @@ without a `<version>`:
 <2> no version tag here
 <3> reactor-test provides facilities to unit test reactive streams
 
-==== Gradle installation
+=== Gradle installation
 Gradle has no core support for Maven BOMs, but you can use Spring's
 https://github.com/spring-gradle-plugins/dependency-management-plugin[gradle-dependency-management]
 plugin.

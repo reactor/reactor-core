@@ -1,5 +1,5 @@
 [[producing]]
-== Programmatically creating a sequence
+= Programmatically creating a sequence
 In this section, we'll introduce means of creating a `Flux` (or `Mono`) by
 programmatically defining its associated events (onNext, onError, onComplete).
 All these methods share the fact that they expose an API to trigger
@@ -7,7 +7,7 @@ the events that we call a **sink**. There are actually a few sink variants, as
 you will discover below.
 
 [[producing.generate]]
-=== Generate
+== Generate
 The simplest form of programmatic creation of a `Flux` is through the `generate`
 method, which takes a generator function.
 
@@ -80,7 +80,7 @@ TIP: If your state object needs to clean up some resources, use the
 state instance.
 
 [[producing.create]]
-=== Create
+== Create
 The more advanced form of programmatic creation of a `Flux`, `create` can both
 work asynchronously or synchronously and is suitable for multiple emissions per
 round.
@@ -146,7 +146,7 @@ NOTE: `Mono` also has a `create` generator. As you should expect, the
 signals subsequent to the first one.
 
 
-=== Handle
+== Handle
 Both present in `Mono` and `Flux`, `handle` is a tiny bit different. It is an
 instance method, meaning that it is chained on an existing source like common
 operators.
