@@ -9,25 +9,25 @@ ifndef::host-github[:ext-relative: {outfilesuffix}]
 :sectnums:
 :sectanchors:
 
-include::aboutDoc.adoc[]
+include::aboutDoc.adoc[leveloffset=1]
 
-include::gettingStarted.adoc[]
+include::gettingStarted.adoc[leveloffset=1]
 
-include::reactiveProgramming.adoc[]
+include::reactiveProgramming.adoc[leveloffset=1]
 
-include::coreFeatures.adoc[]
+include::coreFeatures.adoc[leveloffset=1]
 
 //TODO see other sections from consuming.adoc
 
-include::operatorChoice.adoc[]
+include::operatorChoice.adoc[leveloffset=1]
 
-include::testing.adoc[]
+include::testing.adoc[leveloffset=1]
 
-include::producing.adoc[]
+include::debugging.adoc[leveloffset=1]
 
-include::advancedFeatures.adoc[]
+include::advancedFeatures.adoc[leveloffset=1]
 
-include::faq.adoc[]
+include::faq.adoc[leveloffset=1]
 
 [appendix]
 include::apdx-implem.adoc[]

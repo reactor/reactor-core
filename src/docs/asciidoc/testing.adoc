@@ -1,5 +1,5 @@
 [[testing]]
-== Testing
-=== About the `reactor-test` project
-=== Testing a scenario with `StepVerifier`
-=== Manually emitting with `TestPublisher`
+= Testing
+== About the `reactor-test` project
+== Testing a scenario with `StepVerifier`
+== Manually emitting with `TestPublisher`

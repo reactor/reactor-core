@@ -1,6 +1,6 @@
-== Advanced features and concepts
+= Advanced features and concepts
 
-=== Mutualizing operator usage
+== Mutualizing operator usage
 [source,java]
 ----
 Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
@@ -23,7 +23,7 @@ flux.subscribe(d -> System.out.println("Subscriber to Filter: "+d));
 image::https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/gs-reftail.png[Reference used for Subscriber]
 
 
-==== transform
+=== transform
 The `transform` operator allows to encapsulate the flow by applying a chain of
 operators that is externalized in a function. This applies globally to all the
 subscribers of a sequence.
@@ -42,7 +42,7 @@ Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
 image::https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/gs-transform.png[Transform Operator : encapsulate flows]
 
 
-==== compose
+=== compose
 The `compose` operator also allows to locally apply an externalized chain of
 operators to a sequence, but it does so on a per-subscriber basis.
 
@@ -69,7 +69,7 @@ composedFlux.subscribe(d -> System.out.println("Subscriber 2 to Composed MapAndF
 image::https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/gs-compose.png[Compose Operator : Per Subscriber transformation]
 
 [[reactor.hotCold]]
-=== Hot vs Cold
+== Hot vs Cold
 [source,java]
 ----
 Flux<String> source = Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
@@ -106,13 +106,10 @@ hotSource.onComplete();
 ----
 image::https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/gs-hot.png[Broadcasting a subscription]
 
-=== Broadcast to multiple subscribers with `ConnectableFlux`
+== Broadcast to multiple subscribers with `ConnectableFlux`
 
-=== Parallelize work with `ParallelFlux`
+== Parallelize work with `ParallelFlux`
 
-=== Backpressure and the associated rules
+== Backpressure and the associated rules
 
-=== Global hooks
-
-=== Debugging Reactor
-include::debugging.adoc[leveloffset=2]
+== Global hooks

@@ -1,3 +1,4 @@
+= Debugging Reactor
 Switching from an imperative and synchronous programming paradigm to a reactive
 and asynchronous one can sometimes be daunting. One of the steepest steps in the
 learning curve is how to analyze and debug when something goes wrong.
