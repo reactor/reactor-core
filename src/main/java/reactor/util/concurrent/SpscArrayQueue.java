@@ -37,7 +37,7 @@ final class SpscArrayQueue<T> extends SpscArrayQueueP3<T> implements Queue<T> {
 	/** */
 	private static final long serialVersionUID = 494623116936946976L;
 
-	public SpscArrayQueue(int capacity) {
+	SpscArrayQueue(int capacity) {
 		super(QueueSupplier.ceilingNextPowerOfTwo(capacity));
 	}
 	
