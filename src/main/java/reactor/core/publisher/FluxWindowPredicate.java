@@ -166,12 +166,7 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>> impl
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
 				actual.onSubscribe(this);
-				if (error != null) {
-					s.cancel();
-					done = true;
-					drain();
-				}
-				else if (cancelled == 0) {
+				if (cancelled == 0) {
 					if (prefetch == Integer.MAX_VALUE) {
 						s.request(Long.MAX_VALUE);
 					}
@@ -191,7 +186,7 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>> impl
 			queue.offer(g);
 		}
 
-		boolean offerNewWindow(T key, T emitInNewWindow) {
+		void offerNewWindow(T key, T emitInNewWindow) {
 			// if the main is cancelled, don't create new groups
 			if (cancelled == 0) {
 				WindowGroupedFlux<T> g = new WindowGroupedFlux<>(key, groupQueueSupplier.get(), this, prefetch);
@@ -200,10 +195,12 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>> impl
 				}
 				window = g;
 
-				queue.offer(g);
+				if (!queue.offer(g)) {
+					onError(Operators.onOperatorError(this, Exceptions.failWithOverflow("Queue is full?!"), emitInNewWindow));
+					return;
+				}
 				drain();
 			}
-			return true;
 		}
 
 		@Override
@@ -719,7 +716,7 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>> impl
 			Subscriber<? super T> a = actual;
 
 			if (!queue.offer(t)) {
-				onError(Operators.onOperatorError(null, Exceptions.failWithOverflow("Queue is full?!"), t));
+				onError(Operators.onOperatorError(this, Exceptions.failWithOverflow("Queue is full?!"), t));
 				return;
 			}
 			if (enableOperatorFusion) {

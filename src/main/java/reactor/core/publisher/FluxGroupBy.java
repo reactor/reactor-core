@@ -143,7 +143,7 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 
 		volatile boolean enableAsyncFusion;
 
-		public GroupByMain(Subscriber<? super GroupedFlux<K, V>> actual,
+		GroupByMain(Subscriber<? super GroupedFlux<K, V>> actual,
 				Queue<GroupedFlux<K, V>> queue,
 				Supplier<? extends Queue<V>> groupQueueSupplier,
 				int prefetch,
@@ -695,7 +695,7 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 			Subscriber<? super V> a = actual;
 
 			if (!queue.offer(t)) {
-				onError(Operators.onOperatorError(null, Exceptions.failWithOverflow("Queue is full?!"), t));
+				onError(Operators.onOperatorError(this, Exceptions.failWithOverflow("Queue is full?!"), t));
 				return;
 			}
 			if (outputFused) {

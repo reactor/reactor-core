@@ -21,6 +21,7 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -49,7 +50,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 	static final SwitchMapInner<Object> CANCELLED_INNER =
 			new SwitchMapInner<>(null, 0, Long.MAX_VALUE);
 
-	public FluxSwitchMap(Publisher<? extends T> source,
+	FluxSwitchMap(Publisher<? extends T> source,
 			Function<? super T, ? extends Publisher<? extends R>> mapper,
 			Supplier<? extends Queue<Object>> queueSupplier,
 			int bufferSize) {
@@ -86,6 +87,8 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		final Function<? super T, ? extends Publisher<? extends R>> mapper;
 
 		final Queue<Object> queue;
+
+		final BiPredicate<Object, Object> queueBiAtomic;
 
 		final int bufferSize;
 
@@ -134,7 +137,8 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		static final AtomicIntegerFieldUpdater<SwitchMapMain> ACTIVE =
 				AtomicIntegerFieldUpdater.newUpdater(SwitchMapMain.class, "active");
 
-		public SwitchMapMain(Subscriber<? super R> actual,
+		@SuppressWarnings("unchecked")
+		SwitchMapMain(Subscriber<? super R> actual,
 				Function<? super T, ? extends Publisher<? extends R>> mapper,
 				Queue<Object> queue,
 				int bufferSize) {
@@ -143,6 +147,12 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 			this.queue = queue;
 			this.bufferSize = bufferSize;
 			this.active = 1;
+			if(queue instanceof BiPredicate){
+				this.queueBiAtomic = (BiPredicate<Object, Object>) queue;
+			}
+			else {
+				this.queueBiAtomic = null;
+			}
 		}
 
 		@Override
@@ -158,7 +168,6 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public void onNext(T t) {
-
 			if (done) {
 				Operators.onNextDropped(t);
 				return;
@@ -356,8 +365,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		}
 
 		void innerNext(SwitchMapInner<R> inner, R value) {
-			queue.offer(inner);
-			queue.offer(value);
+			queueBiAtomic.test(inner, value);
 			drain();
 		}
 

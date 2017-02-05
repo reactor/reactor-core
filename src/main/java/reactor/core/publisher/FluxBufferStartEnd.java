@@ -56,7 +56,7 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 
 	final Supplier<? extends Queue<C>> queueSupplier;
 
-	public FluxBufferStartEnd(Publisher<? extends T> source,
+	FluxBufferStartEnd(Publisher<? extends T> source,
 			Publisher<U> start,
 			Function<? super U, ? extends Publisher<V>> end,
 			Supplier<C> bufferSupplier,
@@ -145,7 +145,7 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 				AtomicIntegerFieldUpdater.newUpdater(BufferStartEndMainSubscriber.class,
 						"open");
 
-		public BufferStartEndMainSubscriber(Subscriber<? super C> actual,
+		BufferStartEndMainSubscriber(Subscriber<? super C> actual,
 				Supplier<C> bufferSupplier,
 				Queue<C> queue,
 				Function<? super U, ? extends Publisher<V>> end) {

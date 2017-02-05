@@ -318,7 +318,10 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements MultiReceiver, Fu
 					SourceAndArray sa =
 							new SourceAndArray(subscribers[index], os.clone());
 
-					queue.offer(sa);
+					if (!queue.offer(sa)) {
+						innerError(Operators.onOperatorError(this, Exceptions.failWithOverflow("Queue is full?!")));
+						return;
+					}
 
 					replenishInsteadOfDrain = false;
 				}

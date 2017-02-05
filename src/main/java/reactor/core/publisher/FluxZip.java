@@ -874,7 +874,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 		 */
 		static final int ASYNC = 2;
 
-		public ZipInner(ZipCoordinator<T, ?> parent,
+		ZipInner(ZipCoordinator<T, ?> parent,
 				int prefetch,
 				int index,
 				Supplier<? extends Queue<T>> queueSupplier) {
@@ -919,7 +919,10 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 		@Override
 		public void onNext(T t) {
 			if (sourceMode != ASYNC) {
-				queue.offer(t);
+				if (!queue.offer(t)) {
+					onError(Operators.onOperatorError(s, Exceptions.failWithOverflow("Queue is full?!"), t));
+					return;
+				}
 			}
 			parent.drain();
 		}

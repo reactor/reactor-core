@@ -79,7 +79,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 		static final AtomicIntegerFieldUpdater<EqualCoordinator> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(EqualCoordinator.class, "wip");
 
-		public EqualCoordinator(Subscriber<? super Boolean> actual, int bufferSize,
+		EqualCoordinator(Subscriber<? super Boolean> actual, int bufferSize,
 				Publisher<? extends T> first, Publisher<? extends T> second,
 				BiPredicate<? super T, ? super T> comparer) {
 			this.actual = actual;
@@ -270,7 +270,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 				AtomicReferenceFieldUpdater.newUpdater(EqualSubscriber.class,
 						Subscription.class, "subscription");
 
-		public EqualSubscriber(EqualCoordinator<T> parent, int bufferSize) {
+		EqualSubscriber(EqualCoordinator<T> parent, int bufferSize) {
 			this.parent = parent;
 			this.bufferSize = bufferSize;
 			this.queue = QueueSupplier.<T>get(bufferSize).get();

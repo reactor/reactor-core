@@ -117,7 +117,8 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	}
 
 	/**
-	 * Returns an unbounded, linked-array-based Queue.
+	 * Returns an unbounded, linked-array-based Queue. Integer.max sized link will
+	 * return the default {@link #SMALL_BUFFER_SIZE} size.
 	 * @param linkSize the link size
 	 * @param <T> the reified {@link Queue} generic type
 	 * @return an unbounded {@link Queue} {@link Supplier}
@@ -127,8 +128,8 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 		if (linkSize == XS_BUFFER_SIZE) {
 			return XS_UNBOUNDED;
 		}
-		else if (linkSize == SMALL_BUFFER_SIZE) {
-			return SMALL_UNBOUNDED;
+		else if (linkSize == Integer.MAX_VALUE || linkSize == SMALL_BUFFER_SIZE) {
+			return unbounded();
 		}
 		return  () -> new SpscLinkedArrayQueue<>(linkSize);
 	}

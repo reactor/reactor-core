@@ -44,7 +44,7 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 
 	final Supplier<? extends Queue<Object>> drainQueueSupplier;
 
-	public FluxWindowBoundary(Publisher<? extends T> source, Publisher<U> other,
+	FluxWindowBoundary(Publisher<? extends T> source, Publisher<U> other,
 			Supplier<? extends Queue<T>> processorQueueSupplier,
 			Supplier<? extends Queue<Object>> drainQueueSupplier) {
 		super(source);

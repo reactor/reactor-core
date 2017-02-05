@@ -46,7 +46,7 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 
 	final BiFunction<? super T, ? super U, ? extends R> combiner;
 
-	public FluxWithLatestFrom(Publisher<? extends T> source,
+	FluxWithLatestFrom(Publisher<? extends T> source,
 			Publisher<? extends U> other,
 			BiFunction<? super T, ? super U, ? extends R> combiner) {
 		super(source);
@@ -94,7 +94,7 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 
 		volatile U otherValue;
 
-		public WithLatestFromSubscriber(Subscriber<? super R> actual,
+		WithLatestFromSubscriber(Subscriber<? super R> actual,
 				BiFunction<? super T, ? super U, ? extends R> combiner) {
 			this.actual = actual;
 			this.combiner = combiner;
@@ -238,7 +238,7 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 
 		final WithLatestFromSubscriber<?, U, ?> main;
 
-		public WithLatestFromOtherSubscriber(WithLatestFromSubscriber<?, U, ?> main) {
+		 WithLatestFromOtherSubscriber(WithLatestFromSubscriber<?, U, ?> main) {
 			this.main = main;
 		}
 

@@ -449,7 +449,7 @@ final class FluxCreate<T> extends Flux<T> {
 		static final AtomicIntegerFieldUpdater<BufferAsyncSink> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(BufferAsyncSink.class, "wip");
 
-		public BufferAsyncSink(Subscriber<? super T> actual, int capacityHint) {
+		 BufferAsyncSink(Subscriber<? super T> actual, int capacityHint) {
 			super(actual);
 			this.queue = QueueSupplier.<T>unbounded(capacityHint).get();
 		}

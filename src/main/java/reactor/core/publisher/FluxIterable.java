@@ -135,7 +135,7 @@ final class FluxIterable<T> extends Flux<T> implements Receiver, Fuseable {
 
 		T current;
 
-		public IterableSubscription(Subscriber<? super T> actual,
+		IterableSubscription(Subscriber<? super T> actual,
 				Iterator<? extends T> iterator) {
 			this.actual = actual;
 			this.iterator = iterator;
@@ -303,7 +303,7 @@ final class FluxIterable<T> extends Flux<T> implements Receiver, Fuseable {
 
 		@Override
 		public void clear() {
-			// no op
+			state = STATE_NO_NEXT;
 		}
 
 		@Override
@@ -559,7 +559,7 @@ final class FluxIterable<T> extends Flux<T> implements Receiver, Fuseable {
 
 		@Override
 		public void clear() {
-			// no op
+			state = STATE_NO_NEXT;
 		}
 
 		@Override

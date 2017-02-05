@@ -251,7 +251,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 		static final AtomicIntegerFieldUpdater<BufferSkipSubscriber> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(BufferSkipSubscriber.class, "wip");
 
-		public BufferSkipSubscriber(Subscriber<? super C> actual,
+		BufferSkipSubscriber(Subscriber<? super C> actual,
 				int size,
 				int skip,
 				Supplier<C> bufferSupplier) {
@@ -263,6 +263,10 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 
 		@Override
 		public void request(long n) {
+			if (!Operators.validate(n)) {
+				return;
+			}
+
 			if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
 				// n full buffers
 				long u = Operators.multiplyCap(n, size);

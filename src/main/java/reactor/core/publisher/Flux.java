@@ -1973,7 +1973,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			Function<? super U, ? extends Publisher<V>> closeSelector,
 			Supplier<C> bufferSupplier) {
 		return onAssembly(new FluxBufferStartEnd<>(this, bucketOpening, closeSelector,
-				bufferSupplier, QueueSupplier.xs()));
+				bufferSupplier, QueueSupplier.unbounded(QueueSupplier.XS_BUFFER_SIZE)));
 	}
 
 	/**
@@ -3805,8 +3805,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	public final <K, V> Flux<GroupedFlux<K, V>> groupBy(Function<? super T, ? extends K> keyMapper,
 			Function<? super T, ? extends V> valueMapper, int prefetch) {
 		return onAssembly(new FluxGroupBy<>(this, keyMapper, valueMapper,
-				QueueSupplier.small(),
-				QueueSupplier.unbounded(), prefetch));
+				QueueSupplier.unbounded(prefetch),
+				QueueSupplier.unbounded(prefetch), prefetch));
 	}
 
 	/**
@@ -5176,9 +5176,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a sampled {@link Flux} by last single item observed before a companion {@link Publisher} emits
 	 */
 	public final <U> Flux<T> sampleTimeout(Function<? super T, ? extends Publisher<U>> throttlerFactory) {
-		return onAssembly(new FluxSampleTimeout<>(this,
-				throttlerFactory,
-				QueueSupplier.unbounded(QueueSupplier.XS_BUFFER_SIZE)));
+		return sampleTimeout(throttlerFactory, QueueSupplier.XS_BUFFER_SIZE);
 	}
 
 	/**
@@ -5199,9 +5197,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final <U> Flux<T> sampleTimeout(Function<? super T, ? extends Publisher<U>>
 			throttlerFactory, int maxConcurrency) {
-		if(maxConcurrency == Integer.MAX_VALUE){
-			return sampleTimeout(throttlerFactory);
-		}
 		return onAssembly(new FluxSampleTimeout<>(this, throttlerFactory,
 				QueueSupplier.get(maxConcurrency)));
 	}
@@ -5930,8 +5925,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 */
 	public final <V> Flux<V> switchMap(Function<? super T, Publisher<? extends V>> fn, int prefetch) {
-		return onAssembly(new FluxSwitchMap<>(this, fn, QueueSupplier.get(prefetch),
-				prefetch));
+		return onAssembly(new FluxSwitchMap<>(this, fn, QueueSupplier.unbounded(prefetch), prefetch));
 	}
 
 	/**
@@ -6596,8 +6590,8 @@ public abstract class Flux<T> implements Publisher<T> {
 		return onAssembly(new FluxWindow<>(this,
 				maxSize,
 				skip,
-				QueueSupplier.xs(),
-				QueueSupplier.xs()));
+				QueueSupplier.unbounded(QueueSupplier.XS_BUFFER_SIZE),
+				QueueSupplier.unbounded(QueueSupplier.XS_BUFFER_SIZE)));
 	}
 
 	/**
@@ -6936,8 +6930,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Flux<GroupedFlux<T, T>> windowUntil(Predicate<T> boundaryTrigger, boolean cutBefore, int prefetch) {
 		return onAssembly(new FluxWindowPredicate<>(this,
-				QueueSupplier.get(prefetch),
-				QueueSupplier.unbounded(),
+				QueueSupplier.unbounded(prefetch),
+				QueueSupplier.unbounded(prefetch),
 				prefetch,
 				boundaryTrigger,
 				cutBefore ? FluxBufferPredicate.Mode.UNTIL_CUT_BEFORE : FluxBufferPredicate.Mode.UNTIL));
@@ -6980,8 +6974,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Flux<GroupedFlux<T, T>> windowWhile(Predicate<T> inclusionPredicate, int prefetch) {
 		return onAssembly(new FluxWindowPredicate<>(this,
-				QueueSupplier.get(prefetch),
-				QueueSupplier.unbounded(),
+				QueueSupplier.unbounded(prefetch),
+				QueueSupplier.unbounded(prefetch),
 				prefetch,
 				inclusionPredicate,
 				FluxBufferPredicate.Mode.WHILE));

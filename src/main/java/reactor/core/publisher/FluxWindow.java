@@ -137,7 +137,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 
 		boolean done;
 
-		public WindowExactSubscriber(Subscriber<? super Flux<T>> actual,
+		WindowExactSubscriber(Subscriber<? super Flux<T>> actual,
 				int size,
 				Supplier<? extends Queue<T>> processorQueueSupplier) {
 			this.actual = actual;

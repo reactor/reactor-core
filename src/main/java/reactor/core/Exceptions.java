@@ -28,10 +28,11 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 public abstract class Exceptions {
 
 	/**
-	 *
+	 * @deprecated Cancel stacktrace is always turned on given the exceptional
+	 * frequency and the critical info it can provide
 	 */
-	public static final boolean CANCEL_STACKTRACE =
-			Boolean.parseBoolean(System.getProperty("reactor.trace.cancel", "false"));
+	@Deprecated
+	public static final boolean CANCEL_STACKTRACE = true;
 
 	/**
 	 * A singleton instance of a Throwable indicating a terminal state for exceptions,
@@ -125,7 +126,7 @@ public abstract class Exceptions {
 	 * @return a {@link RuntimeException} that can be checked via {@link #isCancel}
 	 */
 	public static RuntimeException failWithCancel() {
-		return CANCEL_STACKTRACE ? new CancelException() : CancelException.INSTANCE;
+		return new CancelException();
 	}
 
 	/**
@@ -177,7 +178,7 @@ public abstract class Exceptions {
 	 * @return true if given error is a cancellation token.
 	 */
 	public static boolean isCancel(Throwable t) {
-		return t == CancelException.INSTANCE || t instanceof CancelException;
+		return t instanceof CancelException;
 	}
 
 	/**
@@ -296,11 +297,11 @@ public abstract class Exceptions {
 
 	static class BubblingException extends ReactiveException {
 
-		public BubblingException(String message) {
+		BubblingException(String message) {
 			super(message);
 		}
 
-		public BubblingException(Throwable cause) {
+		BubblingException(Throwable cause) {
 			super(cause);
 		}
 
@@ -312,11 +313,11 @@ public abstract class Exceptions {
 	 */
 	static class ReactiveException extends RuntimeException {
 
-		public ReactiveException(Throwable cause) {
+		ReactiveException(Throwable cause) {
 			super(cause);
 		}
 
-		public ReactiveException(String message) {
+		ReactiveException(String message) {
 			super(message);
 		}
 
@@ -351,16 +352,8 @@ public abstract class Exceptions {
 	 */
 	static final class CancelException extends BubblingException {
 
-		@SuppressWarnings("ThrowableInstanceNeverThrown")
-		public static final CancelException INSTANCE = new CancelException();
-
-		private CancelException() {
+		CancelException() {
 			super("The subscriber has denied dispatching");
-		}
-
-		@Override
-		public synchronized Throwable fillInStackTrace() {
-			return CANCEL_STACKTRACE ? super.fillInStackTrace() : this;
 		}
 
 		private static final long serialVersionUID = 2491425227432776144L;
