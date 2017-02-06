@@ -40,7 +40,7 @@ The qualifiers are (in chronological order):
  * `SR1`..`N`: The subsequent GA releases in a codename series (equivalent to
    PATCH number, SR stands for "Service Release").
 
-
+[[getting]]
 == Getting Reactor
 As mentioned above, the easiest way to use Reactor in your core is to use
 the BOM and add the relevant dependencies to your project. Note that when adding
