@@ -27,6 +27,7 @@ import org.junit.Test;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -34,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.Fuseable.ASYNC;
 import static reactor.core.Fuseable.SYNC;
 
-public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
+public class FluxHandleTest extends FluxOperatorTest<String, String> {
 
 	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
@@ -42,7 +43,7 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
 		return Arrays.asList(
 				scenario(f -> f.handle((s, d) -> {
 					if (item(2).equals(s)) {
@@ -51,8 +52,7 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 					else {
 						d.next(s);
 					}
-				})).verifier(step -> step.expectNext(item(0), item(1))
-				                              .verifyComplete()),
+				})).receiveValues(item(0), item(1)),
 
 				scenario(f -> f.handle((s, d) -> {
 					if (item(1).equals(s)) {
@@ -61,15 +61,13 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 					else {
 						d.next(s);
 					}
-				})).verifier(step -> step.expectNext(item(0))
-				                              .verifyComplete()),
+				})).receiveValues(item(0)),
 
 				scenario(f -> f.handle((s, d) -> {
 					if (!item(2).equals(s)) {
 						d.next(s);
 					}
-				})).verifier(step -> step.expectNext(item(0), item(1))
-				                              .verifyComplete()),
+				})).receiveValues(item(0), item(1)),
 
 				scenario(f -> f.handle((s, d) -> {
 					if (item(2).equals(s)) {
@@ -78,12 +76,12 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 					else if (item(1).equals(s)) {
 						d.next(s);
 					}
-				})).verifier(step -> step.expectNext(item(1)).verifyComplete())
+				})).receiveValues(item(1))
 		);
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
+	protected List<Scenario<String, String>> scenarios_operatorError() {
 		return Arrays.asList(
 				scenario(f -> f.handle((s, d) -> {
 					throw exception();
@@ -94,11 +92,11 @@ public class FluxHandleTest extends AbstractFluxOperatorTest<String, String> {
 				scenario(f -> f.handle((s, d) -> {
 					d.next(item(0));
 					d.next(item(1));
-				})).verifier(step -> step.verifyError(IllegalStateException.class)),
+				})),
 
 				scenario(f -> f.handle((s, d) -> {
 					d.next(null);
-				})).verifier(step -> step.verifyError(NullPointerException.class))
+				}))
 		);
 	}
 

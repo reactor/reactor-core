@@ -22,18 +22,23 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxMaterializeTest
-		extends AbstractFluxOperatorTest<String, Signal<String>> {
+		extends FluxOperatorTest<String, Signal<String>> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	protected List<Scenario<String, Signal<String>>> scenarios_threeNextAndComplete() {
+	protected List<Scenario<String, Signal<String>>> scenarios_operatorSuccess() {
 		return Arrays.asList(
 				scenario(Flux::materialize)
+						.receive(s -> assertThat(s).isEqualTo(Signal.next(item(0))),
+								s -> assertThat(s).isEqualTo(Signal.next(item(1))),
+								s -> assertThat(s).isEqualTo(Signal.next(item(2))),
+								s -> assertThat(s).isEqualTo(Signal.complete()))
 						.verifier(step -> step.expectNext(Signal.next(item(0)))
 						                      .expectNext(Signal.next(item(1)))
 						                      .consumeSubscriptionWith(s -> {

@@ -45,6 +45,7 @@ import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
@@ -56,17 +57,13 @@ import static org.junit.Assert.*;
 import static reactor.core.scheduler.Schedulers.fromExecutor;
 import static reactor.core.scheduler.Schedulers.fromExecutorService;
 
-public class FluxPublishOnTest extends AbstractFluxOperatorTest<String, String> {
+public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
 		return defaultOptions.prefetch(QueueSupplier.SMALL_BUFFER_SIZE)
+		                     .fusionModeThreadBarrier(Fuseable.ASYNC)
 		                     .fusionMode(Fuseable.ASYNC);
-	}
-
-	@Override
-	protected int fusionModeThreadBarrierSupport() {
-		return Fuseable.ASYNC;
 	}
 
 	@Override
@@ -95,58 +92,61 @@ public class FluxPublishOnTest extends AbstractFluxOperatorTest<String, String> 
 			assertTrue(Exceptions.unwrap(e) instanceof RejectedExecutionException);
 		}
 		catch (AssertionError e){
-			assertTrue(e.getMessage().contains("timed out"));
+			if(!e.getMessage().contains("timed out")) {
+				throw e;
+			}
 		}
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
-		return Arrays.asList(scenario(f -> f.publishOn(Schedulers.fromExecutor(d -> {
+	protected List<Scenario<String, String>> scenarios_operatorError() {
+		return Arrays.asList(
+
+				scenario(f -> f.publishOn(Schedulers.fromExecutor(d -> {
 					throw exception();
-				}))),
+				}))).receiverDemand(0),
 
 				scenario(f -> f.publishOn(new FailWorkerScheduler()))
-						.fusionMode(Fuseable.NONE),
+						.producerEmpty(),
 
 				scenario(f -> f.publishOn(new FailNullWorkerScheduler()))
-						.fusionMode(Fuseable.NONE)
-						.verifier(step -> step.verifyError(NullPointerException.class)),
+						.producerEmpty(),
 
-				scenario(f -> {
-					RejectingWorkerScheduler rs = new RejectingWorkerScheduler(false, false);
-					return f.publishOn(rs);
-				})
-						.verifier(this::assertNoRejected),
+				scenario(f -> f.publishOn(new RejectingWorkerScheduler(false, false)))
+						.verifier(this::assertNoRejected)
+						.receiverDemand(0),
 
 				scenario(f -> f.publishOn(new RejectingWorkerScheduler(true, false)))
-						.verifier(this::assertRejected),
+						.verifier(this::assertRejected)
+						.receiverDemand(0),
 
 				scenario(f -> f.publishOn(new RejectingWorkerScheduler(true, true)))
-						.verifier(this::assertNoRejected),
+						.verifier(this::assertNoRejected)
+						.receiverDemand(0),
 
 				scenario(f -> f.publishOn(new RejectingWorkerScheduler(false, true)))
 						.verifier(this::assertNoRejected),
 
 				scenario(f -> f.publishOn(new RejectingWorkerScheduler(false, false)))
 						.verifier(this::assertNoRejected)
-						.finiteFlux(Flux.empty()),
+						.receiverDemand(0),
 
 				scenario(f -> f.publishOn(new RejectingWorkerScheduler(false, true)))
 						.verifier(this::assertNoRejected)
-						.finiteFlux(Flux.empty()),
+						.producerEmpty(),
 
 				scenario(f -> f.publishOn(new RejectingWorkerScheduler(true, false)))
 						.verifier(this::assertRejected)
-						.finiteFlux(Flux.empty()),
+						.receiverDemand(0),
 
 				scenario(f -> f.publishOn(new RejectingWorkerScheduler(true, true)))
 						.verifier(this::assertNoRejected)
-						.finiteFlux(Flux.empty())
+						.receiverDemand(0)
 		);
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
 		return Arrays.asList(
  				scenario(f -> f.publishOn(Schedulers.immediate())),
 

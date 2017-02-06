@@ -27,58 +27,41 @@ import org.junit.Test;
 import reactor.core.Fuseable;
 import reactor.core.publisher.FluxBufferPredicate.Mode;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.publisher.TestPublisher;
 import reactor.util.concurrent.QueueSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FluxWindowPredicateTest extends AbstractFluxOperatorTest<String, GroupedFlux<String, String>> {
-
-	@Override
-	protected int fusionModeThreadBarrierSupport() {
-		return Fuseable.ANY;
-	}
+public class FluxWindowPredicateTest extends
+                                     FluxOperatorTest<String, GroupedFlux<String, String>> {
 
 	@Override
 	protected Scenario<String, GroupedFlux<String, String>> defaultScenarioOptions(Scenario<String, GroupedFlux<String, String>> defaultOptions) {
 		return defaultOptions.shouldAssertPostTerminateState(false)
 		                     .fusionMode(Fuseable.ASYNC)
-		                     .prefetch(QueueSupplier.SMALL_BUFFER_SIZE)
-		                     .verifier(step -> {
-		                     	try{
-		                     		step.consumeNextWith(s -> s.buffer()
-			                                                   .subscribe(b -> assertThat(b).isEmpty(), e -> assertThat(e).hasMessage("test")))
-			                            .verifyErrorMessage("test");
-		                        }
-		                        catch (Exception e){
-		                     		assertThat(e).hasMessage("test");
-		                        }
-		                     });
+		                     .fusionModeThreadBarrier(Fuseable.ANY)
+		                     .prefetch(QueueSupplier.SMALL_BUFFER_SIZE);
 	}
 
 	@Override
-	protected List<Scenario<String, GroupedFlux<String, String>>> scenarios_threeNextAndComplete() {
+	protected List<Scenario<String, GroupedFlux<String, String>>> scenarios_operatorSuccess() {
 		return Arrays.asList(
-				scenario(f -> f.windowWhile(t -> true))
-						.verifier(step -> step.consumeNextWith(s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(0), item(1), item(2))))
-						                      .verifyComplete()),
-
-				scenario(f -> f.windowUntil(t -> true))
-						.verifier(step -> step.consumeNextWith(s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(0))))
-						                      .consumeNextWith(s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(1))))
-						                      .consumeNextWith(s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(2))))
-						                      .thenRequest(3)
-						                      .consumeNextWith(s -> s.buffer().subscribe(b -> assertThat(b).isEmpty()))
-						                      .verifyComplete()),
-
 				scenario(f -> f.windowUntil(t -> true, true, 1))
 						.prefetch(1)
-						.verifier(step -> step.consumeNextWith(s -> s.buffer().subscribe(b -> Assert.fail()))
-						                      .consumeNextWith(s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(0))))
-						                      .consumeNextWith(s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(1))))
-						                      .thenRequest(3)
-						                      .consumeNextWith(s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(2))))
-						                      .verifyComplete()),
+						.receive(s -> s.buffer().subscribe(b -> Assert.fail()),
+								s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(0))),
+								s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(1))),
+								s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(2)))),
+
+				scenario(f -> f.windowWhile(t -> true))
+						.receive(s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(0), item(1), item(2)))),
+
+				scenario(f -> f.windowUntil(t -> true))
+						.receive(s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(0))),
+								s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(1))),
+								s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(2))),
+								s -> s.buffer().subscribe(b -> assertThat(b).isEmpty())),
 
 //				scenario(f -> f.windowUntil(t -> true, false, 1))
 //						.prefetch(1)
@@ -90,36 +73,41 @@ public class FluxWindowPredicateTest extends AbstractFluxOperatorTest<String, Gr
 //						                      .verifyComplete()),
 
 				scenario(f -> f.windowUntil(t -> false))
-						.verifier(step -> step.consumeNextWith(s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(0), item(1), item(2))))
-						                      .verifyComplete())
+						.receive(s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(0), item(1), item(2))))
 		);
 	}
 
 	@Override
-	protected List<Scenario<String, GroupedFlux<String, String>>> scenarios_errorInOperatorCallback() {
+	protected List<Scenario<String, GroupedFlux<String, String>>> scenarios_operatorError() {
 		return Arrays.asList(
 				scenario(f -> f.windowWhile(t -> {
 					throw exception();
-				})),
+				}))
+						.receive(s -> s.buffer().subscribe(null, e -> assertThat(e).hasMessage("test"))),
 
 				scenario(f -> f.windowUntil(t -> {
 					throw exception();
-				})),
+				}))
+						.receive(s -> s.buffer().subscribe(null, e -> assertThat(e).hasMessage("test"))),
 
 				scenario(f -> f.windowUntil(t -> {
 					throw exception();
 				}, true))
+						.receive(s -> s.buffer().subscribe(null, e -> assertThat(e).hasMessage("test")))
 		);
 	}
 
 	@Override
 	protected List<Scenario<String, GroupedFlux<String, String>>> scenarios_errorFromUpstreamFailure() {
 		return Arrays.asList(
-				scenario(f -> f.windowWhile(t -> true)),
+				scenario(f -> f.windowWhile(t -> true))
+						.receive(s -> s.buffer().subscribe(null, e -> assertThat(e).hasMessage("test"))),
 
-				scenario(f -> f.windowUntil(t -> true)),
+				scenario(f -> f.windowUntil(t -> true))
+						.receive(s -> s.buffer().subscribe(null, e -> assertThat(e).hasMessage("test"))),
 
 				scenario(f -> f.windowUntil(t -> true, true))
+						.receive(s -> s.buffer().subscribe(null, e -> assertThat(e).hasMessage("test")))
 		);
 	}
 

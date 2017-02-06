@@ -24,24 +24,21 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Fuseable;
+import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 
-public class FluxUsingTest extends AbstractFluxOperatorTest<String, String> {
+public class FluxUsingTest extends FluxOperatorTest<String, String> {
 
 	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
 		return defaultOptions.fusionMode(Fuseable.ANY)
-				.shouldHitDropNextHookAfterTerminate(false)
-				.shouldHitDropErrorHookAfterTerminate(false);
+		                     .fusionModeThreadBarrier(Fuseable.ANY)
+		                     .shouldHitDropNextHookAfterTerminate(false)
+		                     .shouldHitDropErrorHookAfterTerminate(false);
 	}
 
 	@Override
-	protected int fusionModeThreadBarrierSupport() {
-		return Fuseable.ANY;
-	}
-
-	@Override
-	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
+	protected List<Scenario<String, String>> scenarios_operatorError() {
 		return Arrays.asList(
 				scenario(f -> Flux.using(() -> {
 					throw exception();
@@ -49,8 +46,7 @@ public class FluxUsingTest extends AbstractFluxOperatorTest<String, String> {
 						.fusionMode(Fuseable.NONE),
 
 				scenario(f -> Flux.using(() -> 0, c -> null, c -> {}))
-						.fusionMode(Fuseable.NONE)
-						.verifier(step -> step.verifyError(NullPointerException.class)),
+						.fusionMode(Fuseable.NONE),
 
 				scenario(f -> Flux.using(() -> 0, c -> {
 					throw exception();
@@ -74,7 +70,7 @@ public class FluxUsingTest extends AbstractFluxOperatorTest<String, String> {
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
 		return Arrays.asList(
 				scenario(f -> Flux.using(() -> 0, c -> f, c -> {})),
 

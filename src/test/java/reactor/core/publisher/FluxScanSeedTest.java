@@ -18,50 +18,48 @@ package reactor.core.publisher;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
 
 import org.junit.Test;
-import reactor.core.Fuseable;
-import reactor.test.StepVerifier;
+import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 
-public class FluxScanSeedTest  extends AbstractFluxOperatorTest<String, String> {
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class FluxScanSeedTest extends FluxOperatorTest<String, String> {
 
 	@Override
-	protected Consumer<StepVerifier.Step<String>> defaultThreeNextExpectations(Scenario<String, String> scenario) {
-		return step -> step.expectNext(item(0), item(0), item(0))
-		                   .thenRequest(1)
-		                   .expectNext(item(0))
-		                   .verifyComplete();
+	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
+		return defaultOptions.receive(
+				i -> assertThat(i).isEqualTo(item(0)),
+				i -> assertThat(i).isEqualTo(item(0)),
+				i -> assertThat(i).isEqualTo(item(0)),
+				i -> assertThat(i).isEqualTo(item(0)));
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
-		return Arrays.asList(scenario(f -> f.scan(item(0), (a, b) -> {
+	protected List<Scenario<String, String>> scenarios_operatorError() {
+		return Arrays.asList(
+				scenario(f -> f.scan(item(0), (a, b) -> {
 					throw exception();
-				})).verifier(step -> step.expectNext(item(0))
-		                                       .verifyErrorMessage("test")),
+				})).receiveValues(item(0)),
 
 				scenario(f -> f.scan(item(0), (a, b) -> null))
-					.verifier(step -> step.expectNext
-						(item(0))
-						.verifyError(NullPointerException.class)),
+						.receiveValues(item(0)),
 
-				scenario(f -> f.scanWith(() -> null, (a, b) -> b)).verifier(step -> step
-						.verifyError(NullPointerException.class)),
+				scenario(f -> f.scanWith(() -> null, (a, b) -> b)),
 
 				scenario(f -> f.scanWith(() -> {
 							throw exception();
 						},
-						(a, b) -> b)).verifier(step -> step
-								.verifyErrorMessage("test"))
+						(a, b) -> b))
 
 		);
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
-		return Arrays.asList(scenario(f -> f.scan(item(0), (a, b) -> a))
+	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
+		return Arrays.asList(
+				scenario(f -> f.scan(item(0), (a, b) -> a))
 		);
 	}
 

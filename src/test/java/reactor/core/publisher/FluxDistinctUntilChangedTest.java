@@ -20,25 +20,25 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Test;
-import reactor.core.Fuseable;
+import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 
-public class FluxDistinctUntilChangedTest extends AbstractFluxOperatorTest<String, String> {
+public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, String> {
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
+	protected List<Scenario<String, String>> scenarios_operatorError() {
 		return Arrays.asList(
 				scenario(f -> f.distinctUntilChanged(d -> {
 					throw exception();
 				})),
 
 				scenario(f -> f.distinctUntilChanged(d -> null))
-						.verifier(step -> step.verifyError(NullPointerException.class))
+
 		);
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
 		return Arrays.asList(
 				scenario(f -> f.distinctUntilChanged())
 		);

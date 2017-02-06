@@ -18,39 +18,36 @@ package reactor.core.publisher;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
 
 import org.junit.Test;
-import reactor.core.Fuseable;
-import reactor.test.StepVerifier;
+import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 
-public class FluxScanTest extends AbstractFluxOperatorTest<String, String> {
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class FluxScanTest extends FluxOperatorTest<String, String> {
 
 	@Override
-	protected Consumer<StepVerifier.Step<String>> defaultThreeNextExpectations(Scenario<String, String> scenario) {
-		return step -> step.expectNext(item(0), item(0), item(0))
-		                   .verifyComplete();
+	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
+		return defaultOptions.receiveValues(item(0), item(0), item(0));
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
 		return Arrays.asList(
 				scenario(f -> f.scan((a, b) -> a))
 		);
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
+	protected List<Scenario<String, String>> scenarios_operatorError() {
 		return Arrays.asList(
 				scenario(f -> f.scan((a, b) -> {
 					throw exception();
-				})).verifier(step -> step.expectNext(item(0))
-				                              .verifyErrorMessage("test")),
+				})).receiveValues(item(0)),
 
-				scenario(f -> f.scan((a, b) -> null)).verifier(step -> step
-						.expectNext(item(0))
-				                                                                     .verifyError(NullPointerException.class))
+				scenario(f -> f.scan((a, b) -> null))
+						.receiveValues(item(0))
 		);
 	}
 

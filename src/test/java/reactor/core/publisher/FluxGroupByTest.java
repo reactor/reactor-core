@@ -29,23 +29,21 @@ import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FluxGroupByTest extends AbstractFluxOperatorTest<String, GroupedFlux<Integer, String>>{
+public class FluxGroupByTest extends
+                             FluxOperatorTest<String, GroupedFlux<Integer, String>> {
 
 	@Override
 	protected Scenario<String, GroupedFlux<Integer, String>> defaultScenarioOptions(Scenario<String, GroupedFlux<Integer, String>> defaultOptions) {
 		return defaultOptions.fusionMode(Fuseable.ASYNC)
+		                     .fusionModeThreadBarrier(Fuseable.ANY)
 		                     .prefetch(QueueSupplier.SMALL_BUFFER_SIZE)
 		                     .shouldAssertPostTerminateState(false);
-	}
-
-	@Override
-	protected int fusionModeThreadBarrierSupport() {
-		return Fuseable.ANY;
 	}
 
 	@Override
@@ -56,19 +54,17 @@ public class FluxGroupByTest extends AbstractFluxOperatorTest<String, GroupedFlu
 	}
 
 	@Override
-	protected List<Scenario<String, GroupedFlux<Integer, String>>> scenarios_threeNextAndComplete() {
+	protected List<Scenario<String, GroupedFlux<Integer, String>>> scenarios_operatorSuccess() {
 		return Arrays.asList(
 				scenario(f -> f.groupBy(String::hashCode))
-					.verifier(step ->
-							step.assertNext(g -> assertThat(g.key()).isEqualTo(g.blockFirst().hashCode()))
-							    .assertNext(g -> assertThat(g.key()).isEqualTo(g.blockFirst().hashCode()))
-							    .assertNext(g -> assertThat(g.key()).isEqualTo(g.blockFirst().hashCode()))
-							    .verifyComplete())
+					.receive(g -> assertThat(g.key()).isEqualTo(g.blockFirst().hashCode()),
+							    g -> assertThat(g.key()).isEqualTo(g.blockFirst().hashCode()),
+							    g -> assertThat(g.key()).isEqualTo(g.blockFirst().hashCode()))
 		);
 	}
 
 	@Override
-	protected List<Scenario<String, GroupedFlux<Integer, String>>> scenarios_errorInOperatorCallback() {
+	protected List<Scenario<String, GroupedFlux<Integer, String>>> scenarios_operatorError() {
 		return Arrays.asList(
 				scenario(f -> f.groupBy(String::hashCode, s -> {
 					throw exception();
@@ -79,10 +75,10 @@ public class FluxGroupByTest extends AbstractFluxOperatorTest<String, GroupedFlu
 				})),
 
 				scenario(f -> f.groupBy(String::hashCode, s -> null))
-						.verifier(step -> step.verifyError(NullPointerException.class)),
+						,
 
 				scenario(f -> f.groupBy(k -> null))
-						.verifier(step -> step.verifyError(NullPointerException.class))
+
 		);
 	}
 

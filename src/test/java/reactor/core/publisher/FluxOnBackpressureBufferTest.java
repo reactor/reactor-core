@@ -23,11 +23,12 @@ import org.junit.Test;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.FluxOperatorTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxOnBackpressureBufferTest
-		extends AbstractFluxOperatorTest<String, String> {
+		extends FluxOperatorTest<String, String> {
 
 	@Test(expected = IllegalArgumentException.class)
 	public void failNegativeHistory(){
@@ -35,7 +36,7 @@ public class FluxOnBackpressureBufferTest
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
 		return Arrays.asList(
 				scenario(Flux::onBackpressureBuffer),
 
@@ -46,12 +47,8 @@ public class FluxOnBackpressureBufferTest
 	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
 		return defaultOptions.fusionMode(Fuseable.ASYNC)
+		                     .fusionModeThreadBarrier(Fuseable.ASYNC)
 		                     .prefetch(Integer.MAX_VALUE);
-	}
-
-	@Override
-	protected int fusionModeThreadBarrierSupport() {
-		return Fuseable.ASYNC;
 	}
 
 	@Test

@@ -18,79 +18,41 @@ package reactor.core.publisher;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
 import org.junit.Test;
 import reactor.core.Fuseable;
+import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FluxFlattenIterableTest extends AbstractFluxOperatorTest<String, String>{
+public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
 
 	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
 		return defaultOptions.fusionMode(Fuseable.SYNC)
+		                     .fusionModeThreadBarrier(Fuseable.ANY)
 		                     .prefetch(QueueSupplier.SMALL_BUFFER_SIZE)
 		                     .shouldHitDropNextHookAfterTerminate(false);
 	}
 
 	@Override
-	protected int fusionModeThreadBarrierSupport() {
-		return Fuseable.ANY;
-	}
-
-	@Override
-	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
+	protected List<Scenario<String, String>> scenarios_operatorError() {
 		return Arrays.asList(
-				scenario(f -> f.flatMapIterable(s -> null))
-						.verifier(step -> step.verifyError(NullPointerException.class)),
 
-				scenario(f -> f.flatMapIterable(s -> Arrays.asList(s, null)))
-						.verifier(step -> step.expectNext(item(0)).verifyError(NullPointerException.class)),
+				scenario(f -> f.flatMapIterable(s -> Arrays.asList(s, (String)null)))
+						.receiveValues(item(0)),
 
-				scenario(f -> f.flatMapIterable(s -> null))
-		             .verifier(step -> step.verifyError(NullPointerException.class))
-		             .fusionMode(Fuseable.NONE)
-		             .finiteFlux(Mono.fromCallable(() -> item(0)).flux()),
+				scenario(f -> f.flatMapIterable(s -> null)),
 
-				scenario(f -> f.flatMapIterable(s -> null))
-		             .verifier(step -> step.verifyError(NullPointerException.class))
-		             .fusionMode(Fuseable.NONE)
-		             .finiteFlux(Mono.fromCallable(() -> (String)null).flux()),
-
-				scenario(f -> f.flatMapIterable(s -> () -> null))
-						.verifier(step -> step.verifyError(NullPointerException.class)),
-
-				scenario(f -> f.flatMapIterable(s -> () -> null))
-						.fusionMode(Fuseable.NONE)
-						.finiteFlux(Mono.fromCallable(() -> item(0)).flux())
-						.verifier(step -> step.verifyError(NullPointerException.class)),
-
-				scenario(f -> f.flatMapIterable(s -> () -> null))
-						.fusionMode(Fuseable.NONE)
-						.finiteFlux(Mono.fromCallable(() -> (String)null).flux())
-						.verifier(step -> step.verifyError(NullPointerException.class)),
+				scenario(f -> f.flatMapIterable(s -> () -> null)),
 
 				scenario(f -> f.flatMapIterable(s -> {
 					throw exception();
 				})),
-
-				scenario(f -> f.flatMapIterable(s -> {
-					throw exception();
-				}))
-						.fusionMode(Fuseable.NONE)
-						.finiteFlux(Mono.fromCallable(() -> item(0)).flux()),
-
-				scenario(f -> f.flatMapIterable(s -> {
-					throw exception();
-				}))
-						.fusionMode(Fuseable.NONE)
-						.finiteFlux(Mono.fromCallable(() -> (String)null).flux())
-						.verifier(step -> step.verifyError(NullPointerException.class)),
 
 				scenario(f -> f.flatMapIterable(s -> () -> new Iterator<String>() {
 					@Override
@@ -103,33 +65,6 @@ public class FluxFlattenIterableTest extends AbstractFluxOperatorTest<String, St
 						return null;
 					}
 				})),
-
-				scenario(f -> f.flatMapIterable(s -> () -> new Iterator<String>() {
-					@Override
-					public boolean hasNext() {
-						throw exception();
-					}
-
-					@Override
-					public String next() {
-						return null;
-					}
-				})).fusionMode(Fuseable.NONE)
-				   .finiteFlux(Mono.fromCallable(() -> item(0)).flux()),
-
-				scenario(f -> f.flatMapIterable(s -> () -> new Iterator<String>() {
-					@Override
-					public boolean hasNext() {
-						throw exception();
-					}
-
-					@Override
-					public String next() {
-						return null;
-					}
-				})).fusionMode(Fuseable.NONE)
-				   .finiteFlux(Mono.fromCallable(() -> (String)null).flux())
-				   .verifier(step -> step.verifyError(NullPointerException.class)),
 
 				scenario(f -> f.flatMapIterable(s -> () -> new Iterator<String>() {
 					@Override
@@ -160,39 +95,13 @@ public class FluxFlattenIterableTest extends AbstractFluxOperatorTest<String, St
 					}
 				}))
 						.fusionMode(Fuseable.NONE)
-						.verifier(step -> step.expectNext(item(0)).verifyErrorMessage("test")),
+						.receiveValues(item(0))
 
-				scenario(f -> f.flatMapIterable(s -> () -> new Iterator<String>() {
-					@Override
-					public boolean hasNext() {
-						return true;
-					}
-
-					@Override
-					public String next() {
-						throw exception();
-					}
-				})).fusionMode(Fuseable.NONE)
-				   .finiteFlux(Mono.fromCallable(() -> item(0)).flux()),
-
-				scenario(f -> f.flatMapIterable(s -> () -> new Iterator<String>() {
-					@Override
-					public boolean hasNext() {
-						return true;
-					}
-
-					@Override
-					public String next() {
-						throw exception();
-					}
-				})).fusionMode(Fuseable.NONE)
-				   .finiteFlux(Mono.fromCallable(() -> (String)null).flux())
-				   .verifier(step -> step.verifyError(NullPointerException.class))
 		);
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
 		return Arrays.asList(
 				scenario(f -> f.flatMapIterable(s -> Arrays.asList(s))),
 
@@ -200,14 +109,13 @@ public class FluxFlattenIterableTest extends AbstractFluxOperatorTest<String, St
 					.prefetch(1),
 
 				scenario(f -> f.flatMapIterable(s -> new ArrayList<>()))
-					.verifier(step -> step.verifyComplete()),
+					.receiverEmpty(),
 
 				scenario(f -> f.flatMapIterable(s -> Arrays.asList(s, s + s)))
-						.verifier(step -> step.expectNext(item(0), item(0)+item(0))
-						                      .thenRequest(3)
-						                      .expectNext(item(1), item(1)+item(1))
-						                      .expectNext(item(2), item(2)+item(2))
-						                      .verifyComplete())
+						.receiveValues(
+								item(0), item(0)+item(0),
+								item(1), item(1)+item(1),
+								item(2), item(2)+item(2))
 		);
 	}
 

@@ -620,12 +620,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		new Thread(EventLoopProcessor.createRequestTask(s,
 				() -> {
 					if (!alive()) {
-						if (cancelled) {
-							throw Exceptions.failWithCancel();
-						}
-						else {
-							WaitStrategy.throwAlert();
-						}
+						WaitStrategy.alert();
 					}
 				}, null,
 				ringBuffer::getMinimumGatingSequence,
@@ -641,7 +636,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	@Override
 	public void run() {
 		if (!alive()) {
-			WaitStrategy.throwAlert();
+			WaitStrategy.alert();
 		}
 	}
 
@@ -673,7 +668,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 			public void run() {
 				if (barrier.isAlerted() || !isRunning() ||
 						replay(pendingRequest.getAsLong() == Long.MAX_VALUE)) {
-					WaitStrategy.throwAlert();
+					WaitStrategy.alert();
 				}
 			}
 		};
@@ -753,14 +748,14 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 						// is thrown from the WorkHandler
 						if (processedSequence) {
 							if(isCancelled()){
-								throw Exceptions.failWithCancel();
+								WaitStrategy.alert();
 							}
 							processedSequence = false;
 							do {
 								nextSequence = processor.workSequence.getAsLong() + 1L;
 								while ((!unbounded && pendingRequest.getAsLong() == 0L)) {
 									if (!isRunning()) {
-										WaitStrategy.throwAlert();
+										WaitStrategy.alert();
 									}
 									LockSupport.parkNanos(1L);
 								}
@@ -776,11 +771,11 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 								readNextEvent(unbounded);
 							}
 							catch (Exception ce) {
-								if (!WaitStrategy.isAlert(ce)) {
+								if (isCancelled() || !isRunning() || !WaitStrategy
+										.isAlert(ce)) {
 									throw ce;
 								}
 								barrier.clearAlert();
-								throw Exceptions.failWithCancel();
 							}
 
 							processedSequence = true;
@@ -797,7 +792,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 					}
 					catch (InterruptedException | RuntimeException ce) {
-						if (Exceptions.isCancel(ce)){
+						if (Exceptions.isCancel(ce) || isCancelled()){
 							reschedule(event);
 							break;
 						}
@@ -892,7 +887,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 					}
 				}
 				catch (RuntimeException ce) {
-					if (Exceptions.isCancel(ce)) {
+					if (isCancelled() || Exceptions.isCancel(ce)) {
 						running.set(false);
 						return true;
 					}
@@ -926,7 +921,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 				//pause until request
 			while ((!unbounded && getAndSub(pendingRequest, 1L) == 0L)) {
 				if (!isRunning()) {
-					WaitStrategy.throwAlert();
+					WaitStrategy.alert();
 				}
 				//Todo Use WaitStrategy?
 				LockSupport.parkNanos(1L);

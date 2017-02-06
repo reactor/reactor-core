@@ -26,6 +26,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.test.subscriber.AssertSubscriber;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -240,6 +241,18 @@ public class TopicProcessorTest {
 		finally {
 			es.shutdown();
 		}
+	}
+
+	@Test
+	public void testTopicProcessorGetters() {
+
+		final int TEST_BUFFER_SIZE = 16;
+		TopicProcessor<Object> processor = TopicProcessor.create("testProcessor", TEST_BUFFER_SIZE);
+
+		assertEquals(TEST_BUFFER_SIZE, processor.getAvailableCapacity());
+
+		processor.awaitAndShutdown();
+
 	}
 
 	@Test(expected = IllegalArgumentException.class)

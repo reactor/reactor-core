@@ -22,9 +22,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.junit.Test;
 import reactor.core.Fuseable;
+import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 
-public class FluxFilterTest extends AbstractFluxOperatorTest<String, String> {
+public class FluxFilterTest extends FluxOperatorTest<String, String> {
 
 	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
@@ -32,7 +33,7 @@ public class FluxFilterTest extends AbstractFluxOperatorTest<String, String> {
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
+	protected List<Scenario<String, String>> scenarios_operatorError() {
 		return Arrays.asList(
 				scenario(f -> f.filter(d -> {
 					throw exception();
@@ -41,12 +42,13 @@ public class FluxFilterTest extends AbstractFluxOperatorTest<String, String> {
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
 		return Arrays.asList(
 				scenario(f -> f.filter(d -> true)),
 
 				scenario(f -> f.filter(d -> false))
-					.verifier(step -> step.verifyComplete()));
+					.receiverEmpty()
+		);
 	}
 
 	@Override

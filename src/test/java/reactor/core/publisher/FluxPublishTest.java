@@ -22,13 +22,11 @@ import java.util.concurrent.CancellationException;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Disposable;
-import reactor.core.Fuseable;
-import reactor.core.scheduler.Schedulers;
-import reactor.test.StepVerifier;
+import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
-public class FluxPublishTest extends AbstractFluxOperatorTest<String, String> {
+public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
 	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
@@ -36,7 +34,7 @@ public class FluxPublishTest extends AbstractFluxOperatorTest<String, String> {
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
 		return Arrays.asList(
 				scenario(f -> f.publish().autoConnect()),
 

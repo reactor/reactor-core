@@ -17,14 +17,84 @@ package reactor.core.publisher;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.function.Tuples;
 
-public class FluxZipIterableTest {
+public class FluxZipIterableTest extends FluxOperatorTest<String, String> {
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_operatorError() {
+		return Arrays.asList(
+				scenario(f -> f.zipWithIterable(() -> {
+					throw exception();
+				}, (a, b) -> a)),
+
+				scenario(f -> f.zipWithIterable(Arrays.asList(1, 2, 3), (a, b) -> {
+					throw exception();
+				})),
+
+				scenario(f -> f.zipWithIterable(() ->
+						new Iterator<String>(){
+							@Override
+							public boolean hasNext() {
+								throw exception();
+							}
+
+							@Override
+							public String next() {
+								return null;
+							}
+						}, (a, b) -> a)),
+
+				scenario(f -> f.zipWithIterable(() ->
+						new Iterator<String>(){
+							@Override
+							public boolean hasNext() {
+								return true;
+							}
+
+							@Override
+							public String next() {
+								throw exception();
+							}
+						}, (a, b) -> a)),
+
+				scenario(f -> f.zipWithIterable(() ->
+						new Iterator<String>(){
+							boolean invoked;
+							@Override
+							public boolean hasNext() {
+								if(invoked){
+									throw exception();
+								}
+								invoked = true;
+								return true;
+							}
+
+							@Override
+							public String next() {
+								return item(0);
+							}
+						}, (a, b) -> a))
+						.receiveValues(item(0))
+		);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
+		return Arrays.asList(
+				scenario(f -> f.zipWithIterable(Arrays.asList(1, 2, 3), (a, b) -> a)),
+
+				scenario(f -> f.zipWithIterable(Arrays.asList(1, 2, 3, 4, 5), (a, b) -> a))
+		);
+	}
 
 	@Test(expected = NullPointerException.class)
 	public void sourceNull() {

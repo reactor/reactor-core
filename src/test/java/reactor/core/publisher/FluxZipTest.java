@@ -28,10 +28,10 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import reactor.core.Exceptions;
-import reactor.core.Fuseable;
 import reactor.core.MultiReceiver;
 import reactor.core.Trackable;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
@@ -41,7 +41,7 @@ import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FluxZipTest extends AbstractFluxOperatorTest<String, String> {
+public class FluxZipTest extends FluxOperatorTest<String, String> {
 
 	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
@@ -57,7 +57,7 @@ public class FluxZipTest extends AbstractFluxOperatorTest<String, String> {
 	protected List<Scenario<String, String>> scenarios_errorFromUpstreamFailure() {
 		return Arrays.asList(
 
-				scenario(f -> f.zipWith(finiteSourceOrDefault(null), 3, (a, b) -> a))
+				scenario(f -> f.zipWith(Flux.just(1, 2, 3), 3, (a, b) -> a))
 					.prefetch(3),
 
 				scenario(f -> f.zipWith(Flux.<String>error(exception()),

@@ -162,9 +162,11 @@ public abstract class WaitStrategy
     /**
      * Throw a signal singleton exception that can be checked against
      * {@link #isAlert(Throwable)}
+     * @deprecated duplicate to {@link #alert()}
      */
+    @Deprecated
     public static void throwAlert() {
-	    throw AlertException.INSTANCE;
+	    alert();
     }
 
     /**

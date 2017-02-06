@@ -23,10 +23,11 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
-public class FluxConcatMapTest extends AbstractFluxOperatorTest<String, String> {
+public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 
 	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
@@ -36,28 +37,28 @@ public class FluxConcatMapTest extends AbstractFluxOperatorTest<String, String> 
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
 		return Arrays.asList(
 				scenario(f -> f.concatMap(Flux::just)),
 
 				scenario(f -> f.concatMap(d -> Flux.just(d).hide())),
 
 				scenario(f -> f.concatMap(d -> Flux.empty()))
-						.verifier(step -> step.verifyComplete()),
+						.receiverEmpty(),
 
 				scenario(f -> f.concatMapDelayError(Flux::just)),
 
 				scenario(f -> f.concatMapDelayError(d -> Flux.just(d).hide())),
 
 				scenario(f -> f.concatMapDelayError(d -> Flux.empty()))
-						.verifier(step -> step.verifyComplete()),
+						.receiverEmpty(),
 
 				scenario(f -> f.concatMapDelayError(Flux::just, true, 32)),
 
 				scenario(f -> f.concatMapDelayError(d -> Flux.just(d).hide(), true, 32)),
 
 				scenario(f -> f.concatMapDelayError(d -> Flux.empty(), true, 32))
-						.verifier(step -> step.verifyComplete()),
+						.receiverEmpty(),
 
 				scenario(f -> f.concatMap(Flux::just, 1)).prefetch(1)
 		);
@@ -79,17 +80,17 @@ public class FluxConcatMapTest extends AbstractFluxOperatorTest<String, String> 
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
+	protected List<Scenario<String, String>> scenarios_operatorError() {
 		return Arrays.asList(
 				scenario(f -> f.concatMap(d -> {
 					throw exception();
 				})),
 
 				scenario(f -> f.concatMap(d -> Mono.fromCallable(() -> null)))
-					.verifier(step -> step.verifyError(NullPointerException.class)),
+					,
 
 				scenario(f -> f.concatMap(d -> null))
-					.verifier(step -> step.verifyError(NullPointerException.class)),
+					,
 
 				scenario(f -> f.concatMap(d -> {
 					throw exception();
@@ -97,11 +98,11 @@ public class FluxConcatMapTest extends AbstractFluxOperatorTest<String, String> 
 
 				scenario(f -> f.concatMap(d -> Mono.fromCallable(() -> null), 1))
 						.prefetch(1)
-						.verifier(step -> step.verifyError(NullPointerException.class)),
+						,
 
 				scenario(f -> f.concatMap(d -> null, 1))
 						.prefetch(1)
-						.verifier(step -> step.verifyError(NullPointerException.class)),
+						,
 
 				scenario(f -> f.concatMapDelayError(d -> {
 					throw exception();
@@ -110,11 +111,11 @@ public class FluxConcatMapTest extends AbstractFluxOperatorTest<String, String> 
 
 				scenario(f -> f.concatMapDelayError(d -> Mono.fromCallable(() -> null)))
 						.shouldHitDropErrorHookAfterTerminate(true)
-						.verifier(step -> step.verifyError(NullPointerException.class)),
+						,
 
 				scenario(f -> f.concatMapDelayError(d -> null))
 						.shouldHitDropErrorHookAfterTerminate(true)
-						.verifier(step -> step.verifyError(NullPointerException.class)),
+						,
 
 				scenario(f -> f.concatMapDelayError(d -> {
 					throw exception();
@@ -123,11 +124,11 @@ public class FluxConcatMapTest extends AbstractFluxOperatorTest<String, String> 
 
 				scenario(f -> f.concatMapDelayError(d -> Mono.fromCallable(() -> null), true, 32))
 						.shouldHitDropErrorHookAfterTerminate(true)
-						.verifier(step -> step.verifyError(NullPointerException.class)),
+						,
 
 				scenario(f -> f.concatMapDelayError(d -> null, true, 32))
 						.shouldHitDropErrorHookAfterTerminate(true)
-						.verifier(step -> step.verifyError(NullPointerException.class))
+
 		);
 	}
 
