@@ -112,4 +112,5 @@ image::https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/ma
 
 == Backpressure and the associated rules
 
+[[hooks]]
 == Global hooks
