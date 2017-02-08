@@ -281,6 +281,9 @@ public class OperatorsTest {
 				s.onError(new Exception("test"));
 			})
 			    .subscribe(Operators.drainSubscriber());
+
+			assertThat(requested.get()).isTrue();
+			assertThat(errored.get()).isTrue();
 		}
 		finally {
 			Hooks.resetOnErrorDropped();

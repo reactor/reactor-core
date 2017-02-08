@@ -1700,7 +1700,7 @@ public abstract class Operators {
 
 		@Override
 		public void onError(Throwable t) {
-			Operators.onErrorDropped(t);
+			Operators.onErrorDropped(Exceptions.errorCallbackNotImplemented(t));
 		}
 
 		@Override
