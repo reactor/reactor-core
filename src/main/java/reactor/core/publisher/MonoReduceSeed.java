@@ -62,10 +62,10 @@ final class MonoReduceSeed<T, R> extends MonoSource<T, R> implements Fuseable {
 			return;
 		}
 
-		source.subscribe(new ReduceSubscriber<>(s, accumulator, initialValue));
+		source.subscribe(new ReduceSeedSubscriber<>(s, accumulator, initialValue));
 	}
 
-	static final class ReduceSubscriber<T, R> extends Operators.MonoSubscriber<T, R>
+	static final class ReduceSeedSubscriber<T, R> extends Operators.MonoSubscriber<T, R>
 			implements Receiver {
 
 		final BiFunction<R, ? super T, R> accumulator;
@@ -74,7 +74,7 @@ final class MonoReduceSeed<T, R> extends MonoSource<T, R> implements Fuseable {
 
 		boolean done;
 
-		public ReduceSubscriber(Subscriber<? super R> actual,
+		public ReduceSeedSubscriber(Subscriber<? super R> actual,
 				BiFunction<R, ? super T, R> accumulator,
 				R value) {
 			super(actual);

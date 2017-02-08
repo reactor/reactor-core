@@ -35,17 +35,17 @@ final class MonoReduce<T> extends MonoSource<T, T> implements Fuseable {
 
 	final BiFunction<T, T, T> aggregator;
 
-	public MonoReduce(Publisher<? extends T> source, BiFunction<T, T, T> aggregator) {
+	MonoReduce(Publisher<? extends T> source, BiFunction<T, T, T> aggregator) {
 		super(source);
 		this.aggregator = Objects.requireNonNull(aggregator, "aggregator");
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(new AggregateSubscriber<>(s, aggregator));
+		source.subscribe(new ReduceSubscriber<>(s, aggregator));
 	}
 
-	static final class AggregateSubscriber<T> extends Operators.MonoSubscriber<T, T> {
+	static final class ReduceSubscriber<T> extends Operators.MonoSubscriber<T, T> {
 
 		final BiFunction<T, T, T> aggregator;
 
@@ -55,7 +55,7 @@ final class MonoReduce<T> extends MonoSource<T, T> implements Fuseable {
 
 		boolean done;
 
-		public AggregateSubscriber(Subscriber<? super T> actual,
+		ReduceSubscriber(Subscriber<? super T> actual,
 				BiFunction<T, T, T> aggregator) {
 			super(actual);
 			this.aggregator = aggregator;

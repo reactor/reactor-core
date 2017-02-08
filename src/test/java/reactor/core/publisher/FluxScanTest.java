@@ -29,7 +29,7 @@ public class FluxScanTest extends FluxOperatorTest<String, String> {
 
 	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
-		return defaultOptions.receiveValues(item(0), item(0), item(0));
+		return defaultOptions.receive(3, i -> item(0));
 	}
 
 	@Override

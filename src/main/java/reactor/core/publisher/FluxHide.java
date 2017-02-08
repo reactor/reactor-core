@@ -31,7 +31,7 @@ import reactor.core.Receiver;
  */
 final class FluxHide<T> extends FluxSource<T, T> {
 
-	public FluxHide(Publisher<? extends T> source) {
+	FluxHide(Publisher<? extends T> source) {
 		super(source);
 	}
 

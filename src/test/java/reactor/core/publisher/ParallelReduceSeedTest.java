@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -25,11 +26,33 @@ import org.junit.Test;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.ParallelOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ParallelReduceSeedTest {
+public class ParallelReduceSeedTest extends ParallelOperatorTest<String, String> {
+
+	@Override
+	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
+		return defaultOptions.receive(4, i -> item(0));
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
+		return Arrays.asList(
+				scenario(f -> f.reduce(() -> item(0), (a, b) -> a))
+		);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_operatorError() {
+		return Arrays.asList(
+				scenario(f -> f.reduce(() -> "", (a, b) -> null)),
+
+				scenario(f -> f.reduce(() -> null, (a, b) -> a + b))
+		);
+	}
 
 	@Test
 	public void collectAsyncFused() {

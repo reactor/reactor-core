@@ -22,7 +22,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.MonoSource;
 import reactor.test.StepVerifier;
 
 /**
@@ -32,8 +34,13 @@ public abstract class MonoOperatorTest<I, O>
 		extends BaseOperatorTest<I, Mono<I>, O, Mono<O>> {
 
 	public final Scenario<I, O> scenario(Function<Mono<I>, ? extends Mono<O>> scenario) {
+		if (defaultEmpty) {
+			return Scenario.create(scenario)
+			                                .applyAllOptions(defaultScenario.duplicate()
+			                                                                .receiverEmpty());
+		}
 		return Scenario.create(scenario)
-		               .applyAllOptions(defaultScenario);
+		                                .applyAllOptions(defaultScenario);
 	}
 
 	static public final class Scenario<I, O>
@@ -108,6 +115,12 @@ public abstract class MonoOperatorTest<I, O>
 		}
 
 		@Override
+		public Scenario<I, O> producerError(Exception e) {
+			super.producerError(e);
+			return this;
+		}
+
+		@Override
 		public final Scenario<I, O> receiverEmpty() {
 			super.receiverEmpty();
 			return this;
@@ -124,6 +137,12 @@ public abstract class MonoOperatorTest<I, O>
 		@SafeVarargs
 		public final Scenario<I, O> receiveValues(O... receivers) {
 			super.receiveValues(receivers);
+			return this;
+		}
+
+		@Override
+		public final Scenario<I, O> receive(int i, IntFunction<? extends O> receivers) {
+			super.receive(i, receivers);
 			return this;
 		}
 
@@ -170,5 +189,55 @@ public abstract class MonoOperatorTest<I, O>
 	//assert
 	protected List<Scenario<I, O>> scenarios_touchAndAssertState() {
 		return scenarios_operatorSuccess();
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	protected final OperatorScenario<I, Mono<I>, O, Mono<O>> defaultScenarioOptions(
+			OperatorScenario<I, Mono<I>, O, Mono<O>> defaultOptions) {
+		MonoOperatorTest.Scenario<I, O>
+				s = new MonoOperatorTest.Scenario<I, O>(null, null).applyAllOptions(defaultOptions)
+				                                                   .producer(1, i -> (I) "test")
+				                                                   .receive(1, i -> (O)"test" );
+		this.defaultScenario = s;
+		return defaultScenarioOptions(s);
+	}
+
+	@SuppressWarnings("unchecked")
+	protected MonoOperatorTest.Scenario<I, O> defaultScenarioOptions(MonoOperatorTest.Scenario<I, O> defaultOptions) {
+		return defaultOptions;
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	protected Mono<I> sourceScalar(OperatorScenario<I, Mono<I>, O, Mono<O>> scenario) {
+		if(scenario.producerCount() == 0){
+			return (Mono<I>)Mono.empty();
+		}
+		return Mono.just(scenario.producer().apply(0));
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	protected Mono<I> sourceCallable(OperatorScenario<I, Mono<I>, O, Mono<O>> scenario) {
+		if(scenario.producerCount() == 0){
+			return (Mono<I>)Mono.fromRunnable(() -> {});
+		}
+		return Mono.fromCallable(() -> scenario.producer().apply(0));
+	}
+
+	@Override
+	protected Mono<I> withFluxSource(Flux<I> input) {
+		return MonoSource.wrap(input);
+	}
+
+	@Override
+	protected Mono<I> hide(Mono<I> input) {
+		return input.hide();
+	}
+
+	@Override
+	protected Mono<O> conditional(Mono<O> output) {
+		return output.filter(t -> true);
 	}
 }

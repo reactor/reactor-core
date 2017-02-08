@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
@@ -23,12 +25,32 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.publisher.ReduceOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static java.lang.Thread.sleep;
 import static org.junit.Assert.assertEquals;
 
-public class MonoReduceTest {
+public class MonoReduceTest extends ReduceOperatorTest<String, String>{
+
+	@Override
+	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
+		return defaultOptions.receive(1, i -> item(0));
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
+		return Arrays.asList(
+				scenario(f -> f.reduce((a, b) -> a))
+		);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_operatorError() {
+		return Arrays.asList(
+				scenario(f -> f.reduce((a, b) -> null))
+		);
+	}
 
 	private static final Logger LOG = LoggerFactory.getLogger(MonoReduceTest.class);
 

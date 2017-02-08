@@ -55,10 +55,10 @@ final class FluxScan<T> extends FluxSource<T, T> {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(new AccumulateSubscriber<>(s, accumulator));
+		source.subscribe(new ScanSubscriber<>(s, accumulator));
 	}
 
-	static final class AccumulateSubscriber<T>
+	static final class ScanSubscriber<T>
 			implements Subscriber<T>, Receiver, Producer, Loopback, Subscription,
 			           Trackable {
 		final Subscriber<? super T> actual;
@@ -71,7 +71,7 @@ final class FluxScan<T> extends FluxSource<T, T> {
 
 		boolean done;
 
-		public AccumulateSubscriber(Subscriber<? super T> actual, BiFunction<T, ? super T, T> accumulator) {
+		ScanSubscriber(Subscriber<? super T> actual, BiFunction<T, ? super T, T> accumulator) {
 			this.actual = actual;
 			this.accumulator = accumulator;
 		}

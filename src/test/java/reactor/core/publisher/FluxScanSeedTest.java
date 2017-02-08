@@ -29,11 +29,7 @@ public class FluxScanSeedTest extends FluxOperatorTest<String, String> {
 
 	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
-		return defaultOptions.receive(
-				i -> assertThat(i).isEqualTo(item(0)),
-				i -> assertThat(i).isEqualTo(item(0)),
-				i -> assertThat(i).isEqualTo(item(0)),
-				i -> assertThat(i).isEqualTo(item(0)));
+		return defaultOptions.receive(4, i -> item(0));
 	}
 
 	@Override
