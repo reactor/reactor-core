@@ -241,15 +241,18 @@ public class WorkQueueProcessorTest {
 	public void retryErrorPropagatedFromWorkQueueSubscriberCold() throws Exception {
 		AtomicInteger errors = new AtomicInteger(3);
 		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		AtomicInteger onNextSignals = new AtomicInteger();
 
-		StepVerifier.create(wq.log().<Integer>handle((s1, sink) -> {
-			if (errors.decrementAndGet() > 0) {
-				sink.error(new RuntimeException());
-			}
-			else {
-				sink.next(s1);
-			}
-		}).retry())
+		StepVerifier.create(wq.log()
+		                      .doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
+						(s1, sink) -> {
+							if (errors.decrementAndGet() > 0) {
+								sink.error(new RuntimeException());
+							}
+							else {
+								sink.next(s1);
+							}
+						}).retry())
 		            .then(() -> {
 			            wq.onNext(1);
 			            wq.onNext(2);
@@ -259,34 +262,99 @@ public class WorkQueueProcessorTest {
 		            .expectNext(2, 3)
 		            .verifyComplete();
 
+		assertThat(onNextSignals.get(), equalTo(3));
+
 		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
 		}
 	}
-
-
 
 	@Test
 	public void retryErrorPropagatedFromWorkQueueSubscriberHot() throws Exception {
 		AtomicInteger errors = new AtomicInteger(3);
 		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		AtomicInteger onNextSignals = new AtomicInteger();
 
-		StepVerifier.create(wq.log().<Integer>handle((s1, sink) -> {
-			if (errors.decrementAndGet() > 0) {
-				sink.error(new RuntimeException());
-			}
-			else {
-				sink.next(s1);
-			}
-		}).retry())
+		StepVerifier.create(wq.log()
+		                      .doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
+						(s1, sink) -> {
+							if (errors.decrementAndGet() > 0) {
+								sink.error(new RuntimeException());
+							}
+							else {
+								sink.next(s1);
+							}
+						}).retry())
 		            .then(() -> {
 			            wq.onNext(1);
 			            wq.onNext(2);
 			            wq.onNext(3);
 		            })
-		            .expectNextMatches(d -> d == 1 || d == 2)
-		            .expectNextMatches(d -> d == 2 || d == 3)
+		            .expectNext(3)
 		            .thenCancel()
 		            .verify();
+
+		assertThat(onNextSignals.get(), equalTo(3));
+
+		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
+		}
+	}
+
+	@Test
+	public void retryErrorPropagatedFromWorkQueueSubscriberHotPoisonSignal() throws Exception {
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		AtomicInteger onNextSignals = new AtomicInteger();
+
+		StepVerifier.create(wq.log()
+		                      .doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
+						(s1, sink) -> {
+							if (s1 == 1) {
+								sink.error(new RuntimeException());
+							}
+							else {
+								sink.next(s1);
+							}
+						}).retry())
+		            .then(() -> {
+			            wq.onNext(1);
+			            wq.onNext(2);
+			            wq.onNext(3);
+		            })
+		            .expectNext(2, 3)
+		            .thenCancel()
+		            .verify();
+
+		assertThat(onNextSignals.get(), equalTo(3));
+
+		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
+		}
+	}
+
+	@Test
+	public void retryErrorPropagatedFromWorkQueueSubscriberHotPoisonSignal2()
+			throws Exception {
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		AtomicInteger onNextSignals = new AtomicInteger();
+
+		StepVerifier.create(wq.log()
+		                      .doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
+						(s1, sink) -> {
+							if (s1 == 2) {
+								sink.error(new RuntimeException());
+							}
+							else {
+								sink.next(s1);
+							}
+						}).retry())
+		            .then(() -> {
+			            wq.onNext(1);
+			            wq.onNext(2);
+			            wq.onNext(3);
+		            })
+		            .expectNext(1, 3)
+		            .thenCancel()
+		            .verify();
+
+		assertThat(onNextSignals.get(), equalTo(3));
 
 		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
 		}
