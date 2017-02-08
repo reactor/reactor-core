@@ -24,6 +24,8 @@ import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
+import reactor.util.Logger;
+import reactor.util.Loggers;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuples;
 
@@ -56,6 +58,10 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 	static final boolean fullStackTrace = Boolean.parseBoolean(System.getProperty(
 			"reactor.trace.assembly.fullstacktrace",
 			"false"));
+
+	static final String CHECKPOINT_LOGGER_NAME = "reactor.checkpoint";
+
+	static final Logger CHECKPOINT_LOGGER = Loggers.getLogger(CHECKPOINT_LOGGER_NAME);
 
 	/**
 	 * Create an assembly trace decorated as a {@link Flux}.
@@ -476,6 +482,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		}
 
 	}
+
 }
 interface AssemblyOp {
 }

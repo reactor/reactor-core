@@ -175,6 +175,20 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	}
 
 	/**
+	 *
+	 * @param description
+	 * @param minLevel the minimum {@link Level} required for the assembly tracing (only
+	 * FINEST, FINE, INFO, WARNING and SEVERE are taken into account)
+	 * @return
+	 */
+	public final ParallelFlux<T> checkpoint(String description, Level minLevel) {
+		if (minLevel == null || FluxOnAssembly.CHECKPOINT_LOGGER.isLevelEnabled(minLevel)) {
+			return checkpoint(description);
+		}
+		return this;
+	}
+
+	/**
 	 * Collect the elements in each rail into a collection supplied via a
 	 * collectionSupplier and collected into with a collector action, emitting the
 	 * collection at the end.
