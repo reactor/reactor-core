@@ -144,6 +144,51 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Activate assembly tracing for this particular {@link ParallelFlux}, in case of an
+	 * error upstream of the checkpoint.
+	 * <p>
+	 * It should be placed towards the end of the reactive chain, as errors
+	 * triggered downstream of it cannot be observed and augmented with assembly trace.
+	 *
+	 * @return the assembly tracing {@link ParallelFlux}
+	 */
+	public final ParallelFlux<T> checkpoint() {
+		return new ParallelFluxOnAssembly<>(this);
+	}
+
+	/**
+	 * Activate assembly tracing for this particular {@link ParallelFlux} and give it
+	 * a description that will be reflected in the assembly traceback, in case of an error
+	 * upstream of the checkpoint.
+	 * <p>
+	 * It should be placed towards the end of the reactive chain, as errors
+	 * triggered downstream of it cannot be observed and augmented with assembly trace.
+	 * <p>
+	 * The description could for example be a meaningful name for the assembled
+	 * flux or a wider correlation ID.
+	 *
+	 * @param description a description to include in the assembly traceback.
+	 * @return the assembly tracing {@link ParallelFlux}
+	 */
+	public final ParallelFlux<T> checkpoint(String description) {
+		return new ParallelFluxOnAssembly<>(this, description);
+	}
+
+	/**
+	 *
+	 * @param description
+	 * @param minLevel the minimum {@link Level} required for the assembly tracing (only
+	 * FINEST, FINE, INFO, WARNING and SEVERE are taken into account)
+	 * @return
+	 */
+	public final ParallelFlux<T> checkpoint(String description, Level minLevel) {
+		if (minLevel == null || FluxOnAssembly.CHECKPOINT_LOGGER.isLevelEnabled(minLevel)) {
+			return checkpoint(description);
+		}
+		return this;
+	}
+
+	/**
 	 * Collect the elements in each rail into a collection supplied via a
 	 * collectionSupplier and collected into with a collector action, emitting the
 	 * collection at the end.
@@ -619,7 +664,8 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @param category to be mapped into logger configuration (e.g. org.springframework
 	 * .reactor). If category ends with "." like "reactor.", a generated operator
 	 * suffix will complete, e.g. "reactor.Parallel.Map".
-	 * @param level the level to enforce for this tracing ParallelFlux
+	 * @param level the {@link Level} to enforce for this tracing ParallelFlux (only
+	 * FINEST, FINE, INFO, WARNING and SEVERE are taken into account)
 	 * @param options a vararg {@link SignalType} option to filter log messages
 	 *
 	 * @return a new unaltered {@link ParallelFlux}
@@ -648,7 +694,8 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @param category to be mapped into logger configuration (e.g. org.springframework
 	 * .reactor). If category ends with "." like "reactor.", a generated operator
 	 * suffix will complete, e.g. "reactor.ParallelFlux.Map".
-	 * @param level the level to enforce for this tracing ParallelFlux
+	 * @param level the {@link Level} to enforce for this tracing ParallelFlux (only
+	 * FINEST, FINE, INFO, WARNING and SEVERE are taken into account)
 	 * @param showOperatorLine capture the current stack to display operator
 	 * class/line number.
 	 * @param options a vararg {@link SignalType} option to filter log messages

@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
+import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
 
 /**
  * Captures the current stacktrace when this connectable publisher is created and makes it
@@ -36,13 +37,24 @@ import reactor.core.Receiver;
 final class ParallelFluxOnAssembly<T> extends ParallelFlux<T>
 		implements Fuseable, AssemblyOp, Receiver {
 
-	final ParallelFlux<T>                                                          source;
+	final ParallelFlux<T>           source;
+	final AssemblySnapshotException stacktrace;
 
-	final Exception stacktrace;
-
+	/**
+	 * Create an assembly trace wrapping a {@link ParallelFlux}.
+	 */
 	ParallelFluxOnAssembly(ParallelFlux<T> source) {
 		this.source = source;
-		this.stacktrace = new Exception();
+		this.stacktrace = new AssemblySnapshotException();
+	}
+
+	/**
+	 * Create an assembly trace augmented with a custom description (eg. a name for a
+	 * ParallelFlux or a wider correlation ID), wrapping a {@link ParallelFlux}.
+	 */
+	ParallelFluxOnAssembly(ParallelFlux<T> source, String description) {
+		this.source = source;
+		this.stacktrace = new AssemblySnapshotException(description);
 	}
 
 	@Override

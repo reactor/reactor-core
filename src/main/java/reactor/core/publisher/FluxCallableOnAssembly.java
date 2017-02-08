@@ -21,6 +21,7 @@ import java.util.concurrent.Callable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
+import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
 
 /**
  * Captures the current stacktrace when this publisher is created and makes it
@@ -38,11 +39,11 @@ import reactor.core.Fuseable;
 final class FluxCallableOnAssembly<T> extends FluxSource<T, T>
 		implements Fuseable, Callable<T>, AssemblyOp {
 
-	final Exception stacktrace;
+	final AssemblySnapshotException stacktrace;
 
 	FluxCallableOnAssembly(Publisher<? extends T> source) {
 		super(source);
-		this.stacktrace = new Exception();
+		this.stacktrace = new AssemblySnapshotException();
 	}
 
 	@Override
