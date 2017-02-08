@@ -310,7 +310,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		@Override
 		public String getMessage() {
 			StringBuilder sb = new StringBuilder(super.getMessage()).append(
-					"Observed operator chain, starting from the origin :\n");
+					"Error has been observed by the following operators, starting from the origin :\n");
 
 			synchronized (chainOrder) {
 				for(Tuple3<Integer, String, Integer> t : chainOrder) {
