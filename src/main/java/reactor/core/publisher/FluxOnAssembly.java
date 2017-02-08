@@ -227,7 +227,8 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 	/**
 	 * The exception that captures assembly context, possibly with a user-readable
 	 * description or a wider correlation ID (which serves as the exception's
-	 * {@link #getMessage() message} and should not be null).
+	 * {@link #getMessage() message}). Use the empty constructor if the later is not
+	 * relevant.
 	 */
 	static final class AssemblySnapshotException extends RuntimeException {
 
@@ -235,6 +236,10 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 			super();
 		}
 
+		/**
+		 * @param description a description for the assembly traceback.
+		 * Use {@link #AssemblySnapshotException()} rather than null if not relevant.
+		 */
 		AssemblySnapshotException(String description) {
 			super(description);
 		}

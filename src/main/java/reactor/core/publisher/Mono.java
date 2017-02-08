@@ -1274,7 +1274,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Activate assembly tracking for this particular {@link Mono}.
+	 * Activate assembly tracking for this particular {@link Mono}, in case of an error
+	 * upstream of the checkpoint.
+	 * <p>
+	 * It should be placed towards the end of the reactive chain, as errors
+	 * triggered downstream of it cannot be observed and augmented with assembly trace.
 	 *
 	 * @return the assembly tracking {@link Mono}
 	 */
@@ -1284,8 +1288,13 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Activate assembly tracking for this particular {@link Mono} and give it
-	 * a description that will be reflected in the stacktrace assembly traceback in case
-	 * of error. The description could for example be a meaningful name for the assembled
+	 * a description that will be reflected in the assembly traceback, in case of an error
+	 * upstream of the checkpoint.
+	 * <p>
+	 * It should be placed towards the end of the reactive chain, as errors
+	 * triggered downstream of it cannot be observed and augmented with assembly trace.
+	 * <p>
+	 * The description could for example be a meaningful name for the assembled
 	 * mono or a wider correlation ID.
 	 *
 	 * @param description a description to include in the assembly traceback.

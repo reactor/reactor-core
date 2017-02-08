@@ -115,42 +115,11 @@ application.
 Later on, if an exception occurs, the failing operator will be able to refer
 to that capture and append it to the stacktrace.
 
-.Cost of debug mode
-****
-We are dealing with a form of instrumentation here, and creating a
-stacktrace is costly. That is why this debugging feature should only be
-activated in a controlled manner, as a last resort.
-There are ways of limiting the impact of that feature by restricting the hook to
-the type of operator that is causing an issue.
-
-The filter to use is best determined by looking at the class in the stack trace,
-after removing any `Parallel`, `Flux` and `Mono` prefixes and the `Fuseable`
-suffix. For instance in our case:
-
-----
-at reactor.core.publisher.MonoSingle$SingleSubscriber.onNext(MonoSingle.java:120)
-----
-
-We have `MonoSingle.java:120`, so `MonoSingle` operator implementation and
-`single` as the filtering keyword.
-
-So we could only instrument uses of the incriminating operator by doing:
-
-[source,java]
-----
-Hooks.onOperator(providedHook -> providedHook.ifName("single") <1>
-                                             .operatorStackTrace());
-----
-<1> Only activate for operator classes named "single", ignoring case and the
-"Parallel", "Flux" or "Mono" prefixes, as well as "Fuseable" suffix (as seen in
-stacktrace)
-****
-
-In the next section, we'll see how it differs and how to interpret that new
-information.
+In the next section, we'll see how the stacktrace differs and how to interpret
+that new information.
 
 == Reading a stack trace in debug mode
-Reusing the example from above, but activating the `operatorStackTrace` debug
+Reusing our initial example but activating the `operatorStackTrace` debug
 feature, here is the stack we now get:
 
 [source]
@@ -250,6 +219,76 @@ of the section of the chain that gets notified of the error:
     `applyFilters` utility method).
  4. finally it is seen by an `elapsed` and a `transform`. Once again, elapsed is
     what is applied by the transformation function of that second transform.
+
+=== Cost of debug mode
+We are dealing with a form of instrumentation here, and creating a
+stacktrace is costly. That is why this debugging feature should only be
+activated in a controlled manner, as a last resort.
+There are ways of limiting the impact of that feature by restricting the hook to
+the type of operator that is causing an issue.
+
+The filter to use is best determined by looking at the class in the stack trace,
+after removing any `Parallel`, `Flux` and `Mono` prefixes and the `Fuseable`
+suffix. For instance in our case:
+
+----
+at reactor.core.publisher.MonoSingle$SingleSubscriber.onNext(MonoSingle.java:120)
+----
+
+We have `MonoSingle.java:120`, so `MonoSingle` operator implementation and
+`single` as the filtering keyword.
+
+So we could only instrument uses of the incriminating operator by doing:
+
+[source,java]
+----
+Hooks.onOperator(providedHook -> providedHook.ifName("single") <1>
+                                             .operatorStackTrace());
+----
+<1> Only activate for operator classes named "single", ignoring case and the
+"Parallel", "Flux" or "Mono" prefixes, as well as "Fuseable" suffix (as seen in
+stacktrace)
+
+=== The `checkpoint()` alternative
+The debug mode is global and affects every single operator assembled into a
+`Flux` or `Mono` inside the application. This has the benefit of allowing
+*after the fact debugging*: whatever the error, we will obtain additional info
+to debug it.
+
+As we saw in the "Cost of debug mode" above, this is at the cost of an impact on
+performance (due to the number of populated stacktraces). That cost can be
+reduced if we have an idea of likely problematic operators. But usually this
+isn't known unless we observed an error in the wild, saw we were missing
+assembly information and then modified the code to activate assembly tracking,
+hoping we can observe the same error again...
+
+In that scenario, we have to switch into debugging gear and make preparations
+in order to better observe a second occurrence of the error, this time capturing
+all the additional information.
+
+If you can identify reactive chains that you assemble in your application for
+which serviceability is critical, *a mix of both world can be achieved with the
+`checkpoint()` operator.*
+
+You can chain this operator towards their end. The `checkpoint` operator will
+work like the hook version, but only for its link of that particular chain.
+
+Additionally, there is a `checkpoint(String)` variant that allows you to add a
+description to the assembly traceback. It could for example be a static
+identifier or user-readable description, or a wider *correlation ID* coming from
+a header in the case of an HTTP request for instance...
+
+That information appears in the first line of the traceback:
+
+----
+Suppressed: reactor.core.publisher.FluxOnAssembly$OnAssemblyException:
+Assembly trace from producer [reactor.core.publisher.ParallelSource], described as [fooCorrelation1234] : <1>
+	reactor.core.publisher.ParallelFlux.checkpoint(ParallelFlux.java:174)
+	reactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescription(FluxOnAssemblyTest.java:159)
+Observed operator chain, starting from the origin :
+	|_	ParallelFlux.checkpointnull
+----
+<1> `fooCorrelation1234` is the description provided in `checkpoint`
 
 == Logging a stream
 Additionally to stacktrace debugging and analysis, another powerful tool to have
