@@ -62,6 +62,7 @@ public class OperatorScenario<I, PI extends Publisher<? extends I>, O, PO extend
 		this.fusionMode = source.fusionMode;
 		this.receivers = source.receivers;
 		this.receiverValues = source.receiverValues;
+		this.producerError = source.producerError;
 		this.demand = source.demand;
 		this.producing = source.producing;
 		this.producingMapper = source.producingMapper;

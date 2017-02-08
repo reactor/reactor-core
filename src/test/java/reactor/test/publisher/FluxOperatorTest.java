@@ -399,71 +399,6 @@ public abstract class FluxOperatorTest<I, O>
 	}
 
 	@Test
-	public final void sequenceOfNextWithCallbackError() {
-		defaultEmpty = true;
-		forEachScenario(scenarios_operatorError(), scenario -> {
-			Consumer<StepVerifier.Step<O>> verifier = scenario.verifier();
-
-			String m = exception().getMessage();
-			Consumer<StepVerifier.Step<O>> errorVerifier = step -> {
-				try {
-					step.consumeErrorWith(e -> {
-						if (e instanceof NullPointerException || e instanceof IllegalStateException || e.getMessage()
-						                                                                                .equals(m)) {
-							return;
-						}
-						throw Exceptions.propagate(e);
-					}).verify();
-//						step.expectErrorMessage(m)
-//						.verifyThenAssertThat()
-//						.hasOperatorErrorWithMessage(m);
-				}
-				catch (Throwable e) {
-					if (e instanceof AssertionError) {
-						throw (AssertionError) e;
-					}
-					e = Exceptions.unwrap(e);
-					if (e instanceof NullPointerException || e instanceof IllegalStateException || e.getMessage()
-					                                                                                .equals(m)) {
-						return;
-					}
-					throw Exceptions.propagate(e);
-				}
-			};
-
-			if (verifier == null) {
-				verifier = step -> errorVerifier.accept(scenario.applySteps(step));
-				errorVerifier.accept(this.inputHiddenOutputBackpressured(scenario));
-			}
-			else {
-				verifier.accept(this.inputHiddenOutputBackpressured(scenario));
-			}
-
-			int fusion = scenario.fusionMode();
-
-			verifier.accept(this.inputHidden(scenario));
-			verifier.accept(this.inputFused(scenario));
-
-			if (scenario.producerCount() > 0 && (fusion & Fuseable.SYNC) != 0) {
-				verifier.accept(this.inputFusedSyncOutputFusedSync(scenario));
-				verifier.accept(this.inputFusedSyncOutputFusedSyncConditional(scenario));
-			}
-
-			if (scenario.producerCount() > 0 && (fusion & Fuseable.ASYNC) != 0) {
-				verifier.accept(this.inputFusedAsyncOutputFusedAsync(scenario));
-				verifier.accept(this.inputFusedAsyncOutputFusedAsyncConditional(scenario));
-			}
-
-			verifier.accept(this.inputConditionalTryNext(scenario));
-			verifier.accept(this.inputConditionalOutputConditional(scenario));
-			verifier.accept(this.inputHiddenOutputConditionalTryNext(scenario));
-			verifier.accept(this.inputFusedConditionalTryNext(scenario));
-			verifier.accept(this.inputFusedConditionalOutputConditional(scenario));
-			verifier.accept(this.inputFusedConditionalOutputConditionalTryNext(scenario));
-		});
-	}
-
-	@Test
 	public final void errorOnSubscribe() {
 		defaultEmpty = true;
 		forEachScenario(scenarios_errorFromUpstreamFailure(), scenario -> {
@@ -497,48 +432,6 @@ public abstract class FluxOperatorTest<I, O>
 			if (scenario.prefetch() != UNSPECIFIED || (fusion & Fuseable.ASYNC) != 0) {
 				verifier.accept(this.operatorErrorSourceVerifierFusedAsync(scenario));
 			}
-
-		});
-	}
-
-	@Test
-	public final void sequenceOfNextAndComplete() {
-		forEachScenario(scenarios_operatorSuccess(), scenario -> {
-			Consumer<StepVerifier.Step<O>> verifier = scenario.verifier();
-
-			if (verifier == null) {
-				verifier = step -> scenario.applySteps(step)
-				                           .verifyComplete();
-			}
-
-			int fusion = scenario.fusionMode();
-
-			this.inputHiddenOutputBackpressured(scenario)
-			    .consumeSubscriptionWith(s -> s.request(0))
-			    .verifyComplete();
-
-			verifier.accept(this.inputHidden(scenario));
-			verifier.accept(this.inputHiddenOutputConditionalTryNext(scenario));
-
-			verifier.accept(this.inputFused(scenario));
-			verifier.accept(this.inputFusedConditionalTryNext(scenario));
-
-			if ((fusion & Fuseable.SYNC) != 0) {
-				verifier.accept(this.inputFusedSyncOutputFusedSync(scenario));
-				verifier.accept(this.inputFusedSyncOutputFusedSyncConditional(scenario));
-			}
-
-			if ((fusion & Fuseable.ASYNC) != 0) {
-				verifier.accept(this.inputFusedAsyncOutputFusedAsync(scenario));
-				verifier.accept(this.inputFusedAsyncOutputFusedAsyncConditional(scenario));
-				this.inputFusedAsyncOutputFusedAsyncCancel(scenario);
-				this.inputFusedAsyncOutputFusedAsyncConditionalCancel(scenario);
-			}
-
-			verifier.accept(this.inputConditionalTryNext(scenario));
-			verifier.accept(this.inputConditionalOutputConditional(scenario));
-			verifier.accept(this.inputFusedConditionalOutputConditional(scenario));
-			verifier.accept(this.inputFusedConditionalOutputConditionalTryNext(scenario));
 
 		});
 	}

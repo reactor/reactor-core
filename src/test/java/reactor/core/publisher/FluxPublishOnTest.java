@@ -66,11 +66,6 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		                     .fusionMode(Fuseable.ASYNC);
 	}
 
-	@Override
-	protected RuntimeException exception() {
-		return new RejectedExecutionException("Scheduler unavailable");
-	}
-
 	void assertRejected(StepVerifier.Step<String> step) {
 		try {
 			step.consumeErrorWith(e -> Assert.assertTrue(Exceptions.unwrap(e) instanceof RejectedExecutionException))
@@ -104,7 +99,9 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 				scenario(f -> f.publishOn(Schedulers.fromExecutor(d -> {
 					throw exception();
-				}))).receiverDemand(0),
+				})))
+						.producerError(new RejectedExecutionException("Scheduler unavailable"))
+						.receiverDemand(0),
 
 				scenario(f -> f.publishOn(new FailWorkerScheduler()))
 						.producerEmpty(),
