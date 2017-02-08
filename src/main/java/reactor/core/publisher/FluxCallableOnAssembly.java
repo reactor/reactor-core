@@ -43,7 +43,7 @@ final class FluxCallableOnAssembly<T> extends FluxSource<T, T>
 
 	FluxCallableOnAssembly(Publisher<? extends T> source) {
 		super(source);
-		this.stacktrace = new AssemblySnapshotException(null, null);
+		this.stacktrace = new AssemblySnapshotException();
 	}
 
 	@Override

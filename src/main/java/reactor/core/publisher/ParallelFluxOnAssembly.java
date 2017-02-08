@@ -40,9 +40,21 @@ final class ParallelFluxOnAssembly<T> extends ParallelFlux<T>
 	final ParallelFlux<T>           source;
 	final AssemblySnapshotException stacktrace;
 
+	/**
+	 * Create an assembly trace wrapping a {@link ParallelFlux}.
+	 */
 	ParallelFluxOnAssembly(ParallelFlux<T> source) {
 		this.source = source;
-		this.stacktrace = new AssemblySnapshotException(null, null);
+		this.stacktrace = new AssemblySnapshotException();
+	}
+
+	/**
+	 * Create an assembly trace augmented with a custom description (eg. a name for a
+	 * ParallelFlux or a wider correlation ID), wrapping a {@link ParallelFlux}.
+	 */
+	ParallelFluxOnAssembly(ParallelFlux<T> source, String description) {
+		this.source = source;
+		this.stacktrace = new AssemblySnapshotException(description);
 	}
 
 	@Override

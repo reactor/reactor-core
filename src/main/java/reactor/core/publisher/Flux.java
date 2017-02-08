@@ -2460,16 +2460,26 @@ public abstract class Flux<T> implements Publisher<T> {
 		return onAssembly(new FluxCancelOn<>(this, scheduler));
 	}
 
+	/**
+	 * Activate assembly tracking for this particular {@link Flux}.
+	 *
+	 * @return the assembly tracking {@link Flux}.
+	 */
 	public final Flux<T> checkpoint() {
-		return checkpoint(null);
+		return new FluxOnAssembly<>(this);
 	}
 
+	/**
+	 * Activate assembly tracking for this particular {@link Flux} and give it
+	 * a description that will be reflected in the stacktrace assembly traceback in case
+	 * of error. The description could for example be a meaningful name for the assembled
+	 * flux or a wider correlation ID.
+	 *
+	 * @param description a description to include in the assembly traceback.
+	 * @return the assembly tracking {@link Flux}.
+	 */
 	public final Flux<T> checkpoint(String description) {
-		return checkpoint(description, null);
-	}
-
-	public final Flux<T> checkpoint(String description, String correlationId) {
-		return new FluxOnAssembly<T>(this, description, correlationId);
+		return new FluxOnAssembly<>(this, description);
 	}
 
 	/**

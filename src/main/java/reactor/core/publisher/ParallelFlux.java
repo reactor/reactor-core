@@ -144,6 +144,28 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Activate assembly tracking for this particular {@link ParallelFlux}.
+	 *
+	 * @return the assembly tracking {@link ParallelFlux}
+	 */
+	public final ParallelFlux<T> checkpoint() {
+		return new ParallelFluxOnAssembly<>(this);
+	}
+
+	/**
+	 * Activate assembly tracking for this particular {@link ParallelFlux} and give it
+	 * a description that will be reflected in the stacktrace assembly traceback in case
+	 * of error. The description could for example be a meaningful name for the assembled
+	 * flux or a wider correlation ID.
+	 *
+	 * @param description a description to include in the assembly traceback.
+	 * @return the assembly tracking {@link ParallelFlux}
+	 */
+	public final ParallelFlux<T> checkpoint(String description) {
+		return new ParallelFluxOnAssembly<>(this, description);
+	}
+
+	/**
 	 * Collect the elements in each rail into a collection supplied via a
 	 * collectionSupplier and collected into with a collector action, emitting the
 	 * collection at the end.

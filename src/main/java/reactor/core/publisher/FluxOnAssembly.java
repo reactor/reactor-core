@@ -57,9 +57,21 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 			"reactor.trace.assembly.fullstacktrace",
 			"false"));
 
-	FluxOnAssembly(Publisher<? extends T> source, String description, String correlationId) {
+	/**
+	 * Create an assembly trace decorated as a {@link Flux}.
+	 */
+	FluxOnAssembly(Publisher<? extends T> source) {
 		super(source);
-		this.snapshotStack = new AssemblySnapshotException(description, correlationId);
+		this.snapshotStack = new AssemblySnapshotException();
+	}
+
+	/**
+	 * Create an assembly trace augmented with a custom description (eg. a name for a Flux
+	 * or a wider correlation ID) and exposed as a {@link Flux}.
+	 */
+	FluxOnAssembly(Publisher<? extends T> source, String description) {
+		super(source);
+		this.snapshotStack = new AssemblySnapshotException(description);
 	}
 
 	static String getStacktrace(Publisher<?> source, AssemblySnapshotException snapshotStack) {
@@ -157,15 +169,9 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		  .append(sourceClass.getName())
 		  .append("]");
 
-		if (ase.description != null) {
+		if (ase.getMessage() != null) {
 			sb.append(", described as [")
-			  .append(ase.description)
-			  .append("]");
-		}
-
-		if (ase.correlationId != null) {
-			sb.append(", correlationId [")
-			  .append(ase.correlationId)
+			  .append(ase.getMessage())
 			  .append("]");
 		}
 
@@ -220,16 +226,17 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 
 	/**
 	 * The exception that captures assembly context, possibly with a user-readable
-	 * description and / or a wider correlation ID.
+	 * description or a wider correlation ID (which serves as the exception's
+	 * {@link #getMessage() message} and should not be null).
 	 */
 	static final class AssemblySnapshotException extends RuntimeException {
 
-		final String description;
-		final String correlationId;
+		AssemblySnapshotException() {
+			super();
+		}
 
-		public AssemblySnapshotException(String description, String correlationId) {
-			this.description = description;
-			this.correlationId = correlationId;
+		AssemblySnapshotException(String description) {
+			super(description);
 		}
 	}
 

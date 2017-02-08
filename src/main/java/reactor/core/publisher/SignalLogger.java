@@ -84,7 +84,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 
 		if(correlateStack){
 			operatorLine = FluxOnAssembly.extract(FluxOnAssembly.getStacktrace(null,
-					new AssemblySnapshotException(null, null)),
+					new AssemblySnapshotException()),
 					false);
 		}
 		else{

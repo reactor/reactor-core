@@ -18,9 +18,11 @@ package reactor.core.publisher;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Objects;
 
 import org.junit.Test;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
+import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -29,7 +31,18 @@ public class FluxOnAssemblyTest {
 	@Test
 	public void stacktraceHeaderTraceEmpty() {
 		StringBuilder sb = new StringBuilder();
-		AssemblySnapshotException e = new AssemblySnapshotException(null, null);
+		AssemblySnapshotException e = new AssemblySnapshotException();
+
+		FluxOnAssembly.fillStacktraceHeader(sb, String.class, e);
+
+		assertThat(sb.toString())
+				.isEqualTo("\nAssembly trace from producer [java.lang.String] :\n");
+	}
+
+	@Test
+	public void stacktraceHeaderTraceDescriptionNull() {
+		StringBuilder sb = new StringBuilder();
+		AssemblySnapshotException e = new AssemblySnapshotException(null);
 
 		FluxOnAssembly.fillStacktraceHeader(sb, String.class, e);
 
@@ -40,149 +53,119 @@ public class FluxOnAssemblyTest {
 	@Test
 	public void stacktraceHeaderTraceDescription() {
 		StringBuilder sb = new StringBuilder();
-		AssemblySnapshotException e = new AssemblySnapshotException("This is readable", null);
+		AssemblySnapshotException e = new AssemblySnapshotException("1234");
 
 		FluxOnAssembly.fillStacktraceHeader(sb, String.class, e);
 
 		assertThat(sb.toString())
 				.startsWith("\nAssembly trace from producer [java.lang.String]")
-				.endsWith(", described as [This is readable] :\n");
-	}
-
-	@Test
-	public void stacktraceHeaderTraceCorrelation() {
-		StringBuilder sb = new StringBuilder();
-		AssemblySnapshotException e = new AssemblySnapshotException(null, "1234");
-
-		FluxOnAssembly.fillStacktraceHeader(sb, String.class, e);
-
-		assertThat(sb.toString())
-				.startsWith("\nAssembly trace from producer [java.lang.String]")
-				.endsWith(", correlationId [1234] :\n");
-	}
-
-	@Test
-	public void stacktraceHeaderTraceDescriptionAndCorrelation() {
-		StringBuilder sb = new StringBuilder();
-		AssemblySnapshotException e = new AssemblySnapshotException("This is readable", "1234");
-
-		FluxOnAssembly.fillStacktraceHeader(sb, String.class, e);
-
-		assertThat(sb.toString())
-				.startsWith("\nAssembly trace from producer [java.lang.String]")
-				.endsWith(", described as [This is readable], correlationId [1234] :\n");
+				.endsWith(", described as [1234] :\n");
 	}
 
 	@Test
 	public void checkpointEmpty() {
 		StringWriter sw = new StringWriter();
 
-		Flux.range(1, 10)
-		    .map(i -> null)
-		    .checkpoint()
-		    .subscribe(System.out::println, t -> t.printStackTrace(new PrintWriter(sw)));
+		Flux<Integer> tested = Flux.range(1, 10)
+		                           .map(i -> i < 3 ? i : null)
+		                           .filter(i -> i % 2 == 0)
+		                           .checkpoint()
+		                           .doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
+		StepVerifier.create(tested)
+		            .expectNext(2)
+		            .verifyError();
 
 		String debugStack = sw.toString();
 
-		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.FluxMapFuseable] :");
+		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.FluxFilterFuseable] :");
 	}
 
 	@Test
 	public void checkpointDescription() {
 		StringWriter sw = new StringWriter();
+		Flux<Integer> tested = Flux.range(1, 10)
+		                           .map(i -> i < 3 ? i : null)
+		                           .filter(i -> i % 2 == 0)
+		                           .checkpoint("foo")
+		                           .doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
 
-		Flux.range(1, 10)
-		    .map(i -> null)
-		    .checkpoint("foo")
-		    .subscribe(System.out::println, t -> t.printStackTrace(new PrintWriter(sw)));
-
-		String debugStack = sw.toString();
-
-		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.FluxMapFuseable], described as [foo] :");
-	}
-
-	@Test
-	public void checkpointCorrelation() {
-		StringWriter sw = new StringWriter();
-
-		Flux.range(1, 10)
-		    .map(i -> null)
-		    .checkpoint(null, "1234")
-		    .subscribe(System.out::println, t -> t.printStackTrace(new PrintWriter(sw)));
+		StepVerifier.create(tested)
+		            .expectNext(2)
+		            .verifyError();
 
 		String debugStack = sw.toString();
 
-		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.FluxMapFuseable], correlationId [1234] :");
-	}
-
-	@Test
-	public void checkpointDescriptionCorrelation() {
-		StringWriter sw = new StringWriter();
-
-		Flux.range(1, 10)
-		    .map(i -> null)
-		    .checkpoint("foo", "1234")
-		    .subscribe(System.out::println, t -> t.printStackTrace(new PrintWriter(sw)));
-
-		String debugStack = sw.toString();
-
-		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.FluxMapFuseable], described as [foo], correlationId [1234] :");
+		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.FluxFilterFuseable], described as [foo] :");
 	}
 
 	@Test
 	public void monoCheckpointEmpty() {
 		StringWriter sw = new StringWriter();
+		Mono<Object> tested = Mono.just(1)
+		                          .map(i -> null)
+		                          .filter(Objects::nonNull)
+		                          .checkpoint()
+		                          .doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
 
-		Mono.just(1)
-		    .map(i -> null)
-		    .checkpoint()
-		    .subscribe(System.out::println, t -> t.printStackTrace(new PrintWriter(sw)));
+		StepVerifier.create(tested)
+		            .verifyError();
 
 		String debugStack = sw.toString();
 
-		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.MonoMapFuseable] :");
+		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.MonoFilterFuseable] :");
 	}
 
 	@Test
 	public void monoCheckpointDescription() {
 		StringWriter sw = new StringWriter();
+		Mono<Object> tested = Mono.just(1)
+		                          .map(i -> null)
+		                          .filter(Objects::nonNull)
+		                          .checkpoint("foo")
+		                          .doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
 
-		Mono.just(1)
-		    .map(i -> null)
-		    .checkpoint("foo")
-		    .subscribe(System.out::println, t -> t.printStackTrace(new PrintWriter(sw)));
+		StepVerifier.create(tested)
+		            .verifyError();
 
 		String debugStack = sw.toString();
 
-		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.MonoMapFuseable], described as [foo] :");
+		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.MonoFilterFuseable], described as [foo] :");
 	}
 
 	@Test
-	public void monoCheckpointCorrelation() {
+	public void parallelFluxCheckpointEmpty() {
 		StringWriter sw = new StringWriter();
+		Flux<Integer> tested = Flux.range(1, 10)
+		                         .parallel(2)
+		                         .composeGroup(g -> g.map(i -> (Integer) null))
+		                         .checkpoint()
+		                         .sequential()
+		                         .doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
 
-		Mono.just(1)
-		    .map(i -> null)
-		    .checkpoint(null, "1234")
-		    .subscribe(System.out::println, t -> t.printStackTrace(new PrintWriter(sw)));
+		StepVerifier.create(tested)
+		            .verifyError();
 
 		String debugStack = sw.toString();
 
-		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.MonoMapFuseable], correlationId [1234] :");
+		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.ParallelSource] :");
 	}
 
 	@Test
-	public void monoCheckpointDescriptionCorrelation() {
+	public void parallelFluxCheckpointDescription() {
 		StringWriter sw = new StringWriter();
+		Flux<Integer> tested = Flux.range(1, 10)
+		                           .parallel(2)
+		                           .composeGroup(g -> g.map(i -> (Integer) null))
+		                           .checkpoint("foo")
+		                           .sequential()
+		                           .doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
 
-		Mono.just(1)
-		    .map(i -> null)
-		    .checkpoint("foo", "1234")
-		    .subscribe(System.out::println, t -> t.printStackTrace(new PrintWriter(sw)));
+		StepVerifier.create(tested)
+		            .verifyError();
 
 		String debugStack = sw.toString();
 
-		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.MonoMapFuseable], described as [foo], correlationId [1234] :");
+		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.ParallelSource], described as [foo] :");
 	}
 
 }

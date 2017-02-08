@@ -1273,16 +1273,26 @@ public abstract class Mono<T> implements Publisher<T> {
 		return onAssembly(new MonoCancelOn<>(this, scheduler));
 	}
 
+	/**
+	 * Activate assembly tracking for this particular {@link Mono}.
+	 *
+	 * @return the assembly tracking {@link Mono}
+	 */
 	public final Mono<T> checkpoint() {
-		return checkpoint(null);
+		return new MonoOnAssembly<>(this);
 	}
 
+	/**
+	 * Activate assembly tracking for this particular {@link Mono} and give it
+	 * a description that will be reflected in the stacktrace assembly traceback in case
+	 * of error. The description could for example be a meaningful name for the assembled
+	 * mono or a wider correlation ID.
+	 *
+	 * @param description a description to include in the assembly traceback.
+	 * @return the assembly tracking {@link Mono}
+	 */
 	public final Mono<T> checkpoint(String description) {
-		return checkpoint(description, null);
-	}
-
-	public final Mono<T> checkpoint(String description, String correlationId) {
-		return new MonoOnAssembly<>(this, description, correlationId);
+		return new MonoOnAssembly<>(this, description);
 	}
 
 	/**

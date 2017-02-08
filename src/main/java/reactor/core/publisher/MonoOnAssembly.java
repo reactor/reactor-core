@@ -38,9 +38,21 @@ final class MonoOnAssembly<T> extends MonoSource<T, T> implements Fuseable, Asse
 
 	final AssemblySnapshotException stacktrace;
 
-	MonoOnAssembly(Publisher<? extends T> source, String description, String correlationId) {
+	/**
+	 * Create an assembly trace exposed as a {@link Mono}.
+	 */
+	MonoOnAssembly(Publisher<? extends T> source) {
 		super(source);
-		this.stacktrace = new AssemblySnapshotException(description, correlationId);
+		this.stacktrace = new AssemblySnapshotException();
+	}
+
+	/**
+	 * Create an assembly trace augmented with a custom description (eg. a name for a Mono
+	 * or a wider correlation ID) and exposed as a {@link Mono}.
+	 */
+	MonoOnAssembly(Publisher<? extends T> source, String description) {
+		super(source);
+		this.stacktrace = new AssemblySnapshotException(description);
 	}
 
 	@Override

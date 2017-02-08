@@ -49,7 +49,7 @@ final class ConnectableFluxOnAssembly<T> extends ConnectableFlux<T> implements
 
 	ConnectableFluxOnAssembly(ConnectableFlux<T> source) {
 		this.source = source;
-		this.stacktrace = new AssemblySnapshotException(null, null);
+		this.stacktrace = new AssemblySnapshotException();
 	}
 	
 	@Override

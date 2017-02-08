@@ -45,7 +45,7 @@ final class MonoCallableOnAssembly<T> extends MonoSource<T, T>
 
 	MonoCallableOnAssembly(Publisher<? extends T> source) {
 		super(source);
-		this.stacktrace = new AssemblySnapshotException(null, null);
+		this.stacktrace = new AssemblySnapshotException();
 	}
 
 	@Override
