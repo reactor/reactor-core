@@ -792,7 +792,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 					}
 					catch (InterruptedException | RuntimeException ce) {
-						if (Exceptions.isCancel(ce) || isCancelled()){
+						if (Exceptions.isCancel(ce)){
 							reschedule(event);
 							break;
 						}
