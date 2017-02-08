@@ -2460,6 +2460,18 @@ public abstract class Flux<T> implements Publisher<T> {
 		return onAssembly(new FluxCancelOn<>(this, scheduler));
 	}
 
+	public final Flux<T> checkpoint() {
+		return checkpoint(null);
+	}
+
+	public final Flux<T> checkpoint(String description) {
+		return checkpoint(description, null);
+	}
+
+	public final Flux<T> checkpoint(String description, String correlationId) {
+		return new FluxOnAssembly<T>(this, description, correlationId);
+	}
+
 	/**
 	 * Collect the {@link Flux} sequence with the given collector and supplied container on subscribe.
 	 * The collected result will be emitted when this sequence completes.

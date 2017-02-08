@@ -26,6 +26,7 @@ import java.util.logging.Level;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 
@@ -82,7 +83,9 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 		this.fuseable = source instanceof Fuseable;
 
 		if(correlateStack){
-			operatorLine = FluxOnAssembly.extract(FluxOnAssembly.getStacktrace(null, new Exception()),false);
+			operatorLine = FluxOnAssembly.extract(FluxOnAssembly.getStacktrace(null,
+					new AssemblySnapshotException(null, null)),
+					false);
 		}
 		else{
 			operatorLine = null;

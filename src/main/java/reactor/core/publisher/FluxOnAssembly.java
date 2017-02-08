@@ -47,7 +47,7 @@ import reactor.util.function.Tuples;
  */
 final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, AssemblyOp {
 
-	final Exception snapshotStack;
+	final AssemblySnapshotException snapshotStack;
 
 	/**
 	 * If set to true, the creation of FluxOnAssembly will capture the raw stacktrace
@@ -57,19 +57,18 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 			"reactor.trace.assembly.fullstacktrace",
 			"false"));
 
-	FluxOnAssembly(Publisher<? extends T> source) {
+	FluxOnAssembly(Publisher<? extends T> source, String description, String correlationId) {
 		super(source);
-		this.snapshotStack = new Exception();
+		this.snapshotStack = new AssemblySnapshotException(description, correlationId);
 	}
 
-	static String getStacktrace(Publisher<?> source, Exception snapshotStack) {
+	static String getStacktrace(Publisher<?> source, AssemblySnapshotException snapshotStack) {
 		StackTraceElement[] stes = snapshotStack.getStackTrace();
 
-		StringBuilder sb =
-				new StringBuilder(null != source ? "\nAssembly trace from producer [" +
-						source.getClass()
-						      .getName() + "] " +
-						":\n" : "");
+		StringBuilder sb = new StringBuilder();
+		if (null != source) {
+			fillStacktraceHeader(sb, source.getClass(), snapshotStack);
+		}
 
 		for (StackTraceElement e : stes) {
 			String row = e.toString();
@@ -152,9 +151,30 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		return sb.toString();
 	}
 
+	static void fillStacktraceHeader(StringBuilder sb, Class<?> sourceClass,
+			AssemblySnapshotException ase) {
+		sb.append("\nAssembly trace from producer [")
+		  .append(sourceClass.getName())
+		  .append("]");
+
+		if (ase.description != null) {
+			sb.append(", described as [")
+			  .append(ase.description)
+			  .append("]");
+		}
+
+		if (ase.correlationId != null) {
+			sb.append(", correlationId [")
+			  .append(ase.correlationId)
+			  .append("]");
+		}
+
+		sb.append(" :\n");
+	}
+
 	@SuppressWarnings("unchecked")
 	static <T> void subscribe(Subscriber<? super T> s, Publisher<? extends T> source,
-			Exception snapshotStack) {
+			AssemblySnapshotException snapshotStack) {
 
 		if(snapshotStack != null) {
 			if (s instanceof ConditionalSubscriber) {
@@ -196,6 +216,21 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 		subscribe(s, source, snapshotStack);
+	}
+
+	/**
+	 * The exception that captures assembly context, possibly with a user-readable
+	 * description and / or a wider correlation ID.
+	 */
+	static final class AssemblySnapshotException extends RuntimeException {
+
+		final String description;
+		final String correlationId;
+
+		public AssemblySnapshotException(String description, String correlationId) {
+			this.description = description;
+			this.correlationId = correlationId;
+		}
 	}
 
 	/**
@@ -293,16 +328,16 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 
 	static class OnAssemblySubscriber<T> implements Subscriber<T>, QueueSubscription<T> {
 
-		final Exception                snapshotStack;
-		final Subscriber<? super T> actual;
-		final Publisher<?>          parent;
+		final AssemblySnapshotException snapshotStack;
+		final Subscriber<? super T>     actual;
+		final Publisher<?>              parent;
 
 		QueueSubscription<T> qs;
 		Subscription         s;
 		int                  fusionMode;
 
 		OnAssemblySubscriber(Subscriber<? super T> actual,
-				Exception snapshotStack,
+				AssemblySnapshotException snapshotStack,
 				Publisher<?> parent) {
 			this.actual = actual;
 			this.snapshotStack = snapshotStack;
@@ -417,7 +452,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		final ConditionalSubscriber<? super T> actualCS;
 
 		OnAssemblyConditionalSubscriber(ConditionalSubscriber<? super T> actual,
-				Exception stacktrace,
+				AssemblySnapshotException stacktrace,
 				Publisher<?> parent) {
 			super(actual, stacktrace, parent);
 			this.actualCS = actual;

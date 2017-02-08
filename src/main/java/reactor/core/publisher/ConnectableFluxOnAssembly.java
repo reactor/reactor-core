@@ -20,6 +20,7 @@ import java.util.function.Consumer;
 import org.reactivestreams.Subscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
+import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
 
 /**
  * Captures the current stacktrace when this connectable publisher is created and
@@ -44,11 +45,11 @@ final class ConnectableFluxOnAssembly<T> extends ConnectableFlux<T> implements
 
 	final ConnectableFlux<T> source;
 
-	final Exception stacktrace;
+	final AssemblySnapshotException stacktrace;
 
 	ConnectableFluxOnAssembly(ConnectableFlux<T> source) {
 		this.source = source;
-		this.stacktrace = new Exception();
+		this.stacktrace = new AssemblySnapshotException(null, null);
 	}
 	
 	@Override

@@ -22,6 +22,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
 
 /**
  * Captures the current stacktrace when this publisher is created and makes it
@@ -40,11 +41,11 @@ import reactor.core.Fuseable;
 final class MonoCallableOnAssembly<T> extends MonoSource<T, T>
 		implements Callable<T>, AssemblyOp {
 
-	final Exception stacktrace;
+	final AssemblySnapshotException stacktrace;
 
 	MonoCallableOnAssembly(Publisher<? extends T> source) {
 		super(source);
-		this.stacktrace = new Exception();
+		this.stacktrace = new AssemblySnapshotException(null, null);
 	}
 
 	@Override

@@ -543,12 +543,12 @@ public abstract class Hooks {
 							return new FluxCallableOnAssembly<>(publisher);
 						}
 						if (publisher instanceof Mono) {
-							return new MonoOnAssembly<>(publisher);
+							return new MonoOnAssembly<>(publisher, null, null);
 						}
 						if (publisher instanceof ParallelFlux){
 							return new ParallelFluxOnAssembly<>((ParallelFlux<T>) publisher);
 						}
-						return new FluxOnAssembly<>(publisher);
+						return new FluxOnAssembly<>(publisher, null, null);
 					}
 					return publisher;
 				}

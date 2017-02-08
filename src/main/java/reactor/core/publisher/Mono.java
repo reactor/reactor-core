@@ -1273,6 +1273,18 @@ public abstract class Mono<T> implements Publisher<T> {
 		return onAssembly(new MonoCancelOn<>(this, scheduler));
 	}
 
+	public final Mono<T> checkpoint() {
+		return checkpoint(null);
+	}
+
+	public final Mono<T> checkpoint(String description) {
+		return checkpoint(description, null);
+	}
+
+	public final Mono<T> checkpoint(String description, String correlationId) {
+		return new MonoOnAssembly<>(this, description, correlationId);
+	}
+
 	/**
 	 * Defer the given transformation to this {@link Mono} in order to generate a
 	 * target {@link Mono} type. A transformation will occur for each
