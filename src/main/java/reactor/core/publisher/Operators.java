@@ -189,6 +189,18 @@ public abstract class Operators {
 	}
 
 	/**
+	 * Return a singleton {@link Subscriber} that does not check for double onSubscribe
+	 * and purely request Long.MAX. If an error is received it will raise a
+	 * {@link Exceptions#errorCallbackNotImplemented(Throwable)} in the receiving thread.
+	 *
+	 * @return a new {@link Subscriber} whose sole purpose is to request Long.MAX
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> Subscriber<T> drainSubscriber() {
+		return (Subscriber<T>)DrainSubscriber.INSTANCE;
+	}
+
+	/**
 	 * A singleton enumeration that represents a no-op Subscription instance that
 	 * can be freely given out to clients.
 	 * <p>
@@ -857,7 +869,7 @@ public abstract class Operators {
 	 * @param <I> The upstream sequence type
 	 * @param <O> The downstream sequence type
 	 */
-	public static class MonoSubscriber<I, O> implements Subscriber<I>, Loopback,
+	public static class MonoSubscriber<I, O> implements Subscriber<I>,
 	                                                    Trackable,
 	                                                    Receiver, Producer,
 	                                                    Fuseable, //for constants only
@@ -932,11 +944,6 @@ public abstract class Operators {
 		}
 
 		@Override
-		public Object connectedOutput() {
-			return value;
-		}
-
-		@Override
 		public final Subscriber<? super O> downstream() {
 			return actual;
 		}
@@ -956,7 +963,7 @@ public abstract class Operators {
 
 		@Override
 		public boolean isStarted() {
-			return state != NO_REQUEST_NO_VALUE;
+			return !isTerminated();
 		}
 
 		@Override
@@ -1047,7 +1054,7 @@ public abstract class Operators {
 
 		@Override
 		public Object upstream() {
-			return value;
+			return value; //FIXME to be removed/changed to Loopback
 		}
 		/**
 		 * Indicates this Subscription has no value and not requested yet.
@@ -1676,7 +1683,31 @@ public abstract class Operators {
 		static final AtomicIntegerFieldUpdater<ScalarSubscription> ONCE =
 				AtomicIntegerFieldUpdater.newUpdater(ScalarSubscription.class, "once");
 	}
+
+	final static class DrainSubscriber<T> implements Subscriber<T> {
+
+		static final DrainSubscriber INSTANCE = new DrainSubscriber();
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			s.request(Long.MAX_VALUE);
+		}
+
+		@Override
+		public void onNext(Object o) {
+
+		}
+
+		@Override
+		public void onError(Throwable t) {
+			Operators.onErrorDropped(t);
+		}
+
+		@Override
+		public void onComplete() {
+
+		}
+	}
+
 	final static Logger log = Loggers.getLogger(Operators.class);
-
-
 }

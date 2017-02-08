@@ -31,26 +31,28 @@ import static reactor.core.Fuseable.NONE;
  */
 public class OperatorScenario<I, PI extends Publisher<? extends I>, O, PO extends Publisher<? extends O>> {
 
-	final Function<PI, ? extends PO> scenario;
+	final Function<PI, ? extends PO> body;
 	final Exception                  stack;
 
-	Exception producerError                        = null;
-	int       fusionMode                           = NONE;
-	int       fusionModeThreadBarrier              = NONE;
-	int       prefetch                             = -1;
-	boolean   shouldHitDropNextHookAfterTerminate  = true;
-	boolean   shouldHitDropErrorHookAfterTerminate = true;
-	boolean   shouldAssertPostTerminateState       = true;
-	int       producing                            = -1;
-	int       demand                               = -1;
+	RuntimeException producerError                        = null;
+	RuntimeException droppedError                         = null;
+	I                droppedItem                          = null;
+	int              fusionMode                           = NONE;
+	int              fusionModeThreadBarrier              = NONE;
+	int              prefetch                             = -1;
+	boolean          shouldHitDropNextHookAfterTerminate  = true;
+	boolean          shouldHitDropErrorHookAfterTerminate = true;
+	boolean          shouldAssertPostTerminateState       = true;
+	int              producing                            = -1;
+	int              demand                               = -1;
 	IntFunction<? extends I> producingMapper;
 	Consumer<? super O>[]          receivers      = null;
 	O[]                            receiverValues = null;
 	String                         description    = null;
 	Consumer<StepVerifier.Step<O>> verifier       = null;
 
-	OperatorScenario(Function<PI, ? extends PO> scenario, Exception stack) {
-		this.scenario = scenario;
+	OperatorScenario(Function<PI, ? extends PO> body, Exception stack) {
+		this.body = body;
 		this.stack = stack;
 	}
 
@@ -63,6 +65,8 @@ public class OperatorScenario<I, PI extends Publisher<? extends I>, O, PO extend
 		this.receivers = source.receivers;
 		this.receiverValues = source.receiverValues;
 		this.producerError = source.producerError;
+		this.droppedItem = source.droppedItem;
+		this.droppedError = source.droppedError;
 		this.demand = source.demand;
 		this.producing = source.producing;
 		this.producingMapper = source.producingMapper;
@@ -117,8 +121,18 @@ public class OperatorScenario<I, PI extends Publisher<? extends I>, O, PO extend
 		return this;
 	}
 
-	public OperatorScenario<I, PI, O, PO> producerError(Exception producerError) {
+	public OperatorScenario<I, PI, O, PO> producerError(RuntimeException producerError) {
 		this.producerError = Objects.requireNonNull(producerError, "producerError");
+		return this;
+	}
+
+	public OperatorScenario<I, PI, O, PO> droppedError(RuntimeException producerError) {
+		this.droppedError = Objects.requireNonNull(producerError, "producerError");
+		return this;
+	}
+
+	public OperatorScenario<I, PI, O, PO> droppedItem(I item) {
+		this.droppedItem = Objects.requireNonNull(item, "item");
 		return this;
 	}
 
@@ -253,7 +267,7 @@ public class OperatorScenario<I, PI extends Publisher<? extends I>, O, PO extend
 	}
 
 	final Function<PI, ? extends PO> body() {
-		return scenario;
+		return body;
 	}
 
 	final String description() {
@@ -261,27 +275,15 @@ public class OperatorScenario<I, PI extends Publisher<? extends I>, O, PO extend
 	}
 
 	OperatorScenario<I, PI, O, PO> duplicate() {
-		return new OperatorScenario<I, PI, O, PO>(scenario, stack).applyAllOptions(this);
+		return new OperatorScenario<I, PI, O, PO>(body, stack).applyAllOptions(this);
 	}
 
 	final int fusionMode() {
 		return fusionMode;
 	}
 
-	final Exception producerError() {
-		return producerError;
-	}
-
-	final int fusionModeThreadBarrier() {
-		return fusionModeThreadBarrier;
-	}
-
 	final int prefetch() {
 		return prefetch;
-	}
-
-	final IntFunction<? extends I> producer() {
-		return producingMapper;
 	}
 
 	final int producerCount() {

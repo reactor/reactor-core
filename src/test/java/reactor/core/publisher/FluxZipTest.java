@@ -45,12 +45,8 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 
 	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
-		return defaultOptions.shouldHitDropNextHookAfterTerminate(false);
-	}
-
-	@Override
-	protected RuntimeException droppedException() {
-		return exception(); //pass concurrent source error
+		return defaultOptions.shouldHitDropNextHookAfterTerminate(false)
+		                     .droppedError(new RuntimeException("test"));
 	}
 
 	@Override

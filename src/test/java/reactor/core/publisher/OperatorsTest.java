@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
@@ -25,9 +26,7 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
@@ -251,5 +250,40 @@ public class OperatorsTest {
 	@Test
 	public void noopFluxCancelled(){
 		Flux.CANCELLED.dispose(); //noop
+	}
+
+	@Test
+	public void drainSubscriber() {
+		AtomicBoolean requested = new AtomicBoolean();
+		AtomicBoolean errored = new AtomicBoolean();
+		try {
+			Hooks.onErrorDropped(e -> {
+				assertThat(Exceptions.isErrorCallbackNotImplemented(e)).isTrue();
+				assertThat(e.getCause()).hasMessage("test");
+				errored.set(true);
+			});
+			Flux.from(s -> {
+				assertThat(s).isEqualTo(Operators.drainSubscriber());
+				s.onSubscribe(new Subscription() {
+					@Override
+					public void request(long n) {
+						assertThat(n).isEqualTo(Long.MAX_VALUE);
+						requested.set(true);
+					}
+
+					@Override
+					public void cancel() {
+
+					}
+				});
+				s.onNext("ignored"); //dropped
+				s.onComplete(); //dropped
+				s.onError(new Exception("test"));
+			})
+			    .subscribe(Operators.drainSubscriber());
+		}
+		finally {
+			Hooks.resetOnErrorDropped();
+		}
 	}
 }

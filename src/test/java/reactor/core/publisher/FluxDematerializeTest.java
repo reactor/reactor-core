@@ -106,12 +106,7 @@ public class FluxDematerializeTest extends FluxOperatorTest<Signal<String>, Stri
 		return defaultOptions.producer(3, i -> i == 0 ?
 				Signal.next("test") :
 				Signal.next("test"+i)
-		);
-	}
-
-	@Override
-	protected Signal<String> droppedItem() {
-		return Signal.next("dropped");
+		).droppedItem(Signal.next("dropped"));
 	}
 
 	Signal<Integer> error = Signal.error(new RuntimeException("Forced failure"));

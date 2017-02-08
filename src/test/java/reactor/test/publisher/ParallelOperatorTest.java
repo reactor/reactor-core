@@ -55,7 +55,7 @@ public abstract class ParallelOperatorTest<I, O>
 
 		@Override
 		Scenario<I, O> duplicate() {
-			return new Scenario<>(scenario, stack).applyAllOptions(this);
+			return new Scenario<>(body, stack).applyAllOptions(this);
 		}
 
 		@Override
@@ -72,8 +72,20 @@ public abstract class ParallelOperatorTest<I, O>
 		}
 
 		@Override
-		public Scenario<I, O> producerError(Exception e) {
+		public Scenario<I, O> producerError(RuntimeException e) {
 			super.producerError(e);
+			return this;
+		}
+
+		@Override
+		public Scenario<I, O> droppedError(RuntimeException e) {
+			super.droppedError(e);
+			return this;
+		}
+
+		@Override
+		public Scenario<I, O> droppedItem(I item) {
+			super.droppedItem(item);
 			return this;
 		}
 
@@ -186,6 +198,11 @@ public abstract class ParallelOperatorTest<I, O>
 	}
 
 	@Override
+	protected List<Scenario<I, O>> scenarios_touchAndAssertState() {
+		return scenarios_operatorSuccess();
+	}
+
+	@Override
 	@SuppressWarnings("unchecked")
 	protected final OperatorScenario<I, ParallelFlux<I>, O, ParallelFlux<O>> defaultScenarioOptions(
 			OperatorScenario<I, ParallelFlux<I>, O, ParallelFlux<O>> defaultOptions) {
@@ -198,7 +215,9 @@ public abstract class ParallelOperatorTest<I, O>
 				                                  .receive(3,
 						                                  i -> (O) (i == 0 ?
 								                                  "test" :
-								                                  "test" + i));
+								                                  "test" + i))
+				                                  .droppedError(new RuntimeException("dropped"))
+				                                  .droppedItem((I)"dropped");
 		this.defaultScenario = s;
 		return defaultScenarioOptions(s);
 	}
@@ -215,7 +234,7 @@ public abstract class ParallelOperatorTest<I, O>
 			return (ParallelFlux<I>)Flux.empty()
 			                            .parallel(4);
 		}
-		return (ParallelFlux<I>)Flux.just(scenario.producer().apply(0))
+		return (ParallelFlux<I>)Flux.just(scenario.producingMapper.apply(0))
 		                            .parallel(4);
 	}
 
@@ -227,7 +246,7 @@ public abstract class ParallelOperatorTest<I, O>
 		        .flux()
 		        .parallel(4);
 		}
-		return (ParallelFlux<I>) Mono.fromCallable(() -> scenario.producer().apply(0))
+		return (ParallelFlux<I>) Mono.fromCallable(() -> scenario.producingMapper.apply(0))
 		                             .flux()
 		                             .parallel(4);
 	}

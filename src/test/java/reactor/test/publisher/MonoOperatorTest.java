@@ -56,7 +56,7 @@ public abstract class MonoOperatorTest<I, O>
 
 		@Override
 		Scenario<I, O> duplicate() {
-			return new Scenario<>(scenario, stack).applyAllOptions(this);
+			return new Scenario<>(body, stack).applyAllOptions(this);
 		}
 
 		@Override
@@ -115,8 +115,20 @@ public abstract class MonoOperatorTest<I, O>
 		}
 
 		@Override
-		public Scenario<I, O> producerError(Exception e) {
+		public Scenario<I, O> producerError(RuntimeException e) {
 			super.producerError(e);
+			return this;
+		}
+
+		@Override
+		public Scenario<I, O> droppedError(RuntimeException e) {
+			super.droppedError(e);
+			return this;
+		}
+
+		@Override
+		public Scenario<I, O> droppedItem(I item) {
+			super.droppedItem(item);
 			return this;
 		}
 
@@ -186,7 +198,7 @@ public abstract class MonoOperatorTest<I, O>
 		return scenarios_operatorSuccess();
 	}
 
-	//assert
+	@Override
 	protected List<Scenario<I, O>> scenarios_touchAndAssertState() {
 		return scenarios_operatorSuccess();
 	}
@@ -198,7 +210,9 @@ public abstract class MonoOperatorTest<I, O>
 		MonoOperatorTest.Scenario<I, O>
 				s = new MonoOperatorTest.Scenario<I, O>(null, null).applyAllOptions(defaultOptions)
 				                                                   .producer(1, i -> (I) "test")
-				                                                   .receive(1, i -> (O)"test" );
+				                                                   .receive(1, i -> (O)"test" )
+				                                                   .droppedError(new RuntimeException("dropped"))
+				                                                   .droppedItem((I)"dropped");
 		this.defaultScenario = s;
 		return defaultScenarioOptions(s);
 	}
@@ -214,7 +228,7 @@ public abstract class MonoOperatorTest<I, O>
 		if(scenario.producerCount() == 0){
 			return (Mono<I>)Mono.empty();
 		}
-		return Mono.just(scenario.producer().apply(0));
+		return Mono.just(scenario.producingMapper.apply(0));
 	}
 
 	@Override
@@ -223,7 +237,7 @@ public abstract class MonoOperatorTest<I, O>
 		if(scenario.producerCount() == 0){
 			return (Mono<I>)Mono.fromRunnable(() -> {});
 		}
-		return Mono.fromCallable(() -> scenario.producer().apply(0));
+		return Mono.fromCallable(() -> scenario.producingMapper.apply(0));
 	}
 
 	@Override

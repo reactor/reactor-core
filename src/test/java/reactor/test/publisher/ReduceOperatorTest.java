@@ -54,7 +54,7 @@ public abstract class ReduceOperatorTest<I, O>
 
 		@Override
 		Scenario<I, O> duplicate() {
-			return new Scenario<>(scenario, stack).applyAllOptions(this);
+			return new Scenario<>(body, stack).applyAllOptions(this);
 		}
 
 		@Override
@@ -71,8 +71,20 @@ public abstract class ReduceOperatorTest<I, O>
 		}
 
 		@Override
-		public Scenario<I, O> producerError(Exception e) {
+		public Scenario<I, O> producerError(RuntimeException e) {
 			super.producerError(e);
+			return this;
+		}
+
+		@Override
+		public Scenario<I, O> droppedError(RuntimeException e) {
+			super.droppedError(e);
+			return this;
+		}
+
+		@Override
+		public Scenario<I, O> droppedItem(I item) {
+			super.droppedItem(item);
 			return this;
 		}
 
@@ -185,6 +197,11 @@ public abstract class ReduceOperatorTest<I, O>
 	}
 
 	@Override
+	protected List<Scenario<I, O>> scenarios_touchAndAssertState() {
+		return scenarios_operatorSuccess();
+	}
+
+	@Override
 	@SuppressWarnings("unchecked")
 	protected final OperatorScenario<I, Flux<I>, O, Mono<O>> defaultScenarioOptions(
 			OperatorScenario<I, Flux<I>, O, Mono<O>> defaultOptions) {
@@ -194,7 +211,9 @@ public abstract class ReduceOperatorTest<I, O>
 						                                                 "test" :
 						                                                 "test" + i))
 		                                                 .receive(1,
-				                                                 i -> (O) "test");
+				                                                 i -> (O) "test")
+		                                                 .droppedError(new RuntimeException("dropped"))
+		                                                 .droppedItem((I)"dropped");
 		this.defaultScenario = s;
 		return defaultScenarioOptions(s);
 	}
@@ -221,7 +240,7 @@ public abstract class ReduceOperatorTest<I, O>
 		if(scenario.producerCount() == 0){
 			return (Flux<I>)Flux.empty();
 		}
-		return (Flux<I>)Flux.just(scenario.producer().apply(0));
+		return (Flux<I>)Flux.just(scenario.producingMapper.apply(0));
 	}
 
 	@Override
@@ -231,7 +250,7 @@ public abstract class ReduceOperatorTest<I, O>
 			return (Flux<I>)Mono.fromRunnable(() -> {})
 			                            .flux();
 		}
-		return (Flux<I>)Mono.fromCallable(() -> scenario.producer().apply(0))
+		return (Flux<I>)Mono.fromCallable(() -> scenario.producingMapper.apply(0))
 		                            .flux();
 	}
 

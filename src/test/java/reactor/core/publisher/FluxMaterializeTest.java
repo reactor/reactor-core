@@ -88,8 +88,13 @@ public class FluxMaterializeTest
 	protected List<Scenario<String, Signal<String>>> scenarios_errorFromUpstreamFailure() {
 		return Arrays.asList(
 				scenario(Flux::materialize)
-						.verifier(step -> step.assertNext(s -> assertThat(s.getThrowable()).hasMessage("test"))
-						                      .verifyComplete())
+						.verifier(step -> {
+							Hooks.onErrorDropped(c -> assertThat(c).hasMessage("dropped"));
+							Hooks.onNextDropped(c -> assertThat(c).isEqualTo("dropped"));
+							step.assertNext(s -> assertThat(s
+									.getThrowable()).hasMessage("test"))
+							    .verifyComplete();
+						})
 		);
 	}
 

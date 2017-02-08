@@ -131,10 +131,5 @@ final class MonoAny<T> extends MonoSource<T, Boolean> implements Fuseable {
 		public Object upstream() {
 			return s;
 		}
-
-		@Override
-		public Object connectedInput() {
-			return predicate;
-		}
 	}
 }

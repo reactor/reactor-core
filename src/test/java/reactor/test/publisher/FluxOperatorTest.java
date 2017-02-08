@@ -70,7 +70,7 @@ public abstract class FluxOperatorTest<I, O>
 
 		@Override
 		Scenario<I, O> duplicate() {
-			return new Scenario<>(scenario, stack).applyAllOptions(this);
+			return new Scenario<>(body, stack).applyAllOptions(this);
 		}
 
 		@Override
@@ -123,8 +123,20 @@ public abstract class FluxOperatorTest<I, O>
 		}
 
 		@Override
-		public Scenario<I, O> producerError(Exception e) {
+		public Scenario<I, O> producerError(RuntimeException e) {
 			super.producerError(e);
+			return this;
+		}
+
+		@Override
+		public Scenario<I, O> droppedError(RuntimeException e) {
+			super.droppedError(e);
+			return this;
+		}
+
+		@Override
+		public Scenario<I, O> droppedItem(I item) {
+			super.droppedItem(item);
 			return this;
 		}
 
@@ -201,7 +213,7 @@ public abstract class FluxOperatorTest<I, O>
 		if(scenario.producerCount() == 0){
 			return (Flux<I>)Flux.empty();
 		}
-		return (Flux<I>)Flux.just(scenario.producer().apply(0));
+		return (Flux<I>)Flux.just(scenario.producingMapper.apply(0));
 	}
 
 	@Override
@@ -211,7 +223,7 @@ public abstract class FluxOperatorTest<I, O>
 			return (Flux<I>)Mono.fromRunnable(() -> {})
 			                    .flux();
 		}
-		return (Flux<I>)Mono.fromCallable(() -> scenario.producer().apply(0))
+		return (Flux<I>)Mono.fromCallable(() -> scenario.producingMapper.apply(0))
 		                    .flux();
 	}
 
@@ -220,449 +232,8 @@ public abstract class FluxOperatorTest<I, O>
 		return input;
 	}
 
-	@Test
-	@SuppressWarnings("unchecked")
-	public final void assertPrePostState() {
-		forEachScenario(scenarios_touchAndAssertState(), scenario -> {
-
-			Flux<O> f = Flux.<I>from(s -> {
-				Trackable t = null;
-				if (s instanceof Trackable) {
-					t = (Trackable) s;
-					assertThat(t.getError()).isNull();
-					assertThat(t.isStarted()).isFalse();
-					assertThat(t.isTerminated()).isFalse();
-					assertThat(t.isCancelled()).isFalse();
-
-					if (scenario.prefetch() != UNSPECIFIED) {
-						assertThat(Math.min(Integer.MAX_VALUE,
-								t.getCapacity())).isEqualTo(scenario.prefetch());
-						if (t.expectedFromUpstream() != UNSPECIFIED && t.expectedFromUpstream() != t.limit()) {
-							assertThat(t.expectedFromUpstream()).isEqualTo(0);
-						}
-						if (t.limit() != UNSPECIFIED) {
-							assertThat(t.limit()).isEqualTo(defaultLimit(scenario));
-						}
-					}
-
-					if (t.getPending() != UNSPECIFIED && scenario.shouldAssertPostTerminateState()) {
-						assertThat(t.getPending()).isEqualTo(3);
-					}
-					if (t.requestedFromDownstream() != UNSPECIFIED && scenario.shouldAssertPostTerminateState()) {
-						assertThat(t.requestedFromDownstream()).isEqualTo(0);
-					}
-				}
-
-				if (s instanceof Receiver) {
-					assertThat(((Receiver) s).upstream()).isNull();
-				}
-
-				touchTreeState(s);
-
-				s.onSubscribe(Operators.emptySubscription());
-				s.onSubscribe(Operators.emptySubscription()); //noop path
-				s.onSubscribe(Operators.cancelledSubscription()); //noop path
-				if (t != null) {
-
-					assertThat(t.isStarted()).isTrue();
-					if (scenario.prefetch() != UNSPECIFIED) {
-						if (t.expectedFromUpstream() != UNSPECIFIED && t.expectedFromUpstream() != t.limit()) {
-							assertThat(t.expectedFromUpstream()).isEqualTo(scenario.prefetch());
-						}
-					}
-					if (t.requestedFromDownstream() != UNSPECIFIED) {
-						assertThat(t.requestedFromDownstream()).isEqualTo(Long.MAX_VALUE);
-					}
-				}
-				s.onComplete();
-				if (t != null) {
-					touchTreeState(s);
-					if (scenario.shouldAssertPostTerminateState()) {
-						assertThat(t.isStarted()).isFalse();
-						assertThat(t.isTerminated()).isTrue();
-					}
-				}
-			}).as(scenario.body());
-
-			if (scenario.prefetch() != UNSPECIFIED) {
-				assertThat(Math.min(f.getPrefetch(), Integer.MAX_VALUE)).isEqualTo(
-						scenario.prefetch());
-			}
-
-			if (f instanceof Loopback) {
-				assertThat(((Loopback) f).connectedInput()).isNotNull();
-			}
-
-			f.subscribe();
-
-			f = f.filter(t -> true);
-
-			if (scenario.prefetch() != UNSPECIFIED) {
-				assertThat(Math.min(((Flux) (((Receiver) f).upstream())).getPrefetch(),
-						Integer.MAX_VALUE)).isEqualTo(scenario.prefetch());
-			}
-
-			if (((Receiver) f).upstream() instanceof Loopback) {
-				assertThat(((Loopback) (((Receiver) f).upstream())).connectedInput()).isNotNull();
-			}
-
-			f.subscribe();
-
-			AtomicReference<Trackable> ref = new AtomicReference<>();
-			Flux<O> source = fluxFuseableAsync(scenario).doOnSubscribe(s -> {
-				if (s instanceof Producer) {
-					Object _s = ((Producer) ((Producer) s).downstream()).downstream();
-					if (_s instanceof Trackable) {
-						Trackable t = (Trackable) _s;
-						ref.set(t);
-						assertThat(t.isStarted()).isFalse();
-						assertThat(t.isCancelled()).isFalse();
-						if (scenario.prefetch() != UNSPECIFIED) {
-							assertThat(Math.min(Integer.MAX_VALUE,
-									t.getCapacity())).isEqualTo(scenario.prefetch());
-							if (t.expectedFromUpstream() != UNSPECIFIED && t.limit() != t.expectedFromUpstream()) {
-								assertThat(t.expectedFromUpstream()).isEqualTo(0);
-							}
-							if (t.limit() != UNSPECIFIED) {
-								assertThat(t.limit()).isEqualTo(defaultLimit(scenario));
-							}
-						}
-						if (t.getPending() != UNSPECIFIED && scenario.shouldAssertPostTerminateState()) {
-							assertThat(t.getPending()).isEqualTo(3);
-						}
-						if (t.requestedFromDownstream() != UNSPECIFIED && scenario.shouldAssertPostTerminateState()) {
-							assertThat(t.requestedFromDownstream()).isEqualTo(0);
-						}
-						if (t.expectedFromUpstream() != UNSPECIFIED && scenario.shouldAssertPostTerminateState() && t.limit() != t.expectedFromUpstream()) {
-							assertThat(t.expectedFromUpstream()).isEqualTo(0);
-						}
-					}
-				}
-			})
-			                                                  .as(scenario.body());
-
-			if (source.getPrefetch() != UNSPECIFIED && scenario.prefetch() != UNSPECIFIED) {
-				assertThat(Math.min(source.getPrefetch(), Integer.MAX_VALUE)).isEqualTo(
-						scenario.prefetch());
-			}
-
-			f = source.doOnSubscribe(parent -> {
-				if (parent instanceof Trackable) {
-					Trackable t = (Trackable) parent;
-					assertThat(t.getError()).isNull();
-					assertThat(t.isStarted()).isTrue();
-					if (scenario.prefetch() != UNSPECIFIED && t.expectedFromUpstream() != UNSPECIFIED) {
-						assertThat(t.expectedFromUpstream()).isEqualTo(scenario.prefetch());
-					}
-					assertThat(t.isTerminated()).isFalse();
-				}
-
-				//noop path
-				if (parent instanceof Subscriber) {
-					((Subscriber<I>) parent).onSubscribe(Operators.emptySubscription());
-					((Subscriber<I>) parent).onSubscribe(Operators.cancelledSubscription());
-				}
-
-				if (parent instanceof Receiver) {
-					assertThat(((Receiver) parent).upstream()).isNotNull();
-				}
-
-				touchTreeState(parent);
-			})
-			          .doOnComplete(() -> {
-				          if (ref.get() != null) {
-					          Trackable t = ref.get();
-					          if (t.requestedFromDownstream() != UNSPECIFIED) {
-						          assertThat(t.requestedFromDownstream()).isEqualTo(Long.MAX_VALUE);
-					          }
-					          if (scenario.shouldAssertPostTerminateState()) {
-						          assertThat(t.isStarted()).isFalse();
-						          assertThat(t.isTerminated()).isTrue();
-					          }
-					          touchTreeState(ref.get());
-				          }
-			          });
-
-			f.subscribe(r -> touchTreeState(ref.get()));
-
-			source = source.filter(t -> true);
-
-			if (scenario.prefetch() != UNSPECIFIED) {
-				assertThat(Math.min(((Flux) (((Receiver) source).upstream())).getPrefetch(),
-						Integer.MAX_VALUE)).isEqualTo(scenario.prefetch());
-			}
-
-			f = f.filter(t -> true);
-
-			f.subscribe(r -> touchTreeState(ref.get()));
-		});
-	}
-
-	@Test
-	public final void errorOnSubscribe() {
-		defaultEmpty = true;
-		forEachScenario(scenarios_errorFromUpstreamFailure(), scenario -> {
-			Consumer<StepVerifier.Step<O>> verifier = scenario.verifier();
-
-			if (verifier == null) {
-				String m = exception().getMessage();
-				verifier = step -> {
-					try {
-						scenario.applySteps(step)
-						        .verifyErrorMessage(m);
-					}
-					catch (Exception e) {
-						assertThat(Exceptions.unwrap(e)).hasMessage(m);
-					}
-				};
-			}
-
-			int fusion = scenario.fusionMode();
-
-			verifier.accept(this.operatorErrorSourceVerifier(scenario));
-			verifier.accept(this.operatorErrorSourceVerifierTryNext(scenario));
-			verifier.accept(this.operatorErrorSourceVerifierFused(scenario));
-			verifier.accept(this.operatorErrorSourceVerifierConditional(scenario));
-			verifier.accept(this.operatorErrorSourceVerifierConditionalTryNext(scenario));
-			verifier.accept(this.operatorErrorSourceVerifierFusedBothConditional(scenario));
-
-			if (scenario.prefetch() != UNSPECIFIED || (fusion & Fuseable.SYNC) != 0) {
-				verifier.accept(this.operatorErrorSourceVerifierFusedSync(scenario));
-			}
-			if (scenario.prefetch() != UNSPECIFIED || (fusion & Fuseable.ASYNC) != 0) {
-				verifier.accept(this.operatorErrorSourceVerifierFusedAsync(scenario));
-			}
-
-		});
-	}
-
-	final StepVerifier.Step<O> operatorErrorSourceVerifierTryNext(Scenario<I, O> scenario) {
-		TestPublisher<I> ts =
-				TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
-		AtomicBoolean errorDropped = new AtomicBoolean();
-		AtomicBoolean nextDropped = new AtomicBoolean();
-
-		String dropped = droppedException().getMessage();
-		Hooks.onErrorDropped(e -> {
-			assertThat(e).hasMessage(dropped);
-			errorDropped.set(true);
-		});
-		Hooks.onNextDropped(d -> {
-			assertThat(d).isEqualTo(droppedItem());
-			nextDropped.set(true);
-		});
-		return StepVerifier.create(ts.flux()
-		                             .as(scenario.body()))
-		                   .then(() -> {
-			                   ts.error(exception());
-
-			                   //verify drop path
-			                   if (scenario.shouldHitDropErrorHookAfterTerminate()) {
-				                   ts.complete();
-				                   ts.error(droppedException());
-				                   assertThat(errorDropped.get()).isTrue();
-			                   }
-			                   if (scenario.shouldHitDropNextHookAfterTerminate()) {
-				                   ts.next(droppedItem());
-				                   assertThat(nextDropped.get()).isTrue();
-			                   }
-		                   });
-	}
-
-	final StepVerifier.Step<O> operatorErrorSourceVerifier(Scenario<I, O> scenario) {
-		TestPublisher<I> ts =
-				TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE,
-						TestPublisher.Violation.REQUEST_OVERFLOW);
-		AtomicBoolean nextDropped = new AtomicBoolean();
-
-		Hooks.onNextDropped(d -> {
-			assertThat(d).isEqualTo(droppedItem());
-			nextDropped.set(true);
-		});
-		return StepVerifier.create(ts.flux()
-		                             .hide()
-		                             .as(scenario.body()))
-		                   .then(() -> {
-			                   ts.error(exception());
-
-			                   //verify drop path
-			                   if (scenario.shouldHitDropNextHookAfterTerminate()) {
-				                   ts.next(droppedItem());
-				                   assertThat(nextDropped.get()).isTrue();
-			                   }
-		                   });
-	}
-
-	@SuppressWarnings("unchecked")
-	final StepVerifier.Step<O> operatorErrorSourceVerifierFused(Scenario<I, O> scenario) {
-		UnicastProcessor<I> up = UnicastProcessor.create();
-		AtomicBoolean errorDropped = new AtomicBoolean();
-		AtomicBoolean nextDropped = new AtomicBoolean();
-		String dropped = droppedException().getMessage();
-		Hooks.onErrorDropped(e -> {
-			assertThat(e).hasMessage(dropped);
-			errorDropped.set(true);
-		});
-		Hooks.onNextDropped(d -> {
-			assertThat(d).isEqualTo(droppedItem());
-			nextDropped.set(true);
-		});
-		return StepVerifier.create(up.as(f -> new FluxFuseableExceptionOnPoll<>(f,
-				exception()))
-		                             .as(scenario.body()))
-		                   .then(() -> {
-			                   if (up.downstream() != null) {
-				                   up.downstream()
-				                     .onError(exception());
-
-				                   //verify drop path
-
-				                   if (scenario.shouldHitDropErrorHookAfterTerminate()) {
-					                   up.downstream()
-					                     .onComplete();
-					                   up.downstream()
-					                     .onError(droppedException());
-					                   assertThat(errorDropped.get()).isTrue();
-				                   }
-				                   if (scenario.shouldHitDropNextHookAfterTerminate()) {
-
-					                   FluxFuseableExceptionOnPoll.next(up.downstream(),
-							                   droppedItem());
-					                   assertThat(nextDropped.get()).isTrue();
-					                   if (FluxFuseableExceptionOnPoll.shouldTryNext(up.downstream())) {
-						                   nextDropped.set(false);
-						                   FluxFuseableExceptionOnPoll.tryNext(up.downstream(),
-								                   droppedItem());
-						                   assertThat(nextDropped.get()).isTrue();
-					                   }
-				                   }
-
-			                   }
-		                   });
-	}
-
-	final StepVerifier.Step<O> operatorErrorSourceVerifierConditionalTryNext(Scenario<I, O> scenario) {
-		TestPublisher<I> ts =
-				TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
-		AtomicBoolean errorDropped = new AtomicBoolean();
-		AtomicBoolean nextDropped = new AtomicBoolean();
-
-		String dropped = droppedException().getMessage();
-		Hooks.onErrorDropped(e -> {
-			assertThat(e).hasMessage(dropped);
-			errorDropped.set(true);
-		});
-		Hooks.onNextDropped(d -> {
-			assertThat(d).isEqualTo(droppedItem());
-			nextDropped.set(true);
-		});
-		return StepVerifier.create(ts.flux()
-		                             .as(scenario.body())
-		                             .filter(filter -> true))
-		                   .then(() -> {
-			                   ts.error(exception());
-
-			                   //verify drop path
-			                   if (scenario.shouldHitDropErrorHookAfterTerminate()) {
-				                   ts.complete();
-				                   ts.error(droppedException());
-				                   assertThat(errorDropped.get()).isTrue();
-			                   }
-			                   if (scenario.shouldHitDropNextHookAfterTerminate()) {
-				                   ts.next(droppedItem());
-				                   assertThat(nextDropped.get()).isTrue();
-			                   }
-		                   });
-	}
-
-	final StepVerifier.Step<O> operatorErrorSourceVerifierConditional(Scenario<I, O> scenario) {
-		TestPublisher<I> ts =
-				TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
-		AtomicBoolean nextDropped = new AtomicBoolean();
-
-		Hooks.onNextDropped(d -> {
-			assertThat(d).isEqualTo(droppedItem());
-			nextDropped.set(true);
-		});
-		return StepVerifier.create(ts.flux()
-		                             .hide()
-		                             .as(scenario.body())
-		                             .filter(filter -> true))
-		                   .then(() -> {
-			                   ts.error(exception());
-
-			                   //verify drop path
-			                   if (scenario.shouldHitDropNextHookAfterTerminate()) {
-				                   ts.next(droppedItem());
-				                   assertThat(nextDropped.get()).isTrue();
-			                   }
-		                   });
-	}
-
-	final StepVerifier.Step<O> operatorErrorSourceVerifierFusedSync(Scenario<I, O> scenario) {
-		return StepVerifier.create(Flux.just(item(0), item(1))
-		                               .as(f -> new FluxFuseableExceptionOnPoll<>(f, exception()))
-		                               .as(scenario.body()))
-		                   .expectFusion(scenario.fusionMode() & SYNC);
-	}
-
-	final StepVerifier.Step<O> operatorErrorSourceVerifierFusedAsync(Scenario<I, O> scenario) {
-		UnicastProcessor<I> up = UnicastProcessor.create();
-		up.onNext(item(0));
-		return StepVerifier.create(up.as(f -> new FluxFuseableExceptionOnPoll<>(f, exception()))
-		                             .as(scenario.body()))
-		                   .expectFusion(scenario.fusionMode() & ASYNC);
-	}
-
-	@SuppressWarnings("unchecked")
-	final StepVerifier.Step<O> operatorErrorSourceVerifierFusedBothConditional(Scenario<I, O> scenario) {
-		UnicastProcessor<I> up = UnicastProcessor.create();
-		AtomicBoolean errorDropped = new AtomicBoolean();
-		AtomicBoolean nextDropped = new AtomicBoolean();
-		String dropped = droppedException().getMessage();
-		Hooks.onErrorDropped(e -> {
-			assertThat(e).hasMessage(dropped);
-			errorDropped.set(true);
-		});
-		Hooks.onNextDropped(d -> {
-			assertThat(d).isEqualTo(droppedItem());
-			nextDropped.set(true);
-		});
-		return StepVerifier.create(up.as(f -> new FluxFuseableExceptionOnPoll<>(f,
-				exception()))
-		                             .as(scenario.body())
-		                             .filter(filter -> true))
-		                   .then(() -> {
-			                   if (up.downstream() != null) {
-				                   up.downstream()
-				                     .onError(exception());
-
-				                   //verify drop path
-				                   if (scenario.shouldHitDropErrorHookAfterTerminate()) {
-					                   up.downstream()
-					                     .onComplete();
-					                   up.downstream()
-					                     .onError(droppedException());
-					                   assertThat(errorDropped.get()).isTrue();
-				                   }
-				                   if (scenario.shouldHitDropNextHookAfterTerminate()) {
-					                   FluxFuseableExceptionOnPoll.next(up.downstream(),
-							                   droppedItem());
-					                   assertThat(nextDropped.get()).isTrue();
-
-					                   if (FluxFuseableExceptionOnPoll.shouldTryNext(up.downstream())) {
-						                   nextDropped.set(false);
-						                   FluxFuseableExceptionOnPoll.tryNext(up.downstream(),
-								                   droppedItem());
-						                   assertThat(nextDropped.get()).isTrue();
-					                   }
-				                   }
-
-			                   }
-		                   });
-	}
-
 	@Override
+	@SuppressWarnings("unchecked")
 	protected final OperatorScenario<I, Flux<I>, O, Flux<O>> defaultScenarioOptions(
 			OperatorScenario<I, Flux<I>, O, Flux<O>> defaultOptions) {
 		Scenario<I, O> s = new Scenario<I, O>(null, null).applyAllOptions(defaultOptions)
@@ -673,7 +244,9 @@ public abstract class FluxOperatorTest<I, O>
 		                                                 .receive(3,
 				                                                 i -> (O) (i == 0 ?
 						                                                 "test" :
-						                                                 "test" + i));
+						                                                 "test" + i))
+		                                                 .droppedError(new RuntimeException("dropped"))
+		                                                 .droppedItem((I)"dropped");
 		this.defaultScenario = s;
 		return defaultScenarioOptions(s);
 	}
@@ -681,16 +254,6 @@ public abstract class FluxOperatorTest<I, O>
 	@SuppressWarnings("unchecked")
 	protected Scenario<I, O> defaultScenarioOptions(Scenario<I, O> defaultOptions) {
 		return defaultOptions;
-	}
-
-	protected int defaultLimit(Scenario<I, O> scenario) {
-		if (scenario.prefetch() == UNSPECIFIED) {
-			return QueueSupplier.SMALL_BUFFER_SIZE - (QueueSupplier.SMALL_BUFFER_SIZE >> 2);
-		}
-		if (scenario.prefetch() == Integer.MAX_VALUE) {
-			return Integer.MAX_VALUE;
-		}
-		return scenario.prefetch() - (scenario.prefetch() >> 2);
 	}
 
 	@Override
@@ -708,25 +271,9 @@ public abstract class FluxOperatorTest<I, O>
 		return scenarios_operatorSuccess();
 	}
 
-	//assert
+	@Override
 	protected List<Scenario<I, O>> scenarios_touchAndAssertState() {
 		return scenarios_operatorSuccess();
-	}
-
-	//common first unused item or dropped
-	@SuppressWarnings("unchecked")
-	protected I droppedItem() {
-		return (I) "dropped";
-	}
-
-	//unprocessable exception (dropped)
-	protected RuntimeException droppedException() {
-		return new RuntimeException("dropped");
-	}
-
-	//exception
-	protected RuntimeException exception() {
-		return new RuntimeException("test");
 	}
 
 }

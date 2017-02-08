@@ -28,6 +28,11 @@ import reactor.test.subscriber.AssertSubscriber;
 public class MonoReduceSeedTest extends ReduceOperatorTest<String, String> {
 
 	@Override
+	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
+		return defaultOptions.shouldHitDropNextHookAfterTerminate(false);
+	}
+
+	@Override
 	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
 		return Arrays.asList(
 				scenario(f -> f.reduce(item(0), (a, b) -> a))

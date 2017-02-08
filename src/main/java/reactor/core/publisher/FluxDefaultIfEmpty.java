@@ -106,11 +106,6 @@ final class FluxDefaultIfEmpty<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public Object connectedInput() {
-			return value;
-		}
-
-		@Override
 		public int requestFusion(int requestedMode) {
 			return Fuseable.NONE; // prevent fusion because of the upstream
 		}

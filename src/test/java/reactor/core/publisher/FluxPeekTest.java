@@ -139,9 +139,9 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 					   //fixme Support bubbled error verification in reactor-test
 					   Hooks.onErrorDropped(d -> assertTrue(d.getMessage(),
 							   d.getMessage()
-							    .equals("test")));
+							    .equals(exception().getMessage())));
 					   step.consumeSubscriptionWith(Subscription::cancel)
-					       .verifyErrorMessage("test");
+					       .verifyErrorMessage(exception().getMessage());
 				   }));
 	}
 
@@ -155,12 +155,12 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 				})).fusionMode(Fuseable.NONE)
 		           .verifier(step -> {
 			           try {
-						step.verifyErrorMessage("test");
+						step.verifyErrorMessage(exception().getMessage());
 					}
 			           catch (Exception e) {
 				           assertTrue(Exceptions.unwrap(e)
 				                                .getMessage()
-				                                .equals("dropped"));
+				                                .equals(droppedException().getMessage()));
 					}
 				}),
 
@@ -205,7 +205,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 					catch (Exception e) {
 						assertTrue(Exceptions.unwrap(e)
 						                     .getMessage()
-						                     .equals("dropped"));
+						                     .equals(droppedException().getMessage()));
 					}
 				}),
 
@@ -227,7 +227,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 					catch (Exception e) {
 						assertTrue(Exceptions.unwrap(e)
 						                     .getMessage()
-						                     .equals("dropped"));
+						                     .equals(droppedException().getMessage()));
 					}
 				}),
 
@@ -248,7 +248,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 					catch (Exception e) {
 						assertTrue(Exceptions.unwrap(e)
 						                     .getMessage()
-						                     .equals("dropped"));
+						                     .equals(droppedException().getMessage()));
 					}
 				})
 

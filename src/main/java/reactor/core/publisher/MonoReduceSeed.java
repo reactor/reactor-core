@@ -41,7 +41,7 @@ final class MonoReduceSeed<T, R> extends MonoSource<T, R> implements Fuseable {
 
 	final BiFunction<R, ? super T, R> accumulator;
 
-	public MonoReduceSeed(Publisher<? extends T> source,
+	MonoReduceSeed(Publisher<? extends T> source,
 			Supplier<R> initialSupplier,
 			BiFunction<R, ? super T, R> accumulator) {
 		super(source);
@@ -74,7 +74,7 @@ final class MonoReduceSeed<T, R> extends MonoSource<T, R> implements Fuseable {
 
 		boolean done;
 
-		public ReduceSeedSubscriber(Subscriber<? super R> actual,
+		ReduceSeedSubscriber(Subscriber<? super R> actual,
 				BiFunction<R, ? super T, R> accumulator,
 				R value) {
 			super(actual);
@@ -143,6 +143,11 @@ final class MonoReduceSeed<T, R> extends MonoSource<T, R> implements Fuseable {
 		}
 
 		@Override
+		public boolean isStarted() {
+			return s != null && !isTerminated();
+		}
+
+		@Override
 		public boolean isTerminated() {
 			return done;
 		}
@@ -150,11 +155,6 @@ final class MonoReduceSeed<T, R> extends MonoSource<T, R> implements Fuseable {
 		@Override
 		public Object upstream() {
 			return s;
-		}
-
-		@Override
-		public Object connectedInput() {
-			return accumulator;
 		}
 	}
 }

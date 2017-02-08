@@ -127,11 +127,6 @@ final class MonoAll<T> extends MonoSource<T, Boolean> implements Fuseable {
 		}
 
 		@Override
-		public Object connectedInput() {
-			return predicate;
-		}
-
-		@Override
 		public boolean isTerminated() {
 			return done;
 		}

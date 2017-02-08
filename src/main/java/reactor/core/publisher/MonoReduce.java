@@ -102,6 +102,7 @@ final class MonoReduce<T> extends MonoSource<T, T> implements Fuseable {
 				Operators.onErrorDropped(t);
 				return;
 			}
+			done = true;
 			result = null;
 			actual.onError(t);
 		}
@@ -111,6 +112,7 @@ final class MonoReduce<T> extends MonoSource<T, T> implements Fuseable {
 			if (done) {
 				return;
 			}
+			done = true;
 			T r = result;
 			if (r != null) {
 				complete(r);
@@ -124,6 +126,21 @@ final class MonoReduce<T> extends MonoSource<T, T> implements Fuseable {
 		public void cancel() {
 			super.cancel();
 			s.cancel();
+		}
+
+		@Override
+		public boolean isTerminated() {
+			return done;
+		}
+
+		@Override
+		public Object upstream() {
+			return s;
+		}
+
+		@Override
+		public boolean isStarted() {
+			return s != null && !isTerminated();
 		}
 	}
 }
