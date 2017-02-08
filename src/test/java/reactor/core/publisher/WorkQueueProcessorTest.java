@@ -242,7 +242,10 @@ public class WorkQueueProcessorTest {
 		AtomicInteger errors = new AtomicInteger(3);
 		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
 		AtomicInteger onNextSignals = new AtomicInteger();
-
+		wq.onNext(1);
+		wq.onNext(2);
+		wq.onNext(3);
+		wq.onComplete();
 		StepVerifier.create(wq.log()
 		                      .doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
 						(s1, sink) -> {
@@ -253,16 +256,10 @@ public class WorkQueueProcessorTest {
 								sink.next(s1);
 							}
 						}).retry())
-		            .then(() -> {
-			            wq.onNext(1);
-			            wq.onNext(2);
-			            wq.onNext(3);
-			            wq.onComplete();
-		            })
-		            .expectNext(2, 3)
+		            .expectNext(1, 2, 3)
 		            .verifyComplete();
 
-		assertThat(onNextSignals.get(), equalTo(3));
+		assertThat(onNextSignals.get(), equalTo(5));
 
 		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
 		}

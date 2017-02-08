@@ -748,7 +748,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 						// is thrown from the WorkHandler
 						if (processedSequence) {
 							if(isCancelled()){
-								WaitStrategy.alert();
+								break;
 							}
 							processedSequence = false;
 							do {
