@@ -208,11 +208,6 @@ public abstract class Loggers {
 		}
 
 		@Override
-		public boolean isLevelEnabled(Level level) {
-			return logger.isLoggable(level);
-		}
-
-		@Override
 		public boolean isTraceEnabled() {
 			return logger.isLoggable(Level.FINEST);
 		}

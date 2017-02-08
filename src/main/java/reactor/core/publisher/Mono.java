@@ -1305,20 +1305,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 *
-	 * @param description
-	 * @param minLevel the minimum {@link Level} required for the assembly tracing (only
-	 * FINEST, FINE, INFO, WARNING and SEVERE are taken into account)
-	 * @return
-	 */
-	public final Mono<T> checkpoint(String description, Level minLevel) {
-		if (minLevel == null || FluxOnAssembly.CHECKPOINT_LOGGER.isLevelEnabled(minLevel)) {
-			return checkpoint(description);
-		}
-		return this;
-	}
-
-	/**
 	 * Defer the given transformation to this {@link Mono} in order to generate a
 	 * target {@link Mono} type. A transformation will occur for each
 	 * {@link Subscriber}.
