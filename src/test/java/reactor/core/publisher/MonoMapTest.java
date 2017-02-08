@@ -15,10 +15,28 @@
  */
 package reactor.core.publisher;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.junit.Test;
+import reactor.test.publisher.MonoOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 
-public class MonoMapTest {
+public class MonoMapTest extends MonoOperatorTest<String, String> {
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
+		return Arrays.asList(
+				scenario(f -> f.map(a -> a))
+		);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_operatorError() {
+		return Arrays.asList(
+				scenario(f -> f.map(a ->  null))
+		);
+	}
 
 	final Mono<Integer> just = Mono.just(1);
 

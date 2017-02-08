@@ -687,12 +687,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 		ringBuffer.addGatingSequence(minimum);
 		new Thread(EventLoopProcessor.createRequestTask(s, () -> {
 					             if (!alive()) {
-						             if(cancelled){
-							             throw Exceptions.failWithCancel();
-						             }
-						             else {
-							             WaitStrategy.throwAlert();
-						             }
+						             WaitStrategy.alert();
 					             }
 				             }, minimum::set, () -> SUBSCRIBER_COUNT.get(TopicProcessor.this) == 0 ?
 								minimum.getAsLong() :
@@ -706,7 +701,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	@Override
 	public void run() {
 		if (!alive() && SUBSCRIBER_COUNT.get(TopicProcessor.this) == 0) {
-			WaitStrategy.throwAlert();
+			WaitStrategy.alert();
 		}
 	}
 
@@ -735,7 +730,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 			@Override
 			public void run() {
 				if (!running.get() || processor.isTerminated()) {
-					WaitStrategy.throwAlert();
+					WaitStrategy.alert();
 				}
 			}
 		};
@@ -807,7 +802,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 												0) {
 									//Todo Use WaitStrategy?
 									if(!running.get() || processor.isTerminated()){
-										WaitStrategy.throwAlert();
+										WaitStrategy.alert();
 									}
 									LockSupport.parkNanos(1L);
 								}

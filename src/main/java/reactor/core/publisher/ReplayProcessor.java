@@ -520,7 +520,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		volatile boolean done;
 		Throwable error;
 
-		public UnboundedReplayBuffer(int batchSize) {
+		UnboundedReplayBuffer(int batchSize) {
 			this.batchSize = batchSize;
 			Object[] n = new Object[batchSize + 1];
 			this.tail = n;
@@ -730,6 +730,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 			if (tailIndex == batchSize) {
 				node = (Object[]) node[tailIndex];
 				tailIndex = 0;
+				rs.node(node);
 			}
 			@SuppressWarnings("unchecked") T v = (T) node[tailIndex];
 			rs.index(index + 1);

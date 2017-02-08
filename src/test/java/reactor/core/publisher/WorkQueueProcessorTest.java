@@ -336,7 +336,7 @@ public class WorkQueueProcessorTest {
 		for (int i = 0; i < elems; i++) {
 
 			sink.onNext(i);
-			if (i % 100 == 0) {
+			if (i % 1000 == 0) {
 				processor.log("wqp.fail2").subscribe(d -> {
 					errorCount.incrementAndGet();
 					throw Exceptions.failWithCancel();
@@ -501,6 +501,21 @@ public class WorkQueueProcessorTest {
 		finally {
 			es.shutdown();
 		}
+	}
+
+	@Test
+	public void testWorkQueueProcessorGetters() {
+
+		final int TEST_BUFFER_SIZE = 16;
+		WorkQueueProcessor<Object> processor = WorkQueueProcessor.create("testProcessor", TEST_BUFFER_SIZE);
+
+		assertEquals(TEST_BUFFER_SIZE, processor.getAvailableCapacity());
+
+		processor.onNext(new Object());
+
+		assertEquals(TEST_BUFFER_SIZE - 1, processor.getAvailableCapacity());
+		processor.awaitAndShutdown();
+
 	}
 
 	@Test(expected = IllegalArgumentException.class)

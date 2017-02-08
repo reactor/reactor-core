@@ -25,12 +25,13 @@ import java.util.function.Supplier;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxBufferBoundaryTest
-		extends AbstractFluxOperatorTest<String, List<String>> {
+		extends FluxOperatorTest<String, List<String>> {
 
 	@Override
 	protected Scenario<String, List<String>> defaultScenarioOptions(Scenario<String, List<String>> defaultOptions) {
@@ -38,12 +39,10 @@ public class FluxBufferBoundaryTest
 	}
 
 	@Override
-	protected List<Scenario<String, List<String>>> scenarios_errorInOperatorCallback() {
+	protected List<Scenario<String, List<String>>> scenarios_operatorError() {
 		return Arrays.asList(
 
-				scenario(f -> f.buffer(Flux.never(),
-						() -> null)).verifier(step -> step.verifyError(
-						NullPointerException.class)),
+				scenario(f -> f.buffer(Flux.never(), () -> null)),
 
 				scenario(f -> f.buffer(Flux.never(), () -> {
 					throw exception();
@@ -51,13 +50,12 @@ public class FluxBufferBoundaryTest
 	}
 
 	@Override
-	protected List<Scenario<String, List<String>>> scenarios_threeNextAndComplete() {
-		return Arrays.asList(scenario(f -> f.buffer(Mono.never())).verifier(step -> step
-						.assertNext(s -> assertThat(s).containsExactly(item(0), item(1), item(2)))
-						.verifyComplete()),
+	protected List<Scenario<String, List<String>>> scenarios_operatorSuccess() {
+		return Arrays.asList(scenario(f -> f.buffer(Mono.never()))
+						.receive(i -> assertThat(i).containsExactly(item(0), item(1), item(2))),
 
-				scenario(f -> f.buffer(Mono.just(1))).verifier(step -> step
-						.verifyComplete())
+				scenario(f -> f.buffer(Mono.just(1)))
+						.receiverEmpty()
 		);
 	}
 

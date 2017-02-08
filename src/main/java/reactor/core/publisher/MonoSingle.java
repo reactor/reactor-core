@@ -172,10 +172,5 @@ final class MonoSingle<T> extends MonoSource<T, T> implements Fuseable {
 			return s;
 		}
 
-		@Override
-		public Object connectedInput() {
-			return value;
-		}
-
 	}
 }

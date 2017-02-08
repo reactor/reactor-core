@@ -137,17 +137,21 @@ final class ParallelMergeSequential<T> extends Flux<T> {
 				} else {
 					Queue<T> q = inner.getQueue(queueSupplier);
 
-					// FIXME overflow handling
-					q.offer(value);
+					if(!q.offer(value)){
+						onError(Operators.onOperatorError(this, Exceptions.failWithOverflow("Queue is full?!"), value));
+						return;
+					}
 				}
 				if (WIP.decrementAndGet(this) == 0) {
 					return;
 				}
 			} else {
 				Queue<T> q = inner.getQueue(queueSupplier);
-				
-				// FIXME overflow handling
-				q.offer(value);
+
+				if(!q.offer(value)){
+					onError(Operators.onOperatorError(this, Exceptions.failWithOverflow("Queue is full?!"), value));
+					return;
+				}
 
 				if (WIP.getAndIncrement(this) != 0) {
 					return;

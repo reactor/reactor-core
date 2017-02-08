@@ -26,10 +26,11 @@ import org.reactivestreams.Publisher;
 import reactor.core.Fuseable;
 import reactor.core.Trackable;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
-public class FluxCombineLatestTest extends AbstractFluxOperatorTest<String, String> {
+public class FluxCombineLatestTest extends FluxOperatorTest<String, String> {
 
 	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
@@ -38,10 +39,10 @@ public class FluxCombineLatestTest extends AbstractFluxOperatorTest<String, Stri
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
+	protected List<Scenario<String, String>> scenarios_operatorError() {
 		return Arrays.asList(scenario(f -> Flux.combineLatest(o -> null,
 				f,
-				Flux.just(1))).verifier(step -> step.verifyError(NullPointerException.class)),
+				Flux.just(1))),
 
 				scenario(f -> Flux.combineLatest(o -> {
 					throw exception();
@@ -52,9 +53,7 @@ public class FluxCombineLatestTest extends AbstractFluxOperatorTest<String, Stri
 				}, o -> (String) o[0])).fusionMode(Fuseable.NONE),
 
 				scenario(f -> Flux.combineLatest(() -> null,
-						o -> (String) o[0])).fusionMode(Fuseable.NONE)
-				                            .verifier(step -> step.verifyError(
-						                            NullPointerException.class)),
+						o -> (String) o[0])).fusionMode(Fuseable.NONE),
 
 				scenario(f -> Flux.combineLatest(() -> new Iterator<Publisher<?>>() {
 					@Override
@@ -90,9 +89,7 @@ public class FluxCombineLatestTest extends AbstractFluxOperatorTest<String, Stri
 					public Publisher<?> next() {
 						return null;
 					}
-				}, o -> (String) o[0])).fusionMode(Fuseable.NONE)
-				                       .verifier(step -> step.verifyError(
-						                       NullPointerException.class)));
+				}, o -> (String) o[0])).fusionMode(Fuseable.NONE));
 	}
 
 	@Override
@@ -106,29 +103,23 @@ public class FluxCombineLatestTest extends AbstractFluxOperatorTest<String, Stri
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
 		return Arrays.asList(scenario(f -> Flux.combineLatest(o -> (String) o[0],
 				f)).prefetch((int) Trackable.UNSPECIFIED),
 
 				scenario(f -> Flux.combineLatest(o -> (String) o[1],
 						f,
 						Flux.just(item(0), item(1), item(2)),
-						Flux.just(item(0),
-								item(1),
-								item(2)))).verifier(step -> step.expectNext(item(2),
-						item(2),
-						item(2))
-				                                                .verifyComplete()),
+						Flux.just(item(0), item(1), item(2))))
+						.receiveValues(item(2), item(2), item(2)),
 
 				scenario(f -> Flux.combineLatest(o -> (String) o[2],
 						1,
 						f,
-						Flux.just(item(0), item(1), item(2)),
-						Flux.just(item(0), item(1), item(2)))).prefetch(1)
-				                                              .verifier(step -> step.expectNext(
-						                                              item(2),
-						                                              item(2),
-						                                              item(2)))
+						Flux.just(item(0), item(0), item(0)),
+						Flux.just(item(0), item(0), item(0))))
+						.prefetch(1)
+						.receiveValues(item(0), item(0), item(0))
 		);
 	}
 

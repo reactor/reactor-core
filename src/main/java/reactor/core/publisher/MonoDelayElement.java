@@ -23,6 +23,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
+import reactor.core.Receiver;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.TimedScheduler;
 
@@ -56,7 +57,7 @@ final class MonoDelayElement<T> extends MonoSource<T, T> {
 	}
 
 	static final class MonoDelayElementSubscriber<T> extends Operators.MonoSubscriber<T,T>
-			implements Subscription  {
+			implements Subscription, Receiver {
 
 		final long delay;
 		final TimedScheduler scheduler;
@@ -67,7 +68,7 @@ final class MonoDelayElement<T> extends MonoSource<T, T> {
 		volatile Cancellation task;
 		volatile boolean done;
 
-		public MonoDelayElementSubscriber(Subscriber<? super T> actual, TimedScheduler scheduler,
+		MonoDelayElementSubscriber(Subscriber<? super T> actual, TimedScheduler scheduler,
 				long delay, TimeUnit unit) {
 			super(actual);
 			this.scheduler = scheduler;

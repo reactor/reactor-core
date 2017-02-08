@@ -1055,7 +1055,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 */
 	@Override
 	public final void subscribe(Subscriber<? super T> s) {
-		sequential().subscribe(s);
+		sequential().subscribe(new FluxHide.SuppressFuseableSubscriber<>(s));
 	}
 
 	/**

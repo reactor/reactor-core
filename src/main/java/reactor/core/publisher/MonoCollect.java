@@ -148,15 +148,5 @@ final class MonoCollect<T, R> extends MonoSource<T, R> implements Fuseable {
 		public Object upstream() {
 			return s;
 		}
-
-		@Override
-		public Object connectedInput() {
-			return action;
-		}
-
-		@Override
-		public Object connectedOutput() {
-			return value;
-		}
 	}
 }

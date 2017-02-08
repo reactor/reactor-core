@@ -16,11 +16,37 @@
 
 package reactor.core.publisher;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.test.publisher.ParallelOperatorTest;
+import reactor.test.publisher.ReduceOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 
-public class MonoReduceSeedTest {
+public class MonoReduceSeedTest extends ReduceOperatorTest<String, String> {
+
+	@Override
+	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
+		return defaultOptions.shouldHitDropNextHookAfterTerminate(false);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
+		return Arrays.asList(
+				scenario(f -> f.reduce(item(0), (a, b) -> a))
+		);
+	}
+
+	@Override
+	protected List<Scenario<String, String>> scenarios_operatorError() {
+		return Arrays.asList(
+				scenario(f -> f.reduce(item(0), (a, b) -> null)),
+
+				scenario(f -> f.reduceWith(() -> null, (a, b) -> a + b))
+		);
+	}
 
 	@Test(expected = NullPointerException.class)
 	public void sourceNull() {

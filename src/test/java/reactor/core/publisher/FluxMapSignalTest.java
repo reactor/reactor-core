@@ -20,9 +20,10 @@ import java.util.List;
 
 import org.junit.Test;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 
-public class FluxMapSignalTest extends AbstractFluxOperatorTest<String, String> {
+public class FluxMapSignalTest extends FluxOperatorTest<String, String> {
 
 	@Test(expected = IllegalArgumentException.class)
 	public void allNull(){
@@ -35,7 +36,7 @@ public class FluxMapSignalTest extends AbstractFluxOperatorTest<String, String> 
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
 		return Arrays.asList(
 				scenario(f -> f.flatMap(Flux::just, Flux::error, Flux::empty)),
 
@@ -46,13 +47,13 @@ public class FluxMapSignalTest extends AbstractFluxOperatorTest<String, String> 
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
+	protected List<Scenario<String, String>> scenarios_operatorError() {
 		return Arrays.asList(
 				scenario(f -> f.flatMap(d -> null, null, null))
-				.verifier(step -> step.verifyError(NullPointerException.class)),
+				,
 
 				scenario(f -> f.flatMap(null, null, () -> null))
-						.verifier(step -> step.verifyError(NullPointerException.class))
+
 		);
 	}
 

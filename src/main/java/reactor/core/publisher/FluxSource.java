@@ -73,7 +73,7 @@ public class FluxSource<I, O> extends Flux<O> implements Receiver {
 	}
 
 	static final class FuseableFluxSource<I> extends FluxSource<I, I> implements Fuseable{
-		public FuseableFluxSource(Publisher<? extends I> source) {
+		FuseableFluxSource(Publisher<? extends I> source) {
 			super(source);
 		}
 	}

@@ -24,11 +24,12 @@ import java.util.function.Supplier;
 
 import org.junit.Test;
 import org.reactivestreams.Publisher;
+import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FluxWindowTest extends AbstractFluxOperatorTest<String, Flux<String>> {
+public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 
 	@Override
 	protected Scenario<String, Flux<String>> defaultScenarioOptions(Scenario<String, Flux<String>> defaultOptions) {
@@ -36,28 +37,25 @@ public class FluxWindowTest extends AbstractFluxOperatorTest<String, Flux<String
 	}
 
 	@Override
-	protected List<Scenario<String, Flux<String>>> scenarios_threeNextAndComplete() {
+	protected List<Scenario<String, Flux<String>>> scenarios_operatorSuccess() {
 		return Arrays.asList(
 				scenario(Flux::window)
-						.verifier(step -> step.consumeNextWith(s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(0), item(1), item(2))))
-						                      .verifyComplete()),
+						.receive(s -> s.buffer().subscribe(b -> assertThat(b)
+								.containsExactly(item(0), item(1), item(2)))),
 
 				scenario(f -> f.window(1))
-						.verifier(step -> step.consumeNextWith(s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(0))))
-						                      .consumeNextWith(s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(1))))
-						                      .consumeNextWith(s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(2))))
-						                      .verifyComplete()),
+						.receive(s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(0))),
+								s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(1))),
+								s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(2)))),
 
 				scenario(f -> f.window(1, 2))
-						.verifier(step -> step.consumeNextWith(s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(0))))
-						                      .consumeNextWith(s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(2))))
-						                      .verifyComplete()),
+						.receive(s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(0))),
+								s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(2)))),
 
 				scenario(f -> f.window(2, 1))
-						.verifier(step -> step.consumeNextWith(s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(0), item(1))))
-						                      .consumeNextWith(s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(1), item(2))))
-						                      .consumeNextWith(s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(2))))
-						                      .verifyComplete())
+						.receive(s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(0), item(1))),
+								s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(1), item(2))),
+								s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(2))))
 		);
 	}
 

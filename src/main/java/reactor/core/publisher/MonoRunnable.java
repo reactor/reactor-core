@@ -17,17 +17,18 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.concurrent.Callable;
 
 import org.reactivestreams.Subscriber;
 
 /**
  * Executes the runnable whenever a Subscriber subscribes to this Mono.
  */
-final class MonoRunnable extends Mono<Void> {
+final class MonoRunnable extends Mono<Void> implements Callable<Void> {
 
     final Runnable run;
     
-    public MonoRunnable(Runnable run) {
+    MonoRunnable(Runnable run) {
         this.run = Objects.requireNonNull(run, "run");
     }
 
@@ -54,4 +55,8 @@ final class MonoRunnable extends Mono<Void> {
 	    return null;
     }
 
+    @Override
+    public Void call() throws Exception {
+        return null;
+    }
 }

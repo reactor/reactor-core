@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.util.Arrays;
 import java.util.List;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
@@ -26,58 +27,55 @@ import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.publisher.Flux.range;
 import static reactor.core.publisher.Flux.zip;
 
-public class FluxPublishMulticastTest extends AbstractFluxOperatorTest<String, String> {
-
-	@Override
-	protected int fusionModeThreadBarrierSupport() {
-		return Fuseable.ANY;
-	}
+public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 
 	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
-		return defaultOptions.prefetch(QueueSupplier.SMALL_BUFFER_SIZE);
+		return defaultOptions.prefetch(QueueSupplier.SMALL_BUFFER_SIZE)
+		                     .fusionModeThreadBarrier(Fuseable.ANY);
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
+	protected List<Scenario<String, String>> scenarios_operatorError() {
 		return Arrays.asList(
 				scenario(f -> f.publish(p -> {
 					throw exception();
 				})),
 
 				scenario(f -> f.publish(p -> null))
-					.verifier(step -> step.verifyError(NullPointerException.class)),
+					,
 
 				scenario(f -> f.publish(p -> Flux.error(exception()))),
 
 				scenario(f -> f.publish(p -> Flux.just(item(0), null)))
 						.fusionMode(Fuseable.SYNC)
-						.verifier(step -> step.expectNext(item(0))
-						            .verifyError(NullPointerException.class)));
+						.receiveValues(item(0))
+		);
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
 		return Arrays.asList(
 				scenario(f -> f.publish(p -> p)),
 
-				scenario(f -> f.publish(p -> finiteSourceOrDefault(null)))
+				scenario(f -> f.publish(p -> Flux.just("test", "test1", "test2")))
 						.fusionMode(Fuseable.SYNC),
 
 				scenario(f -> f.publish(p -> p.subscribeWith(UnicastProcessor.create()), 256))
 						.fusionMode(Fuseable.ASYNC),
 
 				scenario(f -> f.publish(p -> Flux.empty()))
-						.verifier(step -> step.verifyComplete()),
+						.receiverEmpty(),
 
 				scenario(f -> f.publish(p -> p, 1))
 						.prefetch(1),
@@ -96,8 +94,7 @@ public class FluxPublishMulticastTest extends AbstractFluxOperatorTest<String, S
 						p.subscribeWith(UnicastProcessor.create())))
 						.fusionMode(Fuseable.ASYNC),
 
-				scenario(f -> f.publish(p -> Flux.empty()))
-						.verifier(StepVerifier.LastStep::verifyComplete)
+				scenario(f -> f.publish(p -> p))
 						.shouldHitDropNextHookAfterTerminate(false),
 
 				scenario(f -> Flux.never().publish(p -> {

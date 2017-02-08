@@ -525,10 +525,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		@Override
 		public boolean isEmpty() {
 			State<T> p = parent;
-			if(p != null) {
-				return p.buffer.isEmpty(this);
-			}
-			return true;
+			return p == null || p.buffer.isEmpty(this);
 		}
 
 		@Override

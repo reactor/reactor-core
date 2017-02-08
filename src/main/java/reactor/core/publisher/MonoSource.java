@@ -79,7 +79,7 @@ public class MonoSource<I, O> extends Mono<O> implements Receiver{
 	}
 
 	static final class FuseableMonoSource<I> extends MonoSource<I, I> implements Fuseable{
-		public FuseableMonoSource(Publisher<? extends I> source) {
+		FuseableMonoSource(Publisher<? extends I> source) {
 			super(source);
 		}
 	}

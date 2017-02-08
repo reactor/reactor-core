@@ -21,25 +21,29 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FluxDematerializeTest extends AbstractFluxOperatorTest<Signal<String>, String> {
+public class FluxDematerializeTest extends FluxOperatorTest<Signal<String>, String> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	protected List<Scenario<Signal<String>, String>> scenarios_threeNextAndComplete() {
+	protected List<Scenario<Signal<String>, String>> scenarios_operatorSuccess() {
 		return Arrays.asList(
 				scenario(Flux::<String>dematerialize)
-					.finiteFlux(Flux.just(Signal.complete()))
-					.verifier(step -> step.verifyComplete()),
+					.producer(1, i -> Signal.complete())
+					.receiverEmpty(),
 
 				scenario(Flux::<String>dematerialize)
-						.finiteFlux(Flux.just(Signal.subscribe(Operators.emptySubscription())))
-						.verifier(step -> step.verifyComplete()),
+						.producer(1, i -> Signal.subscribe(Operators.emptySubscription()))
+						.receiverEmpty(),
 
 				scenario(Flux::<String>dematerialize)
+						.receive(s -> assertThat(s).isEqualTo(item(0).get()),
+								s -> assertThat(s).isEqualTo(item(1).get()),
+								s -> assertThat(s).isEqualTo(item(2).get()))
 						.verifier(step -> step.expectNext("test")
 						                      .expectNext("test1")
 						                      .consumeSubscriptionWith(s -> {
@@ -84,11 +88,10 @@ public class FluxDematerializeTest extends AbstractFluxOperatorTest<Signal<Strin
 	}
 
 	@Override
-	protected List<Scenario<Signal<String>, String>> scenarios_errorInOperatorCallback() {
+	protected List<Scenario<Signal<String>, String>> scenarios_operatorError() {
 		return Arrays.asList(
 				scenario(Flux::<String>dematerialize)
-					.finiteFlux(Flux.error(exception()))
-		);
+						.producer(1, i -> Signal.error(exception())));
 	}
 
 	@Override
@@ -99,16 +102,11 @@ public class FluxDematerializeTest extends AbstractFluxOperatorTest<Signal<Strin
 	}
 
 	@Override
-	protected Signal<String> droppedItem() {
-		return Signal.next("dropped");
-	}
-
-	@Override
-	protected Signal<String> item(int i) {
-		if (i == 0) {
-			return Signal.next("test");
-		}
-		return Signal.next("test" + i);
+	protected Scenario<Signal<String>, String> defaultScenarioOptions(Scenario<Signal<String>, String> defaultOptions) {
+		return defaultOptions.producer(3, i -> i == 0 ?
+				Signal.next("test") :
+				Signal.next("test"+i)
+		).droppedItem(Signal.next("dropped"));
 	}
 
 	Signal<Integer> error = Signal.error(new RuntimeException("Forced failure"));

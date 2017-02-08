@@ -21,15 +21,15 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Test;
-import reactor.core.Fuseable;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 
-public class FluxSkipUntilOtherTest extends AbstractFluxOperatorTest<String, String> {
+public class FluxSkipUntilOtherTest extends FluxOperatorTest<String, String> {
 
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
+	protected List<Scenario<String, String>> scenarios_operatorError() {
 		return Arrays.asList(
 				scenario(f -> f.skipUntilOther(Flux.error(exception()))),
 				scenario(f -> f.skipUntilOther(Flux.from(s -> {
@@ -45,12 +45,12 @@ public class FluxSkipUntilOtherTest extends AbstractFluxOperatorTest<String, Str
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
 		return Arrays.asList(
 				scenario(f -> f.skipUntilOther(Flux.empty())),
 
 				scenario(f -> Flux.<String>empty().skipUntilOther(f))
-					.verifier(step -> step.verifyComplete())
+					.receiverEmpty()
 		);
 	}
 

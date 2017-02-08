@@ -16,8 +16,14 @@
 
 package reactor.core.publisher;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.junit.Test;
+import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoRunnableTest {
 
@@ -52,6 +58,28 @@ public class MonoRunnableTest {
 		  .assertComplete()
 		  .assertNoError();
 
+	}
+
+	@Test
+	public void asyncRunnable() {
+		AtomicReference<Thread> t = new AtomicReference<>();
+		StepVerifier.create(Mono.fromRunnable(() -> t.set(Thread.currentThread()))
+		                        .subscribeOn(Schedulers.single()))
+		            .verifyComplete();
+
+		assertThat(t).isNotNull();
+		assertThat(t).isNotEqualTo(Thread.currentThread());
+	}
+
+	@Test
+	public void asyncRunnableBackpressured() {
+		AtomicReference<Thread> t = new AtomicReference<>();
+		StepVerifier.create(Mono.fromRunnable(() -> t.set(Thread.currentThread()))
+		                        .subscribeOn(Schedulers.single()), 0)
+		            .verifyComplete();
+
+		assertThat(t).isNotNull();
+		assertThat(t).isNotEqualTo(Thread.currentThread());
 	}
 
 	@Test

@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Cancellation;
-import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 
@@ -197,8 +196,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 			T v;
 
 			try {
-				v = Objects.requireNonNull(callable.call(),
-				"The callable returned null");
+				v = callable.call();
 			}
 			catch (Throwable ex) {
 				actual.onError(Operators.onOperatorError(this, ex));
@@ -208,6 +206,10 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 			for (; ; ) {
 				int s = state;
 				if (s == HAS_CANCELLED || s == HAS_REQUEST_HAS_VALUE || s == NO_REQUEST_HAS_VALUE) {
+					return;
+				}
+				if(v == null){
+					actual.onComplete();
 					return;
 				}
 				if (s == HAS_REQUEST_NO_VALUE) {
@@ -261,7 +263,9 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 			}
 			T v = value;
 			clear();
-			actual.onNext(v);
+			if (v != null) {
+				actual.onNext(v);
+			}
 			if (state != HAS_CANCELLED) {
 				actual.onComplete();
 			}

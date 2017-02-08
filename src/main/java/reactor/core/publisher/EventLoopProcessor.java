@@ -154,7 +154,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 				barrier.waitFor(waitedSequence, waiter);
 
 				if (!isRunning.get()) {
-					throw Exceptions.failWithCancel();
+					WaitStrategy.alert();
 				}
 				LockSupport.parkNanos(1L);
 			}
@@ -165,7 +165,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		}
 
 		catch (Exception e) {
-			if (WaitStrategy.isAlert(e) || Exceptions.isCancel(e)) {
+			if (!isRunning.get() || WaitStrategy.isAlert(e)) {
 				return false;
 			}
 			throw e;

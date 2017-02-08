@@ -31,6 +31,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
@@ -39,7 +40,7 @@ import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static reactor.core.scheduler.Schedulers.parallel;
 
-public class FluxPeekTest extends AbstractFluxOperatorTest<String, String> {
+public class FluxPeekTest extends FluxOperatorTest<String, String> {
 
 	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
@@ -47,7 +48,7 @@ public class FluxPeekTest extends AbstractFluxOperatorTest<String, String> {
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
 		return Arrays.asList(scenario(f -> f.doOnSubscribe(s -> {
 				})),
 
@@ -83,44 +84,37 @@ public class FluxPeekTest extends AbstractFluxOperatorTest<String, String> {
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
+	protected List<Scenario<String, String>> scenarios_operatorError() {
 		return Arrays.asList(
 
 				scenario(f -> f.doOnSubscribe(s -> {
 					throw exception();
-				})).fusionMode(Fuseable.NONE),
+				})).producerNever(),
 
 				scenario(f -> f.doOnRequest(s -> {
 					throw exception();
-				})).fusionMode(Fuseable.NONE),
+				})).producerNever(),
 
 				scenario(f -> f.doOnComplete(() -> {
 					throw exception();
-				})).fusionMode(Fuseable.SYNC)
-				   .verifier(step -> step.expectNext(item(0), item(1), item(2))
-				                         .verifyErrorMessage("test")),
+				}))
+				   .receiveValues(item(0), item(1), item(2)),
 
 				scenario(f -> f.doOnNext(s -> {
 					throw exception();
 				})),
 
-				scenario(f -> Flux.doOnSignal(f.take(0), null, null, s -> {
+				scenario(f -> Flux.doOnSignal(f, null, null, s -> {
 					if (s.getMessage()
 					     .equals(exception().getMessage())) {
 						throw Exceptions.propagate(s);
 					}
 				}, () -> {
 				}, () -> {
-					throw droppedException();
-				}, null, null)).fusionMode(Fuseable.NONE).verifier(step -> {
-					//fixme Support bubbled error verification in reactor-test
-					Hooks.onErrorDropped(d -> assertTrue(d.getMessage(),
-							d.getMessage()
-							 .equals("dropped")));
-					step.verifyComplete();
-				}),
+					throw exception();
+				}, null, null)).producerEmpty(),
 
-				scenario(f -> Flux.doOnSignal(f.take(0), null, null, s -> {
+				scenario(f -> Flux.doOnSignal(f, null, null, s -> {
 					if (s.getMessage()
 					     .equals(exception().getMessage())) {
 						throw exception();
@@ -128,43 +122,26 @@ public class FluxPeekTest extends AbstractFluxOperatorTest<String, String> {
 				}, () -> {
 				}, () -> {
 					throw exception();
-				}, null, null)).fusionMode(Fuseable.NONE).verifier(step -> {
-					//fixme Support bubbled error verification in reactor-test
-					Hooks.onErrorDropped(d -> assertTrue(d.getMessage(),
-							d.getMessage()
-							 .equals("test")));
-					step.verifyComplete();
-				}),
+				}, null, null)).producerEmpty(),
 
-				scenario(f -> f.take(0)
-				               .doOnComplete(() -> {
+				scenario(f -> f.doOnComplete(() -> {
 					               throw exception();
-				               })).fusionMode(Fuseable.NONE).finiteFlux(Flux.empty()),
+				               })).producerEmpty(),
 
-				scenario(f -> f.take(0)
-				               .doAfterTerminate(() -> {
+				scenario(f -> f.doAfterTerminate(() -> {
 					               throw exception();
-				               })).fusionMode(Fuseable.NONE)
-				                  .finiteFlux(Flux.empty())
-				                  .verifier(step -> {
-					                  //fixme Support bubbled error verification in reactor-test
-					                  Hooks.onErrorDropped(d -> assertTrue(d.getMessage(),
-							                  d.getMessage()
-							                   .equals("test")));
-					                  step.verifyComplete();
-				                  }),
+				               })).producerEmpty(),
 
 				scenario(f -> f.doOnCancel(() -> {
 					throw exception();
-				})).fusionMode(Fuseable.NONE)
-				   .finiteFlux(Flux.never())
+				})).producerNever()
 				   .verifier(step -> {
 					   //fixme Support bubbled error verification in reactor-test
 					   Hooks.onErrorDropped(d -> assertTrue(d.getMessage(),
 							   d.getMessage()
-							    .equals("test")));
+							    .equals(exception().getMessage())));
 					   step.consumeSubscriptionWith(Subscription::cancel)
-					       .verifyErrorMessage("test");
+					       .verifyErrorMessage(exception().getMessage());
 				   }));
 	}
 
@@ -172,18 +149,18 @@ public class FluxPeekTest extends AbstractFluxOperatorTest<String, String> {
 	protected List<Scenario<String, String>> scenarios_errorFromUpstreamFailure() {
 		List<Scenario<String, String>> combinedScenarios = new ArrayList<>();
 
-		combinedScenarios.addAll(scenarios_threeNextAndComplete());
+		combinedScenarios.addAll(scenarios_operatorSuccess());
 		combinedScenarios.addAll(Arrays.asList(scenario(f -> f.doAfterTerminate(() -> {
 					throw droppedException();
 				})).fusionMode(Fuseable.NONE)
 		           .verifier(step -> {
 			           try {
-						step.verifyErrorMessage("test");
+						step.verifyErrorMessage(exception().getMessage());
 					}
 			           catch (Exception e) {
 				           assertTrue(Exceptions.unwrap(e)
 				                                .getMessage()
-				                                .equals("dropped"));
+				                                .equals(droppedException().getMessage()));
 					}
 				}),
 
@@ -228,7 +205,7 @@ public class FluxPeekTest extends AbstractFluxOperatorTest<String, String> {
 					catch (Exception e) {
 						assertTrue(Exceptions.unwrap(e)
 						                     .getMessage()
-						                     .equals("dropped"));
+						                     .equals(droppedException().getMessage()));
 					}
 				}),
 
@@ -250,7 +227,7 @@ public class FluxPeekTest extends AbstractFluxOperatorTest<String, String> {
 					catch (Exception e) {
 						assertTrue(Exceptions.unwrap(e)
 						                     .getMessage()
-						                     .equals("dropped"));
+						                     .equals(droppedException().getMessage()));
 					}
 				}),
 
@@ -271,7 +248,7 @@ public class FluxPeekTest extends AbstractFluxOperatorTest<String, String> {
 					catch (Exception e) {
 						assertTrue(Exceptions.unwrap(e)
 						                     .getMessage()
-						                     .equals("dropped"));
+						                     .equals(droppedException().getMessage()));
 					}
 				})
 

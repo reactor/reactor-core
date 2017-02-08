@@ -22,24 +22,28 @@ import java.util.List;
 
 import org.junit.Test;
 import reactor.core.Fuseable;
+import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 
-public class FluxDistinctTest extends AbstractFluxOperatorTest<String, String> {
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 
 	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
-		return defaultOptions.fusionMode(Fuseable.ANY);
+		return defaultOptions.fusionMode(Fuseable.ANY)
+				.fusionModeThreadBarrier(Fuseable.ANY);
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_errorInOperatorCallback() {
+	protected List<Scenario<String, String>> scenarios_operatorError() {
 		return Arrays.asList(
 				scenario(f -> f.distinct(d -> {
 					throw exception();
 				})),
 
 				scenario(f -> f.distinct(d -> null))
-						.verifier(step -> step.verifyError(NullPointerException.class))
+
 		);
 	}
 
@@ -50,21 +54,14 @@ public class FluxDistinctTest extends AbstractFluxOperatorTest<String, String> {
 	}
 
 	@Override
-	protected List<Scenario<String, String>> scenarios_threeNextAndComplete() {
+	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
 		return Arrays.asList(
-				scenario(f -> f.distinct()),
+				scenario(f -> f.distinct()).producer(3, i -> item(0))
+				                           .receiveValues((item(0)))
+				                           .receiverDemand(2),
 
-				scenario(f -> f.distinct()).finiteFlux(Flux.just(item(0),
-						                           item(0),
-						                           item(0)))
-				                           .verifier(step -> step.expectNext(item(0))
-				                                                 .verifyComplete())
+				scenario(f -> f.distinct())
 		);
-	}
-
-	@Override
-	protected int fusionModeThreadBarrierSupport() {
-		return Fuseable.ANY;
 	}
 
 	@Test(expected = NullPointerException.class)
