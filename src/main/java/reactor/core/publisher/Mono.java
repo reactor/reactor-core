@@ -1274,20 +1274,20 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Activate assembly tracking for this particular {@link Mono}, in case of an error
+	 * Activate assembly tracing for this particular {@link Mono}, in case of an error
 	 * upstream of the checkpoint.
 	 * <p>
 	 * It should be placed towards the end of the reactive chain, as errors
 	 * triggered downstream of it cannot be observed and augmented with assembly trace.
 	 *
-	 * @return the assembly tracking {@link Mono}
+	 * @return the assembly tracing {@link Mono}
 	 */
 	public final Mono<T> checkpoint() {
 		return new MonoOnAssembly<>(this);
 	}
 
 	/**
-	 * Activate assembly tracking for this particular {@link Mono} and give it
+	 * Activate assembly tracing for this particular {@link Mono} and give it
 	 * a description that will be reflected in the assembly traceback, in case of an error
 	 * upstream of the checkpoint.
 	 * <p>
@@ -1298,7 +1298,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * mono or a wider correlation ID.
 	 *
 	 * @param description a description to include in the assembly traceback.
-	 * @return the assembly tracking {@link Mono}
+	 * @return the assembly tracing {@link Mono}
 	 */
 	public final Mono<T> checkpoint(String description) {
 		return new MonoOnAssembly<>(this, description);
@@ -1946,10 +1946,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Observe Reactive Streams signals matching the passed flags {@code options} and use {@link Logger} support to
-	 * handle trace
-	 * implementation. Default will
-	 * use the passed {@link Level} and java.util.logging. If SLF4J is available, it will be used instead.
+	 * Observe Reactive Streams signals matching the passed flags {@code options} and use
+	 * {@link Logger} support to handle trace implementation. Default will use the passed
+	 * {@link Level} and java.util.logging. If SLF4J is available, it will be used instead.
 	 *
 	 * Options allow fine grained filtering of the traced signal, for instance to only capture onNext and onError:
 	 * <pre>
@@ -1960,7 +1959,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param category to be mapped into logger configuration (e.g. org.springframework
 	 * .reactor). If category ends with "." like "reactor.", a generated operator
 	 * suffix will complete, e.g. "reactor.Flux.Map".
-	 * @param level the level to enforce for this tracing Flux
+	 * @param level the {@link Level} to enforce for this tracing Mono (only FINEST, FINE,
+	 * INFO, WARNING and SEVERE are taken into account)
 	 * @param options a vararg {@link SignalType} option to filter log messages
 	 *
 	 * @return a new {@link Mono}
@@ -1986,7 +1986,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param category to be mapped into logger configuration (e.g. org.springframework
 	 * .reactor). If category ends with "." like "reactor.", a generated operator
 	 * suffix will complete, e.g. "reactor.Mono.Map".
-	 * @param level the level to enforce for this tracing Mono
+	 * @param level the {@link Level} to enforce for this tracing Mono (only FINEST, FINE,
+	 * INFO, WARNING and SEVERE are taken into account)
 	 * @param showOperatorLine capture the current stack to display operator
 	 * class/line number.
 	 * @param options a vararg {@link SignalType} option to filter log messages

@@ -32,7 +32,9 @@ import reactor.util.Loggers;
 
 
 /**
- * A logging interceptor that intercepts all reactive calls and trace them
+ * A logging interceptor that intercepts all reactive calls and trace them.
+ * The logging level can be tuned using {@link Level}, but only FINEST, FINE, INFO,
+ * WARNING and SEVERE are taken into account.
  *
  * @author Stephane Maldini
  */
