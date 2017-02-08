@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.junit.Assert;
@@ -716,6 +717,24 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 				Flux.just(3, 4)), true, 128))
 		            .expectNext(1, 2, 3, 4)
 		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void issue422(){
+		Flux<Integer> source = Flux.create((sink) -> {
+			for (int i = 0; i < 300; i++) {
+				sink.next(i);
+			}
+			sink.complete();
+		});
+		Flux<Integer> cached = source.cache();
+
+
+		long cachedCount = cached.concatMapIterable(Collections::singleton)
+		                         .distinct().count().block();
+
+		//System.out.println("source: " + sourceCount);
+		System.out.println("cached: " + cachedCount);
 	}
 
 }
