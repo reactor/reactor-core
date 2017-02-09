@@ -246,7 +246,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		 * Use {@link #AssemblySnapshotException()} rather than null if not relevant.
 		 */
 		AssemblySnapshotException(String description) {
-			super("Checkpoint stack: "+ (description == null ? "" : description));
+			super(description);
 			this.checkpointed = true;
 		}
 	}
