@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.Function;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -431,6 +432,54 @@ public class WorkQueueProcessorTest {
 		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
 		}
 	}
+
+	@Test
+	public void retryErrorPropagatedFromWorkQueueSubscriberHotPoisonSignalParallel()
+			throws Exception {
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		AtomicInteger onNextSignals = new AtomicInteger();
+
+		Function<Flux<Integer>, Flux<Integer>> function = flux -> flux.log()
+		                                                              .doOnNext(e -> onNextSignals.incrementAndGet()).handle(
+						(s1, sink) -> {
+							if (s1 == 1) {
+								sink.error(new RuntimeException());
+							}
+							else {
+								sink.next(s1);
+							}
+						});
+
+		StepVerifier.create(
+
+				wq.log()
+				  .parallel()
+				  .runOn(Schedulers.parallel())
+				  .composeGroup(s -> s.publish()
+				                      .autoConnect()
+				                      .transform(function))
+				  .sequential()
+				  .retry()
+				  .log("END"))
+		            .then(() -> {
+			            wq.onNext(1);
+			            wq.onNext(2);
+			            wq.onNext(3);
+		            })
+		            .expectNext(2, 3)
+		            .thenCancel()
+		            .verify();
+
+		assertThat(onNextSignals.get(), equalTo(3));
+
+		// Need to explicitly complete processor due to use of publish()
+		wq.onComplete();
+
+		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
+		}
+	}
+
+
 
 	@Test
 	public void
