@@ -522,16 +522,19 @@ public class WorkQueueProcessorTest {
 		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
 		AtomicInteger onNextSignals = new AtomicInteger();
 
-		StepVerifier.create(wq.log().flatMap(i -> Mono.just(i).subscribeOn(Schedulers.parallel())).publish().autoConnect().log()
-		                      .doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
-						(s1, sink) -> {
-							if (s1 == 1) {
-								sink.error(new RuntimeException());
-							}
-							else {
-								sink.next(s1);
-							}
-						}).log().retry())
+		StepVerifier.create(wq.log()
+		                      .flatMap(i -> Mono.just(i).log()
+		                                        .doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
+						                      (s1, sink) -> {
+							                      if (s1 == 1) {
+								                      sink.error(new RuntimeException());
+							                      }
+							                      else {
+								                      sink.next(s1);
+							                      }
+						                      }).subscribeOn(Schedulers.parallel()))
+		                      .log()
+		                      .retry())
 		            .then(() -> {
 			            wq.onNext(1);
 			            wq.onNext(2);
@@ -550,23 +553,26 @@ public class WorkQueueProcessorTest {
 	}
 
 	@Test
-	public void
-	retryErrorPropagatedFromWorkQueueSubscriberHotPoisonSignalFlatMapPrefetch1()
+	public void retryErrorPropagatedFromWorkQueueSubscriberHotPoisonSignalFlatMapPrefetch1()
 			throws Exception {
 		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
 		AtomicInteger onNextSignals = new AtomicInteger();
 
-		StepVerifier.create(wq.log().flatMap(i -> Mono.just(i).subscribeOn(Schedulers
-				.parallel()), Integer.MAX_VALUE, 1).publish().autoConnect().log()
-		                      .doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
-						(s1, sink) -> {
-							if (s1 == 1) {
-								sink.error(new RuntimeException());
-							}
-							else {
-								sink.next(s1);
-							}
-						}).log().retry())
+		StepVerifier.create(wq.log()
+		                      .flatMap(i -> Mono.just(i).log()
+		                                        .doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
+						                      (s1, sink) -> {
+							                      if (s1 == 1) {
+								                      sink.error(new RuntimeException());
+							                      }
+							                      else {
+								                      sink.next(s1);
+							                      }
+						                      }).subscribeOn(Schedulers.parallel()),
+				                      Integer.MAX_VALUE,
+				                      1)
+		                      .log()
+		                      .retry())
 		            .then(() -> {
 			            wq.onNext(1);
 			            wq.onNext(2);
