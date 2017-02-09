@@ -153,7 +153,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @return the assembly tracing {@link ParallelFlux}
 	 */
 	public final ParallelFlux<T> checkpoint() {
-		return new ParallelFluxOnAssembly<>(this);
+		return new ParallelFluxOnAssembly<>(this, null);
 	}
 
 	/**

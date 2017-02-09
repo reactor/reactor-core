@@ -2470,7 +2470,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return the assembly tracing {@link Flux}.
 	 */
 	public final Flux<T> checkpoint() {
-		return new FluxOnAssembly<>(this);
+		return new FluxOnAssembly<>(this, null);
 	}
 
 	/**

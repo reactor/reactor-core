@@ -59,10 +59,6 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 			"reactor.trace.assembly.fullstacktrace",
 			"false"));
 
-	static final String CHECKPOINT_LOGGER_NAME = "reactor.checkpoint";
-
-	static final Logger CHECKPOINT_LOGGER = Loggers.getLogger(CHECKPOINT_LOGGER_NAME);
-
 	/**
 	 * Create an assembly trace decorated as a {@link Flux}.
 	 */
@@ -238,8 +234,11 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 	 */
 	static final class AssemblySnapshotException extends RuntimeException {
 
+		final boolean checkpointed;
+
 		AssemblySnapshotException() {
 			super();
+			this.checkpointed = false;
 		}
 
 		/**
@@ -247,7 +246,8 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		 * Use {@link #AssemblySnapshotException()} rather than null if not relevant.
 		 */
 		AssemblySnapshotException(String description) {
-			super(description);
+			super("Checkpoint stack: "+ (description == null ? "" : description));
+			this.checkpointed = true;
 		}
 	}
 
@@ -316,7 +316,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		@Override
 		public String getMessage() {
 			StringBuilder sb = new StringBuilder(super.getMessage()).append(
-					"Error has been observed by the following operators, starting from the origin :\n");
+					"Error has been observed by the following operator(s):\n");
 
 			synchronized (chainOrder) {
 				for(Tuple3<Integer, String, Integer> t : chainOrder) {
@@ -392,20 +392,23 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		}
 
 		final void fail(Throwable t) {
-			boolean set = false;
+			OnAssemblyException set = null;
 			if (t.getSuppressed().length > 0) {
 				for (Throwable e : t.getSuppressed()) {
 					if (e instanceof OnAssemblyException) {
 						OnAssemblyException oae = ((OnAssemblyException) e);
 						oae.add(parent, getStacktrace(parent, snapshotStack));
-						set = true;
+						set = oae;
 						break;
 					}
 				}
 			}
-			if (!set) {
+			if (set == null) {
 				t.addSuppressed(new OnAssemblyException(getStacktrace(parent,
 						snapshotStack), parent));
+			}
+			else if(snapshotStack.checkpointed){
+				t.addSuppressed(snapshotStack);
 			}
 
 		}

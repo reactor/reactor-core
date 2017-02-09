@@ -1283,7 +1283,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return the assembly tracing {@link Mono}
 	 */
 	public final Mono<T> checkpoint() {
-		return new MonoOnAssembly<>(this);
+		return new MonoOnAssembly<>(this, null);
 	}
 
 	/**

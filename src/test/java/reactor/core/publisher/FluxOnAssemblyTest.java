@@ -20,10 +20,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Objects;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import org.junit.Test;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
 import reactor.test.StepVerifier;
 
@@ -81,6 +78,33 @@ public class FluxOnAssemblyTest {
 		String debugStack = sw.toString();
 
 		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.FluxFilterFuseable] :");
+	}
+
+	@Test
+	public void checkpointEmptyAndDebug() {
+		StringWriter sw = new StringWriter();
+
+		Hooks.onOperator(Hooks.OperatorHook::operatorStacktrace);
+
+		try {
+			Flux<Integer> tested = Flux.range(1, 10)
+			                           .map(i -> i < 3 ? i : null)
+			                           .filter(i -> i % 2 == 0)
+			                           .checkpoint()
+			                           .doOnError(t -> t.printStackTrace(new PrintWriter(
+					                           sw)));
+			StepVerifier.create(tested)
+			            .expectNext(2)
+			            .verifyError();
+
+			String debugStack = sw.toString();
+
+			assertThat(debugStack).contains(
+					"Assembly trace from producer [reactor.core.publisher.FluxMapFuseable] :");
+		}
+		finally {
+			Hooks.resetOnOperator();
+		}
 	}
 
 	@Test
