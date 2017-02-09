@@ -37,6 +37,7 @@ import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.CoreMatchers.equalTo;
 
 public class FluxFlatMapTest {
 
@@ -1204,5 +1205,34 @@ public class FluxFlatMapTest {
 		            .thenRequest(1)
 		            .thenCancel()
 		            .verify();
+	}
+
+	@Test
+	public void retryDelayErrors() throws Exception {
+		AtomicInteger onNextSignals = new AtomicInteger();
+
+		StepVerifier.create(Flux.range(1, 3)
+		                        .publish()
+		                        .autoConnect()
+		                        .log()
+		                        .flatMap(i -> Mono.just(i)
+		                                          .doOnNext(e -> onNextSignals.incrementAndGet())
+		                                          .log().<Integer>handle((s1, sink) -> {
+					                        if (s1 == 1) {
+						                        sink.error(new RuntimeException());
+					                        }
+					                        else {
+						                        sink.next(s1);
+					                        }
+				                        }).subscribeOn(Schedulers.parallel()), true, 4, 4)
+		                        .log("retry")
+		                        .retry()
+		                        .log("done"))
+		            .expectNextMatches(d -> d == 2 || d == 3)
+		            .expectNextMatches(d -> d == 2 || d == 3)
+		            .thenCancel()
+		            .verify();
+
+		Assert.assertThat(onNextSignals.get(), equalTo(3));
 	}
 }
