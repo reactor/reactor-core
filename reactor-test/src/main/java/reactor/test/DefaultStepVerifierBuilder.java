@@ -16,21 +16,16 @@
 
 package reactor.test;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
-import java.util.TimeZone;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -41,7 +36,6 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -578,7 +572,7 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		@Override
-		public StepVerifierAssertions verifyThenAssertThat() {
+		public Assertions verifyThenAssertThat() {
 			//plug in the correct hooks
 			Queue<Object> droppedElements = new ConcurrentLinkedQueue<>();
 			Queue<Throwable> droppedErrors = new ConcurrentLinkedQueue<>();
@@ -975,7 +969,7 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		@Override
-		public StepVerifierAssertions verifyThenAssertThat() {
+		public Assertions verifyThenAssertThat() {
 			//plug in the correct hooks
 			Queue<Object> droppedElements = new ConcurrentLinkedQueue<>();
 			Queue<Throwable> droppedErrors = new ConcurrentLinkedQueue<>();
@@ -1552,8 +1546,7 @@ final class DefaultStepVerifierBuilder<T>
 
 	}
 
-	static class DefaultStepVerifierAssertions implements
-	                                            StepVerifier.StepVerifierAssertions {
+	static class DefaultStepVerifierAssertions implements StepVerifier.Assertions {
 
 		private final Queue<Object> droppedElements;
 		private final Queue<Throwable> droppedErrors;
@@ -1570,7 +1563,7 @@ final class DefaultStepVerifierBuilder<T>
 			this.duration = duration;
 		}
 
-		private StepVerifier.StepVerifierAssertions satisfies(BooleanSupplier check, Supplier<String> message) {
+		private StepVerifier.Assertions satisfies(BooleanSupplier check, Supplier<String> message) {
 			if (!check.getAsBoolean()) {
 				throw new AssertionError(message.get());
 			}
@@ -1578,12 +1571,12 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		@Override
-		public StepVerifier.StepVerifierAssertions hasDroppedElements() {
+		public StepVerifier.Assertions hasDroppedElements() {
 			return satisfies(() -> !droppedElements.isEmpty(), () -> "Expected dropped elements, none found.");
 		}
 
 		@Override
-		public StepVerifier.StepVerifierAssertions hasDropped(Object... values) {
+		public StepVerifier.Assertions hasDropped(Object... values) {
 			satisfies(() -> values != null && values.length > 0, () -> "Require non-empty values");
 			List<Object> valuesList = Arrays.asList(values);
 			return satisfies(() -> droppedElements.containsAll(valuesList),
@@ -1591,7 +1584,7 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		@Override
-		public StepVerifier.StepVerifierAssertions hasDroppedExactly(Object... values) {
+		public StepVerifier.Assertions hasDroppedExactly(Object... values) {
 			satisfies(() -> values != null && values.length > 0, () -> "Require non-empty values");
 			List<Object> valuesList = Arrays.asList(values);
 			return satisfies(() -> droppedElements.containsAll(valuesList)
@@ -1600,18 +1593,18 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		@Override
-		public StepVerifier.StepVerifierAssertions hasDroppedErrors() {
+		public StepVerifier.Assertions hasDroppedErrors() {
 			return satisfies(() -> !droppedErrors.isEmpty(),
 					() -> "Expected at least 1 dropped error, none found.");
 		}
 		@Override
-		public StepVerifier.StepVerifierAssertions hasDroppedErrors(int size) {
+		public StepVerifier.Assertions hasDroppedErrors(int size) {
 			return satisfies(() -> droppedErrors.size() == size,
 					() -> String.format("Expected exactly %d dropped errors, %d found.", size, droppedErrors.size()));
 		}
 
 		@Override
-		public StepVerifier.StepVerifierAssertions hasDroppedErrorOfType(Class<? extends Throwable> clazz) {
+		public StepVerifier.Assertions hasDroppedErrorOfType(Class<? extends Throwable> clazz) {
 			satisfies(() -> clazz != null, () -> "Require non-null clazz");
 			hasDroppedErrors(1);
 			return satisfies(() -> clazz.isInstance(droppedErrors.peek()),
@@ -1619,7 +1612,7 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		@Override
-		public StepVerifier.StepVerifierAssertions hasDroppedErrorMatching(Predicate<Throwable> matcher) {
+		public StepVerifier.Assertions hasDroppedErrorMatching(Predicate<Throwable> matcher) {
 			satisfies(() -> matcher != null, () -> "Require non-null matcher");
 			hasDroppedErrors(1);
 			return satisfies(() -> matcher.test(droppedErrors.peek()),
@@ -1627,7 +1620,7 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		@Override
-		public StepVerifier.StepVerifierAssertions hasDroppedErrorWithMessage(String message) {
+		public StepVerifier.Assertions hasDroppedErrorWithMessage(String message) {
 			satisfies(() -> message != null, () -> "Require non-null message");
 			hasDroppedErrors(1);
 			String actual = droppedErrors.peek().getMessage();
@@ -1636,7 +1629,7 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		@Override
-		public StepVerifier.StepVerifierAssertions hasDroppedErrorWithMessageContaining(
+		public StepVerifier.Assertions hasDroppedErrorWithMessageContaining(
 				String messagePart) {
 			satisfies(() -> messagePart != null, () -> "Require non-null messagePart");
 			hasDroppedErrors(1);
@@ -1646,7 +1639,7 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		@Override
-		public StepVerifier.StepVerifierAssertions hasDroppedErrorsMatching(Predicate<Collection<Throwable>> matcher) {
+		public StepVerifier.Assertions hasDroppedErrorsMatching(Predicate<Collection<Throwable>> matcher) {
 			satisfies(() -> matcher != null, () -> "Require non-null matcher");
 			hasDroppedErrors();
 			return satisfies(() -> matcher.test(droppedErrors),
@@ -1654,7 +1647,7 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		@Override
-		public StepVerifier.StepVerifierAssertions hasDroppedErrorsSatisfying(Consumer<Collection<Throwable>> asserter) {
+		public StepVerifier.Assertions hasDroppedErrorsSatisfying(Consumer<Collection<Throwable>> asserter) {
 			satisfies(() -> asserter != null, () -> "Require non-null asserter");
 			hasDroppedErrors();
 			asserter.accept(droppedErrors);
@@ -1662,17 +1655,17 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		@Override
-		public StepVerifier.StepVerifierAssertions hasOperatorErrors() {
+		public StepVerifier.Assertions hasOperatorErrors() {
 			return satisfies(() -> !operatorErrors.isEmpty(),
 					() -> "Expected at least 1 operator error, none found.");
 		}
 		@Override
-		public StepVerifier.StepVerifierAssertions hasOperatorErrors(int size) {
+		public StepVerifier.Assertions hasOperatorErrors(int size) {
 			return satisfies(() -> operatorErrors.size() == size,
 					() -> String.format("Expected exactly %d operator errors, %d found.", size, operatorErrors.size()));
 		}
 
-		StepVerifier.StepVerifierAssertions hasOneOperatorErrorWithError() {
+		StepVerifier.Assertions hasOneOperatorErrorWithError() {
 			satisfies(() -> operatorErrors.size() == 1,
 					() -> String.format("Expected exactly one operator error, %d found.", operatorErrors.size()));
 			satisfies(() -> operatorErrors.peek().getT1() != null,
@@ -1681,7 +1674,7 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		@Override
-		public StepVerifier.StepVerifierAssertions hasOperatorErrorOfType(Class<? extends Throwable> clazz) {
+		public StepVerifier.Assertions hasOperatorErrorOfType(Class<? extends Throwable> clazz) {
 			satisfies(() -> clazz != null, () -> "Require non-null clazz");
 			hasOneOperatorErrorWithError();
 			return satisfies(() -> clazz.isInstance(operatorErrors.peek().getT1()),
@@ -1690,7 +1683,7 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		@Override
-		public StepVerifier.StepVerifierAssertions hasOperatorErrorMatching(Predicate<Throwable> matcher) {
+		public StepVerifier.Assertions hasOperatorErrorMatching(Predicate<Throwable> matcher) {
 			satisfies(() -> matcher != null, () -> "Require non-null matcher");
 			hasOneOperatorErrorWithError();
 			return satisfies(() -> matcher.test(operatorErrors.peek().getT1()),
@@ -1698,7 +1691,7 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		@Override
-		public StepVerifier.StepVerifierAssertions hasOperatorErrorWithMessage(String message) {
+		public StepVerifier.Assertions hasOperatorErrorWithMessage(String message) {
 			satisfies(() -> message != null, () -> "Require non-null message");
 			hasOneOperatorErrorWithError();
 			String actual = operatorErrors.peek().getT1().getMessage();
@@ -1707,7 +1700,7 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		@Override
-		public StepVerifier.StepVerifierAssertions hasOperatorErrorWithMessageContaining(
+		public StepVerifier.Assertions hasOperatorErrorWithMessageContaining(
 				String messagePart) {
 			satisfies(() -> messagePart != null, () -> "Require non-null messagePart");
 			hasOneOperatorErrorWithError();
@@ -1717,7 +1710,7 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		@Override
-		public StepVerifier.StepVerifierAssertions hasOperatorErrorsMatching(Predicate<Collection<Tuple2<Throwable, ?>>> matcher) {
+		public StepVerifier.Assertions hasOperatorErrorsMatching(Predicate<Collection<Tuple2<Throwable, ?>>> matcher) {
 			satisfies(() -> matcher != null, () -> "Require non-null matcher");
 			hasOperatorErrors();
 			return satisfies(() -> matcher.test(operatorErrors),
@@ -1725,7 +1718,7 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		@Override
-		public StepVerifier.StepVerifierAssertions hasOperatorErrorsSatisfying(Consumer<Collection<Tuple2<Throwable, ?>>> asserter) {
+		public StepVerifier.Assertions hasOperatorErrorsSatisfying(Consumer<Collection<Tuple2<Throwable, ?>>> asserter) {
 			satisfies(() -> asserter != null, () -> "Require non-null asserter");
 			hasOperatorErrors();
 			asserter.accept(operatorErrors);
@@ -1733,14 +1726,14 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		@Override
-		public StepVerifier.StepVerifierAssertions tookLessThan(Duration d) {
+		public StepVerifier.Assertions tookLessThan(Duration d) {
 			return satisfies(() -> duration.compareTo(d) <= 0,
 					() -> String.format("Expected scenario to be verified in less than %sms, took %sms.",
 							d.toMillis(), duration.toMillis()));
 		}
 
 		@Override
-		public StepVerifier.StepVerifierAssertions tookMoreThan(Duration d) {
+		public StepVerifier.Assertions tookMoreThan(Duration d) {
 			return satisfies(() -> duration.compareTo(d) >= 0,
 					() -> String.format("Expected scenario to be verified in more than %sms, took %sms.",
 							d.toMillis(), duration.toMillis()));

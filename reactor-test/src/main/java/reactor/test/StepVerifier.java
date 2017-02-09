@@ -271,7 +271,7 @@ public interface StepVerifier {
 
 	/**
 	 * {@link #verify() Verifies} the signals received by this subscriber, then exposes
-	 * various {@link StepVerifierAssertions assertion methods} on the final state.
+	 * various {@link Assertions assertion methods} on the final state.
 	 * <p>
 	 * Note this method will <strong>block</strong> indefinitely until the stream has
 	 * been terminated (either through {@link Subscriber#onComplete()},
@@ -281,7 +281,7 @@ public interface StepVerifier {
 	 *
 	 * @throws AssertionError in case of expectation failures
 	 */
-	StepVerifierAssertions verifyThenAssertThat();
+	Assertions verifyThenAssertThat();
 
 	/**
 	 * Define a builder for terminal states.
@@ -779,138 +779,138 @@ public interface StepVerifier {
 	/**
 	 * Exposes post-verification state assertions.
 	 */
-	interface StepVerifierAssertions {
+	interface Assertions {
 
 		/**
 		 * Assert that the tested publisher has dropped at least one element to the
 		 * {@link Hooks#onNextDropped(Consumer)} hook.
 		 */
-		StepVerifierAssertions hasDroppedElements();
+		Assertions hasDroppedElements();
 
 		/**
 		 * Assert that the tested publisher has dropped at least all of the provided
 		 * elements to the {@link Hooks#onNextDropped(Consumer)} hook, in any order.
 		 */
-		StepVerifierAssertions hasDropped(Object... values);
+		Assertions hasDropped(Object... values);
 
 		/**
 		 * Assert that the tested publisher has dropped all of the provided elements to
 		 * the {@link Hooks#onNextDropped(Consumer)} hook, in any order, and that no
 		 * other elements were dropped.
 		 */
-		StepVerifierAssertions hasDroppedExactly(Object... values);
+		Assertions hasDroppedExactly(Object... values);
 
 		/**
 		 * Assert that the tested publisher has dropped at least one error to the
 		 * {@link Hooks#onErrorDropped(Consumer)} hook.
 		 */
-		StepVerifierAssertions hasDroppedErrors();
+		Assertions hasDroppedErrors();
 
 		/**
 		 * Assert that the tested publisher has dropped exactly n errors to the
 		 * {@link Hooks#onErrorDropped(Consumer)} hook.
 		 */
-		StepVerifierAssertions hasDroppedErrors(int n);
+		Assertions hasDroppedErrors(int n);
 
 		/**
 		 * Assert that the tested publisher has dropped exactly one error of the given type
 		 * to the {@link Hooks#onErrorDropped(Consumer)} hook.
 		 */
-		StepVerifierAssertions hasDroppedErrorOfType(Class<? extends Throwable> clazz);
+		Assertions hasDroppedErrorOfType(Class<? extends Throwable> clazz);
 
 		/**
 		 * Assert that the tested publisher has dropped exactly one error matching the given
 		 * predicate to the {@link Hooks#onErrorDropped(Consumer)} hook.
 		 */
-		StepVerifierAssertions hasDroppedErrorMatching(Predicate<Throwable> matcher);
+		Assertions hasDroppedErrorMatching(Predicate<Throwable> matcher);
 
 		/**
 		 * Assert that the tested publisher has dropped exactly one error with the exact provided
 		 * message to the {@link Hooks#onErrorDropped(Consumer)} hook.
 		 */
-		StepVerifierAssertions hasDroppedErrorWithMessage(String message);
+		Assertions hasDroppedErrorWithMessage(String message);
 
 		/**
 		 * Assert that the tested publisher has dropped exactly one error with a message containing
 		 * the provided string to the {@link Hooks#onErrorDropped(Consumer)} hook.
 		 */
-		StepVerifierAssertions hasDroppedErrorWithMessageContaining(String messagePart);
+		Assertions hasDroppedErrorWithMessageContaining(String messagePart);
 
 		/**
 		 * Assert that the tested publisher has dropped one or more errors to the
 		 * {@link Hooks#onErrorDropped(Consumer)} hook, and assert them as a collection.
 		 */
-		StepVerifierAssertions hasDroppedErrorsSatisfying(Consumer<Collection<Throwable>> errorsConsumer);
+		Assertions hasDroppedErrorsSatisfying(Consumer<Collection<Throwable>> errorsConsumer);
 
 		/**
 		 * Assert that the tested publisher has dropped one or more errors to the
 		 * {@link Hooks#onErrorDropped(Consumer)} hook, and check that the collection of
 		 * errors matches a predicate.
 		 */
-		StepVerifierAssertions hasDroppedErrorsMatching(Predicate<Collection<Throwable>> errorsConsumer);
+		Assertions hasDroppedErrorsMatching(Predicate<Collection<Throwable>> errorsConsumer);
 
 		/**
 		 * Assert that the tested publisher has triggered the {@link Hooks#onOperatorError(BiFunction) onOperatorError} hook
 		 * at least once.
 		 */
-		StepVerifierAssertions hasOperatorErrors();
+		Assertions hasOperatorErrors();
 
 		/**
 		 * Assert that the tested publisher has triggered the {@link Hooks#onOperatorError(BiFunction) onOperatorError} hook
 		 * exactly n times.
 		 */
-		StepVerifierAssertions hasOperatorErrors(int n);
+		Assertions hasOperatorErrors(int n);
 
 		/**
 		 * Assert that the tested publisher has triggered the {@link Hooks#onOperatorError(BiFunction) onOperatorError} hook
 		 * exactly once and the error is of the given type.
 		 */
-		StepVerifierAssertions hasOperatorErrorOfType(Class<? extends Throwable> clazz);
+		Assertions hasOperatorErrorOfType(Class<? extends Throwable> clazz);
 
 		/**
 		 * Assert that the tested publisher has triggered the {@link Hooks#onOperatorError(BiFunction) onOperatorError} hook
 		 * exactly once and the error matches the given predicate.
 		 */
-		StepVerifierAssertions hasOperatorErrorMatching(Predicate<Throwable> matcher);
+		Assertions hasOperatorErrorMatching(Predicate<Throwable> matcher);
 
 		/**
 		 * Assert that the tested publisher has triggered the {@link Hooks#onOperatorError(BiFunction) onOperatorError} hook
 		 * exactly once and the error has the exact provided message.
 		 */
-		StepVerifierAssertions hasOperatorErrorWithMessage(String message);
+		Assertions hasOperatorErrorWithMessage(String message);
 
 		/**
 		 * Assert that the tested publisher has triggered the {@link Hooks#onOperatorError(BiFunction) onOperatorError} hook
 		 * exactly once, with the error message containing the provided string.
 		 */
-		StepVerifierAssertions hasOperatorErrorWithMessageContaining(String messagePart);
+		Assertions hasOperatorErrorWithMessageContaining(String messagePart);
 
 		/**
 		 * Assert that the tested publisher has triggered the {@link Hooks#onOperatorError(BiFunction) onOperatorError} hook
 		 * once or more, and assert the errors and optionally associated data as a collection.
 		 */
-		StepVerifierAssertions hasOperatorErrorsSatisfying(Consumer<Collection<Tuple2<Throwable, ?>>> errorsConsumer);
+		Assertions hasOperatorErrorsSatisfying(Consumer<Collection<Tuple2<Throwable, ?>>> errorsConsumer);
 
 		/**
 		 * Assert that the tested publisher has triggered the {@link Hooks#onOperatorError(BiFunction) onOperatorError} hook
 		 * once or more, and check that the collection of errors and their optionally
 		 * associated data matches a predicate.
 		 */
-		StepVerifierAssertions hasOperatorErrorsMatching(Predicate<Collection<Tuple2<Throwable, ?>>> errorsConsumer);
+		Assertions hasOperatorErrorsMatching(Predicate<Collection<Tuple2<Throwable, ?>>> errorsConsumer);
 
 		/**
 		 * Assert that the whole verification took strictly less than the provided
 		 * duration to execute.
 		 * @param d the expected maximum duration of the verification
 		 */
-		StepVerifierAssertions tookLessThan(Duration d);
+		Assertions tookLessThan(Duration d);
 
 		/**
 		 * Assert that the whole verification took strictly more than the provided
 		 * duration to execute.
 		 * @param d the expected minimum duration of the verification
 		 */
-		StepVerifierAssertions tookMoreThan(Duration d);
+		Assertions tookMoreThan(Duration d);
 	}
 
 }
