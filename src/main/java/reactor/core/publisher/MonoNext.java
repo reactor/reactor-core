@@ -32,7 +32,7 @@ import reactor.core.Trackable;
  */
 final class MonoNext<T> extends MonoSource<T, T> {
 
-	public MonoNext(Publisher<? extends T> source) {
+	MonoNext(Publisher<? extends T> source) {
 		super(source);
 	}
 
@@ -55,7 +55,7 @@ final class MonoNext<T> extends MonoSource<T, T> {
 		static final AtomicIntegerFieldUpdater<NextSubscriber> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(NextSubscriber.class, "wip");
 
-		public NextSubscriber(Subscriber<? super T> actual) {
+		NextSubscriber(Subscriber<? super T> actual) {
 			this.actual = actual;
 		}
 

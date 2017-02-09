@@ -333,6 +333,9 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		for (; ; ) {
 			if (next instanceof Receiver) {
 				Receiver r = (Receiver) next;
+				if (!(r.upstream() instanceof Publisher)){
+					break;
+				}
 				next = r.upstream();
 				if (next instanceof AssemblyOp) {
 					continue;
