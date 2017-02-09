@@ -106,7 +106,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		InnerSubscription<T> inner = new InnerSubscription<>(s);
+		PublishSubscriber<T> inner = new PublishSubscriber<>(s);
 		s.onSubscribe(inner);
 		for (; ; ) {
 			if (inner.isCancelled()) {
@@ -158,7 +158,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 						Subscription.class,
 						"s");
 
-		volatile InnerSubscription<T>[] subscribers;
+		volatile PublishSubscriber<T>[] subscribers;
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
@@ -171,9 +171,9 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 				AtomicIntegerFieldUpdater.newUpdater(State.class, "connected");
 
 		@SuppressWarnings("rawtypes")
-		static final InnerSubscription[] EMPTY      = new InnerSubscription[0];
+		static final PublishSubscriber[] EMPTY      = new PublishSubscriber[0];
 		@SuppressWarnings("rawtypes")
-		static final InnerSubscription[] TERMINATED = new InnerSubscription[0];
+		static final PublishSubscriber[] TERMINATED = new PublishSubscriber[0];
 
 		volatile Queue<T> queue;
 
@@ -289,24 +289,24 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 		void disconnectAction() {
 			queue.clear();
 			CancellationException ex = new CancellationException("Disconnected");
-			for (InnerSubscription<T> inner : terminate()) {
+			for (PublishSubscriber<T> inner : terminate()) {
 				inner.actual.onError(ex);
 			}
 		}
 
-		boolean add(InnerSubscription<T> inner) {
+		boolean add(PublishSubscriber<T> inner) {
 			if (subscribers == TERMINATED) {
 				return false;
 			}
 			synchronized (this) {
-				InnerSubscription<T>[] a = subscribers;
+				PublishSubscriber<T>[] a = subscribers;
 				if (a == TERMINATED) {
 					return false;
 				}
 				int n = a.length;
 
-				@SuppressWarnings("unchecked") InnerSubscription<T>[] b =
-						new InnerSubscription[n + 1];
+				@SuppressWarnings("unchecked") PublishSubscriber<T>[] b =
+						new PublishSubscriber[n + 1];
 				System.arraycopy(a, 0, b, 0, n);
 				b[n] = inner;
 
@@ -316,8 +316,8 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 		}
 
 		@SuppressWarnings("unchecked")
-		void remove(InnerSubscription<T> inner) {
-			InnerSubscription<T>[] a = subscribers;
+		void remove(PublishSubscriber<T> inner) {
+			PublishSubscriber<T>[] a = subscribers;
 			if (a == TERMINATED || a == EMPTY) {
 				return;
 			}
@@ -339,12 +339,12 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 					return;
 				}
 
-				InnerSubscription<T>[] b;
+				PublishSubscriber<T>[] b;
 				if (n == 1) {
 					b = EMPTY;
 				}
 				else {
-					b = new InnerSubscription[n - 1];
+					b = new PublishSubscriber[n - 1];
 					System.arraycopy(a, 0, b, 0, j);
 					System.arraycopy(a, j + 1, b, j, n - j - 1);
 				}
@@ -354,17 +354,20 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 		}
 
 		@SuppressWarnings("unchecked")
-		InnerSubscription<T>[] terminate() {
-			InnerSubscription<T>[] a = subscribers;
-			if (a == TERMINATED) {
-				return a;
-			}
-			synchronized (this) {
+		PublishSubscriber<T>[] terminate() {
+			PublishSubscriber<T>[] a;
+			for(;;) {
 				a = subscribers;
-				if (a != TERMINATED) {
-					subscribers = TERMINATED;
+				if (a == TERMINATED) {
+					return a;
 				}
-				return a;
+				synchronized (this) {
+					a = subscribers;
+					if (a != TERMINATED) {
+						subscribers = TERMINATED;
+					}
+					return a;
+				}
 			}
 		}
 
@@ -377,7 +380,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 			return connected == 0 && CONNECTED.compareAndSet(this, 0, 1);
 		}
 
-		boolean trySubscribe(InnerSubscription<T> inner) {
+		boolean trySubscribe(PublishSubscriber<T> inner) {
 			if (add(inner)) {
 				if (inner.isCancelled()) {
 					remove(inner);
@@ -408,12 +411,12 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 			for (; ; ) {
 
 				if (q != null) {
-					InnerSubscription<T>[] a = subscribers;
+					PublishSubscriber<T>[] a = subscribers;
 					long r = Long.MAX_VALUE;
 
 					if (a.length != 0) {
 
-						for (InnerSubscription<T> inner : a) {
+						for (PublishSubscriber<T> inner : a) {
 							r = Math.min(r, inner.requested);
 						}
 
@@ -445,8 +448,13 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 									break;
 								}
 
-								for (InnerSubscription<T> inner : a) {
-									inner.actual.onNext(v);
+								for (PublishSubscriber<T> inner : a) {
+									if(inner.cancelled == 0) {
+										inner.actual.onNext(v);
+									}
+									else {
+										a = subscribers;
+									}
 								}
 
 								e++;
@@ -461,7 +469,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 							if (e != 0) {
 								replenish(e);
 								if (r != Long.MAX_VALUE) {
-									for (InnerSubscription<T> inner : a) {
+									for (PublishSubscriber<T> inner : a) {
 										inner.produced(e);
 									}
 								}
@@ -497,13 +505,13 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 				if (e != null && e != Exceptions.TERMINATED) {
 					e = Exceptions.terminate(ERROR, this);
 					queue.clear();
-					for (InnerSubscription<T> inner : terminate()) {
+					for (PublishSubscriber<T> inner : terminate()) {
 						inner.actual.onError(e);
 					}
 					return true;
 				}
 				else if (empty) {
-					for (InnerSubscription<T> inner : terminate()) {
+					for (PublishSubscriber<T> inner : terminate()) {
 						inner.actual.onComplete();
 					}
 					return true;
@@ -554,7 +562,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 		}
 	}
 
-	static final class InnerSubscription<T> implements Subscription, Producer, Trackable {
+	static final class PublishSubscriber<T> implements Subscription, Producer, Trackable {
 
 		final Subscriber<? super T> actual;
 
@@ -562,16 +570,16 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<InnerSubscription> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(InnerSubscription.class, "requested");
+		static final AtomicLongFieldUpdater<PublishSubscriber> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(PublishSubscriber.class, "requested");
 
 		volatile int cancelled;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<InnerSubscription> CANCELLED =
-				AtomicIntegerFieldUpdater.newUpdater(InnerSubscription.class,
+		static final AtomicIntegerFieldUpdater<PublishSubscriber> CANCELLED =
+				AtomicIntegerFieldUpdater.newUpdater(PublishSubscriber.class,
 						"cancelled");
 
-		InnerSubscription(Subscriber<? super T> actual) {
+		PublishSubscriber(Subscriber<? super T> actual) {
 			this.actual = actual;
 		}
 

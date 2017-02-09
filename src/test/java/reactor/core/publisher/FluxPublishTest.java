@@ -22,6 +22,7 @@ import java.util.concurrent.CancellationException;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Disposable;
+import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
@@ -417,5 +418,4 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		.assertError(NullPointerException.class)
 		.assertNotComplete();
 	}
-
 }
