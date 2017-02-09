@@ -16,7 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -303,7 +302,7 @@ public class WorkQueueProcessorTest {
 		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
 		AtomicInteger onNextSignals = new AtomicInteger();
 
-		StepVerifier.create(wq.log().publishOn(Schedulers.parallel())
+		StepVerifier.create(wq.log().publishOn(Schedulers.parallel()).publish().autoConnect()
 		                      .doOnNext(e -> onNextSignals.incrementAndGet()).map(
 						s1 -> {
 							if (errors.decrementAndGet() > 0) {
@@ -318,9 +317,12 @@ public class WorkQueueProcessorTest {
 			            wq.onNext(2);
 			            wq.onNext(3);
 		            })
-		            .expectNext(2, 3)
+		            .expectNext(3)
 		            .thenCancel()
-		            .verify(Duration.ofSeconds(1));
+		            .verify();
+
+		// Need to explicitly complete processor due to use of publish()
+		wq.onComplete();
 
 		assertThat(onNextSignals.get(), equalTo(3));
 
@@ -335,7 +337,7 @@ public class WorkQueueProcessorTest {
 		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
 		AtomicInteger onNextSignals = new AtomicInteger();
 
-		StepVerifier.create(wq.log().publishOn(Schedulers.parallel(),1)
+		StepVerifier.create(wq.log().publishOn(Schedulers.parallel(),1).publish().autoConnect()
 		                      .doOnNext(e -> onNextSignals.incrementAndGet()).map(
 						s1 -> {
 							if (errors.decrementAndGet() > 0) {
@@ -355,6 +357,9 @@ public class WorkQueueProcessorTest {
 		            .verify();
 
 		assertThat(onNextSignals.get(), equalTo(3));
+
+		// Need to explicitly complete processor due to use of publish()
+		wq.onComplete();
 
 		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
 		}
@@ -397,7 +402,9 @@ public class WorkQueueProcessorTest {
 		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
 		AtomicInteger onNextSignals = new AtomicInteger();
 
-		StepVerifier.create(wq.log().publishOn(Schedulers.parallel()).log()
+		StepVerifier.create(
+
+				wq.log().publishOn(Schedulers.parallel()).publish().autoConnect().log()
 		                      .doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
 						(s1, sink) -> {
 							if (s1 == 1) {
@@ -406,7 +413,7 @@ public class WorkQueueProcessorTest {
 							else {
 								sink.next(s1);
 							}
-						}).log().retry())
+						}).retry().log("END"))
 		            .then(() -> {
 			            wq.onNext(1);
 			            wq.onNext(2);
@@ -414,9 +421,12 @@ public class WorkQueueProcessorTest {
 		            })
 		            .expectNext(2, 3)
 		            .thenCancel()
-		            .verify(Duration.ofSeconds(1));
+		            .verify();
 
 		assertThat(onNextSignals.get(), equalTo(3));
+
+		// Need to explicitly complete processor due to use of publish()
+		wq.onComplete();
 
 		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
 		}
@@ -429,7 +439,7 @@ public class WorkQueueProcessorTest {
 		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
 		AtomicInteger onNextSignals = new AtomicInteger();
 
-		StepVerifier.create(wq.log().publishOn(Schedulers.parallel(), 1).log()
+		StepVerifier.create(wq.log().publishOn(Schedulers.parallel(), 1).publish().autoConnect().log()
 		                      .doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
 						(s1, sink) -> {
 							if (s1 == 1) {
@@ -448,6 +458,9 @@ public class WorkQueueProcessorTest {
 		            .thenCancel()
 		            .verify();
 
+		// Need to explicitly complete processor due to use of publish()
+		wq.onComplete();
+
 		assertThat(onNextSignals.get(), equalTo(3));
 
 		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
@@ -460,7 +473,7 @@ public class WorkQueueProcessorTest {
 		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
 		AtomicInteger onNextSignals = new AtomicInteger();
 
-		StepVerifier.create(wq.log().flatMap(i -> Mono.just(i).subscribeOn(Schedulers.parallel())).log()
+		StepVerifier.create(wq.log().flatMap(i -> Mono.just(i).subscribeOn(Schedulers.parallel())).publish().autoConnect().log()
 		                      .doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
 						(s1, sink) -> {
 							if (s1 == 1) {
@@ -477,7 +490,9 @@ public class WorkQueueProcessorTest {
 		            })
 		            .expectNext(2, 3)
 		            .thenCancel()
-		            .verify(Duration.ofSeconds(1));
+		            .verify();
+
+		wq.onComplete();
 
 		assertThat(onNextSignals.get(), equalTo(3));
 
@@ -493,7 +508,7 @@ public class WorkQueueProcessorTest {
 		AtomicInteger onNextSignals = new AtomicInteger();
 
 		StepVerifier.create(wq.log().flatMap(i -> Mono.just(i).subscribeOn(Schedulers
-				.parallel()), Integer.MAX_VALUE, 1).log()
+				.parallel()), Integer.MAX_VALUE, 1).publish().autoConnect().log()
 		                      .doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
 						(s1, sink) -> {
 							if (s1 == 1) {
@@ -510,7 +525,9 @@ public class WorkQueueProcessorTest {
 		            })
 		            .expectNext(2, 3)
 		            .thenCancel()
-		            .verify(Duration.ofSeconds(1));
+		            .verify();
+
+		wq.onComplete();
 
 		assertThat(onNextSignals.get(), equalTo(3));
 

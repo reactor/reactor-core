@@ -445,7 +445,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 									break;
 								}
 
-								for (InnerSubscription<T> inner : a) {
+								for (InnerSubscription<T> inner : this.subscribers) {
 									inner.actual.onNext(v);
 								}
 
