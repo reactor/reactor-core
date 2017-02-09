@@ -248,7 +248,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 				verifier = step -> {
 					try {
 						if (scenario.shouldHitDropErrorHookAfterTerminate() || scenario.shouldHitDropNextHookAfterTerminate()) {
-							StepVerifier.StepVerifierAssertions assertions =
+							StepVerifier.Assertions assertions =
 									scenario.applySteps(step)
 									        .expectErrorMessage(m)
 									        .verifyThenAssertThat();
