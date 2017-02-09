@@ -46,7 +46,7 @@ public class GuideDebuggingExtraTests {
 			String debugStack = sw.toString();
 
 			assertThat(debugStack)
-					.endsWith("Error has been observed by the following operators, starting from the origin :\n"
+					.endsWith("Error has been observed by the following operator(s):\n"
 							+ "\t|_\tFlux.map(FakeRepository.java:27)\n"
 							+ "\t|_\tFlux.map(FakeRepository.java:28)\n"
 							+ "\t|_\tFlux.filter(FakeUtils1.java:29)\n"

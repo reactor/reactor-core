@@ -142,7 +142,7 @@ Assembly trace from producer [reactor.core.publisher.MonoSingle] : <4>
 	reactor.guide.GuideTests.populateDebug(GuideTests.java:702)
 	org.junit.rules.TestWatcher$1.evaluate(TestWatcher.java:55)
 	org.junit.rules.RunRules.evaluate(RunRules.java:20)
-Error has been observed by the following operators, starting from the origin : <5>
+Error has been observed by the following operator(s): <5>
 	|_	Flux.single(TestWatcher.java:55) <6>
 ----
 <1> This is new: what we see here is the wrapper operator that captures the
@@ -184,7 +184,7 @@ that line, we find out he meant to use the less restrictive `take(1)` instead...
 Congratulations, *we solved our problem*!
 
 [quote]
-Error has been observed by the following operators, starting from the origin :
+Error has been observed by the following operator(s):
 
 That second part of the debug stacktrace was not necessarily very interesting in
 this particular example, because the error was actually happening in the last
@@ -202,7 +202,7 @@ Now imagine that inside `findAllUserByName` there is a `map` that fails. Here we
 would see the following final traceback:
 [source,java]
 ----
-Error has been observed by the following operators, starting from the origin :
+Error has been observed by the following operator(s):
 	|_	Flux.map(FakeRepository.java:27)
 	|_	Flux.map(FakeRepository.java:28)
 	|_	Flux.filter(FakeUtils1.java:29)
@@ -288,10 +288,14 @@ Suppressed: reactor.core.publisher.FluxOnAssembly$OnAssemblyException:
 Assembly trace from producer [reactor.core.publisher.ParallelSource], described as [fooCorrelation1234] : <1>
 	reactor.core.publisher.ParallelFlux.checkpoint(ParallelFlux.java:174)
 	reactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescription(FluxOnAssemblyTest.java:159)
-Error has been observed by the following operators, starting from the origin :
+Error has been observed by the following operator(s):
 	|_	ParallelFlux.checkpointnull
 ----
 <1> `fooCorrelation1234` is the description provided in `checkpoint`
+
+When both global debugging and local `checkpoint()` are enabled, checkpointed snapshot
+stacks will be appended as suppressed error after the observing operator graph and
+following the same declarative order.
 
 == Logging a stream
 Additionally to stacktrace debugging and analysis, another powerful tool to have
