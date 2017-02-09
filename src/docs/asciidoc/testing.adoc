@@ -189,7 +189,7 @@ After having described the final expectation of your scenario, you can switch to
 a complementary assertion API instead of plainly triggering the `verify()`:
 use `verifyThenAssertThat()` instead.
 
-This returns a `StepVerifierAssertions` object which you can use to assert a few
+This returns a `StepVerifier.Assertions` object which you can use to assert a few
 elements of state once the whole scenario has played out successfully (since it
 does *also call `verify()`*). Typical (albeit advanced) usage is to capture
 elements that have been dropped by some operator and assert them (see the
