@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -28,7 +29,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -297,6 +297,71 @@ public class WorkQueueProcessorTest {
 	}
 
 	@Test
+	public void retryErrorPropagatedFromWorkQueueSubscriberHotPublishOn() throws
+	                                                                     Exception {
+		AtomicInteger errors = new AtomicInteger(3);
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		AtomicInteger onNextSignals = new AtomicInteger();
+
+		StepVerifier.create(wq.log().publishOn(Schedulers.parallel())
+		                      .doOnNext(e -> onNextSignals.incrementAndGet()).map(
+						s1 -> {
+							if (errors.decrementAndGet() > 0) {
+								throw new RuntimeException();
+							}
+							else {
+								return s1;
+							}
+						}).log().retry())
+		            .then(() -> {
+			            wq.onNext(1);
+			            wq.onNext(2);
+			            wq.onNext(3);
+		            })
+		            .expectNext(2, 3)
+		            .thenCancel()
+		            .verify(Duration.ofSeconds(1));
+
+		assertThat(onNextSignals.get(), equalTo(3));
+
+		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
+		}
+	}
+
+	@Test
+	public void retryErrorPropagatedFromWorkQueueSubscriberHotPublishOnPrefetch1() throws
+	                                                                      Exception {
+		AtomicInteger errors = new AtomicInteger(3);
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		AtomicInteger onNextSignals = new AtomicInteger();
+
+		StepVerifier.create(wq.log().publishOn(Schedulers.parallel(),1)
+		                      .doOnNext(e -> onNextSignals.incrementAndGet()).map(
+						s1 -> {
+							if (errors.decrementAndGet() > 0) {
+								throw new RuntimeException();
+							}
+							else {
+								return s1;
+							}
+						}).log().retry())
+		            .then(() -> {
+			            wq.onNext(1);
+			            wq.onNext(2);
+			            wq.onNext(3);
+		            })
+		            .expectNext(3)
+		            .thenCancel()
+		            .verify();
+
+		assertThat(onNextSignals.get(), equalTo(3));
+
+		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
+		}
+	}
+
+
+	@Test
 	public void retryErrorPropagatedFromWorkQueueSubscriberHotPoisonSignal() throws Exception {
 		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
 		AtomicInteger onNextSignals = new AtomicInteger();
@@ -319,6 +384,133 @@ public class WorkQueueProcessorTest {
 		            .expectNext(2, 3)
 		            .thenCancel()
 		            .verify();
+
+		assertThat(onNextSignals.get(), equalTo(3));
+
+		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
+		}
+	}
+
+	@Test
+	public void retryErrorPropagatedFromWorkQueueSubscriberHotPoisonSignalPublishOn()
+			throws Exception {
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		AtomicInteger onNextSignals = new AtomicInteger();
+
+		StepVerifier.create(wq.log().publishOn(Schedulers.parallel()).log()
+		                      .doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
+						(s1, sink) -> {
+							if (s1 == 1) {
+								sink.error(new RuntimeException());
+							}
+							else {
+								sink.next(s1);
+							}
+						}).log().retry())
+		            .then(() -> {
+			            wq.onNext(1);
+			            wq.onNext(2);
+			            wq.onNext(3);
+		            })
+		            .expectNext(2, 3)
+		            .thenCancel()
+		            .verify(Duration.ofSeconds(1));
+
+		assertThat(onNextSignals.get(), equalTo(3));
+
+		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
+		}
+	}
+
+	@Test
+	public void
+	retryErrorPropagatedFromWorkQueueSubscriberHotPoisonSignalPublishOnPrefetch1() throws
+	                                                                               Exception {
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		AtomicInteger onNextSignals = new AtomicInteger();
+
+		StepVerifier.create(wq.log().publishOn(Schedulers.parallel(), 1).log()
+		                      .doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
+						(s1, sink) -> {
+							if (s1 == 1) {
+								sink.error(new RuntimeException());
+							}
+							else {
+								sink.next(s1);
+							}
+						}).log("RETRT").retry())
+		            .then(() -> {
+			            wq.onNext(1);
+			            wq.onNext(2);
+			            wq.onNext(3);
+		            })
+		            .expectNext(2, 3)
+		            .thenCancel()
+		            .verify();
+
+		assertThat(onNextSignals.get(), equalTo(3));
+
+		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
+		}
+	}
+
+	@Test
+	public void retryErrorPropagatedFromWorkQueueSubscriberHotPoisonSignalFlatMap()
+			throws Exception {
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		AtomicInteger onNextSignals = new AtomicInteger();
+
+		StepVerifier.create(wq.log().flatMap(i -> Mono.just(i).subscribeOn(Schedulers.parallel())).log()
+		                      .doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
+						(s1, sink) -> {
+							if (s1 == 1) {
+								sink.error(new RuntimeException());
+							}
+							else {
+								sink.next(s1);
+							}
+						}).log().retry())
+		            .then(() -> {
+			            wq.onNext(1);
+			            wq.onNext(2);
+			            wq.onNext(3);
+		            })
+		            .expectNext(2, 3)
+		            .thenCancel()
+		            .verify(Duration.ofSeconds(1));
+
+		assertThat(onNextSignals.get(), equalTo(3));
+
+		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
+		}
+	}
+
+	@Test
+	public void
+	retryErrorPropagatedFromWorkQueueSubscriberHotPoisonSignalFlatMapPrefetch1()
+			throws Exception {
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		AtomicInteger onNextSignals = new AtomicInteger();
+
+		StepVerifier.create(wq.log().flatMap(i -> Mono.just(i).subscribeOn(Schedulers
+				.parallel()), Integer.MAX_VALUE, 1).log()
+		                      .doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
+						(s1, sink) -> {
+							if (s1 == 1) {
+								sink.error(new RuntimeException());
+							}
+							else {
+								sink.next(s1);
+							}
+						}).log().retry())
+		            .then(() -> {
+			            wq.onNext(1);
+			            wq.onNext(2);
+			            wq.onNext(3);
+		            })
+		            .expectNext(2, 3)
+		            .thenCancel()
+		            .verify(Duration.ofSeconds(1));
 
 		assertThat(onNextSignals.get(), equalTo(3));
 
