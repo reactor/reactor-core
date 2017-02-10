@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -274,16 +274,15 @@ public class WorkQueueProcessorTest {
 		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
 		AtomicInteger onNextSignals = new AtomicInteger();
 
-		StepVerifier.create(wq.log()
-		                      .doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
-						(s1, sink) -> {
-							if (errors.decrementAndGet() > 0) {
-								sink.error(new RuntimeException());
-							}
-							else {
-								sink.next(s1);
-							}
-						}).retry())
+		StepVerifier.create(wq.doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
+				(s1, sink) -> {
+					if (errors.decrementAndGet() > 0) {
+						sink.error(new RuntimeException());
+					}
+					else {
+						sink.next(s1);
+					}
+				}).retry())
 		            .then(() -> {
 			            wq.onNext(1);
 			            wq.onNext(2);
@@ -300,20 +299,20 @@ public class WorkQueueProcessorTest {
 	}
 
 	@Test
-	public void retryErrorPropagatedFromWorkQueueSubscriberHotPoisonSignal() throws Exception {
+	public void retryErrorPropagatedFromWorkQueueSubscriberHotPoisonSignal()
+			throws Exception {
 		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
 		AtomicInteger onNextSignals = new AtomicInteger();
 
-		StepVerifier.create(wq.log()
-		                      .doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
-						(s1, sink) -> {
-							if (s1 == 1) {
-								sink.error(new RuntimeException());
-							}
-							else {
-								sink.next(s1);
-							}
-						}).retry())
+		StepVerifier.create(wq.doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
+				(s1, sink) -> {
+					if (s1 == 1) {
+						sink.error(new RuntimeException());
+					}
+					else {
+						sink.next(s1);
+					}
+				}).retry())
 		            .then(() -> {
 			            wq.onNext(1);
 			            wq.onNext(2);
@@ -688,20 +687,18 @@ public class WorkQueueProcessorTest {
 		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
 		AtomicInteger onNextSignals = new AtomicInteger();
 
-		StepVerifier.create(
-
-				wq
-						.publishOn(Schedulers.parallel())
-						.publish()
-						.autoConnect()
-						.doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle((s1, sink) -> {
-					if (s1 == 1) {
-						sink.error(new RuntimeException());
-					}
-					else {
-						sink.next(s1);
-					}
-				}).retry())
+		StepVerifier.create(wq.publishOn(Schedulers.parallel())
+		                      .publish()
+		                      .autoConnect()
+		                      .doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
+						(s1, sink) -> {
+							if (s1 == 1) {
+								sink.error(new RuntimeException());
+							}
+							else {
+								sink.next(s1);
+							}
+						}).retry())
 		            .then(() -> {
 			            wq.onNext(1);
 			            wq.onNext(2);
@@ -726,30 +723,29 @@ public class WorkQueueProcessorTest {
 		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
 		AtomicInteger onNextSignals = new AtomicInteger();
 
-		Function<Flux<Integer>, Flux<Integer>> function = flux -> flux.doOnNext(e -> onNextSignals.incrementAndGet())
-		                                                              .handle((s1, sink) -> {
-			                                                              if (s1 == 1) {
-				                                                              sink.error(
-						                                                              new RuntimeException());
-			                                                              }
-			                                                              else {
-				                                                              sink.next(s1);
-			                                                              }
-		                                                              });
+		Function<Flux<Integer>, Flux<Integer>> function =
+				flux -> flux.doOnNext(e -> onNextSignals.incrementAndGet())
+				            .handle((s1, sink) -> {
+					            if (s1 == 1) {
+						            sink.error(new RuntimeException());
+					            }
+					            else {
+						            sink.next(s1);
+					            }
+				            });
 
-		StepVerifier.create(wq
-				.parallel(4)
-				.runOn(Schedulers.parallel())
-				.transform(flux -> ParallelFlux.from(flux.groups()
-				                                         .flatMap(s -> s.publish()
-				                                                        .autoConnect()
-				                                                        .transform(
-						                                                        function),
-						                                         true,
-						                                         QueueSupplier.SMALL_BUFFER_SIZE,
-						                                         QueueSupplier.XS_BUFFER_SIZE)))
-				.sequential()
-				.retry())
+		StepVerifier.create(wq.parallel()
+		                      .runOn(Schedulers.parallel())
+		                      .transform(flux -> ParallelFlux.from(flux.groups()
+		                                                               .flatMap(s -> s.publish()
+		                                                                              .autoConnect()
+		                                                                              .transform(
+				                                                                              function),
+				                                                               true,
+				                                                               QueueSupplier.SMALL_BUFFER_SIZE,
+				                                                               QueueSupplier.XS_BUFFER_SIZE)))
+		                      .sequential()
+		                      .retry())
 		            .then(() -> {
 			            wq.onNext(1);
 			            wq.onNext(2);
@@ -775,11 +771,10 @@ public class WorkQueueProcessorTest {
 		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
 		AtomicInteger onNextSignals = new AtomicInteger();
 
-		StepVerifier.create(wq
-				.publishOn(Schedulers.parallel(), 1)
-				.publish()
-				.autoConnect()
-				.doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
+		StepVerifier.create(wq.publishOn(Schedulers.parallel(), 1)
+		                      .publish()
+		                      .autoConnect()
+		                      .doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
 						(s1, sink) -> {
 							if (s1 == 1) {
 								sink.error(new RuntimeException());
@@ -787,8 +782,7 @@ public class WorkQueueProcessorTest {
 							else {
 								sink.next(s1);
 							}
-						})
-				.retry())
+						}).retry())
 		            .then(() -> {
 			            wq.onNext(1);
 			            wq.onNext(2);
@@ -855,21 +849,18 @@ public class WorkQueueProcessorTest {
 		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
 		AtomicInteger onNextSignals = new AtomicInteger();
 
-		StepVerifier.create(wq.log()
-		                      .flatMap(i -> Mono.just(i)
-		                                        .log()
+		StepVerifier.create(wq.flatMap(i -> Mono.just(i)
 		                                        .doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
-						                      (s1, sink) -> {
-							                      if (s1 == 1) {
-								                      sink.error(new RuntimeException());
-							                      }
-							                      else {
-								                      sink.next(s1);
-							                      }
-						                      }).subscribeOn(Schedulers.parallel()),
-				                      QueueSupplier.XS_BUFFER_SIZE,
-				                      1)
-		                      .log("END")
+						(s1, sink) -> {
+							if (s1 == 1) {
+								sink.error(new RuntimeException());
+							}
+							else {
+								sink.next(s1);
+							}
+						}).subscribeOn(Schedulers.parallel()),
+				QueueSupplier.XS_BUFFER_SIZE,
+				1)
 		                      .retry())
 		            .then(() -> {
 			            wq.onNext(1);
