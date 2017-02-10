@@ -60,11 +60,11 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 
 	final Supplier<? extends Queue<T>> queueSupplier;
 
-	volatile State<T> connection;
+	volatile PublishSubscriber<T> connection;
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<FluxPublish, State> CONNECTION =
+	static final AtomicReferenceFieldUpdater<FluxPublish, PublishSubscriber> CONNECTION =
 			AtomicReferenceFieldUpdater.newUpdater(FluxPublish.class,
-					State.class,
+					PublishSubscriber.class,
 					"connection");
 
 	FluxPublish(Publisher<? extends T> source,
@@ -81,11 +81,11 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 	@Override
 	public void connect(Consumer<? super Disposable> cancelSupport) {
 		boolean doConnect;
-		State<T> s;
+		PublishSubscriber<T> s;
 		for (; ; ) {
 			s = connection;
 			if (s == null || s.isTerminated()) {
-				State<T> u = new State<>(prefetch, this);
+				PublishSubscriber<T> u = new PublishSubscriber<>(prefetch, this);
 
 				if (!CONNECTION.compareAndSet(this, s, u)) {
 					continue;
@@ -106,16 +106,16 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		PublishSubscriber<T> inner = new PublishSubscriber<>(s);
+		PublishInner<T> inner = new PublishInner<>(s);
 		s.onSubscribe(inner);
 		for (; ; ) {
 			if (inner.isCancelled()) {
 				break;
 			}
 
-			State<T> c = connection;
+			PublishSubscriber<T> c = connection;
 			if (c == null || c.isTerminated()) {
-				State<T> u = new State<>(prefetch, this);
+				PublishSubscriber<T> u = new PublishSubscriber<>(prefetch, this);
 				if (!CONNECTION.compareAndSet(this, c, u)) {
 					continue;
 				}
@@ -144,7 +144,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 		return source;
 	}
 
-	static final class State<T>
+	static final class PublishSubscriber<T>
 			implements Subscriber<T>, Receiver, MultiProducer, Trackable, Disposable {
 
 		final int prefetch;
@@ -153,27 +153,28 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<State, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(State.class,
+		static final AtomicReferenceFieldUpdater<PublishSubscriber, Subscription> S =
+				AtomicReferenceFieldUpdater.newUpdater(PublishSubscriber.class,
 						Subscription.class,
 						"s");
 
-		volatile PublishSubscriber<T>[] subscribers;
+		volatile PublishInner<T>[] subscribers;
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<State> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(State.class, "wip");
+		static final AtomicIntegerFieldUpdater<PublishSubscriber> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(PublishSubscriber.class, "wip");
 
 		volatile int connected;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<State> CONNECTED =
-				AtomicIntegerFieldUpdater.newUpdater(State.class, "connected");
+		static final AtomicIntegerFieldUpdater<PublishSubscriber> CONNECTED =
+				AtomicIntegerFieldUpdater.newUpdater(PublishSubscriber.class,
+						"connected");
 
 		@SuppressWarnings("rawtypes")
-		static final PublishSubscriber[] EMPTY      = new PublishSubscriber[0];
+		static final PublishInner[] EMPTY      = new PublishInner[0];
 		@SuppressWarnings("rawtypes")
-		static final PublishSubscriber[] TERMINATED = new PublishSubscriber[0];
+		static final PublishInner[] TERMINATED = new PublishInner[0];
 
 		volatile Queue<T> queue;
 
@@ -182,15 +183,15 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 		volatile boolean   done;
 		volatile Throwable error;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<State, Throwable> ERROR =
-				AtomicReferenceFieldUpdater.newUpdater(State.class,
+		static final AtomicReferenceFieldUpdater<PublishSubscriber, Throwable> ERROR =
+				AtomicReferenceFieldUpdater.newUpdater(PublishSubscriber.class,
 						Throwable.class,
 						"error");
 
 		volatile boolean cancelled;
 
 		@SuppressWarnings("unchecked")
-		State(int prefetch, FluxPublish<T> parent) {
+		PublishSubscriber(int prefetch, FluxPublish<T> parent) {
 			this.prefetch = prefetch;
 			this.parent = parent;
 			this.subscribers = EMPTY;
@@ -289,24 +290,24 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 		void disconnectAction() {
 			queue.clear();
 			CancellationException ex = new CancellationException("Disconnected");
-			for (PublishSubscriber<T> inner : terminate()) {
+			for (PublishInner<T> inner : terminate()) {
 				inner.actual.onError(ex);
 			}
 		}
 
-		boolean add(PublishSubscriber<T> inner) {
+		boolean add(PublishInner<T> inner) {
 			if (subscribers == TERMINATED) {
 				return false;
 			}
 			synchronized (this) {
-				PublishSubscriber<T>[] a = subscribers;
+				PublishInner<T>[] a = subscribers;
 				if (a == TERMINATED) {
 					return false;
 				}
 				int n = a.length;
 
-				@SuppressWarnings("unchecked") PublishSubscriber<T>[] b =
-						new PublishSubscriber[n + 1];
+				@SuppressWarnings("unchecked") PublishInner<T>[] b =
+						new PublishInner[n + 1];
 				System.arraycopy(a, 0, b, 0, n);
 				b[n] = inner;
 
@@ -316,8 +317,8 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 		}
 
 		@SuppressWarnings("unchecked")
-		void remove(PublishSubscriber<T> inner) {
-			PublishSubscriber<T>[] a = subscribers;
+		void remove(PublishInner<T> inner) {
+			PublishInner<T>[] a = subscribers;
 			if (a == TERMINATED || a == EMPTY) {
 				return;
 			}
@@ -339,12 +340,12 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 					return;
 				}
 
-				PublishSubscriber<T>[] b;
+				PublishInner<T>[] b;
 				if (n == 1) {
 					b = EMPTY;
 				}
 				else {
-					b = new PublishSubscriber[n - 1];
+					b = new PublishInner[n - 1];
 					System.arraycopy(a, 0, b, 0, j);
 					System.arraycopy(a, j + 1, b, j, n - j - 1);
 				}
@@ -354,9 +355,9 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 		}
 
 		@SuppressWarnings("unchecked")
-		PublishSubscriber<T>[] terminate() {
-			PublishSubscriber<T>[] a;
-			for(;;) {
+		PublishInner<T>[] terminate() {
+			PublishInner<T>[] a;
+			for (; ; ) {
 				a = subscribers;
 				if (a == TERMINATED) {
 					return a;
@@ -380,7 +381,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 			return connected == 0 && CONNECTED.compareAndSet(this, 0, 1);
 		}
 
-		boolean trySubscribe(PublishSubscriber<T> inner) {
+		boolean trySubscribe(PublishInner<T> inner) {
 			if (add(inner)) {
 				if (inner.isCancelled()) {
 					remove(inner);
@@ -405,92 +406,106 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 				return;
 			}
 
-			Queue<T> q = queue;
 			int missed = 1;
 
 			for (; ; ) {
 
-				if (q != null) {
-					PublishSubscriber<T>[] a = subscribers;
-					long r = Long.MAX_VALUE;
+				boolean d = done;
 
-					if (a.length != 0) {
+				Queue<T> q = queue;
 
-						for (PublishSubscriber<T> inner : a) {
-							r = Math.min(r, inner.requested);
+				boolean empty = q == null || q.isEmpty();
+
+				if (checkTerminated(d, empty)) {
+					return;
+				}
+
+				if (!empty) {
+					PublishInner<T>[] a = subscribers;
+					long maxRequested = Long.MAX_VALUE;
+
+					int len = a.length;
+					int cancel = 0;
+
+					for (PublishInner<T> inner : a) {
+						long r = inner.requested;
+						if (r >= 0L) {
+							maxRequested = Math.min(maxRequested, r);
 						}
-
-						if (r != 0) {
-							long e = 0L;
-
-							while (e != r) {
-								boolean d = done;
-								T v;
-
-								try {
-									v = q.poll();
-								}
-								catch (Throwable ex) {
-									Exceptions.addThrowable(ERROR,
-											this,
-											Operators.onOperatorError(s, ex));
-									d = true;
-									v = null;
-								}
-
-								boolean empty = v == null;
-
-								if (checkTerminated(d, empty)) {
-									return;
-								}
-
-								if (empty) {
-									break;
-								}
-
-								for (PublishSubscriber<T> inner : a) {
-									if(inner.cancelled == 0) {
-										inner.actual.onNext(v);
-									}
-									else {
-										a = subscribers;
-									}
-								}
-
-								e++;
-							}
-
-							if (e == r) {
-								if (checkTerminated(done, q.isEmpty())) {
-									return;
-								}
-							}
-
-							if (e != 0) {
-								replenish(e);
-								if (r != Long.MAX_VALUE) {
-									for (PublishSubscriber<T> inner : a) {
-										inner.produced(e);
-									}
-								}
-							}
-						}
-						else if (checkTerminated(done, q.isEmpty())) {
-							return;
+						else { //Long.MIN == PublishInner.CANCEL_REQUEST
+							cancel++;
 						}
 					}
-				}
-				else if (checkTerminated(done, true)) {
-					return;
+
+					if (len == cancel) {
+						T v;
+
+						try {
+							v = q.poll();
+						}
+						catch (Throwable ex) {
+							Exceptions.addThrowable(ERROR,
+									this,
+									Operators.onOperatorError(s, ex));
+							d = true;
+							v = null;
+						}
+						if (checkTerminated(d, v == null)) {
+							return;
+						}
+						replenish(1);
+						continue;
+					}
+
+					int e = 0;
+
+					while (e < maxRequested && cancel != Integer.MIN_VALUE) {
+						d = done;
+						T v;
+
+						try {
+							v = q.poll();
+						}
+						catch (Throwable ex) {
+							Exceptions.addThrowable(ERROR,
+									this,
+									Operators.onOperatorError(s, ex));
+							d = true;
+							v = null;
+						}
+
+						empty = v == null;
+
+						if (checkTerminated(d, empty)) {
+							return;
+						}
+
+						if (empty) {
+							break;
+						}
+
+						for (PublishInner<T> inner : a) {
+							inner.actual.onNext(v);
+							if(inner.produced(1) == PublishInner.CANCEL_REQUEST){
+								cancel = Integer.MIN_VALUE;
+							}
+						}
+
+						e++;
+					}
+
+					if (e != 0) {
+						replenish(e);
+					}
+
+					if (maxRequested != 0L && !empty) {
+						continue;
+					}
 				}
 
 				missed = WIP.addAndGet(this, -missed);
 				if (missed == 0) {
 					break;
-				}
-
-				if (q == null) {
-					q = queue;
 				}
 			}
 		}
@@ -503,15 +518,17 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 			if (d) {
 				Throwable e = error;
 				if (e != null && e != Exceptions.TERMINATED) {
+					CONNECTION.compareAndSet(parent, this, null);
 					e = Exceptions.terminate(ERROR, this);
 					queue.clear();
-					for (PublishSubscriber<T> inner : terminate()) {
+					for (PublishInner<T> inner : terminate()) {
 						inner.actual.onError(e);
 					}
 					return true;
 				}
 				else if (empty) {
-					for (PublishSubscriber<T> inner : terminate()) {
+					CONNECTION.compareAndSet(parent, this, null);
+					for (PublishInner<T> inner : terminate()) {
 						inner.actual.onComplete();
 					}
 					return true;
@@ -562,44 +579,45 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 		}
 	}
 
-	static final class PublishSubscriber<T> implements Subscription, Producer, Trackable {
+	static final class PublishInner<T> implements Subscription, Producer, Trackable {
 
 		final Subscriber<? super T> actual;
 
-		State<T> parent;
+		PublishSubscriber<T> parent;
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<PublishSubscriber> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(PublishSubscriber.class, "requested");
+		static final AtomicLongFieldUpdater<PublishInner> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(PublishInner.class, "requested");
 
-		volatile int cancelled;
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<PublishSubscriber> CANCELLED =
-				AtomicIntegerFieldUpdater.newUpdater(PublishSubscriber.class,
-						"cancelled");
-
-		PublishSubscriber(Subscriber<? super T> actual) {
+		PublishInner(Subscriber<? super T> actual) {
 			this.actual = actual;
 		}
 
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				Operators.getAndAddCap(REQUESTED, this, n);
-				State<T> p = parent;
+				requested(this, n);
+				PublishSubscriber<T> p = parent;
 				if (p != null) {
 					p.drain();
 				}
 			}
 		}
 
+		static final long CANCEL_REQUEST = Long.MIN_VALUE;
+
 		@Override
 		public void cancel() {
-			if (CANCELLED.compareAndSet(this, 0, 1)) {
-				State<T> p = parent;
-				if (p != null) {
-					p.remove(this);
+			long r = requested;
+			if (r != Long.MIN_VALUE) {
+				r = REQUESTED.getAndSet(this, CANCEL_REQUEST);
+				if (r != CANCEL_REQUEST) {
+					PublishSubscriber<T> p = parent;
+					if (p != null) {
+						p.remove(this);
+						p.drain();
+					}
 				}
 			}
 		}
@@ -611,7 +629,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 
 		@Override
 		public boolean isCancelled() {
-			return cancelled != 0;
+			return requested == CANCEL_REQUEST;
 		}
 
 		@Override
@@ -624,8 +642,42 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 			return requested;
 		}
 
-		void produced(long n) {
-			REQUESTED.addAndGet(this, -n);
+		long produced(long n) {
+			return produced(this, n);
+		}
+
+		//TODO factorize in Operators ?
+		static void requested(PublishInner<?> inner, long n) {
+			for (; ; ) {
+				long r = REQUESTED.get(inner);
+				if (r == Long.MIN_VALUE || r == Long.MAX_VALUE) {
+					return;
+				}
+				long u = Operators.addCap(r, n);
+				if (REQUESTED.compareAndSet(inner, r, u)) {
+					return;
+				}
+			}
+		}
+
+		static long produced(PublishInner<?> inner, long n) {
+			for (; ; ) {
+				long current = REQUESTED.get(inner);
+				if (current == Long.MIN_VALUE) {
+					return Long.MIN_VALUE;
+				}
+				if (current == Long.MAX_VALUE) {
+					return Long.MAX_VALUE;
+				}
+				long update = current - n;
+				if (update < 0L) {
+					Operators.reportBadRequest(update);
+					update = 0L;
+				}
+				if (REQUESTED.compareAndSet(inner, current, update)) {
+					return update;
+				}
+			}
 		}
 	}
 }

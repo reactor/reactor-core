@@ -49,11 +49,11 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 	final long           ttl;
 	final TimedScheduler scheduler;
 
-	volatile State<T> connection;
+	volatile ReplaySubscriber<T> connection;
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<FluxReplay, State> CONNECTION =
+	static final AtomicReferenceFieldUpdater<FluxReplay, ReplaySubscriber> CONNECTION =
 			AtomicReferenceFieldUpdater.newUpdater(FluxReplay.class,
-					State.class,
+					ReplaySubscriber.class,
 					"connection");
 
 	FluxReplay(Publisher<T> source,
@@ -82,29 +82,29 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		return connection;
 	}
 
-	State<T> newState() {
+	ReplaySubscriber<T> newState() {
 		if (scheduler != null) {
-			return new State<>(new ReplayProcessor.SizeAndTimeBoundReplayBuffer<>(history,
+			return new ReplaySubscriber<>(new ReplayProcessor.SizeAndTimeBoundReplayBuffer<>(history,
 					ttl,
 					scheduler),
 					this);
 		}
 		if (history != Integer.MAX_VALUE) {
-			return new State<>(new ReplayProcessor.SizeBoundReplayBuffer<>(history),
+			return new ReplaySubscriber<>(new ReplayProcessor.SizeBoundReplayBuffer<>(history),
 					this);
 		}
-		return new State<>(new ReplayProcessor.UnboundedReplayBuffer<>(QueueSupplier.SMALL_BUFFER_SIZE),
+		return new ReplaySubscriber<>(new ReplayProcessor.UnboundedReplayBuffer<>(QueueSupplier.SMALL_BUFFER_SIZE),
 					this);
 	}
 
 	@Override
 	public void connect(Consumer<? super Disposable> cancelSupport) {
 		boolean doConnect;
-		State<T> s;
+		ReplaySubscriber<T> s;
 		for (; ; ) {
 			s = connection;
 			if (s == null || s.isTerminated()) {
-				State<T> u = newState();
+				ReplaySubscriber<T> u = newState();
 				if (!CONNECTION.compareAndSet(this, s, u)) {
 					continue;
 				}
@@ -124,16 +124,16 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		InnerSubscription<T> inner = new InnerSubscription<>(s);
+		ReplayInner<T> inner = new ReplayInner<>(s);
 		s.onSubscribe(inner);
 		for (; ; ) {
 			if (inner.isCancelled()) {
 				break;
 			}
 
-			State<T> c = connection;
+			ReplaySubscriber<T> c = connection;
 			if (c == null || c.isTerminated()) {
-				State<T> u = newState();
+				ReplaySubscriber<T> u = newState();
 				if (!CONNECTION.compareAndSet(this, c, u)) {
 					continue;
 				}
@@ -152,7 +152,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		return source;
 	}
 
-	static final class State<T>
+	static final class ReplaySubscriber<T>
 			implements Subscriber<T>, Receiver, MultiProducer, Trackable, Disposable {
 
 		final FluxReplay<T>                   parent;
@@ -160,32 +160,32 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<State, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(State.class,
+		static final AtomicReferenceFieldUpdater<ReplaySubscriber, Subscription> S =
+				AtomicReferenceFieldUpdater.newUpdater(ReplaySubscriber.class,
 						Subscription.class,
 						"s");
 
-		volatile InnerSubscription<T>[] subscribers;
+		volatile ReplayInner<T>[] subscribers;
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<State> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(State.class, "wip");
+		static final AtomicIntegerFieldUpdater<ReplaySubscriber> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(ReplaySubscriber.class, "wip");
 
 		volatile int connected;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<State> CONNECTED =
-				AtomicIntegerFieldUpdater.newUpdater(State.class, "connected");
+		static final AtomicIntegerFieldUpdater<ReplaySubscriber> CONNECTED =
+				AtomicIntegerFieldUpdater.newUpdater(ReplaySubscriber.class, "connected");
 
 		@SuppressWarnings("rawtypes")
-		static final InnerSubscription[] EMPTY      = new InnerSubscription[0];
+		static final ReplayInner[] EMPTY      = new ReplayInner[0];
 		@SuppressWarnings("rawtypes")
-		static final InnerSubscription[] TERMINATED = new InnerSubscription[0];
+		static final ReplayInner[] TERMINATED = new ReplayInner[0];
 
 		volatile boolean cancelled;
 
 		@SuppressWarnings("unchecked")
-		public State(ReplayProcessor.ReplayBuffer<T> buffer,
+		ReplaySubscriber(ReplayProcessor.ReplayBuffer<T> buffer,
 				FluxReplay<T> parent) {
 			this.buffer = buffer;
 			this.parent = parent;
@@ -210,7 +210,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			}
 			else {
 				b.add(t);
-				for (InnerSubscription<T> rs : subscribers) {
+				for (ReplayInner<T> rs : subscribers) {
 					b.replay(rs);
 				}
 			}
@@ -225,9 +225,9 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			else {
 				b.onError(t);
 
-				InnerSubscription<T>[] a = subscribers;
+				ReplayInner<T>[] a = subscribers;
 
-				for (InnerSubscription<T> rs : a) {
+				for (ReplayInner<T> rs : a) {
 					b.replay(rs);
 				}
 			}
@@ -239,7 +239,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			if (!b.isDone()) {
 				b.onComplete();
 
-				InnerSubscription<T>[] a = subscribers;
+				ReplayInner<T>[] a = subscribers;
 
 				for (ReplayProcessor.ReplaySubscription<T> rs : a) {
 					b.replay(rs);
@@ -264,24 +264,24 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		void disconnectAction() {
 			CancellationException ex = new CancellationException("Disconnected");
 			buffer.onError(ex);
-			for (InnerSubscription<T> inner : terminate()) {
+			for (ReplayInner<T> inner : terminate()) {
 				inner.actual.onError(ex);
 			}
 		}
 
-		boolean add(InnerSubscription<T> inner) {
+		boolean add(ReplayInner<T> inner) {
 			if (subscribers == TERMINATED) {
 				return false;
 			}
 			synchronized (this) {
-				InnerSubscription<T>[] a = subscribers;
+				ReplayInner<T>[] a = subscribers;
 				if (a == TERMINATED) {
 					return false;
 				}
 				int n = a.length;
 
-				@SuppressWarnings("unchecked") InnerSubscription<T>[] b =
-						new InnerSubscription[n + 1];
+				@SuppressWarnings("unchecked") ReplayInner<T>[] b =
+						new ReplayInner[n + 1];
 				System.arraycopy(a, 0, b, 0, n);
 				b[n] = inner;
 
@@ -291,8 +291,8 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		@SuppressWarnings("unchecked")
-		void remove(InnerSubscription<T> inner) {
-			InnerSubscription<T>[] a = subscribers;
+		void remove(ReplayInner<T> inner) {
+			ReplayInner<T>[] a = subscribers;
 			if (a == TERMINATED || a == EMPTY) {
 				return;
 			}
@@ -314,12 +314,12 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 					return;
 				}
 
-				InnerSubscription<T>[] b;
+				ReplayInner<T>[] b;
 				if (n == 1) {
 					b = EMPTY;
 				}
 				else {
-					b = new InnerSubscription[n - 1];
+					b = new ReplayInner[n - 1];
 					System.arraycopy(a, 0, b, 0, j);
 					System.arraycopy(a, j + 1, b, j, n - j - 1);
 				}
@@ -329,8 +329,8 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 
 		@SuppressWarnings("unchecked")
-		InnerSubscription<T>[] terminate() {
-			InnerSubscription<T>[] a = subscribers;
+		ReplayInner<T>[] terminate() {
+			ReplayInner<T>[] a = subscribers;
 			if (a == TERMINATED) {
 				return a;
 			}
@@ -352,7 +352,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 			return connected == 0 && CONNECTED.compareAndSet(this, 0, 1);
 		}
 
-		boolean trySubscribe(InnerSubscription<T> inner) {
+		boolean trySubscribe(ReplayInner<T> inner) {
 			if (add(inner)) {
 				if (inner.isCancelled()) {
 					remove(inner);
@@ -409,12 +409,12 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		}
 	}
 
-	static final class InnerSubscription<T>
+	static final class ReplayInner<T>
 			implements ReplayProcessor.ReplaySubscription<T> {
 
 		final Subscriber<? super T> actual;
 
-		State<T> parent;
+		ReplaySubscriber<T> parent;
 
 		int index;
 
@@ -426,22 +426,22 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<InnerSubscription> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(InnerSubscription.class, "wip");
+		static final AtomicIntegerFieldUpdater<ReplayInner> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(ReplayInner.class, "wip");
 
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<InnerSubscription> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(InnerSubscription.class, "requested");
+		static final AtomicLongFieldUpdater<ReplayInner> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(ReplayInner.class, "requested");
 
 		volatile int cancelled;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<InnerSubscription> CANCELLED =
-				AtomicIntegerFieldUpdater.newUpdater(InnerSubscription.class,
+		static final AtomicIntegerFieldUpdater<ReplayInner> CANCELLED =
+				AtomicIntegerFieldUpdater.newUpdater(ReplayInner.class,
 						"cancelled");
 
-		InnerSubscription(Subscriber<? super T> actual) {
+		ReplayInner(Subscriber<? super T> actual) {
 			this.actual = actual;
 		}
 
@@ -451,7 +451,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 				if (fusionMode() == NONE) {
 					Operators.getAndAddCap(REQUESTED, this, n);
 				}
-				State<T> p = parent;
+				ReplaySubscriber<T> p = parent;
 				if (p != null) {
 					p.buffer.replay(this);
 				}
@@ -461,7 +461,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 		@Override
 		public void cancel() {
 			if (CANCELLED.compareAndSet(this, 0, 1)) {
-				State<T> p = parent;
+				ReplaySubscriber<T> p = parent;
 				if (p != null) {
 					p.remove(this);
 				}
@@ -507,7 +507,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		@Override
 		public T poll() {
-			State<T> p = parent;
+			ReplaySubscriber<T> p = parent;
 			if(p != null){
 				return p.buffer.poll(this);
 			}
@@ -516,7 +516,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		@Override
 		public void clear() {
-			State<T> p = parent;
+			ReplaySubscriber<T> p = parent;
 			if(p != null) {
 				p.buffer.clear(this);
 			}
@@ -524,13 +524,13 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 
 		@Override
 		public boolean isEmpty() {
-			State<T> p = parent;
+			ReplaySubscriber<T> p = parent;
 			return p == null || p.buffer.isEmpty(this);
 		}
 
 		@Override
 		public int size() {
-			State<T> p = parent;
+			ReplaySubscriber<T> p = parent;
 			if(p != null) {
 				return p.buffer.size(this);
 			}
