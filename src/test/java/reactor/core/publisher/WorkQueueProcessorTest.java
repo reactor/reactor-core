@@ -734,8 +734,8 @@ public class WorkQueueProcessorTest {
 					            }
 				            });
 
-		StepVerifier.create(wq.parallel()
-		                      .runOn(Schedulers.parallel())
+		StepVerifier.create(wq.parallel(4)
+		                      .runOn(Schedulers.newParallel("par", 4))
 		                      .transform(flux -> ParallelFlux.from(flux.groups()
 		                                                               .flatMap(s -> s.publish()
 		                                                                              .autoConnect()
