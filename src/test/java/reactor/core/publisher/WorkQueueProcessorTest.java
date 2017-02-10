@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Function;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -725,8 +726,7 @@ public class WorkQueueProcessorTest {
 		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
 		AtomicInteger onNextSignals = new AtomicInteger();
 
-		Function<Flux<Integer>, Flux<Integer>> function = flux -> flux.log()
-		                                                              .doOnNext(e -> onNextSignals.incrementAndGet())
+		Function<Flux<Integer>, Flux<Integer>> function = flux -> flux.doOnNext(e -> onNextSignals.incrementAndGet())
 		                                                              .handle((s1, sink) -> {
 			                                                              if (s1 == 1) {
 				                                                              sink.error(
@@ -760,7 +760,7 @@ public class WorkQueueProcessorTest {
 		            .thenCancel()
 		            .verify();
 
-		assertThat(onNextSignals.get(), equalTo(3));
+		assertThat(onNextSignals.get(), CoreMatchers.either(equalTo(2)).or(equalTo(3)));
 
 		// Need to explicitly complete processor due to use of publish()
 		wq.onComplete();
