@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.Function;
 
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -39,6 +40,7 @@ import reactor.core.scheduler.TimedScheduler;
 import reactor.test.StepVerifier;
 import reactor.util.Logger;
 import reactor.util.Loggers;
+import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.WaitStrategy;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -596,5 +598,294 @@ public class WorkQueueProcessorTest {
 	@Test(expected = IllegalArgumentException.class)
 	public void failNegativeBufferSize() {
 		WorkQueueProcessor.create("test", -1);
+	}
+
+
+	@Test
+	public void retryErrorPropagatedFromWorkQueueSubscriberHotPublishOn()
+			throws Exception {
+		AtomicInteger errors = new AtomicInteger(3);
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		AtomicInteger onNextSignals = new AtomicInteger();
+
+		StepVerifier.create(wq.log()
+		                      .publishOn(Schedulers.parallel())
+		                      .publish()
+		                      .autoConnect()
+		                      .doOnNext(e -> onNextSignals.incrementAndGet())
+		                      .map(s1 -> {
+			                      if (errors.decrementAndGet() > 0) {
+				                      throw new RuntimeException();
+			                      }
+			                      else {
+				                      return s1;
+			                      }
+		                      })
+		                      .log()
+		                      .retry())
+		            .then(() -> {
+			            wq.onNext(1);
+			            wq.onNext(2);
+			            wq.onNext(3);
+		            })
+		            .expectNext(3)
+		            .thenCancel()
+		            .verify();
+
+		// Need to explicitly complete processor due to use of publish()
+		wq.onComplete();
+
+		assertThat(onNextSignals.get(), equalTo(3));
+
+		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
+		}
+	}
+
+	@Test
+	public void retryErrorPropagatedFromWorkQueueSubscriberHotPublishOnPrefetch1()
+			throws Exception {
+		AtomicInteger errors = new AtomicInteger(3);
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		AtomicInteger onNextSignals = new AtomicInteger();
+
+		StepVerifier.create(wq.publishOn(Schedulers.parallel(), 1)
+		                      .publish()
+		                      .autoConnect()
+		                      .log()
+		                      .doOnNext(e -> onNextSignals.incrementAndGet())
+		                      .map(s1 -> {
+			                      if (errors.decrementAndGet() > 0) {
+				                      throw new RuntimeException();
+			                      }
+			                      else {
+				                      return s1;
+			                      }
+		                      })
+		                      .log()
+		                      .retry())
+		            .then(() -> {
+			            wq.onNext(1);
+			            wq.onNext(2);
+			            wq.onNext(3);
+		            })
+		            .expectNext(3)
+		            .thenCancel()
+		            .verify();
+
+		assertThat(onNextSignals.get(), equalTo(3));
+
+		// Need to explicitly complete processor due to use of publish()
+		wq.onComplete();
+
+		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
+		}
+	}
+
+	@Test
+	public void retryErrorPropagatedFromWorkQueueSubscriberHotPoisonSignalPublishOn()
+			throws Exception {
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		AtomicInteger onNextSignals = new AtomicInteger();
+
+		StepVerifier.create(
+
+				wq
+						.publishOn(Schedulers.parallel())
+						.publish()
+						.autoConnect()
+						.doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle((s1, sink) -> {
+					if (s1 == 1) {
+						sink.error(new RuntimeException());
+					}
+					else {
+						sink.next(s1);
+					}
+				}).retry())
+		            .then(() -> {
+			            wq.onNext(1);
+			            wq.onNext(2);
+			            wq.onNext(3);
+		            })
+		            .expectNext(2, 3)
+		            .thenCancel()
+		            .verify();
+
+		assertThat(onNextSignals.get(), equalTo(3));
+
+		// Need to explicitly complete processor due to use of publish()
+		wq.onComplete();
+
+		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
+		}
+	}
+
+	@Test
+	public void retryErrorPropagatedFromWorkQueueSubscriberHotPoisonSignalParallel()
+			throws Exception {
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		AtomicInteger onNextSignals = new AtomicInteger();
+
+		Function<Flux<Integer>, Flux<Integer>> function = flux -> flux.log()
+		                                                              .doOnNext(e -> onNextSignals.incrementAndGet())
+		                                                              .handle((s1, sink) -> {
+			                                                              if (s1 == 1) {
+				                                                              sink.error(
+						                                                              new RuntimeException());
+			                                                              }
+			                                                              else {
+				                                                              sink.next(s1);
+			                                                              }
+		                                                              });
+
+		StepVerifier.create(wq
+				.parallel(4)
+				.runOn(Schedulers.parallel())
+				.transform(flux -> ParallelFlux.from(flux.groups()
+				                                         .flatMap(s -> s.publish()
+				                                                        .autoConnect()
+				                                                        .transform(
+						                                                        function),
+						                                         true,
+						                                         QueueSupplier.SMALL_BUFFER_SIZE,
+						                                         QueueSupplier.XS_BUFFER_SIZE)))
+				.sequential()
+				.retry())
+		            .then(() -> {
+			            wq.onNext(1);
+			            wq.onNext(2);
+			            wq.onNext(3);
+		            })
+		            .expectNextMatches(d -> d == 2 || d == 3)
+		            .expectNextMatches(d -> d == 2 || d == 3)
+		            .thenCancel()
+		            .verify();
+
+		assertThat(onNextSignals.get(), equalTo(3));
+
+		// Need to explicitly complete processor due to use of publish()
+		wq.onComplete();
+
+		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
+		}
+	}
+
+	@Test
+	public void retryErrorPropagatedFromWorkQueueSubscriberHotPoisonSignalPublishOnPrefetch1()
+			throws Exception {
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		AtomicInteger onNextSignals = new AtomicInteger();
+
+		StepVerifier.create(wq
+				.publishOn(Schedulers.parallel(), 1)
+				.publish()
+				.autoConnect()
+				.doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
+						(s1, sink) -> {
+							if (s1 == 1) {
+								sink.error(new RuntimeException());
+							}
+							else {
+								sink.next(s1);
+							}
+						})
+				.retry())
+		            .then(() -> {
+			            wq.onNext(1);
+			            wq.onNext(2);
+			            wq.onNext(3);
+		            })
+		            .expectNext(2, 3)
+		            .thenCancel()
+		            .verify();
+
+		// Need to explicitly complete processor due to use of publish()
+		wq.onComplete();
+
+		assertThat(onNextSignals.get(), equalTo(3));
+
+		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
+		}
+	}
+
+	@Test
+	public void retryErrorPropagatedFromWorkQueueSubscriberHotPoisonSignalFlatMap()
+			throws Exception {
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		AtomicInteger onNextSignals = new AtomicInteger();
+
+		StepVerifier.create(wq.publish()
+		                      .autoConnect()
+		                      .flatMap(i -> Mono.just(i)
+		                                        .doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
+						                      (s1, sink) -> {
+							                      if (s1 == 1) {
+								                      sink.error(new RuntimeException());
+							                      }
+							                      else {
+								                      sink.next(s1);
+							                      }
+						                      }).subscribeOn(Schedulers.parallel()),
+				                      true,
+				                      QueueSupplier.XS_BUFFER_SIZE,
+				                      QueueSupplier.SMALL_BUFFER_SIZE)
+		                      .retry())
+		            .then(() -> {
+			            wq.onNext(1);
+			            wq.onNext(2);
+			            wq.onNext(3);
+		            })
+		            .expectNextMatches(d -> d == 2 || d == 3)
+		            .expectNextMatches(d -> d == 2 || d == 3)
+		            .thenCancel()
+		            .verify();
+
+		wq.onComplete();
+
+		assertThat(onNextSignals.get(), equalTo(3));
+
+		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
+		}
+	}
+
+	// This test runs ok on it's own but hangs in when running whole class!
+	@Ignore
+	@Test
+	public void retryErrorPropagatedFromWorkQueueSubscriberHotPoisonSignalFlatMapPrefetch1()
+			throws Exception {
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		AtomicInteger onNextSignals = new AtomicInteger();
+
+		StepVerifier.create(wq.log()
+		                      .flatMap(i -> Mono.just(i)
+		                                        .log()
+		                                        .doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
+						                      (s1, sink) -> {
+							                      if (s1 == 1) {
+								                      sink.error(new RuntimeException());
+							                      }
+							                      else {
+								                      sink.next(s1);
+							                      }
+						                      }).subscribeOn(Schedulers.parallel()),
+				                      QueueSupplier.XS_BUFFER_SIZE,
+				                      1)
+		                      .log("END")
+		                      .retry())
+		            .then(() -> {
+			            wq.onNext(1);
+			            wq.onNext(2);
+			            wq.onNext(3);
+		            })
+		            .expectNextMatches(d -> d == 2 || d == 3)
+		            .expectNextMatches(d -> d == 2 || d == 3)
+		            .thenCancel()
+		            .verify();
+
+		wq.onComplete();
+
+		assertThat(onNextSignals.get(), equalTo(3));
+
+		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
+		}
 	}
 }
