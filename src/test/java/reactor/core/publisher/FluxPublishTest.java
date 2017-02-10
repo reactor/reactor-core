@@ -18,14 +18,20 @@ package reactor.core.publisher;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import reactor.core.Disposable;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
 
 public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
@@ -417,5 +423,59 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		ts.assertNoValues()
 		.assertError(NullPointerException.class)
 		.assertNotComplete();
+	}
+
+	@Test
+	public void retry() {
+		DirectProcessor<Integer> dp = DirectProcessor.create();
+		StepVerifier.create(
+				dp.publish()
+				  .autoConnect().<Integer>handle((s1, sink) -> {
+					if (s1 == 1) {
+						sink.error(new RuntimeException());
+					}
+					else {
+						sink.next(s1);
+					}
+				}).retry())
+		            .then(() -> {
+			            dp.onNext(1);
+			            dp.onNext(2);
+			            dp.onNext(3);
+		            })
+		            .expectNext(2, 3)
+		            .thenCancel()
+		            .verify();
+
+		// Need to explicitly complete processor due to use of publish()
+		dp.onComplete();
+	}
+
+	// '2' signal is lost of async resubscribe of FluxPublish
+	@Ignore
+	@Test
+	public void retryWithPublishOn() {
+		DirectProcessor<Integer> dp = DirectProcessor.create();
+		StepVerifier.create(
+				dp.publishOn(Schedulers.parallel()).publish()
+				  .autoConnect().<Integer>handle((s1, sink) -> {
+					if (s1 == 1) {
+						sink.error(new RuntimeException());
+					}
+					else {
+						sink.next(s1);
+					}
+				}).retry())
+		            .then(() -> {
+			            dp.onNext(1);
+			            dp.onNext(2);
+			            dp.onNext(3);
+		            })
+		            .expectNext(2, 3)
+		            .thenCancel()
+		            .verify();
+
+		// Need to explicitly complete processor due to use of publish()
+		dp.onComplete();
 	}
 }
