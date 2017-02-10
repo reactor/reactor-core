@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,12 +37,12 @@ import reactor.util.concurrent.WaitStrategy;
  ** An implementation of a RingBuffer backed message-passing Processor implementing publish-subscribe with async event
  * loops.
  * <p>
- * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/topic.png" alt="">
+ * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/topic.png" alt="">
  * <p>
  *  Created from {@link #share}, the {@link TopicProcessor} will authorize concurrent publishing (multi-producer)
  *  from its receiving side {@link Subscriber#onNext(Object)}.
  *  Additionally, any of the {@link TopicProcessor} will stop the event loop thread if an error occurs.
- * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/topics.png" alt="">
+ * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/topics.png" alt="">
  * <p>
  * The processor
  * respects the Reactive Streams contract and must not be signalled concurrently on any

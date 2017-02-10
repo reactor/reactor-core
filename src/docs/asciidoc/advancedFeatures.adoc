@@ -9,7 +9,7 @@ Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
 	.map(String::toUpperCase)
 	.subscribe(d -> System.out.println("Subscriber to Map: "+d));
 ----
-image::https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/gs-operators.png[Operator chain]
+image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/gs-operators.png[Operator chain]
 
 [source,java]
 ----
@@ -20,7 +20,7 @@ Flux<String> flux = Flux.fromIterable(Arrays.asList("blue", "green", "orange", "
 flux.map(String::toUpperCase);
 flux.subscribe(d -> System.out.println("Subscriber to Filter: "+d));
 ----
-image::https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/gs-reftail.png[Reference used for Subscriber]
+image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/gs-reftail.png[Reference used for Subscriber]
 
 
 === transform
@@ -39,7 +39,7 @@ Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
 	.transform(filterAndMap)
 	.subscribe(d -> System.out.println("Subscriber to Transformed MapAndFilter: "+d));
 ----
-image::https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/gs-transform.png[Transform Operator : encapsulate flows]
+image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/gs-transform.png[Transform Operator : encapsulate flows]
 
 
 === compose
@@ -66,7 +66,7 @@ Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
 composedFlux.subscribe(d -> System.out.println("Subscriber 1 to Composed MapAndFilter :"+d));
 composedFlux.subscribe(d -> System.out.println("Subscriber 2 to Composed MapAndFilter: "+d));
 ----
-image::https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/gs-compose.png[Compose Operator : Per Subscriber transformation]
+image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/gs-compose.png[Compose Operator : Per Subscriber transformation]
 
 [[reactor.hotCold]]
 == Hot vs Cold
@@ -81,7 +81,7 @@ Flux<String> source = Flux.fromIterable(Arrays.asList("blue", "green", "orange",
 source.subscribe(d -> System.out.println("Subscriber 1: "+d));
 source.subscribe(d -> System.out.println("Subscriber 2: "+d));
 ----
-image::https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/gs-cold.png[Replaying behavior]
+image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/gs-cold.png[Replaying behavior]
 
 
 
@@ -104,7 +104,7 @@ hotSource.onNext("orange");
 hotSource.onNext("purple");
 hotSource.onComplete();
 ----
-image::https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/gs-hot.png[Broadcasting a subscription]
+image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/gs-hot.png[Broadcasting a subscription]
 
 == Broadcast to multiple subscribers with `ConnectableFlux`
 

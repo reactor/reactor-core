@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,14 +43,14 @@ import reactor.util.concurrent.WaitStrategy;
  ** An implementation of a RingBuffer backed message-passing Processor implementing work-queue distribution with
  * async event loops.
  * <p>
- * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/workqueue.png" alt="">
+ * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/workqueue.png" alt="">
  *     <p>
  *         Created from {@link #share}, the {@link WorkQueueProcessor} will authorize concurrent publishing
  *         (multi-producer) from its receiving side {@link Subscriber#onNext(Object)}.
  *         {@link WorkQueueProcessor} is able to replay up to its buffer size number of failed signals (either
  *         dropped or
  *         fatally throwing on child {@link Subscriber#onNext}).
- * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/workqueuef.png" alt="">
+ * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/workqueuef.png" alt="">
  * <p>
  *     The
  * processor is very similar to {@link TopicProcessor} but

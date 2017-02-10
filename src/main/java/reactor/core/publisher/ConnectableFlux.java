@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ public abstract class ConnectableFlux<T> extends Flux<T> implements Receiver {
 	 * subscribes.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/autoconnect.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/autoconnect.png" alt="">
 	 *
 	 * @return a {@link Flux} that connects to the upstream source when the first {@link org.reactivestreams.Subscriber} subscribes
 	 */
@@ -52,7 +52,7 @@ public abstract class ConnectableFlux<T> extends Flux<T> implements Receiver {
 	 * that triggers the connection.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/autoconnect.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/autoconnect.png" alt="">
 	 *
 	 * @param minSubscribers the minimum number of subscribers
 	 *
@@ -69,7 +69,7 @@ public abstract class ConnectableFlux<T> extends Flux<T> implements Receiver {
 	 * @param cancelSupport the consumer that will receive the {@link Disposable} that allows disconnecting
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/autoconnect.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/autoconnect.png" alt="">
 	 *
 	 * @return a {@link Flux} that connects to the upstream source when the given amount of subscribers subscribed
 	 */
@@ -116,7 +116,7 @@ public abstract class ConnectableFlux<T> extends Flux<T> implements Receiver {
 	 * when all Subscribers cancelled or the upstream source completed.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/refCount.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/refCount.png" alt="">
 	 *
 	 * @return a reference counting {@link Flux}
 	 */
@@ -129,7 +129,7 @@ public abstract class ConnectableFlux<T> extends Flux<T> implements Receiver {
 	 * when all Subscribers cancelled or the upstream source completed.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/refCount.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/refCount.png" alt="">
 	 *
 	 * @param minSubscribers the number of subscribers expected to subscribe before connection
 	 *

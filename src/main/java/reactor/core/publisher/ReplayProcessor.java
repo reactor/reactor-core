@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import reactor.util.concurrent.QueueSupplier;
 /**
  * Replays all or the last N items to Subscribers.
  * <p>
- * <img width="640" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/emitterreplay.png"
+ * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/emitterreplay.png"
  * alt="">
  * <p>
  *
@@ -56,7 +56,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * (buffer and history size of 1).
 	 * <p>
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/replaylast.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/replaylast.png"
 	 * alt="">
 	 *
 	 * @param <T> the relayed type
@@ -74,7 +74,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * (buffer and history size of 1).
 	 * <p>
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/projectreactor.io/master/src/main/static/assets/img/marble/replaylastd.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/replaylastd.png"
 	 * alt="">
 	 *
 	 * @param value a default value to start the sequence with
