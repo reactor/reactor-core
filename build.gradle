@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 the original author or authors.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ ext {
 
   // Testing
   assertJVersion = '3.6.1'
-  testAddonVersion = '3.0.5.BUILD-SNAPSHOT'
+  testAddonVersion = '3.0.5.RELEASE'
   javadocLinks = ["http://docs.oracle.com/javase/8/docs/api/",
 				  "http://docs.oracle.com/javaee/6/api/",
 				  "http://www.reactive-streams.org/reactive-streams-1.0.0-javadoc/"] as String[]
