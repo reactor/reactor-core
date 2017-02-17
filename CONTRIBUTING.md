@@ -21,22 +21,11 @@ removing compiler warnings, etc.
 
 ### Sign the Individual Contributor License Agreement (ICLA)
 
-If you have not previously done so, please fill out and submit the
-[Spring ICLA form][]. You'll receive a token when this process is complete.
-Keep track of this; you may be asked for it later!
+If you have not previously done so, please sign the [Spring CLA form][].
 
-Note that emailing/postal mailing a signed copy is _not_ necessary. Submission
-of the web form is all that is required.
-
-Once you've completed the web form, simply add the following in a comment on
-your pull request:
-
-    I have signed and agree to the terms of the Spring Individual Contributor
-    License Agreement.
-
-You do not need to include your token/id. Please add the above statement to all
-future pull requests as well, simply so that the team knows
-immediately that this process is complete.
+It integrates with Github, just follow the steps. Actually, when you first submit a
+Pull Request a bot will comment on your PR if you haven't signed the CLA (and if you have,
+you'll get a nice green checkmark to the PR checks).
 
 ## Create a Branch
 
@@ -147,7 +136,10 @@ For example:
 
 If you know how, test your changes, it will be a great help for all maintainers and will speed up your pull request to be merged.
 
-### Squash commits
+### Squashing commits
+
+Prefer squashing the commits in your PR in a final single well-commented commit. We
+also have the option of "squash-and-merge" the PR at the end though.
 
 Use `git rebase --interactive --autosquash`, `git add --patch`, and other tools
 to "squash" multiple commits into a single atomic commit. In addition to the man
@@ -191,7 +183,7 @@ Please read and follow the [Commit Guidelines section of Pro Git][].
 Most importantly, please format your commit messages in the following way
 (adapted from the commit template in the link above):
 
-    Short (50 chars or less) summary of changes
+    Fix #ISSUE Short (50 chars or less) summary of changes
 
     More detailed explanatory text, if necessary. Wrap it to about 72
     characters or so. In some contexts, the first line is treated as the
@@ -207,17 +199,17 @@ Most importantly, please format your commit messages in the following way
      - Typically a hyphen or asterisk is used for the bullet, preceded by a
        single space, with blank lines in between, but conventions vary here
 
-    Issue: gh-1234, gh-1235
+    Related Issues: gh-1234, gh-1235
 
 
 1. Use imperative statements in the subject line, e.g. "Fix broken Javadoc link".
 1. Begin the subject line with a capitalized verb, e.g. "Add, Prune, Fix,
     Introduce, Avoid, etc."
+1. Prefix the subject line with "fix #XXX " if the commit is fixing issue XXX (or
+    replace "fix" with "see" if it is only related to an issue without closing it)
 1. Do not end the subject line with a period.
-1. Restrict the subject line to 50 characters or less if possible.
+1. Restrict the subject line to 72 characters or less.
 1. Wrap lines in the body at 72 characters or less.
-1. Mention associated Github issue(s) at the end of the commit comment, prefixed
-    with "Issue: " as above.
 1. In the body of the commit message, explain how things worked before this
     commit, what has changed, and how things work now.
 
@@ -255,7 +247,7 @@ body of the request.
 
 [help documentation]: http://help.github.com/send-pull-requests
 [Issues]: https://github.com/reactor/reactor-core/issues
-[Spring ICLA form]: https://support.springsource.com/spring_committer_signup
+[Spring CLA]: https://cla.pivotal.io/sign/spring
 [fork-and-edit]: https://github.com/blog/844-forking-with-the-edit-button
 [Spring Framework Wiki]: https://github.com/spring-projects/spring-framework/wiki/Spring-Framework-Code-Style
 [Rewriting History section of Pro Git]: http://git-scm.com/book/en/Git-Tools-Rewriting-History
