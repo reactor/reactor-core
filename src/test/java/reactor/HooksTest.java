@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,26 +17,29 @@
 package reactor;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.logging.Level;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
 import reactor.core.publisher.ConnectableFlux;
-import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.Operators;
 import reactor.core.publisher.ParallelFlux;
-import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.SignalType;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Stephane Maldini
@@ -155,10 +158,10 @@ public class HooksTest {
 		simpleFlux();
 
 		Assert.assertArrayEquals(q.toArray(),
-				new String[]{"FluxJust: 1", "{ operator : \"MapFuseable\" }: 2",
-						"{ operator : \"PeekFuseable\" }! false",
-						"{ operator : \"CollectList\" }! true", "MonoJust: [2]",
-						"{ operator : \"Otherwise\" }: [2]"});
+				new String[]{"FluxJust: 1", "{ \"operator\" : \"MapFuseable\" }: 2",
+						"{ \"operator\" : \"PeekFuseable\" }! false",
+						"{ \"operator\" : \"CollectList\" }! true", "MonoJust: [2]",
+						"{ \"operator\" : \"Otherwise\" }: [2]"});
 
 		q.clear();
 
@@ -172,10 +175,10 @@ public class HooksTest {
 		simpleFlux();
 
 		Assert.assertArrayEquals(q.toArray(),
-				new String[]{"FluxJust: 1", "{ operator : \"MapFuseable\" }: 2",
-						"{ operator : \"PeekFuseable\" }! false",
-						"{ operator : \"CollectList\" }! false", "MonoJust: [2]",
-						"{ operator : \"Otherwise\" }: [2]"});
+				new String[]{"FluxJust: 1", "{ \"operator\" : \"MapFuseable\" }: 2",
+						"{ \"operator\" : \"PeekFuseable\" }! false",
+						"{ \"operator\" : \"CollectList\" }! false", "MonoJust: [2]",
+						"{ \"operator\" : \"Otherwise\" }: [2]"});
 
 		q.clear();
 

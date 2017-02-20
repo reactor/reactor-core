@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,9 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable.ConditionalSubscriber;
-import reactor.core.Loopback;
-import reactor.core.Producer;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
 
 /**
  * Skips source values while a predicate returns
@@ -38,7 +33,7 @@ final class FluxSkipWhile<T> extends FluxSource<T, T> {
 
 	final Predicate<? super T> predicate;
 
-	FluxSkipWhile(Publisher<? extends T> source, Predicate<? super T> predicate) {
+	FluxSkipWhile(Flux<? extends T> source, Predicate<? super T> predicate) {
 		super(source);
 		this.predicate = Objects.requireNonNull(predicate, "predicate");
 	}
@@ -49,8 +44,7 @@ final class FluxSkipWhile<T> extends FluxSource<T, T> {
 	}
 
 	static final class SkipWhileSubscriber<T>
-			implements ConditionalSubscriber<T>, Receiver, Producer, Loopback,
-			           Subscription, Trackable {
+			implements ConditionalSubscriber<T>, InnerOperator<T, T> {
 		final Subscriber<? super T> actual;
 
 		final Predicate<? super T> predicate;
@@ -157,30 +151,21 @@ final class FluxSkipWhile<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public boolean isStarted() {
-			return s != null && !done;
+		public Object scan(Attr key) {
+			switch (key){
+				case PARENT:
+					return s;
+				case TERMINATED:
+					return done;
+			}
+			return InnerOperator.super.scan(key);
 		}
 
 		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
-		public Object downstream() {
+		public Subscriber<? super T> actual() {
 			return actual;
 		}
 
-		@Override
-		public Object connectedInput() {
-			return predicate;
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
-		}
-		
 		@Override
 		public void request(long n) {
 			s.request(n);

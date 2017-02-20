@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,14 @@
  */
 package reactor.core.publisher;
 
-import java.util.*;
-import java.util.function.*;
+import java.util.Objects;
+import java.util.Queue;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
-import org.reactivestreams.*;
-
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import reactor.core.Scannable;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
 
 /**
@@ -28,7 +31,7 @@ import reactor.core.publisher.FluxConcatMap.ErrorMode;
  * @param <T> the input value type
  * @param <R> the output value type
  */
-final class ParallelConcatMap<T, R> extends ParallelFlux<R> {
+final class ParallelConcatMap<T, R> extends ParallelFlux<R> implements Scannable{
 
 	final ParallelFlux<T> source;
 	
@@ -40,7 +43,7 @@ final class ParallelConcatMap<T, R> extends ParallelFlux<R> {
 	
 	final ErrorMode errorMode;
 
-	public ParallelConcatMap(
+	ParallelConcatMap(
 			ParallelFlux<T> source,
 			Function<? super T, ? extends Publisher<? extends R>> mapper, 
 					Supplier<? extends Queue<T>> queueSupplier,
@@ -50,6 +53,17 @@ final class ParallelConcatMap<T, R> extends ParallelFlux<R> {
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
 		this.prefetch = prefetch;
 		this.errorMode = Objects.requireNonNull(errorMode, "errorMode");
+	}
+
+	@Override
+	public Object scan(Attr key) {
+		switch (key){
+			case PARENT:
+				return source;
+			case PREFETCH:
+				return getPrefetch();
+		}
+		return null;
 	}
 
 	@Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 package reactor.core.publisher;
 
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -29,13 +27,13 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
-import reactor.core.MultiProducer;
-import reactor.core.Producer;
 import reactor.core.Receiver;
+import reactor.core.Scannable;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.WaitStrategy;
 
@@ -45,11 +43,12 @@ import reactor.util.concurrent.WaitStrategy;
  * @author Stephane Maldini
  */
 abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
-		implements Receiver, Runnable, MultiProducer {
+		implements Runnable, Receiver {
 
 	/**
 	 * Whether the RingBuffer*Processor can be graphed by wrapping the individual Sequence with the target downstream
 	 */
+	@Deprecated
 	public static final  boolean TRACEABLE_RING_BUFFER_PROCESSOR =
 			Boolean.parseBoolean(System.getProperty("reactor.ringbuffer.trace", "true"));
 
@@ -221,39 +220,6 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		return r;
 	}
 
-	/**
-	 * Wrap a new sequence into a traceable {@link Producer} thus keeping reference and adding an extra stack level
-	 * when
-	 * peeking. Mostly invisible cost but the option is left open. Keeping reference of the arbitrary consumer allows
-	 * expanded operational navigation (graph) by finding all target subscribers of a given ring buffer.
-	 *
-	 * @param init the initial sequence index
-	 * @param delegate the target to proxy
-	 *
-	 * @return a wrapped {@link RingBuffer.Sequence}
-	 */
-	static RingBuffer.Sequence wrap(long init, Object delegate) {
-		if (TRACEABLE_RING_BUFFER_PROCESSOR) {
-			return wrap(RingBuffer.newSequence(init), delegate);
-		}
-		else {
-			return RingBuffer.newSequence(init);
-		}
-	}
-
-	/**
-	 * Wrap a sequence into a traceable {@link Producer} thus keeping reference and adding an extra stack level when
-	 * peeking. Mostly invisible cost but the option is left open.
-	 *
-	 * @param init the sequence reference
-	 * @param delegate the object to wrap
-	 *
-	 * @return a wrapped {@link RingBuffer.Sequence}
-	 */
-	static RingBuffer.Sequence wrap(RingBuffer.Sequence init, Object delegate){
-		return new Wrapped<>(delegate, init);
-	}
-
 	final ExecutorService executor;
 	final ClassLoader     contextClassLoader;
 	final String          name;
@@ -317,6 +283,20 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		}
 	}
 
+	@Override
+	public Object upstream() {
+		return upstreamSubscription;
+	}
+
+	@Override
+	public Object scan(Attr key) {
+		switch(key){
+			case PARENT:
+				return upstreamSubscription;
+		}
+		return super.scan(key);
+	}
+
 	/**
 	 * Determine whether this {@code Processor} can be used.
 	 *
@@ -350,6 +330,12 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		}
 	}
 
+	//FIXME store current subscribers
+	@Override
+	public Stream<? extends Scannable> inners() {
+		return Stream.empty();
+	}
+
 	/**
 	 * Drain is a hot replication of the current buffer delivered if supported. Since it is hot there might be no
 	 * guarantee to see a end if the buffer keeps replenishing due to concurrent producing.
@@ -376,14 +362,8 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	/**
 	 * @return a snapshot number of available onNext before starving the resource
 	 */
-	public long getAvailableCapacity() {
+	final public long getAvailableCapacity() {
 		return ringBuffer.bufferSize() - ringBuffer.getPending();
-	}
-
-
-	@Override
-	public Iterator<?> downstreams() {
-		return Arrays.asList(ringBuffer.getSequenceReceivers()).iterator();
 	}
 
 	@Override
@@ -481,12 +461,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	}
 
 	@Override
-	final public Subscription upstream() {
-		return upstreamSubscription;
-	}
-
-	@Override
-	final public long getCapacity() {
+	final public int getBufferSize() {
 		return ringBuffer.bufferSize();
 	}
 
@@ -661,56 +636,4 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 			return name;
 		}
 	}
-}
-
-
-final class Wrapped<E> implements RingBuffer.Sequence, Producer {
-
-	public final E                   delegate;
-	public final RingBuffer.Sequence sequence;
-
-	public Wrapped(E delegate, RingBuffer.Sequence sequence) {
-		this.delegate = delegate;
-		this.sequence = sequence;
-	}
-
-	@Override
-	public long getAsLong() {
-		return sequence.getAsLong();
-	}
-
-	@Override
-	public Object downstream() {
-		return delegate;
-	}
-
-	@Override
-	public void set(long value) {
-		sequence.set(value);
-	}
-
-	@Override
-	public boolean compareAndSet(long expectedValue, long newValue) {
-		return sequence.compareAndSet(expectedValue, newValue);
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if(!(o instanceof Wrapped)){
-			return false;
-		}
-		Wrapped<?> wrapped = (Wrapped<?>) o;
-
-		return sequence.equals(wrapped.sequence);
-
-	}
-
-	@Override
-	public int hashCode() {
-		return sequence.hashCode();
-	}
-
 }

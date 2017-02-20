@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 
+
 /**
  * Maps each upstream value into a Publisher and concatenates them into one
  * sequence of items.
@@ -51,7 +52,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 	/**
 	 * Indicates when an error from the main source should be reported.
 	 */
-	public enum ErrorMode {
+	enum ErrorMode {
 		/**
 		 * Report the error immediately, cancelling the active inner source.
 		 */
@@ -64,24 +65,26 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 		END
 	}
 
-	public static <T, R> Subscriber<T> subscriber(Subscriber<? super R> s,
+	static <T, R> Subscriber<T> subscriber(Subscriber<? super R> s,
 			Function<? super T, ? extends Publisher<? extends R>> mapper,
 			Supplier<? extends Queue<T>> queueSupplier,
-			int prefetch,
-			ErrorMode errorMode) {
-		Subscriber<T> parent;
+			int prefetch, ErrorMode errorMode) {
 		switch (errorMode) {
 			case BOUNDARY:
-				parent =
-						new ConcatMapDelayed<>(s, mapper, queueSupplier, prefetch, false);
-				break;
+				return new ConcatMapDelayed<>(s,
+						mapper,
+						queueSupplier,
+						prefetch,
+						false);
 			case END:
-				parent = new ConcatMapDelayed<>(s, mapper, queueSupplier, prefetch, true);
-				break;
+				return new ConcatMapDelayed<>(s,
+						mapper,
+						queueSupplier,
+						prefetch,
+						true);
 			default:
-				parent = new ConcatMapImmediate<>(s, mapper, queueSupplier, prefetch);
+				return new ConcatMapImmediate<>(s, mapper, queueSupplier, prefetch);
 		}
-		return parent;
 	}
 
 	FluxConcatMap(Publisher<? extends T> source,
@@ -111,23 +114,11 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 			return;
 		}
 
-		Subscriber<T> parent;
-		switch (errorMode) {
-			case BOUNDARY:
-				parent =
-						new ConcatMapDelayed<>(s, mapper, queueSupplier, prefetch, false);
-				break;
-			case END:
-				parent = new ConcatMapDelayed<>(s, mapper, queueSupplier, prefetch, true);
-				break;
-			default:
-				parent = new ConcatMapImmediate<>(s, mapper, queueSupplier, prefetch);
-		}
-		source.subscribe(parent);
+		source.subscribe(subscriber(s, mapper, queueSupplier, prefetch, errorMode));
 	}
 
 	static final class ConcatMapImmediate<T, R>
-			implements Subscriber<T>, FluxConcatMapSupport<R>, Subscription {
+			implements InnerOperator<T, R>, FluxConcatMapSupport<R> {
 
 		final Subscriber<? super R> actual;
 
@@ -174,14 +165,34 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 
 		ConcatMapImmediate(Subscriber<? super R> actual,
 				Function<? super T, ? extends Publisher<? extends R>> mapper,
-				Supplier<? extends Queue<T>> queueSupplier,
-				int prefetch) {
+				Supplier<? extends Queue<T>> queueSupplier, int prefetch) {
 			this.actual = actual;
 			this.mapper = mapper;
 			this.queueSupplier = queueSupplier;
 			this.prefetch = prefetch;
 			this.limit = prefetch - (prefetch >> 2);
 			this.inner = new ConcatMapInner<>(this);
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return s;
+				case TERMINATED:
+					return done;
+				case CANCELLED:
+					return cancelled;
+				case PREFETCH:
+					return prefetch;
+				case BUFFERED:
+					return queue != null ? queue.size() : 0;
+				case ERROR:
+					return error;
+				case LIMIT:
+					return limit;
+			}
+			return InnerOperator.super.scan(key);
 		}
 
 		@Override
@@ -292,6 +303,11 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 			else {
 				Operators.onErrorDropped(e);
 			}
+		}
+
+		@Override
+		public Subscriber<? super R> actual() {
+			return actual;
 		}
 
 		@Override
@@ -439,7 +455,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 	}
 
 	static final class ConcatMapDelayed<T, R>
-			implements Subscriber<T>, FluxConcatMapSupport<R>, Subscription {
+			implements InnerOperator<T, R>, FluxConcatMapSupport<R> {
 
 		final Subscriber<? super R> actual;
 
@@ -481,11 +497,10 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 
 		int sourceMode;
 
-		public ConcatMapDelayed(Subscriber<? super R> actual,
+		ConcatMapDelayed(Subscriber<? super R> actual,
 				Function<? super T, ? extends Publisher<? extends R>> mapper,
 				Supplier<? extends Queue<T>> queueSupplier,
-				int prefetch,
-				boolean veryEnd) {
+				int prefetch, boolean veryEnd) {
 			this.actual = actual;
 			this.mapper = mapper;
 			this.queueSupplier = queueSupplier;
@@ -493,6 +508,36 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 			this.limit = prefetch - (prefetch >> 2);
 			this.veryEnd = veryEnd;
 			this.inner = new ConcatMapInner<>(this);
+		}
+
+		@Override
+		public Subscriber<? super R> actual() {
+			return actual;
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return s;
+				case TERMINATED:
+					return done;
+				case CANCELLED:
+					return cancelled;
+				case PREFETCH:
+					return prefetch;
+				case BUFFERED:
+					return queue != null ? queue.size() : 0;
+				case ERROR:
+					return error;
+				case LIMIT:
+					return limit;
+				case DELAY_ERROR:
+					return true;
+				case DELAY_ERROR_END:
+					return veryEnd;
+			}
+			return InnerOperator.super.scan(key);
 		}
 
 		@Override

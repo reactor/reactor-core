@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,15 +19,12 @@ package reactor.core.publisher;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.Fuseable.QueueSubscription;
-import reactor.core.Producer;
-import reactor.core.Receiver;
 
 /**
  * Hook into the lifecycle events and signals of a {@link Flux} and execute
@@ -46,37 +43,36 @@ final class FluxDoFinally<T> extends FluxSource<T, T> {
 
 	final Consumer<SignalType> onFinally;
 
-	static <T> Subscriber<T> createSubscriber(Publisher<? extends T> source,
-			Subscriber<? super T> s, Consumer<SignalType> onFinally) {
-		Subscriber<T> subscriber;
-		if (source instanceof Fuseable && s instanceof ConditionalSubscriber) {
-			subscriber = new DoFinallyFuseableConditionalSubscriber<T>((ConditionalSubscriber<? super T>) s, onFinally);
+	@SuppressWarnings("unchecked")
+	static <T> Subscriber<T> createSubscriber(
+			Subscriber<? super T> s, Consumer<SignalType> onFinally,
+			boolean fuseable) {
+
+		if (fuseable) {
+			if(s instanceof ConditionalSubscriber) {
+				return new DoFinallyFuseableConditionalSubscriber<>(
+						(ConditionalSubscriber<?	super T>) s, onFinally);
+			}
+			return new DoFinallyFuseableSubscriber<>(s, onFinally);
 		}
-		else if (source instanceof Fuseable) {
-			subscriber = new DoFinallyFuseableSubscriber<>(s, onFinally);
+
+		if (s instanceof ConditionalSubscriber) {
+			return new DoFinallyConditionalSubscriber<>((ConditionalSubscriber<? super T>) s, onFinally);
 		}
-		else if (s instanceof ConditionalSubscriber) {
-			subscriber = new DoFinallyConditionalSubscriber<>((ConditionalSubscriber<? super T>) s, onFinally);
-		}
-		else {
-			subscriber = new DoFinallySubscriber<>(s, onFinally);
-		}
-		return subscriber;
+		return new DoFinallySubscriber<>(s, onFinally);
 	}
 
-	public FluxDoFinally(Publisher<? extends T> source, Consumer<SignalType> onFinally) {
+	FluxDoFinally(Flux<? extends T> source, Consumer<SignalType> onFinally) {
 		super(source);
 		this.onFinally = onFinally;
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(createSubscriber(source, s, onFinally));
+		source.subscribe(createSubscriber(s, onFinally, false));
 	}
 
-	static class DoFinallySubscriber<T> implements Subscriber<T>,
-	                                               Receiver, Producer,
-	                                               Subscription {
+	static class DoFinallySubscriber<T> implements InnerOperator<T, T> {
 
 		final Subscriber<? super T> actual;
 
@@ -96,6 +92,18 @@ final class FluxDoFinally<T> extends FluxSource<T, T> {
 		DoFinallySubscriber(Subscriber<? super T> actual, Consumer<SignalType> onFinally) {
 			this.actual = actual;
 			this.onFinally = onFinally;
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return s;
+				case TERMINATED:
+				case CANCELLED:
+					return once == 1;
+			}
+			return InnerOperator.super.scan(key);
 		}
 
 		@SuppressWarnings("unchecked")
@@ -151,20 +159,16 @@ final class FluxDoFinally<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public Object downstream() {
+		public Subscriber<? super T> actual() {
 			return actual;
 		}
 
-		@Override
-		public Object upstream() {
-			return s;
-		}
 	}
 
 	static class DoFinallyFuseableSubscriber<T> extends DoFinallySubscriber<T>
 		implements Fuseable, QueueSubscription<T> {
 
-		public DoFinallyFuseableSubscriber(Subscriber<? super T> actual, Consumer<SignalType> onFinally) {
+		DoFinallyFuseableSubscriber(Subscriber<? super T> actual, Consumer<SignalType> onFinally) {
 			super(actual, onFinally);
 		}
 

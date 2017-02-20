@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,14 +41,14 @@ final class MonoTimeout<T, U, V> extends MonoSource<T, T> {
 	@SuppressWarnings("rawtypes")
     final static Function NEVER = e -> Flux.never();
 
-	public MonoTimeout(Publisher<? extends T> source,
+	MonoTimeout(Mono<? extends T> source,
 			Publisher<U> firstTimeout) {
 		super(source);
 		this.firstTimeout = Objects.requireNonNull(firstTimeout, "firstTimeout");
 		this.other = null;
 	}
 
-	public MonoTimeout(Publisher<? extends T> source,
+	MonoTimeout(Mono<? extends T> source,
 			Publisher<U> firstTimeout,
 			Publisher<? extends T> other) {
 		super(source);

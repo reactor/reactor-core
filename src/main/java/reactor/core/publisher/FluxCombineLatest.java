@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Queue;
@@ -25,16 +24,16 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.core.MultiReceiver;
-import reactor.core.Producer;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
+import reactor.core.Scannable;
+
+
 
 /**
  * Combines the latest values from multiple sources through a function.
@@ -44,7 +43,7 @@ import reactor.core.Trackable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxCombineLatest<T, R> extends Flux<R> implements MultiReceiver, Fuseable {
+final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 
 	final Publisher<? extends T>[] array;
 
@@ -87,19 +86,8 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements MultiReceiver, Fu
 	}
 
 	@Override
-	public Iterator<?> upstreams() {
-		return iterable != null ? iterable.iterator() : Arrays.asList(array)
-		                                                      .iterator();
-	}
-
-	@Override
 	public long getPrefetch() {
 		return bufferSize;
-	}
-
-	@Override
-	public long upstreamCount() {
-		return array != null ? array.length : -1L;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -166,15 +154,12 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements MultiReceiver, Fu
 			return;
 		}
 		if (n == 1) {
+			Function<T, R> f = t -> combiner.apply(new Object[]{t});
 			if (a[0] instanceof Fuseable) {
-				new FluxMapFuseable<>(a[0],
-						(Function<T, R>) t -> combiner.apply(new Object[]{
-								t})).subscribe(s);
+				new FluxMapFuseable<>(a[0], f).subscribe(s);
 			}
 			else {
-				new FluxMap<>(a[0],
-						(Function<T, R>) t -> combiner.apply(new Object[]{
-								t})).subscribe(s);
+				new FluxMap<>(a[0], f).subscribe(s);
 			}
 			return;
 		}
@@ -190,9 +175,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements MultiReceiver, Fu
 	}
 
 	static final class CombineLatestCoordinator<T, R>
-			implements QueueSubscription<R>, MultiReceiver, Trackable {
-
-		final Subscriber<? super R> actual;
+			implements QueueSubscription<R>, InnerProducer<R> {
 
 		final Function<Object[], R> combiner;
 
@@ -200,7 +183,8 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements MultiReceiver, Fu
 
 		final Queue<SourceAndArray> queue;
 
-		final Object[] latest;
+		final Object[]              latest;
+		final Subscriber<? super R> actual;
 
 		boolean outputFused;
 
@@ -211,6 +195,12 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements MultiReceiver, Fu
 		volatile boolean cancelled;
 
 		volatile long requested;
+
+		@Override
+		public final Subscriber<? super R> actual() {
+			return actual;
+		}
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<CombineLatestCoordinator> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(CombineLatestCoordinator.class,
@@ -272,19 +262,23 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements MultiReceiver, Fu
 		}
 
 		@Override
-		public boolean isCancelled() {
-			return cancelled;
+		public Stream<? extends Scannable> inners() {
+			return Stream.of(subscribers);
 		}
 
 		@Override
-		public Iterator<?> upstreams() {
-			return Arrays.asList(subscribers)
-			             .iterator();
-		}
-
-		@Override
-		public long upstreamCount() {
-			return subscribers.length;
+		public Object scan(Attr key) {
+			switch (key){
+				case TERMINATED:
+					return done;
+				case CANCELLED:
+					return cancelled;
+				case ERROR:
+					return error;
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+			}
+			return InnerProducer.super.scan(key);
 		}
 
 		void subscribe(Publisher<? extends T>[] sources, int n) {
@@ -555,20 +549,10 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements MultiReceiver, Fu
 		public int size() {
 			return queue.size();
 		}
-
-		@Override
-		public boolean isStarted() {
-			return !isTerminated();
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return done;
-		}
 	}
 
 	static final class CombineLatestInner<T>
-			implements Subscriber<T>, Receiver, Producer, Trackable {
+			implements InnerConsumer<T> {
 
 		final CombineLatestCoordinator<T, ?> parent;
 
@@ -636,43 +620,22 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements MultiReceiver, Fu
 		}
 
 		@Override
-		public Object downstream() {
-			return parent;
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
-		}
-
-		@Override
-		public long getCapacity() {
-			return prefetch;
-		}
-
-		@Override
-		public boolean isStarted() {
-			return s != null && !isCancelled();
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return parent.done;
-		}
-
-		@Override
-		public boolean isCancelled() {
-			return s == Operators.cancelledSubscription();
-		}
-
-		@Override
-		public long limit() {
-			return limit;
-		}
-
-		@Override
-		public long expectedFromUpstream() {
-			return limit - produced;
+		public Object scan(Attr key) {
+			switch (key){
+				case PARENT:
+					return  s;
+				case ACTUAL:
+					return parent;
+				case CANCELLED:
+					return s == Operators.cancelledSubscription();
+				case LIMIT:
+					return limit;
+				case PREFETCH:
+					return prefetch;
+				case EXPECTED_FROM_UPSTREAM:
+					return limit - produced;
+			}
+			return null;
 		}
 	}
 

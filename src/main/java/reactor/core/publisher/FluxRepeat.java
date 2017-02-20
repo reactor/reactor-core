@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ final class FluxRepeat<T> extends FluxSource<T, T> {
 
 	final long times;
 
-	public FluxRepeat(Publisher<? extends T> source, long times) {
+	FluxRepeat(Publisher<? extends T> source, long times) {
 		super(source);
 		if (times < 0L) {
 			throw new IllegalArgumentException("times >= 0 required");
@@ -71,7 +71,7 @@ final class FluxRepeat<T> extends FluxSource<T, T> {
 
 		long produced;
 
-		public RepeatSubscriber(Publisher<? extends T> source, Subscriber<? super T> actual, long remaining) {
+		RepeatSubscriber(Publisher<? extends T> source, Subscriber<? super T> actual, long remaining) {
 			super(actual);
 			this.source = source;
 			this.remaining = remaining;
@@ -81,7 +81,7 @@ final class FluxRepeat<T> extends FluxSource<T, T> {
 		public void onNext(T t) {
 			produced++;
 
-			subscriber.onNext(t);
+			actual.onNext(t);
 		}
 
 		@Override
@@ -89,7 +89,7 @@ final class FluxRepeat<T> extends FluxSource<T, T> {
 			long r = remaining;
 			if (r != Long.MAX_VALUE) {
 				if (r == 0) {
-					subscriber.onComplete();
+					actual.onComplete();
 					return;
 				}
 				remaining = r - 1;

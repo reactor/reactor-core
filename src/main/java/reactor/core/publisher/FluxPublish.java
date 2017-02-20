@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.CancellationException;
@@ -26,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -33,10 +32,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.core.MultiProducer;
-import reactor.core.Producer;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
+import reactor.core.Scannable;
 
 /**
  * A connectable publisher which shares an underlying source and dispatches source values
@@ -46,12 +42,12 @@ import reactor.core.Trackable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Producer {
+final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 
 	/**
 	 * The source observable.
 	 */
-	final Publisher<? extends T> source;
+	final Flux<? extends T> source;
 
 	/**
 	 * The size of the prefetch buffer.
@@ -67,7 +63,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 					PublishSubscriber.class,
 					"connection");
 
-	FluxPublish(Publisher<? extends T> source,
+	FluxPublish(Flux<? extends T> source,
 			int prefetch,
 			Supplier<? extends Queue<T>> queueSupplier) {
 		if (prefetch <= 0) {
@@ -135,17 +131,23 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 	}
 
 	@Override
-	public Object downstream() {
-		return connection;
-	}
-
-	@Override
-	public Object upstream() {
+	public Publisher<? extends T> upstream() {
 		return source;
 	}
 
+	@Override
+	public Object scan(Attr key) {
+		switch (key){
+			case PREFETCH:
+				return getPrefetch();
+			case PARENT:
+				return source;
+		}
+		return null;
+	}
+
 	static final class PublishSubscriber<T>
-			implements Subscriber<T>, Receiver, MultiProducer, Trackable, Disposable {
+			implements InnerConsumer<T>, Disposable {
 
 		final int prefetch;
 
@@ -195,6 +197,10 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 			this.prefetch = prefetch;
 			this.parent = parent;
 			this.subscribers = EMPTY;
+		}
+
+		boolean isTerminated(){
+			return subscribers == TERMINATED;
 		}
 
 		@Override
@@ -372,11 +378,6 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 			}
 		}
 
-		@Override
-		public boolean isTerminated() {
-			return subscribers == TERMINATED;
-		}
-
 		boolean tryConnect() {
 			return connected == 0 && CONNECTED.compareAndSet(this, 0, 1);
 		}
@@ -538,48 +539,37 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 		}
 
 		@Override
-		public long getCapacity() {
-			return prefetch;
+		public Stream<? extends Scannable> inners() {
+			return Stream.of(subscribers);
 		}
 
 		@Override
-		public long getPending() {
-			return queue != null ? queue.size() : -1L;
+		public Object scan(Attr key) {
+			switch (key){
+				case PARENT:
+					return s;
+				case PREFETCH:
+					return prefetch;
+				case ERROR:
+					return error;
+				case BUFFERED:
+					return queue != null ? queue.size() : 0;
+				case TERMINATED:
+					return isTerminated();
+				case CANCELLED:
+					return cancelled;
+			}
+			return null;
 		}
 
 		@Override
-		public boolean isCancelled() {
-			return cancelled;
+		public boolean isDisposed() {
+			return cancelled || done;
 		}
 
-		@Override
-		public boolean isStarted() {
-			return !cancelled && !done && s != null;
-		}
-
-		@Override
-		public Throwable getError() {
-			return error;
-		}
-
-		@Override
-		public Iterator<?> downstreams() {
-			return Arrays.asList(subscribers)
-			             .iterator();
-		}
-
-		@Override
-		public long downstreamCount() {
-			return subscribers.length;
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
-		}
 	}
 
-	static final class PublishInner<T> implements Subscription, Producer, Trackable {
+	static final class PublishInner<T> implements InnerProducer<T> {
 
 		final Subscriber<? super T> actual;
 
@@ -622,24 +612,28 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Receiver, Produ
 			}
 		}
 
-		@Override
-		public boolean isStarted() {
-			return !isCancelled();
-		}
-
-		@Override
-		public boolean isCancelled() {
+		boolean isCancelled() {
 			return requested == CANCEL_REQUEST;
 		}
 
 		@Override
-		public Object downstream() {
+		public Subscriber<? super T> actual() {
 			return actual;
 		}
 
 		@Override
-		public long requestedFromDownstream() {
-			return requested;
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return parent;
+				case TERMINATED:
+					return parent != null && parent.isTerminated();
+				case CANCELLED:
+					return isCancelled();
+				case REQUESTED_FROM_DOWNSTREAM:
+					return isCancelled() ? 0L : requested;
+			}
+			return InnerProducer.super.scan(key);
 		}
 
 		long produced(long n) {

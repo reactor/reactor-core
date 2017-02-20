@@ -21,6 +21,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 
+import org.reactivestreams.Subscription;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -226,6 +227,11 @@ public abstract class ReduceOperatorTest<I, O>
 	@Override
 	final Mono<O> conditional(Mono<O> output) {
 		return output.filter(t -> true);
+	}
+
+	@Override
+	protected Mono<O> doOnSubscribe(Mono<O> output, Consumer<? super Subscription> doOnSubscribe) {
+		return output.doOnSubscribe(doOnSubscribe);
 	}
 
 	@Override

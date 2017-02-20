@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package reactor.core.publisher;
 
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.Callable;
@@ -27,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -34,10 +34,8 @@ import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.core.MultiReceiver;
-import reactor.core.Producer;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
+import reactor.core.Scannable;
+
 
 /**
  * Repeatedly takes one item from all source Publishers and
@@ -48,7 +46,7 @@ import reactor.core.Trackable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
+final class FluxZip<T, R> extends Flux<R> {
 
 	final Publisher<? extends T>[] sources;
 
@@ -61,7 +59,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 	final int prefetch;
 
 	@SuppressWarnings("unchecked")
-	public <U> FluxZip(Publisher<? extends T> p1,
+	<U> FluxZip(Publisher<? extends T> p1,
 			Publisher<? extends U> p2,
 			BiFunction<? super T, ? super U, ? extends R> zipper2,
 			Supplier<? extends Queue<T>> queueSupplier,
@@ -74,7 +72,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 				prefetch);
 	}
 
-	public FluxZip(Publisher<? extends T>[] sources,
+	FluxZip(Publisher<? extends T>[] sources,
 			Function<? super Object[], ? extends R> zipper,
 			Supplier<? extends Queue<T>> queueSupplier,
 			int prefetch) {
@@ -88,7 +86,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 		this.prefetch = prefetch;
 	}
 
-	public FluxZip(Iterable<? extends Publisher<? extends T>> sourcesIterable,
+	FluxZip(Iterable<? extends Publisher<? extends T>> sourcesIterable,
 			Function<? super Object[], ? extends R> zipper,
 			Supplier<? extends Queue<T>> queueSupplier,
 			int prefetch) {
@@ -108,7 +106,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 	}
 
 	@SuppressWarnings({"unchecked", "rawtypes"})
-	public FluxZip<T, R> zipAdditionalSource(Publisher source, BiFunction zipper) {
+	FluxZip<T, R> zipAdditionalSource(Publisher source, BiFunction zipper) {
 		Publisher[] oldSources = sources;
 		if (oldSources != null && this.zipper instanceof PairwiseZipper) {
 			int oldLen = oldSources.length;
@@ -305,24 +303,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 		}
 	}
 
-	@Override
-	public Iterator<?> upstreams() {
-		return sources == null ? sourcesIterable.iterator() : Arrays.asList(sources)
-		                                                            .iterator();
-	}
-
-	@Override
-	public long getCapacity() {
-		return prefetch;
-	}
-
-	@Override
-	public long upstreamCount() {
-		return sources == null ? -1 : sources.length;
-	}
-
-	static final class ZipSingleCoordinator<T, R> extends Operators.MonoSubscriber<R, R>
-			implements MultiReceiver, Trackable {
+	static final class ZipSingleCoordinator<T, R> extends Operators.MonoSubscriber<R, R> {
 
 		final Function<? super Object[], ? extends R> zipper;
 
@@ -336,11 +317,12 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 				AtomicIntegerFieldUpdater.newUpdater(ZipSingleCoordinator.class, "wip");
 
 		@SuppressWarnings("unchecked")
-		public ZipSingleCoordinator(Subscriber<? super R> subscriber,
+		ZipSingleCoordinator(Subscriber<? super R> subscriber,
 				Object[] scalars,
 				int n,
 				Function<? super Object[], ? extends R> zipper) {
 			super(subscriber);
+
 			this.zipper = zipper;
 			this.scalars = scalars;
 			ZipSingleSubscriber<T>[] a = new ZipSingleSubscriber[n];
@@ -409,24 +391,19 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 		}
 
 		@Override
-		public long getCapacity() {
-			return upstreamCount();
+		public Object scan(Attr key) {
+			switch (key) {
+				case TERMINATED:
+					return wip == 0;
+				case BUFFERED:
+					return wip > 0 ? scalars.length : 0;
+			}
+			return super.scan(key);
 		}
 
 		@Override
-		public long getPending() {
-			return wip;
-		}
-
-		@Override
-		public Iterator<?> upstreams() {
-			return Arrays.asList(subscribers)
-			             .iterator();
-		}
-
-		@Override
-		public long upstreamCount() {
-			return subscribers.length;
+		public Stream<? extends Scannable> inners() {
+			return Stream.of(subscribers);
 		}
 
 		void cancelAll() {
@@ -439,7 +416,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 	}
 
 	static final class ZipSingleSubscriber<T>
-			implements Subscriber<T>, Trackable, Disposable, Receiver {
+			implements InnerConsumer<T>, Disposable {
 
 		final ZipSingleCoordinator<T, ?> parent;
 
@@ -454,9 +431,26 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 
 		boolean done;
 
-		public ZipSingleSubscriber(ZipSingleCoordinator<T, ?> parent, int index) {
+		ZipSingleSubscriber(ZipSingleCoordinator<T, ?> parent, int index) {
 			this.parent = parent;
 			this.index = index;
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key){
+				case PARENT:
+					return s;
+				case TERMINATED:
+					return done;
+				case ACTUAL:
+					return parent;
+				case CANCELLED:
+					return s == Operators.cancelledSubscription();
+				case BUFFERED:
+					return parent.scalars[index] == null ? 0 : 1;
+			}
+			return null;
 		}
 
 		@Override
@@ -498,43 +492,13 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 		}
 
 		@Override
-		public long getCapacity() {
-			return 1;
-		}
-
-		@Override
-		public long getPending() {
-			return !done ? 1 : -1;
-		}
-
-		@Override
-		public boolean isCancelled() {
-			return s == Operators.cancelledSubscription();
-		}
-
-		@Override
-		public boolean isStarted() {
-			return !isTerminated();
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
-		}
-
-		@Override
 		public void dispose() {
 			Operators.terminate(S, this);
 		}
 	}
 
 	static final class ZipCoordinator<T, R>
-			implements Subscription, MultiReceiver, Trackable {
+			implements InnerProducer<R> {
 
 		final Subscriber<? super R> actual;
 
@@ -563,7 +527,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 
 		final Object[] current;
 
-		public ZipCoordinator(Subscriber<? super R> actual,
+		ZipCoordinator(Subscriber<? super R> actual,
 				Function<? super Object[], ? extends R> zipper,
 				int n,
 				Supplier<? extends Queue<T>> queueSupplier,
@@ -606,45 +570,26 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 		}
 
 		@Override
-		public long getCapacity() {
-			return upstreamCount();
+		public Subscriber<? super R> actual() {
+			return actual;
 		}
 
 		@Override
-		public long getPending() {
-			int nonEmpties = 0;
-			for (int i = 0; i < subscribers.length; i++) {
-				if (subscribers[i].queue != null && !subscribers[i].queue.isEmpty()) {
-					nonEmpties++;
-				}
+		public Stream<? extends Scannable> inners() {
+			return Stream.of(subscribers);
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key){
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+				case ERROR:
+					return error;
+				case CANCELLED:
+					return cancelled;
 			}
-			return nonEmpties;
-		}
-
-		@Override
-		public boolean isCancelled() {
-			return cancelled;
-		}
-
-		@Override
-		public Throwable getError() {
-			return error;
-		}
-
-		@Override
-		public Iterator<?> upstreams() {
-			return Arrays.asList(subscribers)
-			             .iterator();
-		}
-
-		@Override
-		public long upstreamCount() {
-			return subscribers.length;
-		}
-
-		@Override
-		public long requestedFromDownstream() {
-			return requested;
+			return InnerProducer.super.scan(key);
 		}
 
 		void error(Throwable e, int index) {
@@ -741,7 +686,6 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 					}
 
 					R v;
-
 					try {
 						v = Objects.requireNonNull(zipper.apply(values.clone()),
 								"The zipper returned a null value");
@@ -838,7 +782,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 	}
 
 	static final class ZipInner<T>
-			implements Subscriber<T>, Receiver, Producer, Trackable {
+			implements InnerConsumer<T> {
 
 		final ZipCoordinator<T, ?> parent;
 
@@ -944,42 +888,25 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 		}
 
 		@Override
-		public long getCapacity() {
-			return prefetch;
-		}
-
-		@Override
-		public long getPending() {
-			return queue != null ? queue.size() : -1;
-		}
-
-		@Override
-		public boolean isStarted() {
-			return !done;
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return done && queue.isEmpty();
-		}
-
-		@Override
-		public long expectedFromUpstream() {
-			return produced;
-		}
-
-		@Override
-		public long limit() {
-			return limit;
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
-		}
-
-		@Override
-		public Object downstream() {
+		public Object scan(Attr key) {
+			switch (key){
+				case PARENT:
+					return  s;
+				case ACTUAL:
+					return parent;
+				case CANCELLED:
+					return s == Operators.cancelledSubscription();
+				case BUFFERED:
+					return queue != null ? queue.size() : 0;
+				case LIMIT:
+					return limit;
+				case TERMINATED:
+					return done && (queue == null || queue.isEmpty());
+				case PREFETCH:
+					return prefetch;
+				case EXPECTED_FROM_UPSTREAM:
+					return limit - produced;
+			}
 			return null;
 		}
 
@@ -1006,7 +933,7 @@ final class FluxZip<T, R> extends Flux<R> implements MultiReceiver, Trackable {
 
 		final BiFunction[] zippers;
 
-		public PairwiseZipper(BiFunction[] zippers) {
+		PairwiseZipper(BiFunction[] zippers) {
 			this.zippers = zippers;
 		}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,10 @@ package reactor.core.publisher;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Receiver;
+import reactor.core.Scannable;
+
 
 /**
  * Peek into the lifecycle and sequence signals.
@@ -30,7 +30,7 @@ import reactor.core.Receiver;
  *
  * @param <T> the value type of the sequence
  */
-interface SignalPeek<T> extends Receiver {
+interface SignalPeek<T> extends Scannable {
 
 	/**
 	 * A consumer that will observe {@link Subscriber#onSubscribe(Subscription)}
@@ -90,6 +90,4 @@ interface SignalPeek<T> extends Receiver {
 		return null;
 	}
 
-	@Override
-	Publisher<? extends T> upstream();
 }

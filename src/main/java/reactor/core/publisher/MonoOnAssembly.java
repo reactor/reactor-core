@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package reactor.core.publisher;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
@@ -41,7 +40,7 @@ final class MonoOnAssembly<T> extends MonoSource<T, T> implements Fuseable, Asse
 	/**
 	 * Create an assembly trace exposed as a {@link Mono}.
 	 */
-	MonoOnAssembly(Publisher<? extends T> source) {
+	MonoOnAssembly(Mono<? extends T> source) {
 		super(source);
 		this.stacktrace = new AssemblySnapshotException();
 	}
@@ -50,7 +49,7 @@ final class MonoOnAssembly<T> extends MonoSource<T, T> implements Fuseable, Asse
 	 * Create an assembly trace augmented with a custom description (eg. a name for a Mono
 	 * or a wider correlation ID) and exposed as a {@link Mono}.
 	 */
-	MonoOnAssembly(Publisher<? extends T> source, String description) {
+	MonoOnAssembly(Mono<? extends T> source, String description) {
 		super(source);
 		this.stacktrace = new AssemblySnapshotException(description);
 	}

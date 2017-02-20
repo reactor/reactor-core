@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,13 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
+import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Scannable;
+
 
 /**
  * Combines values from a main Publisher with values from another
@@ -46,7 +49,7 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 
 	final BiFunction<? super T, ? super U, ? extends R> combiner;
 
-	FluxWithLatestFrom(Publisher<? extends T> source,
+	FluxWithLatestFrom(Flux<? extends T> source,
 			Publisher<? extends U> other,
 			BiFunction<? super T, ? super U, ? extends R> combiner) {
 		super(source);
@@ -70,13 +73,18 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 	}
 
 	static final class WithLatestFromSubscriber<T, U, R>
-			implements Subscriber<T>, Subscription {
-
-		final Subscriber<? super R> actual;
+			implements InnerOperator<T, R>, InnerProducer<R> {
 
 		final BiFunction<? super T, ? super U, ? extends R> combiner;
+		final Subscriber<? super R>                         actual;
 
 		volatile Subscription main;
+
+		@Override
+		public final Subscriber<? super R> actual() {
+			return actual;
+		}
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<WithLatestFromSubscriber, Subscription>
 				MAIN =
@@ -107,6 +115,22 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 					Operators.reportSubscriptionSet();
 				}
 			}
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case CANCELLED:
+					return main == Operators.cancelledSubscription();
+				case PARENT:
+					return main;
+			}
+			return InnerOperator.super.scan(key);
+		}
+
+		@Override
+		public Stream<? extends Scannable> inners() {
+			return Stream.of(Scannable.from(other));
 		}
 
 		@Override
@@ -234,7 +258,7 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 		}
 	}
 
-	static final class WithLatestFromOtherSubscriber<U> implements Subscriber<U> {
+	static final class WithLatestFromOtherSubscriber<U> implements InnerConsumer<U> {
 
 		final WithLatestFromSubscriber<?, U, ?> main;
 
@@ -247,6 +271,14 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 			main.setOther(s);
 
 			s.request(Long.MAX_VALUE);
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			if (key == Attr.ACTUAL) {
+				return main;
+			}
+			return null;
 		}
 
 		@Override

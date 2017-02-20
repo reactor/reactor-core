@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -108,7 +108,7 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 	}
 
 	static final class FlattenIterableSubscriber<T, R>
-			implements Subscriber<T>, QueueSubscription<R> {
+			implements InnerOperator<T, R>, QueueSubscription<R> {
 
 		final Subscriber<? super R> actual;
 
@@ -163,6 +163,34 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 			this.prefetch = prefetch;
 			this.queueSupplier = queueSupplier;
 			this.limit = prefetch - (prefetch >> 2);
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return s;
+				case TERMINATED:
+					return done;
+				case ERROR:
+					return error;
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+				case CANCELLED:
+					return cancelled;
+				case PREFETCH:
+					return prefetch;
+				case LIMIT:
+					return limit;
+				case BUFFERED:
+					return queue != null ? queue.size() : 0;
+			}
+			return InnerOperator.super.scan(key);
+		}
+
+		@Override
+		public Subscriber<? super R> actual() {
+			return actual;
 		}
 
 		@Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,6 +79,7 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 				scenario(f -> Flux.using(() -> 0, c -> f, c -> {})),
 
 				scenario(f -> Flux.using(() -> 0, c -> f, c -> {}, false))
+						.shouldAssertPostTerminateState(false)
 		);
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.reactivestreams.Subscriber;
 import reactor.core.Cancellation;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
+
 
 /**
  * Executes a Callable and emits its value on the given Scheduler.
@@ -61,7 +62,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 	}
 
 	static final class CallableSubscribeOnSubscription<T>
-			implements QueueSubscription<T>, Runnable {
+			implements QueueSubscription<T>, InnerProducer<T>, Runnable {
 
 		final Subscriber<? super T> actual;
 
@@ -109,6 +110,22 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 			this.actual = actual;
 			this.callable = callable;
 			this.scheduler = scheduler;
+		}
+
+		@Override
+		public Subscriber<? super T> actual() {
+			return actual;
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key){
+				case CANCELLED:
+					return state == HAS_CANCELLED;
+				case BUFFERED:
+					return value != null ? 1 : 0;
+			}
+			return InnerProducer.super.scan(key);
 		}
 
 		@Override

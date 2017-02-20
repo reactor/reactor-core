@@ -15,10 +15,10 @@
  */
 package reactor.test.publisher;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSource;
 import reactor.core.publisher.Operators;
 
@@ -46,7 +46,7 @@ final class FluxFuseableExceptionOnPoll<T> extends FluxSource<T, T>
 
 	final RuntimeException exception;
 
-	FluxFuseableExceptionOnPoll(Publisher<? extends T> source,
+	FluxFuseableExceptionOnPoll(Flux<? extends T> source,
 			RuntimeException exception) {
 		super(source);
 		this.exception = exception;

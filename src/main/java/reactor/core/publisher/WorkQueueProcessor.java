@@ -31,9 +31,6 @@ import java.util.function.Supplier;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
-import reactor.core.Producer;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.concurrent.QueueSupplier;
@@ -537,15 +534,17 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 	@Override
 	public void subscribe(final Subscriber<? super E> subscriber) {
-		super.subscribe(subscriber);
+		if (subscriber == null) {
+			throw Exceptions.argumentIsNullException();
+		}
 
 		if (!alive()) {
 			TopicProcessor.coldSource(ringBuffer, null, error, workSequence).subscribe(subscriber);
 			return;
 		}
 
-		final QueueSubscriberLoop<E> signalProcessor =
-				new QueueSubscriberLoop<>(subscriber, this);
+		final WorkQueueInner<E> signalProcessor =
+				new WorkQueueInner<>(subscriber, this);
 		try {
 
 			incrementSubscribers();
@@ -630,7 +629,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 	@Override
 	public long getPending() {
-		return (getCapacity() - ringBuffer.getPending()) + claimedDisposed.size();
+		return (getBufferSize() - ringBuffer.getPending()) + claimedDisposed.size();
 	}
 
 	@Override
@@ -647,13 +646,13 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @param <T> event implementation storing the data for sharing during exchange or
 	 * parallel coordination of an event.
 	 */
-	final static class QueueSubscriberLoop<T>
-			implements Runnable, Producer, Trackable, Subscription, Receiver {
+	final static class WorkQueueInner<T>
+			implements Runnable, InnerProducer<T> {
 
 		final AtomicBoolean running = new AtomicBoolean(true);
 
 		final RingBuffer.Sequence
-				sequence = wrap(RingBuffer.INITIAL_CURSOR_VALUE, this);
+				sequence = RingBuffer.newSequence(RingBuffer.INITIAL_CURSOR_VALUE);
 
 		final RingBuffer.Sequence pendingRequest = RingBuffer.newSequence(0);
 
@@ -679,7 +678,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		 * @param subscriber the output Subscriber instance
 		 * @param processor the source processor
 		 */
-		QueueSubscriberLoop(Subscriber<? super T> subscriber,
+		WorkQueueInner(Subscriber<? super T> subscriber,
 				WorkQueueProcessor<T> processor) {
 			this.processor = processor;
 			this.subscriber = subscriber;
@@ -747,7 +746,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 						// this prevents the sequence getting too far forward if an error
 						// is thrown from the WorkHandler
 						if (processedSequence) {
-							if(isCancelled()){
+							if(!running.get()){
 								break;
 							}
 							processedSequence = false;
@@ -771,8 +770,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 								readNextEvent(unbounded);
 							}
 							catch (Exception ce) {
-								if (isCancelled() || !isRunning() || !WaitStrategy
-										.isAlert(ce)) {
+								if (!isRunning() || !WaitStrategy.isAlert(ce)) {
 									throw ce;
 								}
 								barrier.clearAlert();
@@ -854,7 +852,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 						if (v == null) {
 							processor.readWait.signalAllWhenBlocking();
-							return !processor.alive() && getPending() == 0;
+							return !processor.alive() && processor.ringBuffer.getPending() == 0;
 						}
 
 						if (v instanceof RingBuffer.Sequence) {
@@ -862,7 +860,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 							long cursor = s.getAsLong() + 1L;
 							if(cursor > processor.ringBuffer.getAsLong()){
 								processor.readWait.signalAllWhenBlocking();
-								return !processor.alive() && getPending() == 0;
+								return !processor.alive() && processor.ringBuffer.getPending() == 0;
 							}
 
 							barrier.waitFor(cursor, waiter);
@@ -887,7 +885,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 					}
 				}
 				catch (RuntimeException ce) {
-					if (isCancelled() || Exceptions.isCancel(ce)) {
+					if (!running.get() || Exceptions.isCancel(ce)) {
 						running.set(false);
 						return true;
 					}
@@ -902,7 +900,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 				}
 			}
 			else {
-				return !processor.alive() && getPending() == 0;
+				return !processor.alive() && processor.ringBuffer.getPending() == 0;
 			}
 		}
 
@@ -929,43 +927,25 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		}
 
 		@Override
-		public long requestedFromDownstream() {
-			return pendingRequest.getAsLong();
+		public Object scan(Attr key) {
+			switch (key){
+				case PARENT:
+					return processor;
+				case PREFETCH:
+					return Integer.MAX_VALUE;
+				case TERMINATED:
+					return processor.isTerminated();
+				case CANCELLED:
+					return !running.get();
+				case REQUESTED_FROM_DOWNSTREAM:
+					return pendingRequest.getAsLong();
+			}
+			return InnerProducer.super.scan(key);
 		}
 
 		@Override
-		public boolean isCancelled() {
-			return !running.get();
-		}
-
-		@Override
-		public boolean isStarted() {
-			return sequence.getAsLong() != -1L;
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return !running.get();
-		}
-
-		@Override
-		public long getPending() {
-			return processor.ringBuffer.getPending();
-		}
-
-		@Override
-		public long getCapacity() {
-			return processor.getCapacity();
-		}
-
-		@Override
-		public Object downstream() {
+		public Subscriber<? super T> actual() {
 			return subscriber;
-		}
-
-		@Override
-		public Object upstream() {
-			return processor;
 		}
 
 		@Override

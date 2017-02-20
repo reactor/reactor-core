@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,30 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.ArrayDeque;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BooleanSupplier;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Producer;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
 
 /**
  * Emits the last N values the source emitted before its completion.
  *
  * @param <T> the value type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxTakeLast<T> extends FluxSource<T, T> {
 
 	final int n;
 
-	FluxTakeLast(Publisher<? extends T> source, int n) {
+	FluxTakeLast(Flux<? extends T> source, int n) {
 		super(source);
 		if (n < 0) {
 			throw new IllegalArgumentException("n >= required but it was " + n);
@@ -48,22 +46,21 @@ final class FluxTakeLast<T> extends FluxSource<T, T> {
 	public void subscribe(Subscriber<? super T> s) {
 		if (n == 0) {
 			source.subscribe(new TakeLastZeroSubscriber<>(s));
-		} else {
+		}
+		else {
 			source.subscribe(new TakeLastManySubscriber<>(s, n));
 		}
 	}
-
 
 	@Override
 	public long getPrefetch() {
 		return Integer.MAX_VALUE;
 	}
 
-	static final class TakeLastZeroSubscriber<T> implements Subscriber<T>, Producer, Subscription,
-																	 Receiver {
+	static final class TakeLastZeroSubscriber<T> implements InnerOperator<T, T> {
 
 		final Subscriber<? super T> actual;
-		
+
 		Subscription s;
 
 		TakeLastZeroSubscriber(Subscriber<? super T> actual) {
@@ -71,10 +68,19 @@ final class FluxTakeLast<T> extends FluxSource<T, T> {
 		}
 
 		@Override
+		public Object scan(Attr key) {
+			switch (key){
+				case PARENT:
+					return s;
+			}
+			return InnerOperator.super.scan(key);
+		}
+
+		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
-				
+
 				actual.onSubscribe(this);
 
 				s.request(Long.MAX_VALUE);
@@ -97,30 +103,23 @@ final class FluxTakeLast<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public Object downstream() {
+		public Subscriber<? super T> actual() {
 			return actual;
 		}
-		
+
 		@Override
 		public void request(long n) {
 			s.request(n);
 		}
-		
+
 		@Override
 		public void cancel() {
 			s.cancel();
 		}
-		
-		@Override
-		public Object upstream() {
-			return s;
-		}
 	}
 
-	static final class TakeLastManySubscriber<T>
-			extends ArrayDeque<T>
-			implements Subscriber<T>, BooleanSupplier, Producer,
-			           Trackable, Subscription, Receiver {
+	static final class TakeLastManySubscriber<T> extends ArrayDeque<T>
+			implements BooleanSupplier, InnerOperator<T, T> {
 
 		final Subscriber<? super T> actual;
 
@@ -133,7 +132,8 @@ final class FluxTakeLast<T> extends FluxSource<T, T> {
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<TakeLastManySubscriber> REQUESTED =
-		  AtomicLongFieldUpdater.newUpdater(TakeLastManySubscriber.class, "requested");
+				AtomicLongFieldUpdater.newUpdater(TakeLastManySubscriber.class,
+						"requested");
 
 		TakeLastManySubscriber(Subscriber<? super T> actual, int n) {
 			this.actual = actual;
@@ -184,32 +184,26 @@ final class FluxTakeLast<T> extends FluxSource<T, T> {
 
 		@Override
 		public void onComplete() {
-
 			DrainUtils.postComplete(actual, this, REQUESTED, this, this);
 		}
 
 		@Override
-		public Object upstream() {
-			return s;
+		public Object scan(Attr key) {
+			switch (key){
+				case CANCELLED:
+					return cancelled;
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+				case PARENT:
+					return s;
+				case BUFFERED:
+					return size();
+			}
+			return InnerOperator.super.scan(key);
 		}
 
 		@Override
-		public boolean isCancelled() {
-			return cancelled;
-		}
-
-		@Override
-		public long getPending() {
-			return size();
-		}
-
-		@Override
-		public long getCapacity() {
-			return n;
-		}
-
-		@Override
-		public Object downstream() {
+		public Subscriber<? super T> actual() {
 			return actual;
 		}
 	}

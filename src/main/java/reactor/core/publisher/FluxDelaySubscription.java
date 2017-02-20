@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,8 @@ import java.util.Objects;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Producer;
+
+
 
 /**
  * Delays the subscription to the main source until another Publisher
@@ -34,7 +35,7 @@ final class FluxDelaySubscription<T, U> extends FluxSource<T, T> {
 
 	final Publisher<U> other;
 
-	public FluxDelaySubscription(Publisher<? extends T> source, Publisher<U> other) {
+	FluxDelaySubscription(Flux<? extends T> source, Publisher<U> other) {
 		super(source);
 		this.other = Objects.requireNonNull(other, "other");
 	}
@@ -50,8 +51,7 @@ final class FluxDelaySubscription<T, U> extends FluxSource<T, T> {
 	}
 
 	static final class DelaySubscriptionOtherSubscriber<T, U>
-			extends Operators.DeferredSubscription implements Producer,
-			                                                        Subscriber<U> {
+			extends Operators.DeferredSubscription implements InnerOperator<U, T> {
 
 		final Publisher<? extends T> source;
 
@@ -61,13 +61,26 @@ final class FluxDelaySubscription<T, U> extends FluxSource<T, T> {
 
 		boolean done;
 
-		public DelaySubscriptionOtherSubscriber(Subscriber<? super T> actual, Publisher<? extends T> source) {
+		DelaySubscriptionOtherSubscriber(Subscriber<? super T> actual, Publisher<?
+				extends T> source) {
 			this.actual = actual;
 			this.source = source;
+
 		}
 
 		@Override
-		public Object downstream() {
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return s;
+				case TERMINATED:
+					return done;
+			}
+			return super.scan(key);
+		}
+
+		@Override
+		public Subscriber<? super T> actual() {
 			return actual;
 		}
 
@@ -123,16 +136,26 @@ final class FluxDelaySubscription<T, U> extends FluxSource<T, T> {
 			source.subscribe(new DelaySubscriptionMainSubscriber<>(actual, this));
 		}
 
-		static final class DelaySubscriptionMainSubscriber<T> implements Subscriber<T> {
+		static final class DelaySubscriptionMainSubscriber<T>
+				implements InnerConsumer<T> {
 
 			final Subscriber<? super T> actual;
 
 			final DelaySubscriptionOtherSubscriber<?, ?> arbiter;
 
-			public DelaySubscriptionMainSubscriber(Subscriber<? super T> actual,
+			DelaySubscriptionMainSubscriber(Subscriber<? super T> actual,
 					DelaySubscriptionOtherSubscriber<?, ?> arbiter) {
 				this.actual = actual;
 				this.arbiter = arbiter;
+			}
+
+			@Override
+			public Object scan(Attr key) {
+				switch (key){
+					case ACTUAL:
+						return actual;
+				}
+				return null;
 			}
 
 			@Override

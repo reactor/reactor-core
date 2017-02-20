@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,14 +20,13 @@ import java.util.Objects;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
-import reactor.core.Receiver;
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoJust<T> 
 extends Mono<T>
-		implements Fuseable.ScalarCallable<T>, Receiver, Fuseable {
+		implements Fuseable.ScalarCallable<T>, Fuseable {
 
 	final T value;
 
@@ -53,10 +52,5 @@ extends Mono<T>
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 		s.onSubscribe(Operators.scalarSubscription(s, value));
-	}
-
-	@Override
-	public Object upstream() {
-		return value;
 	}
 }

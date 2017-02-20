@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,10 @@
  */
 package reactor.core.publisher;
 
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-
 import java.util.Objects;
 import java.util.function.BiConsumer;
 
+import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 
 /**
@@ -37,7 +35,7 @@ final class MonoHandleFuseable<T, R> extends MonoSource<T, R>
 
 	final BiConsumer<? super T, SynchronousSink<R>> handler;
 
-	MonoHandleFuseable(Publisher<? extends T> source, BiConsumer<? super T, SynchronousSink<R>> handler) {
+	MonoHandleFuseable(Mono<? extends T> source, BiConsumer<? super T, SynchronousSink<R>> handler) {
 		super(source);
 		this.handler = Objects.requireNonNull(handler, "handler");
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.function.Function;
 
-import org.reactivestreams.*;
-
+import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 
 /**
@@ -43,7 +42,7 @@ final class MonoMapFuseable<T, R> extends MonoSource<T, R>
 	 * @param mapper the mapper function
 	 * @throws NullPointerException if either {@code source} or {@code mapper} is null.
 	 */
-	MonoMapFuseable(Publisher<? extends T> source, Function<? super T, ? extends R> mapper) {
+	MonoMapFuseable(Mono<? extends T> source, Function<? super T, ? extends R> mapper) {
 		super(source);
 		this.mapper = Objects.requireNonNull(mapper, "mapper");
 	}

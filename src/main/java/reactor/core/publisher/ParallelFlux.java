@@ -39,6 +39,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.util.Logger;
 import reactor.util.concurrent.QueueSupplier;
 
+
 /**
  * A ParallelFlux publishes to an array of Subscribers, in parallel 'rails' (or
  * {@link #groups() 'groups'}).
@@ -692,19 +693,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 			Level level,
 			boolean showOperatorLine,
 			SignalType... options) {
-
-		SignalLogger<T> log =
-				new SignalLogger<>(this, category, level, showOperatorLine, options);
-
-		return doOnSignal(this,
-				log.onNextCall(),
-				log.onAfterNextCall(),
-				log.onErrorCall(),
-				log.onCompleteCall(),
-				log.onAfterTerminateCall(),
-				log.onSubscribeCall(),
-				log.onRequestCall(),
-				log.onCancelCall());
+		return onAssembly(new ParallelLog<>(this, new SignalLogger<>(this, category, level, showOperatorLine, options)));
 	}
 	
 	/**
@@ -963,6 +952,17 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Merge the rails into a {@link #sequential()} Flux and
+	 * {@link Flux#subscribe(Subscriber) subscribe} to said Flux.
+	 *
+	 * @param s the subscriber to use on {@link #sequential()} Flux
+	 */
+	@Override
+	public final void subscribe(Subscriber<? super T> s) {
+		sequential().subscribe(new FluxHide.SuppressFuseableSubscriber<>(s));
+	}
+
+	/**
 	 * Allows composing operators, in assembly time, on top of this {@link ParallelFlux}
 	 * and returns another {@link ParallelFlux} with composed features.
 	 *
@@ -1080,16 +1080,6 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 		return -1L;
 	}
 
-	/**
-	 * Merge the rails into a {@link #sequential()} Flux and
-	 * {@link Flux#subscribe(Subscriber) subscribe} to said Flux.
-	 *
-	 * @param s the subscriber to use on {@link #sequential()} Flux
-	 */
-	@Override
-	public final void subscribe(Subscriber<? super T> s) {
-		sequential().subscribe(new FluxHide.SuppressFuseableSubscriber<>(s));
-	}
 
 	/**
 	 * Invoke {@link Hooks} pointcut given a {@link ParallelFlux} and returning an
@@ -1102,7 +1092,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings("unchecked")
 	protected static <T> ParallelFlux<T> onAssembly(ParallelFlux<T> source) {
-		Hooks.OnOperatorCreate hook = Hooks.onOperatorCreate;
+		Hooks.OnOperatorHook hook = Hooks.onOperatorHook;
 		if (hook == null) {
 			return source;
 		}

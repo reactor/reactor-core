@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
@@ -26,9 +27,11 @@ import java.util.function.Predicate;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Producer;
-import reactor.core.Trackable;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
+import reactor.core.Producer;
+import reactor.core.Scannable;
+import reactor.core.Trackable;
 
 /**
  *
@@ -46,7 +49,7 @@ import reactor.core.Exceptions;
  * @param <E> the element type
  */
 public final class BlockingSink<E>
-		implements Producer, Subscription, Trackable, Consumer<E>, Closeable {
+		implements Subscription, Consumer<E>, Disposable, Producer, Trackable, Closeable {
 	/**
 	 * An acknowledgement signal returned by {@link #emit}.
 	 * {@link BlockingSink.Emission#isOk()} is the only successful signal, the other define the emission failure cause.
@@ -139,7 +142,6 @@ public final class BlockingSink<E>
 		finish();
 	}
 
-	@Override
 	public Subscriber<? super E> downstream() {
 		return actual;
 	}
@@ -278,14 +280,11 @@ public final class BlockingSink<E>
 		}
 	}
 
-	@Override
 	public long getCapacity() {
-		return Trackable.class.isAssignableFrom(actual.getClass()) ? ((Trackable)
-				actual).getCapacity() :
-				Long.MAX_VALUE;
+		return Scannable.from(actual)
+		                .scanOrDefault(Scannable.Attr.CAPACITY, Integer.MAX_VALUE);
 	}
 
-	@Override
 	public Throwable getError() {
 		return uncaughtException;
 	}
@@ -304,9 +303,18 @@ public final class BlockingSink<E>
 		return !cancelled && requested != 0L;
 	}
 
-	@Override
 	public boolean isCancelled() {
 		return cancelled;
+	}
+
+	@Override
+	public void dispose() {
+		error(new CancellationException("disposed"));
+	}
+
+	@Override
+	public boolean isDisposed() {
+		return isCancelled();
 	}
 
 	/**
@@ -323,7 +331,6 @@ public final class BlockingSink<E>
 		}
 	}
 
-	@Override
 	public long requestedFromDownstream() {
 		return requested;
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -180,14 +180,14 @@ public interface Fuseable {
 	 *
 	 * @param <T> the content value type
 	 */
-	interface SynchronousSubscription<T> extends QueueSubscription<T>, Queue<T> {
+	interface SynchronousSubscription<T> extends QueueSubscription<T> {
 
 		@Override
 		default int requestFusion(int requestedMode) {
-			if(requestedMode == NONE){
-				return NONE;
+			if ((requestedMode & Fuseable.SYNC) != 0) {
+				return Fuseable.SYNC;
 			}
-			return SYNC;
+			return NONE;
 		}
 
 	}

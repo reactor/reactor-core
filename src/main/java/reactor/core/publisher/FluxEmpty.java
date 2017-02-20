@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
-import reactor.core.Trackable;
+
 
 /**
  * Represents an empty publisher which only calls onSubscribe and onComplete.
@@ -28,7 +28,7 @@ import reactor.core.Trackable;
  */
 final class FluxEmpty
 extends Flux<Object>
-		implements Fuseable.ScalarCallable<Object>, Trackable {
+		implements Fuseable.ScalarCallable<Object> {
 
 	private static final Flux<Object> INSTANCE = new FluxEmpty();
 
@@ -55,10 +55,5 @@ extends Flux<Object>
 	@Override
 	public Object call() {
 		return null; /* Scalar optimizations on empty */
-	}
-
-	@Override
-	public boolean isTerminated() {
-		return true;
 	}
 }

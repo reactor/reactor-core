@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
-import reactor.core.Receiver;
 
 /**
  * Executes a Supplier function and emits a single value to each individual Subscriber.
@@ -32,17 +31,12 @@ import reactor.core.Receiver;
  */
 final class MonoSupplier<T> 
 extends Mono<T>
-		implements Receiver, Callable<T>, Fuseable {
+		implements Callable<T>, Fuseable {
 
 	final Supplier<? extends T> supplier;
 
 	MonoSupplier(Supplier<? extends T> callable) {
 		this.supplier = Objects.requireNonNull(callable, "callable");
-	}
-
-	@Override
-	public Object upstream() {
-		return supplier;
 	}
 
 	@Override

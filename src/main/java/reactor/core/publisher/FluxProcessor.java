@@ -16,12 +16,19 @@
 
 package reactor.core.publisher;
 
+import java.util.Iterator;
+import java.util.concurrent.CancellationException;
+import java.util.stream.Stream;
+
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Trackable;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
+import reactor.core.MultiProducer;
+import reactor.core.Scannable;
+import reactor.core.Trackable;
 
 /**
  * A base processor that exposes {@link Flux} API for {@link Processor}.
@@ -35,7 +42,7 @@ import reactor.core.Exceptions;
  * @param <OUT> the output value type
  */
 public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
-		implements Processor<IN, OUT>, Trackable {
+		implements Processor<IN, OUT>, Scannable, Disposable, Trackable, MultiProducer {
 
 	/**
 	 * Build a {@link FluxProcessor} whose data are emitted by the most recent emitted {@link Publisher}.
@@ -107,9 +114,27 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		return BlockingSink.create(this, autostart);
 	}
 
-	@Override
-	public long getCapacity() {
+	/**
+	 * Return the processor buffer capacity if any or {@link Integer#MAX_VALUE}
+	 *
+	 * @return processor buffer capacity if any or {@link Integer#MAX_VALUE}
+	 */
+	public int getBufferSize() {
 		return Integer.MAX_VALUE;
+	}
+
+	@Override
+	public final long getCapacity() {
+		return getBufferSize();
+	}
+
+	/**
+	 * Current error if any, default to null
+	 *
+	 * @return Current error if any, default to null
+	 */
+	public Throwable getError() {
+		return null;
 	}
 
 	/**
@@ -122,6 +147,9 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		return new DelegateProcessor<>(this, Operators.serialize(this));
 	}
 
+	/**
+	 * Note: From 3.1 this is to be left unimplemented
+	 */
 	@Override
 	public void subscribe(Subscriber<? super OUT> s) {
 		if (s == null) {
@@ -129,4 +157,69 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		}
 	}
 
+	@Override
+	public void dispose() {
+		onError(new CancellationException("Disposed"));
+	}
+
+	/**
+	 * Has this upstream started or "onSubscribed" ?
+	 *
+	 * @return has this upstream started or "onSubscribed" ?
+	 */
+	public boolean isStarted() {
+		return true;
+	}
+
+	/**
+	 * Has this upstream finished or "completed" / "failed" ?
+	 *
+	 * @return has this upstream finished or "completed" / "failed" ?
+	 */
+	public boolean isTerminated() {
+		return false;
+	}
+
+	/**
+	 * Return the number of active {@link Subscriber} or {@literal -1} if untracked.
+	 *
+	 * @return the number of active {@link Subscriber} or {@literal -1} if untracked
+	 */
+	public long downstreamCount(){
+		return inners().count();
+	}
+
+	/**
+	 * Return true if any {@link Subscriber} is actively subscribed
+	 *
+	 * @return true if any {@link Subscriber} is actively subscribed
+	 */
+	public boolean hasDownstreams() {
+		return downstreamCount() != 0L;
+	}
+
+	@Override
+	public Iterator<?> downstreams() {
+		return inners().iterator();
+	}
+
+	@Override
+	public Stream<? extends Scannable> inners() {
+		return Stream.empty();
+	}
+
+	@Override
+	public Object scan(Attr key) {
+		switch (key) {
+			case TERMINATED:
+				return isTerminated();
+			case ERROR:
+				return getError();
+			case CAPACITY:
+				return getBufferSize();
+			case PUBSUB:
+				return true;
+		}
+		return null;
+	}
 }

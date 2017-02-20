@@ -1,5 +1,5 @@
-	/*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+/*
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -20,14 +21,12 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Producer;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
 
 /**
  * Emits a single item at most from the source.
  *
  * @param <T> the value type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoNext<T> extends MonoSource<T, T> {
@@ -41,8 +40,7 @@ final class MonoNext<T> extends MonoSource<T, T> {
 		source.subscribe(new NextSubscriber<>(s));
 	}
 
-	static final class NextSubscriber<T>
-			implements Subscriber<T>, Subscription, Receiver, Producer, Trackable {
+	static final class NextSubscriber<T> implements InnerOperator<T, T> {
 
 		final Subscriber<? super T> actual;
 
@@ -109,28 +107,20 @@ final class MonoNext<T> extends MonoSource<T, T> {
 		public void cancel() {
 			s.cancel();
 		}
+
 		@Override
-		public boolean isStarted() {
-			return s != null && !done;
+		public Object scan(Attr key) {
+			switch (key) {
+				case TERMINATED:
+					return done;
+				case PARENT:
+					return s;
+			}
+			return InnerOperator.super.scan(key);
 		}
 
 		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
-		public long getCapacity() {
-			return 1L;
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
-		}
-
-		@Override
-		public Object downstream() {
+		public Subscriber<? super T> actual() {
 			return actual;
 		}
 

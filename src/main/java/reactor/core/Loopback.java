@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,10 @@ package reactor.core;
 
 /**
  * A component that is forking to a sub-flow given a delegate input and that is consuming from a given delegate output
+ * @deprecated This internal introspection interface has been removed in favor of
+ * centralized, attribute-based {@link Scannable}.
  */
+@Deprecated
 public interface Loopback {
 
 	/**

@@ -55,6 +55,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.Logger;
 import reactor.util.concurrent.QueueSupplier;
+
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuple4;
@@ -1197,7 +1198,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	//TODO remove from 3.1.0 public API by making package-protected
 	public static <T> Flux<T> mergeSequential(Publisher<? extends Publisher<? extends T>> sources,
 			boolean delayError, int maxConcurrency, int prefetch) {
-		return onAssembly(new FluxMergeSequential<>(sources, identityFunction(),
+		return onAssembly(new FluxMergeSequential<>(sources,
+				identityFunction(),
 				maxConcurrency, prefetch, delayError ? FluxConcatMap.ErrorMode.END :
 				FluxConcatMap.ErrorMode.IMMEDIATE));
 	}
@@ -3747,14 +3749,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Flux<T> doFinally(Consumer<SignalType> onFinally) {
 		Objects.requireNonNull(onFinally, "onFinally");
-		Flux<T> fluxDoFinally;
 		if (this instanceof Fuseable) {
-			fluxDoFinally = new FluxDoFinallyFuseable<>(this, onFinally);
+			return onAssembly(new FluxDoFinallyFuseable<>(this, onFinally));
 		}
-		else {
-			fluxDoFinally = new FluxDoFinally<>(this, onFinally);
-		}
-		return onAssembly(fluxDoFinally);
+		return onAssembly(new FluxDoFinally<>(this, onFinally));
 	}
 
 	/**
@@ -4563,14 +4561,10 @@ public abstract class Flux<T> implements Publisher<T> {
 		SignalLogger<T> log = new SignalLogger<>(this, category, level,
 				showOperatorLine, options);
 
-		return doOnSignal(this,
-				log.onSubscribeCall(),
-				log.onNextCall(),
-				log.onErrorCall(),
-				log.onCompleteCall(),
-				log.onAfterTerminateCall(),
-				log.onRequestCall(),
-				log.onCancelCall());
+		if (this instanceof Fuseable) {
+			return onAssembly(new FluxLogFuseable<>(this, log));
+		}
+		return onAssembly(new FluxLog<>(this, log));
 	}
 
 	/**
@@ -6343,7 +6337,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			tail = this;
 		}
 		else {
-			tail = publishOn(Schedulers.immediate(), c);
+			tail = limitRate(c);
 		}
 		return tail.subscribeWith(consumerAction);
 	}
@@ -7806,7 +7800,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings("unchecked")
 	protected static <T> Flux<T> onAssembly(Flux<T> source) {
-		Hooks.OnOperatorCreate hook = Hooks.onOperatorCreate;
+		Hooks.OnOperatorHook hook = Hooks.onOperatorHook;
 		if(hook == null) {
 			return source;
 		}
@@ -7824,7 +7818,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings("unchecked")
 	protected static <T> ConnectableFlux<T> onAssembly(ConnectableFlux<T> source) {
-		Hooks.OnOperatorCreate hook = Hooks.onOperatorCreate;
+		Hooks.OnOperatorHook hook = Hooks.onOperatorHook;
 		if(hook == null) {
 			return source;
 		}
@@ -7837,7 +7831,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	@SuppressWarnings("unchecked")
-	static <T> Flux<T> doOnSignal(Publisher<T> source,
+	static <T> Flux<T> doOnSignal(Flux<T> source,
 			Consumer<? super Subscription> onSubscribe,
 			Consumer<? super T> onNext,
 			Consumer<? super Throwable> onError,
@@ -7869,7 +7863,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Peek into a sequence signals while passing around a per-subscriber
 	 * state object initialized by {@code stateSeeder} to the various callbacks
 	 */
-	static <T,S> Flux<T> doOnSignalStateful(Publisher<T> source,
+	static <T,S> Flux<T> doOnSignalStateful(Flux<T> source,
 			Supplier<S> stateSeeder,
 			BiConsumer<? super Subscription, S> onSubscribe,
 			BiConsumer<? super T, S> onNext,

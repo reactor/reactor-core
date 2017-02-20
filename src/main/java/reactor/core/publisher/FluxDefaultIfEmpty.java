@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,9 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
-import reactor.core.Receiver;
 
 /**
  * Emits a scalar value if the source sequence turns out to be empty.
@@ -33,7 +31,7 @@ final class FluxDefaultIfEmpty<T> extends FluxSource<T, T> {
 
 	final T value;
 
-	public FluxDefaultIfEmpty(Publisher<? extends T> source, T value) {
+	FluxDefaultIfEmpty(Flux<? extends T> source, T value) {
 		super(source);
 		this.value = Objects.requireNonNull(value, "value");
 	}
@@ -44,16 +42,24 @@ final class FluxDefaultIfEmpty<T> extends FluxSource<T, T> {
 	}
 
 	static final class DefaultIfEmptySubscriber<T>
-			extends Operators.MonoSubscriber<T, T>
-			implements Receiver {
+			extends Operators.MonoSubscriber<T, T> {
 
 		Subscription s;
 
 		boolean hasValue;
 
-		public DefaultIfEmptySubscriber(Subscriber<? super T> actual, T value) {
+		DefaultIfEmptySubscriber(Subscriber<? super T> actual, T value) {
 			super(actual);
 			this.value = value;
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return s;
+			}
+			return super.scan(key);
 		}
 
 		@Override
@@ -98,11 +104,6 @@ final class FluxDefaultIfEmpty<T> extends FluxSource<T, T> {
 		@Override
 		public void setValue(T value) {
 			// value is constant
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
 		}
 
 		@Override

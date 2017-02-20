@@ -1,65 +1,80 @@
+/*
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Producer;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
 
 /**
- * Intercepts the onSubscribe call and makes sure calls to Subscription methods
- * only happen after the child Subscriber has returned from its onSubscribe method.
- * 
+ * Intercepts the onSubscribe call and makes sure calls to Subscription methods only
+ * happen after the child Subscriber has returned from its onSubscribe method.
+ * <p>
  * <p>This helps with child Subscribers that don't expect a recursive call from
- * onSubscribe into their onNext because, for example, they request immediately from
- * their onSubscribe but don't finish their preparation before that and onNext
- * runs into a half-prepared state. This can happen with non Rx mentality based Subscribers.
+ * onSubscribe into their onNext because, for example, they request immediately from their
+ * onSubscribe but don't finish their preparation before that and onNext runs into a
+ * half-prepared state. This can happen with non Rx mentality based Subscribers.
  *
  * @param <T> the value type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  * @since 3.0
  */
 final class FluxAwaitOnSubscribe<T> extends FluxSource<T, T> {
 
-	public FluxAwaitOnSubscribe(Publisher<? extends T> source) {
+	FluxAwaitOnSubscribe(Flux<? extends T> source) {
 		super(source);
 	}
-	
+
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 		source.subscribe(new PostOnSubscribeSubscriber<>(s));
 	}
-	
-	static final class PostOnSubscribeSubscriber<T> implements Receiver,
-	                                                           Producer,
-	                                                           Trackable, Subscriber<T>,
-	                                                           Subscription {
+
+	static final class PostOnSubscribeSubscriber<T> implements InnerOperator<T, T> {
+
 		final Subscriber<? super T> actual;
-		
+
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<PostOnSubscribeSubscriber, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(PostOnSubscribeSubscriber.class, Subscription.class, "s");
-		
+		static final AtomicReferenceFieldUpdater<PostOnSubscribeSubscriber, Subscription>
+				S =
+				AtomicReferenceFieldUpdater.newUpdater(PostOnSubscribeSubscriber.class,
+						Subscription.class,
+						"s");
+
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<PostOnSubscribeSubscriber> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(PostOnSubscribeSubscriber.class, "requested");
+				AtomicLongFieldUpdater.newUpdater(PostOnSubscribeSubscriber.class,
+						"requested");
 
-		public PostOnSubscribeSubscriber(Subscriber<? super T> actual) {
+		PostOnSubscribeSubscriber(Subscriber<? super T> actual) {
 			this.actual = actual;
 		}
-		
+
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
-				
+
 				actual.onSubscribe(this);
-				
+
 				if (Operators.setOnce(S, this, s)) {
 					long r = REQUESTED.getAndSet(this, 0L);
 					if (r != 0L) {
@@ -68,28 +83,29 @@ final class FluxAwaitOnSubscribe<T> extends FluxSource<T, T> {
 				}
 			}
 		}
-		
+
 		@Override
 		public void onNext(T t) {
 			actual.onNext(t);
 		}
-		
+
 		@Override
 		public void onError(Throwable t) {
 			actual.onError(t);
 		}
-		
+
 		@Override
 		public void onComplete() {
 			actual.onComplete();
 		}
-		
+
 		@Override
 		public void request(long n) {
 			Subscription a = s;
 			if (a != null) {
 				a.request(n);
-			} else {
+			}
+			else {
 				if (Operators.validate(n)) {
 					Operators.getAndAddCap(REQUESTED, this, n);
 					a = s;
@@ -102,25 +118,28 @@ final class FluxAwaitOnSubscribe<T> extends FluxSource<T, T> {
 				}
 			}
 		}
-		
+
 		@Override
 		public void cancel() {
 			Operators.terminate(S, this);
 		}
 
 		@Override
-		public Object downstream() {
+		public Subscriber<? super T> actual() {
 			return actual;
 		}
 
 		@Override
-		public Object upstream() {
-			return s;
-		}
-
-		@Override
-		public long requestedFromDownstream() {
-			return requested;
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return s;
+				case CANCELLED:
+					return s == Operators.cancelledSubscription();
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+			}
+			return InnerOperator.super.scan(key);
 		}
 	}
 }

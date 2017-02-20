@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
+import reactor.core.Scannable;
 
 /**
  * Hides the identities of the upstream Publisher object and its Subscription as well.
@@ -24,7 +25,7 @@ import org.reactivestreams.Subscriber;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class ParallelFluxHide<T> extends ParallelFlux<T> {
+final class ParallelFluxHide<T> extends ParallelFlux<T> implements Scannable{
 
 	final ParallelFlux<T> source;
 
@@ -40,6 +41,17 @@ final class ParallelFluxHide<T> extends ParallelFlux<T> {
 	@Override
 	public int parallelism() {
 		return source.parallelism();
+	}
+
+	@Override
+	public Object scan(Attr key) {
+		switch (key){
+			case PARENT:
+				return source;
+			case PREFETCH:
+				return getPrefetch();
+		}
+		return null;
 	}
 
 	@Override

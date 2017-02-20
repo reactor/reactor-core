@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,10 @@ package reactor.core;
 
 /**
  * A lifecycle backed downstream
+ * @deprecated This internal introspection interface has been removed in favor of
+ * centralized, attribute-based {@link Scannable}.
  */
+@Deprecated
 public interface Trackable {
 
 	/**
@@ -27,13 +30,6 @@ public interface Trackable {
 	long UNSPECIFIED = -1L;
 
 	/**
-	 * @return expected number of events to be produced to this component
-	 */
-	default long expectedFromUpstream() {
-		return UNSPECIFIED;
-	}
-
-	/**
 	 * Return defined element capacity
 	 * @return long capacity
 	 */
@@ -41,13 +37,20 @@ public interface Trackable {
 		return UNSPECIFIED;
 	}
 
-
 	/**
 	 * Current error if any, default to null
 	 * @return Current error if any, default to null
 	 */
 	default Throwable getError(){
 		return null;
+	}
+
+
+	/**
+	 * @return expected number of events to be produced to this component
+	 */
+	default long expectedFromUpstream() {
+		return UNSPECIFIED;
 	}
 
 	/**

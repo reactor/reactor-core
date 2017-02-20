@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,8 @@
 package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 
 import org.junit.Test;
-import reactor.core.Receiver;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -54,13 +52,6 @@ public class MonoSupplierTest {
 			throw new RuntimeException("forced failure");
 		}))
 		            .verifyErrorMessage("forced failure");
-	}
-
-	@Test
-	public void supplierUpstream() {
-		Supplier<?> s = () -> "test";
-
-		assertThat(((Receiver)Mono.fromSupplier(s)).upstream()).isEqualTo(s);
 	}
 
 	@Test

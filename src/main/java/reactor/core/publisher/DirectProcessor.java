@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,16 @@
  */
 package reactor.core.publisher;
 
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.stream.Stream;
 
-import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
-import reactor.core.MultiProducer;
-import reactor.core.Producer;
 import reactor.core.Receiver;
-import reactor.core.Trackable;
+import reactor.core.Scannable;
 
 /**
  * Dispatches onNext, onError and onComplete signals to zero-to-many Subscribers.
@@ -46,8 +42,7 @@ import reactor.core.Trackable;
  * @param <T> the input and output value type
  */
 public final class DirectProcessor<T>
-		extends FluxProcessor<T, T>
-	implements Receiver, MultiProducer {
+		extends FluxProcessor<T, T> implements Receiver {
 
 
 	/**
@@ -60,17 +55,17 @@ public final class DirectProcessor<T>
 	}
 
 	@SuppressWarnings("rawtypes")
-	private static final DirectProcessorSubscription[] EMPTY = new DirectProcessorSubscription[0];
+	private static final DirectInner[] EMPTY = new DirectInner[0];
 
 	@SuppressWarnings("rawtypes")
-	private static final DirectProcessorSubscription[] TERMINATED = new DirectProcessorSubscription[0];
+	private static final DirectInner[] TERMINATED = new DirectInner[0];
 
 	@SuppressWarnings("unchecked")
-	private volatile	 DirectProcessorSubscription<T>[]										   subscribers = EMPTY;
+	private volatile	 DirectInner<T>[]                                           subscribers = EMPTY;
 	@SuppressWarnings("rawtypes")
-	private static final AtomicReferenceFieldUpdater<DirectProcessor, DirectProcessorSubscription[]>SUBSCRIBERS =
+	private static final AtomicReferenceFieldUpdater<DirectProcessor, DirectInner[]>SUBSCRIBERS =
 	  AtomicReferenceFieldUpdater.newUpdater(DirectProcessor.class,
-		DirectProcessorSubscription[].class,
+		DirectInner[].class,
 		"subscribers");
 
 	Throwable error;
@@ -97,7 +92,7 @@ public final class DirectProcessor<T>
 	public void onNext(T t) {
 		Objects.requireNonNull(t, "t");
 
-		for (DirectProcessorSubscription<T> s : subscribers) {
+		for (DirectInner<T> s : subscribers) {
 			s.onNext(t);
 		}
 	}
@@ -107,23 +102,25 @@ public final class DirectProcessor<T>
 		Objects.requireNonNull(t, "t");
 
 		error = t;
-		for (DirectProcessorSubscription<?> s : SUBSCRIBERS.getAndSet(this, TERMINATED)) {
+		for (DirectInner<?> s : SUBSCRIBERS.getAndSet(this, TERMINATED)) {
 			s.onError(t);
 		}
 	}
 
 	@Override
 	public void onComplete() {
-		for (DirectProcessorSubscription<?> s : SUBSCRIBERS.getAndSet(this, TERMINATED)) {
+		for (DirectInner<?> s : SUBSCRIBERS.getAndSet(this, TERMINATED)) {
 			s.onComplete();
 		}
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		Objects.requireNonNull(s, "s");
+		if (s == null) {
+			throw Exceptions.argumentIsNullException();
+		}
 
-		DirectProcessorSubscription<T> p = new DirectProcessorSubscription<>(s, this);
+		DirectInner<T> p = new DirectInner<>(s, this);
 		s.onSubscribe(p);
 
 		if (add(p)) {
@@ -141,8 +138,8 @@ public final class DirectProcessor<T>
 	}
 
 	@Override
-	public boolean isStarted() {
-		return true;
+	public Stream<? extends Scannable> inners() {
+		return Stream.of(subscribers);
 	}
 
 	@Override
@@ -151,17 +148,12 @@ public final class DirectProcessor<T>
 	}
 
 	@Override
-	public Iterator<?> downstreams() {
-		return Arrays.asList(subscribers).iterator();
-	}
-
-	@Override
 	public long downstreamCount() {
 		return subscribers.length;
 	}
 
-	boolean add(DirectProcessorSubscription<T> s) {
-		DirectProcessorSubscription<T>[] a = subscribers;
+	boolean add(DirectInner<T> s) {
+		DirectInner<T>[] a = subscribers;
 		if (a == TERMINATED) {
 			return false;
 		}
@@ -173,7 +165,7 @@ public final class DirectProcessor<T>
 			}
 			int len = a.length;
 
-			@SuppressWarnings("unchecked") DirectProcessorSubscription<T>[] b = new DirectProcessorSubscription[len + 1];
+			@SuppressWarnings("unchecked") DirectInner<T>[] b = new DirectInner[len + 1];
 			System.arraycopy(a, 0, b, 0, len);
 			b[len] = s;
 
@@ -184,8 +176,8 @@ public final class DirectProcessor<T>
 	}
 
 	@SuppressWarnings("unchecked")
-	void remove(DirectProcessorSubscription<T> s) {
-		DirectProcessorSubscription<T>[] a = subscribers;
+	void remove(DirectInner<T> s) {
+		DirectInner<T>[] a = subscribers;
 		if (a == TERMINATED || a == EMPTY) {
 			return;
 		}
@@ -213,7 +205,7 @@ public final class DirectProcessor<T>
 				return;
 			}
 
-			DirectProcessorSubscription<T>[] b = new DirectProcessorSubscription[len - 1];
+			DirectInner<T>[] b = new DirectInner[len - 1];
 			System.arraycopy(a, 0, b, 0, j);
 			System.arraycopy(a, j + 1, b, j, len - j - 1);
 
@@ -223,14 +215,24 @@ public final class DirectProcessor<T>
 
 	@Override
 	public boolean hasDownstreams() {
-		DirectProcessorSubscription<T>[] s = subscribers;
+		DirectInner<T>[] s = subscribers;
 		return s != EMPTY && s != TERMINATED;
 	}
 
+	/**
+	 * Return true if terminated with onComplete
+	 *
+	 * @return true if terminated with onComplete
+	 */
 	public boolean hasCompleted() {
 		return subscribers == TERMINATED && error == null;
 	}
 
+	/**
+	 * Return true if terminated with onError
+	 *
+	 * @return true if terminated with onError
+	 */
 	public boolean hasError() {
 		return subscribers == TERMINATED && error != null;
 	}
@@ -243,9 +245,12 @@ public final class DirectProcessor<T>
 		return null;
 	}
 
-	static final class DirectProcessorSubscription<T> implements Subscription,
-																 Receiver, Producer,
-																 Trackable {
+	@Override
+	public Object upstream() {
+		return null;
+	}
+
+	static final class DirectInner<T> implements InnerProducer<T> {
 
 		final Subscriber<? super T> actual;
 
@@ -255,10 +260,10 @@ public final class DirectProcessor<T>
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<DirectProcessorSubscription> REQUESTED =
-		  AtomicLongFieldUpdater.newUpdater(DirectProcessorSubscription.class, "requested");
+		static final AtomicLongFieldUpdater<DirectInner> REQUESTED =
+		  AtomicLongFieldUpdater.newUpdater(DirectInner.class, "requested");
 
-		public DirectProcessorSubscription(Subscriber<? super T> actual, DirectProcessor<T> parent) {
+		DirectInner(Subscriber<? super T> actual, DirectProcessor<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
 		}
@@ -279,23 +284,19 @@ public final class DirectProcessor<T>
 		}
 
 		@Override
-		public boolean isCancelled() {
-			return cancelled;
+		public Object scan(Attr key) {
+			switch (key){
+				case PARENT:
+					return parent;
+				case CANCELLED:
+					return cancelled;
+			}
+			return InnerProducer.super.scan(key);
 		}
 
 		@Override
-		public Subscriber<? super T> downstream() {
+		public Subscriber<? super T> actual() {
 			return actual;
-		}
-
-		@Override
-		public long requestedFromDownstream() {
-			return 0;
-		}
-
-		@Override
-		public Processor<T, T> upstream() {
-			return parent;
 		}
 
 		void onNext(T value) {
@@ -318,19 +319,5 @@ public final class DirectProcessor<T>
 			actual.onComplete();
 		}
 
-		@Override
-		public boolean isStarted() {
-			return parent.isStarted();
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return parent.isTerminated();
-		}
-	}
-
-	@Override
-	public Object upstream() {
-		return null;
 	}
 }

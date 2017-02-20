@@ -58,15 +58,15 @@ public class CoreTest {
 	@Test
 	public void defaultTrackable(){
 		Trackable d = new Trackable() {};
-		assertThat(d.expectedFromUpstream()).isEqualTo(Trackable.UNSPECIFIED);
-		assertThat(d.getCapacity()).isEqualTo(Trackable.UNSPECIFIED);
+		assertThat(d.expectedFromUpstream()).isEqualTo(-1);
+		assertThat(d.getCapacity()).isEqualTo(-1);
 		assertThat(d.getError()).isNull();
-		assertThat(d.getPending()).isEqualTo(Trackable.UNSPECIFIED);
+		assertThat(d.getPending()).isEqualTo(-1);
 		assertThat(d.isCancelled()).isFalse();
 		assertThat(d.isStarted()).isFalse();
 		assertThat(d.isTerminated()).isFalse();
-		assertThat(d.limit()).isEqualTo(Trackable.UNSPECIFIED);
-		assertThat(d.requestedFromDownstream()).isEqualTo(Trackable.UNSPECIFIED);
+		assertThat(d.limit()).isEqualTo(-1);
+		assertThat(d.requestedFromDownstream()).isEqualTo(-1);
 	}
 
 	@Test

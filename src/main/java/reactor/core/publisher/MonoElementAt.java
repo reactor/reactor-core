@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,9 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
-import reactor.core.Receiver;
 
 /**
  * Emits only the element at the given index position or signals a
@@ -36,7 +34,7 @@ final class MonoElementAt<T> extends MonoSource<T, T> implements Fuseable {
 
 	final T defaultValue;
 
-	public MonoElementAt(Publisher<? extends T> source, long index) {
+	MonoElementAt(Flux<? extends T> source, long index) {
 		super(source);
 		if (index < 0) {
 			throw new IndexOutOfBoundsException("index >= required but it was " + index);
@@ -45,7 +43,7 @@ final class MonoElementAt<T> extends MonoSource<T, T> implements Fuseable {
 		this.defaultValue = null;
 	}
 
-	public MonoElementAt(Publisher<? extends T> source, long index, T defaultValue) {
+	MonoElementAt(Flux<? extends T> source, long index, T defaultValue) {
 		super(source);
 		if (index < 0) {
 			throw new IndexOutOfBoundsException("index >= required but it was " + index);
@@ -60,8 +58,7 @@ final class MonoElementAt<T> extends MonoSource<T, T> implements Fuseable {
 	}
 
 	static final class ElementAtSubscriber<T>
-			extends Operators.MonoSubscriber<T, T>
-			implements Receiver {
+			extends Operators.MonoSubscriber<T, T> {
 		final T defaultValue;
 
 		long index;
@@ -70,11 +67,22 @@ final class MonoElementAt<T> extends MonoSource<T, T> implements Fuseable {
 
 		boolean done;
 
-		public ElementAtSubscriber(Subscriber<? super T> actual, long index,
+		ElementAtSubscriber(Subscriber<? super T> actual, long index,
 											T defaultValue) {
 			super(actual);
 			this.index = index;
 			this.defaultValue = defaultValue;
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key){
+				case TERMINATED:
+					return done;
+				case PARENT:
+					return s;
+			}
+			return super.scan(key);
 		}
 
 		@Override
@@ -145,17 +153,5 @@ final class MonoElementAt<T> extends MonoSource<T, T> implements Fuseable {
 						IndexOutOfBoundsException()));
 			}
 		}
-
-
-		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
-		}
-
 	}
 }

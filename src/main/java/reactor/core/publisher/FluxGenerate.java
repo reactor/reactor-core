@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,13 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import java.util.function.*;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
 
 import org.reactivestreams.Subscriber;
-
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.core.Fuseable.QueueSubscription;
-import reactor.core.Trackable;
+
 
 /**
  * Generate signals one-by-one via a function callback.
@@ -51,19 +50,19 @@ extends Flux<T> implements Fuseable {
 	final Consumer<? super S> stateConsumer;
 
 	@SuppressWarnings("unchecked")
-	public FluxGenerate(Consumer<SynchronousSink<T>> generator) {
+	FluxGenerate(Consumer<SynchronousSink<T>> generator) {
 		this(EMPTY_CALLABLE, (state,sink) -> {
 			generator.accept(sink);
 			return null;
 		});
 	}
 
-	public FluxGenerate(Callable<S> stateSupplier, BiFunction<S, SynchronousSink<T>, S> generator) {
+	FluxGenerate(Callable<S> stateSupplier, BiFunction<S, SynchronousSink<T>, S> generator) {
 		this(stateSupplier, generator, s -> {
 		});
 	}
 
-	public FluxGenerate(Callable<S> stateSupplier, BiFunction<S, SynchronousSink<T>, S> generator,
+	FluxGenerate(Callable<S> stateSupplier, BiFunction<S, SynchronousSink<T>, S> generator,
 							 Consumer<? super S> stateConsumer) {
 		this.stateSupplier = Objects.requireNonNull(stateSupplier, "stateSupplier");
 		this.generator = Objects.requireNonNull(generator, "generator");
@@ -84,7 +83,7 @@ extends Flux<T> implements Fuseable {
 	}
 
 	static final class GenerateSubscription<T, S>
-	  implements QueueSubscription<T>, Trackable, SynchronousSink<T> {
+	  implements QueueSubscription<T>, InnerProducer<T>, SynchronousSink<T> {
 
 		final Subscriber<? super T> actual;
 
@@ -108,27 +107,37 @@ extends Flux<T> implements Fuseable {
 
 		volatile long requested;
 
-		@Override
-		public long requestedFromDownstream() {
-			return requested;
-		}
-
-		@Override
-		public boolean isCancelled() {
-			return cancelled;
-		}
-
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<GenerateSubscription> REQUESTED =
 			AtomicLongFieldUpdater.newUpdater(GenerateSubscription.class, "requested");
 
-		public GenerateSubscription(Subscriber<? super T> actual, S state,
+		GenerateSubscription(Subscriber<? super T> actual, S state,
 											 BiFunction<S, SynchronousSink<T>, S> generator, Consumer<? super
 		  S> stateConsumer) {
 			this.actual = actual;
 			this.state = state;
 			this.generator = generator;
 			this.stateConsumer = stateConsumer;
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case TERMINATED:
+					return terminate;
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+				case CANCELLED:
+					return cancelled;
+				case ERROR:
+					return generatedError;
+			}
+			return InnerProducer.super.scan(key);
+		}
+
+		@Override
+		public Subscriber<? super T> actual() {
+			return actual;
 		}
 
 		@Override
@@ -355,11 +364,6 @@ extends Flux<T> implements Fuseable {
 
 			state = s;
 			return v;
-		}
-
-		@Override
-		public Throwable getError() {
-			return generatedError;
 		}
 
 		@Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,13 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
+
 
 /**
  * Given a Mono source, applies a function on its single item and continues
@@ -38,7 +40,7 @@ final class MonoThenMap<T, R> extends MonoSource<T, R> implements Fuseable {
 
 	final Function<? super T, ? extends Mono<? extends R>> mapper;
 
-	MonoThenMap(Publisher<? extends T> source,
+	MonoThenMap(Mono<? extends T> source,
 			Function<? super T, ? extends Mono<? extends R>> mapper) {
 		super(source);
 		this.mapper = Objects.requireNonNull(mapper, "mapper");
@@ -51,32 +53,50 @@ final class MonoThenMap<T, R> extends MonoSource<T, R> implements Fuseable {
 			return;
 		}
 
-		MonoThenApplyMain<T, R> manager = new MonoThenApplyMain<>(s, mapper);
+		ThenMapMain<T, R> manager = new ThenMapMain<>(s, mapper);
 		s.onSubscribe(manager);
 
 		source.subscribe(manager);
 	}
 
-	static final class MonoThenApplyMain<T, R> extends Operators.MonoSubscriber<T, R> {
+	static final class ThenMapMain<T, R> extends Operators.MonoSubscriber<T, R> {
 
 		final Function<? super T, ? extends Mono<? extends R>> mapper;
 
-		final SecondSubscriber<R> second;
+		final ThenMapInner<R> second;
 
 		boolean done;
 
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<MonoThenApplyMain, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(MonoThenApplyMain.class,
+		static final AtomicReferenceFieldUpdater<ThenMapMain, Subscription> S =
+				AtomicReferenceFieldUpdater.newUpdater(ThenMapMain.class,
 						Subscription.class,
 						"s");
 
-		MonoThenApplyMain(Subscriber<? super R> subscriber,
+		ThenMapMain(Subscriber<? super R> subscriber,
 				Function<? super T, ? extends Mono<? extends R>> mapper) {
 			super(subscriber);
 			this.mapper = mapper;
-			this.second = new SecondSubscriber<>(this);
+			this.second = new ThenMapInner<>(this);
+		}
+
+		@Override
+		public Stream<? extends Scannable> inners() {
+			return Stream.of(second);
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key){
+				case PARENT:
+					return s;
+				case CANCELLED:
+					return s == Operators.cancelledSubscription();
+				case TERMINATED:
+					return done;
+			}
+			return super.scan(key);
 		}
 
 		@Override
@@ -168,21 +188,36 @@ final class MonoThenMap<T, R> extends MonoSource<T, R> implements Fuseable {
 			actual.onComplete();
 		}
 
-		static final class SecondSubscriber<R> implements Subscriber<R> {
+		static final class ThenMapInner<R> implements InnerConsumer<R> {
 
-			final MonoThenApplyMain<?, R> parent;
+			final ThenMapMain<?, R> parent;
 
 			volatile Subscription s;
 			@SuppressWarnings("rawtypes")
-			static final AtomicReferenceFieldUpdater<SecondSubscriber, Subscription> S =
-					AtomicReferenceFieldUpdater.newUpdater(SecondSubscriber.class,
+			static final AtomicReferenceFieldUpdater<ThenMapInner, Subscription> S =
+					AtomicReferenceFieldUpdater.newUpdater(ThenMapInner.class,
 							Subscription.class,
 							"s");
 
 			boolean done;
 
-			public SecondSubscriber(MonoThenApplyMain<?, R> parent) {
+			ThenMapInner(ThenMapMain<?, R> parent) {
 				this.parent = parent;
+			}
+
+			@Override
+			public Object scan(Attr key) {
+				switch (key){
+					case PARENT:
+						return s;
+					case ACTUAL:
+						return parent;
+					case TERMINATED:
+						return done;
+					case CANCELLED:
+						return s == Operators.cancelledSubscription();
+				}
+				return null;
 			}
 
 			@Override

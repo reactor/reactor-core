@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ abstract class DrainUtils {
 	 * @param isCancelled callback to detect cancellation
 	 * @return true if the state indicates a completion state.
 	 */
-	public static <T, F> boolean postCompleteRequest(long n,
+	static <T, F> boolean postCompleteRequest(long n,
 			Subscriber<? super T> actual,
 			Queue<T> queue,
 			AtomicLongFieldUpdater<F> field,
@@ -97,7 +97,7 @@ abstract class DrainUtils {
 // TODO enable fast-path
 //        if (n == -1 || n == Long.MAX_VALUE) {
 //            for (;;) {
-//                if (isCancelled.getAsBoolean()) {
+//                if (isDisposed.getAsBoolean()) {
 //                    break;
 //                }
 //

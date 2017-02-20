@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,15 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
+
 
 /**
  * Dispatches the values from upstream in a round robin fashion to subscribers which are
@@ -33,7 +35,7 @@ import reactor.core.Fuseable;
  *
  * @param <T> the value type
  */
-final class ParallelSource<T> extends ParallelFlux<T> {
+final class ParallelSource<T> extends ParallelFlux<T> implements Scannable {
 	final Publisher<? extends T> source;
 	
 	final int parallelism;
@@ -65,6 +67,16 @@ final class ParallelSource<T> extends ParallelFlux<T> {
 		return parallelism;
 	}
 
+	@Override
+	public Object scan(Scannable.Attr key) {
+		switch (key){
+			case PARENT:
+				return source;
+			case PREFETCH:
+				return getPrefetch();
+		}
+		return null;
+	}
 	
 	@Override
 	public void subscribe(Subscriber<? super T>[] subscribers) {
@@ -72,10 +84,10 @@ final class ParallelSource<T> extends ParallelFlux<T> {
 			return;
 		}
 		
-		source.subscribe(new ParallelDispatcher<>(subscribers, prefetch, queueSupplier));
+		source.subscribe(new ParallelSourceMain<>(subscribers, prefetch, queueSupplier));
 	}
 	
-	static final class ParallelDispatcher<T> implements Subscriber<T> {
+	static final class ParallelSourceMain<T> implements InnerConsumer<T> {
 
 		final Subscriber<? super T>[] subscribers;
 		
@@ -103,8 +115,8 @@ final class ParallelSource<T> extends ParallelFlux<T> {
 		
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<ParallelDispatcher> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(ParallelDispatcher.class, "wip");
+		static final AtomicIntegerFieldUpdater<ParallelSourceMain> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(ParallelSourceMain.class, "wip");
 		
 		/** 
 		 * Counts how many subscribers were setup to delay triggering the
@@ -112,22 +124,51 @@ final class ParallelSource<T> extends ParallelFlux<T> {
 		 */
 		volatile int subscriberCount;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<ParallelDispatcher> SUBSCRIBER_COUNT =
-				AtomicIntegerFieldUpdater.newUpdater(ParallelDispatcher.class, "subscriberCount");
+		static final AtomicIntegerFieldUpdater<ParallelSourceMain> SUBSCRIBER_COUNT =
+				AtomicIntegerFieldUpdater.newUpdater(ParallelSourceMain.class, "subscriberCount");
 		
 		int produced;
 		
 		int sourceMode;
 
-		public ParallelDispatcher(Subscriber<? super T>[] subscribers, int prefetch, Supplier<Queue<T>> queueSupplier) {
+		ParallelSourceMain(Subscriber<? super T>[] subscribers, int
+				prefetch,
+				Supplier<Queue<T>> queueSupplier) {
 			this.subscribers = subscribers;
 			this.prefetch = prefetch;
 			this.queueSupplier = queueSupplier;
 			this.limit = prefetch - (prefetch >> 2);
 			this.requests = new AtomicLongArray(subscribers.length);
 			this.emissions = new long[subscribers.length];
+
 		}
-		
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key){
+				case PARENT:
+					return s;
+				case PREFETCH:
+					return prefetch;
+				case LIMIT:
+					return limit;
+				case TERMINATED:
+					return done;
+				case CANCELLED:
+					return cancelled;
+				case ERROR:
+					return error;
+				case BUFFERED:
+					return queue != null ? queue.size() : 0;
+			}
+			return null;
+		}
+
+		@Override
+		public Stream<? extends Scannable> inners() {
+			return Stream.of(subscribers).map(Scannable::from);
+		}
+
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
@@ -178,32 +219,7 @@ final class ParallelSource<T> extends ParallelFlux<T> {
 
 				SUBSCRIBER_COUNT.lazySet(this, i + 1);
 				
-				subscribers[i].onSubscribe(new Subscription() {
-					@Override
-					public void request(long n) {
-						if (Operators.validate(n)) {
-							AtomicLongArray ra = requests;
-							for (;;) {
-								long r = ra.get(j);
-								if (r == Long.MAX_VALUE) {
-									return;
-								}
-								long u = Operators.addCap(r, n);
-								if (ra.compareAndSet(j, r, u)) {
-									break;
-								}
-							}
-							if (subscriberCount == m) {
-								drain();
-							}
-						}
-					}
-					
-					@Override
-					public void cancel() {
-						ParallelDispatcher.this.cancel();
-					}
-				});
+				subscribers[i].onSubscribe(new ParallelSourceInner<>(this, j, m));
 			}
 		}
 
@@ -460,6 +476,59 @@ final class ParallelSource<T> extends ParallelFlux<T> {
 				drainSync();
 			} else {
 				drainAsync();
+			}
+		}
+
+		static final class ParallelSourceInner<T> implements InnerProducer<T> {
+
+			final ParallelSourceMain<T> parent;
+
+			final int index;
+			final int length;
+
+			ParallelSourceInner(ParallelSourceMain<T> parent, int index, int length) {
+				this.index = index;
+				this.length = length;
+				this.parent = parent;
+			}
+
+			@Override
+			public Subscriber<? super T> actual() {
+				return parent.subscribers[index];
+			}
+
+			@Override
+			public Object scan(Attr key) {
+				switch (key){
+					case PARENT:
+						return parent;
+				}
+				return InnerProducer.super.scan(key);
+			}
+
+			@Override
+			public void request(long n) {
+				if (Operators.validate(n)) {
+					AtomicLongArray ra = parent.requests;
+					for (;;) {
+						long r = ra.get(index);
+						if (r == Long.MAX_VALUE) {
+							return;
+						}
+						long u = Operators.addCap(r, n);
+						if (ra.compareAndSet(index, r, u)) {
+							break;
+						}
+					}
+					if (parent.subscriberCount == length) {
+						parent.drain();
+					}
+				}
+			}
+
+			@Override
+			public void cancel() {
+				parent.cancel();
 			}
 		}
 	}

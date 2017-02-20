@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.Receiver;
 
 /**
  * Defers the creation of the actual Publisher the Subscriber will be subscribed to.
@@ -30,7 +29,7 @@ import reactor.core.Receiver;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxDefer<T> extends Flux<T> implements Receiver {
+final class FluxDefer<T> extends Flux<T> {
 
 	final Supplier<? extends Publisher<? extends T>> supplier;
 
@@ -39,23 +38,24 @@ final class FluxDefer<T> extends Flux<T> implements Receiver {
 	}
 
 	@Override
-	public Object upstream() {
-		return supplier;
-	}
-
-	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s) {
 		Publisher<? extends T> p;
 
 		try {
 			p = Objects.requireNonNull(supplier.get(),
-					"The Producer returned by the supplier is null");
+					"The Publisher returned by the supplier is null");
 		}
 		catch (Throwable e) {
 			Operators.error(s, Operators.onOperatorError(e));
 			return;
 		}
 
-		p.subscribe(s);
+		if (p instanceof Publisher) {
+			p.subscribe(s);
+		}
+		else{
+			p.subscribe(s);
+		}
 	}
 }

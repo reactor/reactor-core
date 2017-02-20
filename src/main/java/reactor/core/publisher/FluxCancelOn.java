@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.scheduler.Scheduler;
@@ -30,7 +29,7 @@ final class FluxCancelOn<T> extends FluxSource<T, T> {
 
 	final Scheduler scheduler;
 
-	public FluxCancelOn(Publisher<T> source, Scheduler scheduler) {
+	public FluxCancelOn(Flux<T> source, Scheduler scheduler) {
 		super(source);
 		this.scheduler = Objects.requireNonNull(scheduler, "scheduler");
 	}
@@ -41,7 +40,7 @@ final class FluxCancelOn<T> extends FluxSource<T, T> {
 	}
 
 	static final class CancelSubscriber<T>
-			implements Subscriber<T>, Subscription, Runnable {
+			implements InnerOperator<T, T>, Runnable {
 
 		final Subscriber<? super T> actual;
 		final Scheduler             scheduler;
@@ -52,7 +51,7 @@ final class FluxCancelOn<T> extends FluxSource<T, T> {
 		static final AtomicIntegerFieldUpdater<CancelSubscriber> CANCELLED =
 				AtomicIntegerFieldUpdater.newUpdater(CancelSubscriber.class, "cancelled");
 
-		public CancelSubscriber(Subscriber<? super T> actual, Scheduler scheduler) {
+		CancelSubscriber(Subscriber<? super T> actual, Scheduler scheduler) {
 			this.actual = actual;
 			this.scheduler = scheduler;
 		}
@@ -63,6 +62,22 @@ final class FluxCancelOn<T> extends FluxSource<T, T> {
 				this.s = s;
 				actual.onSubscribe(this);
 			}
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return s;
+				case CANCELLED:
+					return cancelled == 1;
+			}
+			return InnerOperator.super.scan(key);
+		}
+
+		@Override
+		public Subscriber<? super T> actual() {
+			return actual;
 		}
 
 		@Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,7 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import reactor.core.scheduler.Scheduler;
 
 /**
@@ -32,7 +30,7 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 
 	final Supplier<C> bufferSupplier;
 
-	public FluxBufferTimeOrSize(Publisher<T> source,
+	FluxBufferTimeOrSize(Flux<T> source,
 			int maxSize,
 			long timespan,
 			Scheduler timer,
@@ -43,19 +41,20 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 
 	@Override
 	public void subscribe(Subscriber<? super C> subscriber) {
-		source.subscribe(new BufferAction<>(prepareSub(subscriber),
+		source.subscribe(new BufferTimeoutSubscriber<>(prepareSub(subscriber),
 				batchSize,
 				timespan,
 				timer.createWorker(),
 				bufferSupplier));
 	}
 
-	final static class BufferAction<T, C extends Collection<? super T>> extends BatchAction<T, C> {
+	final static class BufferTimeoutSubscriber<T, C extends Collection<? super T>> extends
+	                                                                               BatchSubscriber<T, C> {
 
 		final Supplier<C> bufferSupplier;
 		volatile C values;
 
-		public BufferAction(Subscriber<? super C> actual,
+		BufferTimeoutSubscriber(Subscriber<? super C> actual,
 				int maxSize,
 				long timespan,
 				Scheduler.Worker timer,
@@ -65,9 +64,8 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 		}
 
 		@Override
-		protected void doOnSubscribe(Subscription subscription) {
+		protected void doOnSubscribe() {
 			values = bufferSupplier.get();
-			subscriber.onSubscribe(this);
 		}
 
 		@Override
@@ -79,7 +77,7 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 					values = null;
 				}
 			}
-			subscriber.onError(ev);
+			actual.onError(ev);
 		}
 
 		@Override
@@ -107,7 +105,7 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 			}
 
 			if (flush) {
-				subscriber.onNext(v);
+				actual.onNext(v);
 			}
 		}
 	}

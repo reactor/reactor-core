@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,12 @@
  */
 package reactor.core.publisher;
 
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-
 import java.util.Objects;
 import java.util.function.BiConsumer;
 
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
-import reactor.core.Loopback;
-import reactor.core.Producer;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
 
 /**
  * Maps the values of the source publisher one-on-one via a handler function as long as the handler function result is
@@ -39,7 +33,7 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 
 	final BiConsumer<? super T, SynchronousSink<R>> handler;
 
-	FluxHandle(Publisher<? extends T> source, BiConsumer<? super T, SynchronousSink<R>> handler) {
+	FluxHandle(Flux<? extends T> source, BiConsumer<? super T, SynchronousSink<R>> handler) {
 		super(source);
 		this.handler = Objects.requireNonNull(handler, "handler");
 	}
@@ -56,9 +50,9 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 	}
 
 	static final class HandleSubscriber<T, R>
-			implements Subscriber<T>, Receiver, Producer, Loopback, Subscription,
-								 Fuseable.ConditionalSubscriber<T>, Trackable,
-                       SynchronousSink<R> {
+			implements InnerOperator<T, R>,
+			           Fuseable.ConditionalSubscriber<T>,
+			           SynchronousSink<R> {
 		final Subscriber<? super R>			actual;
 		final BiConsumer<? super T, SynchronousSink<R>> handler;
 
@@ -103,11 +97,11 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 				actual.onNext(v);
 			}
 			if(stop){
+				s.cancel();
 				if(error != null){
-					onError(Operators.onOperatorError(s, error, t));
+					onError(Operators.onOperatorError(null, error, t));
 					return;
 				}
-				s.cancel();
 				onComplete();
 			}
 			else if(v == null){
@@ -135,11 +129,11 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 				actual.onNext(v);
 			}
 			if(stop){
+				s.cancel();
 				if(error != null){
-					onError(Operators.onOperatorError(s, error, t));
+					onError(Operators.onOperatorError(null, error, t));
 				}
 				else {
-					s.cancel();
 					onComplete();
 				}
 				return true;
@@ -170,11 +164,6 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
-		public Throwable getError() {
-			return error;
-		}
-
-		@Override
 		public void complete() {
 			stop = true;
 		}
@@ -194,30 +183,23 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
-		public boolean isStarted() {
-			return s != null && !done;
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return s;
+				case TERMINATED:
+					return done;
+				case ERROR:
+					return error;
+			}
+			return InnerOperator.super.scan(key);
 		}
 
 		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
-		public Object downstream() {
+		public Subscriber<? super R> actual() {
 			return actual;
 		}
 
-		@Override
-		public Object connectedInput() {
-			return handler;
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
-		}
-		
 		@Override
 		public void request(long n) {
 			s.request(n);
@@ -230,8 +212,8 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 	}
 
 	static final class HandleConditionalSubscriber<T, R>
-			implements Fuseable.ConditionalSubscriber<T>, Receiver, Producer, Loopback,
-			           Subscription, Trackable, SynchronousSink<R> {
+			implements Fuseable.ConditionalSubscriber<T>, InnerOperator<T, R>,
+			           SynchronousSink<R> {
 		final Fuseable.ConditionalSubscriber<? super R> actual;
 		final BiConsumer<? super T, SynchronousSink<R>> handler;
 
@@ -277,7 +259,7 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 			if(done){
 				s.cancel();
 				if(error != null){
-					actual.onError(Operators.onOperatorError(s, error, t));
+					actual.onError(Operators.onOperatorError(null, error, t));
 					return;
 				}
 				actual.onComplete();
@@ -310,7 +292,7 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 			if(done){
 				s.cancel();
 				if(error != null){
-					actual.onError(Operators.onOperatorError(s, error, t));
+					actual.onError(Operators.onOperatorError(null, error, t));
 				}
 				else {
 					actual.onComplete();
@@ -343,28 +325,8 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
-		public boolean isStarted() {
-			return upstream() != null && !done;
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
-		public Object downstream() {
+		public Subscriber<? super R> actual() {
 			return actual;
-		}
-
-		@Override
-		public Object connectedInput() {
-			return handler;
-		}
-
-		@Override
-		public Throwable getError() {
-			return error;
 		}
 
 		@Override
@@ -374,7 +336,7 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public void error(Throwable e) {
-			error = Operators.onOperatorError(Objects.requireNonNull(e, "error"));
+			error = Objects.requireNonNull(e, "error");
 			done = true;
 		}
 
@@ -385,11 +347,6 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 			}
 			data = Objects.requireNonNull(o, "data");
 		}
-
-		@Override
-		public Object upstream() {
-			return s;
-		}
 		
 		@Override
 		public void request(long n) {
@@ -399,6 +356,19 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 		@Override
 		public void cancel() {
 			s.cancel();
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return s;
+				case TERMINATED:
+					return done;
+				case ERROR:
+					return error;
+			}
+			return InnerOperator.super.scan(key);
 		}
 	}
 

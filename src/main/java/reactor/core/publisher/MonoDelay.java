@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
+
 
 /**
  * Emits a single 0L value delayed by some time amount with a help of
@@ -64,8 +64,8 @@ final class MonoDelay extends Mono<Long> {
 		}
 	}
 
-	static final class MonoDelayRunnable implements Runnable, Subscription {
-		final Subscriber<? super Long> s;
+	static final class MonoDelayRunnable implements Runnable, InnerProducer<Long> {
+		final Subscriber<? super Long> actual;
 
 		volatile Cancellation cancel;
 		static final AtomicReferenceFieldUpdater<MonoDelayRunnable, Cancellation> CANCEL =
@@ -77,8 +77,8 @@ final class MonoDelay extends Mono<Long> {
 
 		static final Disposable FINISHED = () -> { };
 
-		public MonoDelayRunnable(Subscriber<? super Long> s) {
-			this.s = s;
+		MonoDelayRunnable(Subscriber<? super Long> actual) {
+			this.actual = actual;
 		}
 
 		public void setCancel(Cancellation cancel) {
@@ -88,21 +88,37 @@ final class MonoDelay extends Mono<Long> {
 		}
 
 		@Override
+		public Subscriber<? super Long> actual() {
+			return actual;
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key){
+				case TERMINATED:
+					return cancel == FINISHED;
+				case CANCELLED:
+					return cancel == Flux.CANCELLED;
+				case PARENT:
+					return actual;
+			}
+			return InnerProducer.super.scan(key);
+		}
+
+		@Override
 		public void run() {
 			if (requested) {
 				try {
-				if (CANCEL.getAndSet(this, FINISHED) != Flux.CANCELLED) {
-					s.onNext(0L);
-				}
-				if (cancel != Flux.CANCELLED) {
-					s.onComplete();
-				}
+					if (CANCEL.getAndSet(this, FINISHED) != Flux.CANCELLED) {
+						actual.onNext(0L);
+						actual.onComplete();
+					}
 				}
 				catch (Throwable t){
-					s.onError(Operators.onOperatorError(t));
+					actual.onError(Operators.onOperatorError(t));
 				}
 			} else {
-				s.onError(Exceptions.failWithOverflow("Could not emit value due to lack of requests"));
+				actual.onError(Exceptions.failWithOverflow("Could not emit value due to lack of requests"));
 			}
 		}
 

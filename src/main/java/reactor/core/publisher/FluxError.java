@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.Trackable;
+
 
 /**
  * Emits a constant or generated Throwable instance to Subscribers.
@@ -30,7 +29,7 @@ import reactor.core.Trackable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxError<T> extends Flux<T> implements Trackable {
+final class FluxError<T> extends Flux<T> {
 
 	final Throwable error;
 
@@ -39,11 +38,6 @@ final class FluxError<T> extends Flux<T> implements Trackable {
 	FluxError(Throwable error, boolean whenRequested) {
 		this.error = Objects.requireNonNull(error);
 		this.whenRequested = whenRequested;
-	}
-
-	@Override
-	public Throwable getError() {
-		return error;
 	}
 
 	@Override
@@ -56,7 +50,7 @@ final class FluxError<T> extends Flux<T> implements Trackable {
 		}
 	}
 
-	static final class ErrorSubscription implements Subscription {
+	static final class ErrorSubscription implements InnerProducer {
 
 		final Subscriber<?> actual;
 
@@ -83,6 +77,23 @@ final class FluxError<T> extends Flux<T> implements Trackable {
 		@Override
 		public void cancel() {
 			once = 1;
+		}
+
+		@Override
+		public Subscriber<?> actual() {
+			return actual;
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case ERROR:
+					return error;
+				case CANCELLED:
+				case TERMINATED:
+					return once == 1;
+			}
+			return InnerProducer.super.scan(key);
 		}
 	}
 }

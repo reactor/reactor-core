@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,12 +23,10 @@ import java.util.List;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
-import reactor.test.publisher.TestPublisher;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.util.function.Tuple2;
 
@@ -276,7 +274,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 				.isThrownBy(connected::dispose)
 	            .withMessage("java.util.concurrent.CancellationException: Disconnected");
 
-		boolean cancelled = ((FluxReplay.ReplaySubscriber) connected).isCancelled();
+		boolean cancelled = ((FluxReplay.ReplaySubscriber) connected).cancelled;
 		assertThat(cancelled).isTrue();
 	}
 }

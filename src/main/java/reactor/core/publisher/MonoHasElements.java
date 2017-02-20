@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,13 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
-import reactor.core.Receiver;
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoHasElements<T> extends MonoSource<T, Boolean> implements Fuseable {
 
-	public MonoHasElements(Publisher<? extends T> source) {
+	MonoHasElements(Publisher<? extends T> source) {
 		super(source);
 	}
 
@@ -40,12 +39,20 @@ final class MonoHasElements<T> extends MonoSource<T, Boolean> implements Fuseabl
 		}
 	}
 
-	static final class HasElementsSubscriber<T> extends Operators.MonoSubscriber<T, Boolean>
-			implements Receiver {
+	static final class HasElementsSubscriber<T> extends Operators.MonoSubscriber<T, Boolean> {
 		Subscription s;
 
-		public HasElementsSubscriber(Subscriber<? super Boolean> actual) {
+		HasElementsSubscriber(Subscriber<? super Boolean> actual) {
 			super(actual);
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key){
+				case PARENT:
+					return s;
+			}
+			return super.scan(key);
 		}
 
 		@Override
@@ -76,18 +83,22 @@ final class MonoHasElements<T> extends MonoSource<T, Boolean> implements Fuseabl
 			complete(false);
 		}
 
-		@Override
-		public Object upstream() {
-			return s;
-		}
 	}
 
-	static final class HasElementSubscriber<T> extends Operators.MonoSubscriber<T, Boolean>
-			implements Receiver {
+	static final class HasElementSubscriber<T>
+			extends Operators.MonoSubscriber<T, Boolean> {
 		Subscription s;
 
-		public HasElementSubscriber(Subscriber<? super Boolean> actual) {
+		HasElementSubscriber(Subscriber<? super Boolean> actual) {
 			super(actual);
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			if (key == Attr.PARENT) {
+				return s;
+			}
+			return super.scan(key);
 		}
 
 		@Override

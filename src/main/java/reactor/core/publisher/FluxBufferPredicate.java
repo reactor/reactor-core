@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,12 +26,10 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable.ConditionalSubscriber;
-import reactor.core.Trackable;
 
 /**
  * Buffers elements into custom collections where the buffer boundary is determined by
@@ -63,7 +61,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 
 	final Mode mode;
 
-	public FluxBufferPredicate(Publisher<? extends T> source, Predicate<? super T> predicate,
+	FluxBufferPredicate(Flux<? extends T> source, Predicate<? super T> predicate,
 			Supplier<C> bufferSupplier, Mode mode) {
 		super(source);
 		this.predicate = Objects.requireNonNull(predicate, "predicate");
@@ -97,8 +95,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 
 	static final class BufferPredicateSubscriber<T, C extends Collection<? super T>>
 			extends AbstractQueue<C>
-			implements ConditionalSubscriber<T>, Subscription, Trackable,
-			           BooleanSupplier {
+			implements ConditionalSubscriber<T>, InnerOperator<T, C>, BooleanSupplier {
 
 		final Subscriber<? super C> actual;
 
@@ -255,6 +252,11 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 		}
 
 		@Override
+		public Subscriber<? super C> actual() {
+			return actual;
+		}
+
+		@Override
 		public void onError(Throwable t) {
 			if (done) {
 				Operators.onErrorDropped(t);
@@ -290,29 +292,26 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 		}
 
 		@Override
-		public boolean isStarted() {
-			return s != null && !done;
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
-		public boolean isCancelled() {
-			return s == Operators.CancelledSubscription.INSTANCE;
-		}
-
-		@Override
-		public long getPending() {
-			C b = buffer;
-			return b != null ? b.size() : 0L;
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return s;
+				case TERMINATED:
+					return done;
+				case CANCELLED:
+					return getAsBoolean();
+				case CAPACITY:
+					C b = buffer;
+					return b != null ? b.size() : 0L;
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+			}
+			return InnerOperator.super.scan(key);
 		}
 
 		@Override
 		public boolean getAsBoolean() {
-			return isCancelled();
+			return s == Operators.cancelledSubscription();
 		}
 
 		@Override

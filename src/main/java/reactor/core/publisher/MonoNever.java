@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.Trackable;
+
 
 /**
  * Represents an never publisher which only calls onSubscribe.
@@ -27,11 +27,11 @@ import reactor.core.Trackable;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class MonoNever
-extends Mono<Object> implements Trackable {
+extends Mono<Object> {
 
-	private static final Mono<Object> INSTANCE = new MonoNever();
+	static final Mono<Object> INSTANCE = new MonoNever();
 
-	private MonoNever() {
+	MonoNever() {
 		// deliberately no op
 	}
 
@@ -47,17 +47,8 @@ extends Mono<Object> implements Trackable {
 	 * @return a properly parametrized instance of this never Publisher
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> Mono<T> instance() {
+	static <T> Mono<T> instance() {
 		return (Mono<T>) INSTANCE;
 	}
 
-	@Override
-	public boolean isStarted() {
-		return false;
-	}
-
-	@Override
-	public boolean isTerminated() {
-		return false;
-	}
 }

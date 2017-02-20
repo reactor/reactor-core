@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,16 +22,11 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Supplier;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.core.Loopback;
-import reactor.core.Producer;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
 
@@ -42,7 +37,7 @@ import reactor.core.scheduler.Scheduler.Worker;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fuseable {
+final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable {
 
 	final Scheduler scheduler;
 
@@ -52,7 +47,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 
 	final int prefetch;
 
-	FluxPublishOn(Publisher<? extends T> source,
+	FluxPublishOn(Flux<? extends T> source,
 			Scheduler scheduler,
 			boolean delayError,
 			int prefetch,
@@ -104,14 +99,8 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 				queueSupplier));
 	}
 
-	@Override
-	public Object connectedInput() {
-		return scheduler;
-	}
-
 	static final class PublishOnSubscriber<T>
-			implements Subscriber<T>, QueueSubscription<T>, Runnable, Producer, Loopback,
-			           Receiver, Trackable {
+			implements QueueSubscription<T>, Runnable, InnerOperator<T, T> {
 
 		final Subscriber<? super T> actual;
 
@@ -526,68 +515,34 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 		}
 
 		@Override
-		public long requestedFromDownstream() {
-			return queue == null ? 0 : (requested - queue.size());
+		public Object scan(Attr key) {
+			switch (key) {
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+				case PARENT:
+					return s;
+				case CANCELLED:
+					return cancelled;
+				case TERMINATED:
+					return done;
+				case BUFFERED:
+					return queue != null ? queue.size() : 0;
+				case ERROR:
+					return error;
+				case DELAY_ERROR:
+				case DELAY_ERROR_END:
+					return delayError;
+				case PREFETCH:
+					return prefetch;
+				case LIMIT:
+					return limit;
+			}
+			return InnerOperator.super.scan(key);
 		}
 
 		@Override
-		public long getCapacity() {
-			return prefetch;
-		}
-
-		@Override
-		public long getPending() {
-			return queue != null ? queue.size() : -1L;
-		}
-
-		@Override
-		public boolean isCancelled() {
-			return cancelled;
-		}
-
-		@Override
-		public boolean isStarted() {
-			return s != null && !cancelled && !done;
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
-		public Throwable getError() {
-			return error;
-		}
-
-		@Override
-		public Object connectedInput() {
-			return scheduler;
-		}
-
-		@Override
-		public Object connectedOutput() {
-			return worker;
-		}
-
-		@Override
-		public long expectedFromUpstream() {
-			return queue == null ? 0 : (prefetch - queue.size());
-		}
-
-		@Override
-		public long limit() {
-			return limit;
-		}
-
-		@Override
-		public Object downstream() {
+		public Subscriber<? super T> actual() {
 			return actual;
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
 		}
 
 		@Override
@@ -632,8 +587,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 	}
 
 	static final class PublishOnConditionalSubscriber<T>
-			implements Subscriber<T>, QueueSubscription<T>, Runnable, Producer, Loopback,
-			           Receiver, Trackable {
+			implements QueueSubscription<T>, Runnable, InnerOperator<T, T> {
 
 		final ConditionalSubscriber<? super T> actual;
 
@@ -997,68 +951,34 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Loopback, Fusea
 		}
 
 		@Override
-		public long getCapacity() {
-			return prefetch;
-		}
-
-		@Override
-		public long getPending() {
-			return queue != null ? queue.size() : -1;
-		}
-
-		@Override
-		public boolean isCancelled() {
-			return cancelled;
-		}
-
-		@Override
-		public boolean isStarted() {
-			return s != null && !cancelled && !done;
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
-		public Throwable getError() {
-			return error;
-		}
-
-		@Override
-		public Object connectedInput() {
-			return scheduler;
-		}
-
-		@Override
-		public Object connectedOutput() {
-			return worker;
-		}
-
-		@Override
-		public long expectedFromUpstream() {
-			return queue == null ? 0 : (prefetch - queue.size());
-		}
-
-		@Override
-		public long limit() {
-			return limit;
-		}
-
-		@Override
-		public Object downstream() {
+		public Subscriber<? super T> actual() {
 			return actual;
 		}
 
 		@Override
-		public Object upstream() {
-			return s;
-		}
-
-		@Override
-		public long requestedFromDownstream() {
-			return queue == null ? 0 : (requested - queue.size());
+		public Object scan(Attr key) {
+			switch (key) {
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+				case PARENT:
+					return s;
+				case CANCELLED:
+					return cancelled;
+				case TERMINATED:
+					return done;
+				case BUFFERED:
+					return queue != null ? queue.size() : 0;
+				case ERROR:
+					return error;
+				case DELAY_ERROR:
+				case DELAY_ERROR_END:
+					return delayError;
+				case PREFETCH:
+					return prefetch;
+				case LIMIT:
+					return limit;
+			}
+			return InnerOperator.super.scan(key);
 		}
 
 		void doComplete(Subscriber<?> a) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,10 @@ import java.util.Iterator;
 
 /**
  * A component that will emit events to N downstreams.
+ * @deprecated This internal introspection interface has been removed in favor of
+ * centralized, attribute-based {@link Scannable}.
  */
+@Deprecated
 public interface MultiProducer {
 
 	/**
@@ -42,7 +45,7 @@ public interface MultiProducer {
 	 * @return Has any Subscriber attached to this multi-producer ?
 	 */
 	default boolean hasDownstreams() {
-		return downstreamCount() > 0;
+		return downstreamCount() > 0L;
 	}
 
 }

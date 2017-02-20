@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import java.util.concurrent.Callable;
 import org.reactivestreams.Subscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.core.Receiver;
+
 
 /**
  * Executes a Callable function and emits a single value to each individual Subscriber.
@@ -34,17 +34,12 @@ import reactor.core.Receiver;
  */
 final class MonoCallable<T> 
 extends Mono<T>
-		implements Receiver, Callable<T>, Fuseable {
+		implements Callable<T>, Fuseable {
 
 	final Callable<? extends T> callable;
 
 	MonoCallable(Callable<? extends T> callable) {
 		this.callable = Objects.requireNonNull(callable, "callable");
-	}
-
-	@Override
-	public Object upstream() {
-		return callable;
 	}
 
 	@Override

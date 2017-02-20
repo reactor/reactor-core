@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,11 +61,10 @@ public class FluxHideTest {
 			}
 		};
 
-		FluxHide.SuppressFuseableSubscriber sfs = Flux.just(1, 2, 3)
+		FluxHide.SuppressFuseableSubscriber<Integer> sfs = Flux.just(1, 2, 3)
 		                                              .subscribeWith(new FluxHide.SuppressFuseableSubscriber<>(s));
 
-		assertThat(sfs.downstream()).isEqualTo(s);
-		assertThat(sfs.upstream()).isInstanceOf(FluxArray.ArraySubscription.class);
+		assertThat(sfs.actual()).isEqualTo(s);
 		assertThat(sfs.size()).isEqualTo(0);
 		assertThat(sfs.isEmpty()).isFalse();
 		assertThat(sfs.poll()).isNull();
@@ -108,7 +107,7 @@ public class FluxHideTest {
 		FluxHide.SuppressFuseableSubscriber sfs = Flux.<Integer>error(new Exception("test"))
 		                                              .subscribeWith(new FluxHide.SuppressFuseableSubscriber<>(s));
 
-		assertThat(sfs.downstream()).isEqualTo(s);
+		assertThat(sfs.actual()).isEqualTo(s);
 		assertThat(sfs.size()).isEqualTo(0);
 		assertThat(sfs.isEmpty()).isFalse();
 		assertThat(sfs.poll()).isNull();

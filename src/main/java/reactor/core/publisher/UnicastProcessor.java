@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ import reactor.util.concurrent.QueueSupplier;
  */
 public final class UnicastProcessor<T>
 		extends FluxProcessor<T, T>
-		implements Fuseable.QueueSubscription<T>, Fuseable, Producer, Receiver {
+		implements Fuseable.QueueSubscription<T>, Fuseable, InnerOperator<T, T>, Producer, Receiver {
 
 	/**
 	 * Create a unicast {@link FluxProcessor} that will buffer on a given queue in an
@@ -354,6 +354,9 @@ public final class UnicastProcessor<T>
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
+		if (s == null) {
+			throw Exceptions.argumentIsNullException();
+		}
 		if (once == 0 && ONCE.compareAndSet(this, 0, 1)) {
 
 			s.onSubscribe(this);
@@ -423,8 +426,18 @@ public final class UnicastProcessor<T>
 	}
 
 	@Override
-	public boolean isCancelled() {
-		return cancelled;
+	public Object downstream() {
+		return actual;
+	}
+
+	@Override
+	public Object upstream() {
+		return null;
+	}
+
+	@Override
+	public boolean isDisposed() {
+		return cancelled || done;
 	}
 
 	@Override
@@ -443,22 +456,17 @@ public final class UnicastProcessor<T>
 	}
 
 	@Override
-	public Subscriber<? super T> downstream() {
+	public Subscriber<? super T> actual() {
 		return actual;
 	}
 
 	@Override
-	public Object upstream() {
-		return onTerminate;
+	public long downstreamCount() {
+		return hasDownstreams() ? 1L : 0L;
 	}
 
 	@Override
-	public long getCapacity() {
-		return Integer.MAX_VALUE;
-	}
-
-	@Override
-	public long requestedFromDownstream() {
-		return requested;
+	public boolean hasDownstreams() {
+		return actual != null;
 	}
 }

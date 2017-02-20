@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 
+
 /**
  * Buffers elements into custom collections where the buffer boundary is signalled
  * by another publisher.
@@ -44,7 +45,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 
 	final Supplier<C> bufferSupplier;
 
-	FluxBufferBoundary(Publisher<? extends T> source,
+	FluxBufferBoundary(Flux<? extends T> source,
 			Publisher<U> other,
 			Supplier<C> bufferSupplier) {
 		super(source);
@@ -86,17 +87,22 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 	}
 
 	static final class BufferBoundaryMain<T, U, C extends Collection<? super T>>
-			implements Subscriber<T>, Subscription {
+			implements InnerOperator<T, C>, InnerProducer<C> {
 
+		final Supplier<C>           bufferSupplier;
 		final Subscriber<? super C> actual;
-
-		final Supplier<C> bufferSupplier;
 
 		BufferBoundaryOther<U> other;
 
 		C buffer;
 
 		volatile Subscription s;
+
+		@Override
+		public final Subscriber<? super C> actual() {
+			return actual;
+		}
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<BufferBoundaryMain, Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(BufferBoundaryMain.class,
@@ -114,6 +120,24 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 			this.actual = actual;
 			this.buffer = buffer;
 			this.bufferSupplier = bufferSupplier;
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return s;
+				case CANCELLED:
+					return s == Operators.cancelledSubscription();
+				case CAPACITY:
+					C buffer = this.buffer;
+					return buffer != null ? buffer.size() : 0;
+				case PREFETCH:
+					return Integer.MAX_VALUE;
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+			}
+			return InnerOperator.super.scan(key);
 		}
 
 		@Override
@@ -267,7 +291,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 	}
 
 	static final class BufferBoundaryOther<U> extends Operators.DeferredSubscription
-			implements Subscriber<U> {
+			implements InnerConsumer<U> {
 
 		final BufferBoundaryMain<?, U, ?> main;
 
@@ -280,6 +304,14 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 			if (set(s)) {
 				s.request(Long.MAX_VALUE);
 			}
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			if (key == Attr.ACTUAL) {
+				return main;
+			}
+			return super.scan(key);
 		}
 
 		@Override

@@ -328,7 +328,7 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Expose the specified {@link Publisher} with the {@link Mono} API, and ensure it will emit 0 or 1 item.
-	 *
+	 * The source emitter will be cancelled on the first `onNext`.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/from1.png" alt="">
 	 * <p>
@@ -382,6 +382,21 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public static <T> Mono<T> fromCompletionStage(CompletionStage<? extends T> completionStage) {
 		return onAssembly(new MonoCompletionStage<>(completionStage));
+	}
+
+	/**
+	 * Unchecked cardinality conversion of {@link Publisher} as {@link Mono}, supporting
+	 * {@link Fuseable} sources.
+	 *
+	 * @param source the {@link Publisher} to wrap
+	 * @param <I> input upstream type
+	 * @return a wrapped {@link Mono}
+	 */
+	public static <I> Mono<I> fromDirect(Publisher<? extends I> source){
+		if(source instanceof Fuseable){
+			return new MonoSource.FuseableMonoSource<>(source);
+		}
+		return new MonoSource<>(source);
 	}
 
 	/**
@@ -1684,14 +1699,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final Mono<T> doFinally(Consumer<SignalType> onFinally) {
 		Objects.requireNonNull(onFinally, "onFinally");
-		Mono<T> monoDoFinally;
 		if (this instanceof Fuseable) {
-			monoDoFinally = new MonoDoFinallyFuseable<>(this, onFinally);
+			return onAssembly(new MonoDoFinallyFuseable<>(this, onFinally));
 		}
-		else {
-			monoDoFinally = new MonoDoFinally<>(this, onFinally);
-		}
-		return onAssembly(monoDoFinally);
+		return onAssembly(new MonoDoFinally<>(this, onFinally));
 	}
 
 	/**
@@ -2162,14 +2173,10 @@ public abstract class Mono<T> implements Publisher<T> {
 		SignalLogger<T> log = new SignalLogger<>(this, category, level,
 				showOperatorLine, options);
 
-		return doOnSignal(this,
-				log.onSubscribeCall(),
-				log.onNextCall(),
-				log.onErrorCall(),
-				log.onCompleteCall(),
-				log.onAfterTerminateCall(),
-				log.onRequestCall(),
-				log.onCancelCall());
+		if (this instanceof Fuseable) {
+			return onAssembly(new MonoLogFuseable<>(this, log));
+		}
+		return onAssembly(new MonoLog<>(this, log));
 	}
 
 	/**
@@ -2251,7 +2258,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono} of materialized {@link Signal}
 	 */
 	public final Mono<Signal<T>> materialize() {
-		return onAssembly(new FluxMaterialize<>(this).next());
+		return onAssembly(new MonoMaterialize<>(this));
 	}
 
 	/**
@@ -3241,7 +3248,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings("unchecked")
 	protected static <T> Mono<T> onAssembly(Mono<T> source) {
-		Hooks.OnOperatorCreate hook = Hooks.onOperatorCreate;
+		Hooks.OnOperatorHook hook = Hooks.onOperatorHook;
 		if(hook == null) {
 			return source;
 		}
@@ -3254,7 +3261,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	@SuppressWarnings("unchecked")
-	static <T> Mono<T> doOnSignal(Publisher<T> source,
+	static <T> Mono<T> doOnSignal(Mono<T> source,
 			Consumer<? super Subscription> onSubscribe,
 			Consumer<? super T> onNext,
 			Consumer<? super Throwable> onError,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 
 /**
  * Reduce the sequence of values in each 'rail' to a single value.
@@ -30,7 +31,8 @@ import reactor.core.Fuseable;
  * @param <T> the input value type
  * @param <R> the result value type
  */
-final class ParallelReduceSeed<T, R> extends ParallelFlux<R> implements Fuseable {
+final class ParallelReduceSeed<T, R> extends ParallelFlux<R> implements
+                                                             Scannable, Fuseable {
 
 	final ParallelFlux<? extends T> source;
 
@@ -44,6 +46,17 @@ final class ParallelReduceSeed<T, R> extends ParallelFlux<R> implements Fuseable
 		this.source = source;
 		this.initialSupplier = initialSupplier;
 		this.reducer = reducer;
+	}
+
+	@Override
+	public Object scan(Scannable.Attr key) {
+		switch (key){
+			case PARENT:
+				return source;
+			case PREFETCH:
+				return getPrefetch();
+		}
+		return null;
 	}
 
 	@Override

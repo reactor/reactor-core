@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,12 @@
 package reactor.core.publisher;
 
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.core.Producer;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
@@ -422,22 +419,17 @@ public class FluxTakeTest {
 	}
 
 	@SuppressWarnings("unchecked")
-	void assertTrackableBeforeOnSubscribe(Trackable t){
-		assertThat(t.isTerminated()).isFalse();
-		assertThat(t.limit()).isEqualTo(0);
-		assertThat(t.getCapacity()).isEqualTo(2);
-		assertThat(t.expectedFromUpstream()).isEqualTo(2);
-		assertThat(((Producer)t).downstream()).isNotNull();
+	void assertTrackableBeforeOnSubscribe(InnerOperator t){
+		assertThat(t.scan(Scannable.Attr.TERMINATED, Boolean.class)).isFalse();
+		assertThat(t.scan(Scannable.Attr.EXPECTED_FROM_UPSTREAM)).isEqualTo(2L);
 	}
 
-	void assertTrackableAfterOnSubscribe(Trackable t){
-		assertThat(t.isStarted()).isTrue();
-		assertThat(t.isTerminated()).isFalse();
+	void assertTrackableAfterOnSubscribe(InnerOperator t){
+		assertThat(t.scan(Scannable.Attr.TERMINATED, Boolean.class)).isFalse();
 	}
 
-	void assertTrackableAfterOnComplete(Trackable t){
-		assertThat(t.isStarted()).isFalse();
-		assertThat(t.isTerminated()).isTrue();
+	void assertTrackableAfterOnComplete(InnerOperator t){
+		assertThat(t.scan(Scannable.Attr.TERMINATED, Boolean.class)).isTrue();
 	}
 
 	@Test
@@ -445,13 +437,11 @@ public class FluxTakeTest {
 	public void failDoubleError() {
 		Hooks.onErrorDropped(e -> assertThat(e).hasMessage("test2"));
 		StepVerifier.create(Flux.from(s -> {
-			assertTrackableBeforeOnSubscribe((Trackable)s);
-			assertThat(((Trackable)s).isStarted()).isFalse();
-			assertThat(((Receiver)s).upstream()).isNull();
+			assertTrackableBeforeOnSubscribe((InnerOperator)s);
 			s.onSubscribe(Operators.emptySubscription());
-			assertTrackableAfterOnSubscribe((Trackable)s);
+			assertTrackableAfterOnSubscribe((InnerOperator)s);
 			s.onError(new Exception("test"));
-			assertTrackableAfterOnComplete((Trackable)s);
+			assertTrackableAfterOnComplete((InnerOperator)s);
 			s.onError(new Exception("test2"));
 		})
 		                        .take(2))
@@ -465,13 +455,11 @@ public class FluxTakeTest {
 	public void failConditionalDoubleError() {
 		Hooks.onErrorDropped(e -> assertThat(e).hasMessage("test2"));
 		StepVerifier.create(Flux.from(s -> {
-			assertTrackableBeforeOnSubscribe((Trackable)s);
-			assertThat(((Trackable)s).isStarted()).isFalse();
-			assertThat(((Receiver)s).upstream()).isNull();
+			assertTrackableBeforeOnSubscribe((InnerOperator)s);
 			s.onSubscribe(Operators.emptySubscription());
-			assertTrackableAfterOnSubscribe((Trackable)s);
+			assertTrackableAfterOnSubscribe((InnerOperator)s);
 			s.onError(new Exception("test"));
-			assertTrackableAfterOnComplete((Trackable)s);
+			assertTrackableAfterOnComplete((InnerOperator)s);
 			s.onError(new Exception("test2"));
 		})
 		                        .take(2).filter(d -> true))
@@ -489,13 +477,12 @@ public class FluxTakeTest {
 		StepVerifier.create(up
 		                        .take(2))
 		            .consumeSubscriptionWith(s -> {
-			            assertTrackableBeforeOnSubscribe((Trackable)s);
-			            assertThat(((Receiver)s).upstream()).isNotNull();
+			            assertTrackableBeforeOnSubscribe((InnerOperator)s);
 		            })
 		            .then(() -> {
-			            assertTrackableAfterOnSubscribe((Trackable)up.actual);
+			            assertTrackableAfterOnSubscribe((InnerOperator)up.actual);
 			            up.actual.onError(new Exception("test"));
-			            assertTrackableAfterOnComplete((Trackable)up.actual);
+			            assertTrackableAfterOnComplete((InnerOperator)up.actual);
 			            up.actual.onError(new Exception("test2"));
 		            })
 		            .verifyErrorMessage("test");
@@ -509,12 +496,12 @@ public class FluxTakeTest {
 		StepVerifier.create(up
 		                        .take(2).filter(d -> true))
 		            .consumeSubscriptionWith(s -> {
-			            assertTrackableAfterOnSubscribe((Trackable)s);
+			            assertTrackableAfterOnSubscribe((InnerOperator)s);
 		            })
 		            .then(() -> {
-			            assertTrackableAfterOnSubscribe((Trackable)up.actual);
+			            assertTrackableAfterOnSubscribe((InnerOperator)up.actual);
 			            up.actual.onComplete();
-			            assertTrackableAfterOnComplete((Trackable)up.actual);
+			            assertTrackableAfterOnComplete((InnerOperator)up.actual);
 			            up.actual.onComplete();
 		            })
 		            .verifyComplete();

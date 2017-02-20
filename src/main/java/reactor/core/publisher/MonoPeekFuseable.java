@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package reactor.core.publisher;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
@@ -48,7 +47,7 @@ final class MonoPeekFuseable<T> extends MonoSource<T, T>
 
 	final Runnable onCancelCall;
 
-	public MonoPeekFuseable(Publisher<? extends T> source,
+	MonoPeekFuseable(Mono<? extends T> source,
 			Consumer<? super Subscription> onSubscribeCall,
 			Consumer<? super T> onNextCall,
 			Consumer<? super Throwable> onErrorCall,

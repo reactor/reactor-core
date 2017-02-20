@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,12 +30,10 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
+import reactor.core.Scannable;
 
 /**
  * An iterable that consumes a Publisher in a blocking fashion.
@@ -45,15 +43,15 @@ import reactor.core.Trackable;
  *
  * @param <T> the value type
  */
-final class BlockingIterable<T> implements Iterable<T>, Receiver, Trackable {
+final class BlockingIterable<T> implements Iterable<T>, Scannable {
 
-	final Publisher<? extends T> source;
+	final Flux<? extends T> source;
 
 	final long batchSize;
 
 	final Supplier<Queue<T>> queueSupplier;
 
-	BlockingIterable(Publisher<? extends T> source,
+	BlockingIterable(Flux<? extends T> source,
 			long batchSize,
 			Supplier<Queue<T>> queueSupplier) {
 		if (batchSize <= 0) {
@@ -62,6 +60,17 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Trackable {
 		this.source = Objects.requireNonNull(source, "source");
 		this.batchSize = batchSize;
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
+	}
+
+	@Override
+	public Object scan(Attr key) {
+		switch (key){
+			case PREFETCH:
+				return batchSize;
+			case PARENT:
+				return source;
+		}
+		return null;
 	}
 
 	@Override
@@ -106,23 +115,8 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Trackable {
 		return new SubscriberIterator<>(q, batchSize);
 	}
 
-	@Override
-	public long getCapacity() {
-		return batchSize;
-	}
-
-	@Override
-	public Object upstream() {
-		return source;
-	}
-
-	@Override
-	public long getPending() {
-		return 0;
-	}
-
 	static final class SubscriberIterator<T>
-			implements Subscriber<T>, Iterator<T>, Runnable, Receiver, Trackable {
+			implements InnerConsumer<T>, Iterator<T>, Runnable {
 
 		final Queue<T> queue;
 
@@ -265,18 +259,22 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Trackable {
 		}
 
 		@Override
-		public Object upstream() {
-			return s;
-		}
-
-		@Override
-		public boolean isStarted() {
-			return s != null && !done && s != Operators.cancelledSubscription();
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return done || s == Operators.cancelledSubscription();
+		public Object scan(Attr key) {
+		 	switch (key){
+			    case TERMINATED:
+				    return done;
+			    case PARENT:
+				    return  s;
+			    case CANCELLED:
+			    	return s == Operators.cancelledSubscription();
+			    case LIMIT:
+			    	return limit;
+			    case PREFETCH:
+			    	return batchSize;
+			    case ERROR:
+			    	return error;
+		    }
+			return null;
 		}
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
+import reactor.core.Scannable;
 
 /**
  * An unbounded Java Lambda adapter to {@link Subscriber}, targetted at {@link Mono}.
@@ -32,7 +31,7 @@ import reactor.core.Trackable;
  * @param <T> the value type
  */
 final class LambdaMonoSubscriber<T>
-		implements Subscriber<T>, Receiver, Disposable, Trackable {
+		implements Subscriber<T>, Scannable, Disposable {
 
 	final Consumer<? super T>            consumer;
 	final Consumer<? super Throwable>    errorConsumer;
@@ -87,11 +86,6 @@ final class LambdaMonoSubscriber<T>
 				onError(t);
 			}
 		}
-	}
-
-	@Override
-	public Object upstream() {
-		return subscription;
 	}
 
 	@Override
@@ -162,23 +156,23 @@ final class LambdaMonoSubscriber<T>
 	}
 
 	@Override
-	public long getCapacity() {
-		return Integer.MAX_VALUE;
+	public Object scan(Attr key) {
+		switch (key){
+			case PARENT:
+				return subscription;
+			case PREFETCH:
+				return Integer.MAX_VALUE;
+			case TERMINATED:
+			case CANCELLED:
+				return isDisposed();
+		}
+		return null;
 	}
 
-	@Override
-	public boolean isStarted() {
-		return subscription != null;
-	}
-
-	@Override
-	public boolean isTerminated() {
-		return subscription == Operators.cancelledSubscription();
-	}
 
 	@Override
 	public boolean isDisposed() {
-		return isTerminated();
+		return subscription == Operators.cancelledSubscription();
 	}
 
 	@Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -304,7 +304,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 		AtomicBoolean onAfterComplete = new AtomicBoolean();
 		AtomicBoolean onCancel = new AtomicBoolean();
 
-		new FluxPeek<>(new MonoError<>(new RuntimeException("forced failure")),
+		new FluxPeek<>(new FluxError<>(new RuntimeException("forced failure"), false),
 				onSubscribe::set,
 				onNext::set,
 				onError::set,
@@ -334,7 +334,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 		AtomicBoolean onAfterComplete = new AtomicBoolean();
 		AtomicBoolean onCancel = new AtomicBoolean();
 
-		new FluxPeek<>(MonoEmpty.instance(),
+		new FluxPeek<>(Flux.empty(),
 				onSubscribe::set,
 				onNext::set,
 				onError::set,

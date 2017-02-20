@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 package reactor.core.publisher;
 
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.function.IntFunction;
@@ -24,15 +22,14 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.MultiReceiver;
-import reactor.core.Trackable;
+
 
 /**
  * Merges a fixed array of Publishers.
  * @param <T> the element type of the publishers
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxMerge<T> extends Flux<T> implements MultiReceiver, Trackable {
+final class FluxMerge<T> extends Flux<T> {
 
 	final Publisher<? extends T>[] sources;
 	
@@ -83,7 +80,7 @@ final class FluxMerge<T> extends Flux<T> implements MultiReceiver, Trackable {
 	 * @param newQueueSupplier a function that should return a new queue supplier based on the change in the maxConcurrency value
 	 * @return the new FluxMerge instance
 	 */
-	public FluxMerge<T> mergeAdditionalSource(Publisher<? extends T> source, IntFunction<Supplier<? extends Queue<T>>> newQueueSupplier) {
+	FluxMerge<T> mergeAdditionalSource(Publisher<? extends T> source, IntFunction<Supplier<? extends Queue<T>>> newQueueSupplier) {
 		int n = sources.length;
 		@SuppressWarnings("unchecked")
 		Publisher<? extends T>[] newArray = new Publisher[n + 1];
@@ -103,18 +100,4 @@ final class FluxMerge<T> extends Flux<T> implements MultiReceiver, Trackable {
 		return new FluxMerge<>(newArray, delayError, mc, newMainQueue, prefetch, innerQueueSupplier);
 	}
 
-	@Override
-	public Iterator<?> upstreams() {
-		return Arrays.asList(sources).iterator();
-	}
-
-	@Override
-	public long getCapacity() {
-		return prefetch;
-	}
-
-	@Override
-	public long upstreamCount() {
-		return sources.length;
-	}
 }

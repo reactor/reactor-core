@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
 
+
 /**
  * Periodically emits an ever increasing long value either via a ScheduledExecutorService
  * or a custom async callback function
@@ -40,7 +41,7 @@ final class FluxInterval extends Flux<Long> {
 	
 	final TimeUnit unit;
 
-	public FluxInterval(
+	FluxInterval(
 			long initialDelay, 
 			long period, 
 			TimeUnit unit, 
@@ -56,7 +57,6 @@ final class FluxInterval extends Flux<Long> {
 	
 	@Override
 	public void subscribe(Subscriber<? super Long> s) {
-		
 		Worker w = timedScheduler.createWorker();
 
 		IntervalRunnable r = new IntervalRunnable(s, w);
@@ -66,8 +66,9 @@ final class FluxInterval extends Flux<Long> {
 		w.schedulePeriodically(r, initialDelay, period, unit);
 	}
 
-	static final class IntervalRunnable implements Runnable, Subscription {
-		final Subscriber<? super Long> s;
+	static final class IntervalRunnable implements Runnable, Subscription,
+	                                               InnerProducer<Long> {
+		final Subscriber<? super Long> actual;
 		
 		final Worker worker;
 		
@@ -79,23 +80,37 @@ final class FluxInterval extends Flux<Long> {
 		
 		volatile boolean cancelled;
 
-		public IntervalRunnable(Subscriber<? super Long> s, Worker worker) {
-			this.s = s;
+		IntervalRunnable(Subscriber<? super Long> actual, Worker worker) {
+			this.actual = actual;
 			this.worker = worker;
 		}
-		
+
+		@Override
+		public Subscriber<? super Long> actual() {
+			return actual;
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch(key){
+				case CANCELLED:
+					return cancelled;
+			}
+			return InnerProducer.super.scan(key);
+		}
+
 		@Override
 		public void run() {
 			if (!cancelled) {
 				if (requested != 0L) {
-					s.onNext(count++);
+					actual.onNext(count++);
 					if (requested != Long.MAX_VALUE) {
 						REQUESTED.decrementAndGet(this);
 					}
 				} else {
 					cancel();
 					
-					s.onError(Exceptions.failWithOverflow("Could not emit value " + count + " due to lack of requests"));
+					actual.onError(Exceptions.failWithOverflow("Could not emit value " + count + " due to lack of requests"));
 				}
 			}
 		}

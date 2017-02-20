@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,8 +28,7 @@ import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
-import reactor.core.MultiReceiver;
-import reactor.core.Trackable;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
@@ -708,7 +706,8 @@ public class FluxFlatMapTest {
 		try {
 			StepVerifier.create(Flux.just(1).hide().flatMap(f -> Flux.from(s -> {
 				s.onSubscribe(Operators.emptySubscription());
-				Exceptions.terminate(FluxFlatMap.FlatMapMain.ERROR,( (FluxFlatMap.FlatMapInner) s).downstream());
+				Exceptions.terminate(FluxFlatMap.FlatMapMain.ERROR,( (FluxFlatMap
+						.FlatMapInner) s).parent);
 				s.onError(new Exception("test"));
 			})))
 			            .verifyErrorMessage("test");
@@ -924,87 +923,70 @@ public class FluxFlatMapTest {
 		            .verify();
 	}
 
-	void assertBeforeOnSubscribeState(Trackable s) {
-		assertThat(s.isStarted()).isFalse();
-		assertThat(s.requestedFromDownstream()).isEqualTo(0);
-		assertThat(s.isTerminated()).isFalse();
-		assertThat(s.getCapacity()).isEqualTo(1);
-		assertThat(s.getPending()).isEqualTo(-1);
-		assertThat(s.limit()).isEqualTo(-1);
-		assertThat(s.expectedFromUpstream()).isEqualTo(-1);
-		assertThat(s.isCancelled()).isFalse();
+	void assertBeforeOnSubscribeState(InnerOperator s) {
+		assertThat(s.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
+		assertThat(s.scan(Scannable.Attr.PREFETCH)).isEqualTo(1);
+		assertThat(s.scan(Scannable.Attr.TERMINATED, Boolean.class)).isFalse();
+		assertThat(s.scanOrDefault(Scannable.Attr.CANCELLED, false)).isFalse();
 	}
 
-	void assertAfterOnSubscribeState(Trackable s) {
-		assertThat(s.isStarted()).isTrue();
-		assertThat(s.getError()).isNull();
-		assertThat(s.requestedFromDownstream()).isEqualTo(1);
-		assertThat(s.isTerminated()).isFalse();
-		assertThat(s.isCancelled()).isFalse();
+	void assertAfterOnSubscribeState(InnerOperator s) {
+		assertThat(s.scan(Scannable.Attr.ERROR)).isNull();
+		assertThat(s.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(1L);
+		assertThat(s.scan(Scannable.Attr.TERMINATED, Boolean.class)).isFalse();
+		assertThat(s.scanOrDefault(Scannable.Attr.CANCELLED, false)).isFalse();
 	}
 
-	void assertAfterOnNextInnerState(Trackable s) {
-		assertThat(s.getPending()).isEqualTo(1L);
+	void assertAfterOnNextInnerState(InnerConsumer s) {
+		assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 	}
 
-	void assertAfterOnNextInnerState2(Trackable s) {
-		assertThat(s.getPending()).isEqualTo(-1L);
+	void assertAfterOnNextInnerState2(InnerConsumer s) {
+		assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
 	}
 
-	void assertAfterOnCompleteInnerState(Trackable s) {
-		assertThat(s.isStarted()).isFalse();
-		assertThat(s.isTerminated()).isFalse();
+	void assertAfterOnCompleteInnerState(InnerConsumer s) {
+		assertThat(s.scan(Scannable.Attr.TERMINATED, Boolean.class)).isFalse();
 	}
 
-	void assertAfterOnCompleteInnerState2(Trackable s) {
-		assertThat(s.isStarted()).isFalse();
-		assertThat(s.isTerminated()).isTrue();
-		assertThat(s.getPending()).isEqualTo(-1L);
+	void assertAfterOnCompleteInnerState2(InnerConsumer s) {
+		assertThat(s.scan(Scannable.Attr.TERMINATED, Boolean.class)).isTrue();
+		assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
 	}
 
 	@SuppressWarnings("unchecked")
-	void assertAfterOnSubscribeInnerState(MultiReceiver s) {
-		assertThat(s.upstreamCount()).isEqualTo(1);
-		assertThat(s.upstreams().next()).isNotNull();
-		assertThat(((Trackable)s.upstreams().next()).isStarted()).isTrue();
+	void assertAfterOnSubscribeInnerState(InnerProducer s) {
+		assertThat(s.inners()).hasSize(1);
 	}
 
-	void assertBeforeOnSubscribeInnerState(Trackable s) {
-		assertThat(s.isStarted()).isFalse();
-		assertThat(s.isTerminated()).isFalse();
-		assertThat(s.requestedFromDownstream()).isEqualTo(-1L);
-		assertThat(s.getCapacity()).isEqualTo(32);
-		assertThat(s.getPending()).isEqualTo(-1);
-		assertThat(s.limit()).isEqualTo(24);
-		assertThat(s.expectedFromUpstream()).isEqualTo(0);
-		assertThat(s.isCancelled()).isFalse();
+	void assertBeforeOnSubscribeInnerState(InnerConsumer s) {
+		assertThat(s.scan(Scannable.Attr.TERMINATED, Boolean.class)).isFalse();
+		assertThat(s.scan(Scannable.Attr.PREFETCH)).isEqualTo(32);
+		assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
+		assertThat(s.scan(Scannable.Attr.LIMIT)).isEqualTo(24);
 	}
 
 	@Test
 	public void assertOnSubscribeStateMainAndInner() {
 		StepVerifier.create(Flux.from(s -> {
 			assertBeforeOnSubscribeState((FluxFlatMap.FlatMapMain) s);
-			assertThat(((FluxFlatMap.FlatMapMain) s).upstream()).isNull();
 			s.onSubscribe(Operators.emptySubscription());
-			assertThat(((FluxFlatMap.FlatMapMain) s).upstream()).isSameAs(Operators.emptySubscription());
 			assertAfterOnSubscribeState((FluxFlatMap.FlatMapMain) s);
 			s.onNext(1);
-			assertThat(((FluxFlatMap.FlatMapMain) s).downstream()).isNotNull();
-			assertThat(((FluxFlatMap.FlatMapMain) s).isCancelled()).isTrue();
-			assertThat(((FluxFlatMap.FlatMapMain) s).isStarted()).isFalse();
+			assertThat(((FluxFlatMap.FlatMapMain) s).actual()).isNotNull();
+			assertThat(((FluxFlatMap.FlatMapMain) s).scan(Scannable.Attr.CANCELLED, Boolean.class)).isTrue();
 			s.onComplete();
 		})
 		                        .flatMap(f -> Flux.from(s -> {
 			                        assertBeforeOnSubscribeInnerState((FluxFlatMap.FlatMapInner) s);
 			                        s.onSubscribe(Operators.emptySubscription());
-			                        assertThat(((FluxFlatMap.FlatMapInner) s).upstream()).isEqualTo(
-					                        Operators.emptySubscription());
-			                        assertAfterOnSubscribeInnerState(((FluxFlatMap.FlatMapInner) s).downstream());
+			                        assertAfterOnSubscribeInnerState(((FluxFlatMap
+					                        .FlatMapInner) s).parent);
 			                        s.onNext(f);
 			                        s.onNext(f);
 			                        assertAfterOnNextInnerState(((FluxFlatMap.FlatMapInner) s));
 			                        assertAfterOnCompleteInnerState(((FluxFlatMap.FlatMapInner) s));
-			                        assertThat(((FluxFlatMap.FlatMapInner)s).getPending()).isEqualTo(1L);
+			                        assertThat(((FluxFlatMap.FlatMapInner)s).scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 			                        s.onComplete();
 			                        assertAfterOnCompleteInnerState(((FluxFlatMap.FlatMapInner) s));
 		                        }), 1), 1)
@@ -1017,23 +999,19 @@ public class FluxFlatMapTest {
 	public void assertOnSubscribeStateMainAndInner2() {
 		StepVerifier.create(Flux.from(s -> {
 			assertBeforeOnSubscribeState((FluxFlatMap.FlatMapMain) s);
-			assertThat(((FluxFlatMap.FlatMapMain) s).upstream()).isNull();
 			s.onSubscribe(Operators.emptySubscription());
-			assertThat(((FluxFlatMap.FlatMapMain) s).upstream()).isSameAs(Operators.emptySubscription());
 			assertAfterOnSubscribeState((FluxFlatMap.FlatMapMain) s);
 			s.onNext(1);
-			assertThat(((FluxFlatMap.FlatMapMain) s).downstream()).isNotNull();
-			assertThat(((FluxFlatMap.FlatMapMain) s).isCancelled()).isFalse();
+			assertThat(((FluxFlatMap.FlatMapMain) s).actual()).isNotNull();
+			assertThat(((FluxFlatMap.FlatMapMain) s).scan(Scannable.Attr.CANCELLED, Boolean.class)).isFalse();
 			s.onComplete();
-			assertThat(((FluxFlatMap.FlatMapMain) s).isStarted()).isFalse();
-			assertThat(((FluxFlatMap.FlatMapMain) s).isTerminated()).isTrue();
+			assertThat(((FluxFlatMap.FlatMapMain) s).scan(Scannable.Attr.TERMINATED, Boolean.class)).isTrue();
 		})
 		                        .flatMap(f -> Flux.from(s -> {
 			                        assertBeforeOnSubscribeInnerState((FluxFlatMap.FlatMapInner) s);
 			                        s.onSubscribe(Operators.emptySubscription());
-			                        assertThat(((FluxFlatMap.FlatMapInner) s).upstream()).isEqualTo(
-					                        Operators.emptySubscription());
-			                        assertAfterOnSubscribeInnerState(((FluxFlatMap.FlatMapInner) s).downstream());
+			                        assertAfterOnSubscribeInnerState(((FluxFlatMap
+					                        .FlatMapInner) s).parent);
 			                        s.onNext(f);
 			                        assertAfterOnNextInnerState2(((FluxFlatMap
 					                        .FlatMapInner) s));
@@ -1063,9 +1041,7 @@ public class FluxFlatMapTest {
 		AtomicReference<FluxFlatMap.FlatMapMain> ref = new AtomicReference<>();
 		StepVerifier.create(Flux.from(s -> {
 			assertBeforeOnSubscribeState((FluxFlatMap.FlatMapMain) s);
-			assertThat(((FluxFlatMap.FlatMapMain) s).upstream()).isNull();
 			s.onSubscribe(Operators.emptySubscription());
-			assertThat(((FluxFlatMap.FlatMapMain) s).upstream()).isSameAs(Operators.emptySubscription());
 			assertAfterOnSubscribeState((FluxFlatMap.FlatMapMain) s);
 			s.onNext(1);
 		})
@@ -1074,20 +1050,21 @@ public class FluxFlatMapTest {
 		            .expectNext(1)
 		            .then(() -> {
 						FluxFlatMap.FlatMapMain s = ref.get();
-			            assertThat(s.getPending()).isEqualTo(-1L);
+			            assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
 			            s.onNext(2);
-			            assertThat(s.downstream()).isNotNull();
-			            assertThat(s.isCancelled()).isFalse();
-			            assertThat(s.getPending()).isEqualTo(1);
-			            assertThat(s.isTerminated()).isFalse();
+			            assertThat(s.actual()).isNotNull();
+			            assertThat(s.scan(Scannable.Attr.CANCELLED, Boolean.class)).isFalse();
+			            assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
+			            assertThat(s.scan(Scannable.Attr.TERMINATED, Boolean.class)).isFalse();
 			            s.onComplete();
-			            assertThat(s.getPending()).isEqualTo(-1L);
-			            assertThat(s.isTerminated()).isFalse();
+			            assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
+			            assertThat(s.scan(Scannable.Attr.TERMINATED, Boolean.class)).isFalse();
 		            })
 		            .thenRequest(1)
 		            .then(() -> {
 			            FluxFlatMap.FlatMapMain s = ref.get();
-			            assertThat(s.isTerminated()).isTrue();
+			            assertThat(s.scan(Scannable.Attr.TERMINATED, Boolean.class)).isTrue();
+			            assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
 		            })
 		            .expectNext(2)
 		            .verifyComplete();

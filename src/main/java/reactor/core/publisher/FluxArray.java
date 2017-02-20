@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,29 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
-import reactor.core.MultiReceiver;
-import reactor.core.Producer;
-import reactor.core.Trackable;
+
 
 /**
  * Emits the contents of a wrapped (shared) array.
  *
  * @param <T> the value type
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxArray<T> 
-extends Flux<T>
-		implements Fuseable {
+final class FluxArray<T> extends Flux<T> implements Fuseable {
+
 	final T[] array;
 
 	@SafeVarargs
@@ -50,8 +46,9 @@ extends Flux<T>
 			return;
 		}
 		if (s instanceof ConditionalSubscriber) {
-			s.onSubscribe(new ArrayConditionalSubscription<>((ConditionalSubscriber<? super T>)s, array));
-		} else {
+			s.onSubscribe(new ArrayConditionalSubscription<>((ConditionalSubscriber<? super T>) s, array));
+		}
+		else {
 			s.onSubscribe(new ArraySubscription<>(s, array));
 		}
 	}
@@ -62,8 +59,8 @@ extends Flux<T>
 	}
 
 	static final class ArraySubscription<T>
-			implements Producer, Trackable, MultiReceiver,
-			           SynchronousSubscription<T> {
+			implements InnerProducer<T>, SynchronousSubscription<T> {
+
 		final Subscriber<? super T> actual;
 
 		final T[] array;
@@ -75,9 +72,9 @@ extends Flux<T>
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<ArraySubscription> REQUESTED =
-		  AtomicLongFieldUpdater.newUpdater(ArraySubscription.class, "requested");
+				AtomicLongFieldUpdater.newUpdater(ArraySubscription.class, "requested");
 
-		public ArraySubscription(Subscriber<? super T> actual, T[] array) {
+		ArraySubscription(Subscriber<? super T> actual, T[] array) {
 			this.actual = actual;
 			this.array = array;
 		}
@@ -88,7 +85,8 @@ extends Flux<T>
 				if (Operators.getAndAddCap(REQUESTED, this, n) == 0) {
 					if (n == Long.MAX_VALUE) {
 						fastPath();
-					} else {
+					}
+					else {
 						slowPath(n);
 					}
 				}
@@ -175,32 +173,6 @@ extends Flux<T>
 		}
 
 		@Override
-		public boolean isCancelled() {
-			return cancelled;
-		}
-
-		@Override
-		public Object downstream() {
-			return actual;
-		}
-
-		@Override
-		public long requestedFromDownstream() {
-			return requested;
-		}
-
-		@Override
-		public Iterator<?> upstreams() {
-			return array instanceof Publisher[] ? Arrays.asList(array)
-			                                            .iterator() : null;
-		}
-
-		@Override
-		public long upstreamCount() {
-			return array instanceof Publisher[] ? array.length : -1;
-		}
-
-		@Override
 		public T poll() {
 			int i = index;
 			T[] a = array;
@@ -221,6 +193,11 @@ extends Flux<T>
 		}
 
 		@Override
+		public Subscriber<? super T> actual() {
+			return actual;
+		}
+
+		@Override
 		public void clear() {
 			index = array.length;
 		}
@@ -229,11 +206,26 @@ extends Flux<T>
 		public int size() {
 			return array.length - index;
 		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case TERMINATED:
+					return isEmpty();
+				case BUFFERED:
+					return size();
+				case CANCELLED:
+					return cancelled;
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+			}
+			return InnerProducer.super.scan(key);
+		}
 	}
 
 	static final class ArrayConditionalSubscription<T>
-			implements Producer, Trackable, MultiReceiver,
-			           SynchronousSubscription<T> {
+			implements InnerProducer<T>, SynchronousSubscription<T> {
+
 		final ConditionalSubscriber<? super T> actual;
 
 		final T[] array;
@@ -248,10 +240,14 @@ extends Flux<T>
 				AtomicLongFieldUpdater.newUpdater(ArrayConditionalSubscription.class,
 						"requested");
 
-		public ArrayConditionalSubscription(ConditionalSubscriber<? super T> actual,
-				T[] array) {
+		ArrayConditionalSubscription(ConditionalSubscriber<? super T> actual, T[] array) {
 			this.actual = actual;
 			this.array = array;
+		}
+
+		@Override
+		public Subscriber<? super T> actual() {
+			return actual;
 		}
 
 		@Override
@@ -350,28 +346,18 @@ extends Flux<T>
 		}
 
 		@Override
-		public boolean isCancelled() {
-			return cancelled;
-		}
-
-		@Override
-		public Object downstream() {
-			return actual;
-		}
-
-		@Override
-		public long requestedFromDownstream() {
-			return requested;
-		}
-
-		@Override
-		public Iterator<?> upstreams() {
-			return array instanceof Publisher[] ? Arrays.asList(array).iterator() : null;
-		}
-
-		@Override
-		public long upstreamCount() {
-			return array instanceof Publisher[] ? array.length : -1;
+		public Object scan(Attr key) {
+			switch (key) {
+				case TERMINATED:
+					return isEmpty();
+				case BUFFERED:
+					return size();
+				case CANCELLED:
+					return cancelled;
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+			}
+			return InnerProducer.super.scan(key);
 		}
 
 		@Override

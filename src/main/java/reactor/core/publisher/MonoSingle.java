@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,9 @@ package reactor.core.publisher;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
-import reactor.core.Receiver;
 
 /**
  * Expects and emits a single item from the source or signals
@@ -38,13 +36,13 @@ final class MonoSingle<T> extends MonoSource<T, T> implements Fuseable {
 	final T       defaultValue;
 	final boolean completeOnEmpty;
 
-	public MonoSingle(Publisher<? extends T> source) {
+	MonoSingle(Flux<? extends T> source) {
 		super(source);
 		this.defaultValue = null;
 		this.completeOnEmpty = false;
 	}
 
-	public MonoSingle(Publisher<? extends T> source,
+	MonoSingle(Flux<? extends T> source,
 			T defaultValue,
 			boolean completeOnEmpty) {
 		super(source);
@@ -58,8 +56,7 @@ final class MonoSingle<T> extends MonoSource<T, T> implements Fuseable {
 		source.subscribe(new SingleSubscriber<>(s, defaultValue, completeOnEmpty));
 	}
 
-	static final class SingleSubscriber<T> extends Operators.MonoSubscriber<T, T>
-			implements Receiver {
+	static final class SingleSubscriber<T> extends Operators.MonoSubscriber<T, T>  {
 
 		final T       defaultValue;
 		final boolean completeOnEmpty;
@@ -70,7 +67,18 @@ final class MonoSingle<T> extends MonoSource<T, T> implements Fuseable {
 
 		boolean done;
 
-		public SingleSubscriber(Subscriber<? super T> actual,
+		@Override
+		public Object scan(Attr key) {
+			switch (key){
+				case TERMINATED:
+					return done;
+				case PARENT:
+					return s;
+			}
+			return super.scan(key);
+		}
+
+		SingleSubscriber(Subscriber<? super T> actual,
 				T defaultValue,
 				boolean completeOnEmpty) {
 			super(actual);
@@ -165,11 +173,6 @@ final class MonoSingle<T> extends MonoSource<T, T> implements Fuseable {
 		@Override
 		public boolean isTerminated() {
 			return done;
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
 		}
 
 	}

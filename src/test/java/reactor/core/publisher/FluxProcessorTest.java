@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Trackable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
@@ -55,34 +54,8 @@ public class FluxProcessorTest {
 	@Test
 	public void testCapacity(){
 		assertThat(FluxProcessor.wrap(UnicastProcessor.create(), UnicastProcessor
-				.create()).getCapacity())
+				.create()).getBufferSize())
 				.isEqualTo(Integer.MAX_VALUE);
-	}
-
-	@Test
-	public void testCapacityNoTrackable(){
-		assertThat(FluxProcessor.wrap(new Subscriber<Object>() {
-			@Override
-			public void onSubscribe(Subscription s) {
-
-			}
-
-			@Override
-			public void onNext(Object o) {
-
-			}
-
-			@Override
-			public void onError(Throwable t) {
-
-			}
-
-			@Override
-			public void onComplete() {
-
-			}
-		}, UnicastProcessor.create()).getCapacity())
-				.isEqualTo(Trackable.UNSPECIFIED);
 	}
 
 	@Test
@@ -96,8 +69,8 @@ public class FluxProcessorTest {
 		DelegateProcessor<Integer, Integer> delegateProcessor =
 				(DelegateProcessor<Integer, Integer>)processor;
 
-		assertThat(delegateProcessor.downstream()).isEqualTo(upstream);
-		assertThat(delegateProcessor.upstream()).isInstanceOf(FluxFilterFuseable.class);
+		delegateProcessor.parents().findFirst().ifPresent(s ->
+				assertThat(s).isInstanceOf(FluxFilterFuseable.class));
 
 
 		StepVerifier.create(processor)

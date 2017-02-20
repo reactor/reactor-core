@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,13 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Scannable;
+
 
 final class MonoFlatMap<T, R> extends Flux<R> {
 
@@ -32,7 +35,7 @@ final class MonoFlatMap<T, R> extends Flux<R> {
 
 	final Function<? super T, ? extends Publisher<? extends R>> mapper;
 
-	public MonoFlatMap(Mono<? extends T> source,
+	MonoFlatMap(Mono<? extends T> source,
 			Function<? super T, ? extends Publisher<? extends R>> mapper) {
 		this.source = source;
 		this.mapper = mapper;
@@ -43,10 +46,10 @@ final class MonoFlatMap<T, R> extends Flux<R> {
 		if (FluxFlatMap.trySubscribeScalarMap(source, s, mapper, false)) {
 			return;
 		}
-		source.subscribe(new FlattenSubscriber<T, R>(s, mapper));
+		source.subscribe(new FlatMapMain<T, R>(s, mapper));
 	}
 
-	static final class FlattenSubscriber<T, R> implements Subscriber<T>, Subscription {
+	static final class FlatMapMain<T, R> implements InnerOperator<T, R> {
 
 		final Subscriber<? super R> actual;
 
@@ -56,22 +59,41 @@ final class MonoFlatMap<T, R> extends Flux<R> {
 
 		volatile Subscription inner;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<FlattenSubscriber, Subscription> INNER =
-				AtomicReferenceFieldUpdater.newUpdater(FlattenSubscriber.class,
+		static final AtomicReferenceFieldUpdater<FlatMapMain, Subscription> INNER =
+				AtomicReferenceFieldUpdater.newUpdater(FlatMapMain.class,
 						Subscription.class,
 						"inner");
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<FlattenSubscriber> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(FlattenSubscriber.class, "requested");
+		static final AtomicLongFieldUpdater<FlatMapMain> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(FlatMapMain.class, "requested");
 
 		boolean hasValue;
 
-		public FlattenSubscriber(Subscriber<? super R> actual,
+		FlatMapMain(Subscriber<? super R> actual,
 				Function<? super T, ? extends Publisher<? extends R>> mapper) {
 			this.actual = actual;
 			this.mapper = mapper;
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key){
+				case PARENT:
+					return main;
+			}
+			return InnerOperator.super.scan(key);
+		}
+
+		@Override
+		public Stream<? extends Scannable> inners() {
+			return Stream.of(Scannable.from(inner));
+		}
+
+		@Override
+		public Subscriber<? super R> actual() {
+			return actual;
 		}
 
 		@Override
@@ -158,7 +180,7 @@ final class MonoFlatMap<T, R> extends Flux<R> {
 				return;
 			}
 
-			p.subscribe(new InnerSubscriber<>(this, actual));
+			p.subscribe(new FlatMapInner<>(this, actual));
 		}
 
 		@Override
@@ -176,39 +198,52 @@ final class MonoFlatMap<T, R> extends Flux<R> {
 				actual.onComplete();
 			}
 		}
+	}
 
-		static final class InnerSubscriber<R> implements Subscriber<R> {
+	static final class FlatMapInner<R> implements InnerConsumer<R> {
 
-			final FlattenSubscriber<?, R> parent;
+		final FlatMapMain<?, R> parent;
 
-			final Subscriber<? super R> actual;
+		final Subscriber<? super R> actual;
 
-			public InnerSubscriber(FlattenSubscriber<?, R> parent,
-					Subscriber<? super R> actual) {
-				this.parent = parent;
-				this.actual = actual;
-			}
-
-			@Override
-			public void onSubscribe(Subscription s) {
-				parent.onSubscribeInner(s);
-			}
-
-			@Override
-			public void onNext(R t) {
-				actual.onNext(t);
-			}
-
-			@Override
-			public void onError(Throwable t) {
-				actual.onError(t);
-			}
-
-			@Override
-			public void onComplete() {
-				actual.onComplete();
-			}
-
+		FlatMapInner(FlatMapMain<?, R> parent,
+				Subscriber<? super R> actual) {
+			this.parent = parent;
+			this.actual = actual;
 		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key){
+				case PARENT:
+					return parent.inner;
+				case ACTUAL:
+					return parent;
+				case REQUESTED_FROM_DOWNSTREAM:
+					return parent.requested;
+			}
+			return null;
+		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			parent.onSubscribeInner(s);
+		}
+
+		@Override
+		public void onNext(R t) {
+			actual.onNext(t);
+		}
+
+		@Override
+		public void onError(Throwable t) {
+			actual.onError(t);
+		}
+
+		@Override
+		public void onComplete() {
+			actual.onComplete();
+		}
+
 	}
 }

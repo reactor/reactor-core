@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.function.BiFunction;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
@@ -35,7 +34,7 @@ final class MonoReduce<T> extends MonoSource<T, T> implements Fuseable {
 
 	final BiFunction<T, T, T> aggregator;
 
-	MonoReduce(Publisher<? extends T> source, BiFunction<T, T, T> aggregator) {
+	MonoReduce(Flux<? extends T> source, BiFunction<T, T, T> aggregator) {
 		super(source);
 		this.aggregator = Objects.requireNonNull(aggregator, "aggregator");
 	}
@@ -59,6 +58,17 @@ final class MonoReduce<T> extends MonoSource<T, T> implements Fuseable {
 				BiFunction<T, T, T> aggregator) {
 			super(actual);
 			this.aggregator = aggregator;
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key){
+				case TERMINATED:
+					return done;
+				case PARENT:
+					return s;
+			}
+			return super.scan(key);
 		}
 
 		@Override
@@ -126,21 +136,6 @@ final class MonoReduce<T> extends MonoSource<T, T> implements Fuseable {
 		public void cancel() {
 			super.cancel();
 			s.cancel();
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
-		}
-
-		@Override
-		public boolean isStarted() {
-			return s != null && !isTerminated();
 		}
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,13 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Scannable;
+
 
 /**
  * Waits for all Mono sources to produce a value or terminate, and if
@@ -44,7 +47,7 @@ final class MonoWhen<T, R> extends Mono<R> {
 	final Function<? super Object[], ? extends R> zipper;
 
 	@SuppressWarnings("unchecked")
-	public <U> MonoWhen(boolean delayError,
+	<U> MonoWhen(boolean delayError,
 			Publisher<? extends T> p1,
 			Publisher<? extends U> p2,
 			BiFunction<? super T, ? super U, ? extends R> zipper2) {
@@ -55,7 +58,7 @@ final class MonoWhen<T, R> extends Mono<R> {
 				Objects.requireNonNull(p2, "p2"));
 	}
 
-    public MonoWhen(boolean delayError,
+	MonoWhen(boolean delayError,
 		    Function<? super Object[], ? extends R> zipper,
 		    Publisher<?>... sources) {
 	    this.delayError = delayError;
@@ -64,7 +67,7 @@ final class MonoWhen<T, R> extends Mono<R> {
         this.sourcesIterable = null;
     }
 
-	public MonoWhen(boolean delayError,
+	MonoWhen(boolean delayError,
 			Function<? super Object[], ? extends R> zipper,
 			Iterable<? extends Publisher<?>> sourcesIterable) {
 		this.delayError = delayError;
@@ -74,7 +77,7 @@ final class MonoWhen<T, R> extends Mono<R> {
 	}
 
 	@SuppressWarnings("unchecked")
-	public Mono<R> whenAdditionalSource(Publisher source, BiFunction zipper) {
+	Mono<R> whenAdditionalSource(Publisher source, BiFunction zipper) {
 		Publisher[] oldSources = sources;
 		if (oldSources != null && this.zipper instanceof FluxZip.PairwiseZipper) {
 			int oldLen = oldSources.length;
@@ -115,16 +118,16 @@ final class MonoWhen<T, R> extends Mono<R> {
             return;
         }
 
-	    MonoWhenCoordinator<R> parent =
-			    new MonoWhenCoordinator<>(s, n, delayError, zipper);
+	    WhenCoordinator<R> parent =
+			    new WhenCoordinator<>(s, n, delayError, zipper);
 	    s.onSubscribe(parent);
         parent.subscribe(a);
     }
 
-	static final class MonoWhenCoordinator<R>
-			extends Operators.MonoSubscriber<Object, R> implements Subscription {
+	static final class WhenCoordinator<R>
+			extends Operators.MonoSubscriber<Object, R> {
 
-		final MonoWhenSubscriber<R>[] subscribers;
+		final WhenInner<R>[] subscribers;
 
 		final boolean delayError;
 
@@ -132,25 +135,46 @@ final class MonoWhen<T, R> extends Mono<R> {
 
 		volatile int done;
         @SuppressWarnings("rawtypes")
-        static final AtomicIntegerFieldUpdater<MonoWhenCoordinator> DONE =
-                AtomicIntegerFieldUpdater.newUpdater(MonoWhenCoordinator.class, "done");
+        static final AtomicIntegerFieldUpdater<WhenCoordinator> DONE =
+                AtomicIntegerFieldUpdater.newUpdater(WhenCoordinator.class, "done");
 
         @SuppressWarnings("unchecked")
-        public MonoWhenCoordinator(Subscriber<? super R> subscriber,
+        WhenCoordinator(Subscriber<? super R> subscriber,
 		        int n,
 		        boolean delayError,
 		        Function<? super Object[], ? extends R> zipper) {
 	        super(subscriber);
+
             this.delayError = delayError;
 	        this.zipper = zipper;
-	        subscribers = new MonoWhenSubscriber[n];
+	        subscribers = new WhenInner[n];
             for (int i = 0; i < n; i++) {
-                subscribers[i] = new MonoWhenSubscriber<>(this);
+                subscribers[i] = new WhenInner<>(this);
             }
         }
 
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case TERMINATED:
+					return done;
+				case BUFFERED:
+					return subscribers.length;
+				case DELAY_ERROR:
+				case DELAY_ERROR_END:
+					return delayError;
+			}
+			return super.scan(key);
+		}
+
+		@Override
+		public Stream<? extends Scannable> inners() {
+			return Stream.of(subscribers);
+		}
+
+
 		void subscribe(Publisher<?>[] sources) {
-			MonoWhenSubscriber<R>[] a = subscribers;
+			WhenInner<R>[] a = subscribers;
 			for (int i = 0; i < a.length; i++) {
                 sources[i].subscribe(a[i]);
             }
@@ -170,7 +194,7 @@ final class MonoWhen<T, R> extends Mono<R> {
         
         @SuppressWarnings("unchecked")
         void signal() {
-	        MonoWhenSubscriber<R>[] a = subscribers;
+	        WhenInner<R>[] a = subscribers;
 	        int n = a.length;
             if (DONE.incrementAndGet(this) != n) {
                 return;
@@ -182,7 +206,7 @@ final class MonoWhen<T, R> extends Mono<R> {
             boolean hasEmpty = false;
             
             for (int i = 0; i < a.length; i++) {
-	            MonoWhenSubscriber<R> m = a[i];
+	            WhenInner<R> m = a[i];
 	            Object v = m.value;
                 if (v != null) {
                     o[i] = v;
@@ -231,30 +255,45 @@ final class MonoWhen<T, R> extends Mono<R> {
         public void cancel() {
             if (!isCancelled()) {
                 super.cancel();
-	            for (MonoWhenSubscriber<R> ms : subscribers) {
+	            for (WhenInner<R> ms : subscribers) {
 		            ms.cancel();
                 }
             }
         }
     }
 
-	static final class MonoWhenSubscriber<R> implements Subscriber<Object> {
+	static final class WhenInner<R> implements InnerConsumer<Object> {
 
-		final MonoWhenCoordinator<R> parent;
+		final WhenCoordinator<R> parent;
 
         volatile Subscription s;
         @SuppressWarnings("rawtypes")
-        static final AtomicReferenceFieldUpdater<MonoWhenSubscriber, Subscription> S =
-                AtomicReferenceFieldUpdater.newUpdater(MonoWhenSubscriber.class, Subscription.class, "s");
+        static final AtomicReferenceFieldUpdater<WhenInner, Subscription> S =
+                AtomicReferenceFieldUpdater.newUpdater(WhenInner.class, Subscription.class, "s");
         
         Object value;
         Throwable error;
 
-		public MonoWhenSubscriber(MonoWhenCoordinator<R> parent) {
+		WhenInner(WhenCoordinator<R> parent) {
 			this.parent = parent;
         }
-        
-        @Override
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key){
+				case CANCELLED:
+					return s == Operators.cancelledSubscription();
+				case PARENT:
+					return s;
+				case ACTUAL:
+					return parent;
+				case ERROR:
+					return error;
+			}
+			return null;
+		}
+
+		@Override
         public void onSubscribe(Subscription s) {
             if (Operators.setOnce(S, this, s)) {
                 s.request(Long.MAX_VALUE);

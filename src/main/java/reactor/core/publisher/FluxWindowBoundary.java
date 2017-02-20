@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,15 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
+
 
 /**
  * Splits the source sequence into continuous, non-overlapping windowEnds 
@@ -44,7 +47,7 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 
 	final Supplier<? extends Queue<Object>> drainQueueSupplier;
 
-	FluxWindowBoundary(Publisher<? extends T> source, Publisher<U> other,
+	FluxWindowBoundary(Flux<? extends T> source, Publisher<U> other,
 			Supplier<? extends Queue<T>> processorQueueSupplier,
 			Supplier<? extends Queue<Object>> drainQueueSupplier) {
 		super(source);
@@ -73,19 +76,24 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 	}
 
 	static final class WindowBoundaryMain<T, U>
-			implements Subscriber<T>, Subscription, Disposable {
-
-		final Subscriber<? super Flux<T>> actual;
+			implements InnerOperator<T, Flux<T>>, Disposable {
 
 		final Supplier<? extends Queue<T>> processorQueueSupplier;
 
 		final WindowBoundaryOther<U> boundary;
 
-		final Queue<Object> queue;
+		final Queue<Object>               queue;
+		final Subscriber<? super Flux<T>> actual;
 
 		UnicastProcessor<T> window;
 
 		volatile Subscription s;
+
+		@Override
+		public final Subscriber<? super Flux<T>> actual() {
+			return actual;
+		}
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<WindowBoundaryMain, Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(WindowBoundaryMain.class, Subscription.class, "s");
@@ -119,7 +127,7 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 		
 		static final Object DONE = new Object();
 
-		public WindowBoundaryMain(Subscriber<? super Flux<T>> actual,
+		WindowBoundaryMain(Subscriber<? super Flux<T>> actual,
 				Supplier<? extends Queue<T>> processorQueueSupplier,
 				Queue<T> processorQueue, Queue<Object> queue) {
 			this.actual = actual;
@@ -128,6 +136,30 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 			this.open = 2;
 			this.boundary = new WindowBoundaryOther<>(this);
 			this.queue = queue;
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return s;
+				case ERROR:
+					return error;
+				case CANCELLED:
+					return s == Operators.cancelledSubscription();
+				case PREFETCH:
+					return Integer.MAX_VALUE;
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+				case BUFFERED:
+					return queue.size();
+			}
+			return InnerOperator.super.scan(key);
+		}
+
+		@Override
+		public Stream<? extends Scannable> inners() {
+			return Stream.of(boundary, window);
 		}
 
 		@Override
@@ -170,6 +202,11 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 				cancelMain();
 				boundary.cancel();
 			}
+		}
+
+		@Override
+		public boolean isDisposed() {
+			return s == Operators.cancelledSubscription(); //FIXME add done;
 		}
 
 		@Override
@@ -320,11 +357,11 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 
 	static final class WindowBoundaryOther<U>
 			extends Operators.DeferredSubscription
-			implements Subscriber<U> {
+			implements InnerConsumer<U> {
 
 		final WindowBoundaryMain<?, U> main;
 
-		public WindowBoundaryOther(WindowBoundaryMain<?, U> main) {
+		WindowBoundaryOther(WindowBoundaryMain<?, U> main) {
 			this.main = main;
 		}
 
@@ -333,6 +370,14 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 			if (set(s)) {
 				s.request(Long.MAX_VALUE);
 			}
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			if (key == Attr.ACTUAL) {
+				return main;
+			}
+			return super.scan(key);
 		}
 
 		@Override

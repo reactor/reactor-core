@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -29,15 +27,13 @@ import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
-import reactor.core.MultiReceiver;
-import reactor.core.Producer;
-import reactor.core.Trackable;
+import reactor.core.Scannable;
 import reactor.core.publisher.FluxGroupJoin.JoinSupport;
 import reactor.core.publisher.FluxGroupJoin.LeftRightEndSubscriber;
 import reactor.core.publisher.FluxGroupJoin.LeftRightSubscriber;
@@ -47,7 +43,8 @@ import reactor.util.concurrent.OpenHashSet;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  * @since 3.0
  */
-final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends FluxSource<TLeft, R> {
+final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
+                                                            FluxSource<TLeft, R> {
 
 	final Publisher<? extends TRight> other;
 
@@ -59,7 +56,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends FluxSource<T
 
 	final Supplier<? extends Queue<Object>> queueSupplier;
 
-	public FluxJoin(Publisher<TLeft> source,
+	FluxJoin(Flux<TLeft> source,
 			Publisher<? extends TRight> other,
 			Function<? super TLeft, ? extends Publisher<TLeftEnd>> leftEnd,
 			Function<? super TRight, ? extends Publisher<TRightEnd>> rightEnd,
@@ -76,8 +73,8 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends FluxSource<T
 	@Override
 	public void subscribe(Subscriber<? super R> s) {
 
-		GroupJoinSubscription<TLeft, TRight, TLeftEnd, TRightEnd, R> parent =
-				new GroupJoinSubscription<>(s,
+		JoinSubscription<TLeft, TRight, TLeftEnd, TRightEnd, R> parent =
+				new JoinSubscription<>(s,
 						leftEnd,
 						rightEnd,
 						resultSelector,
@@ -94,10 +91,9 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends FluxSource<T
 		other.subscribe(right);
 	}
 
-	static final class GroupJoinSubscription<TLeft, TRight, TLeftEnd, TRightEnd, R>
-			implements Subscription, JoinSupport, Trackable, MultiReceiver, Producer {
+	static final class JoinSubscription<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
-		final Subscriber<? super R> actual;
+			implements JoinSupport, InnerProducer<R> {
 
 		final Queue<Object>               queue;
 		final BiPredicate<Object, Object> queueBiOffer;
@@ -113,28 +109,34 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends FluxSource<T
 		final Function<? super TRight, ? extends Publisher<TRightEnd>> rightEnd;
 
 		final BiFunction<? super TLeft, ? super TRight, ? extends R> resultSelector;
+		final Subscriber<? super R>                                  actual;
 
 		volatile int wip;
 
-		static final AtomicIntegerFieldUpdater<GroupJoinSubscription> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(GroupJoinSubscription.class, "wip");
+		@Override
+		public final Subscriber<? super R> actual() {
+			return actual;
+		}
+
+		static final AtomicIntegerFieldUpdater<JoinSubscription> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(JoinSubscription.class, "wip");
 
 		volatile int active;
 
-		static final AtomicIntegerFieldUpdater<GroupJoinSubscription> ACTIVE =
-				AtomicIntegerFieldUpdater.newUpdater(GroupJoinSubscription.class,
+		static final AtomicIntegerFieldUpdater<JoinSubscription> ACTIVE =
+				AtomicIntegerFieldUpdater.newUpdater(JoinSubscription.class,
 						"active");
 
 		volatile long requested;
 
-		static final AtomicLongFieldUpdater<GroupJoinSubscription> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(GroupJoinSubscription.class,
+		static final AtomicLongFieldUpdater<JoinSubscription> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(JoinSubscription.class,
 						"requested");
 
 		volatile Throwable error;
 
-		static final AtomicReferenceFieldUpdater<GroupJoinSubscription, Throwable> ERROR =
-				AtomicReferenceFieldUpdater.newUpdater(GroupJoinSubscription.class,
+		static final AtomicReferenceFieldUpdater<JoinSubscription, Throwable> ERROR =
+				AtomicReferenceFieldUpdater.newUpdater(JoinSubscription.class,
 						Throwable.class,
 						"error");
 
@@ -153,7 +155,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends FluxSource<T
 		static final Integer RIGHT_CLOSE = 4;
 
 		@SuppressWarnings("unchecked")
-		public GroupJoinSubscription(Subscriber<? super R> actual,
+		JoinSubscription(Subscriber<? super R> actual,
 				Function<? super TLeft, ? extends Publisher<TLeftEnd>> leftEnd,
 				Function<? super TRight, ? extends Publisher<TRightEnd>> rightEnd,
 				BiFunction<? super TLeft, ? super TRight, ? extends R> resultSelector,
@@ -174,28 +176,25 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends FluxSource<T
 		}
 
 		@Override
-		public Iterator<?> upstreams() {
-			return Arrays.asList(cancellations.keys()).iterator();
+		public Stream<? extends Scannable> inners() {
+			return Stream.of(cancellations.keys()).map(Scannable::from);
 		}
 
 		@Override
-		public Object downstream() {
-			return actual;
-		}
-
-		@Override
-		public long upstreamCount() {
-			return cancellations.keys().length;
-		}
-
-		@Override
-		public long requestedFromDownstream() {
-			return requested;
-		}
-
-		@Override
-		public boolean isCancelled() {
-			return cancelled;
+		public Object scan(Attr key) {
+			switch (key){
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+				case CANCELLED:
+					return cancelled;
+				case BUFFERED:
+					return queue.size() / 2;
+				case TERMINATED:
+					return active == 0;
+				case ERROR:
+					return error;
+			}
+			return InnerProducer.super.scan(key);
 		}
 
 		@Override

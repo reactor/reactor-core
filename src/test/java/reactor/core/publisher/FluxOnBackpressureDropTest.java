@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,14 +42,6 @@ public class FluxOnBackpressureDropTest {
 	@Test(expected = NullPointerException.class)
 	public void onDropNull() {
 		Flux.never().onBackpressureDrop(null);
-	}
-
-	@Test
-	public void onDropAssigned() {
-		Consumer<Object> onDrop = c -> {};
-		PublisherMock<?> p = PublisherMock.create();
-		p.flux().onBackpressureDrop(onDrop).subscribe();
-		Assert.assertTrue(p.get(0).connectedInput().equals(onDrop));
 	}
 
 	@Test

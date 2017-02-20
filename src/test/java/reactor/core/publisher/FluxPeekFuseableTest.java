@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -91,7 +91,7 @@ public class FluxPeekFuseableTest {
 		AtomicBoolean onAfterComplete = new AtomicBoolean();
 		AtomicBoolean onCancel = new AtomicBoolean();
 
-		new FluxPeekFuseable<>(new MonoError<>(new RuntimeException("forced failure")),
+		new FluxPeekFuseable<>(Flux.error(new RuntimeException("forced failure")),
 				onSubscribe::set,
 				onNext::set,
 				onError::set,
@@ -121,7 +121,7 @@ public class FluxPeekFuseableTest {
 		AtomicBoolean onAfterComplete = new AtomicBoolean();
 		AtomicBoolean onCancel = new AtomicBoolean();
 
-		new FluxPeekFuseable<>(MonoEmpty.instance(),
+		new FluxPeekFuseable<>(Flux.empty(),
 				onSubscribe::set,
 				onNext::set,
 				onError::set,

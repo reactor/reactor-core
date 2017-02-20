@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
-import reactor.core.Receiver;
+import reactor.core.Scannable;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
 
 /**
@@ -35,7 +35,7 @@ import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
 final class ParallelFluxOnAssembly<T> extends ParallelFlux<T>
-		implements Fuseable, AssemblyOp, Receiver {
+		implements Fuseable, AssemblyOp, Scannable {
 
 	final ParallelFlux<T>           source;
 	final AssemblySnapshotException stacktrace;
@@ -97,7 +97,13 @@ final class ParallelFluxOnAssembly<T> extends ParallelFlux<T>
 	}
 
 	@Override
-	public Object upstream() {
-		return source;
+	public Object scan(Attr key) {
+		switch (key){
+			case PARENT:
+				return source;
+			case PREFETCH:
+				return getPrefetch();
+		}
+		return null;
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,8 @@
  */
 
 /**
- * Core components of the Loggers framework supporting Reactive Stream programming model.
+ * Core components of the framework supporting extensions to the Reactive Stream
+ * programming model.
  *
- * Topology representation of reactive flows :
- * {@link reactor.core.Receiver upstream} ({@link reactor.core.MultiReceiver s}),
- * {@link reactor.core.Producer downstream}
- * ({@link reactor.core.MultiProducer s}) and
- * {@link reactor.core.Loopback loopback} flows.
- * 
  */
 package reactor.core;

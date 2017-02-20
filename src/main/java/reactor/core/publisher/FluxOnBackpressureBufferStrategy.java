@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,13 +21,9 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Consumer;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
-import reactor.core.Producer;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
 
 /**
  * Buffers values if the subscriber doesn't request fast enough, bounding the
@@ -44,7 +40,7 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 	final boolean                delayError;
 	final BufferOverflowStrategy bufferOverflowStrategy;
 
-	public FluxOnBackpressureBufferStrategy(Publisher<? extends O> source,
+	FluxOnBackpressureBufferStrategy(Flux<? extends O> source,
 			int bufferSize,
 			Consumer<? super O> onBufferOverflow,
 			BufferOverflowStrategy bufferOverflowStrategy) {
@@ -69,8 +65,7 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 
 	static final class BackpressureBufferDropOldestSubscriber<T>
 			extends ArrayDeque<T>
-			implements Subscriber<T>, Subscription, Trackable, Producer,
-			           Receiver {
+			implements InnerOperator<T, T> {
 
 		final Subscriber<? super T>  actual;
 		final int                    bufferSize;
@@ -105,6 +100,30 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 			this.onOverflow = onOverflow;
 			this.overflowStrategy = overflowStrategy;
 			this.bufferSize = bufferSize;
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return s;
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+				case TERMINATED:
+					return done && isEmpty();
+				case CANCELLED:
+					return s == Operators.cancelledSubscription();
+				case BUFFERED:
+					return size();
+				case ERROR:
+					return error;
+				case PREFETCH:
+					return Integer.MAX_VALUE;
+				case DELAY_ERROR:
+				case DELAY_ERROR_END:
+					return delayError;
+			}
+			return InnerOperator.super.scan(key);
 		}
 
 		@Override
@@ -285,48 +304,8 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 		}
 
 		@Override
-		public boolean isCancelled() {
-			return cancelled;
-		}
-
-		@Override
-		public boolean isStarted() {
-			return s != null;
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
-		public Throwable getError() {
-			return error;
-		}
-
-		@Override
-		public Object downstream() {
+		public Subscriber<? super T> actual() {
 			return actual;
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
-		}
-
-		@Override
-		public long getCapacity() {
-			return Integer.MAX_VALUE;
-		}
-
-		@Override
-		public long getPending() {
-			return size();
-		}
-
-		@Override
-		public long requestedFromDownstream() {
-			return requested;
 		}
 
 		boolean checkTerminated(boolean d, boolean empty, Subscriber<? super T> a) {

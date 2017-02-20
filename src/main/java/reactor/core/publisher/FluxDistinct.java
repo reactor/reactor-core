@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,16 +21,11 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.Fuseable.QueueSubscription;
-import reactor.core.Loopback;
-import reactor.core.Producer;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
 
 /**
  * For each subscriber, tracks the source values that have been seen and
@@ -42,13 +37,14 @@ import reactor.core.Trackable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSource<T, T> {
+final class FluxDistinct<T, K, C extends Collection<? super K>> extends
+                                                                FluxSource<T, T> {
 
 	final Function<? super T, ? extends K> keyExtractor;
 
 	final Supplier<C> collectionSupplier;
 
-	FluxDistinct(Publisher<? extends T> source,
+	FluxDistinct(Flux<? extends T> source,
 			Function<? super T, ? extends K> keyExtractor,
 			Supplier<C> collectionSupplier) {
 		super(source);
@@ -82,8 +78,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 	}
 
 	static final class DistinctSubscriber<T, K, C extends Collection<? super K>>
-			implements ConditionalSubscriber<T>, Receiver, Producer, Loopback,
-			           Subscription, Trackable {
+			implements ConditionalSubscriber<T>, InnerOperator<T, T> {
 
 		final Subscriber<? super T> actual;
 
@@ -178,28 +173,8 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 		}
 
 		@Override
-		public boolean isStarted() {
-			return s != null && !done;
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
-		public Object downstream() {
+		public Subscriber<? super T> actual() {
 			return actual;
-		}
-
-		@Override
-		public Object connectedInput() {
-			return keyExtractor;
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
 		}
 
 		@Override
@@ -211,11 +186,21 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 		public void cancel() {
 			s.cancel();
 		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return s;
+				case TERMINATED:
+					return done;
+			}
+			return InnerOperator.super.scan(key);
+		}
 	}
 
 	static final class DistinctConditionalSubscriber<T, K, C extends Collection<? super K>>
-			implements ConditionalSubscriber<T>, Receiver, Producer, Loopback,
-			           Subscription, Trackable {
+			implements ConditionalSubscriber<T>, InnerOperator<T, T> {
 
 		final ConditionalSubscriber<? super T> actual;
 
@@ -335,28 +320,8 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 		}
 
 		@Override
-		public boolean isStarted() {
-			return s != null && !done;
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
-		public Object downstream() {
+		public Subscriber<? super T> actual() {
 			return actual;
-		}
-
-		@Override
-		public Object connectedInput() {
-			return keyExtractor;
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
 		}
 
 		@Override
@@ -368,11 +333,22 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 		public void cancel() {
 			s.cancel();
 		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return s;
+				case TERMINATED:
+					return done;
+			}
+			return InnerOperator.super.scan(key);
+		}
 	}
 
 	static final class DistinctFuseableSubscriber<T, K, C extends Collection<? super K>>
-			implements ConditionalSubscriber<T>, Receiver, Producer, Loopback,
-			           QueueSubscription<T>, Trackable {
+			implements ConditionalSubscriber<T>, InnerOperator<T, T>,
+			           QueueSubscription<T> {
 
 		final Subscriber<? super T> actual;
 
@@ -475,28 +451,8 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 		}
 
 		@Override
-		public boolean isStarted() {
-			return qs != null && !done;
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
-		public Object downstream() {
+		public Subscriber<? super T> actual() {
 			return actual;
-		}
-
-		@Override
-		public Object connectedInput() {
-			return keyExtractor;
-		}
-
-		@Override
-		public Object upstream() {
-			return qs;
 		}
 
 		@Override
@@ -514,6 +470,17 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends FluxSour
 			int m = qs.requestFusion(requestedMode);
 			sourceMode = m;
 			return m;
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return qs;
+				case TERMINATED:
+					return done;
+			}
+			return InnerOperator.super.scan(key);
 		}
 
 		@Override
