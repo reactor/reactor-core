@@ -809,7 +809,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new timed {@link Flux}
 	 */
 	public static Flux<Long> interval(Duration period) {
-		return intervalMillis(period.toMillis());
+		return interval(period, Schedulers.timer());
 	}
 
 	/**
@@ -826,7 +826,41 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new timed {@link Flux}
 	 */
 	public static Flux<Long> interval(Duration delay, Duration period) {
-		return intervalMillis(delay.toMillis(), period.toMillis());
+		return interval(delay, period, Schedulers.timer());
+	}
+
+	/**
+	 * Create a new {@link Flux} that emits an ever incrementing long starting with 0 every {@link Duration} on
+	 * the given timer. If demand is not produced in time, an onError will be signalled. The {@link Flux} will never
+	 * complete.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/interval.png" alt="">
+	 * <p>
+	 * @param period The {@link Duration} to wait before the next increment
+	 * @param timer a {@link TimedScheduler} instance
+	 *
+	 * @return a new timed {@link Flux}
+	 */
+	public static Flux<Long> interval(Duration period, TimedScheduler timer) {
+		return onAssembly(new FluxInterval(period.toMillis(), period.toMillis(), TimeUnit.MILLISECONDS, timer));
+	}
+
+	/**
+	 * Create a new {@link Flux} that emits an ever incrementing long starting with 0 every N period of time on
+	 * the given timer. If demand is not produced in time, an onError will be signalled. The {@link Flux} will never
+	 * complete.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/intervald.png" alt="">
+	 *
+	 * @param delay  the {@link Duration} to wait before emitting 0l
+	 * @param period the period {@link Duration} before each following increment
+	 * @param timer  the {@link TimedScheduler} to schedule on
+	 *
+	 * @return a new timed {@link Flux}
+	 */
+	public static Flux<Long> interval(Duration delay, Duration period, TimedScheduler timer) {
+		return onAssembly(new FluxInterval(delay.toMillis(), period.toMillis(), TimeUnit.MILLISECONDS, timer));
 	}
 
 	/**
@@ -839,9 +873,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param period The number of milliseconds to wait before the next increment
 	 *
 	 * @return a new timed {@link Flux}
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public static Flux<Long> intervalMillis(long period) {
-		return intervalMillis(period, Schedulers.timer());
+		return interval(Duration.ofMillis(period));
 	}
 
 	/**
@@ -855,9 +891,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timer a {@link TimedScheduler} instance
 	 *
 	 * @return a new timed {@link Flux}
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public static Flux<Long> intervalMillis(long period, TimedScheduler timer) {
-		return onAssembly(new FluxInterval(period, period, TimeUnit.MILLISECONDS, timer));
+		return interval(Duration.ofMillis(period), timer);
 	}
 
 	/**
@@ -872,9 +910,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param period the period in milliseconds before each following increment
 	 *
 	 * @return a new timed {@link Flux}
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public static Flux<Long> intervalMillis(long delay, long period) {
-		return intervalMillis(delay, period, Schedulers.timer());
+		return interval(Duration.ofMillis(delay), Duration.ofMillis(period));
 	}
 
 	/**
@@ -890,9 +930,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timer  the {@link TimedScheduler} to schedule on
 	 *
 	 * @return a new timed {@link Flux}
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public static Flux<Long> intervalMillis(long delay, long period, TimedScheduler timer) {
-		return onAssembly(new FluxInterval(delay, period, TimeUnit.MILLISECONDS, timer));
+		return interval(Duration.ofMillis(delay), Duration.ofMillis(period), timer);
 	}
 
 	/**
