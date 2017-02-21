@@ -2900,7 +2900,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return an expirable {@link Mono}
 	 */
 	public final Mono<T> timeout(Duration timeout) {
-		return timeoutMillis(timeout.toMillis());
+		return timeout(timeout, null, Schedulers.timer());
 	}
 
 	/**
@@ -2917,7 +2917,46 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return an expirable {@link Mono} with a fallback {@link Mono}
 	 */
 	public final Mono<T> timeout(Duration timeout, Mono<? extends T> fallback) {
-		return timeoutMillis(timeout.toMillis(), fallback);
+		return timeout(timeout, fallback, Schedulers.timer());
+	}
+
+	/**
+	 * Signal a {@link java.util.concurrent.TimeoutException} error in case an item doesn't arrive before the given period.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/timeouttime1.png" alt="">
+	 *
+	 * @param timeout the timeout before the onNext signal from this {@link Mono}
+	 * @param timer the {@link TimedScheduler} to run on
+	 *
+	 * @return an expirable {@link Mono}
+	 */
+	public final Mono<T> timeout(Duration timeout, TimedScheduler timer) {
+		return timeout(timeout, null, timer);
+	}
+
+	/**
+	 * Switch to a fallback {@link Mono} in case an item doesn't arrive before the given period.
+	 *
+	 * <p> If the given {@link Publisher} is null, signal a {@link java.util.concurrent.TimeoutException}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/timeouttimefallback1.png" alt="">
+	 *
+	 * @param timeout the timeout before the onNext signal from this {@link Mono}
+	 * @param fallback the fallback {@link Mono} to subscribe when a timeout occurs
+	 * @param timer the {@link TimedScheduler} to run on
+	 *
+	 * @return an expirable {@link Mono} with a fallback {@link Mono}
+	 */
+	public final Mono<T> timeout(Duration timeout, Mono<? extends T> fallback,
+			TimedScheduler timer) {
+		final Mono<Long> _timer = Mono.delay(timeout, timer).otherwiseReturn(0L);
+
+		if(fallback == null) {
+			return onAssembly(new MonoTimeout<>(this, _timer));
+		}
+		return onAssembly(new MonoTimeout<>(this, _timer, fallback));
 	}
 
 	/**
@@ -2966,7 +3005,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param timeout the timeout before the onNext signal from this {@link Mono}
 	 *
 	 * @return an expirable {@link Mono}
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Mono<T> timeoutMillis(long timeout) {
 		return timeoutMillis(timeout, Schedulers.timer());
 	}
@@ -2981,7 +3022,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param timer the {@link TimedScheduler} to run on
 	 *
 	 * @return an expirable {@link Mono}
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Mono<T> timeoutMillis(long timeout, TimedScheduler timer) {
 		return timeoutMillis(timeout, null, timer);
 	}
@@ -2998,7 +3041,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param fallback the fallback {@link Mono} to subscribe when a timeout occurs
 	 *
 	 * @return an expirable {@link Mono} with a fallback {@link Mono}
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Mono<T> timeoutMillis(long timeout, Mono<? extends T> fallback) {
 		return timeoutMillis(timeout, fallback, Schedulers.timer());
 	}
@@ -3016,7 +3061,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param timer the {@link TimedScheduler} to run on
 	 *
 	 * @return an expirable {@link Mono} with a fallback {@link Mono}
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Mono<T> timeoutMillis(long timeout, Mono<? extends T> fallback,
 			TimedScheduler timer) {
 		final Mono<Long> _timer = Mono.delayMillis(timeout, timer).otherwiseReturn(0L);

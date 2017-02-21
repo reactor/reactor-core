@@ -6551,7 +6551,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a per-item expirable {@link Flux}
 	 */
 	public final Flux<T> timeout(Duration timeout) {
-		return timeout(timeout, null);
+		return timeout(timeout, null, Schedulers.timer());
 	}
 
 	/**
@@ -6569,7 +6569,49 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a per-item expirable {@link Flux} with a fallback {@link Publisher}
 	 */
 	public final Flux<T> timeout(Duration timeout, Publisher<? extends T> fallback) {
-		return timeoutMillis(timeout.toMillis(), fallback, Schedulers.timer());
+		return timeout(timeout, fallback, Schedulers.timer());
+	}
+
+	/**
+	 * Signal a {@link java.util.concurrent.TimeoutException} error in case a per-item
+	 * period fires before the next item arrives from this {@link Flux}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/timeouttime.png" alt="">
+	 *
+	 * @param timeout the timeout {@link Duration} between two signals from this {@link Flux}
+	 * @param timer the {@link TimedScheduler} to run on
+	 *
+	 * @return a per-item expirable {@link Flux}
+	 */
+	public final Flux<T> timeout(Duration timeout, TimedScheduler timer) {
+		return timeout(timeout, null, timer);
+	}
+
+	/**
+	 * Switch to a fallback {@link Publisher} in case a per-item period fires before the
+	 * next item arrives from this {@link Flux}.
+	 *
+	 * <p> If the given {@link Publisher} is null, signal a {@link java.util.concurrent.TimeoutException}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/timeouttimefallback.png" alt="">
+	 *
+	 * @param timeout the timeout {@link Duration} between two signals from this {@link Flux}
+	 * @param fallback the fallback {@link Publisher} to subscribe when a timeout occurs
+	 * @param timer the {@link TimedScheduler} to run on
+	 *
+	 * @return a per-item expirable {@link Flux} with a fallback {@link Publisher}
+	 */
+	public final Flux<T> timeout(Duration timeout, Publisher<? extends T> fallback,
+			TimedScheduler timer) {
+		final Mono<Long> _timer = Mono.delay(timeout, timer).otherwiseReturn(0L);
+		final Function<T, Publisher<Long>> rest = o -> _timer;
+
+		if(fallback == null) {
+			return timeout(_timer, rest);
+		}
+		return timeout(_timer, rest, fallback);
 	}
 
 	/**
@@ -6647,7 +6689,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timeout the timeout in milliseconds between two signals from this {@link Flux}
 	 *
 	 * @return a per-item expirable {@link Flux}
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Flux<T> timeoutMillis(long timeout) {
 		return timeoutMillis(timeout, null, Schedulers.timer());
 	}
@@ -6663,7 +6707,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timer the {@link TimedScheduler} to run on
 	 *
 	 * @return a per-item expirable {@link Flux}
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Flux<T> timeoutMillis(long timeout, TimedScheduler timer) {
 		return timeoutMillis(timeout, null, timer);
 	}
@@ -6681,7 +6727,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param fallback the fallback {@link Publisher} to subscribe when a timeout occurs
 	 *
 	 * @return a per-item expirable {@link Flux} with a fallback {@link Publisher}
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Flux<T> timeoutMillis(long timeout, Publisher<? extends T> fallback) {
 		return timeoutMillis(timeout, fallback, Schedulers.timer());
 	}
@@ -6700,7 +6748,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timer the {@link TimedScheduler} to run on
 	 *
 	 * @return a per-item expirable {@link Flux} with a fallback {@link Publisher}
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Flux<T> timeoutMillis(long timeout, Publisher<? extends T> fallback,
 			TimedScheduler timer) {
 		final Mono<Long> _timer = Mono.delayMillis(timeout, timer).otherwiseReturn(0L);
