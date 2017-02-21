@@ -208,7 +208,7 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 *** ...with overlapping or dropping windows: `window(int, int)`
 ** of time `window(Duration)`
 *** ...with overlapping or dropping windows: `window(Duration, Duration)`
-** of size OR time (window closes when count is reached or timeout elapsed): `window(int, Duration)`
+** of size OR time (window closes when count is reached or timeout elapsed): `windowTimeout(int, Duration)`
 ** based on a predicate on elements: `windowUntil`
 *** ...…emitting the element that triggered the boundary in the next window (`cutBefore` variant): `.windowUntil(predicate, true)`
 *** ...keeping the window open while elements match a predicate: `windowWhile` (non-matching elements are not emitted)
@@ -220,7 +220,7 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 **** ...with overlapping or dropping buffers: `buffer(int, int)`
 *** by a duration boundary: `buffer(Duration)`
 **** ...with overlapping or dropping buffers: `buffer(Duration, Duration)`
-*** by a size OR duration boundary: `buffer(int, Duration)`
+*** by a size OR duration boundary: `bufferTimeout(int, Duration)`
 *** by an arbitrary criteria boundary: `bufferUntil(Predicate)`
 **** ...putting the element that triggered the boundary in the next buffer: `.bufferUntil(predicate, true)`
 **** ...buffering while predicate matches and dropping the element that triggered the boundary: `bufferWhile(Predicate)`
