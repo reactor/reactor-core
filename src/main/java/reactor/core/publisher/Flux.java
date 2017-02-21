@@ -2979,7 +2979,7 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Delay each of this {@link Flux} elements ({@link Subscriber#onNext} signals)
-	 * by a given duration.
+	 * by a given {@link Duration}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/delayonnext.png" alt="">
@@ -2989,7 +2989,22 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @see #delaySubscription(Duration) delaySubscription to introduce a delay at the beginning of the sequence only
 	 */
 	public final Flux<T> delayElements(Duration delay) {
-		return delayElementsMillis(delay.toMillis());
+		return delayElements(delay, Schedulers.timer());
+	}
+
+	/**
+	 * Delay each of this {@link Flux} elements ({@link Subscriber#onNext} signals)
+	 * by a given {@link Duration}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/delayonnext.png" alt="">
+	 *
+	 * @param delay period to delay each {@link Subscriber#onNext} signal
+	 * @param timer the timed scheduler to use for delaying each signal
+	 * @return a delayed {@link Flux}
+	 */
+	public final Flux<T> delayElements(Duration delay, TimedScheduler timer) {
+		return concatMap(t ->  Mono.delay(delay, timer).map(i -> t));
 	}
 
 	/**
@@ -3000,12 +3015,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/delayonnext.png" alt="">
 	 *
 	 * @param delay period to delay each {@link Subscriber#onNext} signal, in milliseconds
-	 * @deprecated will be replaced by {@link #delayElementsMillis(long)} in 3.1.0
+	 * @deprecated will be replaced by {@link #delayElements(Duration)} in 3.1.0
 	 * @return a delayed {@link Flux}
 	 */
 	@Deprecated
 	public final Flux<T> delayMillis(long delay) {
-		return delayElementsMillis(delay);
+		return delayElements(Duration.ofMillis(delay));
 	}
 
 	/**
@@ -3017,9 +3032,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param delay period to delay each {@link Subscriber#onNext} signal, in milliseconds
 	 * @return a delayed {@link Flux}
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Flux<T> delayElementsMillis(long delay) {
-		return delayElementsMillis(delay, Schedulers.timer());
+		return delayElements(Duration.ofMillis(delay));
 	}
 
 	/**
@@ -3031,12 +3048,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param delay period to delay each {@link Subscriber#onNext} signal, in milliseconds
 	 * @param timer the timed scheduler to use for delaying each signal
-	 * @deprecated will be replaced by {@link #delayElementsMillis(long, TimedScheduler)} in 3.1.0
+	 * @deprecated will be replaced by {@link #delayElements(Duration, TimedScheduler)} in 3.1.0
 	 * @return a delayed {@link Flux}
 	 */
 	@Deprecated
 	public final Flux<T> delayMillis(long delay, TimedScheduler timer) {
-		return delayElementsMillis(delay, timer);
+		return delayElements(Duration.ofMillis(delay), timer);
 	}
 
 	/**
@@ -3049,9 +3066,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param delay period to delay each {@link Subscriber#onNext} signal, in milliseconds
 	 * @param timer the timed scheduler to use for delaying each signal
 	 * @return a delayed {@link Flux}
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Flux<T> delayElementsMillis(long delay, TimedScheduler timer) {
-		return concatMap(t ->  Mono.delayMillis(delay, timer).map(i -> t));
+		return delayElements(Duration.ofMillis(delay), timer);
 	}
 
 	/**
@@ -3067,7 +3086,23 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 */
 	public final Flux<T> delaySubscription(Duration delay) {
-		return delaySubscriptionMillis(delay.toMillis(), Schedulers.timer());
+		return delaySubscription(delay, Schedulers.timer());
+	}
+
+	/**
+	 * Delay the {@link Flux#subscribe(Subscriber) subscription} to this {@link Flux} source until the given
+	 * period elapses.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/delaysubscription.png" alt="">
+	 *
+	 * @param delay {@link Duration} before subscribing this {@link Flux}
+	 * @param timer the {@link TimedScheduler} to run on
+	 *
+	 * @return a delayed {@link Flux}
+	 */
+	public final Flux<T> delaySubscription(Duration delay, TimedScheduler timer) {
+		return delaySubscription(Mono.delay(delay, timer));
 	}
 
 	/**
@@ -3087,7 +3122,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	public final <U> Flux<T> delaySubscription(Publisher<U> subscriptionDelay) {
 		return onAssembly(new FluxDelaySubscription<>(this, subscriptionDelay));
 	}
-	
+
 	/**
 	 * Delay the {@link Flux#subscribe(Subscriber) subscription} to this {@link Flux} source until the given
 	 * period elapses.
@@ -3098,10 +3133,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param delay period in milliseconds before subscribing this {@link Flux}
 	 *
 	 * @return a delayed {@link Flux}
-	 *
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Flux<T> delaySubscriptionMillis(long delay) {
-		return delaySubscriptionMillis(delay, Schedulers.timer());
+		return delaySubscription(Duration.ofMillis(delay), Schedulers.timer());
 	}
 
 	/**
@@ -3115,8 +3151,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timer the {@link TimedScheduler} to run on
 	 *
 	 * @return a delayed {@link Flux}
-	 *
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Flux<T> delaySubscriptionMillis(long delay, TimedScheduler timer) {
 		return delaySubscription(Mono.delayMillis(delay, timer));
 	}

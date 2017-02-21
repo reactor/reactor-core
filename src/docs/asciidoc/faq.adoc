@@ -111,7 +111,7 @@ Flux.<String>error(new IllegalArgumentException())
           if (index < 4) return index;
           else throw Exceptions.propagate(error);
         })
-        .flatMap(index -> Mono.delayMillis(index * 100)) // <3>
+        .flatMap(index -> Mono.delay(Duration.ofMillis(index * 100))) // <3>
         .doOnNext(s -> System.out.println("retried at " + LocalTime.now())) // <4>
     );
 ----
