@@ -1713,7 +1713,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return the first value or null
 	 */
 	public final T blockFirst(Duration d) {
-		return blockFirstMillis(d.toMillis());
+		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>();
+		subscribe(subscriber);
+		return subscriber.blockingGet(d.toMillis(), TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -1721,11 +1723,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param timeout max duration timeout in millis to wait for.
 	 * @return the first value or null
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final T blockFirstMillis(long timeout) {
-		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>();
-		subscribe(subscriber);
-		return subscriber.blockingGet(timeout, TimeUnit.MILLISECONDS);
+		return blockFirst(Duration.ofMillis(timeout));
 	}
 
 	/**
@@ -1747,7 +1749,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return the last value or null
 	 */
 	public final T blockLast(Duration d) {
-		return blockLastMillis(d.toMillis());
+		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>();
+		subscribe(subscriber);
+		return subscriber.blockingGet(d.toMillis(), TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -1755,11 +1759,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param timeout max duration timeout in millis to wait for.
 	 * @return the last value or null
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final T blockLastMillis(long timeout) {
-		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>();
-		subscribe(subscriber);
-		return subscriber.blockingGet(timeout, TimeUnit.MILLISECONDS);
+		return blockLast(Duration.ofMillis(timeout));
 	}
 
 	/**

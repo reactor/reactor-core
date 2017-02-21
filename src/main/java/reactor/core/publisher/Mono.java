@@ -1227,7 +1227,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return T the result
 	 */
 	public final T block(Duration timeout) {
-		return blockMillis(timeout.toMillis());
+		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>();
+		subscribe(subscriber);
+		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -1245,11 +1247,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param timeout maximum time period to wait for in milliseconds before raising a {@link RuntimeException}
 	 *
 	 * @return T the result
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public T blockMillis(long timeout) {
-		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>();
-		subscribe(subscriber);
-		return subscriber.blockingGet(timeout, TimeUnit.MILLISECONDS);
+		return block(Duration.ofMillis(timeout));
 	}
 
 	/**
