@@ -145,8 +145,8 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 *** until a criteria is met (inclusive): `Flux#skipUntil` (predicate-based), `Flux#skipUntilOther` (companion publisher-based)
 *** while a criteria is met (exclusive): `Flux#skipWhile`
 ** by sampling items...
-*** by duration: `Flux#sample(Duration)`, `Flux#sampleMillis`
-**** but keeping the first element in the sampling window instead of the last: `sampleFirst`/`sampleFirstMillis`
+*** by duration: `Flux#sample(Duration)`
+**** but keeping the first element in the sampling window instead of the last: `sampleFirst`
 *** by a publisher-based window: `Flux#sample(Publisher)`
 *** based on a publisher "timing out": `Flux#sampleTimeout` (each element triggers a publisher, and is emitted if that publisher doesn't overlap with the next)
 

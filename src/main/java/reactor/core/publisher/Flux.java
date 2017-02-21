@@ -5123,8 +5123,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Turn this {@link Flux} into a connectable hot source and cache last emitted signals
 	 * for further {@link Subscriber}. Will retain each onNext up to the given per-item
-	 * expiry
-	 * timeout. Completion and Error will also be replayed.
+	 * expiry timeout. Completion and Error will also be replayed.
 	 * <p>
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/replay.png"
@@ -5141,20 +5140,55 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Turn this {@link Flux} into a connectable hot source and cache last emitted signals
 	 * for further {@link Subscriber}. Will retain up to the given history size onNext
-	 * signals and given a per-item ttl. Completion and Error will also be
-	 * replayed.
+	 * signals with a per-item ttl. Completion and Error will also be replayed.
 	 * <p>
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/replay.png"
 	 * alt="">
 	 *
 	 * @param history number of events retained in history excluding complete and error
-	 * @param ttl Per-item timeout duration
+	 * @param ttl Per-item timeout {@link Duration}
 	 *
 	 * @return a replaying {@link ConnectableFlux}
 	 */
 	public final ConnectableFlux<T> replay(int history, Duration ttl) {
-		return replayMillis(history, ttl.toMillis(), Schedulers.timer());
+		return replay(history, ttl, Schedulers.timer());
+	}
+
+	/**
+	 * Turn this {@link Flux} into a connectable hot source and cache last emitted signals
+	 * for further {@link Subscriber}. Will retain onNext signal for up to the given
+	 * {@link Duration} with a per-item ttl. Completion and Error will also be replayed.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/replay.png"
+	 * alt="">
+	 *
+	 * @param ttl Per-item timeout {@link Duration}
+	 * @param timer {@link TimedScheduler} to read current time from
+	 *
+	 * @return a replaying {@link ConnectableFlux}
+	 */
+	public final ConnectableFlux<T> replay(Duration ttl, TimedScheduler timer) {
+		return replay(Integer.MAX_VALUE, ttl, timer);
+	}
+
+	/**
+	 * Turn this {@link Flux} into a connectable hot source and cache last emitted signals
+	 * for further {@link Subscriber}. Will retain up to the given history size onNext
+	 * signals with a per-item ttl. Completion and Error will also be replayed.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/replay.png"
+	 * alt="">
+	 *
+	 * @param history number of events retained in history excluding complete and error
+	 * @param ttl Per-item timeout {@link Duration}
+	 * @param timer {@link TimedScheduler} to read current time from
+	 *
+	 * @return a replaying {@link ConnectableFlux}
+	 */
+	public final ConnectableFlux<T> replay(int history, Duration ttl, TimedScheduler timer) {
+		Objects.requireNonNull(timer, "timer");
+		return onAssembly(new FluxReplay<>(this, history, ttl.toMillis(), timer));
 	}
 
 	/**
@@ -5170,7 +5204,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timer {@link TimedScheduler} to read current time from
 	 *
 	 * @return a replaying {@link ConnectableFlux}
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final ConnectableFlux<T> replayMillis(long ttl, TimedScheduler timer) {
 		return replayMillis(Integer.MAX_VALUE, ttl, timer);
 	}
@@ -5189,7 +5225,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timer {@link TimedScheduler} to read current time from
 	 *
 	 * @return a replaying {@link ConnectableFlux}
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final ConnectableFlux<T> replayMillis(int history,
 			long ttl,
 			TimedScheduler timer) {
@@ -5294,7 +5332,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a sampled {@link Flux} by last item over a period of time
 	 */
 	public final Flux<T> sample(Duration timespan) {
-		return sampleMillis(timespan.toMillis());
+		return sample(interval(timespan));
 	}
 
 	/**
@@ -5321,6 +5359,22 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Emit latest value for every given period of ti,e.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/sampletimespan.png" alt="">
+	 *
+	 * @param timespan the period in second to emit the latest observed item
+	 *
+	 * @return a sampled {@link Flux} by last item over a period of time
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
+	 */
+	@Deprecated
+	public final Flux<T> sampleMillis(long timespan) {
+		return sample(intervalMillis(timespan));
+	}
+
+	/**
 	 * Take a value from this {@link Flux} then use the duration provided to skip other values.
 	 *
 	 * <p>
@@ -5331,7 +5385,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a sampled {@link Flux} by first item over a period of time
 	 */
 	public final Flux<T> sampleFirst(Duration timespan) {
-		return sampleFirstMillis(timespan.toMillis());
+		return sampleFirst(t -> Mono.delay(timespan));
 	}
 
 	/**
@@ -5360,23 +5414,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timespan the period in milliseconds to exclude others values from this sequence
 	 *
 	 * @return a sampled {@link Flux} by first item over a period of time
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Flux<T> sampleFirstMillis(long timespan) {
 		return sampleFirst(t -> Mono.delayMillis(timespan));
-	}
-
-	/**
-	 * Emit latest value for every given period of ti,e.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/sampletimespan.png" alt="">
-	 *
-	 * @param timespan the period in second to emit the latest observed item
-	 *
-	 * @return a sampled {@link Flux} by last item over a period of time
-	 */
-	public final Flux<T> sampleMillis(long timespan) {
-		return sample(intervalMillis(timespan));
 	}
 
 	/**
@@ -5625,7 +5667,27 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a dropping {@link Flux} until the end of the given timespan
 	 */
 	public final Flux<T> skip(Duration timespan) {
-		return skipMillis(timespan.toMillis(), Schedulers.timer());
+		return skip(timespan, Schedulers.timer());
+	}
+
+	/**
+	 * Skip elements from this {@link Flux} for the given time period.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/skiptime.png" alt="">
+	 *
+	 * @param timespan the time window to exclude next signals
+	 * @param timer the {@link TimedScheduler} to run on
+	 *
+	 * @return a dropping {@link Flux} until the end of the given timespan
+	 */
+	public final Flux<T> skip(Duration timespan, TimedScheduler timer) {
+		if(!timespan.isZero()) {
+			return skipUntilOther(Mono.delay(timespan, timer));
+		}
+		else{
+			return this;
+		}
 	}
 
 	/**
@@ -5655,7 +5717,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timespan the time window to exclude next signals
 	 *
 	 * @return a dropping {@link Flux} until the end of the given timespan
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Flux<T> skipMillis(long timespan) {
 		return skipMillis(timespan, Schedulers.timer());
 	}
@@ -5670,7 +5734,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timer the {@link TimedScheduler} to run on
 	 *
 	 * @return a dropping {@link Flux} until the end of the given timespan
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Flux<T> skipMillis(long timespan, TimedScheduler timer) {
 		if(timespan != 0) {
 			return skipUntilOther(Mono.delayMillis(timespan, timer));
@@ -6230,7 +6296,30 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a time limited {@link Flux}
 	 */
 	public final Flux<T> take(Duration timespan) {
-		return takeMillis(timespan.toMillis(), Schedulers.timer());
+		return take(timespan, Schedulers.timer());
+	}
+
+	/**
+	 * Relay values from this {@link Flux} until the given time period elapses.
+	 * <p>
+	 * If the time period is zero, the {@link Subscriber} gets completed if this {@link Flux} completes, signals an
+	 * error or signals its first value (which is not not relayed though).
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/taketime.png" alt="">
+	 *
+	 * @param timespan the time window of items to emit from this {@link Flux}
+	 * @param timer the {@link TimedScheduler} to run on
+	 *
+	 * @return a time limited {@link Flux}
+	 */
+	public final Flux<T> take(Duration timespan, TimedScheduler timer) {
+		if (!timespan.isZero()) {
+			return takeUntilOther(Mono.delay(timespan, timer));
+		}
+		else {
+			return take(0);
+		}
 	}
 
 	/**
@@ -6264,7 +6353,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timespan the time window of items to emit from this {@link Flux}
 	 *
 	 * @return a time limited {@link Flux}
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Flux<T> takeMillis(long timespan) {
 		return takeMillis(timespan, Schedulers.timer());
 	}
@@ -6283,7 +6374,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timer the {@link TimedScheduler} to run on
 	 *
 	 * @return a time limited {@link Flux}
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Flux<T> takeMillis(long timespan, TimedScheduler timer) {
 		if (timespan != 0) {
 			return takeUntilOther(Mono.delayMillis(timespan, timer));
