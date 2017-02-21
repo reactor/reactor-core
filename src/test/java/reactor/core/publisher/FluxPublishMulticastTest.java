@@ -265,4 +265,14 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 
 		sfs.clear(); //NOOP
 	}
+
+	@Test
+	public void syncCancelBeforeComplete() {
+	    assertThat(Flux.just(Flux.just(1).publish(v -> v)).flatMap(v -> v).blockLast()).isEqualTo(1);
+	}
+
+    @Test
+    public void normalCancelBeforeComplete() {
+        assertThat(Flux.just(Flux.just(1).hide().publish(v -> v)).flatMap(v -> v).blockLast()).isEqualTo(1);
+    }
 }
