@@ -224,7 +224,7 @@ public class FluxSkipUntilOtherTest extends FluxOperatorTest<String, String> {
 
 	Flux<Integer> scenario_aFluxCanBeSkippedByTime2(){
 		return Flux.range(0, 1000)
-		           .skipMillis(2000);
+		           .skip(Duration.ofMillis(2000));
 	}
 
 	@Test
@@ -236,7 +236,7 @@ public class FluxSkipUntilOtherTest extends FluxOperatorTest<String, String> {
 
 	Flux<Integer> scenario_aFluxCanBeSkippedByTimeZero(){
 		return Flux.range(0, 1000)
-		           .skipMillis(0);
+		           .skip(Duration.ofMillis(0));
 	}
 
 	@Test

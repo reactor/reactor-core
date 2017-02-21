@@ -82,7 +82,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	public void cacheFlux() {
 
 		Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
-		                                         .delayElementsMillis(1000)
+		                                         .delayElements(Duration.ofMillis(1000))
 		                                         .replay()
 		                                         .autoConnect()
 		                                         .elapsed();
@@ -107,7 +107,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	public void cacheFluxFused() {
 
 		Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
-		                                         .delayElementsMillis(1000)
+		                                         .delayElements(Duration.ofMillis(1000))
 		                                         .replay()
 		                                         .autoConnect()
 		                                         .elapsed();
@@ -134,7 +134,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	public void cacheFluxTTL() {
 
 		Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
-		                                         .delayElementsMillis(1000)
+		                                         .delayElements(Duration.ofMillis(1000))
 		                                         .replay(Duration.ofMillis(2000))
 		                                         .autoConnect()
 		                                         .elapsed();
@@ -158,7 +158,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	public void cacheFluxTTLFused() {
 
 		Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
-		                                         .delayElementsMillis(1000)
+		                                         .delayElements(Duration.ofMillis(1000))
 		                                         .replay(Duration.ofMillis(2000))
 		                                         .autoConnect()
 		                                         .elapsed();
@@ -184,8 +184,8 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	public void cacheFluxTTLMillis() {
 
 		Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
-		                                         .delayElementsMillis(1000)
-		                                         .replayMillis(2000, vts)
+		                                         .delayElements(Duration.ofMillis(1000))
+		                                         .replay(Duration.ofMillis(2000), vts)
 		                                         .autoConnect()
 		                                         .elapsed();
 
@@ -208,7 +208,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	public void cacheFluxHistoryTTL() {
 
 		Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
-		                                         .delayElementsMillis(1000)
+		                                         .delayElements(Duration.ofMillis(1000))
 		                                         .replay(2, Duration.ofMillis(2000))
 		                                         .autoConnect()
 		                                         .elapsed();
@@ -232,7 +232,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	public void cacheFluxHistoryTTLFused() {
 
 		Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
-		                                         .delayElementsMillis(1000)
+		                                         .delayElements(Duration.ofMillis(1000))
 		                                         .replay(2, Duration.ofMillis(2000))
 		                                         .autoConnect()
 		                                         .elapsed();

@@ -225,7 +225,7 @@ public class FluxSpecTests {
 
 	Flux<Integer> scenario_rangeTimedSample() {
 		return Flux.range(1, Integer.MAX_VALUE)
-		           .delayElementsMillis(100)
+		           .delayElements(Duration.ofMillis(100))
 		           .sample(Duration.ofSeconds(4))
 		           .take(1);
 	}
@@ -240,7 +240,7 @@ public class FluxSpecTests {
 
 	Flux<Integer> scenario_rangeTimedTake() {
 		return Flux.range(1, Integer.MAX_VALUE)
-		           .delayElementsMillis(100)
+		           .delayElements(Duration.ofMillis(100))
 		           .take(Duration.ofSeconds(4))
 		           .takeLast(1);
 	}
@@ -810,7 +810,7 @@ public class FluxSpecTests {
 
 		try {
 			Mono<List<Integer>> res = source.subscribeOn(scheduler)
-			                                .delaySubscriptionMillis(1L)
+			                                .delaySubscription(Duration.ofMillis(1L))
 			                                .log("streamed")
 			                                .map(it -> it * 2)
 			                                .buffer()

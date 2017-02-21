@@ -646,8 +646,8 @@ public class FluxMergeSequentialTest {
 		long count = Flux.range(0, 500)
 		                 .flatMapSequential(i -> {
 			                 //ensure each pack of 100 is delayed in inverse order
-			                 long sleep = 600 - i % 100;
-			                 return Mono.delayMillis(sleep)
+			                 Duration sleep = Duration.ofMillis(600 - i % 100);
+			                 return Mono.delay(sleep)
 			                            .then(Mono.just(i))
 			                            .subscribeOn(scheduler);
 		                 })

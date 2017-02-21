@@ -63,7 +63,7 @@ public class MonoDelaySubscriptionTest {
 
 	Mono<Integer> scenario_delayedTrigger2(){
 		return Mono.just(1)
-		           .delaySubscriptionMillis(50);
+		           .delaySubscription(Duration.ofMillis(50));
 	}
 
 	@Test

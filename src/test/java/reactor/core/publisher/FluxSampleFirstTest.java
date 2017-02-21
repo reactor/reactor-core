@@ -160,7 +160,7 @@ public class FluxSampleFirstTest {
 
 	Flux<Integer> scenario_sampleFirstTime(){
 		return Flux.range(1, 10)
-	        .delayElementsMillis(200)
+	        .delayElements(Duration.ofMillis(200))
 	        .sampleFirst(Duration.ofSeconds(1));
 	}
 

@@ -51,7 +51,7 @@ public class FluxIntervalTest {
 			ts.values()
 			  .add(System.currentTimeMillis());
 
-			Flux.intervalMillis(100, 100, exec)
+			Flux.interval(Duration.ofMillis(100), Duration.ofMillis(100), exec)
 			    .take(5)
 			    .map(v -> System.currentTimeMillis())
 			    .subscribe(ts);
@@ -124,7 +124,7 @@ public class FluxIntervalTest {
 	}
 
 	Flux<Long> scenario4(){
-		return Flux.intervalMillis(500, 1000);
+		return Flux.interval(Duration.ofMillis(500), Duration.ofMillis(1000));
 	}
 
 	@Test

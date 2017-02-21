@@ -85,7 +85,7 @@ public class MonoDelayElementTest {
 		AtomicBoolean emitted = new AtomicBoolean();
 		AtomicBoolean cancelled = new AtomicBoolean();
 
-		Mono<Long> source = Mono.delayMillis(1000, vts);
+		Mono<Long> source = Mono.delay(Duration.ofMillis(1000), vts);
 
 		StepVerifier.withVirtualTime(
 				() -> new MonoDelayElement<>(source, 2, TimeUnit.SECONDS, vts)
@@ -224,7 +224,7 @@ public class MonoDelayElementTest {
 
 	@Test
 	public void monoApiTestMillis() {
-		StepVerifier.withVirtualTime(() -> Mono.just("foo").delayElementMillis(5000L))
+		StepVerifier.withVirtualTime(() -> Mono.just("foo").delayElement(Duration.ofMillis(5000L)))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofSeconds(5))
 		            .expectNext("foo")
@@ -236,7 +236,7 @@ public class MonoDelayElementTest {
 		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
 
 		StepVerifier.withVirtualTime(
-				() -> Mono.just("foo").delayElementMillis(5000L, vts),
+				() -> Mono.just("foo").delayElement(Duration.ofMillis(5000L), vts),
 				() -> vts, Long.MAX_VALUE)
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofSeconds(5))

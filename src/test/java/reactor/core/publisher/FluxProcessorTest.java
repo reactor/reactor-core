@@ -15,6 +15,7 @@
  */
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -146,8 +147,8 @@ public class FluxProcessorTest {
 		CountDownLatch latch = new CountDownLatch(1);
 		Scheduler scheduler = Schedulers.parallel();
 		processor.publishOn(scheduler)
-		         .delaySubscriptionMillis(1000)
-		         .subscribe(d -> {
+		         .delaySubscription(Duration.ofMillis(1000))
+		                                    .subscribe(d -> {
 			         count.incrementAndGet();
 			         latch.countDown();
 		         }, 1);

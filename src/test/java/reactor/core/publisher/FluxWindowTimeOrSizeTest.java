@@ -28,7 +28,7 @@ public class FluxWindowTimeOrSizeTest {
 	Flux<List<Integer>> scenario_windowWithTimeoutAccumulateOnTimeOrSize() {
 		return Flux.range(1, 6)
 		           .delayElements(Duration.ofMillis(300))
-		           .window(5, Duration.ofMillis(2000))
+		           .windowTimeout(5, Duration.ofMillis(2000))
 		           .concatMap(Flux::buffer);
 	}
 
@@ -45,7 +45,7 @@ public class FluxWindowTimeOrSizeTest {
 	Flux<List<Integer>> scenario_windowWithTimeoutAccumulateOnTimeOrSize2() {
 		return Flux.range(1, 6)
 		           .delayElements(Duration.ofMillis(300))
-		           .windowMillis(5, 2000)
+		           .windowTimeout(5, Duration.ofMillis(2000))
 		           .concatMap(Flux::buffer);
 	}
 

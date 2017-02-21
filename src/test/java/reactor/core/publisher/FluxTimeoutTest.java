@@ -270,7 +270,7 @@ public class FluxTimeoutTest {
 	}
 
 	Flux<Integer> scenario_timeoutCanBeBoundWithCallback2() {
-		return Flux.<Integer>never().timeoutMillis(500, Flux.just(-5));
+		return Flux.<Integer>never().timeout(Duration.ofMillis(500), Flux.just(-5));
 	}
 
 	@Test
@@ -283,7 +283,7 @@ public class FluxTimeoutTest {
 
 	Flux<?> scenario_timeoutThrown2() {
 		return Flux.never()
-		           .timeoutMillis(500);
+		           .timeout(Duration.ofMillis(500));
 	}
 
 	@Test
@@ -295,7 +295,7 @@ public class FluxTimeoutTest {
 
 	Flux<?> scenario_timeoutThrown3() {
 		return Flux.never()
-		           .timeoutMillis(500, Schedulers.timer());
+		           .timeout(Duration.ofMillis(500), Schedulers.timer());
 	}
 
 	@Test

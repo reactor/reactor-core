@@ -180,7 +180,7 @@ public class FluxBufferStartEndTest {
 	Flux<List<Integer>> scenario_bufferWillSubdivideAnInputFluxOverlapTime2() {
 		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
 		           .delayElements(Duration.ofMillis(99))
-		           .bufferMillis(300L, 200L);//FIXME review signature
+		           .buffer(Duration.ofMillis(300L), Duration.ofMillis(200L));
 	}
 
 	@Test
@@ -197,7 +197,7 @@ public class FluxBufferStartEndTest {
 	Flux<List<Integer>> scenario_bufferWillSubdivideAnInputFluxSameTime() {
 		return Flux.just(1, 2, 3, 4, 5, 6, 7, 8)
 		           .delayElements(Duration.ofMillis(99))
-		           .bufferMillis(300L, 300L);
+		           .buffer(Duration.ofMillis(300L), Duration.ofMillis(300L));
 	}
 
 	@Test

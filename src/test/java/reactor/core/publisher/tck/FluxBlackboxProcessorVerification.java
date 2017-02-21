@@ -58,7 +58,7 @@ public class FluxBlackboxProcessorVerification extends AbstractFluxVerification 
 				                          .map(integer -> -integer)
 				                          .filter(integer -> integer <= 0)
 				                          .map(integer -> -integer)
-				                          .buffer(batch, Duration.ofMillis(50))
+				                          .bufferTimeout(batch, Duration.ofMillis(50))
 				                          .flatMap(Flux::fromIterable)
 				                          .flatMap(i -> Flux.zip(Flux.just(i), otherStream, combinator))
 				 )

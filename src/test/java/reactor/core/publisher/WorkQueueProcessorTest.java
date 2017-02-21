@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -153,7 +154,7 @@ public class WorkQueueProcessorTest {
 		WorkQueueProcessor<String> queueProcessor =
 				WorkQueueProcessor.share("Processor", 256, liteBlocking());
 		TimedScheduler timer = Schedulers.newTimer("Timer");
-		queueProcessor.bufferMillis(32, 2, timer)
+		queueProcessor.bufferTimeout(32, Duration.ofMillis(2), timer)
 		              .subscribe(new Subscriber<List<String>>() {
 			              int counter;
 
