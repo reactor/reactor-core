@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 
@@ -44,7 +45,7 @@ final class MonoRunnable extends Mono<Void> implements Callable<Void> {
     }
     
     @Override
-    public Void blockMillis(long m) {
+    public Void block(Duration m) {
         run.run();
         return null;
     }

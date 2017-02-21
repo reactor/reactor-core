@@ -15,6 +15,7 @@
  */
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.Objects;
 
 import org.reactivestreams.Subscriber;
@@ -40,7 +41,7 @@ extends Mono<T>
 	}
 
 	@Override
-	public T blockMillis(long m) {
+	public T block(Duration m) {
 		return value;
 	}
 

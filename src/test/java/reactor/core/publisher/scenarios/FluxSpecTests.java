@@ -494,7 +494,7 @@ public class FluxSpecTests {
 		source.connectSink().emit(1);
 
 //		then: "the value is mapped"
-		int result = value.blockMillis(5_000);
+		int result = value.block(Duration.ofSeconds(5));
 		assertThat(result).isEqualTo(2);
 	}
 

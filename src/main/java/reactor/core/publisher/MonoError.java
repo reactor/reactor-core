@@ -15,6 +15,7 @@
  */
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -42,7 +43,7 @@ final class MonoError<T> extends Mono<T> implements Trackable {
 	}
 
 	@Override
-	public T blockMillis(long m) {
+	public T block(Duration m) {
 		throw Exceptions.propagate(getError());
 	}
 
