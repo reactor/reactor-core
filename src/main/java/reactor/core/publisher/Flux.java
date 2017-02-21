@@ -6969,7 +6969,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a windowing {@link Flux} of timed {@link Flux} buckets
 	 */
 	public final Flux<Flux<T>> window(Duration timespan) {
-		return windowMillis(timespan.toMillis());
+		return window(timespan, Schedulers.timer());
 	}
 
 	/**
@@ -6998,7 +6998,54 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 */
 	public final Flux<Flux<T>> window(Duration timespan, Duration timeshift) {
-		return windowMillis(timespan.toMillis(), timeshift.toMillis(), Schedulers.timer());
+		return window(timespan, timeshift, Schedulers.timer());
+	}
+
+	/**
+	 * Split this {@link Flux} sequence into continuous, non-overlapping windows delimited by a given period.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowtimespan.png" alt="">
+	 *
+	 * @param timespan the {@link Duration} to delimit {@link Flux} windows
+	 * @param timer the {@link TimedScheduler} to run on
+	 *
+	 * @return a windowing {@link Flux} of timed {@link Flux} buckets
+	 */
+	public final Flux<Flux<T>> window(Duration timespan, TimedScheduler timer) {
+		return window(interval(timespan, timer));
+	}
+
+	/**
+	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code timeshift}
+	 * period, starting from the first item.
+	 * Each {@link Flux} bucket will onComplete after {@code timespan} period has elapsed.
+	 *
+	 * <p>
+	 * When timeshift > timespan : dropping windows
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsizeskip.png" alt="">
+	 * <p>
+	 * When timeshift < timespan : overlapping windows
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsizeskipover.png" alt="">
+	 * <p>
+	 * When timeshift == timespan : exact windows
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsize.png" alt="">
+	 *
+	 * @param timespan the maximum {@link Flux} window {@link Duration}
+	 * @param timeshift the period of time to create new {@link Flux} windows, as a {@link Duration}
+	 * @param timer the {@link TimedScheduler} to run on
+	 *
+	 * @return a windowing {@link Flux} of {@link Flux} buckets delimited by an opening
+	 * {@link Duration} timespan and a closing {@link Duration} timeshift
+	 */
+	public final Flux<Flux<T>> window(Duration timespan, Duration timeshift, TimedScheduler timer) {
+		if (timeshift.equals(timespan)) {
+			return window(timespan);
+		}
+		return window(interval(Duration.ZERO, timeshift, timer), aLong -> Mono.delay(timespan, timer));
 	}
 
 	/**
@@ -7034,7 +7081,25 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
 	 */
 	public final Flux<Flux<T>> windowTimeout(int maxSize, Duration timespan) {
-		return windowTimeoutMillis(maxSize, timespan.toMillis() , Schedulers.timer());
+		return windowTimeout(maxSize, timespan , Schedulers.timer());
+	}
+
+	/**
+	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code maxSize} number
+	 * of items, starting from the first item. {@link Flux} windows will onComplete after a given
+	 * timespan occurs and the number of items has not be counted.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowsizetimeout.png" alt="">
+	 *
+	 * @param maxSize the maximum {@link Flux} window items to count before onComplete
+	 * @param timespan the timeout to use to onComplete a given window if size is not counted yet
+	 * @param timer the {@link TimedScheduler} to run on
+	 *
+	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
+	 */
+	public final Flux<Flux<T>> windowTimeout(int maxSize, Duration timespan, TimedScheduler timer) {
+		return onAssembly(new FluxWindowTimeOrSize<>(this, maxSize, timespan.toMillis(), timer));
 	}
 
 	/**
@@ -7046,7 +7111,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timespan the duration in milliseconds to delimit {@link Flux} windows
 	 *
 	 * @return a windowing {@link Flux} of timed {@link Flux} buckets
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Flux<Flux<T>> windowMillis(long timespan) {
 		return windowMillis(timespan, Schedulers.timer());
 	}
@@ -7061,7 +7128,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timer the {@link TimedScheduler} to run on
 	 *
 	 * @return a windowing {@link Flux} of timed {@link Flux} buckets
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Flux<Flux<T>> windowMillis(long timespan, TimedScheduler timer) {
 		return window(intervalMillis(timespan, timer));
 	}
@@ -7069,7 +7138,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code timeshift}
 	 * period, starting from the first item.
-	 * Each {@link Flux} bucket will onComplete after {@code timespan} period has elpased.
+	 * Each {@link Flux} bucket will onComplete after {@code timespan} period has elapsed.
 	 *
 	 * <p>
 	 * When timeshift > timespan : dropping windows
@@ -7090,8 +7159,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a windowing
 	 * {@link Flux} of {@link Flux} buckets delimited by an opening {@link Publisher} and a selected closing {@link Publisher}
-	 *
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Flux<Flux<T>> windowMillis(long timespan, long timeshift,
 			TimedScheduler timer) {
 		if (timeshift == timespan) {
@@ -7112,7 +7182,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timespan the timeout to use to onComplete a given window if size is not counted yet
 	 *
 	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
-	 * @deprecated use {@link #windowTimeoutMillis(int, long)} instead, will be removed in 3.1.0
+	 * @deprecated use {@link #windowTimeout(int, Duration)} instead, will be removed in 3.1.0
 	 */
 	@Deprecated
 	public final Flux<Flux<T>> windowMillis(int maxSize, long timespan) {
@@ -7132,7 +7202,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timer the {@link TimedScheduler} to run on
 	 *
 	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
-	 * @deprecated use {@link #windowTimeoutMillis(int, long, TimedScheduler)} instead, will be removed in 3.1.0
+	 * @deprecated use {@link #windowTimeout(int, Duration, TimedScheduler)} instead, will be removed in 3.1.0
 	 */
 	@Deprecated
 	public final Flux<Flux<T>> windowMillis(int maxSize, long timespan, TimedScheduler
@@ -7152,7 +7222,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timespan the timeout to use to onComplete a given window if size is not counted yet
 	 *
 	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Flux<Flux<T>> windowTimeoutMillis(int maxSize, long timespan) {
 		return windowTimeoutMillis(maxSize, timespan, Schedulers.timer());
 	}
@@ -7170,7 +7242,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timer the {@link TimedScheduler} to run on
 	 *
 	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Flux<Flux<T>> windowTimeoutMillis(int maxSize, long timespan, TimedScheduler
 			timer) {
 		return onAssembly(new FluxWindowTimeOrSize<>(this, maxSize, timespan, timer));
