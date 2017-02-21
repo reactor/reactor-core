@@ -306,6 +306,7 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 								error = Operators.onOperatorError(s, ex);
 								queue.clear();
 								a = SUBSCRIBERS.getAndSet(this, TERMINATED);
+								n = a.length;
 								for (int i = 0; i < n; i++) {
 									a[i].actual.onError(ex);
 								}
@@ -314,6 +315,7 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 
 							if (v == null) {
 								a = SUBSCRIBERS.getAndSet(this, TERMINATED);
+								n = a.length;
 								for (int i = 0; i < n; i++) {
 									a[i].actual.onComplete();
 								}
@@ -333,6 +335,7 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 						}
 						if (queue.isEmpty()) {
 							a = SUBSCRIBERS.getAndSet(this, TERMINATED);
+							n = a.length;
 							for (int i = 0; i < n; i++) {
 								a[i].actual.onComplete();
 							}
@@ -400,6 +403,7 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 								queue.clear();
 								error = Operators.onOperatorError(s, ex);
 								a = SUBSCRIBERS.getAndSet(this, TERMINATED);
+								n = a.length;
 								for (int i = 0; i < n; i++) {
 									a[i].actual.onError(ex);
 								}
@@ -413,6 +417,7 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 								if (ex != null) {
 									queue.clear();
 									a = SUBSCRIBERS.getAndSet(this, TERMINATED);
+									n = a.length;
 									for (int i = 0; i < n; i++) {
 										a[i].actual.onError(ex);
 									}
@@ -420,6 +425,7 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 								}
 								else if (empty) {
 									a = SUBSCRIBERS.getAndSet(this, TERMINATED);
+									n = a.length;
 									for (int i = 0; i < n; i++) {
 										a[i].actual.onComplete();
 									}
@@ -456,6 +462,7 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 								if (ex != null) {
 									queue.clear();
 									a = SUBSCRIBERS.getAndSet(this, TERMINATED);
+									n = a.length;
 									for (int i = 0; i < n; i++) {
 										a[i].actual.onError(ex);
 									}
@@ -463,6 +470,7 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 								}
 								else if (queue.isEmpty()) {
 									a = SUBSCRIBERS.getAndSet(this, TERMINATED);
+									n = a.length;
 									for (int i = 0; i < n; i++) {
 										a[i].actual.onComplete();
 									}

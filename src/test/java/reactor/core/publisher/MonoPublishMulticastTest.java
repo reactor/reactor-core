@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
@@ -83,5 +85,16 @@ public class MonoPublishMulticastTest {
 
 		Assert.assertFalse("Still subscribed?", sp.isCancelled());
 	}
+
+
+    @Test
+    public void syncCancelBeforeComplete() {
+        assertThat(Mono.just(Mono.just(1).publish(v -> v)).flatMap(v -> v).blockLast()).isEqualTo(1);
+    }
+
+    @Test
+    public void normalCancelBeforeComplete() {
+        assertThat(Mono.just(Mono.just(1).hide().publish(v -> v)).flatMap(v -> v).blockLast()).isEqualTo(1);
+    }
 
 }
