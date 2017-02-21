@@ -2034,7 +2034,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period
 	 */
 	public final Flux<List<T>> buffer(Duration timespan) {
-		return bufferMillis(timespan.toMillis(), Schedulers.timer());
+		return buffer(timespan, Schedulers.timer());
 	}
 
 	/**
@@ -2063,7 +2063,57 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period timeshift and sized by timespan
 	 */
 	public final Flux<List<T>> buffer(Duration timespan, Duration timeshift) {
-		return bufferMillis(timespan.toMillis(), timeshift.toMillis(), Schedulers.timer());
+		return buffer(timespan, timeshift, Schedulers.timer());
+	}
+
+	/**
+	 * Collect incoming values into multiple {@link List} that will be pushed into the
+	 * returned {@link Flux} every timespan.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimespan.png"
+	 * alt="">
+	 *
+	 * @param timespan the {@link Duration} to use to release a buffered list
+	 * @param timer the {@link TimedScheduler} to run on
+	 *
+	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period
+	 */
+	public final Flux<List<T>> buffer(Duration timespan, TimedScheduler timer) {
+		return buffer(interval(timespan, timer));
+	}
+
+	/**
+	 * Collect incoming values into multiple {@link List} delimited by the given {@code timeshift} period. Each {@link
+	 * List} bucket will last until the {@code timespan} has elapsed, thus releasing the bucket to the returned {@link
+	 * Flux}.
+	 * <p>
+	 * When timeshift > timespan : dropping buffers
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimeshift.png"
+	 * alt="">
+	 * <p>
+	 * When timeshift < timespan : overlapping buffers
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimeshiftover.png"
+	 * alt="">
+	 * <p>
+	 * When timeshift == timespan : exact buffers
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimespan.png"
+	 * alt="">
+	 *
+	 * @param timespan the duration to use to release buffered lists
+	 * @param timeshift the duration to use to create a new bucket
+	 * @param timer the {@link TimedScheduler} to run on
+	 *
+	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period timeshift and sized by timespan
+	 */
+	public final Flux<List<T>> buffer(Duration timespan, Duration timeshift, TimedScheduler timer) {
+		if (timespan.equals(timeshift)) {
+			return buffer(timespan, timer);
+		}
+		return buffer(interval(Duration.ZERO, timeshift, timer), aLong -> Mono
+				.delay(timespan, timer));
 	}
 
 	/**
@@ -2116,7 +2166,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
 	 */
 	public final Flux<List<T>> bufferTimeout(int maxSize, Duration timespan) {
-		return bufferTimeout(maxSize, timespan, listSupplier());
+		return bufferTimeout(maxSize, timespan, Schedulers.timer());
 	}
 
 	/**
@@ -2133,8 +2183,44 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a microbatched {@link Flux} of {@link Collection} delimited by given size or a given period timeout
 	 */
 	public final <C extends Collection<? super T>> Flux<C> bufferTimeout(int maxSize, Duration timespan, Supplier<C> bufferSupplier) {
-		return bufferTimeoutMillis(maxSize, timespan.toMillis(), Schedulers.timer(),
+		return bufferTimeout(maxSize, timespan, Schedulers.timer(),
 				bufferSupplier);
+	}
+
+	/**
+	 * Collect incoming values into a {@link List} that will be pushed into the returned {@link Flux} every timespan OR
+	 * maxSize items
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimespansize.png"
+	 * alt="">
+	 *
+	 * @param maxSize the max collected size
+	 * @param timespan the timeout to use to release a buffered list
+	 * @param timer the {@link TimedScheduler} to run on
+	 *
+	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
+	 */
+	public final Flux<List<T>> bufferTimeout(int maxSize, Duration timespan, TimedScheduler timer) {
+		return bufferTimeout(maxSize, timespan, timer, listSupplier());
+	}
+
+	/**
+	 * Collect incoming values into a {@link Collection} that will be pushed into the returned {@link Flux} every timespan OR
+	 * maxSize items
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimespansize.png"
+	 * alt="">
+	 *
+	 * @param maxSize the max collected size
+	 * @param timespan the timeout to use to release a buffered collection
+	 * @param timer the {@link TimedScheduler} to run on
+	 * @param bufferSupplier the collection to use for each data segment
+	 * @param <C> the supplied {@link Collection} type
+	 * @return a microbatched {@link Flux} of {@link Collection} delimited by given size or a given period timeout
+	 */
+	public final  <C extends Collection<? super T>> Flux<C> bufferTimeout(int maxSize, Duration timespan, TimedScheduler
+			timer, Supplier<C> bufferSupplier) {
+		return onAssembly(new FluxBufferTimeOrSize<>(this, maxSize, timespan.toMillis(), timer, bufferSupplier));
 	}
 
 	/**
@@ -2147,7 +2233,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timespan the duration to use to release a buffered list in milliseconds
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Flux<List<T>> bufferMillis(long timespan) {
 		return bufferMillis(timespan, Schedulers.timer());
 	}
@@ -2159,13 +2247,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/buffertimespan.png"
 	 * alt="">
 	 *
-	 * @param timespan theduration to use to release a buffered list in milliseconds
+	 * @param timespan the duration to use to release a buffered list in milliseconds
 	 * @param timer the {@link TimedScheduler} to run on
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Flux<List<T>> bufferMillis(long timespan, TimedScheduler timer) {
-		return buffer(intervalMillis(timespan, timer));
+		return buffer(interval(Duration.ofMillis(timespan), timer));
 	}
 
 	/**
@@ -2192,7 +2282,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timeshift the duration to use to create a new bucket
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period timeshift and sized by timespan
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Flux<List<T>> bufferMillis(long timespan, long timeshift) {
 		return bufferMillis(timespan, timeshift, Schedulers.timer());
 	}
@@ -2222,7 +2314,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timer the {@link TimedScheduler} to run on
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period timeshift and sized by timespan
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Flux<List<T>> bufferMillis(long timespan, long timeshift, TimedScheduler
 			timer) {
 		if (timespan == timeshift) {
@@ -2244,11 +2338,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timespan the timeout in milliseconds to use to release a buffered list
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
-	 * @deprecated use {@link #bufferTimeoutMillis(int, long)} instead, will be removed in 3.1.0
+	 * @deprecated use {@link #bufferTimeout(int, Duration)} instead, will be removed in 3.1.0
 	 */
 	@Deprecated
 	public final Flux<List<T>> bufferMillis(int maxSize, long timespan) {
-		return bufferTimeoutMillis(maxSize, timespan);
+		return bufferTimeout(maxSize, Duration.ofMillis(timespan));
 	}
 
 	/**
@@ -2263,11 +2357,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timer the {@link TimedScheduler} to run on
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
-	 * @deprecated use {@link #bufferTimeoutMillis(int, long, TimedScheduler)} instead, will be removed in 3.1.0
+	 * @deprecated use {@link #bufferTimeout(int, Duration, TimedScheduler)} instead, will be removed in 3.1.0
 	 */
 	@Deprecated
 	public final Flux<List<T>> bufferMillis(int maxSize, long timespan, TimedScheduler timer) {
-		return bufferTimeoutMillis(maxSize, timespan, timer);
+		return bufferTimeout(maxSize, Duration.ofMillis(timespan), timer);
 	}
 
 	/**
@@ -2283,12 +2377,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param bufferSupplier the collection to use for each data segment
 	 * @param <C> the supplied {@link Collection} type
 	 * @return a microbatched {@link Flux} of {@link Collection} delimited by given size or a given period timeout
-	 * @deprecated use {@link #bufferTimeoutMillis(int, long, TimedScheduler, Supplier)} instead, will be removed in 3.1.0
+	 * @deprecated use {@link #bufferTimeout(int, Duration, TimedScheduler, Supplier)} instead, will be removed in 3.1.0
 	 */
 	@Deprecated
 	public final <C extends Collection<? super T>> Flux<C> bufferMillis(int maxSize, long timespan, TimedScheduler
 			timer, Supplier<C> bufferSupplier) {
-		return bufferTimeoutMillis(maxSize, timespan, timer, bufferSupplier);
+		return bufferTimeout(maxSize, Duration.ofMillis(timespan), timer, bufferSupplier);
 	}
 
 	/**
@@ -2302,9 +2396,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timespan the timeout in milliseconds to use to release a buffered list
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Flux<List<T>> bufferTimeoutMillis(int maxSize, long timespan) {
-		return bufferTimeoutMillis(maxSize, timespan, Schedulers.timer());
+		return bufferTimeout(maxSize, Duration.ofMillis(timespan), Schedulers.timer());
 	}
 
 	/**
@@ -2319,9 +2415,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timer the {@link TimedScheduler} to run on
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final Flux<List<T>> bufferTimeoutMillis(int maxSize, long timespan, TimedScheduler timer) {
-		return bufferTimeoutMillis(maxSize, timespan, timer, listSupplier());
+		return bufferTimeout(maxSize, Duration.ofMillis(timespan), timer, listSupplier());
 	}
 
 	/**
@@ -2337,10 +2435,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param bufferSupplier the collection to use for each data segment
 	 * @param <C> the supplied {@link Collection} type
 	 * @return a microbatched {@link Flux} of {@link Collection} delimited by given size or a given period timeout
+	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
+	@Deprecated
 	public final  <C extends Collection<? super T>> Flux<C> bufferTimeoutMillis(int maxSize, long timespan, TimedScheduler
 			timer, Supplier<C> bufferSupplier) {
-		return onAssembly(new FluxBufferTimeOrSize<>(this, maxSize, timespan, timer, bufferSupplier));
+		return bufferTimeout(maxSize, Duration.ofMillis(timespan), timer, bufferSupplier);
 	}
 
 	/**
