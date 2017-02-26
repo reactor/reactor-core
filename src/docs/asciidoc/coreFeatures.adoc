@@ -477,7 +477,7 @@ Flux.just("foo", "bar")
 <4> `take(1)` will cancel after 1 item is emitted.
 
 ==== Demonstrating the terminal aspect of `onError`
-In order to demonstrate that all these operators don't prevent the upstream
+In order to demonstrate that all these operators cause the upstream
 original sequence to terminate when the error happens, let's take a more visual
 example with a `Flux.interval`. The interval operator ticks every x units of time
 with an increasing `Long`:
