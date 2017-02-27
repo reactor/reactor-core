@@ -15,6 +15,8 @@
  */
 package reactor.core.publisher;
 
+import java.time.Duration;
+
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
@@ -60,7 +62,7 @@ extends Mono<Object>
 	}
 
 	@Override
-	public Object blockMillis(long m) {
+	public Object block(Duration m) {
 		return null;
 	}
 

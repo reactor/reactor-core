@@ -215,8 +215,8 @@ tuned to facilitate the work-stealing that can happen in some Schedulers.
 
 Some operators use a specific Scheduler from `Schedulers` by default (and will
 usually give you the option of providing a different one). For instance, calling
-the factory method `Flux.intervalMillis(300)` will produces a `Flux<Long>` that
-ticks every 300ms. This is enabled by `Schedulers.timer()` by default.
+the factory method `Flux.interval(Duration.ofMillis(300))` will produces a `Flux<Long>`
+that ticks every 300ms. This is enabled by `Schedulers.timer()` by default.
 
 Reactor offers two means of switching execution context (or `Scheduler`) in a
 reactive chain: `publishOn` and `subscribeOn`. Both take a `Scheduler` and allow
@@ -484,7 +484,7 @@ with an increasing `Long`:
 [source,java]
 ----
 Flux<String> flux =
-Flux.intervalMillis(250)
+Flux.interval(Duration.ofMillis(250))
     .map(input -> {
 	    if (input < 3) return "tick " + input;
 	    throw new RuntimeException("boom");
@@ -494,7 +494,7 @@ Flux.intervalMillis(250)
 flux.subscribe(System.out::println);
 Thread.sleep(2100); // <1>
 ----
-<1> Note that `intervalMillis` executes on the *timer* `Scheduler` by default.
+<1> Note that `interval` executes on the *timer* `Scheduler` by default.
 Assuming we'd want to run that example in a main class, we add a sleep here so
 that the application doesn't exit immediately without any value being produced.
 
@@ -520,7 +520,7 @@ terminated. To verify that, we can re-use the previous example and append a
 `retry(1)` to retry once instead of the onErrorReturn:
 [source,java]
 ----
-Flux.intervalMillis(250)
+Flux.interval(Duration.ofMillis(250))
     .map(input -> {
         if (input < 3) return "tick " + input;
         throw new RuntimeException("boom");

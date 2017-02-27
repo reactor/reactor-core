@@ -55,7 +55,7 @@ public class FluxWithProcessorVerification extends AbstractFluxVerification {
 				                          .map(integer -> -integer)
 				                          .filter(integer -> integer <= 0)
 				                          .map(integer -> -integer)
-				                          .buffer(batch, Duration.ofMillis(50))
+				                          .bufferTimeout(batch, Duration.ofMillis(50))
 				                          .flatMap(Flux::fromIterable)
 				                          .doOnNext(array -> cumulated.getAndIncrement())
 				                          .flatMap(i -> Flux.zip(Flux.just(i),

@@ -45,8 +45,8 @@ public class MonoFirstTest {
 	@Test//(timeout = 5000)
 	public void all2NonEmpty() {
 		Assert.assertEquals(Integer.MIN_VALUE,
-				Mono.first(Mono.delayMillis(150)
-				               .map(i -> Integer.MIN_VALUE), Mono.delayMillis(250))
+				Mono.first(Mono.delay(Duration.ofMillis(150))
+				               .map(i -> Integer.MIN_VALUE), Mono.delay(Duration.ofMillis(250)))
 				    .block());
 	}
 
@@ -83,8 +83,8 @@ public class MonoFirstTest {
 	@Test//(timeout = 5000)
 	public void all2NonEmptyIterable() {
 		Assert.assertEquals(Integer.MIN_VALUE,
-				Mono.first(Mono.delayMillis(150)
-				               .map(i -> Integer.MIN_VALUE), Mono.delayMillis(250))
+				Mono.first(Mono.delay(Duration.ofMillis(150))
+				               .map(i -> Integer.MIN_VALUE), Mono.delay(Duration.ofMillis(250)))
 				    .block());
 	}
 

@@ -396,7 +396,7 @@ public class GuideTests {
 		VirtualTimeScheduler.set(virtualTimeScheduler);
 
 		Flux<String> flux =
-		Flux.intervalMillis(250)
+		Flux.interval(Duration.ofMillis(250))
 		    .map(input -> {
 			    if (input < 3) return "tick " + input;
 			    throw new RuntimeException("boom");
@@ -423,7 +423,7 @@ public class GuideTests {
 		VirtualTimeScheduler.set(virtualTimeScheduler);
 
 		Flux<Tuple2<Long,String>> flux =
-		Flux.intervalMillis(250)
+		Flux.interval(Duration.ofMillis(250))
 		    .map(input -> {
 			    if (input < 3) return "tick " + input;
 			    throw new RuntimeException("boom");
@@ -491,7 +491,7 @@ public class GuideTests {
 							if (index < 4) return index;
 							else throw Exceptions.propagate(error);
 						})
-						.flatMap(index -> Mono.delayMillis(index * 100)) // <3>
+						.flatMap(index -> Mono.delay(Duration.ofMillis(index * 100))) // <3>
 						.doOnNext(s -> System.out.println("retried at " + LocalTime.now())) // <4>
 				);
 

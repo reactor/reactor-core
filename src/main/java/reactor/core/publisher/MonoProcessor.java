@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Objects;
@@ -134,20 +135,20 @@ public final class MonoProcessor<O> extends Mono<O>
 
 	@Override
 	public O block() {
-		return blockMillis(30_0000L);
+		return block(Duration.ofSeconds(300));
 	}
 
 	/**
 	 * Block the calling thread for the specified time, waiting for the completion of this {@code MonoProcessor}. If the
 	 * {@link MonoProcessor} is completed with an error a RuntimeException that wraps the error is thrown.
 	 *
-	 * @param timeout the timeout value in milliseconds
+	 * @param timeout the timeout value as a {@link Duration}
 	 *
 	 * @return the value of this {@code MonoProcessor} or {@code null} if the timeout is reached and the {@code MonoProcessor} has
 	 * not completed
 	 */
 	@Override
-	public O blockMillis(long timeout) {
+	public O block(Duration timeout) {
 		try {
 			if (!isPending()) {
 				return peek();
@@ -156,8 +157,7 @@ public final class MonoProcessor<O> extends Mono<O>
 				getOrStart();
 			}
 
-			long delay = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeout,
-					TimeUnit.MILLISECONDS);
+			long delay = System.nanoTime() + timeout.toNanos();
 
 			try {
 				long endState = waitStrategy.waitFor(STATE_SUCCESS_VALUE, this,	() -> {

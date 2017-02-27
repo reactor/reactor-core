@@ -145,8 +145,8 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 *** until a criteria is met (inclusive): `Flux#skipUntil` (predicate-based), `Flux#skipUntilOther` (companion publisher-based)
 *** while a criteria is met (exclusive): `Flux#skipWhile`
 ** by sampling items...
-*** by duration: `Flux#sample(Duration)`, `Flux#sampleMillis`
-**** but keeping the first element in the sampling window instead of the last: `sampleFirst`/`sampleFirstMillis`
+*** by duration: `Flux#sample(Duration)`
+**** but keeping the first element in the sampling window instead of the last: `sampleFirst`
 *** by a publisher-based window: `Flux#sample(Publisher)`
 *** based on a publisher "timing out": `Flux#sampleTimeout` (each element triggers a publisher, and is emitted if that publisher doesn't overlap with the next)
 
@@ -208,7 +208,7 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 *** ...with overlapping or dropping windows: `window(int, int)`
 ** of time `window(Duration)`
 *** ...with overlapping or dropping windows: `window(Duration, Duration)`
-** of size OR time (window closes when count is reached or timeout elapsed): `window(int, Duration)`
+** of size OR time (window closes when count is reached or timeout elapsed): `windowTimeout(int, Duration)`
 ** based on a predicate on elements: `windowUntil`
 *** ...…emitting the element that triggered the boundary in the next window (`cutBefore` variant): `.windowUntil(predicate, true)`
 *** ...keeping the window open while elements match a predicate: `windowWhile` (non-matching elements are not emitted)
@@ -220,7 +220,7 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 **** ...with overlapping or dropping buffers: `buffer(int, int)`
 *** by a duration boundary: `buffer(Duration)`
 **** ...with overlapping or dropping buffers: `buffer(Duration, Duration)`
-*** by a size OR duration boundary: `buffer(int, Duration)`
+*** by a size OR duration boundary: `bufferTimeout(int, Duration)`
 *** by an arbitrary criteria boundary: `bufferUntil(Predicate)`
 **** ...putting the element that triggered the boundary in the next buffer: `.bufferUntil(predicate, true)`
 **** ...buffering while predicate matches and dropping the element that triggered the boundary: `bufferWhile(Predicate)`
@@ -234,13 +234,13 @@ TIP: Note that this returns a `Flux<GroupedFlux<K, T>>`, each inner `GroupedFlux
 == Going back to the Synchronous world
 * I have a `Flux<T>` and I want to...
 ** block until I can get the first element: `Flux#blockFirst`
-*** ...with a timeout: `Flux#blockFirstMillis` / `Flux#blockFirst(Duration)`
+*** ...with a timeout: `Flux#blockFirst(Duration)`
 ** block until I can get the last element (or null if empty): `Flux#blockLast`
-*** ...with a timeout: `Flux#blockLastMillis` / `Flux#blockLast(Duration)`
+*** ...with a timeout: `Flux#blockLast(Duration)`
 ** synchronously switch to an `Iterable<T>`: `Flux#toIterable`
 ** synchronously switch to a Java 8 `Stream<T>`: `Flux#toStream`
 
 * I have a `Mono<T>` and I want...
 ** to block until I can get the value: `Mono#block`
-*** ...with a timeout: `Mono#blockMillis` / `Mono#block(Duration)`
+*** ...with a timeout: `Mono#block(Duration)`
 ** a `CompletableFuture<T>`: `Mono#toFuture`

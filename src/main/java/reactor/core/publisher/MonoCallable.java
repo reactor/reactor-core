@@ -15,6 +15,7 @@
  */
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 
@@ -72,11 +73,12 @@ extends Mono<T>
 
 	@Override
 	public T block() {
-		return blockMillis(-1L);
+		//duration is ignored below
+		return block(Duration.ZERO);
 	}
 
 	@Override
-	public T blockMillis(long m) {
+	public T block(Duration m) {
 		try {
 			return Objects.requireNonNull(callable.call(),
 					"The callable source returned null");

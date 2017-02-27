@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.concurrent.Callable;
 
 import org.reactivestreams.Publisher;
@@ -50,12 +51,13 @@ final class MonoCallableOnAssembly<T> extends MonoSource<T, T>
 
 	@Override
 	public T block() {
-		return blockMillis(-1L);
+		//duration is ignored below
+		return block(Duration.ZERO);
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public T blockMillis(long timeout) {
+	public T block(Duration timeout) {
 		try {
 			return ((Callable<T>) source).call();
 		}

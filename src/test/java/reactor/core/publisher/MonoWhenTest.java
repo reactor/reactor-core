@@ -144,7 +144,7 @@ public class MonoWhenTest {
 	@Test//(timeout = 5000)
 	public void all2NonEmpty() {
 		Assert.assertEquals(Tuples.of(0L, 0L),
-				Mono.when(Mono.delayMillis(150), Mono.delayMillis(250))
+				Mono.when(Mono.delay(Duration.ofMillis(150)), Mono.delay(Duration.ofMillis(250)))
 				    .block());
 	}
 

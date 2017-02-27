@@ -517,7 +517,7 @@ public class FluxTests extends AbstractReactorTest {
 		        .parallel(8)
 		        .groups()
 		        .subscribe(stream -> stream.publishOn(asyncGroup)
-		                                 .buffer(1000 / 8, Duration.ofSeconds(1))
+		                                 .bufferTimeout(1000 / 8, Duration.ofSeconds(1))
 		                                 .subscribe(batch -> {
 			                                 for (int j = 0; j < batch.size(); j++) {
                                                 latch.countDown();
@@ -710,7 +710,7 @@ public class FluxTests extends AbstractReactorTest {
 		                 .parallel(PARALLEL_STREAMS)
 		                 .groups()
 		                 .subscribe(substream -> substream.hide().publishOn(asyncGroup)
-		                                                .buffer(BATCH_SIZE, Duration.ofMillis(TIMEOUT))
+		                                                .bufferTimeout(BATCH_SIZE, Duration.ofMillis(TIMEOUT))
 		                                                .subscribe(items -> {
 			                                                batchesDistribution.compute(items.size(),
 					                                                (key, value) -> value == null ? 1 : value + 1);
@@ -1049,7 +1049,7 @@ public class FluxTests extends AbstractReactorTest {
 		final EmitterProcessor<Integer> streamBatcher = EmitterProcessor.create();
 		streamBatcher.connect();
 		streamBatcher.publishOn(asyncGroup)
-		             .buffer(batchsize, Duration.ofSeconds(timeout))
+		             .bufferTimeout(batchsize, Duration.ofSeconds(timeout))
 		             .log("batched")
 		             .parallel(parallelStreams)
 		             .groups()
@@ -1162,7 +1162,7 @@ public class FluxTests extends AbstractReactorTest {
 
 	@Test
 	public void delayEach() throws InterruptedException {
-		StepVerifier.withVirtualTime(() -> Flux.range(1, 3).delayElementsMillis(1000))
+		StepVerifier.withVirtualTime(() -> Flux.range(1, 3).delayElements(Duration.ofMillis(1000)))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofSeconds(1))
 		            .expectNext(1)
@@ -1438,7 +1438,7 @@ public class FluxTests extends AbstractReactorTest {
 
 		CountDownLatch latch = new CountDownLatch(1);
 		try {
-			Flux.intervalMillis(100)
+			Flux.interval(Duration.ofMillis(100))
 			    .take(1)
 			    .publishOn(Schedulers.parallel())
                 .doOnTerminate(() -> latch.countDown())
@@ -1495,6 +1495,6 @@ public class FluxTests extends AbstractReactorTest {
 
 	@Test
 	public void test() {
-		Flux.empty().delayElementsMillis(1000).log().blockLast();
+		Flux.empty().delayElements(Duration.ofMillis(1000)).log().blockLast();
 	}
 }

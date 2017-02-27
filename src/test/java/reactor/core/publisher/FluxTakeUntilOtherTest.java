@@ -168,7 +168,7 @@ public class FluxTakeUntilOtherTest {
 
 	Flux<Integer> scenario_aFluxCanBeLimitedByTime2(){
 		return Flux.range(0, 1000)
-		           .takeMillis(2000);
+		           .take(Duration.ofMillis(2000));
 	}
 
 	@Test
@@ -180,7 +180,7 @@ public class FluxTakeUntilOtherTest {
 	}
 	@Test
 	public void aFluxCanBeLimitedByTime3(){
-		StepVerifier.create(Flux.range(0, 1000).takeMillis(0L))
+		StepVerifier.create(Flux.range(0, 1000).take(Duration.ofMillis(0L)))
 		            .thenAwait(Duration.ofSeconds(2))
 		            .verifyComplete();
 	}
