@@ -36,7 +36,7 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 * that generates events programmatically (can use state)...
 ** synchronously and one-by-one: `Flux#generate`
 ** asynchronously (can also be sync), multiple emissions possible in one pass: `Flux#create`
-(`Flux#Mono` as well, without the multiple emission aspect)
+(`Mono#create` as well, without the multiple emission aspect)
 
 [[which.values]]
 == An existing sequence
