@@ -423,32 +423,57 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		.assertNotComplete();
 	}
 
-	@Test
-	public void retryDelayErrors() throws Exception {
-		AtomicInteger onNextSignals = new AtomicInteger();
 
-		StepVerifier.create(Flux.range(1, 3)
-		                        .publish()
-		                        .autoConnect()
-		                        .log()
-		                        .flatMap(i -> Mono.just(i)
-		                                          .doOnNext(e -> onNextSignals.incrementAndGet())
-		                                          .log().<Integer>handle((s1, sink) -> {
-					                        if (s1 == 1) {
-						                        sink.error(new RuntimeException());
-					                        }
-					                        else {
-						                        sink.next(s1);
-					                        }
-				                        }).subscribeOn(Schedulers.parallel()), true, 4, 4)
-		                        .log("retry")
-		                        .retry()
-		                        .log("done"))
-		            .expectNextMatches(d -> d == 2 || d == 3)
-		            .expectNextMatches(d -> d == 2 || d == 3)
+	@Test
+	public void retry() {
+		DirectProcessor<Integer> dp = DirectProcessor.create();
+		StepVerifier.create(
+				dp.publish()
+				  .autoConnect().<Integer>handle((s1, sink) -> {
+					if (s1 == 1) {
+						sink.error(new RuntimeException());
+					}
+					else {
+						sink.next(s1);
+					}
+				}).retry())
+		            .then(() -> {
+			            dp.onNext(1);
+			            dp.onNext(2);
+			            dp.onNext(3);
+		            })
+		            .expectNext(2, 3)
 		            .thenCancel()
 		            .verify();
 
-		Assert.assertThat(onNextSignals.get(), equalTo(3));
+		// Need to explicitly complete processor due to use of publish()
+		dp.onComplete();
 	}
+
+	@Test
+	public void retryWithPublishOn() {
+		DirectProcessor<Integer> dp = DirectProcessor.create();
+		StepVerifier.create(
+				dp.publishOn(Schedulers.parallel()).publish()
+				  .autoConnect().<Integer>handle((s1, sink) -> {
+					if (s1 == 1) {
+						sink.error(new RuntimeException());
+					}
+					else {
+						sink.next(s1);
+					}
+				}).retry())
+		            .then(() -> {
+			            dp.onNext(1);
+			            dp.onNext(2);
+			            dp.onNext(3);
+		            })
+		            .expectNext(2, 3)
+		            .thenCancel()
+		            .verify();
+
+		// Need to explicitly complete processor due to use of publish()
+		dp.onComplete();
+	}
+
 }

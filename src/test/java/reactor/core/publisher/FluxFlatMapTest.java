@@ -37,6 +37,7 @@ import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.CoreMatchers.equalTo;
 
 public class FluxFlatMapTest {
 
@@ -1205,4 +1206,34 @@ public class FluxFlatMapTest {
 		            .thenCancel()
 		            .verify();
 	}
+
+	@Test
+	public void retryHotDelayErrors() throws Exception {
+		AtomicInteger onNextSignals = new AtomicInteger();
+
+		StepVerifier.create(Flux.range(0, 5).publish().autoConnect()
+		                        .flatMap(i -> Mono.just(i)
+		                                          .doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
+						                        (s1, sink) -> {
+							                        if (s1 == 1 || s1 == 3) {
+								                        sink.error(new RuntimeException());
+							                        }
+							                        else {
+								                        sink.next(s1);
+							                        }
+						                        }).subscribeOn(Schedulers.parallel()),
+				                        true,
+				                        4,
+				                        4)
+		                        .retry())
+		            // TODO Need to add a expectNextUnordered() to fully assert this.
+		            .expectNextMatches(d -> d == 0 || d == 2 || d == 4)
+		            .expectNextMatches(d -> d == 0 || d == 2 || d == 4)
+		            .expectNextMatches(d -> d == 0 || d == 2 || d == 4)
+		            .thenCancel()
+		            .verify();
+
+		Assert.assertThat(onNextSignals.get(), equalTo(5));
+	}
+
 }
