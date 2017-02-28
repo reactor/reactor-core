@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Cancellation;
+import reactor.core.Disposable;
 
 /**
  * Wrapper API around a downstream Subscriber for emitting any number of
@@ -63,6 +64,24 @@ public interface FluxSink<T> {
 	 */
 	FluxSink<T> serialize();
 
+	/**
+	 * Associates a disposable resource with this FluxSink
+	 * that will be disposed in case the downstream cancels the sequence
+	 * via {@link org.reactivestreams.Subscription#cancel()}.
+	 * @param d the disposable callback to use
+	 * @return the {@link FluxSink} with resource to be disposed on cancel signal
+	 */
+	FluxSink<T> onCancel(Disposable d);
+
+	/**
+	 * Associates a disposable resource with this FluxSink
+	 * that will be disposed on the first terminate signal which may be
+	 * a cancel or complete signal.
+	 * @param d the disposable callback to use
+	 * @return the {@link FluxSink} with resource to be disposed on first terminate signal
+	 */
+	FluxSink<T> onTerminate(Disposable d);
+
 
     /**
      * Associate a cancellation-based resource with this FluxSink
@@ -70,6 +89,7 @@ public interface FluxSink<T> {
      * via {@link org.reactivestreams.Subscription#cancel()}.
      * @param c the cancellation callback to use
      */
+	@Deprecated
     void setCancellation(Cancellation c);
 
 	/**

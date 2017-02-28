@@ -34,7 +34,7 @@ public class MonoCancelOnTest {
 		Schedulers.single().schedule(() -> threadHash.set(Thread.currentThread()));
 
 		Mono.create(sink -> {
-			sink.setCancellation(() -> {
+			sink.onTerminate(() -> {
 				if (threadHash.compareAndSet(Thread.currentThread(), null)) {
 					latch.countDown();
 				}

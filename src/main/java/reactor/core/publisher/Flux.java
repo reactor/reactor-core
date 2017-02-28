@@ -82,7 +82,7 @@ import reactor.util.function.Tuples;
  * should be avoided, as these may be shared between several {@link Subscriber Subscribers}.
  *
  * @param <T> the element type of this Reactive Streams {@link Publisher}
- * 
+ *
  * @author Sebastien Deleuze
  * @author Stephane Maldini
  * @author David Karnok
@@ -495,7 +495,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	public static <T> Flux<T> concatDelayError(Publisher<? extends T>... sources) {
 		return onAssembly(new FluxConcatArray<>(true, sources));
 	}
-	
+
 	/**
      * Creates a Flux with multi-emission capabilities (synchronous or asynchronous) through
      * the FluxSink API.
@@ -518,7 +518,7 @@ public abstract class Flux<T> implements Publisher<T> {
      *     // with cancellation support:
      *
      *     button.addActionListener(al);
-     *     emitter.setCancellation(() -> {
+     *     emitter.onTerminate(() -> {
      *         button.removeListener(al);
      *     });
      * });
@@ -552,7 +552,7 @@ public abstract class Flux<T> implements Publisher<T> {
      *     // with cancellation support:
      *
      *     button.addActionListener(al);
-     *     emitter.setCancellation(() -> {
+     *     emitter.onTerminate(() -> {
      *         button.removeListener(al);
      *     });
      * }, FluxSink.OverflowStrategy.LATEST);
@@ -688,7 +688,7 @@ public abstract class Flux<T> implements Publisher<T> {
 		}
 		return onAssembly(FluxSource.wrap(source));
 	}
-	
+
 	/**
 	 * Create a {@link Flux} that emits the items contained in the provided {@link Iterable}.
 	 * <p>
@@ -1034,7 +1034,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	public static <I> Flux<I> merge(Iterable<? extends Publisher<? extends I>> sources) {
 		return merge(fromIterable(sources));
 	}
-	
+
 	/**
 	 * Merge emitted {@link Publisher} sequences from the passed {@link Publisher} array into an interleaved merged
 	 * sequence.
@@ -2968,7 +2968,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	public final <V> Flux<V> concatMapDelayError(Function<? super T, Publisher<? extends V>> mapper) {
 		return concatMapDelayError(mapper, QueueSupplier.XS_BUFFER_SIZE);
 	}
-	
+
 	/**
 	 * Bind dynamic sequences given this input sequence like {@link #flatMap(Function)}, but preserve
 	 * ordering and concatenate emissions instead of merging (no interleave).
@@ -4339,7 +4339,7 @@ public abstract class Flux<T> implements Publisher<T> {
 				log.onRequestCall(),
 				log.onCancelCall());
 	}
-	
+
 	/**
 	 * Transform the items emitted by this {@link Flux} by applying a function to each item.
 	 * <p>

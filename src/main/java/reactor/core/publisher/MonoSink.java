@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import reactor.core.Cancellation;
+import reactor.core.Disposable;
 
 /**
  * Wrapper API around an actual downstream Subscriber
@@ -30,7 +31,7 @@ public interface MonoSink<T> {
      * terminating methods has no effect.
      */
     void success();
-    
+
     /**
      * Complete with the given value.
      * <p>Calling this method multiple times or after the other
@@ -40,7 +41,7 @@ public interface MonoSink<T> {
      * @param value the value to complete with
      */
     void success(T value);
-    
+
     /**
      * Terminate with the give exception
      * <p>Calling this method multiple times or after the other
@@ -48,12 +49,31 @@ public interface MonoSink<T> {
      * @param e the exception to complete with
      */
     void error(Throwable e);
-    
+
+	/**
+	 * Associates a disposable resource with this MonoSink that will be disposed on
+	 * downstream.cancel().
+	 *
+	 * @param d the disposable callback to use
+	 * @return the {@link MonoSink} with resource to be disposed on cancel signal
+	 */
+	MonoSink<T> onCancel(Disposable d);
+
+	/**
+	 * Associates a disposable resource with this MonoSink that will be disposed on the
+	 * first terminate signal which may be a cancel or complete signal.
+	 *
+	 * @param d the disposable callback to use
+	 * @return the {@link MonoSink} with resource to be disposed on first terminate signal
+	 */
+	MonoSink<T> onTerminate(Disposable d);
+
     /**
      * Sets a cancellation callback triggered by
      * downstreams cancel().
      * <p>Calling this method more than once has no effect.
      * @param c the cancellation callback
      */
-    void setCancellation(Cancellation c);
+	@Deprecated
+	void setCancellation(Cancellation c);
 }

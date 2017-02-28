@@ -22,6 +22,7 @@ import org.reactivestreams.*;
 
 import reactor.core.Cancellation;
 import reactor.core.Disposable;
+import reactor.core.publisher.FluxCreate.SinkDisposable;
 
 /**
  * Wraps a the downstream Subscriber into a single emission object
@@ -36,13 +37,13 @@ final class MonoCreate<T> extends Mono<T> {
         this.callback = callback;
     }
 
-    
+
     @Override
     public void subscribe(Subscriber<? super T> s) {
         DefaultMonoSink<T> emitter = new DefaultMonoSink<>(s);
-        
+
         s.onSubscribe(emitter);
-        
+
         try {
             callback.accept(emitter);
         } catch (Throwable ex) {
@@ -52,24 +53,24 @@ final class MonoCreate<T> extends Mono<T> {
 
     static final class DefaultMonoSink<T> implements MonoSink<T>, Subscription {
         final Subscriber<? super T> actual;
-        
-        volatile Cancellation disposable;
-        @SuppressWarnings("rawtypes")
-        static final AtomicReferenceFieldUpdater<DefaultMonoSink, Cancellation>
-                CANCELLATION =
-                AtomicReferenceFieldUpdater.newUpdater(DefaultMonoSink.class, Cancellation.class, "disposable");
-        
+
+		volatile Disposable disposable;
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<DefaultMonoSink, Disposable>
+				DISPOSABLE =
+				AtomicReferenceFieldUpdater.newUpdater(DefaultMonoSink.class, Disposable.class, "disposable");
+
         volatile int state;
         @SuppressWarnings("rawtypes")
         static final AtomicIntegerFieldUpdater<DefaultMonoSink> STATE =
                 AtomicIntegerFieldUpdater.newUpdater(DefaultMonoSink.class, "state");
 
         T value;
-        
+
         static final int NO_REQUEST_HAS_VALUE = 1;
         static final int HAS_REQUEST_NO_VALUE = 2;
         static final int HAS_REQUEST_HAS_VALUE = 3;
-        
+
         DefaultMonoSink(Subscriber<? super T> actual) {
             this.actual = actual;
         }
@@ -77,8 +78,12 @@ final class MonoCreate<T> extends Mono<T> {
         @Override
         public void success() {
             if (STATE.getAndSet(this, HAS_REQUEST_HAS_VALUE) != HAS_REQUEST_HAS_VALUE) {
-	            disposable = Flux.CANCELLED;
-                actual.onComplete();
+				try {
+					actual.onComplete();
+				}
+				finally {
+					disposeResource(false);
+				}
             }
         }
 
@@ -95,9 +100,13 @@ final class MonoCreate<T> extends Mono<T> {
                 }
                 if (s == HAS_REQUEST_NO_VALUE) {
                     if (STATE.compareAndSet(this, s, HAS_REQUEST_HAS_VALUE)) {
-	                    disposable = Flux.CANCELLED;
-                        actual.onNext(value);
-                        actual.onComplete();
+						try {
+							actual.onNext(value);
+							actual.onComplete();
+						}
+						finally {
+							disposeResource(false);
+						}
                     }
                     return;
                 }
@@ -111,21 +120,63 @@ final class MonoCreate<T> extends Mono<T> {
         @Override
         public void error(Throwable e) {
             if (STATE.getAndSet(this, HAS_REQUEST_HAS_VALUE) != HAS_REQUEST_HAS_VALUE) {
-	            disposable = Flux.CANCELLED;
-                actual.onError(e);
+				try {
+					actual.onError(e);
+				}
+				finally {
+					disposeResource(false);
+				}
             } else {
                 Operators.onErrorDropped(e);
             }
         }
 
-        @Override
-        public void setCancellation(Cancellation c) {
-            if (!CANCELLATION.compareAndSet(this, null, c)) {
-                if (disposable != Flux.CANCELLED && c != null) {
-                    c.dispose();
-                }
-            }
-        }
+		@Override
+		public MonoSink<T> onCancel(Disposable d) {
+			if (d != null) {
+				SinkDisposable sd = new SinkDisposable(null, d);
+				if (!DISPOSABLE.compareAndSet(this, null, sd)) {
+					Disposable c = disposable;
+					if (c instanceof SinkDisposable) {
+						SinkDisposable current = (SinkDisposable) c;
+						if (current.onCancel == null)
+							current.onCancel = d;
+						else
+							d.dispose();
+					}
+				}
+			}
+			return this;
+		}
+
+		@Override
+		public MonoSink<T> onTerminate(Disposable d) {
+			if (d != null) {
+				SinkDisposable sd = new SinkDisposable(d, null);
+				if (!DISPOSABLE.compareAndSet(this, null, sd)) {
+					Disposable c = disposable;
+					if (c instanceof SinkDisposable) {
+						SinkDisposable current = (SinkDisposable) c;
+						if (current.disposable == null)
+							current.disposable = d;
+						else
+							d.dispose();
+					}
+				}
+			}
+			return this;
+		}
+
+		@Deprecated
+		@Override
+		public void setCancellation(Cancellation c) {
+			onTerminate(new Disposable() {
+				@Override
+				public void dispose() {
+					c.dispose();
+				}
+			});
+		}
 
         @Override
         public void request(long n) {
@@ -137,9 +188,13 @@ final class MonoCreate<T> extends Mono<T> {
                     }
                     if (s == NO_REQUEST_HAS_VALUE) {
                         if (STATE.compareAndSet(this, s, HAS_REQUEST_HAS_VALUE)) {
-	                        disposable = Flux.CANCELLED;
-                            actual.onNext(value);
-                            actual.onComplete();
+							try {
+								actual.onNext(value);
+								actual.onComplete();
+							}
+							finally {
+								disposeResource(false);
+							}
                         }
                         return;
                     }
@@ -155,15 +210,21 @@ final class MonoCreate<T> extends Mono<T> {
             if (STATE.getAndSet(this, HAS_REQUEST_HAS_VALUE) != HAS_REQUEST_HAS_VALUE) {
                 value = null;
             }
-	        Cancellation c = disposable;
-            if (c != Flux.CANCELLED) {
-                c = CANCELLATION.getAndSet(this, Flux.CANCELLED);
-                if (c != null && c != Flux.CANCELLED) {
-                    c.dispose();
-                }
-            }
+			disposeResource(true);
         }
-        
-        
+
+		void disposeResource(boolean isCancel) {
+			Disposable d = disposable;
+			if (d != Flux.CANCELLED) {
+				d = DISPOSABLE.getAndSet(this, Flux.CANCELLED);
+				if (d != null && d != Flux.CANCELLED) {
+					d.dispose();
+					if (isCancel && d instanceof SinkDisposable) {
+						((SinkDisposable) d).cancel();
+					}
+				}
+			}
+		}
+
     }
 }

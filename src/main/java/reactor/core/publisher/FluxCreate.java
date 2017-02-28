@@ -27,6 +27,7 @@ import java.util.function.Consumer;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Producer;
 import reactor.core.Trackable;
@@ -229,6 +230,17 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 
 		@Override
+		public FluxSink<T> onCancel(Disposable d) {
+			return sink.onCancel(d);
+		}
+
+		@Override
+		public FluxSink<T> onTerminate(Disposable d) {
+			return sink.onTerminate(d);
+		}
+
+		@Deprecated
+		@Override
 		public void setCancellation(Cancellation c) {
 			sink.setCancellation(c);
 		}
@@ -254,12 +266,12 @@ final class FluxCreate<T> extends Flux<T> {
 
 		final Subscriber<? super T> actual;
 
-		volatile Cancellation cancel;
+		volatile Disposable disposable;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<BaseSink, Cancellation> CANCEL =
+		static final AtomicReferenceFieldUpdater<BaseSink, Disposable> DISPOSABLE =
 				AtomicReferenceFieldUpdater.newUpdater(BaseSink.class,
-						Cancellation.class,
-						"cancel");
+						Disposable.class,
+						"disposable");
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
@@ -279,7 +291,7 @@ final class FluxCreate<T> extends Flux<T> {
 				actual.onComplete();
 			}
 			finally {
-				cancelResource();
+				disposeResource(false);
 			}
 		}
 
@@ -292,22 +304,25 @@ final class FluxCreate<T> extends Flux<T> {
 				actual.onError(e);
 			}
 			finally {
-				cancelResource();
+				disposeResource(false);
 			}
 		}
 
 		@Override
 		public final void cancel() {
-			cancelResource();
+			disposeResource(true);
 			onCancel();
 		}
 
-		void cancelResource() {
-			Cancellation c = cancel;
-			if (c != CANCELLED) {
-				c = CANCEL.getAndSet(this, CANCELLED);
-				if (c != null && c != CANCELLED) {
-					c.dispose();
+		void disposeResource(boolean isCancel) {
+			Disposable d = disposable;
+			if (d != CANCELLED) {
+				d = DISPOSABLE.getAndSet(this, CANCELLED);
+				if (d != null && d != CANCELLED) {
+					d.dispose();
+					if (isCancel && d instanceof SinkDisposable) {
+						((SinkDisposable) d).cancel();
+					}
 				}
 			}
 		}
@@ -328,7 +343,7 @@ final class FluxCreate<T> extends Flux<T> {
 
 		@Override
 		public final boolean isCancelled() {
-			return cancel == CANCELLED;
+			return disposable == CANCELLED;
 		}
 
 		@Override
@@ -349,12 +364,51 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 
 		@Override
-		public final void setCancellation(Cancellation c) {
-			if (!CANCEL.compareAndSet(this, null, c)) {
-				if (cancel != CANCELLED && c != null) {
-					c.dispose();
+		public final FluxSink<T> onCancel(Disposable d) {
+			if (d != null) {
+				SinkDisposable sd = new SinkDisposable(null, d);
+				if (!DISPOSABLE.compareAndSet(this, null, sd)) {
+					Disposable c = disposable;
+					if (c instanceof SinkDisposable) {
+						SinkDisposable current = (SinkDisposable) c;
+						if (current.onCancel == null)
+							current.onCancel = d;
+						else
+							d.dispose();
+					}
 				}
 			}
+			return this;
+		}
+
+		@Override
+		public final FluxSink<T> onTerminate(Disposable d) {
+			if (d != null) {
+				SinkDisposable sd = new SinkDisposable(d, null);
+				if (!DISPOSABLE.compareAndSet(this, null, sd)) {
+					Disposable c = disposable;
+					if (c instanceof SinkDisposable) {
+						SinkDisposable current = (SinkDisposable) c;
+						if (current.disposable == null)
+							current.disposable = d;
+						else
+							d.dispose();
+					}
+				}
+			}
+			return this;
+		}
+
+		@Deprecated
+		@Override
+		public final void setCancellation(Cancellation c) {
+			onTerminate(new Disposable() {
+				@Override
+				public void dispose() {
+					c.dispose();
+				}
+
+			});
 		}
 
 		@Override
@@ -689,6 +743,29 @@ final class FluxCreate<T> extends Flux<T> {
 					break;
 				}
 			}
+		}
+	}
+
+	static final class SinkDisposable implements Disposable {
+
+		Disposable onCancel;
+
+		Disposable disposable;
+
+		public SinkDisposable(Disposable disposable, Disposable onCancel) {
+			this.disposable = disposable;
+			this.onCancel = onCancel;
+		}
+
+		@Override
+		public void dispose() {
+			if (disposable != null)
+				disposable.dispose();
+		}
+
+		public void cancel() {
+			if (onCancel != null)
+				onCancel.dispose();
 		}
 	}
 }
