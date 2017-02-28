@@ -29,4 +29,5 @@ public class SingleWorkerSchedulerTest extends AbstractSchedulerTest {
 	protected boolean shouldCheckDisposeTask() {
 		return false;
 	}
+
 }

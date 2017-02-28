@@ -22,7 +22,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
-import reactor.core.scheduler.TimedScheduler;
+import reactor.core.scheduler.Scheduler;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
@@ -31,9 +31,9 @@ import reactor.util.function.Tuples;
  */
 final class FluxElapsed<T> extends FluxSource<T, Tuple2<Long, T>> implements Fuseable {
 
-	final TimedScheduler scheduler;
+	final Scheduler scheduler;
 
-	FluxElapsed(Publisher<T> source, TimedScheduler scheduler) {
+	FluxElapsed(Publisher<T> source, Scheduler scheduler) {
 		super(source);
 		this.scheduler = scheduler;
 	}
@@ -47,15 +47,14 @@ final class FluxElapsed<T> extends FluxSource<T, Tuple2<Long, T>> implements Fus
 			implements Subscriber<T>, QueueSubscription<Tuple2<Long, T>> {
 
 		final Subscriber<? super Tuple2<Long, T>> actual;
-		final TimedScheduler                      scheduler;
+		final Scheduler                           scheduler;
 
 		Subscription      s;
 		QueueSubscription<T> qs;
 
 		long lastTime;
 
-		ElapsedSubscriber(Subscriber<? super Tuple2<Long, T>> actual,
-				TimedScheduler scheduler) {
+		ElapsedSubscriber(Subscriber<? super Tuple2<Long, T>> actual, Scheduler scheduler) {
 			this.actual = actual;
 			this.scheduler = scheduler;
 		}

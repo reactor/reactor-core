@@ -21,7 +21,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Loopback;
 import reactor.core.Producer;
-import reactor.core.scheduler.TimedScheduler;
+import reactor.core.scheduler.Scheduler;
 
 /**
  * WindowAction is forwarding events on a steam until {@code backlog} is reached, after that streams collected events
@@ -30,7 +30,7 @@ import reactor.core.scheduler.TimedScheduler;
  */
 final class FluxWindowTimeOrSize<T> extends FluxBatch<T, Flux<T>> {
 
-	public FluxWindowTimeOrSize(Publisher<T> source, int backlog, long timespan, TimedScheduler timer) {
+	public FluxWindowTimeOrSize(Publisher<T> source, int backlog, long timespan, Scheduler timer) {
 		super(source, backlog, timespan, timer);
 	}
 
@@ -42,11 +42,11 @@ final class FluxWindowTimeOrSize<T> extends FluxBatch<T, Flux<T>> {
 	final static class Window<T> extends Flux<T> implements Subscriber<T>, Subscription, Producer {
 
 		final protected UnicastProcessor<T> processor;
-		final protected TimedScheduler      timer;
+		final protected Scheduler      timer;
 
 		protected int count = 0;
 
-		public Window(TimedScheduler timer) {
+		public Window(Scheduler timer) {
 			this.processor = UnicastProcessor.create();
 			this.timer = timer;
 		}
@@ -95,14 +95,14 @@ final class FluxWindowTimeOrSize<T> extends FluxBatch<T, Flux<T>> {
 
 	final static class WindowAction<T> extends BatchAction<T, Flux<T>> implements Loopback {
 
-		private final TimedScheduler timer;
+		private final Scheduler timer;
 
 		private Window<T> currentWindow;
 
 		public WindowAction(Subscriber<? super Flux<T>> actual,
 				int backlog,
 				long timespan,
-				TimedScheduler timer) {
+				Scheduler timer) {
 
 			super(actual, backlog, true, timespan, timer.createWorker());
 			this.timer = timer;

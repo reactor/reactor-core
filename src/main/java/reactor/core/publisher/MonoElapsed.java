@@ -19,7 +19,7 @@ package reactor.core.publisher;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
-import reactor.core.scheduler.TimedScheduler;
+import reactor.core.scheduler.Scheduler;
 import reactor.util.function.Tuple2;
 
 /**
@@ -27,9 +27,9 @@ import reactor.util.function.Tuple2;
  */
 final class MonoElapsed<T> extends MonoSource<T, Tuple2<Long, T>> implements Fuseable {
 
-	final TimedScheduler scheduler;
+	final Scheduler scheduler;
 
-	MonoElapsed(Publisher<T> source, TimedScheduler scheduler) {
+	MonoElapsed(Publisher<T> source, Scheduler scheduler) {
 		super(source);
 		this.scheduler = scheduler;
 	}

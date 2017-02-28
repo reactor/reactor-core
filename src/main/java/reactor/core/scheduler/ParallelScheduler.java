@@ -16,23 +16,28 @@
 package reactor.core.scheduler;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
 
+import reactor.core.Cancellation;
 import reactor.core.Disposable;
 import reactor.util.concurrent.OpenHashSet;
 
 /**
- * Scheduler that hosts a fixed pool of single-threaded ExecutorService-based workers
- * and is suited for parallel work.
+ * Scheduler that hosts a fixed pool of single-threaded ScheduledExecutorService-based workers
+ * and is suited for parallel work. This scheduler is {@link Scheduler#isTimeCapable() time-capable}.
+ *
+ * @author Stephane Maldini
+ * @author Simon Baslé
  */
-final class ParallelScheduler implements Scheduler, Supplier<ExecutorService> {
+final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorService> {
 
     static final AtomicLong COUNTER = new AtomicLong();
 
@@ -40,15 +45,15 @@ final class ParallelScheduler implements Scheduler, Supplier<ExecutorService> {
     
     final ThreadFactory factory;
 
-    volatile ExecutorService[] executors;
-    static final AtomicReferenceFieldUpdater<ParallelScheduler, ExecutorService[]> EXECUTORS =
-            AtomicReferenceFieldUpdater.newUpdater(ParallelScheduler.class, ExecutorService[].class, "executors");
+    volatile ScheduledExecutorService[] executors;
+    static final AtomicReferenceFieldUpdater<ParallelScheduler, ScheduledExecutorService[]> EXECUTORS =
+            AtomicReferenceFieldUpdater.newUpdater(ParallelScheduler.class, ScheduledExecutorService[].class, "executors");
 
-    static final ExecutorService[] SHUTDOWN = new ExecutorService[0];
+    static final ScheduledExecutorService[] SHUTDOWN = new ScheduledExecutorService[0];
     
-    static final ExecutorService TERMINATED;
+    static final ScheduledExecutorService TERMINATED;
     static {
-        TERMINATED = Executors.newSingleThreadExecutor();
+        TERMINATED = Executors.newSingleThreadScheduledExecutor();
         TERMINATED.shutdownNow();
     }
     
@@ -64,18 +69,18 @@ final class ParallelScheduler implements Scheduler, Supplier<ExecutorService> {
     }
 
     /**
-     * Instantiates the default {@link ExecutorService} for the ParallelScheduler
-     * ({@code Executors.newSingleThreadExecutor}).
+     * Instantiates the default {@link ScheduledExecutorService} for the ParallelScheduler
+     * ({@code Executors.newSingleThreadScheduledExecutor}).
      */
     @Override
-    public ExecutorService get() {
-        return Executors.newSingleThreadExecutor(factory);
+    public ScheduledExecutorService get() {
+        return Executors.newSingleThreadScheduledExecutor(factory);
     }
     
     void init(int n) {
-        ExecutorService[] a = new ExecutorService[n];
+        ScheduledExecutorService[] a = new ScheduledExecutorService[n];
         for (int i = 0; i < n; i++) {
-            a[i] = Schedulers.decorateExecutorService(Schedulers.PARALLEL, this);
+            a[i] = Schedulers.decorateScheduledExecutorService(Schedulers.PARALLEL, this);
         }
         EXECUTORS.lazySet(this, a);
     }
@@ -87,12 +92,12 @@ final class ParallelScheduler implements Scheduler, Supplier<ExecutorService> {
 
 	@Override
     public void start() {
-        ExecutorService[] b = null;
+        ScheduledExecutorService[] b = null;
         for (;;) {
-            ExecutorService[] a = executors;
+            ScheduledExecutorService[] a = executors;
             if (a != SHUTDOWN) {
                 if (b != null) {
-                    for (ExecutorService exec : b) {
+                    for (ScheduledExecutorService exec : b) {
                         exec.shutdownNow();
                     }
                 }
@@ -100,9 +105,9 @@ final class ParallelScheduler implements Scheduler, Supplier<ExecutorService> {
             }
 
             if (b == null) {
-                b = new ExecutorService[n];
+                b = new ScheduledExecutorService[n];
                 for (int i = 0; i < n; i++) {
-                    b[i] = Schedulers.decorateExecutorService(Schedulers.PARALLEL, this);
+                    b[i] = Schedulers.decorateScheduledExecutorService(Schedulers.PARALLEL, this);
                 }
             }
             
@@ -119,19 +124,19 @@ final class ParallelScheduler implements Scheduler, Supplier<ExecutorService> {
 
     @Override
     public void dispose() {
-        ExecutorService[] a = executors;
+        ScheduledExecutorService[] a = executors;
         if (a != SHUTDOWN) {
             a = EXECUTORS.getAndSet(this, SHUTDOWN);
             if (a != SHUTDOWN) {
-                for (ExecutorService exec : a) {
+                for (ScheduledExecutorService exec : a) {
                     Schedulers.executorServiceShutdown(exec, Schedulers.PARALLEL);
                 }
             }
         }
     }
     
-    ExecutorService pick() {
-        ExecutorService[] a = executors;
+    ScheduledExecutorService pick() {
+        ScheduledExecutorService[] a = executors;
         if (a != SHUTDOWN) {
             // ignoring the race condition here, its already random who gets which executor
             int idx = roundRobin;
@@ -145,13 +150,42 @@ final class ParallelScheduler implements Scheduler, Supplier<ExecutorService> {
         }
         return TERMINATED;
     }
-    
-    @Override
+
+	@Override
+	public boolean isTimeCapable() {
+		return true;
+	}
+
+	@Override
     public Disposable schedule(Runnable task) {
-        ExecutorService exec = pick();
+        ScheduledExecutorService exec = pick();
 	    try {
 		    return new ExecutorServiceScheduler.DisposableFuture(
 				    exec.submit(task),
+				    false);
+	    }
+	    catch (RejectedExecutionException ex) {
+		    return REJECTED;
+	    }
+    }
+    @Override
+    public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
+        ScheduledExecutorService exec = pick();
+	    try {
+		    return new ExecutorServiceScheduler.DisposableFuture(
+				    exec.schedule(task, delay, unit),
+				    false);
+	    }
+	    catch (RejectedExecutionException ex) {
+		    return REJECTED;
+	    }
+    }
+    @Override
+    public Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
+        ScheduledExecutorService exec = pick();
+	    try {
+		    return new ExecutorServiceScheduler.DisposableFuture(
+				    exec.scheduleAtFixedRate(task, initialDelay, period, unit),
 				    false);
 	    }
 	    catch (RejectedExecutionException ex) {
@@ -165,18 +199,23 @@ final class ParallelScheduler implements Scheduler, Supplier<ExecutorService> {
     }
     
     static final class ParallelWorker implements Worker {
-        final ExecutorService exec;
+        final ScheduledExecutorService exec;
         
         OpenHashSet<ParallelWorkerTask> tasks;
         
         volatile boolean shutdown;
         
-        public ParallelWorker(ExecutorService exec) {
+        public ParallelWorker(ScheduledExecutorService exec) {
             this.exec = exec;
             this.tasks = new OpenHashSet<>();
         }
 
-        @Override
+	    @Override
+	    public boolean isTimeCapable() {
+		    return true;
+	    }
+
+	    @Override
         public Disposable schedule(Runnable task) {
             if (shutdown) {
                 return REJECTED;
@@ -205,6 +244,71 @@ final class ParallelScheduler implements Scheduler, Supplier<ExecutorService> {
 
             pw.setFuture(f);
             
+            return pw;
+        }
+
+        @Override
+        public Cancellation schedule(Runnable task, long delay, TimeUnit unit) {
+            if (shutdown) {
+                return REJECTED;
+            }
+
+            ParallelWorkerTask pw = new ParallelWorkerTask(task, this);
+
+            synchronized (this) {
+                if (shutdown) {
+                    return REJECTED;
+                }
+                tasks.add(pw);
+            }
+
+            Future<?> f;
+            try {
+                f = exec.schedule(pw, delay, unit);
+            } catch (RejectedExecutionException ex) {
+                return REJECTED;
+            }
+
+            if (shutdown){
+                f.cancel(true);
+                return pw;
+            }
+
+            pw.setFuture(f);
+
+            return pw;
+        }
+
+        @Override
+        public Cancellation schedulePeriodically(Runnable task, long initialDelay,
+                long period, TimeUnit unit) {
+            if (shutdown) {
+                return REJECTED;
+            }
+
+            ParallelWorkerTask pw = new ParallelWorkerTask(task, this);
+
+            synchronized (this) {
+                if (shutdown) {
+                    return REJECTED;
+                }
+                tasks.add(pw);
+            }
+
+            Future<?> f;
+            try {
+                f = exec.scheduleAtFixedRate(pw, initialDelay, period, unit);
+            } catch (RejectedExecutionException ex) {
+                return REJECTED;
+            }
+
+            if (shutdown){
+                f.cancel(true);
+                return pw;
+            }
+
+            pw.setFuture(f);
+
             return pw;
         }
 

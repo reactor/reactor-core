@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.After;
 import org.junit.Test;
 import reactor.core.Exceptions;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.core.scheduler.TimedScheduler;
 import reactor.test.StepVerifier;
@@ -148,7 +149,7 @@ public class MonoDelayElementTest {
 
 	@Test
 	public void onNextOnDisposedSchedulerThrows() {
-		TimedScheduler scheduler = Schedulers.newTimer("onNextOnDisposedSchedulerThrows");
+		Scheduler scheduler = Schedulers.newTimer("onNextOnDisposedSchedulerThrows");
 		scheduler.dispose();
 		Mono<String> source = Mono.just("foo").hide();
 

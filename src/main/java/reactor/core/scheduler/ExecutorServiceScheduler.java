@@ -20,14 +20,19 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import reactor.core.Disposable;
 import reactor.util.concurrent.OpenHashSet;
 
 /**
  * A simple {@link Scheduler} which uses a backing {@link ExecutorService} to schedule
- * Runnables for async operators.
+ * Runnables for async operators. This scheduler is {@link Scheduler#isTimeCapable() time-capable}
+ * if the backing executor is a {@link ScheduledExecutorService}.
+ *
+ * @author Stephane Maldini
+ * @author Simon Baslé
  */
 final class ExecutorServiceScheduler implements Scheduler {
 
@@ -40,8 +45,14 @@ final class ExecutorServiceScheduler implements Scheduler {
 	final boolean         interruptOnCancel;
 
 	ExecutorServiceScheduler(ExecutorService executorService, boolean interruptOnCancel) {
-		this.executor = Schedulers.decorateExecutorService("ExecutorService",
-				() -> executorService);
+		if (executorService instanceof ScheduledExecutorService) {
+			this.executor = Schedulers.decorateScheduledExecutorService("ExecutorService",
+					() -> (ScheduledExecutorService) executorService);
+		}
+		else {
+			this.executor = Schedulers.decorateExecutorService("ExecutorService",
+					() -> executorService);
+		}
 		this.interruptOnCancel = interruptOnCancel;
 	}
 
@@ -51,9 +62,46 @@ final class ExecutorServiceScheduler implements Scheduler {
 	}
 
 	@Override
+	public boolean isTimeCapable() {
+		return executor instanceof ScheduledExecutorService;
+	}
+
+	@Override
 	public Disposable schedule(Runnable task) {
 		try {
 			return new DisposableFuture(executor.submit(task), interruptOnCancel);
+		}
+		catch (RejectedExecutionException ree) {
+			return REJECTED;
+		}
+	}
+
+	@Override
+	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
+		if (!isTimeCapable()) {
+			return NOT_TIMED;
+		}
+
+		ScheduledExecutorService scheduledExecutor = (ScheduledExecutorService) executor;
+
+		try {
+			return new DisposableFuture(scheduledExecutor.schedule(task, delay, unit), interruptOnCancel);
+		}
+		catch (RejectedExecutionException ree) {
+			return REJECTED;
+		}
+	}
+
+	@Override
+	public Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
+		if (!isTimeCapable()) {
+			return NOT_TIMED;
+		}
+
+		ScheduledExecutorService scheduledExecutor = (ScheduledExecutorService) executor;
+
+		try {
+			return new DisposableFuture(scheduledExecutor.scheduleAtFixedRate(task, initialDelay, period, unit), interruptOnCancel);
 		}
 		catch (RejectedExecutionException ree) {
 			return REJECTED;
@@ -96,7 +144,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 		}
 	}
 
-	static final class ExecutorServiceWorker implements Worker {
+	static final class ExecutorServiceWorker implements Worker, DisposableContainer<ScheduledRunnable> {
 
 		final ExecutorService executor;
 		final boolean         interruptOnCancel;
@@ -112,6 +160,11 @@ final class ExecutorServiceScheduler implements Scheduler {
 		}
 
 		@Override
+		public boolean isTimeCapable() {
+			return executor instanceof ScheduledExecutorService;
+		}
+
+		@Override
 		public Disposable schedule(Runnable t) {
 			ScheduledRunnable sr = new ScheduledRunnable(t, this);
 			try {
@@ -122,12 +175,59 @@ final class ExecutorServiceScheduler implements Scheduler {
 				}
 			}
 			catch (RejectedExecutionException ree) {
-				delete(sr);
+				removeAndDispose(sr);
 			}
 			return REJECTED;
 		}
 
-		boolean add(ScheduledRunnable sr) {
+		@Override
+		public Disposable schedule(Runnable t, long delay, TimeUnit unit) {
+			if (!isTimeCapable()) {
+				return NOT_TIMED;
+			}
+
+			ScheduledExecutorService scheduledExecutor = (ScheduledExecutorService) executor;
+
+			ScheduledRunnable sr = new ScheduledRunnable(t, this);
+			try {
+				if (add(sr)) {
+					Future<?> f = scheduledExecutor.schedule(sr, delay, unit);
+					sr.setFuture(f);
+					return sr;
+				}
+			}
+			catch (RejectedExecutionException ree) {
+				removeAndDispose(sr);
+			}
+			return REJECTED;
+		}
+
+		@Override
+		public Disposable schedulePeriodically(Runnable t, long initialDelay, long period, TimeUnit unit) {
+			if (!isTimeCapable()) {
+				return NOT_TIMED;
+			}
+
+			ScheduledExecutorService scheduledExecutor = (ScheduledExecutorService) executor;
+
+			ScheduledRunnable sr = new ScheduledRunnable(t, this);
+			try {
+				if (add(sr)) {
+					Future<?> f = scheduledExecutor.scheduleAtFixedRate(sr, initialDelay, period, unit);
+					sr.setFuture(f);
+					return sr;
+				}
+			}
+			catch (RejectedExecutionException ree) {
+				removeAndDispose(sr);
+			}
+			return REJECTED;
+		}
+
+
+
+		@Override
+		public boolean add(ScheduledRunnable sr) {
 			if (!terminated) {
 				synchronized (this) {
 					if (!terminated) {
@@ -139,14 +239,17 @@ final class ExecutorServiceScheduler implements Scheduler {
 			return false;
 		}
 
-		void delete(ScheduledRunnable sr) {
+		@Override
+		public boolean remove(ScheduledRunnable sr) {
 			if (!terminated) {
 				synchronized (this) {
 					if (!terminated) {
 						tasks.remove(sr);
+						return true;
 					}
 				}
 			}
+			return false;
 		}
 
 		@Override
@@ -171,7 +274,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 					Object[] a = coll.keys();
 					for (Object o : a) {
 						if (o != null) {
-							((ScheduledRunnable) o).cancelFuture();
+							((ScheduledRunnable) o).dispose();
 						}
 					}
 				}
@@ -181,104 +284,6 @@ final class ExecutorServiceScheduler implements Scheduler {
 		@Override
 		public boolean isDisposed() {
 			return terminated;
-		}
-	}
-
-	static final class ScheduledRunnable extends AtomicReference<Future<?>>
-			implements Runnable, Disposable {
-
-		/** */
-		private static final long serialVersionUID = 2284024836904862408L;
-
-		final Runnable task;
-
-		final ExecutorServiceWorker parent;
-
-		ScheduledRunnable(Runnable task, ExecutorServiceWorker parent) {
-			this.task = task;
-			this.parent = parent;
-		}
-
-		@Override
-		public void run() {
-			try {
-				try {
-					task.run();
-				}
-				catch (Throwable e) {
-					Schedulers.handleError(e);
-				}
-			}
-			finally {
-				for (; ; ) {
-					Future<?> a = get();
-					if (a == CANCELLED) {
-						break;
-					}
-					if (compareAndSet(a, FINISHED)) {
-						parent.delete(this);
-						break;
-					}
-				}
-			}
-		}
-
-		void doCancel(Future<?> a) {
-			a.cancel(parent.interruptOnCancel || parent.terminated);
-		}
-
-		void cancelFuture() {
-			for (; ; ) {
-				Future<?> a = get();
-				if (a == FINISHED) {
-					return;
-				}
-				if (compareAndSet(a, CANCELLED)) {
-					if (a != null) {
-						doCancel(a);
-					}
-					return;
-				}
-			}
-		}
-
-		@Override
-		public boolean isDisposed() {
-			Future<?> a = get();
-			return FINISHED == a || CANCELLED == a;
-		}
-
-		@Override
-		public void dispose() {
-			for (; ; ) {
-				Future<?> a = get();
-				if (a == FINISHED) {
-					return;
-				}
-				if (compareAndSet(a, CANCELLED)) {
-					if (a != null) {
-						doCancel(a);
-					}
-					parent.delete(this);
-					return;
-				}
-			}
-		}
-
-		void setFuture(Future<?> f) {
-			for (; ; ) {
-				Future<?> a = get();
-				if (a == FINISHED) {
-					return;
-				}
-				if (a == CANCELLED) {
-					doCancel(a);
-					return;
-				}
-				if (compareAndSet(null, f)) {
-					return;
-				}
-			}
 		}
 	}
 }

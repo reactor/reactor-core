@@ -15,6 +15,12 @@
  */
 package reactor.core.scheduler;
 
+import java.util.concurrent.TimeUnit;
+
+import org.junit.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
 /**
  * @author Stephane Maldini
  */
@@ -28,5 +34,25 @@ public class ExecutorSchedulerTest extends AbstractSchedulerTest {
 	@Override
 	protected Scheduler scheduler() {
 		return Schedulers.fromExecutor(Runnable::run);
+	}
+
+	@Test
+	public void directAndWorkerTimeSchedulingRejected() {
+		Scheduler scheduler = scheduler();
+		Scheduler.Worker worker = scheduler.createWorker();
+		try {
+			assertThat(scheduler.schedule(() -> { }, 100, TimeUnit.MILLISECONDS))
+					.isSameAs(Scheduler.NOT_TIMED);
+			assertThat(scheduler.schedulePeriodically(() -> { }, 100, 100, TimeUnit.MILLISECONDS))
+					.isSameAs(Scheduler.NOT_TIMED);
+
+			assertThat(worker.schedule(() -> { }, 100, TimeUnit.MILLISECONDS))
+					.isSameAs(Scheduler.NOT_TIMED);
+			assertThat(worker.schedulePeriodically(() -> { }, 100, 100, TimeUnit.MILLISECONDS))
+					.isSameAs(Scheduler.NOT_TIMED);
+		}
+		finally {
+			worker.dispose();
+		}
 	}
 }

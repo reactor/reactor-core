@@ -53,7 +53,6 @@ import reactor.core.Fuseable;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.core.scheduler.TimedScheduler;
 import reactor.util.Logger;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.function.Tuple2;
@@ -837,11 +836,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/interval.png" alt="">
 	 * <p>
 	 * @param period The {@link Duration} to wait before the next increment
-	 * @param timer a {@link TimedScheduler} instance
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a new timed {@link Flux}
 	 */
-	public static Flux<Long> interval(Duration period, TimedScheduler timer) {
+	public static Flux<Long> interval(Duration period, Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		return onAssembly(new FluxInterval(period.toMillis(), period.toMillis(), TimeUnit.MILLISECONDS, timer));
 	}
 
@@ -855,11 +855,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param delay  the {@link Duration} to wait before emitting 0l
 	 * @param period the period {@link Duration} before each following increment
-	 * @param timer  the {@link TimedScheduler} to schedule on
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a new timed {@link Flux}
 	 */
-	public static Flux<Long> interval(Duration delay, Duration period, TimedScheduler timer) {
+	public static Flux<Long> interval(Duration delay, Duration period, Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		return onAssembly(new FluxInterval(delay.toMillis(), period.toMillis(), TimeUnit.MILLISECONDS, timer));
 	}
 
@@ -888,13 +889,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/interval.png" alt="">
 	 * <p>
 	 * @param period The duration in milliseconds to wait before the next increment
-	 * @param timer a {@link TimedScheduler} instance
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a new timed {@link Flux}
 	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
 	@Deprecated
-	public static Flux<Long> intervalMillis(long period, TimedScheduler timer) {
+	public static Flux<Long> intervalMillis(long period, Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		return interval(Duration.ofMillis(period), timer);
 	}
 
@@ -927,13 +929,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param delay  the timespan in milliseconds to wait before emitting 0l
 	 * @param period the period in milliseconds before each following increment
-	 * @param timer  the {@link TimedScheduler} to schedule on
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a new timed {@link Flux}
 	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
 	@Deprecated
-	public static Flux<Long> intervalMillis(long delay, long period, TimedScheduler timer) {
+	public static Flux<Long> intervalMillis(long delay, long period, Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		return interval(Duration.ofMillis(delay), Duration.ofMillis(period), timer);
 	}
 
@@ -2074,11 +2077,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * alt="">
 	 *
 	 * @param timespan the {@link Duration} to use to release a buffered list
-	 * @param timer the {@link TimedScheduler} to run on
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period
 	 */
-	public final Flux<List<T>> buffer(Duration timespan, TimedScheduler timer) {
+	public final Flux<List<T>> buffer(Duration timespan, Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		return buffer(interval(timespan, timer));
 	}
 
@@ -2104,11 +2108,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param timespan the duration to use to release buffered lists
 	 * @param timeshift the duration to use to create a new bucket
-	 * @param timer the {@link TimedScheduler} to run on
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period timeshift and sized by timespan
 	 */
-	public final Flux<List<T>> buffer(Duration timespan, Duration timeshift, TimedScheduler timer) {
+	public final Flux<List<T>> buffer(Duration timespan, Duration timeshift, Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		if (timespan.equals(timeshift)) {
 			return buffer(timespan, timer);
 		}
@@ -2196,11 +2201,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param maxSize the max collected size
 	 * @param timespan the timeout to use to release a buffered list
-	 * @param timer the {@link TimedScheduler} to run on
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
 	 */
-	public final Flux<List<T>> bufferTimeout(int maxSize, Duration timespan, TimedScheduler timer) {
+	public final Flux<List<T>> bufferTimeout(int maxSize, Duration timespan, Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		return bufferTimeout(maxSize, timespan, timer, listSupplier());
 	}
 
@@ -2213,13 +2219,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param maxSize the max collected size
 	 * @param timespan the timeout to use to release a buffered collection
-	 * @param timer the {@link TimedScheduler} to run on
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 * @param bufferSupplier the collection to use for each data segment
 	 * @param <C> the supplied {@link Collection} type
 	 * @return a microbatched {@link Flux} of {@link Collection} delimited by given size or a given period timeout
 	 */
-	public final  <C extends Collection<? super T>> Flux<C> bufferTimeout(int maxSize, Duration timespan, TimedScheduler
-			timer, Supplier<C> bufferSupplier) {
+	public final  <C extends Collection<? super T>> Flux<C> bufferTimeout(int maxSize, Duration timespan,
+			Scheduler timer, Supplier<C> bufferSupplier) {
+		Schedulers.checkTimeCapable(timer);
 		return onAssembly(new FluxBufferTimeOrSize<>(this, maxSize, timespan.toMillis(), timer, bufferSupplier));
 	}
 
@@ -2248,13 +2255,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * alt="">
 	 *
 	 * @param timespan the duration to use to release a buffered list in milliseconds
-	 * @param timer the {@link TimedScheduler} to run on
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period
 	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
 	@Deprecated
-	public final Flux<List<T>> bufferMillis(long timespan, TimedScheduler timer) {
+	public final Flux<List<T>> bufferMillis(long timespan, Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		return buffer(interval(Duration.ofMillis(timespan), timer));
 	}
 
@@ -2311,14 +2319,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param timespan the duration to use to release buffered lists
 	 * @param timeshift the duration to use to create a new bucket
-	 * @param timer the {@link TimedScheduler} to run on
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period timeshift and sized by timespan
 	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
 	@Deprecated
-	public final Flux<List<T>> bufferMillis(long timespan, long timeshift, TimedScheduler
-			timer) {
+	public final Flux<List<T>> bufferMillis(long timespan, long timeshift,
+			Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		if (timespan == timeshift) {
 			return bufferMillis(timespan, timer);
 		}
@@ -2354,13 +2363,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param maxSize the max collected size
 	 * @param timespan the timeout to use to release a buffered list
-	 * @param timer the {@link TimedScheduler} to run on
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
-	 * @deprecated use {@link #bufferTimeout(int, Duration, TimedScheduler)} instead, will be removed in 3.1.0
+	 * @deprecated use {@link #bufferTimeout(int, Duration, Scheduler)} instead, will be removed in 3.1.0
 	 */
 	@Deprecated
-	public final Flux<List<T>> bufferMillis(int maxSize, long timespan, TimedScheduler timer) {
+	public final Flux<List<T>> bufferMillis(int maxSize, long timespan, Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		return bufferTimeout(maxSize, Duration.ofMillis(timespan), timer);
 	}
 
@@ -2373,15 +2383,16 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param maxSize the max collected size
 	 * @param timespan the timeout to use to release a buffered collection
-	 * @param timer the {@link TimedScheduler} to run on
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 * @param bufferSupplier the collection to use for each data segment
 	 * @param <C> the supplied {@link Collection} type
 	 * @return a microbatched {@link Flux} of {@link Collection} delimited by given size or a given period timeout
-	 * @deprecated use {@link #bufferTimeout(int, Duration, TimedScheduler, Supplier)} instead, will be removed in 3.1.0
+	 * @deprecated use {@link #bufferTimeout(int, Duration, Scheduler, Supplier)} instead, will be removed in 3.1.0
 	 */
 	@Deprecated
-	public final <C extends Collection<? super T>> Flux<C> bufferMillis(int maxSize, long timespan, TimedScheduler
-			timer, Supplier<C> bufferSupplier) {
+	public final <C extends Collection<? super T>> Flux<C> bufferMillis(int maxSize, long timespan,
+			Scheduler timer, Supplier<C> bufferSupplier) {
+		Schedulers.checkTimeCapable(timer);
 		return bufferTimeout(maxSize, Duration.ofMillis(timespan), timer, bufferSupplier);
 	}
 
@@ -2412,13 +2423,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param maxSize the max collected size
 	 * @param timespan the timeout to use to release a buffered list
-	 * @param timer the {@link TimedScheduler} to run on
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
 	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
 	@Deprecated
-	public final Flux<List<T>> bufferTimeoutMillis(int maxSize, long timespan, TimedScheduler timer) {
+	public final Flux<List<T>> bufferTimeoutMillis(int maxSize, long timespan, Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		return bufferTimeout(maxSize, Duration.ofMillis(timespan), timer, listSupplier());
 	}
 
@@ -2431,15 +2443,16 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param maxSize the max collected size
 	 * @param timespan the timeout to use to release a buffered collection
-	 * @param timer the {@link TimedScheduler} to run on
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 * @param bufferSupplier the collection to use for each data segment
 	 * @param <C> the supplied {@link Collection} type
 	 * @return a microbatched {@link Flux} of {@link Collection} delimited by given size or a given period timeout
 	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
 	@Deprecated
-	public final  <C extends Collection<? super T>> Flux<C> bufferTimeoutMillis(int maxSize, long timespan, TimedScheduler
-			timer, Supplier<C> bufferSupplier) {
+	public final  <C extends Collection<? super T>> Flux<C> bufferTimeoutMillis(int maxSize, long timespan,
+			Scheduler timer, Supplier<C> bufferSupplier) {
+		Schedulers.checkTimeCapable(timer);
 		return bufferTimeout(maxSize, Duration.ofMillis(timespan), timer, bufferSupplier);
 	}
 
@@ -3146,10 +3159,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/delayonnext.png" alt="">
 	 *
 	 * @param delay period to delay each {@link Subscriber#onNext} signal
-	 * @param timer the timed scheduler to use for delaying each signal
+	 * @param timer a time-capable {@link Scheduler} instance to delay each signal on
 	 * @return a delayed {@link Flux}
 	 */
-	public final Flux<T> delayElements(Duration delay, TimedScheduler timer) {
+	public final Flux<T> delayElements(Duration delay, Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		return concatMap(t ->  Mono.delay(delay, timer).map(i -> t));
 	}
 
@@ -3193,12 +3207,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/delayonnext.png" alt="">
 	 *
 	 * @param delay period to delay each {@link Subscriber#onNext} signal, in milliseconds
-	 * @param timer the timed scheduler to use for delaying each signal
-	 * @deprecated will be replaced by {@link #delayElements(Duration, TimedScheduler)} in 3.1.0
+	 * @param timer a time-capable {@link Scheduler} instance to delay each signal on
+	 * @deprecated will be replaced by {@link #delayElements(Duration, Scheduler)} in 3.1.0
 	 * @return a delayed {@link Flux}
 	 */
 	@Deprecated
-	public final Flux<T> delayMillis(long delay, TimedScheduler timer) {
+	public final Flux<T> delayMillis(long delay, Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		return delayElements(Duration.ofMillis(delay), timer);
 	}
 
@@ -3210,12 +3225,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/delayonnext.png" alt="">
 	 *
 	 * @param delay period to delay each {@link Subscriber#onNext} signal, in milliseconds
-	 * @param timer the timed scheduler to use for delaying each signal
+	 * @param timer a time-capable {@link Scheduler} instance to delay each signal on
 	 * @return a delayed {@link Flux}
 	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
 	@Deprecated
-	public final Flux<T> delayElementsMillis(long delay, TimedScheduler timer) {
+	public final Flux<T> delayElementsMillis(long delay, Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		return delayElements(Duration.ofMillis(delay), timer);
 	}
 
@@ -3243,11 +3259,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/delaysubscription.png" alt="">
 	 *
 	 * @param delay {@link Duration} before subscribing this {@link Flux}
-	 * @param timer the {@link TimedScheduler} to run on
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a delayed {@link Flux}
 	 */
-	public final Flux<T> delaySubscription(Duration delay, TimedScheduler timer) {
+	public final Flux<T> delaySubscription(Duration delay, Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		return delaySubscription(Mono.delay(delay, timer));
 	}
 
@@ -3294,13 +3311,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/delaysubscription.png" alt="">
 	 *
 	 * @param delay period in milliseconds before subscribing this {@link Flux}
-	 * @param timer the {@link TimedScheduler} to run on
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a delayed {@link Flux}
 	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
 	@Deprecated
-	public final Flux<T> delaySubscriptionMillis(long delay, TimedScheduler timer) {
+	public final Flux<T> delaySubscriptionMillis(long delay, Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		return delaySubscription(Mono.delayMillis(delay, timer));
 	}
 
@@ -3626,12 +3644,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/elapsed.png"
 	 * alt="">
 	 *
-	 * @param scheduler the {@link TimedScheduler} to read time from
+	 * @param scheduler a {@link Scheduler} instance to {@link Scheduler#now(TimeUnit) read time from}
 	 *
 	 * @return a transforming {@link Flux} that emits tuples of time elapsed in
 	 * milliseconds and matching data
 	 */
-	public final Flux<Tuple2<Long, T>> elapsed(TimedScheduler scheduler) {
+	public final Flux<Tuple2<Long, T>> elapsed(Scheduler scheduler) {
 		return onAssembly(new FluxElapsed<>(this, scheduler));
 	}
 
@@ -5180,11 +5198,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * alt="">
 	 *
 	 * @param ttl Per-item timeout {@link Duration}
-	 * @param timer {@link TimedScheduler} to read current time from
+	 * @param timer a time-capable {@link Scheduler} instance to read current time from
 	 *
 	 * @return a replaying {@link ConnectableFlux}
 	 */
-	public final ConnectableFlux<T> replay(Duration ttl, TimedScheduler timer) {
+	public final ConnectableFlux<T> replay(Duration ttl, Scheduler timer) {
 		return replay(Integer.MAX_VALUE, ttl, timer);
 	}
 
@@ -5198,11 +5216,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param history number of events retained in history excluding complete and error
 	 * @param ttl Per-item timeout {@link Duration}
-	 * @param timer {@link TimedScheduler} to read current time from
+	 * @param timer a {@link Scheduler} instance to read current time from
 	 *
 	 * @return a replaying {@link ConnectableFlux}
 	 */
-	public final ConnectableFlux<T> replay(int history, Duration ttl, TimedScheduler timer) {
+	public final ConnectableFlux<T> replay(int history, Duration ttl, Scheduler timer) {
 		Objects.requireNonNull(timer, "timer");
 		return onAssembly(new FluxReplay<>(this, history, ttl.toMillis(), timer));
 	}
@@ -5217,13 +5235,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * alt="">
 	 *
 	 * @param ttl Per-item timeout duration in milliseconds
-	 * @param timer {@link TimedScheduler} to read current time from
+	 * @param timer {@link Scheduler} to read current time from
 	 *
 	 * @return a replaying {@link ConnectableFlux}
 	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
 	@Deprecated
-	public final ConnectableFlux<T> replayMillis(long ttl, TimedScheduler timer) {
+	public final ConnectableFlux<T> replayMillis(long ttl, Scheduler timer) {
 		return replayMillis(Integer.MAX_VALUE, ttl, timer);
 	}
 
@@ -5238,15 +5256,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param history number of events retained in history excluding complete and error
 	 * @param ttl Per-item timeout duration in milliseconds
-	 * @param timer {@link TimedScheduler} to read current time from
+	 * @param timer {@link Scheduler} to read current time from
 	 *
 	 * @return a replaying {@link ConnectableFlux}
 	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
 	@Deprecated
 	public final ConnectableFlux<T> replayMillis(int history,
-			long ttl,
-			TimedScheduler timer) {
+			long ttl, Scheduler timer) {
 		Objects.requireNonNull(timer, "timer");
 		return onAssembly(new FluxReplay<>(this, history, ttl, timer));
 	}
@@ -5693,11 +5710,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/skiptime.png" alt="">
 	 *
 	 * @param timespan the time window to exclude next signals
-	 * @param timer the {@link TimedScheduler} to run on
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a dropping {@link Flux} until the end of the given timespan
 	 */
-	public final Flux<T> skip(Duration timespan, TimedScheduler timer) {
+	public final Flux<T> skip(Duration timespan, Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		if(!timespan.isZero()) {
 			return skipUntilOther(Mono.delay(timespan, timer));
 		}
@@ -5747,13 +5765,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/skiptime.png" alt="">
 	 *
 	 * @param timespan the time window to exclude next signals
-	 * @param timer the {@link TimedScheduler} to run on
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a dropping {@link Flux} until the end of the given timespan
 	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
 	@Deprecated
-	public final Flux<T> skipMillis(long timespan, TimedScheduler timer) {
+	public final Flux<T> skipMillis(long timespan, Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		if(timespan != 0) {
 			return skipUntilOther(Mono.delayMillis(timespan, timer));
 		}
@@ -6325,11 +6344,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/taketime.png" alt="">
 	 *
 	 * @param timespan the time window of items to emit from this {@link Flux}
-	 * @param timer the {@link TimedScheduler} to run on
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a time limited {@link Flux}
 	 */
-	public final Flux<T> take(Duration timespan, TimedScheduler timer) {
+	public final Flux<T> take(Duration timespan, Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		if (!timespan.isZero()) {
 			return takeUntilOther(Mono.delay(timespan, timer));
 		}
@@ -6387,13 +6407,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/taketime.png" alt="">
 	 *
 	 * @param timespan the time window of items to emit from this {@link Flux}
-	 * @param timer the {@link TimedScheduler} to run on
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a time limited {@link Flux}
 	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
 	@Deprecated
-	public final Flux<T> takeMillis(long timespan, TimedScheduler timer) {
+	public final Flux<T> takeMillis(long timespan, Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		if (timespan != 0) {
 			return takeUntilOther(Mono.delayMillis(timespan, timer));
 		}
@@ -6596,11 +6617,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/timeouttime.png" alt="">
 	 *
 	 * @param timeout the timeout {@link Duration} between two signals from this {@link Flux}
-	 * @param timer the {@link TimedScheduler} to run on
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a per-item expirable {@link Flux}
 	 */
-	public final Flux<T> timeout(Duration timeout, TimedScheduler timer) {
+	public final Flux<T> timeout(Duration timeout, Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		return timeout(timeout, null, timer);
 	}
 
@@ -6615,12 +6637,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param timeout the timeout {@link Duration} between two signals from this {@link Flux}
 	 * @param fallback the fallback {@link Publisher} to subscribe when a timeout occurs
-	 * @param timer the {@link TimedScheduler} to run on
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a per-item expirable {@link Flux} with a fallback {@link Publisher}
 	 */
-	public final Flux<T> timeout(Duration timeout, Publisher<? extends T> fallback,
-			TimedScheduler timer) {
+	public final Flux<T> timeout(Duration timeout, Publisher<? extends T> fallback, Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		final Mono<Long> _timer = Mono.delay(timeout, timer).otherwiseReturn(0L);
 		final Function<T, Publisher<Long>> rest = o -> _timer;
 
@@ -6720,13 +6742,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/timeouttime.png" alt="">
 	 *
 	 * @param timeout the timeout in milliseconds between two signals from this {@link Flux}
-	 * @param timer the {@link TimedScheduler} to run on
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a per-item expirable {@link Flux}
 	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
 	@Deprecated
-	public final Flux<T> timeoutMillis(long timeout, TimedScheduler timer) {
+	public final Flux<T> timeoutMillis(long timeout, Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		return timeoutMillis(timeout, null, timer);
 	}
 
@@ -6761,14 +6784,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param timeout the timeout between two signals from this {@link Flux} in milliseconds
 	 * @param fallback the fallback {@link Publisher} to subscribe when a timeout occurs
-	 * @param timer the {@link TimedScheduler} to run on
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a per-item expirable {@link Flux} with a fallback {@link Publisher}
 	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
 	@Deprecated
 	public final Flux<T> timeoutMillis(long timeout, Publisher<? extends T> fallback,
-			TimedScheduler timer) {
+			Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		final Mono<Long> _timer = Mono.delayMillis(timeout, timer).otherwiseReturn(0L);
 		final Function<T, Publisher<Long>> rest = o -> _timer;
 
@@ -6798,10 +6822,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/timestamp.png" alt="">
 	 *
-	 * @param scheduler the {@link TimedScheduler} to read time from
+	 * @param scheduler the {@link Scheduler} to read time from
 	 * @return a timestamped {@link Flux}
 	 */
-	public final Flux<Tuple2<Long, T>> timestamp(TimedScheduler scheduler) {
+	public final Flux<Tuple2<Long, T>> timestamp(Scheduler scheduler) {
 		return map(d -> Tuples.of(scheduler.now(TimeUnit.MILLISECONDS), d));
 	}
 
@@ -7074,11 +7098,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowtimespan.png" alt="">
 	 *
 	 * @param timespan the {@link Duration} to delimit {@link Flux} windows
-	 * @param timer the {@link TimedScheduler} to run on
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a windowing {@link Flux} of timed {@link Flux} buckets
 	 */
-	public final Flux<Flux<T>> window(Duration timespan, TimedScheduler timer) {
+	public final Flux<Flux<T>> window(Duration timespan, Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		return window(interval(timespan, timer));
 	}
 
@@ -7102,12 +7127,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param timespan the maximum {@link Flux} window {@link Duration}
 	 * @param timeshift the period of time to create new {@link Flux} windows, as a {@link Duration}
-	 * @param timer the {@link TimedScheduler} to run on
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a windowing {@link Flux} of {@link Flux} buckets delimited by an opening
 	 * {@link Duration} timespan and a closing {@link Duration} timeshift
 	 */
-	public final Flux<Flux<T>> window(Duration timespan, Duration timeshift, TimedScheduler timer) {
+	public final Flux<Flux<T>> window(Duration timespan, Duration timeshift, Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		if (timeshift.equals(timespan)) {
 			return window(timespan);
 		}
@@ -7160,11 +7186,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param maxSize the maximum {@link Flux} window items to count before onComplete
 	 * @param timespan the timeout to use to onComplete a given window if size is not counted yet
-	 * @param timer the {@link TimedScheduler} to run on
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
 	 */
-	public final Flux<Flux<T>> windowTimeout(int maxSize, Duration timespan, TimedScheduler timer) {
+	public final Flux<Flux<T>> windowTimeout(int maxSize, Duration timespan, Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		return onAssembly(new FluxWindowTimeOrSize<>(this, maxSize, timespan.toMillis(), timer));
 	}
 
@@ -7191,13 +7218,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/windowtimespan.png" alt="">
 	 *
 	 * @param timespan the duration in milliseconds to delimit {@link Flux} windows
-	 * @param timer the {@link TimedScheduler} to run on
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a windowing {@link Flux} of timed {@link Flux} buckets
 	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
 	@Deprecated
-	public final Flux<Flux<T>> windowMillis(long timespan, TimedScheduler timer) {
+	public final Flux<Flux<T>> windowMillis(long timespan, Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		return window(intervalMillis(timespan, timer));
 	}
 
@@ -7221,15 +7249,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param timespan the maximum {@link Flux} window duration in milliseconds
 	 * @param timeshift the period of time in milliseconds to create new {@link Flux} windows
-	 * @param timer the {@link TimedScheduler} to run on
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a windowing
 	 * {@link Flux} of {@link Flux} buckets delimited by an opening {@link Publisher} and a selected closing {@link Publisher}
 	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
 	@Deprecated
-	public final Flux<Flux<T>> windowMillis(long timespan, long timeshift,
-			TimedScheduler timer) {
+	public final Flux<Flux<T>> windowMillis(long timespan, long timeshift, Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		if (timeshift == timespan) {
 			return windowMillis(timespan);
 		}
@@ -7265,13 +7293,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param maxSize the maximum {@link Flux} window items to count before onComplete
 	 * @param timespan the timeout to use to onComplete a given window if size is not counted yet
-	 * @param timer the {@link TimedScheduler} to run on
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
-	 * @deprecated use {@link #windowTimeout(int, Duration, TimedScheduler)} instead, will be removed in 3.1.0
+	 * @deprecated use {@link #windowTimeout(int, Duration, Scheduler)} instead, will be removed in 3.1.0
 	 */
 	@Deprecated
-	public final Flux<Flux<T>> windowMillis(int maxSize, long timespan, TimedScheduler
+	public final Flux<Flux<T>> windowMillis(int maxSize, long timespan, Scheduler
 			timer) {
 		return windowTimeoutMillis(maxSize, timespan, timer);
 	}
@@ -7305,14 +7333,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param maxSize the maximum {@link Flux} window items to count before onComplete
 	 * @param timespan the timeout to use to onComplete a given window if size is not counted yet
-	 * @param timer the {@link TimedScheduler} to run on
+	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
 	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
 	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
 	@Deprecated
-	public final Flux<Flux<T>> windowTimeoutMillis(int maxSize, long timespan, TimedScheduler
-			timer) {
+	public final Flux<Flux<T>> windowTimeoutMillis(int maxSize, long timespan, Scheduler timer) {
+		Schedulers.checkTimeCapable(timer);
 		return onAssembly(new FluxWindowTimeOrSize<>(this, maxSize, timespan, timer));
 	}
 

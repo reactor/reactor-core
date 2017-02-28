@@ -20,11 +20,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -38,8 +37,8 @@ import static reactor.core.scheduler.ExecutorServiceScheduler.CANCELLED;
 import static reactor.core.scheduler.ExecutorServiceScheduler.FINISHED;
 
 /**
- * Dynamically creates ExecutorService-based Workers and caches the thread pools, reusing
- * them once the Workers have been shut down.
+ * Dynamically creates ScheduledExecutorService-based Workers and caches the thread pools, reusing
+ * them once the Workers have been shut down. This scheduler is {@link Scheduler#isTimeCapable() time-capable}.
  * <p>
  * The maximum number of created thread pools is unbounded.
  * <p>
@@ -47,8 +46,11 @@ import static reactor.core.scheduler.ExecutorServiceScheduler.FINISHED;
  * appropriate constructor to set a different value.
  * <p>
  * This scheduler is not restartable (may be later).
+ *
+ * @author Stephane Maldini
+ * @author Simon Baslé
  */
-final class ElasticScheduler implements Scheduler, Supplier<ExecutorService> {
+final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorService> {
 
 	static final AtomicLong COUNTER = new AtomicLong();
 
@@ -64,16 +66,16 @@ final class ElasticScheduler implements Scheduler, Supplier<ExecutorService> {
 
 	static final int DEFAULT_TTL_SECONDS = 60;
 
-	final Queue<ExecutorServiceExpiry> cache;
+	final Queue<ScheduledExecutorServiceExpiry> cache;
 
-	final Queue<ExecutorService> all;
+	final Queue<ScheduledExecutorService> all;
 
 	final ScheduledExecutorService evictor;
 
-	static final ExecutorService SHUTDOWN;
+	static final ScheduledExecutorService SHUTDOWN;
 
 	static {
-		SHUTDOWN = Executors.newSingleThreadExecutor();
+		SHUTDOWN = Executors.newSingleThreadScheduledExecutor();
 		SHUTDOWN.shutdownNow();
 	}
 
@@ -95,12 +97,12 @@ final class ElasticScheduler implements Scheduler, Supplier<ExecutorService> {
 	}
 
 	/**
-	 * Instantiates the default {@link ExecutorService} for the ElasticScheduler
+	 * Instantiates the default {@link ScheduledExecutorService} for the ElasticScheduler
 	 * ({@code Executors.newSingleThreadExecutor}).
 	 */
 	@Override
-	public ExecutorService get() {
-		return Executors.newSingleThreadExecutor(factory);
+	public ScheduledExecutorService get() {
+		return Executors.newSingleThreadScheduledExecutor(factory);
 	}
 
 	@Override
@@ -129,24 +131,24 @@ final class ElasticScheduler implements Scheduler, Supplier<ExecutorService> {
 
 		cache.clear();
 
-		ExecutorService exec;
+		ScheduledExecutorService exec;
 
 		while ((exec = all.poll()) != null) {
 			exec.shutdownNow();
 		}
 	}
 
-	ExecutorService pick() {
+	ScheduledExecutorService pick() {
 		if (shutdown) {
 			return SHUTDOWN;
 		}
-		ExecutorService result;
-		ExecutorServiceExpiry e = cache.poll();
+		ScheduledExecutorService result;
+		ScheduledExecutorServiceExpiry e = cache.poll();
 		if (e != null) {
 			return e.executor;
 		}
 
-		result = Schedulers.decorateExecutorService(Schedulers.ELASTIC, this);
+		result = Schedulers.decorateScheduledExecutorService(Schedulers.ELASTIC, this);
 		all.offer(result);
 		if (shutdown) {
 			all.remove(result);
@@ -156,8 +158,13 @@ final class ElasticScheduler implements Scheduler, Supplier<ExecutorService> {
 	}
 
 	@Override
+	public boolean isTimeCapable() {
+		return true;
+	}
+
+	@Override
 	public Disposable schedule(Runnable task) {
-		ExecutorService exec = pick();
+		ScheduledExecutorService exec = pick();
 
 		Runnable wrapper = () -> {
 			try {
@@ -182,14 +189,66 @@ final class ElasticScheduler implements Scheduler, Supplier<ExecutorService> {
 	}
 
 	@Override
+	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
+		ScheduledExecutorService exec = pick();
+
+		Runnable wrapper = () -> {
+			try {
+				task.run();
+			}
+			catch (Throwable ex) {
+				Schedulers.handleError(ex);
+			}
+			finally {
+				release(exec);
+			}
+		};
+		Future<?> f;
+
+		try {
+			f = exec.schedule(wrapper, delay, unit);
+		}
+		catch (RejectedExecutionException ex) {
+			return REJECTED;
+		}
+		return new ExecutorServiceScheduler.DisposableFuture(f, true);
+	}
+
+	@Override
+	public Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
+		ScheduledExecutorService exec = pick();
+
+		Runnable wrapper = () -> {
+			try {
+				task.run();
+			}
+			catch (Throwable ex) {
+				Schedulers.handleError(ex);
+			}
+			finally {
+				release(exec);
+			}
+		};
+		Future<?> f;
+
+		try {
+			f = exec.scheduleAtFixedRate(wrapper, initialDelay, period, unit);
+		}
+		catch (RejectedExecutionException ex) {
+			return REJECTED;
+		}
+		return new ExecutorServiceScheduler.DisposableFuture(f, true);
+	}
+
+	@Override
 	public Worker createWorker() {
-		ExecutorService exec = pick();
+		ScheduledExecutorService exec = pick();
 		return new CachedWorker(exec, this);
 	}
 
-	void release(ExecutorService exec) {
+	void release(ScheduledExecutorService exec) {
 		if (exec != SHUTDOWN && !shutdown) {
-			ExecutorServiceExpiry e = new ExecutorServiceExpiry(exec,
+			ScheduledExecutorServiceExpiry e = new ScheduledExecutorServiceExpiry(exec,
 					System.currentTimeMillis() + ttlSeconds * 1000L);
 			cache.offer(e);
 			if (shutdown) {
@@ -203,8 +262,8 @@ final class ElasticScheduler implements Scheduler, Supplier<ExecutorService> {
 	void eviction() {
 		long now = System.currentTimeMillis();
 
-		List<ExecutorServiceExpiry> list = new ArrayList<>(cache);
-		for (ExecutorServiceExpiry e : list) {
+		List<ScheduledExecutorServiceExpiry> list = new ArrayList<>(cache);
+		for (ScheduledExecutorServiceExpiry e : list) {
 			if (e.expireMillis < now) {
 				if (cache.remove(e)) {
 					e.executor.shutdownNow();
@@ -213,12 +272,12 @@ final class ElasticScheduler implements Scheduler, Supplier<ExecutorService> {
 		}
 	}
 
-	static final class ExecutorServiceExpiry {
+	static final class ScheduledExecutorServiceExpiry {
 
-		final ExecutorService executor;
-		final long            expireMillis;
+		final ScheduledExecutorService executor;
+		final long                     expireMillis;
 
-		ExecutorServiceExpiry(ExecutorService executor, long expireMillis) {
+		ScheduledExecutorServiceExpiry(ScheduledExecutorService executor, long expireMillis) {
 			this.executor = executor;
 			this.expireMillis = expireMillis;
 		}
@@ -226,7 +285,7 @@ final class ElasticScheduler implements Scheduler, Supplier<ExecutorService> {
 
 	static final class CachedWorker implements Worker {
 
-		final ExecutorService executor;
+		final ScheduledExecutorService executor;
 
 		final ElasticScheduler parent;
 
@@ -234,10 +293,15 @@ final class ElasticScheduler implements Scheduler, Supplier<ExecutorService> {
 
 		OpenHashSet<CachedTask> tasks;
 
-		CachedWorker(ExecutorService executor, ElasticScheduler parent) {
+		CachedWorker(ScheduledExecutorService executor, ElasticScheduler parent) {
 			this.executor = executor;
 			this.parent = parent;
 			this.tasks = new OpenHashSet<>();
+		}
+
+		@Override
+		public boolean isTimeCapable() {
+			return true;
 		}
 
 		@Override
@@ -258,6 +322,62 @@ final class ElasticScheduler implements Scheduler, Supplier<ExecutorService> {
 			Future<?> f;
 			try {
 				f = executor.submit(ct);
+			}
+			catch (RejectedExecutionException ex) {
+				return REJECTED;
+			}
+
+			ct.setFuture(f);
+
+			return ct;
+		}
+
+		@Override
+		public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
+			if (shutdown) {
+				return REJECTED;
+			}
+
+			CachedTask ct = new CachedTask(task, this);
+
+			synchronized (this) {
+				if (shutdown) {
+					return REJECTED;
+				}
+				tasks.add(ct);
+			}
+
+			Future<?> f;
+			try {
+				f = executor.schedule(ct, delay, unit);
+			}
+			catch (RejectedExecutionException ex) {
+				return REJECTED;
+			}
+
+			ct.setFuture(f);
+
+			return ct;
+		}
+
+		@Override
+		public Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
+			if (shutdown) {
+				return REJECTED;
+			}
+
+			CachedTask ct = new CachedTask(task, this);
+
+			synchronized (this) {
+				if (shutdown) {
+					return REJECTED;
+				}
+				tasks.add(ct);
+			}
+
+			Future<?> f;
+			try {
+				f = executor.scheduleAtFixedRate(ct, initialDelay, period, unit);
 			}
 			catch (RejectedExecutionException ex) {
 				return REJECTED;

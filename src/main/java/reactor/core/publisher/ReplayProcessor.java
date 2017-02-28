@@ -34,7 +34,7 @@ import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
 import reactor.core.scheduler.Schedulers;
-import reactor.core.scheduler.TimedScheduler;
+import reactor.core.scheduler.Scheduler;
 import reactor.util.concurrent.QueueSupplier;
 
 /**
@@ -175,7 +175,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * Creates a time-bounded replay processor.
 	 * <p>
 	 * In this setting, the {@code ReplayProcessor} internally tags each observed item
-	 * with a timestamp value supplied by the {@link TimedScheduler} and keeps only those
+	 * with a timestamp value supplied by the {@link Scheduler} and keeps only those
 	 * whose age is less than the supplied time value converted to milliseconds. For
 	 * example, an item arrives at T=0 and the max age is set to 5; at T&gt;=5 this first
 	 * item is then evicted by any subsequent item or termination signal, leaving the
@@ -199,12 +199,12 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 *
 	 * @param <T> the type of items observed and emitted by the Processor
 	 * @param maxAge the maximum age of the contained items in milliseconds
-	 * @param scheduler the {@link TimedScheduler} that provides the current time
+	 * @param scheduler the {@link Scheduler} that provides the current time
 	 *
 	 * @return a new {@link ReplayProcessor}
 	 */
 	public static <T> ReplayProcessor<T> createTimeoutMillis(long maxAge,
-			TimedScheduler scheduler) {
+			Scheduler scheduler) {
 		return createSizeAndTimeoutMillis(Integer.MAX_VALUE, maxAge, scheduler);
 	}
 
@@ -248,7 +248,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * Creates a time- and size-bounded replay processor.
 	 * <p>
 	 * In this setting, the {@code ReplayProcessor} internally tags each received item
-	 * with a timestamp value supplied by the {@link TimedScheduler} and holds at most
+	 * with a timestamp value supplied by the {@link Scheduler} and holds at most
 	 * {@code size} items in its internal buffer. It evicts items from the start of the
 	 * buffer if their age becomes less-than or equal to the supplied age in milliseconds
 	 * or the buffer reaches its {@code size} limit.
@@ -273,13 +273,13 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * @param <T> the type of items observed and emitted by the Processor
 	 * @param maxAge the maximum age of the contained items in milliseconds
 	 * @param size the maximum number of buffered items
-	 * @param scheduler the {@link TimedScheduler} that provides the current time
+	 * @param scheduler the {@link Scheduler} that provides the current time
 	 *
 	 * @return a new {@link ReplayProcessor}
 	 */
 	public static <T> ReplayProcessor<T> createSizeAndTimeoutMillis(int size,
 			long maxAge,
-			TimedScheduler scheduler) {
+			Scheduler scheduler) {
 		Objects.requireNonNull(scheduler, "scheduler is null");
 		if (size <= 0) {
 			throw new IllegalArgumentException("size > 0 required but it was " + size);
@@ -1046,7 +1046,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 		final int            limit;
 		final long           maxAge;
-		final TimedScheduler scheduler;
+		final Scheduler scheduler;
 		int size;
 
 		volatile TimedNode<T> head;
@@ -1058,7 +1058,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 		SizeAndTimeBoundReplayBuffer(int limit,
 				long maxAge,
-				TimedScheduler scheduler) {
+				Scheduler scheduler) {
 			this.limit = limit;
 			this.maxAge = maxAge;
 			this.scheduler = scheduler;

@@ -15,6 +15,17 @@
  */
 package reactor.core.scheduler;
 
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+
+import org.junit.Test;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
 /**
  * @author Stephane Maldini
  */
@@ -28,5 +39,58 @@ public class SingleSchedulerTest extends AbstractSchedulerTest {
 	@Override
 	protected boolean shouldCheckInterrupted() {
 		return true;
+	}
+
+	@Test
+	public void smokeTestDelay() {
+		for (int i = 0; i < 20; i++) {
+			Scheduler s = Schedulers.newSingle("test");
+			AtomicLong start = new AtomicLong();
+			AtomicLong end = new AtomicLong();
+
+			try {
+				StepVerifier.create(Mono
+						.delay(Duration.ofMillis(100), s)
+						.log()
+						.doOnSubscribe(sub -> start.set(System.nanoTime()))
+						.doOnTerminate((v, e) -> end.set(System.nanoTime()))
+				)
+				            .expectSubscription()
+				            .expectNext(0L)
+				            .verifyComplete();
+
+				long endValue = end.longValue();
+				long startValue = start.longValue();
+				long measuredDelay = endValue - startValue;
+				long measuredDelayMs = TimeUnit.NANOSECONDS.toMillis(measuredDelay);
+				assertThat(measuredDelayMs)
+						.as("iteration %s, measured delay %s nanos, start at %s nanos, end at %s nanos", i, measuredDelay, startValue, endValue)
+						.isGreaterThanOrEqualTo(100L)
+						.isLessThan(200L);
+			}
+			finally {
+				s.dispose();
+			}
+		}
+	}
+
+	@Test
+	public void smokeTestInterval() {
+		Scheduler s = Schedulers.newSingle("test");
+
+		try {
+			StepVerifier.create(Flux.interval(Duration.ofMillis(100), Duration.ofMillis(200), s))
+			            .expectSubscription()
+			            .expectNoEvent(Duration.ofMillis(100))
+			            .expectNext(0L)
+			            .expectNoEvent(Duration.ofMillis(200))
+			            .expectNext(1L)
+			            .expectNoEvent(Duration.ofMillis(200))
+			            .expectNext(2L)
+			            .thenCancel();
+		}
+		finally {
+			s.dispose();
+		}
 	}
 }
