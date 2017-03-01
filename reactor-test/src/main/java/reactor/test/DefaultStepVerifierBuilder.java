@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,8 +46,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Operators;
 import reactor.core.publisher.Signal;
@@ -676,9 +674,9 @@ final class DefaultStepVerifierBuilder<T>
 	}
 
 	final static class DefaultVerifySubscriber<T>
-			implements StepVerifier, Subscriber<T>, Trackable, Receiver {
+			extends AtomicReference<Subscription>
+			implements StepVerifier, Subscriber<T> {
 
-		final AtomicReference<Subscription> subscription;
 		final CountDownLatch                completeLatch;
 		final Queue<Event<T>>               script;
 		final Queue<TaskEvent<T>>           taskEvents;
@@ -738,7 +736,6 @@ final class DefaultStepVerifierBuilder<T>
 			this.produced = 0L;
 			this.unasserted = 0L;
 			this.completeLatch = new CountDownLatch(1);
-			this.subscription = new AtomicReference<>();
 			this.requested = initialRequest;
 		}
 
@@ -795,27 +792,15 @@ final class DefaultStepVerifierBuilder<T>
 		 * @return the {@link VirtualTimeScheduler} this verifier will manipulate when
 		 * using {@link #thenAwait(Duration)} methods, or null if real time is used
 		 */
-		public VirtualTimeScheduler virtualTimeScheduler() {
+		VirtualTimeScheduler virtualTimeScheduler() {
 			return this.virtualTimeScheduler;
 		}
 
-		@Override
-		public Throwable getError() {
-			return errors;
+		boolean isCancelled() {
+			return get() == Operators.cancelledSubscription();
 		}
 
-		@Override
-		public boolean isCancelled() {
-			return upstream() == Operators.cancelledSubscription();
-		}
-
-		@Override
-		public boolean isStarted() {
-			return upstream() != null;
-		}
-
-		@Override
-		public boolean isTerminated() {
+		boolean isTerminated() {
 			return completeLatch.getCount() == 0L;
 		}
 
@@ -861,7 +846,7 @@ final class DefaultStepVerifierBuilder<T>
 				throw Exceptions.argumentIsNullException();
 			}
 
-			if (this.subscription.compareAndSet(null, subscription)) {
+			if (this.compareAndSet(null, subscription)) {
 				onExpectation(Signal.subscribe(subscription));
 				if (requestedFusionMode >= Fuseable.NONE) {
 					startFusion(subscription);
@@ -879,7 +864,7 @@ final class DefaultStepVerifierBuilder<T>
 				else {
 					setFailure(null, "an unexpected Subscription has been received: %s; actual: ",
 							subscription,
-							this.subscription);
+							this);
 				}
 			}
 		}
@@ -890,7 +875,7 @@ final class DefaultStepVerifierBuilder<T>
 			for( ; ;) {
 				boolean d = done;
 				if (d && qs.isEmpty()) {
-					if(subscription.get() == Operators.cancelledSubscription()){
+					if(get() == Operators.cancelledSubscription()){
 						return;
 					}
 					if(errors != null){
@@ -905,7 +890,7 @@ final class DefaultStepVerifierBuilder<T>
 				}
 				long p = 0L;
 				while (p != r) {
-					if(subscription.get() == Operators.cancelledSubscription()){
+					if(get() == Operators.cancelledSubscription()){
 						return;
 					}
 					try {
@@ -930,7 +915,7 @@ final class DefaultStepVerifierBuilder<T>
 					if (!checkRequestOverflow(signal)) {
 						onExpectation(signal);
 						if (d && qs.isEmpty()) {
-							if(subscription.get() == Operators.cancelledSubscription()){
+							if(get() == Operators.cancelledSubscription()){
 								return;
 							}
 							if(errors != null){
@@ -953,11 +938,6 @@ final class DefaultStepVerifierBuilder<T>
 					break;
 				}
 			}
-		}
-
-		@Override
-		public Subscription upstream() {
-			return this.subscription.get();
 		}
 
 		@Override
@@ -1053,7 +1033,7 @@ final class DefaultStepVerifierBuilder<T>
 
 		final Subscription cancel() {
 			Subscription s =
-					this.subscription.getAndSet(Operators.cancelledSubscription());
+					this.getAndSet(Operators.cancelledSubscription());
 			if (s != null && s != Operators.cancelledSubscription()) {
 				s.cancel();
 				if(establishedFusionMode == Fuseable.ASYNC) {
@@ -1348,7 +1328,7 @@ final class DefaultStepVerifierBuilder<T>
 					doCancel();
 					return true;
 				}
-				subscriptionEvent.consume(upstream());
+				subscriptionEvent.consume(get());
 			}
 			return false;
 		}
@@ -1414,12 +1394,12 @@ final class DefaultStepVerifierBuilder<T>
 					break;
 				}
 				if (timeout != Duration.ZERO && stop.isBefore(Instant.now())) {
-					if (!isStarted()) {
+					if (get() == null) {
 						throw new IllegalStateException(
 								"VerifySubscriber has not been subscribed");
 					}
 					else {
-						throw new AssertionError("VerifySubscriber timed out on " + upstream());
+						throw new AssertionError("VerifySubscriber timed out on " + get());
 					}
 				}
 			}
@@ -1479,7 +1459,7 @@ final class DefaultStepVerifierBuilder<T>
 				if (m == Fuseable.SYNC) {
 					T v;
 					for (; ; ) {
-						if(subscription.get() == Operators.cancelledSubscription()){
+						if(get() == Operators.cancelledSubscription()){
 							return;
 						}
 						try {
@@ -1517,7 +1497,7 @@ final class DefaultStepVerifierBuilder<T>
 
 		@SuppressWarnings("unchecked")
 		final void validate() {
-			if (!isStarted()) {
+			if (get() == null) {
 				throw new IllegalStateException(
 						"VerifySubscriber has not been subscribed");
 			}
@@ -1927,7 +1907,7 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		void run(DefaultVerifySubscriber<T> parent) throws Exception {
-			task.accept(parent.subscription.get());
+			task.accept(parent.get());
 		}
 	}
 
@@ -2006,7 +1986,7 @@ final class DefaultStepVerifierBuilder<T>
 			if (delegate.isTerminal()) {
 				parent.doCancel();
 			} else {
-				delegate.consume(parent.upstream());
+				delegate.consume(parent.get());
 			}
 		}
 	}
