@@ -1208,27 +1208,34 @@ public class FluxFlatMapTest {
 	}
 
 	@Test
-	public void flatMapHotDelayErrors() throws Exception {
+	public void flatMapDelayErrors() throws Exception {
 		AtomicInteger onNextSignals = new AtomicInteger();
 
-		StepVerifier.create(Flux.range(0, 5).publish().autoConnect()
+		StepVerifier.create(Flux.range(0, 5).hide()
 		                        .flatMap(i -> Mono.just(i)
-		                                          .doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
-						                        (s1, sink) -> {
-							                        if (s1 == 1 || s1 == 3) {
-								                        sink.error(new RuntimeException("Error: " + s1));
-							                        }
-							                        else {
-								                        sink.next(s1);
-							                        }
-						                        }).subscribeOn(Schedulers.parallel()),
-				                        true, 4, 4))
+		                                          .doOnNext(e -> onNextSignals.incrementAndGet())
+		                                          .handle((s1, sink) -> {
+			                                          if (s1 == 1 || s1 == 3) {
+				                                          sink.error(new RuntimeException("Error: " + s1));
+			                                          }
+			                                          else {
+				                                          sink.next(s1);
+			                                          }
+		                                          })
+		                                          .subscribeOn(Schedulers.parallel()),
+				                        true, 4, 4)
+		                        .retry(1))
 		            .recordWith(ArrayList::new)
 		            .expectNextCount(3)
-		            .consumeRecordedWith(c ->  assertThat((Collection) c).containsExactlyInAnyOrder(0, 2, 4))
+		            .consumeRecordedWith(c ->  {
+		            	assertThat(c).containsExactlyInAnyOrder(0, 2, 4);
+		            	c.clear();
+		            })
+		            .expectNextCount(3)
+		            .consumeRecordedWith(c ->  assertThat(c).containsExactlyInAnyOrder(0, 2, 4))
 		            .verifyError();
 
-		assertThat(onNextSignals.get()).isEqualTo(5);
+		assertThat(onNextSignals.get()).isEqualTo(10);
 	}
 
 }
