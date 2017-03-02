@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
@@ -107,5 +108,16 @@ public class MonoRunnableTest {
 
 		ts.assertNonFuseableSource()
 		  .assertNoValues();
+	}
+
+	@Test
+	public void test() {
+		int c[] = { 0 };
+		Flux.range(1, 1000)
+		    .flatMap(v -> Mono.fromRunnable(() -> { c[0]++; }))
+		    .ignoreElements()
+		    .block();
+
+		Assert.assertEquals(1000, c[0]);
 	}
 }
