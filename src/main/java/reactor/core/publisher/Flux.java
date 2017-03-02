@@ -499,7 +499,7 @@ public abstract class Flux<T> implements Publisher<T> {
      * Creates a Flux with multi-emission capabilities (synchronous or asynchronous) through
      * the FluxSink API.
      * <p>
-     * This Flux factory is useful if one wants to adapt some other a multi-valued async API
+     * This Flux factory is useful if one wants to adapt some other multi-valued async API
      * and not worry about cancellation and backpressure. For example:
      * <p>
      * Handles backpressure by buffering all signals if the downstream can't keep up.
@@ -510,11 +510,11 @@ public abstract class Flux<T> implements Publisher<T> {
      *     ActionListener al = e -&gt; {
      *         emitter.next(textField.getText());
      *     };
-     *     // without cancellation support:
+     *     // without cleanup support:
      *
      *     button.addActionListener(al);
      *
-     *     // with cancellation support:
+     *     // with cleanup support:
      *
      *     button.addActionListener(al);
      *     emitter.onDispose(() -> {
@@ -535,7 +535,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Creates a Flux with multi-emission capabilities (synchronous or asynchronous) through
 	 * the FluxSink API.
 	 * <p>
-	 * This Flux factory is useful if one wants to adapt some other a multi-valued async API
+	 * This Flux factory is useful if one wants to adapt some other multi-valued async API
 	 * and not worry about cancellation and backpressure. For example:
 	 *
      * <pre><code>
@@ -544,11 +544,11 @@ public abstract class Flux<T> implements Publisher<T> {
      *     ActionListener al = e -&gt; {
      *         emitter.next(textField.getText());
      *     };
-     *     // without cancellation support:
+     *     // without cleanup support:
      *
      *     button.addActionListener(al);
      *
-     *     // with cancellation support:
+     *     // with cleanup support:
      *
      *     button.addActionListener(al);
      *     emitter.onDispose(() -> {
@@ -564,7 +564,77 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux}
 	 */
 	public static <T> Flux<T> create(Consumer<? super FluxSink<T>> emitter, OverflowStrategy backpressure) {
-		return onAssembly(new FluxCreate<>(emitter, backpressure));
+		return onAssembly(new FluxCreate<>(emitter, backpressure, FluxCreate.CreateMode.PUSH_PULL));
+	}
+
+	/**
+	 * Creates a Flux with multi-emission capabilities from a single threaded producer
+	 * through the FluxSink API.
+	 * <p>
+	 * This Flux factory is useful if one wants to adapt some other single=threaded
+	 * multi-valued async API and not worry about cancellation and backpressure. For example:
+	 *
+	 * <pre><code>
+	 * Flux.&lt;String&gt;push(emitter -&gt; {
+	 *
+	 *	 ActionListener al = e -&gt; {
+	 *		 emitter.next(textField.getText());
+	 *	 };
+	 *	 // without cleanup support:
+	 *
+	 *	 button.addActionListener(al);
+	 *
+	 *	 // with cleanup support:
+	 *
+	 *	 button.addActionListener(al);
+	 *	 emitter.onDispose(() -> {
+	 *		 button.removeListener(al);
+	 *	 });
+	 * }, FluxSink.OverflowStrategy.LATEST);
+	 * <code></pre>
+	 *
+	 * @param <T> the value type
+	 * @param emitter the consumer that will receive a FluxSink for each individual Subscriber.
+	 * @return a {@link Flux}
+	 */
+	public static <T> Flux<T> push(Consumer<? super FluxSink<T>> emitter) {
+		return onAssembly(new FluxCreate<>(emitter, OverflowStrategy.BUFFER, FluxCreate.CreateMode.PUSH_ONLY));
+	}
+
+	/**
+	 * Creates a Flux with multi-emission capabilities from a single threaded producer
+	 * through the FluxSink API.
+	 * <p>
+	 * This Flux factory is useful if one wants to adapt some other single-threaded
+	 * multi-valued async API and not worry about cancellation and backpressure. For example:
+	 *
+	 * <pre><code>
+	 * Flux.&lt;String&gt;push(emitter -&gt; {
+	 *
+	 *	 ActionListener al = e -&gt; {
+	 *		 emitter.next(textField.getText());
+	 *	 };
+	 *	 // without cleanup support:
+	 *
+	 *	 button.addActionListener(al);
+	 *
+	 *	 // with cleanup support:
+	 *
+	 *	 button.addActionListener(al);
+	 *	 emitter.onDispose(() -> {
+	 *		 button.removeListener(al);
+	 *	 });
+	 * }, FluxSink.OverflowStrategy.LATEST);
+	 * <code></pre>
+	 *
+	 * @param <T> the value type
+	 * @param backpressure the backpressure mode, see {@link OverflowStrategy} for the
+	 * available backpressure modes
+	 * @param emitter the consumer that will receive a FluxSink for each individual Subscriber.
+	 * @return a {@link Flux}
+	 */
+	public static <T> Flux<T> push(Consumer<? super FluxSink<T>> emitter, OverflowStrategy backpressure) {
+		return onAssembly(new FluxCreate<>(emitter, backpressure, FluxCreate.CreateMode.PUSH_ONLY));
 	}
 
 	/**

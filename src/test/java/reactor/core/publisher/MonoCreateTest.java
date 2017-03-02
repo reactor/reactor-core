@@ -146,4 +146,20 @@ public class MonoCreateTest {
 		                        .publishOn(Schedulers.parallel()))
 		            .verifyComplete();
 	}
+
+	@Test
+	public void monoCreateOnRequest() {
+		Mono<Integer> created = Mono.create(s -> {
+			s.onRequest(n -> s.success(5));
+		});
+
+		StepVerifier.create(created, 0)
+					.expectSubscription()
+					.thenAwait()
+					.thenRequest(1)
+					.expectNext(5)
+					.expectComplete()
+					.verify();
+	}
 }
+
