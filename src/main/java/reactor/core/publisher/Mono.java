@@ -116,7 +116,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *     
 	 *     client.addListener(listener);
 	 *     
-	 *     sink.setCancellation(() -&gt; client.removeListener(listener));
+	 *     sink.onTerminate(() -&gt; client.removeListener(listener));
 	 * });
 	 * </code></pre>
 	 * Note that this works only with single-value emitting listeners. Otherwise,
@@ -148,7 +148,7 @@ public abstract class Mono<T> implements Publisher<T> {
      *     // with cancellation support:
      *     
      *     AutoCloseable cancel = client.call("query", callback);
-     *     sink.setCancellation(() -> {
+     *     sink.onTerminate(() -> {
      *         try {
      *             cancel.close();
      *         } catch (Exception ex) {
