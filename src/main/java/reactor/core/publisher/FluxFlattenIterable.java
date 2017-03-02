@@ -408,7 +408,7 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 						}
 
 						boolean d = done;
-						boolean empty = q.isEmpty();
+						boolean empty = q.isEmpty() && it == null;
 
 						if (d && empty) {
 							current = null;

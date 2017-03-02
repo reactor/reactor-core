@@ -20,14 +20,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.junit.Test;
 import reactor.core.Fuseable;
+import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
 
@@ -280,6 +282,35 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertComplete();
+	}
+
+	/**
+	 * See https://github.com/reactor/reactor-core/issues/453
+	 */
+	@Test
+	public void testDrainSyncCompletesSeveralBatches() {
+		//both hide and just with 2 elements are necessary to go into SYNC mode
+		StepVerifier.create(Flux.just(1, 2)
+		                        .flatMapIterable(t -> IntStream.rangeClosed(0, 35).boxed().collect(Collectors.toList()))
+		                        .hide()
+                                .zipWith(Flux.range(1000, 100))
+		                        .count())
+		            .expectNext(72L)
+		            .verifyComplete();
+	}
+
+	/**
+	 * See https://github.com/reactor/reactor-core/issues/453
+	 */
+	@Test
+	public void testDrainAsyncCompletesSeveralBatches() {
+		StepVerifier.create(Flux.range(0, 72)
+		                        .collectList()
+		                        .flatMapIterable(Function.identity())
+		                        .zipWith(Flux.range(1000, 100))
+		                        .count())
+		            .expectNext(72L)
+		            .verifyComplete();
 	}
 
 }
