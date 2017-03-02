@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,7 +38,6 @@ import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.CoreMatchers.equalTo;
 
 public class FluxFlatMapTest {
 
@@ -1208,32 +1208,34 @@ public class FluxFlatMapTest {
 	}
 
 	@Test
-	public void retryHotDelayErrors() throws Exception {
+	public void flatMapDelayErrors() throws Exception {
 		AtomicInteger onNextSignals = new AtomicInteger();
 
-		StepVerifier.create(Flux.range(0, 5).publish().autoConnect()
+		StepVerifier.create(Flux.range(0, 5).hide()
 		                        .flatMap(i -> Mono.just(i)
-		                                          .doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
-						                        (s1, sink) -> {
-							                        if (s1 == 1 || s1 == 3) {
-								                        sink.error(new RuntimeException());
-							                        }
-							                        else {
-								                        sink.next(s1);
-							                        }
-						                        }).subscribeOn(Schedulers.parallel()),
-				                        true,
-				                        4,
-				                        4)
-		                        .retry())
-		            // TODO Need to add a expectNextUnordered() to fully assert this.
-		            .expectNextMatches(d -> d == 0 || d == 2 || d == 4)
-		            .expectNextMatches(d -> d == 0 || d == 2 || d == 4)
-		            .expectNextMatches(d -> d == 0 || d == 2 || d == 4)
-		            .thenCancel()
-		            .verify();
+		                                          .doOnNext(e -> onNextSignals.incrementAndGet())
+		                                          .handle((s1, sink) -> {
+			                                          if (s1 == 1 || s1 == 3) {
+				                                          sink.error(new RuntimeException("Error: " + s1));
+			                                          }
+			                                          else {
+				                                          sink.next(s1);
+			                                          }
+		                                          })
+		                                          .subscribeOn(Schedulers.parallel()),
+				                        true, 4, 4)
+		                        .retry(1))
+		            .recordWith(ArrayList::new)
+		            .expectNextCount(3)
+		            .consumeRecordedWith(c ->  {
+		            	assertThat(c).containsExactlyInAnyOrder(0, 2, 4);
+		            	c.clear();
+		            })
+		            .expectNextCount(3)
+		            .consumeRecordedWith(c ->  assertThat(c).containsExactlyInAnyOrder(0, 2, 4))
+		            .verifyError();
 
-		Assert.assertThat(onNextSignals.get(), equalTo(5));
+		assertThat(onNextSignals.get()).isEqualTo(10);
 	}
 
 }
