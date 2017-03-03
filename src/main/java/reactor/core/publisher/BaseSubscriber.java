@@ -77,9 +77,9 @@ public abstract class BaseSubscriber<T> implements Subscriber<T>, Subscription, 
 
 	/**
 	 * Hook for further processing of onSubscribe's Subscription. Implement this method
-	 * to call {@link #request(long)} as an initial request. Values other than the
-	 * unbounded {@code Long.MAX_VALUE} imply that you'll also call request in
-	 * {@link #hookOnNext(Object)}.
+	 * to call {@link #request(long)} or {@link #requestUnbounded()} as an initial request.
+	 * Values other than the unbounded {@code Long.MAX_VALUE} imply that you'll also call
+	 * request in {@link #hookOnNext(Object)}.
 	 *
 	 * @param subscription the subscription to optionally process
 	 */
@@ -214,6 +214,13 @@ public abstract class BaseSubscriber<T> implements Subscriber<T>, Subscription, 
 		catch (Throwable throwable) {
 			onError(Operators.onOperatorError(throwable));
 		}
+	}
+
+	/**
+	 * {@link #request(long) Request} an unbounded amount.
+	 */
+	public final void requestUnbounded() {
+		request(Long.MAX_VALUE);
 	}
 
 	@Override

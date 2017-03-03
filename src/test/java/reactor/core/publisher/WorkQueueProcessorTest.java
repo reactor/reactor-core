@@ -530,7 +530,7 @@ public class WorkQueueProcessorTest {
 
 		@Override
 		protected void hookOnSubscribe(Subscription subscription) {
-			request(Long.MAX_VALUE);
+			requestUnbounded();
 		}
 
 		@Override
