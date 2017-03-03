@@ -172,7 +172,7 @@ public class BaseSubscriberTest {
 		flux.subscribe(new BaseSubscriber<String>() {
 			@Override
 			protected void hookOnSubscribe(Subscription subscription) {
-				request(Long.MAX_VALUE);
+				requestUnbounded();
 			}
 
 			@Override
@@ -203,7 +203,7 @@ public class BaseSubscriberTest {
 		flux.subscribe(new BaseSubscriber<String>() {
 			@Override
 			protected void hookOnSubscribe(Subscription subscription) {
-				request(Long.MAX_VALUE);
+				requestUnbounded();
 			}
 
 			@Override
@@ -240,7 +240,7 @@ public class BaseSubscriberTest {
 		    .subscribe(new BaseSubscriber<String>() {
 			    @Override
 			    protected void hookOnSubscribe(Subscription subscription) {
-			    	request(Long.MAX_VALUE);
+			    	requestUnbounded();
 			    }
 
 			    @Override
@@ -276,7 +276,7 @@ public class BaseSubscriberTest {
 					.subscribe(new BaseSubscriber<String>() {
 						@Override
 						protected void hookOnSubscribe(Subscription subscription) {
-							request(Long.MAX_VALUE);
+							requestUnbounded();
 						}
 
 						@Override
@@ -345,7 +345,7 @@ public class BaseSubscriberTest {
 			@Override
 			protected void hookOnSubscribe(
 					Subscription subscription) {
-				request(Long.MAX_VALUE);
+				requestUnbounded();
 			}
 
 			@Override
