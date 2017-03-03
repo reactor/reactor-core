@@ -66,9 +66,13 @@ public abstract class BaseSubscriber<T> implements Subscriber<T>, Subscription, 
 		return subscription == Operators.cancelledSubscription();
 	}
 
+	/**
+	 * {@link Disposable#dispose() Dispose} the {@link Subscription} by
+	 * {@link Subscription#cancel() cancelling} it.
+	 */
 	@Override
 	public void dispose() {
-		S.lazySet(this, Operators.cancelledSubscription());
+		cancel();
 	}
 
 	/**
