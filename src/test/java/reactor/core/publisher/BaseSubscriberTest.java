@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -23,7 +24,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
+import reactor.test.StepVerifier;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
@@ -331,5 +334,37 @@ public class BaseSubscriberTest {
 
 		assertThat(checkFinally.get(), is(SignalType.CANCEL));
 		assertThat(error.get(), is(err));
+	}
+
+	@Test
+	public void disposeCancels() throws InterruptedException {
+		AtomicReference<SignalType> onFinally = new AtomicReference<>();
+		CountDownLatch latch = new CountDownLatch(1);
+
+		BaseSubscriber<Long> sub = new BaseSubscriber<Long>() {
+			@Override
+			protected void hookOnSubscribe(
+					Subscription subscription) {
+				request(Long.MAX_VALUE);
+			}
+
+			@Override
+			protected void hookOnNext(Long value) {
+				fail("delay was not cancelled");
+			}
+
+			@Override
+			protected void hookFinally(SignalType type) {
+				onFinally.set(type);
+				latch.countDown();
+			}
+		};
+
+		Disposable d = Mono.delay(Duration.ofSeconds(1))
+		                   .subscribeWith(sub);
+		d.dispose();
+
+		assertTrue("delay not skipped by cancel", latch.await(1500, TimeUnit.MILLISECONDS));
+		assertThat(onFinally.get(), is(SignalType.CANCEL));
 	}
 }
