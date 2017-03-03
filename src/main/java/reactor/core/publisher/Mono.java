@@ -1588,6 +1588,22 @@ public abstract class Mono<T> implements Publisher<T> {
 		return onAssembly(new MonoPeekTerminal<>(this, null, null, afterTerminate));
 	}
 
+	/**
+	 * Triggering <strong>after</strong>the {@link Mono} terminates for any reason,
+	 * including cancellation. The terminating event ({@link SignalType#ON_COMPLETE},
+	 * {@link SignalType#ON_ERROR} and {@link SignalType#CANCEL}) is passed to the consumer,
+	 * which is executed after the signal has been passed downstream.
+	 * <p>
+	 * Note that the fact that the signal is propagated downstream before the callback is
+	 * executed means that several doFinally in a row will be executed in
+	 * <strong>reverse order</strong>. If you want to assert the execution of the callback
+	 * please keep in mind that the Mono will complete before it is executed, so its
+	 * effect might not be visible immediately after eg. a {@link #block()}.
+	 *
+	 * @param onFinally the callback to execute after a terminal signal (complete, error
+	 * or cancel)
+	 * @return an observed {@link Mono}
+	 */
 	public final Mono<T> doFinally(Consumer<SignalType> onFinally) {
 		Objects.requireNonNull(onFinally, "onFinally");
 		Mono<T> monoDoFinally;
