@@ -479,6 +479,8 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 				autoCancel);
 	}
 
+	ThreadFactory requestTaskThreadFactory;
+
 	@SuppressWarnings("rawtypes")
     static final Supplier FACTORY = (Supplier<Slot>) Slot::new;
 
@@ -529,9 +531,33 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		this.writeWait = waitStrategy;
 
 		ringBuffer.addGatingSequence(workSequence);
-
+		this.requestTaskThreadFactory = createDefaultRequestTaskThreadFactory();
 	}
 
+	ThreadFactory createDefaultRequestTaskThreadFactory() {
+		return r -> new Thread(r,this.name+"[request-task]");
+	}
+
+	/**
+	 * Call <strong>before</strong> {@link #subscribe() subscription} to customize the
+	 * {@link ThreadFactory} used for internal Threads spawned for request tasks.
+	 * The default will use the same name as the main processor executor's threads, with
+	 * a {@code [request-task]} suffix.
+	 * <p>
+	 * These threads are spawned {@link #onSubscribe(Subscription)}, so this method should
+	 * be called before subscription.
+	 *
+	 * @param factory the factory to use for {@link #requestTask(Subscription)}, or null
+	 * to reset to the default.
+	 */
+	public void setRequestTaskThreadFactory(ThreadFactory factory) {
+		if (factory == null) {
+			this.requestTaskThreadFactory = createDefaultRequestTaskThreadFactory();
+		}
+		else {
+			this.requestTaskThreadFactory = factory;
+		}
+	}
 	@Override
 	public void subscribe(final Subscriber<? super E> subscriber) {
 		if (subscriber == null) {
@@ -616,15 +642,15 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 	@Override
 	protected void requestTask(Subscription s) {
-		new Thread(EventLoopProcessor.createRequestTask(s,
+		Thread t = requestTaskThreadFactory.newThread(EventLoopProcessor.createRequestTask(s,
 				() -> {
 					if (!alive()) {
 						WaitStrategy.alert();
 					}
 				}, null,
 				ringBuffer::getMinimumGatingSequence,
-				readWait, this, ringBuffer.bufferSize()),
-				name + "[request-task]").start();
+				readWait, this, ringBuffer.bufferSize()));
+		t.start();
 	}
 
 	@Override

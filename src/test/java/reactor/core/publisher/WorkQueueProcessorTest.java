@@ -31,6 +31,7 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.Function;
 
 import org.assertj.core.api.Assertions;
+import org.assertj.core.api.Condition;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -931,5 +932,44 @@ public class WorkQueueProcessorTest {
 		Assertions.assertThat(latch.await(4, TimeUnit.SECONDS))
 		          .overridingErrorMessage("Data not received")
 		          .isTrue();
+	}
+
+	@Test
+	public void testDefaultRequestTaskThreadName() {
+		String mainName = "workQueueProcessorRequestTask";
+		String expectedName = mainName + "[request-task]";
+
+		TopicProcessor<Object> processor = TopicProcessor.create(mainName, 8);
+
+		processor.requestTask(Operators.cancelledSubscription());
+
+		Thread[] threads = new Thread[Thread.activeCount()];
+		Thread.enumerate(threads);
+
+		Condition<Thread> defaultRequestTaskThread = new Condition<>(
+				thread -> expectedName.equals(thread.getName()),
+				"a thread named \"%s\"", expectedName);
+
+		Assertions.assertThat(threads)
+		          .haveExactly(1, defaultRequestTaskThread);
+	}
+
+	@Test
+	public void testCustomRequestTaskThreadName() {
+		String expectedName = "workQueueProcessorRequestTask";
+		TopicProcessor<Object> processor = TopicProcessor.create("testProcessor", 8);
+		processor.setRequestTaskThreadFactory(r -> new Thread(r, expectedName));
+
+		processor.requestTask(Operators.cancelledSubscription());
+
+		Thread[] threads = new Thread[Thread.activeCount()];
+		Thread.enumerate(threads);
+
+		Condition<Thread> customRequestTaskThread = new Condition<>(
+				thread -> expectedName.equals(thread.getName()),
+				"a thread named \"%s\"", expectedName);
+
+		Assertions.assertThat(threads)
+		          .haveExactly(1, customRequestTaskThread);
 	}
 }

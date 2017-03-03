@@ -21,6 +21,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.assertj.core.api.Assertions;
+import org.assertj.core.api.Condition;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -322,5 +324,44 @@ public class TopicProcessorTest {
 				.isTrue();
 	}
 
+
+	@Test
+	public void testDefaultRequestTaskThreadName() {
+		String mainName = "topicProcessorRequestTask";
+		String expectedName = mainName + "[request-task]";
+
+		TopicProcessor<Object> processor = TopicProcessor.create(mainName, 8);
+
+		processor.requestTask(Operators.cancelledSubscription());
+
+		Thread[] threads = new Thread[Thread.activeCount()];
+		Thread.enumerate(threads);
+
+		Condition<Thread> defaultRequestTaskThread = new Condition<>(
+				thread -> expectedName.equals(thread.getName()),
+				"a thread named \"%s\"", expectedName);
+
+		Assertions.assertThat(threads)
+		          .haveExactly(1, defaultRequestTaskThread);
+	}
+
+	@Test
+	public void testCustomRequestTaskThreadName() {
+		String expectedName = "topicProcessorRequestTask";
+		TopicProcessor<Object> processor = TopicProcessor.create("testProcessor", 8);
+		processor.setRequestTaskThreadFactory(r -> new Thread(r, expectedName));
+
+		processor.requestTask(Operators.cancelledSubscription());
+
+		Thread[] threads = new Thread[Thread.activeCount()];
+		Thread.enumerate(threads);
+
+		Condition<Thread> customRequestTaskThread = new Condition<>(
+				thread -> expectedName.equals(thread.getName()),
+				"a thread named \"%s\"", expectedName);
+
+		Assertions.assertThat(threads)
+		          .haveExactly(1, customRequestTaskThread);
+	}
 
 }
