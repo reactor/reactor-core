@@ -150,7 +150,7 @@ final class MonoCreate<T> extends Mono<T> {
 		}
 
 		@Override
-		public MonoSink<T> onTerminate(Disposable d) {
+		public MonoSink<T> onDispose(Disposable d) {
 			if (d != null) {
 				SinkDisposable sd = new SinkDisposable(d, null);
 				if (!DISPOSABLE.compareAndSet(this, null, sd)) {
@@ -170,7 +170,7 @@ final class MonoCreate<T> extends Mono<T> {
 		@Deprecated
 		@Override
 		public void setCancellation(Cancellation c) {
-			onTerminate(new Disposable() {
+			onDispose(new Disposable() {
 				@Override
 				public void dispose() {
 					c.dispose();

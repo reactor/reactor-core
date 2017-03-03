@@ -76,11 +76,11 @@ public interface FluxSink<T> {
 	/**
 	 * Associates a disposable resource with this FluxSink
 	 * that will be disposed on the first terminate signal which may be
-	 * a cancel or complete signal.
+	 * a cancel, complete or error signal.
 	 * @param d the disposable callback to use
 	 * @return the {@link FluxSink} with resource to be disposed on first terminate signal
 	 */
-	FluxSink<T> onTerminate(Disposable d);
+	FluxSink<T> onDispose(Disposable d);
 
 
     /**

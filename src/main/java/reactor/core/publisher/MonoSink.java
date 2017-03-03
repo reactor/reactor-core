@@ -61,12 +61,12 @@ public interface MonoSink<T> {
 
 	/**
 	 * Associates a disposable resource with this MonoSink that will be disposed on the
-	 * first terminate signal which may be a cancel or complete signal.
+	 * first terminate signal which may be a cancel, complete or error signal.
 	 *
 	 * @param d the disposable callback to use
 	 * @return the {@link MonoSink} with resource to be disposed on first terminate signal
 	 */
-	MonoSink<T> onTerminate(Disposable d);
+	MonoSink<T> onDispose(Disposable d);
 
     /**
      * Sets a cancellation callback triggered by

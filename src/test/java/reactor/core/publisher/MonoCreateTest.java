@@ -15,7 +15,6 @@
  */
 package reactor.core.publisher;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
@@ -29,16 +28,16 @@ public class MonoCreateTest {
 
 	@Test
 	public void createStreamFromMonoCreate() {
-		AtomicInteger onTerminate = new AtomicInteger();
+		AtomicInteger onDispose = new AtomicInteger();
 		AtomicInteger onCancel = new AtomicInteger();
 		StepVerifier.create(Mono.create(s -> {
-							s.onTerminate(onTerminate::getAndIncrement)
+							s.onDispose(onDispose::getAndIncrement)
 							 .onCancel(onCancel::getAndIncrement)
 							 .success("test1");
 						}))
 		            .expectNext("test1")
 		            .verifyComplete();
-		assertThat(onTerminate.get()).isEqualTo(1);
+		assertThat(onDispose.get()).isEqualTo(1);
 		assertThat(onCancel.get()).isEqualTo(0);
 	}
 
@@ -51,50 +50,50 @@ public class MonoCreateTest {
 
 	@Test
 	public void createStreamFromMonoCreateError() {
-		AtomicInteger onTerminate = new AtomicInteger();
+		AtomicInteger onDispose = new AtomicInteger();
 		AtomicInteger onCancel = new AtomicInteger();
 		StepVerifier.create(Mono.create(s -> {
-							s.onTerminate(onTerminate::getAndIncrement)
+							s.onDispose(onDispose::getAndIncrement)
 							 .onCancel(onCancel::getAndIncrement)
 							 .error(new Exception("test"));
 						}))
 		            .verifyErrorMessage("test");
-		assertThat(onTerminate.get()).isEqualTo(1);
+		assertThat(onDispose.get()).isEqualTo(1);
 		assertThat(onCancel.get()).isEqualTo(0);
 	}
 
 	@Test
 	public void cancellation() {
-		AtomicInteger onTerminate = new AtomicInteger();
+		AtomicInteger onDispose = new AtomicInteger();
 		AtomicInteger onCancel = new AtomicInteger();
 		StepVerifier.create(Mono.create(s -> {
-							s.onTerminate(onTerminate::getAndIncrement)
+							s.onDispose(onDispose::getAndIncrement)
 							 .onCancel(onCancel::getAndIncrement);
 						}))
 		            .thenAwait()
 		            .consumeSubscriptionWith(Subscription::cancel)
 		            .thenCancel()
 		            .verify();
-		assertThat(onTerminate.get()).isEqualTo(1);
+		assertThat(onDispose.get()).isEqualTo(1);
 		assertThat(onCancel.get()).isEqualTo(1);
 	}
 
 	public void monoCreateDisposables() {
-		AtomicInteger terminate1 = new AtomicInteger();
-		AtomicInteger terminate2 = new AtomicInteger();
+		AtomicInteger dispose1 = new AtomicInteger();
+		AtomicInteger dispose2 = new AtomicInteger();
 		AtomicInteger cancel1 = new AtomicInteger();
 		AtomicInteger cancel2 = new AtomicInteger();
 		AtomicInteger cancellation = new AtomicInteger();
 		Mono<String> created = Mono.create(s -> {
-			s.onTerminate(terminate1::getAndIncrement)
+			s.onDispose(dispose1::getAndIncrement)
 			 .onCancel(cancel1::getAndIncrement);
-			s.onTerminate(terminate2::getAndIncrement);
-			assertThat(terminate2.get()).isEqualTo(1);
+			s.onDispose(dispose2::getAndIncrement);
+			assertThat(dispose2.get()).isEqualTo(1);
 			s.onCancel(cancel2::getAndIncrement);
 			assertThat(cancel2.get()).isEqualTo(1);
 			s.setCancellation(cancellation::getAndIncrement);
 			assertThat(cancellation.get()).isEqualTo(1);
-			assertThat(terminate1.get()).isEqualTo(0);
+			assertThat(dispose1.get()).isEqualTo(0);
 			assertThat(cancel1.get()).isEqualTo(0);
 			s.success();
 		});
@@ -102,7 +101,7 @@ public class MonoCreateTest {
 		StepVerifier.create(created)
 		            .verifyComplete();
 
-		assertThat(terminate1.get()).isEqualTo(1);
+		assertThat(dispose1.get()).isEqualTo(1);
 		assertThat(cancel1.get()).isEqualTo(0);
 	}
 
