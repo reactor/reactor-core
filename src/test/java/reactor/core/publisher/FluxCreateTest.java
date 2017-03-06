@@ -53,10 +53,10 @@ public class FluxCreateTest {
 
 	@Test
 	public void fluxCreateBuffered() {
-		AtomicInteger onTerminate = new AtomicInteger();
+		AtomicInteger onDispose = new AtomicInteger();
 		AtomicInteger onCancel = new AtomicInteger();
 		Flux<String> created = Flux.create(s -> {
-			s.onTerminate(onTerminate::getAndIncrement)
+			s.onDispose(onDispose::getAndIncrement)
 			 .onCancel(onCancel::getAndIncrement);
 			s.next("test1");
 			s.next("test2");
@@ -70,7 +70,7 @@ public class FluxCreateTest {
 		            .expectNext("test1", "test2", "test3")
 		            .verifyComplete();
 
-		assertThat(onTerminate.get()).isEqualTo(1);
+		assertThat(onDispose.get()).isEqualTo(1);
 		assertThat(onCancel.get()).isEqualTo(0);
 	}
 
@@ -127,21 +127,21 @@ public class FluxCreateTest {
 
 	@Test
 	public void fluxCreateDisposables() {
-		AtomicInteger terminate1 = new AtomicInteger();
-		AtomicInteger terminate2 = new AtomicInteger();
+		AtomicInteger dispose1 = new AtomicInteger();
+		AtomicInteger dispose2 = new AtomicInteger();
 		AtomicInteger cancel1 = new AtomicInteger();
 		AtomicInteger cancel2 = new AtomicInteger();
 		AtomicInteger cancellation = new AtomicInteger();
 		Flux<String> created = Flux.create(s -> {
-			s.onTerminate(terminate1::getAndIncrement)
+			s.onDispose(dispose1::getAndIncrement)
 			 .onCancel(cancel1::getAndIncrement);
-			s.onTerminate(terminate2::getAndIncrement);
-			assertThat(terminate2.get()).isEqualTo(1);
+			s.onDispose(dispose2::getAndIncrement);
+			assertThat(dispose2.get()).isEqualTo(1);
 			s.onCancel(cancel2::getAndIncrement);
 			assertThat(cancel2.get()).isEqualTo(1);
 			s.setCancellation(cancellation::getAndIncrement);
 			assertThat(cancellation.get()).isEqualTo(1);
-			assertThat(terminate1.get()).isEqualTo(0);
+			assertThat(dispose1.get()).isEqualTo(0);
 			assertThat(cancel1.get()).isEqualTo(0);
 			s.next("test1");
 			s.complete();
@@ -151,17 +151,17 @@ public class FluxCreateTest {
 		            .expectNext("test1")
 		            .verifyComplete();
 
-		assertThat(terminate1.get()).isEqualTo(1);
+		assertThat(dispose1.get()).isEqualTo(1);
 		assertThat(cancel1.get()).isEqualTo(0);
 	}
 
 	@Test
 	public void fluxCreateBufferedCancelled() {
-		AtomicInteger onTerminate = new AtomicInteger();
+		AtomicInteger onDispose = new AtomicInteger();
 		AtomicInteger onCancel = new AtomicInteger();
 		Flux<String> created = Flux.create(s -> {
-			s.onTerminate(() -> {
-				onTerminate.getAndIncrement();
+			s.onDispose(() -> {
+				onDispose.getAndIncrement();
 				assertThat(s.isCancelled()).isTrue();
 			});
 			s.onCancel(() -> {
@@ -179,7 +179,7 @@ public class FluxCreateTest {
 		            .thenCancel()
 		            .verify();
 
-		assertThat(onTerminate.get()).isEqualTo(1);
+		assertThat(onDispose.get()).isEqualTo(1);
 		assertThat(onCancel.get()).isEqualTo(1);
 	}
 
@@ -271,11 +271,11 @@ public class FluxCreateTest {
 
 	@Test
 	public void fluxCreateSerializedCancelled() {
-		AtomicInteger onTerminate = new AtomicInteger();
+		AtomicInteger onDispose = new AtomicInteger();
 		AtomicInteger onCancel = new AtomicInteger();
 		Flux<String> created = Flux.create(s -> {
 			s = s.serialize();
-			s.onTerminate(onTerminate::getAndIncrement)
+			s.onDispose(onDispose::getAndIncrement)
 			 .onCancel(onCancel::getAndIncrement);
 			s.next("test1");
 			s.next("test2");
@@ -289,7 +289,7 @@ public class FluxCreateTest {
 		            .thenCancel()
 		            .verify();
 
-		assertThat(onTerminate.get()).isEqualTo(1);
+		assertThat(onDispose.get()).isEqualTo(1);
 		assertThat(onCancel.get()).isEqualTo(1);
 	}
 
@@ -432,11 +432,11 @@ public class FluxCreateTest {
 
 	@Test
 	public void fluxCreateLatestCancelled() {
-		AtomicInteger onTerminate = new AtomicInteger();
+		AtomicInteger onDispose = new AtomicInteger();
 		AtomicInteger onCancel = new AtomicInteger();
 		Flux<String> created = Flux.create(s -> {
-			s.onTerminate(() -> {
-				onTerminate.getAndIncrement();
+			s.onDispose(() -> {
+				onDispose.getAndIncrement();
 				assertThat(s.isCancelled()).isTrue();
 			});
 			s.onCancel(() -> {
@@ -454,7 +454,7 @@ public class FluxCreateTest {
 		            .thenCancel()
 		            .verify();
 
-		assertThat(onTerminate.get()).isEqualTo(1);
+		assertThat(onDispose.get()).isEqualTo(1);
 		assertThat(onCancel.get()).isEqualTo(1);
 	}
 
@@ -539,11 +539,11 @@ public class FluxCreateTest {
 
 	@Test
 	public void fluxCreateDropCancelled() {
-		AtomicInteger onTerminate = new AtomicInteger();
+		AtomicInteger onDispose = new AtomicInteger();
 		AtomicInteger onCancel = new AtomicInteger();
 		Flux<String> created = Flux.create(s -> {
-			s.onTerminate(() -> {
-				onTerminate.getAndIncrement();
+			s.onDispose(() -> {
+				onDispose.getAndIncrement();
 				assertThat(s.isCancelled()).isTrue();
 			});
 			s.onCancel(() -> {
@@ -561,7 +561,7 @@ public class FluxCreateTest {
 		            .thenCancel()
 		            .verify();
 
-		assertThat(onTerminate.get()).isEqualTo(1);
+		assertThat(onDispose.get()).isEqualTo(1);
 		assertThat(onCancel.get()).isEqualTo(1);
 	}
 
@@ -645,11 +645,11 @@ public class FluxCreateTest {
 
 	@Test
 	public void fluxCreateErrorCancelled() {
-		AtomicInteger onTerminate = new AtomicInteger();
+		AtomicInteger onDispose = new AtomicInteger();
 		AtomicInteger onCancel = new AtomicInteger();
 		Flux<String> created = Flux.create(s -> {
-			s.onTerminate(() -> {
-				onTerminate.getAndIncrement();
+			s.onDispose(() -> {
+				onDispose.getAndIncrement();
 				assertThat(s.isCancelled()).isTrue();
 			});
 			s.onCancel(() -> {
@@ -667,7 +667,7 @@ public class FluxCreateTest {
 		            .thenCancel()
 		            .verify();
 
-		assertThat(onTerminate.get()).isEqualTo(1);
+		assertThat(onDispose.get()).isEqualTo(1);
 		assertThat(onCancel.get()).isEqualTo(1);
 	}
 
@@ -751,11 +751,11 @@ public class FluxCreateTest {
 
 	@Test
 	public void fluxCreateIgnoreCancelled() {
-		AtomicInteger onTerminate = new AtomicInteger();
+		AtomicInteger onDispose = new AtomicInteger();
 		AtomicInteger onCancel = new AtomicInteger();
 		Flux<String> created = Flux.create(s -> {
-			s.onTerminate(() -> {
-				onTerminate.getAndIncrement();
+			s.onDispose(() -> {
+				onDispose.getAndIncrement();
 				assertThat(s.isCancelled()).isTrue();
 			});
 			s.onCancel(() -> {
@@ -773,7 +773,7 @@ public class FluxCreateTest {
 		            .thenCancel()
 		            .verify();
 
-		assertThat(onTerminate.get()).isEqualTo(1);
+		assertThat(onDispose.get()).isEqualTo(1);
 		assertThat(onCancel.get()).isEqualTo(1);
 	}
 

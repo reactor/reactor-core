@@ -235,8 +235,8 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 
 		@Override
-		public FluxSink<T> onTerminate(Disposable d) {
-			return sink.onTerminate(d);
+		public FluxSink<T> onDispose(Disposable d) {
+			return sink.onDispose(d);
 		}
 
 		@Deprecated
@@ -382,7 +382,7 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 
 		@Override
-		public final FluxSink<T> onTerminate(Disposable d) {
+		public final FluxSink<T> onDispose(Disposable d) {
 			if (d != null) {
 				SinkDisposable sd = new SinkDisposable(d, null);
 				if (!DISPOSABLE.compareAndSet(this, null, sd)) {
@@ -402,7 +402,7 @@ final class FluxCreate<T> extends Flux<T> {
 		@Deprecated
 		@Override
 		public final void setCancellation(Cancellation c) {
-			onTerminate(new Disposable() {
+			onDispose(new Disposable() {
 				@Override
 				public void dispose() {
 					c.dispose();

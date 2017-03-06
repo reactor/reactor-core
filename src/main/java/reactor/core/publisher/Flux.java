@@ -518,7 +518,7 @@ public abstract class Flux<T> implements Publisher<T> {
      *     // with cancellation support:
      *
      *     button.addActionListener(al);
-     *     emitter.onTerminate(() -> {
+     *     emitter.onDispose(() -> {
      *         button.removeListener(al);
      *     });
      * });
@@ -552,7 +552,7 @@ public abstract class Flux<T> implements Publisher<T> {
      *     // with cancellation support:
      *
      *     button.addActionListener(al);
-     *     emitter.onTerminate(() -> {
+     *     emitter.onDispose(() -> {
      *         button.removeListener(al);
      *     });
      * }, FluxSink.OverflowStrategy.LATEST);
