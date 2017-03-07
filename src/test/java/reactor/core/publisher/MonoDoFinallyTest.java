@@ -16,9 +16,12 @@
 
 package reactor.core.publisher;
 
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;
 import reactor.core.Exceptions;
@@ -183,6 +186,20 @@ public class MonoDoFinallyTest implements Consumer<SignalType> {
 			assertNotSame(e, _e);
 			assertThat(_e, is(instanceOf(IllegalStateException.class)));
 		}
+	}
+
+	@Test
+	public void severalInARowExecutedInReverseOrder() {
+		Queue<String> finallyOrder = new ConcurrentLinkedDeque<>();
+
+		Flux.just("b")
+		    .hide()
+		    .doFinally(s -> finallyOrder.offer("FIRST"))
+		    .doFinally(s -> finallyOrder.offer("SECOND"))
+		    .blockLast();
+
+		Assertions.assertThat(finallyOrder)
+		          .containsExactly("SECOND", "FIRST");
 	}
 
 }
