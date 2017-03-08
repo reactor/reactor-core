@@ -768,7 +768,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <S> the custom state per subscriber
 	 * @param stateSupplier called for each incoming Supplier to provide the initial state for the generator bifunction
 	 * @param generator the bifunction called with the current state, the SynchronousSink API instance and is
-     * expected to return a (new) state.
+	 * expected to return a (new) state.
 	 * @return a Reactive {@link Flux} publisher ready to be subscribed
 	 */
 	public static <T, S> Flux<T> generate(Callable<S> stateSupplier, BiFunction<S, SynchronousSink<T>, S> generator) {
@@ -786,11 +786,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param <T> the value type emitted
 	 * @param <S> the custom state per subscriber
-     * @param stateSupplier called for each incoming Supplier to provide the initial state for the generator bifunction
-     * @param generator the bifunction called with the current state, the SynchronousSink API instance and is
-     * expected to return a (new) state.
-     * @param stateConsumer called after the generator has terminated or the downstream cancelled, receiving the last
-     * state to be handled (i.e., release resources or do other cleanup).
+	 * @param stateSupplier called for each incoming Supplier to provide the initial state for the generator bifunction
+	 * @param generator the bifunction called with the current state, the SynchronousSink API instance and is
+	 * expected to return a (new) state.
+	 * @param stateConsumer called after the generator has terminated or the downstream cancelled, receiving the last
+	 * state to be handled (i.e., release resources or do other cleanup).
 	 *
 	 * @return a Reactive {@link Flux} publisher ready to be subscribed
 	 */
@@ -799,7 +799,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Create a new {@link Flux} that emits an ever incrementing long starting with 0 every period on
+	 * Create a {@link Flux} that emits an ever incrementing long starting with 0 every period on
 	 * the global timer. If demand is not produced in time, an onError will be signalled. The {@link Flux} will never
 	 * complete.
 	 * <p>
@@ -813,7 +813,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Create a new {@link Flux} that emits an ever incrementing long starting with 0 every N period of time unit on
+	 * Create a {@link Flux} that emits an ever incrementing long starting with 0 every N period of time unit on
 	 * a global timer. If demand is not produced in time, an onError will be signalled. The {@link Flux} will never
 	 * complete.
 	 *
@@ -830,7 +830,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Create a new {@link Flux} that emits an ever incrementing long starting with 0 every {@link Duration} on
+	 * Create a {@link Flux} that emits an ever incrementing long starting with 0 every {@link Duration} on
 	 * the given timer. If demand is not produced in time, an onError will be signalled. The {@link Flux} will never
 	 * complete.
 	 * <p>
@@ -846,7 +846,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Create a new {@link Flux} that emits an ever incrementing long starting with 0 every N period of time on
+	 * Create a {@link Flux} that emits an ever incrementing long starting with 0 every N period of time on
 	 * the given timer. If demand is not produced in time, an onError will be signalled. The {@link Flux} will never
 	 * complete.
 	 *
@@ -864,7 +864,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Create a new {@link Flux} that emits an ever incrementing long starting with 0 every N milliseconds on
+	 * Create a {@link Flux} that emits an ever incrementing long starting with 0 every N milliseconds on
 	 * the given timer. If demand is not produced in time, an onError will be signalled. The {@link Flux} will never
 	 * complete.
 	 * <p>
@@ -881,7 +881,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Create a new {@link Flux} that emits an ever incrementing long starting with 0 every N milliseconds on
+	 * Create a {@link Flux} that emits an ever incrementing long starting with 0 every N milliseconds on
 	 * the given timer. If demand is not produced in time, an onError will be signalled. The {@link Flux} will never
 	 * complete.
 	 * <p>
@@ -899,7 +899,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Create a new {@link Flux} that emits an ever incrementing long starting with 0 every N period of time unit on
+	 * Create a {@link Flux} that emits an ever incrementing long starting with 0 every N period of time unit on
 	 * a global timer. If demand is not produced in time, an onError will be signalled. The {@link Flux} will never
 	 * complete.
 	 *
@@ -918,7 +918,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Create a new {@link Flux} that emits an ever incrementing long starting with 0 every N period of time unit on
+	 * Create a {@link Flux} that emits an ever incrementing long starting with 0 every N period of time unit on
 	 * the given timer. If demand is not produced in time, an onError will be signalled. The {@link Flux} will never
 	 * complete.
 	 *
@@ -938,7 +938,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Create a new {@link Flux} that emits the specified items and then complete.
+	 * Create a {@link Flux} that emits the specified items and then completes.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/justn.png" alt="">
 	 * <p>
