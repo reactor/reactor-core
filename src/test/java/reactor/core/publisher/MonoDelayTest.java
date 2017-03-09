@@ -16,10 +16,13 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
 import reactor.core.Exceptions;
 import reactor.test.StepVerifier;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoDelayTest {
 
@@ -44,5 +47,23 @@ public class MonoDelayTest {
 		StepVerifier.withVirtualTime(this::scenario_delayedSourceError, 0L)
 		            .thenAwait(Duration.ofSeconds(5))
 		            .verifyErrorMatches(Exceptions::isOverflow);
+	}
+
+	@Test
+	public void multipleDelaysUsingDefaultScheduler() throws InterruptedException {
+		AtomicLong counter = new AtomicLong();
+
+		Mono.delay(Duration.ofMillis(50)).subscribe(v -> counter.incrementAndGet());
+		Mono.delay(Duration.ofMillis(100)).subscribe(v -> counter.incrementAndGet());
+		Mono.delay(Duration.ofMillis(150)).subscribe(v -> counter.incrementAndGet());
+		Mono.delay(Duration.ofMillis(200)).subscribe(v -> counter.incrementAndGet());
+
+		assertThat(counter.intValue()).isEqualTo(0);
+
+		Thread.sleep(110);
+		assertThat(counter.intValue()).isEqualTo(2);
+
+		Thread.sleep(110);
+		assertThat(counter.intValue()).isEqualTo(4);
 	}
 }

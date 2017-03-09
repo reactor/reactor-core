@@ -3148,12 +3148,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @see #delaySubscription(Duration) delaySubscription to introduce a delay at the beginning of the sequence only
 	 */
 	public final Flux<T> delayElements(Duration delay) {
-		return delayElements(delay, Schedulers.timer());
+		return delayElements(delay, Schedulers.parallel());
 	}
 
 	/**
 	 * Delay each of this {@link Flux} elements ({@link Subscriber#onNext} signals)
-	 * by a given {@link Duration}.
+	 * by a given {@link Duration}. Signals are delayed and played on the
+	 * {@link Schedulers#parallel() parallel} default Scheduler.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/delayonnext.png" alt="">
@@ -3237,7 +3238,7 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Delay the {@link Flux#subscribe(Subscriber) subscription} to this {@link Flux} source until the given
-	 * period elapses.
+	 * period elapses. The delay is introduced through the {@link Schedulers#parallel() parallel} default Scheduler.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/delaysubscription.png" alt="">
@@ -3248,7 +3249,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 */
 	public final Flux<T> delaySubscription(Duration delay) {
-		return delaySubscription(delay, Schedulers.timer());
+		return delaySubscription(delay, Schedulers.parallel());
 	}
 
 	/**
@@ -3288,7 +3289,7 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Delay the {@link Flux#subscribe(Subscriber) subscription} to this {@link Flux} source until the given
-	 * period elapses.
+	 * period elapses. The delay is introduced through the {@link Schedulers#parallel() parallel} default Scheduler.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/delaysubscription.png" alt="">
@@ -3300,7 +3301,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	@Deprecated
 	public final Flux<T> delaySubscriptionMillis(long delay) {
-		return delaySubscription(Duration.ofMillis(delay), Schedulers.timer());
+		return delaySubscription(Duration.ofMillis(delay), Schedulers.parallel());
 	}
 
 	/**

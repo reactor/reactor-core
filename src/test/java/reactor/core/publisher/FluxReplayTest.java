@@ -69,7 +69,8 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 
 	@Before
 	public void vtsStart() {
-		vts = VirtualTimeScheduler.getOrSet(false);
+		//delayElements (notably) now uses parallel() so VTS must be enabled everywhere
+		vts = VirtualTimeScheduler.getOrSet(true);
 	}
 
 	@After

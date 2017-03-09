@@ -23,12 +23,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.After;
 import org.junit.Test;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.core.scheduler.TimedScheduler;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.scheduler.VirtualTimeScheduler;
@@ -38,11 +36,8 @@ import static org.assertj.core.api.Assertions.fail;
 
 public class MonoDelayElementTest {
 
-	@After
-	public void reset() {
-		//TODO remove once the StepVerifier explicitly resets VirtualTimeScheduler
-		//see https://github.com/reactor/reactor-addons/issues/70
-		VirtualTimeScheduler.reset();
+	private Scheduler defaultSchedulerForDelay() {
+		return Schedulers.parallel(); //reflects the default used in Mono.delay(duration)
 	}
 
 	@Test
@@ -50,7 +45,7 @@ public class MonoDelayElementTest {
 		Mono<String> source = Mono.just("foo").log().hide();
 
 		StepVerifier.withVirtualTime(() -> new MonoDelayElement<>(source, 2, TimeUnit.SECONDS,
-				Schedulers.timer()).log())
+				defaultSchedulerForDelay()).log())
 	                .expectSubscription()
 	                .expectNoEvent(Duration.ofSeconds(2))
 	                .expectNext("foo")
@@ -108,7 +103,7 @@ public class MonoDelayElementTest {
 		Mono<String> source = Mono.<String>empty().log().hide();
 
 		Duration d = StepVerifier.create(new MonoDelayElement<>(source, 10, TimeUnit.SECONDS,
-				Schedulers.timer()).log())
+				defaultSchedulerForDelay()).log())
 		            .expectSubscription()
 		            .verifyComplete();
 
@@ -119,7 +114,7 @@ public class MonoDelayElementTest {
 	public void errorIsImmediate() {
 		Mono<String> source = Mono.<String>error(new IllegalStateException("boom")).hide();
 
-		Duration d = StepVerifier.create(new MonoDelayElement<>(source, 10, TimeUnit.SECONDS, Schedulers.timer()).log())
+		Duration d = StepVerifier.create(new MonoDelayElement<>(source, 10, TimeUnit.SECONDS, defaultSchedulerForDelay()).log())
 		                         .expectSubscription()
 		                         .verifyErrorMessage("boom");
 
@@ -134,7 +129,7 @@ public class MonoDelayElementTest {
 
 		try {
 			StepVerifier.withVirtualTime(() ->
-					new MonoDelayElement<>(source, 2, TimeUnit.SECONDS, Schedulers.timer()))
+					new MonoDelayElement<>(source, 2, TimeUnit.SECONDS, defaultSchedulerForDelay()))
 			            .expectSubscription()
 			            .then(() -> source.next("foo").error(new IllegalStateException("boom")))
 			            .expectNoEvent(Duration.ofSeconds(2))
@@ -261,7 +256,7 @@ public class MonoDelayElementTest {
 			StepVerifier.withVirtualTime(() -> new MonoDelayElement<>(source,
 					2,
 					TimeUnit.SECONDS,
-					Schedulers.timer()))
+					defaultSchedulerForDelay()))
 			            .expectSubscription()
 			            .expectNoEvent(Duration.ofSeconds(2))
 			            .expectNext("foo")
@@ -284,7 +279,7 @@ public class MonoDelayElementTest {
 		StepVerifier.withVirtualTime(() -> new MonoDelayElement<>(source,
 				2,
 				TimeUnit.SECONDS,
-				Schedulers.timer()))
+				defaultSchedulerForDelay()))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofSeconds(2))
 		            .expectNext("foo")
@@ -306,7 +301,7 @@ public class MonoDelayElementTest {
 			StepVerifier.withVirtualTime(() -> new MonoDelayElement<>(source,
 					2,
 					TimeUnit.SECONDS,
-					Schedulers.timer()))
+					defaultSchedulerForDelay()))
 			            .expectSubscription()
 			            .expectNoEvent(Duration.ofSeconds(2))
 			            .expectNext("foo")
@@ -325,7 +320,8 @@ public class MonoDelayElementTest {
 		Flux<Integer> source = Flux.range(1, 5);
 
 
-		StepVerifier.withVirtualTime(() -> new MonoDelayElement<>(source, 2, TimeUnit.SECONDS, Schedulers.timer())
+		StepVerifier.withVirtualTime(() -> new MonoDelayElement<>(source, 2, TimeUnit.SECONDS,
+				defaultSchedulerForDelay())
 				.doOnSubscribe(s -> {
 					assertThat(s).isInstanceOf(MonoDelayElement.MonoDelayElementSubscriber.class);
 

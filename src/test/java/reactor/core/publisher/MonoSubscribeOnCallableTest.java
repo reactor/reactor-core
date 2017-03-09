@@ -39,6 +39,7 @@ public class MonoSubscribeOnCallableTest {
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofSeconds(1))
 		            .thenRequest(1)
+		            .thenAwait()
 		            .expectNext(1)
 		            .expectComplete()
 		            .verify();

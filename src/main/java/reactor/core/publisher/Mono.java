@@ -184,6 +184,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Create a Mono which delays an onNext signal of {@code duration} of given unit and complete on the global timer.
 	 * If the demand cannot be produced in time, an onError will be signalled instead.
+	 * The delay is introduced through the {@link Schedulers#parallel() parallel} default Scheduler.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/delay.png" alt="">
@@ -193,7 +194,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Mono}
 	 */
 	public static Mono<Long> delay(Duration duration) {
-		return delay(duration, Schedulers.timer());
+		return delay(duration, Schedulers.parallel());
 	}
 
 	/**
@@ -1392,14 +1393,14 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * Note that the scheduler on which the mono chain continues execution will be the
-	 * time scheduler used if the mono is valued, or the current scheduler if the mono
-	 * completes empty or errors.
+	 * {@link Schedulers#parallel() parallel} scheduler if the mono is valued, or the
+	 * current scheduler if the mono completes empty or errors.
 	 *
 	 * @param delay period to delay each {@link Subscriber#onNext} signal
 	 * @return a delayed {@link Mono}
 	 */
 	public final Mono<T> delayElement(Duration delay) {
-		return delayElement(delay, Schedulers.timer());
+		return delayElement(delay, Schedulers.parallel());
 	}
 
 	/**
@@ -1411,7 +1412,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * Note that the scheduler on which the mono chain continues execution will be the
-	 * time scheduler used if the mono is valued, or the current scheduler if the mono
+	 * time scheduler provided if the mono is valued, or the current scheduler if the mono
 	 * completes empty or errors.
 	 *
 	 * @param delay {@link Duration} to delay each {@link Subscriber#onNext} signal
@@ -1432,7 +1433,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * Note that the scheduler on which the mono chain continues execution will be the
-	 * time scheduler used if the mono is valued, or the current scheduler if the mono
+	 * time scheduler provided if the mono is valued, or the current scheduler if the mono
 	 * completes empty or errors.
 	 *
 	 * @param delay period to delay each {@link Subscriber#onNext} signal, in milliseconds
@@ -1453,7 +1454,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * Note that the scheduler on which the mono chain continues execution will be the
-	 * time scheduler used if the mono is valued, or the current scheduler if the mono
+	 * {@link Schedulers#parallel() parallel} if the mono is valued, or the current scheduler if the mono
 	 * completes empty or errors.
 	 *
 	 * @param delay period to delay each {@link Subscriber#onNext} signal, in milliseconds
@@ -1521,7 +1522,7 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Delay the {@link Mono#subscribe(Subscriber) subscription} to this {@link Mono} source until the given
-	 * period elapses.
+	 * period elapses. The delay is introduced through the {@link Schedulers#parallel() parallel} default Scheduler.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/delaysubscription1.png" alt="">
@@ -1538,7 +1539,7 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Delay the {@link Mono#subscribe(Subscriber) subscription} to this {@link Mono} source until the given
-	 * period elapses.
+	 * period elapses. The delay is introduced through the {@link Schedulers#parallel() parallel} default Scheduler.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/delaysubscription1.png" alt="">
