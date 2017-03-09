@@ -79,7 +79,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 	@Override
 	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 		if (!isTimeCapable()) {
-			return NOT_TIMED;
+			return REJECTED;
 		}
 
 		ScheduledExecutorService scheduledExecutor = (ScheduledExecutorService) executor;
@@ -95,7 +95,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 	@Override
 	public Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
 		if (!isTimeCapable()) {
-			return NOT_TIMED;
+			return REJECTED;
 		}
 
 		ScheduledExecutorService scheduledExecutor = (ScheduledExecutorService) executor;
@@ -183,7 +183,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 		@Override
 		public Disposable schedule(Runnable t, long delay, TimeUnit unit) {
 			if (!isTimeCapable()) {
-				return NOT_TIMED;
+				return REJECTED;
 			}
 
 			ScheduledExecutorService scheduledExecutor = (ScheduledExecutorService) executor;
@@ -205,7 +205,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 		@Override
 		public Disposable schedulePeriodically(Runnable t, long initialDelay, long period, TimeUnit unit) {
 			if (!isTimeCapable()) {
-				return NOT_TIMED;
+				return REJECTED;
 			}
 
 			ScheduledExecutorService scheduledExecutor = (ScheduledExecutorService) executor;

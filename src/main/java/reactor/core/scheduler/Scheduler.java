@@ -20,6 +20,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import com.sun.org.apache.regexp.internal.RE;
 import reactor.core.Cancellation;
 import reactor.core.Disposable;
 
@@ -44,7 +45,7 @@ public interface Scheduler extends Disposable {
 	 * operations.
 	 * <p>
 	 * The {@link Scheduler} default is to return false and have the above operations
-	 * immediately return the pre-disposed {@link Scheduler#NOT_TIMED} instance.
+	 * immediately return the pre-disposed {@link Scheduler#REJECTED} instance.
 	 *
 	 * @return true if the scheduler is time-capable, false otherwise.
 	 */
@@ -77,10 +78,11 @@ public interface Scheduler extends Disposable {
 	 * @param delay the delay amount, non-positive values indicate non-delayed scheduling
 	 * @param unit the unit of measure of the delay amount
 	 * @return the {@link Cancellation} that let's one cancel this particular delayed task,
-	 * or {@link #NOT_TIMED} if the Scheduler is not capable of scheduling periodically.
+	 * or {@link #REJECTED} if the Scheduler is not capable of scheduling periodically.
+	 * @see #isTimeCapable()
 	 */
 	default Cancellation schedule(Runnable task, long delay, TimeUnit unit) {
-		return NOT_TIMED;
+		return REJECTED;
 	}
 
 	/**
@@ -99,10 +101,11 @@ public interface Scheduler extends Disposable {
 	 * @param period the period at which the task should be re-executed
 	 * @param unit the unit of measure of the delay amount
 	 * @return the {@link Cancellation} that let's one cancel this particular delayed task,
-	 * or {@link #NOT_TIMED} if the Scheduler is not capable of scheduling periodically.
+	 * or {@link #REJECTED} if the Scheduler is not capable of scheduling periodically.
+	 * @see #isTimeCapable()
 	 */
 	default Cancellation schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
-		return NOT_TIMED;
+		return REJECTED;
 	}
 
 	/**
@@ -188,7 +191,7 @@ public interface Scheduler extends Disposable {
 		 * <p>
 		 * The {@link Worker} default in {@link Scheduler} is to return false and have
 		 * the above operations immediately return the pre-disposed
-		 * {@link Scheduler#NOT_TIMED} instance.
+		 * {@link Scheduler#REJECTED} instance.
 		 *
 		 * @return true if the worker is time-capable, false otherwise.
 		 */
@@ -217,10 +220,11 @@ public interface Scheduler extends Disposable {
 		 * @param delay the delay amount, non-positive values indicate non-delayed scheduling
 		 * @param unit the unit of measure of the delay amount
 		 * @return the {@link Cancellation} that let's one cancel this particular delayed task,
-		 * or {@link #NOT_TIMED} if the Worker is not capable of scheduling with delay.
+		 * or {@link #REJECTED} if the Worker is not capable of scheduling with delay.
+		 * @see #isTimeCapable()
 		 */
 		default Cancellation schedule(Runnable task, long delay, TimeUnit unit) {
-			return NOT_TIMED;
+			return REJECTED;
 		}
 
 		/**
@@ -238,10 +242,11 @@ public interface Scheduler extends Disposable {
 		 * @param period the period at which the task should be re-executed
 		 * @param unit the unit of measure of the delay amount
 		 * @return the {@link Cancellation} that let's one cancel this particular delayed task,
-		 * or {@link #NOT_TIMED} if the Worker is not capable of scheduling periodically.
+		 * or {@link #REJECTED} if the Worker is not capable of scheduling periodically.
+		 * @see #isTimeCapable()
 		 */
 		default Cancellation schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
-			return NOT_TIMED;
+			return REJECTED;
 		}
 
 		/**
@@ -268,13 +273,8 @@ public interface Scheduler extends Disposable {
 	}
 	
 	/**
-	 * Returned by the schedule() methods if the Scheduler or the Worker has ben shut down.
+	 * Returned by the schedule() methods if the Scheduler or the Worker has ben shut down,
+	 * or is incapable of deferring tasks (not {@link Scheduler#isTimeCapable() time capable}).
 	 */
 	Disposable REJECTED = new RejectedDisposable();
-
-	/**
-	 * Returned by the schedule() methods if the Scheduler is incapable of deferring tasks
-	 * to a future point in time / executing tasks at a time interval.
-	 */
-	Disposable NOT_TIMED = new RejectedDisposable();
 }

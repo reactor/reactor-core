@@ -54,18 +54,18 @@ public class ExecutorServiceSchedulerTest extends AbstractSchedulerTest {
 		Scheduler s = Schedulers.fromExecutorService(Executors.newSingleThreadExecutor());
 		assertThat(s.schedule(() -> {}, 100, TimeUnit.MILLISECONDS))
 				.describedAs("direct delayed scheduling")
-				.isSameAs(Scheduler.NOT_TIMED);
+				.isSameAs(Scheduler.REJECTED);
 		assertThat(s.schedulePeriodically(() -> {}, 100, 100, TimeUnit.MILLISECONDS))
 				.describedAs("direct periodic scheduling")
-				.isSameAs(Scheduler.NOT_TIMED);
+				.isSameAs(Scheduler.REJECTED);
 
 		Worker w = s.createWorker();
 		assertThat(w.schedule(() -> {}, 100, TimeUnit.MILLISECONDS))
 				.describedAs("worker delayed scheduling")
-				.isSameAs(Scheduler.NOT_TIMED);
+				.isSameAs(Scheduler.REJECTED);
 		assertThat(w.schedulePeriodically(() -> {}, 100, 100, TimeUnit.MILLISECONDS))
 				.describedAs("worder periodic scheduling")
-				.isSameAs(Scheduler.NOT_TIMED);
+				.isSameAs(Scheduler.REJECTED);
 	}
 
 	@Test

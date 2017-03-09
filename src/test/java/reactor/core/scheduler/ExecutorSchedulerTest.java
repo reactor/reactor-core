@@ -42,14 +42,14 @@ public class ExecutorSchedulerTest extends AbstractSchedulerTest {
 		Scheduler.Worker worker = scheduler.createWorker();
 		try {
 			assertThat(scheduler.schedule(() -> { }, 100, TimeUnit.MILLISECONDS))
-					.isSameAs(Scheduler.NOT_TIMED);
+					.isSameAs(Scheduler.REJECTED);
 			assertThat(scheduler.schedulePeriodically(() -> { }, 100, 100, TimeUnit.MILLISECONDS))
-					.isSameAs(Scheduler.NOT_TIMED);
+					.isSameAs(Scheduler.REJECTED);
 
 			assertThat(worker.schedule(() -> { }, 100, TimeUnit.MILLISECONDS))
-					.isSameAs(Scheduler.NOT_TIMED);
+					.isSameAs(Scheduler.REJECTED);
 			assertThat(worker.schedulePeriodically(() -> { }, 100, 100, TimeUnit.MILLISECONDS))
-					.isSameAs(Scheduler.NOT_TIMED);
+					.isSameAs(Scheduler.REJECTED);
 		}
 		finally {
 			worker.dispose();

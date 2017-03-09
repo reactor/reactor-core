@@ -230,7 +230,7 @@ public abstract class AbstractSchedulerTest {
 				catch (InterruptedException e) {
 				}
 			}, 10, TimeUnit.MILLISECONDS);
-			assertThat(d).isNotSameAs(Scheduler.NOT_TIMED);
+			assertThat(d).isNotSameAs(Scheduler.REJECTED);
 
 			latch.await();
 			assertThat(d.isDisposed()).isFalse();
@@ -275,7 +275,7 @@ public abstract class AbstractSchedulerTest {
 				catch (InterruptedException e) {
 				}
 			}, 10, TimeUnit.MILLISECONDS);
-			assertThat(d).isNotSameAs(Scheduler.NOT_TIMED);
+			assertThat(d).isNotSameAs(Scheduler.REJECTED);
 
 			latch.await();
 			assertThat(d.isDisposed()).isFalse();
@@ -320,7 +320,7 @@ public abstract class AbstractSchedulerTest {
 				catch (InterruptedException e) {
 				}
 			}, 10, 10, TimeUnit.MILLISECONDS);
-			assertThat(d).isNotSameAs(Scheduler.NOT_TIMED);
+			assertThat(d).isNotSameAs(Scheduler.REJECTED);
 
 			assertThat(d.isDisposed()).isFalse();
 
@@ -364,7 +364,7 @@ public abstract class AbstractSchedulerTest {
 				}
 			}, 10, 10, TimeUnit.MILLISECONDS);
 			Disposable d = (Disposable) c;
-			assertThat(d).isNotSameAs(Scheduler.NOT_TIMED);
+			assertThat(d).isNotSameAs(Scheduler.REJECTED);
 
 			latch.await();
 			assertThat(d.isDisposed()).isFalse();
