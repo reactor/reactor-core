@@ -2178,6 +2178,7 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Merge emissions of this {@link Mono} with the provided {@link Publisher}.
+	 * The element from the Mono may be interleaved with the elements of the Publisher.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/merge1.png" alt="">
