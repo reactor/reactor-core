@@ -170,7 +170,7 @@ final class MonoCreate<T> extends Mono<T> {
 		@Deprecated
 		@Override
 		public void setCancellation(Cancellation c) {
-			onDispose(new Disposable() {
+			onCancel(new Disposable() {
 				@Override
 				public void dispose() {
 					c.dispose();
@@ -218,10 +218,10 @@ final class MonoCreate<T> extends Mono<T> {
 			if (d != Flux.CANCELLED) {
 				d = DISPOSABLE.getAndSet(this, Flux.CANCELLED);
 				if (d != null && d != Flux.CANCELLED) {
-					d.dispose();
 					if (isCancel && d instanceof SinkDisposable) {
 						((SinkDisposable) d).cancel();
 					}
+					d.dispose();
 				}
 			}
 		}

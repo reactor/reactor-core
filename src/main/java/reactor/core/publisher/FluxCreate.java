@@ -319,10 +319,10 @@ final class FluxCreate<T> extends Flux<T> {
 			if (d != CANCELLED) {
 				d = DISPOSABLE.getAndSet(this, CANCELLED);
 				if (d != null && d != CANCELLED) {
-					d.dispose();
 					if (isCancel && d instanceof SinkDisposable) {
 						((SinkDisposable) d).cancel();
 					}
+					d.dispose();
 				}
 			}
 		}
