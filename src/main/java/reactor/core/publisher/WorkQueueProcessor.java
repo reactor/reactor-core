@@ -277,6 +277,34 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	}
 
 	/**
+	 * Create a new WorkQueueProcessor using the passed buffer size, wait strategy
+	 * and auto-cancel settings. <p> The passed {@code executor} {@link ExecutorService}
+	 * will execute as many event-loop consuming the ringbuffer as subscribers.
+	 * <p> An additional {@code requestTaskExecutor} {@link ExecutorService} is also used
+	 * internally on each subscription.
+	 * @param executor A provided ExecutorService to manage threading infrastructure
+	 * @param requestTaskExecutor A provided ExecutorService to manage threading infrastructure.
+	 * Should be capable of executing several runnables in parallel (eg. cached thread pool)
+	 * @param bufferSize A Backlog Size to mitigate slow subscribers
+	 * @param strategy A RingBuffer WaitStrategy to use instead of the default
+	 * smart blocking wait strategy.
+	 * @param autoCancel Should this propagate cancellation when unregistered by all
+	 * subscribers ?
+	 * @param <E> Type of processed signals
+	 * @return a fresh processor
+	 */
+	public static <E> WorkQueueProcessor<E> create(ExecutorService executor,
+			ExecutorService requestTaskExecutor,
+			int bufferSize, WaitStrategy strategy, boolean autoCancel) {
+		return new WorkQueueProcessor<>(null,
+				executor, requestTaskExecutor,
+				bufferSize,
+				strategy == null ? WaitStrategy.liteBlocking() : strategy,
+				false,
+				autoCancel);
+	}
+
+	/**
 	 * Create a new WorkQueueProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A Shared Processor
 	 * authorizes concurrent onNext calls and is suited for multi-threaded publisher that
@@ -479,7 +507,35 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 				autoCancel);
 	}
 
-	ThreadFactory requestTaskThreadFactory;
+	/**
+	 * Create a new WorkQueueProcessor using the passed buffer size, wait strategy
+	 * and auto-cancel settings. <p> A Shared Processor authorizes concurrent onNext calls
+	 * and is suited for multi-threaded publisher that will fan-in data. <p> The passed
+	 * {@link ExecutorService} will execute as many event-loop
+	 * consuming the ringbuffer as subscribers.
+	 * <p> An additional {@code requestTaskExecutor} {@link ExecutorService} is also used
+	 * internally on each subscription.
+	 * @param executor A provided ExecutorService to manage threading infrastructure
+	 * @param requestTaskExecutor A provided ExecutorService to manage threading infrastructure
+	 * @param bufferSize A Backlog Size to mitigate slow subscribers
+	 * @param strategy A RingBuffer WaitStrategy to use instead of the default
+	 * smart blocking wait strategy.
+	 * @param autoCancel Should this propagate cancellation when unregistered by all
+	 * subscribers ?
+	 * @param <E> Type of processed signals
+	 * @return a fresh processor
+	 */
+	public static <E> WorkQueueProcessor<E> share(ExecutorService executor,
+			ExecutorService requestTaskExecutor,
+			int bufferSize, WaitStrategy strategy, boolean autoCancel) {
+		return new WorkQueueProcessor<>(null,
+				executor,
+				requestTaskExecutor,
+				bufferSize,
+				strategy == null ? WaitStrategy.liteBlocking() : strategy,
+				true,
+				autoCancel);
+	}
 
 	@SuppressWarnings("rawtypes")
     static final Supplier FACTORY = (Supplier<Slot>) Slot::new;
@@ -493,6 +549,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 	final Queue<Object> claimedDisposed = new ConcurrentLinkedQueue<>();
 
+	final ExecutorService requestTaskExecutor;
 
 	final WaitStrategy writeWait;
 
@@ -521,6 +578,15 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 			ExecutorService executor,
 			int bufferSize, WaitStrategy waitStrategy, boolean share,
 	                                boolean autoCancel) {
+		this(threadFactory, executor, defaultRequestTaskExecutor(defaultName(threadFactory, WorkQueueProcessor.class)),
+				bufferSize, waitStrategy, share, autoCancel);
+	}
+
+	@SuppressWarnings("unchecked")
+	WorkQueueProcessor(ThreadFactory threadFactory,
+			ExecutorService executor, ExecutorService requestTaskExecutor,
+			int bufferSize, WaitStrategy waitStrategy, boolean share,
+	                                boolean autoCancel) {
 		super(bufferSize, threadFactory,
 				executor,
 				autoCancel,
@@ -531,33 +597,9 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		this.writeWait = waitStrategy;
 
 		ringBuffer.addGatingSequence(workSequence);
-		this.requestTaskThreadFactory = createDefaultRequestTaskThreadFactory();
+		this.requestTaskExecutor = requestTaskExecutor;
 	}
 
-	ThreadFactory createDefaultRequestTaskThreadFactory() {
-		return r -> new Thread(r,this.name+"[request-task]");
-	}
-
-	/**
-	 * Call <strong>before</strong> {@link #subscribe() subscription} to customize the
-	 * {@link ThreadFactory} used for internal Threads spawned for request tasks.
-	 * The default will use the same name as the main processor executor's threads, with
-	 * a {@code [request-task]} suffix.
-	 * <p>
-	 * These threads are spawned {@link #onSubscribe(Subscription)}, so this method should
-	 * be called before subscription.
-	 *
-	 * @param factory the factory to use for {@link #requestTask(Subscription)}, or null
-	 * to reset to the default.
-	 */
-	public void setRequestTaskThreadFactory(ThreadFactory factory) {
-		if (factory == null) {
-			this.requestTaskThreadFactory = createDefaultRequestTaskThreadFactory();
-		}
-		else {
-			this.requestTaskThreadFactory = factory;
-		}
-	}
 	@Override
 	public void subscribe(final Subscriber<? super E> subscriber) {
 		if (subscriber == null) {
@@ -642,7 +684,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 	@Override
 	protected void requestTask(Subscription s) {
-		Thread t = requestTaskThreadFactory.newThread(EventLoopProcessor.createRequestTask(s,
+		requestTaskExecutor.execute(EventLoopProcessor.createRequestTask(s,
 				() -> {
 					if (!alive()) {
 						WaitStrategy.alert();
@@ -650,7 +692,6 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 				}, null,
 				ringBuffer::getMinimumGatingSequence,
 				readWait, this, ringBuffer.bufferSize()));
-		t.start();
 	}
 
 	@Override

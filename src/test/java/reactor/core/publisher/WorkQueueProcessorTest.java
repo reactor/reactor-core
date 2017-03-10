@@ -946,6 +946,9 @@ public class WorkQueueProcessorTest {
 		Thread[] threads = new Thread[Thread.activeCount()];
 		Thread.enumerate(threads);
 
+		//cleanup to avoid visibility in other tests
+		processor.forceShutdown();
+
 		Condition<Thread> defaultRequestTaskThread = new Condition<>(
 				thread -> expectedName.equals(thread.getName()),
 				"a thread named \"%s\"", expectedName);
@@ -955,15 +958,58 @@ public class WorkQueueProcessorTest {
 	}
 
 	@Test
-	public void testCustomRequestTaskThreadName() {
-		String expectedName = "workQueueProcessorRequestTask";
-		WorkQueueProcessor<Object> processor = WorkQueueProcessor.create("testProcessor", 8);
-		processor.setRequestTaskThreadFactory(r -> new Thread(r, expectedName));
+	public void testCustomRequestTaskThreadNameCreate() {
+		String expectedName = "workQueueProcessorRequestTaskCreate";
+		//NOTE: the below single executor should not be used usually as requestTask assumes it immediately gets executed
+		ExecutorService customTaskExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, expectedName));
+		WorkQueueProcessor<Object> processor = WorkQueueProcessor.create(
+				Executors.newCachedThreadPool(), customTaskExecutor,
+				8, WaitStrategy.liteBlocking(), true);
 
 		processor.requestTask(Operators.cancelledSubscription());
+		processor.subscribe();
 
 		Thread[] threads = new Thread[Thread.activeCount()];
 		Thread.enumerate(threads);
+
+		//cleanup to avoid visibility in other tests
+		customTaskExecutor.shutdownNow();
+		processor.forceShutdown();
+
+		for (Thread thread : threads) {
+			System.out.println(thread.getName());
+		}
+
+		Condition<Thread> customRequestTaskThread = new Condition<>(
+				thread -> expectedName.equals(thread.getName()),
+				"a thread named \"%s\"", expectedName);
+
+		Assertions.assertThat(threads)
+		          .haveExactly(1, customRequestTaskThread);
+	}
+
+	@Test
+	public void testCustomRequestTaskThreadNameShare() {
+		String expectedName = "workQueueProcessorRequestTaskShare";
+		//NOTE: the below single executor should not be used usually as requestTask assumes it immediately gets executed
+		ExecutorService customTaskExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, expectedName));
+		WorkQueueProcessor<Object> processor = WorkQueueProcessor.share(
+				Executors.newCachedThreadPool(), customTaskExecutor,
+				8, WaitStrategy.liteBlocking(), true);
+
+		processor.requestTask(Operators.cancelledSubscription());
+		processor.subscribe();
+
+		Thread[] threads = new Thread[Thread.activeCount()];
+		Thread.enumerate(threads);
+
+		//cleanup to avoid visibility in other tests
+		customTaskExecutor.shutdownNow();
+		processor.forceShutdown();
+
+		for (Thread thread : threads) {
+			System.out.println(thread.getName());
+		}
 
 		Condition<Thread> customRequestTaskThread = new Condition<>(
 				thread -> expectedName.equals(thread.getName()),

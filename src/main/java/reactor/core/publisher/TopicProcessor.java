@@ -312,6 +312,36 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	}
 
 	/**
+	 * Create a new TopicProcessor using passed backlog size, wait strategy and
+	 * auto-cancel settings. <p> The passed {@link ExecutorService}
+	 * will execute as many event-loop consuming the ringbuffer as subscribers.
+	 * <p> An additional {@code requestTaskExecutor} {@link ExecutorService} is also used
+	 * internally on each subscription.
+	 * @param service A provided ExecutorService to manage threading infrastructure
+	 * @param requestTaskExecutor A provided ExecutorService to manage threading infrastructure.
+	 * Should be capable of executing several runnables in parallel (eg. cached thread pool)
+	 * @param bufferSize A Backlog Size to mitigate slow subscribers
+	 * @param strategy A RingBuffer WaitStrategy to use instead of the default
+	 * blocking wait strategy.
+	 * @param autoCancel Should this propagate cancellation when unregistered by all
+	 * subscribers ?
+	 * @param <E> Type of processed signals
+	 * @return a fresh processor
+	 */
+	public static <E> TopicProcessor<E> create(ExecutorService service, ExecutorService requestTaskExecutor,
+	                                                int bufferSize, WaitStrategy strategy,
+	                                                boolean autoCancel) {
+		return new TopicProcessor<>(null,
+				service, requestTaskExecutor,
+				bufferSize,
+				strategy == null ?
+						WaitStrategy.phasedOffLiteLock(200, 100, TimeUnit.MILLISECONDS) :
+						strategy,
+				false,
+				autoCancel, null);
+	}
+
+	/**
 	 * Create a new TopicProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A Shared Processor
 	 * authorizes concurrent onNext calls and is suited for multi-threaded publisher that
@@ -569,11 +599,44 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 				autoCancel, null);
 	}
 
-	ThreadFactory requestTaskThreadFactory;
+	/**
+	 * Create a new TopicProcessor using passed backlog size, wait strategy and
+	 * auto-cancel settings. <p> A Shared Processor authorizes concurrent onNext calls and
+	 * is suited for multi-threaded publisher that will fan-in data. <p> The passed {@link
+	 * ExecutorService} will execute as many event-loop consuming the
+	 * ringbuffer as subscribers.
+	 * <p> An additional {@code requestTaskExecutor} {@link ExecutorService} is also used
+	 * internally on each subscription.
+	 * @param service A provided ExecutorService to manage threading infrastructure
+	 * @param requestTaskExecutor A provided ExecutorService to manage threading infrastructure.
+	 * @param service A provided ExecutorService to manage threading infrastructure
+	 * @param bufferSize A Backlog Size to mitigate slow subscribers
+	 * @param strategy A RingBuffer WaitStrategy to use instead of the default
+	 * blocking wait strategy.
+	 * @param autoCancel Should this propagate cancellation when unregistered by all
+	 * subscribers ?
+	 * @param <E> Type of processed signals
+	 * @return a fresh processor
+	 */
+	public static <E> TopicProcessor<E> share(ExecutorService service,
+			ExecutorService requestTaskExecutor,
+			int bufferSize, WaitStrategy strategy,
+			boolean autoCancel) {
+		return new TopicProcessor<>(null,
+				service, requestTaskExecutor,
+				bufferSize,
+				strategy == null ?
+						WaitStrategy.phasedOffLiteLock(200, 100, TimeUnit.MILLISECONDS) :
+						strategy,
+				true,
+				autoCancel, null);
+	}
 
 	final RingBuffer.Reader barrier;
 
 	final RingBuffer.Sequence minimum;
+
+	final ExecutorService requestTaskExecutor;
 
 	TopicProcessor(String name, int bufferSize,
 	                            WaitStrategy waitStrategy, boolean shared,
@@ -594,6 +657,19 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 			boolean shared,
 			boolean autoCancel,
 			final Supplier<E> signalSupplier) {
+		this(threadFactory, executor,
+				defaultRequestTaskExecutor(defaultName(threadFactory, TopicProcessor.class)),
+				bufferSize, waitStrategy, shared, autoCancel, signalSupplier);
+	}
+
+	TopicProcessor(ThreadFactory threadFactory,
+			ExecutorService executor,
+			ExecutorService requestTaskExecutor,
+			int bufferSize,
+			WaitStrategy waitStrategy,
+			boolean shared,
+			boolean autoCancel,
+			final Supplier<E> signalSupplier) {
 		super(bufferSize, threadFactory, executor, autoCancel, shared, () -> {
 			Slot<E> signal = new Slot<>();
 			if (signalSupplier != null) {
@@ -604,32 +680,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 
 		this.minimum = RingBuffer.newSequence(-1);
 		this.barrier = ringBuffer.newReader();
-		this.requestTaskThreadFactory = createDefaultRequestTaskThreadFactory();
-	}
-
-	ThreadFactory createDefaultRequestTaskThreadFactory() {
-		return r -> new Thread(r,this.name+"[request-task]");
-	}
-
-	/**
-	 * Call <strong>before</strong> {@link #subscribe() subscription} to customize the
-	 * {@link ThreadFactory} used for internal Threads spawned for request tasks.
-	 * The default will use the same name as the main processor executor's threads, with
-	 * a {@code [request-task]} suffix.
-	 * <p>
-	 * These threads are spawned {@link #onSubscribe(Subscription)}, so this method should
-	 * be called before subscription.
-	 *
-	 * @param factory the factory to use for {@link #requestTask(Subscription)}, or null
-	 * to reset to the default.
-	 */
-	public void setRequestTaskThreadFactory(ThreadFactory factory) {
-		if (factory == null) {
-			this.requestTaskThreadFactory = createDefaultRequestTaskThreadFactory();
-		}
-		else {
-			this.requestTaskThreadFactory = factory;
-		}
+		this.requestTaskExecutor = requestTaskExecutor;
 	}
 
 	@Override
@@ -710,7 +761,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	protected void requestTask(Subscription s) {
 		minimum.set(ringBuffer.getCursor());
 		ringBuffer.addGatingSequence(minimum);
-		Thread t = requestTaskThreadFactory.newThread(
+		requestTaskExecutor.execute(
 				EventLoopProcessor.createRequestTask(s, () -> {
 					             if (!alive()) {
 						             WaitStrategy.alert();
@@ -721,7 +772,6 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 				readWait,
 				this,
 				ringBuffer.bufferSize()));
-		t.start();
 	}
 
 	@Override

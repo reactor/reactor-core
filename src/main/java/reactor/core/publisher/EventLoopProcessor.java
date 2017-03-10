@@ -257,10 +257,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 
 		contextClassLoader = new EventLoopContext();
 
-		@SuppressWarnings("rawtypes")
-        String name = threadFactory instanceof Supplier ? ((Supplier)
-				threadFactory).get().toString() : null;
-		this.name = null != name ? name : getClass().getSimpleName();
+		this.name = defaultName(threadFactory, getClass());
 
 		if (executor == null) {
 			this.executor = Executors.newCachedThreadPool(threadFactory);
@@ -295,6 +292,33 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 				return upstreamSubscription;
 		}
 		return super.scan(key);
+	}
+
+	/**
+	 * A method to extract a name from the ThreadFactory if it turns out to be a Supplier
+	 * (in which case the supplied value string representation is used). Otherwise return
+	 * the current class's simpleName.
+	 *
+	 * @param threadFactory the factory to test for a supplied name
+	 * @param clazz
+	 * @return the name to use in thread pools
+	 */
+	protected static String defaultName(ThreadFactory threadFactory, Class<? extends EventLoopProcessor> clazz) {
+		String name = threadFactory instanceof Supplier ? ((Supplier)
+				threadFactory).get().toString() : null;
+		return null != name ? name : clazz.getSimpleName();
+	}
+
+	/**
+	 * A method to create a suitable default {@link ExecutorService} for use in implementors
+	 * {@link #requestTask(Subscription)} (a {@link Executors#newCachedThreadPool() cached
+	 * thread pool}), reusing a main name and appending {@code [request-task]} suffix.
+	 *
+	 * @param name the main thread name used by the processor.
+	 * @return a default {@link ExecutorService} for requestTask.
+	 */
+	protected static ExecutorService defaultRequestTaskExecutor(String name) {
+		return Executors.newCachedThreadPool(r -> new Thread(r,name+"[request-task]"));
 	}
 
 	/**
@@ -552,7 +576,6 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 			}
 		}
 	}
-
 
 	protected void requestTask(final Subscription s) {
 		//implementation might run a specific request task for the given subscription
