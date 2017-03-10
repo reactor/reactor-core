@@ -939,7 +939,7 @@ public class WorkQueueProcessorTest {
 		String mainName = "workQueueProcessorRequestTask";
 		String expectedName = mainName + "[request-task]";
 
-		TopicProcessor<Object> processor = TopicProcessor.create(mainName, 8);
+		WorkQueueProcessor<Object> processor = WorkQueueProcessor.create(mainName, 8);
 
 		processor.requestTask(Operators.cancelledSubscription());
 
@@ -957,7 +957,7 @@ public class WorkQueueProcessorTest {
 	@Test
 	public void testCustomRequestTaskThreadName() {
 		String expectedName = "workQueueProcessorRequestTask";
-		TopicProcessor<Object> processor = TopicProcessor.create("testProcessor", 8);
+		WorkQueueProcessor<Object> processor = WorkQueueProcessor.create("testProcessor", 8);
 		processor.setRequestTaskThreadFactory(r -> new Thread(r, expectedName));
 
 		processor.requestTask(Operators.cancelledSubscription());
