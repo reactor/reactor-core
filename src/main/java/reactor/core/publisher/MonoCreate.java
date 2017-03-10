@@ -209,8 +209,8 @@ final class MonoCreate<T> extends Mono<T> {
         public void cancel() {
             if (STATE.getAndSet(this, HAS_REQUEST_HAS_VALUE) != HAS_REQUEST_HAS_VALUE) {
                 value = null;
+                disposeResource(true);
             }
-			disposeResource(true);
         }
 
 		void disposeResource(boolean isCancel) {

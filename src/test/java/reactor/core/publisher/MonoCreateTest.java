@@ -15,10 +15,13 @@
  */
 package reactor.core.publisher;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
@@ -78,6 +81,7 @@ public class MonoCreateTest {
 		assertThat(onCancel.get()).isEqualTo(1);
 	}
 
+	@Test
 	public void monoCreateDisposables() {
 		AtomicInteger dispose1 = new AtomicInteger();
 		AtomicInteger dispose2 = new AtomicInteger();
@@ -103,6 +107,37 @@ public class MonoCreateTest {
 
 		assertThat(dispose1.get()).isEqualTo(1);
 		assertThat(cancel1.get()).isEqualTo(0);
+	}
+
+	@Test
+	public void monoCreateOnCancel() {
+		AtomicBoolean cancelled = new AtomicBoolean();
+		Mono.create(s -> s.onCancel(() -> cancelled.set(true)).success("test")).block();
+		assertThat(cancelled.get()).isFalse();
+
+		Mono.create(s -> s.onCancel(() -> cancelled.set(true)).success()).block();
+		assertThat(cancelled.get()).isFalse();
+	}
+
+	@Test
+	public void monoCreateCancelOnNext() {
+		AtomicInteger onCancel = new AtomicInteger();
+		AtomicInteger onDispose = new AtomicInteger();
+		AtomicReference<Subscription> subscription = new AtomicReference<>();
+		Mono<String> created = Mono.create(s -> {
+			s.onDispose(onDispose::getAndIncrement)
+			 .onCancel(onCancel::getAndIncrement)
+			 .success("done");
+		});
+		created = created.doOnSubscribe(s -> subscription.set(s))
+						 .doOnNext(n -> subscription.get().cancel());
+
+		StepVerifier.create(created)
+					.expectNext("done")
+					.verifyComplete();
+
+		assertThat(onDispose.get()).isEqualTo(1);
+		assertThat(onCancel.get()).isEqualTo(0);
 	}
 
 	@Test
