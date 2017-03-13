@@ -28,9 +28,15 @@ import static reactor.core.scheduler.ExecutorServiceScheduler.FINISHED;
  * A runnable task for {@link Scheduler} Workers that are time-capable (implementing a
  * relevant schedule(delay) and schedulePeriodically(period) methods).
  *
+ * Unlike the one in {@link ExecutorServiceScheduler}, this runnable doesn't expose the
+ * ability to cancel inner task when interrupted.
+ *
  * @author Simon Baslé
  */
-class ScheduledRunnable implements Runnable, Disposable {
+final class ScheduledRunnable implements Runnable, Disposable {
+
+	private static final DisposableContainer<ScheduledRunnable> DISPOSED_PARENT = new EmptyDisposableContainer<>();
+	private static final DisposableContainer<ScheduledRunnable> DONE_PARENT = new EmptyDisposableContainer<>();
 
 	final Runnable task;
 
@@ -122,15 +128,4 @@ class ScheduledRunnable implements Runnable, Disposable {
 		}
 	}
 
-	static final DisposableContainer<ScheduledRunnable> DISPOSED_PARENT = new EmptyDisposableContainer<>();
-	static final DisposableContainer<ScheduledRunnable> DONE_PARENT = new EmptyDisposableContainer<>();
-
-	private static final class EmptyDisposableContainer<T extends Disposable> implements DisposableContainer<T> {
-
-		@Override
-		public boolean add(T disposable) { return false; }
-
-		@Override
-		public boolean remove(T disposable) { return false; }
-	}
 }

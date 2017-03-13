@@ -22,6 +22,7 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import reactor.core.Disposable;
 import reactor.util.concurrent.OpenHashSet;
@@ -144,14 +145,14 @@ final class ExecutorServiceScheduler implements Scheduler {
 		}
 	}
 
-	static final class ExecutorServiceWorker implements Worker, DisposableContainer<ScheduledRunnable> {
+	static final class ExecutorServiceWorker implements Worker, DisposableContainer<ExecutorServiceSchedulerRunnable> {
 
 		final ExecutorService executor;
 		final boolean         interruptOnCancel;
 
 		volatile boolean terminated;
 
-		OpenHashSet<ScheduledRunnable> tasks;
+		OpenHashSet<ExecutorServiceSchedulerRunnable> tasks;
 
 		ExecutorServiceWorker(ExecutorService executor, boolean interruptOnCancel) {
 			this.executor = executor;
@@ -166,7 +167,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 
 		@Override
 		public Disposable schedule(Runnable t) {
-			ScheduledRunnable sr = new ScheduledRunnable(t, this);
+			ExecutorServiceSchedulerRunnable sr = new ExecutorServiceSchedulerRunnable(t, this);
 			try {
 				if (add(sr)) {
 					Future<?> f = executor.submit(sr);
@@ -188,7 +189,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 
 			ScheduledExecutorService scheduledExecutor = (ScheduledExecutorService) executor;
 
-			ScheduledRunnable sr = new ScheduledRunnable(t, this);
+			ExecutorServiceSchedulerRunnable sr = new ExecutorServiceSchedulerRunnable(t, this);
 			try {
 				if (add(sr)) {
 					Future<?> f = scheduledExecutor.schedule(sr, delay, unit);
@@ -210,7 +211,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 
 			ScheduledExecutorService scheduledExecutor = (ScheduledExecutorService) executor;
 
-			ScheduledRunnable sr = new ScheduledRunnable(t, this);
+			ExecutorServiceSchedulerRunnable sr = new ExecutorServiceSchedulerRunnable(t, this);
 			try {
 				if (add(sr)) {
 					Future<?> f = scheduledExecutor.scheduleAtFixedRate(sr, initialDelay, period, unit);
@@ -227,7 +228,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 
 
 		@Override
-		public boolean add(ScheduledRunnable sr) {
+		public boolean add(ExecutorServiceSchedulerRunnable sr) {
 			if (!terminated) {
 				synchronized (this) {
 					if (!terminated) {
@@ -240,7 +241,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 		}
 
 		@Override
-		public boolean remove(ScheduledRunnable sr) {
+		public boolean remove(ExecutorServiceSchedulerRunnable sr) {
 			if (!terminated) {
 				synchronized (this) {
 					if (!terminated) {
@@ -260,7 +261,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 		@Override
 		public void dispose() {
 			if (!terminated) {
-				OpenHashSet<ScheduledRunnable> coll;
+				OpenHashSet<ExecutorServiceSchedulerRunnable> coll;
 				synchronized (this) {
 					if (terminated) {
 						return;
@@ -274,7 +275,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 					Object[] a = coll.keys();
 					for (Object o : a) {
 						if (o != null) {
-							((ScheduledRunnable) o).dispose();
+							((ExecutorServiceSchedulerRunnable) o).dispose();
 						}
 					}
 				}
@@ -284,6 +285,124 @@ final class ExecutorServiceScheduler implements Scheduler {
 		@Override
 		public boolean isDisposed() {
 			return terminated;
+		}
+	}
+
+	/**
+	 * A runnable task for {@link ExecutorServiceScheduler} Workers that exposes the
+	 * ability to cancel inner task when interrupted.
+	 *
+	 * @author Simon Baslé
+	 */
+	static final class ExecutorServiceSchedulerRunnable implements Runnable, Disposable {
+
+		static final DisposableContainer<ExecutorServiceSchedulerRunnable> DISPOSED_PARENT =
+				new EmptyDisposableContainer<>();
+		static final DisposableContainer<ExecutorServiceSchedulerRunnable> DONE_PARENT =
+				new EmptyDisposableContainer<>();
+
+		final Runnable task;
+
+		volatile Future<?> future;
+		static final AtomicReferenceFieldUpdater<ExecutorServiceSchedulerRunnable, Future>
+				FUTURE = AtomicReferenceFieldUpdater.newUpdater(
+				ExecutorServiceSchedulerRunnable.class,
+				Future.class,
+				"future");
+
+		volatile DisposableContainer<ExecutorServiceSchedulerRunnable> parent;
+		static final AtomicReferenceFieldUpdater<ExecutorServiceSchedulerRunnable, DisposableContainer>
+				PARENT = AtomicReferenceFieldUpdater.newUpdater(
+				ExecutorServiceSchedulerRunnable.class,
+				DisposableContainer.class,
+				"parent");
+
+		ExecutorServiceSchedulerRunnable(Runnable task, DisposableContainer<ExecutorServiceSchedulerRunnable> parent) {
+			this.task = task;
+			PARENT.lazySet(this, parent);
+		}
+
+		@Override
+		public void run() {
+			try {
+				try {
+					task.run();
+				}
+				catch (Throwable ex) {
+					Schedulers.handleError(ex);
+				}
+			}
+			finally {
+				DisposableContainer<ExecutorServiceSchedulerRunnable> o = parent;
+				if (o != DISPOSED_PARENT && o != null && PARENT.compareAndSet(this,
+						o,
+						DONE_PARENT)) {
+					o.remove(this);
+				}
+
+				Future f;
+				for (; ; ) {
+					f = future;
+					if (f == CANCELLED || FUTURE.compareAndSet(this, f, FINISHED)) {
+						break;
+					}
+				}
+			}
+		}
+
+		void setFuture(Future<?> f) {
+			for (; ; ) {
+				Future o = future;
+				if (o == FINISHED) {
+					return;
+				}
+				if (o == CANCELLED) {
+					f.cancel(true);
+					return;
+				}
+				if (FUTURE.compareAndSet(this, o, f)) {
+					return;
+				}
+			}
+		}
+
+		@Override
+		public boolean isDisposed() {
+			Future<?> a = future;
+			return FINISHED == a || CANCELLED == a;
+		}
+
+		@Override
+		public void dispose() {
+			for (; ; ) {
+				Future f = future;
+				if (f == FINISHED || f == CANCELLED) {
+					break;
+				}
+				if (FUTURE.compareAndSet(this, f, CANCELLED)) {
+					if (f != null) {
+						DisposableContainer<ExecutorServiceSchedulerRunnable> o = parent;
+						boolean mayInterruptIfRunning = false;
+						if (o == DONE_PARENT || o == DISPOSED_PARENT || o == null) {
+							mayInterruptIfRunning = ((ExecutorServiceWorker) parent).interruptOnCancel;
+						}
+
+						f.cancel(mayInterruptIfRunning);
+					}
+					break;
+				}
+			}
+
+			for (; ; ) {
+				DisposableContainer<ExecutorServiceSchedulerRunnable> o = parent;
+				if (o == DONE_PARENT || o == DISPOSED_PARENT || o == null) {
+					return;
+				}
+				if (PARENT.compareAndSet(this, o, DISPOSED_PARENT)) {
+					o.remove(this);
+					return;
+				}
+			}
 		}
 	}
 }
