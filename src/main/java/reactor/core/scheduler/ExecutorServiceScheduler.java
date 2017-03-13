@@ -294,10 +294,8 @@ final class ExecutorServiceScheduler implements Scheduler {
 	 */
 	static final class ExecutorServiceSchedulerRunnable implements Runnable, Disposable {
 
-		static final DisposableContainer<ExecutorServiceSchedulerRunnable> DISPOSED_PARENT =
-				new EmptyDisposableContainer<>();
-		static final DisposableContainer<ExecutorServiceSchedulerRunnable> DONE_PARENT =
-				new EmptyDisposableContainer<>();
+		static final ExecutorServiceWorker DISPOSED_PARENT = new ExecutorServiceWorker(null, false);
+		static final ExecutorServiceWorker DONE_PARENT = new ExecutorServiceWorker(null, false);
 
 		final Runnable task;
 
@@ -308,14 +306,14 @@ final class ExecutorServiceScheduler implements Scheduler {
 				Future.class,
 				"future");
 
-		volatile DisposableContainer<ExecutorServiceSchedulerRunnable> parent;
-		static final AtomicReferenceFieldUpdater<ExecutorServiceSchedulerRunnable, DisposableContainer>
+		volatile ExecutorServiceWorker parent;
+		static final AtomicReferenceFieldUpdater<ExecutorServiceSchedulerRunnable, ExecutorServiceWorker>
 				PARENT = AtomicReferenceFieldUpdater.newUpdater(
 				ExecutorServiceSchedulerRunnable.class,
-				DisposableContainer.class,
+				ExecutorServiceWorker.class,
 				"parent");
 
-		ExecutorServiceSchedulerRunnable(Runnable task, DisposableContainer<ExecutorServiceSchedulerRunnable> parent) {
+		ExecutorServiceSchedulerRunnable(Runnable task, ExecutorServiceWorker parent) {
 			this.task = task;
 			PARENT.lazySet(this, parent);
 		}
@@ -331,10 +329,8 @@ final class ExecutorServiceScheduler implements Scheduler {
 				}
 			}
 			finally {
-				DisposableContainer<ExecutorServiceSchedulerRunnable> o = parent;
-				if (o != DISPOSED_PARENT && o != null && PARENT.compareAndSet(this,
-						o,
-						DONE_PARENT)) {
+				ExecutorServiceWorker o = parent;
+				if (o != DISPOSED_PARENT && o != null && PARENT.compareAndSet(this, o, DONE_PARENT)) {
 					o.remove(this);
 				}
 
@@ -355,7 +351,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 					return;
 				}
 				if (o == CANCELLED) {
-					f.cancel(true);
+					f.cancel(parent.interruptOnCancel);
 					return;
 				}
 				if (FUTURE.compareAndSet(this, o, f)) {
@@ -379,20 +375,14 @@ final class ExecutorServiceScheduler implements Scheduler {
 				}
 				if (FUTURE.compareAndSet(this, f, CANCELLED)) {
 					if (f != null) {
-						DisposableContainer<ExecutorServiceSchedulerRunnable> o = parent;
-						boolean mayInterruptIfRunning = false;
-						if (o == DONE_PARENT || o == DISPOSED_PARENT || o == null) {
-							mayInterruptIfRunning = ((ExecutorServiceWorker) parent).interruptOnCancel;
-						}
-
-						f.cancel(mayInterruptIfRunning);
+						f.cancel(parent.interruptOnCancel);
 					}
 					break;
 				}
 			}
 
 			for (; ; ) {
-				DisposableContainer<ExecutorServiceSchedulerRunnable> o = parent;
+				ExecutorServiceWorker o = parent;
 				if (o == DONE_PARENT || o == DISPOSED_PARENT || o == null) {
 					return;
 				}
