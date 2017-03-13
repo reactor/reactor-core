@@ -403,4 +403,17 @@ public class TopicProcessorTest {
 		          .haveExactly(1, customRequestTaskThread);
 	}
 
+	@Test
+	public void customRequestTaskThreadRejectsNull() {
+		ExecutorService customTaskExecutor = null;
+
+		Assertions.assertThatExceptionOfType(NullPointerException.class)
+		          .isThrownBy(() -> new TopicProcessor<>(
+				          Thread::new,
+				          Executors.newCachedThreadPool(),
+				          customTaskExecutor,
+				          8, WaitStrategy.liteBlocking(), true, true, Object::new)
+		          );
+	}
+
 }

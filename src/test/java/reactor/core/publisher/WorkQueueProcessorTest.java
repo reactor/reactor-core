@@ -1018,4 +1018,17 @@ public class WorkQueueProcessorTest {
 		Assertions.assertThat(threads)
 		          .haveExactly(1, customRequestTaskThread);
 	}
+
+	@Test
+	public void customRequestTaskThreadRejectsNull() {
+		ExecutorService customTaskExecutor = null;
+
+		Assertions.assertThatExceptionOfType(NullPointerException.class)
+		          .isThrownBy(() -> new WorkQueueProcessor<>(
+				          Thread::new,
+				          Executors.newCachedThreadPool(),
+				          customTaskExecutor,
+				          8, WaitStrategy.liteBlocking(), true, true)
+		          );
+	}
 }

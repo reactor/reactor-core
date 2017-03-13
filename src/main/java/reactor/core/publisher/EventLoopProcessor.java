@@ -478,10 +478,19 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		try {
 			onComplete();
 			executor.shutdown();
+			specificShutdown();
 		}
 		catch (Throwable t) {
 			onError(Operators.onOperatorError(t));
 		}
+	}
+
+	/**
+	 * A method to be overridden by implementors that need additional steps on {@link #shutdown()}
+	 * after the main executor's shutdown and onComplete signal.
+	 */
+	protected void specificShutdown() {
+		//NO-OP
 	}
 
 	@Override

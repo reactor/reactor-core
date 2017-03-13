@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
@@ -594,6 +595,8 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 				FACTORY,
 				waitStrategy);
 
+		Objects.requireNonNull(requestTaskExecutor, "requestTaskExecutor");
+
 		this.writeWait = waitStrategy;
 
 		ringBuffer.addGatingSequence(workSequence);
@@ -704,6 +707,11 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		if (!alive()) {
 			WaitStrategy.alert();
 		}
+	}
+
+	@Override
+	protected void specificShutdown() {
+		requestTaskExecutor.shutdown();
 	}
 
 	/**

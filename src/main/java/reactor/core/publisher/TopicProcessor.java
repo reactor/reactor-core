@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
@@ -678,6 +679,8 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 			return signal;
 		}, waitStrategy);
 
+		Objects.requireNonNull(requestTaskExecutor, "requestTaskExecutor");
+
 		this.minimum = RingBuffer.newSequence(-1);
 		this.barrier = ringBuffer.newReader();
 		this.requestTaskExecutor = requestTaskExecutor;
@@ -779,6 +782,11 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 		if (!alive() && SUBSCRIBER_COUNT.get(TopicProcessor.this) == 0) {
 			WaitStrategy.alert();
 		}
+	}
+
+	@Override
+	protected void specificShutdown() {
+		requestTaskExecutor.shutdown();
 	}
 
 	/**
