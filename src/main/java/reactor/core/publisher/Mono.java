@@ -624,6 +624,38 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Subscribe to this Mono and another Publisher, which will be used as a trigger for
+	 * the emission of this Mono's element. That is to say, this Mono's element is delayed
+	 * until the trigger Publisher emits for the first time (or terminates empty).
+	 *
+	 * @param anyPublisher the publisher which first emission or termination will trigger
+	 * the emission of this Mono's value.
+	 * @return this Mono, but delayed until the given publisher emits first or terminates.
+	 */
+	public Mono<T> untilOther(Publisher<?> anyPublisher) {
+		Objects.requireNonNull(anyPublisher, "anyPublisher required");
+		return onAssembly(new MonoUntilOther<>(false, this, anyPublisher, Function.identity()));
+	}
+
+	/**
+	 * Subscribe to this Mono and another Publisher, which will be used as a trigger for
+	 * the emission of this Mono's element, mapped through a provided function.
+	 * That is to say, this Mono's element is delayed until the trigger Publisher emits
+	 * for the first time (or terminates empty), and is then transformed by the provided
+	 * mapper function.
+	 *
+	 * @param anyPublisher the publisher which first emission or termination will trigger
+	 * the emission of this Mono's value.
+	 * @param mapper the function through which to transform this Mono's value.
+	 * @return a transformed Mono, delayed until the given publisher emits first or terminates.
+	 */
+	public <R> Mono<R> untilOther(Publisher<?> anyPublisher, Function<? super T, ? extends R> mapper) {
+		Objects.requireNonNull(anyPublisher, "anyPublisher required");
+		Objects.requireNonNull(mapper, "mapper required");
+		return onAssembly(new MonoUntilOther<>(false, this, anyPublisher, mapper));
+	}
+
+	/**
 	 * Merge given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
 	 * have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
 	 * returned {@link Mono}.
