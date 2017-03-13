@@ -3019,39 +3019,43 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Bind {@link Iterable} sequences given this input sequence like {@link #flatMapIterable(Function)}, but preserve
-	 * ordering and concatenate emissions instead of merging (no interleave).
-	 * <p>
-	 * Errors will be delayed after the current concat backlog.
-	 * <p>
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/concatmap.png"
-	 * alt="">
+	 * Transform the items emitted by this {@link Flux} into {@link Iterable}, then flatten the elements from those by
+	 * concatening them into a single {@link Flux}.
 	 *
-	 * @param mapper the function to transform this sequence of T into concatenated sequences of R
-	 * @param <R> the produced concatenated type
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/concatmap.png" alt="">
+	 * <p>
+	 * Note that unlike {@link #flatMap(Function)} and {@link #concatMap(Function)}, with Iterable there is
+	 * no notion of eager vs lazy inner subscription. The content of the Iterables are all played sequentially.
+	 * Thus {@code flatMapIterable} and {@code concatMapIterable} are equivalent offered as a discoverability
+	 * improvement for users that explore the API with the concat vs flatMap expectation.
 	 *
-	 * @return a concatenated {@link Flux}
+	 * @param mapper the {@link Function} to transform input sequence into N {@link Iterable}
+	 * @param <R> the merged output sequence type
+	 *
+	 * @return a concatenation of the values from the Iterables obtained from each element in this {@link Flux}
 	 */
 	public final <R> Flux<R> concatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
 		return concatMapIterable(mapper, QueueSupplier.XS_BUFFER_SIZE);
 	}
 
 	/**
-	 * Bind {@link Iterable} sequences given this input sequence like {@link #flatMapIterable(Function)}, but preserve
-	 * ordering and concatenate emissions instead of merging (no interleave).
-	 * <p>
-	 * Errors will be delayed after the current concat backlog.
-	 * <p>
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/concatmap.png"
-	 * alt="">
+	 * Transform the items emitted by this {@link Flux} into {@link Iterable}, then flatten the emissions from those by
+	 * concatening them into a single {@link Flux}. The prefetch argument allows to give an arbitrary prefetch size to the merged {@link Iterable}.
 	 *
-	 * @param mapper the function to transform this sequence of T into concatenated sequences of R
-	 * @param prefetch the inner source produced demand
-	 * @param <R> the produced concatenated type
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/concatmap.png" alt="">
+	 * <p>
+	 * Note that unlike {@link #flatMap(Function)} and {@link #concatMap(Function)}, with Iterable there is
+	 * no notion of eager vs lazy inner subscription. The content of the Iterables are all played sequentially.
+	 * Thus {@code flatMapIterable} and {@code concatMapIterable} are equivalent offered as a discoverability
+	 * improvement for users that explore the API with the concat vs flatMap expectation.
 	 *
-	 * @return a concatenated {@link Flux}
+	 * @param mapper the {@link Function} to transform input sequence into N {@link Iterable}
+	 * @param prefetch the maximum in-flight elements from each inner {@link Iterable} sequence
+	 * @param <R> the merged output sequence type
+	 *
+	 * @return a concatenation of the values from the Iterables obtained from each element in this {@link Flux}
 	 */
 	public final <R> Flux<R> concatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper,
 			int prefetch) {
@@ -3825,16 +3829,20 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Transform the items emitted by this {@link Flux} into {@link Iterable}, then flatten the elements from those by
-	 * merging them into a single {@link Flux}. The prefetch argument allows to give an
-	 * arbitrary prefetch size to the merged {@link Iterable}.
+	 * merging them into a single {@link Flux}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/concatmap.png" alt="">
+	 * <p>
+	 * Note that unlike {@link #flatMap(Function)} and {@link #concatMap(Function)}, with Iterable there is
+	 * no notion of eager vs lazy inner subscription. The content of the Iterables are all played sequentially.
+	 * Thus {@code flatMapIterable} and {@code concatMapIterable} are equivalent offered as a discoverability
+	 * improvement for users that explore the API with the concat vs flatMap expectation.
 	 *
-	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Iterable}
+	 * @param mapper the {@link Function} to transform input sequence into N {@link Iterable}
 	 * @param <R> the merged output sequence type
 	 *
-	 * @return a merged {@link Flux}
+	 * @return a concatenation of the values from the Iterables obtained from each element in this {@link Flux}
 	 */
 	public final <R> Flux<R> flatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
 		return flatMapIterable(mapper, QueueSupplier.SMALL_BUFFER_SIZE);
@@ -3847,12 +3855,17 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/concatmap.png" alt="">
+	 * <p>
+	 * Note that unlike {@link #flatMap(Function)} and {@link #concatMap(Function)}, with Iterable there is
+	 * no notion of eager vs lazy inner subscription. The content of the Iterables are all played sequentially.
+	 * Thus {@code flatMapIterable} and {@code concatMapIterable} are equivalent offered as a discoverability
+	 * improvement for users that explore the API with the concat vs flatMap expectation.
 	 *
-	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Iterable}
+	 * @param mapper the {@link Function} to transform input sequence into N {@link Iterable}
 	 * @param prefetch the maximum in-flight elements from each inner {@link Iterable} sequence
 	 * @param <R> the merged output sequence type
 	 *
-	 * @return a merged {@link Flux}
+	 * @return a concatenation of the values from the Iterables obtained from each element in this {@link Flux}
 	 */
 	public final <R> Flux<R> flatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper, int prefetch) {
 		return onAssembly(new FluxFlattenIterable<>(this, mapper, prefetch,
