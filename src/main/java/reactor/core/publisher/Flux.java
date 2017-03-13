@@ -3829,7 +3829,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * arbitrary prefetch size to the merged {@link Iterable}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/flatmapsequential.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/concatmap.png" alt="">
 	 *
 	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Iterable}
 	 * @param <R> the merged output sequence type
@@ -3846,7 +3846,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * arbitrary prefetch size to the merged {@link Iterable}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/flatmapsequential.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/concatmap.png" alt="">
 	 *
 	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Iterable}
 	 * @param prefetch the maximum in-flight elements from each inner {@link Iterable} sequence
