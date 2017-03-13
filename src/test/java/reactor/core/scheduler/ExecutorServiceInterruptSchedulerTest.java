@@ -34,6 +34,16 @@ public class ExecutorServiceInterruptSchedulerTest extends AbstractSchedulerTest
 		return true;
 	}
 
+	@Override
+	protected boolean shouldCheckDirectTimeScheduling() {
+		return false;
+	}
+
+	@Override
+	protected boolean shouldCheckWorkerTimeScheduling() {
+		return false;
+	}
+
 	@Test
 	public void noopCancelledAndFinished() throws Exception {
 		ExecutorServiceScheduler.EMPTY.run();

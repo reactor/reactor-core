@@ -32,6 +32,16 @@ public class ExecutorSchedulerTest extends AbstractSchedulerTest {
 	}
 
 	@Override
+	protected boolean shouldCheckDirectTimeScheduling() {
+		return false;
+	}
+
+	@Override
+	protected boolean shouldCheckWorkerTimeScheduling() {
+		return false;
+	}
+
+	@Override
 	protected Scheduler scheduler() {
 		return Schedulers.fromExecutor(Runnable::run);
 	}

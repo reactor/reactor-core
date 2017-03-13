@@ -21,7 +21,7 @@ import reactor.core.Disposable;
  * Executes tasks on the caller's thread immediately.
  * <p>
  * Use the ImmediateScheduler.instance() to get a shared, stateless instance of this scheduler.
- * This scheduler is NOT {@link Scheduler#isTimeCapable() time-capable}
+ * This scheduler is NOT time-capable (can't schedule with delay / periodically).
  *
  * @author Stephane Maldini
  */

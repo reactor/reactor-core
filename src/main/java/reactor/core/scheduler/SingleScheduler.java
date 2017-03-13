@@ -33,8 +33,8 @@ import reactor.util.concurrent.OpenHashSet;
 
 /**
  * Scheduler that works with a single-threaded ScheduledExecutorService and is suited for
- * same-thread work (like an event dispatch thread). This scheduler is
- * {@link Scheduler#isTimeCapable() time-capable}
+ * same-thread work (like an event dispatch thread). This scheduler is time-capable (can
+ * schedule with delay / periodically).
  */
 final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorService>,
                                        TimedScheduler {
@@ -123,11 +123,6 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	}
 
 	@Override
-	public boolean isTimeCapable() {
-		return true;
-	}
-
-	@Override
 	public Disposable schedule(Runnable task) {
 		try {
 			return new ExecutorServiceScheduler.DisposableFuture(
@@ -182,11 +177,6 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		SingleWorker(ScheduledExecutorService exec) {
 			this.exec = exec;
 			this.tasks = new OpenHashSet<>();
-		}
-
-		@Override
-		public boolean isTimeCapable() {
-			return true;
 		}
 
 		@Override

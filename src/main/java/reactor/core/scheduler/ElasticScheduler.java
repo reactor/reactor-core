@@ -38,7 +38,8 @@ import static reactor.core.scheduler.ExecutorServiceScheduler.FINISHED;
 
 /**
  * Dynamically creates ScheduledExecutorService-based Workers and caches the thread pools, reusing
- * them once the Workers have been shut down. This scheduler is {@link Scheduler#isTimeCapable() time-capable}.
+ * them once the Workers have been shut down. This scheduler is time-capable (can schedule
+ * with delay / periodically).
  * <p>
  * The maximum number of created thread pools is unbounded.
  * <p>
@@ -155,11 +156,6 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 			return SHUTDOWN;
 		}
 		return result;
-	}
-
-	@Override
-	public boolean isTimeCapable() {
-		return true;
 	}
 
 	@Override
@@ -297,11 +293,6 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 			this.executor = executor;
 			this.parent = parent;
 			this.tasks = new OpenHashSet<>();
-		}
-
-		@Override
-		public boolean isTimeCapable() {
-			return true;
 		}
 
 		@Override

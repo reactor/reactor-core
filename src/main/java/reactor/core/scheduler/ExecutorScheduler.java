@@ -31,8 +31,8 @@ import reactor.util.concurrent.OpenHashSet;
  * Wraps a java.util.concurrent.Executor and provides the Scheduler API over it.
  * <p>
  * It supports both non-trampolined worker (for cases where the trampolining happens
- * externally) and trampolined worker.  This scheduler is NOT
- * {@link Scheduler#isTimeCapable() time-capable}.
+ * externally) and trampolined worker. This scheduler is NOT time-capable (can't schedule
+ * with delay / periodically).
  *
  * @author Stephane Maldini
  */

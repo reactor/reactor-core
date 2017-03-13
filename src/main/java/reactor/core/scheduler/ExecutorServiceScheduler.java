@@ -29,8 +29,8 @@ import reactor.util.concurrent.OpenHashSet;
 
 /**
  * A simple {@link Scheduler} which uses a backing {@link ExecutorService} to schedule
- * Runnables for async operators. This scheduler is {@link Scheduler#isTimeCapable() time-capable}
- * if the backing executor is a {@link ScheduledExecutorService}.
+ * Runnables for async operators. This scheduler is time-capable (can schedule with a
+ * delay and/or periodically) if the backing executor is a {@link ScheduledExecutorService}.
  *
  * @author Stephane Maldini
  * @author Simon Baslé
@@ -62,8 +62,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 		return new ExecutorServiceWorker(executor, interruptOnCancel);
 	}
 
-	@Override
-	public boolean isTimeCapable() {
+	boolean isTimeCapable() {
 		return executor instanceof ScheduledExecutorService;
 	}
 
@@ -160,8 +159,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 			this.tasks = new OpenHashSet<>();
 		}
 
-		@Override
-		public boolean isTimeCapable() {
+		boolean isTimeCapable() {
 			return executor instanceof ScheduledExecutorService;
 		}
 

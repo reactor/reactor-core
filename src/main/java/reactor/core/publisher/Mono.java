@@ -210,7 +210,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Mono}
 	 */
 	public static Mono<Long> delay(Duration duration, Scheduler timer) {
-		Schedulers.checkTimeCapable(timer);
 		return onAssembly(new MonoDelay(duration.toMillis(), TimeUnit.MILLISECONDS, timer));
 	}
 
@@ -246,7 +245,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	@Deprecated
 	public static Mono<Long> delayMillis(long duration, Scheduler timer) {
-		Schedulers.checkTimeCapable(timer);
 		return delay(Duration.ofMillis(duration), timer);
 	}
 
@@ -1420,7 +1418,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a delayed {@link Mono}
 	 */
 	public final Mono<T> delayElement(Duration delay, Scheduler timer) {
-		Schedulers.checkTimeCapable(timer);
 		return onAssembly(new MonoDelayElement<>(this, delay.toMillis(), TimeUnit.MILLISECONDS, timer));
 	}
 
@@ -1464,7 +1461,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	@Deprecated
 	public final Mono<T> delayElementMillis(long delay, Scheduler timer) {
-		Schedulers.checkTimeCapable(timer);
 		return delayElement(Duration.ofMillis(delay), timer);
 	}
 
@@ -1498,7 +1494,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 */
 	public final Mono<T> delaySubscription(Duration delay, Scheduler timer) {
-		Schedulers.checkTimeCapable(timer);
 		return delaySubscription(Mono.delay(delay, timer));
 	}
 
@@ -1552,7 +1547,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	@Deprecated
 	public final Mono<T> delaySubscriptionMillis(long delay, Scheduler timer) {
-		Schedulers.checkTimeCapable(timer);
 		return delaySubscription(Duration.ofMillis(delay), timer);
 	}
 
@@ -2954,7 +2948,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return an expirable {@link Mono}
 	 */
 	public final Mono<T> timeout(Duration timeout, Scheduler timer) {
-		Schedulers.checkTimeCapable(timer);
 		return timeout(timeout, null, timer);
 	}
 
@@ -2974,7 +2967,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final Mono<T> timeout(Duration timeout, Mono<? extends T> fallback,
 			Scheduler timer) {
-		Schedulers.checkTimeCapable(timer);
 		final Mono<Long> _timer = Mono.delay(timeout, timer).otherwiseReturn(0L);
 
 		if(fallback == null) {
@@ -3050,7 +3042,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	@Deprecated
 	public final Mono<T> timeoutMillis(long timeout, Scheduler timer) {
-		Schedulers.checkTimeCapable(timer);
 		return timeoutMillis(timeout, null, timer);
 	}
 
@@ -3091,7 +3082,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	@Deprecated
 	public final Mono<T> timeoutMillis(long timeout, Mono<? extends T> fallback,
 			Scheduler timer) {
-		Schedulers.checkTimeCapable(timer);
 		final Mono<Long> _timer = Mono.delayMillis(timeout, timer).otherwiseReturn(0L);
 
 		if(fallback == null) {

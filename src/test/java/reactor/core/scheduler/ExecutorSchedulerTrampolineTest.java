@@ -29,4 +29,14 @@ public class ExecutorSchedulerTrampolineTest extends AbstractSchedulerTest {
 	protected Scheduler scheduler() {
 		return Schedulers.fromExecutor(Runnable::run, true);
 	}
+
+	@Override
+	protected boolean shouldCheckDirectTimeScheduling() {
+		return false;
+	}
+
+	@Override
+	protected boolean shouldCheckWorkerTimeScheduling() {
+		return false;
+	}
 }

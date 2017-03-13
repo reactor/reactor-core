@@ -25,8 +25,8 @@ import reactor.core.Cancellation;
  * provides Worker services on top of it.
  * <p>
  * Use the dispose() to release the wrapped worker.
- * This scheduler is {@link Scheduler#isTimeCapable() time-capable} if the worker itself
- * is {@link Worker#isTimeCapable() time-capable}.
+ * This scheduler is time-capable if the worker itself is time-capable (can schedule with
+ * a delay and/or periodically).
  */
 final class SingleWorkerScheduler implements Scheduler, Executor {
 
@@ -44,11 +44,6 @@ final class SingleWorkerScheduler implements Scheduler, Executor {
     @Override
     public void dispose() {
         main.dispose();
-    }
-
-    @Override
-    public boolean isTimeCapable() {
-        return main.isTimeCapable();
     }
 
     @Override

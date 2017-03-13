@@ -51,6 +51,10 @@ public abstract class AbstractSchedulerTest {
 		return true;
 	}
 
+	protected boolean shouldCheckDirectTimeScheduling() { return true; }
+
+	protected boolean shouldCheckWorkerTimeScheduling() { return true; }
+
 	@Test(timeout = 10000)
 	final public void directScheduleAndDispose() throws Exception {
 		Scheduler s = scheduler();
@@ -215,10 +219,10 @@ public abstract class AbstractSchedulerTest {
 
 	@Test(timeout = 10000)
 	final public void directScheduleAndDisposeDelay() throws Exception {
+		Assume.assumeTrue("Scheduler marked as not supporting time scheduling", shouldCheckDirectTimeScheduling());
 		Scheduler s = scheduler();
 
 		try {
-			Assume.assumeTrue("Scheduler marked as not supporting time scheduling", scheduler().isTimeCapable());
 			assertThat(s.isDisposed()).isFalse();
 			CountDownLatch latch = new CountDownLatch(1);
 			CountDownLatch latch2 = new CountDownLatch(1);
@@ -258,11 +262,11 @@ public abstract class AbstractSchedulerTest {
 
 	@Test(timeout = 10000)
 	final public void workerScheduleAndDisposeDelay() throws Exception {
+		Assume.assumeTrue("Worker marked as not supporting time scheduling", shouldCheckWorkerTimeScheduling());
 		Scheduler s = scheduler();
 		Scheduler.Worker w = s.createWorker();
 
 		try {
-			Assume.assumeTrue("Worker marked as not supporting time scheduling", w.isTimeCapable());
 
 			assertThat(w.isDisposed()).isFalse();
 			CountDownLatch latch = new CountDownLatch(1);
@@ -303,10 +307,10 @@ public abstract class AbstractSchedulerTest {
 
 	@Test(timeout = 10000)
 	final public void directScheduleAndDisposePeriod() throws Exception {
+		Assume.assumeTrue("Scheduler marked as not supporting time scheduling", shouldCheckDirectTimeScheduling());
 		Scheduler s = scheduler();
 
 		try {
-			Assume.assumeTrue("Scheduler marked as not supporting time scheduling", s.isTimeCapable());
 			assertThat(s.isDisposed()).isFalse();
 			CountDownLatch latch = new CountDownLatch(2);
 			CountDownLatch latch2 = new CountDownLatch(1);
@@ -346,11 +350,11 @@ public abstract class AbstractSchedulerTest {
 
 	@Test(timeout = 10000)
 	final public void workerScheduleAndDisposePeriod() throws Exception {
+		Assume.assumeTrue("Worker marked as not supporting time scheduling", shouldCheckWorkerTimeScheduling());
 		Scheduler s = scheduler();
 		Scheduler.Worker w = s.createWorker();
 
 		try {
-			Assume.assumeTrue("Worker marked as not supporting time scheduling", w.isTimeCapable());
 
 			assertThat(w.isDisposed()).isFalse();
 			CountDownLatch latch = new CountDownLatch(1);

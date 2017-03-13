@@ -30,4 +30,8 @@ public class SingleWorkerAroundTimerSchedulerTest extends AbstractSchedulerTest 
 		return false;
 	}
 
+	@Override
+	protected boolean shouldCheckWorkerTimeScheduling() {
+		return false;
+	}
 }

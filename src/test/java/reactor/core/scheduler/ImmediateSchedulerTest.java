@@ -42,6 +42,16 @@ public class ImmediateSchedulerTest extends AbstractSchedulerTest {
 		return false;
 	}
 
+	@Override
+	protected boolean shouldCheckDirectTimeScheduling() {
+		return false;
+	}
+
+	@Override
+	protected boolean shouldCheckWorkerTimeScheduling() {
+		return false;
+	}
+
 	@Test
 	public void directAndWorkerTimeSchedulingRejected() {
 		Scheduler scheduler = scheduler();

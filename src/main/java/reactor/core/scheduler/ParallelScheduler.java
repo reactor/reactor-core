@@ -32,7 +32,8 @@ import reactor.util.concurrent.OpenHashSet;
 
 /**
  * Scheduler that hosts a fixed pool of single-threaded ScheduledExecutorService-based workers
- * and is suited for parallel work. This scheduler is {@link Scheduler#isTimeCapable() time-capable}.
+ * and is suited for parallel work. This scheduler is time-capable (can schedule with
+ * delay / periodically).
  *
  * @author Stephane Maldini
  * @author Simon Baslé
@@ -152,11 +153,6 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
     }
 
 	@Override
-	public boolean isTimeCapable() {
-		return true;
-	}
-
-	@Override
     public Disposable schedule(Runnable task) {
         ScheduledExecutorService exec = pick();
 	    try {
@@ -209,11 +205,6 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
             this.exec = exec;
             this.tasks = new OpenHashSet<>();
         }
-
-	    @Override
-	    public boolean isTimeCapable() {
-		    return true;
-	    }
 
 	    @Override
         public Disposable schedule(Runnable task) {

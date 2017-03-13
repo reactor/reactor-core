@@ -39,21 +39,6 @@ import reactor.core.Disposable;
 public interface Scheduler extends Disposable {
 
 	/**
-	 * Check if a Scheduler instance is "time-capable", that is to say that it can
-	 * perform {@link #schedule(Runnable, long, TimeUnit)} and
-	 * {@link #schedulePeriodically(Runnable, long, long, TimeUnit)}
-	 * operations.
-	 * <p>
-	 * The {@link Scheduler} default is to return false and have the above operations
-	 * immediately return the pre-disposed {@link Scheduler#REJECTED} instance.
-	 *
-	 * @return true if the scheduler is time-capable, false otherwise.
-	 */
-		default boolean isTimeCapable() {
-			return this instanceof TimedScheduler;
-		}
-
-	/**
 	 * Schedules the given task on this scheduler non-delayed execution.
 	 *
 	 * <p>
@@ -79,7 +64,6 @@ public interface Scheduler extends Disposable {
 	 * @param unit the unit of measure of the delay amount
 	 * @return the {@link Cancellation} that let's one cancel this particular delayed task,
 	 * or {@link #REJECTED} if the Scheduler is not capable of scheduling periodically.
-	 * @see #isTimeCapable()
 	 */
 	default Cancellation schedule(Runnable task, long delay, TimeUnit unit) {
 		return REJECTED;
@@ -102,7 +86,6 @@ public interface Scheduler extends Disposable {
 	 * @param unit the unit of measure of the delay amount
 	 * @return the {@link Cancellation} that let's one cancel this particular delayed task,
 	 * or {@link #REJECTED} if the Scheduler is not capable of scheduling periodically.
-	 * @see #isTimeCapable()
 	 */
 	default Cancellation schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
 		return REJECTED;
@@ -184,22 +167,6 @@ public interface Scheduler extends Disposable {
 	interface Worker extends Disposable {
 
 		/**
-		 * Check if a Worker instance is "time-capable", that is to say that it can
-		 * perform {@link #schedule(Runnable, long, TimeUnit)} and
-		 * {@link #schedulePeriodically(Runnable, long, long, TimeUnit)}
-		 * operations.
-		 * <p>
-		 * The {@link Worker} default in {@link Scheduler} is to return false and have
-		 * the above operations immediately return the pre-disposed
-		 * {@link Scheduler#REJECTED} instance.
-		 *
-		 * @return true if the worker is time-capable, false otherwise.
-		 */
-		default boolean isTimeCapable() {
-			return false;
-		}
-
-		/**
 		 * Schedules the task on this worker.
 		 * @param task the task to schedule
 		 * @return the {@link Cancellation} instance that let's one cancel this particular task.
@@ -221,7 +188,6 @@ public interface Scheduler extends Disposable {
 		 * @param unit the unit of measure of the delay amount
 		 * @return the {@link Cancellation} that let's one cancel this particular delayed task,
 		 * or {@link #REJECTED} if the Worker is not capable of scheduling with delay.
-		 * @see #isTimeCapable()
 		 */
 		default Cancellation schedule(Runnable task, long delay, TimeUnit unit) {
 			return REJECTED;
@@ -243,7 +209,6 @@ public interface Scheduler extends Disposable {
 		 * @param unit the unit of measure of the delay amount
 		 * @return the {@link Cancellation} that let's one cancel this particular delayed task,
 		 * or {@link #REJECTED} if the Worker is not capable of scheduling periodically.
-		 * @see #isTimeCapable()
 		 */
 		default Cancellation schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
 			return REJECTED;
@@ -274,7 +239,7 @@ public interface Scheduler extends Disposable {
 	
 	/**
 	 * Returned by the schedule() methods if the Scheduler or the Worker has ben shut down,
-	 * or is incapable of deferring tasks (not {@link Scheduler#isTimeCapable() time capable}).
+	 * or is incapable of scheduling tasks with a delay/periodically (not "time capable").
 	 */
 	Disposable REJECTED = new RejectedDisposable();
 }

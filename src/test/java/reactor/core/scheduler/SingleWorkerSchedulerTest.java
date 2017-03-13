@@ -30,4 +30,13 @@ public class SingleWorkerSchedulerTest extends AbstractSchedulerTest {
 		return false;
 	}
 
+	@Override
+	protected boolean shouldCheckDirectTimeScheduling() {
+		return false;
+	}
+
+	@Override
+	protected boolean shouldCheckWorkerTimeScheduling() {
+		return false;
+	}
 }
