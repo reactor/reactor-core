@@ -28,7 +28,8 @@ public class FluxCacheTest {
 	@Test
 	public void cacheFlux() {
 		try {
-			VirtualTimeScheduler vts = VirtualTimeScheduler.getOrSet(false);
+			//delayElements now uses parallel() so VTS must be enabled everywhere
+			VirtualTimeScheduler vts = VirtualTimeScheduler.getOrSet(true);
 
 			Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
 			                                         .delayElements(Duration.ofMillis(1000))
@@ -57,7 +58,8 @@ public class FluxCacheTest {
 	@Test
 	public void cacheFluxTTL() {
 		try {
-			VirtualTimeScheduler vts = VirtualTimeScheduler.getOrSet(false);
+			//delayElements now uses parallel() so VTS must be enabled everywhere
+			VirtualTimeScheduler vts = VirtualTimeScheduler.getOrSet(true);
 
 			Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
 			                                         .delayElements(Duration.ofMillis(1000))
@@ -85,7 +87,8 @@ public class FluxCacheTest {
 	@Test
 	public void cacheFluxHistoryTTL() {
 		try {
-			VirtualTimeScheduler vts = VirtualTimeScheduler.getOrSet(false);
+			//delayElements now uses parallel() so VTS must be enabled everywhere
+			VirtualTimeScheduler vts = VirtualTimeScheduler.getOrSet(true);
 
 			Flux<Tuple2<Long, Integer>> source = Flux.just(1, 2, 3)
 			                                         .delayElements(Duration.ofMillis(1000))

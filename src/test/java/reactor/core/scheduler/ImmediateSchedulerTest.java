@@ -15,6 +15,13 @@
  */
 package reactor.core.scheduler;
 
+import java.util.concurrent.TimeUnit;
+
+import org.junit.Test;
+import reactor.core.scheduler.Scheduler.Worker;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
 /**
  * @author Stephane Maldini
  */
@@ -33,5 +40,35 @@ public class ImmediateSchedulerTest extends AbstractSchedulerTest {
 	@Override
 	protected boolean shouldCheckMassWorkerDispose() {
 		return false;
+	}
+
+	@Override
+	protected boolean shouldCheckDirectTimeScheduling() {
+		return false;
+	}
+
+	@Override
+	protected boolean shouldCheckWorkerTimeScheduling() {
+		return false;
+	}
+
+	@Test
+	public void directAndWorkerTimeSchedulingRejected() {
+		Scheduler scheduler = scheduler();
+		Worker worker = scheduler.createWorker();
+		try {
+			assertThat(scheduler.schedule(() -> { }, 100, TimeUnit.MILLISECONDS))
+					.isSameAs(Scheduler.REJECTED);
+			assertThat(scheduler.schedulePeriodically(() -> { }, 100, 100, TimeUnit.MILLISECONDS))
+					.isSameAs(Scheduler.REJECTED);
+
+			assertThat(worker.schedule(() -> { }, 100, TimeUnit.MILLISECONDS))
+					.isSameAs(Scheduler.REJECTED);
+			assertThat(worker.schedulePeriodically(() -> { }, 100, 100, TimeUnit.MILLISECONDS))
+					.isSameAs(Scheduler.REJECTED);
+		}
+		finally {
+			worker.dispose();
+		}
 	}
 }

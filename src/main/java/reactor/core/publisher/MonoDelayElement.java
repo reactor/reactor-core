@@ -25,7 +25,6 @@ import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
 import reactor.core.Receiver;
 import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.TimedScheduler;
 
 /**
  * Emits the first value emitted by a given source publisher, delayed by some time amount
@@ -37,13 +36,13 @@ import reactor.core.scheduler.TimedScheduler;
  */
 final class MonoDelayElement<T> extends MonoSource<T, T> {
 
-	final TimedScheduler timedScheduler;
+	final Scheduler timedScheduler;
 
 	final long delay;
 
 	final TimeUnit unit;
 
-	public MonoDelayElement(Publisher<? extends T> source, long delay, TimeUnit unit, TimedScheduler timedScheduler) {
+	public MonoDelayElement(Publisher<? extends T> source, long delay, TimeUnit unit, Scheduler timedScheduler) {
 		super(source);
 		this.delay = delay;
 		this.unit = Objects.requireNonNull(unit, "unit");
@@ -60,7 +59,7 @@ final class MonoDelayElement<T> extends MonoSource<T, T> {
 			implements Subscription, Receiver {
 
 		final long delay;
-		final TimedScheduler scheduler;
+		final Scheduler scheduler;
 		final TimeUnit unit;
 
 		Subscription s;
@@ -68,7 +67,7 @@ final class MonoDelayElement<T> extends MonoSource<T, T> {
 		volatile Cancellation task;
 		volatile boolean done;
 
-		MonoDelayElementSubscriber(Subscriber<? super T> actual, TimedScheduler scheduler,
+		MonoDelayElementSubscriber(Subscriber<? super T> actual, Scheduler scheduler,
 				long delay, TimeUnit unit) {
 			super(actual);
 			this.scheduler = scheduler;

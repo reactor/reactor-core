@@ -23,7 +23,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.scheduler.TimedScheduler;
+import reactor.core.scheduler.Scheduler;
 
 /**
  * @author Stephane Maldini
@@ -35,7 +35,7 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 	public FluxBufferTimeOrSize(Publisher<T> source,
 			int maxSize,
 			long timespan,
-			TimedScheduler timer,
+			Scheduler timer,
 			Supplier<C> bufferSupplier) {
 		super(source, maxSize, timespan, timer);
 		this.bufferSupplier = Objects.requireNonNull(bufferSupplier, "bufferSupplier");
@@ -58,7 +58,7 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 		public BufferAction(Subscriber<? super C> actual,
 				int maxSize,
 				long timespan,
-				TimedScheduler.TimedWorker timer,
+				Scheduler.Worker timer,
 				Supplier<C> bufferSupplier) {
 			super(actual, maxSize, false, timespan, timer);
 			this.bufferSupplier = bufferSupplier;

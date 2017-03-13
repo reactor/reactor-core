@@ -23,19 +23,18 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import reactor.core.Cancellation;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.publisher.DirectProcessor;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,11 +45,9 @@ public class SchedulersTest {
 
 	final static class TestSchedulers implements Schedulers.Factory {
 
-		final Scheduler      elastic  =
-				Schedulers.Factory.super.newElastic(60, Thread::new);
+		final Scheduler      elastic  = Schedulers.Factory.super.newElastic(60, Thread::new);
 		final Scheduler      single   = Schedulers.Factory.super.newSingle(Thread::new);
-		final Scheduler      parallel =
-				Schedulers.Factory.super.newParallel(1, Thread::new);
+		final Scheduler      parallel =	Schedulers.Factory.super.newParallel(1, Thread::new);
 		final TimedScheduler timer    = Schedulers.Factory.super.newTimer(Thread::new);
 
 		TestSchedulers(boolean disposeOnInit) {
@@ -111,8 +108,8 @@ public class SchedulersTest {
 		Schedulers.Factory ts1 = new Schedulers.Factory() { };
 		Schedulers.Factory ts2 = new TestSchedulers(false);
 		Schedulers.setFactory(ts1);
-		TimedScheduler cachedTimerOld = uncache(Schedulers.timer());
-		TimedScheduler standaloneTimer = Schedulers.newTimer("standaloneTimer");
+		Scheduler cachedTimerOld = uncache(Schedulers.timer());
+		Scheduler standaloneTimer = Schedulers.newTimer("standaloneTimer");
 
 
 		Assert.assertNotSame(cachedTimerOld, standaloneTimer);
@@ -120,7 +117,7 @@ public class SchedulersTest {
 		Assert.assertNotSame(standaloneTimer.schedule(() -> {}), Scheduler.REJECTED);
 
 		Schedulers.setFactory(ts2);
-		TimedScheduler cachedTimerNew = uncache(Schedulers.timer());
+		Scheduler cachedTimerNew = uncache(Schedulers.timer());
 
 		Assert.assertEquals(cachedTimerNew, Schedulers.newTimer("unused"));
 		Assert.assertNotSame(cachedTimerNew, cachedTimerOld);
@@ -202,7 +199,6 @@ public class SchedulersTest {
 	}
 
 	@Test
-	@Ignore
 	public void testRejectingSingleTimedScheduler() {
 		assertRejectingScheduler(Schedulers.newTimer("test"));
 	}
@@ -283,14 +279,14 @@ public class SchedulersTest {
 	}
 
 	@Test
-	public void simpleTest() throws Exception {
+	public void immediateTaskIsExecuted() throws Exception {
 		Scheduler serviceRB = Schedulers.newSingle("rbWork");
 		Scheduler.Worker r = serviceRB.createWorker();
 
 		long start = System.currentTimeMillis();
-		CountDownLatch latch = new CountDownLatch(1);
+		AtomicInteger latch = new AtomicInteger(1);
 		Consumer<String> c =  ev -> {
-			latch.countDown();
+			latch.decrementAndGet();
 			try {
 				System.out.println("ev: "+ev);
 				Thread.sleep(1000);
@@ -301,13 +297,41 @@ public class SchedulersTest {
 		};
 		r.schedule(() -> c.accept("Hello World!"));
 
-		serviceRB.dispose();
 		Thread.sleep(1200);
 		long end = System.currentTimeMillis();
 
-		Assert.assertTrue("Event missed", latch.getCount() == 0);
-		Assert.assertTrue("Timeout too long", (end - start) >= 1000);
+		serviceRB.dispose();
 
+		Assert.assertTrue("Event missed", latch.intValue() == 0);
+		Assert.assertTrue("Timeout too long", (end - start) >= 1000);
+	}
+
+	@Test
+	public void immediateTaskIsSkippedIfDisposeRightAfter() throws Exception {
+		Scheduler serviceRB = Schedulers.newSingle("rbWork");
+		Scheduler.Worker r = serviceRB.createWorker();
+
+		long start = System.currentTimeMillis();
+		AtomicInteger latch = new AtomicInteger(1);
+		Consumer<String> c =  ev -> {
+			latch.decrementAndGet();
+			try {
+				System.out.println("ev: "+ev);
+				Thread.sleep(1000);
+			}
+			catch(InterruptedException ie){
+				throw Exceptions.propagate(ie);
+			}
+		};
+		r.schedule(() -> c.accept("Hello World!"));
+		serviceRB.dispose();
+
+		Thread.sleep(1200);
+		long end = System.currentTimeMillis();
+
+
+		Assert.assertTrue("Task not skipped", latch.intValue() == 1);
+		Assert.assertTrue("Timeout too long", (end - start) >= 1000);
 	}
 
 	@Test
@@ -335,7 +359,7 @@ public class SchedulersTest {
 
 	@Test
 	public void testCachedSchedulerDelegates() {
-		TimedScheduler mock = new TimedScheduler() {
+		Scheduler mock = new Scheduler() {
 			@Override
 			public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 				throw new IllegalStateException("scheduleTaskDelay");
@@ -348,7 +372,7 @@ public class SchedulersTest {
 			}
 
 			@Override
-			public TimedWorker createWorker() {
+			public Worker createWorker() {
 				throw new IllegalStateException("createWorker");
 			}
 
@@ -383,8 +407,7 @@ public class SchedulersTest {
 			}
 		};
 
-		Schedulers.CachedTimedScheduler cached = new Schedulers.CachedTimedScheduler(
-				"cached", mock);
+		Schedulers.CachedScheduler cached = new Schedulers.CachedScheduler("cached", mock);
 
 		//dispose is bypassed by the cached version
 		cached.dispose();
@@ -725,8 +748,8 @@ public class SchedulersTest {
 		assertThat(ts.now(TimeUnit.MILLISECONDS)).isGreaterThanOrEqualTo(before)
 		                                         .isLessThanOrEqualTo(System.currentTimeMillis());
 
-		assertThat(tw.now(TimeUnit.MILLISECONDS)).isGreaterThanOrEqualTo(before)
-		                                        .isLessThanOrEqualTo(System.currentTimeMillis());
+//		assertThat(tw.now(TimeUnit.MILLISECONDS)).isGreaterThanOrEqualTo(before)
+//		                                        .isLessThanOrEqualTo(System.currentTimeMillis());
 
 		//noop
 		new Schedulers(){
@@ -772,7 +795,7 @@ public class SchedulersTest {
 		}
 	}
 
-	final static class EmptyTimedScheduler implements TimedScheduler {
+	final static class EmptyTimedScheduler implements Scheduler {
 
 		@Override
 		public Cancellation schedule(Runnable task) {
@@ -784,20 +807,20 @@ public class SchedulersTest {
 			return null;
 		}
 
-		@Override
-		public Cancellation schedulePeriodically(Runnable task,
-				long initialDelay,
-				long period,
-				TimeUnit unit) {
-			return null;
-		}
+//		@Override
+//		public Cancellation schedulePeriodically(Runnable task,
+//				long initialDelay,
+//				long period,
+//				TimeUnit unit) {
+//			return null;
+//		}
 
 		@Override
 		public EmptyTimedWorker createWorker() {
 			return new EmptyTimedWorker();
 		}
 
-		static class EmptyTimedWorker implements TimedWorker {
+		static class EmptyTimedWorker implements Worker {
 
 			@Override
 			public Cancellation schedule(Runnable task) {

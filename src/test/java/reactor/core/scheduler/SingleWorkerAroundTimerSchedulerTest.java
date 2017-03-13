@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,37 +15,23 @@
  */
 package reactor.core.scheduler;
 
-import java.util.concurrent.Executors;
-
-import org.junit.Test;
-
 /**
  * @author Stephane Maldini
  */
-public class ExecutorServiceInterruptSchedulerTest extends AbstractSchedulerTest {
+public class SingleWorkerAroundTimerSchedulerTest extends AbstractSchedulerTest {
 
 	@Override
 	protected Scheduler scheduler() {
-		return Schedulers.fromExecutorService(Executors.newSingleThreadExecutor(), true);
+		return Schedulers.single(Schedulers.newTimer("singleWorkerTimer"));
 	}
 
 	@Override
-	protected boolean shouldCheckInterrupted() {
-		return true;
-	}
-
-	@Override
-	protected boolean shouldCheckDirectTimeScheduling() {
+	protected boolean shouldCheckDisposeTask() {
 		return false;
 	}
 
 	@Override
 	protected boolean shouldCheckWorkerTimeScheduling() {
 		return false;
-	}
-
-	@Test
-	public void noopCancelledAndFinished() throws Exception {
-		ExecutorServiceScheduler.EMPTY.run();
 	}
 }

@@ -29,4 +29,14 @@ public class SingleWorkerSchedulerTest extends AbstractSchedulerTest {
 	protected boolean shouldCheckDisposeTask() {
 		return false;
 	}
+
+	@Override
+	protected boolean shouldCheckDirectTimeScheduling() {
+		return false;
+	}
+
+	@Override
+	protected boolean shouldCheckWorkerTimeScheduling() {
+		return false;
+	}
 }

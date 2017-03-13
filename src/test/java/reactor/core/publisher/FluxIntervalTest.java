@@ -25,13 +25,13 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import reactor.core.scheduler.Schedulers;
-import reactor.core.scheduler.TimedScheduler;
+import reactor.core.scheduler.Scheduler;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxIntervalTest {
 
-	TimedScheduler exec;
+	Scheduler exec;
 
 	@Before
 	public void before() {

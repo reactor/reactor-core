@@ -25,7 +25,6 @@ import reactor.core.Cancellation;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.TimedScheduler;
 
 /**
  * Emits a single 0L value delayed by some time amount with a help of
@@ -35,13 +34,13 @@ import reactor.core.scheduler.TimedScheduler;
  */
 final class MonoDelay extends Mono<Long> {
 
-	final TimedScheduler timedScheduler;
+	final Scheduler timedScheduler;
 
 	final long delay;
 
 	final TimeUnit unit;
 
-	MonoDelay(long delay, TimeUnit unit, TimedScheduler timedScheduler) {
+	MonoDelay(long delay, TimeUnit unit, Scheduler timedScheduler) {
 		this.delay = delay;
 		this.unit = Objects.requireNonNull(unit, "unit");
 		this.timedScheduler = Objects.requireNonNull(timedScheduler, "timedScheduler");

@@ -18,18 +18,24 @@ package reactor.core.scheduler;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.assertj.core.api.Condition;
+import org.assertj.core.condition.AnyOf;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 import reactor.core.Cancellation;
 import reactor.core.Disposable;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 
 /**
  * @author Stephane Maldini
  */
 public abstract class AbstractSchedulerTest {
+
+	static final Condition<Scheduler> DISPOSED_OR_CACHED =
+			new Condition<>(sched -> sched instanceof Schedulers.CachedScheduler || sched.isDisposed(),
+			"a %s scheduler", "disposed or cached");
 
 	protected abstract Scheduler scheduler();
 
@@ -45,6 +51,10 @@ public abstract class AbstractSchedulerTest {
 		return true;
 	}
 
+	protected boolean shouldCheckDirectTimeScheduling() { return true; }
+
+	protected boolean shouldCheckWorkerTimeScheduling() { return true; }
+
 	@Test(timeout = 10000)
 	final public void directScheduleAndDispose() throws Exception {
 		Scheduler s = scheduler();
@@ -52,15 +62,6 @@ public abstract class AbstractSchedulerTest {
 		if(s instanceof Schedulers.CachedScheduler){
 			unwrapped = ((Schedulers.CachedScheduler)s).get();
 			assertThat(unwrapped).isNotNull();
-			if(!(s instanceof TimedScheduler)){
-				try{
-					((Schedulers.CachedScheduler)s).asTimedScheduler();
-					fail("cached as non timed-scheduler");
-				}
-				catch (UnsupportedOperationException e){
-					assertThat(e).hasMessage("Scheduler is not Timed");
-				}
-			}
 		}
 		else {
 			unwrapped = null;
@@ -213,6 +214,186 @@ public abstract class AbstractSchedulerTest {
 		finally {
 			s.shutdown();
 			s.dispose();//noop
+		}
+	}
+
+	@Test(timeout = 10000)
+	final public void directScheduleAndDisposeDelay() throws Exception {
+		Assume.assumeTrue("Scheduler marked as not supporting time scheduling", shouldCheckDirectTimeScheduling());
+		Scheduler s = scheduler();
+
+		try {
+			assertThat(s.isDisposed()).isFalse();
+			CountDownLatch latch = new CountDownLatch(1);
+			CountDownLatch latch2 = new CountDownLatch(1);
+			Disposable d = (Disposable) s.schedule(() -> {
+				try {
+					latch.countDown();
+					latch2.await(10, TimeUnit.SECONDS);
+				}
+				catch (InterruptedException e) {
+				}
+			}, 10, TimeUnit.MILLISECONDS);
+			assertThat(d).isNotSameAs(Scheduler.REJECTED);
+
+			latch.await();
+			assertThat(d.isDisposed()).isFalse();
+			d.dispose();
+
+			Thread.yield();
+
+			latch2.countDown();
+
+			s.dispose();
+			assertThat(s).is(DISPOSED_OR_CACHED);
+
+			d = (Disposable) s.schedule(() -> { });
+
+			if (!(s instanceof Schedulers.CachedScheduler)) {
+				assertThat(d).isSameAs(Scheduler.REJECTED);
+			}
+			d.dispose();
+			assertThat(d.isDisposed()).isTrue();
+		}
+		finally {
+			s.dispose();
+		}
+	}
+
+	@Test(timeout = 10000)
+	final public void workerScheduleAndDisposeDelay() throws Exception {
+		Assume.assumeTrue("Worker marked as not supporting time scheduling", shouldCheckWorkerTimeScheduling());
+		Scheduler s = scheduler();
+		Scheduler.Worker w = s.createWorker();
+
+		try {
+
+			assertThat(w.isDisposed()).isFalse();
+			CountDownLatch latch = new CountDownLatch(1);
+			CountDownLatch latch2 = new CountDownLatch(1);
+			Disposable d = (Disposable) w.schedule(() -> {
+				try {
+					latch.countDown();
+					latch2.await(10, TimeUnit.SECONDS);
+				}
+				catch (InterruptedException e) {
+				}
+			}, 10, TimeUnit.MILLISECONDS);
+			assertThat(d).isNotSameAs(Scheduler.REJECTED);
+
+			latch.await();
+			assertThat(d.isDisposed()).isFalse();
+			d.dispose();
+
+			Thread.yield();
+
+			latch2.countDown();
+
+			w.dispose();
+			assertThat(w.isDisposed()).isTrue();
+
+			d = (Disposable) w.schedule(() -> { });
+
+			assertThat(d).isEqualTo(Scheduler.REJECTED);
+			assertThat(d.isDisposed()).isTrue();
+			d.dispose();
+			assertThat(d.isDisposed()).isTrue();
+		}
+		finally {
+			w.dispose();
+			s.dispose();
+		}
+	}
+
+	@Test(timeout = 10000)
+	final public void directScheduleAndDisposePeriod() throws Exception {
+		Assume.assumeTrue("Scheduler marked as not supporting time scheduling", shouldCheckDirectTimeScheduling());
+		Scheduler s = scheduler();
+
+		try {
+			assertThat(s.isDisposed()).isFalse();
+			CountDownLatch latch = new CountDownLatch(2);
+			CountDownLatch latch2 = new CountDownLatch(1);
+			Disposable d = (Disposable) s.schedulePeriodically(() -> {
+				try {
+					latch.countDown();
+					if (latch.getCount() == 0) {
+						latch2.await(10, TimeUnit.SECONDS);
+					}
+				}
+				catch (InterruptedException e) {
+				}
+			}, 10, 10, TimeUnit.MILLISECONDS);
+			assertThat(d).isNotSameAs(Scheduler.REJECTED);
+
+			assertThat(d.isDisposed()).isFalse();
+
+			latch.await();
+			d.dispose();
+
+			Thread.yield();
+
+			latch2.countDown();
+
+			s.dispose();
+			assertThat(s).is(DISPOSED_OR_CACHED);
+
+			d = (Disposable) s.schedule(() -> { });
+
+			d.dispose();
+			assertThat(d.isDisposed()).isTrue();
+		}
+		finally {
+			s.dispose();
+		}
+	}
+
+	@Test(timeout = 10000)
+	final public void workerScheduleAndDisposePeriod() throws Exception {
+		Assume.assumeTrue("Worker marked as not supporting time scheduling", shouldCheckWorkerTimeScheduling());
+		Scheduler s = scheduler();
+		Scheduler.Worker w = s.createWorker();
+
+		try {
+
+			assertThat(w.isDisposed()).isFalse();
+			CountDownLatch latch = new CountDownLatch(1);
+			CountDownLatch latch2 = new CountDownLatch(1);
+			Cancellation c = w.schedulePeriodically(() -> {
+				try {
+					latch.countDown();
+					latch2.await(10, TimeUnit.SECONDS);
+				}
+				catch (InterruptedException e) {
+				}
+			}, 10, 10, TimeUnit.MILLISECONDS);
+			Disposable d = (Disposable) c;
+			assertThat(d).isNotSameAs(Scheduler.REJECTED);
+
+			latch.await();
+			assertThat(d.isDisposed()).isFalse();
+			d.dispose();
+
+			Thread.yield();
+
+			latch2.countDown();
+
+			w.shutdown();
+			assertThat(w.isDisposed()).isTrue();
+
+			c = w.schedule(() -> {
+			});
+
+			assertThat(c).isEqualTo(Scheduler.REJECTED);
+
+			d = (Disposable) c;
+			assertThat(d.isDisposed()).isTrue();
+			d.dispose();
+			assertThat(d.isDisposed()).isTrue();
+		}
+		finally {
+			w.dispose();
+			s.dispose();
 		}
 	}
 }

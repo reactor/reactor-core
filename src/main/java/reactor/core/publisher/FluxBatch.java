@@ -26,7 +26,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
 import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.TimedScheduler;
 
 /**
  * @author Stephane Maldini
@@ -35,12 +34,12 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 
 	final int            batchSize;
 	final long           timespan;
-	final TimedScheduler timer;
+	final Scheduler timer;
 
 	public FluxBatch(Publisher<T> source,
 			int batchSize,
 			long timespan,
-			final TimedScheduler timer) {
+			final Scheduler timer) {
 		super(source);
 		if (timespan <= 0) {
 			throw new IllegalArgumentException("Timeout period must be strictly " + "positive");
@@ -79,7 +78,7 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 		final boolean                    first;
 		final int                        batchSize;
 		final long                       timespan;
-		final TimedScheduler.TimedWorker timer;
+		final Scheduler.Worker           timer;
 		final Runnable                   flushTask;
 
 		volatile int                                    terminated =
@@ -106,7 +105,7 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 				int batchSize,
 				boolean first,
 				long timespan,
-				final TimedScheduler.TimedWorker timer) {
+				final Scheduler.Worker timer) {
 
 			super(actual);
 

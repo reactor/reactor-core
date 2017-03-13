@@ -49,11 +49,11 @@ public class FluxSubscribeOnCallableTest {
 	public void normalBackpressured() {
 		StepVerifier.withVirtualTime(() -> Mono.fromCallable(() -> 1)
 		                                       .flux()
-		                                       .subscribeOn(
-				Schedulers.single()), 0)
+		                                       .subscribeOn(Schedulers.single()), 0)
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofSeconds(1))
 		            .thenRequest(1)
+		            .thenAwait()
 		            .expectNext(1)
 		            .expectComplete()
 		            .verify();
@@ -93,6 +93,7 @@ public class FluxSubscribeOnCallableTest {
 			            .size()).isEqualTo(1);
 		            })
 		            .thenRequest(1)
+		            .thenAwait()
 		            .expectNext(1)
 		            .expectComplete()
 		            .verify();

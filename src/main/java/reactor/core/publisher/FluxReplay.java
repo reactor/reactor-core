@@ -34,7 +34,7 @@ import reactor.core.MultiProducer;
 import reactor.core.Producer;
 import reactor.core.Receiver;
 import reactor.core.Trackable;
-import reactor.core.scheduler.TimedScheduler;
+import reactor.core.scheduler.Scheduler;
 import reactor.util.concurrent.QueueSupplier;
 
 /**
@@ -47,7 +47,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 	final Publisher<T>   source;
 	final int            history;
 	final long           ttl;
-	final TimedScheduler scheduler;
+	final Scheduler scheduler;
 
 	volatile ReplaySubscriber<T> connection;
 	@SuppressWarnings("rawtypes")
@@ -59,7 +59,7 @@ final class FluxReplay<T> extends ConnectableFlux<T>
 	FluxReplay(Publisher<T> source,
 			int history,
 			long ttl,
-			TimedScheduler scheduler) {
+			Scheduler scheduler) {
 		this.source = Objects.requireNonNull(source, "source");
 		this.history = history;
 		if(history < 0){

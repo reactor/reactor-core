@@ -329,43 +329,46 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * Create a new {@link TimedScheduler} backed by a single threaded {@link
-	 * java.util.concurrent.ScheduledExecutorService}.
+	 * Create a new {@link Scheduler} backed by a single threaded {@link
+	 * java.util.concurrent.ScheduledExecutorService}, making it guaranteed to be capable
+	 * of scheduling tasks in the future.
 	 *
 	 * @param name timer thread prefix
 	 *
-	 * @return a new {@link TimedScheduler}
+	 * @return a new time-capable {@link Scheduler}
 	 */
-	public static TimedScheduler newTimer(String name) {
+	public static Scheduler newTimer(String name) {
 		return newTimer(name, true);
 	}
 
 	/**
-	 * Create a new {@link TimedScheduler} backed by a single threaded {@link
-	 * java.util.concurrent.ScheduledExecutorService}.
+	 * Create a new {@link Scheduler} backed by a single threaded {@link
+	 * java.util.concurrent.ScheduledExecutorService}, making it guaranteed to be capable
+	 * of scheduling tasks in the future.
 	 *
 	 * @param name Component and thread name prefix
 	 * @param daemon false if the {@link Scheduler} requires an explicit {@link
 	 * Scheduler#dispose()} to exit the VM.
 	 *
-	 * @return a new {@link TimedScheduler}
+	 * @return a new time-capable {@link Scheduler}
 	 */
-	public static TimedScheduler newTimer(String name, boolean daemon) {
+	public static Scheduler newTimer(String name, boolean daemon) {
 		return newTimer(new SchedulerThreadFactory(name,
 				daemon,
-				SingleTimedScheduler.COUNTER));
+				SingleScheduler.TIMER_COUNTER));
 	}
 
 	/**
-	 * Create a new {@link TimedScheduler} backed by a single threaded {@link
-	 * java.util.concurrent.ScheduledExecutorService}.
+	 * Create a new {@link Scheduler} backed by a single threaded {@link
+	 * java.util.concurrent.ScheduledExecutorService}, making it guaranteed to be capable
+	 * of scheduling tasks in the future.
 	 *
 	 * @param threadFactory a {@link ThreadFactory} to use for the unique thread of the
-	 * {@link TimedScheduler}
+	 * {@link Scheduler}
 	 *
-	 * @return a new {@link TimedScheduler}
+	 * @return a new time-capable {@link Scheduler}
 	 */
-	public static TimedScheduler newTimer(ThreadFactory threadFactory) {
+	public static Scheduler newTimer(ThreadFactory threadFactory) {
 		return factory.newTimer(threadFactory);
 	}
 
@@ -471,13 +474,12 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * Create or reuse a hash-wheel based {@link TimedScheduler} with a resolution of 50MS
-	 * All times will rounded up to the closest multiple of this resolution.
+	 * Create or reuse a time-capable {@link Scheduler}.
 	 *
-	 * @return a cached hash-wheel based {@link TimedScheduler}
+	 * @return a cached time-capable {@link Scheduler}
 	 */
-	public static TimedScheduler timer() {
-		return timedCache(TIMER, TIMER_SUPPLIER).asTimedScheduler();
+	public static Scheduler timer() {
+		return timedCache(TIMER, TIMER_SUPPLIER);
 	}
 
 	/**
@@ -563,14 +565,14 @@ public abstract class Schedulers {
 		}
 
 		/**
-		 * Create a new {@link TimedScheduler} backed by a dedicated resource.
+		 * Create a new time-capable {@link Scheduler} backed by a dedicated resource.
 		 *
 		 * @param threadFactory a {@link ThreadFactory} to use for the eventual thread
 		 *
-		 * @return a new {@link TimedScheduler}
+		 * @return a new time-capable {@link Scheduler}
 		 */
 		default TimedScheduler newTimer(ThreadFactory threadFactory) {
-			return new SingleTimedScheduler(threadFactory);
+			return new SingleScheduler(threadFactory);
 		}
 	}
 
@@ -593,7 +595,7 @@ public abstract class Schedulers {
 
 	static final Supplier<Scheduler> SINGLE_SUPPLIER = () -> newSingle(SINGLE, true);
 
-	static final Supplier<TimedScheduler> TIMER_SUPPLIER = () -> newTimer(TIMER);
+	static final Supplier<Scheduler> TIMER_SUPPLIER = () -> newTimer(TIMER);
 
 	static final Factory DEFAULT = new Factory() {
 	};
@@ -615,13 +617,13 @@ public abstract class Schedulers {
 	}
 
 	static CachedScheduler timedCache(String key,
-			Supplier<TimedScheduler> schedulerSupplier) {
+			Supplier<Scheduler> schedulerSupplier) {
 		for (; ; ) {
 			CachedScheduler s = cachedSchedulers.get(key);
 			if (s != null) {
 				return s;
 			}
-			s = new CachedTimedScheduler(key, schedulerSupplier.get());
+			s = new CachedScheduler(key, schedulerSupplier.get());
 			if (cachedSchedulers.putIfAbsent(key, s) == null) {
 				return s;
 			}
@@ -696,8 +698,26 @@ public abstract class Schedulers {
 		}
 
 		@Override
+		public Cancellation schedule(Runnable task, long delay, TimeUnit unit) {
+			return cached.schedule(task, delay, unit);
+		}
+
+		@Override
+		public Cancellation schedulePeriodically(Runnable task,
+				long initialDelay,
+				long period,
+				TimeUnit unit) {
+			return cached.schedulePeriodically(task, initialDelay, period, unit);
+		}
+
+		@Override
 		public Worker createWorker() {
 			return cached.createWorker();
+		}
+
+		@Override
+		public long now(TimeUnit unit) {
+			return cached.now(unit);
 		}
 
 		@Override
@@ -732,54 +752,6 @@ public abstract class Schedulers {
 
 		void _dispose() {
 			cached.dispose();
-		}
-
-		TimedScheduler asTimedScheduler() {
-			throw new UnsupportedOperationException("Scheduler is not Timed");
-		}
-	}
-
-	static final class CachedTimedScheduler extends CachedScheduler
-			implements TimedScheduler {
-
-		final TimedScheduler cachedTimed;
-
-		CachedTimedScheduler(String key, TimedScheduler cachedTimed) {
-			super(key, cachedTimed);
-			this.cachedTimed = cachedTimed;
-		}
-
-		@Override
-		public Cancellation schedule(Runnable task, long delay, TimeUnit unit) {
-			return cachedTimed.schedule(task, delay, unit);
-		}
-
-		@Override
-		public Cancellation schedulePeriodically(Runnable task,
-				long initialDelay,
-				long period,
-				TimeUnit unit) {
-			return cachedTimed.schedulePeriodically(task, initialDelay, period, unit);
-		}
-
-		@Override
-		public TimedWorker createWorker() {
-			return cachedTimed.createWorker();
-		}
-
-		@Override
-		TimedScheduler asTimedScheduler() {
-			return this;
-		}
-
-		@Override
-		public TimedScheduler get() {
-			return cachedTimed;
-		}
-
-		@Override
-		public long now(TimeUnit unit) {
-			return cachedTimed.now(unit);
 		}
 	}
 }

@@ -22,8 +22,8 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
-import reactor.core.scheduler.TimedScheduler;
-import reactor.core.scheduler.TimedScheduler.TimedWorker;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Scheduler.Worker;
 
 /**
  * Periodically emits an ever increasing long value either via a ScheduledExecutorService
@@ -32,7 +32,7 @@ import reactor.core.scheduler.TimedScheduler.TimedWorker;
  */
 final class FluxInterval extends Flux<Long> {
 
-	final TimedScheduler timedScheduler;
+	final Scheduler timedScheduler;
 	
 	final long initialDelay;
 	
@@ -44,7 +44,7 @@ final class FluxInterval extends Flux<Long> {
 			long initialDelay, 
 			long period, 
 			TimeUnit unit, 
-			TimedScheduler timedScheduler) {
+			Scheduler timedScheduler) {
 		if (period < 0L) {
 			throw new IllegalArgumentException("period >= 0 required but it was " + period);
 		}
@@ -57,7 +57,7 @@ final class FluxInterval extends Flux<Long> {
 	@Override
 	public void subscribe(Subscriber<? super Long> s) {
 		
-		TimedWorker w = timedScheduler.createWorker();
+		Worker w = timedScheduler.createWorker();
 
 		IntervalRunnable r = new IntervalRunnable(s, w);
 
@@ -69,7 +69,7 @@ final class FluxInterval extends Flux<Long> {
 	static final class IntervalRunnable implements Runnable, Subscription {
 		final Subscriber<? super Long> s;
 		
-		final TimedWorker worker;
+		final Worker worker;
 		
 		volatile long requested;
 		static final AtomicLongFieldUpdater<IntervalRunnable> REQUESTED =
@@ -79,7 +79,7 @@ final class FluxInterval extends Flux<Long> {
 		
 		volatile boolean cancelled;
 
-		public IntervalRunnable(Subscriber<? super Long> s, TimedWorker worker) {
+		public IntervalRunnable(Subscriber<? super Long> s, Worker worker) {
 			this.s = s;
 			this.worker = worker;
 		}

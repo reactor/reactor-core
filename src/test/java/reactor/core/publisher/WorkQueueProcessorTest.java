@@ -37,8 +37,8 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.core.scheduler.TimedScheduler;
 import reactor.test.StepVerifier;
 import reactor.util.Logger;
 import reactor.util.Loggers;
@@ -153,7 +153,7 @@ public class WorkQueueProcessorTest {
 	public void highRate() throws Exception {
 		WorkQueueProcessor<String> queueProcessor =
 				WorkQueueProcessor.share("Processor", 256, liteBlocking());
-		TimedScheduler timer = Schedulers.newTimer("Timer");
+		Scheduler timer = Schedulers.newTimer("Timer");
 		queueProcessor.bufferTimeout(32, Duration.ofMillis(2), timer)
 		              .subscribe(new Subscriber<List<String>>() {
 			              int counter;

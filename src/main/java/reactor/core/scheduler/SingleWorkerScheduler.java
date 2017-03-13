@@ -16,6 +16,7 @@
 package reactor.core.scheduler;
 
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 
 import reactor.core.Cancellation;
 
@@ -24,6 +25,8 @@ import reactor.core.Cancellation;
  * provides Worker services on top of it.
  * <p>
  * Use the dispose() to release the wrapped worker.
+ * This scheduler is time-capable if the worker itself is time-capable (can schedule with
+ * a delay and/or periodically).
  */
 final class SingleWorkerScheduler implements Scheduler, Executor {
 
@@ -42,12 +45,23 @@ final class SingleWorkerScheduler implements Scheduler, Executor {
     public void dispose() {
         main.dispose();
     }
-    
+
     @Override
     public Cancellation schedule(Runnable task) {
         return main.schedule(task);
     }
-    
+
+    @Override
+    public Cancellation schedule(Runnable task, long delay, TimeUnit unit) {
+        return main.schedule(task, delay, unit);
+    }
+
+    @Override
+    public Cancellation schedulePeriodically(Runnable task, long initialDelay,
+            long period, TimeUnit unit) {
+        return main.schedulePeriodically(task, initialDelay, period, unit);
+    }
+
     @Override
     public void execute(Runnable command) {
         main.schedule(command);
@@ -55,6 +69,7 @@ final class SingleWorkerScheduler implements Scheduler, Executor {
     
     @Override
     public Worker createWorker() {
+        //TODO could this be simplified by returning this.main?
         return new ExecutorScheduler.ExecutorSchedulerWorker(this);
     }
 

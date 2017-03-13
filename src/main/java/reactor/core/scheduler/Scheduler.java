@@ -17,8 +17,10 @@ package reactor.core.scheduler;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import com.sun.org.apache.regexp.internal.RE;
 import reactor.core.Cancellation;
 import reactor.core.Disposable;
 
@@ -30,21 +32,73 @@ import reactor.core.Disposable;
  * passed through the relevant {@link Schedulers} hook
  * ({@link Schedulers#decorateExecutorService(String, Supplier)} or
  * {@link Schedulers#decorateScheduledExecutorService(String, Supplier)}).
+ *
+ * @author Stephane Maldini
+ * @author Simon Baslé
  */
 public interface Scheduler extends Disposable {
+
 	/**
 	 * Schedules the given task on this scheduler non-delayed execution.
-	 * 
+	 *
 	 * <p>
 	 * This method is safe to be called from multiple threads but there are no
 	 * ordering guarantees between tasks.
-	 * 
+	 *
 	 * @param task the task to execute
-	 * 
+	 *
 	 * @return the {@link Cancellation} instance that let's one cancel this particular task.
 	 * If the {@link Scheduler} has been shut down, the {@link #REJECTED} {@link Cancellation} instance is returned.
 	 */
 	Cancellation schedule(Runnable task);
+
+	/**
+	 * Schedules the execution of the given task with the given delay amount.
+	 *
+	 * <p>
+	 * This method is safe to be called from multiple threads but there are no
+	 * ordering guarantees between tasks.
+	 *
+	 * @param task the task to schedule
+	 * @param delay the delay amount, non-positive values indicate non-delayed scheduling
+	 * @param unit the unit of measure of the delay amount
+	 * @return the {@link Cancellation} that let's one cancel this particular delayed task,
+	 * or {@link #REJECTED} if the Scheduler is not capable of scheduling periodically.
+	 */
+	default Cancellation schedule(Runnable task, long delay, TimeUnit unit) {
+		return REJECTED;
+	}
+
+	/**
+	 * Schedules a periodic execution of the given task with the given initial delay and period.
+	 *
+	 * <p>
+	 * This method is safe to be called from multiple threads but there are no
+	 * ordering guarantees between tasks.
+	 *
+	 * <p>
+	 * The periodic execution is at a fixed rate, that is, the first execution will be after the initial
+	 * delay, the second after initialDelay + period, the third after initialDelay + 2 * period, and so on.
+	 *
+	 * @param task the task to schedule
+	 * @param initialDelay the initial delay amount, non-positive values indicate non-delayed scheduling
+	 * @param period the period at which the task should be re-executed
+	 * @param unit the unit of measure of the delay amount
+	 * @return the {@link Cancellation} that let's one cancel this particular delayed task,
+	 * or {@link #REJECTED} if the Scheduler is not capable of scheduling periodically.
+	 */
+	default Cancellation schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
+		return REJECTED;
+	}
+
+	/**
+	 * Returns the "current time" notion of this scheduler.
+	 * @param unit the target unit of the current time
+	 * @return the current time value in the target unit of measure
+	 */
+	default long now(TimeUnit unit) {
+		return unit.convert(System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+	}
 	
 	/**
 	 * Creates a worker of this Scheduler that executed task in a strict
@@ -105,10 +159,13 @@ public interface Scheduler extends Disposable {
 
 	/**
 	 * A worker representing an asynchronous boundary that executes tasks in
-	 * a FIFO order, guaranteed non-concurrently with respect to each other. 
+	 * a FIFO order, guaranteed non-concurrently with respect to each other.
+	 *
+	 * @author Stephane Maldini
+	 * @author Simon Baslé
 	 */
 	interface Worker extends Disposable {
-		
+
 		/**
 		 * Schedules the task on this worker.
 		 * @param task the task to schedule
@@ -116,7 +173,47 @@ public interface Scheduler extends Disposable {
 		 * If the Scheduler has been shut down, the {@link #REJECTED} {@link Cancellation} instance is returned.
 		 */
 		Cancellation schedule(Runnable task);
-		
+
+		/**
+		 * Schedules the execution of the given task with the given delay amount.
+		 *
+		 * <p>
+		 * This method is safe to be called from multiple threads and tasks are executed in
+		 * some total order. Two tasks scheduled at a same time with the same delay will be
+		 * ordered in FIFO order if the schedule() was called from the same thread or
+		 * in arbitrary order if the schedule() was called from different threads.
+		 *
+		 * @param task the task to schedule
+		 * @param delay the delay amount, non-positive values indicate non-delayed scheduling
+		 * @param unit the unit of measure of the delay amount
+		 * @return the {@link Cancellation} that let's one cancel this particular delayed task,
+		 * or {@link #REJECTED} if the Worker is not capable of scheduling with delay.
+		 */
+		default Cancellation schedule(Runnable task, long delay, TimeUnit unit) {
+			return REJECTED;
+		}
+
+		/**
+		 * Schedules a periodic execution of the given task with the given initial delay and period.
+		 *
+		 * <p>
+		 * This method is safe to be called from multiple threads.
+		 *
+		 * <p>
+		 * The periodic execution is at a fixed rate, that is, the first execution will be after the initial
+		 * delay, the second after initialDelay + period, the third after initialDelay + 2 * period, and so on.
+		 *
+		 * @param task the task to schedule
+		 * @param initialDelay the initial delay amount, non-positive values indicate non-delayed scheduling
+		 * @param period the period at which the task should be re-executed
+		 * @param unit the unit of measure of the delay amount
+		 * @return the {@link Cancellation} that let's one cancel this particular delayed task,
+		 * or {@link #REJECTED} if the Worker is not capable of scheduling periodically.
+		 */
+		default Cancellation schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
+			return REJECTED;
+		}
+
 		/**
 		 * Instructs this worker to cancel all pending tasks, all running tasks in 
 		 * a best-effort manner, reject new tasks and
@@ -141,7 +238,8 @@ public interface Scheduler extends Disposable {
 	}
 	
 	/**
-	 * Returned by the schedule() methods if the Scheduler or the Worker has ben shut down.
+	 * Returned by the schedule() methods if the Scheduler or the Worker has ben shut down,
+	 * or is incapable of scheduling tasks with a delay/periodically (not "time capable").
 	 */
 	Disposable REJECTED = new RejectedDisposable();
 }
