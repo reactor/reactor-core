@@ -24,6 +24,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.assertj.core.api.Assertions;
+import org.assertj.core.api.Condition;
 import org.junit.Test;
 import reactor.core.Fuseable;
 import reactor.core.publisher.DirectProcessor;
@@ -44,6 +45,13 @@ import static reactor.test.publisher.TestPublisher.Violation.REQUEST_OVERFLOW;
  * @author Simon Basle
  */
 public class StepVerifierTests {
+
+	/**
+	 * An AssertJ Condition that can be used to check if a {@link VirtualTimeScheduler} will
+	 * be used for all {@link Schedulers} factory methods once {@link VirtualTimeScheduler#set(VirtualTimeScheduler) set}.
+	 */
+	static final Condition<? super VirtualTimeScheduler> ENABLED_FOR_ALL = new Condition<>(
+			vts -> vts.isEnabledOnAllSchedulers(), "");
 
 	@Test
 	public void expectNext() {
@@ -1664,4 +1672,11 @@ public class StepVerifierTests {
 		assertThat(VirtualTimeScheduler.isFactoryEnabled()).isFalse();
 	}
 
+	@Test
+	public void defaultStepVerifierVTSIsEnabledForAll() {
+		StepVerifier.withVirtualTime(() -> Mono.just(1))
+		            .then(() -> assertThat(VirtualTimeScheduler.get()).is(ENABLED_FOR_ALL))
+	                .expectNext(1)
+	                .verifyComplete();
+	}
 }
