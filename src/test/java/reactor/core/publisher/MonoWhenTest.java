@@ -21,6 +21,7 @@ import java.util.Arrays;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Publisher;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.function.Tuple2;
@@ -406,5 +407,59 @@ public class MonoWhenTest {
 		            .then(() -> assertThat(mp.isTerminated()).isTrue())
 		            .assertNext(v -> assertThat(v.getT1() == 1 && v.getT2() == 2 && v.getT3() == 3 && v.getT4() == 4 && v.getT5() == 5 && v.getT6() == 6).isTrue())
 		            .verifyComplete();
+	}
+
+	@Test
+	public void whenIterableDelayErrorCombinesErrors() {
+		Exception boom1 = new NullPointerException("boom1");
+		Exception boom2 = new IllegalArgumentException("boom2");
+
+		StepVerifier.create(Mono.whenDelayError(
+				Arrays.asList(Mono.just("foo"), Mono.<String>error(boom1), Mono.<String>error(boom2)),
+				Tuples.fn3()))
+		            .verifyErrorMatches(e -> e.getMessage().equals("Multiple errors") &&
+				            e.getSuppressed()[0] == boom1 &&
+				            e.getSuppressed()[1] == boom2);
+	}
+
+	@Test
+	public void whenIterableDoesntCombineErrors() {
+		Exception boom1 = new NullPointerException("boom1");
+		Exception boom2 = new IllegalArgumentException("boom2");
+
+		StepVerifier.create(Mono.when(
+				Arrays.asList(Mono.just("foo"), Mono.<String>error(boom1), Mono.<String>error(boom2)),
+				Tuples.fn3()))
+		            .verifyErrorMatches(e -> e == boom1);
+	}
+
+	@Test
+	public void whenIterableDelayErrorPublishersVoidCombinesErrors() {
+		Exception boom1 = new NullPointerException("boom1");
+		Exception boom2 = new IllegalArgumentException("boom2");
+
+		Iterable<Publisher<Void>> voidPublishers = Arrays.asList(
+				Mono.<Void>empty(),
+				Mono.<Void>error(boom1),
+				Mono.<Void>error(boom2));
+
+		StepVerifier.create(Mono.whenDelayError(voidPublishers))
+		            .verifyErrorMatches(e -> e.getMessage().equals("Multiple errors") &&
+				            e.getSuppressed()[0] == boom1 &&
+				            e.getSuppressed()[1] == boom2);
+	}
+
+	@Test
+	public void whenIterablePublishersVoidDoesntCombineErrors() {
+		Exception boom1 = new NullPointerException("boom1");
+		Exception boom2 = new IllegalArgumentException("boom2");
+
+		Iterable<Publisher<Void>> voidPublishers = Arrays.asList(
+				Mono.<Void>empty(),
+				Mono.<Void>error(boom1),
+				Mono.<Void>error(boom2));
+
+		StepVerifier.create(Mono.when(voidPublishers))
+		            .verifyErrorMatches(e -> e == boom1);
 	}
 }

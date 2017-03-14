@@ -815,9 +815,8 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Aggregate given void publisher into a new a {@literal Mono} that will be fulfilled
-	 * when all of the given {@literal
-	 * Monos} have been fulfilled. An error will cause pending results to be cancelled and immediate error emission to the
-	 * returned {@link Mono}.
+	 * when all of the given {@literal sources} have been fulfilled. An error will cause
+	 * pending results to be cancelled and immediate error emission to the returned {@link Mono}.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/whent.png" alt="">
 	 * <p>
@@ -863,7 +862,7 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Merge given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
-	 * have been fulfilled.
+	 * have been fulfilled. If both Monos error, the two exceptions are combined (suppressed into a combining exception).
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/whent.png" alt="">
@@ -882,7 +881,7 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Merge given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Mono Monos}
-	 * have been fulfilled.
+	 * have been fulfilled. If several Monos error, the exceptions are combined (suppressed into a combining exception).
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/whent.png" alt="">
@@ -903,7 +902,7 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Merge given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
-	 * have been fulfilled.
+	 * have been fulfilled. If several Monos error, the exceptions are combined (suppressed into a combining exception).
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/whent.png" alt="">
@@ -929,7 +928,7 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Merge given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
-	 * have been fulfilled.
+	 * have been fulfilled. If several Monos error, the exceptions are combined (suppressed into a combining exception).
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/whent.png" alt="">
@@ -958,7 +957,7 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Merge given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
-	 * have been fulfilled.
+	 * have been fulfilled. If several Monos error, the exceptions are combined (suppressed into a combining exception).
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/whent.png" alt="">
@@ -989,9 +988,49 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Merge given void publishers into a new a {@literal Mono} that will be fulfilled
-	 * when all of the given {@literal Monos}
-	 * have been fulfilled.
+	 * Aggregate given void publishers into a new a {@literal Mono} that will be
+	 * fulfilled when all of the given {@literal sources} have been fulfilled. If any Publisher
+	 * terminates without value, the returned sequence will be terminated immediately and
+	 * pending results cancelled. If several Publishers error, the exceptions are combined
+	 * (suppressed into a combining exception).
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/whent.png" alt="">
+	 * <p>
+	 *
+	 * @param sources The sources to use.
+	 *
+	 * @return a {@link Mono}.
+	 */
+	public static Mono<Void> whenDelayError(final Iterable<? extends Publisher<Void>> sources) {
+		return onAssembly(new MonoWhen<>(true, VOID_FUNCTION, sources));
+	}
+
+	/**
+	 * Aggregate given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal
+	 * Monos} have been fulfilled. If any Mono terminates without value, the returned sequence will be terminated
+	 * immediately and pending results cancelled. If several Monos error, the exceptions are combined (suppressed
+	 * into a combining exception).
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/whent.png" alt="">
+	 * <p>
+	 *
+	 * @param monos The monos to use.
+	 * @param combinator the function to transform the combined array into an arbitrary
+	 * object.
+	 * @param <R> the combined result
+	 *
+	 * @return a {@link Mono}.
+	 */
+	public static <R> Mono<R> whenDelayError(final Iterable<? extends Mono<?>> monos, Function<? super Object[], ? extends R> combinator) {
+		return onAssembly(new MonoWhen<>(true, combinator, monos));
+	}
+
+	/**
+	 * Merge given void publishers into a new a {@literal Mono} that will be fulfilled when
+	 * all of the given {@literal sources} have been fulfilled. If several Publishers error,
+	 * the exceptions are combined (suppressed into a combining exception).
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/whent.png" alt="">
@@ -1011,9 +1050,10 @@ public abstract class Mono<T> implements Publisher<T> {
 		return onAssembly(new MonoWhen<>(true, VOID_FUNCTION, sources));
 	}
 
+
 	/**
 	 * Merge given monos into a new a {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
-	 * have been fulfilled.
+	 * have been fulfilled. If several Monos error, the exceptions are combined (suppressed into a combining exception).
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/whent.png" alt="">
