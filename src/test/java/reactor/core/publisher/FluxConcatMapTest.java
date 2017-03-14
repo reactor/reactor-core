@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -27,6 +28,8 @@ import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 
@@ -735,6 +738,36 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 
 		//System.out.println("source: " + sourceCount);
 		System.out.println("cached: " + cachedCount);
+	}
+
+	@Test
+	public void prefetchMaxTranslatesToUnboundedRequest() {
+		AtomicLong requested = new AtomicLong();
+
+		StepVerifier.create(Flux.just(1, 2, 3).hide()
+		                        .doOnRequest(requested::set)
+		                        .concatMap(i -> Flux.range(0, i), Integer.MAX_VALUE))
+		            .expectNext(0, 0, 1, 0, 1, 2)
+		            .verifyComplete();
+
+		assertThat(requested.get())
+				.isNotEqualTo(Integer.MAX_VALUE)
+				.isEqualTo(Long.MAX_VALUE);
+	}
+
+	@Test
+	public void prefetchMaxTranslatesToUnboundedRequest2() {
+		AtomicLong requested = new AtomicLong();
+
+		StepVerifier.create(Flux.just(1, 2, 3).hide()
+		                        .doOnRequest(requested::set)
+		                        .concatMapDelayError(i -> Flux.range(0, i), Integer.MAX_VALUE))
+		            .expectNext(0, 0, 1, 0, 1, 2)
+		            .verifyComplete();
+
+		assertThat(requested.get())
+				.isNotEqualTo(Integer.MAX_VALUE)
+				.isEqualTo(Long.MAX_VALUE);
 	}
 
 }

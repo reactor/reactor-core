@@ -217,7 +217,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 
 				actual.onSubscribe(this);
 
-				s.request(prefetch);
+				s.request(prefetch == Integer.MAX_VALUE ? Long.MAX_VALUE : prefetch);
 			}
 		}
 
@@ -530,7 +530,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 
 				actual.onSubscribe(this);
 
-				s.request(prefetch);
+				s.request(prefetch == Integer.MAX_VALUE ? Long.MAX_VALUE : prefetch);
 			}
 		}
 
