@@ -38,13 +38,11 @@ import org.reactivestreams.Subscription;
  */
 final class MonoUntilOther<T, R> extends Mono<R> {
 
-	final boolean cancelOnTriggerValue;
-
 	final boolean delayError;
 
 	final Mono<T> source;
 
-	final Publisher<?> other;
+	Publisher<?>[] others;
 
 	final Function<? super T, ? extends R> mapper;
 
@@ -54,26 +52,37 @@ final class MonoUntilOther<T, R> extends Mono<R> {
 			Function<? super T, ? extends R> mapper) {
 		this.delayError = delayError;
 		this.source = Objects.requireNonNull(monoSource, "monoSource");
-		this.other = Objects.requireNonNull(triggerPublisher, "triggerPublisher");
+		this.others = new Publisher[] { Objects.requireNonNull(triggerPublisher, "triggerPublisher")};
 		this.mapper = Objects.requireNonNull(mapper, "mapper");
-		this.cancelOnTriggerValue = !(other instanceof Mono);
+	}
+
+	/**
+	 * Add a trigger to wait for, without any additional transformation (as there would
+	 * be no way of detecting said transformation is compatible with the array of sources).
+	 * @param trigger
+	 */
+	public void addTrigger(Publisher<?> trigger) {
+		Publisher<?>[] oldTriggers = this.others;
+		this.others = new Publisher[oldTriggers.length + 1];
+		System.arraycopy(oldTriggers, 0, this.others, 0, oldTriggers.length);
+		this.others[oldTriggers.length] = trigger;
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super R> s) {
-		MonoUntilOtherCoordinator<T, R> parent = new MonoUntilOtherCoordinator<>(s, delayError, mapper, cancelOnTriggerValue);
+		MonoUntilOtherCoordinator<T, R> parent = new MonoUntilOtherCoordinator<>(s, delayError, mapper, others.length + 1);
 		s.onSubscribe(parent);
-		parent.subscribe(source, other);
+		parent.subscribe(source, others);
 	}
 
 	static final class MonoUntilOtherCoordinator<T, R>
 			extends Operators.MonoSubscriber<T, R> implements Subscription {
 
-		final boolean                           cancelOnTriggerValue;
+		final int                               n;
 		final boolean                           delayError;
 		final Function<? super T, ? extends R>  mapper;
 		final MonoUntilOtherSourceSubscriber<T> sourceSubscriber;
-		final MonoUntilOtherTriggerSubscriber   triggerSubscriber;
+		final MonoUntilOtherTriggerSubscriber[] triggerSubscribers;
 
 		volatile int done;
 		static final AtomicIntegerFieldUpdater<MonoUntilOtherCoordinator> DONE =
@@ -82,25 +91,34 @@ final class MonoUntilOther<T, R> extends Mono<R> {
 		MonoUntilOtherCoordinator(Subscriber<? super R> subscriber,
 				boolean delayError,
 				Function<? super T, ? extends R> mapper,
-				boolean cancelOnFirstTriggerValue) {
+				int n) {
 			super(subscriber);
-			this.cancelOnTriggerValue = cancelOnFirstTriggerValue;
+			this.n = n;
 			this.delayError = delayError;
 			this.mapper = mapper;
 			sourceSubscriber = new MonoUntilOtherSourceSubscriber<>(this);
-			triggerSubscriber = new MonoUntilOtherTriggerSubscriber(this);
+			triggerSubscribers = new MonoUntilOtherTriggerSubscriber[n - 1];
 		}
 
-		void subscribe(Publisher<T> source, Publisher<?> trigger) {
+		void subscribe(Publisher<T> source, Publisher<?>[] triggers) {
+			if (triggers.length != triggerSubscribers.length) {
+				throw new IllegalArgumentException(triggerSubscribers.length + " triggers required");
+			}
 			source.subscribe(sourceSubscriber);
-			trigger.subscribe(triggerSubscriber);
+			for (int i = 0; i < triggerSubscribers.length; i++) {
+				Publisher p = triggers[i];
+				boolean cancelOnTriggerValue = !(p instanceof Mono);
+				MonoUntilOtherTriggerSubscriber triggerSubscriber = new MonoUntilOtherTriggerSubscriber(this, cancelOnTriggerValue);
+				this.triggerSubscribers[i] = triggerSubscriber;
+				p.subscribe(triggerSubscriber);
+			}
 		}
 
 		void signalError(Throwable t) {
 			if (delayError) {
 				signal();
 			} else {
-				if (DONE.getAndSet(this, 2) != 2) {
+				if (DONE.getAndSet(this, n) != n) {
 					cancel();
 					actual.onError(t);
 				}
@@ -108,15 +126,16 @@ final class MonoUntilOther<T, R> extends Mono<R> {
 		}
 
 		void signal() {
-			if (DONE.incrementAndGet(this) != 2) {
+			if (DONE.incrementAndGet(this) != n) {
 				return;
 			}
 
 			T o = null;
 			Throwable error = null;
 			Throwable compositeError = null;
-			boolean hasEmpty = false;
+			boolean sourceEmpty = false;
 
+			//check if source produced value or error
 			MonoUntilOtherSourceSubscriber<T> ms = sourceSubscriber;
 			T v = ms.value;
 			if (v != null) {
@@ -134,35 +153,39 @@ final class MonoUntilOther<T, R> extends Mono<R> {
 						error = e;
 					}
 				} else {
-					hasEmpty = true;
+					sourceEmpty = true;
 				}
 			}
 
-			MonoUntilOtherTriggerSubscriber mt = triggerSubscriber;
-			Throwable e = mt.error;
-			if (e != null) {
-				if (compositeError != null) {
-					compositeError.addSuppressed(e);
-				} else
-				if (error != null) {
-					compositeError = new Throwable("Multiple errors");
-					compositeError.addSuppressed(error);
-					compositeError.addSuppressed(e);
-				} else {
-					error = e;
+			//check for errors in the triggers
+			for (int i = 0; i < n - 1; i++) {
+				MonoUntilOtherTriggerSubscriber mt = triggerSubscribers[i];
+				Throwable e = mt.error;
+				if (e != null) {
+					if (compositeError != null) {
+						compositeError.addSuppressed(e);
+					} else
+					if (error != null) {
+						compositeError = new Throwable("Multiple errors");
+						compositeError.addSuppressed(error);
+						compositeError.addSuppressed(e);
+					} else {
+						error = e;
+					}
+					//else the trigger publisher was empty, but we'll ignore that
 				}
-				//else the trigger publisher was empty, but we'll ignore that
 			}
 
 			if (compositeError != null) {
 				actual.onError(compositeError);
-			} else
-			if (error != null) {
+			}
+			else if (error != null) {
 				actual.onError(error);
-			} else
-			if (hasEmpty) {
+			}
+			else if (sourceEmpty) {
 				actual.onComplete();
 			} else {
+				//apply the transformation to the source
 				R r;
 				try {
 					r = Objects.requireNonNull(mapper.apply(o), "mapper produced a null value");
@@ -179,8 +202,13 @@ final class MonoUntilOther<T, R> extends Mono<R> {
 		public void cancel() {
 			if (!isCancelled()) {
 				super.cancel();
+				//sourceSubscriber is eagerly created so always cancellable...
 				sourceSubscriber.cancel();
-				triggerSubscriber.cancel();
+				//...but triggerSubscribers could be partially initialized
+				for (int i = 0; i < triggerSubscribers.length; i++) {
+					MonoUntilOtherTriggerSubscriber ts = triggerSubscribers[i];
+					if (ts != null) ts.cancel();
+				}
 			}
 		}
 	}
@@ -239,6 +267,7 @@ final class MonoUntilOther<T, R> extends Mono<R> {
 	static final class MonoUntilOtherTriggerSubscriber implements Subscriber<Object> {
 
 		final MonoUntilOtherCoordinator<?, ?> parent;
+		final boolean cancelOnTriggerValue;
 
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
@@ -248,8 +277,10 @@ final class MonoUntilOther<T, R> extends Mono<R> {
 		boolean done;
 		Throwable error;
 
-		public MonoUntilOtherTriggerSubscriber(MonoUntilOtherCoordinator<?, ?> parent) {
+		public MonoUntilOtherTriggerSubscriber(MonoUntilOtherCoordinator<?, ?> parent,
+				boolean cancelOnTriggerValue) {
 			this.parent = parent;
+			this.cancelOnTriggerValue = cancelOnTriggerValue;
 		}
 
 		@Override
@@ -266,7 +297,7 @@ final class MonoUntilOther<T, R> extends Mono<R> {
 			if (!done) {
 				done = true;
 				parent.signal();
-				if (parent.cancelOnTriggerValue) {
+				if (cancelOnTriggerValue) {
 					s.cancel();
 				}
 			}

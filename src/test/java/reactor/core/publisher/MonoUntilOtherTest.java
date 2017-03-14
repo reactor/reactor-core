@@ -165,4 +165,47 @@ public class MonoUntilOtherTest {
 		            .expectNext("foo3")
 		            .verifyComplete();
 	}
+
+	@Test
+	public void testAPIchainingCombinesWhenNoFunction() {
+		Mono<String> source = Mono.just("foo");
+
+		Mono<String> until1 = source.untilOther(
+				Flux.just(1, 2, 3),
+				s -> s + "BAR");
+
+		Mono<String> until2 = until1.untilOther(
+				Mono.delay(Duration.ofMillis(800)));
+
+		assertThat(until1).isSameAs(until2);
+
+		StepVerifier.create(until2)
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMillis(700))
+		            .thenAwait(Duration.ofMillis(100))
+		            .expectNext("fooBAR")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void testAPIchainingDoesntCombineWhenFunction() {
+		Mono<String> source = Mono.just("foo");
+
+		Mono<String> until1 = source.untilOther(
+				Flux.just(1, 2, 3),
+				s -> s + "BAR");
+
+		Mono<String> until2 = until1.untilOther(
+				Mono.delay(Duration.ofMillis(800)),
+				String::toUpperCase);
+
+		assertThat(until1).isNotSameAs(until2);
+
+		StepVerifier.create(until2)
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMillis(700))
+		            .thenAwait(Duration.ofMillis(100))
+		            .expectNext("FOOBAR")
+		            .verifyComplete();
+	}
 }

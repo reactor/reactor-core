@@ -634,6 +634,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public Mono<T> untilOther(Publisher<?> anyPublisher) {
 		Objects.requireNonNull(anyPublisher, "anyPublisher required");
+		if (this instanceof MonoUntilOther) {
+			((MonoUntilOther) this).addTrigger(anyPublisher);
+			return this;
+		}
 		return onAssembly(new MonoUntilOther<>(false, this, anyPublisher, Function.identity()));
 	}
 
