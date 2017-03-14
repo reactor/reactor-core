@@ -46,7 +46,8 @@ public class MonoUntilOtherTest {
 	@Test
 	public void testMonoValuedAndPublisherVoidMapped() {
 		Publisher<Void> voidPublisher = Mono.fromRunnable(() -> { });
-		StepVerifier.create(new MonoUntilOther<>(false, Mono.just("foo"), voidPublisher, s -> s.length()))
+		StepVerifier.create(new MonoUntilOther<>(false, Mono.just("foo"), voidPublisher,
+				String::length))
 		            .expectNext(3)
 		            .verifyComplete();
 	}
@@ -55,8 +56,8 @@ public class MonoUntilOtherTest {
 	public void mapperNull() {
 		StepVerifier.withVirtualTime(() -> new MonoUntilOther<>(false,
 				Mono.just("foo"), Mono.delay(Duration.ofMillis(500)), s -> null))
-	                .expectSubscription()
-	                .expectNoEvent(Duration.ofMillis(500))
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMillis(500))
 	                .verifyErrorMatches(e -> e instanceof NullPointerException &&
 			                "mapper produced a null value".equals(e.getMessage()));
 	}
@@ -65,17 +66,15 @@ public class MonoUntilOtherTest {
 	public void triggerSequenceHasMultipleValuesCancelled() {
 		AtomicBoolean triggerCancelled = new AtomicBoolean();
 		StepVerifier.create(new MonoUntilOther<>(false,
-				Mono.just("foo").hide(),
-				Flux.just(1, 2, 3)
+				Mono.just("foo"),
+				Flux.just(1, 2, 3).hide()
 				    .delayElements(Duration.ofMillis(500))
-				    .doOnCancel(() -> triggerCancelled.set(true))
-				    .log(),
+				    .doOnCancel(() -> triggerCancelled.set(true)),
 				s -> s))
 		            .expectSubscription()
-		            .expectNoEvent(Duration.ofMillis(500))
+		            .expectNoEvent(Duration.ofMillis(450))
 		            .expectNext("foo")
 		            .verifyComplete();
-		try { Thread.sleep(1000); } catch (InterruptedException e) { e.printStackTrace(); }
 		assertThat(triggerCancelled.get()).isTrue();
 	}
 
@@ -85,11 +84,10 @@ public class MonoUntilOtherTest {
 		StepVerifier.create(new MonoUntilOther<>(false,
 				Mono.just("foo"),
 				Mono.delay(Duration.ofMillis(500))
-				    .doOnCancel(() -> triggerCancelled.set(true))
-				    .log(),
+				    .doOnCancel(() -> triggerCancelled.set(true)),
 				s -> s))
 		            .expectSubscription()
-		            .expectNoEvent(Duration.ofMillis(500))
+		            .expectNoEvent(Duration.ofMillis(450))
 		            .expectNext("foo")
 		            .verifyComplete();
 		assertThat(triggerCancelled.get()).isFalse();
