@@ -16,8 +16,11 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 
@@ -226,6 +229,39 @@ public class LambdaMonoSubscriberTest {
 			Hooks.resetOnErrorDropped();
 			Hooks.resetOnNextDropped();
 		}
+	}
+
+	@Test
+	public void completeHookErrorDropped() {
+		Hooks.onErrorDropped(e -> assertTrue(e.getMessage().equals("complete")));
+		try {
+			Mono.just("foo")
+		        .subscribe(v -> {},
+				        e -> {},
+				        () -> { throw new IllegalStateException("complete");});
+		}
+		finally {
+			Hooks.resetOnErrorDropped();
+		}
+	}
+
+	@Test
+	public void noErrorHookThrowsCallbackNotImplemented() {
+		RuntimeException boom = new IllegalArgumentException("boom");
+		Assertions.assertThatExceptionOfType(RuntimeException.class)
+		          .isThrownBy(() -> Mono.error(boom).subscribe(v -> {}))
+	              .withCause(boom)
+	              .hasToString("reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.IllegalArgumentException: boom");
+	}
+
+	@Test
+	public void testCancel() {
+		AtomicLong cancelCount = new AtomicLong();
+		Mono.delay(Duration.ofMillis(500))
+		    .doOnCancel(cancelCount::incrementAndGet)
+		    .subscribe(v -> {})
+		    .dispose();
+		Assertions.assertThat(cancelCount.get()).isEqualTo(1);
 	}
 
 	private static class TestSubscription implements Subscription {
