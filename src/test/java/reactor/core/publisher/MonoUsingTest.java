@@ -19,9 +19,15 @@ package reactor.core.publisher;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.assertj.core.api.Assertions;
+import org.assertj.core.api.Condition;
 import org.junit.Assert;
 import org.junit.Test;
+import org.testng.remote.strprotocol.IStringMessage;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoUsingTest {
 
@@ -215,5 +221,29 @@ public class MonoUsingTest {
 
 
 		Assert.assertEquals(1, cleanup.get());
+	}
+
+	@Test
+	public void sourceFactoryAndResourceCleanupThrow() {
+		RuntimeException sourceEx = new IllegalStateException("sourceFactory");
+		RuntimeException cleanupEx = new IllegalStateException("resourceCleanup");
+
+		Condition<? super Throwable> suppressingFactory = new Condition<>(
+				e -> {
+					Throwable[] suppressed = e.getSuppressed();
+					return suppressed != null && suppressed.length == 1 && suppressed[0] == sourceEx;
+				}, "suppressing <%s>", sourceEx);
+
+		Mono<String> test = new MonoUsing<>(() -> "foo",
+				o -> { throw sourceEx; },
+				s -> { throw cleanupEx; },
+				false);
+
+		StepVerifier.create(test)
+		            .verifyErrorMatches(
+				            e -> assertThat(e)
+						            .hasMessage("resourceCleanup")
+						            .is(suppressingFactory) != null);
+
 	}
 }
