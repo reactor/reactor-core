@@ -49,7 +49,7 @@ public class Tuple2<T1, T2> implements Iterable<Object>, Serializable {
 	/**
 	 * Type-safe way to get the fist object of this {@link Tuples}.
 	 *
-	 * @return The second object
+	 * @return The first object
 	 */
 	public T1 getT1() {
 		return t1;
