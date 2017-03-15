@@ -69,8 +69,12 @@ abstract class BlockingSingleSubscriber<T> extends CountDownLatch
 		cancelled = true;
 		Subscription s = this.s;
 		if (S.compareAndSet(this, s, null)) {
-			s.cancel();
+			upstreamCancel(s);
 		}
+	}
+
+	protected void upstreamCancel(Subscription s) {
+		s.cancel();
 	}
 
 	/**
