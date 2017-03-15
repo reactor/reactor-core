@@ -27,11 +27,11 @@ import reactor.core.Receiver;
 import reactor.core.Trackable;
 
 /**
- * An unbounded Java Lambda adapter to {@link Subscriber}
+ * An unbounded Java Lambda adapter to {@link Subscriber}, targetted at {@link Mono}.
  *
  * @param <T> the value type
  */
-final class LambdaFirstSubscriber<T>
+final class LambdaMonoSubscriber<T>
 		implements Subscriber<T>, Receiver, Disposable, Trackable {
 
 	final Consumer<? super T>            consumer;
@@ -40,8 +40,8 @@ final class LambdaFirstSubscriber<T>
 	final Consumer<? super Subscription> subscriptionConsumer;
 
 	volatile Subscription subscription;
-	static final AtomicReferenceFieldUpdater<LambdaFirstSubscriber, Subscription> S =
-			AtomicReferenceFieldUpdater.newUpdater(LambdaFirstSubscriber.class,
+	static final AtomicReferenceFieldUpdater<LambdaMonoSubscriber, Subscription> S =
+			AtomicReferenceFieldUpdater.newUpdater(LambdaMonoSubscriber.class,
 					Subscription.class,
 					"subscription");
 
@@ -59,7 +59,7 @@ final class LambdaFirstSubscriber<T>
 	 * @param subscriptionConsumer A {@link Consumer} called with the
 	 * {@link Subscription} to perform initial request, or null to request max
 	 */
-	LambdaFirstSubscriber(Consumer<? super T> consumer,
+	LambdaMonoSubscriber(Consumer<? super T> consumer,
 			Consumer<? super Throwable> errorConsumer,
 			Runnable completeConsumer,
 			Consumer<? super Subscription> subscriptionConsumer) {
@@ -138,10 +138,7 @@ final class LambdaFirstSubscriber<T>
 			throw Exceptions.argumentIsNullException();
 		}
 		Subscription s = S.getAndSet(this, Operators.cancelledSubscription());
-		if (s != null && s != Operators.cancelledSubscription()) {
-			s.cancel();
-		}
-		else {
+		if (s == null || s == Operators.cancelledSubscription()) {
 			Operators.onNextDropped(x);
 			return;
 		}

@@ -2782,7 +2782,7 @@ public abstract class Mono<T> implements Publisher<T> {
 			Consumer<? super Throwable> errorConsumer,
 			Runnable completeConsumer,
 			Consumer<? super Subscription> subscriptionConsumer) {
-		return subscribeWith(new LambdaFirstSubscriber<>(consumer, errorConsumer,
+		return subscribeWith(new LambdaMonoSubscriber<>(consumer, errorConsumer,
 				completeConsumer, subscriptionConsumer));
 	}
 
