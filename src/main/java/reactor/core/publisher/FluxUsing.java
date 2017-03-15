@@ -95,8 +95,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 				resourceCleanup.accept(resource);
 			}
 			catch (Throwable ex) {
-				//FIXME shouldn't it be onOpError(e)?
-				ex.addSuppressed(Operators.onOperatorError(ex));
+				ex.addSuppressed(Operators.onOperatorError(e));
 				e = ex;
 			}
 
