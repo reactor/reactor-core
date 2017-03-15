@@ -16,8 +16,13 @@
 
 package reactor.core.publisher;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoHasElementsTest {
 
@@ -80,5 +85,31 @@ public class MonoHasElementsTest {
 		ts.assertValues(true)
 		  .assertComplete()
 		  .assertNoError();
+	}
+
+	@Test
+	public void fluxSourceIsCancelled() {
+		AtomicLong cancelCount = new AtomicLong();
+
+		StepVerifier.create(Flux.range(1, 10)
+		                        .doOnCancel(cancelCount::incrementAndGet)
+		                        .hasElements())
+	                .expectNext(true)
+	                .verifyComplete();
+
+		assertThat(cancelCount.get()).isEqualTo(1);
+	}
+
+	@Test
+	public void monoSourceIsNotCancelled() {
+		AtomicLong cancelCount = new AtomicLong();
+
+		StepVerifier.create(Mono.just(1)
+		                        .doOnCancel(cancelCount::incrementAndGet)
+		                        .hasElement())
+		            .expectNext(true)
+		            .verifyComplete();
+
+		assertThat(cancelCount.get()).isEqualTo(0);
 	}
 }
