@@ -274,7 +274,7 @@ public abstract class Operators {
 	 * @param root the optional root cause to suppress
 	 */
 	public static void onErrorDropped(Throwable e, Throwable root) {
-		if(root != null) {
+		if(root != null && root != e) {
 			e.addSuppressed(root);
 		}
 		onErrorDropped(e);

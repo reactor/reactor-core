@@ -176,7 +176,9 @@ public abstract class BaseSubscriber<T> implements Subscriber<T>, Subscription, 
 			hookOnError(t);
 		}
 		catch (Throwable e) {
-			e.addSuppressed(t);
+			if (e != t) {
+				e.addSuppressed(t);
+			}
 			Operators.onErrorDropped(e);
 		}
 		finally {

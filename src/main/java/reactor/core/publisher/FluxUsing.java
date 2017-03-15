@@ -95,6 +95,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 				resourceCleanup.accept(resource);
 			}
 			catch (Throwable ex) {
+				//FIXME shouldn't it be onOpError(e)?
 				ex.addSuppressed(Operators.onOperatorError(ex));
 				e = ex;
 			}
@@ -193,7 +194,9 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 				}
 				catch (Throwable e) {
 					Throwable _e = Operators.onOperatorError(e);
-					_e.addSuppressed(t);
+					if (_e != t) {
+						_e.addSuppressed(t);
+					}
 					t = _e;
 				}
 			}
@@ -328,7 +331,9 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 				}
 				catch (Throwable e) {
 					Throwable _e = Operators.onOperatorError(e);
-					_e.addSuppressed(t);
+					if (_e != t) {
+						_e.addSuppressed(t);
+					}
 					t = _e;
 				}
 			}
@@ -473,7 +478,9 @@ final class FluxUsing<T, S> extends Flux<T> implements Receiver, Fuseable {
 				}
 				catch (Throwable e) {
 					Throwable _e = Operators.onOperatorError(e);
-					_e.addSuppressed(t);
+					if (_e != t) {
+						_e.addSuppressed(t);
+					}
 					t = _e;
 				}
 			}

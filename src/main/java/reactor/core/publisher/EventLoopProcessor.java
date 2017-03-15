@@ -70,7 +70,9 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		});
 		if (error != null) {
 			if (t != null) {
-				t.addSuppressed(error);
+				if (t != error) {
+					t.addSuppressed(error);
+				}
 				return concat(bufferIterable, Flux.error(t));
 			}
 			return concat(bufferIterable, Flux.error(error));
