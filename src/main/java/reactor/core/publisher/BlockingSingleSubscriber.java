@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -35,7 +36,11 @@ abstract class BlockingSingleSubscriber<T> extends CountDownLatch
 	T         value;
 	Throwable error;
 
-	Subscription s;
+	volatile Subscription s;
+
+	static AtomicReferenceFieldUpdater<BlockingSingleSubscriber, Subscription> S =
+		AtomicReferenceFieldUpdater.newUpdater(BlockingSingleSubscriber.class,
+				Subscription.class, "s");
 
 	volatile boolean cancelled;
 
@@ -48,8 +53,7 @@ abstract class BlockingSingleSubscriber<T> extends CountDownLatch
 		this.s = s;
 		if (!cancelled) {
 			s.request(Long.MAX_VALUE);
-			if (cancelled) {
-				this.s = null;
+			if (cancelled && S.compareAndSet(this, s, null)) {
 				s.cancel();
 			}
 		}
@@ -64,8 +68,7 @@ abstract class BlockingSingleSubscriber<T> extends CountDownLatch
 	public final void dispose() {
 		cancelled = true;
 		Subscription s = this.s;
-		if (s != null) {
-			this.s = null;
+		if (S.compareAndSet(this, s, null)) {
 			s.cancel();
 		}
 	}

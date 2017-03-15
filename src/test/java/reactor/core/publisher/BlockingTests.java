@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -183,4 +184,24 @@ public class BlockingTests {
 		    })
 		    .subscribe(System.out::println);
 	}*/
+
+	@Test
+	public void fluxBlockFirstCancelsOnce() {
+		AtomicLong cancelCount = new AtomicLong();
+		Flux.range(1, 10)
+	        .doOnCancel(cancelCount::incrementAndGet)
+	        .blockFirst();
+
+		assertThat(cancelCount.get()).isEqualTo(1);
+	}
+
+	@Test
+	public void fluxBlockLastDoesntCancel() {
+		AtomicLong cancelCount = new AtomicLong();
+		Flux.range(1, 10)
+	        .doOnCancel(cancelCount::incrementAndGet)
+	        .blockLast();
+
+		assertThat(cancelCount.get()).isEqualTo(0);
+	}
 }
