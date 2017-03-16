@@ -16,9 +16,13 @@
 
 package reactor.core.publisher;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
+import org.reactivestreams.Subscription;
+import reactor.core.Receiver;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -33,6 +37,17 @@ public class MonoHasElementsTest {
 
 	@Test
 	public void emptySource() {
+		AssertSubscriber<Boolean> ts = AssertSubscriber.create();
+
+		Flux.empty().hasElements().subscribe(ts);
+
+		ts.assertValues(false)
+		  .assertComplete()
+		  .assertNoError();
+	}
+
+	@Test
+	public void emptyMonoSource() {
 		AssertSubscriber<Boolean> ts = AssertSubscriber.create();
 
 		Mono.empty().hasElement().subscribe(ts);
@@ -111,5 +126,64 @@ public class MonoHasElementsTest {
 		            .verifyComplete();
 
 		assertThat(cancelCount.get()).isEqualTo(0);
+	}
+
+	@Test
+	public void testHasElementUpstream() throws InterruptedException {
+		AtomicReference<Subscription> sub = new AtomicReference<>();
+
+		Mono.just("foo").hide()
+		    .hasElement()
+		    .subscribe(v -> {}, e -> {}, () -> {},
+				    s -> {
+					    sub.set(s);
+					    s.request(Long.MAX_VALUE);
+				    });
+
+		assertThat(sub.get()).isInstanceOf(MonoHasElements.HasElementSubscriber.class);
+		assertThat(((Receiver) sub.get()).upstream().getClass()).isEqualTo(FluxHide.HideSubscriber.class);
+	}
+
+	@Test
+	public void testHasElementsUpstream() throws InterruptedException {
+		AtomicReference<Subscription> sub = new AtomicReference<>();
+
+		Flux.just("foo", "bar").hide()
+		    .hasElements()
+		    .subscribe(v -> {}, e -> {}, () -> {},
+				    s -> {
+					    sub.set(s);
+					    s.request(Long.MAX_VALUE);
+				    });
+
+		assertThat(sub.get()).isInstanceOf(MonoHasElements.HasElementsSubscriber.class);
+		assertThat(((Receiver) sub.get()).upstream().getClass()).isEqualTo(FluxHide.HideSubscriber.class);
+	}
+
+	@Test
+	public void hasElementCancel() throws InterruptedException {
+		AtomicBoolean cancelled = new AtomicBoolean();
+
+		Mono.just("foo").hide()
+		    .doOnCancel(() -> cancelled.set(true))
+		    .log()
+		    .hasElement()
+		    .subscribe(v -> {}, e -> {}, () -> {},
+				    Subscription::cancel);
+
+		assertThat(cancelled.get()).isTrue();
+	}
+
+	@Test
+	public void hasElementsCancel() throws InterruptedException {
+		AtomicBoolean cancelled = new AtomicBoolean();
+
+		Flux.just("foo", "bar").hide()
+		    .doOnCancel(() -> cancelled.set(true))
+		    .hasElements()
+		    .subscribe(v -> {}, e -> {}, () -> {},
+				    Subscription::cancel);
+
+		assertThat(cancelled.get()).isTrue();
 	}
 }
