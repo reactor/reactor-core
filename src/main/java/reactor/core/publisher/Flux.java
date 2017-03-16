@@ -429,7 +429,6 @@ public abstract class Flux<T> implements Publisher<T> {
 		return concatDelayError(sources, QueueSupplier.XS_BUFFER_SIZE);
 	}
 
-
 	/**
 	 * Concat all sources emitted as an onNext signal from a parent {@link Publisher}.
 	 * A complete signal from each source will delimit the individual sequences and will be eventually
@@ -1069,7 +1068,7 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Merge emitted {@link Publisher} sequences from the passed {@link Publisher} array into an interleaved merged
-	 * sequence, delaying any error after the whole merge backlog has been processed.
+	 * sequence. This variant will delay any error until after the rest of the merge backlog has been processed.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/merge.png" alt="">
 	 * <p>
@@ -1128,18 +1127,49 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param sources a {@link Publisher} of {@link Publisher} sequence to merge
 	 * @param <T> the merged type
 	 *
-	 * @return a merged {@link Flux}
+	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
 	 */
 	public static <T> Flux<T> mergeSequential(Publisher<? extends Publisher<? extends T>> sources) {
 		return mergeSequential(sources, false, QueueSupplier.SMALL_BUFFER_SIZE,
 				QueueSupplier.XS_BUFFER_SIZE);
 	}
 
+	/**
+	 * Merge emitted {@link Publisher} sequences by the passed {@link Publisher} into
+	 * an ordered merged sequence. Unlike concat, the inner publishers are subscribed to
+	 * eagerly. Unlike merge, their emitted values are merged into the final sequence in
+	 * subscription order.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/mergesequential.png" alt="">
+	 * <p>
+	 * @param sources a {@link Publisher} of {@link Publisher} sequence to merge
+	 * @param prefetch the inner source request size
+	 * @param maxConcurrency the request produced to the main source thus limiting concurrent merge backlog
+	 * @param <T> the merged type
+	 *
+	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
+	 */
 	public static <T> Flux<T> mergeSequential(Publisher<? extends Publisher<? extends T>> sources,
 			int maxConcurrency, int prefetch) {
 		return mergeSequential(sources, false, maxConcurrency, prefetch);
 	}
 
+	/**
+	 * Merge emitted {@link Publisher} sequences by the passed {@link Publisher} into
+	 * an ordered merged sequence. Unlike concat, the inner publishers are subscribed to
+	 * eagerly. Unlike merge, their emitted values are merged into the final sequence in
+	 * subscription order. This variant will delay any error until after the rest of the
+	 * mergeSequential backlog has been processed.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/mergesequential.png" alt="">
+	 * <p>
+	 * @param sources a {@link Publisher} of {@link Publisher} sequence to merge
+	 * @param prefetch the inner source request size
+	 * @param maxConcurrency the request produced to the main source thus limiting concurrent merge backlog
+	 * @param <T> the merged type
+	 *
+	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
+	 */
 	public static <T> Flux<T> mergeSequentialDelayError(Publisher<? extends Publisher<? extends T>> sources,
 			int maxConcurrency, int prefetch) {
 		return mergeSequential(sources, true, maxConcurrency, prefetch);
@@ -1159,7 +1189,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param maxConcurrency the request produced to the main source thus limiting concurrent merge backlog
 	 * @param <T> the merged type
 	 *
-	 * @return a merged {@link Flux}
+	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
 	 * @deprecated use {@link #mergeSequential(Publisher, int, int)} or {@link #mergeSequentialDelayError(Publisher, int, int)}
 	 * instead, will be removed in 3.1.0.
 	 */
@@ -1182,18 +1212,48 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param sources a number of {@link Publisher} sequences to merge
 	 * @param <I> the merged type
 	 *
-	 * @return a merged {@link Flux}
+	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
 	 */
 	@SafeVarargs
 	public static <I> Flux<I> mergeSequential(Publisher<? extends I>... sources) {
 		return mergeSequential(QueueSupplier.XS_BUFFER_SIZE, false, sources);
 	}
 
+	/**
+	 * Merge a number of {@link Publisher} sequences into an ordered merged sequence.
+	 * Unlike concat, the inner publishers are subscribed to eagerly. Unlike merge, their
+	 * emitted values are merged into the final sequence in subscription order.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/mergesequential.png" alt="">
+	 * <p>
+	 * @param prefetch the inner source request size
+	 * @param sources a number of {@link Publisher} sequences to merge
+	 * @param <I> the merged type
+	 *
+	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
+	 */
 	@SafeVarargs
 	public static <I> Flux<I> mergeSequential(int prefetch, Publisher<? extends I>... sources) {
 		return mergeSequential(prefetch, false, sources);
 	}
 
+	/**
+	 * Merge a number of {@link Publisher} sequences into an ordered merged sequence.
+	 * Unlike concat, the inner publishers are subscribed to eagerly. Unlike merge, their
+	 * emitted values are merged into the final sequence in subscription order.
+	 * This variant will delay any error until after the rest of the mergeSequential backlog
+	 * has been processed.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/mergesequential.png" alt="">
+	 * <p>
+	 * @param prefetch the inner source request size
+	 * @param sources a number of {@link Publisher} sequences to merge
+	 * @param <I> the merged type
+	 *
+	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
+	 * @deprecated use {@link #mergeSequential(int, Publisher[])} or {@link #mergeSequentialDelayError(int, Publisher[])}
+	 * instead, will be removed in 3.1.0
+	 */
 	@SafeVarargs
 	public static <I> Flux<I> mergeSequentialDelayError(int prefetch, Publisher<? extends I>... sources) {
 		return mergeSequential(prefetch, true, sources);
@@ -1211,7 +1271,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param sources a number of {@link Publisher} sequences to merge
 	 * @param <I> the merged type
 	 *
-	 * @return a merged {@link Flux}
+	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
 	 * @deprecated use {@link #mergeSequential(int, Publisher[])} or {@link #mergeSequentialDelayError(int, Publisher[])}
 	 * instead, will be removed in 3.1.0
 	 */
@@ -1241,18 +1301,48 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param sources an {@link Iterable} of {@link Publisher} sequences to merge
 	 * @param <I> the merged type
 	 *
-	 * @return a merged {@link Flux}
+	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
 	 */
 	public static <I> Flux<I> mergeSequential(Iterable<? extends Publisher<? extends I>> sources) {
 		return mergeSequential(sources, false, QueueSupplier.SMALL_BUFFER_SIZE,
 				QueueSupplier.XS_BUFFER_SIZE);
 	}
 
+	/**
+	 * Merge {@link Publisher} sequences from an {@link Iterable} into an ordered merged
+	 * sequence. Unlike concat, the inner publishers are subscribed to eagerly. Unlike
+	 * merge, their emitted values are merged into the final sequence in subscription order.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/mergesequential.png" alt="">
+	 * <p>
+	 * @param sources an {@link Iterable} of {@link Publisher} sequences to merge
+	 * @param maxConcurrency the request produced to the main source thus limiting concurrent merge backlog
+	 * @param prefetch the inner source request size
+	 * @param <I> the merged type
+	 *
+	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
+	 */
 	public static <I> Flux<I> mergeSequential(Iterable<? extends Publisher<? extends I>> sources,
 			int maxConcurrency, int prefetch) {
 		return mergeSequential(sources, false, maxConcurrency, prefetch);
 	}
 
+	/**
+	 * Merge {@link Publisher} sequences from an {@link Iterable} into an ordered merged
+	 * sequence. Unlike concat, the inner publishers are subscribed to eagerly. Unlike
+	 * merge, their emitted values are merged into the final sequence in subscription order.
+	 * This variant will delay any error until after the rest of the mergeSequential backlog
+	 * has been processed.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/mergesequential.png" alt="">
+	 * <p>
+	 * @param sources an {@link Iterable} of {@link Publisher} sequences to merge
+	 * @param maxConcurrency the request produced to the main source thus limiting concurrent merge backlog
+	 * @param prefetch the inner source request size
+	 * @param <I> the merged type
+	 *
+	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
+	 */
 	public static <I> Flux<I> mergeSequentialDelayError(Iterable<? extends Publisher<? extends I>> sources,
 			int maxConcurrency, int prefetch) {
 		return mergeSequential(sources, true, maxConcurrency, prefetch);
@@ -1271,7 +1361,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param prefetch the inner source request size
 	 * @param <I> the merged type
 	 *
-	 * @return a merged {@link Flux}
+	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
 	 * @deprecate use {@link #mergeSequential(Iterable, int, int)} or {@link #mergeSequentialDelayError(Iterable, int, int)}
 	 * instead, will be removed in 3.1.0.
 	 */
@@ -3826,13 +3916,29 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <V> the merged output sequence type
 	 *
 	 * @return a merged {@link Flux}
-	 *
 	 */
 	public final <V> Flux<V> flatMap(Function<? super T, ? extends Publisher<? extends V>> mapper, int
 			concurrency, int prefetch) {
 		return flatMap(mapper, false, concurrency, prefetch);
 	}
 
+	/**
+	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the emissions from those by
+	 * merging them into a single {@link Flux}, so that they may interleave. The concurrency argument allows to
+	 * control how many merged {@link Publisher} can happen in parallel. The prefetch argument allows to give an
+	 * arbitrary prefetch size to the merged {@link Publisher}. This variant will delay any error until after the
+	 * rest of the flatMap backlog has been processed.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/flatmapc.png" alt="">
+	 *
+	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
+	 * @param concurrency the maximum in-flight elements from this {@link Flux} sequence
+	 * @param prefetch the maximum in-flight elements from each inner {@link Publisher} sequence
+	 * @param <V> the merged output sequence type
+	 *
+	 * @return a merged {@link Flux}
+	 */
 	public final <V> Flux<V> flatMapDelayError(Function<? super T, ? extends Publisher<? extends V>> mapper,
 			int concurrency, int prefetch) {
 		return flatMap(mapper, true, concurrency, prefetch);
@@ -3955,7 +4061,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
 	 * @param <R> the merged output sequence type
 	 *
-	 * @return a merged {@link Flux}
+	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
 	 */
 	public final <R> Flux<R> flatMapSequential(Function<? super T, ? extends
 			Publisher<? extends R>> mapper) {
@@ -3978,7 +4084,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param maxConcurrency the maximum in-flight elements from this {@link Flux} sequence
 	 * @param <R> the merged output sequence type
 	 *
-	 * @return a merged {@link Flux}
+	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
 	 */
 	public final <R> Flux<R> flatMapSequential(Function<? super T, ? extends
 			Publisher<? extends R>> mapper, int maxConcurrency) {
@@ -4002,13 +4108,33 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param prefetch the maximum in-flight elements from each inner {@link Publisher} sequence
 	 * @param <R> the merged output sequence type
 	 *
-	 * @return a merged {@link Flux}
+	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
 	 */
 	public final <R> Flux<R> flatMapSequential(Function<? super T, ? extends
 			Publisher<? extends R>> mapper, int maxConcurrency, int prefetch) {
 		return flatMapSequential(mapper, false, maxConcurrency, prefetch);
 	}
 
+	/**
+	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the
+	 * emissions from those by merging them into a single {@link Flux}, in order.
+	 * Unlike concatMap, transformed inner Publishers are subscribed to eagerly. Unlike
+	 * flatMap, their emitted elements are merged respecting the order of the original
+	 * sequence. The concurrency argument allows to control how many merged {@link Publisher}
+	 * can happen in parallel. The prefetch argument allows to give an arbitrary prefetch
+	 * size to the merged {@link Publisher}. This variant will delay any error until after the
+	 * rest of the flatMap backlog has been processed.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/flatmapsequential.png" alt="">
+	 *
+	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
+	 * @param maxConcurrency the maximum in-flight elements from this {@link Flux} sequence
+	 * @param prefetch the maximum in-flight elements from each inner {@link Publisher} sequence
+	 * @param <R> the merged output sequence type
+	 *
+	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
+	 */
 	public final <R> Flux<R> flatMapSequentialDelayError(Function<? super T, ? extends
 			Publisher<? extends R>> mapper, int maxConcurrency, int prefetch) {
 		return flatMapSequential(mapper, true, maxConcurrency, prefetch);
@@ -4032,7 +4158,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param prefetch the maximum in-flight elements from each inner {@link Publisher} sequence
 	 * @param <R> the merged output sequence type
 	 *
-	 * @return a merged {@link Flux}
+	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
 	 * @deprecated use {@link #flatMapSequential(Function, int, int)} or {@link #flatMapSequentialDelayError(Function, int, int)}
 	 * instead, will be removed in 3.1.0.
 	 */
