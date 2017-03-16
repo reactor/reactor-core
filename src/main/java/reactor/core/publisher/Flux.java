@@ -1251,8 +1251,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <I> the merged type
 	 *
 	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
-	 * @deprecated use {@link #mergeSequential(int, Publisher[])} or {@link #mergeSequentialDelayError(int, Publisher[])}
-	 * instead, will be removed in 3.1.0
 	 */
 	@SafeVarargs
 	public static <I> Flux<I> mergeSequentialDelayError(int prefetch, Publisher<? extends I>... sources) {

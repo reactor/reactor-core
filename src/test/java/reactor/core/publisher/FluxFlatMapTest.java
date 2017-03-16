@@ -369,7 +369,7 @@ public class FluxFlatMapTest {
 		EmitterProcessor<Integer> source1 = EmitterProcessor.create();
 		EmitterProcessor<Integer> source2 = EmitterProcessor.create();
 		
-		source.flatMap(v -> v == 1 ? source1 : source2, false, Integer.MAX_VALUE, 32).subscribe(ts);
+		source.flatMap(v -> v == 1 ? source1 : source2, Integer.MAX_VALUE, 32).subscribe(ts);
 
 		source1.connect();
 		source2.connect();
@@ -493,8 +493,7 @@ public class FluxFlatMapTest {
 	@Test
 	public void failPublisherDelay() {
 		StepVerifier.create(Flux.just(1, 2, 3)
-		                        .flatMap(d -> Flux.error(new Exception("test")),
-				                        true,
+		                        .flatMapDelayError(d -> Flux.error(new Exception("test")),
 				                        1,
 				                        1))
 		            .verifyErrorMessage("Multiple exceptions");
@@ -503,8 +502,7 @@ public class FluxFlatMapTest {
 	@Test
 	public void completePublisherDelayCancel() {
 		StepVerifier.create(Flux.just(1, 2, 3)
-		                        .flatMap(d -> Flux.<Integer>empty().hide(),
-				                        true,
+		                        .flatMapDelayError(d -> Flux.<Integer>empty().hide(),
 				                        1,
 				                        1))
 		            .thenCancel()
@@ -514,8 +512,7 @@ public class FluxFlatMapTest {
 	@Test
 	public void completePublisherDelay() {
 		StepVerifier.create(Flux.just(1, 2, 3)
-		                        .flatMap(d -> Flux.<Integer>empty().hide(),
-				                        true,
+		                        .flatMapDelayError(d -> Flux.<Integer>empty().hide(),
 				                        1,
 				                        1))
 		            .verifyComplete();
@@ -1212,7 +1209,7 @@ public class FluxFlatMapTest {
 		AtomicInteger onNextSignals = new AtomicInteger();
 
 		StepVerifier.create(Flux.range(0, 5).hide()
-		                        .flatMap(i -> Mono.just(i)
+		                        .flatMapDelayError(i -> Mono.just(i)
 		                                          .doOnNext(e -> onNextSignals.incrementAndGet())
 		                                          .handle((s1, sink) -> {
 			                                          if (s1 == 1 || s1 == 3) {
@@ -1223,7 +1220,7 @@ public class FluxFlatMapTest {
 			                                          }
 		                                          })
 		                                          .subscribeOn(Schedulers.parallel()),
-				                        true, 4, 4)
+				                        4, 4)
 		                        .retry(1))
 		            .recordWith(ArrayList::new)
 		            .expectNextCount(3)

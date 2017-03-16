@@ -108,7 +108,7 @@ public class FluxMergeSequentialTest {
 	@Test
 	public void normalDelayEnd() {
 		Flux.range(1, 5)
-		        .flatMapSequential(t -> Flux.range(t, 2), true, 32, 32)
+		        .flatMapSequentialDelayError(t -> Flux.range(t, 2), 32, 32)
 		        .subscribeWith(AssertSubscriber.create())
 		        .assertComplete().assertValues(1, 2, 2, 3, 3, 4, 4, 5, 5, 6);
 	}
@@ -116,7 +116,7 @@ public class FluxMergeSequentialTest {
 	@Test
 	public void normalDelayEndBackpressured() {
 		AssertSubscriber<Integer> ts = Flux.range(1, 5)
-		                                   .flatMapSequential(t -> Flux.range(t, 2), true, 32, 32)
+		                                   .flatMapSequentialDelayError(t -> Flux.range(t, 2), 32, 32)
 		                                   .subscribeWith(AssertSubscriber.create(3));
 
 		ts.assertValues(1, 2, 2);
@@ -139,7 +139,7 @@ public class FluxMergeSequentialTest {
 		DirectProcessor<Integer> main = DirectProcessor.create();
 		final DirectProcessor<Integer> inner = DirectProcessor.create();
 
-		AssertSubscriber<Integer> ts = main.flatMapSequential(t -> inner, true, 32, 32)
+		AssertSubscriber<Integer> ts = main.flatMapSequentialDelayError(t -> inner, 32, 32)
 		                                   .subscribeWith(AssertSubscriber.create());
 
 		main.onNext(1);
@@ -517,7 +517,7 @@ public class FluxMergeSequentialTest {
 		Flux<Integer> source = Flux.just(1);
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Flux.mergeSequential(Arrays.asList(source, source, source), false, 1, 1)
+		Flux.mergeSequential(Arrays.asList(source, source, source), 1, 1)
 		    .subscribe(ts);
 
 		ts.assertValues(1, 1, 1);
@@ -542,7 +542,7 @@ public class FluxMergeSequentialTest {
 		Flux<Integer> source = Flux.just(1);
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Flux.mergeSequential(Flux.just(source, source, source), false, 1, 1)
+		Flux.mergeSequential(Flux.just(source, source, source), 1, 1)
 		    .subscribe(ts);
 
 		ts.assertValues(1, 1, 1);
@@ -555,7 +555,7 @@ public class FluxMergeSequentialTest {
 	public void badPrefetch() throws Exception {
 		Flux<Integer> source = Flux.just(1);
 		try {
-			Flux.mergeSequential(Arrays.asList(source, source, source), false, 1, -99);
+			Flux.mergeSequential(Arrays.asList(source, source, source), 1, -99);
 		} catch (IllegalArgumentException ex) {
 			assertEquals("prefetch > 0 required but it was -99", ex.getMessage());
 		}
@@ -597,8 +597,17 @@ public class FluxMergeSequentialTest {
 	}
 
 	@Test
+	public void mergeSequentialTwoPrefetch() {
+		StepVerifier.create(Flux.mergeSequential(128,
+				Flux.just(1).concatWith(Flux.error(new Exception("test"))),
+				Flux.just(2)))
+		            .expectNext(1)
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
 	public void mergeSequentialTwoDelayError() {
-		StepVerifier.create(Flux.mergeSequential(128, true,
+		StepVerifier.create(Flux.mergeSequentialDelayError(128,
 				Flux.just(1).concatWith(Flux.error(new Exception("test"))),
 				Flux.just(2)))
 		            .expectNext(1, 2)
@@ -615,9 +624,9 @@ public class FluxMergeSequentialTest {
 
 	@Test
 	public void mergeSequentialTwoDelayIterableError() {
-		StepVerifier.create(Flux.mergeSequential(
+		StepVerifier.create(Flux.mergeSequentialDelayError(
 				Arrays.asList(Flux.just(1).concatWith(Flux.error(new Exception("test"))),
-				Flux.just(2)), true, 128, 128))
+				Flux.just(2)), 128, 128))
 		            .expectNext(1, 2)
 		            .verifyErrorMessage("test");
 	}
@@ -632,9 +641,9 @@ public class FluxMergeSequentialTest {
 
 	@Test
 	public void mergeSequentialTwoDelayPublisherError() {
-		StepVerifier.create(Flux.mergeSequential(
+		StepVerifier.create(Flux.mergeSequentialDelayError(
 				Flux.just(Flux.just(1).concatWith(Flux.error(new Exception("test"))),
-						Flux.just(2)), true, 128, 128))
+						Flux.just(2)), 128, 128))
 		            .expectNext(1, 2)
 		            .verifyErrorMessage("test");
 	}
