@@ -93,7 +93,7 @@ final class MonoUsing<T, S> extends Mono<T> implements Receiver, Fuseable {
 				resourceCleanup.accept(resource);
 			}
 			catch (Throwable ex) {
-				ex.addSuppressed(Operators.onOperatorError(ex));
+				ex.addSuppressed(Operators.onOperatorError(e));
 				e = ex;
 			}
 

@@ -21,11 +21,15 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.assertj.core.api.Condition;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Fuseable;
+import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxUsingTest extends FluxOperatorTest<String, String> {
 
@@ -275,6 +279,30 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 		Assert.assertFalse("Has subscriber?", tp.hasDownstreams());
 
 		Assert.assertEquals(1, cleanup.get());
+	}
+
+	@Test
+	public void sourceFactoryAndResourceCleanupThrow() {
+		RuntimeException sourceEx = new IllegalStateException("sourceFactory");
+		RuntimeException cleanupEx = new IllegalStateException("resourceCleanup");
+
+		Condition<? super Throwable> suppressingFactory = new Condition<>(
+				e -> {
+					Throwable[] suppressed = e.getSuppressed();
+					return suppressed != null && suppressed.length == 1 && suppressed[0] == sourceEx;
+				}, "suppressing <%s>", sourceEx);
+
+		Flux<String> test = new FluxUsing<>(() -> "foo",
+				o -> { throw sourceEx; },
+				s -> { throw cleanupEx; },
+				false);
+
+		StepVerifier.create(test)
+		            .consumeErrorWith(e -> assertThat(e)
+				            .hasMessage("resourceCleanup")
+				            .is(suppressingFactory))
+		            .verify();
+
 	}
 
 }

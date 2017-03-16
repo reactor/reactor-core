@@ -410,7 +410,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 				t.addSuppressed(new OnAssemblyException(getStacktrace(parent,
 						snapshotStack), parent));
 			}
-			else if(snapshotStack.checkpointed){
+			else if(snapshotStack.checkpointed && t != snapshotStack){
 				t.addSuppressed(snapshotStack);
 			}
 
