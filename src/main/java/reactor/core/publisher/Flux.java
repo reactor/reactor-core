@@ -1069,6 +1069,23 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Merge emitted {@link Publisher} sequences from the passed {@link Publisher} array into an interleaved merged
+	 * sequence, delaying any error after the whole merge backlog has been processed.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/merge.png" alt="">
+	 * <p>
+	 * @param sources the {@link Publisher} array to iterate on {@link Publisher#subscribe(Subscriber)}
+	 * @param prefetch the inner source request size
+	 * @param <I> The source type of the data sequence
+	 *
+	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
+	 */
+	@SafeVarargs
+	public static <I> Flux<I> mergeDelayError(int prefetch, Publisher<? extends I>... sources) {
+		return merge(prefetch, true, sources);
+	}
+
+	/**
+	 * Merge emitted {@link Publisher} sequences from the passed {@link Publisher} array into an interleaved merged
 	 * sequence.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/merge.png" alt="">
@@ -1079,8 +1096,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <I> The source type of the data sequence
 	 *
 	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
+	 * @deprecated use {@link #merge(int, Publisher[])} or {@link #mergeDelayError(int, Publisher[])}
+	 * instead, will be removed in 3.1.0
 	 */
 	@SafeVarargs
+	@Deprecated
+	//TODO remove from 3.1.0 public API by making package-protected
 	public static <I> Flux<I> merge(int prefetch, boolean delayError, Publisher<? extends I>... sources) {
 		if (sources.length == 0) {
 			return empty();
@@ -1114,6 +1135,16 @@ public abstract class Flux<T> implements Publisher<T> {
 				QueueSupplier.XS_BUFFER_SIZE);
 	}
 
+	public static <T> Flux<T> mergeSequential(Publisher<? extends Publisher<? extends T>> sources,
+			int maxConcurrency, int prefetch) {
+		return mergeSequential(sources, false, maxConcurrency, prefetch);
+	}
+
+	public static <T> Flux<T> mergeSequentialDelayError(Publisher<? extends Publisher<? extends T>> sources,
+			int maxConcurrency, int prefetch) {
+		return mergeSequential(sources, true, maxConcurrency, prefetch);
+	}
+
 	/**
 	 * Merge emitted {@link Publisher} sequences by the passed {@link Publisher} into
 	 * an ordered merged sequence. Unlike concat, the inner publishers are subscribed to
@@ -1129,7 +1160,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <T> the merged type
 	 *
 	 * @return a merged {@link Flux}
+	 * @deprecated use {@link #mergeSequential(Publisher, int, int)} or {@link #mergeSequentialDelayError(Publisher, int, int)}
+	 * instead, will be removed in 3.1.0.
 	 */
+	@Deprecated
+	//TODO remove from 3.1.0 public API by making package-protected
 	public static <T> Flux<T> mergeSequential(Publisher<? extends Publisher<? extends T>> sources,
 			boolean delayError, int maxConcurrency, int prefetch) {
 		return onAssembly(new FluxMergeSequential<>(sources, identityFunction(),
@@ -1154,6 +1189,16 @@ public abstract class Flux<T> implements Publisher<T> {
 		return mergeSequential(QueueSupplier.XS_BUFFER_SIZE, false, sources);
 	}
 
+	@SafeVarargs
+	public static <I> Flux<I> mergeSequential(int prefetch, Publisher<? extends I>... sources) {
+		return mergeSequential(prefetch, false, sources);
+	}
+
+	@SafeVarargs
+	public static <I> Flux<I> mergeSequentialDelayError(int prefetch, Publisher<? extends I>... sources) {
+		return mergeSequential(prefetch, true, sources);
+	}
+
 	/**
 	 * Merge a number of {@link Publisher} sequences into an ordered merged sequence.
 	 * Unlike concat, the inner publishers are subscribed to eagerly. Unlike merge, their
@@ -1167,8 +1212,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <I> the merged type
 	 *
 	 * @return a merged {@link Flux}
+	 * @deprecated use {@link #mergeSequential(int, Publisher[])} or {@link #mergeSequentialDelayError(int, Publisher[])}
+	 * instead, will be removed in 3.1.0
 	 */
 	@SafeVarargs
+	@Deprecated
+	//TODO remove from 3.1.0 public API by making package-protected
 	public static <I> Flux<I> mergeSequential(int prefetch, boolean delayError,
 			Publisher<? extends I>... sources) {
 		if (sources.length == 0) {
@@ -1199,6 +1248,16 @@ public abstract class Flux<T> implements Publisher<T> {
 				QueueSupplier.XS_BUFFER_SIZE);
 	}
 
+	public static <I> Flux<I> mergeSequential(Iterable<? extends Publisher<? extends I>> sources,
+			int maxConcurrency, int prefetch) {
+		return mergeSequential(sources, false, maxConcurrency, prefetch);
+	}
+
+	public static <I> Flux<I> mergeSequentialDelayError(Iterable<? extends Publisher<? extends I>> sources,
+			int maxConcurrency, int prefetch) {
+		return mergeSequential(sources, true, maxConcurrency, prefetch);
+	}
+
 	/**
 	 * Merge {@link Publisher} sequences from an {@link Iterable} into an ordered merged
 	 * sequence. Unlike concat, the inner publishers are subscribed to eagerly. Unlike
@@ -1213,7 +1272,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <I> the merged type
 	 *
 	 * @return a merged {@link Flux}
+	 * @deprecate use {@link #mergeSequential(Iterable, int, int)} or {@link #mergeSequentialDelayError(Iterable, int, int)}
+	 * instead, will be removed in 3.1.0.
 	 */
+	@Deprecated
+	//TODO remove from 3.1.0 public API by making package-protected
 	public static <I> Flux<I> mergeSequential(Iterable<? extends Publisher<? extends I>> sources,
 			boolean delayError, int maxConcurrency, int prefetch) {
 		return onAssembly(new FluxMergeSequential<>(new FluxIterable<>(sources),
@@ -3770,6 +3833,11 @@ public abstract class Flux<T> implements Publisher<T> {
 		return flatMap(mapper, false, concurrency, prefetch);
 	}
 
+	public final <V> Flux<V> flatMapDelayError(Function<? super T, ? extends Publisher<? extends V>> mapper,
+			int concurrency, int prefetch) {
+		return flatMap(mapper, true, concurrency, prefetch);
+	}
+
 	/**
 	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the emissions from those by
 	 * merging them into a single {@link Flux}, so that they may interleave. The concurrency argument allows to
@@ -3786,8 +3854,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <V> the merged output sequence type
 	 *
 	 * @return a merged {@link Flux}
-	 *
+	 * @deprecated use {@link #flatMap(Function, int, int)} or {@link #flatMapDelayError(Function, int, int)}
+	 * instead, will be removed in 3.1.0.
 	 */
+	@Deprecated
+	//TODO remove from 3.1.0 public API by making package-protected
 	public final <V> Flux<V> flatMap(Function<? super T, ? extends Publisher<? extends
 			V>> mapper, boolean delayError, int concurrency, int prefetch) {
 		return onAssembly(new FluxFlatMap<>(
@@ -3938,6 +4009,11 @@ public abstract class Flux<T> implements Publisher<T> {
 		return flatMapSequential(mapper, false, maxConcurrency, prefetch);
 	}
 
+	public final <R> Flux<R> flatMapSequentialDelayError(Function<? super T, ? extends
+			Publisher<? extends R>> mapper, int maxConcurrency, int prefetch) {
+		return flatMapSequential(mapper, true, maxConcurrency, prefetch);
+	}
+
 	/**
 	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the
 	 * emissions from those by merging them into a single {@link Flux}, in order.
@@ -3957,7 +4033,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <R> the merged output sequence type
 	 *
 	 * @return a merged {@link Flux}
+	 * @deprecated use {@link #flatMapSequential(Function, int, int)} or {@link #flatMapSequentialDelayError(Function, int, int)}
+	 * instead, will be removed in 3.1.0.
 	 */
+	@Deprecated
+	//TODO remove from 3.1.0 public API by making package-protected
 	public final <R> Flux<R> flatMapSequential(Function<? super T, ? extends
 			Publisher<? extends R>> mapper, boolean delayError, int maxConcurrency,
 			int prefetch) {
@@ -4962,6 +5042,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} producing asynchronously
 	 */
+	//TODO as part of #435 but separate from #480, switch to prefix-based (note that would change the current default of delayError = true)
 	public final Flux<T> publishOn(Scheduler scheduler, boolean delayError, int prefetch) {
 		if (this instanceof Callable) {
 			if (this instanceof Fuseable.ScalarCallable) {
