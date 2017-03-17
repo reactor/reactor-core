@@ -16,10 +16,14 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.TestPublisher;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoThenIgnoreTest {
 
@@ -62,5 +66,17 @@ public class MonoThenIgnoreTest {
 		StepVerifier.withVirtualTime(this::scenario)
 		            .thenAwait(Duration.ofSeconds(123))
 		            .expectComplete();
+	}
+
+	@Test
+	public void cancel() {
+		TestPublisher<String> cancelTester = TestPublisher.create();
+
+		cancelTester.flux()
+		            .then()
+		            .subscribe()
+		            .cancel();
+
+		cancelTester.assertCancelled();
 	}
 }

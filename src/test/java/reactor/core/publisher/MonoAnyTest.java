@@ -16,10 +16,16 @@
 
 package reactor.core.publisher;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.core.Disposable;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoAnyTest {
 
@@ -152,4 +158,15 @@ public class MonoAnyTest {
 		  });
 	}
 
+	@Test
+	public void cancel() {
+		TestPublisher<String> cancelTester = TestPublisher.create();
+
+		cancelTester.flux()
+		            .any(s -> s.length() > 100)
+		            .subscribe()
+		            .cancel();
+
+		cancelTester.assertCancelled();
+	}
 }

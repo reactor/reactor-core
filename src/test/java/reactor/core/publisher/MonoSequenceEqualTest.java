@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
@@ -27,6 +28,8 @@ import org.reactivestreams.Subscription;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.util.concurrent.QueueSupplier;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoSequenceEqualTest {
 
@@ -190,6 +193,32 @@ public class MonoSequenceEqualTest {
 		Assert.assertTrue("left not cancelled", cancel1.get());
 		Assert.assertNotNull("right not subscribed", sub2.get());
 		Assert.assertTrue("right not cancelled", cancel2.get());
+	}
+
+	@Test
+	public void doubleCancelCancelsOnce() {
+		AtomicReference<Subscription> sub1 = new AtomicReference<>();
+		AtomicReference<Subscription> sub2 = new AtomicReference<>();
+		AtomicLong cancel1 = new AtomicLong();
+		AtomicLong cancel2 = new AtomicLong();
+
+		Flux<Integer> source1 = Flux.range(1, 5)
+		                            .doOnSubscribe(sub1::set)
+		                            .doOnCancel(cancel1::incrementAndGet)
+		                            .hide();
+		Flux<Integer> source2 = Flux.just(1, 2, 3, 7, 8)
+		                            .doOnSubscribe(sub2::set)
+		                            .doOnCancel(cancel2::incrementAndGet)
+		                            .hide();
+
+		Mono.sequenceEqual(source1, source2)
+		    .subscribe(System.out::println, Throwable::printStackTrace, null,
+				    s -> { s.cancel(); s.cancel(); });
+
+		Assert.assertNotNull("left not subscribed", sub1.get());
+		assertThat(cancel1.get()).isEqualTo(1);
+		Assert.assertNotNull("right not subscribed", sub2.get());
+		assertThat(cancel2.get()).isEqualTo(1);
 	}
 
 	@Test

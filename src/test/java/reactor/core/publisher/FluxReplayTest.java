@@ -23,11 +23,18 @@ import java.util.List;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.reactivestreams.Subscription;
+import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
+import reactor.test.publisher.TestPublisher;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.util.function.Tuple2;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.junit.Assert.fail;
 
 public class FluxReplayTest extends FluxOperatorTest<String, String> {
 
@@ -252,6 +259,24 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		            .expectNextMatches(t -> t.getT1() == 0 && t.getT2() == 2)
 		            .expectNextMatches(t -> t.getT1() == 0 && t.getT2() == 3)
 		            .verifyComplete();
+	}
 
+	@Test
+	public void cancel() {
+		ConnectableFlux<Integer> replay = Flux.range(1, 5)
+		                                             .replay(2);
+		Disposable subscribed = replay.subscribe(v -> {},
+				e -> fail(e.toString()));
+
+		Disposable connected = replay.connect();
+
+		//the lambda subscriber itself is cancelled so it will bubble the exception
+		//propagated by connect().dipose()
+		assertThatExceptionOfType(RuntimeException.class)
+				.isThrownBy(connected::dispose)
+	            .withMessage("java.util.concurrent.CancellationException: Disconnected");
+
+		boolean cancelled = ((FluxReplay.ReplaySubscriber) connected).isCancelled();
+		assertThat(cancelled).isTrue();
 	}
 }
