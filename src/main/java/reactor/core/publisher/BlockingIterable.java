@@ -146,8 +146,6 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Trackable {
 		volatile boolean done;
 		Throwable error;
 
-		volatile boolean cancelled;
-
 		 SubscriberIterator(Queue<T> queue, long batchSize) {
 			this.queue = queue;
 			this.batchSize = batchSize;
@@ -159,9 +157,6 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Trackable {
 		@Override
 		public boolean hasNext() {
 			for (; ; ) {
-				if (cancelled) {
-					return false;
-				}
 				boolean d = done;
 				boolean empty = queue.isEmpty();
 				if (d) {
@@ -176,7 +171,7 @@ final class BlockingIterable<T> implements Iterable<T>, Receiver, Trackable {
 				if (empty) {
 					lock.lock();
 					try {
-						while (!cancelled && !done && queue.isEmpty()) {
+						while (!done && queue.isEmpty()) {
 							condition.await();
 						}
 					}

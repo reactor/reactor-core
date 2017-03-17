@@ -295,7 +295,7 @@ public final class MonoProcessor<O> extends Mono<O>
 		if(value != null) {
 			finalState = STATE_SUCCESS_VALUE;
 			this.value = value;
-			if (s != null) {
+			if (s != null && !(source instanceof Mono)) {
 				s.cancel();
 			}
 		}

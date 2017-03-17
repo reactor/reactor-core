@@ -16,21 +16,24 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
-public class LambdaFirstSubscriberTest {
+public class LambdaMonoSubscriberTest {
 
 	@Test
 	public void consumeOnSubscriptionNotifiesError() {
 		AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
 
-		LambdaFirstSubscriber<String> tested = new LambdaFirstSubscriber<>(
+		LambdaMonoSubscriber<String> tested = new LambdaMonoSubscriber<>(
 				value -> {},
 				errorHolder::set,
 				() -> {},
@@ -53,7 +56,7 @@ public class LambdaFirstSubscriberTest {
 	public void consumeOnSubscriptionThrowsFatal() {
 		AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
 
-		LambdaFirstSubscriber<String> tested = new LambdaFirstSubscriber<>(
+		LambdaMonoSubscriber<String> tested = new LambdaMonoSubscriber<>(
 				value -> {},
 				errorHolder::set,
 				() -> {},
@@ -81,7 +84,7 @@ public class LambdaFirstSubscriberTest {
 	public void consumeOnSubscriptionReceivesSubscriptionAndRequests32() {
 		AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
 		AtomicReference<Subscription> subscriptionHolder = new AtomicReference<>(null);
-		LambdaFirstSubscriber<String> tested = new LambdaFirstSubscriber<>(
+		LambdaMonoSubscriber<String> tested = new LambdaMonoSubscriber<>(
 				value -> {},
 				errorHolder::set,
 				() -> { },
@@ -105,7 +108,7 @@ public class LambdaFirstSubscriberTest {
 	@Test
 	public void noSubscriptionConsumerTriggersRequestOfMax() {
 		AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
-		LambdaFirstSubscriber<String> tested = new LambdaFirstSubscriber<>(
+		LambdaMonoSubscriber<String> tested = new LambdaMonoSubscriber<>(
 				value -> {},
 				errorHolder::set,
 				() -> {},
@@ -124,10 +127,10 @@ public class LambdaFirstSubscriberTest {
 	}
 
 	@Test
-	public void onNextConsumerExceptionTriggersCancellationAndBubblesUp() {
+	public void onNextConsumerExceptionBubblesUpDoesntTriggerCancellation() {
 		AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
 
-		LambdaFirstSubscriber<String> tested = new LambdaFirstSubscriber<>(
+		LambdaMonoSubscriber<String> tested = new LambdaMonoSubscriber<>(
 				value -> { throw new IllegalArgumentException(); },
 				errorHolder::set,
 				() -> {},
@@ -150,15 +153,15 @@ public class LambdaFirstSubscriberTest {
 
 		assertThat("unexpected exception in onError",
 				errorHolder.get(), is(nullValue()));
-		assertThat("subscription has not been cancelled",
-				testSubscription.isCancelled, is(true));
+		assertThat("subscription has been cancelled",
+				testSubscription.isCancelled, is(false));
 	}
 
 	@Test
-	public void onNextConsumerFatalTriggersCancellation() {
+	public void onNextConsumerFatalDoesntTriggerCancellation() {
 		AtomicReference<Throwable> errorHolder = new AtomicReference<>(null);
 
-		LambdaFirstSubscriber<String> tested = new LambdaFirstSubscriber<>(
+		LambdaMonoSubscriber<String> tested = new LambdaMonoSubscriber<>(
 				value -> { throw new OutOfMemoryError(); },
 				errorHolder::set,
 				() -> {},
@@ -177,15 +180,14 @@ public class LambdaFirstSubscriberTest {
 		}
 
 		assertThat("unexpected onError", errorHolder.get(), is(nullValue()));
-		assertThat("subscription has not been cancelled on fatal exception",
-				testSubscription.isCancelled, is(true));
+		assertThat("subscription has been cancelled", testSubscription.isCancelled, is(false));
 	}
 
 	@Test
 	public void emptyMonoState(){
 		assertTrue(MonoSource.wrap(s -> {
-			assertTrue(s instanceof LambdaFirstSubscriber);
-			LambdaFirstSubscriber<?> bfs = (LambdaFirstSubscriber<?>)s;
+			assertTrue(s instanceof LambdaMonoSubscriber);
+			LambdaMonoSubscriber<?> bfs = (LambdaMonoSubscriber<?>)s;
 			assertTrue(bfs.upstream() == null);
 			assertTrue(bfs.getCapacity() == Integer.MAX_VALUE);
 			assertFalse(bfs.isTerminated());
@@ -209,8 +211,8 @@ public class LambdaFirstSubscriberTest {
 		Hooks.onNextDropped(d -> assertTrue(d.equals("test2")));
 		try {
 			MonoSource.wrap(s -> {
-				assertTrue(s instanceof LambdaFirstSubscriber);
-				LambdaFirstSubscriber<?> bfs = (LambdaFirstSubscriber<?>) s;
+				assertTrue(s instanceof LambdaMonoSubscriber);
+				LambdaMonoSubscriber<?> bfs = (LambdaMonoSubscriber<?>) s;
 				Operators.error(s, new Exception("test"));
 				s.onComplete();
 				s.onError(new Exception("test2"));
@@ -227,6 +229,39 @@ public class LambdaFirstSubscriberTest {
 			Hooks.resetOnErrorDropped();
 			Hooks.resetOnNextDropped();
 		}
+	}
+
+	@Test
+	public void completeHookErrorDropped() {
+		Hooks.onErrorDropped(e -> assertTrue(e.getMessage().equals("complete")));
+		try {
+			Mono.just("foo")
+		        .subscribe(v -> {},
+				        e -> {},
+				        () -> { throw new IllegalStateException("complete");});
+		}
+		finally {
+			Hooks.resetOnErrorDropped();
+		}
+	}
+
+	@Test
+	public void noErrorHookThrowsCallbackNotImplemented() {
+		RuntimeException boom = new IllegalArgumentException("boom");
+		Assertions.assertThatExceptionOfType(RuntimeException.class)
+		          .isThrownBy(() -> Mono.error(boom).subscribe(v -> {}))
+	              .withCause(boom)
+	              .hasToString("reactor.core.Exceptions$ErrorCallbackNotImplemented: java.lang.IllegalArgumentException: boom");
+	}
+
+	@Test
+	public void testCancel() {
+		AtomicLong cancelCount = new AtomicLong();
+		Mono.delay(Duration.ofMillis(500))
+		    .doOnCancel(cancelCount::incrementAndGet)
+		    .subscribe(v -> {})
+		    .dispose();
+		Assertions.assertThat(cancelCount.get()).isEqualTo(1);
 	}
 
 	private static class TestSubscription implements Subscription {

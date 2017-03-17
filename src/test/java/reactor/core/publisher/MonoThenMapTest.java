@@ -2,6 +2,7 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 
+import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoThenMapTest {
@@ -15,5 +16,17 @@ public class MonoThenMapTest {
         ts.assertValues(2)
         .assertComplete()
         .assertNoError();
+    }
+
+    @Test
+    public void cancel() {
+        TestPublisher<String> cancelTester = TestPublisher.create();
+
+        cancelTester.mono()
+                    .then(s -> Mono.just(s.length()))
+                    .subscribe()
+                    .cancel();
+
+        cancelTester.assertCancelled();
     }
 }

@@ -16,8 +16,13 @@
 
 package reactor.core.publisher;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.junit.Test;
+import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoElementAtTest {
 
@@ -197,4 +202,15 @@ public class MonoElementAtTest {
 		  .assertComplete();
 	}
 
+	@Test
+	public void cancel() {
+		TestPublisher<String> cancelTester = TestPublisher.create();
+
+		cancelTester.flux()
+		            .elementAt(1000)
+		            .subscribe()
+		            .cancel();
+
+		cancelTester.assertCancelled();
+	}
 }

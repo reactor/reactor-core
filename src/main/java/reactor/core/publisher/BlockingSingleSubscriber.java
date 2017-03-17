@@ -48,10 +48,6 @@ abstract class BlockingSingleSubscriber<T> extends CountDownLatch
 		this.s = s;
 		if (!cancelled) {
 			s.request(Long.MAX_VALUE);
-			if (cancelled) {
-				this.s = null;
-				s.cancel();
-			}
 		}
 	}
 

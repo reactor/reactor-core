@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoNextTest {
@@ -41,5 +42,17 @@ public class MonoNextTest {
 		ts.request(1);
 		ts.assertValues(1)
 		  .assertComplete();
+	}
+
+	@Test
+	public void cancel() {
+		TestPublisher<String> cancelTester = TestPublisher.create();
+
+		cancelTester.flux()
+		            .next()
+		            .subscribe()
+		            .cancel();
+
+		cancelTester.assertCancelled();
 	}
 }

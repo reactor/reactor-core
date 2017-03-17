@@ -1245,7 +1245,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return T the result
 	 */
 	public T block() {
-		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>();
+		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>();
 		subscribe(subscriber);
 		return subscriber.blockingGet();
 	}
@@ -1267,7 +1267,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return T the result
 	 */
 	public T block(Duration timeout) {
-		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>();
+		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>();
 		subscribe(subscriber);
 		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
 	}
@@ -2782,7 +2782,7 @@ public abstract class Mono<T> implements Publisher<T> {
 			Consumer<? super Throwable> errorConsumer,
 			Runnable completeConsumer,
 			Consumer<? super Subscription> subscriptionConsumer) {
-		return subscribeWith(new LambdaFirstSubscriber<>(consumer, errorConsumer,
+		return subscribeWith(new LambdaMonoSubscriber<>(consumer, errorConsumer,
 				completeConsumer, subscriptionConsumer));
 	}
 

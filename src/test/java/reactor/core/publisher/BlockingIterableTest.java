@@ -23,8 +23,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.Supplier;
 
 import org.junit.Assert;
 import org.junit.Test;

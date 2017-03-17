@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
@@ -350,6 +351,27 @@ public class MonoProcessorTest {
 		            .then(() -> assertThat(mp2.getError()).hasMessage("test"))
 		            .then(() -> assertThat(mp2.isTerminated()).isTrue())
 		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void fluxCancelledByMonoProcessor() {
+		AtomicLong cancelCounter = new AtomicLong();
+		Flux.range(1, 10)
+		    .doOnCancel(cancelCounter::incrementAndGet)
+		    .publishNext()
+		    .subscribe();
+
+		assertThat(cancelCounter.get()).isEqualTo(1);
+	}
+
+	@Test
+	public void monoNotCancelledByMonoProcessor() {
+		AtomicLong cancelCounter = new AtomicLong();
+		MonoProcessor<String> monoProcessor = Mono.just("foo")
+		                                          .doOnCancel(cancelCounter::incrementAndGet)
+		                                          .subscribe();
+
+		assertThat(cancelCounter.get()).isEqualTo(0);
 	}
 
 }

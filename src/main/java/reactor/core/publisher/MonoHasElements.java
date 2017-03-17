@@ -32,7 +32,12 @@ final class MonoHasElements<T> extends MonoSource<T, Boolean> implements Fuseabl
 
 	@Override
 	public void subscribe(Subscriber<? super Boolean> s) {
-		source.subscribe(new HasElementsSubscriber<>(s));
+		if (source instanceof Mono) {
+			source.subscribe(new HasElementSubscriber<>(s));
+		}
+		else {
+			source.subscribe(new HasElementsSubscriber<>(s));
+		}
 	}
 
 	static final class HasElementsSubscriber<T> extends Operators.MonoSubscriber<T, Boolean>
@@ -63,6 +68,47 @@ final class MonoHasElements<T> extends MonoSource<T, Boolean> implements Fuseabl
 		public void onNext(T t) {
 			s.cancel();
 
+			complete(true);
+		}
+
+		@Override
+		public void onComplete() {
+			complete(false);
+		}
+
+		@Override
+		public Object upstream() {
+			return s;
+		}
+	}
+
+	static final class HasElementSubscriber<T> extends Operators.MonoSubscriber<T, Boolean>
+			implements Receiver {
+		Subscription s;
+
+		public HasElementSubscriber(Subscriber<? super Boolean> actual) {
+			super(actual);
+		}
+
+		@Override
+		public void cancel() {
+			super.cancel();
+			s.cancel();
+		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			if (Operators.validate(this.s, s)) {
+				this.s = s;
+				actual.onSubscribe(this);
+
+				s.request(Long.MAX_VALUE);
+			}
+		}
+
+		@Override
+		public void onNext(T t) {
+			//here we avoid the cancel because the source is assumed to be a Mono
 			complete(true);
 		}
 
