@@ -106,4 +106,17 @@ public class FluxMergeTest {
 	                .expectNext(1, 2, 3, 4)
 	                .verifyComplete();
 	}
+
+	@Test
+	public void mergeDelayError() {
+		IllegalStateException boom = new IllegalStateException("boom");
+
+		StepVerifier.create(Flux.mergeDelayError(32,
+				Flux.error(boom),
+				Flux.range(1, 4)
+		))
+		            .expectNext(1, 2, 3, 4)
+		            .consumeErrorWith(e -> assertThat(e).isEqualTo(boom))
+		            .verify();
+	}
 }
