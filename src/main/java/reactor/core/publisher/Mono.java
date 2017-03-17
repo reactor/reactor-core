@@ -635,28 +635,30 @@ public abstract class Mono<T> implements Publisher<T> {
 	public Mono<T> untilOther(Publisher<?> anyPublisher) {
 		Objects.requireNonNull(anyPublisher, "anyPublisher required");
 		if (this instanceof MonoUntilOther) {
-			((MonoUntilOther) this).addTrigger(anyPublisher);
+			((MonoUntilOther<T>) this).addTrigger(anyPublisher);
 			return this;
 		}
-		return onAssembly(new MonoUntilOther<>(false, this, anyPublisher, Function.identity()));
+		return onAssembly(new MonoUntilOther<>(false, this, anyPublisher));
 	}
 
 	/**
 	 * Subscribe to this Mono and another Publisher, which will be used as a trigger for
 	 * the emission of this Mono's element, mapped through a provided function.
 	 * That is to say, this Mono's element is delayed until the trigger Publisher emits
-	 * for the first time (or terminates empty), and is then transformed by the provided
-	 * mapper function.
+	 * for the first time (or terminates empty). Any error is delayed until all publishers
+	 * have triggered, and multiple errors are combined into one.
 	 *
 	 * @param anyPublisher the publisher which first emission or termination will trigger
 	 * the emission of this Mono's value.
-	 * @param mapper the function through which to transform this Mono's value.
-	 * @return a transformed Mono, delayed until the given publisher emits first or terminates.
+	 * @return this Mono, but delayed until the given publisher emits first or terminates.
 	 */
-	public <R> Mono<R> untilOther(Publisher<?> anyPublisher, Function<? super T, ? extends R> mapper) {
+	public Mono<T> untilOtherDelayError(Publisher<?> anyPublisher) {
 		Objects.requireNonNull(anyPublisher, "anyPublisher required");
-		Objects.requireNonNull(mapper, "mapper required");
-		return onAssembly(new MonoUntilOther<>(false, this, anyPublisher, mapper));
+		if (this instanceof MonoUntilOther) {
+			((MonoUntilOther<T>) this).addTrigger(anyPublisher);
+			return this;
+		}
+		return onAssembly(new MonoUntilOther<>(true, this, anyPublisher));
 	}
 
 	/**

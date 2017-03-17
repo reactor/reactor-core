@@ -31,7 +31,7 @@ public class MonoUntilOtherTest {
 	@Test
 	public void testMonoValuedAndPublisherVoid() {
 		Publisher<Void> voidPublisher = Mono.fromRunnable(() -> { });
-		StepVerifier.create(new MonoUntilOther<>(false, Mono.just("foo"), voidPublisher, Function.identity()))
+		StepVerifier.create(new MonoUntilOther<>(false, Mono.just("foo"), voidPublisher))
 		            .expectNext("foo")
 		            .verifyComplete();
 	}
@@ -39,27 +39,8 @@ public class MonoUntilOtherTest {
 	@Test
 	public void testMonoEmptyAndPublisherVoid() {
 		Publisher<Void> voidPublisher = Mono.fromRunnable(() -> { });
-		StepVerifier.create(new MonoUntilOther<>(false, Mono.<String>empty(), voidPublisher, Function.identity()))
+		StepVerifier.create(new MonoUntilOther<>(false, Mono.<String>empty(), voidPublisher))
 		            .verifyComplete();
-	}
-
-	@Test
-	public void testMonoValuedAndPublisherVoidMapped() {
-		Publisher<Void> voidPublisher = Mono.fromRunnable(() -> { });
-		StepVerifier.create(new MonoUntilOther<>(false, Mono.just("foo"), voidPublisher,
-				String::length))
-		            .expectNext(3)
-		            .verifyComplete();
-	}
-
-	@Test
-	public void mapperNull() {
-		StepVerifier.withVirtualTime(() -> new MonoUntilOther<>(false,
-				Mono.just("foo"), Mono.delay(Duration.ofMillis(500)), s -> null))
-		            .expectSubscription()
-		            .expectNoEvent(Duration.ofMillis(500))
-	                .verifyErrorMatches(e -> e instanceof NullPointerException &&
-			                "mapper produced a null value".equals(e.getMessage()));
 	}
 
 	@Test
@@ -69,8 +50,7 @@ public class MonoUntilOtherTest {
 				Mono.just("foo"),
 				Flux.just(1, 2, 3).hide()
 				    .delayElements(Duration.ofMillis(500))
-				    .doOnCancel(() -> triggerCancelled.set(true)),
-				s -> s))
+				    .doOnCancel(() -> triggerCancelled.set(true))))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofMillis(450))
 		            .expectNext("foo")
@@ -84,8 +64,7 @@ public class MonoUntilOtherTest {
 		StepVerifier.create(new MonoUntilOther<>(false,
 				Mono.just("foo"),
 				Mono.delay(Duration.ofMillis(500))
-				    .doOnCancel(() -> triggerCancelled.set(true)),
-				s -> s))
+				    .doOnCancel(() -> triggerCancelled.set(true))))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofMillis(450))
 		            .expectNext("foo")
@@ -97,8 +76,7 @@ public class MonoUntilOtherTest {
 	public void triggerSequenceDoneFirst() {
 		StepVerifier.withVirtualTime(() -> new MonoUntilOther<>(false,
 				Mono.delay(Duration.ofSeconds(2)),
-				Mono.just("foo"),
-				s -> s))
+				Mono.just("foo")))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofSeconds(2))
 		            .expectNext(0L)
@@ -109,8 +87,7 @@ public class MonoUntilOtherTest {
 	public void sourceHasError() {
 		StepVerifier.create(new MonoUntilOther<>(false,
 				Mono.<String>error(new IllegalStateException("boom")),
-				Mono.just("foo"),
-				s -> s))
+				Mono.just("foo")))
 		            .verifyErrorMessage("boom");
 	}
 
@@ -118,8 +95,7 @@ public class MonoUntilOtherTest {
 	public void triggerHasError() {
 		StepVerifier.create(new MonoUntilOther<>(false,
 				Mono.just("foo"),
-				Mono.<String>error(new IllegalStateException("boom")),
-				s -> s))
+				Mono.<String>error(new IllegalStateException("boom"))))
 		            .verifyErrorMessage("boom");
 	}
 
@@ -127,8 +103,7 @@ public class MonoUntilOtherTest {
 	public void sourceAndTriggerHaveErrorsNotDelayed() {
 		StepVerifier.create(new MonoUntilOther<>(false,
 				Mono.<String>error(new IllegalStateException("boom1")),
-				Mono.<Integer>error(new IllegalStateException("boom2")),
-				s -> s))
+				Mono.<Integer>error(new IllegalStateException("boom2"))))
 		            .verifyErrorMessage("boom1");
 	}
 
@@ -138,8 +113,7 @@ public class MonoUntilOtherTest {
 		IllegalStateException boom2 = new IllegalStateException("boom2");
 		StepVerifier.create(new MonoUntilOther<>(true,
 				Mono.<String>error(boom1),
-				Mono.<Integer>error(boom2),
-				s -> s))
+				Mono.<Integer>error(boom2)))
 		            .verifyErrorMatches(e -> e.getMessage().equals("Multiple errors") &&
 				            e.getSuppressed()[0] == boom1 &&
 				            e.getSuppressed()[1] == boom2);
@@ -156,23 +130,41 @@ public class MonoUntilOtherTest {
 	}
 
 	@Test
-	public void testAPIUntilOtherMapper() {
+	public void testAPIUntilOtherErrorsImmediately() {
+		IllegalArgumentException boom = new IllegalArgumentException("boom");
+		StepVerifier.create(Mono.error(boom)
+		                        .untilOther(Mono.delay(Duration.ofSeconds(2))))
+		            .expectErrorMessage("boom")
+		            .verify(Duration.ofMillis(200)); //at least, less than 2s
+	}
+
+	@Test
+	public void testAPIUntilOtherDelayErrorNoError() {
 		StepVerifier.withVirtualTime(() -> Mono.just("foo")
-		                                       .untilOther(Mono.delay(Duration.ofSeconds(2)),
-				                                       s -> s + s.length()))
+		                                       .untilOtherDelayError(Mono.delay(Duration.ofSeconds(2))))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofSeconds(2))
-		            .expectNext("foo3")
+		            .expectNext("foo")
 		            .verifyComplete();
 	}
 
 	@Test
-	public void testAPIchainingCombinesWhenNoFunction() {
+	public void testAPIUntilOtherDelayErrorWaitsOtherTriggers() {
+		IllegalArgumentException boom = new IllegalArgumentException("boom");
+
+		StepVerifier.withVirtualTime(() -> Mono.error(boom)
+		                                       .untilOtherDelayError(Mono.delay(Duration.ofSeconds(2))))
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofSeconds(2))
+		            .verifyErrorMessage("boom");
+	}
+
+	@Test
+	public void testAPIchainingCombines() {
 		Mono<String> source = Mono.just("foo");
 
 		Mono<String> until1 = source.untilOther(
-				Flux.just(1, 2, 3),
-				s -> s + "BAR");
+				Flux.just(1, 2, 3));
 
 		Mono<String> until2 = until1.untilOther(
 				Mono.delay(Duration.ofMillis(800)));
@@ -183,29 +175,26 @@ public class MonoUntilOtherTest {
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofMillis(700))
 		            .thenAwait(Duration.ofMillis(100))
-		            .expectNext("fooBAR")
+		            .expectNext("foo")
 		            .verifyComplete();
 	}
 
 	@Test
-	public void testAPIchainingDoesntCombineWhenFunction() {
+	public void testAPIchainingCombinesWithFirstDelayErrorParameter() {
 		Mono<String> source = Mono.just("foo");
 
-		Mono<String> until1 = source.untilOther(
-				Flux.just(1, 2, 3),
-				s -> s + "BAR");
+		Mono<String> until1 = source.untilOtherDelayError(
+				Mono.error(new IllegalArgumentException("boom")));
 
 		Mono<String> until2 = until1.untilOther(
-				Mono.delay(Duration.ofMillis(800)),
-				String::toUpperCase);
+				Mono.delay(Duration.ofMillis(800)));
 
-		assertThat(until1).isNotSameAs(until2);
+		assertThat(until1).isSameAs(until2);
 
 		StepVerifier.create(until2)
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofMillis(700))
 		            .thenAwait(Duration.ofMillis(100))
-		            .expectNext("FOOBAR")
-		            .verifyComplete();
+		            .verifyErrorMessage("boom");
 	}
 }
