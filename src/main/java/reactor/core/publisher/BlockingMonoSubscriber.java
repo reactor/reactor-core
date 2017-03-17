@@ -16,20 +16,10 @@
 
 package reactor.core.publisher;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.Disposable;
-import reactor.core.Exceptions;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
-
 /**
  * Blocks assuming the upstream is a Mono, until it signals its value or completes.
- * Compared to {@link BlockingFirstSubscriber}, this variant doesn't cancel the upstream.
+ * Compared to {@link BlockingFirstSubscriber}, this variant doesn't cancel the upstream
+ * in onNext.
  *
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
@@ -40,7 +30,6 @@ final class BlockingMonoSubscriber<T> extends BlockingSingleSubscriber<T> {
 	public void onNext(T t) {
 		if (value == null) {
 			value = t;
-			dispose();
 			countDown();
 		}
 	}
@@ -51,10 +40,5 @@ final class BlockingMonoSubscriber<T> extends BlockingSingleSubscriber<T> {
 			error = t;
 		}
 		countDown();
-	}
-
-	@Override
-	protected void upstreamCancel(Subscription s) {
-		//NO-OP
 	}
 }
