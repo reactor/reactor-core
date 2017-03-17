@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 
 import org.junit.Assert;
@@ -27,6 +28,7 @@ import org.junit.Test;
 import reactor.core.Fuseable;
 import reactor.core.publisher.FluxBufferPredicate.Mode;
 import reactor.test.StepVerifier;
+import reactor.test.StepVerifierOptions;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.publisher.TestPublisher;
 import reactor.util.concurrent.QueueSupplier;
@@ -686,5 +688,136 @@ public class FluxWindowPredicateTest extends
 		TestPublisher<?> tp = TestPublisher.create();
 		tp.flux().windowWhile(s -> true, Integer.MAX_VALUE).subscribe();
 		tp.assertMinRequested(Long.MAX_VALUE);
+	}
+
+	@Test
+	public void manualRequestWindowUntilOverRequestingSourceByPrefetch() {
+		AtomicLong req = new AtomicLong();
+		int prefetch = 4;
+
+		Flux<Integer> source = Flux.range(1, 20)
+		                           .doOnRequest(req::addAndGet)
+		                           .log()
+		                           .hide();
+
+		StepVerifier.create(source.windowUntil(i -> i % 5 == 0, false, prefetch)
+		                          .concatMap(w -> w, 1)
+				.log("downstream"),  0)
+		            .thenRequest(2)
+		            .expectNext(1, 2)
+		            .thenRequest(6)
+		            .expectNext(3, 4, 5, 6, 7, 8)
+		            .expectNoEvent(Duration.ofMillis(100))
+		            .thenCancel()
+		            .verify();
+
+		assertThat(req.get()).isEqualTo(8 + prefetch);
+	}
+
+	@Test
+	public void manualRequestWindowWhileOverRequestingSourceByPrefetch() {
+		AtomicLong req = new AtomicLong();
+		int prefetch = 4;
+
+		Flux<Integer> source = Flux.range(1, 20)
+		                           .doOnRequest(req::addAndGet)
+		                           .log("source")
+		                           .hide();
+
+		StepVerifier.create(source.windowWhile(i -> i % 5 != 0, prefetch)
+		                          .concatMap(w -> w.log(), 1)
+		                          .log("downstream"),  0)
+		            .thenRequest(2)
+		            .expectNext(1, 2)
+		            .thenRequest(6)
+		            .expectNext(3, 4, 6, 7, 8, 9)
+		            .expectNoEvent(Duration.ofMillis(100))
+		            .thenCancel()
+		            .verify();
+
+		assertThat(req.get()).isEqualTo(10 + prefetch); //9 forwarded elements, 2 delimiters
+	}
+
+	// see https://github.com/reactor/reactor-core/issues/477
+	@Test
+	public void windowWhileOneByOneStartingDelimiterReplenishes() {
+		AtomicLong req = new AtomicLong();
+		Flux<String> source = Flux.just("#", "1A", "1B", "1C", "#", "2A", "2B", "2C", "2D", "#", "3A").hide();
+
+		StepVerifier.create(
+				source
+				.doOnRequest(req::addAndGet)
+				.log("source")
+				.windowWhile(s -> !"#".equals(s), 2)
+				.log("windowWhile")
+				.concatMap(w -> w.collectList()
+				                 .log("window")
+						, 1)
+				.log("downstream")
+			, StepVerifierOptions.create().checkUnderRequesting(false).initialRequest(1))
+		            .expectNextMatches(List::isEmpty)
+		            .thenRequest(1)
+		            .assertNext(l -> assertThat(l).containsExactly("1A", "1B", "1C"))
+		            .thenRequest(1)
+		            .assertNext(l -> assertThat(l).containsExactly("2A", "2B", "2C", "2D"))
+		            .thenRequest(1)
+		            .assertNext(l -> assertThat(l).containsExactly("3A"))
+                    .expectComplete()
+		            .verify(Duration.ofSeconds(1));
+
+		assertThat(req.get()).isEqualTo(13); //11 elements + the prefetch
+	}
+
+	// see https://github.com/reactor/reactor-core/issues/477
+	@Test
+	public void windowWhileUnboundedStartingDelimiterReplenishes() {
+		AtomicLong req = new AtomicLong();
+		Flux<String> source = Flux.just("#", "1A", "1B", "1C", "#", "2A", "2B", "2C", "2D", "#", "3A").hide();
+
+		StepVerifier.create(
+		source
+				.doOnRequest(req::addAndGet)
+				.log("source")
+				.windowWhile(s -> !"#".equals(s), 2)
+				.log("windowWhile")
+				.concatMap(w -> w.collectList()
+				                 .log("window")
+						, 1)
+				.log("downstream")
+		)
+		            .expectNextMatches(List::isEmpty)
+		            .assertNext(l -> assertThat(l).containsExactly("1A", "1B", "1C"))
+		            .assertNext(l -> assertThat(l).containsExactly("2A", "2B", "2C", "2D"))
+		            .assertNext(l -> assertThat(l).containsExactly("3A"))
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(1));
+
+		assertThat(req.get()).isEqualTo(13); //11 elements + the prefetch
+	}
+
+	@Test
+	public void windowUntilUnboundedStartingDelimiterReplenishes() {
+		AtomicLong req = new AtomicLong();
+		Flux<String> source = Flux.just("#", "1A", "1B", "1C", "#", "2A", "2B", "2C", "2D", "#", "3A").hide();
+
+		StepVerifier.create(
+		source
+				.doOnRequest(req::addAndGet)
+				.log("source")
+				.windowUntil(s -> "#".equals(s), false, 2)
+				.log("windowUntil")
+				.concatMap(w -> w.collectList()
+								 .log("window")
+						, 1)
+				.log("downstream")
+		)
+		            .assertNext(l -> assertThat(l).containsExactly("#"))
+		            .assertNext(l -> assertThat(l).containsExactly("1A", "1B", "1C", "#"))
+		            .assertNext(l -> assertThat(l).containsExactly("2A", "2B", "2C", "2D", "#"))
+		            .assertNext(l -> assertThat(l).containsExactly("3A"))
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(1));
+
+		assertThat(req.get()).isEqualTo(13); //11 elements + the prefetch
 	}
 }

@@ -180,8 +180,7 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>> impl
 		void initializeWindow() {
 			WindowGroupedFlux<T> g = new WindowGroupedFlux<>(null,
 					groupQueueSupplier.get(),
-					this,
-					prefetch);
+					this);
 			window = g;
 			queue.offer(g);
 		}
@@ -189,7 +188,7 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>> impl
 		void offerNewWindow(T key, T emitInNewWindow) {
 			// if the main is cancelled, don't create new groups
 			if (cancelled == 0) {
-				WindowGroupedFlux<T> g = new WindowGroupedFlux<>(key, groupQueueSupplier.get(), this, prefetch);
+				WindowGroupedFlux<T> g = new WindowGroupedFlux<>(key, groupQueueSupplier.get(), this);
 				if (emitInNewWindow != null) {
 					g.onNext(emitInNewWindow);
 				}
@@ -232,6 +231,8 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>> impl
 			else if (mode == Mode.WHILE && !match) {
 				g.onComplete();
 				offerNewWindow(t, null);
+				//compensate for the dropped delimiter
+				s.request(1);
 			}
 			else {
 				g.onNext(t);
@@ -515,8 +516,6 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>> impl
 
 		final T key;
 
-		final int limit;
-
 		@Override
 		public T key() {
 			return key;
@@ -564,12 +563,10 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>> impl
 
 		public WindowGroupedFlux(T key,
 				Queue<T> queue,
-				WindowPredicateMain<T> parent,
-				int prefetch) {
+				WindowPredicateMain<T> parent) {
 			this.key = key;
 			this.queue = queue;
 			this.parent = parent;
-			this.limit = prefetch - (prefetch >> 2);
 		}
 
 		void propagateTerminate() {
@@ -875,11 +872,6 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>> impl
 		@Override
 		public long expectedFromUpstream() {
 			return produced;
-		}
-
-		@Override
-		public long limit() {
-			return limit;
 		}
 
 		@Override
