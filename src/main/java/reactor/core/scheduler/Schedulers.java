@@ -16,18 +16,14 @@
 
 package reactor.core.scheduler;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
@@ -134,7 +130,7 @@ public abstract class Schedulers {
 	 * ExecutorService-based workers and is suited for parallel work
 	 */
 	public static Scheduler elastic() {
-		return cache(ELASTIC, ELASTIC_SUPPLIER);
+		return cache(CACHED_ELASTIC, ELASTIC, ELASTIC_SUPPLIER);
 	}
 
 	/**
@@ -393,7 +389,7 @@ public abstract class Schedulers {
 	 * ExecutorService-based workers
 	 */
 	public static Scheduler parallel() {
-		return cache(PARALLEL, PARALLEL_SUPPLIER);
+		return cache(CACHED_PARALLEL, PARALLEL, PARALLEL_SUPPLIER);
 	}
 
 	/**
@@ -434,16 +430,16 @@ public abstract class Schedulers {
 	 * Clear any cached {@link Scheduler} and call dispose on them.
 	 */
 	public static void shutdownNow() {
-		List<CachedScheduler> schedulers;
-		Collection<CachedScheduler> view = cachedSchedulers.values();
-		for (; ; ) {
-			schedulers = new ArrayList<>(view);
-			view.clear();
-			schedulers.forEach(CachedScheduler::_dispose);
-			if (view.isEmpty()) {
-				return;
-			}
-		}
+		//TODO loop necessary?
+		CachedScheduler oldElastic = CACHED_ELASTIC.getAndSet(null);
+		CachedScheduler oldParallel = CACHED_PARALLEL.getAndSet(null);
+		CachedScheduler oldSingle = CACHED_SINGLE.getAndSet(null);
+		CachedScheduler oldTimer = CACHED_TIMER.getAndSet(null);
+
+		if (oldElastic != null) oldElastic._dispose();
+		if (oldParallel != null) oldParallel._dispose();
+		if (oldSingle != null) oldSingle._dispose();
+		if (oldTimer != null) oldTimer._dispose();
 	}
 
 	/**
@@ -454,7 +450,7 @@ public abstract class Schedulers {
 	 * ExecutorService-based worker
 	 */
 	public static Scheduler single() {
-		return cache(SINGLE, SINGLE_SUPPLIER);
+		return cache(CACHED_SINGLE, SINGLE, SINGLE_SUPPLIER);
 	}
 
 	/**
@@ -479,7 +475,7 @@ public abstract class Schedulers {
 	 * @return a cached time-capable {@link Scheduler}
 	 */
 	public static Scheduler timer() {
-		return timedCache(TIMER, TIMER_SUPPLIER);
+		return cache(CACHED_TIMER, TIMER, TIMER_SUPPLIER);
 	}
 
 	/**
@@ -582,8 +578,11 @@ public abstract class Schedulers {
 	static final String SINGLE   = "single"; //non blocking tasks
 	static final String TIMER    = "timer"; //timed tasks
 
-	static final ConcurrentMap<String, CachedScheduler> cachedSchedulers =
-			new ConcurrentHashMap<>();
+	// Cached schedulers in atomic references:
+	static AtomicReference<CachedScheduler> CACHED_ELASTIC  = new AtomicReference<>();
+	static AtomicReference<CachedScheduler> CACHED_PARALLEL = new AtomicReference<>();
+	static AtomicReference<CachedScheduler> CACHED_SINGLE   = new AtomicReference<>();
+	static AtomicReference<CachedScheduler> CACHED_TIMER    = new AtomicReference<>();
 
 	static final Supplier<Scheduler> ELASTIC_SUPPLIER =
 			() -> newElastic(ELASTIC, ElasticScheduler.DEFAULT_TTL_SECONDS, true);
@@ -602,33 +601,19 @@ public abstract class Schedulers {
 
 	static volatile Factory factory = DEFAULT;
 
-	static CachedScheduler cache(String key, Supplier<Scheduler> schedulerSupplier) {
-		for (; ; ) {
-			CachedScheduler s = cachedSchedulers.get(key);
-			if (s != null) {
-				return s;
-			}
-			s = new CachedScheduler(key, schedulerSupplier.get());
-			if (cachedSchedulers.putIfAbsent(key, s) == null) {
-				return s;
-			}
-			s._dispose();
+	static CachedScheduler cache(AtomicReference<CachedScheduler> reference, String key, Supplier<Scheduler> supplier) {
+		CachedScheduler s = reference.get();
+		if (s != null) {
+			return s;
 		}
-	}
-
-	static CachedScheduler timedCache(String key,
-			Supplier<Scheduler> schedulerSupplier) {
-		for (; ; ) {
-			CachedScheduler s = cachedSchedulers.get(key);
-			if (s != null) {
-				return s;
-			}
-			s = new CachedScheduler(key, schedulerSupplier.get());
-			if (cachedSchedulers.putIfAbsent(key, s) == null) {
-				return s;
-			}
-			s._dispose();
+		s = new CachedScheduler(key, supplier.get());
+		if (reference.compareAndSet(null, s)) {
+			return s;
 		}
+		//the reference was updated in the meantime with a cached scheduler
+		//fallback to it and dispose the extraneous one
+		s._dispose();
+		return reference.get();
 	}
 
 	static final Logger log = Loggers.getLogger(Schedulers.class);
