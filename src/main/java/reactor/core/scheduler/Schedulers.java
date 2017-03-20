@@ -430,7 +430,6 @@ public abstract class Schedulers {
 	 * Clear any cached {@link Scheduler} and call dispose on them.
 	 */
 	public static void shutdownNow() {
-		//TODO loop necessary?
 		CachedScheduler oldElastic = CACHED_ELASTIC.getAndSet(null);
 		CachedScheduler oldParallel = CACHED_PARALLEL.getAndSet(null);
 		CachedScheduler oldSingle = CACHED_SINGLE.getAndSet(null);
@@ -601,6 +600,18 @@ public abstract class Schedulers {
 
 	static volatile Factory factory = DEFAULT;
 
+	/**
+	 * Get a {@link CachedScheduler} out of the {@code reference} or create one using the
+	 * {@link Supplier} if the reference is empty, effectively creating a single instance
+	 * to be reused as a default scheduler for the given {@code key} category.
+	 *
+	 * @param reference the cache reference that holds the scheduler
+	 * @param key the "name" for the Scheduler's category/type
+	 * @param supplier the {@link Scheduler} generator to use and wrap into a {@link CachedScheduler}.
+	 * Note that in case of a race, an extraneous Scheduler can be created, but it'll get
+	 * immediately {@link Scheduler#dispose() disposed}.
+	 * @return a {@link CachedScheduler} to be reused, either pre-existing or created
+	 */
 	static CachedScheduler cache(AtomicReference<CachedScheduler> reference, String key, Supplier<Scheduler> supplier) {
 		CachedScheduler s = reference.get();
 		if (s != null) {
