@@ -662,7 +662,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public static <T1, T2, O> Mono<O> when(Mono<? extends T1> p1, Mono<?
 			extends T2> p2, BiFunction<? super T1, ? super T2, ? extends O> combinator) {
-		return onAssembly(new MonoWhen<T1, O>(false, p1, p2, combinator));
+		return onAssembly(new MonoWhen<T1, O>(false, p1, p2, combinator, false));
 	}
 
 	/**
@@ -684,7 +684,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> when(Mono<? extends T1> p1, Mono<? extends T2> p2, Mono<? extends T3> p3) {
-		return onAssembly(new MonoWhen(false, a -> Tuples.fromArray((Object[])a), p1, p2, p3));
+		return onAssembly(new MonoWhen(false, a -> Tuples.fromArray((Object[])a), false, p1, p2, p3));
 	}
 
 	/**
@@ -711,7 +711,7 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<? extends T2> p2,
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4) {
-		return onAssembly(new MonoWhen(false, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4));
+		return onAssembly(new MonoWhen(false, a -> Tuples.fromArray((Object[])a), false, p1, p2, p3, p4));
 	}
 
 	/**
@@ -741,7 +741,7 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5) {
-		return onAssembly(new MonoWhen(false, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4, p5));
+		return onAssembly(new MonoWhen(false, a -> Tuples.fromArray((Object[])a), false, p1, p2, p3, p4, p5));
 	}
 
 	/**
@@ -774,7 +774,7 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5,
 			Mono<? extends T6> p6) {
-        return onAssembly(new MonoWhen(false, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4, p5, p6));
+        return onAssembly(new MonoWhen(false, a -> Tuples.fromArray((Object[])a), false, p1, p2, p3, p4, p5, p6));
 	}
 
 	/**
@@ -791,7 +791,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono}.
 	 */
 	public static Mono<Void> when(final Iterable<? extends Publisher<Void>> sources) {
-		return onAssembly(new MonoWhen<>(false, VOID_FUNCTION, sources));
+		return onAssembly(new MonoWhen<>(false, VOID_FUNCTION, false, sources));
 	}
 
 	/**
@@ -810,7 +810,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono}.
 	 */
 	public static <R> Mono<R> when(final Iterable<? extends Mono<?>> monos, Function<? super Object[], ? extends R> combinator) {
-		return onAssembly(new MonoWhen<>(false, combinator, monos));
+		return onAssembly(new MonoWhen<>(false, combinator, false, monos));
 	}
 
 	/**
@@ -832,7 +832,7 @@ public abstract class Mono<T> implements Publisher<T> {
 		if (sources.length == 1) {
 			return from(sources[0]);
 		}
-		return onAssembly(new MonoWhen<>(false, VOID_FUNCTION, sources));
+		return onAssembly(new MonoWhen<>(false, VOID_FUNCTION, false, sources));
 	}
 
 
@@ -857,7 +857,21 @@ public abstract class Mono<T> implements Publisher<T> {
 		if (monos.length == 1) {
 			return monos[0].map(d -> combinator.apply(new Object[]{d}));
 		}
-		return onAssembly(new MonoWhen<>(false, combinator, monos));
+		return onAssembly(new MonoWhen<>(false, combinator, false, monos));
+	}
+
+	public static <R> Mono<R> whenSparse(Function<? super Object[], ? extends R> combinator, Mono<?>... monos) {
+		if (monos.length == 0) {
+			return empty();
+		}
+		return onAssembly(new MonoWhen<>(false, combinator, true, monos));
+	}
+
+	public static <R> Mono<R> whenSparseDelayError(Function<? super Object[], ? extends R> combinator, Mono<?>... monos) {
+		if (monos.length == 0) {
+			return empty();
+		}
+		return onAssembly(new MonoWhen<>(true, combinator, true, monos));
 	}
 
 	/**
@@ -876,7 +890,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2> Mono<Tuple2<T1, T2>> whenDelayError(Mono<? extends T1> p1, Mono<? extends T2> p2) {
-		return onAssembly(new MonoWhen(true, a -> Tuples.fromArray((Object[])a), p1, p2));
+		return onAssembly(new MonoWhen(true, a -> Tuples.fromArray((Object[])a), false, p1, p2));
 	}
 
 	/**
@@ -897,7 +911,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> whenDelayError(Mono<? extends T1> p1, Mono<? extends T2> p2, Mono<? extends T3> p3) {
-		return onAssembly(new MonoWhen(true, a -> Tuples.fromArray((Object[])a), p1, p2, p3));
+		return onAssembly(new MonoWhen(true, a -> Tuples.fromArray((Object[])a), false, p1, p2, p3));
 	}
 
 	/**
@@ -923,7 +937,7 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<? extends T2> p2,
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4) {
-		return onAssembly(new MonoWhen(true, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4));
+		return onAssembly(new MonoWhen(true, a -> Tuples.fromArray((Object[])a), false, p1, p2, p3, p4));
 	}
 
 	/**
@@ -952,7 +966,7 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5) {
-		return onAssembly(new MonoWhen(true, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4, p5));
+		return onAssembly(new MonoWhen(true, a -> Tuples.fromArray((Object[])a), false, p1, p2, p3, p4, p5));
 	}
 
 	/**
@@ -984,7 +998,7 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5,
 			Mono<? extends T6> p6) {
-		return onAssembly(new MonoWhen(true, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4, p5, p6));
+		return onAssembly(new MonoWhen(true, a -> Tuples.fromArray((Object[])a), false, p1, p2, p3, p4, p5, p6));
 	}
 
 	/**
@@ -1003,7 +1017,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono}.
 	 */
 	public static Mono<Void> whenDelayError(final Iterable<? extends Publisher<Void>> sources) {
-		return onAssembly(new MonoWhen<>(true, VOID_FUNCTION, sources));
+		return onAssembly(new MonoWhen<>(true, VOID_FUNCTION, false, sources));
 	}
 
 	/**
@@ -1024,7 +1038,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono}.
 	 */
 	public static <R> Mono<R> whenDelayError(final Iterable<? extends Mono<?>> monos, Function<? super Object[], ? extends R> combinator) {
-		return onAssembly(new MonoWhen<>(true, combinator, monos));
+		return onAssembly(new MonoWhen<>(true, combinator, false, monos));
 	}
 
 	/**
@@ -1047,7 +1061,7 @@ public abstract class Mono<T> implements Publisher<T> {
 		if (sources.length == 1) {
 			return from(sources[0]);
 		}
-		return onAssembly(new MonoWhen<>(true, VOID_FUNCTION, sources));
+		return onAssembly(new MonoWhen<>(true, VOID_FUNCTION, false, sources));
 	}
 
 
@@ -1073,7 +1087,7 @@ public abstract class Mono<T> implements Publisher<T> {
 		if (monos.length == 1) {
 			return monos[0].map(d -> combinator.apply(new Object[]{d}));
 		}
-		return onAssembly(new MonoWhen<>(true, combinator, monos));
+		return onAssembly(new MonoWhen<>(true, combinator, false, monos));
 	}
 
 	/**

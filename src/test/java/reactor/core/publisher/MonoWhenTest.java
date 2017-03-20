@@ -18,7 +18,9 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.function.Function;
 
+import org.assertj.core.groups.Tuple;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
@@ -461,5 +463,74 @@ public class MonoWhenTest {
 
 		StepVerifier.create(Mono.when(voidPublishers))
 		            .verifyErrorMatches(e -> e == boom1);
+	}
+
+	@Test
+	public void whenWithEmptyShortCircuits() {
+		Mono<String> object1 = Mono.just("foo");
+		Mono<String> object2 = Mono.empty();
+
+		//noinspection unchecked
+		StepVerifier.create(Mono.when(Tuples.fn2(), object1, object2))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void sparseOneEmptyMappingToSomething() {
+		StepVerifier.create(Mono.whenSparse(v -> "value: " + v[0], Mono.empty()))
+	                .expectNext("value: null")
+	                .verifyComplete();
+	}
+
+	@Test
+	public void sparseOneEmptyMappingToNull() {
+		StepVerifier.create(Mono.whenSparse(v -> v[0], Mono.empty()))
+		            .verifyErrorMessage("zipper produced a null value");
+	}
+
+	@Test
+	public void sparseAllEmpty() {
+		//noinspection unchecked
+		StepVerifier.create(Mono.whenSparse(Tuples.fn3(), Mono.empty(), Mono.empty(), Mono.empty()))
+		            .expectNext(Tuples.of(null, null, null))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void sparseSeveralEmpty() {
+		//noinspection unchecked
+		StepVerifier.create(Mono.whenSparse(Tuples.fn3(), Mono.empty(), Mono.just("foo"), Mono.empty()))
+		            .expectNext(Tuples.of(null, "foo", null))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void sparseNoneEmpty() {
+		//noinspection unchecked
+		StepVerifier.create(Mono.whenSparse(Tuples.fn3(), Mono.just("foo"), Mono.just("bar"), Mono.just("baz")))
+		            .expectNext(Tuples.of("foo", "bar", "baz"))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void sparseWithErrors() {
+		StepVerifier.create(Mono.whenSparse(arr -> arr[0],
+				Mono.just("foo"),
+				Mono.empty(),
+				Mono.error(new IllegalArgumentException("boom1")),
+				Mono.error(new IllegalArgumentException("boom2")))
+		)
+	                .verifyErrorMessage("boom1");
+	}
+
+	@Test
+	public void sparseWithErrorsDelayError() {
+		StepVerifier.create(Mono.whenSparseDelayError(arr -> arr[0],
+				Mono.just("foo"),
+				Mono.empty(),
+				Mono.error(new IllegalArgumentException("boom1")),
+				Mono.error(new IllegalArgumentException("boom2")))
+		)
+		            .verifyErrorMessage("Multiple errors");
 	}
 }
