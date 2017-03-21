@@ -15,6 +15,7 @@
  */
 package reactor.core.publisher;
 
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -24,8 +25,11 @@ import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -268,6 +272,54 @@ public class TopicProcessorTest {
 	@Test(expected = IllegalArgumentException.class)
 	public void failNegativeBufferSize() {
 		TopicProcessor.create("test", -1);
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/445
+	@Test(timeout = 5_000)
+	public void testBufferSize1Shared() throws Exception {
+		TopicProcessor<String> broadcast = TopicProcessor.share("share-name", 1, true);
+
+		int simultaneousSubscribers = 3000;
+		CountDownLatch latch = new CountDownLatch(simultaneousSubscribers);
+		Scheduler scheduler = Schedulers.single();
+
+		BlockingSink<String> sink = broadcast.connectSink();
+		Flux<String> flux = broadcast.filter(Objects::nonNull)
+		                             .publishOn(scheduler)
+		                             .cache(1);
+
+		for (int i = 0; i < simultaneousSubscribers; i++) {
+			flux.subscribe(s -> latch.countDown());
+		}
+		sink.submit("data", 1, TimeUnit.SECONDS);
+
+		assertThat(latch.await(4, TimeUnit.SECONDS))
+				.overridingErrorMessage("Data not received")
+				.isTrue();
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/445
+	@Test(timeout = 5_000)
+	public void testBufferSize1Created() throws Exception {
+		TopicProcessor<String> broadcast = TopicProcessor.create("share-name", 1, true);
+
+		int simultaneousSubscribers = 3000;
+		CountDownLatch latch = new CountDownLatch(simultaneousSubscribers);
+		Scheduler scheduler = Schedulers.single();
+
+		BlockingSink<String> sink = broadcast.connectSink();
+		Flux<String> flux = broadcast.filter(Objects::nonNull)
+		                             .publishOn(scheduler)
+		                             .cache(1);
+
+		for (int i = 0; i < simultaneousSubscribers; i++) {
+			flux.subscribe(s -> latch.countDown());
+		}
+		sink.submit("data", 1, TimeUnit.SECONDS);
+
+		assertThat(latch.await(4, TimeUnit.SECONDS))
+				.overridingErrorMessage("Data not received")
+				.isTrue();
 	}
 
 

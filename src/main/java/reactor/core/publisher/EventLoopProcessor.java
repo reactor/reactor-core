@@ -543,7 +543,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		@Override
 		public void run() {
 			final long bufferSize = prefetch;
-			final long limit = bufferSize - Math.max(bufferSize >> 2, 1);
+			final long limit = bufferSize == 1 ? bufferSize : bufferSize - Math.max(bufferSize >> 2, 1);
 			long cursor = -1;
 			try {
 				spinObserver.run();
