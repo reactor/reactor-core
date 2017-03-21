@@ -18,7 +18,6 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
 
 import org.junit.Test;
 import org.reactivestreams.Publisher;
@@ -44,15 +43,23 @@ public class MonoUntilOtherTest {
 	}
 
 	@Test
+	public void triggerSequenceWithDelays() {
+		Duration duration = StepVerifier.create(new MonoUntilOther<>(false,
+				Mono.just("foo"),
+				Flux.just(1, 2, 3).hide().delayElements(Duration.ofMillis(500))))
+		            .expectNext("foo")
+		            .verifyComplete();
+
+		assertThat(duration.toMillis()).isGreaterThanOrEqualTo(500);
+	}
+
+	@Test
 	public void triggerSequenceHasMultipleValuesCancelled() {
 		AtomicBoolean triggerCancelled = new AtomicBoolean();
 		StepVerifier.create(new MonoUntilOther<>(false,
 				Mono.just("foo"),
 				Flux.just(1, 2, 3).hide()
-				    .delayElements(Duration.ofMillis(500))
 				    .doOnCancel(() -> triggerCancelled.set(true))))
-		            .expectSubscription()
-		            .expectNoEvent(Duration.ofMillis(450))
 		            .expectNext("foo")
 		            .verifyComplete();
 		assertThat(triggerCancelled.get()).isTrue();
@@ -63,10 +70,8 @@ public class MonoUntilOtherTest {
 		AtomicBoolean triggerCancelled = new AtomicBoolean();
 		StepVerifier.create(new MonoUntilOther<>(false,
 				Mono.just("foo"),
-				Mono.delay(Duration.ofMillis(500))
+				Mono.just(1)
 				    .doOnCancel(() -> triggerCancelled.set(true))))
-		            .expectSubscription()
-		            .expectNoEvent(Duration.ofMillis(450))
 		            .expectNext("foo")
 		            .verifyComplete();
 		assertThat(triggerCancelled.get()).isFalse();
