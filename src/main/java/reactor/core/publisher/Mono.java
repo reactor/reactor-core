@@ -3173,6 +3173,10 @@ public abstract class Mono<T> implements Publisher<T> {
 		return subscribeWith(new MonoToCompletableFuture<>());
 	}
 
+	public final Callable<T> toCallable() {
+		return new MonoToCallable<>(this);
+	}
+
 	/**
 	 * Transform this {@link Mono} in order to generate a target {@link Mono}. Unlike {@link #compose(Function)}, the
 	 * provided function is executed as part of assembly.
