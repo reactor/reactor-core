@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscription;
 
@@ -33,6 +34,10 @@ final class MonoToCallable<T> extends BlockingSingleSubscriber<T> implements Cal
 
 	final Mono<T> upstream;
 
+	volatile int once;
+	static final AtomicIntegerFieldUpdater<MonoToCallable> ONCE =
+			AtomicIntegerFieldUpdater.newUpdater(MonoToCallable.class, "once");
+
 	MonoToCallable(Mono<T> upstream) {
 		super();
 		this.upstream = upstream;
@@ -40,7 +45,9 @@ final class MonoToCallable<T> extends BlockingSingleSubscriber<T> implements Cal
 
 	@Override
 	public T call() throws Exception {
-		upstream.subscribe(this);
+		if (ONCE.compareAndSet(this, 0, 1)) {
+			upstream.subscribe(this);
+		}
 		return blockingGet();
 	}
 

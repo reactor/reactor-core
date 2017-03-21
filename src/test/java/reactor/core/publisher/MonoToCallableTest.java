@@ -17,10 +17,10 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
 
@@ -77,4 +77,19 @@ public class MonoToCallableTest {
 		assertThat(callable.call()).isNull();
 	}
 
+	@Test
+	public void multipleCallSubscribesOnce() throws Exception {
+		AtomicLong subscribed = new AtomicLong();
+
+		Mono<String> source = Mono.just("foo")
+		                          .doOnSubscribe(s -> subscribed.incrementAndGet());
+
+		Callable<String> callable = source.toCallable();
+		callable.call();
+		callable.call();
+		callable.call();
+		callable.call();
+
+		assertThat(subscribed.get()).isEqualTo(1);
+	}
 }
