@@ -3173,12 +3173,30 @@ public abstract class Mono<T> implements Publisher<T> {
 		return subscribeWith(new MonoToCompletableFuture<>());
 	}
 
+	/**
+	 * Transform this {@link Mono} into an {@link Optional}, blocking until the Mono is
+	 * fulfilled, at which point it is either empty (returning an {@link Optional#empty()})
+	 * or valued (returning a filled {@link Optional}). In case of an error, that error is
+	 * thrown by the {@link #toOptional()} method.
+	 *
+	 * @return an {@link Optional}
+	 */
 	public final Optional<T> toOptional() {
 		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>();
 		subscribe(subscriber);
 		return Optional.ofNullable(subscriber.blockingGet());
 	}
 
+	/**
+	 * Transform this {@link Mono} into an {@link Optional}, blocking until the Mono is
+	 * fulfilled or the given {@code duration} timeout is expired. If fulfilled, it is
+	 * either empty (returning an {@link Optional#empty()}) or valued (returning a filled
+	 * {@link Optional}). In case of an error, that error is thrown by the
+	 * {@link #toOptional()} method.
+	 *
+	 * @return an {@link Optional}, or times out
+	 * @throws IllegalStateException in case of timeout
+	 */
 	public final Optional<T> toOptional(Duration duration) {
 		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>();
 		subscribe(subscriber);
