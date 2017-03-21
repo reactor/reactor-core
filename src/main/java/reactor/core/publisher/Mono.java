@@ -3173,6 +3173,12 @@ public abstract class Mono<T> implements Publisher<T> {
 		return subscribeWith(new MonoToCompletableFuture<>());
 	}
 
+	public final Optional<T> toOptional() {
+		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>();
+		subscribe(subscriber);
+		return Optional.ofNullable(subscriber.blockingGet());
+	}
+
 	/**
 	 * Transform this {@link Mono} in order to generate a target {@link Mono}. Unlike {@link #compose(Function)}, the
 	 * provided function is executed as part of assembly.
