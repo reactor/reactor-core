@@ -3179,6 +3179,12 @@ public abstract class Mono<T> implements Publisher<T> {
 		return Optional.ofNullable(subscriber.blockingGet());
 	}
 
+	public final Optional<T> toOptional(Duration duration) {
+		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>();
+		subscribe(subscriber);
+		return Optional.ofNullable(subscriber.blockingGet(duration.toMillis(), TimeUnit.MILLISECONDS));
+	}
+
 	/**
 	 * Transform this {@link Mono} in order to generate a target {@link Mono}. Unlike {@link #compose(Function)}, the
 	 * provided function is executed as part of assembly.
