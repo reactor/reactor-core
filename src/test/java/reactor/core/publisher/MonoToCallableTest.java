@@ -27,9 +27,6 @@ import org.junit.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-/**
- * @author Simon Baslé
- */
 public class MonoToCallableTest {
 
 	@Test
