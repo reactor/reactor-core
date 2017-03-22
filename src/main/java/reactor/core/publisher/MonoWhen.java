@@ -37,6 +37,8 @@ final class MonoWhen<T, R> extends Mono<R> {
 
     final boolean delayError;
 
+	final boolean handleEmptyAsNull;
+
 	final Publisher<?>[] sources;
 
 	final Iterable<? extends Publisher<?>> sourcesIterable;
@@ -47,30 +49,36 @@ final class MonoWhen<T, R> extends Mono<R> {
 	public <U> MonoWhen(boolean delayError,
 			Publisher<? extends T> p1,
 			Publisher<? extends U> p2,
-			BiFunction<? super T, ? super U, ? extends R> zipper2) {
+			BiFunction<? super T, ? super U, ? extends R> zipper2,
+			boolean handleEmptyAsNull) {
 		this(delayError,
 				new FluxZip.PairwiseZipper<>(new BiFunction[]{
 						Objects.requireNonNull(zipper2, "zipper2")}),
+				handleEmptyAsNull,
 				Objects.requireNonNull(p1, "p1"),
 				Objects.requireNonNull(p2, "p2"));
 	}
 
     public MonoWhen(boolean delayError,
 		    Function<? super Object[], ? extends R> zipper,
+		    boolean handleEmptyAsNull,
 		    Publisher<?>... sources) {
 	    this.delayError = delayError;
 	    this.zipper = Objects.requireNonNull(zipper, "zipper");
 	    this.sources = Objects.requireNonNull(sources, "sources");
         this.sourcesIterable = null;
+		this.handleEmptyAsNull = handleEmptyAsNull;
     }
 
 	public MonoWhen(boolean delayError,
 			Function<? super Object[], ? extends R> zipper,
+		    boolean handleEmptyAsNull,
 			Iterable<? extends Publisher<?>> sourcesIterable) {
 		this.delayError = delayError;
 		this.zipper = Objects.requireNonNull(zipper, "zipper");
 		this.sources = null;
 		this.sourcesIterable = Objects.requireNonNull(sourcesIterable, "sourcesIterable");
+		this.handleEmptyAsNull = handleEmptyAsNull;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -85,7 +93,7 @@ final class MonoWhen<T, R> extends Mono<R> {
 			Function<Object[], R> z =
 					((FluxZip.PairwiseZipper<R>) this.zipper).then(zipper);
 
-			return new MonoWhen<>(delayError, z, newSources);
+			return new MonoWhen<>(delayError, z, handleEmptyAsNull, newSources);
 		}
 		return null;
 	}
@@ -116,7 +124,7 @@ final class MonoWhen<T, R> extends Mono<R> {
         }
 
 	    MonoWhenCoordinator<R> parent =
-			    new MonoWhenCoordinator<>(s, n, delayError, zipper);
+			    new MonoWhenCoordinator<>(s, n, delayError, zipper, handleEmptyAsNull);
 	    s.onSubscribe(parent);
         parent.subscribe(a);
     }
@@ -127,6 +135,8 @@ final class MonoWhen<T, R> extends Mono<R> {
 		final MonoWhenSubscriber<R>[] subscribers;
 
 		final boolean delayError;
+
+		final boolean handleEmptyAsNull;
 
 		final Function<? super Object[], ? extends R> zipper;
 
@@ -139,10 +149,12 @@ final class MonoWhen<T, R> extends Mono<R> {
         public MonoWhenCoordinator(Subscriber<? super R> subscriber,
 		        int n,
 		        boolean delayError,
-		        Function<? super Object[], ? extends R> zipper) {
+		        Function<? super Object[], ? extends R> zipper,
+		        boolean handleEmptyAsNull) {
 	        super(subscriber);
             this.delayError = delayError;
 	        this.zipper = zipper;
+	        this.handleEmptyAsNull = handleEmptyAsNull;
 	        subscribers = new MonoWhenSubscriber[n];
             for (int i = 0; i < n; i++) {
                 subscribers[i] = new MonoWhenSubscriber<>(this);
@@ -184,25 +196,25 @@ final class MonoWhen<T, R> extends Mono<R> {
             for (int i = 0; i < a.length; i++) {
 	            MonoWhenSubscriber<R> m = a[i];
 	            Object v = m.value;
-                if (v != null) {
+	            if (m.error != null) {
+		            Throwable e = m.error;
+		            if (compositeError != null) {
+			            compositeError.addSuppressed(e);
+		            }
+		            else if (error != null) {
+			            compositeError = new Throwable("Multiple errors");
+			            compositeError.addSuppressed(error);
+			            compositeError.addSuppressed(e);
+		            }
+		            else {
+			            error = e;
+		            }
+	            }
+	            else if (v != null || handleEmptyAsNull) {
                     o[i] = v;
-                } else {
-                    Throwable e = m.error;
-                    if (e != null) {
-                        if (compositeError != null) {
-                            compositeError.addSuppressed(e);
-                        } else
-                        if (error != null) {
-                            compositeError = new Throwable("Multiple errors");
-                            compositeError.addSuppressed(error);
-                            compositeError.addSuppressed(e);
-                        } else {
-                            error = e;
-                        }
-                    } else {
-                        hasEmpty = true;
-                    }
-                }
+	            } else {
+		            hasEmpty = true;
+	            }
             }
             
             if (compositeError != null) {
