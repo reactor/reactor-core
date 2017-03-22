@@ -177,6 +177,9 @@ enough demand for the sequence to advance or your Flux will get "stuck". That is
 the reason why `BaseSubscriber` forces you to implement the subscription and
 onNext hooks, where you should usually call `request` at least once.
 
+`BaseSubscriber` also offers a `requestUnbounded()` method to switch to unbounded
+mode (equivalent to `request(Long.MAX_VALUE)`.
+
 //the leveloffset seems to be absolute from root
 include::producing.adoc[leveloffset=2]
 
