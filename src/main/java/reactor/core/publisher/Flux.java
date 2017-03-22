@@ -5166,7 +5166,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} producing asynchronously
 	 */
-	//TODO as part of #435 but separate from #480, switch to prefix-based (note that would change the current default of delayError = true)
 	public final Flux<T> publishOn(Scheduler scheduler, boolean delayError, int prefetch) {
 		if (this instanceof Callable) {
 			if (this instanceof Fuseable.ScalarCallable) {
