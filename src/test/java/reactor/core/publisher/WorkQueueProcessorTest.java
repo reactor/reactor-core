@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -29,6 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Function;
 
+import org.assertj.core.api.Assertions;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -879,5 +881,55 @@ public class WorkQueueProcessorTest {
 
 		while (wq.downstreamCount() != 0 && Thread.activeCount() > 1) {
 		}
+	}
+
+
+	//see https://github.com/reactor/reactor-core/issues/445
+	@Test(timeout = 5_000)
+	public void testBufferSize1Shared() throws Exception {
+		WorkQueueProcessor<String> broadcast = WorkQueueProcessor.share("share-name", 1, true);
+
+		int simultaneousSubscribers = 3000;
+		CountDownLatch latch = new CountDownLatch(simultaneousSubscribers);
+		Scheduler scheduler = Schedulers.single();
+
+		BlockingSink<String> sink = broadcast.connectSink();
+		Flux<String> flux = broadcast.filter(Objects::nonNull)
+		                             .publishOn(scheduler)
+		                             .cache(1);
+
+		for (int i = 0; i < simultaneousSubscribers; i++) {
+			flux.subscribe(s -> latch.countDown());
+		}
+		sink.submit("data", 1, TimeUnit.SECONDS);
+
+		Assertions.assertThat(latch.await(4, TimeUnit.SECONDS))
+		          .overridingErrorMessage("Data not received")
+		          .isTrue();
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/445
+	@Test(timeout = 5_000)
+	public void testBufferSize1Created() throws Exception {
+		WorkQueueProcessor<String> broadcast = WorkQueueProcessor.create("share-name", 1, true);
+
+		int simultaneousSubscribers = 3000;
+		CountDownLatch latch = new CountDownLatch(simultaneousSubscribers);
+		Scheduler scheduler = Schedulers.single();
+
+		BlockingSink<String> sink = broadcast.connectSink();
+		Flux<String> flux = broadcast.filter(Objects::nonNull)
+		                             .publishOn(scheduler)
+		                             .cache(1);
+
+		for (int i = 0; i < simultaneousSubscribers; i++) {
+			flux.subscribe(s -> latch.countDown());
+		}
+
+		sink.submit("data", 1, TimeUnit.SECONDS);
+
+		Assertions.assertThat(latch.await(4, TimeUnit.SECONDS))
+		          .overridingErrorMessage("Data not received")
+		          .isTrue();
 	}
 }
