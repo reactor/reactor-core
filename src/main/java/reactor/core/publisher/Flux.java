@@ -3837,6 +3837,13 @@ public abstract class Flux<T> implements Publisher<T> {
 		return onAssembly(new FluxFilter<>(this, p));
 	}
 
+	public final Flux<T> filterWhen(Function<? super T, ? extends Publisher<Boolean>> p) {
+		return filterWhen(p, QueueSupplier.SMALL_BUFFER_SIZE);
+	}
+
+	public final Flux<T> filterWhen(Function<? super T, ? extends Publisher<Boolean>> p, int bufferSize) {
+		return onAssembly(new FluxFilterWhen<>(this, p, bufferSize));
+	}
 
 	/**
 	 * Emit from the fastest first sequence between this publisher and the given publisher
