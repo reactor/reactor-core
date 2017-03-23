@@ -3837,12 +3837,42 @@ public abstract class Flux<T> implements Publisher<T> {
 		return onAssembly(new FluxFilter<>(this, p));
 	}
 
-	public final Flux<T> filterWhen(Function<? super T, ? extends Publisher<Boolean>> p) {
-		return filterWhen(p, QueueSupplier.SMALL_BUFFER_SIZE);
+	/**
+	 * Test each value emitted by this {@link Flux} asynchronously using a generated
+	 * {@code Publisher&lt;Boolean&gt;} test. A value is replayed if the first item emitted
+	 * by its corresponding test is {@literal true}. It is dropped if its test is either
+	 * empty or its first emitted value is {@literal false}.
+	 * <p>
+	 * Note that only the first value of the test publisher is considered, and unless it
+	 * is a {@link Mono}, test will be cancelled after receiving that first value. Test
+	 * publishers are generated and subscribed to in sequence.
+	 *
+	 * @param asyncPredicate the function generating a {@link Publisher} of {@link Boolean}
+	 * for each value, to filter the Flux with
+	 * @return a filtered {@link Flux}
+	 */
+	public final Flux<T> filterWhen(Function<? super T, ? extends Publisher<Boolean>> asyncPredicate) {
+		return filterWhen(asyncPredicate, QueueSupplier.SMALL_BUFFER_SIZE);
 	}
 
-	public final Flux<T> filterWhen(Function<? super T, ? extends Publisher<Boolean>> p, int bufferSize) {
-		return onAssembly(new FluxFilterWhen<>(this, p, bufferSize));
+	/**
+	 * Test each value emitted by this {@link Flux} asynchronously using a generated
+	 * {@code Publisher&lt;Boolean&gt;} test. A value is replayed if the first item emitted
+	 * by its corresponding test is {@literal true}. It is dropped if its test is either
+	 * empty or its first emitted value is {@literal false}.
+	 * <p>
+	 * Note that only the first value of the test publisher is considered, and unless it
+	 * is a {@link Mono}, test will be cancelled after receiving that first value. Test
+	 * publishers are generated and subscribed to in sequence.
+	 *
+	 * @param asyncPredicate the function generating a {@link Publisher} of {@link Boolean}
+	 * for each value, to filter the Flux with
+	 * @param prefetch the prefetch size for the source
+	 * @return a filtered {@link Flux}
+	 */
+	public final Flux<T> filterWhen(Function<? super T, ? extends Publisher<Boolean>> asyncPredicate,
+			int prefetch) {
+		return onAssembly(new FluxFilterWhen<>(this, asyncPredicate, prefetch));
 	}
 
 	/**

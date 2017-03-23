@@ -23,6 +23,14 @@ import org.reactivestreams.Subscriber;
 import reactor.util.concurrent.QueueSupplier;
 
 /**
+ * Maps the first upstream value into a single {@code true} or {@code false} value
+ * provided by a generated Publisher for that input value and emits the input value if
+ * the inner Publisher returned {@code true}.
+ * <p>
+ * Only the first item emitted by the inner Publisher's are considered. If
+ * the inner Publisher is empty, no resulting item is generated for that input value.
+ *
+ * @param <T> the input value type
  * @author Simon Baslé
  */
 public class MonoFilterWhen<T> extends MonoSource<T, T> {
