@@ -61,9 +61,10 @@ public class DefaultStepVerifierBuilderTests {
 
 	@Test(timeout = 4000)
 	public void manuallyManagedVirtualTime() {
-		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
+		VirtualTimeScheduler vts = VirtualTimeScheduler.createForAll();
 		try {
 			VirtualTimeScheduler.getOrSet(vts);
+			assertThat(VirtualTimeScheduler.get()).isSameAs(vts);
 
 			Flux<String> flux = Flux.just("foo").delay(Duration.ofSeconds(4));
 
@@ -91,7 +92,7 @@ public class DefaultStepVerifierBuilderTests {
 
 	@Test
 	public void suppliedVirtualTimeButNoSourceDoesntEnableScheduler() {
-		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
+		VirtualTimeScheduler vts = VirtualTimeScheduler.createForAll();
 
 		new DefaultStepVerifierBuilder<String>(StepVerifierOptions.create()
 				.initialRequest(Long.MAX_VALUE)
