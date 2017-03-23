@@ -293,4 +293,41 @@ public class FluxFilterWhenTest {
 		assertThat(cancelCount.get()).isEqualTo(0);
 	}
 
+	@Test
+	public void bufferSizeIsAlsoPrefetch() {
+		AtomicLong requested = new AtomicLong();
+
+		Flux.range(1, 10)
+		    .hide()
+		    .doOnRequest(r -> requested.compareAndSet(0, r))
+		    .filterWhen(v -> Mono.just(v % 2 == 0), 5)
+		    .subscribe().dispose();
+
+		assertThat(requested.get()).isEqualTo(5);
+	}
+
+	@Test
+	public void largeBufferSize() {
+		int bufferSize = 65536; //the buffer size given as example in javadoc
+		AtomicLong requested = new AtomicLong();
+
+		Flux.range(1, 10)
+		    .hide()
+		    .doOnRequest(r -> requested.compareAndSet(0, r))
+		    .filterWhen(v -> Mono.just(v % 2 == 0), bufferSize)
+		    .subscribe().dispose();
+
+		assertThat(requested.get()).isEqualTo(bufferSize);
+
+		bufferSize = bufferSize + 1; //assert even if above it is still fine
+		requested.set(0);
+		Flux.range(1, 10)
+		    .hide()
+		    .doOnRequest(r -> requested.compareAndSet(0, r))
+		    .filterWhen(v -> Mono.just(v % 2 == 0), bufferSize)
+		    .subscribe().dispose();
+
+		assertThat(requested.get()).isEqualTo(bufferSize);
+	}
+
 }

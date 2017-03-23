@@ -3868,9 +3868,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param asyncPredicate the function generating a {@link Publisher} of {@link Boolean}
 	 * for each value, to filter the Flux with
 	 * @param bufferSize the maximum expected number of values to hold pending a result of
-	 * their respective asynchronous predicates. Also serves as the initial request size
-	 * for the source, but is be limited in size (eg. not possible to request unbounded
-	 * by using Integer.MAX_VALUE).
+	 * their respective asynchronous predicates, rounded to the next power of two. This is
+	 * capped depending on the size of the heap and the JVM limits, so be careful with
+	 * large values (although eg. {@literal 65536} should still be fine). Also serves as
+	 * the initial request size for the source.
 	 * @return a filtered {@link Flux}
 	 */
 	public final Flux<T> filterWhen(Function<? super T, ? extends Publisher<Boolean>> asyncPredicate,
