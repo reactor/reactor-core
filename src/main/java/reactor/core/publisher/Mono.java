@@ -1938,6 +1938,10 @@ public abstract class Mono<T> implements Publisher<T> {
 		return onAssembly(new MonoFilter<>(this, tester));
 	}
 
+	public final Mono<T> filterWhen(Function<? super T, ? extends Publisher<Boolean>> asyncPredicate) {
+		return onAssembly(new MonoFilterWhen<>(this, asyncPredicate, QueueSupplier.XS_BUFFER_SIZE));
+	}
+
 	/**
 	 * Transform the item emitted by this {@link Mono} into a Publisher, then forward
 	 * its emissions into the returned {@link Flux}.
