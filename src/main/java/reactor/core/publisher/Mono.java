@@ -1952,7 +1952,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a filtered {@link Mono}
 	 */
 	public final Mono<T> filterWhen(Function<? super T, ? extends Publisher<Boolean>> asyncPredicate) {
-		return onAssembly(new MonoFilterWhen<>(this, asyncPredicate, QueueSupplier.XS_BUFFER_SIZE));
+		return onAssembly(new MonoFilterWhen<>(this, asyncPredicate));
 	}
 
 	/**

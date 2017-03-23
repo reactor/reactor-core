@@ -38,8 +38,7 @@ public class MonoFilterWhen<T> extends MonoSource<T, T> {
 	final Function<? super T, ? extends Publisher<Boolean>> asyncPredicate;
 
 	MonoFilterWhen(Publisher<T> source,
-			Function<? super T, ? extends Publisher<Boolean>> asyncPredicate,
-			int bufferSize) {
+			Function<? super T, ? extends Publisher<Boolean>> asyncPredicate) {
 		super(source);
 		this.asyncPredicate = asyncPredicate;
 	}
