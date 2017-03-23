@@ -38,6 +38,7 @@ import reactor.util.concurrent.QueueSupplier;
  * @author David Karnok
  * @author Simon Baslé
  */
+//adapted from RxJava2Extensions: https://github.com/akarnokd/RxJava2Extensions/blob/master/src/main/java/hu/akarnokd/rxjava2/operators/FlowableFilterAsync.java
 public class FluxFilterWhen<T> extends FluxSource<T, T> {
 
 	final Publisher<T> source;
