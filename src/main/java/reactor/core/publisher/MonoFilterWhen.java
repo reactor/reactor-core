@@ -33,7 +33,7 @@ import reactor.util.concurrent.QueueSupplier;
  * @param <T> the input value type
  * @author Simon Baslé
  */
-public class MonoFilterWhen<T> extends MonoSource<T, T> {
+class MonoFilterWhen<T> extends MonoSource<T, T> {
 
 	final Function<? super T, ? extends Publisher<Boolean>> asyncPredicate;
 
