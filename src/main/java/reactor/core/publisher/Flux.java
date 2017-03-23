@@ -3867,12 +3867,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param asyncPredicate the function generating a {@link Publisher} of {@link Boolean}
 	 * for each value, to filter the Flux with
-	 * @param prefetch the prefetch size for the source
+	 * @param bufferSize the maximum expected number of values to hold pending a result of
+	 * their respective asynchronous predicates. Also serves as the initial request size
+	 * for the source, but is be limited in size (eg. not possible to request unbounded
+	 * by using Integer.MAX_VALUE).
 	 * @return a filtered {@link Flux}
 	 */
 	public final Flux<T> filterWhen(Function<? super T, ? extends Publisher<Boolean>> asyncPredicate,
-			int prefetch) {
-		return onAssembly(new FluxFilterWhen<>(this, asyncPredicate, prefetch));
+			int bufferSize) {
+		return onAssembly(new FluxFilterWhen<>(this, asyncPredicate, bufferSize));
 	}
 
 	/**
