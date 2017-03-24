@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,6 @@ package reactor.core.publisher;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Producer;
-import reactor.core.Receiver;
 
 /**
  * Ignores normal values and passes only the terminal signals along.
@@ -29,7 +27,7 @@ import reactor.core.Receiver;
  */
 final class MonoIgnoreEmpty<T> extends MonoSource<T, T> {
 
-	public MonoIgnoreEmpty(Publisher<? extends T> source) {
+	MonoIgnoreEmpty(Publisher<? extends T> source) {
 		super(source);
 	}
 
@@ -38,14 +36,22 @@ final class MonoIgnoreEmpty<T> extends MonoSource<T, T> {
 		source.subscribe(new IgnoreElementsSubscriber<>(s));
 	}
 
-	static final class IgnoreElementsSubscriber<T> implements Subscriber<T>, Producer, Subscription,
-	                                                          Receiver {
+	static final class IgnoreElementsSubscriber<T> implements InnerOperator<T, T> {
 		final Subscriber<? super T> actual;
 
 		Subscription s;
 
-		public IgnoreElementsSubscriber(Subscriber<? super T> actual) {
+		IgnoreElementsSubscriber(Subscriber<? super T> actual) {
 			this.actual = actual;
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key){
+				case PARENT:
+					return s;
+			}
+			return InnerOperator.super.scan(key);
 		}
 
 		@Override
@@ -75,7 +81,7 @@ final class MonoIgnoreEmpty<T> extends MonoSource<T, T> {
 		}
 
 		@Override
-		public Object downstream() {
+		public Subscriber<? super T> actual() {
 			return actual;
 		}
 
@@ -87,11 +93,6 @@ final class MonoIgnoreEmpty<T> extends MonoSource<T, T> {
 		@Override
 		public void cancel() {
 			s.cancel();
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
 		}
 	}
 }

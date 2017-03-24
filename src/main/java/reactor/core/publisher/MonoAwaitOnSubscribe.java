@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package reactor.core.publisher;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 
 /**
@@ -33,7 +32,7 @@ import org.reactivestreams.Subscriber;
  */
 final class MonoAwaitOnSubscribe<T> extends MonoSource<T, T> {
 
-	public MonoAwaitOnSubscribe(Publisher<? extends T> source) {
+	MonoAwaitOnSubscribe(Mono<? extends T> source) {
 		super(source);
 	}
 	

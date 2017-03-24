@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,19 +20,19 @@ import java.util.Objects;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
+
 
 /**
  * A Stream that emits only one value and then complete.
  * <p>
- * Since the fluxion retains the value in a final field, any {@link this#subscribe(Subscriber)} will
+ * Since the flux retains the value in a final field, any
+ * {@link this#subscribe(Subscriber)} will
  * replay the value. This is a "Cold" fluxion.
  * <p>
- * Create such fluxion with the provided factory, E.g.:
+ * Create such flux with the provided factory, E.g.:
  * <pre>
  * {@code
- * Streams.just(1).subscribe(
+ * Flux.just(1).subscribe(
  *    log::info,
  *    log::error,
  *    (-> log.info("complete"))
@@ -49,12 +49,11 @@ import reactor.core.Trackable;
  *
  * @author Stephane Maldini
  */
-final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, Fuseable,
-		Receiver {
+final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, Fuseable {
 
 	final T value;
 
-	public FluxJust(T value) {
+	FluxJust(T value) {
 		this.value = Objects.requireNonNull(value, "value");
 	}
 
@@ -65,29 +64,19 @@ final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, F
 
 	@Override
 	public void subscribe(final Subscriber<? super T> subscriber) {
-		try {
-			subscriber.onSubscribe(new WeakScalarSubscription<>(value, subscriber));
-		}
-		catch (Throwable throwable) {
-			subscriber.onError(Operators.onOperatorError(throwable));
-		}
-	}
-
-	@Override
-	public Object upstream() {
-		return value;
+		subscriber.onSubscribe(new WeakScalarSubscription<>(value, subscriber));
 	}
 
 	static final class WeakScalarSubscription<T> implements QueueSubscription<T>,
-	                                                        Receiver, Trackable {
+	                                                        InnerProducer<T>{
 
 		boolean terminado;
 		final T                     value;
-		final Subscriber<? super T> subscriber;
+		final Subscriber<? super T> actual;
 
-		public WeakScalarSubscription(T value, Subscriber<? super T> subscriber) {
+		WeakScalarSubscription(T value, Subscriber<? super T> actual) {
 			this.value = value;
-			this.subscriber = subscriber;
+			this.actual = actual;
 		}
 
 		@Override
@@ -98,31 +87,15 @@ final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, F
 
 			terminado = true;
 			if (value != null) {
-				subscriber.onNext(value);
+				actual.onNext(value);
 			}
-			subscriber.onComplete();
+			actual.onComplete();
 		}
 
 		@Override
 		public void cancel() {
 			terminado = true;
 		}
-
-		@Override
-		public boolean isStarted() {
-			return !terminado;
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return terminado;
-		}
-
-		@Override
-		public Object upstream() {
-			return value;
-		}
-
 
 		@Override
 		public int requestFusion(int requestedMode) {
@@ -154,6 +127,21 @@ final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, F
 		@Override
 		public void clear() {
 			terminado = true;
+		}
+
+		@Override
+		public Subscriber<? super T> actual() {
+			return actual;
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch(key){
+				case TERMINATED:
+				case CANCELLED:
+					return terminado;
+			}
+			return InnerProducer.super.scan(key);
 		}
 	}
 }

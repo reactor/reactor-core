@@ -18,31 +18,14 @@ package reactor.test.publisher;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 
-import org.junit.Test;
-import org.reactivestreams.Subscriber;
-import reactor.core.Exceptions;
-import reactor.core.Fuseable;
-import reactor.core.Loopback;
-import reactor.core.Producer;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
+import org.reactivestreams.Subscription;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.Operators;
-import reactor.core.publisher.UnicastProcessor;
 import reactor.test.StepVerifier;
-import reactor.util.concurrent.QueueSupplier;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static reactor.core.Fuseable.*;
-import static reactor.core.Trackable.UNSPECIFIED;
 
 public abstract class FluxOperatorTest<I, O>
 		extends BaseOperatorTest<I, Flux<I>, O, Flux<O>> {
@@ -200,6 +183,12 @@ public abstract class FluxOperatorTest<I, O>
 	@Override
 	Flux<O> conditional(Flux<O> output) {
 		return output.filter(t -> true);
+	}
+
+	@Override
+	protected Flux<O> doOnSubscribe(Flux<O> output,
+			Consumer<? super Subscription> doOnSubscribe) {
+		return output.doOnSubscribe(doOnSubscribe);
 	}
 
 	@Override

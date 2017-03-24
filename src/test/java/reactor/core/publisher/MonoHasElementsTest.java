@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.Receiver;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -157,7 +158,11 @@ public class MonoHasElementsTest {
 				    });
 
 		assertThat(sub.get()).isInstanceOf(MonoHasElements.HasElementsSubscriber.class);
-		assertThat(((Receiver) sub.get()).upstream().getClass()).isEqualTo(FluxHide.HideSubscriber.class);
+		Scannable.from(sub.get())
+		         .parents()
+		         .findFirst()
+		         .ifPresent(s -> assertThat(s).isInstanceOf(FluxHide.HideSubscriber
+				         .class));
 	}
 
 	@Test

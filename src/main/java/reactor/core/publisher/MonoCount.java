@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,9 @@
  */
 package reactor.core.publisher;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
-import reactor.core.Receiver;
 
 /**
  * Counts the number of values in the source sequence.
@@ -30,7 +28,7 @@ import reactor.core.Receiver;
  */
 final class MonoCount<T> extends MonoSource<T, Long> implements Fuseable {
 
-	public MonoCount(Publisher<? extends T> source) {
+	MonoCount(Flux<? extends T> source) {
 		super(source);
 	}
 
@@ -39,15 +37,23 @@ final class MonoCount<T> extends MonoSource<T, Long> implements Fuseable {
 		source.subscribe(new CountSubscriber<>(s));
 	}
 
-	static final class CountSubscriber<T> extends Operators.MonoSubscriber<T, Long>
-			implements Receiver {
+	static final class CountSubscriber<T> extends Operators.MonoSubscriber<T, Long>  {
 
 		long counter;
 
 		Subscription s;
 
-		public CountSubscriber(Subscriber<? super Long> actual) {
+		CountSubscriber(Subscriber<? super Long> actual) {
 			super(actual);
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key){
+				case PARENT:
+					return s;
+			}
+			return super.scan(key);
 		}
 
 		@Override
@@ -75,11 +81,6 @@ final class MonoCount<T> extends MonoSource<T, Long> implements Fuseable {
 		@Override
 		public void onComplete() {
 			complete(counter);
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
 		}
 
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,16 @@
 
 package reactor.core.publisher;
 
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.MultiReceiver;
-import reactor.core.Producer;
-import reactor.core.Trackable;
+import reactor.core.Scannable;
+
 
 /**
  * Given a set of source Publishers the values of that Publisher is forwarded to the
@@ -36,32 +35,21 @@ import reactor.core.Trackable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxFirstEmitting<T> extends Flux<T> implements MultiReceiver {
+final class FluxFirstEmitting<T> extends Flux<T> {
 
 	final Publisher<? extends T>[] array;
 
 	final Iterable<? extends Publisher<? extends T>> iterable;
 
 	@SafeVarargs
-	public FluxFirstEmitting(Publisher<? extends T>... array) {
+	FluxFirstEmitting(Publisher<? extends T>... array) {
 		this.array = Objects.requireNonNull(array, "array");
 		this.iterable = null;
 	}
 
-	public FluxFirstEmitting(Iterable<? extends Publisher<? extends T>> iterable) {
+	FluxFirstEmitting(Iterable<? extends Publisher<? extends T>> iterable) {
 		this.array = null;
 		this.iterable = Objects.requireNonNull(iterable);
-	}
-
-	@Override
-	public Iterator<?> upstreams() {
-		return iterable != null ? iterable.iterator() : Arrays.asList(array)
-		                                                      .iterator();
-	}
-
-	@Override
-	public long upstreamCount() {
-		return array != null ? array.length : -1L;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -156,7 +144,7 @@ final class FluxFirstEmitting<T> extends Flux<T> implements MultiReceiver {
 	 *
 	 * @return the new FluxFirstEmitting instance or null if the Amb runs with an Iterable
 	 */
-	public FluxFirstEmitting<T> ambAdditionalSource(Publisher<? extends T> source) {
+	FluxFirstEmitting<T> ambAdditionalSource(Publisher<? extends T> source) {
 		if (array != null) {
 			int n = array.length;
 			@SuppressWarnings("unchecked") Publisher<? extends T>[] newArray =
@@ -170,7 +158,7 @@ final class FluxFirstEmitting<T> extends Flux<T> implements MultiReceiver {
 	}
 
 	static final class RaceCoordinator<T>
-			implements Subscription, MultiReceiver, Trackable {
+			implements Subscription, Scannable {
 
 		final FirstEmittingSubscriber<T>[] subscribers;
 
@@ -182,9 +170,23 @@ final class FluxFirstEmitting<T> extends Flux<T> implements MultiReceiver {
 				AtomicIntegerFieldUpdater.newUpdater(RaceCoordinator.class, "wip");
 
 		@SuppressWarnings("unchecked")
-		public RaceCoordinator(int n) {
+		RaceCoordinator(int n) {
 			subscribers = new FirstEmittingSubscriber[n];
 			wip = Integer.MIN_VALUE;
+		}
+
+		@Override
+		public Stream<? extends Scannable> inners() {
+			return Stream.of(subscribers);
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case CANCELLED:
+					return cancelled;
+			}
+			return null;
 		}
 
 		void subscribe(Publisher<? extends T>[] sources,
@@ -268,26 +270,10 @@ final class FluxFirstEmitting<T> extends Flux<T> implements MultiReceiver {
 			}
 			return false;
 		}
-
-		@Override
-		public boolean isCancelled() {
-			return cancelled;
-		}
-
-		@Override
-		public Iterator<?> upstreams() {
-			return Arrays.asList(subscribers)
-			             .iterator();
-		}
-
-		@Override
-		public long upstreamCount() {
-			return subscribers.length;
-		}
 	}
 
 	static final class FirstEmittingSubscriber<T> extends Operators.DeferredSubscription
-			implements Subscriber<T>, Producer {
+			implements InnerOperator<T, T> {
 
 		final RaceCoordinator<T> parent;
 
@@ -297,7 +283,7 @@ final class FluxFirstEmitting<T> extends Flux<T> implements MultiReceiver {
 
 		boolean won;
 
-		public FirstEmittingSubscriber(Subscriber<? super T> actual,
+		FirstEmittingSubscriber(Subscriber<? super T> actual,
 				RaceCoordinator<T> parent,
 				int index) {
 			this.actual = actual;
@@ -306,12 +292,23 @@ final class FluxFirstEmitting<T> extends Flux<T> implements MultiReceiver {
 		}
 
 		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return s;
+				case CANCELLED:
+					return parent.cancelled;
+			}
+			return InnerOperator.super.scan(key);
+		}
+
+		@Override
 		public void onSubscribe(Subscription s) {
 			set(s);
 		}
 
 		@Override
-		public Object downstream() {
+		public Subscriber<? super T> actual() {
 			return actual;
 		}
 

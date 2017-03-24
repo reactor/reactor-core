@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,7 +26,6 @@ import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
-import reactor.test.StepVerifier;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
@@ -50,10 +49,12 @@ public class BaseSubscriberTest {
 			public void hookOnNext(Integer integer) {
 				assertTrue("unexpected previous value for " + integer,
 						lastValue.compareAndSet(integer - 1, integer));
-				if (integer < 10)
+				if (integer < 10) {
 					request(1);
-				else
+				}
+				else {
 					cancel();
+				}
 			}
 
 			@Override
@@ -94,8 +95,10 @@ public class BaseSubscriberTest {
 				}
 			});
 			fail("expected UnsupportedOperationException");
-		} catch (UnsupportedOperationException e) {
-			assertThat(e.getClass().getSimpleName(), is("ErrorCallbackNotImplemented"));
+		}
+		catch (UnsupportedOperationException e) {
+			assertThat(e.getClass()
+			            .getSimpleName(), is("ErrorCallbackNotImplemented"));
 			assertThat(e.getCause(), is(instanceOf(IllegalStateException.class)));
 		}
 	}
@@ -142,7 +145,6 @@ public class BaseSubscriberTest {
 			protected void hookOnSubscribe(Subscription subscription) {
 				throw new OutOfMemoryError("boom");
 			}
-
 
 			@Override
 			protected void hookOnNext(String value) {
@@ -244,7 +246,8 @@ public class BaseSubscriberTest {
 			    }
 
 			    @Override
-			    protected void hookOnNext(String value) { }
+			    protected void hookOnNext(String value) {
+			    }
 
 			    @Override
 			    protected void hookOnError(Throwable throwable) {
@@ -279,19 +282,20 @@ public class BaseSubscriberTest {
 							requestUnbounded();
 						}
 
-						@Override
-						protected void hookOnNext(String value) { }
+				@Override
+				protected void hookOnNext(String value) {
+				}
 
-						@Override
-						protected void hookOnError(Throwable throwable) {
-							throw err;
-						}
+				@Override
+				protected void hookOnError(Throwable throwable) {
+					throw err;
+				}
 
-						@Override
-						protected void hookFinally(SignalType type) {
-							checkFinally.set(type);
-						}
-					});
+				@Override
+				protected void hookFinally(SignalType type) {
+					checkFinally.set(type);
+				}
+			});
 			fail("expected " + err);
 		}
 		catch (Throwable e) {
@@ -310,11 +314,12 @@ public class BaseSubscriberTest {
 		    .subscribe(new BaseSubscriber<String>() {
 			    @Override
 			    protected void hookOnSubscribe(Subscription subscription) {
-			    	this.cancel();
+				    this.cancel();
 			    }
 
 			    @Override
-			    protected void hookOnNext(String value) { }
+			    protected void hookOnNext(String value) {
+			    }
 
 			    @Override
 			    protected void hookOnError(Throwable throwable) {

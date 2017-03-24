@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -562,11 +562,11 @@ public class ReplayProcessorTest {
 
 		rp.subscribe();
 
-		ReplayProcessor.ReplayProcessorSubscription<String> s =
-				((Iterator<ReplayProcessor.ReplayProcessorSubscription>)rp
+		ReplayProcessor.ReplayInner<String> s =
+				((Iterator<ReplayProcessor.ReplayInner>)rp
 						.downstreams()).next();
 
-		assertThat(d1).isEqualTo(s.downstream());
+		assertThat(d1).isEqualTo(s.actual());
 
 		assertThat(s.isEmpty()).isTrue();
 		assertThat(s.isCancelled()).isFalse();
@@ -574,8 +574,8 @@ public class ReplayProcessorTest {
 
 		assertThat(rp.isStarted()).isFalse();
 		assertThat(rp.getPrefetch()).isEqualTo(Integer.MAX_VALUE);
-		if(rp.getCapacity() != Integer.MAX_VALUE) {
-			assertThat(rp.getCapacity()).isEqualTo(1);
+		if(rp.getBufferSize() != Integer.MAX_VALUE) {
+			assertThat(rp.getBufferSize()).isEqualTo(1);
 		}
 		BlockingSink<String> sink = rp.connectSink();
 		assertThat(rp.connectSink().isCancelled()).isTrue();

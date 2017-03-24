@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,8 +36,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
 import reactor.core.publisher.Operators;
 
 /**
@@ -79,7 +77,7 @@ import reactor.core.publisher.Operators;
  * @author Brian Clozel
  */
 public class AssertSubscriber<T>
-		implements Subscriber<T>, Subscription, Trackable, Receiver {
+		implements Subscriber<T>, Subscription {
 
 	/**
 	 * Default timeout for waiting next values to be received
@@ -826,17 +824,10 @@ public class AssertSubscriber<T>
 		}
 	}
 
-	@Override
-	public final boolean isCancelled() {
+	final boolean isCancelled() {
 		return s == Operators.cancelledSubscription();
 	}
 
-	@Override
-	public final boolean isStarted() {
-		return s != null;
-	}
-
-	@Override
 	public final boolean isTerminated() {
 		return cdl.getCount() == 0;
 	}
@@ -949,11 +940,6 @@ public class AssertSubscriber<T>
 		}
 	}
 
-	@Override
-	public final long requestedFromDownstream() {
-		return requested;
-	}
-
 	/**
 	 * Setup what fusion mode should be requested scenario the incoming
 	 * Subscription if it happens to be QueueSubscription
@@ -965,7 +951,6 @@ public class AssertSubscriber<T>
 		return this;
 	}
 
-	@Override
 	public Subscription upstream() {
 		return s;
 	}

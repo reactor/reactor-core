@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import java.util.List;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import reactor.core.Fuseable;
-import reactor.core.Trackable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
@@ -95,7 +94,7 @@ public class FluxCombineLatestTest extends FluxOperatorTest<String, String> {
 	@Override
 	protected List<Scenario<String, String>> scenarios_errorFromUpstreamFailure() {
 		return Arrays.asList(scenario(f -> Flux.combineLatest(o -> (String) o[0],
-				f)).prefetch((int) Trackable.UNSPECIFIED),
+				f)).prefetch(-1),
 
 				scenario(f -> Flux.combineLatest(o -> (String) o[0],
 						f,
@@ -105,7 +104,7 @@ public class FluxCombineLatestTest extends FluxOperatorTest<String, String> {
 	@Override
 	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
 		return Arrays.asList(scenario(f -> Flux.combineLatest(o -> (String) o[0],
-				f)).prefetch((int) Trackable.UNSPECIFIED),
+				f)).prefetch(-1),
 
 				scenario(f -> Flux.combineLatest(o -> (String) o[1],
 						f,

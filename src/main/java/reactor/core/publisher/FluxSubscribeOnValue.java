@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,13 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Cancellation;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
-import reactor.core.Loopback;
-import reactor.core.Producer;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
+
 
 /**
  * Publisher indicating a scalar/empty source that subscribes on the specified scheduler.
@@ -67,7 +66,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 	}
 
 	static final class ScheduledScalar<T>
-			implements QueueSubscription<T>, Runnable, Producer, Loopback {
+			implements QueueSubscription<T>, InnerProducer<T>, Runnable {
 
 		final Subscriber<? super T> actual;
 
@@ -102,6 +101,24 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 			this.actual = actual;
 			this.value = value;
 			this.scheduler = scheduler;
+		}
+
+		@Override
+		public Subscriber<? super T> actual() {
+			return actual;
+		}
+
+		@Override
+		public Object scan(Scannable.Attr key) {
+			switch (key){
+				case CANCELLED:
+					return future == CANCELLED;
+				case TERMINATED:
+					return future == FINISHED;
+				case BUFFERED:
+					return value != null ? 1 : 0;
+			}
+			return InnerProducer.super.scan(key);
 		}
 
 		@Override
@@ -149,21 +166,6 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 		}
 
 		@Override
-		public Object downstream() {
-			return actual;
-		}
-
-		@Override
-		public Object connectedInput() {
-			return scheduler;
-		}
-
-		@Override
-		public Object connectedOutput() {
-			return value;
-		}
-
-		@Override
 		public int requestFusion(int requestedMode) {
 			if ((requestedMode & Fuseable.ASYNC) != 0) {
 				fusionState = NO_VALUE;
@@ -198,7 +200,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 	}
 
 	static final class ScheduledEmpty
-			implements QueueSubscription<Void>, Runnable, Producer, Loopback {
+			implements QueueSubscription<Void>, Runnable {
 
 		final Subscriber<?> actual;
 
@@ -248,11 +250,6 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 					f.dispose();
 				}
 			}
-		}
-
-		@Override
-		public Object downstream() {
-			return actual;
 		}
 
 		@Override

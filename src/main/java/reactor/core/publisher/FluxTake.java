@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,11 @@ package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.Fuseable.QueueSubscription;
-import reactor.core.Producer;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
 
 /**
  * Takes only the first N values from the source Publisher.
@@ -40,7 +36,7 @@ final class FluxTake<T> extends FluxSource<T, T> {
 
 	final long n;
 
-	FluxTake(Publisher<? extends T> source, long n) {
+	FluxTake(Flux<? extends T> source, long n) {
 		super(source);
 		if (n < 0) {
 			throw new IllegalArgumentException("n >= 0 required but it was " + n);
@@ -66,7 +62,7 @@ final class FluxTake<T> extends FluxSource<T, T> {
 	}
 
 	static final class TakeSubscriber<T>
-			implements Subscriber<T>, Subscription, Receiver, Producer, Trackable {
+			implements InnerOperator<T, T> {
 
 		final Subscriber<? super T> actual;
 
@@ -164,45 +160,26 @@ final class FluxTake<T> extends FluxSource<T, T> {
 		public void cancel() {
 			s.cancel();
 		}
+
 		@Override
-		public boolean isStarted() {
-			return s != null && !done;
+		public Object scan(Attr key) {
+			switch (key){
+				case TERMINATED:
+					return done;
+				case PARENT:
+					return s;
+			}
+			return InnerOperator.super.scan(key);
 		}
 
 		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
-		public long getCapacity() {
-			return n;
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
-		}
-
-		@Override
-		public long expectedFromUpstream() {
-			return remaining;
-		}
-
-		@Override
-		public Object downstream() {
+		public Subscriber<? super T> actual() {
 			return actual;
-		}
-
-		@Override
-		public long limit() {
-			return 0;
 		}
 	}
 
 	static final class TakeConditionalSubscriber<T>
-			implements ConditionalSubscriber<T>, Subscription, Receiver, Producer,
-			           Trackable {
+			implements ConditionalSubscriber<T>, InnerOperator<T, T> {
 
 		final ConditionalSubscriber<? super T> actual;
 
@@ -331,45 +308,26 @@ final class FluxTake<T> extends FluxSource<T, T> {
 		public void cancel() {
 			s.cancel();
 		}
+
 		@Override
-		public boolean isStarted() {
-			return s != null && !done;
+		public Object scan(Attr key) {
+			switch (key){
+				case TERMINATED:
+					return done;
+				case PARENT:
+					return s;
+			}
+			return InnerOperator.super.scan(key);
 		}
 
 		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
-		public long getCapacity() {
-			return n;
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
-		}
-
-		@Override
-		public long expectedFromUpstream() {
-			return remaining;
-		}
-
-		@Override
-		public Object downstream() {
+		public Subscriber<? super T> actual() {
 			return actual;
-		}
-
-		@Override
-		public long limit() {
-			return 0;
 		}
 	}
 
 	static final class TakeFuseableSubscriber<T>
-			implements Subscriber<T>, QueueSubscription<T>, Receiver, Producer,
-			           Trackable {
+			implements QueueSubscription<T>, InnerOperator<T, T> {
 
 		final Subscriber<? super T> actual;
 
@@ -479,39 +437,21 @@ final class FluxTake<T> extends FluxSource<T, T> {
 		public void cancel() {
 			qs.cancel();
 		}
+
 		@Override
-		public boolean isStarted() {
-			return qs != null && !done;
+		public Object scan(Attr key) {
+			switch (key){
+				case TERMINATED:
+					return done;
+				case PARENT:
+					return qs;
+			}
+			return InnerOperator.super.scan(key);
 		}
 
 		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
-		public long getCapacity() {
-			return n;
-		}
-
-		@Override
-		public Object upstream() {
-			return qs;
-		}
-
-		@Override
-		public long expectedFromUpstream() {
-			return remaining;
-		}
-
-		@Override
-		public Object downstream() {
+		public Subscriber<? super T> actual() {
 			return actual;
-		}
-
-		@Override
-		public long limit() {
-			return 0;
 		}
 
 		@Override

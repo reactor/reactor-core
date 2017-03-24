@@ -16,19 +16,16 @@
 
 package reactor.core.publisher;
 
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.stream.Stream;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.MultiProducer;
-import reactor.core.Producer;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
 import reactor.core.Exceptions;
+import reactor.core.Receiver;
+import reactor.core.Scannable;
 import reactor.util.concurrent.QueueSupplier;
 
 /**
@@ -47,8 +44,7 @@ import reactor.util.concurrent.QueueSupplier;
  *
  * @param <T> the input and output value type
  */
-public final class EmitterProcessor<T> extends FluxProcessor<T, T>
-		implements MultiProducer, Receiver {
+public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements Receiver {
 
 	/**
 	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size, blockingWait
@@ -135,9 +131,9 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		return upstreamSubscription;
 	}
 
-	static final EmitterSubscriber<?>[] EMPTY = new EmitterSubscriber<?>[0];
+	static final EmitterInner<?>[] EMPTY = new EmitterInner<?>[0];
 
-	static final EmitterSubscriber<?>[] CANCELLED = new EmitterSubscriber<?>[0];
+	static final EmitterInner<?>[] CANCELLED = new EmitterInner<?>[0];
 
 	private volatile Throwable error;
 
@@ -147,12 +143,12 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 					Throwable.class,
 					"error");
 
-	volatile EmitterSubscriber<?>[] subscribers;
+	volatile EmitterInner<?>[] subscribers;
 
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<EmitterProcessor, EmitterSubscriber[]> SUBSCRIBERS =
+	static final AtomicReferenceFieldUpdater<EmitterProcessor, EmitterInner[]> SUBSCRIBERS =
 			AtomicReferenceFieldUpdater.newUpdater(EmitterProcessor.class,
-					EmitterSubscriber[].class,
+					EmitterInner[].class,
 					"subscribers");
 	@SuppressWarnings("unused")
 	private volatile int running;
@@ -182,9 +178,16 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
+	public Stream<? extends Scannable> inners() {
+		return Stream.of(subscribers);
+	}
+
+	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		super.subscribe(s);
-		EmitterSubscriber<T> inner = new EmitterSubscriber<>(this, s);
+		if (s == null) {
+			throw Exceptions.argumentIsNullException();
+		}
+		EmitterInner<T> inner = new EmitterInner<>(this, s);
 		if(addInner(inner)) {
 			if (upstreamSubscription != null) {
 				inner.start();
@@ -214,7 +217,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 			throw Exceptions.argumentIsNullException();
 		}
 
-		EmitterSubscriber<?>[] inner = subscribers;
+		EmitterInner<?>[] inner = subscribers;
 		if (inner == CANCELLED) {
 			//FIXME should entorse to the spec and throw Exceptions.failWithCancel
 			return;
@@ -241,7 +244,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 
 			for (int i = 0; i < n; i++) {
 
-				EmitterSubscriber<T> is = (EmitterSubscriber<T>) inner[i];
+				EmitterInner<T> is = (EmitterInner<T>) inner[i];
 
 				if (is.done) {
 					removeInner(is, autoCancel ? CANCELLED : EMPTY);
@@ -261,7 +264,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 					//no tracking and remaining demand positive
 					if (r > 0L && poll == null) {
 						if (r != Long.MAX_VALUE) {
-							EmitterSubscriber.REQUESTED.decrementAndGet(is);
+							EmitterInner.REQUESTED.decrementAndGet(is);
 						}
 						is.actual.onNext(t);
 					}
@@ -316,7 +319,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	public void onSubscribe(final Subscription s) {
 		if (Operators.validate(upstreamSubscription, s)) {
 			this.upstreamSubscription = s;
-			EmitterSubscriber<?>[] innerSubscribers = subscribers;
+			EmitterInner<?>[] innerSubscribers = subscribers;
 			if (innerSubscribers != CANCELLED && innerSubscribers.length != 0) {
 				for (int i = 0; i < innerSubscribers.length; i++) {
 					innerSubscribers[i].start();
@@ -330,13 +333,20 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		return error;
 	}
 
-	@Override
+	/**
+	 * Return whether has all subcribers cancelled and {@link #create(boolean)} auto
+	 * shutdown argument
+	 * been set to true.
+	 *
+	 * @return whether has all subcribers cancelled and {@link #create(boolean)} auto
+	 * shutdown argument been set to true.
+	 */
 	public boolean isCancelled() {
 		return subscribers == CANCELLED;
 	}
 
 	@Override
-	final public long getCapacity() {
+	final public int getBufferSize() {
 		return bufferSize;
 	}
 
@@ -351,13 +361,16 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	public long limit() {
-		return limit;
-	}
-
-	@Override
-	public long expectedFromUpstream() {
-		return outstanding;
+	public Object scan(Attr key) {
+		switch (key) {
+			case PARENT:
+				return upstreamSubscription;
+			case BUFFERED:
+				return emitBuffer == null ? 0 : emitBuffer.getPending();
+			case CANCELLED:
+				return isCancelled();
+		}
+		return super.scan(key);
 	}
 
 	RingBuffer<EventLoopProcessor.Slot<T>> getMainQueue() {
@@ -389,7 +402,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		int missed = 1;
 		RingBuffer<EventLoopProcessor.Slot<T>> q = null;
 		for (; ; ) {
-			EmitterSubscriber<?>[] inner = subscribers;
+			EmitterInner<?>[] inner = subscribers;
 			if (inner == CANCELLED) {
 				cancel();
 				return;
@@ -407,7 +420,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 				long _r;
 
 				for (int i = 0; i < n; i++) {
-					@SuppressWarnings("unchecked") EmitterSubscriber<T> is = (EmitterSubscriber<T>) inner[i];
+					@SuppressWarnings("unchecked") EmitterInner<T> is = (EmitterInner<T>) inner[i];
 
 					long r = is.requested;
 
@@ -450,7 +463,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 						}
 
 						if (!unbounded && r > _r) {
-							EmitterSubscriber.REQUESTED.addAndGet(is, _r - r);
+							EmitterInner.REQUESTED.addAndGet(is, _r - r);
 						}
 
 					}
@@ -487,7 +500,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		}
 	}
 
-	final void checkTerminal(EmitterSubscriber<T> is, RingBuffer.Sequence innerSequence, long r) {
+	final void checkTerminal(EmitterInner<T> is, RingBuffer.Sequence innerSequence, long r) {
 		Throwable e = error;
 		if ((e != null && r == 0) || innerSequence == null || is.unbounded || innerSequence.getAsLong() >= emitBuffer.getCursor()) {
 			removeInner(is, EMPTY);
@@ -502,7 +515,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		}
 	}
 
-	final void startAllTrackers(EmitterSubscriber<?>[] inner, long seq, int size) {
+	final void startAllTrackers(EmitterInner<?>[] inner, long seq, int size) {
 		RingBuffer.Sequence poll;
 		for (int i = 0; i < size - 1; i++) {
 			poll = inner[i].pollCursor;
@@ -517,9 +530,9 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		ERROR.compareAndSet(this, null, t);
 	}
 
-	final boolean addInner(EmitterSubscriber<T> inner) {
+	final boolean addInner(EmitterInner<T> inner) {
 		for (; ; ) {
-			EmitterSubscriber<?>[] a = subscribers;
+			EmitterInner<?>[] a = subscribers;
 			if (a == CANCELLED) {
 				return false;
 			}
@@ -527,7 +540,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 			if (n + 1 > maxConcurrency) {
 				throw Exceptions.failWithOverflow();
 			}
-			EmitterSubscriber<?>[] b = new EmitterSubscriber[n + 1];
+			EmitterInner<?>[] b = new EmitterInner[n + 1];
 			System.arraycopy(a, 0, b, 0, n);
 			b[n] = inner;
 			if (SUBSCRIBERS.compareAndSet(this, a, b)) {
@@ -536,9 +549,9 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		}
 	}
 
-	final void removeInner(EmitterSubscriber<?> inner, EmitterSubscriber<?>[] lastRemoved) {
+	final void removeInner(EmitterInner<?> inner, EmitterInner<?>[] lastRemoved) {
 		for (; ; ) {
-			EmitterSubscriber<?>[] a = subscribers;
+			EmitterInner<?>[] a = subscribers;
 			if (a == CANCELLED || a == EMPTY) {
 				return;
 			}
@@ -550,12 +563,12 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 					break;
 				}
 			}
-			EmitterSubscriber<?>[] b;
+			EmitterInner<?>[] b;
 			if (n == 1) {
 				b = lastRemoved;
 			}
 			else {
-				b = new EmitterSubscriber<?>[n - 1];
+				b = new EmitterInner<?>[n - 1];
 				System.arraycopy(a, 0, b, 0, j);
 				System.arraycopy(a, j + 1, b, j, n - j - 1);
 			}
@@ -599,11 +612,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	public Iterator<?> downstreams() {
-		return Arrays.asList(subscribers).iterator();
-	}
-
-	@Override
 	public long downstreamCount() {
 		return subscribers.length;
 	}
@@ -618,10 +626,10 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 				'}';
 	}
 
-	static final class EmitterSubscriber<T>
-			implements Subscription, Trackable, Receiver, Producer {
+	static final class EmitterInner<T>
+			implements InnerProducer<T> {
 
-		public static final long MASK_NOT_SUBSCRIBED = Long.MIN_VALUE;
+		static final long MASK_NOT_SUBSCRIBED = Long.MIN_VALUE;
 		final EmitterProcessor<T>   parent;
 		final Subscriber<? super T> actual;
 
@@ -632,18 +640,18 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		private volatile long requested = MASK_NOT_SUBSCRIBED;
 
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<EmitterSubscriber> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(EmitterSubscriber.class, "requested");
+		static final AtomicLongFieldUpdater<EmitterInner> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(EmitterInner.class, "requested");
 
 		volatile RingBuffer.Sequence pollCursor;
 
 		@SuppressWarnings("rawtypes")
-        static final AtomicReferenceFieldUpdater<EmitterSubscriber, RingBuffer.Sequence> CURSOR =
-				AtomicReferenceFieldUpdater.newUpdater(EmitterSubscriber.class,
+        static final AtomicReferenceFieldUpdater<EmitterInner, RingBuffer.Sequence> CURSOR =
+				AtomicReferenceFieldUpdater.newUpdater(EmitterInner.class,
 						RingBuffer.Sequence.class,
 						"pollCursor");
 
-		public EmitterSubscriber(EmitterProcessor<T> parent, final Subscriber<? super T> actual) {
+		EmitterInner(EmitterProcessor<T> parent, final Subscriber<? super T> actual) {
 			this.actual = actual;
 			this.parent = parent;
 		}
@@ -665,13 +673,17 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		}
 
 		@Override
-		public long requestedFromDownstream() {
-			return requested;
-		}
-
-		@Override
-		public long getCapacity() {
-			return parent.bufferSize;
+		public final Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return parent;
+				case TERMINATED:
+				case CANCELLED:
+					return done;
+				case BUFFERED:
+					return pollCursor == null || done ? -1L : parent.emitBuffer.getCursor() - pollCursor.getAsLong();
+			}
+			return InnerProducer.super.scan(key);
 		}
 
 		void startTracking(long seq) {
@@ -693,32 +705,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T>
 		}
 
 		@Override
-		public boolean isCancelled() {
-			return done;
-		}
-
-		@Override
-		public long getPending() {
-			return pollCursor == null || done ? -1L : parent.emitBuffer.getCursor() - pollCursor.getAsLong();
-		}
-
-		@Override
-		public boolean isStarted() {
-			return parent.isStarted();
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return parent.isTerminated();
-		}
-
-		@Override
-		public Object upstream() {
-			return parent;
-		}
-
-		@Override
-		public Subscriber<? super T> downstream() {
+		public Subscriber<? super T> actual() {
 			return actual;
 		}
 	}

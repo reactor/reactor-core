@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+import reactor.core.Scannable;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
@@ -188,16 +189,12 @@ public class LambdaMonoSubscriberTest {
 		assertTrue(MonoSource.wrap(s -> {
 			assertTrue(s instanceof LambdaMonoSubscriber);
 			LambdaMonoSubscriber<?> bfs = (LambdaMonoSubscriber<?>)s;
-			assertTrue(bfs.upstream() == null);
-			assertTrue(bfs.getCapacity() == Integer.MAX_VALUE);
-			assertFalse(bfs.isTerminated());
-			assertFalse(bfs.isStarted());
+			assertTrue(bfs.scan(Scannable.Attr.PREFETCH, Integer.class) == Integer.MAX_VALUE);
+			assertFalse(bfs.scan(Scannable.Attr.TERMINATED, Boolean.class));
 			bfs.onSubscribe(Operators.emptySubscription());
 			bfs.onSubscribe(Operators.emptySubscription()); // noop
-			assertTrue(bfs.isStarted());
-			assertTrue(bfs.upstream() != null);
 			s.onComplete();
-			assertTrue(bfs.isTerminated());
+			assertTrue(bfs.scan(Scannable.Attr.TERMINATED, Boolean.class));
 			bfs.dispose();
 			bfs.dispose();
 		}).subscribe(s -> {}, null, () -> {}).isDisposed());
@@ -217,7 +214,7 @@ public class LambdaMonoSubscriberTest {
 				s.onComplete();
 				s.onError(new Exception("test2"));
 				s.onNext("test2");
-				assertTrue(bfs.isTerminated());
+				assertTrue(bfs.scan(Scannable.Attr.TERMINATED, Boolean.class));
 				bfs.dispose();
 			})
 			          .subscribe(s -> {

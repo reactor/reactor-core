@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,11 +24,14 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
+
 
 /**
  * Switches to a new Publisher generated via a function whenever the upstream produces an
@@ -80,9 +83,8 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 				bufferSize));
 	}
 
-	static final class SwitchMapMain<T, R> implements Subscriber<T>, Subscription {
-
-		final Subscriber<? super R> actual;
+	static final class SwitchMapMain<T, R>
+			implements InnerOperator<T, R> {
 
 		final Function<? super T, ? extends Publisher<? extends R>> mapper;
 
@@ -90,13 +92,20 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 
 		final BiPredicate<Object, Object> queueBiAtomic;
 
-		final int bufferSize;
+		final int                   bufferSize;
+		final Subscriber<? super R> actual;
 
 		Subscription s;
 
 		volatile boolean done;
 
 		volatile Throwable error;
+
+		@Override
+		public final Subscriber<? super R> actual() {
+			return actual;
+		}
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SwitchMapMain, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(SwitchMapMain.class,
@@ -153,6 +162,32 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 			else {
 				this.queueBiAtomic = null;
 			}
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key){
+				case CANCELLED:
+					return cancelled;
+				case PARENT:
+					return s;
+				case TERMINATED:
+					return done;
+				case ERROR:
+					return error;
+				case PREFETCH:
+					return bufferSize;
+				case BUFFERED:
+					return queue.size();
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+			}
+			return InnerOperator.super.scan(key);
+		}
+
+		@Override
+		public Stream<? extends Scannable> inners() {
+			return Stream.of(inner);
 		}
 
 		@Override
@@ -390,7 +425,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		}
 	}
 
-	static final class SwitchMapInner<R> implements Subscriber<R>, Subscription {
+	static final class SwitchMapInner<R> implements InnerConsumer<R>, Subscription {
 
 		final SwitchMapMain<?, R> parent;
 
@@ -414,11 +449,26 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 
 		int produced;
 
-		public SwitchMapInner(SwitchMapMain<?, R> parent, int bufferSize, long index) {
+		SwitchMapInner(SwitchMapMain<?, R> parent, int bufferSize, long index) {
 			this.parent = parent;
 			this.bufferSize = bufferSize;
 			this.limit = bufferSize - (bufferSize >> 2);
 			this.index = index;
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key){
+				case CANCELLED:
+					return s == Operators.cancelledSubscription();
+				case PARENT:
+					return s;
+				case ACTUAL:
+					return parent;
+				case PREFETCH:
+					return bufferSize;
+			}
+			return null;
 		}
 
 		@Override

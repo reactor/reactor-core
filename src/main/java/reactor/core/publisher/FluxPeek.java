@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,16 +18,13 @@ package reactor.core.publisher;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
-import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
-import reactor.core.Producer;
-import reactor.core.Receiver;
 import reactor.core.publisher.FluxPeekFuseable.PeekConditionalSubscriber;
-import reactor.core.publisher.FluxPeekFuseable.PeekFuseableSubscriber;
+
+
 
 /**
  * Peek into the lifecycle events and signals of a sequence.
@@ -57,7 +54,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 
 	final Runnable onCancelCall;
 
-	public FluxPeek(Publisher<? extends T> source, Consumer<? super Subscription> onSubscribeCall,
+	FluxPeek(Flux<? extends T> source, Consumer<? super Subscription> onSubscribeCall,
 			Consumer<? super T> onNextCall,
 			Consumer<? super Throwable> onErrorCall,
 			Runnable onCompleteCall,
@@ -85,7 +82,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 		source.subscribe(new PeekSubscriber<>(s, this));
 	}
 
-	static final class PeekSubscriber<T> implements Subscriber<T>, Subscription, Receiver, Producer {
+	static final class PeekSubscriber<T> implements InnerOperator<T, T> {
 
 		final Subscriber<? super T> actual;
 
@@ -95,9 +92,20 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 
 		boolean done;
 
-		public PeekSubscriber(Subscriber<? super T> actual, SignalPeek<T> parent) {
+		PeekSubscriber(Subscriber<? super T> actual, SignalPeek<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return s;
+				case TERMINATED:
+					return done;
+			}
+			return InnerOperator.super.scan(key);
 		}
 
 		@Override
@@ -232,14 +240,10 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 		}
 
 		@Override
-		public Object downstream() {
+		public Subscriber<? super T> actual() {
 			return actual;
 		}
 
-		@Override
-		public Object upstream() {
-			return s;
-		}
 	}
 
 	@Override

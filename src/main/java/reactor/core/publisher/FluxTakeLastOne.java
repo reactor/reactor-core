@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package reactor.core.publisher;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 
@@ -27,7 +26,7 @@ import reactor.core.Fuseable;
  */
 final class FluxTakeLastOne<T> extends FluxSource<T, T> implements Fuseable {
 
-	FluxTakeLastOne(Publisher<? extends T> source) {
+	FluxTakeLastOne(Flux<? extends T> source) {
 		super(source);
 	}
 

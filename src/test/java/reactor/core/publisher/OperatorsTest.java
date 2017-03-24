@@ -201,8 +201,6 @@ public class OperatorsTest {
 		//Noop
 		es.cancel();
 		es.request(-1);
-
-		assertThat(es.isCancelled()).isTrue();
 	}
 
 	@Test //TODO review use of checkRequest

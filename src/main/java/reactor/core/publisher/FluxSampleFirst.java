@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,14 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
+
 
 /**
  * Takes a value from upstream then uses the duration provided by a
@@ -41,7 +44,7 @@ final class FluxSampleFirst<T, U> extends FluxSource<T, T> {
 
 	final Function<? super T, ? extends Publisher<U>> throttler;
 
-	public FluxSampleFirst(Publisher<? extends T> source,
+	FluxSampleFirst(Flux<? extends T> source,
 			Function<? super T, ? extends Publisher<U>> throttler) {
 		super(source);
 		this.throttler = Objects.requireNonNull(throttler, "throttler");
@@ -49,7 +52,7 @@ final class FluxSampleFirst<T, U> extends FluxSource<T, T> {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		ThrottleFirstMain<T, U> main = new ThrottleFirstMain<>(s, throttler);
+		SampleFirstMain<T, U> main = new SampleFirstMain<>(s, throttler);
 
 		s.onSubscribe(main);
 
@@ -61,49 +64,75 @@ final class FluxSampleFirst<T, U> extends FluxSource<T, T> {
 		return Integer.MAX_VALUE;
 	}
 
-	static final class ThrottleFirstMain<T, U> implements Subscriber<T>, Subscription {
-
-		final Subscriber<? super T> actual;
+	static final class SampleFirstMain<T, U>
+			implements InnerOperator<T, T>, InnerProducer<T> {
 
 		final Function<? super T, ? extends Publisher<U>> throttler;
+		final Subscriber<? super T>                       actual;
 
 		volatile boolean gate;
 
 		volatile Subscription s;
+
+		@Override
+		public final Subscriber<? super T> actual() {
+			return actual;
+		}
+
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ThrottleFirstMain, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(ThrottleFirstMain.class,
+		static final AtomicReferenceFieldUpdater<SampleFirstMain, Subscription> S =
+				AtomicReferenceFieldUpdater.newUpdater(SampleFirstMain.class,
 						Subscription.class,
 						"s");
 
 		volatile Subscription other;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ThrottleFirstMain, Subscription> OTHER =
-				AtomicReferenceFieldUpdater.newUpdater(ThrottleFirstMain.class,
+		static final AtomicReferenceFieldUpdater<SampleFirstMain, Subscription> OTHER =
+				AtomicReferenceFieldUpdater.newUpdater(SampleFirstMain.class,
 						Subscription.class,
 						"other");
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<ThrottleFirstMain> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(ThrottleFirstMain.class, "requested");
+		static final AtomicLongFieldUpdater<SampleFirstMain> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(SampleFirstMain.class, "requested");
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<ThrottleFirstMain> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(ThrottleFirstMain.class, "wip");
+		static final AtomicIntegerFieldUpdater<SampleFirstMain> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(SampleFirstMain.class, "wip");
 
 		volatile Throwable error;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ThrottleFirstMain, Throwable> ERROR =
-				AtomicReferenceFieldUpdater.newUpdater(ThrottleFirstMain.class,
+		static final AtomicReferenceFieldUpdater<SampleFirstMain, Throwable> ERROR =
+				AtomicReferenceFieldUpdater.newUpdater(SampleFirstMain.class,
 						Throwable.class,
 						"error");
 
-		public ThrottleFirstMain(Subscriber<? super T> actual,
+		SampleFirstMain(Subscriber<? super T> actual,
 				Function<? super T, ? extends Publisher<U>> throttler) {
 			this.actual = actual;
 			this.throttler = throttler;
+		}
+
+		@Override
+		public Stream<? extends Scannable> inners() {
+			return Stream.of(Scannable.from(other));
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case CANCELLED:
+					return s == Operators.cancelledSubscription();
+				case PARENT:
+					return s;
+				case ERROR:
+					return error;
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+			}
+			return InnerOperator.super.scan(key);
 		}
 
 		@Override
@@ -154,7 +183,7 @@ final class FluxSampleFirst<T, U> extends FluxSource<T, T> {
 					return;
 				}
 
-				ThrottleFirstOther<U> other = new ThrottleFirstOther<>(this);
+				SampleFirstOther<U> other = new SampleFirstOther<>(this);
 
 				if (Operators.replace(OTHER, this, other)) {
 					p.subscribe(other);
@@ -210,13 +239,22 @@ final class FluxSampleFirst<T, U> extends FluxSource<T, T> {
 		}
 	}
 
-	static final class ThrottleFirstOther<U> extends Operators.DeferredSubscription
-			implements Subscriber<U> {
+	static final class SampleFirstOther<U> extends Operators.DeferredSubscription
+			implements InnerConsumer<U> {
 
-		final ThrottleFirstMain<?, U> main;
+		final SampleFirstMain<?, U> main;
 
-		public ThrottleFirstOther(ThrottleFirstMain<?, U> main) {
+		SampleFirstOther(SampleFirstMain<?, U> main) {
 			this.main = main;
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case ACTUAL:
+					return main;
+			}
+			return super.scan(key);
 		}
 
 		@Override

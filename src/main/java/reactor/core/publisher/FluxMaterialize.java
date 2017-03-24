@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,20 @@
 
 package reactor.core.publisher;
 
-import java.util.*;
+import java.util.AbstractQueue;
+import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BooleanSupplier;
 
-import org.reactivestreams.*;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 
 /**
  * @author Stephane Maldini
  */
 final class FluxMaterialize<T> extends FluxSource<T, Signal<T>> {
 
-	FluxMaterialize(Publisher<T> source) {
+	FluxMaterialize(Flux<T> source) {
 		super(source);
 	}
 
@@ -38,7 +40,7 @@ final class FluxMaterialize<T> extends FluxSource<T, Signal<T>> {
 
 	final static class MaterializeSubscriber<T>
 	extends AbstractQueue<Signal<T>>
-	implements Subscriber<T>, Subscription, BooleanSupplier {
+			implements InnerOperator<T, Signal<T>>, BooleanSupplier {
 	    
 	    final Subscriber<? super Signal<T>> actual;
 
@@ -60,14 +62,38 @@ final class FluxMaterialize<T> extends FluxSource<T, Signal<T>> {
 		}
 
 		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return s;
+				case TERMINATED:
+					return terminalSignal != null;
+				case ERROR:
+					return terminalSignal != null ? terminalSignal.getThrowable() : null;
+				case CANCELLED:
+					return getAsBoolean();
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+				case BUFFERED:
+					return size();
+			}
+			return InnerOperator.super.scan(key);
+		}
+
+		@Override
+		public Subscriber<? super Signal<T>> actual() {
+			return actual;
+		}
+
+		@Override
 		public void onSubscribe(Subscription s) {
 		    if (Operators.validate(this.s, s)) {
 		        this.s = s;
-		        
+
 		        actual.onSubscribe(this);
 		    }
 		}
-		
+
 		@Override
 		public void onNext(T ev) {
 			if(terminalSignal != null){
@@ -87,7 +113,7 @@ final class FluxMaterialize<T> extends FluxSource<T, Signal<T>> {
 			terminalSignal = Signal.error(ev);
             long p = produced;
             if (p != 0L) {
-                REQUESTED.addAndGet(this, -p);
+	            Operators.addAndGet(REQUESTED, this, -p);
             }
             DrainUtils.postComplete(actual, this, REQUESTED, this, this);
 		}
@@ -100,7 +126,7 @@ final class FluxMaterialize<T> extends FluxSource<T, Signal<T>> {
 			terminalSignal = Signal.complete();
             long p = produced;
             if (p != 0L) {
-                REQUESTED.addAndGet(this, -p);
+	            Operators.addAndGet(REQUESTED, this, -p);
             }
             DrainUtils.postComplete(actual, this, REQUESTED, this, this);
 		}

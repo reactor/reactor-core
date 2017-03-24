@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -74,9 +74,9 @@ public class SignalLoggerTests {
 	@Test
 	public void synchronousSubscriptionAsString() {
 		SignalLogger sl = new SignalLogger<>(Mono.empty(), null, null, false);
-		SynchronousSubscription<Object> s = new FluxPeekFuseable.PeekFuseableSubscriber<>(null, null);
+		SynchronousSubscription<Object> s = new FluxArray.ArraySubscription<>(null, null);
 
-		assertThat(sl.subscriptionAsString(s), is("[Synchronous Fuseable] FluxPeekFuseable.PeekFuseableSubscriber"));
+		assertThat(sl.subscriptionAsString(s), is("[Synchronous Fuseable] FluxArray.ArraySubscription"));
 	}
 	@Test
 	public void queueSubscriptionAsString() {

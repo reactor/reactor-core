@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.test.publisher.ParallelOperatorTest;
 import reactor.test.publisher.ReduceOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -55,12 +54,14 @@ public class MonoReduceSeedTest extends ReduceOperatorTest<String, String> {
 
 	@Test(expected = NullPointerException.class)
 	public void supplierNull() {
-		new MonoReduceSeed<>(Mono.never(), null, (a, b) -> b);
+		Flux.never()
+		    .reduceWith(null, (a, b) -> b);
 	}
 
 	@Test(expected = NullPointerException.class)
 	public void accumulatorNull() {
-		new MonoReduceSeed<>(Mono.never(), () -> 1, null);
+		Flux.never()
+		    .reduceWith(() -> 1, null);
 	}
 
 	@Test

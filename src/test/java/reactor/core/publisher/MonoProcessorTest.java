@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
 import reactor.test.StepVerifier;
 import reactor.util.function.Tuple2;
 
@@ -102,7 +103,7 @@ public class MonoProcessorTest {
 	public void MonoProcessorRejectedSubscribeCallbackNull() {
 		MonoProcessor<String> mp = MonoProcessor.create();
 
-		mp.subscribe(null, null);
+		mp.subscribe((Subscriber<String>)null);
 	}
 
 	@Test

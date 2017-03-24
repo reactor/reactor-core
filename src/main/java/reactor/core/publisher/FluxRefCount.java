@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,13 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
-import reactor.core.Producer;
-import reactor.core.Receiver;
+import reactor.core.Scannable;
+
 
 /**
  * Connects to the underlying Flux once the given number of Subscribers subscribed
@@ -34,17 +35,16 @@ import reactor.core.Receiver;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxRefCount<T> extends Flux<T>
-		implements Receiver, Producer, Fuseable {
+final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 
 	final ConnectableFlux<? extends T> source;
 	
 	final int n;
 
-	volatile State<T> connection;
+	volatile RefCountMonitor<T> connection;
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<FluxRefCount, State> CONNECTION =
-			AtomicReferenceFieldUpdater.newUpdater(FluxRefCount.class, State.class, "connection");
+	static final AtomicReferenceFieldUpdater<FluxRefCount, RefCountMonitor> CONNECTION =
+			AtomicReferenceFieldUpdater.newUpdater(FluxRefCount.class, RefCountMonitor.class, "connection");
 
 	FluxRefCount(ConnectableFlux<? extends T> source, int n) {
 		if (n <= 0) {
@@ -61,12 +61,12 @@ final class FluxRefCount<T> extends Flux<T>
 	
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		State<T> state;
+		RefCountMonitor<T> state;
 		
 		for (;;) {
 			state = connection;
 			if (state == null || state.isDisconnected()) {
-				State<T> u = new State<>(n, this);
+				RefCountMonitor<T> u = new RefCountMonitor<>(n, this);
 				
 				if (!CONNECTION.compareAndSet(this, state, u)) {
 					continue;
@@ -80,18 +80,18 @@ final class FluxRefCount<T> extends Flux<T>
 		}
 	}
 
-
 	@Override
-	public Object downstream() {
-		return connection;
+	public Object scan(Attr key) {
+		switch (key){
+			case PREFETCH:
+				return getPrefetch();
+			case PARENT:
+				return source;
+		}
+		return null;
 	}
 
-	@Override
-	public Object upstream() {
-		return source;
-	}
-
-	static final class State<T> implements Consumer<Disposable>, Receiver {
+	static final class RefCountMonitor<T> implements Consumer<Disposable> {
 		
 		final int n;
 		
@@ -99,23 +99,23 @@ final class FluxRefCount<T> extends Flux<T>
 		
 		volatile int subscribers;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<State> SUBSCRIBERS =
-				AtomicIntegerFieldUpdater.newUpdater(State.class, "subscribers");
+		static final AtomicIntegerFieldUpdater<RefCountMonitor> SUBSCRIBERS =
+				AtomicIntegerFieldUpdater.newUpdater(RefCountMonitor.class, "subscribers");
 		
 		volatile Disposable disconnect;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<State, Disposable> DISCONNECT =
-				AtomicReferenceFieldUpdater.newUpdater(State.class, Disposable.class, "disconnect");
+		static final AtomicReferenceFieldUpdater<RefCountMonitor, Disposable> DISCONNECT =
+				AtomicReferenceFieldUpdater.newUpdater(RefCountMonitor.class, Disposable.class, "disconnect");
 		
-		State(int n, FluxRefCount<? extends T> parent) {
+		RefCountMonitor(int n, FluxRefCount<? extends T> parent) {
 			this.n = n;
 			this.parent = parent;
 		}
 		
 		void subscribe(Subscriber<? super T> s) {
 			// FIXME think about what happens when subscribers come and go below the connection threshold concurrently
-			
-			InnerSubscriber<T> inner = new InnerSubscriber<>(s, this);
+
+			RefCountInner<T> inner = new RefCountInner<>(s, this);
 			parent.source.subscribe(inner);
 			
 			if (SUBSCRIBERS.incrementAndGet(this) == n) {
@@ -157,26 +157,28 @@ final class FluxRefCount<T> extends Flux<T>
 			}
 		}
 
-		@Override
-		public Object upstream() {
-			return parent;
-		}
-
-		static final class InnerSubscriber<T> implements Subscriber<T>,
-		                                                 QueueSubscription<T>,
-		                                                 Receiver,
-		                                                 Producer {
+		static final class RefCountInner<T>
+				implements QueueSubscription<T>, InnerOperator<T, T> {
 
 			final Subscriber<? super T> actual;
 			
-			final State<T> parent;
+			final RefCountMonitor<T> parent;
 			
 			Subscription s;
 			QueueSubscription<T> qs;
-			
-			InnerSubscriber(Subscriber<? super T> actual, State<T> parent) {
+
+			RefCountInner(Subscriber<? super T> actual, RefCountMonitor<T> parent) {
 				this.actual = actual;
 				this.parent = parent;
+			}
+
+			@Override
+			public Object scan(Attr key) {
+				switch(key){
+					case PARENT:
+						return s;
+				}
+				return InnerOperator.super.scan(key);
 			}
 
 			@Override
@@ -216,13 +218,8 @@ final class FluxRefCount<T> extends Flux<T>
 			}
 
 			@Override
-			public Object downstream() {
+			public Subscriber<? super T> actual() {
 				return actual;
-			}
-
-			@Override
-			public Object upstream() {
-				return s;
 			}
 
 			@Override

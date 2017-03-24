@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 
 	final Supplier<? extends Queue<T>> processorQueueSupplier;
 
-	FluxWindowStartEnd(Publisher<? extends T> source,
+	FluxWindowStartEnd(Flux<? extends T> source,
 			Publisher<U> start,
 			Function<? super U, ? extends Publisher<V>> end,
 			Supplier<? extends Queue<Object>> drainQueueSupplier,
@@ -87,7 +87,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 	}
 
 	static final class WindowStartEndMainSubscriber<T, U, V>
-			implements Subscriber<T>, Subscription, Disposable {
+			implements Subscriber<T>, InnerOperator<T, Flux<T>>, Disposable {
 
 		final Subscriber<? super Flux<T>> actual;
 
@@ -159,6 +159,20 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 			this.windows = new HashSet<>();
 			this.processorQueueSupplier = processorQueueSupplier;
 			this.open = 1;
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch(key){
+				case TERMINATED:
+					return mainDone;
+			}
+			return InnerOperator.super.scan(key);
+		}
+
+		@Override
+		public Subscriber<? super Flux<T>> actual() {
+			return actual;
 		}
 
 		@Override
@@ -260,6 +274,11 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 			if (OPEN.decrementAndGet(this) == 0) {
 				Operators.terminate(S, this);
 			}
+		}
+
+		@Override
+		public boolean isDisposed() {
+			return cancelled || mainDone;
 		}
 
 		boolean add(WindowStartEndEnder<T, V> ender) {

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
@@ -129,7 +130,7 @@ public class MonoDelayElementTest {
 
 		try {
 			StepVerifier.withVirtualTime(() ->
-					new MonoDelayElement<>(source, 2, TimeUnit.SECONDS, defaultSchedulerForDelay()))
+					new MonoDelayElement<>(source.mono(), 2, TimeUnit.SECONDS, defaultSchedulerForDelay()))
 			            .expectSubscription()
 			            .then(() -> source.next("foo").error(new IllegalStateException("boom")))
 			            .expectNoEvent(Duration.ofSeconds(2))
@@ -245,7 +246,7 @@ public class MonoDelayElementTest {
 		AtomicReference<Object> dropped = new AtomicReference<>();
 		Hooks.onNextDropped(dropped::set);
 
-		Flux<String> source = Flux.from(s -> {
+		Mono<String> source = MonoSource.wrap(s -> {
 			s.onSubscribe(Operators.emptySubscription());
 			s.onNext("foo");
 			s.onNext("bar");
@@ -270,7 +271,7 @@ public class MonoDelayElementTest {
 
 	@Test
 	public void guardedAgainstOnComplete() {
-		Flux<String> source = Flux.from(s -> {
+		Mono<String> source = MonoSource.wrap(s -> {
 			s.onSubscribe(Operators.emptySubscription());
 			s.onNext("foo");
 			s.onComplete();
@@ -291,7 +292,7 @@ public class MonoDelayElementTest {
 		AtomicReference<Throwable> dropped = new AtomicReference<>();
 		Hooks.onErrorDropped(dropped::set);
 
-		Flux<String> source = Flux.from(s -> {
+		Mono<String> source = MonoSource.wrap(s -> {
 			s.onSubscribe(Operators.emptySubscription());
 			s.onNext("foo");
 			s.onError(new IllegalStateException("boom"));
@@ -317,18 +318,18 @@ public class MonoDelayElementTest {
 	@Test
 	public void upstreamIsDelayedSource() {
 		AtomicReference<Object> upstream = new AtomicReference<>();
-		Flux<Integer> source = Flux.range(1, 5);
+		Mono<Integer> source = MonoSource.wrap(Flux.range(1, 5));
 
 
 		StepVerifier.withVirtualTime(() -> new MonoDelayElement<>(source, 2, TimeUnit.SECONDS,
 				defaultSchedulerForDelay())
 				.doOnSubscribe(s -> {
-					assertThat(s).isInstanceOf(MonoDelayElement.MonoDelayElementSubscriber.class);
+					assertThat(s).isInstanceOf(MonoDelayElement.DelayElementSubscriber.class);
 
-					MonoDelayElement.MonoDelayElementSubscriber delayedSubscriber =
-							(MonoDelayElement.MonoDelayElementSubscriber) s;
+					MonoDelayElement.DelayElementSubscriber delayedSubscriber =
+							(MonoDelayElement.DelayElementSubscriber) s;
 
-					upstream.set(delayedSubscriber.upstream());
+					upstream.set(delayedSubscriber.scan(Scannable.Attr.PARENT));
 				}))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofSeconds(2))

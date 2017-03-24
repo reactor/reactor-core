@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,14 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Loopback;
+import reactor.core.Scannable;
+
+
 
 /**
  * Repeats a source when a companion sequence signals an item in response to the main's
@@ -41,7 +44,7 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 
 	final Function<? super Flux<Long>, ? extends Publisher<?>> whenSourceFactory;
 
-	public FluxRepeatWhen(Publisher<? extends T> source,
+	FluxRepeatWhen(Publisher<? extends T> source,
 			Function<? super Flux<Long>, ? extends Publisher<?>> whenSourceFactory) {
 		super(source);
 		this.whenSourceFactory =
@@ -101,13 +104,26 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 
 		long produced;
 
-		public RepeatWhenMainSubscriber(Subscriber<? super T> actual,
+		RepeatWhenMainSubscriber(Subscriber<? super T> actual,
 				Subscriber<Long> signaller,
 				Publisher<? extends T> source) {
 			super(actual);
 			this.signaller = signaller;
 			this.source = source;
 			this.otherArbiter = new Operators.DeferredSubscription();
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			if (key == Attr.CANCELLED) {
+				return cancelled;
+			}
+			return super.scan(key);
+		}
+
+		@Override
+		public Stream<? extends Scannable> inners() {
+			return Stream.of(Scannable.from(signaller), otherArbiter);
 		}
 
 		@Override
@@ -124,7 +140,7 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 
 		@Override
 		public void onNext(T t) {
-			subscriber.onNext(t);
+			actual.onNext(t);
 
 			produced++;
 		}
@@ -133,7 +149,7 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 		public void onError(Throwable t) {
 			otherArbiter.cancel();
 
-			subscriber.onError(t);
+			actual.onError(t);
 		}
 
 		@Override
@@ -174,23 +190,34 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 			cancelled = true;
 			super.cancel();
 
-			subscriber.onError(e);
+			actual.onError(e);
 		}
 
 		void whenComplete() {
 			cancelled = true;
 			super.cancel();
 
-			subscriber.onComplete();
+			actual.onComplete();
 		}
 	}
 
 	static final class RepeatWhenOtherSubscriber extends Flux<Long>
-			implements Subscriber<Object>, Loopback {
+			implements InnerConsumer<Object> {
 
 		RepeatWhenMainSubscriber<?> main;
 
 		final DirectProcessor<Long> completionSignal = new DirectProcessor<>();
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key){
+				case PARENT:
+					return main.otherArbiter;
+				case ACTUAL:
+					return main;
+			}
+			return null;
+		}
 
 		@Override
 		public void onSubscribe(Subscription s) {
@@ -217,14 +244,5 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 			completionSignal.subscribe(s);
 		}
 
-		@Override
-		public Object connectedInput() {
-			return main;
-		}
-
-		@Override
-		public Object connectedOutput() {
-			return completionSignal;
-		}
 	}
 }

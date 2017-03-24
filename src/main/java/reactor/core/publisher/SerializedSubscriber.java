@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,6 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Producer;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
 
 /**
  * Subscriber that makes sure signals are delivered sequentially in case the onNext, onError or onComplete methods are
@@ -34,8 +31,7 @@ import reactor.core.Trackable;
  *
  * @param <T> the value type
  */
-final class SerializedSubscriber<T> implements Subscriber<T>, Subscription, Receiver, Producer,
-                                               Trackable {
+final class SerializedSubscriber<T> implements InnerOperator<T, T> {
 
 	final Subscriber<? super T> actual;
 
@@ -70,12 +66,12 @@ final class SerializedSubscriber<T> implements Subscriber<T>, Subscription, Rece
 
 	@Override
 	public void onNext(T t) {
-		if (isCancelled() || isTerminated()) {
+		if (cancelled || done) {
 			return;
 		}
 
 		synchronized (this) {
-			if (isCancelled() || isTerminated()) {
+			if (cancelled || done) {
 				return;
 			}
 
@@ -95,12 +91,12 @@ final class SerializedSubscriber<T> implements Subscriber<T>, Subscription, Rece
 
 	@Override
 	public void onError(Throwable t) {
-		if (isCancelled() || isTerminated()) {
+		if (cancelled || done) {
 			return;
 		}
 
 		synchronized (this) {
-			if (isCancelled() || isTerminated()) {
+			if (cancelled || done) {
 				return;
 			}
 
@@ -118,12 +114,12 @@ final class SerializedSubscriber<T> implements Subscriber<T>, Subscription, Rece
 
 	@Override
 	public void onComplete() {
-		if (isCancelled() || isTerminated()) {
+		if (cancelled || done) {
 			return;
 		}
 
 		synchronized (this) {
-			if (isCancelled() || isTerminated()) {
+			if (cancelled || done) {
 				return;
 			}
 
@@ -174,7 +170,7 @@ final class SerializedSubscriber<T> implements Subscriber<T>, Subscription, Rece
 	void serDrainLoop(Subscriber<? super T> actual) {
 		for (; ; ) {
 
-			if (isCancelled()) {
+			if (cancelled) {
 				return;
 			}
 
@@ -183,7 +179,7 @@ final class SerializedSubscriber<T> implements Subscriber<T>, Subscription, Rece
 			LinkedArrayNode<T> n;
 
 			synchronized (this) {
-				if (isCancelled()) {
+				if (cancelled) {
 					return;
 				}
 
@@ -194,8 +190,8 @@ final class SerializedSubscriber<T> implements Subscriber<T>, Subscription, Rece
 
 				missed = false;
 
-				d = isTerminated();
-				e = getError();
+				d = done;
+				e = error;
 				n = head;
 
 				head = null;
@@ -209,7 +205,7 @@ final class SerializedSubscriber<T> implements Subscriber<T>, Subscription, Rece
 
 				for (int i = 0; i < c; i++) {
 
-					if (isCancelled()) {
+					if (cancelled) {
 						return;
 					}
 
@@ -219,7 +215,7 @@ final class SerializedSubscriber<T> implements Subscriber<T>, Subscription, Rece
 				n = n.next;
 			}
 
-			if (isCancelled()) {
+			if (cancelled) {
 				return;
 			}
 
@@ -235,47 +231,35 @@ final class SerializedSubscriber<T> implements Subscriber<T>, Subscription, Rece
 	}
 
 	@Override
-	public Subscriber<? super T> downstream() {
+	public Subscriber<? super T> actual() {
 		return actual;
 	}
 
 	@Override
-	public boolean isCancelled() {
-		return cancelled;
+	public Object scan(Attr key) {
+		switch (key){
+			case PARENT:
+				return s;
+			case ERROR:
+				return error;
+			case BUFFERED:
+				return producerCapacity();
+			case CAPACITY:
+				return LinkedArrayNode.DEFAULT_CAPACITY;
+			case CANCELLED:
+				return cancelled;
+			case TERMINATED:
+				return done;
+		}
+		return InnerOperator.super.scan(key);
 	}
 
-	@Override
-	public boolean isTerminated() {
-		return done;
-	}
-
-	@Override
-	public Throwable getError() {
-		return error;
-	}
-
-	@Override
-	public boolean isStarted() {
-		return s != null || !cancelled;
-	}
-
-	@Override
-	public Subscription upstream() {
-		return s;
-	}
-
-	@Override
-	public long getPending() {
+	long producerCapacity() {
 		LinkedArrayNode<T> node = tail;
 		if(node != null){
 			return node.count;
 		}
 		return 0;
-	}
-
-	@Override
-	public long getCapacity() {
-		return LinkedArrayNode.DEFAULT_CAPACITY;
 	}
 
 	/**
@@ -293,7 +277,7 @@ final class SerializedSubscriber<T> implements Subscriber<T>, Subscription, Rece
 		LinkedArrayNode<T> next;
 
 		@SuppressWarnings("unchecked")
-		public LinkedArrayNode(T value) {
+		LinkedArrayNode(T value) {
 			array = (T[]) new Object[DEFAULT_CAPACITY];
 			array[0] = value;
 			count = 1;

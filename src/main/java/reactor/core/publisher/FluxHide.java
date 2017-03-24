@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,9 @@
  */
 package reactor.core.publisher;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
-import reactor.core.Producer;
-import reactor.core.Receiver;
 
 /**
  * Hides the identities of the upstream Publisher object and its Subscription
@@ -31,7 +28,7 @@ import reactor.core.Receiver;
  */
 final class FluxHide<T> extends FluxSource<T, T> {
 
-	FluxHide(Publisher<? extends T> source) {
+	FluxHide(Flux<? extends T> source) {
 		super(source);
 	}
 
@@ -40,7 +37,7 @@ final class FluxHide<T> extends FluxSource<T, T> {
 		source.subscribe(new HideSubscriber<>(s));
 	}
 
-	static final class HideSubscriber<T> implements Subscriber<T>, Subscription, Receiver {
+	static final class HideSubscriber<T> implements InnerOperator<T, T> {
 		final Subscriber<? super T> actual;
 
 		Subscription s;
@@ -50,8 +47,8 @@ final class FluxHide<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public Object upstream() {
-			return s;
+		public Subscriber<? super T> actual() {
+			return actual;
 		}
 
 		@Override
@@ -84,16 +81,25 @@ final class FluxHide<T> extends FluxSource<T, T> {
 		public void onComplete() {
 			actual.onComplete();
 		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return s;
+			}
+			return InnerOperator.super.scan(key);
+		}
 	}
 
 	static final class SuppressFuseableSubscriber<T>
-			implements Producer, Receiver, Subscriber<T>, Fuseable.QueueSubscription<T> {
+			implements InnerOperator<T, T>, Fuseable.QueueSubscription<T> {
 
 		final Subscriber<? super T> actual;
 
 		Subscription s;
 
-		public SuppressFuseableSubscriber(Subscriber<? super T> actual) {
+		SuppressFuseableSubscriber(Subscriber<? super T> actual) {
 			this.actual = actual;
 
 		}
@@ -105,6 +111,15 @@ final class FluxHide<T> extends FluxSource<T, T> {
 
 				actual.onSubscribe(this);
 			}
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return s;
+			}
+			return InnerOperator.super.scan(key);
 		}
 
 		@Override
@@ -158,13 +173,9 @@ final class FluxHide<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public Object downstream() {
+		public Subscriber<? super T> actual() {
 			return actual;
 		}
 
-		@Override
-		public Object upstream() {
-			return s;
-		}
 	}
 }

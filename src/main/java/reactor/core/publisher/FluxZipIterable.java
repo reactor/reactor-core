@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,8 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.function.BiFunction;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Producer;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
 
 /**
  * Pairwise combines elements of a publisher and an iterable sequence through a function.
@@ -42,7 +38,7 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 
 	final BiFunction<? super T, ? super U, ? extends R> zipper;
 
-	FluxZipIterable(Publisher<? extends T> source,
+	FluxZipIterable(Flux<? extends T> source,
 			Iterable<? extends U> other,
 			BiFunction<? super T, ? super U, ? extends R> zipper) {
 		super(source);
@@ -82,8 +78,7 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 	}
 
 	static final class ZipSubscriber<T, U, R>
-			implements Subscriber<T>, Producer, Receiver, Subscription,
-			           Trackable {
+			implements InnerOperator<T, R> {
 
 		final Subscriber<? super R> actual;
 
@@ -101,6 +96,17 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 			this.actual = actual;
 			this.it = it;
 			this.zipper = zipper;
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key){
+				case TERMINATED:
+					return done;
+				case PARENT:
+					return s;
+			}
+			return InnerOperator.super.scan(key);
 		}
 
 		@Override
@@ -181,23 +187,8 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 		}
 
 		@Override
-		public boolean isStarted() {
-			return s != null && !done;
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
-		public Object downstream() {
+		public Subscriber<? super R> actual() {
 			return actual;
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
 		}
 
 		@Override

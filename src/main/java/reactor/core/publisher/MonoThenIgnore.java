@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,17 @@
 
 package reactor.core.publisher;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.stream.Stream;
 
-import org.reactivestreams.*;
-
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
-import reactor.core.MultiReceiver;
+import reactor.core.Scannable;
+
 
 /**
  * Concatenates a several Mono sources with a final Mono source by
@@ -35,35 +35,23 @@ import reactor.core.MultiReceiver;
  *
  * @param <T> the final value type
  */
-final class MonoThenIgnore<T> extends Mono<T> implements Fuseable, MultiReceiver {
+final class MonoThenIgnore<T> extends Mono<T> implements Fuseable {
 
     final Mono<?>[] ignore;
     
     final Mono<T> last;
     
-    public MonoThenIgnore(Mono<?>[] ignore, Mono<T> last) {
+    MonoThenIgnore(Mono<?>[] ignore, Mono<T> last) {
         this.ignore = Objects.requireNonNull(ignore, "ignore");
         this.last = Objects.requireNonNull(last, "last");
     }
     
     @Override
     public void subscribe(Subscriber<? super T> s) {
-        MonoThenIgnoreMain<T> manager = new MonoThenIgnoreMain<>(s, ignore, last);
+        ThenIgnoreMain<T> manager = new ThenIgnoreMain<>(s, ignore, last);
         s.onSubscribe(manager);
         
         manager.drain();
-    }
-
-    @Override
-    public Iterator<?> upstreams() {
-        List<Mono<?>> r = Arrays.asList(ignore);
-        r.add(last);
-        return r.iterator();
-    }
-
-    @Override
-    public long upstreamCount() {
-        return ignore.length + 1;
     }
     
     /**
@@ -72,7 +60,7 @@ final class MonoThenIgnore<T> extends Mono<T> implements Fuseable, MultiReceiver
      * @param newLast the new last Mono instance
      * @return the new operator set up
      */
-    public <U> MonoThenIgnore<U> shift(Mono<U> newLast) {
+    <U> MonoThenIgnore<U> shift(Mono<U> newLast) {
         Objects.requireNonNull(newLast, "newLast");
         Mono<?>[] a = ignore;
         int n = a.length;
@@ -83,14 +71,14 @@ final class MonoThenIgnore<T> extends Mono<T> implements Fuseable, MultiReceiver
         return new MonoThenIgnore<>(b, newLast);
     }
     
-    static final class MonoThenIgnoreMain<T>
+    static final class ThenIgnoreMain<T>
             extends Operators.MonoSubscriber<T, T> {
-        final MonoThenIgnoreSubscriber ignore;
+        final ThenIgnoreInner ignore;
         
-        final MonoThenAcceptSubscriber<T> accept;
+        final ThenAcceptInner<T> accept;
         
         final Mono<?>[] ignoreMonos;
-        
+
         final Mono<T> lastMono;
 
         int index;
@@ -99,18 +87,25 @@ final class MonoThenIgnore<T> extends Mono<T> implements Fuseable, MultiReceiver
         
         volatile int wip;
         @SuppressWarnings("rawtypes")
-        static final AtomicIntegerFieldUpdater<MonoThenIgnoreMain> WIP =
-                AtomicIntegerFieldUpdater.newUpdater(MonoThenIgnoreMain.class, "wip");
+        static final AtomicIntegerFieldUpdater<ThenIgnoreMain> WIP =
+                AtomicIntegerFieldUpdater.newUpdater(ThenIgnoreMain.class, "wip");
         
-        public MonoThenIgnoreMain(Subscriber<? super T> subscriber, Mono<?>[] ignoreMonos, Mono<T> lastMono) {
+        ThenIgnoreMain(Subscriber<? super T> subscriber,
+		        Mono<?>[] ignoreMonos, Mono<T> lastMono) {
             super(subscriber);
             this.ignoreMonos = ignoreMonos;
             this.lastMono = lastMono;
-            this.ignore = new MonoThenIgnoreSubscriber(this);
-            this.accept = new MonoThenAcceptSubscriber<>(this);
+            this.ignore = new ThenIgnoreInner(this);
+            this.accept = new ThenAcceptInner<>(this);
+
         }
 
-        @SuppressWarnings("unchecked")
+	    @Override
+	    public Stream<? extends Scannable> inners() {
+		    return Stream.of(ignore, accept);
+	    }
+
+	    @SuppressWarnings("unchecked")
         void drain() {
             if (WIP.getAndIncrement(this) != 0) {
                 return;
@@ -188,16 +183,29 @@ final class MonoThenIgnore<T> extends Mono<T> implements Fuseable, MultiReceiver
         }
     }
     
-    static final class MonoThenIgnoreSubscriber implements Subscriber<Object> {
-        final MonoThenIgnoreMain<?> parent;
+    static final class ThenIgnoreInner implements InnerConsumer<Object> {
+        final ThenIgnoreMain<?> parent;
         
         volatile Subscription s;
-        static final AtomicReferenceFieldUpdater<MonoThenIgnoreSubscriber, Subscription> S =
-                AtomicReferenceFieldUpdater.newUpdater(MonoThenIgnoreSubscriber.class, Subscription.class, "s");
+        static final AtomicReferenceFieldUpdater<ThenIgnoreInner, Subscription> S =
+                AtomicReferenceFieldUpdater.newUpdater(ThenIgnoreInner.class, Subscription.class, "s");
         
-        public MonoThenIgnoreSubscriber(MonoThenIgnoreMain<?> parent) {
+        ThenIgnoreInner(ThenIgnoreMain<?> parent) {
             this.parent = parent;
         }
+
+	    @Override
+	    public Object scan(Attr key) {
+		    switch (key){
+			    case PARENT:
+				    return s;
+			    case ACTUAL:
+				    return parent;
+			    case CANCELLED:
+				    return s == Operators.cancelledSubscription();
+		    }
+		    return null;
+	    }
         
         @Override
         public void onSubscribe(Subscription s) {
@@ -205,7 +213,7 @@ final class MonoThenIgnore<T> extends Mono<T> implements Fuseable, MultiReceiver
                 s.request(Long.MAX_VALUE);
             }
         }
-        
+
         @Override
         public void onNext(Object t) {
             // ignored
@@ -230,20 +238,35 @@ final class MonoThenIgnore<T> extends Mono<T> implements Fuseable, MultiReceiver
         }
     }
     
-    static final class MonoThenAcceptSubscriber<T> implements Subscriber<T> {
-        final MonoThenIgnoreMain<T> parent;
+    static final class ThenAcceptInner<T> implements InnerConsumer<T> {
+        final ThenIgnoreMain<T> parent;
         
         volatile Subscription s;
         @SuppressWarnings("rawtypes")
-        static final AtomicReferenceFieldUpdater<MonoThenAcceptSubscriber, Subscription> S =
-                AtomicReferenceFieldUpdater.newUpdater(MonoThenAcceptSubscriber.class, Subscription.class, "s");
+        static final AtomicReferenceFieldUpdater<ThenAcceptInner, Subscription> S =
+                AtomicReferenceFieldUpdater.newUpdater(ThenAcceptInner.class, Subscription.class, "s");
 
         boolean done;
         
-        public MonoThenAcceptSubscriber(MonoThenIgnoreMain<T> parent) {
+        ThenAcceptInner(ThenIgnoreMain<T> parent) {
             this.parent = parent;
         }
-        
+
+        @Override
+        public Object scan(Attr key) {
+            switch (key){
+                case PARENT:
+                    return s;
+                case ACTUAL:
+                    return parent;
+	            case TERMINATED:
+                    return done;
+	            case CANCELLED:
+	            	return s == Operators.cancelledSubscription();
+            }
+            return null;
+        }
+
         @Override
         public void onSubscribe(Subscription s) {
             if (Operators.setOnce(S, this, s)) {

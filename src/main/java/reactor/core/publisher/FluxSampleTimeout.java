@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +23,14 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
+
 
 /**
  * Emits the last value from upstream only if there were no newer values emitted
@@ -44,7 +47,7 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 
 	final Supplier<Queue<Object>> queueSupplier;
 
-	FluxSampleTimeout(Publisher<? extends T> source,
+	FluxSampleTimeout(Flux<? extends T> source,
 			Function<? super T, ? extends Publisher<U>> throttler,
 			Supplier<Queue<Object>> queueSupplier) {
 		super(source);
@@ -61,51 +64,58 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 
-		Queue<ThrottleTimeoutOther<T, U>> q = (Queue) queueSupplier.get();
+		Queue<SampleTimeoutOther<T, U>> q = (Queue) queueSupplier.get();
 
-		ThrottleTimeoutMain<T, U> main = new ThrottleTimeoutMain<>(s, throttler, q);
+		SampleTimeoutMain<T, U> main = new SampleTimeoutMain<>(s, throttler, q);
 
 		s.onSubscribe(main);
 
 		source.subscribe(main);
 	}
 
-	static final class ThrottleTimeoutMain<T, U> implements Subscriber<T>, Subscription {
+	static final class SampleTimeoutMain<T, U>
 
-		final Subscriber<? super T> actual;
+			implements InnerOperator<T, T>, InnerProducer<T> {
 
 		final Function<? super T, ? extends Publisher<U>> throttler;
 
-		final Queue<ThrottleTimeoutOther<T, U>> queue;
+		final Queue<SampleTimeoutOther<T, U>> queue;
+		final Subscriber<? super T>           actual;
 
 		volatile Subscription s;
+
+		@Override
+		public final Subscriber<? super T> actual() {
+			return actual;
+		}
+
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ThrottleTimeoutMain, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(ThrottleTimeoutMain.class,
+		static final AtomicReferenceFieldUpdater<SampleTimeoutMain, Subscription> S =
+				AtomicReferenceFieldUpdater.newUpdater(SampleTimeoutMain.class,
 						Subscription.class,
 						"s");
 
 		volatile Subscription other;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ThrottleTimeoutMain, Subscription>
-				OTHER = AtomicReferenceFieldUpdater.newUpdater(ThrottleTimeoutMain.class,
+		static final AtomicReferenceFieldUpdater<SampleTimeoutMain, Subscription>
+				OTHER = AtomicReferenceFieldUpdater.newUpdater(SampleTimeoutMain.class,
 				Subscription.class,
 				"other");
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<ThrottleTimeoutMain> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(ThrottleTimeoutMain.class, "requested");
+		static final AtomicLongFieldUpdater<SampleTimeoutMain> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(SampleTimeoutMain.class, "requested");
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<ThrottleTimeoutMain> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(ThrottleTimeoutMain.class, "wip");
+		static final AtomicIntegerFieldUpdater<SampleTimeoutMain> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(SampleTimeoutMain.class, "wip");
 
 		volatile Throwable error;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ThrottleTimeoutMain, Throwable> ERROR =
-				AtomicReferenceFieldUpdater.newUpdater(ThrottleTimeoutMain.class,
+		static final AtomicReferenceFieldUpdater<SampleTimeoutMain, Throwable> ERROR =
+				AtomicReferenceFieldUpdater.newUpdater(SampleTimeoutMain.class,
 						Throwable.class,
 						"error");
 
@@ -115,15 +125,39 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 
 		volatile long index;
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<ThrottleTimeoutMain> INDEX =
-				AtomicLongFieldUpdater.newUpdater(ThrottleTimeoutMain.class, "index");
+		static final AtomicLongFieldUpdater<SampleTimeoutMain> INDEX =
+				AtomicLongFieldUpdater.newUpdater(SampleTimeoutMain.class, "index");
 
-		public ThrottleTimeoutMain(Subscriber<? super T> actual,
+		SampleTimeoutMain(Subscriber<? super T> actual,
 				Function<? super T, ? extends Publisher<U>> throttler,
-				Queue<ThrottleTimeoutOther<T, U>> queue) {
+				Queue<SampleTimeoutOther<T, U>> queue) {
 			this.actual = actual;
 			this.throttler = throttler;
 			this.queue = queue;
+		}
+
+		@Override
+		public Stream<? extends Scannable> inners() {
+			return Stream.of(Scannable.from(other));
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key){
+				case TERMINATED:
+					return done;
+				case CANCELLED:
+					return cancelled;
+				case PARENT:
+					return s;
+				case ERROR:
+					return error;
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+				case BUFFERED:
+					return queue.size();
+			}
+			return InnerOperator.super.scan(key);
 		}
 
 		@Override
@@ -168,7 +202,7 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 				return;
 			}
 
-			ThrottleTimeoutOther<T, U> os = new ThrottleTimeoutOther<>(this, t, idx);
+			SampleTimeoutOther<T, U> os = new SampleTimeoutOther<>(this, t, idx);
 
 			if (Operators.replace(OTHER, this, os)) {
 				p.subscribe(os);
@@ -195,8 +229,8 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 		@Override
 		public void onComplete() {
 			Subscription o = other;
-			if (o instanceof ThrottleTimeoutOther) {
-				ThrottleTimeoutOther<?, ?> os = (ThrottleTimeoutOther<?, ?>) o;
+			if (o instanceof FluxSampleTimeout.SampleTimeoutOther) {
+				SampleTimeoutOther<?, ?> os = (SampleTimeoutOther<?, ?>) o;
 				os.cancel();
 				os.onComplete();
 			}
@@ -204,7 +238,7 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 			drain();
 		}
 
-		void otherNext(ThrottleTimeoutOther<T, U> other) {
+		void otherNext(SampleTimeoutOther<T, U> other) {
 			queue.offer(other);
 			drain();
 		}
@@ -226,7 +260,7 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 			}
 
 			final Subscriber<? super T> a = actual;
-			final Queue<ThrottleTimeoutOther<T, U>> q = queue;
+			final Queue<SampleTimeoutOther<T, U>> q = queue;
 
 			int missed = 1;
 
@@ -235,7 +269,7 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 				for (; ; ) {
 					boolean d = done;
 
-					ThrottleTimeoutOther<T, U> o = q.poll();
+					SampleTimeoutOther<T, U> o = q.poll();
 
 					boolean empty = o == null;
 
@@ -303,10 +337,10 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 		}
 	}
 
-	static final class ThrottleTimeoutOther<T, U> extends Operators.DeferredSubscription
-			implements Subscriber<U> {
+	static final class SampleTimeoutOther<T, U> extends Operators.DeferredSubscription
+			implements InnerConsumer<U> {
 
-		final ThrottleTimeoutMain<T, U> main;
+		final SampleTimeoutMain<T, U> main;
 
 		final T value;
 
@@ -314,13 +348,24 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 
 		volatile int once;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<ThrottleTimeoutOther> ONCE =
-				AtomicIntegerFieldUpdater.newUpdater(ThrottleTimeoutOther.class, "once");
+		static final AtomicIntegerFieldUpdater<SampleTimeoutOther> ONCE =
+				AtomicIntegerFieldUpdater.newUpdater(SampleTimeoutOther.class, "once");
 
-		public ThrottleTimeoutOther(ThrottleTimeoutMain<T, U> main, T value, long index) {
+		SampleTimeoutOther(SampleTimeoutMain<T, U> main, T value, long index) {
 			this.main = main;
 			this.value = value;
 			this.index = index;
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key){
+				case TERMINATED:
+					return once == 1;
+				case ACTUAL:
+					return main;
+			}
+			return super.scan(key);
 		}
 
 		@Override

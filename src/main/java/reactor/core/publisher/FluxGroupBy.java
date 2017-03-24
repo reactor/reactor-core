@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,16 +25,15 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.core.MultiProducer;
-import reactor.core.Producer;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
+import reactor.core.Scannable;
+
+
 
 /**
  * Groups upstream items into their own Publisher sequence based on a key selector.
@@ -59,7 +57,7 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 
 	final int prefetch;
 
-	FluxGroupBy(Publisher<? extends T> source,
+	FluxGroupBy(Flux<? extends T> source,
 			Function<? super T, ? extends K> keySelector,
 			Function<? super T, ? extends V> valueSelector,
 			Supplier<? extends Queue<GroupedFlux<K, V>>> mainQueueSupplier,
@@ -94,14 +92,12 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 	}
 
 	static final class GroupByMain<T, K, V>
-			implements Subscriber<T>, QueueSubscription<GroupedFlux<K, V>>, MultiProducer,
-			           Producer, Trackable, Receiver {
+			implements QueueSubscription<GroupedFlux<K, V>>,
+			           InnerOperator<T, GroupedFlux<K, V>>, InnerProducer<GroupedFlux<K,V>> {
 
 		final Function<? super T, ? extends K> keySelector;
 
 		final Function<? super T, ? extends V> valueSelector;
-
-		final Subscriber<? super GroupedFlux<K, V>> actual;
 
 		final Queue<GroupedFlux<K, V>> queue;
 
@@ -111,7 +107,15 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 
 		final ConcurrentMap<K, UnicastGroupedFlux<K, V>> groupMap;
 
+		final Subscriber<? super GroupedFlux<K, V>>      actual;
+
 		volatile int wip;
+
+		@Override
+		public final Subscriber<? super GroupedFlux<K, V>> actual() {
+			return actual;
+		}
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<GroupByMain> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(GroupByMain.class, "wip");
@@ -239,59 +243,29 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 		}
 
 		@Override
-		public long getCapacity() {
-			return prefetch;
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return s;
+				case TERMINATED:
+					return done;
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+				case PREFETCH:
+					return prefetch;
+				case BUFFERED:
+					return queue.size();
+				case CANCELLED:
+					return cancelled == 1;
+				case ERROR:
+					return error;
+			}
+			return InnerOperator.super.scan(key);
 		}
 
 		@Override
-		public long getPending() {
-			return queue.size();
-		}
-
-		@Override
-		public boolean isStarted() {
-			return s != null && cancelled != 1 && !done;
-		}
-
-		@Override
-		public boolean isCancelled() {
-			return cancelled == 1;
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
-		public Throwable getError() {
-			return error;
-		}
-
-		@Override
-		public Iterator<?> downstreams() {
-			return groupMap.values()
-			               .iterator();
-		}
-
-		@Override
-		public long downstreamCount() {
-			return GROUP_COUNT.get(this);
-		}
-
-		@Override
-		public Object downstream() {
-			return actual;
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
-		}
-
-		@Override
-		public long requestedFromDownstream() {
-			return requested;
+		public Stream<? extends Scannable> inners() {
+			return groupMap.values().stream();
 		}
 
 		void signalAsyncError() {
@@ -497,7 +471,7 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 	}
 
 	static final class UnicastGroupedFlux<K, V> extends GroupedFlux<K, V>
-			implements Fuseable, QueueSubscription<V>, Producer, Receiver, Trackable {
+			implements Fuseable, QueueSubscription<V>, InnerProducer<V> {
 
 		final K key;
 
@@ -806,59 +780,27 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 		}
 
 		@Override
-		public boolean isCancelled() {
-			return cancelled;
+		public Object scan(Attr key) {
+			switch (key){
+				case PARENT:
+					return parent;
+				case TERMINATED:
+					return done;
+				case CANCELLED:
+					return cancelled;
+				case ERROR:
+					return error;
+				case BUFFERED:
+					return queue != null ? queue.size() : 0;
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+			}
+			return InnerProducer.super.scan(key);
 		}
 
 		@Override
-		public boolean isStarted() {
-			return once == 1 && !done && !cancelled;
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
-		public Throwable getError() {
-			return error;
-		}
-
-		@Override
-		public Object downstream() {
+		public Subscriber<? super V> actual() {
 			return actual;
-		}
-
-		@Override
-		public Object upstream() {
-			return parent;
-		}
-
-		@Override
-		public long getCapacity() {
-			GroupByMain<?, ?, ?> parent = this.parent;
-			return parent != null ? parent.prefetch : -1L;
-		}
-
-		@Override
-		public long getPending() {
-			return queue == null || done ? -1L : queue.size();
-		}
-
-		@Override
-		public long requestedFromDownstream() {
-			return requested;
-		}
-
-		@Override
-		public long expectedFromUpstream() {
-			return produced;
-		}
-
-		@Override
-		public long limit() {
-			return limit;
 		}
 
 	}

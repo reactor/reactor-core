@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
@@ -263,11 +264,8 @@ public class EmitterProcessorTest {
 
 		tp.onNext(1);
 		assertThat(tp.getPending()).isEqualTo(0);
-		assertThat(tp.limit()).isEqualTo(Math.max(1, QueueSupplier.SMALL_BUFFER_SIZE / 2));
-		assertThat(tp.getCapacity()).isEqualTo(QueueSupplier.SMALL_BUFFER_SIZE);
-		assertThat(tp.expectedFromUpstream()).isEqualTo(QueueSupplier.SMALL_BUFFER_SIZE);
+		assertThat(tp.getBufferSize()).isEqualTo(QueueSupplier.SMALL_BUFFER_SIZE);
 		assertThat(tp.isCancelled()).isFalse();
-		assertThat(tp.isStarted()).isFalse();
 		assertThat(tp.downstreams()).isEmpty();
 
 		Disposable d1 = tp.subscribe();
@@ -304,9 +302,8 @@ public class EmitterProcessorTest {
 		});
 		s.accept(5);
 		s.accept(6);
-		assertThat(tp.expectedFromUpstream()).isEqualTo(QueueSupplier.SMALL_BUFFER_SIZE - 5);
 		s.accept(7);
-		assertThat(tp.getPending()).isEqualTo(3);
+		assertThat(tp.scan(Scannable.Attr.BUFFERED)).isEqualTo(3);
 		assertThat(tp.isTerminated()).isFalse();
 		s.complete();
 		assertThat(tp.isTerminated()).isFalse();

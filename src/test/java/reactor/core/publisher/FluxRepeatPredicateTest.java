@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,6 @@ import org.junit.Test;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxRepeatPredicateTest {
-
-	@Test(expected = NullPointerException.class)
-	public void sourceNull() {
-		new FluxRepeatPredicate<>(null, () -> true);
-	}
 
 	@Test(expected = NullPointerException.class)
 	public void predicateNull() {

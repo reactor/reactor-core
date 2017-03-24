@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,18 +19,15 @@ package reactor.core.publisher;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
 abstract class BlockingSingleSubscriber<T> extends CountDownLatch
-		implements Subscriber<T>, Disposable, Trackable, Receiver {
+		implements InnerConsumer<T>, Disposable {
 
 	T         value;
 	Throwable error;
@@ -126,33 +123,27 @@ abstract class BlockingSingleSubscriber<T> extends CountDownLatch
 		return value;
 	}
 
+
+
 	@Override
-	public Object upstream() {
-		return s;
+	public Object scan(Attr key) {
+		switch (key){
+			case TERMINATED:
+				return getCount() == 0;
+			case PARENT:
+				return  s;
+			case CANCELLED:
+				return cancelled;
+			case ERROR:
+				return error;
+			case PREFETCH:
+				return Integer.MAX_VALUE;
+		}
+		return null;
 	}
 
 	@Override
-	public boolean isTerminated() {
-		return getCount() == 0;
-	}
-
-	@Override
-	public boolean isCancelled() {
-		return cancelled;
-	}
-
-	@Override
-	public boolean isStarted() {
-		return s != null;
-	}
-
-	@Override
-	public Throwable getError() {
-		return error;
-	}
-
-	@Override
-	public long getPending() {
-		return getCount();
+	public boolean isDisposed() {
+		return cancelled || getCount() == 0;
 	}
 }

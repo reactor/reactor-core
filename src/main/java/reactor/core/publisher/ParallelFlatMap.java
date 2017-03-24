@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,12 @@
 package reactor.core.publisher;
 
 import java.util.Queue;
-import java.util.function.*;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
-import org.reactivestreams.*;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import reactor.core.Scannable;
 
 /**
  * Flattens the generated Publishers on each rail.
@@ -26,7 +29,7 @@ import org.reactivestreams.*;
  * @param <T> the input value type
  * @param <R> the output value type
  */
-final class ParallelFlatMap<T, R> extends ParallelFlux<R> {
+final class ParallelFlatMap<T, R> extends ParallelFlux<R> implements Scannable{
 
 	final ParallelFlux<T> source;
 	
@@ -42,7 +45,7 @@ final class ParallelFlatMap<T, R> extends ParallelFlux<R> {
 	
 	final Supplier<? extends Queue<R>> innerQueueSupplier;
 
-	public ParallelFlatMap(
+	ParallelFlatMap(
 			ParallelFlux<T> source,
 			Function<? super T, ? extends Publisher<? extends R>> mapper,
 			boolean delayError, 
@@ -55,6 +58,17 @@ final class ParallelFlatMap<T, R> extends ParallelFlux<R> {
 		this.mainQueueSupplier = mainQueueSupplier;
 		this.prefetch = prefetch;
 		this.innerQueueSupplier = innerQueueSupplier;
+	}
+
+	@Override
+	public Object scan(Attr key) {
+		switch (key){
+			case PARENT:
+				return source;
+			case PREFETCH:
+				return getPrefetch();
+		}
+		return null;
 	}
 
 	@Override

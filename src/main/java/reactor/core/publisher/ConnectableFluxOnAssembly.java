@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,11 @@ package reactor.core.publisher;
 
 import java.util.function.Consumer;
 
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
 
 /**
@@ -41,7 +43,8 @@ import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
 final class ConnectableFluxOnAssembly<T> extends ConnectableFlux<T> implements
-		Fuseable, AssemblyOp {
+                                                                    Fuseable, AssemblyOp,
+                                                                    Scannable {
 
 	final ConnectableFlux<T> source;
 
@@ -63,7 +66,18 @@ final class ConnectableFluxOnAssembly<T> extends ConnectableFlux<T> implements
 	}
 
 	@Override
-	public Object upstream() {
+	public Publisher<? extends T> upstream() {
 		return source;
+	}
+
+	@Override
+	public Object scan(Attr key) {
+		switch (key){
+			case PREFETCH:
+				return getPrefetch();
+			case PARENT:
+				return source;
+		}
+		return null;
 	}
 }

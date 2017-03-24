@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,22 +16,17 @@
 
 package reactor.core.publisher;
 
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.reactivestreams.Processor;
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
-import reactor.core.MultiProducer;
-import reactor.core.Producer;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
+import reactor.core.Scannable;
 
 /**
  * Splits the source sequence into possibly overlapping publishers.
@@ -43,7 +38,7 @@ final class FluxWindowOnCancel<T> extends FluxSource<T, Flux<T>> {
 
 	final Supplier<? extends Queue<T>> processorQueueSupplier;
 
-	public FluxWindowOnCancel(Publisher<? extends T> source,
+	FluxWindowOnCancel(Flux<? extends T> source,
 			Supplier<? extends Queue<T>> processorQueueSupplier) {
 		super(source);
 		this.processorQueueSupplier =
@@ -56,8 +51,7 @@ final class FluxWindowOnCancel<T> extends FluxSource<T, Flux<T>> {
 	}
 
 	static final class WindowOnCancelSubscriber<T>
-			implements Subscriber<T>, Subscription, Disposable, Producer,
-			           MultiProducer, Receiver, Trackable {
+			implements Disposable, InnerOperator<T, Flux<T>> {
 
 		final Subscriber<? super Flux<T>> actual;
 
@@ -79,7 +73,7 @@ final class FluxWindowOnCancel<T> extends FluxSource<T, Flux<T>> {
 
 		boolean done;
 
-		public WindowOnCancelSubscriber(Subscriber<? super Flux<T>> actual,
+		WindowOnCancelSubscriber(Subscriber<? super Flux<T>> actual,
 				Supplier<? extends Queue<T>> processorQueueSupplier) {
 			this.actual = actual;
 			this.processorQueueSupplier = processorQueueSupplier;
@@ -166,34 +160,31 @@ final class FluxWindowOnCancel<T> extends FluxSource<T, Flux<T>> {
 		}
 
 		@Override
-		public Object downstream() {
+		public boolean isDisposed() {
+			return once == 1 || done;
+		}
+
+		@Override
+		public Subscriber<? super Flux<T>> actual() {
 			return actual;
 		}
 
 		@Override
-		public boolean isStarted() {
-			return s != null && !done;
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return s;
+				case CANCELLED:
+					return once == 1;
+				case TERMINATED:
+					return done;
+			}
+			return InnerOperator.super.scan(key);
 		}
 
 		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
-		}
-
-		@Override
-		public Iterator<?> downstreams() {
-			return Collections.singletonList(window)
-			                  .iterator();
-		}
-
-		@Override
-		public long downstreamCount() {
-			return window != null ? 1L : 0L;
+		public Stream<? extends Scannable> inners() {
+			return Stream.of(window);
 		}
 
 	}

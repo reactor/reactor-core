@@ -21,6 +21,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 
+import org.reactivestreams.Subscription;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.ParallelFlux;
@@ -264,5 +265,11 @@ public abstract class ParallelOperatorTest<I, O>
 	@Override
 	protected ParallelFlux<O> conditional(ParallelFlux<O> output) {
 		return output.filter(t -> true);
+	}
+
+	@Override
+	protected ParallelFlux<O> doOnSubscribe(ParallelFlux<O> output,
+			Consumer<? super Subscription> doOnSubscribe) {
+		return output.doOnSubscribe(doOnSubscribe);
 	}
 }

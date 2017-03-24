@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import java.time.Duration;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
-import reactor.core.Trackable;
+
 
 /**
  * Represents an empty publisher which only calls onSubscribe and onComplete.
@@ -32,11 +32,11 @@ import reactor.core.Trackable;
  */
 final class MonoEmpty 
 extends Mono<Object>
-		implements Fuseable.ScalarCallable<Object>, Trackable {
+		implements Fuseable.ScalarCallable<Object> {
 
-	private static final Publisher<Object> INSTANCE = new MonoEmpty();
+	static final Publisher<Object> INSTANCE = new MonoEmpty();
 
-	private MonoEmpty() {
+	MonoEmpty() {
 		// deliberately no op
 	}
 
@@ -52,7 +52,7 @@ extends Mono<Object>
 	 * @return a properly parametrized instance of this empty Publisher
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> Mono<T> instance() {
+	static <T> Mono<T> instance() {
 		return (Mono<T>) INSTANCE;
 	}
 
@@ -69,10 +69,5 @@ extends Mono<Object>
 	@Override
 	public Object block() {
 		return null;
-	}
-
-	@Override
-	public boolean isTerminated() {
-		return true;
 	}
 }

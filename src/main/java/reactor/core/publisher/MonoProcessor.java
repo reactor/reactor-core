@@ -17,11 +17,9 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.LongSupplier;
@@ -35,6 +33,7 @@ import reactor.core.Exceptions;
 import reactor.core.MultiProducer;
 import reactor.core.Producer;
 import reactor.core.Receiver;
+import reactor.core.Scannable;
 import reactor.core.Trackable;
 import reactor.util.concurrent.WaitStrategy;
 
@@ -52,8 +51,8 @@ import reactor.util.concurrent.WaitStrategy;
  * @author Stephane Maldini
  */
 public final class MonoProcessor<O> extends Mono<O>
-		implements Processor<O, O>, Disposable, Subscription, Trackable, Receiver,
-		           Producer, LongSupplier, MultiProducer {
+		implements Processor<O, O>, Disposable, Subscription, Producer, Receiver,
+		           LongSupplier, Trackable, MultiProducer {
 
 	/**
 	 * Create a {@link MonoProcessor} that will eagerly request 1 on {@link #onSubscribe(Subscription)}, cache and emit
@@ -81,7 +80,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	}
 
 	final Publisher<? extends O> source;
-	final WaitStrategy waitStrategy;
+	final WaitStrategy           waitStrategy;
 
 	Subscription subscription;
 	volatile Processor<O, O> processor;
@@ -239,7 +238,7 @@ public final class MonoProcessor<O> extends Mono<O>
 
 	@Override
 	public boolean isDisposed() {
-		return isTerminated();
+		return isTerminated() || isCancelled();
 	}
 
 	@Override
@@ -441,28 +440,19 @@ public final class MonoProcessor<O> extends Mono<O>
 		}
 	}
 
-	static final MultiProducer EMPTY_MP = Collections::emptyIterator;
-
-	final MultiProducer asMultiProducer(){
-		if(processor instanceof MultiProducer){
-			return (MultiProducer)processor;
-		}
-		return EMPTY_MP;
-	}
-
 	@Override
 	public Iterator<?> downstreams() {
-		return asMultiProducer().downstreams();
+		return Scannable.from(processor).inners().iterator();
 	}
 
 	@Override
 	public long downstreamCount() {
-		return asMultiProducer().downstreamCount();
+		return Scannable.from(processor).inners().count();
 	}
 
 	@Override
 	public boolean hasDownstreams() {
-		return asMultiProducer().hasDownstreams();
+		return downstreamCount() != 0;
 	}
 
 	@SuppressWarnings("unchecked")

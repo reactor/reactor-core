@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import java.util.stream.Stream;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
-import reactor.core.Receiver;
+
 
 /**
  * Emits the contents of a Stream source.
@@ -31,17 +31,12 @@ import reactor.core.Receiver;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxStream<T> extends Flux<T> implements Receiver, Fuseable {
+final class FluxStream<T> extends Flux<T> implements Fuseable {
 
 	final Stream<? extends T> stream;
 
 	FluxStream(Stream<? extends T> iterable) {
 		this.stream = Objects.requireNonNull(iterable, "stream");
-	}
-
-	@Override
-	public Object upstream() {
-		return stream;
 	}
 
 	@Override

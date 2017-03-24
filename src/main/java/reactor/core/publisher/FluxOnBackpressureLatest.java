@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,8 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Producer;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
 
 /**
  * Runs the source in unbounded mode and emits only the latest value
@@ -35,7 +31,7 @@ import reactor.core.Trackable;
  */
 final class FluxOnBackpressureLatest<T> extends FluxSource<T, T> {
 
-	public FluxOnBackpressureLatest(Publisher<? extends T> source) {
+	FluxOnBackpressureLatest(Flux<? extends T> source) {
 		super(source);
 	}
 
@@ -50,7 +46,7 @@ final class FluxOnBackpressureLatest<T> extends FluxSource<T, T> {
 	}
 
 	static final class LatestSubscriber<T>
-			implements Subscriber<T>, Subscription, Trackable, Producer, Receiver {
+			implements InnerOperator<T, T> {
 
 		final Subscriber<? super T> actual;
 
@@ -76,7 +72,7 @@ final class FluxOnBackpressureLatest<T> extends FluxSource<T, T> {
 		static final AtomicReferenceFieldUpdater<LatestSubscriber, Object> VALUE =
 		  AtomicReferenceFieldUpdater.newUpdater(LatestSubscriber.class, Object.class, "value");
 
-		public LatestSubscriber(Subscriber<? super T> actual) {
+		LatestSubscriber(Subscriber<? super T> actual) {
 			this.actual = actual;
 		}
 
@@ -209,38 +205,30 @@ final class FluxOnBackpressureLatest<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public boolean isCancelled() {
-			return cancelled;
-		}
-
-		@Override
-		public boolean isStarted() {
-			return s != null && !cancelled && !done;
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
-		public Object downstream() {
+		public Subscriber<? super T> actual() {
 			return actual;
 		}
 
 		@Override
-		public long requestedFromDownstream() {
-			return requested;
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return s;
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+				case TERMINATED:
+					return done;
+				case CANCELLED:
+					return cancelled;
+				case BUFFERED:
+					return value != null;
+				case ERROR:
+					return error;
+				case PREFETCH:
+					return Integer.MAX_VALUE;
+			}
+			return InnerOperator.super.scan(key);
 		}
 
-		@Override
-		public Throwable getError() {
-			return error;
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
-		}
 	}
 }

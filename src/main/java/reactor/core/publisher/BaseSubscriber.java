@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -61,6 +61,16 @@ public abstract class BaseSubscriber<T> implements Subscriber<T>, Subscription, 
 		return subscription != null;
 	}
 
+	/**
+	 * @deprecated use {@link #isDisposed()}
+	 * @return true if disposed
+	 */
+	@Override
+	@Deprecated
+	public boolean isTerminated() {
+		return isDisposed();
+	}
+
 	@Override
 	public boolean isDisposed() {
 		return subscription == Operators.cancelledSubscription();
@@ -77,22 +87,28 @@ public abstract class BaseSubscriber<T> implements Subscriber<T>, Subscription, 
 
 	/**
 	 * Hook for further processing of onSubscribe's Subscription. Implement this method
-	 * to call {@link #request(long)} or {@link #requestUnbounded()} as an initial request.
-	 * Values other than the unbounded {@code Long.MAX_VALUE} imply that you'll also call
-	 * request in {@link #hookOnNext(Object)}.
+	 * to call {@link #request(long)} as an initial request. Values other than the
+	 * unbounded {@code Long.MAX_VALUE} imply that you'll also call request in
+	 * {@link #hookOnNext(Object)}.
+	 * <p> Defaults to request unbounded Long.MAX_VALUE as in {@link #requestUnbounded()}
 	 *
 	 * @param subscription the subscription to optionally process
 	 */
-	protected abstract void hookOnSubscribe(Subscription subscription);
+	protected void hookOnSubscribe(Subscription subscription){
+		subscription.request(Long.MAX_VALUE);
+	}
 
 	/**
 	 * Hook for processing of onNext values. You can call {@link #request(long)} here
 	 * to further request data from the source {@link org.reactivestreams.Publisher} if
 	 * the {@link #hookOnSubscribe(Subscription) initial request} wasn't unbounded.
+	 * <p>Defaults to doing nothing.
 	 *
 	 * @param value the emitted value to process
 	 */
-	protected abstract void hookOnNext(T value);
+	protected void hookOnNext(T value){
+		// NO-OP
+	}
 
 	/**
 	 * Optional hook for completion processing. Defaults to doing nothing.
@@ -247,11 +263,6 @@ public abstract class BaseSubscriber<T> implements Subscriber<T>, Subscription, 
 		catch (Throwable finallyFailure) {
 			Operators.onErrorDropped(finallyFailure);
 		}
-	}
-
-	@Override
-	public boolean isTerminated() {
-		return null != subscription && subscription instanceof Trackable && ((Trackable) subscription).isTerminated();
 	}
 
 	@Override

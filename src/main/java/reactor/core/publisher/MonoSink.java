@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import reactor.core.Cancellation;
 import reactor.core.Disposable;
+
 
 /**
  * Wrapper API around an actual downstream Subscriber
@@ -70,10 +71,10 @@ public interface MonoSink<T> {
 
     /**
      * Sets a cancellation callback triggered by
-     * downstreams cancel().
+     * downstream cancel().
      * <p>Calling this method more than once has no effect.
      * @param c the cancellation callback
      */
 	@Deprecated
-	void setCancellation(Cancellation c);
+	MonoSink<T> setCancellation(Cancellation c);
 }

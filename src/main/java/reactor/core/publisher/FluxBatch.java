@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Cancellation;
@@ -36,7 +35,7 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 	final long           timespan;
 	final Scheduler timer;
 
-	public FluxBatch(Publisher<T> source,
+	FluxBatch(Flux<T> source,
 			int batchSize,
 			long timespan,
 			final Scheduler timer) {
@@ -57,19 +56,10 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 		return Operators.serialize(actual);
 	}
 
-	static abstract class BatchAction<T, V> extends Operators.SubscriberAdapter<T, V> {
+	static abstract class BatchSubscriber<T, V> implements InnerOperator<T, V> {
 
-		@SuppressWarnings("ThrowableInstanceNeverThrown")
-		static final Exception FAILED_SATE             =
-				new RuntimeException("Failed Subscriber") {
-					/** */
-					private static final long serialVersionUID = 7503907754069414227L;
+		final Subscriber<? super V> actual;
 
-					@Override
-					public synchronized Throwable fillInStackTrace() {
-						return null;
-					}
-				};
 		final static int NOT_TERMINATED          = 0;
 		final static int TERMINATED_WITH_SUCCESS = 1;
 		final static int TERMINATED_WITH_ERROR   = 2;
@@ -81,38 +71,39 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 		final Scheduler.Worker           timer;
 		final Runnable                   flushTask;
 
-		volatile int                                    terminated =
+		protected Subscription subscription;
+
+		volatile int                                                terminated =
 				NOT_TERMINATED;
 		@SuppressWarnings("rawtypes")
-		static final     AtomicIntegerFieldUpdater<BatchAction> TERMINATED =
-				AtomicIntegerFieldUpdater.newUpdater(BatchAction.class, "terminated");
+		static final     AtomicIntegerFieldUpdater<BatchSubscriber> TERMINATED =
+				AtomicIntegerFieldUpdater.newUpdater(BatchSubscriber.class, "terminated");
 
 
 		volatile long requested;
 
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<BatchAction> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(BatchAction.class, "requested");
+		static final AtomicLongFieldUpdater<BatchSubscriber> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(BatchSubscriber.class, "requested");
 
 		volatile int index = 0;
 
-		static final     AtomicIntegerFieldUpdater<BatchAction> INDEX =
-				AtomicIntegerFieldUpdater.newUpdater(BatchAction.class, "index");
+		static final     AtomicIntegerFieldUpdater<BatchSubscriber> INDEX =
+				AtomicIntegerFieldUpdater.newUpdater(BatchSubscriber.class, "index");
 
 		volatile Cancellation timespanRegistration;
 
-		public BatchAction(Subscriber<? super V> actual,
+		BatchSubscriber(Subscriber<? super V> actual,
 				int batchSize,
 				boolean first,
 				long timespan,
 				final Scheduler.Worker timer) {
 
-			super(actual);
-
+			this.actual = actual;
 			this.timespan = timespan;
 			this.timer = timer;
 			this.flushTask = () -> {
-				if (!isTerminated()) {
+				if (terminated == NOT_TERMINATED) {
 					int index;
 					for(;;){
 						index = this.index;
@@ -131,16 +122,24 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 			this.batchSize = batchSize;
 		}
 
-		void doRequested(long before, long n) {
-			if (isTerminated()) {
-				return;
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return subscription;
+				case CANCELLED:
+					return terminated == TERMINATED_WITH_CANCEL;
+				case TERMINATED:
+					return terminated == TERMINATED_WITH_ERROR || terminated == TERMINATED_WITH_SUCCESS;
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+				case CAPACITY:
+					return batchSize;
+				case BUFFERED:
+					return batchSize - index;
 			}
-			if (batchSize == Integer.MAX_VALUE || n == Long.MAX_VALUE) {
-				requestMore(Long.MAX_VALUE);
-			}
-			else {
-				requestMore(Operators.multiplyCap(n, batchSize));
-			}
+			return InnerOperator.super.scan(key);
 		}
 
 		void nextCallback(T event) {
@@ -153,7 +152,7 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 		}
 
 		@Override
-		protected void doNext(final T value) {
+		public void onNext(final T value) {
 			int index;
 			for(;;){
 				index = this.index + 1;
@@ -190,45 +189,37 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 				flushCallback(null);
 			}
 			finally {
-				subscriber.onComplete();
+				actual.onComplete();
 			}
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return terminated != NOT_TERMINATED;
 		}
 
 		/**
 		 * @return has this {@link Subscriber} terminated with success ?
 		 */
-		public final boolean isCompleted() {
+		final boolean isCompleted() {
 			return terminated == TERMINATED_WITH_SUCCESS;
 		}
 
 		/**
 		 * @return has this {@link Subscriber} terminated with an error ?
 		 */
-		public final boolean isFailed() {
+		final boolean isFailed() {
 			return terminated == TERMINATED_WITH_ERROR;
 		}
 
-		/**
-		 * @return has this {@link Subscriber} been cancelled
-		 */
 		@Override
-		public final boolean isCancelled() {
-			return terminated == TERMINATED_WITH_CANCEL;
-		}
-
-		@Override
-		public final long requestedFromDownstream() {
-			return requested;
-		}
-
-		@Override
-		protected void doRequest(long n) {
-			doRequested(Operators.getAndAddCap(REQUESTED, this, n), n);
+		public void request(long n) {
+			if (Operators.validate(n)) {
+				if (terminated != NOT_TERMINATED) {
+					return;
+				}
+				if (batchSize == Integer.MAX_VALUE || n == Long.MAX_VALUE) {
+					requestMore(Long.MAX_VALUE);
+				}
+				else {
+					requestMore(Operators.multiplyCap(n, batchSize));
+				}
+			}
 		}
 
 		final void requestMore(long n) {
@@ -239,46 +230,52 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 		}
 
 		@Override
-		protected void doComplete() {
+		public Subscriber<? super V> actual() {
+			return actual;
+		}
+
+		@Override
+		public void onComplete() {
 			if (TERMINATED.compareAndSet(this, NOT_TERMINATED, TERMINATED_WITH_SUCCESS)) {
+				timer.dispose();
 				checkedComplete();
-				doTerminate();
 			}
 		}
 
 		@Override
-		protected void doError(Throwable throwable) {
+		public void onError(Throwable throwable) {
 			if (TERMINATED.compareAndSet(this, NOT_TERMINATED, TERMINATED_WITH_ERROR)) {
+				timer.dispose();
 				checkedError(throwable);
-				doTerminate();
 			}
 		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			if (Operators.validate(this.subscription, s)) {
+				this.subscription = s;
+				doOnSubscribe();
+				actual.onSubscribe(this);
+			}
+		}
+
+		abstract void doOnSubscribe();
 
 		void checkedError(Throwable throwable) {
-			subscriber.onError(throwable);
+			actual.onError(throwable);
 		}
 
 		@Override
-		protected void doCancel() {
+		public void cancel() {
 			if (TERMINATED.compareAndSet(this, NOT_TERMINATED, TERMINATED_WITH_CANCEL)) {
-				checkedCancel();
-				doTerminate();
+				timer.dispose();
+				Subscription s = this.subscription;
+				if (s != null) {
+					this.subscription = null;
+					s.cancel();
+				}
 			}
 		}
-
-		void checkedCancel() {
-			super.doCancel();
-		}
-
-		void doTerminate() {
-			timer.dispose();
-		}
-
-		@Override
-		public Throwable getError() {
-			return isFailed() ? FAILED_SATE : null;
-		}
-
 
 		@Override
 		public String toString() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,129 +29,154 @@ import reactor.core.scheduler.Scheduler.Worker;
  * Subscribes to the upstream Mono on the specified Scheduler and makes sure
  * any request from downstream is issued on the same worker where the subscription
  * happened.
- * 
+ *
  * @param <T> the value type
  */
 final class MonoSubscribeOn<T> extends MonoSource<T, T> {
-    
-    final Scheduler scheduler;
 
-    public MonoSubscribeOn(Publisher<? extends T> source, Scheduler scheduler) {
-        super(source);
-        this.scheduler = scheduler;
-    }
-    
-    @Override
-    public void subscribe(Subscriber<? super T> s) {
-        Scheduler.Worker worker = scheduler.createWorker();
-        
-        MonoSubscribeOnSubscriber<T> parent = new MonoSubscribeOnSubscriber<>(source, s,
-		        worker);
-        s.onSubscribe(parent);
-        
-        if (worker.schedule(parent) == Scheduler.REJECTED && !worker.isDisposed()) {
-            s.onError(Operators.onRejectedExecution(parent, null, null));
-        }
-    }
-    
-    static final class MonoSubscribeOnSubscriber<T> implements Subscriber<T>,
-                                                               Subscription, Runnable {
-        final Subscriber<? super T> actual;
-        
-        final Publisher<? extends T> parent;
+	final Scheduler scheduler;
 
-        final Scheduler.Worker worker;
+	MonoSubscribeOn(Mono<? extends T> source, Scheduler scheduler) {
+		super(source);
+		this.scheduler = scheduler;
+	}
 
-        volatile Subscription s;
-        @SuppressWarnings("rawtypes")
-        static final AtomicReferenceFieldUpdater<MonoSubscribeOnSubscriber, Subscription> S =
-                AtomicReferenceFieldUpdater.newUpdater(MonoSubscribeOnSubscriber.class, Subscription.class, "s");
+	@Override
+	public void subscribe(Subscriber<? super T> s) {
+		Scheduler.Worker worker = scheduler.createWorker();
 
-        volatile long requested;
-        @SuppressWarnings("rawtypes")
-        static final AtomicLongFieldUpdater<MonoSubscribeOnSubscriber> REQUESTED =
-                AtomicLongFieldUpdater.newUpdater(MonoSubscribeOnSubscriber.class, "requested");
-        
-        public MonoSubscribeOnSubscriber(Publisher<? extends T> parent, Subscriber<?
-		        super T> actual, Worker worker) {
-            this.actual = actual;
-            this.parent = parent;
-            this.worker = worker;
-        }
+		SubscribeOnSubscriber<T> parent = new SubscribeOnSubscriber<>(source, s, worker);
+		s.onSubscribe(parent);
 
-	    @Override
-	    public void run() {
-		    parent.subscribe(this);
-	    }
+		if (worker.schedule(parent) == Scheduler.REJECTED && !worker.isDisposed()) {
+			s.onError(Operators.onRejectedExecution(parent, null, null));
+		}
+	}
 
-	    @Override
-        public void onSubscribe(Subscription s) {
-            if (!Operators.setOnce(S, this, s)) {
-                s.cancel();
-            } else {
-                long r = REQUESTED.getAndSet(this, 0L);
-                if (r != 0L) {
-                    if (worker.schedule(() -> requestMore(r)) == Scheduler.REJECTED && !worker.isDisposed()) {
-                        actual.onError(Operators.onRejectedExecution(this, null, null));
-                    }
-                }
-            }
-        }
-        
-        @Override
-        public void onNext(T t) {
-            actual.onNext(t);
-        }
-        
-        @Override
-        public void onError(Throwable t) {
-            try {
-                actual.onError(t);
-            } finally {
-                worker.dispose();
-            }
-        }
-        
-        @Override
-        public void onComplete() {
-            try {
-                actual.onComplete();
-            } finally {
-                worker.dispose();
-            }
-        }
-        
-        @Override
-        public void request(long n) {
-            if (Operators.validate(n)) {
-                if(worker.schedule(() -> requestMore(n)) == Scheduler.REJECTED &&
-		                !worker.isDisposed()){
-	                actual.onError(Operators.onRejectedExecution(this, null, null));
-                }
-            }
-        }
-        
-        @Override
-        public void cancel() {
-            if (Operators.terminate(S, this)) {
-                worker.dispose();
-            }
-        }
-        
-        void requestMore(long n) {
-            Subscription a = s;
-            if (a != null) {
-                a.request(n);
-            } else {
-                Operators.getAndAddCap(REQUESTED, this, n);
-                a = s;
-                if (a != null) {
-                    long r = REQUESTED.getAndSet(this, 0L);
-                    if (r != 0L) {
-                        a.request(r);
-                    }
-                }
-            }
-        }
-    }
+	static final class SubscribeOnSubscriber<T>
+			implements InnerOperator<T, T>, Runnable {
+
+		final Subscriber<? super T> actual;
+
+		final Publisher<? extends T> parent;
+
+		final Scheduler.Worker worker;
+
+		volatile Subscription s;
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<SubscribeOnSubscriber, Subscription> S =
+				AtomicReferenceFieldUpdater.newUpdater(SubscribeOnSubscriber.class,
+						Subscription.class,
+						"s");
+
+		volatile long requested;
+		@SuppressWarnings("rawtypes")
+		static final AtomicLongFieldUpdater<SubscribeOnSubscriber> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(SubscribeOnSubscriber.class,
+						"requested");
+
+		SubscribeOnSubscriber(Publisher<? extends T> parent,
+				Subscriber<? super T> actual,
+				Worker worker) {
+			this.actual = actual;
+			this.parent = parent;
+			this.worker = worker;
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key){
+				case CANCELLED:
+					return s == Operators.cancelledSubscription();
+				case PARENT:
+					return s;
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+			}
+			return InnerOperator.super.scan(key);
+		}
+
+		@Override
+		public void run() {
+			parent.subscribe(this);
+		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			if (!Operators.setOnce(S, this, s)) {
+				s.cancel();
+			}
+			else {
+				long r = REQUESTED.getAndSet(this, 0L);
+				if (r != 0L) {
+					if (worker.schedule(() -> requestMore(r)) == Scheduler.REJECTED && !worker.isDisposed()) {
+						actual.onError(Operators.onRejectedExecution(this, null, null));
+					}
+				}
+			}
+		}
+
+		@Override
+		public Subscriber<? super T> actual() {
+			return actual;
+		}
+
+		@Override
+		public void onNext(T t) {
+			actual.onNext(t);
+		}
+
+		@Override
+		public void onError(Throwable t) {
+			try {
+				actual.onError(t);
+			}
+			finally {
+				worker.dispose();
+			}
+		}
+
+		@Override
+		public void onComplete() {
+			try {
+				actual.onComplete();
+			}
+			finally {
+				worker.dispose();
+			}
+		}
+
+		@Override
+		public void request(long n) {
+			if (Operators.validate(n)) {
+				if (worker.schedule(() -> requestMore(n)) == Scheduler.REJECTED && !worker.isDisposed()) {
+					actual.onError(Operators.onRejectedExecution(this, null, null));
+				}
+			}
+		}
+
+		@Override
+		public void cancel() {
+			if (Operators.terminate(S, this)) {
+				worker.dispose();
+			}
+		}
+
+		void requestMore(long n) {
+			Subscription a = s;
+			if (a != null) {
+				a.request(n);
+			}
+			else {
+				Operators.getAndAddCap(REQUESTED, this, n);
+				a = s;
+				if (a != null) {
+					long r = REQUESTED.getAndSet(this, 0L);
+					if (r != 0L) {
+						a.request(r);
+					}
+				}
+			}
+		}
+	}
 }

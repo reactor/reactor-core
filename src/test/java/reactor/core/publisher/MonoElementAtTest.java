@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,17 +38,17 @@ public class MonoElementAtTest {
 
 	@Test(expected = NullPointerException.class)
 	public void defaultSupplierNull() {
-		new MonoElementAt<>(Mono.never(), 1, null);
+		Flux.never().elementAt(1, null);
 	}
 
 	@Test(expected = IndexOutOfBoundsException.class)
 	public void indexNegative1() {
-		new MonoElementAt<>(Mono.never(), -1);
+		Flux.never().elementAt(-1);
 	}
 
 	@Test(expected = IndexOutOfBoundsException.class)
 	public void indexNegative2() {
-		new MonoElementAt<>(Mono.never(), -1, 1);
+		Flux.never().elementAt(-1, 1);
 	}
 
 	@Test

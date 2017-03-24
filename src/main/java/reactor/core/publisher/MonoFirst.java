@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,13 +16,11 @@
 
 package reactor.core.publisher;
 
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Objects;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.MultiReceiver;
 
 /**
  * Given a set of source Publishers the values of that Publisher is forwarded to the
@@ -32,24 +30,24 @@ import reactor.core.MultiReceiver;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoFirst<T> extends Mono<T> implements MultiReceiver {
+final class MonoFirst<T> extends Mono<T> {
 
 	final Mono<? extends T>[] array;
 
 	final Iterable<? extends Mono<? extends T>> iterable;
 
 	@SafeVarargs
-	public MonoFirst(Mono<? extends T>... array) {
+	MonoFirst(Mono<? extends T>... array) {
 		this.array = Objects.requireNonNull(array, "array");
 		this.iterable = null;
 	}
 
-	public MonoFirst(Iterable<? extends Mono<? extends T>> iterable) {
+	MonoFirst(Iterable<? extends Mono<? extends T>> iterable) {
 		this.array = null;
 		this.iterable = Objects.requireNonNull(iterable);
 	}
 
-	public Mono<T> orAdditionalSource(Mono<? extends T> other) {
+	Mono<T> orAdditionalSource(Mono<? extends T> other) {
 		if (array != null) {
 			int n = array.length;
 			@SuppressWarnings("unchecked") Mono<? extends T>[] newArray = new Mono[n + 1];
@@ -59,17 +57,6 @@ final class MonoFirst<T> extends Mono<T> implements MultiReceiver {
 			return new MonoFirst<>(newArray);
 		}
 		return null;
-	}
-
-	@Override
-	public Iterator<?> upstreams() {
-		return iterable != null ? iterable.iterator() : Arrays.asList(array)
-		                                                      .iterator();
-	}
-
-	@Override
-	public long upstreamCount() {
-		return array != null ? array.length : -1L;
 	}
 
 	@SuppressWarnings("unchecked")

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -29,12 +27,17 @@ import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.*;
+import reactor.core.Disposable;
+import reactor.core.Exceptions;
+import reactor.core.Scannable;
 import reactor.util.concurrent.OpenHashSet;
+
+
 
 /**
  * A Publisher that correlates two Publishers when they overlap in time and groups the
@@ -68,7 +71,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 	final Supplier<? extends Queue<Object>> queueSupplier;
 	final Supplier<? extends Queue<TRight>> processorQueueSupplier;
 
-	public FluxGroupJoin(Publisher<TLeft> source,
+	FluxGroupJoin(Flux<TLeft> source,
 			Publisher<? extends TRight> other,
 			Function<? super TLeft, ? extends Publisher<TLeftEnd>> leftEnd,
 			Function<? super TRight, ? extends Publisher<TRightEnd>> rightEnd,
@@ -121,10 +124,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 	}
 
 	static final class GroupJoinSubscription<TLeft, TRight, TLeftEnd, TRightEnd, R>
-			implements Subscription, JoinSupport, Trackable, Producer, MultiReceiver,
-			           reactor.core.MultiProducer {
-
-		final Subscriber<? super R> actual;
+			implements JoinSupport, InnerProducer<R> {
 
 		final Queue<Object>               queue;
 		final BiPredicate<Object, Object> queueBiOffer;
@@ -142,12 +142,18 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		final BiFunction<? super TLeft, ? super Flux<TRight>, ? extends R> resultSelector;
 
 		final Supplier<? extends Queue<TRight>> processorQueueSupplier;
+		final Subscriber<? super R>             actual;
 
 		int leftIndex;
 
 		int rightIndex;
 
 		volatile int wip;
+
+		@Override
+		public final Subscriber<? super R> actual() {
+			return actual;
+		}
 
 		static final AtomicIntegerFieldUpdater<GroupJoinSubscription> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(GroupJoinSubscription.class, "wip");
@@ -182,7 +188,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		static final Integer RIGHT_CLOSE = 4;
 
 		@SuppressWarnings("unchecked")
-		public GroupJoinSubscription(Subscriber<? super R> actual,
+		GroupJoinSubscription(Subscriber<? super R> actual,
 				Function<? super TLeft, ? extends Publisher<TLeftEnd>> leftEnd,
 				Function<? super TRight, ? extends Publisher<TRightEnd>> rightEnd,
 				BiFunction<? super TLeft, ? super Flux<TRight>, ? extends R> resultSelector,
@@ -206,38 +212,28 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		}
 
 		@Override
-		public Iterator<?> downstreams() {
-			return lefts.values().iterator();
+		public Stream<? extends Scannable> inners() {
+			return Stream.concat(
+					lefts.values().stream(),
+					Stream.of(cancellations.keys()).map(Scannable::from)
+			);
 		}
 
 		@Override
-		public long downstreamCount() {
-			return lefts.size();
-		}
-
-		@Override
-		public Iterator<?> upstreams() {
-			return Arrays.asList(cancellations.keys()).iterator();
-		}
-
-		@Override
-		public Object downstream() {
-			return actual;
-		}
-
-		@Override
-		public long upstreamCount() {
-			return cancellations.keys().length;
-		}
-
-		@Override
-		public boolean isCancelled() {
-			return cancelled;
-		}
-
-		@Override
-		public long requestedFromDownstream() {
-			return requested;
+		public Object scan(Attr key) {
+			switch (key){
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+				case CANCELLED:
+					return cancelled;
+				case BUFFERED:
+					return queue.size() / 2;
+				case TERMINATED:
+					return active == 0;
+				case ERROR:
+					return error;
+			}
+			return InnerProducer.super.scan(key);
 		}
 
 		@Override
@@ -524,7 +520,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 	}
 
 	static final class LeftRightSubscriber
-			implements Subscriber<Object>, Disposable, Trackable, Receiver {
+			implements InnerConsumer<Object>, Disposable {
 
 		final JoinSupport parent;
 
@@ -538,7 +534,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 						Subscription.class,
 						"subscription");
 
-		public LeftRightSubscriber(JoinSupport parent, boolean isLeft) {
+		LeftRightSubscriber(JoinSupport parent, boolean isLeft) {
 			this.parent = parent;
 			this.isLeft = isLeft;
 		}
@@ -557,7 +553,20 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		}
 
 		@Override
-		public boolean isCancelled() {
+		public Object scan(Attr key) {
+			switch (key){
+				case PARENT:
+					return subscription;
+				case ACTUAL:
+					return parent;
+				case CANCELLED:
+					return isDisposed();
+			}
+			return null;
+		}
+
+		@Override
+		public boolean isDisposed() {
 			return Operators.cancelledSubscription() == subscription;
 		}
 
@@ -583,14 +592,10 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 			parent.innerComplete(this);
 		}
 
-		@Override
-		public Object upstream() {
-			return subscription;
-		}
 	}
 
 	static final class LeftRightEndSubscriber
-			implements Subscriber<Object>, Disposable, Trackable, Receiver {
+			implements InnerConsumer<Object>, Disposable {
 
 		final JoinSupport parent;
 
@@ -606,7 +611,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 				Subscription.class,
 				"subscription");
 
-		public LeftRightEndSubscriber(JoinSupport parent, boolean isLeft, int index) {
+		LeftRightEndSubscriber(JoinSupport parent, boolean isLeft, int index) {
 			this.parent = parent;
 			this.isLeft = isLeft;
 			this.index = index;
@@ -626,7 +631,18 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		}
 
 		@Override
-		public boolean isCancelled() {
+		public Object scan(Attr key) {
+			switch (key){
+				case PARENT:
+					return subscription;
+				case CANCELLED:
+					return isDisposed();
+			}
+			return null;
+		}
+
+		@Override
+		public boolean isDisposed() {
 			return Operators.cancelledSubscription() == subscription;
 		}
 
@@ -661,9 +677,5 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 			parent.innerClose(isLeft, this);
 		}
 
-		@Override
-		public Object upstream() {
-			return subscription;
-		}
 	}
 }

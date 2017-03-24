@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,10 +27,6 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Loopback;
-import reactor.core.Producer;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
 
 /**
  * Buffers a certain number of subsequent elements and emits the buffers.
@@ -87,8 +83,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 	}
 
 	static final class BufferExactSubscriber<T, C extends Collection<? super T>>
-			implements Subscriber<T>, Subscription, Receiver, Producer, Loopback,
-			           Trackable {
+			implements InnerOperator<T, C> {
 
 		final Subscriber<? super C> actual;
 
@@ -185,50 +180,29 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 		}
 
 		@Override
-		public boolean isStarted() {
-			return s != null && !done;
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
-		public Object downstream() {
+		public Subscriber<? super C> actual() {
 			return actual;
 		}
 
 		@Override
-		public Object connectedInput() {
-			return bufferSupplier;
-		}
-
-		@Override
-		public Object connectedOutput() {
-			return buffer;
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
-		}
-
-		@Override
-		public long getPending() {
-			C b = buffer;
-			return b != null ? b.size() : 0L;
-		}
-
-		@Override
-		public long getCapacity() {
-			return size;
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return s;
+				case TERMINATED:
+					return done;
+				case CAPACITY:
+					C b = buffer;
+					return b != null ? b.size() : 0L;
+				case PREFETCH:
+					return size;
+			}
+			return InnerOperator.super.scan(key);
 		}
 	}
 
 	static final class BufferSkipSubscriber<T, C extends Collection<? super T>>
-			implements Subscriber<T>, Subscription, Receiver, Producer, Loopback,
-			           Trackable {
+			implements InnerOperator<T, C> {
 
 		final Subscriber<? super C> actual;
 
@@ -361,51 +335,29 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 		}
 
 		@Override
-		public boolean isStarted() {
-			return s != null && !done;
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
-		public Object downstream() {
+		public Subscriber<? super C> actual() {
 			return actual;
 		}
 
-		@Override
-		public Object connectedInput() {
-			return bufferSupplier;
-		}
-
-		@Override
-		public Object connectedOutput() {
-			return buffer;
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
-		}
-
-		@Override
-		public long getPending() {
-			C b = buffer;
-			return b != null ? b.size() : 0L;
-		}
-
-		@Override
-		public long getCapacity() {
-			return size;
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return s;
+				case TERMINATED:
+					return done;
+				case CAPACITY:
+					C b = buffer;
+					return b != null ? b.size() : 0L;
+				case PREFETCH:
+					return size;
+			}
+			return InnerOperator.super.scan(key);
 		}
 	}
 
 	static final class BufferOverlappingSubscriber<T, C extends Collection<? super T>>
 			extends ArrayDeque<C>
-			implements Subscriber<T>, Subscription, Receiver, BooleanSupplier, Producer,
-			           Trackable, Loopback {
+			implements BooleanSupplier, InnerOperator<T, C> {
 
 		final Subscriber<? super C> actual;
 
@@ -566,48 +518,28 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 		}
 
 		@Override
-		public boolean isCancelled() {
-			return cancelled;
-		}
-
-		@Override
-		public boolean isStarted() {
-			return s != null && (!cancelled && !done);
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
-		public long getPending() {
-			return size() * size; //rounded max
-		}
-
-		@Override
-		public long getCapacity() {
-			return Integer.MAX_VALUE;
-		}
-
-		@Override
-		public Object downstream() {
+		public Subscriber<? super C> actual() {
 			return actual;
 		}
 
 		@Override
-		public long requestedFromDownstream() {
-			return requested;
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return s;
+				case TERMINATED:
+					return done;
+				case CANCELLED:
+					return cancelled;
+				case CAPACITY:
+					return size() * size;
+				case PREFETCH:
+					return Integer.MAX_VALUE;
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+			}
+			return InnerOperator.super.scan(key);
 		}
 
-		@Override
-		public Object connectedInput() {
-			return bufferSupplier;
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
-		}
 	}
 }

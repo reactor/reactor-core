@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,6 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Producer;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
 
 /**
  * Maps the values of the source publisher one-on-one via a mapper function.
@@ -74,8 +71,8 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
 
     static final class FluxMapSignalSubscriber<T, R> 
     extends AbstractQueue<R>
-    implements Subscriber<T>, Receiver, Producer, Trackable, Subscription,
-               BooleanSupplier {
+		    implements InnerOperator<T, R>,
+		               BooleanSupplier {
 
         final Subscriber<? super R>            actual;
         final FluxMapSignal<T, R> parent;
@@ -169,7 +166,7 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
 	        value = v;
             long p = produced;
             if (p != 0L) {
-                REQUESTED.addAndGet(this, -p);
+	            Operators.addAndGet(REQUESTED, this, -p);
             }
 	        DrainUtils.postComplete(actual, this, REQUESTED, this, this);
         }
@@ -201,29 +198,14 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
             value = v;
             long p = produced;
             if (p != 0L) {
-                REQUESTED.addAndGet(this, -p);
+	            Operators.addAndGet(REQUESTED, this, -p);
             }
             DrainUtils.postComplete(actual, this, REQUESTED, this, this);
         }
 
         @Override
-        public boolean isStarted() {
-            return s != null && !done;
-        }
-
-        @Override
-        public boolean isTerminated() {
-            return done;
-        }
-
-        @Override
-        public Object downstream() {
+        public Subscriber<? super R> actual() {
             return actual;
-        }
-
-        @Override
-        public Object upstream() {
-            return s;
         }
 
 	    @Override
@@ -251,8 +233,20 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
         }
 
 	    @Override
-	    public boolean isCancelled() {
-		    return cancelled;
+	    public Object scan(Attr key) {
+		    switch (key) {
+			    case PARENT:
+				    return s;
+			    case TERMINATED:
+				    return done;
+			    case CANCELLED:
+			    	return getAsBoolean();
+			    case REQUESTED_FROM_DOWNSTREAM:
+			    	return requested;
+			    case BUFFERED:
+			    	return size();
+		    }
+		    return InnerOperator.super.scan(key);
 	    }
 
 	    @Override

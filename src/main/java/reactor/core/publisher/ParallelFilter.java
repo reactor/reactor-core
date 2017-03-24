@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,17 @@
  */
 package reactor.core.publisher;
 
-import java.util.function.*;
+import java.util.function.Predicate;
 
-import org.reactivestreams.*;
+import org.reactivestreams.Subscriber;
+import reactor.core.Scannable;
 
 /**
  * Filters each 'rail' of the source ParallelFlux with a predicate function.
  *
  * @param <T> the input value type
  */
-final class ParallelFilter<T> extends ParallelFlux<T> {
+final class ParallelFilter<T> extends ParallelFlux<T> implements Scannable{
 
 	final ParallelFlux<T> source;
 	
@@ -33,6 +34,17 @@ final class ParallelFilter<T> extends ParallelFlux<T> {
 	ParallelFilter(ParallelFlux<T> source, Predicate<? super T> predicate) {
 		this.source = source;
 		this.predicate = predicate;
+	}
+
+	@Override
+	public Object scan(Attr key) {
+		switch (key){
+			case PARENT:
+				return source;
+			case PREFETCH:
+				return getPrefetch();
+		}
+		return null;
 	}
 
 	@Override

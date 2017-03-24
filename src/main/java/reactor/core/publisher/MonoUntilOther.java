@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,10 +19,13 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Scannable;
+
 
 /**
  * Waits for a Mono source to produce a value or terminate, as well as a Publisher source
@@ -42,7 +45,7 @@ final class MonoUntilOther<T> extends Mono<T> {
 
 	Publisher<?>[] others;
 
-	public MonoUntilOther(boolean delayError,
+	MonoUntilOther(boolean delayError,
 			Mono<T> monoSource,
 			Publisher<?> triggerPublisher) {
 		this.delayError = delayError;
@@ -54,7 +57,7 @@ final class MonoUntilOther<T> extends Mono<T> {
 	 * Add a trigger to wait for.
 	 * @param trigger
 	 */
-	public void addTrigger(Publisher<?> trigger) {
+	void addTrigger(Publisher<?> trigger) {
 		Publisher<?>[] oldTriggers = this.others;
 		this.others = new Publisher[oldTriggers.length + 1];
 		System.arraycopy(oldTriggers, 0, this.others, 0, oldTriggers.length);
@@ -63,31 +66,52 @@ final class MonoUntilOther<T> extends Mono<T> {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		MonoUntilOtherCoordinator<T> parent = new MonoUntilOtherCoordinator<>(s, delayError, others.length + 1);
+		UntilOtherCoordinator<T> parent = new UntilOtherCoordinator<>(s,
+				delayError,
+				others.length + 1);
 		s.onSubscribe(parent);
 		parent.subscribe(source, others);
 	}
 
-	static final class MonoUntilOtherCoordinator<T>
-			extends Operators.MonoSubscriber<T, T> implements Subscription {
+	static final class UntilOtherCoordinator<T>
+			extends Operators.MonoSubscriber<T, T> {
 
-		final int                               n;
-		final boolean                           delayError;
-		final MonoUntilOtherSourceSubscriber<T> sourceSubscriber;
-		final MonoUntilOtherTriggerSubscriber[] triggerSubscribers;
+		final int                 n;
+		final boolean             delayError;
+		final UntilOtherSource<T> sourceSubscriber;
+		final UntilOtherTrigger[] triggerSubscribers;
 
 		volatile int done;
-		static final AtomicIntegerFieldUpdater<MonoUntilOtherCoordinator> DONE =
-				AtomicIntegerFieldUpdater.newUpdater(MonoUntilOtherCoordinator.class, "done");
+		static final AtomicIntegerFieldUpdater<UntilOtherCoordinator> DONE =
+				AtomicIntegerFieldUpdater.newUpdater(UntilOtherCoordinator.class, "done");
 
-		MonoUntilOtherCoordinator(Subscriber<? super T> subscriber,
+		UntilOtherCoordinator(Subscriber<? super T> subscriber,
 				boolean delayError,
 				int n) {
 			super(subscriber);
 			this.n = n;
+
 			this.delayError = delayError;
-			sourceSubscriber = new MonoUntilOtherSourceSubscriber<>(this);
-			triggerSubscribers = new MonoUntilOtherTriggerSubscriber[n - 1];
+			sourceSubscriber = new UntilOtherSource<>(this);
+			triggerSubscribers = new UntilOtherTrigger[n - 1];
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case TERMINATED:
+					return done;
+				case PARENT:
+					return sourceSubscriber;
+				case DELAY_ERROR:
+					return delayError;
+			}
+			return super.scan(key);
+		}
+
+		@Override
+		public Stream<? extends Scannable> inners() {
+			return Stream.of(triggerSubscribers);
 		}
 
 		@SuppressWarnings("unchecked")
@@ -99,7 +123,7 @@ final class MonoUntilOther<T> extends Mono<T> {
 			for (int i = 0; i < triggerSubscribers.length; i++) {
 				Publisher<?> p = triggers[i];
 				boolean cancelOnTriggerValue = !(p instanceof Mono);
-				MonoUntilOtherTriggerSubscriber triggerSubscriber = new MonoUntilOtherTriggerSubscriber(this, cancelOnTriggerValue);
+				UntilOtherTrigger triggerSubscriber = new UntilOtherTrigger(this, cancelOnTriggerValue);
 				this.triggerSubscribers[i] = triggerSubscriber;
 				p.subscribe(triggerSubscriber);
 			}
@@ -127,7 +151,7 @@ final class MonoUntilOther<T> extends Mono<T> {
 			boolean sourceEmpty = false;
 
 			//check if source produced value or error
-			MonoUntilOtherSourceSubscriber<T> ms = sourceSubscriber;
+			UntilOtherSource<T> ms = sourceSubscriber;
 			T v = ms.value;
 			if (v != null) {
 				o = v;
@@ -142,7 +166,7 @@ final class MonoUntilOther<T> extends Mono<T> {
 
 			//check for errors in the triggers
 			for (int i = 0; i < n - 1; i++) {
-				MonoUntilOtherTriggerSubscriber mt = triggerSubscribers[i];
+				UntilOtherTrigger mt = triggerSubscribers[i];
 				Throwable e = mt.error;
 				if (e != null) {
 					if (compositeError != null) {
@@ -181,26 +205,26 @@ final class MonoUntilOther<T> extends Mono<T> {
 				sourceSubscriber.cancel();
 				//...but triggerSubscribers could be partially initialized
 				for (int i = 0; i < triggerSubscribers.length; i++) {
-					MonoUntilOtherTriggerSubscriber ts = triggerSubscribers[i];
+					UntilOtherTrigger ts = triggerSubscribers[i];
 					if (ts != null) ts.cancel();
 				}
 			}
 		}
 	}
 
-	static final class MonoUntilOtherSourceSubscriber<T> implements Subscriber<T> {
+	static final class UntilOtherSource<T> implements Subscriber<T> {
 
-		final MonoUntilOtherCoordinator<T> parent;
+		final UntilOtherCoordinator<T> parent;
 
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<MonoUntilOtherSourceSubscriber, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(MonoUntilOtherSourceSubscriber.class, Subscription.class, "s");
+		static final AtomicReferenceFieldUpdater<UntilOtherSource, Subscription> S =
+				AtomicReferenceFieldUpdater.newUpdater(UntilOtherSource.class, Subscription.class, "s");
 
 		T value;
 		Throwable error;
 
-		public MonoUntilOtherSourceSubscriber(MonoUntilOtherCoordinator<T> parent) {
+		public UntilOtherSource(UntilOtherCoordinator<T> parent) {
 			this.parent = parent;
 		}
 
@@ -239,23 +263,38 @@ final class MonoUntilOther<T> extends Mono<T> {
 		}
 	}
 
-	static final class MonoUntilOtherTriggerSubscriber implements Subscriber {
+	static final class UntilOtherTrigger<T> implements InnerConsumer<T> {
 
-		final MonoUntilOtherCoordinator<?> parent;
-		final boolean cancelOnTriggerValue;
+		final UntilOtherCoordinator<?> parent;
+		final boolean                  cancelOnTriggerValue;
 
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<MonoUntilOtherTriggerSubscriber, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(MonoUntilOtherTriggerSubscriber.class, Subscription.class, "s");
+		static final AtomicReferenceFieldUpdater<UntilOtherTrigger, Subscription> S =
+				AtomicReferenceFieldUpdater.newUpdater(UntilOtherTrigger.class, Subscription.class, "s");
 
 		boolean done;
 		Throwable error;
 
-		public MonoUntilOtherTriggerSubscriber(MonoUntilOtherCoordinator<?> parent,
+		UntilOtherTrigger(UntilOtherCoordinator<?> parent,
 				boolean cancelOnTriggerValue) {
 			this.parent = parent;
 			this.cancelOnTriggerValue = cancelOnTriggerValue;
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key){
+				case CANCELLED:
+					return s == Operators.cancelledSubscription();
+				case PARENT:
+					return s;
+				case ACTUAL:
+					return parent;
+				case ERROR:
+					return error;
+			}
+			return null;
 		}
 
 		@Override

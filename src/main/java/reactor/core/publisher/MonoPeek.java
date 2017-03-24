@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,19 +15,13 @@
  */
 package reactor.core.publisher;
 
-import java.util.Objects;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.publisher.FluxPeekFuseable.PeekConditionalSubscriber;
-import reactor.core.publisher.FluxPeekFuseable.PeekFuseableConditionalSubscriber;
-import reactor.core.publisher.FluxPeekFuseable.PeekFuseableSubscriber;
 
 /**
  * Peeks out values that make a filter function return false.
@@ -51,7 +45,7 @@ final class MonoPeek<T> extends MonoSource<T, T> implements SignalPeek<T> {
 
 	final Runnable onCancelCall;
 
-	public MonoPeek(Publisher<? extends T> source, Consumer<? super Subscription> onSubscribeCall,
+	MonoPeek(Mono<? extends T> source, Consumer<? super Subscription> onSubscribeCall,
 			Consumer<? super T> onNextCall, Consumer<? super Throwable> onErrorCall, Runnable
 			onCompleteCall,
 			Runnable onAfterTerminateCall, LongConsumer onRequestCall, Runnable onCancelCall) {

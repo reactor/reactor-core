@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 import reactor.core.publisher.FluxDistinct.DistinctFuseableSubscriber;
@@ -43,7 +42,7 @@ final class FluxDistinctFuseable<T, K, C extends Collection<? super K>>
 
 	final Supplier<C> collectionSupplier;
 
-	FluxDistinctFuseable(Publisher<? extends T> source,
+	FluxDistinctFuseable(Flux<? extends T> source,
 			Function<? super T, ? extends K> keyExtractor,
 			Supplier<C> collectionSupplier) {
 		super(source);

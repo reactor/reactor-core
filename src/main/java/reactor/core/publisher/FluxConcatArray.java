@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,12 @@
  */
 package reactor.core.publisher;
 
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.MultiReceiver;
 import reactor.core.Exceptions;
 
 /**
@@ -32,28 +29,16 @@ import reactor.core.Exceptions;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxConcatArray<T> 
-extends Flux<T>
-		implements MultiReceiver {
+final class FluxConcatArray<T> extends Flux<T> {
 
 	final Publisher<? extends T>[] array;
 	
 	final boolean delayError;
 
 	@SafeVarargs
-	public FluxConcatArray(boolean delayError, Publisher<? extends T>... array) {
+	FluxConcatArray(boolean delayError, Publisher<? extends T>... array) {
 		this.array = Objects.requireNonNull(array, "array");
 		this.delayError = delayError;
-	}
-
-	@Override
-	public Iterator<?> upstreams() {
-		return Arrays.asList(array).iterator();
-	}
-
-	@Override
-	public long upstreamCount() {
-		return array.length;
 	}
 
 	@Override
@@ -76,7 +61,8 @@ extends Flux<T>
 		}
 
 		if (delayError) {
-			ConcatArrayDelayErrorSubscriber<T> parent = new ConcatArrayDelayErrorSubscriber<>(s, a);
+			ConcatArrayDelayErrorSubscriber<T> parent = new
+					ConcatArrayDelayErrorSubscriber<>(s, a);
 
 			s.onSubscribe(parent);
 
@@ -103,7 +89,7 @@ extends Flux<T>
 	 * @param source the new source to merge with the others
 	 * @return the new FluxConcatArray instance
 	 */
-	public FluxConcatArray<T> concatAdditionalSourceLast(Publisher<? extends T> source) {
+	FluxConcatArray<T> concatAdditionalSourceLast(Publisher<? extends T> source) {
 		int n = array.length;
 		@SuppressWarnings("unchecked")
 		Publisher<? extends T>[] newArray = new Publisher[n + 1];
@@ -123,7 +109,7 @@ extends Flux<T>
 	 * @return the new FluxConcatArray instance
 	 */
 	@SuppressWarnings("unchecked")
-	public <V> FluxConcatArray<V> concatAdditionalIgnoredLast(Publisher<? extends V>
+	<V> FluxConcatArray<V> concatAdditionalIgnoredLast(Publisher<? extends V>
 			source) {
 		int n = array.length;
 		Publisher<? extends V>[] newArray = new Publisher[n + 1];
@@ -144,7 +130,7 @@ extends Flux<T>
 	 * @param source the new source to merge with the others
 	 * @return the new FluxConcatArray instance
 	 */
-	public FluxConcatArray<T> concatAdditionalSourceFirst(Publisher<? extends T> source) {
+	FluxConcatArray<T> concatAdditionalSourceFirst(Publisher<? extends T> source) {
 		int n = array.length;
 		@SuppressWarnings("unchecked")
 		Publisher<? extends T>[] newArray = new Publisher[n + 1];
@@ -169,7 +155,8 @@ extends Flux<T>
 
 		long produced;
 
-		public ConcatArraySubscriber(Subscriber<? super T> actual, Publisher<? extends T>[] sources) {
+		ConcatArraySubscriber(Subscriber<? super T> actual, Publisher<? extends T>[]
+				sources) {
 			super(actual);
 			this.sources = sources;
 		}
@@ -178,7 +165,7 @@ extends Flux<T>
 		public void onNext(T t) {
 			produced++;
 
-			subscriber.onNext(t);
+			actual.onNext(t);
 		}
 
 		@Override
@@ -193,14 +180,14 @@ extends Flux<T>
 
 					int i = index;
 					if (i == a.length) {
-						subscriber.onComplete();
+						actual.onComplete();
 						return;
 					}
 
 					Publisher<? extends T> p = a[i];
 
 					if (p == null) {
-						subscriber.onError(new NullPointerException("The " + i + "th source Publisher is null"));
+						actual.onError(new NullPointerException("The " + i + "th source Publisher is null"));
 						return;
 					}
 
@@ -241,7 +228,8 @@ extends Flux<T>
 		
 		long produced;
 
-		public ConcatArrayDelayErrorSubscriber(Subscriber<? super T> actual, Publisher<? extends T>[] sources) {
+		ConcatArrayDelayErrorSubscriber(Subscriber<? super T> actual, Publisher<?
+				extends T>[] sources) {
 			super(actual);
 			this.sources = sources;
 		}
@@ -250,9 +238,9 @@ extends Flux<T>
 		public void onNext(T t) {
 			produced++;
 
-			subscriber.onNext(t);
+			actual.onNext(t);
 		}
-		
+
 		@Override
 		public void onError(Throwable t) {
 			if (Exceptions.addThrowable(ERROR, this, t)) {
@@ -260,6 +248,17 @@ extends Flux<T>
 			} else {
 				Operators.onErrorDropped(t);
 			}
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch(key){
+				case DELAY_ERROR:
+					return true;
+				case ERROR:
+					return error;
+			}
+			return super.scan(key);
 		}
 
 		@Override
@@ -276,9 +275,9 @@ extends Flux<T>
 					if (i == a.length) {
 						Throwable e = Exceptions.terminate(ERROR, this);
 						if (e != null) {
-							subscriber.onError(e);
+							actual.onError(e);
 						} else {
-							subscriber.onComplete();
+							actual.onComplete();
 						}
 						return;
 					}
@@ -286,7 +285,7 @@ extends Flux<T>
 					Publisher<? extends T> p = a[i];
 
 					if (p == null) {
-						subscriber.onError(new NullPointerException("The " + i + "th source Publisher is null"));
+						actual.onError(new NullPointerException("The " + i + "th source Publisher is null"));
 						return;
 					}
 

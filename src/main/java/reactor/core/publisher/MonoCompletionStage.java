@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,11 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
-import reactor.core.Receiver;
+
 
 /**
  * Emits the value or error produced by the wrapped CompletionStage.
@@ -33,17 +32,12 @@ import reactor.core.Receiver;
  */
 final class MonoCompletionStage<T>
 extends Mono<T>
-        implements Receiver, Fuseable {
+        implements Fuseable {
 
     final CompletionStage<? extends T> future;
 
-    public MonoCompletionStage(CompletionStage<? extends T> future) {
+    MonoCompletionStage(CompletionStage<? extends T> future) {
         this.future = Objects.requireNonNull(future, "future");
-    }
-
-    @Override
-    public Object upstream() {
-        return future;
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,9 @@ import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
-import reactor.core.Receiver;
 
 /**
  * Collects the values of the source sequence into a container returned by
@@ -42,7 +40,7 @@ final class MonoCollect<T, R> extends MonoSource<T, R> implements Fuseable {
 
 	final BiConsumer<? super R, ? super T> action;
 
-	MonoCollect(Publisher<? extends T> source,
+	MonoCollect(Flux<? extends T> source,
 			Supplier<R> supplier,
 			BiConsumer<? super R, ? super T> action) {
 		super(source);
@@ -66,8 +64,7 @@ final class MonoCollect<T, R> extends MonoSource<T, R> implements Fuseable {
 		source.subscribe(new CollectSubscriber<>(s, action, container));
 	}
 
-	static final class CollectSubscriber<T, R> extends Operators.MonoSubscriber<T, R>
-			implements Receiver {
+	static final class CollectSubscriber<T, R> extends Operators.MonoSubscriber<T, R>  {
 
 		final BiConsumer<? super R, ? super T> action;
 
@@ -81,6 +78,17 @@ final class MonoCollect<T, R> extends MonoSource<T, R> implements Fuseable {
 			super(actual);
 			this.action = action;
 			this.value = container;
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key){
+				case TERMINATED:
+					return done;
+				case PARENT:
+					return s;
+			}
+			return super.scan(key);
 		}
 
 		@Override
@@ -142,11 +150,6 @@ final class MonoCollect<T, R> extends MonoSource<T, R> implements Fuseable {
 		@Override
 		public boolean isTerminated() {
 			return done;
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
 		}
 	}
 }

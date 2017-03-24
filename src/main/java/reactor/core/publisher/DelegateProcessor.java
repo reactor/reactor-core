@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,38 +16,26 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Producer;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
 
 /**
  * @author Stephane Maldini
  */
-final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
-		implements Producer, Receiver {
+final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT>  {
 
-	private final Publisher<OUT> downstream;
-	private final Subscriber<IN> upstream;
+	final Publisher<OUT> downstream;
+	final Subscriber<IN> upstream;
 
-	DelegateProcessor(Publisher<OUT> downstream, Subscriber<IN> upstream) {
+	DelegateProcessor(Publisher<OUT> downstream,
+			Subscriber<IN> upstream) {
 		this.downstream = Objects.requireNonNull(downstream, "Downstream must not be null");
 		this.upstream = Objects.requireNonNull(upstream, "Upstream must not be null");
-	}
-
-	@Override
-	public Subscriber<IN> downstream() {
-		return upstream;
-	}
-
-	@Override
-	public long getCapacity() {
-		return Trackable.class.isAssignableFrom(upstream.getClass()) ?
-				((Trackable) upstream).getCapacity() : Trackable.UNSPECIFIED;
 	}
 
 	@Override
@@ -79,7 +67,41 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 	}
 
 	@Override
-	public Publisher<OUT> upstream() {
-		return downstream;
+	public Stream<? extends Scannable> inners() {
+		return Scannable.from(upstream)
+		                .inners();
+	}
+
+	@Override
+	public int getBufferSize() {
+		return Scannable.from(upstream)
+		                .scanOrDefault(Attr.CAPACITY, super.getBufferSize());
+	}
+
+	@Override
+	public Throwable getError() {
+		return Scannable.from(upstream)
+		                .scanOrDefault(Attr.ERROR, super.getError());
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public boolean isStarted() {
+		return !(upstream instanceof FluxProcessor) || ((FluxProcessor<OUT, ?>) upstream).isStarted();
+	}
+
+	@Override
+	public boolean isTerminated() {
+		return Scannable.from(upstream)
+		                .scanOrDefault(Attr.TERMINATED, super.isTerminated());
+	}
+
+	@Override
+	public Object scan(Attr key) {
+		if(key == Attr.PARENT){
+			return downstream;
+		}
+		return Scannable.from(upstream)
+		                .scan(key);
 	}
 }

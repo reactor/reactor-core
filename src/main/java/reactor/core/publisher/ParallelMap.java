@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,8 @@ package reactor.core.publisher;
 
 import java.util.function.Function;
 
-import org.reactivestreams.*;
+import org.reactivestreams.Subscriber;
+import reactor.core.Scannable;
 
 /**
  * Maps each 'rail' of the source ParallelFlux with a mapper function.
@@ -25,7 +26,7 @@ import org.reactivestreams.*;
  * @param <T> the input value type
  * @param <R> the output value type
  */
-final class ParallelMap<T, R> extends ParallelFlux<R> {
+final class ParallelMap<T, R> extends ParallelFlux<R> implements Scannable {
 
 	final ParallelFlux<T> source;
 	
@@ -34,6 +35,17 @@ final class ParallelMap<T, R> extends ParallelFlux<R> {
 	ParallelMap(ParallelFlux<T> source, Function<? super T, ? extends R> mapper) {
 		this.source = source;
 		this.mapper = mapper;
+	}
+
+	@Override
+	public Object scan(Attr key) {
+		switch (key){
+			case PARENT:
+				return source;
+			case PREFETCH:
+				return getPrefetch();
+		}
+		return null;
 	}
 
 	@Override

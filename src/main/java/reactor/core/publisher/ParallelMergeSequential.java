@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,17 @@
 package reactor.core.publisher;
 
 import java.util.Queue;
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
-import org.reactivestreams.*;
-
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
+
 
 /**
  * Merges the individual 'rails' of the source ParallelFlux, unordered,
@@ -29,7 +34,7 @@ import reactor.core.Exceptions;
  *
  * @param <T> the value type
  */
-final class ParallelMergeSequential<T> extends Flux<T> {
+final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 	final ParallelFlux<? extends T> source;
 	final int prefetch;
 	final Supplier<Queue<T>> queueSupplier;
@@ -42,57 +47,97 @@ final class ParallelMergeSequential<T> extends Flux<T> {
 		this.prefetch = prefetch;
 		this.queueSupplier = queueSupplier;
 	}
+
+	@Override
+	public Object scan(Attr key) {
+		switch (key){
+			case PARENT:
+				return source;
+			case PREFETCH:
+				return getPrefetch();
+		}
+		return null;
+	}
 	
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		MergeSequentialSubscription<T> parent = new MergeSequentialSubscription<>(s, source.parallelism(), prefetch, queueSupplier);
+		MergeSequentialMain<T> parent = new MergeSequentialMain<>(s, source
+				.parallelism(), prefetch, queueSupplier);
 		s.onSubscribe(parent);
 		source.subscribe(parent.subscribers);
 	}
 	
-	static final class MergeSequentialSubscription<T> implements Subscription {
+	static final class MergeSequentialMain<T>
+			implements InnerProducer<T> {
+		final MergeSequentialInner<T>[] subscribers;
+		
+		final Supplier<Queue<T>>    queueSupplier;
 		final Subscriber<? super T> actual;
-		
-		final MergeSequentialInnerSubscriber<T>[] subscribers;
-		
-		final Supplier<Queue<T>> queueSupplier;
-		
+
 		volatile Throwable error;
+
+		@Override
+		public final Subscriber<? super T> actual() {
+			return actual;
+		}
+
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<MergeSequentialSubscription, Throwable> ERROR =
-				AtomicReferenceFieldUpdater.newUpdater(MergeSequentialSubscription.class, Throwable.class, "error");
+		static final AtomicReferenceFieldUpdater<MergeSequentialMain, Throwable> ERROR =
+				AtomicReferenceFieldUpdater.newUpdater(MergeSequentialMain.class, Throwable.class, "error");
 		
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<MergeSequentialSubscription> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(MergeSequentialSubscription.class, "wip");
+		static final AtomicIntegerFieldUpdater<MergeSequentialMain> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(MergeSequentialMain.class, "wip");
 		
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<MergeSequentialSubscription> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(MergeSequentialSubscription.class, "requested");
+		static final AtomicLongFieldUpdater<MergeSequentialMain> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(MergeSequentialMain.class, "requested");
 		
 		volatile boolean cancelled;
 
 		volatile int done;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<MergeSequentialSubscription> DONE =
-				AtomicIntegerFieldUpdater.newUpdater(MergeSequentialSubscription.class, "done");
+		static final AtomicIntegerFieldUpdater<MergeSequentialMain> DONE =
+				AtomicIntegerFieldUpdater.newUpdater(MergeSequentialMain.class, "done");
 
-		public MergeSequentialSubscription(Subscriber<? super T> actual, int n, int prefetch, Supplier<Queue<T>> queueSupplier) {
+		MergeSequentialMain(Subscriber<? super T> actual, int n, int
+				prefetch,
+				Supplier<Queue<T>> queueSupplier) {
 			this.actual = actual;
 			this.queueSupplier = queueSupplier;
 			@SuppressWarnings("unchecked")
-			MergeSequentialInnerSubscriber<T>[] a = new MergeSequentialInnerSubscriber[n];
+			MergeSequentialInner<T>[] a = new MergeSequentialInner[n];
 			
 			for (int i = 0; i < n; i++) {
-				a[i] = new MergeSequentialInnerSubscriber<>(this, prefetch);
+				a[i] = new MergeSequentialInner<>(this, prefetch);
 			}
 			
 			this.subscribers = a;
 			DONE.lazySet(this, n);
 		}
-		
+
+		@Override
+		public Object scan(Attr key) {
+			switch(key){
+				case CANCELLED:
+					return cancelled;
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+				case TERMINATED:
+					return done == 0;
+				case ERROR:
+					return error;
+			}
+			return InnerProducer.super.scan(key);
+		}
+
+		@Override
+		public Stream<? extends Scannable> inners() {
+			return Stream.of(subscribers);
+		}
+
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
@@ -115,18 +160,18 @@ final class ParallelMergeSequential<T> extends Flux<T> {
 		}
 		
 		void cancelAll() {
-			for (MergeSequentialInnerSubscriber<T> s : subscribers) {
+			for (MergeSequentialInner<T> s : subscribers) {
 				s.cancel();
 			}
 		}
 		
 		void cleanup() {
-			for (MergeSequentialInnerSubscriber<T> s : subscribers) {
+			for (MergeSequentialInner<T> s : subscribers) {
 				s.queue = null; 
 			}
 		}
 		
-		void onNext(MergeSequentialInnerSubscriber<T> inner, T value) {
+		void onNext(MergeSequentialInner<T> inner, T value) {
 			if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
 				if (requested != 0) {
 					actual.onNext(value);
@@ -189,7 +234,7 @@ final class ParallelMergeSequential<T> extends Flux<T> {
 		void drainLoop() {
 			int missed = 1;
 			
-			MergeSequentialInnerSubscriber<T>[] s = this.subscribers;
+			MergeSequentialInner<T>[] s = this.subscribers;
 			int n = s.length;
 			Subscriber<? super T> a = this.actual;
 			
@@ -217,7 +262,7 @@ final class ParallelMergeSequential<T> extends Flux<T> {
 					boolean empty = true;
 					
 					for (int i = 0; i < n; i++) {
-						MergeSequentialInnerSubscriber<T> inner = s[i];
+						MergeSequentialInner<T> inner = s[i];
 						
 						Queue<T> q = inner.queue;
 						if (q != null) {
@@ -262,7 +307,7 @@ final class ParallelMergeSequential<T> extends Flux<T> {
 					boolean empty = true;
 					
 					for (int i = 0; i < n; i++) {
-						MergeSequentialInnerSubscriber<T> inner = s[i];
+						MergeSequentialInner<T> inner = s[i];
 						
 						Queue<T> q = inner.queue;
 						if (q != null && !q.isEmpty()) {
@@ -294,9 +339,9 @@ final class ParallelMergeSequential<T> extends Flux<T> {
 		}
 	}
 	
-	static final class MergeSequentialInnerSubscriber<T> implements Subscriber<T> {
+	static final class MergeSequentialInner<T> implements InnerConsumer<T> {
 		
-		final MergeSequentialSubscription<T> parent;
+		final MergeSequentialMain<T> parent;
 		
 		final int prefetch;
 		
@@ -306,17 +351,36 @@ final class ParallelMergeSequential<T> extends Flux<T> {
 		
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<MergeSequentialInnerSubscriber, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(MergeSequentialInnerSubscriber.class, Subscription.class, "s");
+		static final AtomicReferenceFieldUpdater<MergeSequentialInner, Subscription> S =
+				AtomicReferenceFieldUpdater.newUpdater(MergeSequentialInner.class, Subscription.class, "s");
 		
 		volatile Queue<T> queue;
 		
 		volatile boolean done;
 		
-		public MergeSequentialInnerSubscriber(MergeSequentialSubscription<T> parent, int prefetch) {
+		MergeSequentialInner(MergeSequentialMain<T> parent, int prefetch) {
 			this.parent = parent;
 			this.prefetch = prefetch ;
 			this.limit = prefetch - (prefetch >> 2);
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch(key){
+				case CANCELLED:
+					return s == Operators.cancelledSubscription();
+				case PARENT:
+					return s;
+				case ACTUAL:
+					return parent;
+				case PREFETCH:
+					return prefetch;
+				case BUFFERED:
+					return queue != null ? queue.size() : 0;
+				case TERMINATED:
+					return done;
+			}
+			return null;
 		}
 		
 		@Override

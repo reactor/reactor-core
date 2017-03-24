@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,15 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import org.reactivestreams.Publisher;
+import reactor.core.Receiver;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class MonoFromTest {
+public class MonoSourceTest {
 
 	@Test
 	public void empty() {

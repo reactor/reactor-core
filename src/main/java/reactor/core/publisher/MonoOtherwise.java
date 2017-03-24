@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ final class MonoOtherwise<T> extends MonoSource<T, T> {
 
 	final Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory;
 
-	public MonoOtherwise(Publisher<? extends T> source,
+	MonoOtherwise(Mono<? extends T> source,
 						   Function<? super Throwable, ? extends Mono<? extends T>>
 								   nextFactory) {
 		super(source);

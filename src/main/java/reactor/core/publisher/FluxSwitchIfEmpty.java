@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import java.util.Objects;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.core.Loopback;
 
 /**
  * Switches to another source if the first source turns out to be empty.
@@ -31,7 +30,7 @@ final class FluxSwitchIfEmpty<T> extends FluxSource<T, T> {
 
 	final Publisher<? extends T> other;
 
-	public FluxSwitchIfEmpty(Publisher<? extends T> source,
+	FluxSwitchIfEmpty(Flux<? extends T> source,
 			Publisher<? extends T> other) {
 		super(source);
 		this.other = Objects.requireNonNull(other, "other");
@@ -47,13 +46,13 @@ final class FluxSwitchIfEmpty<T> extends FluxSource<T, T> {
 	}
 
 	static final class SwitchIfEmptySubscriber<T>
-			extends Operators.MultiSubscriptionSubscriber<T, T> implements Loopback {
+			extends Operators.MultiSubscriptionSubscriber<T, T> {
 
 		final Publisher<? extends T> other;
 
 		boolean once;
 
-		public SwitchIfEmptySubscriber(Subscriber<? super T> actual,
+		SwitchIfEmptySubscriber(Subscriber<? super T> actual,
 				Publisher<? extends T> other) {
 			super(actual);
 			this.other = other;
@@ -65,7 +64,7 @@ final class FluxSwitchIfEmpty<T> extends FluxSource<T, T> {
 				once = true;
 			}
 
-			subscriber.onNext(t);
+			actual.onNext(t);
 		}
 
 		@Override
@@ -76,18 +75,8 @@ final class FluxSwitchIfEmpty<T> extends FluxSource<T, T> {
 				other.subscribe(this);
 			}
 			else {
-				subscriber.onComplete();
+				actual.onComplete();
 			}
-		}
-
-		@Override
-		public Object connectedInput() {
-			return null;
-		}
-
-		@Override
-		public Object connectedOutput() {
-			return other;
 		}
 	}
 }

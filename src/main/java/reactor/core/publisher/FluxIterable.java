@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,8 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
-import reactor.core.Producer;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
+
 
 /**
  * Emits the contents of an Iterable source.
@@ -34,11 +31,11 @@ import reactor.core.Trackable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxIterable<T> extends Flux<T> implements Receiver, Fuseable {
+final class FluxIterable<T> extends Flux<T> implements Fuseable {
 
 	final Iterable<? extends T> iterable;
 
-	public FluxIterable(Iterable<? extends T> iterable) {
+	FluxIterable(Iterable<? extends T> iterable) {
 		this.iterable = Objects.requireNonNull(iterable, "iterable");
 	}
 
@@ -55,11 +52,6 @@ final class FluxIterable<T> extends Flux<T> implements Receiver, Fuseable {
 		}
 
 		subscribe(s, it);
-	}
-
-	@Override
-	public Object upstream() {
-		return iterable;
 	}
 
 	/**
@@ -99,7 +91,7 @@ final class FluxIterable<T> extends Flux<T> implements Receiver, Fuseable {
 	}
 
 	static final class IterableSubscription<T>
-			implements Producer, Trackable, SynchronousSubscription<T> {
+			implements InnerProducer<T>, SynchronousSubscription<T> {
 
 		final Subscriber<? super T> actual;
 
@@ -277,28 +269,21 @@ final class FluxIterable<T> extends Flux<T> implements Receiver, Fuseable {
 		}
 
 		@Override
-		public boolean isCancelled() {
-			return cancelled;
-		}
-
-		@Override
-		public boolean isStarted() {
-			return iterator.hasNext();
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return !iterator.hasNext();
-		}
-
-		@Override
-		public Object downstream() {
+		public Subscriber<? super T> actual() {
 			return actual;
 		}
 
 		@Override
-		public long requestedFromDownstream() {
-			return requested;
+		public Object scan(Attr key) {
+			switch(key){
+				case CANCELLED:
+					return cancelled;
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+				case TERMINATED:
+					return state == STATE_NO_NEXT;
+			}
+			return InnerProducer.super.scan(key);
 		}
 
 		@Override
@@ -353,7 +338,7 @@ final class FluxIterable<T> extends Flux<T> implements Receiver, Fuseable {
 	}
 
 	static final class IterableSubscriptionConditional<T>
-			implements Producer, Trackable, Subscription, SynchronousSubscription<T> {
+			implements InnerProducer<T>, SynchronousSubscription<T> {
 
 		final ConditionalSubscriber<? super T> actual;
 
@@ -389,7 +374,7 @@ final class FluxIterable<T> extends Flux<T> implements Receiver, Fuseable {
 
 		T current;
 
-		public IterableSubscriptionConditional(ConditionalSubscriber<? super T> actual,
+		IterableSubscriptionConditional(ConditionalSubscriber<? super T> actual,
 				Iterator<? extends T> iterator) {
 			this.actual = actual;
 			this.iterator = iterator;
@@ -533,28 +518,21 @@ final class FluxIterable<T> extends Flux<T> implements Receiver, Fuseable {
 		}
 
 		@Override
-		public boolean isCancelled() {
-			return cancelled;
-		}
-
-		@Override
-		public boolean isStarted() {
-			return iterator.hasNext();
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return !iterator.hasNext();
-		}
-
-		@Override
-		public Object downstream() {
+		public Subscriber<? super T> actual() {
 			return actual;
 		}
 
 		@Override
-		public long requestedFromDownstream() {
-			return requested;
+		public Object scan(Attr key) {
+			switch(key){
+				case CANCELLED:
+					return cancelled;
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+				case TERMINATED:
+					return state == STATE_NO_NEXT;
+			}
+			return InnerProducer.super.scan(key);
 		}
 
 		@Override

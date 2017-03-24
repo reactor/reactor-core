@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,6 @@ package reactor.core.publisher;
 
 import java.util.function.Consumer;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 
@@ -39,14 +38,14 @@ final class MonoDoFinallyFuseable<T> extends MonoSource<T, T> implements Fuseabl
 
 	final Consumer<SignalType> onFinally;
 
-	public MonoDoFinallyFuseable(Publisher<? extends T> source, Consumer<SignalType> onFinally) {
+	MonoDoFinallyFuseable(Mono<? extends T> source, Consumer<SignalType> onFinally) {
 		super(source);
 		this.onFinally = onFinally;
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(FluxDoFinally.createSubscriber(source, s, onFinally));
+		source.subscribe(FluxDoFinally.createSubscriber(s, onFinally, true));
 	}
 
 }

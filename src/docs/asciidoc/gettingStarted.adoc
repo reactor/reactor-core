@@ -62,7 +62,7 @@ BOM by adding the following to your `pom.xml`:footnote:[if the top section alrea
         <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-bom</artifactId>
-            <version>Aluminium-RELEASE</version>
+            <version>Aluminium-SR1</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -114,7 +114,7 @@ Then use it to import the BOM:
 ----
 dependencyManagement {
      imports {
-          mavenBom "io.projectreactor:reactor-bom:Aluminium-RELEASE"
+          mavenBom "io.projectreactor:reactor-bom:Aluminium-SR1"
      }
 }
 ----

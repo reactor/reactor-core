@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ final class MonoRetryWhen<T> extends MonoSource<T, T> {
 	final Function<? super Flux<Throwable>, ? extends Publisher<?>>
 			whenSourceFactory;
 
-	public MonoRetryWhen(Publisher<? extends T> source,
+	MonoRetryWhen(Mono<? extends T> source,
 			Function<? super Flux<Throwable>, ? extends Publisher<?>> whenSourceFactory) {
 		super(source);
 		this.whenSourceFactory =

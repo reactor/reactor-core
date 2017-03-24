@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,14 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
+
 
 /**
  * Samples the main source and emits its latest value whenever the other Publisher
@@ -44,7 +47,7 @@ final class FluxSample<T, U> extends FluxSource<T, T> {
 
 	final Publisher<U> other;
 
-	public FluxSample(Publisher<? extends T> source, Publisher<U> other) {
+	FluxSample(Flux<? extends T> source, Publisher<U> other) {
 		super(source);
 		this.other = Objects.requireNonNull(other, "other");
 	}
@@ -63,39 +66,64 @@ final class FluxSample<T, U> extends FluxSource<T, T> {
 
 		s.onSubscribe(main);
 
-		other.subscribe(new SampleOtherSubscriber<>(main));
+		other.subscribe(new SampleOther<>(main));
 
 		source.subscribe(main);
 	}
 
 	static final class SampleMainSubscriber<T>
-	  implements Subscriber<T>, Subscription {
+			implements InnerOperator<T, T>, InnerProducer<T> {
 
 		final Subscriber<? super T> actual;
+		volatile T                  value;
 
-		volatile T value;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SampleMainSubscriber, Object> VALUE =
 		  AtomicReferenceFieldUpdater.newUpdater(SampleMainSubscriber.class, Object.class, "value");
 
 		volatile Subscription main;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SampleMainSubscriber, Subscription> MAIN =
 		  AtomicReferenceFieldUpdater.newUpdater(SampleMainSubscriber.class, Subscription.class, "main");
-
-
 		volatile Subscription other;
+
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SampleMainSubscriber, Subscription> OTHER =
 		  AtomicReferenceFieldUpdater.newUpdater(SampleMainSubscriber.class, Subscription.class, "other");
-
 		volatile long requested;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<SampleMainSubscriber> REQUESTED =
 		  AtomicLongFieldUpdater.newUpdater(SampleMainSubscriber.class, "requested");
-
-		public SampleMainSubscriber(Subscriber<? super T> actual) {
+		SampleMainSubscriber(Subscriber<? super T> actual) {
 			this.actual = actual;
+		}
+
+		@Override
+		public final Subscriber<? super T> actual() {
+			return actual;
+		}
+
+		@Override
+		public Stream<? extends Scannable> inners() {
+			return Stream.of(Scannable.from(other));
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+				case PARENT:
+					return main;
+				case CANCELLED:
+					return main == Operators.cancelledSubscription();
+				case BUFFERED:
+					return value != null ? 1 : 0;
+			}
+			return InnerOperator.super.scan(key);
 		}
 
 		@Override
@@ -183,11 +211,26 @@ final class FluxSample<T, U> extends FluxSource<T, T> {
 		}
 	}
 
-	static final class SampleOtherSubscriber<T, U> implements Subscriber<U> {
+	static final class SampleOther<T, U> implements InnerConsumer<U> {
 		final SampleMainSubscriber<T> main;
 
-		public SampleOtherSubscriber(SampleMainSubscriber<T> main) {
+		SampleOther(SampleMainSubscriber<T> main) {
 			this.main = main;
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return main.other;
+				case ACTUAL:
+					return main;
+				case CANCELLED:
+					return main.other == Operators.cancelledSubscription();
+				case PREFETCH:
+					return Long.MAX_VALUE;
+			}
+			return null;
 		}
 
 		@Override

@@ -27,9 +27,6 @@ import java.util.function.Supplier;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
-import reactor.core.Producer;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.WaitStrategy;
 
@@ -609,7 +606,9 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 
 	@Override
 	public void subscribe(final Subscriber<? super E> subscriber) {
-		super.subscribe(subscriber);
+		if (subscriber == null) {
+			throw Exceptions.argumentIsNullException();
+		}
 
 		if (!alive()) {
 			coldSource(ringBuffer, null, error, minimum).subscribe(subscriber);
@@ -618,8 +617,8 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 
 		//create a unique eventProcessor for this subscriber
 		final RingBuffer.Sequence pendingRequest = RingBuffer.newSequence(0);
-		final TopicSubscriberLoop<E> signalProcessor =
-				new TopicSubscriberLoop<>(this, pendingRequest, subscriber);
+		final TopicInner<E> signalProcessor =
+				new TopicInner<>(this, pendingRequest, subscriber);
 
 		//bind eventProcessor sequence to observe the ringBuffer
 
@@ -712,13 +711,12 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * @param <T> event implementation storing the data for sharing during exchange or
 	 * parallel coordination of an event.
 	 */
-	final static class TopicSubscriberLoop<T>
-			implements Runnable, Producer, Receiver, Trackable, Subscription {
+	final static class TopicInner<T>
+			implements Runnable, InnerProducer<T> {
 
 		final AtomicBoolean running = new AtomicBoolean(true);
 
-		final RingBuffer.Sequence sequence =
-				wrap(RingBuffer.INITIAL_CURSOR_VALUE, this);
+		final RingBuffer.Sequence sequence = RingBuffer.newSequence(RingBuffer.INITIAL_CURSOR_VALUE);
 
 		final TopicProcessor<T> processor;
 
@@ -743,7 +741,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 		 * @param pendingRequest holder for the number of pending requests
 		 * @param subscriber the output Subscriber instance
 		 */
-		TopicSubscriberLoop(TopicProcessor<T> processor,
+		TopicInner(TopicProcessor<T> processor,
 		                            RingBuffer.Sequence pendingRequest,
 		                            Subscriber<? super T> subscriber) {
 			this.processor = processor;
@@ -859,43 +857,27 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 		}
 
 		@Override
-		public boolean isCancelled() {
-			return !running.get();
+		public Object scan(Attr key) {
+			switch (key){
+				case PARENT:
+					return processor;
+				case PREFETCH:
+					return Integer.MAX_VALUE;
+				case TERMINATED:
+					return processor.isTerminated();
+				case CANCELLED:
+					return !running.get();
+				case REQUESTED_FROM_DOWNSTREAM:
+					return pendingRequest.getAsLong();
+				case BUFFERED:
+					return processor.ringBuffer.getCursor() - sequence.getAsLong();
+			}
+			return InnerProducer.super.scan(key);
 		}
 
 		@Override
-		public boolean isStarted() {
-			return sequence.getAsLong() != -1L;
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return !running.get();
-		}
-
-		@Override
-		public long requestedFromDownstream() {
-			return pendingRequest.getAsLong();
-		}
-
-		@Override
-		public long getPending() {
-			return processor.ringBuffer.getCursor() - sequence.getAsLong();
-		}
-
-		@Override
-		public long getCapacity() {
-			return processor.getCapacity();
-		}
-
-		@Override
-		public Object downstream() {
+		public Subscriber<? super T> actual() {
 			return subscriber;
-		}
-
-		@Override
-		public Object upstream() {
-			return processor;
 		}
 
 		@Override

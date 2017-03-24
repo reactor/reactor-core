@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 
-import org.reactivestreams.*;
+import org.reactivestreams.Subscriber;
 
 /**
  * Emits a default value if the wrapped Mono is empty.
@@ -27,7 +27,7 @@ import org.reactivestreams.*;
 final class MonoDefaultIfEmpty<T> extends MonoSource<T, T> {
     final T defaultValue;
 
-    public MonoDefaultIfEmpty(Publisher<? extends T> source, T defaultValue) {
+    MonoDefaultIfEmpty(Mono<? extends T> source, T defaultValue) {
         super(source);
         this.defaultValue = Objects.requireNonNull(defaultValue, "defaultValue");
     }

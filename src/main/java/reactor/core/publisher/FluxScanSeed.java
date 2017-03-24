@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,13 +21,8 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Loopback;
-import reactor.core.Producer;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
 
 import static reactor.core.publisher.DrainUtils.COMPLETED_MASK;
 import static reactor.core.publisher.DrainUtils.REQUESTED_MASK;
@@ -56,7 +51,7 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 
 	final Supplier<R> initialSupplier;
 
-	FluxScanSeed(Publisher<? extends T> source,
+	FluxScanSeed(Flux<? extends T> source,
 			Supplier<R> initialSupplier,
 			BiFunction<R, ? super T, R> accumulator) {
 		super(source);
@@ -80,8 +75,7 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 	}
 
 	static final class ScanSeedSubscriber<T, R>
-			implements Subscriber<T>, Subscription, Producer, Receiver, Loopback,
-			           Trackable {
+			implements InnerOperator<T, R> {
 
 		final Subscriber<? super R> actual;
 
@@ -224,33 +218,24 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
-		public boolean isStarted() {
-			return s != null && !done;
+		public Object scan(Attr key) {
+			switch (key){
+				case PARENT:
+					return s;
+				case TERMINATED:
+					return done;
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+				case BUFFERED:
+					return value != null ? 1 : 0;
+			}
+			return InnerOperator.super.scan(key);
 		}
 
 		@Override
-		public long requestedFromDownstream() {
-			return requested;
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
-		@Override
-		public Object downstream() {
+		public Subscriber<? super R> actual() {
 			return actual;
 		}
 
-		@Override
-		public Object connectedInput() {
-			return accumulator;
-		}
-
-		@Override
-		public Object upstream() {
-			return s;
-		}
 	}
 }

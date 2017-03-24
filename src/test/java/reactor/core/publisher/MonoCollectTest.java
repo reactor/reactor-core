@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,13 +33,12 @@ public class MonoCollectTest {
 
 	@Test(expected = NullPointerException.class)
 	public void nullSupplier() {
-		new MonoCollect<>(Mono.never(), null, (a, b) -> {
-		});
+		Flux.never().collect(null, (a, b) -> {});
 	}
 
 	@Test(expected = NullPointerException.class)
 	public void nullAction() {
-		new MonoCollect<>(Mono.never(), () -> 1, null);
+		Flux.never().collect(() -> 1, null);
 	}
 
 	@Test

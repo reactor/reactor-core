@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -129,7 +129,13 @@ final class ParallelPeek<T> extends ParallelFlux<T> implements SignalPeek<T>{
 	}
 
 	@Override
-	public ParallelFlux<T> upstream() {
-		return source;
+	public Object scan(Attr key) {
+		switch (key){
+			case PARENT:
+				return source;
+			case PREFETCH:
+				return getPrefetch();
+		}
+		return null;
 	}
 }

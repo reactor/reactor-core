@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,20 +21,21 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 import reactor.core.Receiver;
+import reactor.core.Scannable;
+
 
 /**
  * A decorating {@link Mono} {@link Publisher} that exposes {@link Mono} API over an arbitrary {@link Publisher}
  * Useful to create operators which return a {@link Mono}, e.g. :
  * {@code
- *    flux.as(f -> new MonoSource<>(f))
- *        .then(d -> Mono.delay(1))
- *        .get();
+ *    flux.as(f -> MonoSource.wrap(f))
+ *        .then(d -> Mono.delay(Duration.ofSeconds(1))
+ *        .block();
  * }
- *
  * @param <I> delegate {@link Publisher} type
  * @param <O> produced type
  */
-public class MonoSource<I, O> extends Mono<O> implements Receiver{
+public class MonoSource<I, O> extends Mono<O> implements Scannable, Receiver {
 
 	protected final Publisher<? extends I> source;
 
@@ -52,12 +53,18 @@ public class MonoSource<I, O> extends Mono<O> implements Receiver{
 		return new MonoSource<>(source);
 	}
 
+	/**
+	 * Build a {@link MonoSource} wrapper around the passed parent {@link Publisher}
+	 *
+	 * @param source the {@link Publisher} to decorate
+	 */
 	protected MonoSource(Publisher<? extends I> source) {
 		this.source = Objects.requireNonNull(source);
 	}
 
 	/**
-	 * Default is delegating and decorating with Mono API
+	 * Default is simply delegating and decorating with {@link Mono} API. Note this
+	 * assumes an identity between input and output types.
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
@@ -67,10 +74,16 @@ public class MonoSource<I, O> extends Mono<O> implements Receiver{
 
 	@Override
 	public String toString() {
-		return "{" +
-				" operator : \"" + getClass().getSimpleName().replaceAll("Mono","") +
-				"\" " +
-				'}';
+		StringBuilder sb = new StringBuilder();
+		return sb.append('{')
+		         .append(" \"operator\" : ")
+		         .append('"')
+		         .append(getClass().getSimpleName()
+		                           .replaceAll("Mono", ""))
+		         .append('"')
+		         .append(' ')
+		         .append('}')
+		         .toString();
 	}
 
 	@Override
@@ -78,7 +91,17 @@ public class MonoSource<I, O> extends Mono<O> implements Receiver{
 		return source;
 	}
 
-	static final class FuseableMonoSource<I> extends MonoSource<I, I> implements Fuseable{
+	@Override
+	public Object scan(Scannable.Attr key) {
+		switch (key){
+			case PARENT:
+				return source;
+		}
+		return null;
+	}
+
+	static final class FuseableMonoSource<I> extends MonoSource<I, I>
+			implements Fuseable{
 		FuseableMonoSource(Publisher<? extends I> source) {
 			super(source);
 		}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import reactor.core.Exceptions;
-import reactor.core.MultiReceiver;
-import reactor.core.Trackable;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
@@ -585,19 +584,6 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		Flux<Integer>[] list = new Flux[]{Flux.just(1), Flux.just(2)};
 		Flux<Integer> f = Flux.zip(obj -> 0, 123, list);
 		assertThat(f.getPrefetch()).isEqualTo(123);
-
-		assertThat(f instanceof Trackable).isTrue();
-		Trackable t = (Trackable) f;
-		assertThat(t.getCapacity()).isEqualTo(123);
-
-		assertThat(f instanceof MultiReceiver).isTrue();
-		MultiReceiver mr = (MultiReceiver) f;
-		assertThat(mr.upstreamCount()).isEqualTo(2);
-
-		Iterator<?> it = mr.upstreams();
-		assertThat(it.next()).isEqualTo(list[0]);
-		assertThat(it.next()).isEqualTo(list[1]);
-		assertThat(it.hasNext()).isFalse();
 	}
 
 	@Test
@@ -606,19 +592,6 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		List<Flux<Integer>> list = Arrays.asList(Flux.just(1), Flux.just(2));
 		Flux<Integer> f = Flux.zip(list, 123, obj -> 0);
 		assertThat(f.getPrefetch()).isEqualTo(123);
-
-		assertThat(f instanceof Trackable).isTrue();
-		Trackable t = (Trackable) f;
-		assertThat(t.getCapacity()).isEqualTo(123);
-
-		assertThat(f instanceof MultiReceiver).isTrue();
-		MultiReceiver mr = (MultiReceiver) f;
-		assertThat(mr.upstreamCount()).isEqualTo(-1);
-
-		Iterator<?> it = mr.upstreams();
-		assertThat(it.next()).isEqualTo(list.get(0));
-		assertThat(it.next()).isEqualTo(list.get(1));
-		assertThat(it.hasNext()).isFalse();
 	}
 
 	@Test(expected = IllegalArgumentException.class)
@@ -759,8 +732,8 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		try {
 			StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1), d1, s -> {
 				Subscriber<?> a =
-						((DirectProcessor.DirectProcessorSubscription) d1.downstreams()
-						                                                 .next()).actual;
+						((DirectProcessor.DirectInner) d1.downstreams()
+						                                 .next()).actual;
 
 				s.onSubscribe(Operators.emptySubscription());
 				s.onComplete();
@@ -912,9 +885,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		UnicastProcessor<Integer> up = UnicastProcessor.create();
 		try {
 			StepVerifier.create(Flux.zip(obj -> (int) obj[0] + (int) obj[1], 1, up, s -> {
-				assertThat(((FluxZip.ZipInner) up.actual).parent.subscribers[1].isTerminated()).isFalse();
-				assertThat(((FluxZip.ZipInner) up.actual).parent.getPending()).isEqualTo(
-						0L);
+				assertThat(((FluxZip.ZipInner) up.actual).parent.subscribers[1].done).isFalse();
 				Flux.just(2, 3, 5)
 				    .subscribe(s);
 			})
@@ -925,9 +896,9 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 			            .then(() -> up.onNext(2))
 			            .thenRequest(1)
 			            .expectNext(5)
-			            .then(() -> assertThat(((FluxZip.ZipInner) up.actual).isTerminated()).isFalse())
+			            .then(() -> assertThat(((FluxZip.ZipInner) up.actual).done).isFalse())
 			            .then(() -> up.actual.onError(new Exception("test")))
-			            .then(() -> assertThat(((FluxZip.ZipInner) up.actual).isTerminated()).isTrue())
+			            .then(() -> assertThat(((FluxZip.ZipInner) up.actual).done).isTrue())
 			            .then(() -> up.actual.onError(new Exception("test2")))
 			            .verifyErrorMessage("test");
 		}
@@ -1054,8 +1025,8 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		DirectProcessor<Integer> d = DirectProcessor.create();
 		StepVerifier.create(Flux.zip(obj -> 0, d, s -> {
 			Subscriber<?> a =
-					((DirectProcessor.DirectProcessorSubscription) d.downstreams()
-					                                                .next()).actual;
+					((DirectProcessor.DirectInner) d.downstreams()
+					                                .next()).actual;
 
 			Operators.complete(s);
 
@@ -1144,11 +1115,11 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 			                        assertInnerSubscriberBefore(ref.get());
 		                        }), 0)
 		            .then(() -> assertThat(ref.get()
-		                                      .getCapacity()).isEqualTo(3))
+		                                      .scan(Scannable.Attr.BUFFERED)).isEqualTo(3))
 		            .then(() -> assertThat(ref.get()
-		                                      .getPending()).isEqualTo(1))
+		                                      .scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE))
 		            .then(() -> assertThat(ref.get()
-		                                      .upstreams()).hasSize(3))
+		                                      .inners()).hasSize(3))
 		            .thenCancel()
 		            .verify();
 
@@ -1157,28 +1128,24 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 
 	@SuppressWarnings("unchecked")
 	void assertInnerSubscriberBefore(FluxZip.ZipSingleCoordinator c) {
-		FluxZip.ZipSingleSubscriber s = (FluxZip.ZipSingleSubscriber) c.upstreams()
-		                                                               .next();
+		FluxZip.ZipSingleSubscriber s = (FluxZip.ZipSingleSubscriber) c.inners()
+		                                                               .findFirst()
+		                                                               .get();
 
-		assertThat(s.isStarted()).isTrue();
-		assertThat(s.isTerminated()).isFalse();
-		assertThat(s.upstream()).isNull();
-		assertThat(s.getCapacity()).isEqualTo(1L);
-		assertThat(s.getPending()).isEqualTo(1L);
-		assertThat(s.isCancelled()).isFalse();
+		assertThat(s.scan(Scannable.Attr.TERMINATED, Boolean.class)).isFalse();
+		assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
+		assertThat(s.scan(Scannable.Attr.CANCELLED, Boolean.class)).isFalse();
 	}
 
 	@SuppressWarnings("unchecked")
 	void assertInnerSubscriber(FluxZip.ZipSingleCoordinator c) {
-		FluxZip.ZipSingleSubscriber s = (FluxZip.ZipSingleSubscriber) c.upstreams()
-		                                                               .next();
+		FluxZip.ZipSingleSubscriber s = (FluxZip.ZipSingleSubscriber) c.inners()
+		                                                               .findFirst()
+		                                                               .get();
 
-		assertThat(s.isStarted()).isFalse();
-		assertThat(s.isTerminated()).isTrue();
-		assertThat(s.upstream()).isNotNull();
-		assertThat(s.getCapacity()).isEqualTo(1);
-		assertThat(s.getPending()).isEqualTo(-1L);
-		assertThat(s.isCancelled()).isTrue();
+		assertThat(s.scan(Scannable.Attr.TERMINATED, Boolean.class)).isTrue();
+		assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
+		assertThat(s.scan(Scannable.Attr.CANCELLED, Boolean.class)).isTrue();
 
 		Hooks.onNextDropped(v -> {
 		});
@@ -1208,15 +1175,11 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 			                        assertInnerSubscriberBefore(ref.get());
 		                        }), 0)
 		            .then(() -> assertThat(ref.get()
-		                                      .getCapacity()).isEqualTo(3))
+		                                      .inners().count()).isEqualTo(3))
 		            .then(() -> assertThat(ref.get()
-		                                      .getPending()).isEqualTo(1))
+		                                      .scan(Scannable.Attr.ERROR)).isNull())
 		            .then(() -> assertThat(ref.get()
-		                                      .upstreams()).hasSize(3))
-		            .then(() -> assertThat(ref.get()
-		                                      .getError()).isNull())
-		            .then(() -> assertThat(ref.get()
-		                                      .requestedFromDownstream()).isEqualTo(0))
+		                                      .scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L))
 		            .thenCancel()
 		            .verify();
 
@@ -1236,11 +1199,9 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 					ref.get()
 					   .cancel();
 					assertThat(ref.get()
-					              .getPending()).isEqualTo(1);
+					              .scan(Scannable.Attr.CANCELLED, Boolean.class)).isTrue();
 					assertThat(ref.get()
-					              .isCancelled()).isTrue();
-					assertThat(ref.get()
-					              .isTerminated()).isFalse();
+					              .scanOrDefault(Scannable.Attr.TERMINATED, false));
 					return Flux.just(3);
 				}),
 				Flux.just(3)
@@ -1251,15 +1212,12 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 			                        assertInnerSubscriberBefore(ref.get());
 		                        }), 0)
 		            .then(() -> assertThat(ref.get()
-		                                      .getCapacity()).isEqualTo(3))
+		                                      .inners()).hasSize(3))
 		            .then(() -> assertThat(ref.get()
-		                                      .getPending()).isEqualTo(1))
+		                                      .scan(Scannable.Attr.ERROR)).isNull())
 		            .then(() -> assertThat(ref.get()
-		                                      .upstreams()).hasSize(3))
-		            .then(() -> assertThat(ref.get()
-		                                      .getError()).isNull())
-		            .then(() -> assertThat(ref.get()
-		                                      .requestedFromDownstream()).isEqualTo(0))
+		                                      .scan(Scannable.Attr
+				                                      .REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L))
 		            .thenCancel()
 		            .verify();
 
@@ -1268,34 +1226,26 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 
 	@SuppressWarnings("unchecked")
 	void assertInnerSubscriberBefore(FluxZip.ZipCoordinator c) {
-		FluxZip.ZipInner s = (FluxZip.ZipInner) c.upstreams()
+		FluxZip.ZipInner s = (FluxZip.ZipInner) c.inners()
+		                                         .iterator()
 		                                         .next();
 
-		assertThat(s.isStarted()).isTrue();
-		assertThat(s.isTerminated()).isFalse();
-		assertThat(s.upstream()).isNull();
-		assertThat(s.getCapacity()).isEqualTo(123);
-		assertThat(s.getPending()).isEqualTo(-1L);
-		assertThat(s.limit()).isEqualTo(93);
-		assertThat(s.expectedFromUpstream()).isEqualTo(0);
-		assertThat(s.downstream()).isNull();
-		assertThat(s.isCancelled()).isFalse();
+		assertThat(s.scan(Scannable.Attr.TERMINATED, Boolean.class)).isFalse();
+		assertThat(s.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
+		assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
+		assertThat(s.scan(Scannable.Attr.CANCELLED, Boolean.class)).isFalse();
 	}
 
 	@SuppressWarnings("unchecked")
 	void assertInnerSubscriber(FluxZip.ZipCoordinator c) {
-		FluxZip.ZipInner s = (FluxZip.ZipInner) c.upstreams()
+		FluxZip.ZipInner s = (FluxZip.ZipInner) c.inners()
+		                                         .iterator()
 		                                         .next();
 
-		assertThat(s.isStarted()).isFalse();
-		assertThat(s.isTerminated()).isFalse();
-		assertThat(s.upstream()).isNotNull();
-		assertThat(s.getCapacity()).isEqualTo(123);
-		assertThat(s.getPending()).isEqualTo(1);
-		assertThat(s.limit()).isEqualTo(93);
-		assertThat(s.expectedFromUpstream()).isEqualTo(0);
-		assertThat(s.downstream()).isNull();
-		assertThat(s.isCancelled()).isFalse();
+		assertThat(s.scan(Scannable.Attr.TERMINATED, Boolean.class)).isFalse();
+		assertThat(s.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
+		assertThat(c.inners()).hasSize(3);
+		assertThat(s.scan(Scannable.Attr.CANCELLED, Boolean.class)).isTrue();
 	}
 
 	@Test
