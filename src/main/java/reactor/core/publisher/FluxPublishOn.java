@@ -534,8 +534,6 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable {
 					return delayError;
 				case PREFETCH:
 					return prefetch;
-				case LIMIT:
-					return limit;
 			}
 			return InnerOperator.super.scan(key);
 		}
@@ -975,8 +973,6 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable {
 					return delayError;
 				case PREFETCH:
 					return prefetch;
-				case LIMIT:
-					return limit;
 			}
 			return InnerOperator.super.scan(key);
 		}

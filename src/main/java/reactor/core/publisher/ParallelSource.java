@@ -140,7 +140,6 @@ final class ParallelSource<T> extends ParallelFlux<T> implements Scannable {
 			this.limit = prefetch - (prefetch >> 2);
 			this.requests = new AtomicLongArray(subscribers.length);
 			this.emissions = new long[subscribers.length];
-
 		}
 
 		@Override
@@ -150,8 +149,6 @@ final class ParallelSource<T> extends ParallelFlux<T> implements Scannable {
 					return s;
 				case PREFETCH:
 					return prefetch;
-				case LIMIT:
-					return limit;
 				case TERMINATED:
 					return done;
 				case CANCELLED:

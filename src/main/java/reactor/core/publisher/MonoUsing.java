@@ -102,8 +102,7 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable {
 					eager));
 		}
 		else if (s instanceof ConditionalSubscriber) {
-			p.subscribe(new FluxUsing.UsingConditionalSubscriber<>((ConditionalSubscriber<? super
-					T>) s,
+			p.subscribe(new FluxUsing.UsingConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
 					resourceCleanup,
 					resource,
 					eager));

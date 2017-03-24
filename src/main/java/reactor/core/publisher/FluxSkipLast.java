@@ -96,6 +96,8 @@ final class FluxSkipLast<T> extends FluxSource<T, T> {
 			switch (key){
 				case PARENT:
 					return s;
+				case PREFETCH:
+					return n;
 				case BUFFERED:
 					return size();
 			}

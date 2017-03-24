@@ -180,8 +180,6 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 					return cancelled;
 				case PREFETCH:
 					return prefetch;
-				case LIMIT:
-					return limit;
 				case BUFFERED:
 					return queue != null ? queue.size() : 0;
 			}

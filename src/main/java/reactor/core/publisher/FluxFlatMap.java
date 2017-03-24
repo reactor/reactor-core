@@ -271,8 +271,6 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					return maxConcurrency;
 				case REQUESTED_FROM_DOWNSTREAM:
 					return requested;
-				case LIMIT:
-					return limit;
 				case BUFFERED:
 					return (scalarQueue != null ? scalarQueue.size() : 0) + size;
 			}
@@ -967,8 +965,6 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 					return queue == null ? 0 : queue.size();
 				case PREFETCH:
 					return prefetch;
-				case LIMIT:
-					return limit;
 			}
 			return null;
 		}

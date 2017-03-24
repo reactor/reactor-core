@@ -167,8 +167,6 @@ final class FluxOnBackpressureDrop<T> extends FluxSource<T, T> {
 					return requested;
 				case TERMINATED:
 					return done;
-				case CANCELLED:
-					return s == Operators.cancelledSubscription();
 				case PREFETCH:
 					return Integer.MAX_VALUE;
 			}

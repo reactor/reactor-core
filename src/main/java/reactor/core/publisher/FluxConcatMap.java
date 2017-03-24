@@ -189,8 +189,6 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 					return queue != null ? queue.size() : 0;
 				case ERROR:
 					return error;
-				case LIMIT:
-					return limit;
 			}
 			return InnerOperator.super.scan(key);
 		}
@@ -530,8 +528,6 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 					return queue != null ? queue.size() : 0;
 				case ERROR:
 					return error;
-				case LIMIT:
-					return limit;
 				case DELAY_ERROR:
 					return true;
 				case DELAY_ERROR_END:

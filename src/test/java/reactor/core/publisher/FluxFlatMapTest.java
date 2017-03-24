@@ -963,7 +963,6 @@ public class FluxFlatMapTest {
 		assertThat(s.scan(Scannable.Attr.TERMINATED, Boolean.class)).isFalse();
 		assertThat(s.scan(Scannable.Attr.PREFETCH)).isEqualTo(32);
 		assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
-		assertThat(s.scan(Scannable.Attr.LIMIT)).isEqualTo(24);
 	}
 
 	@Test

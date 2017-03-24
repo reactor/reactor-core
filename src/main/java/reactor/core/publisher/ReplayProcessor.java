@@ -541,7 +541,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 		@Override
 		public int capacity() {
-			return batchSize;
+			return Integer.MAX_VALUE;
 		}
 
 		@Override

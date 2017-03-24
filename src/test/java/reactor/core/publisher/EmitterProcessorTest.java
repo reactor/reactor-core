@@ -265,7 +265,6 @@ public class EmitterProcessorTest {
 		tp.onNext(1);
 		assertThat(tp.getPending()).isEqualTo(0);
 		assertThat(tp.getBufferSize()).isEqualTo(QueueSupplier.SMALL_BUFFER_SIZE);
-		assertThat(tp.scan(Scannable.Attr.EXPECTED_FROM_UPSTREAM)).isEqualTo(QueueSupplier.SMALL_BUFFER_SIZE);
 		assertThat(tp.isCancelled()).isFalse();
 		assertThat(tp.downstreams()).isEmpty();
 
@@ -303,7 +302,6 @@ public class EmitterProcessorTest {
 		});
 		s.accept(5);
 		s.accept(6);
-		assertThat(tp.scan(Scannable.Attr.EXPECTED_FROM_UPSTREAM)).isEqualTo(QueueSupplier.SMALL_BUFFER_SIZE - 5);
 		s.accept(7);
 		assertThat(tp.scan(Scannable.Attr.BUFFERED)).isEqualTo(3);
 		assertThat(tp.isTerminated()).isFalse();

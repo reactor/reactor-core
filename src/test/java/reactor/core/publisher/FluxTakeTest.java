@@ -421,7 +421,6 @@ public class FluxTakeTest {
 	@SuppressWarnings("unchecked")
 	void assertTrackableBeforeOnSubscribe(InnerOperator t){
 		assertThat(t.scan(Scannable.Attr.TERMINATED, Boolean.class)).isFalse();
-		assertThat(t.scan(Scannable.Attr.EXPECTED_FROM_UPSTREAM)).isEqualTo(2L);
 	}
 
 	void assertTrackableAfterOnSubscribe(InnerOperator t){

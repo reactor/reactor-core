@@ -267,8 +267,6 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 				    return  s;
 			    case CANCELLED:
 			    	return s == Operators.cancelledSubscription();
-			    case LIMIT:
-			    	return limit;
 			    case PREFETCH:
 			    	return batchSize;
 			    case ERROR:

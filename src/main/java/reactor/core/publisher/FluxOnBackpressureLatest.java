@@ -219,7 +219,7 @@ final class FluxOnBackpressureLatest<T> extends FluxSource<T, T> {
 				case TERMINATED:
 					return done;
 				case CANCELLED:
-					return s == Operators.cancelledSubscription();
+					return cancelled;
 				case BUFFERED:
 					return value != null;
 				case ERROR:

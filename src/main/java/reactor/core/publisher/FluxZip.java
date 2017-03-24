@@ -898,14 +898,10 @@ final class FluxZip<T, R> extends Flux<R> {
 					return s == Operators.cancelledSubscription();
 				case BUFFERED:
 					return queue != null ? queue.size() : 0;
-				case LIMIT:
-					return limit;
 				case TERMINATED:
 					return done && (queue == null || queue.isEmpty());
 				case PREFETCH:
 					return prefetch;
-				case EXPECTED_FROM_UPSTREAM:
-					return limit - produced;
 			}
 			return null;
 		}

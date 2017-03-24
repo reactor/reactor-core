@@ -467,8 +467,6 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 					return parent;
 				case PREFETCH:
 					return bufferSize;
-				case LIMIT:
-					return limit;
 			}
 			return null;
 		}

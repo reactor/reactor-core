@@ -138,8 +138,6 @@ abstract class BlockingSingleSubscriber<T> extends CountDownLatch
 				return error;
 			case PREFETCH:
 				return Integer.MAX_VALUE;
-			case EXPECTED_FROM_UPSTREAM:
-				return getCount();
 		}
 		return null;
 	}

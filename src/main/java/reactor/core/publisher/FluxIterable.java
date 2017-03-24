@@ -281,7 +281,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 				case REQUESTED_FROM_DOWNSTREAM:
 					return requested;
 				case TERMINATED:
-					return isEmpty();
+					return state == STATE_NO_NEXT;
 			}
 			return InnerProducer.super.scan(key);
 		}
@@ -530,7 +530,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 				case REQUESTED_FROM_DOWNSTREAM:
 					return requested;
 				case TERMINATED:
-					return isEmpty();
+					return state == STATE_NO_NEXT;
 			}
 			return InnerProducer.super.scan(key);
 		}

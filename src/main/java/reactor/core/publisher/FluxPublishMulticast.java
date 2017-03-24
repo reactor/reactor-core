@@ -168,8 +168,6 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 					return cancelled;
 				case TERMINATED:
 					return done;
-				case LIMIT:
-					return limit;
 				case PREFETCH:
 					return prefetch;
 				case BUFFERED:

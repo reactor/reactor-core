@@ -1233,8 +1233,6 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		assertThat(s.scan(Scannable.Attr.TERMINATED, Boolean.class)).isFalse();
 		assertThat(s.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
 		assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
-		assertThat(s.scan(Scannable.Attr.LIMIT)).isEqualTo(93);
-		assertThat(s.scan(Scannable.Attr.EXPECTED_FROM_UPSTREAM)).isEqualTo(93L);
 		assertThat(s.scan(Scannable.Attr.CANCELLED, Boolean.class)).isFalse();
 	}
 
@@ -1247,8 +1245,6 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		assertThat(s.scan(Scannable.Attr.TERMINATED, Boolean.class)).isFalse();
 		assertThat(s.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
 		assertThat(c.inners()).hasSize(3);
-		assertThat(s.scan(Scannable.Attr.LIMIT)).isEqualTo(93);
-		assertThat(s.scan(Scannable.Attr.EXPECTED_FROM_UPSTREAM)).isEqualTo(93L);
 		assertThat(s.scan(Scannable.Attr.CANCELLED, Boolean.class)).isTrue();
 	}
 

@@ -22,8 +22,8 @@ import reactor.core.Scannable;
 
 /**
  *
- * A {@link InnerProducer} is a root {@link Subscription} that cycle back by default
- * the actual {@link Subscriber}.
+ * {@link InnerProducer} is a {@link Scannable} {@link Subscription} that produces
+ * data to an {@link #actual()} {@link Subscriber}
  *
  * @param <O> output operator produced type
  *

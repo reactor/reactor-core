@@ -113,11 +113,6 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 
 		volatile int wip;
 
-		@Override
-		public final Subscriber<? super R> actual() {
-			return actual;
-		}
-
 		static final AtomicIntegerFieldUpdater<JoinSubscription> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(JoinSubscription.class, "wip");
 
@@ -178,6 +173,11 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 		@Override
 		public Stream<? extends Scannable> inners() {
 			return Stream.of(cancellations.keys()).map(Scannable::from);
+		}
+
+		@Override
+		public final Subscriber<? super R> actual() {
+			return actual;
 		}
 
 		@Override

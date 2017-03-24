@@ -278,7 +278,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 
 		@Override
 		public boolean isDisposed() {
-			return s == Operators.cancelledSubscription() || mainDone;
+			return cancelled || mainDone;
 		}
 
 		boolean add(WindowStartEndEnder<T, V> ender) {

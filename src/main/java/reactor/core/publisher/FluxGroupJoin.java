@@ -124,7 +124,6 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 	}
 
 	static final class GroupJoinSubscription<TLeft, TRight, TLeftEnd, TRightEnd, R>
-
 			implements JoinSupport, InnerProducer<R> {
 
 		final Queue<Object>               queue;

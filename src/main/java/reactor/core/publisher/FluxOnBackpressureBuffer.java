@@ -123,7 +123,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxSource<O, O> implements Fuse
 				case TERMINATED:
 					return done && queue.isEmpty();
 				case CANCELLED:
-					return s == Operators.cancelledSubscription();
+					return cancelled;
 				case BUFFERED:
 					return queue.size();
 				case ERROR:

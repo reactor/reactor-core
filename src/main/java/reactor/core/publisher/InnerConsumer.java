@@ -21,8 +21,7 @@ import reactor.core.Scannable;
 
 /**
  *
- * A {@link InnerConsumer} is a root {@link Subscription} that cycle back by default
- * the actual {@link Subscriber}.
+ * A {@link InnerConsumer} is a {@link Scannable} {@link Subscriber}.
  *
  * @param <I> input operator produced type
  *

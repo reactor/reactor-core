@@ -87,7 +87,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 	}
 
 	static final class BufferBoundaryMain<T, U, C extends Collection<? super T>>
-			implements InnerOperator<T, C>, InnerProducer<C> {
+			implements InnerOperator<T, C> {
 
 		final Supplier<C>           bufferSupplier;
 		final Subscriber<? super C> actual;

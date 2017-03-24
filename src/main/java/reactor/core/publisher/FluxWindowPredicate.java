@@ -287,7 +287,7 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>>
 
 		@Override
 		public Stream<? extends Scannable> inners() {
-			return Stream.of(window);
+			return window == null ? Stream.empty() : Stream.of(window);
 		}
 
 		@Override
@@ -813,7 +813,7 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>>
 				case TERMINATED:
 					return done;
 				case BUFFERED:
-					return queue.size();
+					return queue == null ? 0 : queue.size();
 				case ERROR:
 					return error;
 				case REQUESTED_FROM_DOWNSTREAM:

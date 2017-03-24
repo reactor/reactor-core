@@ -51,11 +51,6 @@ final class FluxDefer<T> extends Flux<T> {
 			return;
 		}
 
-		if (p instanceof Publisher) {
-			p.subscribe(s);
-		}
-		else{
-			p.subscribe(s);
-		}
+		p.subscribe(s);
 	}
 }

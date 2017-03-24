@@ -210,8 +210,6 @@ final class FluxRetryWhen<T> extends FluxSource<T, T> {
 		@Override
 		public Object scan(Attr key) {
 			switch (key){
-				case CANCELLED:
-					return main.otherArbiter == Operators.cancelledSubscription();
 				case PARENT:
 					return main.otherArbiter;
 				case ACTUAL:

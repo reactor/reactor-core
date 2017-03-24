@@ -168,8 +168,6 @@ final class FluxTake<T> extends FluxSource<T, T> {
 					return done;
 				case PARENT:
 					return s;
-				case EXPECTED_FROM_UPSTREAM:
-					return remaining;
 			}
 			return InnerOperator.super.scan(key);
 		}
@@ -318,8 +316,6 @@ final class FluxTake<T> extends FluxSource<T, T> {
 					return done;
 				case PARENT:
 					return s;
-				case EXPECTED_FROM_UPSTREAM:
-					return remaining;
 			}
 			return InnerOperator.super.scan(key);
 		}
@@ -449,8 +445,6 @@ final class FluxTake<T> extends FluxSource<T, T> {
 					return done;
 				case PARENT:
 					return qs;
-				case EXPECTED_FROM_UPSTREAM:
-					return remaining;
 			}
 			return InnerOperator.super.scan(key);
 		}

@@ -112,7 +112,7 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 				case TERMINATED:
 					return done && isEmpty();
 				case CANCELLED:
-					return s == Operators.cancelledSubscription();
+					return cancelled;
 				case BUFFERED:
 					return size();
 				case ERROR:

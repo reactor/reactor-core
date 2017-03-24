@@ -442,8 +442,6 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 					return size;
 				case TERMINATED:
 					return done;
-				case EXPECTED_FROM_UPSTREAM:
-					return skip + size - index;
 			}
 			return InnerOperator.super.scan(key);
 		}
@@ -734,7 +732,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				case PARENT:
 					return s;
 				case CANCELLED:
-					return once == 1;
+					return cancelled;
 				case CAPACITY:
 					return size;
 				case TERMINATED:

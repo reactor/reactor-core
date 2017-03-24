@@ -375,8 +375,6 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 					return parent;
 				case PREFETCH:
 					return prefetch;
-				case LIMIT:
-					return limit;
 				case BUFFERED:
 					return queue != null ? queue.size() : 0;
 				case TERMINATED:

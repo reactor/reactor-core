@@ -245,6 +245,8 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 		@Override
 		public Object scan(Attr key) {
 			switch (key) {
+				case PARENT:
+					return s;
 				case TERMINATED:
 					return done;
 				case REQUESTED_FROM_DOWNSTREAM:

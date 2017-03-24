@@ -61,6 +61,16 @@ public abstract class BaseSubscriber<T> implements Subscriber<T>, Subscription, 
 		return subscription != null;
 	}
 
+	/**
+	 * @deprecated use {@link #isDisposed()}
+	 * @return true if disposed
+	 */
+	@Override
+	@Deprecated
+	public boolean isTerminated() {
+		return isDisposed();
+	}
+
 	@Override
 	public boolean isDisposed() {
 		return subscription == Operators.cancelledSubscription();
@@ -80,7 +90,7 @@ public abstract class BaseSubscriber<T> implements Subscriber<T>, Subscription, 
 	 * to call {@link #request(long)} as an initial request. Values other than the
 	 * unbounded {@code Long.MAX_VALUE} imply that you'll also call request in
 	 * {@link #hookOnNext(Object)}.
-	 * <p> Defaults to request unbounded Long.MAX_VALUE
+	 * <p> Defaults to request unbounded Long.MAX_VALUE as in {@link #requestUnbounded()}
 	 *
 	 * @param subscription the subscription to optionally process
 	 */

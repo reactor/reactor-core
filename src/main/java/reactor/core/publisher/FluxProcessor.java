@@ -217,8 +217,6 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 				return getError();
 			case CAPACITY:
 				return getBufferSize();
-			case PUBSUB:
-				return true;
 		}
 		return null;
 	}

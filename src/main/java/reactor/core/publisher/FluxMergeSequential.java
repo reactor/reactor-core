@@ -126,11 +126,6 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 
 		volatile Throwable error;
 
-		@Override
-		public final Subscriber<? super R> actual() {
-			return actual;
-		}
-
 		static final AtomicReferenceFieldUpdater<MergeSequentialMain, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(MergeSequentialMain.class, Throwable.class, "error");
 
@@ -164,6 +159,11 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 		@Override
 		public Stream<? extends Scannable> inners() {
 			return Stream.of(subscribers.peek());
+		}
+
+		@Override
+		public final Subscriber<? super R> actual() {
+			return actual;
 		}
 
 		@Override
@@ -527,8 +527,6 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 					return queue == null ? 0 : queue.size();
 				case PREFETCH:
 					return prefetch;
-				case LIMIT:
-					return limit;
 			}
 			return null;
 		}

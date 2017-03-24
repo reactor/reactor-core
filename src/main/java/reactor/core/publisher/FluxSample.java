@@ -72,39 +72,38 @@ final class FluxSample<T, U> extends FluxSource<T, T> {
 	}
 
 	static final class SampleMainSubscriber<T>
-
 			implements InnerOperator<T, T>, InnerProducer<T> {
 
 		final Subscriber<? super T> actual;
 		volatile T                  value;
-
-		@Override
-		public final Subscriber<? super T> actual() {
-			return actual;
-		}
 
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SampleMainSubscriber, Object> VALUE =
 		  AtomicReferenceFieldUpdater.newUpdater(SampleMainSubscriber.class, Object.class, "value");
 
 		volatile Subscription main;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SampleMainSubscriber, Subscription> MAIN =
 		  AtomicReferenceFieldUpdater.newUpdater(SampleMainSubscriber.class, Subscription.class, "main");
-
-
 		volatile Subscription other;
+
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SampleMainSubscriber, Subscription> OTHER =
 		  AtomicReferenceFieldUpdater.newUpdater(SampleMainSubscriber.class, Subscription.class, "other");
-
 		volatile long requested;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<SampleMainSubscriber> REQUESTED =
 		  AtomicLongFieldUpdater.newUpdater(SampleMainSubscriber.class, "requested");
-
 		SampleMainSubscriber(Subscriber<? super T> actual) {
 			this.actual = actual;
+		}
+
+		@Override
+		public final Subscriber<? super T> actual() {
+			return actual;
 		}
 
 		@Override

@@ -628,12 +628,8 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 					return parent;
 				case CANCELLED:
 					return s == Operators.cancelledSubscription();
-				case LIMIT:
-					return limit;
 				case PREFETCH:
 					return prefetch;
-				case EXPECTED_FROM_UPSTREAM:
-					return limit - produced;
 			}
 			return null;
 		}

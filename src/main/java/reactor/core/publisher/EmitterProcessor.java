@@ -367,8 +367,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements Re
 				return upstreamSubscription;
 			case BUFFERED:
 				return emitBuffer == null ? 0 : emitBuffer.getPending();
-			case EXPECTED_FROM_UPSTREAM:
-				return outstanding;
 			case CANCELLED:
 				return isCancelled();
 		}
@@ -677,6 +675,8 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements Re
 		@Override
 		public final Object scan(Attr key) {
 			switch (key) {
+				case PARENT:
+					return parent;
 				case TERMINATED:
 				case CANCELLED:
 					return done;
