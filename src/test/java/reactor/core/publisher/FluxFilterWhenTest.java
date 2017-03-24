@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -328,6 +329,72 @@ public class FluxFilterWhenTest {
 		    .subscribe().dispose();
 
 		assertThat(requested.get()).isEqualTo(bufferSize);
+	}
+
+	@Test
+	public void introspectionNormal() {
+		AtomicReference<Scannable> scannable = new AtomicReference<>();
+
+		Flux<Integer> flux = Flux.range(1, 10)
+		                         .filterWhen(i -> Mono.just(i % 2 == 0), 3)
+		                         .doOnSubscribe(sub -> {
+			                         assertThat(sub).isInstanceOf(Scannable.class);
+			                         scannable.set((Scannable) sub);
+		                         });
+
+		StepVerifier.create(flux, 0)
+		            .thenRequest(2)
+		            .expectNext(2)
+		            .then(() -> {
+			            assertThat(scannable.get().scan(Scannable.Attr.PARENT)).isInstanceOf(FluxRange.RangeSubscription.class);
+			            assertThat(scannable.get().scan(Scannable.Attr.ACTUAL)).isInstanceOf(FluxPeek.PeekSubscriber.class);
+			            assertThat(scannable.get().scan(Scannable.Attr.PREFETCH)).isEqualTo(3);
+			            assertThat(scannable.get().scan(Scannable.Attr.CAPACITY)).isEqualTo(4);
+			            assertThat(scannable.get().scan(Scannable.Attr.ERROR)).isNull();
+			            assertThat(scannable.get().scan(Scannable.Attr.BUFFERED )).isEqualTo(1L);
+			            assertThat(scannable.get().scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(2L);
+			            assertThat(scannable.get().scan(Scannable.Attr.CANCELLED)).isEqualTo(false);
+			            assertThat(scannable.get().scan(Scannable.Attr.TERMINATED)).isEqualTo(false);
+		            })
+	                .thenRequest(2)
+	                .expectNext(4)
+	                .then(() -> {
+		                assertThat(scannable.get().scan(Scannable.Attr.ERROR)).isNull();
+		                assertThat(scannable.get().scan(Scannable.Attr.BUFFERED )).isEqualTo(2L);
+		                assertThat(scannable.get().scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(4L);
+		                assertThat(scannable.get().scan(Scannable.Attr.CANCELLED)).isEqualTo(false);
+		                assertThat(scannable.get().scan(Scannable.Attr.TERMINATED)).isEqualTo(false);
+	                })
+	                .thenRequest(20)
+	                .expectNext(6, 8, 10)
+	                .verifyComplete();
+
+		assertThat(scannable.get().scan(Scannable.Attr.BUFFERED)).isEqualTo(6L);
+		assertThat(scannable.get().scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(24L);
+		assertThat(scannable.get().scan(Scannable.Attr.CANCELLED)).isEqualTo(false);
+		assertThat(scannable.get().scan(Scannable.Attr.TERMINATED)).isEqualTo(true);
+	}
+
+	//TODO introspect errors (but is difficult due to Expections.terminate)
+	@Test
+	public void introspectionCancel() {
+		AtomicReference<Scannable> scannable = new AtomicReference<>();
+
+		Flux<Integer> flux = Flux.range(1, 10).concatWith(Mono.error(new IllegalStateException("boom")))
+		                         .filterWhen(i -> Mono.just(i % 2 == 0), 3)
+		                         .doOnSubscribe(sub -> {
+		                         	assertThat(sub).isInstanceOf(Scannable.class);
+			                         scannable.set((Scannable) sub);
+		                         });
+
+		StepVerifier.create(flux, 0)
+		            .thenRequest(2)
+		            .expectNext(2)
+		            .then(() -> assertThat(scannable.get().scan(Scannable.Attr.CANCELLED)).isEqualTo(false))
+		            .thenCancel()
+		            .verify();
+
+		assertThat(scannable.get().scan(Scannable.Attr.CANCELLED)).isEqualTo(true);
 	}
 
 }

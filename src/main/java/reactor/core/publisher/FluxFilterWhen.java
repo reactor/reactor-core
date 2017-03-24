@@ -20,9 +20,11 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.*;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.reactivestreams.*;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
 import reactor.util.concurrent.QueueSupplier;
 
 /**
@@ -58,7 +60,7 @@ class FluxFilterWhen<T> extends FluxSource<T, T> {
 		source.subscribe(new FilterWhenSubscriber<>(s, asyncPredicate, bufferSize));
 	}
 
-	static final class FilterWhenSubscriber<T> implements Subscriber<T>, Subscription {
+	static final class FilterWhenSubscriber<T> implements InnerOperator<T, T> {
 
 		final Subscriber<? super T>                             actual;
 		final Function<? super T, ? extends Publisher<Boolean>> asyncPredicate;
@@ -343,9 +345,45 @@ class FluxFilterWhen<T> extends FluxSource<T, T> {
 			clearCurrent();
 			drain();
 		}
+
+		@Override
+		public Subscriber<? super T> actual() {
+			return actual;
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return upstream;
+				case TERMINATED:
+					return done;
+				case CANCELLED:
+					return cancelled;
+				case ERROR:
+					//FIXME ERROR is often reset by Exceptions.terminate :(
+					return error;
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+				case CAPACITY:
+					return toFilter.length();
+				case BUFFERED:
+					return producerIndex - consumerIndex;
+				case PREFETCH:
+					return bufferSize;
+				default:
+					return InnerOperator.super.scan(key);
+			}
+		}
+
+		@Override
+		public Stream<? extends Scannable> inners() {
+			FilterInnerSubscriber c = current;
+			return c == null ? Stream.empty() : Stream.of(c);
+		}
 	}
 
-	static final class FilterInnerSubscriber implements Subscriber<Boolean> {
+	static final class FilterInnerSubscriber implements InnerConsumer<Boolean> {
 
 		final FilterWhenSubscriber<?> parent;
 		final boolean                 cancelOnNext;
@@ -353,6 +391,7 @@ class FluxFilterWhen<T> extends FluxSource<T, T> {
 		boolean done;
 
 		volatile Subscription sub;
+
 		static final AtomicReferenceFieldUpdater<FilterInnerSubscriber, Subscription> SUB =
 				AtomicReferenceFieldUpdater.newUpdater(FilterInnerSubscriber.class, Subscription.class, "sub");
 
@@ -399,6 +438,26 @@ class FluxFilterWhen<T> extends FluxSource<T, T> {
 
 		void cancel() {
 			Operators.terminate(SUB, this);
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch(key) {
+				case PARENT:
+					return parent;
+				case ACTUAL:
+					return sub;
+				case CANCELLED:
+					return sub == Operators.cancelledSubscription();
+				case TERMINATED:
+					return done;
+				case PREFETCH:
+					return Integer.MAX_VALUE;
+				case REQUESTED_FROM_DOWNSTREAM:
+					return done ? 0 : 1;
+				default:
+					return null;
+			}
 		}
 	}
 }
