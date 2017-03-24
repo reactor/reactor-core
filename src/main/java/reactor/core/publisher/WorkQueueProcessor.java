@@ -770,7 +770,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 								readNextEvent(unbounded);
 							}
 							catch (Exception ce) {
-								if (!isRunning() || !WaitStrategy.isAlert(ce)) {
+								if (!running.get() || !WaitStrategy.isAlert(ce)) {
 									throw ce;
 								}
 								barrier.clearAlert();
