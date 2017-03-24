@@ -120,7 +120,6 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 				case PREFETCH:
 					return Integer.MAX_VALUE;
 				case DELAY_ERROR:
-				case DELAY_ERROR_END:
 					return delayError;
 			}
 			return InnerOperator.super.scan(key);

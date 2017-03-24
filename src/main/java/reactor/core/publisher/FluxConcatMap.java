@@ -530,8 +530,6 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 					return error;
 				case DELAY_ERROR:
 					return true;
-				case DELAY_ERROR_END:
-					return veryEnd;
 			}
 			return InnerOperator.super.scan(key);
 		}

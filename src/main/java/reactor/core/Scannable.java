@@ -63,16 +63,6 @@ public interface Scannable {
 		DELAY_ERROR,
 
 		/**
-		 * Delay_Error_End resolves to {@link Boolean} in pair with
-		 * {@link #DELAY_ERROR} and return true whether error delaying is applied to the
-		 * complete backlog view of the component. For instance `concatMapDelayError`
-		 * can delay until all sources have been consumed.
-		 * <p>
-		 *     Note: This attribute usually resolves to a constant value
-		 */
-		DELAY_ERROR_END,
-
-		/**
 		 * Prefetch is an {@link Integer} attribute defining the rate of processing in a
 		 * component
 		 * which has capacity to request and hold a backlog of data. It

@@ -177,8 +177,6 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 					return done && subscribers.isEmpty();
 				case DELAY_ERROR:
 					return errorMode != ErrorMode.IMMEDIATE;
-				case DELAY_ERROR_END:
-					return errorMode == ErrorMode.END;
 				case PREFETCH:
 					return maxConcurrency;
 				case REQUESTED_FROM_DOWNSTREAM:

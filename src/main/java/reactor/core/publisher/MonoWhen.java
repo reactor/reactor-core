@@ -161,7 +161,6 @@ final class MonoWhen<T, R> extends Mono<R> {
 				case BUFFERED:
 					return subscribers.length;
 				case DELAY_ERROR:
-				case DELAY_ERROR_END:
 					return delayError;
 			}
 			return super.scan(key);

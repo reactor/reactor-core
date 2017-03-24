@@ -944,7 +944,6 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 		o.scan(Scannable.Attr.CANCELLED);
 		o.scan(Scannable.Attr.CAPACITY);
 		o.scan(Scannable.Attr.DELAY_ERROR);
-		o.scan(Scannable.Attr.DELAY_ERROR_END);
 		o.scan(Scannable.Attr.ERROR);
 		o.scan(Scannable.Attr.PREFETCH);
 		o.scan(Scannable.Attr.PARENT);

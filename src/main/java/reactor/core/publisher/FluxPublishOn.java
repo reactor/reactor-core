@@ -530,7 +530,6 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable {
 				case ERROR:
 					return error;
 				case DELAY_ERROR:
-				case DELAY_ERROR_END:
 					return delayError;
 				case PREFETCH:
 					return prefetch;
@@ -969,7 +968,6 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable {
 				case ERROR:
 					return error;
 				case DELAY_ERROR:
-				case DELAY_ERROR_END:
 					return delayError;
 				case PREFETCH:
 					return prefetch;

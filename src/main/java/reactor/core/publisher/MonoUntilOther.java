@@ -104,7 +104,6 @@ final class MonoUntilOther<T> extends Mono<T> {
 				case PARENT:
 					return sourceSubscriber;
 				case DELAY_ERROR:
-				case DELAY_ERROR_END:
 					return delayError;
 			}
 			return super.scan(key);
