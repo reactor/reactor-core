@@ -130,7 +130,7 @@ Flux<String> bridge = Flux.create(sink -> {
 <3> the processComplete event is translated to an `onComplete`
 <4> all of this is done asynchronously whenever the myEventProcessor executes
 
-Additionally, since `create` can be asynchrounous and manages backpressure, you
+Additionally, since `create` can be asynchronous and manages backpressure, you
 can refine how to behave backpressure-wise, by indicating an `OverflowStrategy`:
 
  - `IGNORE` to Completely ignore downstream backpressure requests.
@@ -145,6 +145,91 @@ NOTE: `Mono` also has a `create` generator. As you should expect, the
 `MonoSink` of Mono's create doesn't allow several emissions. It will drop all
 signals subsequent to the first one.
 
+=== Push model
+A variant of `create` is `push`, which is suitable for processing events
+from a single producer. Similar to `create`, `push` can also be asynchronous
+and can manage backpressure using any of the overflow strategies supported
+by `create`. But only one producing thread may invoke `next`, `complete` or
+`error` at a time.
+
+[source,java]
+----
+Flux<String> bridge = Flux.push(sink -> {
+    myEventProcessor.register(
+      new SingleThreadEventListener<String>() { // <1>
+
+        public void onDataChunk(List<String> chunk) {
+          for(String s : chunk) {
+            sink.next(s); // <2>
+          }
+        }
+
+        public void processComplete() {
+            sink.complete(); // <3>
+        }
+
+        public void processError(Throwable e) {
+            sink.error(e); // <4>
+        }
+    });
+});
+----
+<1> we bridge to the `SingleThreadEventListener` API
+<2> events are pushed to sink using `next` from a single listener thread
+<3> `complete` event generated from the same listener thread
+<4> `error` event also generated from the same listener thread
+
+=== Hybrid push/pull model
+Unlike `push`, `create` may be used in `push` or `pull` mode, making it suitable
+for bridging with listener-based APIs where data may be delivered asynchronously
+at any time. `onRequest` callback can be registered on `FluxSink` to track requests.
+The callback may be used to request more data from source if required and to manage
+backpressure by delivering data to sink only when requests are pending. This enables
+a hybrid push/pull model where downstream can pull data that is already available
+from upstream and upstream can push data to downstream when data becomes available
+at a later time.
+
+[source,java]
+----
+Flux<String> bridge = Flux.create(sink -> {
+    myMessageProcessor.register(
+      new MyMessageListener<String>() {
+
+        public void onMessage(List<String> messages) {
+          for(String s : messages) {
+            sink.next(s); // <3>
+          }
+        }
+    });
+    sink.onRequest(n -> {
+        List<String> messages = myMessageProcessor.request(n); // <1>
+        for(String s : message) {
+           sink.next(s); // <2>
+        }
+    });
+----
+<1> Poll for messages when requests are made
+<2> If messages are available immediately, push them to sink
+<3> Remaining messages that arrive asynchronously later are also delivered
+
+=== Cleaning up
+
+Two callbacks `onDispose` and `onCancel` are provided to perform any cleanup
+on cancellation or termination. `onDispose` can be used to perform cleanup
+when the `Flux` completes, errors out or is cancelled. 'onCancel can be
+used to perform any action specific to cancellation prior to cleanup using
+`onDispose`.
+
+[source,java]
+----
+Flux<String> bridge = Flux.create(sink -> {
+    sink.onRequest(n -> channel.poll(n))
+        .onCancel(() -> channel.cancel()) // <1>
+        .onDipose(() -> channel.close())  // <2>
+    });
+----
+<1> onCancel is invoked for cancel signal
+<2> onDispose is invoked for complete/error/cancel
 
 == Handle
 Both present in `Mono` and `Flux`, `handle` is a tiny bit different. It is an

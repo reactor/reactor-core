@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import java.util.function.LongConsumer;
+
 import org.reactivestreams.Subscriber;
 import reactor.core.Cancellation;
 import reactor.core.Disposable;
@@ -63,8 +65,32 @@ public interface FluxSink<T> {
 	/**
 	 * Ensures that calls to next, error and complete are properly serialized.
 	 * @return a new serialized {@link FluxSink}
+	 * @deprecated Use {@link Flux#create(java.util.function.Consumer)} or
+	 * {@link Flux#create(java.util.function.Consumer, OverflowStrategy)}
+	 * to create a serialized {@link FluxSink}.
 	 */
+	@Deprecated
 	FluxSink<T> serialize();
+
+	/**
+	 * Attaches a {@link LongConsumer} to this {@link FluxSink} that will be notified of
+	 * any request to this sink.
+	 * <p>
+	 * For push/pull sinks created using {@link Flux#create(java.util.function.Consumer)}
+	 * or {@link Flux#create(java.util.function.Consumer, OverflowStrategy)}, the consumer
+	 * is invoked for every request to enable a hybrid backpressure-enabled push/pull model.
+	 * When bridging with asynchronous listener-based APIs, the {@code onRequest} callback
+	 * may be used to request more data from source if required and to manage backpressure
+	 * by delivering data to sink only when requests are pending.
+	 * <p>
+	 * For push-only sinks created using {@link Flux#push(java.util.function.Consumer, OverflowStrategy)},
+	 * the consumer is invoked with an initial request of {@code Long.MAX_VALUE} when this method
+	 * is invoked.
+	 *
+	 * @param consumer the consumer to invoke on each request
+	 * @return {@link FluxSink} with a consumer that is notified of requests
+	 */
+	FluxSink<T> onRequest(LongConsumer consumer);
 
 	/**
 	 * Associates a disposable resource with this FluxSink
@@ -91,9 +117,12 @@ public interface FluxSink<T> {
      * via {@link org.reactivestreams.Subscription#cancel()}.
      * @param c the cancellation callback to use
      * @return this sink
+     * @deprecated use {@link #onDispose(Disposable)} for resources to be disposed
+     * on any cancel signal or {@link #onCancel(Disposable)} for resources to be
+     * disposed on cancel.
      */
 	@Deprecated
-    FluxSink<T> setCancellation(Cancellation c);
+    void setCancellation(Cancellation c);
 
 	/**
 	 * Enumeration for backpressure handling.

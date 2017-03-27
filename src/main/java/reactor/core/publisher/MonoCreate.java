@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Cancellation;
@@ -68,6 +69,11 @@ final class MonoCreate<T> extends Mono<T> {
         @SuppressWarnings("rawtypes")
         static final AtomicIntegerFieldUpdater<DefaultMonoSink> STATE =
                 AtomicIntegerFieldUpdater.newUpdater(DefaultMonoSink.class, "state");
+
+		volatile LongConsumer requestConsumer;
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<DefaultMonoSink, LongConsumer> REQUEST_CONSUMER =
+				AtomicReferenceFieldUpdater.newUpdater(DefaultMonoSink.class, LongConsumer.class, "requestConsumer");
 
         T value;
 
@@ -145,7 +151,15 @@ final class MonoCreate<T> extends Mono<T> {
             } else {
                 Operators.onErrorDropped(e);
             }
-        }
+		}
+
+		@Override
+		public MonoSink<T> onRequest(LongConsumer consumer) {
+			if (!REQUEST_CONSUMER.compareAndSet(this, null, consumer)) {
+				throw new IllegalStateException("A consumer has already been assigned to consume requests");
+			}
+			return this;
+		}
 
 		@Override
 		public Subscriber<? super T> actual() {
@@ -188,8 +202,8 @@ final class MonoCreate<T> extends Mono<T> {
 
 		@Deprecated
 		@Override
-		public MonoSink<T> setCancellation(Cancellation c) {
-			return onCancel(new Disposable() {
+		public void setCancellation(Cancellation c) {
+			onCancel(new Disposable() {
 				@Override
 				public void dispose() {
 					c.dispose();
@@ -200,6 +214,10 @@ final class MonoCreate<T> extends Mono<T> {
         @Override
         public void request(long n) {
             if (Operators.validate(n)) {
+				LongConsumer consumer = requestConsumer;
+				if (consumer != null) {
+					consumer.accept(n);
+				}
                 for (;;) {
                     int s = state;
                     if (s == HAS_REQUEST_NO_VALUE || s == HAS_REQUEST_HAS_VALUE) {

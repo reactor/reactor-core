@@ -15,6 +15,8 @@
  */
 package reactor.core.publisher;
 
+import java.util.function.LongConsumer;
+
 import reactor.core.Cancellation;
 import reactor.core.Disposable;
 
@@ -49,7 +51,15 @@ public interface MonoSink<T> {
      * terminating methods has no effect.
      * @param e the exception to complete with
      */
-    void error(Throwable e);
+	void error(Throwable e);
+
+	/**
+	 * Attaches a {@link LongConsumer} to this {@link MonoSink} that will be notified of any
+	 * request to this sink.
+	 * @param consumer the consumer to invoke on each request
+	 * @return {@link MonoSink} with a consumer that is notified of requests
+	 */
+	MonoSink<T> onRequest(LongConsumer consumer);
 
 	/**
 	 * Associates a disposable resource with this MonoSink that will be disposed on
@@ -74,7 +84,10 @@ public interface MonoSink<T> {
      * downstream cancel().
      * <p>Calling this method more than once has no effect.
      * @param c the cancellation callback
+     * @deprecated Use {@link #onDispose(Disposable)} for resources to be disposed on any
+     * terminate signal or {@link #onCancel(Disposable)} for resources to be disposed on
+     * cancel.
      */
 	@Deprecated
-	MonoSink<T> setCancellation(Cancellation c);
+	void setCancellation(Cancellation c);
 }

@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Cancellation;
@@ -43,14 +44,23 @@ import reactor.util.concurrent.QueueSupplier;
  */
 final class FluxCreate<T> extends Flux<T> {
 
+	enum CreateMode {
+		PUSH_ONLY,
+		PUSH_PULL
+	}
+
 	final Consumer<? super FluxSink<T>> source;
 
 	final OverflowStrategy backpressure;
 
+	final CreateMode createMode;
+
 	FluxCreate(Consumer<? super FluxSink<T>> source,
-			FluxSink.OverflowStrategy backpressure) {
+			FluxSink.OverflowStrategy backpressure,
+			CreateMode createMode) {
 		this.source = Objects.requireNonNull(source, "source");
 		this.backpressure = Objects.requireNonNull(backpressure, "backpressure");
+		this.createMode = createMode;
 	}
 
 	@Override
@@ -82,7 +92,7 @@ final class FluxCreate<T> extends Flux<T> {
 
 		t.onSubscribe(sink);
 		try {
-			source.accept(sink);
+			source.accept(createMode == CreateMode.PUSH_PULL ? sink.serialize() : sink);
 		}
 		catch (Throwable ex) {
 			Exceptions.throwIfFatal(ex);
@@ -109,7 +119,6 @@ final class FluxCreate<T> extends Flux<T> {
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<SerializedSink> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(SerializedSink.class, "wip");
-
 
 		final Queue<T> queue;
 
@@ -232,20 +241,27 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 
 		@Override
+		public FluxSink<T> onRequest(LongConsumer consumer) {
+			sink.onRequest(consumer, consumer, sink.requested);
+			return this;
+		}
+
+		@Override
 		public FluxSink<T> onCancel(Disposable d) {
-			return sink.onCancel(d);
+			sink.onCancel(d);
+			return this;
 		}
 
 		@Override
 		public FluxSink<T> onDispose(Disposable d) {
-			return sink.onDispose(d);
+			sink.onDispose(d);
+			return this;
 		}
 
 		@Deprecated
 		@Override
-		public FluxSink<T> setCancellation(Cancellation c) {
+		public void setCancellation(Cancellation c) {
 			sink.setCancellation(c);
-			return this;
 		}
 
 		@Override
@@ -293,6 +309,11 @@ final class FluxCreate<T> extends Flux<T> {
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<BaseSink> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(BaseSink.class, "requested");
+
+		volatile LongConsumer requestConsumer;
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<BaseSink, LongConsumer> REQUEST_CONSUMER =
+				AtomicReferenceFieldUpdater.newUpdater(BaseSink.class, LongConsumer.class, "requestConsumer");
 
 		BaseSink(Subscriber<? super T> actual) {
 			this.actual = actual;
@@ -362,6 +383,11 @@ final class FluxCreate<T> extends Flux<T> {
 		public final void request(long n) {
 			if (Operators.validate(n)) {
 				Operators.getAndAddCap(REQUESTED, this, n);
+
+				LongConsumer consumer = requestConsumer;
+				if (n > 0 && consumer != null && !isCancelled()) {
+					consumer.accept(n);
+				}
 				onRequestedFromDownstream();
 			}
 		}
@@ -373,6 +399,20 @@ final class FluxCreate<T> extends Flux<T> {
 		@Override
 		public Subscriber<? super T> actual() {
 			return actual;
+		}
+
+		@Override
+		public FluxSink<T> onRequest(LongConsumer consumer) {
+			onRequest(consumer, n -> {}, Long.MAX_VALUE);
+			return this;
+		}
+
+		protected void onRequest(LongConsumer initialRequestConsumer, LongConsumer requestConsumer, long value) {
+			if (!REQUEST_CONSUMER.compareAndSet(this, null, requestConsumer)) {
+				throw new IllegalStateException("A consumer has already been assigned to consume requests");
+			} else if (value > 0) {
+				initialRequestConsumer.accept(value);
+			}
 		}
 
 		@Override
@@ -413,8 +453,8 @@ final class FluxCreate<T> extends Flux<T> {
 
 		@Deprecated
 		@Override
-		public final FluxSink<T> setCancellation(Cancellation c) {
-			return onDispose(new Disposable() {
+		public final void setCancellation(Cancellation c) {
+			onDispose(new Disposable() {
 				@Override
 				public void dispose() {
 					c.dispose();
