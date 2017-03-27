@@ -184,3 +184,5 @@ image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src
 
 [[hooks]]
 == Global hooks
+
+== Replacing default `Schedulers`
