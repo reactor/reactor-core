@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -46,6 +47,7 @@ import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.SignalType;
 import reactor.core.publisher.UnicastProcessor;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.util.function.Tuple2;
@@ -155,6 +157,21 @@ public class GuideTests {
 		Thread.sleep(500);
 		System.out.println("subscribing second");
 		autoCo.subscribe(System.out::println, e -> {}, () -> {});
+	}
+
+	@Test
+	public void advancedParallelJustDivided() {
+		Flux.range(1, 10)
+	        .parallel(2) //<1>
+	        .subscribe(i -> System.out.println(Thread.currentThread().getName() + " -> " + i));
+	}
+
+	@Test
+	public void advancedParallelParallelized() {
+		Flux.range(1, 10)
+	        .parallel(2)
+	        .runOn(Schedulers.parallel())
+	        .subscribe(i -> System.out.println(Thread.currentThread().getName() + " -> " + i));
 	}
 
 	private Flux<String> someStringSource() {

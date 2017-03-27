@@ -271,6 +271,78 @@ subscribed to source
 ----
 
 == Parallelize work with `ParallelFlux`
+With multi-core architectures being a commodity nowadays, being able to easily
+parallelize work is very important. Reactor helps with that by providing a
+special type, `ParallelFlux`, that exposes operators that are optimized for
+parallelized work.
+
+To obtain a `ParallelFlux`, one can use the `parallel()` operator on any `Flux`.
+*This will not by itself parallelize the work* however, but rather will divide
+the workload into "rails" (by default as many rails as there are CPU cores).
+
+In order to tell the resulting ParallelFlux where to execute each rail (and
+by extension to execute rails in parallel) you have to use `runOn(Scheduler)`.
+Note that there is a recommended dedicated Scheduler for parallel work:
+`Schedulers.parallel()`.
+
+Contrast:
+
+[source,java]
+----
+Flux.range(1, 10)
+    .parallel(2) //<1>
+    .subscribe(i -> System.out.println(Thread.currentThread().getName() + " -> " + i));
+----
+<1> here we force a number of rails instead of relying on the number of CPU cores
+
+with:
+[source,java]
+----
+Flux.range(1, 10)
+    .parallel(2)
+    .runOn(Schedulers.parallel())
+    .subscribe(i -> System.out.println(Thread.currentThread().getName() + " -> " + i));
+----
+
+The first outputs:
+----
+main -> 1
+main -> 2
+main -> 3
+main -> 4
+main -> 5
+main -> 6
+main -> 7
+main -> 8
+main -> 9
+main -> 10
+----
+
+While the second correctly parallelizes on two threads:
+----
+parallel-1 -> 1
+parallel-2 -> 2
+parallel-1 -> 3
+parallel-2 -> 4
+parallel-1 -> 5
+parallel-2 -> 6
+parallel-1 -> 7
+parallel-1 -> 9
+parallel-2 -> 8
+parallel-2 -> 10
+----
+
+If once you've processed your sequence in parallel you want to revert back to a
+"normal" flux and apply the rest of the operator chain in a sequential manner,
+you can use the `sequential()` method on `ParallelFlux`.
+
+Note that it is the case by default if you `subscribe` to the ParallelFlux with
+a single provided `Subscriber`, but not when using the lambda-based variants of
+`subscribe`.
+
+You can also access individual rails or "groups" as a `Flux<GroupedFlux<T>>` via
+the `groups()` method and apply additional operators to them via the
+`composeGroup()` method.
 
 == Backpressure and the associated rules
 
