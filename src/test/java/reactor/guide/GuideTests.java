@@ -40,6 +40,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.publisher.BaseSubscriber;
+import reactor.core.publisher.ConnectableFlux;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
@@ -118,6 +119,37 @@ public class GuideTests {
 		hotSource.onNext("orange");
 		hotSource.onNext("purple");
 		hotSource.onComplete();
+	}
+
+	@Test
+	public void advancedConnectable() throws InterruptedException {
+		Flux<Integer> source = Flux.range(1, 3)
+		                           .doOnSubscribe(s -> System.out.println("subscribed to source"));
+
+		ConnectableFlux<Integer> co = source.publish();
+
+		co.subscribe(System.out::println, e -> {}, () -> {});
+		co.subscribe(System.out::println, e -> {}, () -> {});
+
+		System.out.println("done subscribing");
+		Thread.sleep(500);
+		System.out.println("will now connect");
+
+		co.connect();
+	}
+
+	@Test
+	public void advancedConnectableAutoConnect() throws InterruptedException {
+		Flux<Integer> source = Flux.range(1, 3)
+		                           .doOnSubscribe(s -> System.out.println("subscribed to source"));
+
+		Flux<Integer> autoCo = source.publish().autoConnect(2);
+
+		autoCo.subscribe(System.out::println, e -> {}, () -> {});
+		System.out.println("subscribed first");
+		Thread.sleep(500);
+		System.out.println("subscribing second");
+		autoCo.subscribe(System.out::println, e -> {}, () -> {});
 	}
 
 	private Flux<String> someStringSource() {
