@@ -96,7 +96,10 @@ public class GuideTests {
 
 	@Test
 	public void advancedCold() {
-		Flux<String> source = Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"));
+		Flux<String> source = Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
+		                          .doOnNext(System.out::println)
+		                          .filter(s -> s.startsWith("o"))
+		                          .map(String::toUpperCase);
 
 		source.subscribe(d -> System.out.println("Subscriber 1: "+d));
 		source.subscribe(d -> System.out.println("Subscriber 2: "+d));
@@ -107,7 +110,9 @@ public class GuideTests {
 		UnicastProcessor<String> hotSource = UnicastProcessor.create();
 
 		Flux<String> hotFlux = hotSource.publish()
-		                                .autoConnect();
+		                                .autoConnect()
+		                                .map(String::toUpperCase);
+
 
 		hotFlux.subscribe(d -> System.out.println("Subscriber 1 to Hot Source: "+d));
 

@@ -123,7 +123,10 @@ Contrast these two other examples:
 
 [source,java]
 ----
-Flux<String> source = Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"));
+Flux<String> source = Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
+                          .doOnNext(System.out::println)
+                          .filter(s -> s.startsWith("o"))
+                          .map(String::toUpperCase);
 
 source.subscribe(d -> System.out.println("Subscriber 1: "+d));
 source.subscribe(d -> System.out.println("Subscriber 2: "+d));
@@ -132,14 +135,16 @@ source.subscribe(d -> System.out.println("Subscriber 2: "+d));
 Which outputs:
 
 ----
-Subscriber 1: blue
-Subscriber 1: green
-Subscriber 1: orange
-Subscriber 1: purple
-Subscriber 2: blue
-Subscriber 2: green
-Subscriber 2: orange
-Subscriber 2: purple
+blue
+green
+orange
+Subscriber 1: ORANGE
+purple
+blue
+green
+orange
+Subscriber 2: ORANGE
+purple
 ----
 
 image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/gs-cold.png[Replaying behavior]
@@ -151,7 +156,9 @@ Compared to:
 UnicastProcessor<String> hotSource = UnicastProcessor.create();
 
 Flux<String> hotFlux = hotSource.publish()
-                                .autoConnect();
+                                .autoConnect()
+                                .map(String::toUpperCase);
+
 
 hotFlux.subscribe(d -> System.out.println("Subscriber 1 to Hot Source: "+d));
 
@@ -167,12 +174,12 @@ hotSource.onComplete();
 
 Which outputs:
 ----
-Subscriber 1 to Hot Source: blue
-Subscriber 1 to Hot Source: green
-Subscriber 1 to Hot Source: orange
-Subscriber 2 to Hot Source: orange
-Subscriber 1 to Hot Source: purple
-Subscriber 2 to Hot Source: purple
+Subscriber 1 to Hot Source: BLUE
+Subscriber 1 to Hot Source: GREEN
+Subscriber 1 to Hot Source: ORANGE
+Subscriber 2 to Hot Source: ORANGE
+Subscriber 1 to Hot Source: PURPLE
+Subscriber 2 to Hot Source: PURPLE
 ----
 image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/gs-hot.png[Broadcasting a subscription]
 
