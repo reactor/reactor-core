@@ -88,27 +88,69 @@ purple
 
 [[reactor.hotCold]]
 == Hot vs Cold
+So far we have considered that all `Flux` (and `Mono`) are the same: they all
+represent an asynchronous sequence of data, and nothing happens before you
+subscribe.
+
+There are however in reality two broad families of publishers: *cold* ones and
+*hot* ones.
+
+The description above applies to the *cold* family of publishers. They generate
+data anew for each subscription, and if no subscription is done then data never
+start generating.
+
+Think HTTP request: each new subscriber will trigger an HTTP call, but no call
+is made if no one is interested in the result.
+
+*Hot* publishers on the other hand don't really depend on any number of
+subscribers. They might start publishing data right away, and would continue
+doing so whenever a new `Subscriber` comes in (in which case said subscriber
+would only see new elements emitted _after_ it subscribed). So for such hot
+publishers, _something_ indeed happens before you subscribe.
+
+One example of the few hot operators in Reactor is `just`: it directly capture
+the value at assembly time, and will replay it to anybody subscribing to it
+later on. To re-use the HTTP call analogy, if the captured data is the result
+of an HTTP call then only one network call is made, when instantiating _just_.
+
+To transform `just` into a _cold_ publisher, you can use `defer`. This will
+defer the HTTP request in our example to subscription time (and would result in
+a separate network call for each new subscription).
+
+NOTE: Most other _hot_ publishers in Reactor are `Processor`.
+
+Contrast these two other examples:
+
 [source,java]
 ----
-Flux<String> source = Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
-	.doOnNext(System.out::println)
-	.filter(color -> !color.equals("orange"))
-	.map(String::toUpperCase);
-
+Flux<String> source = Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"));
 
 source.subscribe(d -> System.out.println("Subscriber 1: "+d));
 source.subscribe(d -> System.out.println("Subscriber 2: "+d));
 ----
+
+Which outputs:
+
+----
+Subscriber 1: blue
+Subscriber 1: green
+Subscriber 1: orange
+Subscriber 1: purple
+Subscriber 2: blue
+Subscriber 2: green
+Subscriber 2: orange
+Subscriber 2: purple
+----
+
 image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/gs-cold.png[Replaying behavior]
 
-
+Compared to:
 
 [source,java]
 ----
 UnicastProcessor<String> hotSource = UnicastProcessor.create();
 
-Flux<String> hotFlux = hotSource.doOnNext(System.out::println)
-                                .publish()
+Flux<String> hotFlux = hotSource.publish()
                                 .autoConnect();
 
 hotFlux.subscribe(d -> System.out.println("Subscriber 1 to Hot Source: "+d));
@@ -121,6 +163,16 @@ hotFlux.subscribe(d -> System.out.println("Subscriber 2 to Hot Source: "+d));
 hotSource.onNext("orange");
 hotSource.onNext("purple");
 hotSource.onComplete();
+----
+
+Which outputs:
+----
+Subscriber 1 to Hot Source: blue
+Subscriber 1 to Hot Source: green
+Subscriber 1 to Hot Source: orange
+Subscriber 2 to Hot Source: orange
+Subscriber 1 to Hot Source: purple
+Subscriber 2 to Hot Source: purple
 ----
 image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/gs-hot.png[Broadcasting a subscription]
 
