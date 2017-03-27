@@ -698,4 +698,27 @@ converted.subscribe(
 ----
 
 == Processor
+Processors are a special kind of `Publisher` that are also a `Subscriber`. That
+means that you can `subscribe` to a `Processor` (generally, they implement
+`Flux`), but also call methods to manually inject data into the sequence or
+terminate it...
+
+There are several kind of Processors, each with a few particular semantics, but
+before you start looking into these, you need to ask yourself the following question:
+
 === Do I need a Processor?
+Most of the time, you should try to avoid using a `Processor`. They are harder
+to use correctly and prone to some corner cases.
+
+So if you think a `Processor` could be a good match for your use-case, ask
+yourself if you have tried these two alternatives before:
+
+ 1. could a classic operator or combination of operators fit the bill? (see
+   <<which-operator>>)
+ 2. could a <<producing,"generator">> operator work instead? (generally these
+   operators are made to bridge APIs that are not reactive, providing a "sink"
+   that is very similar in concept to a `Processor` in the sense that it allows
+   you to populate the sequence with data, or terminate it).
+
+If after exploring the above alternatives you still think you need a `Processor`,
+head to the <<processor>> appendix to learn about the different implementations.
