@@ -61,6 +61,39 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class GuideTests {
 
 	@Test
+	public void advancedCompose() {
+		Function<Flux<String>, Flux<String>> filterAndMap =
+				f -> f.filter(color -> !color.equals("orange"))
+				      .map(String::toUpperCase);
+
+		Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
+		    .doOnNext(System.out::println)
+		    .transform(filterAndMap)
+		    .subscribe(d -> System.out.println("Subscriber to Transformed MapAndFilter: "+d));
+	}
+
+	@Test
+	public void advancedTransform() {
+		AtomicInteger ai = new AtomicInteger();
+		Function<Flux<String>, Flux<String>> filterAndMap = f -> {
+			if (ai.incrementAndGet() == 1) {
+				return f.filter(color -> !color.equals("orange"))
+				        .map(String::toUpperCase);
+			}
+			return f.filter(color -> !color.equals("purple"))
+			        .map(String::toUpperCase);
+		};
+
+		Flux<String> composedFlux =
+				Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
+				    .doOnNext(System.out::println)
+				    .compose(filterAndMap);
+
+		composedFlux.subscribe(d -> System.out.println("Subscriber 1 to Composed MapAndFilter :"+d));
+		composedFlux.subscribe(d -> System.out.println("Subscriber 2 to Composed MapAndFilter: "+d));
+	}
+
+	@Test
 	public void fluxComposing() throws Exception {
 		Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
 		    .log()

@@ -1,32 +1,17 @@
 = Advanced features and concepts
 
 == Mutualizing operator usage
-[source,java]
-----
-Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
-	.doOnNext(System.out::println)
-	.filter(color -> !color.equals("orange"))
-	.map(String::toUpperCase)
-	.subscribe(d -> System.out.println("Subscriber to Map: "+d));
-----
-image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/gs-operators.png[Operator chain]
-
-[source,java]
-----
-Flux<String> flux = Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
-	.doOnNext(System.out::println)
-	.filter(color -> !color.equals("orange"));
-
-flux.map(String::toUpperCase);
-flux.subscribe(d -> System.out.println("Subscriber to Filter: "+d));
-----
-image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/gs-reftail.png[Reference used for Subscriber]
-
+From a clean code perspective, code reuse is generally a good thing. Reactor
+offers a few patterns that will help you reuse and mutualize code, notably
+for operators or combination of operators that you might want to apply regularly
+in your codebase.
 
 === transform
-The `transform` operator allows to encapsulate the flow by applying a chain of
-operators that is externalized in a function. This applies globally to all the
-subscribers of a sequence.
+The `transform` operator lets you encapsulate a piece of an operator chain into
+a function. That function will be applied to an original operator chain at
+assembly time to augment it with the encapsulated operators. So this applies the
+same to all the subscribers of a sequence, and is basically equivalent to
+chaining the operators directly.
 
 [source,java]
 ----
@@ -41,10 +26,24 @@ Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
 ----
 image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/gs-transform.png[Transform Operator : encapsulate flows]
 
+This outputs:
+
+----
+blue
+Subscriber to Transformed MapAndFilter: BLUE
+green
+Subscriber to Transformed MapAndFilter: GREEN
+orange
+purple
+Subscriber to Transformed MapAndFilter: PURPLE
+----
 
 === compose
-The `compose` operator also allows to locally apply an externalized chain of
-operators to a sequence, but it does so on a per-subscriber basis.
+The `compose` operator is very similar to `transform` and also lets you
+encapsulate operators in a function. The major difference is that this function
+is applied to the original sequence *on a per-subscriber basis*. It means that
+the function can actually produce a different operator chain for each
+subscription (eg. by maintaining some state).
 
 [source,java]
 ----
@@ -67,6 +66,25 @@ composedFlux.subscribe(d -> System.out.println("Subscriber 1 to Composed MapAndF
 composedFlux.subscribe(d -> System.out.println("Subscriber 2 to Composed MapAndFilter: "+d));
 ----
 image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/gs-compose.png[Compose Operator : Per Subscriber transformation]
+
+This outputs:
+
+----
+blue
+Subscriber 1 to Composed MapAndFilter :BLUE
+green
+Subscriber 1 to Composed MapAndFilter :GREEN
+orange
+purple
+Subscriber 1 to Composed MapAndFilter :PURPLE
+blue
+Subscriber 2 to Composed MapAndFilter: BLUE
+green
+Subscriber 2 to Composed MapAndFilter: GREEN
+orange
+Subscriber 2 to Composed MapAndFilter: ORANGE
+purple
+----
 
 [[reactor.hotCold]]
 == Hot vs Cold
