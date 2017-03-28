@@ -57,10 +57,10 @@ class FluxFilterWhen<T> extends FluxSource<T, T> {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(new FilterWhenSubscriber<>(s, asyncPredicate, bufferSize));
+		source.subscribe(new FluxFilterWhenSubscriber<>(s, asyncPredicate, bufferSize));
 	}
 
-	static final class FilterWhenSubscriber<T> implements InnerOperator<T, T> {
+	static final class FluxFilterWhenSubscriber<T> implements InnerOperator<T, T> {
 
 		final Subscriber<? super T>                             actual;
 		final Function<? super T, ? extends Publisher<Boolean>> asyncPredicate;
@@ -73,30 +73,30 @@ class FluxFilterWhen<T> extends FluxSource<T, T> {
 		long         producerIndex;
 		Subscription upstream;
 
-		volatile boolean               cancelled;
-		volatile FilterInnerSubscriber current;
-		volatile boolean               done;
-		volatile Throwable             error;
-		volatile long                  requested;
-		volatile int                   state;
-		volatile int                   wip;
+		volatile boolean         cancelled;
+		volatile FilterWhenInner current;
+		volatile boolean         done;
+		volatile Throwable       error;
+		volatile long            requested;
+		volatile int             state;
+		volatile int             wip;
 
-		static final AtomicReferenceFieldUpdater<FilterWhenSubscriber, Throwable> ERROR =
-				AtomicReferenceFieldUpdater.newUpdater(FilterWhenSubscriber.class, Throwable.class, "error");
-		static final AtomicLongFieldUpdater<FilterWhenSubscriber> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(FilterWhenSubscriber.class, "requested");
-		static final AtomicIntegerFieldUpdater<FilterWhenSubscriber> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(FilterWhenSubscriber.class, "wip");
-		static final AtomicReferenceFieldUpdater<FilterWhenSubscriber, FilterInnerSubscriber> CURRENT =
-				AtomicReferenceFieldUpdater.newUpdater(FilterWhenSubscriber.class, FilterInnerSubscriber.class, "current");
+		static final AtomicReferenceFieldUpdater<FluxFilterWhenSubscriber, Throwable>      ERROR     =
+				AtomicReferenceFieldUpdater.newUpdater(FluxFilterWhenSubscriber.class, Throwable.class, "error");
+		static final AtomicLongFieldUpdater<FluxFilterWhenSubscriber>                      REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(FluxFilterWhenSubscriber.class, "requested");
+		static final AtomicIntegerFieldUpdater<FluxFilterWhenSubscriber>                   WIP       =
+				AtomicIntegerFieldUpdater.newUpdater(FluxFilterWhenSubscriber.class, "wip");
+		static final AtomicReferenceFieldUpdater<FluxFilterWhenSubscriber, FilterWhenInner>CURRENT   =
+				AtomicReferenceFieldUpdater.newUpdater(FluxFilterWhenSubscriber.class, FilterWhenInner.class, "current");
 
-		static final FilterInnerSubscriber INNER_CANCELLED = new FilterInnerSubscriber(null, false);
+		static final FilterWhenInner INNER_CANCELLED = new FilterWhenInner(null, false);
 
 		static final int STATE_FRESH   = 0;
 		static final int STATE_RUNNING = 1;
 		static final int STATE_RESULT  = 2;
 
-		FilterWhenSubscriber(Subscriber<? super T> actual,
+		FluxFilterWhenSubscriber(Subscriber<? super T> actual,
 				Function<? super T, ? extends Publisher<Boolean>> asyncPredicate,
 				int bufferSize) {
 			this.toFilter = new AtomicReferenceArray<>(QueueSupplier.ceilingNextPowerOfTwo(bufferSize));
@@ -150,7 +150,7 @@ class FluxFilterWhen<T> extends FluxSource<T, T> {
 		}
 
 		void cancelInner() {
-			FilterInnerSubscriber a = CURRENT.get(this);
+			FilterWhenInner a = CURRENT.get(this);
 			if (a != INNER_CANCELLED) {
 				a = CURRENT.getAndSet(this, INNER_CANCELLED);
 				if (a != null && a != INNER_CANCELLED) {
@@ -246,7 +246,7 @@ class FluxFilterWhen<T> extends FluxSource<T, T> {
 									a.onNext(t);
 								}
 							} else {
-								FilterInnerSubscriber inner = new FilterInnerSubscriber(this, !(p instanceof Mono));
+								FilterWhenInner inner = new FilterWhenInner(this, !(p instanceof Mono));
 								if (CURRENT.compareAndSet(this,null, inner)) {
 									state = STATE_RUNNING;
 									p.subscribe(inner);
@@ -320,7 +320,7 @@ class FluxFilterWhen<T> extends FluxSource<T, T> {
 		}
 
 		void clearCurrent() {
-			FilterInnerSubscriber c = current;
+			FilterWhenInner c = current;
 			if (c != INNER_CANCELLED) {
 				CURRENT.compareAndSet(this, c, null);
 			}
@@ -378,24 +378,24 @@ class FluxFilterWhen<T> extends FluxSource<T, T> {
 
 		@Override
 		public Stream<? extends Scannable> inners() {
-			FilterInnerSubscriber c = current;
+			FilterWhenInner c = current;
 			return c == null ? Stream.empty() : Stream.of(c);
 		}
 	}
 
-	static final class FilterInnerSubscriber implements InnerConsumer<Boolean> {
+	static final class FilterWhenInner implements InnerConsumer<Boolean> {
 
-		final FilterWhenSubscriber<?> parent;
-		final boolean                 cancelOnNext;
+		final FluxFilterWhenSubscriber<?> parent;
+		final boolean                     cancelOnNext;
 
 		boolean done;
 
 		volatile Subscription sub;
 
-		static final AtomicReferenceFieldUpdater<FilterInnerSubscriber, Subscription> SUB =
-				AtomicReferenceFieldUpdater.newUpdater(FilterInnerSubscriber.class, Subscription.class, "sub");
+		static final AtomicReferenceFieldUpdater<FilterWhenInner, Subscription> SUB =
+				AtomicReferenceFieldUpdater.newUpdater(FilterWhenInner.class, Subscription.class, "sub");
 
-		FilterInnerSubscriber(FilterWhenSubscriber<?> parent, boolean cancelOnNext) {
+		FilterWhenInner(FluxFilterWhenSubscriber<?> parent, boolean cancelOnNext) {
 			this.parent = parent;
 			this.cancelOnNext = cancelOnNext;
 		}
