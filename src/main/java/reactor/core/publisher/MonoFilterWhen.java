@@ -43,7 +43,7 @@ class MonoFilterWhen<T> extends MonoSource<T, T> {
 
 	final Function<? super T, ? extends Publisher<Boolean>> asyncPredicate;
 
-	MonoFilterWhen(Publisher<T> source,
+	MonoFilterWhen(Mono<T> source,
 			Function<? super T, ? extends Publisher<Boolean>> asyncPredicate) {
 		super(source);
 		this.asyncPredicate = asyncPredicate;
@@ -56,25 +56,35 @@ class MonoFilterWhen<T> extends MonoSource<T, T> {
 
 	static final class MonoFilterWhenSubscriber<T> extends Operators.MonoSubscriber<T, T> {
 
+		/* Implementation notes on state transitions:
+		 * This subscriber runs through a few possible state transitions, that are
+		 * expressed through the signal methods rather than an explicit state variable,
+		 * as they are simple enough (states suffixed with a * correspond to a terminal
+		 * signal downstream):
+		 *  - SUBSCRIPTION -> EMPTY | VALUED | EARLY ERROR
+		 *  - EMPTY -> COMPLETE
+		 *  - VALUED -> FILTERING | EARLY ERROR
+		 *  - EARLY ERROR*
+		 *  - FILTERING -> FEMPTY | FERROR | FVALUED
+		 *  - FEMPTY -> COMPLETE
+		 *  - FERROR*
+		 *  - FVALUED -> ON NEXT + COMPLETE | COMPLETE
+		 *  - COMPLETE*
+		 */
+
 		final Function<? super T, ? extends Publisher<Boolean>> asyncPredicate;
+
+		//this is only touched by onNext and read by onComplete, so no need for volatile
+		boolean sourceValued;
 
 		Subscription upstream;
 
 		volatile FilterWhenInner asyncFilter;
-		volatile Throwable       error;
-		volatile int             filterState;
 
 		static final AtomicReferenceFieldUpdater<MonoFilterWhenSubscriber, FilterWhenInner> ASYNC_FILTER =
 				AtomicReferenceFieldUpdater.newUpdater(MonoFilterWhenSubscriber.class, FilterWhenInner.class, "asyncFilter");
 		
-		static final AtomicReferenceFieldUpdater<MonoFilterWhenSubscriber, Throwable> ERROR =
-				AtomicReferenceFieldUpdater.newUpdater(MonoFilterWhenSubscriber.class, Throwable.class, "error");
-
 		static final FilterWhenInner INNER_CANCELLED = new FilterWhenInner(null, false);
-
-		static final int STATE_FRESH         = 0; //the source value is fresh
-		static final int STATE_RUNNING       = 1; //the filter is running asynchronously
-		static final int STATE_RESULT        = 2; //the output Mono is resolved
 
 		MonoFilterWhenSubscriber(Subscriber<? super T> actual, Function<? super T, ? extends Publisher<Boolean>> asyncPredicate) {
 			super(actual);
@@ -90,76 +100,67 @@ class MonoFilterWhen<T> extends MonoSource<T, T> {
 			}
 		}
 
+		@SuppressWarnings("unchecked")
 		@Override
 		public void onNext(T t) {
-			if (filterState == STATE_FRESH) {
-				setValue(t);
-				Publisher<Boolean> p;
+			//we assume the source is a Mono, so only one onNext will ever happen
+			sourceValued = true;
+			setValue(t);
+			Publisher<Boolean> p;
+
+			try {
+				p = Objects.requireNonNull(asyncPredicate.apply(t),
+						"The asyncPredicate returned a null value");
+			}
+			catch (Throwable ex) {
+				Exceptions.throwIfFatal(ex);
+				super.onError(ex);
+				return;
+			}
+
+			if (p instanceof Callable) {
+				Boolean u;
 
 				try {
-					p = Objects.requireNonNull(asyncPredicate.apply(t),
-							"The asyncPredicate returned a null value");
+					u = ((Callable<Boolean>) p).call();
 				}
 				catch (Throwable ex) {
 					Exceptions.throwIfFatal(ex);
-						//TODO not really needed as we don't expect to get there if the Mono source errors
-					Exceptions.addThrowable(ERROR, this, ex);
-					filterState = STATE_RESULT;
-					super.onError(error);
+					super.onError(ex);
 					return;
 				}
 
-				if (p instanceof Callable) {
-					Boolean u;
-
-					try {
-						u = ((Callable<Boolean>) p).call();
-					}
-					catch (Throwable ex) {
-						Exceptions.throwIfFatal(ex);
-						//TODO not really needed as we don't expect to get there if the Mono source errors
-						Exceptions.addThrowable(ERROR, this, ex);
-						filterState = STATE_RESULT;
-						super.onError(error);
-						return;
-					}
-
-					if (u != null && u) {
-						actual.onNext(t);
-					}
+				if (u != null && u) {
+					actual.onNext(t);
+					actual.onComplete();
 				}
 				else {
-					FilterWhenInner inner = new FilterWhenInner(this, !(p instanceof Mono));
-					if (ASYNC_FILTER.compareAndSet(this, null, inner)) {
-						filterState = STATE_RUNNING;
-						p.subscribe(inner);
-					}
+					actual.onComplete();
 				}
 			}
-			//TODO drop?
+			else {
+				FilterWhenInner inner = new FilterWhenInner(this, !(p instanceof Mono));
+				if (ASYNC_FILTER.compareAndSet(this, null, inner)) {
+					p.subscribe(inner);
+				}
+			}
 		}
 
 		@Override
 		public void onComplete() {
-			if (filterState == STATE_FRESH) {
+			if (!sourceValued) {
 				//there was no value, we can complete empty
 				super.onComplete();
 			}
 			//otherwise just wait for the inner filter to apply, rather than complete too soon
 		}
 
-		@Override
-		public void onError(Throwable t) {
-			Exceptions.addThrowable(ERROR, this, t);
-			if (filterState != STATE_RUNNING) {
-				super.onError(t);
-			}
-		}
-
-		@Override
-		public Throwable getError() {
-			return error;
-		}
+		/* implementation note on onError:
+		 * if the source errored, we can propagate that directly since there
+		 * was no chance for an inner subscriber to have been triggered
+		 * (the source being a Mono). So we can just have the parent's behavior
+		 * of calling actual.onError(t) for onError.
+		 */
 
 		@Override
 		public void cancel() {
@@ -181,7 +182,6 @@ class MonoFilterWhen<T> extends MonoSource<T, T> {
 		}
 
 		void innerResult(Boolean item) {
-			filterState = STATE_RESULT;
 			if (item != null && item) {
 				//will reset the value with itself, but using parent's `value` saves a field
 				complete(value);
@@ -192,20 +192,10 @@ class MonoFilterWhen<T> extends MonoSource<T, T> {
 		}
 
 		void innerError(Throwable ex) {
-			Exceptions.addThrowable(ERROR, this, ex);
-			super.onError(error);
-		}
-
-		void innerComplete() {
-			if (filterState == STATE_RUNNING) {
-				Throwable e = error;
-				if (e == null) {
-					super.onComplete();
-				}
-				else {
-					super.onError(e);
-				}
-			}
+			//if the inner subscriber (the filter one) errors, then we can
+			//always propagate that error directly, as it means that the source Mono
+			//was at least valued rather than in error.
+			super.onError(ex);
 		}
 
 		@Override
@@ -220,10 +210,6 @@ class MonoFilterWhen<T> extends MonoSource<T, T> {
 					return upstream;
 				case CANCELLED:
 					return super.state == CANCELLED;
-				case ERROR:
-					return error;
-				case BUFFERED:
-					return filterState == STATE_RUNNING ? 1 : 0;
 				case PREFETCH:
 					return 1;
 				default:
@@ -287,8 +273,9 @@ class MonoFilterWhen<T> extends MonoSource<T, T> {
 		@Override
 		public void onComplete() {
 			if (!done) {
+				//the filter publisher was empty
 				done = true;
-				parent.innerComplete();
+				parent.innerResult(null); //will trigger actual.onComplete()
 			}
 		}
 
