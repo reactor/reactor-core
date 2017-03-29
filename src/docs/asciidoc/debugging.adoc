@@ -102,7 +102,7 @@ This is done by customizing the `Hook.onOperator` hook *at application start*
 (or at least before the incriminated flux or mono can be instantiated), like so:
 [source,java]
 ----
-Hooks.onOperator(providedHook -> providedHook.operatorStackTrace());
+Hooks.onOperator(providedHook -> providedHook.operatorStacktrace());
 ----
 
 The idea is that this will start instrumenting the calls to `Flux` (and
@@ -119,7 +119,7 @@ In the next section, we'll see how the stacktrace differs and how to interpret
 that new information.
 
 == Reading a stack trace in debug mode
-Reusing our initial example but activating the `operatorStackTrace` debug
+Reusing our initial example but activating the `operatorStacktrace` debug
 feature, here is the stack we now get:
 
 [source]
@@ -246,7 +246,7 @@ So we could only instrument uses of the incriminating operator by doing:
 [source,java]
 ----
 Hooks.onOperator(providedHook -> providedHook.ifName("single") <1>
-                                             .operatorStackTrace());
+                                             .operatorStacktrace());
 ----
 <1> Only activate for operator classes named "single", ignoring case and the
 "Parallel", "Flux" or "Mono" prefixes, as well as "Fuseable" suffix (as seen in
