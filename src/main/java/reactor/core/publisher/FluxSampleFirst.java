@@ -65,7 +65,7 @@ final class FluxSampleFirst<T, U> extends FluxSource<T, T> {
 	}
 
 	static final class SampleFirstMain<T, U>
-			implements InnerOperator<T, T>, InnerProducer<T> {
+			implements InnerOperator<T, T> {
 
 		final Function<? super T, ? extends Publisher<U>> throttler;
 		final Subscriber<? super T>                       actual;

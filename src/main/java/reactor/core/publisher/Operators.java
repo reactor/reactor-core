@@ -1131,7 +1131,7 @@ public abstract class Operators {
 		}
 
 		@Override
-		public Object downstream() {
+		public Subscriber<? super O> downstream() {
 			return actual();
 		}
 
