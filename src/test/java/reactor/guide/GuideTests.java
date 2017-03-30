@@ -761,7 +761,7 @@ public class GuideTests {
 				assertThat(withSuppressed.getSuppressed()).hasSize(1);
 				assertThat(withSuppressed.getSuppressed()[0])
 						.hasMessageStartingWith("\nAssembly trace from producer [reactor.core.publisher.MonoSingle] :")
-						.hasMessageEndingWith("Flux.single(GuideTests.java:685)\n");
+						.hasMessageEndingWith("Flux.single(GuideTests.java:719)\n");
 			});
 		}
 	}
