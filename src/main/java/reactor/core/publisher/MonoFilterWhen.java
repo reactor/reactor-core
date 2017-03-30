@@ -96,7 +96,7 @@ class MonoFilterWhen<T> extends MonoSource<T, T> {
 			if (Operators.validate(upstream, s)) {
 				upstream = s;
 				actual.onSubscribe(this);
-				s.request(1);
+				s.request(Long.MAX_VALUE);
 			}
 		}
 
@@ -131,8 +131,7 @@ class MonoFilterWhen<T> extends MonoSource<T, T> {
 				}
 
 				if (u != null && u) {
-					actual.onNext(t);
-					actual.onComplete();
+					complete(t);
 				}
 				else {
 					actual.onComplete();
@@ -208,11 +207,9 @@ class MonoFilterWhen<T> extends MonoSource<T, T> {
 			switch (key) {
 				case PARENT:
 					return upstream;
-				case CANCELLED:
-					return super.state == CANCELLED;
-				case PREFETCH:
-					return 1;
-				default:
+				case TERMINATED:
+					return asyncFilter != null ? super.scan(Attr.TERMINATED) : asyncFilter.scan(Attr.TERMINATED);
+				default: //CANCELLED, PREFETCH
 					return super.scan(key);
 			}
 		}
