@@ -313,4 +313,18 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
 		            .verifyComplete();
 	}
 
+	/**
+	 * See https://github.com/reactor/reactor-core/issues/508
+	 */
+	@Test
+	public void testPublishingTwice() {
+		StepVerifier.create(Flux.just(Flux.range(0, 300).toIterable(), Flux.range(0, 300).toIterable())
+				.flatMapIterable(x -> x)
+				.share()
+				.share()
+				.count())
+				.expectNext(600L)
+				.verifyComplete();
+	}
+
 }
