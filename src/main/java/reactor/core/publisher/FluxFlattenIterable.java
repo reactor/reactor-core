@@ -627,7 +627,7 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 		public boolean isEmpty() {
 			Iterator<? extends R> it = current;
 			if (it != null) {
-				return it.hasNext();
+				return !it.hasNext();
 			}
 			return queue.isEmpty(); // estimate
 		}
