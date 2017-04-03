@@ -985,9 +985,10 @@ public class StepVerifierTests {
 	}
 
 	@Test(timeout = 1000)
+	@Deprecated //note interval now uses parallel() by default, so no sense in keeping a test with VTS not enabled on it
 	public void verifyCreatedSchedulerUsesVirtualTime() {
 		//a timeout will occur if virtual time isn't used
-		StepVerifier.withVirtualTime(() -> Flux.interval(Duration.ofSeconds(3))
+		StepVerifier.withVirtualTime(() -> Flux.interval(Duration.ofSeconds(3), Schedulers.timer())
 		                                       .map(d -> "t" + d),
 				VirtualTimeScheduler::create,
 				0)
