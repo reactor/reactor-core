@@ -887,7 +887,7 @@ public class StepVerifierTests {
 	@Test
 	public void verifyVirtualTimeOnNext() {
 		StepVerifier.withVirtualTime(() -> Flux.just("foo", "bar", "foobar")
-		                                       .delay(Duration.ofHours(1))
+		                                       .delayElements(Duration.ofHours(1))
 		                                       .log())
 		            .thenAwait(Duration.ofHours(1))
 		            .expectNext("foo")
@@ -945,7 +945,7 @@ public class StepVerifierTests {
 	public void verifyVirtualTimeOnNextIntervalManual() {
 		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
 
-		StepVerifier.withVirtualTime(() -> Flux.intervalMillis(1000, vts)
+		StepVerifier.withVirtualTime(() -> Flux.interval(Duration.ofMillis(1000), vts)
 		                                       .map(d -> "t" + d))
 		            .then(() -> vts.advanceTimeBy(Duration.ofHours(1)))
 		            .expectNextCount(3600)
@@ -1037,7 +1037,7 @@ public class StepVerifierTests {
 	@Test
 	public void longDelayAndNoTermination() {
 		StepVerifier.withVirtualTime(() -> Flux.just("foo", "bar")
-		                                       .delay(Duration.ofSeconds(5))
+		                                       .delayElements(Duration.ofSeconds(5))
 		                                       .concatWith(Mono.never()),
 				Long.MAX_VALUE)
 		            .expectSubscription()
@@ -1053,7 +1053,7 @@ public class StepVerifierTests {
 	@Test
 	public void thenAwaitThenCancelWaitsForDuration() {
 		Duration verifyDuration = StepVerifier.create(Flux.just("foo", "bar")
-		                                                  .delay(Duration.ofMillis(500)))
+		                                                  .delayElements(Duration.ofMillis(500)))
 		                                      .expectSubscription()
 		                                      .thenAwait(Duration.ofMillis(500))
 		                                      .expectNext("foo")
