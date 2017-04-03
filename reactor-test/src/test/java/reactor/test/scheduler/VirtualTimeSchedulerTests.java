@@ -40,7 +40,7 @@ public class VirtualTimeSchedulerTests {
 		Assert.assertFalse(Schedulers.newElastic("") instanceof VirtualTimeScheduler);
 		Assert.assertFalse(Schedulers.newSingle("") instanceof VirtualTimeScheduler);
 
-		VirtualTimeScheduler.getOrSet(true);
+		VirtualTimeScheduler.getOrSet();
 
 		Assert.assertTrue(Schedulers.newParallel("") instanceof VirtualTimeScheduler);
 		Assert.assertTrue(Schedulers.newElastic("") instanceof VirtualTimeScheduler);
@@ -49,13 +49,14 @@ public class VirtualTimeSchedulerTests {
 
 		VirtualTimeScheduler t = VirtualTimeScheduler.get();
 
-		Assert.assertEquals(Schedulers.newParallel(""), t);
-		Assert.assertEquals(Schedulers.newElastic(""), t);
-		Assert.assertEquals(Schedulers.newSingle(""), t);
-		Assert.assertEquals(Schedulers.newTimer(""), t);
+		Assert.assertSame(Schedulers.newParallel(""), t);
+		Assert.assertSame(Schedulers.newElastic(""), t);
+		Assert.assertSame(Schedulers.newSingle(""), t);
+		Assert.assertSame(Schedulers.newTimer(""), t);
 	}
 
 	@Test
+	@Deprecated
 	public void timerOnlyEnabled() {
 		Assert.assertFalse(Schedulers.newTimer("") instanceof VirtualTimeScheduler);
 		Assert.assertFalse(Schedulers.newParallel("") instanceof VirtualTimeScheduler);
@@ -78,6 +79,7 @@ public class VirtualTimeSchedulerTests {
 	}
 
 	@Test
+	@Deprecated
 	public void enableProvidedSchedulerIdempotent() {
 		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
 
