@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,11 +67,6 @@ public abstract class AbstractProcessorVerification extends org.reactivestreams.
 	@Override
 	public void required_spec309_requestZeroMustSignalIllegalArgumentException() throws Throwable {
 		throw new SkipException("Need RS review");
-	}
-
-	@BeforeClass
-	public void setup() {
-		Schedulers.timer();
 	}
 
 	@AfterClass

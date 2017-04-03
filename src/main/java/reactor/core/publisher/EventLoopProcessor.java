@@ -284,7 +284,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	}
 
 	@Override
-	public Object upstream() {
+	public Subscription upstream() {
 		return upstreamSubscription;
 	}
 

@@ -42,6 +42,7 @@ import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.core.scheduler.TimedScheduler;
 import reactor.util.Logger;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.function.Tuple2;
@@ -244,7 +245,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
 	@Deprecated
-	public static Mono<Long> delayMillis(long duration, Scheduler timer) {
+	public static Mono<Long> delayMillis(long duration, TimedScheduler timer) {
 		return delay(Duration.ofMillis(duration), timer);
 	}
 
@@ -1553,7 +1554,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
 	@Deprecated
-	public final Mono<T> delayElementMillis(long delay, Scheduler timer) {
+	public final Mono<T> delayElementMillis(long delay, TimedScheduler timer) {
 		return delayElement(Duration.ofMillis(delay), timer);
 	}
 
@@ -1639,7 +1640,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
 	@Deprecated
-	public final Mono<T> delaySubscriptionMillis(long delay, Scheduler timer) {
+	public final Mono<T> delaySubscriptionMillis(long delay, TimedScheduler timer) {
 		return delaySubscription(Duration.ofMillis(delay), timer);
 	}
 
@@ -1902,7 +1903,24 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a transforming {@link Mono} that emits a tuple of time elapsed in milliseconds and matching data
 	 */
 	public final Mono<Tuple2<Long, T>> elapsed() {
-		return elapsed(Schedulers.timer());
+		return elapsed(Schedulers.parallel());
+	}
+
+	/**
+	 * Map this {@link Mono} sequence into {@link reactor.util.function.Tuple2} of T1 {@link Long} timemillis and T2
+	 * {@code T} associated data. The timemillis corresponds to the elapsed time between the subscribe and the first
+	 * next signal.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/elapsed1.png" alt="">
+	 *
+	 * @param scheduler a {@link Scheduler} instance to read time from
+	 * @return a transforming {@link Mono} that emits a tuple of time elapsed in milliseconds and matching data
+	 * @deprecated use {@link #elapsed(Scheduler)}
+	 */
+	@Deprecated
+	public final Mono<Tuple2<Long, T>> elapsed(TimedScheduler scheduler) {
+		return elapsed((Scheduler)scheduler);
 	}
 
 	/**
@@ -1917,6 +1935,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a transforming {@link Mono} that emits a tuple of time elapsed in milliseconds and matching data
 	 */
 	public final Mono<Tuple2<Long, T>> elapsed(Scheduler scheduler) {
+		Objects.requireNonNull(scheduler, "scheduler");
 		return onAssembly(new MonoElapsed<>(this, scheduler));
 	}
 
@@ -3002,7 +3021,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return an expirable {@link Mono}
 	 */
 	public final Mono<T> timeout(Duration timeout) {
-		return timeout(timeout, null, Schedulers.timer());
+		return timeout(timeout, null, Schedulers.parallel());
 	}
 
 	/**
@@ -3019,7 +3038,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return an expirable {@link Mono} with a fallback {@link Mono}
 	 */
 	public final Mono<T> timeout(Duration timeout, Mono<? extends T> fallback) {
-		return timeout(timeout, fallback, Schedulers.timer());
+		return timeout(timeout, fallback, Schedulers.parallel());
 	}
 
 	/**
@@ -3111,7 +3130,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	@Deprecated
 	public final Mono<T> timeoutMillis(long timeout) {
-		return timeoutMillis(timeout, Schedulers.timer());
+		return timeout(Duration.ofMillis(timeout), Schedulers.parallel());
 	}
 
 	/**
@@ -3127,7 +3146,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
 	 */
 	@Deprecated
-	public final Mono<T> timeoutMillis(long timeout, Scheduler timer) {
+	public final Mono<T> timeoutMillis(long timeout, TimedScheduler timer) {
 		return timeoutMillis(timeout, null, timer);
 	}
 
@@ -3147,7 +3166,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	@Deprecated
 	public final Mono<T> timeoutMillis(long timeout, Mono<? extends T> fallback) {
-		return timeoutMillis(timeout, fallback, Schedulers.timer());
+		return timeout(Duration.ofMillis(timeout), fallback, Schedulers.parallel());
 	}
 
 	/**
@@ -3167,13 +3186,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	@Deprecated
 	public final Mono<T> timeoutMillis(long timeout, Mono<? extends T> fallback,
-			Scheduler timer) {
-		final Mono<Long> _timer = Mono.delayMillis(timeout, timer).otherwiseReturn(0L);
-
-		if(fallback == null) {
-			return onAssembly(new MonoTimeout<>(this, _timer));
-		}
-		return onAssembly(new MonoTimeout<>(this, _timer, fallback));
+			TimedScheduler timer) {
+		return timeout(Duration.ofMillis(timeout), fallback, timer);
 	}
 
 
@@ -3187,7 +3201,23 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a timestamped {@link Mono}
 	 */
 	public final Mono<Tuple2<Long, T>> timestamp() {
-		return timestamp(Schedulers.timer());
+		return timestamp(Schedulers.parallel());
+	}
+
+	/**
+	 * Emit a {@link reactor.util.function.Tuple2} pair of T1 {@link Long} current system time in
+	 * millis and T2 {@code T} associated data for the eventual item from this {@link Mono}
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/timestamp1.png" alt="">
+	 *
+	 * @param scheduler a {@link Scheduler} instance to read time from
+	 * @return a timestamped {@link Mono}
+	 * @deprecated use {@link #timestamp(Scheduler)}
+	 */
+	@Deprecated
+	public final Mono<Tuple2<Long, T>> timestamp(TimedScheduler scheduler) {
+		return timestamp((Scheduler)scheduler);
 	}
 
 	/**
@@ -3201,6 +3231,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a timestamped {@link Mono}
 	 */
 	public final Mono<Tuple2<Long, T>> timestamp(Scheduler scheduler) {
+		Objects.requireNonNull(scheduler, "scheduler");
 		return map(d -> Tuples.of(scheduler.now(TimeUnit.MILLISECONDS), d));
 	}
 

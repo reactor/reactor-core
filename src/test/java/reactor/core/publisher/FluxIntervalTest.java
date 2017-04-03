@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,7 +81,7 @@ public class FluxIntervalTest {
 		return Flux.interval(Duration.ofSeconds(3))
 		    .flatMap(v -> Flux.fromIterable(Arrays.asList("A"))
 		                      .flatMap(w -> Mono.fromCallable(() -> Arrays.asList(1, 2))
-		                                        .subscribeOn(Schedulers.timer())
+		                                        .subscribeOn(Schedulers.parallel())
 		                                        .flatMap(Flux::fromIterable))).log();
 	}
 
