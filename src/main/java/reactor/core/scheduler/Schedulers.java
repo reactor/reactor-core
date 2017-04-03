@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -332,8 +332,11 @@ public abstract class Schedulers {
 	 * @param name timer thread prefix
 	 *
 	 * @return a new time-capable {@link Scheduler}
+	 * @deprecated in 3.0.6 and from 3.1 onwards, all Scheduler support time.
+	 * {@link #newSingle(String)} is a direct equivalent if required.
 	 */
-	public static Scheduler newTimer(String name) {
+	@Deprecated
+	public static TimedScheduler newTimer(String name) {
 		return newTimer(name, true);
 	}
 
@@ -347,8 +350,11 @@ public abstract class Schedulers {
 	 * Scheduler#dispose()} to exit the VM.
 	 *
 	 * @return a new time-capable {@link Scheduler}
+	 * @deprecated in 3.0.6 and from 3.1 onwards, all Scheduler support time.
+	 * {@link #newSingle(String, boolean)} is a direct equivalent if required.
 	 */
-	public static Scheduler newTimer(String name, boolean daemon) {
+	@Deprecated
+	public static TimedScheduler newTimer(String name, boolean daemon) {
 		return newTimer(new SchedulerThreadFactory(name,
 				daemon,
 				SingleScheduler.TIMER_COUNTER));
@@ -363,8 +369,11 @@ public abstract class Schedulers {
 	 * {@link Scheduler}
 	 *
 	 * @return a new time-capable {@link Scheduler}
+	 * @deprecated in 3.0.6 and from 3.1 onwards, all Scheduler support time.
+	 * {@link #newSingle(ThreadFactory)} is a direct equivalent if required.
 	 */
-	public static Scheduler newTimer(ThreadFactory threadFactory) {
+	@Deprecated
+	public static TimedScheduler newTimer(ThreadFactory threadFactory) {
 		return factory.newTimer(threadFactory);
 	}
 
@@ -415,7 +424,7 @@ public abstract class Schedulers {
 	 * <p>
 	 * This method should be called safely and with caution, typically on app startup.
 	 * <p>
-	 * Note that cached schedulers (like {@link #timer()}) are also shut down and will be
+	 * Note that cached schedulers (like {@link #single()}) are also shut down and will be
 	 * re-created from the new factory upon next use.
 	 *
 	 * @param factoryInstance an arbitrary {@link Factory} instance.
@@ -433,12 +442,12 @@ public abstract class Schedulers {
 		CachedScheduler oldElastic = CACHED_ELASTIC.getAndSet(null);
 		CachedScheduler oldParallel = CACHED_PARALLEL.getAndSet(null);
 		CachedScheduler oldSingle = CACHED_SINGLE.getAndSet(null);
-		CachedScheduler oldTimer = CACHED_TIMER.getAndSet(null);
+		TimedScheduler oldTimer = CACHED_TIMER.getAndSet(null);
 
 		if (oldElastic != null) oldElastic._dispose();
 		if (oldParallel != null) oldParallel._dispose();
 		if (oldSingle != null) oldSingle._dispose();
-		if (oldTimer != null) oldTimer._dispose();
+		if (oldTimer != null) oldTimer.dispose();
 	}
 
 	/**
@@ -472,9 +481,23 @@ public abstract class Schedulers {
 	 * Create or reuse a time-capable {@link Scheduler}.
 	 *
 	 * @return a cached time-capable {@link Scheduler}
+	 * @deprecated in 3.0.6 and from 3.1 onwards, all Scheduler support time.
+	 * {@link #single} is a direct equivalent if required.
 	 */
-	public static Scheduler timer() {
-		return cache(CACHED_TIMER, TIMER, TIMER_SUPPLIER);
+	@Deprecated
+	public static TimedScheduler timer() {
+		TimedScheduler s = CACHED_TIMER.get();
+		if (s != null) {
+			return s;
+		}
+		s = TIMER_SUPPLIER.get();
+		if (CACHED_TIMER.compareAndSet(null, s)) {
+			return s;
+		}
+		//the reference was updated in the meantime with a cached scheduler
+		//fallback to it and dispose the extraneous one
+		s.dispose();
+		return CACHED_TIMER.get();
 	}
 
 	/**
@@ -488,16 +511,6 @@ public abstract class Schedulers {
 //		catch (InterruptedException e) {
 //			log.warn("{} scheduler in-flight tasks didn't terminate within 30 seconds", type);
 //		}
-	}
-
-	public static ExecutorService decorateExecutorService(String schedulerType,
-			Supplier<? extends ExecutorService> actual) {
-		return factory.decorateExecutorService(schedulerType, actual);
-	}
-
-	public static ScheduledExecutorService decorateScheduledExecutorService(String schedulerType,
-			Supplier<? extends ScheduledExecutorService> actual) {
-		return factory.decorateScheduledExecutorService(schedulerType, actual);
 	}
 
 	/**
@@ -581,7 +594,7 @@ public abstract class Schedulers {
 	static AtomicReference<CachedScheduler> CACHED_ELASTIC  = new AtomicReference<>();
 	static AtomicReference<CachedScheduler> CACHED_PARALLEL = new AtomicReference<>();
 	static AtomicReference<CachedScheduler> CACHED_SINGLE   = new AtomicReference<>();
-	static AtomicReference<CachedScheduler> CACHED_TIMER    = new AtomicReference<>();
+	static AtomicReference<TimedScheduler> CACHED_TIMER    = new AtomicReference<>();
 
 	static final Supplier<Scheduler> ELASTIC_SUPPLIER =
 			() -> newElastic(ELASTIC, ElasticScheduler.DEFAULT_TTL_SECONDS, true);
@@ -593,7 +606,7 @@ public abstract class Schedulers {
 
 	static final Supplier<Scheduler> SINGLE_SUPPLIER = () -> newSingle(SINGLE, true);
 
-	static final Supplier<Scheduler> TIMER_SUPPLIER = () -> newTimer(TIMER);
+	static final Supplier<TimedScheduler> TIMER_SUPPLIER = () -> newTimer(TIMER);
 
 	static final Factory DEFAULT = new Factory() {
 	};
@@ -750,4 +763,17 @@ public abstract class Schedulers {
 			cached.dispose();
 		}
 	}
+
+	//TODO Should not be public , removed from public scope in 3.1
+	public static ExecutorService decorateExecutorService(String schedulerType,
+			Supplier<? extends ExecutorService> actual) {
+		return factory.decorateExecutorService(schedulerType, actual);
+	}
+
+	//TODO Should not be public , removed from public scope in 3.1
+	public static ScheduledExecutorService decorateScheduledExecutorService(String schedulerType,
+			Supplier<? extends ScheduledExecutorService> actual) {
+		return factory.decorateScheduledExecutorService(schedulerType, actual);
+	}
+
 }

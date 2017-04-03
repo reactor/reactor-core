@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -108,7 +108,7 @@ public class SchedulersTest {
 		Schedulers.Factory ts1 = new Schedulers.Factory() { };
 		Schedulers.Factory ts2 = new TestSchedulers(false);
 		Schedulers.setFactory(ts1);
-		Scheduler cachedTimerOld = uncache(Schedulers.timer());
+		Scheduler cachedTimerOld = Schedulers.timer();
 		Scheduler standaloneTimer = Schedulers.newTimer("standaloneTimer");
 
 
@@ -117,7 +117,7 @@ public class SchedulersTest {
 		Assert.assertNotSame(standaloneTimer.schedule(() -> {}), Scheduler.REJECTED);
 
 		Schedulers.setFactory(ts2);
-		Scheduler cachedTimerNew = uncache(Schedulers.timer());
+		Scheduler cachedTimerNew = Schedulers.timer();
 
 		Assert.assertEquals(cachedTimerNew, Schedulers.newTimer("unused"));
 		Assert.assertNotSame(cachedTimerNew, cachedTimerOld);
@@ -129,14 +129,6 @@ public class SchedulersTest {
 		Assert.assertNotSame(standaloneTimer.schedule(() -> {}), Scheduler.REJECTED);
 		//new factory = new alive cached scheduler
 		Assert.assertNotSame(cachedTimerNew.schedule(() -> {}), Scheduler.REJECTED);
-	}
-
-	@SuppressWarnings("unchecked")
-	private <T extends Scheduler> T uncache(T scheduler) {
-		if (scheduler instanceof Supplier) {
-			return ((Supplier<T>) scheduler).get();
-		}
-		throw new IllegalArgumentException("not a cache scheduler, expected Supplier<? extends Scheduler>");
 	}
 
 	@Test

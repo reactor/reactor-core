@@ -426,7 +426,7 @@ public final class UnicastProcessor<T>
 	}
 
 	@Override
-	public Object downstream() {
+	public Subscriber<? super T> downstream() {
 		return actual;
 	}
 
