@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
@@ -312,6 +313,36 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	}
 
 	/**
+	 * Create a new TopicProcessor using passed backlog size, wait strategy and
+	 * auto-cancel settings. <p> The passed {@link ExecutorService}
+	 * will execute as many event-loop consuming the ringbuffer as subscribers.
+	 * <p> An additional {@code requestTaskExecutor} {@link ExecutorService} is also used
+	 * internally on each subscription.
+	 * @param service A provided ExecutorService to manage threading infrastructure
+	 * @param requestTaskExecutor A provided ExecutorService to manage threading infrastructure.
+	 * Should be capable of executing several runnables in parallel (eg. cached thread pool)
+	 * @param bufferSize A Backlog Size to mitigate slow subscribers
+	 * @param strategy A RingBuffer WaitStrategy to use instead of the default
+	 * blocking wait strategy.
+	 * @param autoCancel Should this propagate cancellation when unregistered by all
+	 * subscribers ?
+	 * @param <E> Type of processed signals
+	 * @return a fresh processor
+	 */
+	public static <E> TopicProcessor<E> create(ExecutorService service, ExecutorService requestTaskExecutor,
+	                                                int bufferSize, WaitStrategy strategy,
+	                                                boolean autoCancel) {
+		return new TopicProcessor<>(null,
+				service, requestTaskExecutor,
+				bufferSize,
+				strategy == null ?
+						WaitStrategy.phasedOffLiteLock(200, 100, TimeUnit.MILLISECONDS) :
+						strategy,
+				false,
+				autoCancel, null);
+	}
+
+	/**
 	 * Create a new TopicProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A Shared Processor
 	 * authorizes concurrent onNext calls and is suited for multi-threaded publisher that
@@ -569,9 +600,44 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 				autoCancel, null);
 	}
 
+	/**
+	 * Create a new TopicProcessor using passed backlog size, wait strategy and
+	 * auto-cancel settings. <p> A Shared Processor authorizes concurrent onNext calls and
+	 * is suited for multi-threaded publisher that will fan-in data. <p> The passed {@link
+	 * ExecutorService} will execute as many event-loop consuming the
+	 * ringbuffer as subscribers.
+	 * <p> An additional {@code requestTaskExecutor} {@link ExecutorService} is also used
+	 * internally on each subscription.
+	 * @param service A provided ExecutorService to manage threading infrastructure
+	 * @param requestTaskExecutor A provided ExecutorService to manage threading infrastructure.
+	 * @param service A provided ExecutorService to manage threading infrastructure
+	 * @param bufferSize A Backlog Size to mitigate slow subscribers
+	 * @param strategy A RingBuffer WaitStrategy to use instead of the default
+	 * blocking wait strategy.
+	 * @param autoCancel Should this propagate cancellation when unregistered by all
+	 * subscribers ?
+	 * @param <E> Type of processed signals
+	 * @return a fresh processor
+	 */
+	public static <E> TopicProcessor<E> share(ExecutorService service,
+			ExecutorService requestTaskExecutor,
+			int bufferSize, WaitStrategy strategy,
+			boolean autoCancel) {
+		return new TopicProcessor<>(null,
+				service, requestTaskExecutor,
+				bufferSize,
+				strategy == null ?
+						WaitStrategy.phasedOffLiteLock(200, 100, TimeUnit.MILLISECONDS) :
+						strategy,
+				true,
+				autoCancel, null);
+	}
+
 	final RingBuffer.Reader barrier;
 
 	final RingBuffer.Sequence minimum;
+
+	final ExecutorService requestTaskExecutor;
 
 	TopicProcessor(String name, int bufferSize,
 	                            WaitStrategy waitStrategy, boolean shared,
@@ -592,6 +658,19 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 			boolean shared,
 			boolean autoCancel,
 			final Supplier<E> signalSupplier) {
+		this(threadFactory, executor,
+				defaultRequestTaskExecutor(defaultName(threadFactory, TopicProcessor.class)),
+				bufferSize, waitStrategy, shared, autoCancel, signalSupplier);
+	}
+
+	TopicProcessor(ThreadFactory threadFactory,
+			ExecutorService executor,
+			ExecutorService requestTaskExecutor,
+			int bufferSize,
+			WaitStrategy waitStrategy,
+			boolean shared,
+			boolean autoCancel,
+			final Supplier<E> signalSupplier) {
 		super(bufferSize, threadFactory, executor, autoCancel, shared, () -> {
 			Slot<E> signal = new Slot<>();
 			if (signalSupplier != null) {
@@ -600,8 +679,11 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 			return signal;
 		}, waitStrategy);
 
+		Objects.requireNonNull(requestTaskExecutor, "requestTaskExecutor");
+
 		this.minimum = RingBuffer.newSequence(-1);
 		this.barrier = ringBuffer.newReader();
+		this.requestTaskExecutor = requestTaskExecutor;
 	}
 
 	@Override
@@ -673,8 +755,6 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 		//ringBuffer.markAsTerminated();
 	}
 
-
-
 	@Override
 	public long getPending() {
 		return ringBuffer.getPending();
@@ -684,7 +764,8 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	protected void requestTask(Subscription s) {
 		minimum.set(ringBuffer.getCursor());
 		ringBuffer.addGatingSequence(minimum);
-		new Thread(EventLoopProcessor.createRequestTask(s, () -> {
+		requestTaskExecutor.execute(
+				EventLoopProcessor.createRequestTask(s, () -> {
 					             if (!alive()) {
 						             WaitStrategy.alert();
 					             }
@@ -693,8 +774,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 						ringBuffer.getMinimumGatingSequence(minimum),
 				readWait,
 				this,
-				ringBuffer.bufferSize()),
-				name+"[request-task]").start();
+				ringBuffer.bufferSize()));
 	}
 
 	@Override
@@ -702,6 +782,11 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 		if (!alive() && SUBSCRIBER_COUNT.get(TopicProcessor.this) == 0) {
 			WaitStrategy.alert();
 		}
+	}
+
+	@Override
+	protected void specificShutdown() {
+		requestTaskExecutor.shutdown();
 	}
 
 	/**
@@ -896,5 +981,4 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 			halt();
 		}
 	}
-
 }

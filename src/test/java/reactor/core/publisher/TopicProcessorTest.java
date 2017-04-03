@@ -21,6 +21,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.assertj.core.api.Assertions;
+import org.assertj.core.api.Condition;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -28,6 +30,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.concurrent.WaitStrategy;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -322,5 +325,95 @@ public class TopicProcessorTest {
 				.isTrue();
 	}
 
+
+	@Test
+	public void testDefaultRequestTaskThreadName() {
+		String mainName = "topicProcessorRequestTask";
+		String expectedName = mainName + "[request-task]";
+
+		TopicProcessor<Object> processor = TopicProcessor.create(mainName, 8);
+
+		processor.requestTask(Operators.cancelledSubscription());
+
+		Thread[] threads = new Thread[Thread.activeCount()];
+		Thread.enumerate(threads);
+
+		//cleanup to avoid visibility in other tests
+		processor.forceShutdown();
+
+
+		Condition<Thread> defaultRequestTaskThread = new Condition<>(
+				thread -> expectedName.equals(thread.getName()),
+				"a thread named \"%s\"", expectedName);
+
+		Assertions.assertThat(threads)
+		          .haveExactly(1, defaultRequestTaskThread);
+	}
+
+	@Test
+	public void testCustomRequestTaskThreadName() {
+		String expectedName = "topicProcessorRequestTaskCreate";
+		//NOTE: the below single executor should not be used usually as requestTask assumes it immediately gets executed
+		ExecutorService customTaskExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, expectedName));
+		TopicProcessor<Object> processor = TopicProcessor.create(
+				Executors.newCachedThreadPool(), customTaskExecutor,
+				8, WaitStrategy.liteBlocking(), true);
+
+		processor.requestTask(Operators.cancelledSubscription());
+
+		Thread[] threads = new Thread[Thread.activeCount()];
+		Thread.enumerate(threads);
+
+		//cleanup to avoid visibility in other tests
+		customTaskExecutor.shutdownNow();
+		processor.forceShutdown();
+
+		Condition<Thread> customRequestTaskThread = new Condition<>(
+				thread -> expectedName.equals(thread.getName()),
+				"a thread named \"%s\"", expectedName);
+
+		Assertions.assertThat(threads)
+		          .haveExactly(1, customRequestTaskThread);
+	}
+
+	@Test
+	public void testCustomRequestTaskThreadShare() {
+		String expectedName = "topicProcessorRequestTaskShare";
+		//NOTE: the below single executor should not be used usually as requestTask assumes it immediately gets executed
+		ExecutorService customTaskExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, expectedName));
+
+		TopicProcessor<Object> processor = TopicProcessor.share(
+				Executors.newCachedThreadPool(), customTaskExecutor,
+				8, WaitStrategy.liteBlocking(), true);
+
+		processor.requestTask(Operators.cancelledSubscription());
+
+		Thread[] threads = new Thread[Thread.activeCount()];
+		Thread.enumerate(threads);
+
+		//cleanup to avoid visibility in other tests
+		customTaskExecutor.shutdownNow();
+		processor.forceShutdown();
+
+		Condition<Thread> customRequestTaskThread = new Condition<>(
+				thread -> expectedName.equals(thread.getName()),
+				"a thread named \"%s\"", expectedName);
+
+		Assertions.assertThat(threads)
+		          .haveExactly(1, customRequestTaskThread);
+	}
+
+	@Test
+	public void customRequestTaskThreadRejectsNull() {
+		ExecutorService customTaskExecutor = null;
+
+		Assertions.assertThatExceptionOfType(NullPointerException.class)
+		          .isThrownBy(() -> new TopicProcessor<>(
+				          Thread::new,
+				          Executors.newCachedThreadPool(),
+				          customTaskExecutor,
+				          8, WaitStrategy.liteBlocking(), true, true, Object::new)
+		          );
+	}
 
 }

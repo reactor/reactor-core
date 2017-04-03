@@ -31,6 +31,7 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.Function;
 
 import org.assertj.core.api.Assertions;
+import org.assertj.core.api.Condition;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -931,5 +932,103 @@ public class WorkQueueProcessorTest {
 		Assertions.assertThat(latch.await(4, TimeUnit.SECONDS))
 		          .overridingErrorMessage("Data not received")
 		          .isTrue();
+	}
+
+	@Test
+	public void testDefaultRequestTaskThreadName() {
+		String mainName = "workQueueProcessorRequestTask";
+		String expectedName = mainName + "[request-task]";
+
+		WorkQueueProcessor<Object> processor = WorkQueueProcessor.create(mainName, 8);
+
+		processor.requestTask(Operators.cancelledSubscription());
+
+		Thread[] threads = new Thread[Thread.activeCount()];
+		Thread.enumerate(threads);
+
+		//cleanup to avoid visibility in other tests
+		processor.forceShutdown();
+
+		Condition<Thread> defaultRequestTaskThread = new Condition<>(
+				thread -> expectedName.equals(thread.getName()),
+				"a thread named \"%s\"", expectedName);
+
+		Assertions.assertThat(threads)
+		          .haveExactly(1, defaultRequestTaskThread);
+	}
+
+	@Test
+	public void testCustomRequestTaskThreadNameCreate() {
+		String expectedName = "workQueueProcessorRequestTaskCreate";
+		//NOTE: the below single executor should not be used usually as requestTask assumes it immediately gets executed
+		ExecutorService customTaskExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, expectedName));
+		WorkQueueProcessor<Object> processor = WorkQueueProcessor.create(
+				Executors.newCachedThreadPool(), customTaskExecutor,
+				8, WaitStrategy.liteBlocking(), true);
+
+		processor.requestTask(Operators.cancelledSubscription());
+		processor.subscribe();
+
+		Thread[] threads = new Thread[Thread.activeCount()];
+		Thread.enumerate(threads);
+
+		//cleanup to avoid visibility in other tests
+		customTaskExecutor.shutdownNow();
+		processor.forceShutdown();
+
+		for (Thread thread : threads) {
+			System.out.println(thread.getName());
+		}
+
+		Condition<Thread> customRequestTaskThread = new Condition<>(
+				thread -> expectedName.equals(thread.getName()),
+				"a thread named \"%s\"", expectedName);
+
+		Assertions.assertThat(threads)
+		          .haveExactly(1, customRequestTaskThread);
+	}
+
+	@Test
+	public void testCustomRequestTaskThreadNameShare() {
+		String expectedName = "workQueueProcessorRequestTaskShare";
+		//NOTE: the below single executor should not be used usually as requestTask assumes it immediately gets executed
+		ExecutorService customTaskExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, expectedName));
+		WorkQueueProcessor<Object> processor = WorkQueueProcessor.share(
+				Executors.newCachedThreadPool(), customTaskExecutor,
+				8, WaitStrategy.liteBlocking(), true);
+
+		processor.requestTask(Operators.cancelledSubscription());
+		processor.subscribe();
+
+		Thread[] threads = new Thread[Thread.activeCount()];
+		Thread.enumerate(threads);
+
+		//cleanup to avoid visibility in other tests
+		customTaskExecutor.shutdownNow();
+		processor.forceShutdown();
+
+		for (Thread thread : threads) {
+			System.out.println(thread.getName());
+		}
+
+		Condition<Thread> customRequestTaskThread = new Condition<>(
+				thread -> expectedName.equals(thread.getName()),
+				"a thread named \"%s\"", expectedName);
+
+		Assertions.assertThat(threads)
+		          .haveExactly(1, customRequestTaskThread);
+	}
+
+	@Test
+	public void customRequestTaskThreadRejectsNull() {
+		ExecutorService customTaskExecutor = null;
+
+		Assertions.assertThatExceptionOfType(NullPointerException.class)
+		          .isThrownBy(() -> new WorkQueueProcessor<>(
+				          Thread::new,
+				          Executors.newCachedThreadPool(),
+				          customTaskExecutor,
+				          8, WaitStrategy.liteBlocking(), true, true)
+		          );
 	}
 }
