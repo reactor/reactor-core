@@ -22,8 +22,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.TestPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -283,6 +286,32 @@ public class MonoFilterWhenTest {
 		            .verifyComplete();
 
 		assertThat(cancelCount.get()).isEqualTo(0);
+	}
+
+	@Test
+	public void scanTerminatedOnlyTrueIfFilterTerminated() {
+		AtomicReference<Subscriber> subscriber = new AtomicReference<>();
+		TestPublisher<Boolean> filter = TestPublisher.create();
+		new MonoFilterWhen(new Mono() {
+			@Override
+			public void subscribe(Subscriber s) {
+				subscriber.set(s);
+				//NON-EMPTY SOURCE WILL TRIGGER FILTER SUBSCRIPTION
+				s.onNext(2);
+				s.onComplete();
+			}
+		}, w -> filter)
+	        .subscribe();
+
+		assertThat(subscriber.get()).isNotNull()
+	                                .isInstanceOf(Scannable.class);
+		Boolean terminated = ((Scannable) subscriber.get()).scan(Scannable.Attr.TERMINATED, Boolean.class);
+		assertThat(terminated).isFalse();
+
+		filter.emit(Boolean.TRUE);
+
+		terminated = ((Scannable) subscriber.get()).scan(Scannable.Attr.TERMINATED, Boolean.class);
+		assertThat(terminated).isTrue();
 	}
 
 }

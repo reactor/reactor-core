@@ -208,7 +208,7 @@ class MonoFilterWhen<T> extends MonoSource<T, T> {
 				case PARENT:
 					return upstream;
 				case TERMINATED:
-					return asyncFilter != null ? super.scan(Attr.TERMINATED) : asyncFilter.scan(Attr.TERMINATED);
+					return asyncFilter != null ? asyncFilter.scan(Attr.TERMINATED) : super.scan(Attr.TERMINATED);
 				default: //CANCELLED, PREFETCH
 					return super.scan(key);
 			}
