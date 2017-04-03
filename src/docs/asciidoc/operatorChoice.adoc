@@ -122,6 +122,7 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 == Filtering a sequence
 * I want to filter a sequence...
 ** based on an arbitrary criteria: `filter`
+*** ...that is asynchronously computed: `filterWhen`
 ** restricting on the type of the emitted objects: `ofType`
 ** by ignoring the values altogether: `ignoreElements`
 ** by ignoring duplicates...

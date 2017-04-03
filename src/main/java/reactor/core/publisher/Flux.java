@@ -3907,6 +3907,47 @@ public abstract class Flux<T> implements Publisher<T> {
 		return onAssembly(new FluxFilter<>(this, p));
 	}
 
+	/**
+	 * Test each value emitted by this {@link Flux} asynchronously using a generated
+	 * {@code Publisher&lt;Boolean&gt;} test. A value is replayed if the first item emitted
+	 * by its corresponding test is {@literal true}. It is dropped if its test is either
+	 * empty or its first emitted value is {@literal false}.
+	 * <p>
+	 * Note that only the first value of the test publisher is considered, and unless it
+	 * is a {@link Mono}, test will be cancelled after receiving that first value. Test
+	 * publishers are generated and subscribed to in sequence.
+	 *
+	 * @param asyncPredicate the function generating a {@link Publisher} of {@link Boolean}
+	 * for each value, to filter the Flux with
+	 * @return a filtered {@link Flux}
+	 */
+	public final Flux<T> filterWhen(Function<? super T, ? extends Publisher<Boolean>> asyncPredicate) {
+		return filterWhen(asyncPredicate, QueueSupplier.SMALL_BUFFER_SIZE);
+	}
+
+	/**
+	 * Test each value emitted by this {@link Flux} asynchronously using a generated
+	 * {@code Publisher&lt;Boolean&gt;} test. A value is replayed if the first item emitted
+	 * by its corresponding test is {@literal true}. It is dropped if its test is either
+	 * empty or its first emitted value is {@literal false}.
+	 * <p>
+	 * Note that only the first value of the test publisher is considered, and unless it
+	 * is a {@link Mono}, test will be cancelled after receiving that first value. Test
+	 * publishers are generated and subscribed to in sequence.
+	 *
+	 * @param asyncPredicate the function generating a {@link Publisher} of {@link Boolean}
+	 * for each value, to filter the Flux with
+	 * @param bufferSize the maximum expected number of values to hold pending a result of
+	 * their respective asynchronous predicates, rounded to the next power of two. This is
+	 * capped depending on the size of the heap and the JVM limits, so be careful with
+	 * large values (although eg. {@literal 65536} should still be fine). Also serves as
+	 * the initial request size for the source.
+	 * @return a filtered {@link Flux}
+	 */
+	public final Flux<T> filterWhen(Function<? super T, ? extends Publisher<Boolean>> asyncPredicate,
+			int bufferSize) {
+		return onAssembly(new FluxFilterWhen<>(this, asyncPredicate, bufferSize));
+	}
 
 	/**
 	 * Emit from the fastest first sequence between this publisher and the given publisher

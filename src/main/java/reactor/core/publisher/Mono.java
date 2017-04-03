@@ -1939,6 +1939,23 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
+	 * If this {@link Mono} is valued, test the value asynchronously using a generated
+	 * {@code Publisher&lt;Boolean&gt;} test. The value from the Mono is replayed if the
+	 * first item emitted by the test is {@literal true}. It is dropped if the test is
+	 * either empty or its first emitted value is {@literal false}.
+	 * <p>
+	 * Note that only the first value of the test publisher is considered, and unless it
+	 * is a {@link Mono}, test will be cancelled after receiving that first value.
+	 *
+	 * @param asyncPredicate the function generating a {@link Publisher} of {@link Boolean}
+	 * to filter the Mono with
+	 * @return a filtered {@link Mono}
+	 */
+	public final Mono<T> filterWhen(Function<? super T, ? extends Publisher<Boolean>> asyncPredicate) {
+		return onAssembly(new MonoFilterWhen<>(this, asyncPredicate));
+	}
+
+	/**
 	 * Transform the item emitted by this {@link Mono} into a Publisher, then forward
 	 * its emissions into the returned {@link Flux}.
 	 *
