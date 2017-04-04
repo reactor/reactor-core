@@ -771,6 +771,11 @@ public abstract class Operators {
 		volatile long requested;
 
 		@Override
+		public boolean isCancelled() {
+			return s == Operators.cancelledSubscription();
+		}
+
+		@Override
 		public void cancel() {
 			Subscription a = s;
 			if (a != cancelledSubscription()) {
@@ -789,7 +794,7 @@ public abstract class Operators {
 				case REQUESTED_FROM_DOWNSTREAM:
 					return requested;
 				case CANCELLED:
-					return s == Operators.cancelledSubscription();
+					return isCancelled();
 			}
 			return null;
 		}

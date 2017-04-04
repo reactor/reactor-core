@@ -6307,7 +6307,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param prefetch the the prefetch amount, positive
 	 *
 	 * @return a new {@link Disposable} to dispose the {@link Subscription}
+	 * @deprecated use limitRate + subscribe(Consumer)
 	 */
+	@Deprecated
 	public final Disposable subscribe(Consumer<? super T> consumer, int prefetch) {
 		Objects.requireNonNull(consumer, "consumer");
 		return subscribe(consumer, null, null, prefetch);
