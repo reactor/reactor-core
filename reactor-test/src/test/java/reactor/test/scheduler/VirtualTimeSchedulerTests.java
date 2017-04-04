@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,6 @@ public class VirtualTimeSchedulerTests {
 
 	@Test
 	public void allEnabled() {
-		Assert.assertFalse(Schedulers.newTimer("") instanceof VirtualTimeScheduler);
 		Assert.assertFalse(Schedulers.newParallel("") instanceof VirtualTimeScheduler);
 		Assert.assertFalse(Schedulers.newElastic("") instanceof VirtualTimeScheduler);
 		Assert.assertFalse(Schedulers.newSingle("") instanceof VirtualTimeScheduler);
@@ -45,91 +44,40 @@ public class VirtualTimeSchedulerTests {
 		Assert.assertTrue(Schedulers.newParallel("") instanceof VirtualTimeScheduler);
 		Assert.assertTrue(Schedulers.newElastic("") instanceof VirtualTimeScheduler);
 		Assert.assertTrue(Schedulers.newSingle("") instanceof VirtualTimeScheduler);
-		Assert.assertTrue(Schedulers.newTimer("") instanceof VirtualTimeScheduler);
 
 		VirtualTimeScheduler t = VirtualTimeScheduler.get();
 
 		Assert.assertSame(Schedulers.newParallel(""), t);
 		Assert.assertSame(Schedulers.newElastic(""), t);
 		Assert.assertSame(Schedulers.newSingle(""), t);
-		Assert.assertSame(Schedulers.newTimer(""), t);
-	}
-
-	@Test
-	@Deprecated
-	public void timerOnlyEnabled() {
-		Assert.assertFalse(Schedulers.newTimer("") instanceof VirtualTimeScheduler);
-		Assert.assertFalse(Schedulers.newParallel("") instanceof VirtualTimeScheduler);
-		Assert.assertFalse(Schedulers.newElastic("") instanceof VirtualTimeScheduler);
-		Assert.assertFalse(Schedulers.newSingle("") instanceof VirtualTimeScheduler);
-
-		VirtualTimeScheduler.getOrSet(false);
-
-		Assert.assertTrue(Schedulers.newTimer("") instanceof VirtualTimeScheduler);
-		Assert.assertFalse(Schedulers.newParallel("") instanceof VirtualTimeScheduler);
-		Assert.assertFalse(Schedulers.newElastic("") instanceof VirtualTimeScheduler);
-		Assert.assertFalse(Schedulers.newSingle("") instanceof VirtualTimeScheduler);
-
-		VirtualTimeScheduler t = VirtualTimeScheduler.get();
-
-		Assert.assertNotSame(Schedulers.newParallel(""), t);
-		Assert.assertNotSame(Schedulers.newElastic(""), t);
-		Assert.assertNotSame(Schedulers.newSingle(""), t);
-		Assert.assertEquals(Schedulers.newTimer(""), t);
-	}
-
-	@Test
-	@Deprecated
-	public void enableProvidedSchedulerIdempotent() {
-		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
-
-		VirtualTimeScheduler.getOrSet(vts);
-
-		Assert.assertSame(vts, uncache(Schedulers.timer()));
-		Assert.assertNotSame(vts, uncache(Schedulers.single()));
-		Assert.assertFalse(vts.isEnabledOnAllSchedulers());
-		Assert.assertFalse(vts.shutdown);
-
-
-		VirtualTimeScheduler.getOrSet(vts);
-
-		Assert.assertSame(vts, uncache(Schedulers.timer()));
-		Assert.assertNotSame(vts, uncache(Schedulers.single()));
-		Assert.assertFalse(vts.isEnabledOnAllSchedulers());
-		Assert.assertFalse(vts.shutdown);
 	}
 
 	@Test
 	public void enableProvidedAllSchedulerIdempotent() {
-		VirtualTimeScheduler vts = VirtualTimeScheduler.createForAll();
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
 
 		VirtualTimeScheduler.getOrSet(vts);
 
-		Assert.assertSame(vts, uncache(Schedulers.timer()));
 		Assert.assertSame(vts, uncache(Schedulers.single()));
-		Assert.assertTrue(vts.isEnabledOnAllSchedulers());
 		Assert.assertFalse(vts.shutdown);
 
 
 		VirtualTimeScheduler.getOrSet(vts);
 
-		Assert.assertSame(vts, uncache(Schedulers.timer()));
 		Assert.assertSame(vts, uncache(Schedulers.single()));
-		Assert.assertTrue(vts.isEnabledOnAllSchedulers());
 		Assert.assertFalse(vts.shutdown);
 	}
 
 	@Test
 	public void enableTwoSimilarSchedulersUsesFirst() {
-		VirtualTimeScheduler vts1 = VirtualTimeScheduler.createForAll();
-		VirtualTimeScheduler vts2 = VirtualTimeScheduler.createForAll();
+		VirtualTimeScheduler vts1 = VirtualTimeScheduler.create();
+		VirtualTimeScheduler vts2 = VirtualTimeScheduler.create();
 
 		VirtualTimeScheduler firstEnableResult = VirtualTimeScheduler.getOrSet(vts1);
 		VirtualTimeScheduler secondEnableResult = VirtualTimeScheduler.getOrSet(vts2);
 
 		Assert.assertSame(vts1, firstEnableResult);
 		Assert.assertSame(vts1, secondEnableResult);
-		Assert.assertSame(vts1, uncache(Schedulers.timer()));
 		Assert.assertSame(vts1, uncache(Schedulers.single()));
 		Assert.assertFalse(vts1.shutdown);
 	}

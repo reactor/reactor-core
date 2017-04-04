@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,16 +141,6 @@ public interface StepVerifier {
 	}
 
 	/**
-	 * @deprecated to be removed in 3.1.0 for parameter ordering harmonization. Please
-	 * use {@link #withVirtualTime(Supplier, long)} instead.
-	 */
-	@Deprecated
-	static <T> FirstStep<T> withVirtualTime(long n,
-			Supplier<? extends Publisher<? extends T>> scenarioSupplier) {
-		return withVirtualTime(scenarioSupplier, () -> VirtualTimeScheduler.getOrSet(), n);
-	}
-
-	/**
 	 * Prepare a new {@code StepVerifier} in a controlled environment using
 	 * {@link VirtualTimeScheduler} to schedule and expect virtual wait via
 	 * {@link Step#thenAwait}. Each {@link #verify()} will fully (re)play the
@@ -165,25 +155,6 @@ public interface StepVerifier {
 	static <T> FirstStep<T> withVirtualTime(Supplier<? extends Publisher<? extends T>> scenarioSupplier,
 			long n) {
 		return withVirtualTime(scenarioSupplier, () -> VirtualTimeScheduler.getOrSet(), n);
-	}
-
-	/**
-	 * @deprecated to be removed in 3.1.0 for parameter ordering harmonization. Please
-	 * use {@link #withVirtualTime(Supplier, Supplier, long)} instead.
-	 */
-	@Deprecated
-	static <T> FirstStep<T> withVirtualTime(long n,
-			Supplier<? extends Publisher<? extends T>> scenarioSupplier,
-			Supplier<? extends VirtualTimeScheduler> vtsLookup) {
-		DefaultStepVerifierBuilder.checkPositive(n);
-		Objects.requireNonNull(scenarioSupplier, "scenarioSupplier");
-		Objects.requireNonNull(vtsLookup, "vtsLookup");
-
-		StepVerifierOptions options = StepVerifierOptions.create()
-				.initialRequest(n)
-				.virtualTimeSchedulerSupplier(vtsLookup);
-		return DefaultStepVerifierBuilder.newVerifier(options,
-				scenarioSupplier);
 	}
 
 	/**

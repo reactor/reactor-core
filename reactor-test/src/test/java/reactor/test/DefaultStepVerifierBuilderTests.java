@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ public class DefaultStepVerifierBuilderTests {
 
 	@Test(timeout = 4000)
 	public void manuallyManagedVirtualTime() {
-		VirtualTimeScheduler vts = VirtualTimeScheduler.createForAll();
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
 		try {
 			VirtualTimeScheduler.getOrSet(vts);
 			assertThat(VirtualTimeScheduler.get()).isSameAs(vts);
@@ -92,7 +92,7 @@ public class DefaultStepVerifierBuilderTests {
 
 	@Test
 	public void suppliedVirtualTimeButNoSourceDoesntEnableScheduler() {
-		VirtualTimeScheduler vts = VirtualTimeScheduler.createForAll();
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
 
 		new DefaultStepVerifierBuilder<String>(StepVerifierOptions.create()
 				.initialRequest(Long.MAX_VALUE)

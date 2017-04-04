@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,93 +30,27 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.core.scheduler.TimedScheduler;
 import reactor.util.concurrent.QueueSupplier;
 
 /**
  * A {@link Scheduler} that uses a virtual clock, allowing to manipulate time
  * (eg. in tests). Can replace the default reactor schedulers by using 
- * the {@link #getOrSet(boolean)} / {@link #set(VirtualTimeScheduler)} methods.
+ * the {@link #getOrSet} / {@link #set(VirtualTimeScheduler)} methods.
  *
  * @author Stephane Maldini
  */
-//TODO implement Scheduler instead in 3.1.0
-public class VirtualTimeScheduler implements TimedScheduler {
+public class VirtualTimeScheduler implements Scheduler {
 
 	/**
 	 * Create a new {@link VirtualTimeScheduler} without enabling it. Call
-	 * {@link #getOrSet(VirtualTimeScheduler)} to enable it on timed-only
+	 * {@link #getOrSet(VirtualTimeScheduler)} to enable it on
 	 * {@link Schedulers.Factory} factories.
 	 *
 	 * @return a new {@link VirtualTimeScheduler} intended for timed-only
 	 * {@link Schedulers} factories.
-	 * @deprecated behavior will change to be that of {@link #createForAll()} in 3.1.0
 	 */
-	@Deprecated
 	public static VirtualTimeScheduler create() {
-		return new VirtualTimeScheduler(false);
-	}
-
-	/**
-	 * Create a new {@link VirtualTimeScheduler} without enabling it. Call
-	 * {@link #getOrSet(VirtualTimeScheduler)} to enable it on all {@link Schedulers.Factory}
-	 * factories.
-	 *
-	 * @return a new {@link VirtualTimeScheduler} intended for all {@link Schedulers} factories.
-	 * @deprecated will be removed in 3.1.0, AT WHICH POINT the `create()` method will influence ALL schedulers
-	 */
-	@Deprecated
-	public static VirtualTimeScheduler createForAll() {
-		return new VirtualTimeScheduler(true);
-	}
-
-	/**
-	 * Assign a single newly created {@link VirtualTimeScheduler} to all or timed-only
-	 * {@link Schedulers.Factory} factories. While the method is thread safe, its usually
-	 * advised to execute such wide-impact BEFORE all tested code runs (setup etc).
-	 * The created scheduler is returned.
-	 *
-	 * @param allSchedulers true if all {@link Schedulers.Factory} factories
-	 * @return the VirtualTimeScheduler that was created and set through the factory
-	 * @deprecated use {@link #getOrSet(boolean)} alias instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public static VirtualTimeScheduler enable(boolean allSchedulers) {
-		return enable(() -> new VirtualTimeScheduler(allSchedulers), allSchedulers);
-	}
-
-	/**
-	 * Assign an externally created {@link VirtualTimeScheduler} to the relevant
-	 * {@link Schedulers.Factory} factories, depending on how it was created (see
-	 * {@link #createForAll()} and {@link #create()}). Note that the returned scheduler
-	 * should always be captured and used going forward, as the provided scheduler can be
-	 * superseded by a matching scheduler that has already been enabled.
-	 * <p>
-	 * While the method is thread safe, it's usually advised to execute such wide-impact
-	 * BEFORE all tested code runs (setup etc). The actual enabled Scheduler is returned.
-	 *
-	 * @param scheduler the {@link VirtualTimeScheduler} to use in factories.
-	 * @return the enabled VirtualTimeScheduler (can be different from the provided one)
-	 * @deprecated use {@link #getOrSet(VirtualTimeScheduler)} instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public static VirtualTimeScheduler enable(VirtualTimeScheduler scheduler) {
-		return enable(() -> scheduler, scheduler.isEnabledOnAllSchedulers());
-	}
-
-	/**
-	 * Assign a single newly created {@link VirtualTimeScheduler} to all or timed-only
-	 * {@link Schedulers.Factory} factories. While the method is thread safe, its usually
-	 * advised to execute such wide-impact BEFORE all tested code runs (setup etc).
-	 * The created scheduler is returned.
-	 *
-	 * @param allSchedulers true if all {@link Schedulers.Factory} factories
-	 * @return the VirtualTimeScheduler that was created and set through the factory
-	 * @deprecated will be removed in 3.1.0, use {@link #getOrSet()} to obtain a newly created VTS and assign it to all factories
-	 */
-	@Deprecated
-	public static VirtualTimeScheduler getOrSet(boolean allSchedulers) {
-		return enable(() -> new VirtualTimeScheduler(allSchedulers), allSchedulers);
+		return new VirtualTimeScheduler();
 	}
 
 	/**
@@ -127,13 +61,13 @@ public class VirtualTimeScheduler implements TimedScheduler {
 	 * @return the VirtualTimeScheduler that was created and set through the factory
 	 */
 	public static VirtualTimeScheduler getOrSet() {
-		return enable(() -> new VirtualTimeScheduler(), true);
+		return enable(VirtualTimeScheduler::new, false);
 	}
 
 	/**
 	 * Assign an externally created {@link VirtualTimeScheduler} to the relevant
 	 * {@link Schedulers.Factory} factories, depending on how it was created (see
-	 * {@link #createForAll()} and {@link #create()}). Note that the returned scheduler
+	 * {@link #create()} and {@link #create()}). Note that the returned scheduler
 	 * should always be captured and used going forward, as the provided scheduler can be
 	 * superseded by a matching scheduler that has already been enabled.
 	 * <p>
@@ -144,13 +78,13 @@ public class VirtualTimeScheduler implements TimedScheduler {
 	 * @return the enabled VirtualTimeScheduler (can be different from the provided one)
 	 */
 	public static VirtualTimeScheduler getOrSet(VirtualTimeScheduler scheduler) {
-		return enable(() -> scheduler, scheduler.isEnabledOnAllSchedulers());
+		return enable(() -> scheduler, false);
 	}
 
 	/**
 	 * Assign an externally created {@link VirtualTimeScheduler} to the relevant
 	 * {@link Schedulers.Factory} factories, depending on how it was created (see
-	 * {@link #createForAll()} and {@link #create()}). Contrary to
+	 * {@link #create()} and {@link #create()}). Contrary to
 	 * {@link #getOrSet(VirtualTimeScheduler)}, the provided scheduler is always used, even
 	 * if a matching scheduler is currently enabled.
 	 * <p>
@@ -161,43 +95,35 @@ public class VirtualTimeScheduler implements TimedScheduler {
 	 * @return the enabled VirtualTimeScheduler (same as provided), for chaining
 	 */
 	public static VirtualTimeScheduler set(VirtualTimeScheduler scheduler) {
-		return enable(() -> scheduler, scheduler.isEnabledOnAllSchedulers(), true);
+		return enable(() -> scheduler, true);
 	}
 
 	/**
 	 * Common method to enable a {@link VirtualTimeScheduler} in {@link Schedulers}
-	 * factories. The supplier is lazily called if there's no current scheduler that
-	 * matches the {@code allSchedulers} parameter. Enabling the same scheduler twice is
+	 * factories. The supplier is lazily called. Enabling the same scheduler twice is
 	 * also idempotent.
 	 *
 	 * @param schedulerSupplier the supplier executed to obtain a fresh {@link VirtualTimeScheduler}
-	 * @param allSchedulers whether or not the scheduler should be activated for all factories
 	 * @return the scheduler that is actually used after the operation.
 	 */
-	//TODO remove allSchedulers parameter in 3.1.0
-	static VirtualTimeScheduler enable(Supplier<VirtualTimeScheduler>
-			schedulerSupplier, boolean allSchedulers) {
-		return enable(schedulerSupplier, allSchedulers, false);
+	static VirtualTimeScheduler enable(Supplier<VirtualTimeScheduler> schedulerSupplier) {
+		return enable(schedulerSupplier, false);
 	}
 
 	/**
 	 * Common method to enable a {@link VirtualTimeScheduler} in {@link Schedulers}
-	 * factories. The supplier is lazily called if the {@code exact} param is
-	 * set to true or if there's no current scheduler that matches the
-	 * {@code allSchedulers} parameter. Enabling the same scheduler twice is also
-	 * idempotent.
+	 * factories. The supplier is lazily called. Enabling the same scheduler twice is
+	 * also idempotent.
 	 *
 	 * @param schedulerSupplier the supplier executed to obtain a fresh {@link VirtualTimeScheduler}
-	 * @param allSchedulers whether or not the scheduler should be activated for all factories
 	 * @param exact whether or not to force the use of the supplier, even if there's a matching scheduler
 	 * @return the scheduler that is actually used after the operation.
 	 */
-	//TODO remove allSchedulers parameter in 3.1.0
 	static VirtualTimeScheduler enable(Supplier<VirtualTimeScheduler>
-			schedulerSupplier, boolean allSchedulers, boolean exact) {
+			schedulerSupplier, boolean exact) {
 		for (; ; ) {
 			VirtualTimeScheduler s = CURRENT.get();
-			if (s != null && !exact && s.allScheduler == allSchedulers) {
+			if (s != null && !exact) {
 				return s;
 			}
 			VirtualTimeScheduler newS = schedulerSupplier.get();
@@ -206,12 +132,7 @@ public class VirtualTimeScheduler implements TimedScheduler {
 			}
 
 			if (CURRENT.compareAndSet(s, newS)) {
-				if (!allSchedulers) {
-					Schedulers.setFactory(new TimedOnlyFactory(newS));
-				}
-				else {
-					Schedulers.setFactory(new AllFactory(newS));
-				}
+				Schedulers.setFactory(new AllFactory(newS));
 				if (CURRENT.get() == newS) {
 					return newS;
 				}
@@ -254,9 +175,6 @@ public class VirtualTimeScheduler implements TimedScheduler {
 		}
 	}
 
-	@Deprecated
-	final boolean allScheduler;
-
 	final Queue<TimedRunnable> queue =
 			new PriorityBlockingQueue<>(QueueSupplier.XS_BUFFER_SIZE);
 
@@ -267,16 +185,7 @@ public class VirtualTimeScheduler implements TimedScheduler {
 
 	volatile boolean shutdown;
 
-	/**
-	 * @deprecated will be removed in 3.1.0 in favor of an argumentless ctor (enable on all by default)
-	 */
-	@Deprecated
-	protected VirtualTimeScheduler(boolean allScheduler) {
-		this.allScheduler = allScheduler;
-	}
-
 	protected VirtualTimeScheduler() {
-		this.allScheduler = true;
 	}
 
 	/**
@@ -314,16 +223,6 @@ public class VirtualTimeScheduler implements TimedScheduler {
 			throw new IllegalStateException("VirtualTimeScheduler is shutdown");
 		}
 		return new VirtualTimeWorker();
-	}
-
-	/**
-	 * @return true if virtual-time is also enabled on non-timed global {@link
-	 * reactor.core.scheduler.Schedulers.Factory}
-	 * @deprecated will always be true from 3.1.0 onwards
-	 */
-	@Deprecated
-	public boolean isEnabledOnAllSchedulers() {
-		return allScheduler;
 	}
 
 	@Override
@@ -367,11 +266,6 @@ public class VirtualTimeScheduler implements TimedScheduler {
 	}
 
 	@Override
-	public void shutdown() {
-		dispose();
-	}
-
-	@Override
 	public Disposable schedulePeriodically(Runnable task,
 			long initialDelay,
 			long period, TimeUnit unit) {
@@ -379,7 +273,7 @@ public class VirtualTimeScheduler implements TimedScheduler {
 			return REJECTED;
 		}
 
-		final TimedWorker w = createWorker();
+		final Worker w = createWorker();
 
 		PeriodicDirectTask periodicTask = new PeriodicDirectTask(task, w);
 
@@ -433,25 +327,11 @@ public class VirtualTimeScheduler implements TimedScheduler {
 		}
 	}
 
-	static final class TimedOnlyFactory implements Schedulers.Factory {
-
-		final VirtualTimeScheduler s;
-
-		public TimedOnlyFactory(VirtualTimeScheduler s) {
-			this.s = s;
-		}
-
-		@Override
-		public TimedScheduler newTimer(ThreadFactory threadFactory) {
-			return s;
-		}
-	}
-
 	static final class AllFactory implements Schedulers.Factory {
 
 		final VirtualTimeScheduler s;
 
-		public AllFactory(VirtualTimeScheduler s) {
+		AllFactory(VirtualTimeScheduler s) {
 			this.s = s;
 		}
 
@@ -469,21 +349,11 @@ public class VirtualTimeScheduler implements TimedScheduler {
 		public Scheduler newSingle(ThreadFactory threadFactory) {
 			return s;
 		}
-
-		@Override
-		public TimedScheduler newTimer(ThreadFactory threadFactory) {
-			return s;
-		}
 	}
 
-	final class VirtualTimeWorker implements TimedWorker {
+	final class VirtualTimeWorker implements Worker {
 
 		volatile boolean shutdown;
-
-		@Override
-		public long now(TimeUnit unit) {
-			return VirtualTimeScheduler.this.now(unit);
-		}
 
 		@Override
 		public Disposable schedule(Runnable run) {

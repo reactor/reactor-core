@@ -632,7 +632,7 @@ final class DefaultStepVerifierBuilder<T>
 				}
 				finally {
 					if (vts != null) {
-						vts.shutdown();
+						vts.dispose();
 						//explicitly reset the factory, rather than rely on vts shutdown doing so
 						// because it could have been eagerly shut down in a test.
 						VirtualTimeScheduler.reset();

@@ -24,7 +24,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.assertj.core.api.Assertions;
-import org.assertj.core.api.Condition;
 import org.junit.Test;
 import reactor.core.Fuseable;
 import reactor.core.publisher.DirectProcessor;
@@ -45,13 +44,6 @@ import static reactor.test.publisher.TestPublisher.Violation.REQUEST_OVERFLOW;
  * @author Simon Basle
  */
 public class StepVerifierTests {
-
-	/**
-	 * An AssertJ Condition that can be used to check if a {@link VirtualTimeScheduler} will
-	 * be used for all {@link Schedulers} factory methods once {@link VirtualTimeScheduler#set(VirtualTimeScheduler) set}.
-	 */
-	static final Condition<? super VirtualTimeScheduler> ENABLED_FOR_ALL = new Condition<>(
-			vts -> vts.isEnabledOnAllSchedulers(), "");
 
 	@Test
 	public void expectNext() {
@@ -985,27 +977,11 @@ public class StepVerifierTests {
 	}
 
 	@Test(timeout = 1000)
-	@Deprecated //note interval now uses parallel() by default, so no sense in keeping a test with VTS not enabled on it
-	public void verifyCreatedSchedulerUsesVirtualTime() {
-		//a timeout will occur if virtual time isn't used
-		StepVerifier.withVirtualTime(() -> Flux.interval(Duration.ofSeconds(3), Schedulers.timer())
-		                                       .map(d -> "t" + d),
-				VirtualTimeScheduler::create,
-				0)
-		            .thenRequest(1)
-		            .thenAwait(Duration.ofSeconds(1))
-		            .thenAwait(Duration.ofSeconds(2))
-		            .expectNext("t0")
-		            .thenCancel()
-		            .verify();
-	}
-
-	@Test(timeout = 1000)
 	public void verifyCreatedForAllSchedulerUsesVirtualTime() {
 		//a timeout will occur if virtual time isn't used
 		StepVerifier.withVirtualTime(() -> Flux.interval(Duration.ofSeconds(3))
 		                                       .map(d -> "t" + d),
-				VirtualTimeScheduler::createForAll,
+				VirtualTimeScheduler::create,
 				0)
 		            .thenRequest(1)
 		            .thenAwait(Duration.ofSeconds(1))
@@ -1671,13 +1647,5 @@ public class StepVerifierTests {
 		assertThat(vts1.isDisposed()).isFalse();
 		assertThat(vts2.isDisposed()).isTrue();
 		assertThat(VirtualTimeScheduler.isFactoryEnabled()).isFalse();
-	}
-
-	@Test
-	public void defaultStepVerifierVTSIsEnabledForAll() {
-		StepVerifier.withVirtualTime(() -> Mono.just(1))
-		            .then(() -> assertThat(VirtualTimeScheduler.get()).is(ENABLED_FOR_ALL))
-	                .expectNext(1)
-	                .verifyComplete();
 	}
 }
