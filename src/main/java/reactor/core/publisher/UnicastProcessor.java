@@ -27,8 +27,6 @@ import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.core.Producer;
-import reactor.core.Receiver;
 import reactor.util.concurrent.QueueSupplier;
 
 /**
@@ -42,7 +40,7 @@ import reactor.util.concurrent.QueueSupplier;
  */
 public final class UnicastProcessor<T>
 		extends FluxProcessor<T, T>
-		implements Fuseable.QueueSubscription<T>, Fuseable, InnerOperator<T, T>, Producer, Receiver {
+		implements Fuseable.QueueSubscription<T>, Fuseable, InnerOperator<T, T> {
 
 	/**
 	 * Create a unicast {@link FluxProcessor} that will buffer on a given queue in an
@@ -423,16 +421,6 @@ public final class UnicastProcessor<T>
 			return Fuseable.ASYNC;
 		}
 		return Fuseable.NONE;
-	}
-
-	@Override
-	public Subscriber<? super T> downstream() {
-		return actual;
-	}
-
-	@Override
-	public Object upstream() {
-		return null;
 	}
 
 	@Override

@@ -20,7 +20,6 @@ import java.util.Objects;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
-import reactor.core.Receiver;
 import reactor.core.Scannable;
 
 /**
@@ -28,7 +27,7 @@ import reactor.core.Scannable;
  * @param <I> Upstream type
  * @param <O> Downstream type
  */
-public class FluxSource<I, O> extends Flux<O> implements Scannable, Receiver {
+public class FluxSource<I, O> extends Flux<O> implements Scannable {
 
 	protected final Publisher<? extends I> source;
 
@@ -77,11 +76,6 @@ public class FluxSource<I, O> extends Flux<O> implements Scannable, Receiver {
 		         .append(' ')
 		         .append('}')
 		         .toString();
-	}
-
-	@Override
-	public final Publisher<? extends I> upstream() {
-		return source;
 	}
 
 	@Override

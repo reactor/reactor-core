@@ -187,7 +187,7 @@ public class EmitterProcessorTest {
 			            Assert.assertFalse("Completed?", tp.isTerminated());
 			            Assert.assertNull("Has error?", tp.getError());
 			            Assert.assertTrue("Started?", tp.isStarted());
-			            Assert.assertNotNull("No upstream?", tp.upstream());
+			            Assert.assertNotNull("No upstream?", tp.upstreamSubscription);
 		            })
 		            .then(() -> {
 			            tp.onNext(1);
@@ -266,10 +266,10 @@ public class EmitterProcessorTest {
 		assertThat(tp.getPending()).isEqualTo(0);
 		assertThat(tp.getBufferSize()).isEqualTo(QueueSupplier.SMALL_BUFFER_SIZE);
 		assertThat(tp.isCancelled()).isFalse();
-		assertThat(tp.downstreams()).isEmpty();
+		assertThat(tp.inners()).isEmpty();
 
 		Disposable d1 = tp.subscribe();
-		assertThat(tp.downstreams()).hasSize(1);
+		assertThat(tp.inners()).hasSize(1);
 
 		BlockingSink<Integer> s = tp.connectSink();
 		assertThat(tp.isStarted()).isTrue();
@@ -375,7 +375,6 @@ public class EmitterProcessorTest {
 	public void ignoreDoubleOnSubscribe() {
 		EmitterProcessor<Integer> ep = EmitterProcessor.create();
 		ep.connectSink();
-		assertThat(ep.connectSink().isCancelled()).isTrue();
 	}
 
 	@Test(expected = IllegalArgumentException.class)

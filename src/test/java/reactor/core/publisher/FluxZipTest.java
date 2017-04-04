@@ -732,8 +732,8 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		try {
 			StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1), d1, s -> {
 				Subscriber<?> a =
-						((DirectProcessor.DirectInner) d1.downstreams()
-						                                 .next()).actual;
+						((DirectProcessor.DirectInner) d1.inners().findFirst().get())
+								.actual;
 
 				s.onSubscribe(Operators.emptySubscription());
 				s.onComplete();
@@ -1025,8 +1025,8 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		DirectProcessor<Integer> d = DirectProcessor.create();
 		StepVerifier.create(Flux.zip(obj -> 0, d, s -> {
 			Subscriber<?> a =
-					((DirectProcessor.DirectInner) d.downstreams()
-					                                .next()).actual;
+					((DirectProcessor.DirectInner) d.inners().findFirst().get())
+							.actual;
 
 			Operators.complete(s);
 

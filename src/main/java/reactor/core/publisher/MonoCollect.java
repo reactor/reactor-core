@@ -147,9 +147,5 @@ final class MonoCollect<T, R> extends MonoSource<T, R> implements Fuseable {
 			// value is constant
 		}
 
-		@Override
-		public boolean isTerminated() {
-			return done;
-		}
 	}
 }

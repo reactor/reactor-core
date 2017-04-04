@@ -29,9 +29,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
-import reactor.core.Producer;
 import reactor.core.Scannable;
-import reactor.core.Trackable;
 
 /**
  *
@@ -49,7 +47,7 @@ import reactor.core.Trackable;
  * @param <E> the element type
  */
 public final class BlockingSink<E>
-		implements Subscription, Consumer<E>, Disposable, Producer, Trackable, Closeable {
+		implements Subscription, Consumer<E>, Disposable, Closeable {
 	/**
 	 * An acknowledgement signal returned by {@link #emit}.
 	 * {@link BlockingSink.Emission#isOk()} is the only successful signal, the other define the emission failure cause.
@@ -304,18 +302,13 @@ public final class BlockingSink<E>
 	}
 
 	@Override
-	public boolean isCancelled() {
-		return cancelled;
-	}
-
-	@Override
 	public void dispose() {
 		error(new CancellationException("disposed"));
 	}
 
 	@Override
 	public boolean isDisposed() {
-		return isCancelled();
+		return cancelled;
 	}
 
 	/**
@@ -330,11 +323,6 @@ public final class BlockingSink<E>
 		if (Operators.checkRequest(n, actual)) {
 			Operators.getAndAddCap(REQUESTED, this, n);
 		}
-	}
-
-	@Override
-	public long requestedFromDownstream() {
-		return requested;
 	}
 
 	/**

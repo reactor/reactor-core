@@ -28,10 +28,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.core.Producer;
-import reactor.core.Receiver;
 import reactor.core.Scannable;
-import reactor.core.Trackable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 
@@ -765,10 +762,14 @@ public abstract class Operators {
 	 * they need to be cancelled or requested at any time.
 	 */
 	public static class DeferredSubscription
-			implements Subscription, Scannable, Receiver, Trackable {
+			implements Subscription, Scannable {
 
 		volatile Subscription s;
 		volatile long requested;
+
+		protected boolean isCancelled(){
+			return s == cancelledSubscription();
+		}
 
 		@Override
 		public void cancel() {
@@ -789,14 +790,9 @@ public abstract class Operators {
 				case REQUESTED_FROM_DOWNSTREAM:
 					return requested;
 				case CANCELLED:
-					return s == Operators.cancelledSubscription();
+					return isCancelled();
 			}
 			return null;
-		}
-
-		@Override
-		public Subscription upstream() {
-			return s;
 		}
 
 		@Override
@@ -876,7 +872,7 @@ public abstract class Operators {
 	 * @param <O> The downstream sequence type
 	 */
 	public static class MonoSubscriber<I, O>
-			implements Trackable, Receiver, InnerOperator<I, O>, Producer,
+			implements InnerOperator<I, O>,
 			           Fuseable, //for constants only
 			           Fuseable.QueueSubscription<O> {
 
@@ -908,19 +904,9 @@ public abstract class Operators {
 		}
 
 		@Override
-		public Subscriber<? super O> downstream() {
-			return actual();
-		}
-
-		@Override
 		public final void clear() {
 			STATE.lazySet(this, FUSED_CONSUMED);
 			value = null;
-		}
-
-		@Override
-		public Object upstream() {
-			return value;
 		}
 
 		/**
@@ -1107,161 +1093,6 @@ public abstract class Operators {
 				AtomicIntegerFieldUpdater.newUpdater(MonoSubscriber.class, "state");
 	}
 
-
-
-	/**
-	 * A {@link Subscriber} with an asymetric typed wrapped subscriber. Yet it represents a unique relationship between
-	 * a Publisher and a Subscriber, it doesn't implement
-	 * the {@link org.reactivestreams.Processor} interface allowing multiple subscribes.
-	 *
-	 * @param <I> the input value type
-	 * @param <O> the output value type
-	 * @deprecated use {@link BaseSubscriber}
-	 */
-	@Deprecated
-	public static class SubscriberAdapter<I, O>
-			implements InnerOperator<I, O>, Trackable, Receiver, Producer {
-
-		protected final Subscriber<? super O> subscriber;
-
-		protected Subscription subscription;
-
-		public SubscriberAdapter(Subscriber<? super O> subscriber) {
-			this.subscriber = subscriber;
-		}
-
-		@Override
-		public Subscriber<? super O> downstream() {
-			return actual();
-		}
-
-		@Override
-		public final void cancel() {
-			try {
-				doCancel();
-			} catch (Throwable throwable) {
-				doOnSubscriberError(onOperatorError(subscription, throwable));
-			}
-		}
-
-		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return subscription;
-			}
-			return InnerOperator.super.scan(key);
-		}
-
-		@Override
-		public Subscriber<? super O> actual() {
-			return subscriber;
-		}
-
-		@Override
-		public final void onComplete() {
-			try {
-				doComplete();
-			} catch (Throwable throwable) {
-				doOnSubscriberError(onOperatorError(throwable));
-			}
-		}
-
-		@Override
-		public final void onError(Throwable t) {
-			if (t == null) {
-				throw Exceptions.argumentIsNullException();
-			}
-			doError(t);
-		}
-
-		@Override
-		public final void onNext(I i) {
-			if (i == null) {
-				throw Exceptions.argumentIsNullException();
-			}
-			try {
-				doNext(i);
-			}
-			catch (Throwable throwable) {
-				doOnSubscriberError(onOperatorError(subscription, throwable, i));
-			}
-		}
-
-		@Override
-		public final void onSubscribe(Subscription s) {
-			if (validate(subscription, s)) {
-				try {
-					subscription = s;
-					doOnSubscribe(s);
-				}
-				catch (Throwable throwable) {
-					doOnSubscriberError(onOperatorError(s, throwable));
-				}
-			}
-		}
-
-		@Override
-		public final void request(long n) {
-			try {
-				checkRequest(n);
-				doRequest(n);
-			} catch (Throwable throwable) {
-				doCancel();
-				doOnSubscriberError(onOperatorError(throwable));
-			}
-		}
-
-		@Override
-		public String toString() {
-			return getClass().getSimpleName();
-		}
-
-		/**
-		 * Hook for further processing of onSubscribe's Subscription.
-		 * @param subscription the subscription to optionally process
-		 */
-		protected void doOnSubscribe(Subscription subscription) {
-			subscriber.onSubscribe(this);
-		}
-
-		@Override
-		public Subscription upstream() {
-			return subscription;
-		}
-
-		@SuppressWarnings("unchecked")
-		protected void doNext(I i) {
-			subscriber.onNext((O) i);
-		}
-
-		protected void doError(Throwable throwable) {
-			subscriber.onError(throwable);
-		}
-
-		protected void doOnSubscriberError(Throwable throwable){
-			subscriber.onError(throwable);
-		}
-
-		protected void doComplete() {
-			subscriber.onComplete();
-		}
-
-		protected void doRequest(long n) {
-			Subscription s = this.subscription;
-			if (s != null) {
-				s.request(n);
-			}
-		}
-
-		protected void doCancel() {
-			Subscription s = this.subscription;
-			if (s != null) {
-				this.subscription = null;
-				s.cancel();
-			}
-		}
-	}
 
 	/**
 	 * A subscription implementation that arbitrates request amounts between subsequent Subscriptions, including the

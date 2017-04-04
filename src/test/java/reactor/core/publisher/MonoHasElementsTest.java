@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 import org.reactivestreams.Subscription;
-import reactor.core.Receiver;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -142,7 +141,7 @@ public class MonoHasElementsTest {
 				    });
 
 		assertThat(sub.get()).isInstanceOf(MonoHasElements.HasElementSubscriber.class);
-		assertThat(((Receiver) sub.get()).upstream().getClass()).isEqualTo(FluxHide.HideSubscriber.class);
+		assertThat(Scannable.from(sub.get()).scan(Scannable.Attr.PARENT).getClass()).isEqualTo(FluxHide.HideSubscriber.class);
 	}
 
 	@Test

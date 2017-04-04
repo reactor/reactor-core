@@ -128,9 +128,5 @@ final class MonoHasElements<T> extends MonoSource<T, Boolean> implements Fuseabl
 			complete(false);
 		}
 
-		@Override
-		public Object upstream() {
-			return s;
-		}
 	}
 }

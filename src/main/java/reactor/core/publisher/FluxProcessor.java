@@ -16,7 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.util.Iterator;
 import java.util.concurrent.CancellationException;
 import java.util.stream.Stream;
 
@@ -26,9 +25,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
-import reactor.core.MultiProducer;
 import reactor.core.Scannable;
-import reactor.core.Trackable;
 
 /**
  * A base processor that exposes {@link Flux} API for {@link Processor}.
@@ -42,7 +39,7 @@ import reactor.core.Trackable;
  * @param <OUT> the output value type
  */
 public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
-		implements Processor<IN, OUT>, Scannable, Disposable, Trackable, MultiProducer {
+		implements Processor<IN, OUT>, Scannable, Disposable {
 
 	/**
 	 * Build a {@link FluxProcessor} whose data are emitted by the most recent emitted {@link Publisher}.
@@ -123,11 +120,6 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		return Integer.MAX_VALUE;
 	}
 
-	@Override
-	public final long getCapacity() {
-		return getBufferSize();
-	}
-
 	/**
 	 * Current error if any, default to null
 	 *
@@ -196,11 +188,6 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 */
 	public boolean hasDownstreams() {
 		return downstreamCount() != 0L;
-	}
-
-	@Override
-	public Iterator<?> downstreams() {
-		return inners().iterator();
 	}
 
 	@Override

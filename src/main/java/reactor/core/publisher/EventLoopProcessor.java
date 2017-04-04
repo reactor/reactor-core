@@ -32,7 +32,6 @@ import java.util.stream.Stream;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
-import reactor.core.Receiver;
 import reactor.core.Scannable;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.WaitStrategy;
@@ -43,7 +42,7 @@ import reactor.util.concurrent.WaitStrategy;
  * @author Stephane Maldini
  */
 abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
-		implements Runnable, Receiver {
+		implements Runnable {
 
 	/**
 	 * Whether the RingBuffer*Processor can be graphed by wrapping the individual Sequence with the target downstream
@@ -280,10 +279,12 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		}
 	}
 
-	@Override
-	public Subscription upstream() {
-		return upstreamSubscription;
-	}
+	/**
+	 * Return the number of parked elements in the emitter backlog.
+	 *
+	 * @return the number of parked elements in the emitter backlog.
+	 */
+	public abstract long getPending();
 
 	@Override
 	public Object scan(Attr key) {
@@ -403,11 +404,6 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	@Override
 	final public int hashCode() {
 		return contextClassLoader.hashCode();
-	}
-
-	@Override
-	final public boolean isCancelled() {
-		return cancelled;
 	}
 
 	@Override

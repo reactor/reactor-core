@@ -571,8 +571,7 @@ public class ReplayProcessorTest {
 		rp.subscribe();
 
 		ReplayProcessor.ReplayInner<String> s =
-				((Iterator<ReplayProcessor.ReplayInner>)rp
-						.downstreams()).next();
+				((ReplayProcessor.ReplayInner<String>) rp.inners().findFirst().get());
 
 		assertThat(d1).isEqualTo(s.actual());
 
@@ -586,9 +585,7 @@ public class ReplayProcessorTest {
 			assertThat(rp.getBufferSize()).isEqualTo(1);
 		}
 		BlockingSink<String> sink = rp.connectSink();
-		assertThat(rp.connectSink().isCancelled()).isTrue();
 		rp.onComplete();
-		assertThat(rp.connectSink().isCancelled()).isTrue();
 		assertThat(rp.isStarted()).isTrue();
 
 		rp.onComplete();

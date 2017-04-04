@@ -131,11 +131,6 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 	}
 
 	@Override
-	public Publisher<? extends T> upstream() {
-		return source;
-	}
-
-	@Override
 	public Object scan(Attr key) {
 		switch (key){
 			case PREFETCH:

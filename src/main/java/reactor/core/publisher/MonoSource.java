@@ -20,7 +20,6 @@ import java.util.Objects;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
-import reactor.core.Receiver;
 import reactor.core.Scannable;
 
 
@@ -35,7 +34,7 @@ import reactor.core.Scannable;
  * @param <I> delegate {@link Publisher} type
  * @param <O> produced type
  */
-public class MonoSource<I, O> extends Mono<O> implements Scannable, Receiver {
+public class MonoSource<I, O> extends Mono<O> implements Scannable {
 
 	protected final Publisher<? extends I> source;
 
@@ -84,11 +83,6 @@ public class MonoSource<I, O> extends Mono<O> implements Scannable, Receiver {
 		         .append(' ')
 		         .append('}')
 		         .toString();
-	}
-
-	@Override
-	public final Publisher<? extends I> upstream() {
-		return source;
 	}
 
 	@Override

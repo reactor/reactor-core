@@ -19,7 +19,6 @@ import java.util.function.Consumer;
 
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
-import reactor.core.Receiver;
 
 /**
  * The abstract base class for connectable publishers that let subscribers pile up
@@ -29,7 +28,7 @@ import reactor.core.Receiver;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  * @param <T> the input and output value type
  */
-public abstract class ConnectableFlux<T> extends Flux<T> implements Receiver {
+public abstract class ConnectableFlux<T> extends Flux<T> {
 
 	/**
 	 * Connects this {@link ConnectableFlux} to the upstream source when the first {@link org.reactivestreams.Subscriber}

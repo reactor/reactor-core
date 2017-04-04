@@ -138,11 +138,6 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 	}
 
 	@Override
-	public Publisher<? extends T> upstream() {
-		return source;
-	}
-
-	@Override
 	public Object scan(Scannable.Attr key) {
 		switch (key){
 			case PREFETCH:

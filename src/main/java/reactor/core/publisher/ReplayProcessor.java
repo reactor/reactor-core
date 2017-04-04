@@ -29,7 +29,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.core.Receiver;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -46,7 +45,7 @@ import reactor.util.concurrent.QueueSupplier;
  * @param <T> the value type
  */
 public final class ReplayProcessor<T> extends FluxProcessor<T, T>
-		implements Fuseable, Receiver {
+		implements Fuseable {
 
 	/**
 	 * Create a {@link ReplayProcessor} from hot-cold {@link ReplayProcessor#create
@@ -417,11 +416,6 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	@Override
 	public Stream<? extends Scannable> inners() {
 		return Stream.of(subscribers);
-	}
-
-	@Override
-	public Object upstream() {
-		return subscription;
 	}
 
 	@Override

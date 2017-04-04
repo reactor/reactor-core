@@ -22,8 +22,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
-import reactor.core.Receiver;
-import reactor.core.Trackable;
 
 /**
  * A simple base class for a {@link Subscriber} implementation that lets the user
@@ -43,32 +41,20 @@ import reactor.core.Trackable;
  *
  * @author Simon Baslé
  */
-public abstract class BaseSubscriber<T> implements Subscriber<T>, Subscription, Trackable,
-                                                   Receiver, Disposable {
+public abstract class BaseSubscriber<T> implements Subscriber<T>, Subscription,
+                                                   Disposable {
 
 	volatile Subscription subscription;
 
 	static AtomicReferenceFieldUpdater<BaseSubscriber, Subscription> S =
 			AtomicReferenceFieldUpdater.newUpdater(BaseSubscriber.class, Subscription.class, "subscription");
 
-	@Override
-	public Subscription upstream() {
-		return subscription;
-	}
-
-	@Override
-	public boolean isStarted() {
-		return subscription != null;
-	}
-
 	/**
-	 * @deprecated use {@link #isDisposed()}
-	 * @return true if disposed
+	 * Return current {@link Subscription}
+	 * @return current {@link Subscription}
 	 */
-	@Override
-	@Deprecated
-	public boolean isTerminated() {
-		return isDisposed();
+	protected Subscription upstream() {
+		return subscription;
 	}
 
 	@Override

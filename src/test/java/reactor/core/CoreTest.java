@@ -34,42 +34,6 @@ public class CoreTest {
 	}
 
 	@Test
-	public void defaultLoopback(){
-		Loopback d = new Loopback() {};
-		assertThat(d.connectedInput()).isNull();
-		assertThat(d.connectedOutput()).isNull();
-	}
-
-	@Test
-	public void defaultMultiProducer(){
-		MultiProducer d = () -> null;
-		assertThat(d.downstreams()).isNull();
-		assertThat(d.hasDownstreams()).isFalse();
-		assertThat(d.downstreamCount()).isEqualTo(-1);
-	}
-
-	@Test
-	public void defaultMultiReceiver(){
-		MultiReceiver d = () -> null;
-		assertThat(d.upstreams()).isNull();
-		assertThat(d.upstreamCount()).isEqualTo(-1);
-	}
-
-	@Test
-	public void defaultTrackable(){
-		Trackable d = new Trackable() {};
-		assertThat(d.expectedFromUpstream()).isEqualTo(-1);
-		assertThat(d.getCapacity()).isEqualTo(-1);
-		assertThat(d.getError()).isNull();
-		assertThat(d.getPending()).isEqualTo(-1);
-		assertThat(d.isCancelled()).isFalse();
-		assertThat(d.isStarted()).isFalse();
-		assertThat(d.isTerminated()).isFalse();
-		assertThat(d.limit()).isEqualTo(-1);
-		assertThat(d.requestedFromDownstream()).isEqualTo(-1);
-	}
-
-	@Test
 	public void defaultFuseableQueueSubscription(){
 		TestQueueSubscription tqs = new TestQueueSubscription();
 		testUnsupported(() -> tqs.peek());

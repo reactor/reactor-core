@@ -130,10 +130,5 @@ final class MonoAny<T> extends MonoSource<T, Boolean> implements Fuseable {
 			complete(false);
 		}
 
-		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
 	}
 }

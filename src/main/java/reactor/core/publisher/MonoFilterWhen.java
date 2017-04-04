@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -195,11 +195,6 @@ class MonoFilterWhen<T> extends MonoSource<T, T> {
 			//always propagate that error directly, as it means that the source Mono
 			//was at least valued rather than in error.
 			super.onError(ex);
-		}
-
-		@Override
-		public Object upstream() {
-			return upstream;
 		}
 
 		@Override

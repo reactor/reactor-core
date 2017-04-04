@@ -17,7 +17,6 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -30,11 +29,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
-import reactor.core.MultiProducer;
-import reactor.core.Producer;
-import reactor.core.Receiver;
 import reactor.core.Scannable;
-import reactor.core.Trackable;
 import reactor.util.concurrent.WaitStrategy;
 
 /**
@@ -51,8 +46,7 @@ import reactor.util.concurrent.WaitStrategy;
  * @author Stephane Maldini
  */
 public final class MonoProcessor<O> extends Mono<O>
-		implements Processor<O, O>, Disposable, Subscription, Producer, Receiver,
-		           LongSupplier, Trackable, MultiProducer {
+		implements Processor<O, O>, Disposable, Subscription, Scannable, LongSupplier {
 
 	/**
 	 * Create a {@link MonoProcessor} that will eagerly request 1 on {@link #onSubscribe(Subscription)}, cache and emit
@@ -123,16 +117,6 @@ public final class MonoProcessor<O> extends Mono<O>
 	}
 
 	@Override
-	public final Subscriber<O> downstream() {
-		return processor;
-	}
-
-	@Override
-	public long expectedFromUpstream() {
-		return !isPending() ? 0L : (requested != 0L ? 1L : 0L);
-	}
-
-	@Override
 	public O block() {
 		return block(Duration.ofSeconds(300));
 	}
@@ -192,17 +176,21 @@ public final class MonoProcessor<O> extends Mono<O>
 		}
 	}
 
-	@Override
+	/**
+	 * Return the produced {@link Throwable} error if any or null
+	 *
+	 * @return the produced {@link Throwable} error if any or null
+	 */
 	public final Throwable getError() {
 		return error;
 	}
 
-	@Override
-	public long getPending() {
-		return isPending() ? 0L : 1L;
-	}
-
-	@Override
+	/**
+	 * Indicates whether this {@code MonoProcessor} has been interrupted via cancellation.
+	 *
+	 * @return {@code true} if this {@code MonoProcessor} is cancelled, {@code false}
+	 * otherwise.
+	 */
 	public boolean isCancelled() {
 		return state == STATE_CANCELLED;
 	}
@@ -216,12 +204,6 @@ public final class MonoProcessor<O> extends Mono<O>
 		return state == STATE_ERROR;
 	}
 
-
-	@Override
-	public final boolean isStarted() {
-		return state > STATE_READY && subscription != null && !isTerminated();
-	}
-
 	/**
 	 * Indicates whether this {@code MonoProcessor} has been successfully completed a value.
 	 *
@@ -231,7 +213,12 @@ public final class MonoProcessor<O> extends Mono<O>
 		return state == STATE_COMPLETE_NO_VALUE || state == STATE_SUCCESS_VALUE;
 	}
 
-	@Override
+	/**
+	 * Indicates whether this {@code MonoProcessor} has been terminated by the
+	 * source producer with a success or an error.
+	 *
+	 * @return {@code true} if this {@code MonoProcessor} is successful, {@code false} otherwise.
+	 */
 	public final boolean isTerminated() {
 		return state > STATE_POST_SUBSCRIBED;
 	}
@@ -239,11 +226,6 @@ public final class MonoProcessor<O> extends Mono<O>
 	@Override
 	public boolean isDisposed() {
 		return isTerminated() || isCancelled();
-	}
-
-	@Override
-	public long limit() {
-		return 1;
 	}
 
 	@Override
@@ -420,10 +402,25 @@ public final class MonoProcessor<O> extends Mono<O>
 	}
 
 	@Override
-	public final Object upstream() {
-		return subscription;
+	public Object scan(Attr key) {
+		switch (key){
+			case ACTUAL:
+				return processor;
+			case PARENT:
+				return subscription;
+			case ERROR:
+				return error;
+			case REQUESTED_FROM_DOWNSTREAM:
+				return requested;
+			case PREFETCH:
+				return Integer.MAX_VALUE;
+			case CANCELLED:
+				return isCancelled();
+			case TERMINATED:
+				return isTerminated();
+		}
+		return null;
 	}
-
 
 	final boolean isPending() {
 		return !isTerminated() && !isCancelled();
@@ -440,18 +437,21 @@ public final class MonoProcessor<O> extends Mono<O>
 		}
 	}
 
-	@Override
-	public Iterator<?> downstreams() {
-		return Scannable.from(processor).inners().iterator();
-	}
-
-	@Override
-	public long downstreamCount() {
+	/**
+	 * Return the number of active {@link Subscriber} or {@literal -1} if untracked.
+	 *
+	 * @return the number of active {@link Subscriber} or {@literal -1} if untracked
+	 */
+	public final long downstreamCount() {
 		return Scannable.from(processor).inners().count();
 	}
 
-	@Override
-	public boolean hasDownstreams() {
+	/**
+	 * Return true if any {@link Subscriber} is actively subscribed
+	 *
+	 * @return true if any {@link Subscriber} is actively subscribed
+	 */
+	public final boolean hasDownstreams() {
 		return downstreamCount() != 0;
 	}
 

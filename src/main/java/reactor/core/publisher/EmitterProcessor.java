@@ -24,7 +24,6 @@ import java.util.stream.Stream;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
-import reactor.core.Receiver;
 import reactor.core.Scannable;
 import reactor.util.concurrent.QueueSupplier;
 
@@ -44,7 +43,7 @@ import reactor.util.concurrent.QueueSupplier;
  *
  * @param <T> the input and output value type
  */
-public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements Receiver {
+public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 
 	/**
 	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size, blockingWait
@@ -126,11 +125,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements Re
 
 	private volatile boolean done;
 
-	@Override
-	public Subscription upstream() {
-		return upstreamSubscription;
-	}
-
 	static final EmitterInner<?>[] EMPTY = new EmitterInner<?>[0];
 
 	static final EmitterInner<?>[] CANCELLED = new EmitterInner<?>[0];
@@ -204,7 +198,11 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements Re
 		return this;
 	}
 
-	@Override
+	/**
+	 * Return the number of parked elements in the emitter backlog.
+	 *
+	 * @return the number of parked elements in the emitter backlog.
+	 */
 	public long getPending() {
 		return (emitBuffer == null ? -1L :
 				emitBuffer.getPending());

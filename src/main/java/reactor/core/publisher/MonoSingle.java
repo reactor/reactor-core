@@ -170,10 +170,5 @@ final class MonoSingle<T> extends MonoSource<T, T> implements Fuseable {
 			}
 		}
 
-		@Override
-		public boolean isTerminated() {
-			return done;
-		}
-
 	}
 }

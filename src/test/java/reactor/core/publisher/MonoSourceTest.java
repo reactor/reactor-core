@@ -16,12 +16,8 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import org.reactivestreams.Publisher;
-import reactor.core.Receiver;
-import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class MonoSourceTest {

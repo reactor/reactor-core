@@ -23,7 +23,6 @@ import java.util.stream.Stream;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
-import reactor.core.Receiver;
 import reactor.core.Scannable;
 
 /**
@@ -42,7 +41,7 @@ import reactor.core.Scannable;
  * @param <T> the input and output value type
  */
 public final class DirectProcessor<T>
-		extends FluxProcessor<T, T> implements Receiver {
+		extends FluxProcessor<T, T> {
 
 
 	/**
@@ -242,11 +241,6 @@ public final class DirectProcessor<T>
 		if (subscribers == TERMINATED) {
 			return error;
 		}
-		return null;
-	}
-
-	@Override
-	public Object upstream() {
 		return null;
 	}
 
