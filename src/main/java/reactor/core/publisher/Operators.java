@@ -509,7 +509,7 @@ public abstract class Operators {
 	 * {@link Subscriber} is slower.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/serialize.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/serialize.png" alt="">
 	 *
 	 * @param <T> the relayed type
 	 * @param subscriber the subscriber to wrap

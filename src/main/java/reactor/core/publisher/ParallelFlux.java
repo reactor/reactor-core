@@ -602,7 +602,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * implementation. Default will use {@link Level#INFO} and java.util.logging. If SLF4J
 	 * is available, it will be used instead.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/log.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/log.png"
 	 * alt="">
 	 * <p>
 	 * The default log category will be "reactor.*", a generated operator suffix will
@@ -619,7 +619,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * implementation. Default will use {@link Level#INFO} and java.util.logging. If SLF4J
 	 * is available, it will be used instead.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/log.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/log.png"
 	 * alt="">
 	 * <p>
 	 *
@@ -645,7 +645,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *     ParallelFlux.log("category", Level.INFO, SignalType.ON_NEXT,
 	 * SignalType.ON_ERROR)
 	 *
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/log.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/log.png"
 	 * alt="">
 	 *
 	 * @param category to be mapped into logger configuration (e.g. org.springframework
@@ -675,7 +675,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *     ParallelFlux.log("category", Level.INFO, SignalType.ON_NEXT,
 	 * SignalType.ON_ERROR)
 	 *
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/log.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/log.png"
 	 * alt="">
 	 *
 	 * @param category to be mapped into logger configuration (e.g. org.springframework

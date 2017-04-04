@@ -24,7 +24,7 @@ Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
 	.transform(filterAndMap)
 	.subscribe(d -> System.out.println("Subscriber to Transformed MapAndFilter: "+d));
 ----
-image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/gs-transform.png[Transform Operator : encapsulate flows]
+image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/gs-transform.png[Transform Operator : encapsulate flows]
 
 This outputs:
 
@@ -65,7 +65,7 @@ Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
 composedFlux.subscribe(d -> System.out.println("Subscriber 1 to Composed MapAndFilter :"+d));
 composedFlux.subscribe(d -> System.out.println("Subscriber 2 to Composed MapAndFilter: "+d));
 ----
-image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/gs-compose.png[Compose Operator : Per Subscriber transformation]
+image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/gs-compose.png[Compose Operator : Per Subscriber transformation]
 
 This outputs:
 

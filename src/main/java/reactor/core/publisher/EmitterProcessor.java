@@ -37,7 +37,7 @@ import reactor.util.concurrent.QueueSupplier;
  *     parent sequence after a given {@link Subscriber} is subscribed.
  *
  * <p>
- * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.5.RELEASE/src/docs/marble/emitter.png" alt="">
+ * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/emitter.png" alt="">
  * <p>
  *
  * @author Stephane Maldini
