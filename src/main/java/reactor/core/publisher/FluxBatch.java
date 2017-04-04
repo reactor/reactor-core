@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler;
 
 /**
@@ -91,7 +91,7 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 		static final     AtomicIntegerFieldUpdater<BatchSubscriber> INDEX =
 				AtomicIntegerFieldUpdater.newUpdater(BatchSubscriber.class, "index");
 
-		volatile Cancellation timespanRegistration;
+		volatile Disposable timespanRegistration;
 
 		BatchSubscriber(Subscriber<? super V> actual,
 				int batchSize,

@@ -19,11 +19,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.assertj.core.api.Condition;
-import org.assertj.core.condition.AnyOf;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
-import reactor.core.Cancellation;
 import reactor.core.Disposable;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -72,7 +70,7 @@ public abstract class AbstractSchedulerTest {
 			CountDownLatch latch = new CountDownLatch(1);
 			CountDownLatch latch2 = shouldCheckDisposeTask() ? new CountDownLatch(1)
 					: null;
-			Cancellation c = s.schedule(() -> {
+			Disposable c = s.schedule(() -> {
 				try{
 					latch.countDown();
 					if(latch2 != null && !latch2.await(10, TimeUnit.SECONDS) &&
@@ -83,7 +81,7 @@ public abstract class AbstractSchedulerTest {
 				catch (InterruptedException e){
 				}
 			});
-			Disposable d = (Disposable) c;
+			Disposable d = c;
 
 			latch.await();
 			if(shouldCheckDisposeTask()) {
@@ -124,7 +122,7 @@ public abstract class AbstractSchedulerTest {
 				}
 			});
 
-			d = (Disposable) c;
+			d = c;
 			if(unwrapped == null) {
 				assertThat(c).isEqualTo(Scheduler.REJECTED);
 			}
@@ -147,7 +145,7 @@ public abstract class AbstractSchedulerTest {
 			CountDownLatch latch = new CountDownLatch(1);
 			CountDownLatch latch2 = shouldCheckDisposeTask() ? new CountDownLatch(1)
 					: null;
-			Cancellation c = w.schedule(() -> {
+			Disposable c = w.schedule(() -> {
 				try{
 					latch.countDown();
 					if(latch2 != null && !latch2.await(10, TimeUnit.SECONDS) &&
@@ -158,7 +156,7 @@ public abstract class AbstractSchedulerTest {
 				catch (InterruptedException e){
 				}
 			});
-			Disposable d = (Disposable) c;
+			Disposable d = c;
 
 			latch.await();
 			if(shouldCheckDisposeTask()) {
@@ -179,7 +177,7 @@ public abstract class AbstractSchedulerTest {
 				massCancel = new Disposable[n];
 				Thread current = Thread.currentThread();
 				for(int i = 0; i< n; i++){
-					massCancel[i] = (Disposable) w.schedule(() -> {
+					massCancel[i] = w.schedule(() -> {
 						if(current == Thread.currentThread()){
 							return;
 						}
@@ -206,7 +204,7 @@ public abstract class AbstractSchedulerTest {
 			}
 
 			c = w.schedule(() -> {});
-			d = (Disposable) c;
+			d = c;
 
 			assertThat(c).isEqualTo(Scheduler.REJECTED);
 			assertThat(d.isDisposed()).isTrue();
@@ -226,7 +224,7 @@ public abstract class AbstractSchedulerTest {
 			assertThat(s.isDisposed()).isFalse();
 			CountDownLatch latch = new CountDownLatch(1);
 			CountDownLatch latch2 = new CountDownLatch(1);
-			Disposable d = (Disposable) s.schedule(() -> {
+			Disposable d = s.schedule(() -> {
 				try {
 					latch.countDown();
 					latch2.await(10, TimeUnit.SECONDS);
@@ -247,7 +245,7 @@ public abstract class AbstractSchedulerTest {
 			s.dispose();
 			assertThat(s).is(DISPOSED_OR_CACHED);
 
-			d = (Disposable) s.schedule(() -> { });
+			d = s.schedule(() -> { });
 
 			if (!(s instanceof Schedulers.CachedScheduler)) {
 				assertThat(d).isSameAs(Scheduler.REJECTED);
@@ -271,7 +269,7 @@ public abstract class AbstractSchedulerTest {
 			assertThat(w.isDisposed()).isFalse();
 			CountDownLatch latch = new CountDownLatch(1);
 			CountDownLatch latch2 = new CountDownLatch(1);
-			Disposable d = (Disposable) w.schedule(() -> {
+			Disposable d = w.schedule(() -> {
 				try {
 					latch.countDown();
 					latch2.await(10, TimeUnit.SECONDS);
@@ -292,7 +290,7 @@ public abstract class AbstractSchedulerTest {
 			w.dispose();
 			assertThat(w.isDisposed()).isTrue();
 
-			d = (Disposable) w.schedule(() -> { });
+			d = w.schedule(() -> { });
 
 			assertThat(d).isEqualTo(Scheduler.REJECTED);
 			assertThat(d.isDisposed()).isTrue();
@@ -314,7 +312,7 @@ public abstract class AbstractSchedulerTest {
 			assertThat(s.isDisposed()).isFalse();
 			CountDownLatch latch = new CountDownLatch(2);
 			CountDownLatch latch2 = new CountDownLatch(1);
-			Disposable d = (Disposable) s.schedulePeriodically(() -> {
+			Disposable d = s.schedulePeriodically(() -> {
 				try {
 					latch.countDown();
 					if (latch.getCount() == 0) {
@@ -338,7 +336,7 @@ public abstract class AbstractSchedulerTest {
 			s.dispose();
 			assertThat(s).is(DISPOSED_OR_CACHED);
 
-			d = (Disposable) s.schedule(() -> { });
+			d = s.schedule(() -> { });
 
 			d.dispose();
 			assertThat(d.isDisposed()).isTrue();
@@ -359,7 +357,7 @@ public abstract class AbstractSchedulerTest {
 			assertThat(w.isDisposed()).isFalse();
 			CountDownLatch latch = new CountDownLatch(1);
 			CountDownLatch latch2 = new CountDownLatch(1);
-			Cancellation c = w.schedulePeriodically(() -> {
+			Disposable c = w.schedulePeriodically(() -> {
 				try {
 					latch.countDown();
 					latch2.await(10, TimeUnit.SECONDS);
@@ -367,7 +365,7 @@ public abstract class AbstractSchedulerTest {
 				catch (InterruptedException e) {
 				}
 			}, 10, 10, TimeUnit.MILLISECONDS);
-			Disposable d = (Disposable) c;
+			Disposable d = c;
 			assertThat(d).isNotSameAs(Scheduler.REJECTED);
 
 			latch.await();
@@ -386,7 +384,7 @@ public abstract class AbstractSchedulerTest {
 
 			assertThat(c).isEqualTo(Scheduler.REJECTED);
 
-			d = (Disposable) c;
+			d = c;
 			assertThat(d.isDisposed()).isTrue();
 			d.dispose();
 			assertThat(d.isDisposed()).isTrue();

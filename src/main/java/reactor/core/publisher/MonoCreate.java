@@ -21,7 +21,6 @@ import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.Cancellation;
 import reactor.core.Disposable;
 import reactor.core.publisher.FluxCreate.SinkDisposable;
 
@@ -198,17 +197,6 @@ final class MonoCreate<T> extends Mono<T> {
 				}
 			}
 			return this;
-		}
-
-		@Deprecated
-		@Override
-		public void setCancellation(Cancellation c) {
-			onCancel(new Disposable() {
-				@Override
-				public void dispose() {
-					c.dispose();
-				}
-			});
 		}
 
         @Override

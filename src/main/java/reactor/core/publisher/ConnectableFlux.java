@@ -105,7 +105,7 @@ public abstract class ConnectableFlux<T> extends Flux<T> {
 	 * and subsequent times. In addition the disconnection should be also tied
 	 * to a particular connection (so two different connection can't disconnect the other).
 	 *
-	 * @param cancelSupport the callback is called with a Cancellation instance that can
+	 * @param cancelSupport the callback is called with a Disposable instance that can
 	 * be called to disconnect the source, even synchronously.
 	 */
 	public abstract void connect(Consumer<? super Disposable> cancelSupport);

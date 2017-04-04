@@ -19,7 +19,6 @@ package reactor.core.publisher;
 import java.util.function.LongConsumer;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.Cancellation;
 import reactor.core.Disposable;
 
 
@@ -109,20 +108,6 @@ public interface FluxSink<T> {
 	 * @return the {@link FluxSink} with resource to be disposed on first terminate signal
 	 */
 	FluxSink<T> onDispose(Disposable d);
-
-
-    /**
-     * Associate a cancellation-based resource with this FluxSink
-     * that will be disposed in case the downstream cancels the sequence
-     * via {@link org.reactivestreams.Subscription#cancel()}.
-     * @param c the cancellation callback to use
-     * @return this sink
-     * @deprecated use {@link #onDispose(Disposable)} for resources to be disposed
-     * on any cancel signal or {@link #onCancel(Disposable)} for resources to be
-     * disposed on cancel.
-     */
-	@Deprecated
-    void setCancellation(Cancellation c);
 
 	/**
 	 * Enumeration for backpressure handling.

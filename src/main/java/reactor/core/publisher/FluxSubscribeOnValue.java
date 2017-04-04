@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.Cancellation;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -51,7 +50,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 		if (v == null) {
 			ScheduledEmpty parent = new ScheduledEmpty(s);
 			s.onSubscribe(parent);
-			Cancellation f = scheduler.schedule(parent);
+			Disposable f = scheduler.schedule(parent);
 			if (f == Scheduler.REJECTED) {
 				if (parent.future != Flux.CANCELLED) {
 					s.onError(Operators.onRejectedExecution());
@@ -79,14 +78,14 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 		static final AtomicIntegerFieldUpdater<ScheduledScalar> ONCE =
 				AtomicIntegerFieldUpdater.newUpdater(ScheduledScalar.class, "once");
 
-		volatile Cancellation future;
+		volatile Disposable future;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ScheduledScalar, Cancellation> FUTURE =
+		static final AtomicReferenceFieldUpdater<ScheduledScalar, Disposable> FUTURE =
 				AtomicReferenceFieldUpdater.newUpdater(ScheduledScalar.class,
-						Cancellation.class,
+						Disposable.class,
 						"future");
 
-		static final Cancellation FINISHED = () -> {
+		static final Disposable FINISHED = () -> {
 		};
 
 		int fusionState;
@@ -125,7 +124,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 		public void request(long n) {
 			if (Operators.validate(n)) {
 				if (ONCE.compareAndSet(this, 0, 1)) {
-					Cancellation f = scheduler.schedule(this);
+					Disposable f = scheduler.schedule(this);
 					if(f == Scheduler.REJECTED && future != FINISHED && future !=
 							CANCELLED) {
 						actual.onError(Operators.onRejectedExecution(this, null, null));
@@ -142,7 +141,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 		@Override
 		public void cancel() {
 			ONCE.lazySet(this, 1);
-			Cancellation f = future;
+			Disposable f = future;
 			if (f != CANCELLED && future != FINISHED) {
 				f = FUTURE.getAndSet(this, CANCELLED);
 				if (f != null && f != CANCELLED && f != FINISHED) {
@@ -204,10 +203,10 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 
 		final Subscriber<?> actual;
 
-		volatile Cancellation future;
-		static final AtomicReferenceFieldUpdater<ScheduledEmpty, Cancellation> FUTURE =
+		volatile Disposable future;
+		static final AtomicReferenceFieldUpdater<ScheduledEmpty, Disposable> FUTURE =
 				AtomicReferenceFieldUpdater.newUpdater(ScheduledEmpty.class,
-						Cancellation.class,
+						Disposable.class,
 						"future");
 
 		static final Disposable FINISHED = () -> {
@@ -224,7 +223,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 
 		@Override
 		public void cancel() {
-			Cancellation f = future;
+			Disposable f = future;
 			if (f != CANCELLED && f != FINISHED) {
 				f = FUTURE.getAndSet(this, CANCELLED);
 				if (f != null && f != CANCELLED && f != FINISHED) {
@@ -243,9 +242,9 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 			}
 		}
 
-		void setFuture(Cancellation f) {
+		void setFuture(Disposable f) {
 			if (!FUTURE.compareAndSet(this, null, f)) {
-				Cancellation a = future;
+				Disposable a = future;
 				if (a != FINISHED && a != CANCELLED) {
 					f.dispose();
 				}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -812,7 +812,7 @@ public class FluxTests extends AbstractReactorTest {
 
 		                           );
 
-		/*Cancellation action = */s
+		/*Disposable action = */s
 		                  .subscribe(integer -> {
 			                  latch.countDown();
 			                  System.out.println(integer);
@@ -890,7 +890,7 @@ public class FluxTests extends AbstractReactorTest {
 		                                 .log("before")
 		                                 .publishOn(asyncGroup);
 
-		/*Cancellation tail = */worker.log("after")
+		/*Disposable tail = */worker.log("after")
 		                          .parallel(2)
 		                          .groups()
 		                          .subscribe(s -> s.log("w"+s.key())
@@ -1019,7 +1019,7 @@ public class FluxTests extends AbstractReactorTest {
 
 		CountDownLatch endLatch = new CountDownLatch(1000 / 100);
 
-		/*Cancellation controls = */sensorDataStream
+		/*Disposable controls = */sensorDataStream
 				/*     step 2  */.window(100)
 				///*     step 3  */.timeout(1000)
 				/*     step 4  */
@@ -1091,7 +1091,7 @@ public class FluxTests extends AbstractReactorTest {
 
 		CountDownLatch latch = new CountDownLatch(10);
 
-		/*Cancellation c = */Flux.range(1, 10)
+		/*Disposable c = */Flux.range(1, 10)
 		                     .groupBy(n -> n % 2 == 0)
 		                     .flatMap(stream -> stream.publishOn(supplier1)
 		                                            .log("groupBy-" + stream.key()))

@@ -20,7 +20,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.Cancellation;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
@@ -52,7 +51,7 @@ final class MonoDelay extends Mono<Long> {
 
 		s.onSubscribe(r);
 
-		Cancellation f = timedScheduler.schedule(r, delay, unit);
+		Disposable f = timedScheduler.schedule(r, delay, unit);
 		if (f == Scheduler.REJECTED) {
 			if(r.cancel != Flux.CANCELLED &&
 					r.cancel != MonoDelayRunnable.FINISHED) {
@@ -67,10 +66,10 @@ final class MonoDelay extends Mono<Long> {
 	static final class MonoDelayRunnable implements Runnable, InnerProducer<Long> {
 		final Subscriber<? super Long> actual;
 
-		volatile Cancellation cancel;
-		static final AtomicReferenceFieldUpdater<MonoDelayRunnable, Cancellation> CANCEL =
+		volatile Disposable cancel;
+		static final AtomicReferenceFieldUpdater<MonoDelayRunnable, Disposable> CANCEL =
 				AtomicReferenceFieldUpdater.newUpdater(MonoDelayRunnable.class,
-						Cancellation.class,
+						Disposable.class,
 						"cancel");
 
 		volatile boolean requested;
@@ -81,7 +80,7 @@ final class MonoDelay extends Mono<Long> {
 			this.actual = actual;
 		}
 
-		public void setCancel(Cancellation cancel) {
+		public void setCancel(Disposable cancel) {
 			if (!CANCEL.compareAndSet(this, null, cancel)) {
 				cancel.dispose();
 			}
@@ -124,7 +123,7 @@ final class MonoDelay extends Mono<Long> {
 
 		@Override
 		public void cancel() {
-			Cancellation c = cancel;
+			Disposable c = cancel;
 			if (c != Flux.CANCELLED && c != FINISHED) {
 				c =  CANCEL.getAndSet(this, Flux.CANCELLED);
 				if (c != null && c != Flux.CANCELLED && c != FINISHED) {

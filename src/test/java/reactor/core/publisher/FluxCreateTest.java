@@ -89,7 +89,7 @@ public class FluxCreateTest {
 		AtomicInteger cancellation = new AtomicInteger();
 		AtomicInteger onCancel = new AtomicInteger();
 		StepVerifier.create(Flux.create(s -> {
-			s.setCancellation(cancellation::getAndIncrement);
+			s.onDispose(cancellation::getAndIncrement);
 			s.onCancel(onCancel::getAndIncrement);
 			s.next("test1");
 			s.next("test2");
@@ -149,7 +149,7 @@ public class FluxCreateTest {
 			assertThat(dispose2.get()).isEqualTo(1);
 			s.onCancel(cancel2::getAndIncrement);
 			assertThat(cancel2.get()).isEqualTo(1);
-			s.setCancellation(cancellation::getAndIncrement);
+			s.onDispose(cancellation::getAndIncrement);
 			assertThat(cancellation.get()).isEqualTo(1);
 			assertThat(dispose1.get()).isEqualTo(0);
 			assertThat(cancel1.get()).isEqualTo(0);

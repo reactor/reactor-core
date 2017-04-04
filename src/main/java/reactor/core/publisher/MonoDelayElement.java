@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler;
 
 /**
@@ -61,7 +61,7 @@ final class MonoDelayElement<T> extends MonoSource<T, T> {
 
 		Subscription s;
 
-		volatile Cancellation task;
+		volatile Disposable task;
 		volatile boolean done;
 
 		DelayElementSubscriber(Subscriber<? super T> actual, Scheduler scheduler,
@@ -111,7 +111,7 @@ final class MonoDelayElement<T> extends MonoSource<T, T> {
 				return;
 			}
 			this.done = true;
-			Cancellation task = scheduler.schedule(() -> complete(t), delay, unit);
+			Disposable task = scheduler.schedule(() -> complete(t), delay, unit);
 			if (task == Scheduler.REJECTED) {
 					throw Operators.onRejectedExecution(this, null, t);
 			}

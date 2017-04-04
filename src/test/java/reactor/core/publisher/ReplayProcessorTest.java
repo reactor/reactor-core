@@ -276,7 +276,7 @@ public class ReplayProcessorTest {
 
 	@Test
 	public void timed() throws Exception {
-		VirtualTimeScheduler.getOrSet(true);
+		VirtualTimeScheduler.getOrSet();
 
 		ReplayProcessor<Integer> rp =
 				ReplayProcessor.createTimeout(Duration.ofSeconds(1));
@@ -300,7 +300,7 @@ public class ReplayProcessorTest {
 
 	@Test
 	public void timedError() throws Exception {
-		VirtualTimeScheduler.getOrSet(true);
+		VirtualTimeScheduler.getOrSet();
 
 		ReplayProcessor<Integer> rp =
 				ReplayProcessor.createTimeout(Duration.ofSeconds(1));
@@ -348,7 +348,7 @@ public class ReplayProcessorTest {
 
 	@Test
 	public void timedFused() throws Exception {
-		VirtualTimeScheduler.getOrSet(true);
+		VirtualTimeScheduler.getOrSet();
 
 		ReplayProcessor<Integer> rp =
 				ReplayProcessor.createTimeout(Duration.ofSeconds(1));
@@ -373,7 +373,7 @@ public class ReplayProcessorTest {
 
 	@Test
 	public void timedFusedError() throws Exception {
-		VirtualTimeScheduler.getOrSet(true);
+		VirtualTimeScheduler.getOrSet();
 
 		ReplayProcessor<Integer> rp =
 				ReplayProcessor.createTimeout(Duration.ofSeconds(1));
@@ -614,7 +614,7 @@ public class ReplayProcessorTest {
 
 	@Before
 	public void virtualTime(){
-    	VirtualTimeScheduler.getOrSet(false);
+    	VirtualTimeScheduler.getOrSet();
 	}
 
 	@After

@@ -20,7 +20,7 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 
@@ -48,7 +48,7 @@ final class MonoSubscribeOnCallable<T> extends Mono<T> implements Fuseable {
 				new FluxSubscribeOnCallable.CallableSubscribeOnSubscription<>(s, callable, scheduler);
 		s.onSubscribe(parent);
 
-		Cancellation f = scheduler.schedule(parent);
+		Disposable f = scheduler.schedule(parent);
 		if (f == Scheduler.REJECTED) {
 			if(parent.state != FluxSubscribeOnCallable.CallableSubscribeOnSubscription.HAS_CANCELLED) {
 				s.onError(Operators.onRejectedExecution());

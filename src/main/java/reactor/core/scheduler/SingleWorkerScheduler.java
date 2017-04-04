@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package reactor.core.scheduler;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 
 /**
  * Wraps one of the workers of some other Scheduler and
@@ -47,17 +47,17 @@ final class SingleWorkerScheduler implements Scheduler, Executor {
     }
 
     @Override
-    public Cancellation schedule(Runnable task) {
+    public Disposable schedule(Runnable task) {
         return main.schedule(task);
     }
 
     @Override
-    public Cancellation schedule(Runnable task, long delay, TimeUnit unit) {
+    public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
         return main.schedule(task, delay, unit);
     }
 
     @Override
-    public Cancellation schedulePeriodically(Runnable task, long initialDelay,
+    public Disposable schedulePeriodically(Runnable task, long initialDelay,
             long period, TimeUnit unit) {
         return main.schedulePeriodically(task, initialDelay, period, unit);
     }

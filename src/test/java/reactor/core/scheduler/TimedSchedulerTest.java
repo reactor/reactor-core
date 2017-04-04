@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.core.Cancellation;
 import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler.Worker;
 
@@ -84,7 +83,7 @@ public class TimedSchedulerTest extends AbstractSchedulerTest {
 
 	        int tasks = 10;
 
-	        Cancellation[] c = new Cancellation[tasks];
+	        Disposable[] c = new Disposable[tasks];
 
 	        for (int i = 0; i < tasks; i++) {
 		        c[i] = w1.schedulePeriodically(task, 500, 500, TimeUnit.MILLISECONDS);
@@ -93,7 +92,7 @@ public class TimedSchedulerTest extends AbstractSchedulerTest {
             w1.dispose();
 
 	        for (int i = 0; i < tasks; i++) {
-		        assertThat(((Disposable) c[i]).isDisposed()).isTrue();
+		        assertThat(c[i].isDisposed()).isTrue();
 	        }
             
             Assert.assertEquals(0, counter.get());

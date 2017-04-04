@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 
@@ -50,7 +50,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 				new CallableSubscribeOnSubscription<>(s, callable, scheduler);
 		s.onSubscribe(parent);
 
-		Cancellation f = scheduler.schedule(parent);
+		Disposable f = scheduler.schedule(parent);
 		if (f == Scheduler.REJECTED) {
 			if(parent.state != CallableSubscribeOnSubscription.HAS_CANCELLED) {
 				s.onError(Operators.onRejectedExecution());
@@ -88,20 +88,20 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 		static final int HAS_VALUE = 2;
 		static final int COMPLETE  = 3;
 
-		volatile Cancellation mainFuture;
+		volatile Disposable mainFuture;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<CallableSubscribeOnSubscription, Cancellation>
+		static final AtomicReferenceFieldUpdater<CallableSubscribeOnSubscription, Disposable>
 				MAIN_FUTURE = AtomicReferenceFieldUpdater.newUpdater(
 				CallableSubscribeOnSubscription.class,
-				Cancellation.class,
+				Disposable.class,
 				"mainFuture");
 
-		volatile Cancellation requestFuture;
+		volatile Disposable requestFuture;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<CallableSubscribeOnSubscription, Cancellation>
+		static final AtomicReferenceFieldUpdater<CallableSubscribeOnSubscription, Disposable>
 				REQUEST_FUTURE = AtomicReferenceFieldUpdater.newUpdater(
 				CallableSubscribeOnSubscription.class,
-				Cancellation.class,
+				Disposable.class,
 				"requestFuture");
 
 		CallableSubscribeOnSubscription(Subscriber<? super T> actual,
@@ -132,7 +132,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 		public void cancel() {
 			state = HAS_CANCELLED;
 			fusionState = COMPLETE;
-			Cancellation a = mainFuture;
+			Disposable a = mainFuture;
 			if (a != CANCELLED) {
 				a = MAIN_FUTURE.getAndSet(this, CANCELLED);
 				if (a != null && a != CANCELLED) {
@@ -182,9 +182,9 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 			return isEmpty() ? 0 : 1;
 		}
 
-		void setMainFuture(Cancellation c) {
+		void setMainFuture(Disposable c) {
 			for (; ; ) {
-				Cancellation a = mainFuture;
+				Disposable a = mainFuture;
 				if (a == CANCELLED) {
 					c.dispose();
 					return;
@@ -195,9 +195,9 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 			}
 		}
 
-		void setRequestFuture(Cancellation c) {
+		void setRequestFuture(Disposable c) {
 			for (; ; ) {
-				Cancellation a = requestFuture;
+				Disposable a = requestFuture;
 				if (a == CANCELLED) {
 					c.dispose();
 					return;
@@ -257,7 +257,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 					}
 					if (s == NO_REQUEST_HAS_VALUE) {
 						if (STATE.compareAndSet(this, s, HAS_REQUEST_HAS_VALUE)) {
-							Cancellation f = scheduler.schedule(this::emitValue);
+							Disposable f = scheduler.schedule(this::emitValue);
 							if(f == Scheduler.REJECTED){
 								actual.onError(Operators.onRejectedExecution());
 							}

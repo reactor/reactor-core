@@ -18,7 +18,6 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.Queue;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
@@ -27,7 +26,6 @@ import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.Cancellation;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
@@ -261,12 +259,6 @@ final class FluxCreate<T> extends Flux<T> {
 			return this;
 		}
 
-		@Deprecated
-		@Override
-		public void setCancellation(Cancellation c) {
-			sink.setCancellation(c);
-		}
-
 		@Override
 		public long requestedFromDownstream() {
 			return sink.requestedFromDownstream();
@@ -452,18 +444,6 @@ final class FluxCreate<T> extends Flux<T> {
 				}
 			}
 			return this;
-		}
-
-		@Deprecated
-		@Override
-		public final void setCancellation(Cancellation c) {
-			onDispose(new Disposable() {
-				@Override
-				public void dispose() {
-					c.dispose();
-				}
-
-			});
 		}
 
 		@Override

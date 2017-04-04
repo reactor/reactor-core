@@ -24,7 +24,7 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
@@ -282,7 +282,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable {
 			}
 		}
 
-		Cancellation trySchedule() {
+		Disposable trySchedule() {
 			if (WIP.getAndIncrement(this) != 0) {
 				return null;
 			}
@@ -768,7 +768,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable {
 			}
 		}
 
-		Cancellation trySchedule() {
+		Disposable trySchedule() {
 			if (WIP.getAndIncrement(this) != 0) {
 				return null;
 			}

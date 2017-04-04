@@ -341,19 +341,19 @@ public class MonoDelayElementTest {
 
 	@Test
 	public void testDeprecatedFluxApi() {
-		StepVerifier.withVirtualTime(() -> Flux.just("foo").delay(Duration.ofSeconds(2)))
+		StepVerifier.withVirtualTime(() -> Flux.just("foo").delayElements(Duration.ofSeconds(2)))
 	                .expectSubscription()
 	                .expectNoEvent(Duration.ofSeconds(2))
 	                .expectNext("foo")
 	                .verifyComplete();
 
-		StepVerifier.withVirtualTime(() -> Flux.just("foo").delayMillis(2000L))
+		StepVerifier.withVirtualTime(() -> Flux.just("foo").delayElements(Duration.ofSeconds(2)))
 	                .expectSubscription()
 	                .expectNoEvent(Duration.ofSeconds(2))
 	                .expectNext("foo")
 	                .verifyComplete();
 
-		StepVerifier.withVirtualTime(() -> Flux.just("foo").delayMillis(2000L, VirtualTimeScheduler.get()))
+		StepVerifier.withVirtualTime(() -> Flux.just("foo").delayElements(Duration.ofSeconds(2), VirtualTimeScheduler.get()))
 	                .expectSubscription()
 	                .expectNoEvent(Duration.ofSeconds(2))
 	                .expectNext("foo")

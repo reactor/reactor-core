@@ -31,7 +31,6 @@ import java.util.function.Supplier;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.core.Cancellation;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.publisher.DirectProcessor;
@@ -122,7 +121,7 @@ public class SchedulersTest {
 		Assert.assertEquals(cachedTimerNew, Schedulers.newTimer("unused"));
 		Assert.assertNotSame(cachedTimerNew, cachedTimerOld);
 		//assert that the old factory"s cached scheduler was shut down
-		Cancellation disposable = cachedTimerOld.schedule(() -> {});
+		Disposable disposable = cachedTimerOld.schedule(() -> {});
 		System.out.println(disposable);
 		Assert.assertEquals(disposable, Scheduler.REJECTED);
 		//independently created schedulers are still the programmer"s responsibility
@@ -762,7 +761,7 @@ public class SchedulersTest {
 		}
 
 		@Override
-		public Cancellation schedule(Runnable task) {
+		public Disposable schedule(Runnable task) {
 			return null;
 		}
 
@@ -776,7 +775,7 @@ public class SchedulersTest {
 			boolean disposeCalled;
 
 			@Override
-			public Cancellation schedule(Runnable task) {
+			public Disposable schedule(Runnable task) {
 				return null;
 			}
 
@@ -790,17 +789,17 @@ public class SchedulersTest {
 	final static class EmptyTimedScheduler implements Scheduler {
 
 		@Override
-		public Cancellation schedule(Runnable task) {
+		public Disposable schedule(Runnable task) {
 			return null;
 		}
 
 		@Override
-		public Cancellation schedule(Runnable task, long delay, TimeUnit unit) {
+		public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 			return null;
 		}
 
 //		@Override
-//		public Cancellation schedulePeriodically(Runnable task,
+//		public Disposable schedulePeriodically(Runnable task,
 //				long initialDelay,
 //				long period,
 //				TimeUnit unit) {
@@ -815,17 +814,17 @@ public class SchedulersTest {
 		static class EmptyTimedWorker implements Worker {
 
 			@Override
-			public Cancellation schedule(Runnable task) {
+			public Disposable schedule(Runnable task) {
 				return null;
 			}
 
 			@Override
-			public Cancellation schedule(Runnable task, long delay, TimeUnit unit) {
+			public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 				return null;
 			}
 
 			@Override
-			public Cancellation schedulePeriodically(Runnable task,
+			public Disposable schedulePeriodically(Runnable task,
 					long initialDelay,
 					long period,
 					TimeUnit unit) {

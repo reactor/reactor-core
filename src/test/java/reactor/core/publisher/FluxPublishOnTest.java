@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1129,7 +1129,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		EmitterProcessor<Integer> d = EmitterProcessor.create();
 		BlockingSink<Integer> s = BlockingSink.create(d);
 
-		/*Cancellation c = */
+		/*Disposable c = */
 		d.publishOn(Schedulers.parallel())
 		 .parallel(8)
 		 .groups()
@@ -1211,7 +1211,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 			                                                return Integer.parseInt(str);
 		                                                }));
 
-		/* Cancellation tail =*/
+		/* Disposable tail =*/
 		tasks.subscribe(i -> {
 			latch.countDown();
 		});

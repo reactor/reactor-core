@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
-import reactor.core.Cancellation;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.util.Logger;
@@ -702,17 +701,17 @@ public abstract class Schedulers {
 		}
 
 		@Override
-		public Cancellation schedule(Runnable task) {
+		public Disposable schedule(Runnable task) {
 			return cached.schedule(task);
 		}
 
 		@Override
-		public Cancellation schedule(Runnable task, long delay, TimeUnit unit) {
+		public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 			return cached.schedule(task, delay, unit);
 		}
 
 		@Override
-		public Cancellation schedulePeriodically(Runnable task,
+		public Disposable schedulePeriodically(Runnable task,
 				long initialDelay,
 				long period,
 				TimeUnit unit) {

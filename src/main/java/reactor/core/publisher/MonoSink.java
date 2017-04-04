@@ -17,7 +17,6 @@ package reactor.core.publisher;
 
 import java.util.function.LongConsumer;
 
-import reactor.core.Cancellation;
 import reactor.core.Disposable;
 
 
@@ -78,16 +77,4 @@ public interface MonoSink<T> {
 	 * @return the {@link MonoSink} with resource to be disposed on first terminate signal
 	 */
 	MonoSink<T> onDispose(Disposable d);
-
-    /**
-     * Sets a cancellation callback triggered by
-     * downstream cancel().
-     * <p>Calling this method more than once has no effect.
-     * @param c the cancellation callback
-     * @deprecated Use {@link #onDispose(Disposable)} for resources to be disposed on any
-     * terminate signal or {@link #onCancel(Disposable)} for resources to be disposed on
-     * cancel.
-     */
-	@Deprecated
-	void setCancellation(Cancellation c);
 }

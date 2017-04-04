@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.Cancellation;
+import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler;
 
 /**
@@ -52,12 +52,12 @@ final class MonoPublishOn<T> extends MonoSource<T, T> {
 
 		Subscription s;
 
-		volatile Cancellation future;
+		volatile Disposable future;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<PublishOnSubscriber, Cancellation>
+		static final AtomicReferenceFieldUpdater<PublishOnSubscriber, Disposable>
 				FUTURE =
 				AtomicReferenceFieldUpdater.newUpdater(PublishOnSubscriber.class,
-						Cancellation.class,
+						Disposable.class,
 						"future");
 
 		T         value;
@@ -121,9 +121,9 @@ final class MonoPublishOn<T> extends MonoSource<T, T> {
 			}
 		}
 
-		Cancellation schedule() {
+		Disposable schedule() {
 			if (future == null) {
-				Cancellation c = scheduler.schedule(this);
+				Disposable c = scheduler.schedule(this);
 				if (!FUTURE.compareAndSet(this, null, c)) {
 					c.dispose();
 				}
@@ -139,7 +139,7 @@ final class MonoPublishOn<T> extends MonoSource<T, T> {
 
 		@Override
 		public void cancel() {
-			Cancellation c = future;
+			Disposable c = future;
 			if (c != Flux.CANCELLED) {
 				c = FUTURE.getAndSet(this, Flux.CANCELLED);
 				if (c != null && c != Flux.CANCELLED) {

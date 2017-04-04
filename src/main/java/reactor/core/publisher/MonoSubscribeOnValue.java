@@ -18,9 +18,9 @@ package reactor.core.publisher;
 import java.util.Objects;
 
 import org.reactivestreams.Subscriber;
-
-import reactor.core.Cancellation;
-import reactor.core.publisher.FluxSubscribeOnValue.*;
+import reactor.core.Disposable;
+import reactor.core.publisher.FluxSubscribeOnValue.ScheduledEmpty;
+import reactor.core.publisher.FluxSubscribeOnValue.ScheduledScalar;
 import reactor.core.scheduler.Scheduler;
 
 
@@ -47,7 +47,7 @@ final class MonoSubscribeOnValue<T> extends Mono<T> {
 		if (v == null) {
 			ScheduledEmpty parent = new ScheduledEmpty(s);
 			s.onSubscribe(parent);
-			Cancellation f = scheduler.schedule(parent);
+			Disposable f = scheduler.schedule(parent);
 			if (f == Scheduler.REJECTED) {
 				if(parent.future != Flux.CANCELLED) {
 					s.onError(Operators.onRejectedExecution());
