@@ -20,7 +20,7 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
     }
 
     dependencies {
-      //compile "io.projectreactor:reactor-core:3.0.6.BUILD-SNAPSHOT"
+      //compile "io.projectreactor:reactor-core:3.1.0.BUILD-SNAPSHOT"
       compile "io.projectreactor:reactor-core:3.0.6.RELEASE"
     }
 ```
@@ -116,13 +116,12 @@ Mono.fromCallable( () -> System.currentTimeMillis() )
 ```
 
 
-## Hot Publishing : BlockingSink, FluxSink, MonoSink
+## Custom sources : Flux.create and FluxSink, Mono.create and MonoSink
 To bridge a Subscriber or Processor into an outside context that is taking care of
-producing non concurrently, use `Flux#create`, `Mono#create`, or
-`FluxProcessor#connectSink()`.
+producing non concurrently, use `Flux#create`, `Mono#create`.
 
 ```java
-Flux.create(emitter -> {
+Flux.create(sink -> {
          ActionListener al = e -> {
             emitter.next(textField.getText());
          };
@@ -131,7 +130,7 @@ Flux.create(emitter -> {
          button.addActionListener(al);
 
          // with cancellation support:
-         emitter.setCancellation(() -> {
+         sink.onCancel(() -> {
          	button.removeListener(al);
          });
     },
@@ -140,71 +139,6 @@ Flux.create(emitter -> {
     .timeout(3)
     .doOnComplete(() -> System.out.println("completed!"))
     .subscribe(System.out::println)
-```
-
-## Hot Publishing : Processors
-
-The 3 main processor implementations are message relays using 0 ([EmitterProcessor](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/EmitterProcessor.html)) or N threads ([TopicProcessor](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/TopicProcessor.html) and [WorkQueueProcessor](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/WorkQueueProcessor.html)). They also use bounded buffers, aka RingBuffer.
-
-### Pub-Sub : EmitterProcessor
-
-[A signal broadcaster](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/EmitterProcessor.html) that will safely handle asynchronous boundaries between N Subscribers (asynchronous or not) and a parent producer.
-
-```java
-EmitterProcessor<Integer> emitter = EmitterProcessor.create();
-BlockingSink<Integer> sink = emitter.connectSink();
-sink.next(1);
-sink.next(2);
-emitter.subscribe(System.out::println);
-sink.next(3); //output : 3
-sink.finish();
-```
-
-### Pub-Sub Replay : ReplayProcessor
-
-[A caching broadcaster](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/ReplayProcessor.html) that will safely handle
-asynchronous boundaries between N Subscribers (asynchronous or not) and a parent producer.
-
-Replay capacity in action:
-```java
-ReplayProcessor<Integer> replayer = ReplayProcessor.create();
-BlockingSink<Integer> sink = replayer.connectSink();
-sink.submit(1);
-sink.submit(2);
-replayer.subscribe(System.out::println); //output 1, 2
-replayer.subscribe(System.out::println); //output 1, 2
-sink.submit(3); //output : ...3 ...3
-sink.finish();
-```
-
-Note : ReplayProcessor does not explicitly require a call to `connectSink()` since its demand upstream is constant and unbounded (and it will retain the specified history number of items). That means you could just call `onNext` on the processor directly without problems.
-
-### Async Pub-Sub : TopicProcessor
-
-[An asynchronous signal broadcaster](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/TopicProcessor.html) dedicating an event loop thread per subscriber and maxing out producing/consuming rate with temporary tolerance to latency peaks. Also supports multi-producing and emission without onSubscribe.
-
-```java
-TopicProcessor<Integer> topic = TopicProcessor.create();
-topic.subscribe(System.out::println);
-topic.onNext(1); //output : ...1
-topic.onNext(2); //output : ...2
-topic.subscribe(System.out::println); //output : ...1, 2
-topic.onNext(3); //output : ...3 ...3
-topic.onComplete();
-```
-
-### Async Distributed : WorkQueueProcessor
-
-Similar to TopicProcessor regarding thread per subscriber but this time exclusively distributing the input data signal to the next available Subscriber. [WorkQueueProcessor](http://projectreactor.io/docs/core/release/api/reactor/core/publisher/WorkQueueProcessor.html) is also able to replay detected dropped data downstream (error or cancel) to any Subscriber ready.
-
-```java
-WorkQueueProcessor<Integer> queue = WorkQueueProcessor.create();
-queue.subscribe(System.out::println);
-queue.subscribe(System.out::println);
-queue.onNext(1); //output : ...1
-queue.onNext(2); //output : .... ...2
-queue.onNext(3); //output : ...3 
-queue.onComplete();
 ```
 
 ## The Backpressure Thing
@@ -216,6 +150,9 @@ Most of this cool stuff uses bounded ring buffer implementation under the hood t
 "Operator Fusion" (flow optimizers), health state observers, helpers to build custom reactive components, bounded queue generator, hash-wheel timer, converters from/to Java 9 Flow, Publisher and Java 8 CompletableFuture. The `reactor-addons` repository contains a `reactor-test` project with test features like the [`StepVerifier`](http://projectreactor.io/docs/test/release/api/index.html?reactor/test/StepVerifier.html).
 
 -------------------------------------
+
+## Reference Guide
+http://projectreactor.io/docs/core/release/reference/docs/index.html
 
 ## Javadoc
 https://projectreactor.io/docs/core/release/api/
