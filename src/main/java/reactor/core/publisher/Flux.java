@@ -7680,7 +7680,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * point the previous window will receive the triggering element then onComplete.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsize.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowuntil.png" alt="">
 	 *
 	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
 	 * @return a windowing {@link Flux} of {@link GroupedFlux} windows, bounded depending
@@ -7703,7 +7703,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * onComplete, similar to {@link #windowUntil(Predicate)}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsize.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowuntil.png" alt="">
 	 *
 	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
 	 * @param cutBefore set to true to include the triggering element in the new window rather than the old.
@@ -7728,7 +7728,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * onComplete, similar to {@link #windowUntil(Predicate)}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsize.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowuntil.png" alt="">
 	 *
 	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
 	 * @param cutBefore set to true to include the triggering element in the new window rather than the old.
