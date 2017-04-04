@@ -17,7 +17,7 @@ Flux<String> secrets = Flux.just("foo", "chain");
 flux.map(secret -> secret.replaceAll(".", "*")); <1>
 flux.subscribe(next -> System.out.println("Received: " + next));
 ----
-<1> mistake is here
+<1> mistake is here, the result isn't reaffected to `flux` variable
 
 With:
 

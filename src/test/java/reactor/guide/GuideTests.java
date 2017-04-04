@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -40,11 +41,13 @@ import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.publisher.BaseSubscriber;
+import reactor.core.publisher.ConnectableFlux;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.SignalType;
 import reactor.core.publisher.UnicastProcessor;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.util.function.Tuple2;
@@ -61,36 +64,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class GuideTests {
 
 	@Test
-	public void fluxComposing() throws Exception {
-		Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
-		    .log()
-		    .filter(color -> !color.equals("orange"))
-		    .map(String::toUpperCase)
-		    .subscribe(d -> System.out.println("Subscriber to Map: "+d));
-
-		System.out.println("\n");
-
-		Flux<String> flux =
-				Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
-				    .doOnNext(System.out::println)
-				    .filter(color -> !color.equals("orange"));
-
-		flux.map(String::toUpperCase);
-		flux.subscribe(d -> System.out.println("Subscriber to Filter: "+d));
-
-		System.out.println("\n");
-
-		Flux<String> source =
-				Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
-				    .doOnNext(System.out::println)
-				    .filter(color -> !color.equals("orange"))
-				    .map(String::toUpperCase);
-
-		source.subscribe(d -> System.out.println("Subscriber 1: "+d));
-		source.subscribe(d -> System.out.println("Subscriber 2: "+d));
-
-		System.out.println("\n");
-
+	public void advancedCompose() {
 		Function<Flux<String>, Flux<String>> filterAndMap =
 				f -> f.filter(color -> !color.equals("orange"))
 				      .map(String::toUpperCase);
@@ -99,11 +73,12 @@ public class GuideTests {
 		    .doOnNext(System.out::println)
 		    .transform(filterAndMap)
 		    .subscribe(d -> System.out.println("Subscriber to Transformed MapAndFilter: "+d));
+	}
 
-		System.out.println("\n");
-
+	@Test
+	public void advancedTransform() {
 		AtomicInteger ai = new AtomicInteger();
-		filterAndMap = f -> {
+		Function<Flux<String>, Flux<String>> filterAndMap = f -> {
 			if (ai.incrementAndGet() == 1) {
 				return f.filter(color -> !color.equals("orange"))
 				        .map(String::toUpperCase);
@@ -119,14 +94,27 @@ public class GuideTests {
 
 		composedFlux.subscribe(d -> System.out.println("Subscriber 1 to Composed MapAndFilter :"+d));
 		composedFlux.subscribe(d -> System.out.println("Subscriber 2 to Composed MapAndFilter: "+d));
+	}
 
-		System.out.println("\n");
+	@Test
+	public void advancedCold() {
+		Flux<String> source = Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
+		                          .doOnNext(System.out::println)
+		                          .filter(s -> s.startsWith("o"))
+		                          .map(String::toUpperCase);
 
+		source.subscribe(d -> System.out.println("Subscriber 1: "+d));
+		source.subscribe(d -> System.out.println("Subscriber 2: "+d));
+	}
+
+	@Test
+	public void advancedHot() {
 		UnicastProcessor<String> hotSource = UnicastProcessor.create();
 
-		Flux<String> hotFlux = hotSource.doOnNext(System.out::println)
-		                                .publish()
-		                                .autoConnect();
+		Flux<String> hotFlux = hotSource.publish()
+		                                .autoConnect()
+		                                .map(String::toUpperCase);
+
 
 		hotFlux.subscribe(d -> System.out.println("Subscriber 1 to Hot Source: "+d));
 
@@ -138,6 +126,52 @@ public class GuideTests {
 		hotSource.onNext("orange");
 		hotSource.onNext("purple");
 		hotSource.onComplete();
+	}
+
+	@Test
+	public void advancedConnectable() throws InterruptedException {
+		Flux<Integer> source = Flux.range(1, 3)
+		                           .doOnSubscribe(s -> System.out.println("subscribed to source"));
+
+		ConnectableFlux<Integer> co = source.publish();
+
+		co.subscribe(System.out::println, e -> {}, () -> {});
+		co.subscribe(System.out::println, e -> {}, () -> {});
+
+		System.out.println("done subscribing");
+		Thread.sleep(500);
+		System.out.println("will now connect");
+
+		co.connect();
+	}
+
+	@Test
+	public void advancedConnectableAutoConnect() throws InterruptedException {
+		Flux<Integer> source = Flux.range(1, 3)
+		                           .doOnSubscribe(s -> System.out.println("subscribed to source"));
+
+		Flux<Integer> autoCo = source.publish().autoConnect(2);
+
+		autoCo.subscribe(System.out::println, e -> {}, () -> {});
+		System.out.println("subscribed first");
+		Thread.sleep(500);
+		System.out.println("subscribing second");
+		autoCo.subscribe(System.out::println, e -> {}, () -> {});
+	}
+
+	@Test
+	public void advancedParallelJustDivided() {
+		Flux.range(1, 10)
+	        .parallel(2) //<1>
+	        .subscribe(i -> System.out.println(Thread.currentThread().getName() + " -> " + i));
+	}
+
+	@Test
+	public void advancedParallelParallelized() {
+		Flux.range(1, 10)
+	        .parallel(2)
+	        .runOn(Schedulers.parallel())
+	        .subscribe(i -> System.out.println(Thread.currentThread().getName() + " -> " + i));
 	}
 
 	private Flux<String> someStringSource() {
@@ -727,7 +761,7 @@ public class GuideTests {
 				assertThat(withSuppressed.getSuppressed()).hasSize(1);
 				assertThat(withSuppressed.getSuppressed()[0])
 						.hasMessageStartingWith("\nAssembly trace from producer [reactor.core.publisher.MonoSingle] :")
-						.hasMessageEndingWith("Flux.single(GuideTests.java:685)\n");
+						.hasMessageEndingWith("Flux.single(GuideTests.java:719)\n");
 			});
 		}
 	}
