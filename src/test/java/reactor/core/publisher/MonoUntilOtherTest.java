@@ -168,13 +168,16 @@ public class MonoUntilOtherTest {
 	public void testAPIchainingCombines() {
 		Mono<String> source = Mono.just("foo");
 
-		Mono<String> until1 = source.untilOther(
-				Flux.just(1, 2, 3));
+		Flux<Integer> trigger1 = Flux.just(1, 2, 3);
+		Mono<Long> trigger2 = Mono.delay(Duration.ofMillis(800));
 
-		Mono<String> until2 = until1.untilOther(
-				Mono.delay(Duration.ofMillis(800)));
+		MonoUntilOther<String> until1 = (MonoUntilOther<String>) source.untilOther(trigger1);
+		MonoUntilOther<String> until2 = (MonoUntilOther<String>) until1.untilOther(trigger2);
 
-		assertThat(until1).isSameAs(until2);
+		assertThat(until1).isNotSameAs(until2);
+		assertThat(until1.source).isSameAs(until2.source);
+		assertThat(until1.others).containsExactly(trigger1);
+		assertThat(until2.others).containsExactly(trigger1, trigger2);
 
 		StepVerifier.create(until2)
 		            .expectSubscription()
@@ -188,18 +191,29 @@ public class MonoUntilOtherTest {
 	public void testAPIchainingCombinesWithFirstDelayErrorParameter() {
 		Mono<String> source = Mono.just("foo");
 
-		Mono<String> until1 = source.untilOtherDelayError(
-				Mono.error(new IllegalArgumentException("boom")));
+		Mono<String> trigger1 = Mono.error(new IllegalArgumentException("boom"));
+		Mono<Long> trigger2 = Mono.delay(Duration.ofMillis(800));
 
-		Mono<String> until2 = until1.untilOther(
-				Mono.delay(Duration.ofMillis(800)));
+		MonoUntilOther<String> until1 = (MonoUntilOther<String>) source.untilOtherDelayError(trigger1);
+		MonoUntilOther<String> until2 = (MonoUntilOther<String>) until1.untilOther(trigger2);
 
-		assertThat(until1).isSameAs(until2);
+		assertThat(until1).isNotSameAs(until2);
+		assertThat(until1.source).isSameAs(until2.source);
+		assertThat(until1.others).containsExactly(trigger1);
+		assertThat(until2.others).containsExactly(trigger1, trigger2);
 
 		StepVerifier.create(until2)
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofMillis(700))
 		            .thenAwait(Duration.ofMillis(100))
 		            .verifyErrorMessage("boom");
+	}
+
+	@Test
+	public void testAPIChainingCombinesDifferentInstances() {
+		Mono<String> source = Mono.just("foo");
+
+
+
 	}
 }
