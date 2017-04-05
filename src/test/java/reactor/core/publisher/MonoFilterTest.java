@@ -146,7 +146,7 @@ public class MonoFilterTest {
 
 		Mono.just(1)
 		    .hide()
-		    .then(w -> up.filter(v -> (v & 1) == 0))
+		    .thenMap(w -> up.filter(v -> (v & 1) == 0))
 		    .subscribe(ts);
 
 		up.onNext(2);
