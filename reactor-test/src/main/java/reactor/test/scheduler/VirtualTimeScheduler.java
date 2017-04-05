@@ -401,11 +401,6 @@ public class VirtualTimeScheduler implements Scheduler {
 		}
 
 		@Override
-		public void shutdown() {
-			dispose();
-		}
-
-		@Override
 		public void dispose() {
 			shutdown = true;
 		}
