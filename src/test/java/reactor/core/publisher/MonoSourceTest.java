@@ -61,6 +61,13 @@ public class MonoSourceTest {
 	}
 
 	@Test
+	public void monoDirect() {
+		StepVerifier.create(Flux.just(1).as(Mono::fromDirect))
+	                .expectNext(1)
+	                .verifyComplete();
+	}
+
+	@Test
 	public void transform() {
 		StepVerifier.create(Mono.just(1).transform(m -> Flux.just(1, 2, 3)))
 	                .expectNext(1)

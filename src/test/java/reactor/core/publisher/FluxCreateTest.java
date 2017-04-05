@@ -218,7 +218,7 @@ public class FluxCreateTest {
 			s.next("test2");
 			s.next("test3");
 			s.complete();
-		}, OverflowStrategy.BUFFER);
+		});
 
 		assertThat(created.getPrefetch()).isEqualTo(-1);
 
