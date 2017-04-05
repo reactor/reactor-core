@@ -59,7 +59,7 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 	}
 
 	@Override
-	public long getPrefetch() {
+	public int getPrefetch() {
 		return Integer.MAX_VALUE;
 	}
 

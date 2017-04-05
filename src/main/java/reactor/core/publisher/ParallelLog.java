@@ -59,7 +59,7 @@ final class ParallelLog<T> extends ParallelFlux<T> implements Scannable {
 	}
 
 	@Override
-	public long getPrefetch() {
+	public int getPrefetch() {
 		return source.getPrefetch();
 	}
 

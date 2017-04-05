@@ -63,7 +63,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable {
 	}
 
 	@Override
-	public long getPrefetch() {
+	public int getPrefetch() {
 		return prefetch;
 	}
 

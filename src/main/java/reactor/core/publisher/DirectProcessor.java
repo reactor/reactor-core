@@ -73,7 +73,7 @@ public final class DirectProcessor<T>
 	}
 
 	@Override
-	public long getPrefetch() {
+	public int getPrefetch() {
 		return Integer.MAX_VALUE;
 	}
 

@@ -64,7 +64,7 @@ final class FluxAutoConnect<T> extends Flux<T>
 	}
 
 	@Override
-	public long getPrefetch() {
+	public int getPrefetch() {
 		return source.getPrefetch();
 	}
 

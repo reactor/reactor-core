@@ -583,20 +583,6 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 		return new ParallelFluxHide<>(this);
 	}
 
-
-	/**
-	 * Returns true if the parallel sequence has to be ordered when joining back.
-	 *
-	 * @return true if the parallel sequence has to be ordered when joining back
-	 * @deprecated This accessor was initially exposed to introspect the internal
-	 * ordering scenario for parallel rails. In effect reactor 3.0 and 3.1 only offer
-	 * non ordered merge at the end and therefore this should always returns false;
-	 */
-	@Deprecated
-	public boolean isOrdered(){
-		return false;
-	}
-
 	/**
 	 * Observe all Reactive Streams signals and use {@link Logger} support to handle trace
 	 * implementation. Default will use {@link Level#INFO} and java.util.logging. If SLF4J
@@ -1076,8 +1062,8 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the prefetch configuration of the component
 	 */
-	public long getPrefetch() {
-		return -1L;
+	public int getPrefetch() {
+		return -1;
 	}
 
 

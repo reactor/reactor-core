@@ -70,7 +70,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 	}
 
 	@Override
-	public long getPrefetch() {
+	public int getPrefetch() {
 		return 1; //this operator changes the downstream request to 1 in the source
 	}
 

@@ -50,7 +50,7 @@ final class ParallelMergeSort<T> extends Flux<T> implements Scannable {
 	}
 
 	@Override
-	public long getPrefetch() {
+	public int getPrefetch() {
 		return Integer.MAX_VALUE;
 	}
 

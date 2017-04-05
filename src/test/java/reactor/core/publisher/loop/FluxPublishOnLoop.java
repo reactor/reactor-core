@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -116,7 +116,7 @@ public class FluxPublishOnLoop {
 		for (int j = 1; j < 256; j *= 2) {
 
 			Flux<Integer> source = Flux.range(1, count)
-			                           .flatMap(v -> Flux.range(v, 2), false, 128, j)
+			                           .flatMap(v -> Flux.range(v, 2), 128, j)
 			                           .publishOn(scheduler);
 
 			StepVerifier.Step<Integer> v = StepVerifier.create(source)

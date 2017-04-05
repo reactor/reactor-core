@@ -46,7 +46,7 @@ public class FluxCreateTest {
 	public void normalBuffered() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		Flux<Integer> source = Flux.<Signal<Integer>>create(e -> {
-			e.serialize().next(Signal.next(1));
+			e.next(Signal.next(1));
 			e.next(Signal.next(2));
 			e.next(Signal.next(3));
 			e.next(Signal.complete());

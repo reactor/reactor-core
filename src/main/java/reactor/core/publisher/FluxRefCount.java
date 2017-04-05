@@ -55,7 +55,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 	}
 
 	@Override
-	public long getPrefetch() {
+	public int getPrefetch() {
 		return source.getPrefetch();
 	}
 	

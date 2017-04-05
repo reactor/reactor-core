@@ -25,13 +25,6 @@ import reactor.test.StepVerifier;
 public class MonoIgnoreEmptyTest {
 
 	@Test
-	public void normalEmpty() {
-		StepVerifier.create(Flux.just(1)
-		                        .then(Flux.empty()))
-		            .expectComplete();
-	}
-
-	@Test
 	public void normal() {
 		StepVerifier.create(Flux.just(1)
 		                        .thenEmpty(Flux.empty()))

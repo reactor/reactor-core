@@ -121,10 +121,11 @@ public class FluxProcessorTest {
 		Scheduler scheduler = Schedulers.parallel();
 		processor.publishOn(scheduler)
 		         .delaySubscription(Duration.ofMillis(1000))
+		         .limitRate(1)
 		                                    .subscribe(d -> {
 			         count.incrementAndGet();
 			         latch.countDown();
-		         }, 1);
+		         });
 
 		BlockingSink<Integer> session = processor.connectSink();
 		long emission = session.submit(1);
@@ -189,7 +190,7 @@ public class FluxProcessorTest {
 			processor.publishOn(c)
 			         .doOnComplete(latch::countDown)
 			         .doOnNext(d -> latch.countDown())
-			         .subscribe(Integer.MAX_VALUE);
+			         .subscribe();
 		}
 
 		BlockingSink<Integer> session = processor.connectSink();

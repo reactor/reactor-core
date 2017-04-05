@@ -62,27 +62,18 @@ public interface FluxSink<T> {
 	boolean isCancelled();
 
 	/**
-	 * Ensures that calls to next, error and complete are properly serialized.
-	 * @return a new serialized {@link FluxSink}
-	 * @deprecated Use {@link Flux#create(java.util.function.Consumer)} or
-	 * {@link Flux#create(java.util.function.Consumer, OverflowStrategy)}
-	 * to create a serialized {@link FluxSink}.
-	 */
-	@Deprecated
-	FluxSink<T> serialize();
-
-	/**
 	 * Attaches a {@link LongConsumer} to this {@link FluxSink} that will be notified of
 	 * any request to this sink.
 	 * <p>
 	 * For push/pull sinks created using {@link Flux#create(java.util.function.Consumer)}
-	 * or {@link Flux#create(java.util.function.Consumer, OverflowStrategy)}, the consumer
+	 * or {@link Flux#create},
+	 * the consumer
 	 * is invoked for every request to enable a hybrid backpressure-enabled push/pull model.
 	 * When bridging with asynchronous listener-based APIs, the {@code onRequest} callback
 	 * may be used to request more data from source if required and to manage backpressure
 	 * by delivering data to sink only when requests are pending.
 	 * <p>
-	 * For push-only sinks created using {@link Flux#push(java.util.function.Consumer, OverflowStrategy)},
+	 * For push-only sinks created using {@link Flux#push},
 	 * the consumer is invoked with an initial request of {@code Long.MAX_VALUE} when this method
 	 * is invoked.
 	 *

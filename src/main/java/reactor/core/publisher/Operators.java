@@ -45,33 +45,6 @@ import reactor.util.Loggers;
 public abstract class Operators {
 
 	/**
-	 * Concurrent addition bound to Long.MAX_VALUE.
-	 * Any concurrent write will "happen" before this operation.
-	 *
-	 * @param current current atomic to update
-	 * @param toAdd   delta to add
-	 * @return Addition result or Long.MAX_VALUE
-	 * @deprecated This util is neither used by Core nor consistent with the other
-	 * `addAndGet` methods present which use {@link AtomicLongFieldUpdater}. In
-	 * an effort to keep Operators API consistent, this util will not be supported
-	 * anymore and users need to port over its body under their app code.
-	 */
-	@Deprecated
-	public static long addAndGet(AtomicLong current, long toAdd) {
-		long u, r;
-		do {
-			r = current.get();
-			if (r == Long.MAX_VALUE) {
-				return Long.MAX_VALUE;
-			}
-			u = addCap(r, toAdd);
-		}
-		while (!current.compareAndSet(r, u));
-
-		return u;
-	}
-
-	/**
 	 * Concurrent addition bound to Long.MAX_VALUE. Any concurrent write will "happen"
 	 * before this operation.
 	 *

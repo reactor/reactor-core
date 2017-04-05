@@ -87,7 +87,7 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 	}
 
 	@Override
-	public long getPrefetch() {
+	public int getPrefetch() {
 		return prefetch;
 	}
 

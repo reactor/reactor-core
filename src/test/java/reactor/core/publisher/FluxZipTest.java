@@ -92,25 +92,6 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
-	public void iterableWithoutCombinatorReturnsCorrectTuple() {
-		Flux<Integer> flux1 = Flux.just(1);
-		Flux<Integer> flux2 = Flux.just(2);
-		Flux<Integer> flux3 = Flux.just(3);
-		Flux<Integer> flux4 = Flux.just(4);
-		List<Object> expected = Arrays.asList(1, 2, 3, 4);
-
-		Flux<Tuple2> zipped = Flux.zip(Arrays.asList(flux1, flux2, flux3, flux4));
-
-		StepVerifier.create(zipped)
-		            .consumeNextWith(t -> Assertions.assertThat(t)
-		                                            .containsExactlyElementsOf(expected)
-		                                            .isExactlyInstanceOf(Tuple4.class))
-		            .expectComplete()
-		            .verify();
-	}
-
-	@Test
 	public void publisherOfPublishersUsesCorrectTuple() {
 		Flux<Flux<Integer>> map = Flux.range(1, 7)
 		                              .map(Flux::just);

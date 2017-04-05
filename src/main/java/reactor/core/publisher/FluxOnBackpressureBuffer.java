@@ -61,7 +61,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxSource<O, O> implements Fuse
 	}
 
 	@Override
-	public long getPrefetch() {
+	public int getPrefetch() {
 		return Integer.MAX_VALUE;
 	}
 

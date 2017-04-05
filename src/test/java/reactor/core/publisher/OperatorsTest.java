@@ -96,27 +96,6 @@ public class OperatorsTest {
 	}
 
 	@Test
-	public void addAndGetAtomicLong() {
-		AtomicLong test = new AtomicLong();
-		race(0L,
-				s -> Operators.addAndGet(test, 1),
-				a -> a >= 100_000L,
-				(a, b) -> a == b
-		);
-
-		assertThat(Operators.addAndGet(test, -1_000_000L))
-				.isEqualTo(Long.MAX_VALUE);
-
-		test.set(1L);
-
-		assertThat(Operators.addAndGet(test, Long.MAX_VALUE))
-				.isEqualTo(Long.MAX_VALUE);
-
-		assertThat(Operators.addAndGet(test, 0))
-				.isEqualTo(Long.MAX_VALUE);
-	}
-
-	@Test
 	public void addAndGetAtomicField() {
 		TEST_REQUEST.set(this, 0L);
 

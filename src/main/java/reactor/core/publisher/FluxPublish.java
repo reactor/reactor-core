@@ -126,7 +126,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 	}
 
 	@Override
-	public long getPrefetch() {
+	public int getPrefetch() {
 		return prefetch;
 	}
 

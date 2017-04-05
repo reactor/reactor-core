@@ -62,7 +62,7 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 	}
 
 	@Override
-	public long getPrefetch() {
+	public int getPrefetch() {
 		return prefetch;
 	}
 

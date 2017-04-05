@@ -66,7 +66,7 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 	}
 
 	@Override
-	public long getPrefetch() {
+	public int getPrefetch() {
 		return prefetch;
 	}
 

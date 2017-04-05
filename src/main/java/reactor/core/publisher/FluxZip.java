@@ -101,7 +101,7 @@ final class FluxZip<T, R> extends Flux<R> {
 	}
 
 	@Override
-	public long getPrefetch() {
+	public int getPrefetch() {
 		return prefetch;
 	}
 

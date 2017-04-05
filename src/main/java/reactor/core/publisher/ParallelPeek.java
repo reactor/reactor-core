@@ -84,7 +84,7 @@ final class ParallelPeek<T> extends ParallelFlux<T> implements SignalPeek<T>{
 	}
 
 	@Override
-	public long getPrefetch() {
+	public int getPrefetch() {
 		return source.getPrefetch();
 	}
 

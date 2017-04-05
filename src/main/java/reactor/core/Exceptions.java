@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,13 +26,6 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 public abstract class Exceptions {
-
-	/**
-	 * @deprecated Cancel stacktrace is always turned on given the exceptional
-	 * frequency and the critical info it can provide
-	 */
-	@Deprecated
-	public static final boolean CANCEL_STACKTRACE = true;
 
 	/**
 	 * A singleton instance of a Throwable indicating a terminal state for exceptions,

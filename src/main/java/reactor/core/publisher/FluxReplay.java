@@ -68,7 +68,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 	}
 
 	@Override
-	public long getPrefetch() {
+	public int getPrefetch() {
 		return history;
 	}
 

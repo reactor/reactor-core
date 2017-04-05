@@ -90,7 +90,7 @@ final class FluxCreate<T> extends Flux<T> {
 
 		t.onSubscribe(sink);
 		try {
-			source.accept(createMode == CreateMode.PUSH_PULL ? sink.serialize() : sink);
+			source.accept(createMode == CreateMode.PUSH_PULL ? new SerializedSink<>(sink) : sink);
 		}
 		catch (Throwable ex) {
 			Exceptions.throwIfFatal(ex);
@@ -270,11 +270,6 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 
 		@Override
-		public FluxSink<T> serialize() {
-			return this;
-		}
-
-		@Override
 		public Object scan(Attr key) {
 			switch (key) {
 				case BUFFERED:
@@ -444,11 +439,6 @@ final class FluxCreate<T> extends Flux<T> {
 				}
 			}
 			return this;
-		}
-
-		@Override
-		public final FluxSink<T> serialize() {
-			return new SerializedSink<>(this);
 		}
 
 		@Override

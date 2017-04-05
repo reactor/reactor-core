@@ -81,7 +81,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 	}
 
 	@Override
-	public long getPrefetch() {
+	public int getPrefetch() {
 		return prefetch;
 	}
 

@@ -60,7 +60,7 @@ final class ParallelReduceSeed<T, R> extends ParallelFlux<R> implements
 	}
 
 	@Override
-	public long getPrefetch() {
+	public int getPrefetch() {
 		return Integer.MAX_VALUE;
 	}
 

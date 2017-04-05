@@ -86,7 +86,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 	}
 
 	@Override
-	public long getPrefetch() {
+	public int getPrefetch() {
 		return bufferSize;
 	}
 

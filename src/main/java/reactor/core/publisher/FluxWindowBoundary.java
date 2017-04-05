@@ -57,7 +57,7 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 	}
 
 	@Override
-	public long getPrefetch() {
+	public int getPrefetch() {
 		return Integer.MAX_VALUE;
 	}
 

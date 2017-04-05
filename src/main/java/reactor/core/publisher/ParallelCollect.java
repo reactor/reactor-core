@@ -59,7 +59,7 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Scannable, 
 	}
 
 	@Override
-	public long getPrefetch() {
+	public int getPrefetch() {
 		return Integer.MAX_VALUE;
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -157,16 +157,6 @@ public abstract class WaitStrategy
      */
     public static WaitStrategy sleeping() {
         return Sleeping.INSTANCE;
-    }
-
-    /**
-     * Throw a signal singleton exception that can be checked against
-     * {@link #isAlert(Throwable)}
-     * @deprecated duplicate to {@link #alert()}
-     */
-    @Deprecated
-    public static void throwAlert() {
-	    alert();
     }
 
     /**

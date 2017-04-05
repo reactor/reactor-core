@@ -1081,39 +1081,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Merge emitted {@link Publisher} sequences from the passed {@link Publisher} array into an interleaved merged
-	 * sequence.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/merge.png" alt="">
-	 * <p>
-	 * @param sources the {@link Publisher} array to iterate on {@link Publisher#subscribe(Subscriber)}
-	 * @param prefetch the inner source request size
-	 * @param delayError should any error be delayed after current merge backlog
-	 * @param <I> The source type of the data sequence
-	 *
-	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
-	 * @deprecated use {@link #merge(int, Publisher[])} or {@link #mergeDelayError(int, Publisher[])}
-	 * instead, will be removed in 3.1.0
-	 */
-	@SafeVarargs
-	@Deprecated
-	//TODO remove from 3.1.0 public API by making package-protected
-	public static <I> Flux<I> merge(int prefetch, boolean delayError, Publisher<? extends I>... sources) {
-		if (sources.length == 0) {
-			return empty();
-		}
-		if (sources.length == 1) {
-			return from(sources[0]);
-		}
-		return onAssembly(new FluxMerge<>(sources,
-				delayError,
-				sources.length,
-				QueueSupplier.get(sources.length),
-				prefetch,
-				QueueSupplier.get(prefetch)));
-	}
-
-	/**
 	 * Merge emitted {@link Publisher} sequences by the passed {@link Publisher} into
 	 * an ordered merged sequence. Unlike concat, the inner publishers are subscribed to
 	 * eagerly. Unlike merge, their emitted values are merged into the final sequence in
@@ -1173,34 +1140,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Merge emitted {@link Publisher} sequences by the passed {@link Publisher} into
-	 * an ordered merged sequence. Unlike concat, the inner publishers are subscribed to
-	 * eagerly. Unlike merge, their emitted values are merged into the final sequence in
-	 * subscription order.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/mergesequential.png" alt="">
-	 * <p>
-	 * @param sources a {@link Publisher} of {@link Publisher} sequence to merge
-	 * @param delayError should any error be delayed after current merge backlog
-	 * @param prefetch the inner source request size
-	 * @param maxConcurrency the request produced to the main source thus limiting concurrent merge backlog
-	 * @param <T> the merged type
-	 *
-	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
-	 * @deprecated use {@link #mergeSequential(Publisher, int, int)} or {@link #mergeSequentialDelayError(Publisher, int, int)}
-	 * instead, will be removed in 3.1.0.
-	 */
-	@Deprecated
-	//TODO remove from 3.1.0 public API by making package-protected
-	public static <T> Flux<T> mergeSequential(Publisher<? extends Publisher<? extends T>> sources,
-			boolean delayError, int maxConcurrency, int prefetch) {
-		return onAssembly(new FluxMergeSequential<>(sources,
-				identityFunction(),
-				maxConcurrency, prefetch, delayError ? FluxConcatMap.ErrorMode.END :
-				FluxConcatMap.ErrorMode.IMMEDIATE));
-	}
-
-	/**
 	 * Merge a number of {@link Publisher} sequences into an ordered merged sequence.
 	 * Unlike concat, the inner publishers are subscribed to eagerly. Unlike merge, their
 	 * emitted values are merged into the final sequence in subscription order.
@@ -1253,38 +1192,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	@SafeVarargs
 	public static <I> Flux<I> mergeSequentialDelayError(int prefetch, Publisher<? extends I>... sources) {
 		return mergeSequential(prefetch, true, sources);
-	}
-
-	/**
-	 * Merge a number of {@link Publisher} sequences into an ordered merged sequence.
-	 * Unlike concat, the inner publishers are subscribed to eagerly. Unlike merge, their
-	 * emitted values are merged into the final sequence in subscription order.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/mergesequential.png" alt="">
-	 * <p>
-	 * @param delayError should any error be delayed after current merge backlog
-	 * @param prefetch the inner source request size
-	 * @param sources a number of {@link Publisher} sequences to merge
-	 * @param <I> the merged type
-	 *
-	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
-	 * @deprecated use {@link #mergeSequential(int, Publisher[])} or {@link #mergeSequentialDelayError(int, Publisher[])}
-	 * instead, will be removed in 3.1.0
-	 */
-	@SafeVarargs
-	@Deprecated
-	//TODO remove from 3.1.0 public API by making package-protected
-	public static <I> Flux<I> mergeSequential(int prefetch, boolean delayError,
-			Publisher<? extends I>... sources) {
-		if (sources.length == 0) {
-			return empty();
-		}
-		if (sources.length == 1) {
-			return from(sources[0]);
-		}
-		return onAssembly(new FluxMergeSequential<>(new FluxArray<>(sources),
-				identityFunction(), sources.length, prefetch,
-				delayError ? FluxConcatMap.ErrorMode.END : FluxConcatMap.ErrorMode.IMMEDIATE));
 	}
 
 	/**
@@ -1342,32 +1249,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	public static <I> Flux<I> mergeSequentialDelayError(Iterable<? extends Publisher<? extends I>> sources,
 			int maxConcurrency, int prefetch) {
 		return mergeSequential(sources, true, maxConcurrency, prefetch);
-	}
-
-	/**
-	 * Merge {@link Publisher} sequences from an {@link Iterable} into an ordered merged
-	 * sequence. Unlike concat, the inner publishers are subscribed to eagerly. Unlike
-	 * merge, their emitted values are merged into the final sequence in subscription order.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/mergesequential.png" alt="">
-	 * <p>
-	 * @param sources an {@link Iterable} of {@link Publisher} sequences to merge
-	 * @param delayError should any error be delayed after current merge backlog
-	 * @param maxConcurrency the request produced to the main source thus limiting concurrent merge backlog
-	 * @param prefetch the inner source request size
-	 * @param <I> the merged type
-	 *
-	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
-	 * @deprecate use {@link #mergeSequential(Iterable, int, int)} or {@link #mergeSequentialDelayError(Iterable, int, int)}
-	 * instead, will be removed in 3.1.0.
-	 */
-	@Deprecated
-	//TODO remove from 3.1.0 public API by making package-protected
-	public static <I> Flux<I> mergeSequential(Iterable<? extends Publisher<? extends I>> sources,
-			boolean delayError, int maxConcurrency, int prefetch) {
-		return onAssembly(new FluxMergeSequential<>(new FluxIterable<>(sources),
-				identityFunction(), maxConcurrency, prefetch,
-				delayError ? FluxConcatMap.ErrorMode.END : FluxConcatMap.ErrorMode.IMMEDIATE));
 	}
 
 	/**
@@ -1641,36 +1522,6 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations
-	 * of the most recent items emitted by each source until any of them completes. Errors will immediately be
-	 * forwarded.
-	 * The {@link Iterable#iterator()} will be called on each {@link Publisher#subscribe(Subscriber)}.
-	 * <p>
-	 * Note that this version is very limited compared to the alternatives where you either provide
-	 * a fixed number of sources or a more meaningful combinator. Here we default to combining into
-	 * {@link Tuples}, which limits us to up to 8 sources ({@link Tuple8}). Additionally, since a
-	 * {@link Tuple2} is returned, the usage will probably be limited to iterating over the Tuple
-	 * (or casting to the correct TupleN, but if you can do that you're better off using the fixed
-	 * size signatures like {@link #zip(Publisher, Publisher, Publisher)}). Consider using
-	 * {@link #zip(Iterable, Function)} instead, with {@link java.util.Arrays#asList(Object[])}
-	 * as a combinator, if you really don't know the number of sources or if it can grow beyond
-	 * 8.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/zipt.png" alt="">
-	 * <p>
-	 * @param sources the {@link Iterable} to iterate on {@link Publisher#subscribe(Subscriber)}
-	 *
-	 * @return a zipped {@link Flux}
-	 * @deprecated prefer using {@link #zip(Iterable, Function)}, will be removed in 3.1.0
-	 * @see #zip(Publisher, Publisher, Publisher)
-	 * @see #zip(Iterable, Function)
-	 */
-	@Deprecated
-	public static Flux<Tuple2> zip(Iterable<? extends Publisher<?>> sources) {
-		return zip(sources, Tuples.fnAny());
-	}
-
-	/**
-	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations
 	 * produced by the passed combinator function of the
 	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
 	 *
@@ -1909,18 +1760,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Blocks until the upstream signals its first value or completes.
-	 *
-	 * @param timeout max duration timeout in millis to wait for.
-	 * @return the first value or null
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final T blockFirstMillis(long timeout) {
-		return blockFirst(Duration.ofMillis(timeout));
-	}
-
-	/**
 	 * Blocks until the upstream completes and return the last emitted value.
 	 *
 	 * @return the last value or null
@@ -1942,18 +1781,6 @@ public abstract class Flux<T> implements Publisher<T> {
 		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>();
 		subscribe(subscriber);
 		return subscriber.blockingGet(d.toMillis(), TimeUnit.MILLISECONDS);
-	}
-
-	/**
-	 * Blocks until the upstream completes and return the last emitted value.
-	 *
-	 * @param timeout max duration timeout in millis to wait for.
-	 * @return the last value or null
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final T blockLastMillis(long timeout) {
-		return blockLast(Duration.ofMillis(timeout));
 	}
 
 	/**
@@ -2262,43 +2089,6 @@ public abstract class Flux<T> implements Publisher<T> {
 		}
 		return buffer(interval(Duration.ZERO, timeshift, timer), aLong -> Mono
 				.delay(timespan, timer));
-	}
-
-	/**
-	 * Collect incoming values into a {@link List} that will be pushed into the returned {@link Flux} every timespan OR
-	 * maxSize items.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/buffertimespansize.png"
-	 * alt="">
-	 *
-	 * @param maxSize the max collected size
-	 * @param timespan the timeout to use to release a buffered list
-	 *
-	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
-	 * @deprecated use {@link #bufferTimeout(int, Duration)} instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<List<T>> buffer(int maxSize, Duration timespan) {
-		return bufferTimeout(maxSize, timespan);
-	}
-
-	/**
-	 * Collect incoming values into a {@link Collection} that will be pushed into the returned {@link Flux} every timespan OR
-	 * maxSize items.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/buffertimespansize.png"
-	 * alt="">
-	 *
-	 * @param maxSize the max collected size
-	 * @param timespan the timeout to use to release a buffered list
-	 * @param bufferSupplier the collection to use for each data segment
-	 * @param <C> the supplied {@link Collection} type
-	 * @return a microbatched {@link Flux} of {@link Collection} delimited by given size or a given period timeout
-	 * @deprecated use {@link #bufferTimeout(int, Duration, Supplier)} instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final <C extends Collection<? super T>> Flux<C> buffer(int maxSize, Duration timespan, Supplier<C> bufferSupplier) {
-		return bufferTimeout(maxSize, timespan, bufferSupplier);
 	}
 
 	/**
@@ -3040,23 +2830,6 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Delay each of this {@link Flux} elements ({@link Subscriber#onNext} signals)
-	 * by a given duration.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/delayonnext.png" alt="">
-	 *
-	 * @param delay duration to delay each {@link Subscriber#onNext} signal
-	 * @return a delayed {@link Flux}
-	 * @deprecated will be replaced by {@link #delayElements(Duration)} in 3.1.0
-	 * @see #delaySubscription(Duration) delaySubscription to introduce a delay at the beginning of the sequence only
-	 */
-	@Deprecated
-	public final Flux<T> delay(Duration delay) {
-		return delayElements(delay);
-	}
-
-	/**
-	 * Delay each of this {@link Flux} elements ({@link Subscriber#onNext} signals)
 	 * by a given {@link Duration}.
 	 *
 	 * <p>
@@ -3658,40 +3431,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the emissions from those by
-	 * merging them into a single {@link Flux}, so that they may interleave. The concurrency argument allows to
-	 * control how many merged {@link Publisher} can happen in parallel. The prefetch argument allows to give an
-	 * arbitrary prefetch size to the merged {@link Publisher}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/flatmapc.png" alt="">
-	 *
-	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
-	 * @param delayError should any error be delayed after current merge backlog
-	 * @param concurrency the maximum in-flight elements from this {@link Flux} sequence
-	 * @param prefetch the maximum in-flight elements from each inner {@link Publisher} sequence
-	 * @param <V> the merged output sequence type
-	 *
-	 * @return a merged {@link Flux}
-	 * @deprecated use {@link #flatMap(Function, int, int)} or {@link #flatMapDelayError(Function, int, int)}
-	 * instead, will be removed in 3.1.0.
-	 */
-	@Deprecated
-	//TODO remove from 3.1.0 public API by making package-protected
-	public final <V> Flux<V> flatMap(Function<? super T, ? extends Publisher<? extends
-			V>> mapper, boolean delayError, int concurrency, int prefetch) {
-		return onAssembly(new FluxFlatMap<>(
-				this,
-				mapper,
-				delayError,
-				concurrency,
-				QueueSupplier.get(concurrency),
-				prefetch,
-				QueueSupplier.get(prefetch)
-		));
-	}
-
-	/**
 	 * Transform the signals emitted by this {@link Flux} into Publishers, then flatten the emissions from those by
 	 * merging them into a single {@link Flux}, so that they may interleave.
 	 * OnError will be transformed into completion signal after its mapping callback has been applied.
@@ -3854,43 +3593,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the
-	 * emissions from those by merging them into a single {@link Flux}, in order.
-	 * Unlike concatMap, transformed inner Publishers are subscribed to eagerly. Unlike
-	 * flatMap, their emitted elements are merged respecting the order of the original
-	 * sequence. The concurrency argument allows to control how many merged {@link Publisher}
-	 * can happen in parallel. The prefetch argument allows to give an arbitrary prefetch
-	 * size to the merged {@link Publisher}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/flatmapsequential.png" alt="">
-	 *
-	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
-	 * @param delayError should any error be delayed after current merge backlog
-	 * @param maxConcurrency the maximum in-flight elements from this {@link Flux} sequence
-	 * @param prefetch the maximum in-flight elements from each inner {@link Publisher} sequence
-	 * @param <R> the merged output sequence type
-	 *
-	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
-	 * @deprecated use {@link #flatMapSequential(Function, int, int)} or {@link #flatMapSequentialDelayError(Function, int, int)}
-	 * instead, will be removed in 3.1.0.
-	 */
-	@Deprecated
-	//TODO remove from 3.1.0 public API by making package-protected
-	public final <R> Flux<R> flatMapSequential(Function<? super T, ? extends
-			Publisher<? extends R>> mapper, boolean delayError, int maxConcurrency,
-			int prefetch) {
-		return onAssembly(new FluxMergeSequential<>(this, mapper, maxConcurrency,
-				prefetch, delayError ? FluxConcatMap.ErrorMode.END :
-				FluxConcatMap.ErrorMode.IMMEDIATE));
-	}
-
-	/**
 	 * The prefetch configuration of the {@link Flux}
-	 * @return the prefetch configuration of the {@link Flux}, -1L if unspecified
+	 * @return the prefetch configuration of the {@link Flux}, -1 if unspecified
 	 */
-	public long getPrefetch() {
-		return -1L;
+	public int getPrefetch() {
+		return -1;
 	}
 
 	/**
@@ -5717,27 +5424,6 @@ public abstract class Flux<T> implements Publisher<T> {
 		return subscribe(null, null, null);
 	}
 
-
-	/**
-	 * Start the chain and request {@code prefetch} demand
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/unbounded.png" alt="">
-	 * <p>
-	 *
-	 * For a version that gives you more control over backpressure and the request, see
-	 * {@link #subscribe(Subscriber)} with a {@link BaseSubscriber}.
-	 *
-	 * @param prefetch an arbitrary value
-	 *
-	 * @return a {@link Disposable} task to execute to dispose and cancel the underlying {@link Subscription}
-	 * @deprecated use {@link #limitRate(int)}
-	 */
-	@Deprecated
-	public final Disposable subscribe(int prefetch) {
-		return subscribe(null, null, null, prefetch);
-	}
-
 	/**
 	 * Subscribe a {@link Consumer} to this {@link Flux} that will consume all the
 	 * sequence. It will request an unbounded demand.
@@ -5756,31 +5442,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	public final Disposable subscribe(Consumer<? super T> consumer) {
 		Objects.requireNonNull(consumer, "consumer");
 		return subscribe(consumer, null, null);
-	}
-
-	/**
-	 * Subscribe a {@link Consumer} to this {@link Flux} that will consume all the
-	 * sequence.
-	 * <p>If prefetch is {@code != Long.MAX_VALUE}, the {@link Subscriber} will use it as
-	 * a prefetch strategy: first request N, then when 25% of N is left to be received on
-	 * onNext, request N x 0.75.
-	 * <p>For a passive version that observe and forward incoming data see {@link
-	 * #doOnNext(java.util.function.Consumer)}.
-	 * <p>For a version that gives you more control over backpressure and the request, see
-	 * {@link #subscribe(Subscriber)} with a {@link BaseSubscriber}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/subscribe.png"
-	 * alt="">
-	 *
-	 * @param consumer the consumer to invoke on each value
-	 * @param prefetch the the prefetch amount, positive
-	 *
-	 * @return a new {@link Disposable} to dispose the {@link Subscription}
-	 */
-	public final Disposable subscribe(Consumer<? super T> consumer, int prefetch) {
-		Objects.requireNonNull(consumer, "consumer");
-		return subscribe(consumer, null, null, prefetch);
 	}
 
 	/**
@@ -5858,92 +5519,6 @@ public abstract class Flux<T> implements Publisher<T> {
 
 		subscribe(consumerAction);
 		return consumerAction;
-	}
-
-	/**
-	 * Subscribe {@link Consumer} to this {@link Flux} that will consume all the sequence.
-	 * <p>If prefetch is {@code != Long.MAX_VALUE}, the {@link Subscriber} will use it as
-	 * a prefetch strategy: first request N, then when 25% of N is left to be received on
-	 * onNext, request N x 0.75.
-	 *
-	 * <p> For a passive version that observe and forward
-	 * incoming data see {@link #doOnNext(java.util.function.Consumer)}, {@link
-	 * #doOnError(java.util.function.Consumer)}, {@link #doOnComplete(Runnable)} and
-	 * {@link #doOnSubscribe(Consumer)}.
-	 * <p>For a version that gives you more control over backpressure and the request, see
-	 * {@link #subscribe(Subscriber)} with a {@link BaseSubscriber}.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/subscribecomplete.png"
-	 * alt="">
-	 *
-	 * @param consumer the consumer to invoke on each value
-	 * @param errorConsumer the consumer to invoke on error signal
-	 * @param completeConsumer the consumer to invoke on complete signal
-	 * @param prefetch the demand to produce to this {@link Flux}
-	 *
-	 * @return a new {@link Disposable} to dispose the {@link Subscription}
-	 * @deprecated prefer using {@code limitRate(prefetch).subscribe(...)} to
-	 * {@code subscribe(..., prefetch)}
-	 * @see #limitRate(int)
-	 * @see #subscribe(Consumer, Consumer, Runnable)
-	 */
-	@Deprecated
-	public final Disposable subscribe(Consumer<? super T> consumer,
-			Consumer<? super Throwable> errorConsumer,
-			Runnable completeConsumer,
-			int prefetch) {
-		return subscribe(consumer, errorConsumer, completeConsumer, null, prefetch);
-	}
-
-	/**
-	 * Subscribe {@link Consumer} to this {@link Flux} that will consume all the sequence.
-	 * <p>If prefetch is {@code != Long.MAX_VALUE}, the {@link Subscriber} will use it as
-	 * a prefetch strategy: first request N, then when 25% of N is left to be received on
-	 * onNext, request N x 0.75.
-	 *
-	 * <p> For a passive version that observe and forward
-	 * incoming data see {@link #doOnNext(java.util.function.Consumer)}, {@link
-	 * #doOnError(java.util.function.Consumer)} and {@link #doOnComplete(Runnable)}.
-	 * <p>For a version that gives you more control over backpressure and the request, see
-	 * {@link #subscribe(Subscriber)} with a {@link BaseSubscriber}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/subscribecomplete.png"
-	 * alt="">
-	 *
-	 * @param consumer the consumer to invoke on each value
-	 * @param errorConsumer the consumer to invoke on error signal
-	 * @param completeConsumer the consumer to invoke on complete signal
-	 * @param subscriptionConsumer the consumer to invoke on subscribe signal, to be used
-	 * for the initial {@link Subscription#request(long) request}, or null for max request
-	 * @param prefetch the demand to produce to this {@link Flux} (deprecated)
-	 *
-	 * @return a new {@link Disposable} to dispose the {@link Subscription}
-	 * @deprecated prefer using {@code limitRate(prefetch).subscribe(...)} to
-	 * {@code subscribe(..., prefetch)}
-	 * @see #limitRate(int)
-	 * @see #subscribe(Consumer, Consumer, Runnable, Consumer)
-	 */
-	@Deprecated
-	public final Disposable subscribe(Consumer<? super T> consumer,
-			Consumer<? super Throwable> errorConsumer,
-			Runnable completeConsumer,
-			Consumer<? super Subscription> subscriptionConsumer,
-			int prefetch) {
-
-		int c = Math.min(Integer.MAX_VALUE, prefetch);
-
-		LambdaSubscriber<T> consumerAction =
-				new LambdaSubscriber<>(consumer, errorConsumer, completeConsumer, subscriptionConsumer);
-
-		Flux<T> tail;
-		if (c == Integer.MAX_VALUE) {
-			tail = this;
-		}
-		else {
-			tail = limitRate(c);
-		}
-		return tail.subscribeWith(consumerAction);
 	}
 
 	/**
@@ -6230,25 +5805,6 @@ public abstract class Flux<T> implements Publisher<T> {
 		@SuppressWarnings("unchecked")
 		Mono<Void> then = (Mono<Void>) new MonoIgnoreEmpty<>(this);
 		return Mono.onAssembly(then);
-	}
-
-	/**
-	 * Return a {@code Mono<Void>} that waits for this {@link Flux} to complete then
-	 * for a supplied {@link Publisher Publisher&lt;Void&gt;} to also complete. The
-	 * second completion signal is replayed, or any error signal that occurs instead.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/ignorethen.png"
-	 * alt="">
-	 *
-	 * @param other a {@link Publisher} to wait for after this Flux's termination
-	 * @return a new {@link Mono} completing when both publishers have completed in
-	 * sequence
-	 * @deprecated use {@link #thenEmpty(Publisher)} instead, this alias will be
-	 * removed in 3.1.0
-	 */
-	@Deprecated
-	public final Mono<Void> then(Publisher<Void> other) {
-		return thenEmpty(other);
 	}
 
 	/**
@@ -6811,25 +6367,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timespan the timeout to use to onComplete a given window if size is not counted yet
 	 *
 	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
-	 * @deprecated use {@link #windowTimeout(int, Duration)} instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<Flux<T>> window(int maxSize, Duration timespan) {
-		return windowTimeout(maxSize, timespan);
-	}
-
-	/**
-	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code maxSize} number
-	 * of items, starting from the first item. {@link Flux} windows will onComplete after a given
-	 * timespan occurs and the number of items has not be counted.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsizetimeout.png" alt="">
-	 *
-	 * @param maxSize the maximum {@link Flux} window items to count before onComplete
-	 * @param timespan the timeout to use to onComplete a given window if size is not counted yet
-	 *
-	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
 	 */
 	public final Flux<Flux<T>> windowTimeout(int maxSize, Duration timespan) {
 		return windowTimeout(maxSize, timespan , Schedulers.parallel());
@@ -7160,6 +6697,28 @@ public abstract class Flux<T> implements Publisher<T> {
 		return getClass().getSimpleName();
 	}
 
+
+	final <V> Flux<V> flatMap(Function<? super T, ? extends Publisher<? extends
+			V>> mapper, boolean delayError, int concurrency, int prefetch) {
+		return onAssembly(new FluxFlatMap<>(
+				this,
+				mapper,
+				delayError,
+				concurrency,
+				QueueSupplier.get(concurrency),
+				prefetch,
+				QueueSupplier.get(prefetch)
+		));
+	}
+
+	final <R> Flux<R> flatMapSequential(Function<? super T, ? extends
+			Publisher<? extends R>> mapper, boolean delayError, int maxConcurrency,
+			int prefetch) {
+		return onAssembly(new FluxMergeSequential<>(this, mapper, maxConcurrency,
+				prefetch, delayError ? FluxConcatMap.ErrorMode.END :
+				FluxConcatMap.ErrorMode.IMMEDIATE));
+	}
+
 	@SuppressWarnings("unchecked")
 	static <T> Flux<T> doOnSignal(Flux<T> source,
 			Consumer<? super Subscription> onSubscribe,
@@ -7235,6 +6794,52 @@ public abstract class Flux<T> implements Publisher<T> {
 		return Mono.onAssembly(new MonoCallable<>(supplier));
 	}
 
+	@SafeVarargs
+	static <I> Flux<I> merge(int prefetch, boolean delayError, Publisher<? extends I>... sources) {
+		if (sources.length == 0) {
+			return empty();
+		}
+		if (sources.length == 1) {
+			return from(sources[0]);
+		}
+		return onAssembly(new FluxMerge<>(sources,
+				delayError,
+				sources.length,
+				QueueSupplier.get(sources.length),
+				prefetch,
+				QueueSupplier.get(prefetch)));
+	}
+
+	@SafeVarargs
+	static <I> Flux<I> mergeSequential(int prefetch, boolean delayError,
+			Publisher<? extends I>... sources) {
+		if (sources.length == 0) {
+			return empty();
+		}
+		if (sources.length == 1) {
+			return from(sources[0]);
+		}
+		return onAssembly(new FluxMergeSequential<>(new FluxArray<>(sources),
+				identityFunction(), sources.length, prefetch,
+				delayError ? FluxConcatMap.ErrorMode.END : FluxConcatMap.ErrorMode.IMMEDIATE));
+	}
+
+	static <T> Flux<T> mergeSequential(Publisher<? extends Publisher<? extends T>> sources,
+			boolean delayError, int maxConcurrency, int prefetch) {
+		return onAssembly(new FluxMergeSequential<>(sources,
+				identityFunction(),
+				maxConcurrency, prefetch, delayError ? FluxConcatMap.ErrorMode.END :
+				FluxConcatMap.ErrorMode.IMMEDIATE));
+	}
+
+	static <I> Flux<I> mergeSequential(Iterable<? extends Publisher<? extends I>> sources,
+			boolean delayError, int maxConcurrency, int prefetch) {
+		return onAssembly(new FluxMergeSequential<>(new FluxIterable<>(sources),
+				identityFunction(), maxConcurrency, prefetch,
+				delayError ? FluxConcatMap.ErrorMode.END : FluxConcatMap.ErrorMode.IMMEDIATE));
+	}
+
+
 	static BooleanSupplier countingBooleanSupplier(BooleanSupplier predicate, long max) {
 		if (max <= 0) {
 			return predicate;
@@ -7298,7 +6903,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	@SuppressWarnings("rawtypes")
 	static final Function        HASHCODE_EXTRACTOR      = Object::hashCode;
 	@SuppressWarnings("rawtypes")
-    static final Function        IDENTITY_FUNCTION       = Function.identity();
+	static final Function        IDENTITY_FUNCTION       = Function.identity();
 
 	static final Disposable CANCELLED = () -> {
 	};

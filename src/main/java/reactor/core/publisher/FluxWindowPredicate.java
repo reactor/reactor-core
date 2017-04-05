@@ -94,7 +94,7 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>>
 	}
 
 	@Override
-	public long getPrefetch() {
+	public int getPrefetch() {
 		return prefetch;
 	}
 

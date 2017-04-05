@@ -813,10 +813,11 @@ public class FluxTests extends AbstractReactorTest {
 		                           );
 
 		/*Disposable action = */s
+							.limitRate(1)
 		                  .subscribe(integer -> {
 			                  latch.countDown();
 			                  System.out.println(integer);
-		                  }, 1);
+		                  });
 
 
 		afterSubscribe.await(5, TimeUnit.SECONDS);
@@ -1139,7 +1140,8 @@ public class FluxTests extends AbstractReactorTest {
 		       .log("testOn")
 		       .subscribeOn(ioGroup)
 		       .publishOn(asyncGroup)
-		       .subscribe(t -> latch.countDown(), 1);
+		        .limitRate(1)
+		       .subscribe(t -> latch.countDown());
 
 		assertThat("Not totally dispatched", latch.await(30, TimeUnit.SECONDS));
 	}
@@ -1206,7 +1208,7 @@ public class FluxTests extends AbstractReactorTest {
 	}
 
 	/**
-	 * This test case demonstrates a silent failure of {@link Flux#intervalMillis(long)}
+	 * This test case demonstrates a silent failure of {@link Flux#interval(Duration)}
 	 * when a resolution is specified that
 	 * is less than the backing {@link Timer} class.
 	 *

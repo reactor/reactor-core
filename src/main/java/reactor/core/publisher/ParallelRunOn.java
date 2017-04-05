@@ -86,7 +86,7 @@ final class ParallelRunOn<T> extends ParallelFlux<T> implements Scannable, Fusea
 	}
 
 	@Override
-	public long getPrefetch() {
+	public int getPrefetch() {
 		return prefetch;
 	}
 

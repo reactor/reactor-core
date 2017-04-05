@@ -1291,28 +1291,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Block until a next signal is received, will return null if onComplete, T if onNext, throw a
-	 * {@literal Exceptions.DownstreamException} if checked error or origin RuntimeException if unchecked.
-	 * If the default timeout {@literal 30 seconds} has elapsed, a {@link RuntimeException}  will be thrown.
-	 *
-	 * Note that each block() will subscribe a new single (MonoSink) subscriber, in other words, the result might
-	 * miss signal from hot publishers.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/block.png" alt="">
-	 * <p>
-	 *
-	 * @param timeout maximum time period to wait for in milliseconds before raising a {@link RuntimeException}
-	 *
-	 * @return T the result
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final T blockMillis(long timeout) {
-		return block(Duration.ofMillis(timeout));
-	}
-
-	/**
 	 * Cast the current {@link Mono} produced type into a target produced type.
 	 *
 	 * <p>

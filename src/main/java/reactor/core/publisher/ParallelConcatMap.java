@@ -67,7 +67,7 @@ final class ParallelConcatMap<T, R> extends ParallelFlux<R> implements Scannable
 	}
 
 	@Override
-	public long getPrefetch() {
+	public int getPrefetch() {
 		return prefetch;
 	}
 
