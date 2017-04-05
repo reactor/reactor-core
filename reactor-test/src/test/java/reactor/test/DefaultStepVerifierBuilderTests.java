@@ -66,7 +66,7 @@ public class DefaultStepVerifierBuilderTests {
 			VirtualTimeScheduler.getOrSet(vts);
 			assertThat(VirtualTimeScheduler.get()).isSameAs(vts);
 
-			Flux<String> flux = Flux.just("foo").delay(Duration.ofSeconds(4));
+			Flux<String> flux = Flux.just("foo").delayElements(Duration.ofSeconds(4));
 
 			DefaultVerifySubscriber<String> s =
 					new DefaultStepVerifierBuilder<String>(StepVerifierOptions.create()
