@@ -2104,7 +2104,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
 	 */
 	public final Flux<List<T>> bufferTimeout(int maxSize, Duration timespan) {
-		return bufferTimeout(maxSize, timespan, Schedulers.parallel());
+		return bufferTimeout(maxSize, timespan, listSupplier());
 	}
 
 	/**
