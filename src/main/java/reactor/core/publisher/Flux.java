@@ -6282,7 +6282,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code timeshift}
 	 * period, starting from the first item.
-	 * Each {@link Flux} bucket will onComplete after {@code timespan} period has elpased.
+	 * Each {@link Flux} bucket will onComplete after {@code timespan} period has elapsed.
 	 *
 	 * <p>
 	 * When timeshift > timespan : dropping windows
