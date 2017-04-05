@@ -184,7 +184,7 @@ public class MonoProcessorTest {
 
 		mp.onNext(1);
 
-		MonoProcessor<Integer> mp2 = mp.then(s -> Mono.just(s * 2))
+		MonoProcessor<Integer> mp2 = mp.thenMap(s -> Mono.just(s * 2))
 		                               .subscribe();
 
 		assertThat(mp2.isTerminated()).isTrue();

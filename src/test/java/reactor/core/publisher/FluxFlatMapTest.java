@@ -835,7 +835,7 @@ public class FluxFlatMapTest {
 	@Test
 	public void suppressFusionIfExpected() {
 		StepVerifier.create(Mono.just(1)
-		                        .then(d -> Mono.just(d)
+		                        .thenMap(d -> Mono.just(d)
 		                                       .hide()))
 		            .consumeSubscriptionWith(s -> {
 			            assertThat(s).isInstanceOf(FluxHide.SuppressFuseableSubscriber.class);
@@ -861,7 +861,7 @@ public class FluxFlatMapTest {
 	@Test
 	public void suppressFusionIfExpectedError() {
 		StepVerifier.create(Mono.just(1)
-		                        .then(d -> Mono.error(new Exception("test"))
+		                        .thenMap(d -> Mono.error(new Exception("test"))
 		                                       .hide()))
 		            .consumeSubscriptionWith(s -> {
 			            assertThat(s).isInstanceOf(FluxHide.SuppressFuseableSubscriber.class);

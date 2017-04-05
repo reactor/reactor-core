@@ -158,7 +158,7 @@ public class MonoTests {
 		                             .log("time1")
 		                             .map(d -> "Spring wins")
 		                             .or(Mono.delay(Duration.ofMillis(2000)).log("time2").map(d -> "Spring Reactive"))
-		                             .then(t -> Mono.just(t+ " world"))
+		                             .thenMap(t -> Mono.just(t+ " world"))
 		                             .elapsed()
 		                             .block();
 		assertThat("Alternate mono not seen", h.getT2(), is("Spring Reactive world"));

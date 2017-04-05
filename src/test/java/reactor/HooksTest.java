@@ -280,7 +280,7 @@ public class HooksTest {
 		Hooks.onOperator(hooks -> hooks.operatorStacktrace());
 		try {
 			Mono.just(1)
-			    .then(d ->
+			    .thenMap(d ->
 				    Mono.error(new RuntimeException())
 			    )
 			    .filter(d -> true)
@@ -293,7 +293,7 @@ public class HooksTest {
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
 					("HooksTest.java:"));
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tMono" +
-					".then" +
+					".thenMap" +
 					"(HooksTest.java:"));
 			return;
 		}

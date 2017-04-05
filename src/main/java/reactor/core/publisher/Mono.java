@@ -1195,7 +1195,7 @@ public abstract class Mono<T> implements Publisher<T> {
 			BiFunction<T, T2, O> combinator) {
 		Objects.requireNonNull(rightGenerator, "rightGenerator function is mandatory to get the right-hand side Mono");
 		Objects.requireNonNull(combinator, "combinator function is mandatory to combine results from both Monos");
-		return then(t -> rightGenerator.apply(t).map(t2 -> combinator.apply(t, t2)));
+		return thenMap(t -> rightGenerator.apply(t).map(t2 -> combinator.apply(t, t2)));
 	}
 
 	/**
@@ -2738,9 +2738,25 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param <R> the result type bound
 	 *
 	 * @return a new {@link Mono} containing the merged values
+	 * @deprecated replace with equivalent {@link #thenMap(Function)}. Will be removed in 3.1.0.RELEASE.
 	 */
-	public final <R> Mono<R> then(Function<? super T, ? extends Mono<? extends R>>
-			transformer) {
+	@Deprecated
+	public final <R> Mono<R> then(Function<? super T, ? extends Mono<? extends R>> transformer) {
+		return thenMap(transformer);
+	}
+
+	/**
+	 * Convert the value of {@link Mono} to another {@link Mono} possibly with another value type.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/then.png" alt="">
+	 * <p>
+	 * @param transformer the function to dynamically bind a new {@link Mono}
+	 * @param <R> the result type bound
+	 *
+	 * @return a new {@link Mono} containing the merged values
+	 */
+	public final <R> Mono<R> thenMap(Function<? super T, ? extends Mono<? extends R>> transformer) {
 		return onAssembly(new MonoThenMap<>(this, transformer));
 	}
 
