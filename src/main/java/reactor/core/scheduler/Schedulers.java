@@ -324,59 +324,6 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * Create a new {@link Scheduler} backed by a single threaded {@link
-	 * java.util.concurrent.ScheduledExecutorService}, making it guaranteed to be capable
-	 * of scheduling tasks in the future.
-	 *
-	 * @param name timer thread prefix
-	 *
-	 * @return a new time-capable {@link Scheduler}
-	 * @deprecated in 3.0.6 and from 3.1 onwards, all Scheduler support time.
-	 * {@link #newSingle(String)} is a direct equivalent if required.
-	 */
-	@Deprecated
-	public static TimedScheduler newTimer(String name) {
-		return newTimer(name, true);
-	}
-
-	/**
-	 * Create a new {@link Scheduler} backed by a single threaded {@link
-	 * java.util.concurrent.ScheduledExecutorService}, making it guaranteed to be capable
-	 * of scheduling tasks in the future.
-	 *
-	 * @param name Component and thread name prefix
-	 * @param daemon false if the {@link Scheduler} requires an explicit {@link
-	 * Scheduler#dispose()} to exit the VM.
-	 *
-	 * @return a new time-capable {@link Scheduler}
-	 * @deprecated in 3.0.6 and from 3.1 onwards, all Scheduler support time.
-	 * {@link #newSingle(String, boolean)} is a direct equivalent if required.
-	 */
-	@Deprecated
-	public static TimedScheduler newTimer(String name, boolean daemon) {
-		return newTimer(new SchedulerThreadFactory(name,
-				daemon,
-				SingleScheduler.TIMER_COUNTER));
-	}
-
-	/**
-	 * Create a new {@link Scheduler} backed by a single threaded {@link
-	 * java.util.concurrent.ScheduledExecutorService}, making it guaranteed to be capable
-	 * of scheduling tasks in the future.
-	 *
-	 * @param threadFactory a {@link ThreadFactory} to use for the unique thread of the
-	 * {@link Scheduler}
-	 *
-	 * @return a new time-capable {@link Scheduler}
-	 * @deprecated in 3.0.6 and from 3.1 onwards, all Scheduler support time.
-	 * {@link #newSingle(ThreadFactory)} is a direct equivalent if required.
-	 */
-	@Deprecated
-	public static TimedScheduler newTimer(ThreadFactory threadFactory) {
-		return factory.newTimer(threadFactory);
-	}
-
-	/**
 	 * Define a hook that is executed when a {@link Scheduler} has
 	 * {@link #handleError(Throwable) handled an error}. Note that it is executed after
 	 * the error has been passed to the thread uncaughtErrorHandler, which is not the
@@ -417,7 +364,7 @@ public abstract class Schedulers {
 
 	/**
 	 * Override {@link Schedulers} finite signatures of {@link #newParallel}, {@link
-	 * #newSingle}, {@link #newTimer} and {@link #newElastic} factory using the matching
+	 * #newSingle} and {@link #newElastic} factory using the matching
 	 * method signature in the target class. A finite signature corresponds to those
 	 * including a {@link ThreadFactory} argument and should be instance methods.
 	 * <p>
@@ -441,12 +388,10 @@ public abstract class Schedulers {
 		CachedScheduler oldElastic = CACHED_ELASTIC.getAndSet(null);
 		CachedScheduler oldParallel = CACHED_PARALLEL.getAndSet(null);
 		CachedScheduler oldSingle = CACHED_SINGLE.getAndSet(null);
-		TimedScheduler oldTimer = CACHED_TIMER.getAndSet(null);
 
 		if (oldElastic != null) oldElastic._dispose();
 		if (oldParallel != null) oldParallel._dispose();
 		if (oldSingle != null) oldSingle._dispose();
-		if (oldTimer != null) oldTimer.dispose();
 	}
 
 	/**
@@ -474,29 +419,6 @@ public abstract class Schedulers {
 	 */
 	public static Scheduler single(Scheduler original) {
 		return new SingleWorkerScheduler(original);
-	}
-
-	/**
-	 * Create or reuse a time-capable {@link Scheduler}.
-	 *
-	 * @return a cached time-capable {@link Scheduler}
-	 * @deprecated in 3.0.6 and from 3.1 onwards, all Scheduler support time.
-	 * {@link #single} is a direct equivalent if required.
-	 */
-	@Deprecated
-	public static TimedScheduler timer() {
-		TimedScheduler s = CACHED_TIMER.get();
-		if (s != null) {
-			return s;
-		}
-		s = TIMER_SUPPLIER.get();
-		if (CACHED_TIMER.compareAndSet(null, s)) {
-			return s;
-		}
-		//the reference was updated in the meantime with a cached scheduler
-		//fallback to it and dispose the extraneous one
-		s.dispose();
-		return CACHED_TIMER.get();
 	}
 
 	/**
@@ -570,17 +492,6 @@ public abstract class Schedulers {
 		default Scheduler newSingle(ThreadFactory threadFactory) {
 			return new SingleScheduler(threadFactory);
 		}
-
-		/**
-		 * Create a new time-capable {@link Scheduler} backed by a dedicated resource.
-		 *
-		 * @param threadFactory a {@link ThreadFactory} to use for the eventual thread
-		 *
-		 * @return a new time-capable {@link Scheduler}
-		 */
-		default TimedScheduler newTimer(ThreadFactory threadFactory) {
-			return new SingleScheduler(threadFactory);
-		}
 	}
 
 	// Internals
@@ -593,7 +504,6 @@ public abstract class Schedulers {
 	static AtomicReference<CachedScheduler> CACHED_ELASTIC  = new AtomicReference<>();
 	static AtomicReference<CachedScheduler> CACHED_PARALLEL = new AtomicReference<>();
 	static AtomicReference<CachedScheduler> CACHED_SINGLE   = new AtomicReference<>();
-	static AtomicReference<TimedScheduler> CACHED_TIMER    = new AtomicReference<>();
 
 	static final Supplier<Scheduler> ELASTIC_SUPPLIER =
 			() -> newElastic(ELASTIC, ElasticScheduler.DEFAULT_TTL_SECONDS, true);
@@ -604,8 +514,6 @@ public abstract class Schedulers {
 			true);
 
 	static final Supplier<Scheduler> SINGLE_SUPPLIER = () -> newSingle(SINGLE, true);
-
-	static final Supplier<TimedScheduler> TIMER_SUPPLIER = () -> newTimer(TIMER);
 
 	static final Factory DEFAULT = new Factory() {
 	};
@@ -734,11 +642,6 @@ public abstract class Schedulers {
 		}
 
 		@Override
-		public void shutdown() {
-			dispose();
-		}
-
-		@Override
 		public void dispose() {
 		}
 
@@ -763,14 +666,12 @@ public abstract class Schedulers {
 		}
 	}
 
-	//TODO Should not be public , removed from public scope in 3.1
-	public static ExecutorService decorateExecutorService(String schedulerType,
+	static ExecutorService decorateExecutorService(String schedulerType,
 			Supplier<? extends ExecutorService> actual) {
 		return factory.decorateExecutorService(schedulerType, actual);
 	}
 
-	//TODO Should not be public , removed from public scope in 3.1
-	public static ScheduledExecutorService decorateScheduledExecutorService(String schedulerType,
+	static ScheduledExecutorService decorateScheduledExecutorService(String schedulerType,
 			Supplier<? extends ScheduledExecutorService> actual) {
 		return factory.decorateScheduledExecutorService(schedulerType, actual);
 	}

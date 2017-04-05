@@ -1289,7 +1289,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 				}
 
 				@Override
-				public void shutdown() {
+				public void dispose() {
 
 				}
 

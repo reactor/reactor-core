@@ -145,7 +145,7 @@ public class MonoDelayElementTest {
 
 	@Test
 	public void onNextOnDisposedSchedulerThrows() {
-		Scheduler scheduler = Schedulers.newTimer("onNextOnDisposedSchedulerThrows");
+		Scheduler scheduler = Schedulers.newSingle("onNextOnDisposedSchedulerThrows");
 		scheduler.dispose();
 		Mono<String> source = Mono.just("foo").hide();
 

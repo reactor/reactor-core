@@ -30,18 +30,12 @@ public class TimedSchedulerTest extends AbstractSchedulerTest {
 
 	@Override
 	protected Scheduler scheduler() {
-		return Schedulers.newTimer("test-timer");
-	}
-
-	@Test
-	public void supportedStart() throws Exception {
-		Scheduler scheduler = Schedulers.timer();
-		scheduler.start();
+		return Schedulers.newSingle("test-timer");
 	}
 
 	@Test
 	public void independentWorkers() throws InterruptedException {
-		Scheduler timer = Schedulers.newTimer("test-timer");
+		Scheduler timer = Schedulers.newSingle("test-timer");
         
         try {
             Worker w1 = timer.createWorker();
@@ -72,7 +66,7 @@ public class TimedSchedulerTest extends AbstractSchedulerTest {
 
     @Test
     public void massCancel() throws InterruptedException {
-        Scheduler timer = Schedulers.newTimer("test-timer");
+        Scheduler timer = Schedulers.newSingle("test-timer");
         
         try {
             Worker w1 = timer.createWorker();
@@ -98,7 +92,7 @@ public class TimedSchedulerTest extends AbstractSchedulerTest {
             Assert.assertEquals(0, counter.get());
         }
         finally {
-	        timer.shutdown();
+	        timer.dispose();
         }
     }
 

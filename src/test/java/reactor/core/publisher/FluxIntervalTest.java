@@ -35,7 +35,7 @@ public class FluxIntervalTest {
 
 	@Before
 	public void before() {
-		exec = Schedulers.newTimer("interval-test");
+		exec = Schedulers.newSingle("interval-test");
 	}
 
 	@After

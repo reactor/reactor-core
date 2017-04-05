@@ -37,11 +37,6 @@ final class SingleWorkerScheduler implements Scheduler, Executor {
     }
 
     @Override
-    public void shutdown() {
-        dispose();
-    }
-
-    @Override
     public void dispose() {
         main.dispose();
     }

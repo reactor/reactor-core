@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
  */
 
 /**
- * {@link reactor.core.scheduler.Scheduler} and  {@link reactor.core.scheduler.TimedScheduler} contract and static
- * factory methods in {@link reactor.core.scheduler.Schedulers}.
+ * {@link reactor.core.scheduler.Scheduler} contract and static
+ * registry and factory methods in {@link reactor.core.scheduler.Schedulers}.
  *
  * @author Stephane Maldini
  */

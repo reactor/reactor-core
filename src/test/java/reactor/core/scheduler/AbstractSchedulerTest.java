@@ -100,7 +100,7 @@ public abstract class AbstractSchedulerTest {
 			}
 
 
-			s.shutdown();
+			s.dispose();
 			s.dispose();//noop
 
 			if(s == ImmediateScheduler.instance()){
@@ -130,7 +130,7 @@ public abstract class AbstractSchedulerTest {
 			assertThat(d.isDisposed()).isTrue();
 		}
 		finally {
-			s.shutdown();
+			s.dispose();
 			s.dispose();//noop
 		}
 	}
@@ -193,7 +193,7 @@ public abstract class AbstractSchedulerTest {
 			else{
 				massCancel = null;
 			}
-			w.shutdown();
+			w.dispose();
 			w.dispose(); //noop
 			assertThat(w.isDisposed()).isTrue();
 
@@ -210,7 +210,7 @@ public abstract class AbstractSchedulerTest {
 			assertThat(d.isDisposed()).isTrue();
 		}
 		finally {
-			s.shutdown();
+			s.dispose();
 			s.dispose();//noop
 		}
 	}
@@ -376,7 +376,7 @@ public abstract class AbstractSchedulerTest {
 
 			latch2.countDown();
 
-			w.shutdown();
+			w.dispose();
 			assertThat(w.isDisposed()).isTrue();
 
 			c = w.schedule(() -> {

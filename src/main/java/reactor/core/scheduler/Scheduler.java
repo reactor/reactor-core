@@ -125,7 +125,6 @@ public interface Scheduler extends Disposable {
 	 *
 	 */
 	default void dispose() {
-		shutdown();
 	}
 
 	/**
@@ -137,22 +136,6 @@ public interface Scheduler extends Disposable {
 	 * leave the Scheduler in either active or inactive state.
 	 */
 	default void start() {
-	}
-
-	/**
-	 * Instructs this Scheduler to release all resources and reject
-	 * any new tasks to be executed.
-	 *
-	 * <p>The operation is thread-safe but one should avoid using
-	 * start() and shutdown() concurrently as it would non-deterministically
-	 * leave the Scheduler in either active or inactive state.
-	 *
-	 * @deprecated move the implementation to {@link #dispose()} and call dispose from shutdown.
-	 * Will be removed in 3.1.0
-	 */
-	@Deprecated
-	default void shutdown() {
-
 	}
 
 	/**
@@ -210,28 +193,6 @@ public interface Scheduler extends Disposable {
 		 */
 		default Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
 			return REJECTED;
-		}
-
-		/**
-		 * Instructs this worker to cancel all pending tasks, all running tasks in 
-		 * a best-effort manner, reject new tasks and
-		 * release any resources associated with it.
-		 *
-		 * @deprecated move the implementation to {@link #dispose()} and call dispose from shutdown.
-		 * Will be removed in 3.1.0
-		 */
-		@Deprecated
-		void shutdown();
-
-		/**
-		 * Instructs this worker to cancel all pending tasks, all running tasks in
-		 * a best-effort manner, reject new tasks and
-		 * release any resources associated with it.
-		 *
-		 */
-		@Override
-		default void dispose() {
-			shutdown();
 		}
 	}
 	

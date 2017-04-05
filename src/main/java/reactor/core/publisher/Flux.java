@@ -53,7 +53,6 @@ import reactor.core.Fuseable;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.core.scheduler.TimedScheduler;
 import reactor.util.Logger;
 import reactor.util.concurrent.QueueSupplier;
 
@@ -931,80 +930,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public static Flux<Long> interval(Duration delay, Duration period, Scheduler timer) {
 		return onAssembly(new FluxInterval(delay.toMillis(), period.toMillis(), TimeUnit.MILLISECONDS, timer));
-	}
-
-	/**
-	 * Create a {@link Flux} that emits an ever incrementing long starting with 0 every N milliseconds on
-	 * the given timer. If demand is not produced in time, an onError will be signalled. The {@link Flux} will never
-	 * complete.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/interval.png" alt="">
-	 * <p>
-	 * @param period The number of milliseconds to wait before the next increment
-	 *
-	 * @return a new timed {@link Flux}
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public static Flux<Long> intervalMillis(long period) {
-		return interval(Duration.ofMillis(period));
-	}
-
-	/**
-	 * Create a {@link Flux} that emits an ever incrementing long starting with 0 every N milliseconds on
-	 * the given timer. If demand is not produced in time, an onError will be signalled. The {@link Flux} will never
-	 * complete.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/interval.png" alt="">
-	 * <p>
-	 * @param period The duration in milliseconds to wait before the next increment
-	 * @param timer a time-capable {@link Scheduler} instance to run on
-	 *
-	 * @return a new timed {@link Flux}
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public static Flux<Long> intervalMillis(long period, TimedScheduler timer) {
-		return interval(Duration.ofMillis(period), timer);
-	}
-
-	/**
-	 * Create a {@link Flux} that emits an ever incrementing long starting with 0 every N period of time unit on
-	 * a global timer. If demand is not produced in time, an onError will be signalled. The {@link Flux} will never
-	 * complete.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/intervald.png" alt="">
-	 *
-	 * @param delay  the delay in milliseconds to wait before emitting 0l
-	 * @param period the period in milliseconds before each following increment
-	 *
-	 * @return a new timed {@link Flux}
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public static Flux<Long> intervalMillis(long delay, long period) {
-		return interval(Duration.ofMillis(delay), Duration.ofMillis(period));
-	}
-
-	/**
-	 * Create a {@link Flux} that emits an ever incrementing long starting with 0 every N period of time unit on
-	 * the given timer. If demand is not produced in time, an onError will be signalled. The {@link Flux} will never
-	 * complete.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/intervald.png" alt="">
-	 *
-	 * @param delay  the timespan in milliseconds to wait before emitting 0l
-	 * @param period the period in milliseconds before each following increment
-	 * @param timer a time-capable {@link Scheduler} instance to run on
-	 *
-	 * @return a new timed {@link Flux}
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public static Flux<Long> intervalMillis(long delay, long period, TimedScheduler timer) {
-		return interval(Duration.ofMillis(delay), Duration.ofMillis(period), timer);
 	}
 
 	/**
@@ -2447,226 +2372,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Collect incoming values into multiple {@link List} that will be pushed into the returned {@link Flux} every
-	 * timespan.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/buffertimespan.png"
-	 * alt="">
-	 *
-	 * @param timespan the duration to use to release a buffered list in milliseconds
-	 *
-	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<List<T>> bufferMillis(long timespan) {
-		return buffer(Duration.ofMillis(timespan), Schedulers.parallel());
-	}
-
-	/**
-	 * Collect incoming values into multiple {@link List} that will be pushed into the returned {@link Flux} every
-	 * timespan.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/buffertimespan.png"
-	 * alt="">
-	 *
-	 * @param timespan the duration to use to release a buffered list in milliseconds
-	 * @param timer a time-capable {@link Scheduler} instance to run on
-	 *
-	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<List<T>> bufferMillis(long timespan, TimedScheduler timer) {
-		return buffer(interval(Duration.ofMillis(timespan), timer));
-	}
-
-	/**
-	 * Collect incoming values into multiple {@link List} delimited by the given {@code timeshift} period. Each {@link
-	 * List} bucket will last until the {@code timespan} has elapsed, thus releasing the bucket to the returned {@link
-	 * Flux}.
-	 * <p>
-	 * When timeshift > timespan : dropping buffers
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/buffertimeshift.png"
-	 * alt="">
-	 * <p>
-	 * When timeshift < timespan : overlapping buffers
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/buffertimeshiftover.png"
-	 * alt="">
-	 * <p>
-	 * When timeshift == timespan : exact buffers
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/buffertimespan.png"
-	 * alt="">
-	 *
-	 * @param timespan the duration to use to release buffered lists
-	 * @param timeshift the duration to use to create a new bucket
-	 *
-	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period timeshift and sized by timespan
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<List<T>> bufferMillis(long timespan, long timeshift) {
-		return buffer(Duration.ofMillis(timespan), Duration.ofMillis(timeshift), Schedulers.parallel());
-	}
-
-	/**
-	 * Collect incoming values into multiple {@link List} delimited by the given {@code timeshift} period. Each {@link
-	 * List} bucket will last until the {@code timespan} has elapsed, thus releasing the bucket to the returned {@link
-	 * Flux}.
-	 * <p>
-	 * When timeshift > timespan : dropping buffers
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/buffertimeshift.png"
-	 * alt="">
-	 * <p>
-	 * When timeshift < timespan : overlapping buffers
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/buffertimeshiftover.png"
-	 * alt="">
-	 * <p>
-	 * When timeshift == timespan : exact buffers
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/buffertimespan.png"
-	 * alt="">
-	 *
-	 * @param timespan the duration to use to release buffered lists
-	 * @param timeshift the duration to use to create a new bucket
-	 * @param timer a time-capable {@link Scheduler} instance to run on
-	 *
-	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period timeshift and sized by timespan
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<List<T>> bufferMillis(long timespan, long timeshift,
-			TimedScheduler timer) {
-		if (timespan == timeshift) {
-			return bufferMillis(timespan, timer);
-		}
-		return buffer(intervalMillis(0, timeshift, timer), aLong -> Mono
-				.delayMillis
-				(timespan, timer));
-	}
-
-	/**
-	 * Collect incoming values into a {@link List} that will be pushed into the returned {@link Flux} every timespan OR
-	 * maxSize items.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/buffertimespansize.png"
-	 * alt="">
-	 *
-	 * @param maxSize the max collected size
-	 * @param timespan the timeout in milliseconds to use to release a buffered list
-	 *
-	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
-	 * @deprecated use {@link #bufferTimeout(int, Duration)} instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<List<T>> bufferMillis(int maxSize, long timespan) {
-		return bufferTimeout(maxSize, Duration.ofMillis(timespan));
-	}
-
-	/**
-	 * Collect incoming values into a {@link List} that will be pushed into the returned {@link Flux} every timespan OR
-	 * maxSize items
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/buffertimespansize.png"
-	 * alt="">
-	 *
-	 * @param maxSize the max collected size
-	 * @param timespan the timeout to use to release a buffered list
-	 * @param timer a time-capable {@link Scheduler} instance to run on
-	 *
-	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
-	 * @deprecated use {@link #bufferTimeout(int, Duration, Scheduler)} instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<List<T>> bufferMillis(int maxSize, long timespan, TimedScheduler timer) {
-		return bufferTimeout(maxSize, Duration.ofMillis(timespan), timer);
-	}
-
-	/**
-	 * Collect incoming values into a {@link Collection} that will be pushed into the returned {@link Flux} every timespan OR
-	 * maxSize items
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/buffertimespansize.png"
-	 * alt="">
-	 *
-	 * @param maxSize the max collected size
-	 * @param timespan the timeout to use to release a buffered collection
-	 * @param timer a time-capable {@link Scheduler} instance to run on
-	 * @param bufferSupplier the collection to use for each data segment
-	 * @param <C> the supplied {@link Collection} type
-	 * @return a microbatched {@link Flux} of {@link Collection} delimited by given size or a given period timeout
-	 * @deprecated use {@link #bufferTimeout(int, Duration, Scheduler, Supplier)} instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final <C extends Collection<? super T>> Flux<C> bufferMillis(int maxSize, long timespan,
-			TimedScheduler timer, Supplier<C> bufferSupplier) {
-		return bufferTimeout(maxSize, Duration.ofMillis(timespan), timer, bufferSupplier);
-	}
-
-	/**
-	 * Collect incoming values into a {@link List} that will be pushed into the returned {@link Flux} every timespan OR
-	 * maxSize items.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/buffertimespansize.png"
-	 * alt="">
-	 *
-	 * @param maxSize the max collected size
-	 * @param timespan the timeout in milliseconds to use to release a buffered list
-	 *
-	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<List<T>> bufferTimeoutMillis(int maxSize, long timespan) {
-		return bufferTimeout(maxSize, Duration.ofMillis(timespan), Schedulers.parallel());
-	}
-
-	/**
-	 * Collect incoming values into a {@link List} that will be pushed into the returned {@link Flux} every timespan OR
-	 * maxSize items
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/buffertimespansize.png"
-	 * alt="">
-	 *
-	 * @param maxSize the max collected size
-	 * @param timespan the timeout to use to release a buffered list
-	 * @param timer a time-capable {@link Scheduler} instance to run on
-	 *
-	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<List<T>> bufferTimeoutMillis(int maxSize, long timespan, TimedScheduler timer) {
-		return bufferTimeout(maxSize, Duration.ofMillis(timespan), timer, listSupplier());
-	}
-
-	/**
-	 * Collect incoming values into a {@link Collection} that will be pushed into the returned {@link Flux} every timespan OR
-	 * maxSize items
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/buffertimespansize.png"
-	 * alt="">
-	 *
-	 * @param maxSize the max collected size
-	 * @param timespan the timeout to use to release a buffered collection
-	 * @param timer a time-capable {@link Scheduler} instance to run on
-	 * @param bufferSupplier the collection to use for each data segment
-	 * @param <C> the supplied {@link Collection} type
-	 * @return a microbatched {@link Flux} of {@link Collection} delimited by given size or a given period timeout
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final  <C extends Collection<? super T>> Flux<C> bufferTimeoutMillis(int maxSize, long timespan,
-			TimedScheduler timer, Supplier<C> bufferSupplier) {
-		return bufferTimeout(maxSize, Duration.ofMillis(timespan), timer, bufferSupplier);
-	}
-
-	/**
 	 * Collect incoming values into multiple {@link List} that will be pushed into
 	 * the returned {@link Flux} each time the given predicate returns true. Note that
 	 * the element that triggers the predicate to return true (and thus closes a buffer)
@@ -3382,72 +3087,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Delay each of this {@link Flux} elements ({@link Subscriber#onNext} signals)
-	 * by a given duration in milliseconds.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/delayonnext.png" alt="">
-	 *
-	 * @param delay period to delay each {@link Subscriber#onNext} signal, in milliseconds
-	 * @deprecated will be replaced by {@link #delayElements(Duration)} in 3.1.0
-	 * @return a delayed {@link Flux}
-	 */
-	@Deprecated
-	public final Flux<T> delayMillis(long delay) {
-		return delayElements(Duration.ofMillis(delay));
-	}
-
-	/**
-	 * Delay each of this {@link Flux} elements ({@link Subscriber#onNext} signals)
-	 * by a given duration in milliseconds.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/delayonnext.png" alt="">
-	 *
-	 * @param delay period to delay each {@link Subscriber#onNext} signal, in milliseconds
-	 * @return a delayed {@link Flux}
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<T> delayElementsMillis(long delay) {
-		return delayElements(Duration.ofMillis(delay));
-	}
-
-	/**
-	 * Delay each of this {@link Flux} elements ({@link Subscriber#onNext} signals)
-	 * by a given duration in milliseconds.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/delayonnext.png" alt="">
-	 *
-	 * @param delay period to delay each {@link Subscriber#onNext} signal, in milliseconds
-	 * @param timer a time-capable {@link Scheduler} instance to delay each signal on
-	 * @deprecated will be replaced by {@link #delayElements(Duration, Scheduler)} in 3.1.0
-	 * @return a delayed {@link Flux}
-	 */
-	@Deprecated
-	public final Flux<T> delayMillis(long delay, TimedScheduler timer) {
-		return delayElements(Duration.ofMillis(delay), timer);
-	}
-
-	/**
-	 * Delay each of this {@link Flux} elements ({@link Subscriber#onNext} signals)
-	 * by a given duration in milliseconds.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/delayonnext.png" alt="">
-	 *
-	 * @param delay period to delay each {@link Subscriber#onNext} signal, in milliseconds
-	 * @param timer a time-capable {@link Scheduler} instance to delay each signal on
-	 * @return a delayed {@link Flux}
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<T> delayElementsMillis(long delay, TimedScheduler timer) {
-		return delayElements(Duration.ofMillis(delay), timer);
-	}
-
-	/**
 	 * Delay the {@link Flux#subscribe(Subscriber) subscription} to this {@link Flux} source until the given
 	 * period elapses. The delay is introduced through the {@link Schedulers#parallel() parallel} default Scheduler.
 	 *
@@ -3495,41 +3134,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final <U> Flux<T> delaySubscription(Publisher<U> subscriptionDelay) {
 		return onAssembly(new FluxDelaySubscription<>(this, subscriptionDelay));
-	}
-
-	/**
-	 * Delay the {@link Flux#subscribe(Subscriber) subscription} to this {@link Flux} source until the given
-	 * period elapses. The delay is introduced through the {@link Schedulers#parallel() parallel} default Scheduler.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/delaysubscription.png" alt="">
-	 *
-	 * @param delay period in milliseconds before subscribing this {@link Flux}
-	 *
-	 * @return a delayed {@link Flux}
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<T> delaySubscriptionMillis(long delay) {
-		return delaySubscription(Duration.ofMillis(delay), Schedulers.parallel());
-	}
-
-	/**
-	 * Delay the {@link Flux#subscribe(Subscriber) subscription} to this {@link Flux} source until the given
-	 * period elapses.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/delaysubscription.png" alt="">
-	 *
-	 * @param delay period in milliseconds before subscribing this {@link Flux}
-	 * @param timer a time-capable {@link Scheduler} instance to run on
-	 *
-	 * @return a delayed {@link Flux}
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<T> delaySubscriptionMillis(long delay, TimedScheduler timer) {
-		return delaySubscription(Mono.delayMillis(delay, timer));
 	}
 
 	/**
@@ -3838,27 +3442,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Flux<Tuple2<Long, T>> elapsed() {
 		return elapsed(Schedulers.parallel());
-	}
-
-	/**
-	 * Map this {@link Flux} sequence into {@link reactor.util.function.Tuple2} of T1
-	 * {@link Long} timemillis and T2 {@code T} associated data. The timemillis
-	 * corresponds to the elapsed time between the subscribe and the first next signal OR
-	 * between two next signals.
-	 * <p>
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/elapsed.png"
-	 * alt="">
-	 *
-	 * @param scheduler a {@link Scheduler} instance to {@link Scheduler#now(TimeUnit) read time from}
-	 *
-	 * @return a transforming {@link Flux} that emits tuples of time elapsed in
-	 * milliseconds and matching data
-	 * @deprecated use {@link #elapsed(Scheduler)}
-	 */
-	@Deprecated
-	public final Flux<Tuple2<Long, T>> elapsed(TimedScheduler scheduler) {
-		return elapsed((Scheduler)scheduler);
 	}
 
 	/**
@@ -5553,49 +5136,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Turn this {@link Flux} into a connectable hot source and cache last emitted signals
-	 * for further {@link Subscriber}. Will retain up to the given history size onNext
-	 * signals. Completion and Error will also be replayed.
-	 * <p>
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/replay.png"
-	 * alt="">
-	 *
-	 * @param ttl Per-item timeout duration in milliseconds
-	 * @param timer {@link Scheduler} to read current time from
-	 *
-	 * @return a replaying {@link ConnectableFlux}
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final ConnectableFlux<T> replayMillis(long ttl, TimedScheduler timer) {
-		return replayMillis(Integer.MAX_VALUE, ttl, timer);
-	}
-
-	/**
-	 * Turn this {@link Flux} into a connectable hot source and cache last emitted signals
-	 * for further {@link Subscriber}. Will retain up to the given history size onNext
-	 * signals. Completion and Error will also be replayed.
-	 * <p>
-	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/replay.png"
-	 * alt="">
-	 *
-	 * @param history number of events retained in history excluding complete and error
-	 * @param ttl Per-item timeout duration in milliseconds
-	 * @param timer {@link Scheduler} to read current time from
-	 *
-	 * @return a replaying {@link ConnectableFlux}
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final ConnectableFlux<T> replayMillis(int history,
-			long ttl, TimedScheduler timer) {
-		Objects.requireNonNull(timer, "timer");
-		return onAssembly(new FluxReplay<>(this, history, ttl, timer));
-	}
-
-	/**
 	 * Re-subscribes to this {@link Flux} sequence if it signals any error
 	 * either indefinitely.
 	 * <p>
@@ -5719,22 +5259,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Emit latest value for every given period of ti,e.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/sampletimespan.png" alt="">
-	 *
-	 * @param timespan the period in second to emit the latest observed item
-	 *
-	 * @return a sampled {@link Flux} by last item over a period of time
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<T> sampleMillis(long timespan) {
-		return sample(intervalMillis(timespan));
-	}
-
-	/**
 	 * Take a value from this {@link Flux} then use the duration provided to skip other values.
 	 *
 	 * <p>
@@ -5763,22 +5287,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final <U> Flux<T> sampleFirst(Function<? super T, ? extends Publisher<U>> samplerFactory) {
 		return onAssembly(new FluxSampleFirst<>(this, samplerFactory));
-	}
-
-	/**
-	 * Take a value from this {@link Flux} then use the duration provided to skip other values.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/samplefirsttimespan.png" alt="">
-	 *
-	 * @param timespan the period in milliseconds to exclude others values from this sequence
-	 *
-	 * @return a sampled {@link Flux} by first item over a period of time
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<T> sampleFirstMillis(long timespan) {
-		return sampleFirst(t -> Mono.delayMillis(timespan));
 	}
 
 	/**
@@ -6066,44 +5574,6 @@ public abstract class Flux<T> implements Publisher<T> {
 			return this;
 		}
 		return onAssembly(new FluxSkipLast<>(this, n));
-	}
-
-	/**
-	 * Skip elements from this {@link Flux} for the given time period.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/skiptime.png" alt="">
-	 *
-	 * @param timespan the time window to exclude next signals
-	 *
-	 * @return a dropping {@link Flux} until the end of the given timespan
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<T> skipMillis(long timespan) {
-		return skip(Duration.ofMillis(timespan), Schedulers.parallel());
-	}
-
-	/**
-	 * Skip elements from this {@link Flux} for the given time period.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/skiptime.png" alt="">
-	 *
-	 * @param timespan the time window to exclude next signals
-	 * @param timer a time-capable {@link Scheduler} instance to run on
-	 *
-	 * @return a dropping {@link Flux} until the end of the given timespan
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<T> skipMillis(long timespan, TimedScheduler timer) {
-		if(timespan != 0) {
-			return skipUntilOther(Mono.delayMillis(timespan, timer));
-		}
-		else{
-			return this;
-		}
 	}
 
 	/**
@@ -6701,52 +6171,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Relay values from this {@link Flux} until the given time period elapses.
-	 * <p>
-	 * If the time period is zero, the {@link Subscriber} gets completed if this {@link Flux} completes, signals an
-	 * error or
-	 * signals its first value (which is not not relayed though).
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/taketime.png" alt="">
-	 *
-	 * @param timespan the time window of items to emit from this {@link Flux}
-	 *
-	 * @return a time limited {@link Flux}
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<T> takeMillis(long timespan) {
-		return take(Duration.ofMillis(timespan), Schedulers.parallel());
-	}
-
-	/**
-	 * Relay values from this {@link Flux} until the given time period elapses.
-	 * <p>
-	 * If the time period is zero, the {@link Subscriber} gets completed if this {@link Flux} completes, signals an
-	 * error or
-	 * signals its first value (which is not not relayed though).
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/taketime.png" alt="">
-	 *
-	 * @param timespan the time window of items to emit from this {@link Flux}
-	 * @param timer a time-capable {@link Scheduler} instance to run on
-	 *
-	 * @return a time limited {@link Flux}
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<T> takeMillis(long timespan, TimedScheduler timer) {
-		if (timespan != 0) {
-			return takeUntilOther(Mono.delayMillis(timespan, timer));
-		}
-		else {
-			return take(0);
-		}
-	}
-
-	/**
 	 * Relay values from this {@link Flux} until the given {@link Predicate} matches.
 	 * Unlike {@link #takeWhile}, this will include the matched data.
 	 *
@@ -7039,89 +6463,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Signal a {@link java.util.concurrent.TimeoutException} error in case a per-item period in milliseconds fires
-	 * before the next item arrives from this {@link Flux}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timeouttime.png" alt="">
-	 *
-	 * @param timeout the timeout in milliseconds between two signals from this {@link Flux}
-	 *
-	 * @return a per-item expirable {@link Flux}
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<T> timeoutMillis(long timeout) {
-		return timeout(Duration.ofMillis(timeout), null, Schedulers.parallel());
-	}
-
-	/**
-	 * Signal a {@link java.util.concurrent.TimeoutException} error in case a per-item period in milliseconds fires
-	 * before the next item arrives from this {@link Flux}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timeouttime.png" alt="">
-	 *
-	 * @param timeout the timeout in milliseconds between two signals from this {@link Flux}
-	 * @param timer a time-capable {@link Scheduler} instance to run on
-	 *
-	 * @return a per-item expirable {@link Flux}
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<T> timeoutMillis(long timeout, TimedScheduler timer) {
-		return timeout(Duration.ofMillis(timeout), null, timer);
-	}
-
-	/**
-	 * Switch to a fallback {@link Publisher} in case a per-item period
-	 * fires before the next item arrives from this {@link Flux}.
-	 *
-	 * <p> If the given {@link Publisher} is null, signal a {@link java.util.concurrent.TimeoutException}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timeouttimefallback.png" alt="">
-	 *
-	 * @param timeout the timeout between two signals from this {@link Flux} in milliseconds
-	 * @param fallback the fallback {@link Publisher} to subscribe when a timeout occurs
-	 *
-	 * @return a per-item expirable {@link Flux} with a fallback {@link Publisher}
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<T> timeoutMillis(long timeout, Publisher<? extends T> fallback) {
-		return timeout(Duration.ofMillis(timeout), fallback, Schedulers.parallel());
-	}
-
-	/**
-	 * Switch to a fallback {@link Publisher} in case a per-item period
-	 * fires before the next item arrives from this {@link Flux}.
-	 *
-	 * <p> If the given {@link Publisher} is null, signal a {@link java.util.concurrent.TimeoutException}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timeouttimefallback.png" alt="">
-	 *
-	 * @param timeout the timeout between two signals from this {@link Flux} in milliseconds
-	 * @param fallback the fallback {@link Publisher} to subscribe when a timeout occurs
-	 * @param timer a time-capable {@link Scheduler} instance to run on
-	 *
-	 * @return a per-item expirable {@link Flux} with a fallback {@link Publisher}
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<T> timeoutMillis(long timeout, Publisher<? extends T> fallback,
-			TimedScheduler timer) {
-		final Mono<Long> _timer = Mono.delayMillis(timeout, timer).otherwiseReturn(0L);
-		final Function<T, Publisher<Long>> rest = o -> _timer;
-
-		if(fallback == null) {
-			return timeout(_timer, rest);
-		}
-		return timeout(_timer, rest, fallback);
-	}
-
-	/**
 	 * Emit a {@link reactor.util.function.Tuple2} pair of T1 {@link Long} current system time in
 	 * millis and T2 {@code T} associated data for each item from this {@link Flux}
 	 *
@@ -7132,22 +6473,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Flux<Tuple2<Long, T>> timestamp() {
 		return timestamp(Schedulers.parallel());
-	}
-
-	/**
-	 * Emit a {@link reactor.util.function.Tuple2} pair of T1 {@link Long} current system time in
-	 * millis and T2 {@code T} associated data for each item from this {@link Flux}
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timestamp.png" alt="">
-	 *
-	 * @param scheduler the {@link Scheduler} to read time from
-	 * @return a timestamped {@link Flux}
-	 * @deprecated use {@link #timestamp(Scheduler)}
-	 */
-	@Deprecated
-	public final Flux<Tuple2<Long, T>> timestamp(TimedScheduler scheduler) {
-		return timestamp((Scheduler)scheduler);
 	}
 
 	/**
@@ -7526,152 +6851,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Flux<Flux<T>> windowTimeout(int maxSize, Duration timespan, Scheduler timer) {
 		return onAssembly(new FluxWindowTimeOrSize<>(this, maxSize, timespan.toMillis(), timer));
-	}
-
-	/**
-	 * Split this {@link Flux} sequence into continuous, non-overlapping windows delimited by a given period.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowtimespan.png" alt="">
-	 *
-	 * @param timespan the duration in milliseconds to delimit {@link Flux} windows
-	 *
-	 * @return a windowing {@link Flux} of timed {@link Flux} buckets
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<Flux<T>> windowMillis(long timespan) {
-		return window(Duration.ofMillis(timespan), Schedulers.parallel());
-	}
-
-	/**
-	 * Split this {@link Flux} sequence into continuous, non-overlapping windows delimited by a given period.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowtimespan.png" alt="">
-	 *
-	 * @param timespan the duration in milliseconds to delimit {@link Flux} windows
-	 * @param timer a time-capable {@link Scheduler} instance to run on
-	 *
-	 * @return a windowing {@link Flux} of timed {@link Flux} buckets
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<Flux<T>> windowMillis(long timespan, TimedScheduler timer) {
-		return window(interval(Duration.ofMillis(timespan), timer));
-	}
-
-	/**
-	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code timeshift}
-	 * period, starting from the first item.
-	 * Each {@link Flux} bucket will onComplete after {@code timespan} period has elapsed.
-	 *
-	 * <p>
-	 * When timeshift > timespan : dropping windows
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsizeskip.png" alt="">
-	 * <p>
-	 * When timeshift < timespan : overlapping windows
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsizeskipover.png" alt="">
-	 * <p>
-	 * When timeshift == timespan : exact windows
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsize.png" alt="">
-	 *
-	 * @param timespan the maximum {@link Flux} window duration in milliseconds
-	 * @param timeshift the period of time in milliseconds to create new {@link Flux} windows
-	 * @param timer a time-capable {@link Scheduler} instance to run on
-	 *
-	 * @return a windowing
-	 * {@link Flux} of {@link Flux} buckets delimited by an opening {@link Publisher} and a selected closing {@link Publisher}
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<Flux<T>> windowMillis(long timespan, long timeshift, TimedScheduler timer) {
-		if (timeshift == timespan) {
-			return windowMillis(timespan);
-		}
-		return window(intervalMillis(0L, timeshift, timer), aLong -> Mono.delayMillis(timespan, timer));
-	}
-
-	/**
-	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code maxSize} number
-	 * of items, starting from the first item. {@link Flux} windows will onComplete after a given
-	 * timespan occurs and the number of items has not be counted.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsizetimeout.png" alt="">
-	 *
-	 * @param maxSize the maximum {@link Flux} window items to count before onComplete
-	 * @param timespan the timeout to use to onComplete a given window if size is not counted yet
-	 *
-	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
-	 * @deprecated use {@link #windowTimeout(int, Duration)} instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<Flux<T>> windowMillis(int maxSize, long timespan) {
-		return windowTimeoutMillis(maxSize, timespan);
-	}
-
-	/**
-	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code maxSize} number
-	 * of items, starting from the first item. {@link Flux} windows will onComplete after a given
-	 * timespan occurs and the number of items has not be counted.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsizetimeout.png" alt="">
-	 *
-	 * @param maxSize the maximum {@link Flux} window items to count before onComplete
-	 * @param timespan the timeout to use to onComplete a given window if size is not counted yet
-	 * @param timer a time-capable {@link Scheduler} instance to run on
-	 *
-	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
-	 * @deprecated use {@link #windowTimeout(int, Duration, Scheduler)} instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<Flux<T>> windowMillis(int maxSize, long timespan, TimedScheduler
-			timer) {
-		return windowTimeoutMillis(maxSize, timespan, timer);
-	}
-
-	/**
-	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code maxSize} number
-	 * of items, starting from the first item. {@link Flux} windows will onComplete after a given
-	 * timespan occurs and the number of items has not be counted.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsizetimeout.png" alt="">
-	 *
-	 * @param maxSize the maximum {@link Flux} window items to count before onComplete
-	 * @param timespan the timeout to use to onComplete a given window if size is not counted yet
-	 *
-	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<Flux<T>> windowTimeoutMillis(int maxSize, long timespan) {
-		return windowTimeout(maxSize, Duration.ofMillis(timespan), Schedulers.parallel());
-	}
-
-	/**
-	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code maxSize} number
-	 * of items, starting from the first item. {@link Flux} windows will onComplete after a given
-	 * timespan occurs and the number of items has not be counted.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsizetimeout.png" alt="">
-	 *
-	 * @param maxSize the maximum {@link Flux} window items to count before onComplete
-	 * @param timespan the timeout to use to onComplete a given window if size is not counted yet
-	 * @param timer a time-capable {@link Scheduler} instance to run on
-	 *
-	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Flux<Flux<T>> windowTimeoutMillis(int maxSize, long timespan, TimedScheduler timer) {
-		return onAssembly(new FluxWindowTimeOrSize<>(this, maxSize, timespan, timer));
 	}
 
 	/**

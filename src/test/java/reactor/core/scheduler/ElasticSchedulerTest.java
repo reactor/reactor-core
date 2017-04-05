@@ -59,7 +59,7 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 		((ElasticScheduler)s).evictor.shutdownNow();
 
 		try{
-			Disposable d = (Disposable)s.schedule(() -> {
+			Disposable d = s.schedule(() -> {
 				try {
 					Thread.sleep(10000);
 				}
@@ -76,7 +76,7 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 			}
 		}
 		finally {
-			s.shutdown();
+			s.dispose();
 			s.dispose();//noop
 		}
 

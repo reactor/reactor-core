@@ -42,7 +42,6 @@ import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.core.scheduler.TimedScheduler;
 import reactor.util.Logger;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.function.Tuple2;
@@ -212,41 +211,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public static Mono<Long> delay(Duration duration, Scheduler timer) {
 		return onAssembly(new MonoDelay(duration.toMillis(), TimeUnit.MILLISECONDS, timer));
-	}
-
-	/**
-	 * Create a Mono which delays an onNext signal of {@code duration} milliseconds and complete.
-	 * If the demand cannot be produced in time, an onError will be signalled instead.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/delay.png" alt="">
-	 * <p>
-	 * @param duration the duration in milliseconds of the delay
-	 *
-	 * @return a new {@link Mono}
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public static Mono<Long> delayMillis(long duration) {
-		return delay(Duration.ofMillis(duration));
-	}
-
-	/**
-	 * Create a Mono which delays an onNext signal of {@code duration} milliseconds and complete.
-	 * If the demand cannot be produced in time, an onError will be signalled instead.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/delay.png" alt="">
-	 * <p>
-	 * @param duration the duration in milliseconds of the delay
-	 * @param timer a time-capable {@link Scheduler} instance to run on
-	 *
-	 * @return a new {@link Mono}
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public static Mono<Long> delayMillis(long duration, TimedScheduler timer) {
-		return delay(Duration.ofMillis(duration), timer);
 	}
 
 
@@ -1516,49 +1480,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Delay this {@link Flux} element ({@link Subscriber#onNext} signal) by a given
-	 * duration, in milliseconds. Empty monos or error signals are not delayed.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/delayonnext.png" alt="">
-	 *
-	 * <p>
-	 * Note that the scheduler on which the mono chain continues execution will be the
-	 * time scheduler provided if the mono is valued, or the current scheduler if the mono
-	 * completes empty or errors.
-	 *
-	 * @param delay period to delay each {@link Subscriber#onNext} signal, in milliseconds
-	 * @return a delayed {@link Mono}
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Mono<T> delayElementMillis(long delay) {
-		return delayElement(Duration.ofMillis(delay));
-	}
-
-	/**
-	 * Delay this {@link Flux} element ({@link Subscriber#onNext} signal) by a given
-	 * duration, in milliseconds. Empty monos or error signals are not delayed.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/delayonnext.png" alt="">
-	 *
-	 * <p>
-	 * Note that the scheduler on which the mono chain continues execution will be the
-	 * {@link Schedulers#parallel() parallel} if the mono is valued, or the current scheduler if the mono
-	 * completes empty or errors.
-	 *
-	 * @param delay period to delay each {@link Subscriber#onNext} signal, in milliseconds
-	 * @param timer a time-capable {@link Scheduler} instance to delay the value signal on
-	 * @return a delayed {@link Mono}
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Mono<T> delayElementMillis(long delay, TimedScheduler timer) {
-		return delayElement(Duration.ofMillis(delay), timer);
-	}
-
-	/**
 	 * Delay the {@link Mono#subscribe(Subscriber) subscription} to this {@link Mono} source until the given
 	 * period elapses.
 	 *
@@ -1607,41 +1528,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final <U> Mono<T> delaySubscription(Publisher<U> subscriptionDelay) {
 		return onAssembly(new MonoDelaySubscription<>(this, subscriptionDelay));
-	}
-
-	/**
-	 * Delay the {@link Mono#subscribe(Subscriber) subscription} to this {@link Mono} source until the given
-	 * period elapses. The delay is introduced through the {@link Schedulers#parallel() parallel} default Scheduler.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/delaysubscription1.png" alt="">
-	 *
-	 * @param delay period in milliseconds before subscribing this {@link Mono}
-	 *
-	 * @return a delayed {@link Mono}
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Mono<T> delaySubscriptionMillis(long delay) {
-		return delaySubscription(Duration.ofMillis(delay));
-	}
-
-	/**
-	 * Delay the {@link Mono#subscribe(Subscriber) subscription} to this {@link Mono} source until the given
-	 * period elapses. The delay is introduced through the {@link Schedulers#parallel() parallel} default Scheduler.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/delaysubscription1.png" alt="">
-	 *
-	 * @param delay period in milliseconds before subscribing this {@link Mono}
-	 * @param timer a time-capable {@link Scheduler} instance to run on
-	 *
-	 * @return a delayed {@link Mono}
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Mono<T> delaySubscriptionMillis(long delay, TimedScheduler timer) {
-		return delaySubscription(Duration.ofMillis(delay), timer);
 	}
 
 	/**
@@ -1904,23 +1790,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final Mono<Tuple2<Long, T>> elapsed() {
 		return elapsed(Schedulers.parallel());
-	}
-
-	/**
-	 * Map this {@link Mono} sequence into {@link reactor.util.function.Tuple2} of T1 {@link Long} timemillis and T2
-	 * {@code T} associated data. The timemillis corresponds to the elapsed time between the subscribe and the first
-	 * next signal.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/elapsed1.png" alt="">
-	 *
-	 * @param scheduler a {@link Scheduler} instance to read time from
-	 * @return a transforming {@link Mono} that emits a tuple of time elapsed in milliseconds and matching data
-	 * @deprecated use {@link #elapsed(Scheduler)}
-	 */
-	@Deprecated
-	public final Mono<Tuple2<Long, T>> elapsed(TimedScheduler scheduler) {
-		return elapsed((Scheduler)scheduler);
 	}
 
 	/**
@@ -3135,80 +3004,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Signal a {@link java.util.concurrent.TimeoutException} error in case an item doesn't arrive before the given period.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timeouttime1.png" alt="">
-	 *
-	 * @param timeout the timeout before the onNext signal from this {@link Mono}
-	 *
-	 * @return an expirable {@link Mono}
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Mono<T> timeoutMillis(long timeout) {
-		return timeout(Duration.ofMillis(timeout), Schedulers.parallel());
-	}
-
-	/**
-	 * Signal a {@link java.util.concurrent.TimeoutException} error in case an item doesn't arrive before the given period.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timeouttime1.png" alt="">
-	 *
-	 * @param timeout the timeout before the onNext signal from this {@link Mono}
-	 * @param timer a time-capable {@link Scheduler} instance to run on
-	 *
-	 * @return an expirable {@link Mono}
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Mono<T> timeoutMillis(long timeout, TimedScheduler timer) {
-		return timeoutMillis(timeout, null, timer);
-	}
-
-	/**
-	 * Switch to a fallback {@link Mono} in case an item doesn't arrive before the given period.
-	 *
-	 * <p> If the given {@link Publisher} is null, signal a {@link java.util.concurrent.TimeoutException}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timeouttimefallback1.png" alt="">
-	 *
-	 * @param timeout the timeout before the onNext signal from this {@link Mono} in milliseconds
-	 * @param fallback the fallback {@link Mono} to subscribe when a timeout occurs
-	 *
-	 * @return an expirable {@link Mono} with a fallback {@link Mono}
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Mono<T> timeoutMillis(long timeout, Mono<? extends T> fallback) {
-		return timeout(Duration.ofMillis(timeout), fallback, Schedulers.parallel());
-	}
-
-	/**
-	 * Switch to a fallback {@link Mono} in case an item doesn't arrive before the given period.
-	 *
-	 * <p> If the given {@link Publisher} is null, signal a {@link java.util.concurrent.TimeoutException}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timeouttimefallback1.png" alt="">
-	 *
-	 * @param timeout the timeout before the onNext signal from this {@link Mono} in milliseconds
-	 * @param fallback the fallback {@link Mono} to subscribe when a timeout occurs
-	 * @param timer a time-capable {@link Scheduler} instance to run on
-	 *
-	 * @return an expirable {@link Mono} with a fallback {@link Mono}
-	 * @deprecated use the {@link Duration} based variants instead, will be removed in 3.1.0
-	 */
-	@Deprecated
-	public final Mono<T> timeoutMillis(long timeout, Mono<? extends T> fallback,
-			TimedScheduler timer) {
-		return timeout(Duration.ofMillis(timeout), fallback, timer);
-	}
-
-
-	/**
 	 * Emit a {@link reactor.util.function.Tuple2} pair of T1 {@link Long} current system time in
 	 * millis and T2 {@code T} associated data for the eventual item from this {@link Mono}
 	 *
@@ -3219,22 +3014,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final Mono<Tuple2<Long, T>> timestamp() {
 		return timestamp(Schedulers.parallel());
-	}
-
-	/**
-	 * Emit a {@link reactor.util.function.Tuple2} pair of T1 {@link Long} current system time in
-	 * millis and T2 {@code T} associated data for the eventual item from this {@link Mono}
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timestamp1.png" alt="">
-	 *
-	 * @param scheduler a {@link Scheduler} instance to read time from
-	 * @return a timestamped {@link Mono}
-	 * @deprecated use {@link #timestamp(Scheduler)}
-	 */
-	@Deprecated
-	public final Mono<Tuple2<Long, T>> timestamp(TimedScheduler scheduler) {
-		return timestamp((Scheduler)scheduler);
 	}
 
 	/**

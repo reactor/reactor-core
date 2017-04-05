@@ -118,11 +118,6 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
     }
 
     @Override
-    public void shutdown() {
-        dispose();
-    }
-
-    @Override
     public void dispose() {
         ScheduledExecutorService[] a = executors;
         if (a != SHUTDOWN) {
@@ -300,11 +295,6 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
             pw.setFuture(f);
 
             return pw;
-        }
-
-        @Override
-        public void shutdown() {
-            dispose();
         }
 
         @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -114,11 +114,6 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 	@Override
 	public boolean isDisposed() {
 		return shutdown;
-	}
-
-	@Override
-	public void shutdown() {
-		dispose();
 	}
 
 	@Override
@@ -377,11 +372,6 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 			ct.setFuture(f);
 
 			return ct;
-		}
-
-		@Override
-		public void shutdown() {
-			dispose();
 		}
 
 		@Override

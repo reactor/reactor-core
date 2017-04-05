@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -47,14 +46,12 @@ public class SchedulersTest {
 		final Scheduler      elastic  = Schedulers.Factory.super.newElastic(60, Thread::new);
 		final Scheduler      single   = Schedulers.Factory.super.newSingle(Thread::new);
 		final Scheduler      parallel =	Schedulers.Factory.super.newParallel(1, Thread::new);
-		final TimedScheduler timer    = Schedulers.Factory.super.newTimer(Thread::new);
 
 		TestSchedulers(boolean disposeOnInit) {
 			if (disposeOnInit) {
 				elastic.dispose();
 				single.dispose();
 				parallel.dispose();
-				timer.dispose();
 			}
 		}
 
@@ -72,10 +69,6 @@ public class SchedulersTest {
 			assertThat(((Schedulers.SchedulerThreadFactory)threadFactory).get()).isEqualTo("unused");
 			return single;
 		}
-
-		public final TimedScheduler newTimer(ThreadFactory threadFactory) {
-			return timer;
-		}
 	}
 
 	@After
@@ -92,7 +85,6 @@ public class SchedulersTest {
 		Assert.assertEquals(ts.single, Schedulers.newSingle("unused"));
 		Assert.assertEquals(ts.elastic, Schedulers.newElastic("unused"));
 		Assert.assertEquals(ts.parallel, Schedulers.newParallel("unused"));
-		Assert.assertEquals(ts.timer, Schedulers.newTimer("unused"));
 
 		Schedulers.resetFactory();
 
@@ -107,8 +99,8 @@ public class SchedulersTest {
 		Schedulers.Factory ts1 = new Schedulers.Factory() { };
 		Schedulers.Factory ts2 = new TestSchedulers(false);
 		Schedulers.setFactory(ts1);
-		Scheduler cachedTimerOld = Schedulers.timer();
-		Scheduler standaloneTimer = Schedulers.newTimer("standaloneTimer");
+		Scheduler cachedTimerOld = Schedulers.single();
+		Scheduler standaloneTimer = Schedulers.newSingle("standaloneTimer");
 
 
 		Assert.assertNotSame(cachedTimerOld, standaloneTimer);
@@ -116,9 +108,9 @@ public class SchedulersTest {
 		Assert.assertNotSame(standaloneTimer.schedule(() -> {}), Scheduler.REJECTED);
 
 		Schedulers.setFactory(ts2);
-		Scheduler cachedTimerNew = Schedulers.timer();
+		Scheduler cachedTimerNew = Schedulers.newSingle("unused");
 
-		Assert.assertEquals(cachedTimerNew, Schedulers.newTimer("unused"));
+		Assert.assertEquals(cachedTimerNew, Schedulers.newSingle("unused"));
 		Assert.assertNotSame(cachedTimerNew, cachedTimerOld);
 		//assert that the old factory"s cached scheduler was shut down
 		Disposable disposable = cachedTimerOld.schedule(() -> {});
@@ -187,11 +179,6 @@ public class SchedulersTest {
 	@Test
 	public void testRejectingSingleScheduler() {
 		assertRejectingScheduler(Schedulers.newSingle("test"));
-	}
-
-	@Test
-	public void testRejectingSingleTimedScheduler() {
-		assertRejectingScheduler(Schedulers.newTimer("test"));
 	}
 
 	@Test
@@ -392,10 +379,6 @@ public class SchedulersTest {
 				throw new IllegalStateException("start");
 			}
 
-			@Override
-			public void shutdown() {
-				throw new IllegalStateException("shutdown");
-			}
 		};
 
 		Schedulers.CachedScheduler cached = new Schedulers.CachedScheduler("cached", mock);
@@ -487,30 +470,6 @@ public class SchedulersTest {
 	@Test(timeout = 5000)
 	public void elasticSchedulerThreadCheck() throws Exception{
 		Scheduler s = Schedulers.newElastic("work");
-		try {
-			Scheduler.Worker w = s.createWorker();
-
-			Thread currentThread = Thread.currentThread();
-			AtomicReference<Thread> taskThread = new AtomicReference<>(currentThread);
-			CountDownLatch latch = new CountDownLatch(1);
-
-			w.schedule(() -> {
-				taskThread.set(Thread.currentThread());
-				latch.countDown();
-			});
-
-			latch.await();
-
-			assertThat(taskThread.get()).isNotEqualTo(currentThread);
-		}
-		finally {
-			s.dispose();
-		}
-	}
-
-	@Test(timeout = 5000)
-	public void timerSchedulerThreadCheck() throws Exception{
-		Scheduler s = Schedulers.newTimer("work");
 		try {
 			Scheduler.Worker w = s.createWorker();
 
@@ -705,7 +664,7 @@ public class SchedulersTest {
 		               .subscribeOn(s)
 		               .block();
 
-		s.shutdown();
+		s.dispose();
 		s.start();
 
 		Thread t2 = Mono.fromCallable(Thread::currentThread)
@@ -748,7 +707,7 @@ public class SchedulersTest {
 		};
 
 		//noop
-		Schedulers.elastic().shutdown();
+		Schedulers.elastic().dispose();
 	}
 
 	final static class EmptyScheduler implements Scheduler {
@@ -756,7 +715,7 @@ public class SchedulersTest {
 		boolean disposeCalled;
 
 		@Override
-		public void shutdown() {
+		public void dispose() {
 			disposeCalled = true;
 		}
 
@@ -780,7 +739,7 @@ public class SchedulersTest {
 			}
 
 			@Override
-			public void shutdown() {
+			public void dispose() {
 				disposeCalled = true;
 			}
 		}
@@ -832,7 +791,7 @@ public class SchedulersTest {
 			}
 
 			@Override
-			public void shutdown() {
+			public void dispose() {
 			}
 		}
 	}

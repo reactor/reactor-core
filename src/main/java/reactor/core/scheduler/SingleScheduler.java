@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,8 +36,7 @@ import reactor.util.concurrent.OpenHashSet;
  * same-thread work (like an event dispatch thread). This scheduler is time-capable (can
  * schedule with delay / periodically).
  */
-final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorService>,
-                                       TimedScheduler {
+final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorService> {
 
 	static final AtomicLong COUNTER       = new AtomicLong();
 	static final AtomicLong TIMER_COUNTER = new AtomicLong();
@@ -107,11 +106,6 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	}
 
 	@Override
-	public void shutdown() {
-		dispose();
-	}
-
-	@Override
 	public void dispose() {
 		ScheduledExecutorService a = executor;
 		if (a != TERMINATED) {
@@ -162,11 +156,11 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 	}
 
 	@Override
-	public TimedWorker createWorker() {
+	public Worker createWorker() {
 		return new SingleWorker(executor);
 	}
 
-	static final class SingleWorker implements Worker, DisposableContainer<ScheduledRunnable>, TimedWorker {
+	static final class SingleWorker implements Worker, DisposableContainer<ScheduledRunnable> {
 
 		final ScheduledExecutorService exec;
 
@@ -233,11 +227,6 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 			}
 
 			return sr;
-		}
-
-		@Override
-		public void shutdown() {
-			dispose();
 		}
 
 		@Override

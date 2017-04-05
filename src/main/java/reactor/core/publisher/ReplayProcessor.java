@@ -32,7 +32,6 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.core.scheduler.TimedScheduler;
 import reactor.util.concurrent.QueueSupplier;
 
 /**
@@ -205,46 +204,6 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	/**
-	 * Creates a time-bounded replay processor.
-	 * <p>
-	 * In this setting, the {@code ReplayProcessor} internally tags each observed item
-	 * with a timestamp value supplied by the {@link Scheduler} and keeps only those
-	 * whose age is less than the supplied time value converted to milliseconds. For
-	 * example, an item arrives at T=0 and the max age is set to 5; at T&gt;=5 this first
-	 * item is then evicted by any subsequent item or termination signal, leaving the
-	 * buffer empty.
-	 * <p>
-	 * Once the processor is terminated, subscribers subscribing to it will receive items
-	 * that remained in the buffer after the terminal signal, regardless of their age.
-	 * <p>
-	 * If an subscriber subscribes while the {@code ReplayProcessor} is active, it will
-	 * observe only those items from within the buffer that have an age less than the
-	 * specified time, and each item observed thereafter, even if the buffer evicts items
-	 * due to the time constraint in the mean time. In other words, once an subscriber
-	 * subscribes, it observes items without gaps in the sequence except for any outdated
-	 * items at the beginning of the sequence.
-	 * <p>
-	 * Note that terminal signals ({@code onError} and {@code onComplete}) trigger
-	 * eviction as well. For example, with a max age of 5, the first item is observed at
-	 * T=0, then an {@code onComplete} signal arrives at T=10. If an subscriber subscribes
-	 * at T=11, it will find an empty {@code ReplayProcessor} with just an {@code
-	 * onCompleted} signal.
-	 *
-	 * @param <T> the type of items observed and emitted by the Processor
-	 * @param maxAge the maximum age of the contained items in milliseconds
-	 * @param scheduler the {@link Scheduler} that provides the current time
-	 *
-	 * @return a new {@link ReplayProcessor}
-	 * @deprecated use {@link #createTimeout(Duration, Scheduler)}
-	 */
-	@Deprecated
-	public static <T> ReplayProcessor<T> createTimeoutMillis(long maxAge,
-			TimedScheduler scheduler) {
-		return createSizeAndTimeout(Integer.MAX_VALUE, Duration.ofMillis(maxAge),
-				scheduler);
-	}
-
-	/**
 	 * Creates a time- and size-bounded replay processor.
 	 * <p>
 	 * In this setting, the {@code ReplayProcessor} internally tags each received item
@@ -279,47 +238,6 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 */
 	public static <T> ReplayProcessor<T> createSizeAndTimeout(int size, Duration maxAge) {
 		return createSizeAndTimeout(size, maxAge, Schedulers.parallel());
-	}
-
-	/**
-	 * Creates a time- and size-bounded replay processor.
-	 * <p>
-	 * In this setting, the {@code ReplayProcessor} internally tags each received item
-	 * with a timestamp value supplied by the {@link Scheduler} and holds at most
-	 * {@code size} items in its internal buffer. It evicts items from the start of the
-	 * buffer if their age becomes less-than or equal to the supplied age in milliseconds
-	 * or the buffer reaches its {@code size} limit.
-	 * <p>
-	 * When subscribers subscribe to a terminated {@code ReplayProcessor}, they observe
-	 * the items that remained in the buffer after the terminal signal, regardless of
-	 * their age, but at most {@code size} items.
-	 * <p>
-	 * If an subscriber subscribes while the {@code ReplayProcessor} is active, it will
-	 * observe only those items from within the buffer that have age less than the
-	 * specified time and each subsequent item, even if the buffer evicts items due to the
-	 * time constraint in the mean time. In other words, once an subscriber subscribes, it
-	 * observes items without gaps in the sequence except for the outdated items at the
-	 * beginning of the sequence.
-	 * <p>
-	 * Note that terminal signals ({@code onError} and {@code onComplete}) trigger
-	 * eviction as well. For example, with a max age of 5, the first item is observed at
-	 * T=0, then an {@code onComplete} signal arrives at T=10. If an Subscriber subscribes
-	 * at T=11, it will find an empty {@code ReplayProcessor} with just an {@code
-	 * onCompleted} signal.
-	 *
-	 * @param <T> the type of items observed and emitted by the Processor
-	 * @param maxAge the maximum age of the contained items in milliseconds
-	 * @param size the maximum number of buffered items
-	 * @param scheduler the {@link Scheduler} that provides the current time
-	 *
-	 * @return a new {@link ReplayProcessor}
-	 * @deprecated use {@link #createSizeAndTimeout(int, Duration, Scheduler)}
-	 */
-	@Deprecated
-	public static <T> ReplayProcessor<T> createSizeAndTimeoutMillis(int size,
-			long maxAge,
-			TimedScheduler scheduler) {
-		return createSizeAndTimeout(size, Duration.ofMillis(maxAge), scheduler);
 	}
 
 	/**
