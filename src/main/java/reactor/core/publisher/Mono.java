@@ -651,8 +651,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	public Mono<T> untilOther(Publisher<?> anyPublisher) {
 		Objects.requireNonNull(anyPublisher, "anyPublisher required");
 		if (this instanceof MonoUntilOther) {
-			((MonoUntilOther<T>) this).addTrigger(anyPublisher);
-			return this;
+			return ((MonoUntilOther<T>) this).addTrigger(anyPublisher);
 		}
 		return onAssembly(new MonoUntilOther<>(false, this, anyPublisher));
 	}
@@ -671,8 +670,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	public Mono<T> untilOtherDelayError(Publisher<?> anyPublisher) {
 		Objects.requireNonNull(anyPublisher, "anyPublisher required");
 		if (this instanceof MonoUntilOther) {
-			((MonoUntilOther<T>) this).addTrigger(anyPublisher);
-			return this;
+			return ((MonoUntilOther<T>) this).addTrigger(anyPublisher);
 		}
 		return onAssembly(new MonoUntilOther<>(true, this, anyPublisher));
 	}

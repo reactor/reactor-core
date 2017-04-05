@@ -53,15 +53,26 @@ final class MonoUntilOther<T> extends Mono<T> {
 		this.others = new Publisher[] { Objects.requireNonNull(triggerPublisher, "triggerPublisher")};
 	}
 
+	private MonoUntilOther(boolean delayError,
+			Mono<T> monoSource,
+			Publisher<?>[] triggerPublishers) {
+		this.delayError = delayError;
+		this.source = Objects.requireNonNull(monoSource, "monoSource");
+		this.others = triggerPublishers;
+	}
+
 	/**
 	 * Add a trigger to wait for.
 	 * @param trigger
+	 * @return a new {@link MonoUntilOther} instance with same source but additional trigger
 	 */
-	void addTrigger(Publisher<?> trigger) {
+	MonoUntilOther<T> addTrigger(Publisher<?> trigger) {
+		Objects.requireNonNull(trigger, "trigger");
 		Publisher<?>[] oldTriggers = this.others;
-		this.others = new Publisher[oldTriggers.length + 1];
-		System.arraycopy(oldTriggers, 0, this.others, 0, oldTriggers.length);
-		this.others[oldTriggers.length] = trigger;
+		Publisher<?>[] newTriggers = new Publisher[oldTriggers.length + 1];
+		System.arraycopy(oldTriggers, 0, newTriggers, 0, oldTriggers.length);
+		newTriggers[oldTriggers.length] = trigger;
+		return new MonoUntilOther<T>(this.delayError, this.source, newTriggers);
 	}
 
 	@Override
