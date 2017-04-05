@@ -144,15 +144,15 @@ project.tasks.withType(Test).all {
 
 configure(rootProject) {
   repositories {
-	mavenCentral()
-	jcenter()
-	maven { url 'http://repo.spring.io/libs-milestone' }
-	maven { url "https://oss.sonatype.org/content/repositories/releases/" }
-
 	if (version.endsWith('BUILD-SNAPSHOT') || project.hasProperty('platformVersion')) {
 	  mavenLocal()
 	  maven { url 'http://repo.spring.io/libs-snapshot' }
 	}
+
+	mavenCentral()
+	jcenter()
+	maven { url 'http://repo.spring.io/libs-milestone' }
+	maven { url "https://oss.sonatype.org/content/repositories/releases/" }
 
   }
 
