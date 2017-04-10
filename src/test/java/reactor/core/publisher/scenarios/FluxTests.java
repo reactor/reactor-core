@@ -428,7 +428,7 @@ public class FluxTests extends AbstractReactorTest {
 								  .flatMap(w -> w.count().map(c -> Tuples.of(w.key(), c)))
 		                          .log("elapsed")
 		                          .collectSortedList((a, b) -> a.getT1().compareTo(b.getT1()))
-		                          .flatMap(Flux::fromIterable)
+		                          .flatMapMany(Flux::fromIterable)
 		                          .reduce(-1L, (acc, next) -> acc > 0l ? ((next.getT1() + acc) / 2) : next.getT1())
 		                          .log("reduced-elapsed")
 		                          .cache();

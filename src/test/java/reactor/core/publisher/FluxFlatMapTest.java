@@ -528,14 +528,14 @@ public class FluxFlatMapTest {
 		StepVerifier.create(Mono.fromCallable(() -> {
 			throw new Exception("test");
 		})
-		                        .flatMap(Flux::just))
+		                        .flatMapMany(Flux::just))
 		            .verifyErrorMessage("test");
 	}
 
 	@Test
 	public void failScalarMap() {
 		StepVerifier.create(Mono.just(1)
-		                        .flatMap(f -> {
+		                        .flatMapMany(f -> {
 			                        throw new RuntimeException("test");
 		                        }))
 		            .verifyErrorMessage("test");
@@ -544,14 +544,14 @@ public class FluxFlatMapTest {
 	@Test
 	public void failScalarMapNull() {
 		StepVerifier.create(Mono.just(1)
-		                        .flatMap(f -> null))
+		                        .flatMapMany(f -> null))
 		            .verifyError(NullPointerException.class);
 	}
 
 	@Test
 	public void failScalarMapCallableError() {
 		StepVerifier.create(Mono.just(1)
-		                        .flatMap(f -> Mono.fromCallable(() -> {
+		                        .flatMapMany(f -> Mono.fromCallable(() -> {
 			                        throw new Exception("test");
 		                        })))
 		            .verifyErrorMessage("test");
@@ -560,21 +560,21 @@ public class FluxFlatMapTest {
 	@Test
 	public void failMapCallableNullError() {
 		StepVerifier.create(Mono.just(1)
-		                        .flatMap(f -> Mono.fromCallable(() -> null)))
+		                        .flatMapMany(f -> Mono.fromCallable(() -> null)))
 		            .verifyError(NullPointerException.class);
 	}
 
 	@Test
 	public void prematureScalarMapCallableNullComplete() {
 		StepVerifier.create(Mono.just(1)
-		                        .flatMap(f -> Mono.empty()))
+		                        .flatMapMany(f -> Mono.empty()))
 		            .verifyComplete();
 	}
 
 	@Test
 	public void prematureScalarMapCallableJust() {
 		StepVerifier.create(Mono.just(1)
-		                        .flatMap(f -> Mono.fromCallable(() -> 2)))
+		                        .flatMapMany(f -> Mono.fromCallable(() -> 2)))
 		            .expectNext(2)
 		            .verifyComplete();
 	}

@@ -89,12 +89,12 @@ public class MonoPublishMulticastTest {
 
     @Test
     public void syncCancelBeforeComplete() {
-        assertThat(Mono.just(Mono.just(1).publish(v -> v)).flatMap(v -> v).blockLast()).isEqualTo(1);
+        assertThat(Mono.just(Mono.just(1).publish(v -> v)).flatMapMany(v -> v).blockLast()).isEqualTo(1);
     }
 
     @Test
     public void normalCancelBeforeComplete() {
-        assertThat(Mono.just(Mono.just(1).hide().publish(v -> v)).flatMap(v -> v).blockLast()).isEqualTo(1);
+        assertThat(Mono.just(Mono.just(1).hide().publish(v -> v)).flatMapMany(v -> v).blockLast()).isEqualTo(1);
     }
 
 }
