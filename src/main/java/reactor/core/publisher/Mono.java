@@ -61,9 +61,8 @@ import reactor.util.function.Tuples;
  * <p>
  *
  * <p>The rx operators will offer aliases for input {@link Mono} type to preserve the "at most one"
- * property of the resulting {@link Mono}. For instance {@link Mono#flatMap flatMap} returns a {@link Flux} with 
- * possibly
- * more than 1 emission. Its alternative enforcing {@link Mono} input is {@link Mono#then then}.
+ * property of the resulting {@link Mono}. For instance {@link Mono#flatMap flatMap} returns a
+ * {@link Mono}, while there is a {@link Mono#flatMapMany} alias with possibly more than 1 emission.
  *
  * <p>{@code Mono<Void>} should be used for {@link Publisher} that just completes without any value.
  *
@@ -1984,8 +1983,52 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param <R> the merged sequence type
 	 *
 	 * @return a new {@link Flux} as the sequence is not guaranteed to be single at most
+	 * @deprecated will change signature and behavior in 3.1 to reflect current {@link #then(Function)}.
+	 * flatMap will be renamed {@link #flatMapMany(Function)}, so use that instead.
 	 */
+	@Deprecated
 	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper) {
+		return this.flatMapMany(mapper);
+	}
+
+	/**
+	 * Transform the signals emitted by this {@link Mono} into a Publisher, then forward
+	 * its emissions into the returned {@link Flux}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/flatmaps1.png" alt="">
+	 * <p>
+	 * @param mapperOnNext the {@link Function} to call on next data and returning a sequence to merge
+	 * @param mapperOnError the {@link Function} to call on error signal and returning a sequence to merge
+	 * @param mapperOnComplete the {@link Function} to call on complete signal and returning a sequence to merge
+	 * @param <R> the type of the produced inner sequence
+	 *
+	 * @return a new {@link Flux} as the sequence is not guaranteed to be single at most
+	 *
+	 * @see Flux#flatMap(Function, Function, Supplier)
+	 * @deprecated will change signature and behavior in 3.1 to reflect current {@link #then(Function)}.
+	 * flatMap will be renamed {@link #flatMapMany(Function, Function, Supplier)}, so use that instead.
+	 */
+	@Deprecated
+	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapperOnNext,
+			Function<Throwable, ? extends Publisher<? extends R>> mapperOnError,
+			Supplier<? extends Publisher<? extends R>> mapperOnComplete) {
+		return this.flatMapMany(mapperOnNext, mapperOnError, mapperOnComplete);
+	}
+	/**
+	 * Transform the item emitted by this {@link Mono} into a Publisher, then forward
+	 * its emissions into the returned {@link Flux}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/flatmap1.png" alt="">
+	 * <p>
+	 * @param mapper the
+	 * {@link Function} to produce a sequence of R from the the eventual passed {@link Subscriber#onNext}
+	 * @param <R> the merged sequence type
+	 *
+	 * @return a new {@link Flux} as the sequence is not guaranteed to be single at most
+	 */
+	public final <R> Flux<R> flatMapMany(Function<? super T, ? extends Publisher<? extends R>> mapper) {
 		return Flux.onAssembly(new MonoFlatMap<>(this, mapper));
 	}
 
@@ -2005,7 +2048,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @see Flux#flatMap(Function, Function, Supplier)
 	 */
-	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapperOnNext,
+	public final <R> Flux<R> flatMapMany(Function<? super T, ? extends Publisher<? extends R>> mapperOnNext,
 			Function<Throwable, ? extends Publisher<? extends R>> mapperOnError,
 			Supplier<? extends Publisher<? extends R>> mapperOnComplete) {
 
@@ -2927,6 +2970,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param <R> the result type bound
 	 *
 	 * @return a new {@link Mono} containing the merged values
+	 * @deprecated in 3.1.0.M1 this method will be renamed `flatMap`. However, until
+	 * then the behavior of {@link #flatMap(Function)} remains the current one, so it is
+	 * not yet possible to anticipate this migration.
 	 */
 	public final <R> Mono<R> then(Function<? super T, ? extends Mono<? extends R>>
 			transformer) {

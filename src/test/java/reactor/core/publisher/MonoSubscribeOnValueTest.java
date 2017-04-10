@@ -32,7 +32,7 @@ public class MonoSubscribeOnValueTest {
 	public void testSubscribeOnValueFusion() {
 
 		StepVerifier.create(Mono.just(1)
-		                        .flatMap(f -> Mono.just(f + 1)
+		                        .flatMapMany(f -> Mono.just(f + 1)
 		                                          .subscribeOn(Schedulers.parallel())
 		                                          .map(this::slow)))
 		            .expectFusion(Fuseable.ASYNC, Fuseable.NONE)
