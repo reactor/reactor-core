@@ -429,11 +429,6 @@ public final class UnicastProcessor<T>
 	}
 
 	@Override
-	public boolean isStarted() {
-		return once == 1 && !done && !cancelled;
-	}
-
-	@Override
 	public boolean isTerminated() {
 		return done;
 	}

@@ -67,6 +67,14 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT>  {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
+	public boolean isSerialized() {
+		return upstream instanceof SerializedSubscriber ||
+				(upstream instanceof FluxProcessor &&
+						((FluxProcessor<?, ?>)upstream).isSerialized());
+	}
+
+	@Override
 	public Stream<? extends Scannable> inners() {
 		return Scannable.from(upstream)
 		                .inners();
@@ -82,12 +90,6 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT>  {
 	public Throwable getError() {
 		return Scannable.from(upstream)
 		                .scanOrDefault(Attr.ERROR, super.getError());
-	}
-
-	@Override
-	@SuppressWarnings("unchecked")
-	public boolean isStarted() {
-		return !(upstream instanceof FluxProcessor) || ((FluxProcessor<OUT, ?>) upstream).isStarted();
 	}
 
 	@Override

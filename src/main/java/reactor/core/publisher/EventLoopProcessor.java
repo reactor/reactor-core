@@ -44,13 +44,6 @@ import reactor.util.concurrent.WaitStrategy;
 abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		implements Runnable {
 
-	/**
-	 * Whether the RingBuffer*Processor can be graphed by wrapping the individual Sequence with the target downstream
-	 */
-	@Deprecated
-	public static final  boolean TRACEABLE_RING_BUFFER_PROCESSOR =
-			Boolean.parseBoolean(System.getProperty("reactor.ringbuffer.trace", "true"));
-
 	static <E> Flux<E> coldSource(RingBuffer<Slot<E>> ringBuffer, Throwable t, Throwable error,
 			RingBuffer.Sequence start){
 		Flux<E> bufferIterable = generate(start::getAsLong, (seq, sink) -> {
@@ -219,10 +212,10 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		return r;
 	}
 
-	final ExecutorService executor;
-	final ClassLoader     contextClassLoader;
-	final String          name;
-	final boolean         autoCancel;
+	final ExecutorService  executor;
+	final EventLoopContext contextClassLoader;
+	final String           name;
+	final boolean          autoCancel;
 
 	final RingBuffer<Slot<IN>> ringBuffer;
 	final WaitStrategy readWait = WaitStrategy.liteBlocking();
@@ -254,7 +247,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 
 		this.autoCancel = autoCancel;
 
-		contextClassLoader = new EventLoopContext();
+		contextClassLoader = new EventLoopContext(multiproducers);
 
 		this.name = defaultName(threadFactory, getClass());
 
@@ -407,8 +400,8 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	}
 
 	@Override
-	final public boolean isStarted() {
-		return upstreamSubscription != null || ringBuffer.getAsLong() != -1;
+	public boolean isSerialized() {
+		return contextClassLoader.multiproducer;
 	}
 
 	@Override
@@ -610,9 +603,12 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 
 	final static class EventLoopContext extends ClassLoader {
 
-		EventLoopContext() {
+		final boolean multiproducer;
+
+		EventLoopContext(boolean multiproducer) {
 			super(Thread.currentThread()
 			            .getContextClassLoader());
+			this.multiproducer = multiproducer;
 		}
 	}
 

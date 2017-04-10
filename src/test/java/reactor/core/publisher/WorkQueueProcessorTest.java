@@ -62,15 +62,13 @@ public class WorkQueueProcessorTest {
 
 	static final String s = "Synchronizer";
 
-	public static void submitInCurrentThread(BlockingSink<String> emitter) {
+	public static void submitInCurrentThread(FluxSink<String> emitter) {
 		Random rand = new Random();
 		for (int i = 0; i < 1000; i++) {
-			long re = emitter.submit(e);
-			logger.debug("Submit element result " + re);
+			emitter.next(e);
 			LockSupport.parkNanos(2_000_000 + rand.nextInt(200_000) - 100_000);
 			synchronized (s) {
-				long rd = emitter.submit(s);
-				logger.debug("Submit drain result " + rd);
+				emitter.next(s);
 				timeoutWait(s);
 			}
 		}
@@ -188,14 +186,14 @@ public class WorkQueueProcessorTest {
 				              s.request(Long.MAX_VALUE);
 			              }
 		              });
-		BlockingSink<String> emitter = queueProcessor.connectSink();
+		FluxSink<String> emitter = queueProcessor.sink();
 
 		try {
 			submitInCurrentThread(emitter);
 		}
 		finally {
 			logger.debug("Finishing");
-			emitter.finish();
+			emitter.complete();
 			timer.dispose();
 		}
 		TimeUnit.SECONDS.sleep(1);
@@ -403,7 +401,6 @@ public class WorkQueueProcessorTest {
 		         });
 
 		sink.subscribe(processor);
-		sink.connect();
 		for (int i = 0; i < elems; i++) {
 
 			sink.onNext(i);
@@ -894,7 +891,7 @@ public class WorkQueueProcessorTest {
 		CountDownLatch latch = new CountDownLatch(simultaneousSubscribers);
 		Scheduler scheduler = Schedulers.single();
 
-		BlockingSink<String> sink = broadcast.connectSink();
+		FluxSink<String> sink = broadcast.sink();
 		Flux<String> flux = broadcast.filter(Objects::nonNull)
 		                             .publishOn(scheduler)
 		                             .cache(1);
@@ -902,7 +899,7 @@ public class WorkQueueProcessorTest {
 		for (int i = 0; i < simultaneousSubscribers; i++) {
 			flux.subscribe(s -> latch.countDown());
 		}
-		sink.submit("data", 1, TimeUnit.SECONDS);
+		sink.next("data");
 
 		Assertions.assertThat(latch.await(4, TimeUnit.SECONDS))
 		          .overridingErrorMessage("Data not received")
@@ -918,7 +915,7 @@ public class WorkQueueProcessorTest {
 		CountDownLatch latch = new CountDownLatch(simultaneousSubscribers);
 		Scheduler scheduler = Schedulers.single();
 
-		BlockingSink<String> sink = broadcast.connectSink();
+		FluxSink<String> sink = broadcast.sink();
 		Flux<String> flux = broadcast.filter(Objects::nonNull)
 		                             .publishOn(scheduler)
 		                             .cache(1);
@@ -927,7 +924,7 @@ public class WorkQueueProcessorTest {
 			flux.subscribe(s -> latch.countDown());
 		}
 
-		sink.submit("data", 1, TimeUnit.SECONDS);
+		sink.next("data");
 
 		Assertions.assertThat(latch.await(4, TimeUnit.SECONDS))
 		          .overridingErrorMessage("Data not received")

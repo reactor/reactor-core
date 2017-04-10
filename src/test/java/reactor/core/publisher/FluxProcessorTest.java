@@ -25,7 +25,6 @@ import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
@@ -127,21 +126,13 @@ public class FluxProcessorTest {
 			         latch.countDown();
 		         });
 
-		BlockingSink<Integer> session = processor.connectSink();
-		long emission = session.submit(1);
-		if (emission == -1L) {
-			throw new IllegalStateException("Negatime " + emission);
-		}
+		FluxSink<Integer> session = processor.sink();
+		session.next(1);
 		//System.out.println(emission);
-		if (session.hasFailed()) {
-			session.getError()
-			       .printStackTrace();
-		}
-		session.finish();
+		session.complete();
 
 		latch.await(5, TimeUnit.SECONDS);
-		Assert.assertTrue("latch : " + count, count.get() == 1);
-		Assert.assertTrue("time : " + emission, emission >= 0);
+		Assert.assertTrue("latch : " + count, count.get() == 0);
 		scheduler.dispose();
 	}
 
@@ -159,20 +150,14 @@ public class FluxProcessorTest {
 			         .subscribe(d -> latch.countDown(), null, latch::countDown);
 		}
 
-		BlockingSink<Integer> session = processor.connectSink();
+		FluxSink<Integer> session = processor.sink();
 
 		for (int i = 0; i < n; i++) {
-			while (!session.emit(i)
-			               .isOk()) {
-				//System.out.println(emission);
-				if (session.hasFailed()) {
-					session.getError()
-					       .printStackTrace();
-					throw session.getError();
-				}
+			while (session.requestedFromDownstream() == 0) {
 			}
+			session.next(i);
 		}
-		session.finish();
+		session.complete();
 
 		boolean waited = latch.await(5, TimeUnit.SECONDS);
 		Assert.assertTrue( "latch : " + latch.getCount(), waited);
@@ -193,20 +178,14 @@ public class FluxProcessorTest {
 			         .subscribe();
 		}
 
-		BlockingSink<Integer> session = processor.connectSink();
+		FluxSink<Integer> session = processor.sink();
 
 		for (int i = 0; i < n; i++) {
-			while (!session.emit(i)
-			               .isOk()) {
-				//System.out.println(emission);
-				if (session.hasFailed()) {
-					session.getError()
-					       .printStackTrace();
-					throw session.getError();
-				}
+			while (session.requestedFromDownstream() == 0) {
 			}
+			session.next(i);
 		}
-		session.finish();
+		session.complete();
 
 		boolean waited = latch.await(5, TimeUnit.SECONDS);
 		Assert.assertTrue( "latch : " + latch.getCount(), waited);

@@ -47,7 +47,7 @@ public interface FluxSink<T> {
      * @param t the value to emit, not null
      * Will return this sink from 3.1 (now void)
      */
-    void next(T t);
+    FluxSink<T> next(T t);
 
 	/**
 	 * The current outstanding request amount.

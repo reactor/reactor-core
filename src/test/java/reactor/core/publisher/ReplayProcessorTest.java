@@ -16,7 +16,6 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
-import java.util.Iterator;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -579,18 +578,15 @@ public class ReplayProcessorTest {
 		assertThat(s.isCancelled()).isFalse();
 		assertThat(s.isCancelled()).isFalse();
 
-		assertThat(rp.isStarted()).isFalse();
 		assertThat(rp.getPrefetch()).isEqualTo(Integer.MAX_VALUE);
 		if(rp.getBufferSize() != Integer.MAX_VALUE) {
 			assertThat(rp.getBufferSize()).isEqualTo(1);
 		}
-		BlockingSink<String> sink = rp.connectSink();
-		rp.onComplete();
-		assertThat(rp.isStarted()).isTrue();
-
+		FluxSink<String> sink = rp.sink();
+		sink.next("test");
 		rp.onComplete();
 
-		assertThat(sink.emit("test").isCancelled()).isTrue();
+		rp.onComplete();
 
 		Exception e = new RuntimeException("test");
 		try{
