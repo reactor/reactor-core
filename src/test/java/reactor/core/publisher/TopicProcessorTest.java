@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,9 +33,7 @@ import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.WaitStrategy;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * @author Stephane Maldini
@@ -286,7 +284,7 @@ public class TopicProcessorTest {
 		CountDownLatch latch = new CountDownLatch(simultaneousSubscribers);
 		Scheduler scheduler = Schedulers.single();
 
-		BlockingSink<String> sink = broadcast.connectSink();
+		FluxSink<String> sink = broadcast.sink();
 		Flux<String> flux = broadcast.filter(Objects::nonNull)
 		                             .publishOn(scheduler)
 		                             .cache(1);
@@ -294,7 +292,7 @@ public class TopicProcessorTest {
 		for (int i = 0; i < simultaneousSubscribers; i++) {
 			flux.subscribe(s -> latch.countDown());
 		}
-		sink.submit("data", 1, TimeUnit.SECONDS);
+		sink.next("data");
 
 		assertThat(latch.await(4, TimeUnit.SECONDS))
 				.overridingErrorMessage("Data not received")
@@ -310,7 +308,7 @@ public class TopicProcessorTest {
 		CountDownLatch latch = new CountDownLatch(simultaneousSubscribers);
 		Scheduler scheduler = Schedulers.single();
 
-		BlockingSink<String> sink = broadcast.connectSink();
+		FluxSink<String> sink = broadcast.sink();
 		Flux<String> flux = broadcast.filter(Objects::nonNull)
 		                             .publishOn(scheduler)
 		                             .cache(1);
@@ -318,7 +316,7 @@ public class TopicProcessorTest {
 		for (int i = 0; i < simultaneousSubscribers; i++) {
 			flux.subscribe(s -> latch.countDown());
 		}
-		sink.submit("data", 1, TimeUnit.SECONDS);
+		sink.next("data");
 
 		assertThat(latch.await(4, TimeUnit.SECONDS))
 				.overridingErrorMessage("Data not received")

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -157,8 +157,6 @@ public class FluxResumeTest {
 	public void someFirst() {
 		EmitterProcessor<Integer> tp = EmitterProcessor.create();
 
-		tp.connect();
-
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		tp.onErrorResumeWith(v -> Flux.range(11, 10))
@@ -179,8 +177,6 @@ public class FluxResumeTest {
 	@Test
 	public void someFirstBackpressured() {
 		EmitterProcessor<Integer> tp = EmitterProcessor.create();
-
-		tp.connect();
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(10);
 

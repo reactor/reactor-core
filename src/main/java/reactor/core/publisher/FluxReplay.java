@@ -18,8 +18,10 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -45,6 +47,912 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 	final Scheduler scheduler;
 
 	volatile ReplaySubscriber<T> connection;
+
+	interface ReplaySubscription<T> extends QueueSubscription<T>, InnerProducer<T> {
+
+		Subscriber<? super T> actual();
+
+		boolean enter();
+
+		int leave(int missed);
+
+		void produced(long n);
+
+		void node(Object node);
+
+		Object node();
+
+		int tailIndex();
+
+		void tailIndex(int tailIndex);
+
+		int index();
+
+		void index(int index);
+
+		int fusionMode();
+
+		boolean isCancelled();
+
+		long requested();
+	}
+
+	interface ReplayBuffer<T> {
+
+		void add(T value);
+
+		void onError(Throwable ex);
+
+		Throwable getError();
+
+		void onComplete();
+
+		void replay(ReplaySubscription<T> rs);
+
+		boolean isDone();
+
+		T poll(ReplaySubscription<T> rs);
+
+		void clear(ReplaySubscription<T> rs);
+
+		boolean isEmpty(ReplaySubscription<T> rs);
+
+		int size(ReplaySubscription<T> rs);
+
+		int size();
+
+		int capacity();
+	}
+
+	static final class SizeAndTimeBoundReplayBuffer<T> implements ReplayBuffer<T> {
+
+		static final class TimedNode<T> extends AtomicReference<TimedNode<T>> {
+
+			final T    value;
+			final long time;
+
+			TimedNode(T value, long time) {
+				this.value = value;
+				this.time = time;
+			}
+		}
+
+		final int            limit;
+		final long           maxAge;
+		final Scheduler scheduler;
+		int size;
+
+		volatile TimedNode<T> head;
+
+		TimedNode<T> tail;
+
+		Throwable error;
+		volatile boolean done;
+
+		SizeAndTimeBoundReplayBuffer(int limit,
+				long maxAge,
+				Scheduler scheduler) {
+			this.limit = limit;
+			this.maxAge = maxAge;
+			this.scheduler = scheduler;
+			TimedNode<T> h = new TimedNode<>(null, 0L);
+			this.tail = h;
+			this.head = h;
+		}
+
+		@SuppressWarnings("unchecked")
+		void replayNormal(ReplaySubscription<T> rs) {
+			int missed = 1;
+			final Subscriber<? super T> a = rs.actual();
+
+			for (; ; ) {
+				@SuppressWarnings("unchecked") TimedNode<T> node =
+						(TimedNode<T>) rs.node();
+				if (node == null) {
+					node = head;
+					if (!done) {
+						// skip old entries
+						long limit = scheduler.now(TimeUnit.MILLISECONDS) - maxAge;
+						TimedNode<T> next = node;
+						while (next != null) {
+							long ts = next.time;
+							if (ts > limit) {
+								break;
+							}
+							node = next;
+							next = node.get();
+						}
+					}
+				}
+
+				long r = rs.requested();
+				long e = 0L;
+
+				while (e != r) {
+					if (rs.isCancelled()) {
+						rs.node(null);
+						return;
+					}
+
+					boolean d = done;
+					TimedNode<T> next = node.get();
+					boolean empty = next == null;
+
+					if (d && empty) {
+						rs.node(null);
+						Throwable ex = error;
+						if (ex != null) {
+							a.onError(ex);
+						}
+						else {
+							a.onComplete();
+						}
+						return;
+					}
+
+					if (empty) {
+						break;
+					}
+
+					a.onNext(next.value);
+
+					e++;
+					node = next;
+				}
+
+				if (e == r) {
+					if (rs.isCancelled()) {
+						rs.node(null);
+						return;
+					}
+
+					boolean d = done;
+					boolean empty = node.get() == null;
+
+					if (d && empty) {
+						rs.node(null);
+						Throwable ex = error;
+						if (ex != null) {
+							a.onError(ex);
+						}
+						else {
+							a.onComplete();
+						}
+						return;
+					}
+				}
+
+				if (e != 0L) {
+					if (r != Long.MAX_VALUE) {
+						rs.produced(e);
+					}
+				}
+
+				rs.node(node);
+
+				missed = rs.leave(missed);
+				if (missed == 0) {
+					break;
+				}
+			}
+		}
+
+		void replayFused(ReplaySubscription<T> rs) {
+			int missed = 1;
+
+			final Subscriber<? super T> a = rs.actual();
+
+			for (; ; ) {
+
+				if (rs.isCancelled()) {
+					rs.node(null);
+					return;
+				}
+
+				boolean d = done;
+
+				a.onNext(null);
+
+				if (d) {
+					Throwable ex = error;
+					if (ex != null) {
+						a.onError(ex);
+					}
+					else {
+						a.onComplete();
+					}
+					return;
+				}
+
+				missed = rs.leave(missed);
+				if (missed == 0) {
+					break;
+				}
+			}
+		}
+
+		@Override
+		public void onError(Throwable ex) {
+			done = true;
+			error = ex;
+		}
+
+		@Override
+		public Throwable getError() {
+			return error;
+		}
+
+		@Override
+		public void onComplete() {
+			done = true;
+		}
+
+		@Override
+		public boolean isDone() {
+			return done;
+		}
+
+		@SuppressWarnings("unchecked")
+		TimedNode<T> latestHead(ReplaySubscription<T> rs) {
+			long now = scheduler.now(TimeUnit.MILLISECONDS) - maxAge;
+
+			TimedNode<T> h = (TimedNode<T>) rs.node();
+			if (h == null) {
+				h = head;
+			}
+			TimedNode<T> n;
+			while ((n = h.get()) != null) {
+				if (n.time > now) {
+					break;
+				}
+				h = n;
+			}
+			return h;
+		}
+
+		@Override
+		public T poll(ReplaySubscription<T> rs) {
+			TimedNode<T> node = latestHead(rs);
+			TimedNode<T> next;
+			long now = scheduler.now(TimeUnit.MILLISECONDS) - maxAge;
+			while ((next = node.get()) != null) {
+				if (next.time > now) {
+					node = next;
+					break;
+				}
+				node = next;
+			}
+			if (next == null) {
+				return null;
+			}
+			rs.node(next);
+
+			return node.value;
+		}
+
+		@Override
+		public void clear(ReplaySubscription<T> rs) {
+			rs.node(null);
+		}
+
+		@Override
+		@SuppressWarnings("unchecked")
+		public boolean isEmpty(ReplaySubscription<T> rs) {
+			TimedNode<T> node = latestHead(rs);
+			return node.get() == null;
+		}
+
+		@Override
+		public int size(ReplaySubscription<T> rs) {
+			TimedNode<T> node = latestHead(rs);
+			int count = 0;
+
+			TimedNode<T> next;
+			while ((next = node.get()) != null && count != Integer.MAX_VALUE) {
+				count++;
+				node = next;
+			}
+
+			return count;
+		}
+
+		@Override
+		public int size() {
+			TimedNode<T> node = head;
+			int count = 0;
+
+			TimedNode<T> next;
+			while ((next = node.get()) != null && count != Integer.MAX_VALUE) {
+				count++;
+				node = next;
+			}
+
+			return count;
+		}
+
+		@Override
+		public int capacity() {
+			return limit;
+		}
+
+		@Override
+		public void add(T value) {
+			TimedNode<T> n = new TimedNode<>(value, scheduler.now(TimeUnit.MILLISECONDS));
+			tail.set(n);
+			tail = n;
+			int s = size;
+			if (s == limit) {
+				head = head.get();
+			}
+			else {
+				size = s + 1;
+			}
+			long limit = scheduler.now(TimeUnit.MILLISECONDS) - maxAge;
+
+			TimedNode<T> h = head;
+			TimedNode<T> next;
+			int removed = 0;
+			for (; ; ) {
+				next = h.get();
+				if (next == null) {
+					break;
+				}
+
+				if (next.time > limit) {
+					if (removed != 0) {
+						size = size - removed;
+						head = h;
+					}
+					break;
+				}
+
+				h = next;
+				removed++;
+			}
+		}
+
+		@Override
+		@SuppressWarnings("unchecked")
+		public void replay(ReplaySubscription<T> rs) {
+			if (!rs.enter()) {
+				return;
+			}
+
+			if (rs.fusionMode() == NONE) {
+				replayNormal(rs);
+			}
+			else {
+				replayFused(rs);
+			}
+		}
+	}
+
+	static final class UnboundedReplayBuffer<T> implements ReplayBuffer<T> {
+
+		final int batchSize;
+
+		volatile int size;
+
+		final Object[] head;
+
+		Object[] tail;
+
+		int tailIndex;
+
+		volatile boolean done;
+		Throwable error;
+
+		UnboundedReplayBuffer(int batchSize) {
+			this.batchSize = batchSize;
+			Object[] n = new Object[batchSize + 1];
+			this.tail = n;
+			this.head = n;
+		}
+
+		@Override
+		public Throwable getError() {
+			return error;
+		}
+
+		@Override
+		public int capacity() {
+			return Integer.MAX_VALUE;
+		}
+
+		@Override
+		public void add(T value) {
+			int i = tailIndex;
+			Object[] a = tail;
+			if (i == a.length - 1) {
+				Object[] b = new Object[a.length];
+				b[0] = value;
+				tailIndex = 1;
+				a[i] = b;
+				tail = b;
+			}
+			else {
+				a[i] = value;
+				tailIndex = i + 1;
+			}
+			size++;
+		}
+
+		@Override
+		public void onError(Throwable ex) {
+			error = ex;
+			done = true;
+		}
+
+		@Override
+		public void onComplete() {
+			done = true;
+		}
+
+		void replayNormal(ReplaySubscription<T> rs) {
+			int missed = 1;
+
+			final Subscriber<? super T> a = rs.actual();
+			final int n = batchSize;
+
+			for (; ; ) {
+
+				long r = rs.requested();
+				long e = 0L;
+
+				Object[] node = (Object[]) rs.node();
+				if (node == null) {
+					node = head;
+				}
+				int tailIndex = rs.tailIndex();
+				int index = rs.index();
+
+				while (e != r) {
+					if (rs.isCancelled()) {
+						rs.node(null);
+						return;
+					}
+
+					boolean d = done;
+					boolean empty = index == size;
+
+					if (d && empty) {
+						rs.node(null);
+						Throwable ex = error;
+						if (ex != null) {
+							a.onError(ex);
+						}
+						else {
+							a.onComplete();
+						}
+						return;
+					}
+
+					if (empty) {
+						break;
+					}
+
+					if (tailIndex == n) {
+						node = (Object[]) node[tailIndex];
+						tailIndex = 0;
+					}
+
+					@SuppressWarnings("unchecked") T v = (T) node[tailIndex];
+
+					a.onNext(v);
+
+					e++;
+					tailIndex++;
+					index++;
+				}
+
+				if (e == r) {
+					if (rs.isCancelled()) {
+						rs.node(null);
+						return;
+					}
+
+					boolean d = done;
+					boolean empty = index == size;
+
+					if (d && empty) {
+						rs.node(null);
+						Throwable ex = error;
+						if (ex != null) {
+							a.onError(ex);
+						}
+						else {
+							a.onComplete();
+						}
+						return;
+					}
+				}
+
+				if (e != 0L) {
+					if (r != Long.MAX_VALUE) {
+						rs.produced(e);
+					}
+				}
+
+				rs.index(index);
+				rs.tailIndex(tailIndex);
+				rs.node(node);
+
+				missed = rs.leave(missed);
+				if (missed == 0) {
+					break;
+				}
+			}
+		}
+
+		void replayFused(ReplaySubscription<T> rs) {
+			int missed = 1;
+
+			final Subscriber<? super T> a = rs.actual();
+
+			for (; ; ) {
+
+				if (rs.isCancelled()) {
+					rs.node(null);
+					return;
+				}
+
+				boolean d = done;
+
+				a.onNext(null);
+
+				if (d) {
+					Throwable ex = error;
+					if (ex != null) {
+						a.onError(ex);
+					}
+					else {
+						a.onComplete();
+					}
+					return;
+				}
+
+				missed = rs.leave(missed);
+				if (missed == 0) {
+					break;
+				}
+			}
+		}
+
+		@Override
+		public void replay(ReplaySubscription<T> rs) {
+			if (!rs.enter()) {
+				return;
+			}
+
+			if (rs.fusionMode() == NONE) {
+				replayNormal(rs);
+			}
+			else {
+				replayFused(rs);
+			}
+		}
+
+		@Override
+		public boolean isDone() {
+			return done;
+		}
+
+		@Override
+		public T poll(ReplaySubscription<T> rs) {
+			int index = rs.index();
+			if (index == size) {
+				return null;
+			}
+			Object[] node = (Object[]) rs.node();
+			if (node == null) {
+				node = head;
+				rs.node(node);
+			}
+			int tailIndex = rs.tailIndex();
+			if (tailIndex == batchSize) {
+				node = (Object[]) node[tailIndex];
+				tailIndex = 0;
+				rs.node(node);
+			}
+			@SuppressWarnings("unchecked") T v = (T) node[tailIndex];
+			rs.index(index + 1);
+			rs.tailIndex(tailIndex + 1);
+			return v;
+		}
+
+		@Override
+		public void clear(ReplaySubscription<T> rs) {
+			rs.node(null);
+		}
+
+		@Override
+		public boolean isEmpty(ReplaySubscription<T> rs) {
+			return rs.index() == size;
+		}
+
+		@Override
+		public int size(ReplaySubscription<T> rs) {
+			return size - rs.index();
+		}
+
+		@Override
+		public int size() {
+			return size;
+		}
+
+	}
+
+	static final class SizeBoundReplayBuffer<T> implements ReplayBuffer<T> {
+
+		final int limit;
+
+		volatile Node<T> head;
+
+		Node<T> tail;
+
+		int size;
+
+		volatile boolean done;
+		Throwable error;
+
+		SizeBoundReplayBuffer(int limit) {
+			if(limit < 0){
+				throw new IllegalArgumentException("Limit cannot be negative");
+			}
+			this.limit = limit;
+			Node<T> n = new Node<>(null);
+			this.tail = n;
+			this.head = n;
+		}
+
+		@Override
+		public int capacity() {
+			return limit;
+		}
+
+		@Override
+		public void add(T value) {
+			Node<T> n = new Node<>(value);
+			tail.set(n);
+			tail = n;
+			int s = size;
+			if (s == limit) {
+				head = head.get();
+			}
+			else {
+				size = s + 1;
+			}
+		}
+
+		@Override
+		public void onError(Throwable ex) {
+			error = ex;
+			done = true;
+		}
+
+		@Override
+		public void onComplete() {
+			done = true;
+		}
+
+		void replayNormal(ReplaySubscription<T> rs) {
+			final Subscriber<? super T> a = rs.actual();
+
+			int missed = 1;
+
+			for (; ; ) {
+
+				long r = rs.requested();
+				long e = 0L;
+
+				@SuppressWarnings("unchecked") Node<T> node = (Node<T>) rs.node();
+				if (node == null) {
+					node = head;
+				}
+
+				while (e != r) {
+					if (rs.isCancelled()) {
+						rs.node(null);
+						return;
+					}
+
+					boolean d = done;
+					Node<T> next = node.get();
+					boolean empty = next == null;
+
+					if (d && empty) {
+						rs.node(null);
+						Throwable ex = error;
+						if (ex != null) {
+							a.onError(ex);
+						}
+						else {
+							a.onComplete();
+						}
+						return;
+					}
+
+					if (empty) {
+						break;
+					}
+
+					a.onNext(next.value);
+
+					e++;
+					node = next;
+				}
+
+				if (e == r) {
+					if (rs.isCancelled()) {
+						rs.node(null);
+						return;
+					}
+
+					boolean d = done;
+					boolean empty = node.get() == null;
+
+					if (d && empty) {
+						rs.node(null);
+						Throwable ex = error;
+						if (ex != null) {
+							a.onError(ex);
+						}
+						else {
+							a.onComplete();
+						}
+						return;
+					}
+				}
+
+				if (e != 0L) {
+					if (r != Long.MAX_VALUE) {
+						rs.produced(e);
+					}
+				}
+
+				rs.node(node);
+
+				missed = rs.leave(missed);
+				if (missed == 0) {
+					break;
+				}
+			}
+		}
+
+		void replayFused(ReplaySubscription<T> rs) {
+			int missed = 1;
+
+			final Subscriber<? super T> a = rs.actual();
+
+			for (; ; ) {
+
+				if (rs.isCancelled()) {
+					rs.node(null);
+					return;
+				}
+
+				boolean d = done;
+
+				a.onNext(null);
+
+				if (d) {
+					Throwable ex = error;
+					if (ex != null) {
+						a.onError(ex);
+					}
+					else {
+						a.onComplete();
+					}
+					return;
+				}
+
+				missed = rs.leave(missed);
+				if (missed == 0) {
+					break;
+				}
+			}
+		}
+
+		@Override
+		public void replay(ReplaySubscription<T> rs) {
+			if (!rs.enter()) {
+				return;
+			}
+
+			if (rs.fusionMode() == NONE) {
+				replayNormal(rs);
+			}
+			else {
+				replayFused(rs);
+			}
+		}
+
+		@Override
+		public Throwable getError() {
+			return error;
+		}
+
+		@Override
+		public boolean isDone() {
+			return done;
+		}
+
+		static final class Node<T> extends AtomicReference<Node<T>> {
+
+			/** */
+			private static final long serialVersionUID = 3713592843205853725L;
+
+			final T value;
+
+			Node(T value) {
+				this.value = value;
+			}
+		}
+
+		@Override
+		public T poll(ReplaySubscription<T> rs) {
+			@SuppressWarnings("unchecked") Node<T> node = (Node<T>) rs.node();
+			if (node == null) {
+				node = head;
+				rs.node(node);
+			}
+
+			Node<T> next = node.get();
+			if (next == null) {
+				return null;
+			}
+			rs.node(next);
+
+			return next.value;
+		}
+
+		@Override
+		public void clear(ReplaySubscription<T> rs) {
+			rs.node(null);
+		}
+
+		@Override
+		public boolean isEmpty(ReplaySubscription<T> rs) {
+			@SuppressWarnings("unchecked") Node<T> node = (Node<T>) rs.node();
+			if (node == null) {
+				node = head;
+				rs.node(node);
+			}
+			return node.get() == null;
+		}
+
+		@Override
+		public int size(ReplaySubscription<T> rs) {
+			@SuppressWarnings("unchecked") Node<T> node = (Node<T>) rs.node();
+			if (node == null) {
+				node = head;
+			}
+			int count = 0;
+
+			Node<T> next;
+			while ((next = node.get()) != null && count != Integer.MAX_VALUE) {
+				count++;
+				node = next;
+			}
+
+			return count;
+		}
+
+		@Override
+		public int size() {
+			Node<T> node = head;
+			int count = 0;
+
+			Node<T> next;
+			while ((next = node.get()) != null && count != Integer.MAX_VALUE) {
+				count++;
+				node = next;
+			}
+
+			return count;
+		}
+	}
+
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<FluxReplay, ReplaySubscriber> CONNECTION =
 			AtomicReferenceFieldUpdater.newUpdater(FluxReplay.class,
@@ -74,16 +982,16 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 	ReplaySubscriber<T> newState() {
 		if (scheduler != null) {
-			return new ReplaySubscriber<>(new ReplayProcessor.SizeAndTimeBoundReplayBuffer<>(history,
+			return new ReplaySubscriber<>(new SizeAndTimeBoundReplayBuffer<>(history,
 					ttl,
 					scheduler),
 					this);
 		}
 		if (history != Integer.MAX_VALUE) {
-			return new ReplaySubscriber<>(new ReplayProcessor.SizeBoundReplayBuffer<>(history),
+			return new ReplaySubscriber<>(new SizeBoundReplayBuffer<>(history),
 					this);
 		}
-		return new ReplaySubscriber<>(new ReplayProcessor.UnboundedReplayBuffer<>(QueueSupplier.SMALL_BUFFER_SIZE),
+		return new ReplaySubscriber<>(new UnboundedReplayBuffer<>(QueueSupplier.SMALL_BUFFER_SIZE),
 					this);
 	}
 
@@ -151,8 +1059,8 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 	static final class ReplaySubscriber<T>
 			implements InnerConsumer<T>, Disposable {
 
-		final FluxReplay<T>                   parent;
-		final ReplayProcessor.ReplayBuffer<T> buffer;
+		final FluxReplay<T>   parent;
+		final ReplayBuffer<T> buffer;
 
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
@@ -161,7 +1069,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 						Subscription.class,
 						"s");
 
-		volatile ReplayInner<T>[] subscribers;
+		volatile ReplaySubscription<T>[] subscribers;
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
@@ -174,14 +1082,14 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 				AtomicIntegerFieldUpdater.newUpdater(ReplaySubscriber.class, "connected");
 
 		@SuppressWarnings("rawtypes")
-		static final ReplayInner[] EMPTY      = new ReplayInner[0];
+		static final ReplaySubscription[] EMPTY      = new ReplaySubscription[0];
 		@SuppressWarnings("rawtypes")
-		static final ReplayInner[] TERMINATED = new ReplayInner[0];
+		static final ReplaySubscription[] TERMINATED = new ReplaySubscription[0];
 
 		volatile boolean cancelled;
 
 		@SuppressWarnings("unchecked")
-		ReplaySubscriber(ReplayProcessor.ReplayBuffer<T> buffer,
+		ReplaySubscriber(ReplayBuffer<T> buffer,
 				FluxReplay<T> parent) {
 			this.buffer = buffer;
 			this.parent = parent;
@@ -200,13 +1108,13 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 		@Override
 		public void onNext(T t) {
-			ReplayProcessor.ReplayBuffer<T> b = buffer;
+			ReplayBuffer<T> b = buffer;
 			if (b.isDone()) {
 				Operators.onNextDropped(t);
 			}
 			else {
 				b.add(t);
-				for (ReplayInner<T> rs : subscribers) {
+				for (ReplaySubscription<T> rs : subscribers) {
 					b.replay(rs);
 				}
 			}
@@ -214,16 +1122,16 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 		@Override
 		public void onError(Throwable t) {
-			ReplayProcessor.ReplayBuffer<T> b = buffer;
+			ReplayBuffer<T> b = buffer;
 			if (b.isDone()) {
 				Operators.onErrorDropped(t);
 			}
 			else {
 				b.onError(t);
 
-				ReplayInner<T>[] a = subscribers;
+				ReplaySubscription<T>[] a = subscribers;
 
-				for (ReplayInner<T> rs : a) {
+				for (ReplaySubscription<T> rs : a) {
 					b.replay(rs);
 				}
 			}
@@ -231,13 +1139,13 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 		@Override
 		public void onComplete() {
-			ReplayProcessor.ReplayBuffer<T> b = buffer;
+			ReplayBuffer<T> b = buffer;
 			if (!b.isDone()) {
 				b.onComplete();
 
-				ReplayInner<T>[] a = subscribers;
+				ReplaySubscription<T>[] a = subscribers;
 
-				for (ReplayProcessor.ReplaySubscription<T> rs : a) {
+				for (ReplaySubscription<T> rs : a) {
 					b.replay(rs);
 				}
 			}
@@ -260,8 +1168,8 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		void disconnectAction() {
 			CancellationException ex = new CancellationException("Disconnected");
 			buffer.onError(ex);
-			for (ReplayInner<T> inner : terminate()) {
-				inner.actual.onError(ex);
+			for (ReplaySubscription<T> inner : terminate()) {
+				inner.actual().onError(ex);
 			}
 		}
 
@@ -270,7 +1178,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 				return false;
 			}
 			synchronized (this) {
-				ReplayInner<T>[] a = subscribers;
+				ReplaySubscription<T>[] a = subscribers;
 				if (a == TERMINATED) {
 					return false;
 				}
@@ -287,8 +1195,8 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		}
 
 		@SuppressWarnings("unchecked")
-		void remove(ReplayInner<T> inner) {
-			ReplayInner<T>[] a = subscribers;
+		void remove(ReplaySubscription<T> inner) {
+			ReplaySubscription<T>[] a = subscribers;
 			if (a == TERMINATED || a == EMPTY) {
 				return;
 			}
@@ -310,7 +1218,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 					return;
 				}
 
-				ReplayInner<T>[] b;
+				ReplaySubscription<T>[] b;
 				if (n == 1) {
 					b = EMPTY;
 				}
@@ -325,8 +1233,8 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		}
 
 		@SuppressWarnings("unchecked")
-		ReplayInner<T>[] terminate() {
-			ReplayInner<T>[] a = subscribers;
+		ReplaySubscription<T>[] terminate() {
+			ReplaySubscription<T>[] a = subscribers;
 			if (a == TERMINATED) {
 				return a;
 			}
@@ -395,7 +1303,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 	}
 
 	static final class ReplayInner<T>
-			implements ReplayProcessor.ReplaySubscription<T> {
+			implements ReplaySubscription<T> {
 
 		final Subscriber<? super T> actual;
 
@@ -457,7 +1365,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 				case REQUESTED_FROM_DOWNSTREAM:
 					return isCancelled() ? 0L : requested;
 			}
-			return ReplayProcessor.ReplaySubscription.super.scan(key);
+			return ReplaySubscription.super.scan(key);
 		}
 
 		@Override

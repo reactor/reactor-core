@@ -74,41 +74,18 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		return new DelegateProcessor<>(downstream, upstream);
 	}
 
-
-	/**
-	 * Trigger onSubscribe with a stateless subscription to signal this subscriber it can start receiving
-	 * onNext, onComplete and onError calls.
-	 * <p>
-	 * Doing so MAY allow direct UNBOUNDED onXXX calls and MAY prevent {@link org.reactivestreams.Publisher} to subscribe this
-	 * subscriber.
-	 *
-	 * Note that {@link org.reactivestreams.Processor} can extend this behavior to effectively start its subscribers.
-	 *
-	 * @return this
-	 */
-	public FluxProcessor<IN, OUT> connect() {
-		onSubscribe(Operators.emptySubscription());
-		return this;
+	@Override
+	public void dispose() {
+		onError(new CancellationException("Disposed"));
 	}
 
 	/**
-	 * Create a {@link BlockingSink} and attach it via {@link #onSubscribe(Subscription)}.
+	 * Return the number of active {@link Subscriber} or {@literal -1} if untracked.
 	 *
-	 * @return a new subscribed {@link BlockingSink}
+	 * @return the number of active {@link Subscriber} or {@literal -1} if untracked
 	 */
-	public final BlockingSink<IN> connectSink() {
-		return connectSink(true);
-	}
-
-	/**
-	 * Prepare a {@link BlockingSink} and pass it to {@link #onSubscribe(Subscription)} if the autostart flag is
-	 * set to true.
-	 *
-	 * @param autostart automatically start?
-	 * @return a new {@link BlockingSink}
-	 */
-	public final BlockingSink<IN> connectSink(boolean autostart) {
-		return BlockingSink.create(this, autostart);
+	public long downstreamCount(){
+		return inners().count();
 	}
 
 	/**
@@ -130,58 +107,6 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	}
 
 	/**
-	 * Create a {@link FluxProcessor} that safely gates multi-threaded producer
-	 * {@link Subscriber#onNext(Object)}.
-	 *
-	 * @return a serializing {@link FluxProcessor}
-	 */
-	public final FluxProcessor<IN, OUT> serialize() {
-		return new DelegateProcessor<>(this, Operators.serialize(this));
-	}
-
-	/**
-	 * Note: From 3.1 this is to be left unimplemented
-	 */
-	@Override
-	public void subscribe(Subscriber<? super OUT> s) {
-		if (s == null) {
-			throw Exceptions.argumentIsNullException();
-		}
-	}
-
-	@Override
-	public void dispose() {
-		onError(new CancellationException("Disposed"));
-	}
-
-	/**
-	 * Has this upstream started or "onSubscribed" ?
-	 *
-	 * @return has this upstream started or "onSubscribed" ?
-	 */
-	public boolean isStarted() {
-		return true;
-	}
-
-	/**
-	 * Has this upstream finished or "completed" / "failed" ?
-	 *
-	 * @return has this upstream finished or "completed" / "failed" ?
-	 */
-	public boolean isTerminated() {
-		return false;
-	}
-
-	/**
-	 * Return the number of active {@link Subscriber} or {@literal -1} if untracked.
-	 *
-	 * @return the number of active {@link Subscriber} or {@literal -1} if untracked
-	 */
-	public long downstreamCount(){
-		return inners().count();
-	}
-
-	/**
 	 * Return true if any {@link Subscriber} is actively subscribed
 	 *
 	 * @return true if any {@link Subscriber} is actively subscribed
@@ -195,6 +120,24 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		return Stream.empty();
 	}
 
+	/**
+	 * Has this upstream finished or "completed" / "failed" ?
+	 *
+	 * @return has this upstream finished or "completed" / "failed" ?
+	 */
+	public boolean isTerminated() {
+		return false;
+	}
+
+	/**
+	 * Return true if this {@link FluxProcessor} supports multithread producing
+	 *
+	 * @return true if this {@link FluxProcessor} supports multithread producing
+	 */
+	public boolean isSerialized() {
+		return false;
+	}
+
 	@Override
 	public Object scan(Attr key) {
 		switch (key) {
@@ -206,5 +149,50 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 				return getBufferSize();
 		}
 		return null;
+	}
+
+	/**
+	 * Create a {@link FluxProcessor} that safely gates multi-threaded producer
+	 * {@link Subscriber#onNext(Object)}.
+	 *
+	 * @return a serializing {@link FluxProcessor}
+	 */
+	public final FluxProcessor<IN, OUT> serialize() {
+		return new DelegateProcessor<>(this, Operators.serialize(this));
+	}
+
+	/**
+	 * Create a {@link FluxSink} that safely gates multi-threaded producer
+	 * {@link Subscriber#onNext(Object)}.
+	 *
+	 * <p> The returned {@link FluxSink} will not apply any
+	 * {@link FluxSink.OverflowStrategy} and overflowing {@link FluxSink#next(Object)}
+	 * will behave in two possible ways depending on the Processor:
+	 * <ul>
+	 * <li> an unbounded processor will handle the overflow itself by dropping or
+	 * buffering </li>
+	 * <li> a bounded processor will block/spin</li>
+	 * </ul>
+	 *
+	 * @return a serializing {@link FluxSink}
+	 */
+	public final FluxSink<IN> sink() {
+		FluxCreate.IgnoreSink<IN> s = new FluxCreate.IgnoreSink<>(this);
+		onSubscribe(s);
+		if(s.isCancelled() ||
+				(isSerialized() && getBufferSize() == Integer.MAX_VALUE)){
+			return s;
+		}
+		return new FluxCreate.SerializedSink<>(s);
+	}
+
+	/**
+	 * Note: From 3.1 this is to be left unimplemented
+	 */
+	@Override
+	public void subscribe(Subscriber<? super OUT> s) {
+		if (s == null) {
+			throw Exceptions.argumentIsNullException();
+		}
 	}
 }

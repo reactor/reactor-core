@@ -128,10 +128,9 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 
 		@Override
-		public void next(T t) {
+		public FluxSink<T> next(T t) {
 			if (sink.isCancelled() || done) {
-				return;
-//				return this;
+				return this;
 			}
 			if (t == null) {
 				throw new NullPointerException("t is null in sink.next(t)");
@@ -139,8 +138,7 @@ final class FluxCreate<T> extends Flux<T> {
 			if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
 				sink.next(t);
 				if (WIP.decrementAndGet(this) == 0) {
-//					return this;
-					return;
+					return this;
 				}
 			}
 			else {
@@ -149,12 +147,11 @@ final class FluxCreate<T> extends Flux<T> {
 					q.offer(t);
 				}
 				if (WIP.getAndIncrement(this) != 0) {
-//					return this;
-					return;
+					return this;
 				}
 			}
 			drainLoop();
-//			return this;
+			return this;
 		}
 
 		@Override
@@ -461,10 +458,9 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 
 		@Override
-		public void next(T t) {
+		public FluxSink<T> next(T t) {
 			if (isCancelled()) {
-				return;
-//				return this;
+				return this;
 			}
 
 			actual.onNext(t);
@@ -472,8 +468,7 @@ final class FluxCreate<T> extends Flux<T> {
 			for (; ; ) {
 				long r = requested;
 				if (r == 0L || REQUESTED.compareAndSet(this, r, r - 1)) {
-					return;
-//					return this;
+					return this;
 				}
 			}
 		}
@@ -487,10 +482,9 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 
 		@Override
-		public final void next(T t) {
+		public final FluxSink<T> next(T t) {
 			if (isCancelled()) {
-//				return this;
-				return;
+				return this;
 			}
 
 			if (requested != 0) {
@@ -500,7 +494,7 @@ final class FluxCreate<T> extends Flux<T> {
 			else {
 				onOverflow();
 			}
-//			return this;
+			return this;
 		}
 
 		abstract void onOverflow();
@@ -550,10 +544,10 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 
 		@Override
-		public void next(T t) {
+		public FluxSink<T> next(T t) {
 			queue.offer(t);
 			drain();
-//			return this;
+			return this;
 		}
 
 		@Override
@@ -691,10 +685,10 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 
 		@Override
-		public void next(T t) {
+		public FluxSink<T> next(T t) {
 			queue.set(t);
 			drain();
-//			return this;
+			return this;
 		}
 
 		@Override

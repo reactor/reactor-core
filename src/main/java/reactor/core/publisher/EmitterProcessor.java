@@ -16,40 +16,47 @@
 
 package reactor.core.publisher;
 
+import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Stream;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
+import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.concurrent.QueueSupplier;
 
+import static reactor.core.publisher.FluxPublish.PublishSubscriber.EMPTY;
+import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
+
 /**
- ** An implementation of a RingBuffer backed message-passing Processor implementing publish-subscribe with
- * synchronous (thread-stealing and happen-before interactions) drain loops.
+ * * An implementation of a RingBuffer backed message-passing Processor implementing
+ * publish-subscribe with synchronous (thread-stealing and happen-before interactions)
+ * drain loops.
  * <p>
- *     The default {@link #create} factories will only produce the new elements observed in
- *     the
- *     parent sequence after a given {@link Subscriber} is subscribed.
- *
+ * The default {@link #create} factories will only produce the new elements observed in
+ * the parent sequence after a given {@link Subscriber} is subscribed.
  * <p>
- * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/emitter.png" alt="">
  * <p>
- *
- * @author Stephane Maldini
+ * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/emitter.png"
+ * alt="">
+ * <p>
  *
  * @param <T> the input and output value type
+ *
+ * @author Stephane Maldini
  */
 public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size, blockingWait
-	 * Strategy and auto-cancel.
+	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE}
+	 * backlog size, blockingWait Strategy and auto-cancel.
 	 *
 	 * @param <E> Type of processed signals
+	 *
 	 * @return a fresh processor
 	 */
 	public static <E> EmitterProcessor<E> create() {
@@ -57,10 +64,12 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	}
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size, blockingWait
-	 * Strategy and auto-cancel.
+	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE}
+	 * backlog size, blockingWait Strategy and auto-cancel.
+	 *
 	 * @param <E> Type of processed signals
-     * @param autoCancel automatically cancel
+	 * @param autoCancel automatically cancel
+	 *
 	 * @return a fresh processor
 	 */
 	public static <E> EmitterProcessor<E> create(boolean autoCancel) {
@@ -68,68 +77,65 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	}
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size, blockingWait
-	 * Strategy and auto-cancel.
+	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE}
+	 * backlog size, blockingWait Strategy and auto-cancel.
+	 *
 	 * @param <E> Type of processed signals
-     * @param bufferSize the internal buffer size to hold signals
+	 * @param bufferSize the internal buffer size to hold signals
+	 *
 	 * @return a fresh processor
 	 */
 	public static <E> EmitterProcessor<E> create(int bufferSize) {
-		return create(bufferSize, Integer.MAX_VALUE);
+		return create(bufferSize, true);
 	}
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size, blockingWait
-	 * Strategy and auto-cancel.
+	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE}
+	 * backlog size, blockingWait Strategy and auto-cancel.
+	 *
 	 * @param <E> Type of processed signals
-     * @param bufferSize the internal buffer size to hold signals
-     * @param concurrency the concurrency level of the emission
-	 * @return a fresh processor
-	 */
-	public static <E> EmitterProcessor<E> create(int bufferSize, int concurrency) {
-		return create(bufferSize, concurrency, true);
-	}
-
-	/**
-	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size, blockingWait
-	 * Strategy and auto-cancel. 
-	 * @param <E> Type of processed signals
-     * @param bufferSize the internal buffer size to hold signals
-     * @param autoCancel automatically cancel
+	 * @param bufferSize the internal buffer size to hold signals
+	 * @param autoCancel automatically cancel
+	 *
 	 * @return a fresh processor
 	 */
 	public static <E> EmitterProcessor<E> create(int bufferSize, boolean autoCancel) {
-		return create(bufferSize, Integer.MAX_VALUE, autoCancel);
+		return new EmitterProcessor<>(autoCancel, bufferSize);
 	}
 
-	/**
-	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size, blockingWait
-	 * Strategy and auto-cancel. 
-	 * @param <E> Type of processed signals
-	 * @param bufferSize the internal buffer size to hold signals
-	 * @param concurrency the concurrency level of the emission
-	 * @param autoCancel automatically cancel
-	 * @return a fresh processor
-	 */
-	public static <E> EmitterProcessor<E> create(int bufferSize, int concurrency, boolean autoCancel) {
-		return new EmitterProcessor<>(autoCancel, concurrency, bufferSize);
-	}
+	final int prefetch;
 
-	final int maxConcurrency;
-	final int bufferSize;
-	final int limit;
 	final boolean autoCancel;
-	Subscription upstreamSubscription;
 
-	private volatile RingBuffer<EventLoopProcessor.Slot<T>> emitBuffer;
+	volatile Subscription s;
+	@SuppressWarnings("rawtypes")
+	static final AtomicReferenceFieldUpdater<EmitterProcessor, Subscription> S =
+			AtomicReferenceFieldUpdater.newUpdater(EmitterProcessor.class,
+					Subscription.class,
+					"s");
 
-	private volatile boolean done;
+	volatile FluxPublish.PubSubInner<T>[] subscribers;
 
-	static final EmitterInner<?>[] EMPTY = new EmitterInner<?>[0];
+	@SuppressWarnings("rawtypes")
+	static final AtomicReferenceFieldUpdater<EmitterProcessor, FluxPublish.PubSubInner[]>
+			SUBSCRIBERS = AtomicReferenceFieldUpdater.newUpdater(EmitterProcessor.class,
+			FluxPublish.PubSubInner[].class,
+			"subscribers");
 
-	static final EmitterInner<?>[] CANCELLED = new EmitterInner<?>[0];
+	@SuppressWarnings("unused")
+	volatile int wip;
 
-	private volatile Throwable error;
+	@SuppressWarnings("rawtypes")
+	static final AtomicIntegerFieldUpdater<EmitterProcessor> WIP =
+			AtomicIntegerFieldUpdater.newUpdater(EmitterProcessor.class, "wip");
+
+	volatile Queue<T> queue;
+
+	int sourceMode;
+
+	volatile boolean done;
+
+	volatile Throwable error;
 
 	@SuppressWarnings("rawtypes")
 	static final AtomicReferenceFieldUpdater<EmitterProcessor, Throwable> ERROR =
@@ -137,37 +143,12 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 					Throwable.class,
 					"error");
 
-	volatile EmitterInner<?>[] subscribers;
-
-	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<EmitterProcessor, EmitterInner[]> SUBSCRIBERS =
-			AtomicReferenceFieldUpdater.newUpdater(EmitterProcessor.class,
-					EmitterInner[].class,
-					"subscribers");
-	@SuppressWarnings("unused")
-	private volatile int running;
-
-	@SuppressWarnings("rawtypes")
-	static final AtomicIntegerFieldUpdater<EmitterProcessor> RUNNING =
-			AtomicIntegerFieldUpdater.newUpdater(EmitterProcessor.class, "running");
-
-	private volatile int outstanding;
-
-	@SuppressWarnings("rawtypes")
-	static final AtomicIntegerFieldUpdater<EmitterProcessor> OUTSTANDING =
-			AtomicIntegerFieldUpdater.newUpdater(EmitterProcessor.class, "outstanding");
-	boolean firstDrain = true;
-
-	EmitterProcessor(boolean autoCancel, int maxConcurrency, int bufferSize) {
-		if (bufferSize < 1){
-			throw new IllegalArgumentException("bufferSize must be strictly positive, " +
-					"was: "+bufferSize);
+	EmitterProcessor(boolean autoCancel, int prefetch) {
+		if (prefetch < 1) {
+			throw new IllegalArgumentException("bufferSize must be strictly positive, " + "was: " + prefetch);
 		}
 		this.autoCancel = autoCancel;
-		this.maxConcurrency = maxConcurrency;
-		this.bufferSize = bufferSize;
-		this.limit = Math.max(1, bufferSize / 2);
-		OUTSTANDING.lazySet(this, bufferSize);
+		this.prefetch = prefetch;
 		SUBSCRIBERS.lazySet(this, EMPTY);
 	}
 
@@ -181,21 +162,28 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 		if (s == null) {
 			throw Exceptions.argumentIsNullException();
 		}
-		EmitterInner<T> inner = new EmitterInner<>(this, s);
-		if(addInner(inner)) {
-			if (upstreamSubscription != null) {
-				inner.start();
+		EmitterInner<T> inner = new EmitterInner<>(s, this);
+		s.onSubscribe(inner);
+
+		if (inner.isCancelled()) {
+			return;
+		}
+
+		if (add(inner)) {
+			if (inner.isCancelled()) {
+				remove(inner);
+			}
+			drain();
+		}
+		else {
+			Throwable e = error;
+			if (e != null) {
+				inner.actual.onError(e);
+			}
+			else {
+				inner.actual.onComplete();
 			}
 		}
-		else{
-			Operators.complete(inner.actual);
-		}
-	}
-
-	@Override
-	public EmitterProcessor<T> connect() {
-		onSubscribe(Operators.emptySubscription());
-		return this;
 	}
 
 	/**
@@ -203,92 +191,79 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	 *
 	 * @return the number of parked elements in the emitter backlog.
 	 */
-	public long getPending() {
-		return (emitBuffer == null ? -1L :
-				emitBuffer.getPending());
+	public int getPending() {
+		Queue<T> q = queue;
+		return q != null ? q.size() : 0;
+	}
+
+	@Override
+	public void onSubscribe(final Subscription s) {
+		if (Operators.setOnce(S, this, s)) {
+			if (s instanceof Fuseable.QueueSubscription) {
+				@SuppressWarnings("unchecked") Fuseable.QueueSubscription<T> f =
+						(Fuseable.QueueSubscription<T>) s;
+
+				int m = f.requestFusion(Fuseable.ANY);
+				if (m == Fuseable.SYNC) {
+					sourceMode = m;
+					queue = f;
+					done = true;
+					drain();
+					return;
+				}
+				else if (m == Fuseable.ASYNC) {
+					sourceMode = m;
+					queue = f;
+					s.request(prefetch);
+					return;
+				}
+			}
+
+			queue = QueueSupplier.<T>get(prefetch).get();
+
+			s.request(prefetch);
+		}
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public void onNext(T t) {
-		if (t == null) {
+		if (t == null && sourceMode == Fuseable.NONE) {
 			throw Exceptions.argumentIsNullException();
 		}
 
-		EmitterInner<?>[] inner = subscribers;
-		if (inner == CANCELLED) {
-			//FIXME should entorse to the spec and throw Exceptions.failWithCancel
+		if (done) {
+			return;
+		}
+		if (sourceMode == Fuseable.ASYNC) {
+			drain();
 			return;
 		}
 
-		int n = inner.length;
-		if (n != 0) {
+		Queue<T> q = queue;
 
-			long seq = -1L;
-
-			int outstanding;
-			if (upstreamSubscription != Operators.emptySubscription()) {
-
-				outstanding = this.outstanding;
-				if (outstanding != 0) {
-					OUTSTANDING.decrementAndGet(this);
-				}
-				else {
-					buffer(t);
-					drain();
-					return;
-				}
+		if (q == null) {
+			if (Operators.setOnce(S, this, Operators.emptySubscription())) {
+				q = QueueSupplier.<T>get(prefetch).get();
+				queue = q;
 			}
-
-			for (int i = 0; i < n; i++) {
-
-				EmitterInner<T> is = (EmitterInner<T>) inner[i];
-
-				if (is.done) {
-					removeInner(is, autoCancel ? CANCELLED : EMPTY);
-
-					if (autoCancel && subscribers == CANCELLED) {
-						if (RUNNING.compareAndSet(this, 0, 1)) {
-							cancel();
-						}
+			else {
+				for (; ; ) {
+					if (isDisposed()) {
 						return;
 					}
-					continue;
+					q = queue;
+					if (q != null) {
+						break;
+					}
 				}
-					long r = is.requested;
-					is.unbounded = r == Long.MAX_VALUE;
-					RingBuffer.Sequence poll = is.unbounded ? null : is.pollCursor;
-
-					//no tracking and remaining demand positive
-					if (r > 0L && poll == null) {
-						if (r != Long.MAX_VALUE) {
-							EmitterInner.REQUESTED.decrementAndGet(is);
-						}
-						is.actual.onNext(t);
-					}
-					//if failed, we buffer if not previously buffered and we assign a tracking cursor to that slot
-					else {
-						if (seq == -1L) {
-							seq = buffer(t);
-							startAllTrackers(inner, seq, i + 1);
-						}
-						else if(poll == null){
-							is.startTracking(seq);
-						}
-					}
-
 			}
-
-			if (RUNNING.getAndIncrement(this) != 0) {
-				return;
-			}
-
-			drainLoop();
-
 		}
-		else {
-			buffer(t);
+
+		while (!q.offer(t)) {
+			LockSupport.parkNanos(10);
 		}
+		drain();
 	}
 
 	@Override
@@ -298,10 +273,15 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 		}
 		if (done) {
 			Operators.onErrorDropped(t);
+			return;
 		}
-		reportError(t);
-		done = true;
-		drain();
+		if (Exceptions.addThrowable(ERROR, this, t)) {
+			done = true;
+			drain();
+		}
+		else {
+			Operators.onErrorDropped(t);
+		}
 	}
 
 	@Override
@@ -311,19 +291,6 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 		}
 		done = true;
 		drain();
-	}
-
-	@Override
-	public void onSubscribe(final Subscription s) {
-		if (Operators.validate(upstreamSubscription, s)) {
-			this.upstreamSubscription = s;
-			EmitterInner<?>[] innerSubscribers = subscribers;
-			if (innerSubscribers != CANCELLED && innerSubscribers.length != 0) {
-				for (int i = 0; i < innerSubscribers.length; i++) {
-					innerSubscribers[i].start();
-				}
-			}
-		}
 	}
 
 	@Override
@@ -340,205 +307,190 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	 * shutdown argument been set to true.
 	 */
 	public boolean isCancelled() {
-		return subscribers == CANCELLED;
+		return Operators.cancelledSubscription() == s;
 	}
 
 	@Override
 	final public int getBufferSize() {
-		return bufferSize;
-	}
-
-	@Override
-	public boolean isStarted() {
-		return upstreamSubscription != null;
+		return prefetch;
 	}
 
 	@Override
 	public boolean isTerminated() {
-		return done && (emitBuffer == null || emitBuffer.getPending() == 0);
+		return done && getPending() == 0;
 	}
 
 	@Override
 	public Object scan(Attr key) {
 		switch (key) {
 			case PARENT:
-				return upstreamSubscription;
+				return s;
 			case BUFFERED:
-				return emitBuffer == null ? 0 : emitBuffer.getPending();
+				return getPending();
 			case CANCELLED:
 				return isCancelled();
 		}
 		return super.scan(key);
 	}
 
-	RingBuffer<EventLoopProcessor.Slot<T>> getMainQueue() {
-		RingBuffer<EventLoopProcessor.Slot<T>> q = emitBuffer;
-		if (q == null) {
-			q = EventLoopProcessor.createSingleProducer(bufferSize);
-			emitBuffer = q;
-		}
-		return q;
-	}
-
-	final long buffer(T value) {
-		RingBuffer<EventLoopProcessor.Slot<T>> q = getMainQueue();
-
-		long seq = q.next();
-
-		q.get(seq).value = value;
-		q.publish(seq);
-		return seq;
-	}
-
 	final void drain() {
-		if (RUNNING.getAndIncrement(this) == 0) {
-			drainLoop();
+		if (WIP.getAndIncrement(this) != 0) {
+			return;
 		}
-	}
 
-	final void drainLoop() {
 		int missed = 1;
-		RingBuffer<EventLoopProcessor.Slot<T>> q = null;
+
 		for (; ; ) {
-			EmitterInner<?>[] inner = subscribers;
-			if (inner == CANCELLED) {
-				cancel();
-				return;
-			}
+
 			boolean d = done;
 
-			if (d && inner == EMPTY) {
+			Queue<T> q = queue;
+
+			boolean empty = q == null || q.isEmpty();
+
+			if (checkTerminated(d, empty)) {
 				return;
 			}
 
-			int n = inner.length;
+			if (!empty) {
+				FluxPublish.PubSubInner<T>[] a = subscribers;
+				long maxRequested = Long.MAX_VALUE;
 
-			if (n != 0) {
-				RingBuffer.Sequence innerSequence;
-				long _r;
+				int len = a.length;
+				int cancel = 0;
 
-				for (int i = 0; i < n; i++) {
-					@SuppressWarnings("unchecked") EmitterInner<T> is = (EmitterInner<T>) inner[i];
-
-					long r = is.requested;
-
-					if (is.done) {
-						removeInner(is, autoCancel ? CANCELLED : EMPTY);
-						if (autoCancel && subscribers == CANCELLED) {
-							cancel();
-							return;
-						}
-						continue;
+				for (FluxPublish.PubSubInner<T> inner : a) {
+					long r = inner.requested;
+					if (r >= 0L) {
+						maxRequested = Math.min(maxRequested, r);
 					}
-
-					if (q == null) {
-						q = emitBuffer;
-					}
-					innerSequence = is.pollCursor;
-					if (!is.unbounded && innerSequence != null && r > 0) {
-						_r = r;
-
-						boolean unbounded = _r == Long.MAX_VALUE;
-						T oo;
-
-						long cursor = innerSequence.getAsLong();
-						long max = q.getCursor();
-						while (_r != 0L) {
-							cursor++;
-							if (max >= cursor) {
-								oo = q.get(cursor).value;
-							}
-							else {
-								break;
-							}
-
-							innerSequence.set(cursor);
-							is.actual.onNext(oo);
-
-							if (!unbounded) {
-								_r--;
-							}
-						}
-
-						if (!unbounded && r > _r) {
-							EmitterInner.REQUESTED.addAndGet(is, _r - r);
-						}
-
-					}
-					else {
-						_r = 0L;
-					}
-
-					if (d) {
-						checkTerminal(is, innerSequence, _r);
+					else { //Long.MIN == PublishInner.CANCEL_REQUEST
+						cancel++;
 					}
 				}
 
-				if (!done && firstDrain) {
-					Subscription s = upstreamSubscription;
-					if (s != null) {
-						firstDrain = false;
-						s.request(bufferSize);
+				if (len == cancel) {
+					T v;
+
+					try {
+						v = q.poll();
 					}
+					catch (Throwable ex) {
+						Exceptions.addThrowable(ERROR,
+								this,
+								Operators.onOperatorError(s, ex));
+						d = true;
+						v = null;
+					}
+					if (checkTerminated(d, v == null)) {
+						return;
+					}
+					if (sourceMode != Fuseable.SYNC) {
+						s.request(1);
+					}
+					continue;
 				}
-				else {
-					if (q != null) {
-						requestMore(q.getPending());
+
+				int e = 0;
+
+				while (e < maxRequested && cancel != Integer.MIN_VALUE) {
+					d = done;
+					T v;
+
+					try {
+						v = q.poll();
 					}
-					else {
-						requestMore(0);
+					catch (Throwable ex) {
+						Exceptions.addThrowable(ERROR,
+								this,
+								Operators.onOperatorError(s, ex));
+						d = true;
+						v = null;
 					}
+
+					empty = v == null;
+
+					if (checkTerminated(d, empty)) {
+						return;
+					}
+
+					if (empty) {
+						break;
+					}
+
+					for (FluxPublish.PubSubInner<T> inner : a) {
+						inner.actual.onNext(v);
+						if (FluxPublish.PubSubInner.produced(inner,
+								1) == FluxPublish.PublishInner.CANCEL_REQUEST) {
+							cancel = Integer.MIN_VALUE;
+						}
+					}
+
+					e++;
+				}
+
+				if (e != 0 && sourceMode != Fuseable.SYNC) {
+					s.request(e);
+				}
+
+				if (maxRequested != 0L && !empty) {
+					continue;
 				}
 			}
 
-			missed = RUNNING.addAndGet(this, -missed);
+			missed = WIP.addAndGet(this, -missed);
 			if (missed == 0) {
 				break;
 			}
 		}
 	}
 
-	final void checkTerminal(EmitterInner<T> is, RingBuffer.Sequence innerSequence, long r) {
-		Throwable e = error;
-		if ((e != null && r == 0) || innerSequence == null || is.unbounded || innerSequence.getAsLong() >= emitBuffer.getCursor()) {
-			removeInner(is, EMPTY);
-			if (!is.done) {
-				if (e == null) {
-					is.actual.onComplete();
-				}
-				else {
-					is.actual.onError(e);
+	@SuppressWarnings("unchecked")
+	FluxPublish.PubSubInner<T>[] terminate() {
+		return SUBSCRIBERS.getAndSet(this, TERMINATED);
+	}
+
+	boolean checkTerminated(boolean d, boolean empty) {
+		if (s == Operators.cancelledSubscription()) {
+			if (autoCancel) {
+				terminate();
+				Queue<T> q = queue;
+				if (q != null) {
+					q.clear();
 				}
 			}
+			return true;
 		}
-	}
-
-	final void startAllTrackers(EmitterInner<?>[] inner, long seq, int size) {
-		RingBuffer.Sequence poll;
-		for (int i = 0; i < size - 1; i++) {
-			poll = inner[i].pollCursor;
-			if (poll == null) {
-				inner[i].startTracking(seq + 1);
+		if (d) {
+			Throwable e = error;
+			if (e != null && e != Exceptions.TERMINATED) {
+				Queue<T> q = queue;
+				if (q != null) {
+					q.clear();
+				}
+				for (FluxPublish.PubSubInner<T> inner : terminate()) {
+					inner.actual.onError(e);
+				}
+				return true;
+			}
+			else if (empty) {
+				for (FluxPublish.PubSubInner<T> inner : terminate()) {
+					inner.actual.onComplete();
+				}
+				return true;
 			}
 		}
-		inner[size - 1].startTracking(seq);
+		return false;
 	}
 
-	final void reportError(Throwable t) {
-		ERROR.compareAndSet(this, null, t);
-	}
-
-	final boolean addInner(EmitterInner<T> inner) {
+	final boolean add(EmitterInner<T> inner) {
 		for (; ; ) {
-			EmitterInner<?>[] a = subscribers;
-			if (a == CANCELLED) {
+			FluxPublish.PubSubInner<T>[] a = subscribers;
+			if (a == TERMINATED) {
 				return false;
 			}
 			int n = a.length;
-			if (n + 1 > maxConcurrency) {
-				throw Exceptions.failWithOverflow();
-			}
-			EmitterInner<?>[] b = new EmitterInner[n + 1];
+			FluxPublish.PubSubInner<?>[] b = new FluxPublish.PubSubInner[n + 1];
 			System.arraycopy(a, 0, b, 0, n);
 			b[n] = inner;
 			if (SUBSCRIBERS.compareAndSet(this, a, b)) {
@@ -547,65 +499,47 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 		}
 	}
 
-	final void removeInner(EmitterInner<?> inner, EmitterInner<?>[] lastRemoved) {
+	final void remove(FluxPublish.PubSubInner<T> inner) {
 		for (; ; ) {
-			EmitterInner<?>[] a = subscribers;
-			if (a == CANCELLED || a == EMPTY) {
+			FluxPublish.PubSubInner<T>[] a = subscribers;
+			if (a == TERMINATED || a == EMPTY) {
 				return;
 			}
 			int n = a.length;
-			int j = 0;
+			int j = -1;
 			for (int i = 0; i < n; i++) {
 				if (a[i] == inner) {
 					j = i;
 					break;
 				}
 			}
-			EmitterInner<?>[] b;
+
+			if (j < 0) {
+				return;
+			}
+
+			FluxPublish.PubSubInner<?>[] b;
 			if (n == 1) {
-				b = lastRemoved;
+				b = EMPTY;
 			}
 			else {
-				b = new EmitterInner<?>[n - 1];
+				b = new FluxPublish.PubSubInner<?>[n - 1];
 				System.arraycopy(a, 0, b, 0, j);
 				System.arraycopy(a, j + 1, b, j, n - j - 1);
 			}
 			if (SUBSCRIBERS.compareAndSet(this, a, b)) {
-				RingBuffer.Sequence poll = inner.pollCursor;
-				if (poll != null) {
-					getMainQueue().removeGatingSequence(poll);
+				if (autoCancel && b == EMPTY && Operators.terminate(S, this)) {
+					if (WIP.getAndIncrement(this) != 0) {
+						return;
+					}
+					terminate();
+					Queue<T> q = queue;
+					if (q != null) {
+						q.clear();
+					}
 				}
-				return;
 			}
-		}
-	}
-
-	final void requestMore(int buffered) {
-		Subscription subscription = upstreamSubscription;
-		if (subscription == Operators.emptySubscription()) {
 			return;
-		}
-
-		if (buffered < bufferSize) {
-			int r = outstanding;
-			if (r > limit) {
-				return;
-			}
-			int toRequest = (bufferSize - r) - buffered;
-			if (toRequest > 0 && subscription != null) {
-				OUTSTANDING.addAndGet(this, toRequest);
-				subscription.request(toRequest);
-			}
-		}
-	}
-
-	final void cancel() {
-		if (!done) {
-			Subscription s = upstreamSubscription;
-			if (s != null) {
-				upstreamSubscription = null;
-				s.cancel();
-			}
 		}
 	}
 
@@ -614,97 +548,24 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 		return subscribers.length;
 	}
 
-	@Override
-	public String toString() {
-		return "{" +
-				"done: " + done +
-				(error != null ? ", error: '" + error.getMessage() + "', " : "") +
-				", outstanding: " + outstanding +
-				", pending: " + emitBuffer +
-				'}';
-	}
+	static final class EmitterInner<T> extends FluxPublish.PubSubInner<T> {
 
-	static final class EmitterInner<T>
-			implements InnerProducer<T> {
+		final EmitterProcessor<T> parent;
 
-		static final long MASK_NOT_SUBSCRIBED = Long.MIN_VALUE;
-		final EmitterProcessor<T>   parent;
-		final Subscriber<? super T> actual;
-
-		volatile boolean done;
-
-		boolean unbounded = false;
-
-		private volatile long requested = MASK_NOT_SUBSCRIBED;
-
-		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<EmitterInner> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(EmitterInner.class, "requested");
-
-		volatile RingBuffer.Sequence pollCursor;
-
-		@SuppressWarnings("rawtypes")
-        static final AtomicReferenceFieldUpdater<EmitterInner, RingBuffer.Sequence> CURSOR =
-				AtomicReferenceFieldUpdater.newUpdater(EmitterInner.class,
-						RingBuffer.Sequence.class,
-						"pollCursor");
-
-		EmitterInner(EmitterProcessor<T> parent, final Subscriber<? super T> actual) {
-			this.actual = actual;
+		EmitterInner(Subscriber<? super T> actual, EmitterProcessor<T> parent) {
+			super(actual);
 			this.parent = parent;
 		}
 
 		@Override
-		public void request(long n) {
-			if (Operators.checkRequest(n, actual)) {
-				Operators.getAndAddCap(REQUESTED, this, n);
-				if (EmitterProcessor.RUNNING.getAndIncrement(parent) == 0) {
-					parent.drainLoop();
-				}
-			}
-		}
-
-		@Override
-		public void cancel() {
-			done = true;
+		void drainParent() {
 			parent.drain();
 		}
 
 		@Override
-		public final Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return parent;
-				case TERMINATED:
-				case CANCELLED:
-					return done;
-				case BUFFERED:
-					return pollCursor == null || done ? -1L : parent.emitBuffer.getCursor() - pollCursor.getAsLong();
-			}
-			return InnerProducer.super.scan(key);
-		}
-
-		void startTracking(long seq) {
-			RingBuffer.Sequence pollSequence = RingBuffer.newSequence(seq - 1L);
-			if (CURSOR.compareAndSet(this, null, pollSequence)) {
-				parent.emitBuffer.addGatingSequence(pollSequence);
-			}
-		}
-
-		void start() {
-			if (REQUESTED.compareAndSet(this, MASK_NOT_SUBSCRIBED, 0)) {
-				RingBuffer<EventLoopProcessor.Slot<T>> ringBuffer = parent.emitBuffer;
-				if (ringBuffer != null) {
-					startTracking(Math.max(0L, ringBuffer.getMinimumGatingSequence() + 1L));
-				}
-
-				actual.onSubscribe(this);
-			}
-		}
-
-		@Override
-		public Subscriber<? super T> actual() {
-			return actual;
+		void removeAndDrainParent() {
+			parent.remove(this);
+			parent.drain();
 		}
 	}
 

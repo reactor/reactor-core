@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -191,7 +191,7 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 		sp.publish(o -> Flux.<Integer>empty())
 		  .subscribe(ts);
 
-		Assert.assertFalse("Still subscribed?", sp.downstreamCount() == 0);
+		Assert.assertFalse("Still subscribed?", sp.downstreamCount() == 1);
 	}
 
 	@Test
