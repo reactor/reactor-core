@@ -208,12 +208,4 @@ public class MonoUntilOtherTest {
 		            .thenAwait(Duration.ofMillis(100))
 		            .verifyErrorMessage("boom");
 	}
-
-	@Test
-	public void testAPIChainingCombinesDifferentInstances() {
-		Mono<String> source = Mono.just("foo");
-
-
-
-	}
 }

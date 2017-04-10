@@ -1494,9 +1494,4 @@ public class FluxTests extends AbstractReactorTest {
 		}
 	}
 
-
-	@Test
-	public void test() {
-		Flux.empty().delayElements(Duration.ofMillis(1000)).log().blockLast();
-	}
 }
