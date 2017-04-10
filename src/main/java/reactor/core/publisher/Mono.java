@@ -1796,7 +1796,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final <R> Mono<R> flatMap(Function<? super T, ? extends Mono<? extends R>>
 			transformer) {
-		return onAssembly(new MonoThenMap<>(this, transformer));
+		return onAssembly(new MonoFlatMap<>(this, transformer));
 	}
 
 	/**
@@ -1813,7 +1813,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Flux} as the sequence is not guaranteed to be single at most
 	 */
 	public final <R> Flux<R> flatMapMany(Function<? super T, ? extends Publisher<? extends R>> mapper) {
-		return Flux.onAssembly(new MonoFlatMap<>(this, mapper));
+		return Flux.onAssembly(new MonoFlatMapMany<>(this, mapper));
 	}
 
 	/**

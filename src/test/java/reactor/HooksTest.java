@@ -293,7 +293,7 @@ public class HooksTest {
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
 					("HooksTest.java:"));
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tMono" +
-					".then" +
+					".flatMap" +
 					"(HooksTest.java:"));
 			return;
 		}
