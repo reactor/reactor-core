@@ -48,6 +48,7 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 ** running an asynchronous task for each source item (eg. urls to http request): `flatMap` + an async `Publisher`-returning method
 *** ...ignoring some data: conditionally return a `Mono.empty()` in the flatMap lambda
 *** ...retaining the original sequence order: `Flux#flatMapSequential` (this triggers the async processes immediately but reorders the results)
+*** ...where the async task can return multiple values, from a `Mono` source: `Mono#flatMapMany`
 
 * I want to aggregate a `Flux`... (the `Flux#` prefix is assumed below)
 ** into a List: `collectList`, `collectSortedList`

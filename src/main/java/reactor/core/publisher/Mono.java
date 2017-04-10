@@ -60,9 +60,8 @@ import reactor.util.function.Tuples;
  * <p>
  *
  * <p>The rx operators will offer aliases for input {@link Mono} type to preserve the "at most one"
- * property of the resulting {@link Mono}. For instance {@link Mono#flatMap flatMap} returns a {@link Flux} with 
- * possibly
- * more than 1 emission. Its alternative enforcing {@link Mono} input is {@link Mono#then then}.
+ * property of the resulting {@link Mono}. For instance {@link Mono#flatMap flatMap} returns a
+ * {@link Mono}, while there is a {@link Mono#flatMapMany} alias with possibly more than 1 emission.
  *
  * <p>{@code Mono<Void>} should be used for {@link Publisher} that just completes without any value.
  *
@@ -1195,7 +1194,7 @@ public abstract class Mono<T> implements Publisher<T> {
 			BiFunction<T, T2, O> combinator) {
 		Objects.requireNonNull(rightGenerator, "rightGenerator function is mandatory to get the right-hand side Mono");
 		Objects.requireNonNull(combinator, "combinator function is mandatory to combine results from both Monos");
-		return then(t -> rightGenerator.apply(t).map(t2 -> combinator.apply(t, t2)));
+		return flatMap(t -> rightGenerator.apply(t).map(t2 -> combinator.apply(t, t2)));
 	}
 
 	/**
@@ -1784,6 +1783,23 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Transform the item emitted by this {@link Mono} into another {@link Mono}
+	 * possibly with another value type.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/then.png" alt="">
+	 * <p>
+	 * @param transformer the function to dynamically bind a new {@link Mono}
+	 * @param <R> the result type bound
+	 *
+	 * @return a new {@link Mono} containing the merged values
+	 */
+	public final <R> Mono<R> flatMap(Function<? super T, ? extends Mono<? extends R>>
+			transformer) {
+		return onAssembly(new MonoFlatMap<>(this, transformer));
+	}
+
+	/**
 	 * Transform the item emitted by this {@link Mono} into a Publisher, then forward
 	 * its emissions into the returned {@link Flux}.
 	 *
@@ -1796,8 +1812,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} as the sequence is not guaranteed to be single at most
 	 */
-	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper) {
-		return Flux.onAssembly(new MonoFlatMap<>(this, mapper));
+	public final <R> Flux<R> flatMapMany(Function<? super T, ? extends Publisher<? extends R>> mapper) {
+		return Flux.onAssembly(new MonoFlatMapMany<>(this, mapper));
 	}
 
 	/**
@@ -1816,7 +1832,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @see Flux#flatMap(Function, Function, Supplier)
 	 */
-	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapperOnNext,
+	public final <R> Flux<R> flatMapMany(Function<? super T, ? extends Publisher<? extends R>> mapperOnNext,
 			Function<Throwable, ? extends Publisher<? extends R>> mapperOnError,
 			Supplier<? extends Publisher<? extends R>> mapperOnComplete) {
 
@@ -2726,22 +2742,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final Mono<Void> then() {
 		return empty(this);
-	}
-
-	/**
-	 * Convert the value of {@link Mono} to another {@link Mono} possibly with another value type.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/then.png" alt="">
-	 * <p>
-	 * @param transformer the function to dynamically bind a new {@link Mono}
-	 * @param <R> the result type bound
-	 *
-	 * @return a new {@link Mono} containing the merged values
-	 */
-	public final <R> Mono<R> then(Function<? super T, ? extends Mono<? extends R>>
-			transformer) {
-		return onAssembly(new MonoThenMap<>(this, transformer));
 	}
 
 	/**

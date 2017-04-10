@@ -18,155 +18,122 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Fuseable;
 import reactor.core.Scannable;
 
 
-final class MonoFlatMap<T, R> extends Flux<R> {
+/**
+ * Given a Mono source, applies a function on its single item and continues
+ * with that Mono instance, emitting its final result.
+ *
+ * @param <T> the value type
+ *
+ * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
+ */
+final class MonoFlatMap<T, R> extends MonoSource<T, R> implements Fuseable {
 
-	final Mono<? extends T> source;
-
-	final Function<? super T, ? extends Publisher<? extends R>> mapper;
+	final Function<? super T, ? extends Mono<? extends R>> mapper;
 
 	MonoFlatMap(Mono<? extends T> source,
-			Function<? super T, ? extends Publisher<? extends R>> mapper) {
-		this.source = source;
-		this.mapper = mapper;
+			Function<? super T, ? extends Mono<? extends R>> mapper) {
+		super(source);
+		this.mapper = Objects.requireNonNull(mapper, "mapper");
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super R> s) {
-		if (FluxFlatMap.trySubscribeScalarMap(source, s, mapper, false)) {
+
+		if (FluxFlatMap.trySubscribeScalarMap(source, s, mapper, true)) {
 			return;
 		}
-		source.subscribe(new FlatMapMain<T, R>(s, mapper));
+
+		ThenMapMain<T, R> manager = new ThenMapMain<>(s, mapper);
+		s.onSubscribe(manager);
+
+		source.subscribe(manager);
 	}
 
-	static final class FlatMapMain<T, R> implements InnerOperator<T, R> {
+	static final class ThenMapMain<T, R> extends Operators.MonoSubscriber<T, R> {
 
-		final Subscriber<? super R> actual;
+		final Function<? super T, ? extends Mono<? extends R>> mapper;
 
-		final Function<? super T, ? extends Publisher<? extends R>> mapper;
+		final ThenMapInner<R> second;
 
-		Subscription main;
+		boolean done;
 
-		volatile Subscription inner;
+		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<FlatMapMain, Subscription> INNER =
-				AtomicReferenceFieldUpdater.newUpdater(FlatMapMain.class,
+		static final AtomicReferenceFieldUpdater<ThenMapMain, Subscription> S =
+				AtomicReferenceFieldUpdater.newUpdater(ThenMapMain.class,
 						Subscription.class,
-						"inner");
+						"s");
 
-		volatile long requested;
-		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<FlatMapMain> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(FlatMapMain.class, "requested");
-
-		boolean hasValue;
-
-		FlatMapMain(Subscriber<? super R> actual,
-				Function<? super T, ? extends Publisher<? extends R>> mapper) {
-			this.actual = actual;
+		ThenMapMain(Subscriber<? super R> subscriber,
+				Function<? super T, ? extends Mono<? extends R>> mapper) {
+			super(subscriber);
 			this.mapper = mapper;
+			this.second = new ThenMapInner<>(this);
+		}
+
+		@Override
+		public Stream<? extends Scannable> inners() {
+			return Stream.of(second);
 		}
 
 		@Override
 		public Object scan(Attr key) {
 			switch (key){
 				case PARENT:
-					return main;
+					return s;
+				case CANCELLED:
+					return s == Operators.cancelledSubscription();
+				case TERMINATED:
+					return done;
 			}
-			return InnerOperator.super.scan(key);
-		}
-
-		@Override
-		public Stream<? extends Scannable> inners() {
-			return Stream.of(Scannable.from(inner));
-		}
-
-		@Override
-		public Subscriber<? super R> actual() {
-			return actual;
-		}
-
-		@Override
-		public void request(long n) {
-			Subscription a = inner;
-			if (a != null) {
-				a.request(n);
-			}
-			else {
-				if (Operators.validate(n)) {
-					Operators.getAndAddCap(REQUESTED, this, n);
-					a = inner;
-					if (a != null) {
-						n = REQUESTED.getAndSet(this, 0L);
-						if (n != 0L) {
-							a.request(n);
-						}
-					}
-				}
-			}
-		}
-
-		@Override
-		public void cancel() {
-			main.cancel();
-			Operators.terminate(INNER, this);
+			return super.scan(key);
 		}
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.main, s)) {
-				this.main = s;
-
-				actual.onSubscribe(this);
-
+			if (Operators.setOnce(S, this, s)) {
 				s.request(Long.MAX_VALUE);
 			}
 		}
 
-		void onSubscribeInner(Subscription s) {
-			if (Operators.setOnce(INNER, this, s)) {
-
-				long r = REQUESTED.getAndSet(this, 0L);
-				if (r != 0) {
-					s.request(r);
-				}
-			}
-		}
-
-		@SuppressWarnings("unchecked")
 		@Override
 		public void onNext(T t) {
-			hasValue = true;
+			if (done) {
+				Operators.onNextDropped(t);
+				return;
+			}
+			done = true;
 
-			Publisher<? extends R> p;
+			Mono<? extends R> m;
 
 			try {
-				p = Objects.requireNonNull(mapper.apply(t),
-						"The mapper returned a null Publisher.");
+				m = Objects.requireNonNull(mapper.apply(t),
+						"The mapper returned a null Mono");
 			}
 			catch (Throwable ex) {
-				actual.onError(Operators.onOperatorError(this, ex, t));
+				actual.onError(Operators.onOperatorError(s, ex, t));
 				return;
 			}
 
-			if (p instanceof Callable) {
-				R v;
+			if (m instanceof Callable) {
+				@SuppressWarnings("unchecked") Callable<R> c = (Callable<R>) m;
 
+				R v;
 				try {
-					v = ((Callable<R>) p).call();
+					v = c.call();
 				}
 				catch (Throwable ex) {
-					actual.onError(Operators.onOperatorError(this, ex, t));
+					actual.onError(Operators.onOperatorError(s, ex, t));
 					return;
 				}
 
@@ -174,76 +141,125 @@ final class MonoFlatMap<T, R> extends Flux<R> {
 					actual.onComplete();
 				}
 				else {
-					onSubscribeInner(Operators.scalarSubscription(actual, v));
+					complete(v);
 				}
-
 				return;
 			}
 
-			p.subscribe(new FlatMapInner<>(this, actual));
+			try {
+				m.subscribe(second);
+			}
+			catch (Throwable e) {
+				actual.onError(Operators.onOperatorError(this, e, t));
+			}
 		}
 
 		@Override
 		public void onError(Throwable t) {
-			if (hasValue) {
+			if (done) {
 				Operators.onErrorDropped(t);
 				return;
 			}
+			done = true;
 			actual.onError(t);
 		}
 
 		@Override
 		public void onComplete() {
-			if (!hasValue) {
-				actual.onComplete();
+			if (done) {
+				return;
 			}
-		}
-	}
-
-	static final class FlatMapInner<R> implements InnerConsumer<R> {
-
-		final FlatMapMain<?, R> parent;
-
-		final Subscriber<? super R> actual;
-
-		FlatMapInner(FlatMapMain<?, R> parent,
-				Subscriber<? super R> actual) {
-			this.parent = parent;
-			this.actual = actual;
-		}
-
-		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case PARENT:
-					return parent.inner;
-				case ACTUAL:
-					return parent;
-				case REQUESTED_FROM_DOWNSTREAM:
-					return parent.requested;
-			}
-			return null;
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			parent.onSubscribeInner(s);
-		}
-
-		@Override
-		public void onNext(R t) {
-			actual.onNext(t);
-		}
-
-		@Override
-		public void onError(Throwable t) {
-			actual.onError(t);
-		}
-
-		@Override
-		public void onComplete() {
+			done = true;
 			actual.onComplete();
 		}
 
+		@Override
+		public void cancel() {
+			super.cancel();
+			Operators.terminate(S, this);
+			second.cancel();
+		}
+
+		void secondError(Throwable ex) {
+			actual.onError(ex);
+		}
+
+		void secondComplete() {
+			actual.onComplete();
+		}
+
+		static final class ThenMapInner<R> implements InnerConsumer<R> {
+
+			final ThenMapMain<?, R> parent;
+
+			volatile Subscription s;
+			@SuppressWarnings("rawtypes")
+			static final AtomicReferenceFieldUpdater<ThenMapInner, Subscription> S =
+					AtomicReferenceFieldUpdater.newUpdater(ThenMapInner.class,
+							Subscription.class,
+							"s");
+
+			boolean done;
+
+			ThenMapInner(ThenMapMain<?, R> parent) {
+				this.parent = parent;
+			}
+
+			@Override
+			public Object scan(Attr key) {
+				switch (key){
+					case PARENT:
+						return s;
+					case ACTUAL:
+						return parent;
+					case TERMINATED:
+						return done;
+					case CANCELLED:
+						return s == Operators.cancelledSubscription();
+				}
+				return null;
+			}
+
+			@Override
+			public void onSubscribe(Subscription s) {
+				if (Operators.setOnce(S, this, s)) {
+					s.request(Long.MAX_VALUE);
+				}
+			}
+
+			@Override
+			public void onNext(R t) {
+				if (done) {
+					Operators.onNextDropped(t);
+					return;
+				}
+				done = true;
+				this.parent.complete(t);
+			}
+
+			@Override
+			public void onError(Throwable t) {
+				if (done) {
+					Operators.onErrorDropped(t);
+					return;
+				}
+				done = true;
+				this.parent.secondError(t);
+			}
+
+			@Override
+			public void onComplete() {
+				if (done) {
+					return;
+				}
+				done = true;
+				this.parent.secondComplete();
+			}
+
+			void cancel() {
+				Operators.terminate(S, this);
+			}
+
+		}
 	}
 }
