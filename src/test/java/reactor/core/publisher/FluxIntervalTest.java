@@ -79,10 +79,10 @@ public class FluxIntervalTest {
 
 	Flux<Integer> flatMapScenario() {
 		return Flux.interval(Duration.ofSeconds(3))
-		    .flatMap(v -> Flux.fromIterable(Arrays.asList("A"))
+		           .flatMap(v -> Flux.fromIterable(Arrays.asList("A"))
 		                      .flatMap(w -> Mono.fromCallable(() -> Arrays.asList(1, 2))
 		                                        .subscribeOn(Schedulers.parallel())
-		                                        .flatMap(Flux::fromIterable))).log();
+		                                        .flatMapMany(Flux::fromIterable))).log();
 	}
 
 	@Test

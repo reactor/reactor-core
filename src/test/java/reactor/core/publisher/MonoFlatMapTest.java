@@ -25,7 +25,7 @@ public class MonoFlatMapTest {
     public void normal() {
         AssertSubscriber<Integer> ts = AssertSubscriber.create();
         
-        Mono.just(1).hide().flatMap(v -> Flux.just(2).hide())
+        Mono.just(1).hide().flatMapMany(v -> Flux.just(2).hide())
         .subscribe(ts);
         
         ts.assertValues(2)
@@ -37,7 +37,7 @@ public class MonoFlatMapTest {
     public void normalInnerJust() {
         AssertSubscriber<Integer> ts = AssertSubscriber.create();
         
-        Mono.just(1).hide().flatMap(v -> Flux.just(2))
+        Mono.just(1).hide().flatMapMany(v -> Flux.just(2))
         .subscribe(ts);
         
         ts.assertValues(2)
@@ -49,7 +49,7 @@ public class MonoFlatMapTest {
     public void normalInnerEmpty() {
         AssertSubscriber<Integer> ts = AssertSubscriber.create();
         
-        Mono.just(1).hide().flatMap(v -> Flux.<Integer>empty())
+        Mono.just(1).hide().flatMapMany(v -> Flux.<Integer>empty())
         .subscribe(ts);
         
         ts.assertNoValues()

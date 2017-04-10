@@ -280,7 +280,7 @@ public class HooksTest {
 		Hooks.onOperator(hooks -> hooks.operatorStacktrace());
 		try {
 			Mono.just(1)
-			    .then(d ->
+			    .flatMap(d ->
 				    Mono.error(new RuntimeException())
 			    )
 			    .filter(d -> true)

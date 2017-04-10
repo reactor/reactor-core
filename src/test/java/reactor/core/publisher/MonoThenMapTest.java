@@ -11,7 +11,7 @@ public class MonoThenMapTest {
     public void normalHidden() {
         AssertSubscriber<Integer> ts = AssertSubscriber.create();
         
-        Mono.just(1).hide().then(v -> Mono.just(2).hide()).subscribe(ts);
+        Mono.just(1).hide().flatMap(v -> Mono.just(2).hide()).subscribe(ts);
         
         ts.assertValues(2)
         .assertComplete()
@@ -23,7 +23,7 @@ public class MonoThenMapTest {
         TestPublisher<String> cancelTester = TestPublisher.create();
 
         cancelTester.mono()
-                    .then(s -> Mono.just(s.length()))
+                    .flatMap(s -> Mono.just(s.length()))
                     .subscribe()
                     .cancel();
 
