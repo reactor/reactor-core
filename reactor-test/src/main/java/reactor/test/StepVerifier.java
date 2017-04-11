@@ -29,30 +29,44 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.publisher.Hooks;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.util.function.Tuple2;
 
 /**
- * A {@link StepVerifier} is a verifiable, blocking script usually produced by
- * terminal expectations of the said script.
- * <ul> <li>Create a {@code
- * StepVerifier} builder using {@link #create} or {@link #withVirtualTime}</li>
- * <li>Set individual up value expectations using
- * {@link Step#expectNext}, {@link Step#expectNextMatches(Predicate)},
- * {@link Step#expectNextCount(long)} or
- * {@link Step#expectNextSequence(Iterable)}
- * .</li>  <li>Set up
- * subscription actions using either
- * {@link Step#thenRequest(long) thenRequest(long)} or {@link
- * Step#thenCancel() thenCancel()}. </li> <li>Build the {@code
- * StepVerifier} using {@link LastStep#expectComplete},
- * {@link LastStep#expectError}, {@link
- * LastStep#expectError(Class) expectError(Class)}, {@link
- * LastStep#expectErrorMatches(Predicate) expectErrorMatches(Predicate)}, or {@link
- * LastStep#thenCancel}. </li> <li>Subscribe the built {@code
- * StepVerifier} to a {@code Publisher}.</li> <li>Verify the expectations using
- * either {@link #verify()} or {@link #verify(Duration)}.</li> <li>If any expectations
- * failed, an {@code AssertionError} will be thrown indicating the failures.</li> </ul>
+ * A {@link StepVerifier} provides a declarative way of creating a verifiable script for
+ * an async {@link Publisher} sequence, by expressing expectations about the events that
+ * will happen upon subscription. The verification must be triggered after the terminal
+ * expectations (completion, error, cancellation) have been declared, by calling one of
+ * the {@link #verify()} methods.
+ *
+ *
+ * <ul> <li>Create a {@code StepVerifier} around a {@link Publisher} using
+ * {@link #create create(Publisher)} or
+ * {@link #withVirtualTime withVirtualTime(Supplier&lt;Publisher&gt;)}
+ * (in which case you should lazily create the publisher inside the provided
+ * {@link Supplier lambda}).</li>
+ * <li>Set up individual value expectations using
+ * {@link Step#expectNext expectNext},
+ * {@link Step#expectNextMatches(Predicate) expectNextMatches(Predicate)},
+ * {@link Step#assertNext(Consumer) assertNext(Consumer)},
+ * {@link Step#expectNextCount(long) expectNextCount(long)} or
+ * {@link Step#expectNextSequence(Iterable) expectNextSequence(Iterable)}.</li>
+ * <li>Trigger subscription actions during the verification using either
+ * {@link Step#thenRequest(long) thenRequest(long)} or {@link Step#thenCancel() thenCancel()}. </li>
+ * <li>Finalize the test scenario using a terminal expectation:
+ * {@link LastStep#expectComplete expectComplete()},
+ * {@link LastStep#expectError expectError()},
+ * {@link LastStep#expectError(Class) expectError(Class)},
+ * {@link LastStep#expectErrorMatches(Predicate) expectErrorMatches(Predicate)}, or
+ * {@link LastStep#thenCancel thenCancel()}.</li>
+ * <li>Trigger the verification of the resulting {@code StepVerifier} on its {@code Publisher}
+ * using either {@link #verify()} or {@link #verify(Duration)}. (note some of the terminal
+ * expectations above have a "verify" prefixed alternative that both declare the
+ * expectation and trigger the verification).</li>
+ * <li>If any expectations failed, an {@link AssertionError} will be thrown indicating the
+ * failures.</li>
+ * </ul>
  *
  * <p>For example:
  * <pre>
@@ -65,61 +79,49 @@ import reactor.util.function.Tuple2;
  *
  * @author Arjen Poutsma
  * @author Stephane Maldini
+ * @author Simon Baslé
  */
 public interface StepVerifier {
 
 	/**
-	 * Prepare a new {@code StepVerifier} in an uncontrolled environment: Expect non-virtual
-	 * blocking
-	 * wait via
-	 * {@link Step#thenAwait}. Each {@link #verify()} will fully (re)play the
-	 * scenario.
+	 * Prepare a new {@code StepVerifier} in an uncontrolled environment:
+	 * {@link Step#thenAwait} will block in real time.
+	 * Each {@link #verify()} will fully (re)play the scenario.
 	 *
-	 * @param publisher the publisher to subscribe to
+	 * @param publisher the publisher to subscribe to and verify
 	 *
-	 * @return the {@link Duration} of the verification
-	 *
-	 * @throws AssertionError in case of expectation failures
+	 * @return a builder for expectation declaration and ultimately verification.
 	 */
 	static <T> FirstStep<T> create(Publisher<? extends T> publisher) {
 		return create(publisher, Long.MAX_VALUE);
 	}
 
 	/**
-	 * Prepare a new {@code StepVerifier} in an uncontrolled environment: Expect non-virtual
-	 * blocking
-	 * wait via
-	 * {@link Step#thenAwait}. Each {@link #verify()} will fully (re)play the
-	 * scenario. The verification will request a
-	 * specified amount of
-	 * values.
+	 * Prepare a new {@code StepVerifier} in an uncontrolled environment:
+	 * {@link Step#thenAwait} will block in real time.
+	 * Each {@link #verify()} will fully (re)play the scenario.
+	 * The verification will request a specified amount of values.
 	 *
-	 * @param publisher the publisher to subscribe to
+	 * @param publisher the publisher to subscribe to and verify
 	 * @param n the amount of items to request
 	 *
-	 * @return the {@link Duration} of the verification
-	 *
-	 * @throws AssertionError in case of expectation failures, or when the verification
-	 *                        times out
+	 * @return a builder for expectation declaration and ultimately verification.
 	 */
-	static <T> FirstStep<T> create(Publisher<? extends T> publisher,
-			long n) {
+	static <T> FirstStep<T> create(Publisher<? extends T> publisher, long n) {
 		return create(publisher, StepVerifierOptions.create().initialRequest(n));
 	}
 
 	/**
-	 * Prepare a new {@code StepVerifier} in an uncontrolled environment: Expect non-virtual
-	 * blocking wait via {@link Step#thenAwait}. Each {@link #verify()} will fully (re)play the
-	 * scenario. The verification will request a specified amount of values according to
+	 * Prepare a new {@code StepVerifier} in an uncontrolled environment:
+	 * {@link Step#thenAwait} will block in real time.
+	 * Each {@link #verify()} will fully (re)play the scenario.
+	 * The verification will request a specified amount of values according to
 	 * the {@link StepVerifierOptions options} passed.
 	 *
 	 * @param publisher the publisher to subscribe to
 	 * @param options the options for the verification
 	 *
-	 * @return the {@link Duration} of the verification
-	 *
-	 * @throws AssertionError in case of expectation failures, or when the verification
-	 *                        times out
+	 * @return a builder for expectation declaration and ultimately verification.
 	 */
 	static <T> FirstStep<T> create(Publisher<? extends T> publisher, StepVerifierOptions options) {
 		return DefaultStepVerifierBuilder.newVerifier(options, () -> publisher);
@@ -127,14 +129,19 @@ public interface StepVerifier {
 
 	/**
 	 * Prepare a new {@code StepVerifier} in a controlled environment using
-	 * {@link VirtualTimeScheduler} to schedule and expect virtual wait via
-	 * {@link Step#thenAwait}. Each {@link #verify()} will fully (re)play the
-	 * scenario. The verification will request an unbounded amount of values.
+	 * {@link VirtualTimeScheduler} to manipulate a virtual clock via
+	 * {@link Step#thenAwait}. The scheduler is injected into all {@link Schedulers} factories,
+	 * which means that any operator created within the lambda without a specific scheduler
+	 * will use virtual time.
+	 * Each {@link #verify()} will fully (re)play the scenario.
+	 * The verification will request an unbounded amount of values.
 	 *
-	 * @param scenarioSupplier a mandatory supplier of the {@link Publisher} to test
+	 * @param scenarioSupplier a mandatory supplier of the {@link Publisher} to subscribe
+	 * to and verify. In order for operators to use virtual time, they must be invoked
+	 * from within the lambda.
 	 * @param <T> the type of the subscriber
 	 *
-	 * @return a builder for setting up value expectations
+	 * @return a builder for expectation declaration and ultimately verification.
 	 */
 	static <T> FirstStep<T> withVirtualTime(Supplier<? extends Publisher<? extends T>> scenarioSupplier) {
 		return withVirtualTime(scenarioSupplier, Long.MAX_VALUE);
@@ -142,15 +149,20 @@ public interface StepVerifier {
 
 	/**
 	 * Prepare a new {@code StepVerifier} in a controlled environment using
-	 * {@link VirtualTimeScheduler} to schedule and expect virtual wait via
-	 * {@link Step#thenAwait}. Each {@link #verify()} will fully (re)play the
-	 * scenario. The verification will request a specified amount of values.
+	 * {@link VirtualTimeScheduler} to manipulate a virtual clock via
+	 * {@link Step#thenAwait}. The scheduler is injected into all {@link Schedulers} factories,
+	 * which means that any operator created within the lambda without a specific scheduler
+	 * will use virtual time.
+	 * Each {@link #verify()} will fully (re)play the scenario.
+	 * The verification will request a specified amount of values.
 	 *
-	 * @param scenarioSupplier a mandatory supplier of the {@link Publisher} to test
+	 * @param scenarioSupplier a mandatory supplier of the {@link Publisher} to subscribe
+	 * to and verify. In order for operators to use virtual time, they must be invoked
+	 * from within the lambda.
 	 * @param n the amount of items to request (must be &gt;= 0)
 	 * @param <T> the type of the subscriber
 	 *
-	 * @return a builder for setting up value expectations
+	 * @return a builder for expectation declaration and ultimately verification.
 	 */
 	static <T> FirstStep<T> withVirtualTime(Supplier<? extends Publisher<? extends T>> scenarioSupplier,
 			long n) {
@@ -158,19 +170,23 @@ public interface StepVerifier {
 	}
 
 	/**
-	 * Create a new {@code StepVerifier} in a parameterized environment using
-	 * passed
-	 * {@link VirtualTimeScheduler} to schedule and expect virtual wait via
-	 * {@link Step#thenAwait}. Each {@link #verify()} will fully (re)play the
-	 * scenario. The verification will request a specified amount of values.
+	 * Prepare a new {@code StepVerifier} in a controlled environment using
+	 * a user-provided {@link VirtualTimeScheduler} to manipulate a virtual clock via
+	 * {@link Step#thenAwait}. The scheduler is injected into all {@link Schedulers} factories,
+	 * which means that any operator created within the lambda without a specific scheduler
+	 * will use virtual time.
+	 * Each {@link #verify()} will fully (re)play the scenario.
+	 * The verification will request a specified amount of values.
 	 *
-	 * @param scenarioSupplier a mandatory supplier of the {@link Publisher} to test
-	 * @param vtsLookup a mandatory {@link VirtualTimeScheduler} lookup to use in {@code
-	 * thenAwait}
+	 * @param scenarioSupplier a mandatory supplier of the {@link Publisher} to subscribe
+	 * to and verify. In order for operators to use virtual time, they must be invoked
+	 * from within the lambda.
+	 * @param vtsLookup the supplier of the {@link VirtualTimeScheduler} to inject and
+	 * manipulate during verification.
 	 * @param n the amount of items to request (must be &gt;= 0)
 	 * @param <T> the type of the subscriber
 	 *
-	 * @return a builder for setting up value expectations
+	 * @return a builder for expectation declaration and ultimately verification.
 	 */
 	static <T> FirstStep<T> withVirtualTime(
 			Supplier<? extends Publisher<? extends T>> scenarioSupplier,
@@ -182,18 +198,23 @@ public interface StepVerifier {
 	}
 
 	/**
-	 * Create a new {@code StepVerifier} in a parameterized environment using
-	 * passed {@link VirtualTimeScheduler} to schedule and expect virtual wait via
-	 * {@link Step#thenAwait}. Each {@link #verify()} will fully (re)play the
-	 * scenario. The verification will request a specified amount of values according to
+	 * Prepare a new {@code StepVerifier} in a controlled environment using
+	 * a user-provided {@link VirtualTimeScheduler} to manipulate a virtual clock via
+	 * {@link Step#thenAwait}. The scheduler is injected into all {@link Schedulers} factories,
+	 * which means that any operator created within the lambda without a specific scheduler
+	 * will use virtual time.
+	 * Each {@link #verify()} will fully (re)play the scenario.
+	 * The verification will request a specified amount of values according to
 	 * the provided {@link StepVerifierOptions options}.
 	 *
-	 * @param scenarioSupplier a mandatory supplier of the {@link Publisher} to test
-	 * @param options the verification options, including a mandatory
-	 *      {@link VirtualTimeScheduler} lookup to use in {@code thenAwait}
+	 * @param scenarioSupplier a mandatory supplier of the {@link Publisher} to subscribe
+	 * to and verify. In order for operators to use virtual time, they must be invoked
+	 * from within the lambda.
+	 * @param options the verification options, including the supplier of the
+	 * {@link VirtualTimeScheduler} to inject and manipulate during verification.
 	 * @param <T> the type of the subscriber
 	 *
-	 * @return a builder for setting up value expectations
+	 * @return a builder for expectation declaration and ultimately verification.
 	 */
 	static <T> FirstStep<T> withVirtualTime(
 			Supplier<? extends Publisher<? extends T>> scenarioSupplier,
@@ -216,25 +237,24 @@ public interface StepVerifier {
 
 	/**
 	 * Verify the signals received by this subscriber. This method will
-	 * <strong>block</strong> indefinitely until the stream has been terminated (either
+	 * <strong>block</strong> until the stream has been terminated (either
 	 * through {@link Subscriber#onComplete()}, {@link Subscriber#onError(Throwable)} or
-	 * {@link Subscription#cancel()}).
+	 * {@link Subscription#cancel()}). Depending on the declared expectations and actions,
+	 * notably in case of undersized manual requests, such a verification could also block
+	 * indefinitely.
 	 *
-	 * @return the {@link Duration} of the verification
-	 *
+	 * @return the actual {@link Duration} the verification took.
 	 * @throws AssertionError in case of expectation failures
 	 */
 	Duration verify() throws AssertionError;
 
 	/**
 	 * Verify the signals received by this subscriber. This method will
-	 * <strong>block</strong> for the given duration or until the stream has been
+	 * <strong>block</strong> for up to the given duration or until the stream has been
 	 * terminated (either through {@link Subscriber#onComplete()},
-	 * {@link Subscriber#onError(Throwable)} or
-	 * {@link Subscription#cancel()}).
+	 * {@link Subscriber#onError(Throwable)} or {@link Subscription#cancel()}).
 	 *
-	 * @return the {@link Duration} of the verification
-	 *
+	 * @return the actual {@link Duration} the verification took.
 	 * @throws AssertionError in case of expectation failures, or when the verification
 	 *                        times out
 	 */
@@ -244,12 +264,13 @@ public interface StepVerifier {
 	 * {@link #verify() Verifies} the signals received by this subscriber, then exposes
 	 * various {@link Assertions assertion methods} on the final state.
 	 * <p>
-	 * Note this method will <strong>block</strong> indefinitely until the stream has
-	 * been terminated (either through {@link Subscriber#onComplete()},
+	 * Note this method will <strong>block</strong> until the stream has been
+	 * terminated (either through {@link Subscriber#onComplete()},
 	 * {@link Subscriber#onError(Throwable)} or {@link Subscription#cancel()}).
+	 * Depending on the declared expectations and actions, notably in case of undersized
+	 * manual requests, such a verification could also block indefinitely.
 	 *
-	 * @return the {@link Duration} of the verification
-	 *
+	 * @return the actual {@link Duration} the verification took.
 	 * @throws AssertionError in case of expectation failures
 	 */
 	Assertions verifyThenAssertThat();
@@ -260,9 +281,9 @@ public interface StepVerifier {
 	interface LastStep {
 
 		/**
-		 * Expect an error and consume with the given consumer. Any {@code
-		 * AssertionError}s thrown by the consumer will be rethrown during {@linkplain
-		 * #verify() verification}.
+		 * Expect an error and consume with the given consumer. Any
+		 * {@code AssertionError}s thrown by the consumer will be rethrown
+		 * during {@linkplain #verify() verification}.
 		 *
 		 * @param consumer the consumer for the exception
 		 *
@@ -273,7 +294,7 @@ public interface StepVerifier {
 		/**
 		 * Expect an unspecified error.
 		 *
-		 * @return the built verification
+		 * @return the built verification scenario, ready to be verified
 		 *
 		 * @see Subscriber#onError(Throwable)
 		 */
@@ -284,7 +305,7 @@ public interface StepVerifier {
 		 *
 		 * @param clazz the expected error type
 		 *
-		 * @return the built verification
+		 * @return the built verification scenario, ready to be verified
 		 *
 		 * @see Subscriber#onError(Throwable)
 		 */
@@ -295,7 +316,7 @@ public interface StepVerifier {
 		 *
 		 * @param errorMessage the expected error message
 		 *
-		 * @return the built verification
+		 * @return the built verification scenario, ready to be verified
 		 *
 		 * @see Subscriber#onError(Throwable)
 		 */
@@ -306,7 +327,7 @@ public interface StepVerifier {
 		 *
 		 * @param predicate the predicate to test on the next received error
 		 *
-		 * @return the built verification
+		 * @return the built verification scenario, ready to be verified
 		 *
 		 * @see Subscriber#onError(Throwable)
 		 */
@@ -315,7 +336,7 @@ public interface StepVerifier {
 		/**
 		 * Expect the completion signal.
 		 *
-		 * @return the built verification
+		 * @return the built verification scenario, ready to be verified
 		 *
 		 * @see Subscriber#onComplete()
 		 */
@@ -324,7 +345,7 @@ public interface StepVerifier {
 		/**
 		 * Cancel the underlying subscription.
 		 *
-		 * @return the built verification
+		 * @return the built verification scenario, ready to be verified
 		 *
 		 * @see Subscription#cancel()
 		 */
@@ -339,7 +360,7 @@ public interface StepVerifier {
 		 * separately if you need something more specific (like activating logging or
 		 * putting a timeout).
 		 *
-		 * @return the {@link Duration} of the verification
+		 * @return the actual {@link Duration} the verification took.
 		 *
 		 * @see #expectError()
 		 * @see #verify()
@@ -357,7 +378,7 @@ public interface StepVerifier {
 		 * putting a timeout).
 		 *
 		 * @param clazz the expected error type
-		 * @return the {@link Duration} of the verification
+		 * @return the actual {@link Duration} the verification took.
 		 *
 		 * @see #expectError(Class)
 		 * @see #verify()
@@ -367,7 +388,7 @@ public interface StepVerifier {
 
 		/**
 		 * Trigger the {@link #verify() verification}, expecting an error with the
-		 * specified messagee as terminal event.
+		 * specified message as terminal event.
 		 * <p>
 		 * This is a convenience method that calls {@link #verify()} in addition to the
 		 * expectation. Explicitly use the expect method and verification method
@@ -375,7 +396,7 @@ public interface StepVerifier {
 		 * putting a timeout).
 		 *
 		 * @param errorMessage the expected error message
-		 * @return the {@link Duration} of the verification
+		 * @return the actual {@link Duration} the verification took.
 		 *
 		 * @see #expectErrorMessage(String)
 		 * @see #verify()
@@ -393,7 +414,7 @@ public interface StepVerifier {
 		 * putting a timeout).
 		 *
 		 * @param predicate the predicate to test on the next received error
-		 * @return the {@link Duration} of the verification
+		 * @return the actual {@link Duration} the verification took.
 		 *
 		 * @see #expectErrorMatches(Predicate)
 		 * @see #verify()
@@ -410,7 +431,7 @@ public interface StepVerifier {
 		 * separately if you need something more specific (like activating logging or
 		 * putting a timeout).
 		 *
-		 * @return the {@link Duration} of the verification
+		 * @return the actual {@link Duration} the verification took.
 		 *
 		 * @see #expectComplete()
 		 * @see #verify()
@@ -442,7 +463,7 @@ public interface StepVerifier {
 		Step<T> as(String description);
 
 		/**
-		 * Expect an element and consume with the given consumer. Any {@code
+		 * Expect an element and consume with the given consumer.Any {@code
 		 * AssertionError}s thrown by the consumer will be rethrown during {@linkplain
 		 * #verify() verification}.
 		 *
@@ -469,14 +490,12 @@ public interface StepVerifier {
 		}
 
 		/**
-		 * Expect a recording session started via {@link #recordWith} and
-		 * consume with
-		 * the
-		 * given consumer. Any {@code
-		 * AssertionError}s thrown by the consumer will be rethrown during {@linkplain
-		 * #verify() verification}.
+		 * Expect a recording session started via {@link #recordWith}, end it and verify
+		 * it by applying the given consumer.
+		 * Any {@code AssertionError}s thrown by the consumer will be rethrown during
+		 * {@linkplain #verify() verification}.
 		 *
-		 * @param consumer the consumer for the value
+		 * @param consumer the consumer used to apply assertions on the recorded session
 		 *
 		 * @return this builder
 		 */
@@ -494,9 +513,10 @@ public interface StepVerifier {
 		Step<T> expectNext(T... ts);
 
 		/**
-		 * Expect an element count starting from the last expectation or onSubscribe.
+		 * Expect to received {@code count} elements, starting from the previous
+		 * expectation or onSubscribe.
 		 *
-		 * @param count the predicate to test on the next received value
+		 * @param count the number of emitted items to expect.
 		 *
 		 * @return this builder
 		 *
@@ -508,7 +528,7 @@ public interface StepVerifier {
 		 * Expect the next elements to match the given {@link Iterable} until its
 		 * iterator depletes.
 		 *
-		 * @param iterable the predicate to test on the next received value
+		 * @param iterable the iterable containing the next expected values
 		 *
 		 * @return this builder
 		 *
@@ -541,10 +561,11 @@ public interface StepVerifier {
 		Step<T> consumeSubscriptionWith(Consumer<? super Subscription> consumer);
 
 		/**
-		 * Expect that no event has been observed by the verifier. A duration is
-		 * necessary to limit in time that "nothing" has effectively happened.
+		 * Expect that no event has been observed by the verifier for the length of
+		 * the provided {@link Duration}. If virtual time is used, this duration is
+		 * verified using the virtual clock.
 		 *
-		 * @param duration the period to observe no event has been received
+		 * @param duration the duration for which to observe no event has been received
 		 *
 		 * @return this builder
 		 *
@@ -553,10 +574,8 @@ public interface StepVerifier {
 		Step<T> expectNoEvent(Duration duration);
 
 		/**
-		 * Expect and end a recording session started via {@link #recordWith} and
-		 * consume with
-		 * the
-		 * given consumer.
+		 * Expect a recording session started via {@link #recordWith}, end it and verify
+		 * it by ensuring the provided predicate matches.
 		 *
 		 * @param predicate the predicate to test on the recorded session
 		 *
@@ -568,15 +587,13 @@ public interface StepVerifier {
 
 		/**
 		 * Start a recording session storing {@link Subscriber#onNext(Object)} values in
-		 * the
-		 * supplied {@link Collection}. Further steps
+		 * the supplied {@link Collection}. Further steps
 		 * {@link #expectRecordedMatches(Predicate)} and
-		 * {@link #consumeRecordedWith(Consumer)} can consume the session.
-		 * <p>If an
-		 * existing recording session hasn't not been declaratively consumed, this step
+		 * {@link #consumeRecordedWith(Consumer)} can consume and assert the session.
+		 * <p>If an existing recording session hasn't not been declaratively consumed, this step
 		 * will override the current session.
 		 *
-		 * @param supplier the task to run
+		 * @param supplier the supplier for the {@link Collection} to use for recording.
 		 *
 		 * @return this builder
 		 */
@@ -626,7 +643,8 @@ public interface StepVerifier {
 
 		/**
 		 * Consume further onNext signals using a provided {@link Consumer} as long as
-		 * they match a {@link Predicate}.
+		 * they match a {@link Predicate}.  You can use the consumer to apply assertions
+		 * on each value.
 		 *
 		 * @param predicate the condition to continue consuming onNext
 		 * @param consumer  the consumer to use to consume the data, when the predicate
@@ -716,9 +734,16 @@ public interface StepVerifier {
 		Step<T> expectNoFusionSupport();
 
 		/**
-		 * Expect no Subscription or any other event for the given duration.
+		 * Expect no event and no Subscription has been observed by the verifier for the
+		 * length of the provided {@link Duration}. If virtual time is used, this duration
+		 * is verified using the virtual clock.
+		 * <p>
+		 * Note that you should only use this method as the first expectation if you
+		 * actually don't expect a subscription to happen. Use
+		 * {@link FirstStep#expectSubscription()} combined with {@link Step#expectNoEvent(Duration)}
+		 * to work around that.
 		 *
-		 * @param duration the period to observe no event has been received
+		 * @param duration the duration for which to observe no event has been received
 		 *
 		 * @return this builder
 		 */
