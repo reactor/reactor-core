@@ -544,6 +544,20 @@ public class StepVerifierTests {
 	}
 
 	@Test
+	public void verifyNextAsWithEmptyFlux() {
+	    final List<Integer> source = Arrays.asList(1,2,3);
+		Flux<Integer> flux = Flux.empty();
+
+        assertThatExceptionOfType(AssertionError.class)
+                .isThrownBy(() -> StepVerifier.create(flux)
+				.expectNextSequence(source)
+				.expectComplete()
+				.verify())
+                .withMessageStartingWith("expectation \"expectNextSequence\" failed (")
+                .withMessageEndingWith("expected next value: 1; actual signal: onComplete(); iterable: [1, 2, 3])");;
+	}
+
+	@Test
 	public void verifyRecordMatches() {
 		Flux<String> flux = Flux.just("foo", "bar", "foobar");
 

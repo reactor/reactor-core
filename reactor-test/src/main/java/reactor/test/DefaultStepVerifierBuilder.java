@@ -1221,7 +1221,7 @@ final class DefaultStepVerifierBuilder<T>
 		boolean onSignalSequence(Signal<T> actualSignal,
 				SignalSequenceEvent<T> sequenceEvent) {
 			Iterator<? extends T> currentNextAs = this.currentNextAs;
-			if (actualSignal.isOnNext() && currentNextAs == null) {
+			if (currentNextAs == null) {
 				currentNextAs = sequenceEvent.iterable.iterator();
 				this.currentNextAs = currentNextAs;
 			}
