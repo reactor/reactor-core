@@ -17,10 +17,41 @@
 package reactor.core.publisher;
 
 /**
- * Reactive Stream notification type
+ * Reactive Stream signal types
  */
 public enum SignalType {
-	SUBSCRIBE, REQUEST, CANCEL, ON_SUBSCRIBE, ON_NEXT, ON_ERROR, ON_COMPLETE,
+
+	/**
+	 * A signal when the subscription is triggered
+	 */
+	SUBSCRIBE,
+	/**
+	 * A signal when a request is made through the subscription
+	 */
+	REQUEST,
+	/**
+	 * A signal when the subscription is cancelled
+	 */
+	CANCEL,
+	/**
+	 * A signal when an operator receives a subscription
+	 */
+	ON_SUBSCRIBE,
+	/**
+	 * A signal when an operator receives an emitted value
+	 */
+	ON_NEXT,
+	/**
+	 * A signal when an operator receives an error
+	 */
+	ON_ERROR,
+	/**
+	 * A signal when an operator completes
+	 */
+	ON_COMPLETE,
+	/**
+	 * A signal that can be propagated AFTER an operator has terminated
+	 */
 	AFTER_TERMINATE;
 
 	@Override

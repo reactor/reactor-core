@@ -35,26 +35,29 @@ import reactor.util.Loggers;
 import static reactor.core.Exceptions.unwrap;
 
 /**
- * {@link Schedulers} provide various {@link Scheduler} generator useable by {@link
+ * {@link Schedulers} provides various {@link Scheduler} factories useable by {@link
  * reactor.core.publisher.Flux#publishOn publishOn} or {@link reactor.core.publisher.Mono#subscribeOn
  * subscribeOn} :
  * <p>
  * <ul> <li>{@link #fromExecutorService(ExecutorService)}}. </li> <li>{@link #newParallel}
  * : Optimized for fast {@link Runnable} executions </li> <li>{@link #single} : Optimized
  * for low-latency {@link Runnable} executions </li> <li>{@link #immediate}. </li> </ul>
+ * <p>
+ * Factories prefixed with {@code new} return a new instance of their flavor of {@link Scheduler},
+ * while other factories like {@link #elastic()} return a shared instance, that is the one
+ * used by operators requiring that flavor as their default Scheduler.
  *
  * @author Stephane Maldini
  */
 public abstract class Schedulers {
 
 	/**
-	 * Default number of processors available to the runtime on init (min 4)
+	 * Default pool size, initialized to the number of processors available to the runtime
+	 * on init (but with a minimum value of 4).
 	 *
 	 * @see Runtime#availableProcessors()
 	 */
-	public static final int DEFAULT_POOL_SIZE = Math.max(Runtime.getRuntime()
-	                                                            .availableProcessors(),
-			4);
+	public static final int DEFAULT_POOL_SIZE = Math.max(Runtime.getRuntime().availableProcessors(), 4);
 
 	static volatile BiConsumer<Thread, ? super Throwable> onHandleErrorHook;
 
@@ -363,15 +366,13 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * Override {@link Schedulers} finite signatures of {@link #newParallel}, {@link
-	 * #newSingle} and {@link #newElastic} factory using the matching
-	 * method signature in the target class. A finite signature corresponds to those
-	 * including a {@link ThreadFactory} argument and should be instance methods.
+	 * Replace {@link Schedulers} factories ({@link #newParallel(String) newParallel},
+	 * {@link #newSingle(String) newSingle} and {@link #newElastic(String) newElastic}). Also
+	 * shutdown Schedulers from the cached factories (like {@link #single()}) in order to
+	 * also use these replacements, re-creating the shared schedulers from the new factory
+	 * upon next use.
 	 * <p>
 	 * This method should be called safely and with caution, typically on app startup.
-	 * <p>
-	 * Note that cached schedulers (like {@link #single()}) are also shut down and will be
-	 * re-created from the new factory upon next use.
 	 *
 	 * @param factoryInstance an arbitrary {@link Factory} instance.
 	 */
@@ -406,8 +407,9 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * Wraps a single worker of some other {@link Scheduler} and provides {@link
-	 * reactor.core.scheduler.Scheduler.Worker} services on top of it.
+	 * Wraps a single {@link reactor.core.scheduler.Scheduler.Worker} from some other
+	 * {@link Scheduler} and provides {@link reactor.core.scheduler.Scheduler.Worker}
+	 * services on top of it.
 	 * <p>
 	 * Use the {@link Scheduler#dispose()} to release the wrapped worker.
 	 *
@@ -439,11 +441,31 @@ public abstract class Schedulers {
 	 */
 	public interface Factory {
 
+		/**
+		 * Override this method to decorate {@link ExecutorService} internally used by
+		 * Reactor's various {@link Scheduler} implementations, allowing to tune the
+		 * {@link ExecutorService} backing implementation.
+		 *
+		 * @param schedulerType a name hinting at the flavor of Scheduler being tuned.
+		 * @param actual the default backing implementation, provided lazily as a Supplier
+		 * so that you can bypass instantiation completely if you want to replace it.
+		 * @return the internal {@link ExecutorService} instance to use.
+		 */
 		default ExecutorService decorateExecutorService(String schedulerType,
 				Supplier<? extends ExecutorService> actual) {
 			return actual.get();
 		}
 
+		/**
+		 * Override this method to decorate {@link ScheduledExecutorService} internally used by
+		 * Reactor's various {@link Scheduler} implementations, allowing to tune the
+		 * {@link ScheduledExecutorService} backing implementation.
+		 *
+		 * @param schedulerType a name hinting at the flavor of Scheduler being tuned.
+		 * @param actual the default backing implementation, provided lazily as a Supplier
+		 * so that you can bypass instantiation completely if you want to replace it.
+		 * @return the internal {@link ScheduledExecutorService} instance to use.
+		 */
 		default ScheduledExecutorService decorateScheduledExecutorService(String schedulerType,
 				Supplier<? extends ScheduledExecutorService> actual) {
 			return actual.get();

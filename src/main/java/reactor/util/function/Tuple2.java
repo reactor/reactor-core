@@ -140,6 +140,10 @@ public class Tuple2<T1, T2> implements Iterable<Object>, Serializable {
 		return 2;
 	}
 
+	/**
+	 * String representation that can be adjusted for higher-cardinality Tuples in order
+	 * to show all values hold. Default to the t1 and t2 values separated by a comma.
+	 */
 	protected StringBuilder innerToString() {
 		StringBuilder sb = new StringBuilder();
 		if (t1 != null) sb.append(t1);
@@ -148,6 +152,13 @@ public class Tuple2<T1, T2> implements Iterable<Object>, Serializable {
 		return sb;
 	}
 
+	/**
+	 * A Tuple String representation is the comma separated list of values, enclosed
+	 * in square brackets. Note that intermediate {@literal null} values are represented
+	 * as the empty String, like {@code [value1,,value3]} for a Tuple3 or {@code [,value2]}
+	 * for a Tuple2.
+	 * @return the Tuple String representation
+	 */
 	@Override
 	public final String toString() {
 		return innerToString().insert(0, '[').append(']').toString();

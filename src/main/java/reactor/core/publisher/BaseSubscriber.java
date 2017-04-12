@@ -27,7 +27,8 @@ import reactor.core.Exceptions;
  * A simple base class for a {@link Subscriber} implementation that lets the user
  * perform a {@link #request(long)} and {@link #cancel()} on it directly. As the targeted
  * use case is to manually handle requests, the {@link #hookOnSubscribe(Subscription)} and
- * {@link #hookOnNext(Object)} hooks are expected to be implemented.
+ * {@link #hookOnNext(Object)} hooks are expected to be implemented, but they nonetheless
+ * default to an unbounded request at subscription time.
  * <p>
  * Override the other optional hooks {@link #hookOnComplete()},
  * {@link #hookOnError(Throwable)} and {@link #hookOnCancel()}

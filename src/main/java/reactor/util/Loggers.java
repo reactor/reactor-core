@@ -20,7 +20,7 @@ import java.util.regex.Matcher;
 
 /**
  * Expose static methods to get a logger depending on the environment (SLF4J or
- * {@link java.util.logging.Logger}).
+ * {@link java.util.logging.Logger java.util.logging.Logger}).
  */
 public abstract class Loggers {
 
@@ -42,10 +42,10 @@ public abstract class Loggers {
 
 
 	/**
-	 * Try getting an appropriate
-	 * {@link Logger} whether SLF4J is not present on the classpath or fallback to {@link java.util.logging.Logger}.
+	 * Get a {@link Logger}, backed by SLF4J if present on the classpath or falling back
+	 * to {@link java.util.logging.Logger java.util.logging.Logger}.
 	 *
-	 * @param name the category or logger name to assign
+	 * @param name the category or logger name to use
 	 *
 	 * @return a new {@link Logger} instance
 	 */
@@ -54,10 +54,10 @@ public abstract class Loggers {
 	}
 
 	/**
-	 * Try getting an appropriate
-	 * {@link Logger} whether SLF4J is not present on the classpath or fallback to {@link java.util.logging.Logger}.
+	 * Get a {@link Logger}, backed by SLF4J if present on the classpath or falling back
+	 * to {@link java.util.logging.Logger java.util.logging.Logger}.
 	 *
-	 * @param cls the source {@link Class} to derive the name from.
+	 * @param cls the source {@link Class} to derive the logger name from.
 	 *
 	 * @return a new {@link Logger} instance
 	 */

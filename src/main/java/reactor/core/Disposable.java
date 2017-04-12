@@ -25,14 +25,17 @@ public interface Disposable {
 
 	/**
 	 * Cancel or dispose the underlying task or resource.
-	 * <p>Call to this method is/should be idempotent.
+	 * <p>
+	 * Implementations are required to make this method idempotent.
 	 */
 	void dispose();
 
 	/**
-	 * Optionally return {@literal true} when the resource or task is disposed. The
-	 * implementor does not require to track disposition and may never return {@literal
-	 * true} even when disposed.
+	 * Optionally return {@literal true} when the resource or task is disposed.
+	 * <p>
+	 * Implementations are not required to track disposition and as such may never
+	 * return {@literal true} even when disposed. However, they MUST only return true
+	 * when there's a guarantee the resource or task is disposed.
 	 *
 	 * @return {@literal true} when there's a guarantee the resource or task is disposed.
 	 */

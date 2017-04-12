@@ -41,16 +41,17 @@ public interface Fuseable {
 	 * thus any queue-exit computation may be invalid at that point.
 	 * <p>
 	 * For example, an {@code asyncSource.map().publishOn().subscribe()} sequence where {@code asyncSource}
-	 * is async-fuseable, publishOn may fuse the whole sequence into a single Queue which invokes the mapper
-	 * function on its {@code poll()} method that is on another thread that whereas the unfused sequence
-	 * would have invoked the mapper on the previous thread. If such mapper is costly, it would escape its
-	 * thread bound this way.
+	 * is async-fuseable: publishOn may fuse the whole sequence into a single Queue. That in turn
+	 * could invoke the mapper function from its {@code poll()} method from another thread,
+	 * whereas the unfused sequence would have invoked the mapper on the previous thread.
+	 * If such mapper invocation is costly, it would escape its thread boundary this way.
 	 */
 	int THREAD_BARRIER = 4;
 
 	/**
 	 * A subscriber variant that can immediately tell if it consumed
-	 * the value or not, avoiding the usual request(1) for dropped
+	 * the value or not, directly allowing a new value to be sent if
+	 * it didn't. This avoids the usual request(1) round-trip for dropped
 	 * values.
 	 *
 	 * @param <T> the value type
@@ -65,12 +66,12 @@ public interface Fuseable {
 	}
 
 	/**
-	 * Contract queue-fusion based optimizations for supporting subscriptions.
+	 * Support contract for queue-fusion based optimizations on subscriptions.
 	 *
 	 * <ul>
 	 *  <li>
 	 *  Synchronous sources which have fixed size and can
-	 *  emit its items in a pull fashion, thus avoiding the request-accounting
+	 *  emit their items in a pull fashion, thus avoiding the request-accounting
 	 *  overhead in many cases.
 	 *  </li>
 	 *  <li>
@@ -94,11 +95,11 @@ public interface Fuseable {
 		 * For example, if a source supports only ASYNC fusion but
 		 * the intermediate operator supports only SYNC fuseable sources,
 		 * the operator may request SYNC fusion and the source can reject it via
-		 * NONE, thus the operator can return NONE as well to dowstream and the
+		 * NONE, thus the operator can return NONE as well to downstream and the
 		 * fusion doesn't happen.
 		 *
-		 * @param requestedMode the mode to request
-		 * @return the fusion mode activated
+		 * @param requestedMode the mode requested by the intermediate operator
+		 * @return the actual fusion mode activated
 		 */
 		int requestFusion(int requestedMode);
 
@@ -175,7 +176,7 @@ public interface Fuseable {
 
 	/**
 	 * Base class for synchronous sources which have fixed size and can
-	 * emit its items in a pull fashion, thus avoiding the request-accounting
+	 * emit their items in a pull fashion, thus avoiding the request-accounting
 	 * overhead in many cases.
 	 *
 	 * @param <T> the content value type

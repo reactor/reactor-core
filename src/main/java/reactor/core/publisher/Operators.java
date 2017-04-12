@@ -35,8 +35,7 @@ import reactor.util.Loggers;
 
 /**
  * An helper to support "Operator" writing, handle noop subscriptions, validate request
- * size and
- * to cap concurrent additive operations to Long.MAX_VALUE,
+ * size and to cap concurrent additive operations to Long.MAX_VALUE,
  * which is generic to {@link Subscription#request(long)} handling.
  *
  * Combine utils available to operator implementations, @see http://github.com/reactor/reactive-streams-commons
@@ -45,8 +44,8 @@ import reactor.util.Loggers;
 public abstract class Operators {
 
 	/**
-	 * Concurrent addition bound to Long.MAX_VALUE. Any concurrent write will "happen"
-	 * before this operation.
+	 * Concurrent addition bound to Long.MAX_VALUE. Any concurrent write will "happen
+	 * before" this operation.
 	 *
 	 * @param <T> the parent instance type
 	 * @param updater current field updater
@@ -104,12 +103,11 @@ public abstract class Operators {
 	 * A singleton Subscription that represents a cancelled subscription instance and
 	 * should not be leaked to clients as it represents a terminal state. <br> If
 	 * algorithms need to hand out a subscription, replace this with a singleton
-	 * subscription because
-	 * there is
-	 * no standard way to tell if a
-	 * Subscription is cancelled or not otherwise.
+	 * subscription because there is no standard way to tell if a Subscription is cancelled
+	 * or not otherwise.
 	 *
-	 * @return a singleton noop {@link Subscription}
+	 * @return a singleton noop {@link Subscription} to be used as an inner representation
+	 * of the cancelled state
 	 */
 	public static Subscription cancelledSubscription() {
 		return CancelledSubscription.INSTANCE;
@@ -128,12 +126,13 @@ public abstract class Operators {
 	}
 
 	/**
-	 * Throws an exception if request is 0 or negative as specified in rule 3.09 of Reactive Streams
+	 * Propagate an exception to a subscriber if request is 0 or negative,
+	 * as specified in rule 3.09 of Reactive Streams
 	 *
 	 * @param n          demand to check
 	 * @param subscriber Subscriber to onError if non strict positive n
 	 *
-	 * @return true if valid or false if specification exception occured
+	 * @return true if valid or false if specification exception occurred
 	 *
 	 * @throws IllegalArgumentException if subscriber is null and demand is negative or 0.
 	 */
@@ -199,7 +198,7 @@ public abstract class Operators {
 
 	/**
 	 * Concurrent addition bound to Long.MAX_VALUE.
-	 * Any concurrent write will "happen" before this operation.
+	 * Any concurrent write will "happen before" this operation.
 	 *
      * @param <T> the parent instance type
 	 * @param updater  current field updater
@@ -239,7 +238,9 @@ public abstract class Operators {
 	}
 
 	/**
-	 * Take an unsignalled exception that is masking anowher one due to callback failure.
+	 * An unexpected exception is about to be dropped, and it additionally
+	 * masks another one due to callback failure. The later will be suppressed by
+	 * the dropped exception.
 	 *
 	 * @param e the exception to handle
 	 * @param root the optional root cause to suppress
@@ -252,9 +253,9 @@ public abstract class Operators {
 	}
 
 	/**
-	 * Take an unsignalled exception that is masking another one due to callback failure.
+	 * An unexpected exception is about to be dropped.
 	 *
-	 * @param e the exception to handle
+	 * @param e the dropped exception
 	 */
 	public static void onErrorDropped(Throwable e) {
 		Consumer<? super Throwable> hook = Hooks.onErrorDroppedHook;
@@ -268,7 +269,7 @@ public abstract class Operators {
 	 * An unexpected event is about to be dropped.
 	 *
 	 * @param <T> the dropped value type
-	 * @param t the dropping data
+	 * @param t the dropped data
 	 */
 	public static <T> void onNextDropped(T t) {
 		if(t != null) {
@@ -313,7 +314,9 @@ public abstract class Operators {
 	 * Map an "operator" error given an operator parent {@link Subscription}. The
 	 * result error will be passed via onError to the operator downstream.
 	 * {@link Subscription} will be cancelled after checking for fatal error via
-	 * {@link Exceptions#throwIfFatal(Throwable)}.
+	 * {@link Exceptions#throwIfFatal(Throwable)}. Takes an additional signal, which
+	 * can be added as a suppressed exception if it is a {@link Throwable} and the
+	 * default {@link Hooks#onOperatorError(BiFunction) hook} is in place.
 	 *
 	 * @param subscription the linked operator parent {@link Subscription}
 	 * @param error the callback or operator error
@@ -348,8 +351,8 @@ public abstract class Operators {
 
 	/**
 	 * Return a wrapped {@link RejectedExecutionException} which can be thrown by the
-	 * operator. That denotes that an execution was rejected by a
-	 * {@link reactor.core.scheduler.Scheduler} due to dispose.
+	 * operator. This exception denotes that an execution was rejected by a
+	 * {@link reactor.core.scheduler.Scheduler}, notably when it was already disposed.
 	 * <p>
 	 * Wrapping is done by calling both {@link Exceptions#bubble(Throwable)} and
 	 * {@link #onOperatorError(Subscription, Throwable, Object)}.
@@ -361,8 +364,8 @@ public abstract class Operators {
 
 	/**
 	 * Return a wrapped {@link RejectedExecutionException} which can be thrown by the
-	 * operator. That denotes that an execution was rejected by a
-	 * {@link reactor.core.scheduler.Scheduler} due to dispose.
+	 * operator. This exception denotes that an execution was rejected by a
+	 * {@link reactor.core.scheduler.Scheduler}, notably when it was already disposed.
 	 * <p>
 	 * Wrapping is done by calling both {@link Exceptions#bubble(Throwable)} and
 	 * {@link #onOperatorError(Subscription, Throwable, Object)} (with the passed
@@ -384,14 +387,15 @@ public abstract class Operators {
 	}
 
 	/**
-	 * Concurrent substraction bound to 0.
-	 * Any concurrent write will "happen" before this operation.
+	 * Concurrent subtraction bound to 0, mostly used to decrement a request tracker by
+	 * the amount produced by the operator. Any concurrent write will "happen before"
+	 * this operation.
 	 *
      * @param <T> the parent instance type
 	 * @param updater  current field updater
 	 * @param instance current instance to update
-	 * @param toSub    delta to sub
-	 * @return value after subscription or zero
+	 * @param toSub    delta to subtract
+	 * @return value after subtraction or zero
 	 */
 	public static <T> long produced(AtomicLongFieldUpdater<T> updater, T instance, long toSub) {
 		long r, u;
@@ -407,8 +411,9 @@ public abstract class Operators {
 	}
 
 	/**
-	 * A generic utility to atomically replace a subscription or cancel if marked by a
-	 * singleton subscription.
+	 * A generic utility to atomically replace a subscription or cancel the replacement
+	 * if the current subscription is marked as already cancelled (as in
+	 * {@link #cancelledSubscription()}).
 	 *
 	 * @param field The Atomic container
 	 * @param instance the instance reference
@@ -433,23 +438,27 @@ public abstract class Operators {
 	}
 
 	/**
-	 * Throw {@link IllegalArgumentException}
+	 * Throw an {@link IllegalArgumentException} if the request is null or negative.
 	 *
 	 * @param n the demand to evaluate
+	 * @see Exceptions#nullOrNegativeRequestException(long)
 	 */
 	public static void reportBadRequest(long n) {
 		throw Exceptions.nullOrNegativeRequestException(n);
 	}
 
 	/**
-	 * Throw {@link IllegalStateException}
+	 * Throw an {@link IllegalStateException} that indicates more than the requested
+	 * amount was produced.
+	 *
+	 * @see Exceptions#failWithOverflow()
 	 */
 	public static void reportMoreProduced() {
 		throw Exceptions.failWithOverflow();
 	}
 
 	/**
-	 * Log reportedSubscriptions
+	 * Log a {@link Exceptions#duplicateOnSubscribeException() duplicate subscription} error.
 	 */
 	public static void reportSubscriptionSet() {
 		if (log.isDebugEnabled()) {
@@ -473,16 +482,16 @@ public abstract class Operators {
 	}
 
 	/**
-	 * Safely gate a {@link Subscriber} by a serializing {@link Subscriber}.
-	 * Serialization uses thread-stealing and a potentially unbounded queue that might starve a calling thread if
-	 * races are too important and
-	 * {@link Subscriber} is slower.
+	 * Safely gate a {@link Subscriber} by making sure onNext signals are delivered
+	 * sequentially (serialized).
+	 * Serialization uses thread-stealing and a potentially unbounded queue that might
+	 * starve a calling thread if races are too important and {@link Subscriber} is slower.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/serialize.png" alt="">
 	 *
 	 * @param <T> the relayed type
-	 * @param subscriber the subscriber to wrap
+	 * @param subscriber the subscriber to serialize
 	 * @return a serializing {@link Subscriber}
 	 */
 	public static <T> Subscriber<T> serialize(Subscriber<? super T> subscriber) {
@@ -490,8 +499,11 @@ public abstract class Operators {
 	}
 
 	/**
-	 * A generic utility to atomically replace a subscription or cancel if marked by a
-	 * singleton subscription or concurrently set before.
+	 * A generic utility to atomically replace a subscription or cancel the replacement
+	 * if current subscription is marked as cancelled (as in {@link #cancelledSubscription()})
+	 * or was concurrently updated before.
+	 * <p>
+	 * The replaced subscription is itself cancelled.
 	 *
 	 * @param field The Atomic container
 	 * @param instance the instance reference
@@ -521,6 +533,10 @@ public abstract class Operators {
 	/**
 	 * Sets the given subscription once and returns true if successful, false
 	 * if the field has a subscription already or has been cancelled.
+	 * <p>
+	 * If the field already has a subscription, it is cancelled and the duplicate
+	 * subscription is reported (see {@link #reportSubscriptionSet()}).
+	 *
 	 * @param <F> the instance type containing the field
 	 * @param field the field accessor
 	 * @param instance the parent instance
@@ -557,11 +573,11 @@ public abstract class Operators {
 	}
 
 	/**
-	 * Cap a substraction to 0
+	 * Cap a subtraction to 0
 	 *
 	 * @param a left operand
 	 * @param b right operand
-	 * @return Subscription result or 0 if overflow
+	 * @return Subtraction result or 0 if overflow
 	 */
 	public static long subOrZero(long a, long b) {
 		long res = a - b;
@@ -595,8 +611,8 @@ public abstract class Operators {
 	}
 
 	/**
-	 * Check Subscription current state and cancel new Subscription if different null, returning true if
-	 * ready to subscribe.
+	 * Check Subscription current state and cancel new Subscription if current is set,
+	 * or return true if ready to subscribe.
 	 *
 	 * @param current current Subscription, expected to be null
 	 * @param next new Subscription
@@ -732,8 +748,8 @@ public abstract class Operators {
 	}
 
 	/**
-	 * Base class for Subscribers that will receive their Subscriptions at any time yet
-	 * they need to be cancelled or requested at any time.
+	 * Base class for Subscribers that will receive their Subscriptions at any time, yet
+	 * they might also need to be cancelled or requested at any time.
 	 */
 	public static class DeferredSubscription
 			implements Subscription, Scannable {
@@ -1021,6 +1037,12 @@ public abstract class Operators {
 			return NONE;
 		}
 
+		/**
+		 * Set the value internally, without impacting request tracking state.
+		 *
+		 * @param value the new value.
+		 * @see #complete(Object)
+		 */
 		public void setValue(O value) {
 			this.value = value;
 		}

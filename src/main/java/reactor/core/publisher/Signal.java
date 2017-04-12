@@ -50,11 +50,11 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	}
 
 	/**
-	 * Creates and returns a {@code Signal} of variety {@code Type.FAILED}, and assigns it
-	 * an error.
+	 * Creates and returns a {@code Signal} of variety {@code Type.FAILED}, which holds
+	 * the error.
 	 *
 	 * @param <T> the value type
-	 * @param e the error to assign to the signal
+	 * @param e the error associated to the signal
 	 *
 	 * @return an {@code OnError} variety of {@code Signal}
 	 */
@@ -63,11 +63,11 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	}
 
 	/**
-	 * Creates and returns a {@code Signal} of variety {@code Type.NEXT}, and assigns it a
-	 * value.
+	 * Creates and returns a {@code Signal} of variety {@code Type.NEXT}, which holds
+	 * the value.
 	 *
 	 * @param <T> the value type
-	 * @param t the item to assign to the signal as its value
+	 * @param t the value item associated to the signal
 	 *
 	 * @return an {@code OnNext} variety of {@code Signal}
 	 */
@@ -76,18 +76,20 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	}
 
 	/**
-	 * @param o is the given object a complete {@link Signal}
+	 * Check if an arbitrary Object represents a COMPLETE {@link Signal}.
 	 *
-	 * @return true if completion signal
+	 * @param o the object to check
+	 * @return true if object represents the completion signal
 	 */
 	public static boolean isComplete(Object o) {
 		return o == ON_COMPLETE;
 	}
 
 	/**
-	 * @param o is the given object a complete {@link Signal}
+	 * Check if a arbitrary Object represents an ERROR {@link Signal}.
 	 *
-	 * @return true if completion signal
+	 * @param o the object to check
+	 * @return true if object represents the error signal
 	 */
 	public static boolean isError(Object o) {
 		return o instanceof Signal && ((Signal) o).getType() == SignalType.ON_ERROR;
@@ -99,7 +101,7 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	 * @param <T> the value type
 	 * @param subscription the subscription
 	 *
-	 * @return an {@code OnCompleted} variety of {@code Signal}
+	 * @return an {@code OnSubscribe} variety of {@code Signal}
 	 */
 	public static <T> Signal<T> subscribe(Subscription subscription) {
 		return new ImmutableSignal<>(SignalType.ON_SUBSCRIBE, null, null, subscription);
@@ -108,27 +110,29 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	/**
 	 * Read the error associated with this (onError) signal.
 	 *
-	 * @return the Throwable associated with this (onError) signal
+	 * @return the Throwable associated with this (onError) signal, or null if not relevant
 	 */
 	public abstract Throwable getThrowable();
 
 	/**
 	 * Read the subscription associated with this (onSubscribe) signal.
 	 *
-	 * @return the Subscription associated with this (onSubscribe) signal
+	 * @return the Subscription associated with this (onSubscribe) signal, or null if not
+	 * relevant
 	 */
 	public abstract Subscription getSubscription();
 
 	/**
 	 * Retrieves the item associated with this (onNext) signal.
 	 *
-	 * @return the item associated with this (onNext) signal
+	 * @return the item associated with this (onNext) signal, or null if not relevant
 	 */
 	@Override
 	public abstract T get();
 
 	/**
-	 * Has this signal an item associated with it ?
+	 * Has this signal an item associated with it ? (which only happens if it is an
+	 * (onNext) signal)
 	 *
 	 * @return a boolean indicating whether or not this signal has an item associated with
 	 * it
@@ -147,8 +151,9 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	}
 
 	/**
-	 * Read the type of this signal: {@code Subscribe}, {@code Next}, {@code Error}, or
-	 * {@code Complete}
+	 * Read the type of this signal: {@link SignalType#ON_SUBSCRIBE},
+	 * {@link SignalType#ON_NEXT}, {@link SignalType#ON_ERROR}, or
+	 * {@link SignalType#ON_COMPLETE}
 	 *
 	 * @return the type of the signal
 	 */
@@ -193,6 +198,12 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 		return getType() == SignalType.ON_NEXT;
 	}
 
+	/**
+	 * Propagate the signal represented by this {@link Signal} instance to a
+	 * given {@link Subscriber}.
+	 *
+	 * @param observer the {@link Subscriber} to play the {@link Signal} on
+	 */
 	@Override
 	public void accept(Subscriber<? super T> observer) {
 		if (isOnNext()) {

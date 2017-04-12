@@ -47,15 +47,15 @@ public abstract class ConnectableFlux<T> extends Flux<T> {
 	 * Connects this {@link ConnectableFlux} to the upstream source when the specified amount of
 	 * {@link org.reactivestreams.Subscriber} subscribes.
 	 * <p>
-	 * Subscribing and immediately unsubscribing Subscribers also contribute the the subscription count
-	 * that triggers the connection.
+	 * Subscribing and immediately unsubscribing still contributes to the counter that
+	 * triggers the connection.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/autoconnect.png" alt="">
 	 *
 	 * @param minSubscribers the minimum number of subscribers
 	 *
-	 * @return a {@link Flux} that connects to the upstream source when the given amount of Subscribers subscribe
+	 * @return a {@link Flux} that connects to the upstream source when the given amount of Subscribers subscribed
 	 */
 	public final Flux<T> autoConnect(int minSubscribers) {
 		return autoConnect(minSubscribers, NOOP_DISCONNECT);
