@@ -610,7 +610,6 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * internally on each subscription.
 	 * @param service A provided ExecutorService to manage threading infrastructure
 	 * @param requestTaskExecutor A provided ExecutorService to manage threading infrastructure.
-	 * @param service A provided ExecutorService to manage threading infrastructure
 	 * @param bufferSize A Backlog Size to mitigate slow subscribers
 	 * @param strategy A RingBuffer WaitStrategy to use instead of the default
 	 * blocking wait strategy.

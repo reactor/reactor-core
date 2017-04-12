@@ -1433,7 +1433,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <I> the merged type
 	 *
 	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
-	 * @deprecate use {@link #mergeSequential(Iterable, int, int)} or {@link #mergeSequentialDelayError(Iterable, int, int)}
+	 * @deprecated use {@link #mergeSequential(Iterable, int, int)} or {@link #mergeSequentialDelayError(Iterable, int, int)}
 	 * instead, will be removed in 3.1.0.
 	 */
 	@Deprecated
