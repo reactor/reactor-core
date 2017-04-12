@@ -16,7 +16,7 @@
 package reactor.core.publisher;
 
 /**
- * Represents a sequence of events with an associated key.
+ * Represents a sequence of events which has an associated key.
  *
  * @param <K> the key type
  * @param <V> the value type
@@ -24,8 +24,8 @@ package reactor.core.publisher;
 public abstract class GroupedFlux<K, V> extends Flux<V> {
 
 	/**
-	 * Return defined identifier
-	 * @return defined identifier
+	 * Return the key of the {@link GroupedFlux}.
+	 * @return the key
 	 */
 	public abstract K key();
 }

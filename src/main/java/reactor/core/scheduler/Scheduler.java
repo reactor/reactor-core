@@ -37,7 +37,7 @@ import reactor.core.Disposable;
 public interface Scheduler extends Disposable {
 
 	/**
-	 * Schedules the given task on this scheduler non-delayed execution.
+	 * Schedules the non-delayed execution of the given task on this scheduler.
 	 *
 	 * <p>
 	 * This method is safe to be called from multiple threads but there are no
@@ -148,7 +148,7 @@ public interface Scheduler extends Disposable {
 	interface Worker extends Disposable {
 
 		/**
-		 * Schedules the task on this worker.
+		 * Schedules the task for immediate execution on this worker.
 		 * @param task the task to schedule
 		 * @return the {@link Disposable} instance that let's one cancel this particular task.
 		 * If the Scheduler has been shut down, the {@link #REJECTED} {@link Disposable} instance is returned.

@@ -169,13 +169,15 @@ public interface Scannable {
 	}
 
 	/**
-	 * Return the casted {@link Scannable}, null or a
-	 * constant {@link Scannable} that return false on
+	 * Attempt to cast the Object to a {@link Scannable}. Return null if the
+	 * value is null, or a default object if the value is not a {@link Scannable}.
+	 * The default object is a constant {@link Scannable} that return false on
 	 * {@link Scannable#isScanAvailable}.
 	 *
 	 * @param o a reference to cast
 	 *
-	 * @return the casted {@link Scannable}, null or {@link Attr#UNAVAILABLE_SCAN}
+	 * @return the casted {@link Scannable}, null or a default {@link Scannable} instance
+	 * that isn't actually scannable.
 	 */
 	@SuppressWarnings("unchecked")
 	static Scannable from(Object o) {
@@ -229,7 +231,9 @@ public interface Scannable {
 	}
 
 	/**
-	 * Return an eventual value or null for a given component state {@link Attr}
+	 * Introspect a component's specific state {@link Attr attribute}, returning a
+	 * best effort value or null if the attribute doesn't make sense for that particular
+	 * component.
 	 *
 	 * @param key an {@link Attr} to get the operator state
 	 *
@@ -238,9 +242,9 @@ public interface Scannable {
 	Object scan(Attr key);
 
 	/**
-	 * Resolve a value given an {@link Attr} within the {@link Scannable}. If unresolved
-	 * return the
-	 * passed default value.
+	 * Introspect a component's specific state {@link Attr attribute}, returning a
+	 * best effort value casted to the provided class, or null if the attribute doesn't
+	 * make sense for that particular component.
 	 *
 	 * @param key a {@link Attr} to resolve the value within the context
 	 * @param type the attribute type
@@ -259,12 +263,12 @@ public interface Scannable {
 	}
 
 	/**
-	 * Resolve a value given an {@link Attr} within the {@link Scannable}. If unresolved
-	 * return the
-	 * passed default value.
+	 * Introspect a component's specific state {@link Attr attribute}, returning a
+	 * best effort casted value or the provided default if the attribute doesn't make
+	 * sense for that particular component.
 	 *
 	 * @param key a {@link Attr} to resolve the value within the context
-	 * @param defaultValue a fallback value if key doesn't resolve
+	 * @param defaultValue a fallback value if key doesn't resolve (also defining the return type)
 	 *
 	 * @return an eventual value or the default passed
 	 */

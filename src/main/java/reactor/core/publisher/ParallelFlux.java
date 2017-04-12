@@ -46,8 +46,10 @@ import reactor.util.concurrent.QueueSupplier;
  * <p>
  * Use {@code from()} to start processing a regular Publisher in 'rails', which each
  * cover a subset of the original Publisher's data. {@link Flux#parallel()} is a
- * convenient shortcut to achieve that on a {@link Flux}. Use {@code runOn()} to
- * introduce where each 'rail' should run on thread-vise.
+ * convenient shortcut to achieve that on a {@link Flux}.
+ * <p>
+ * Use {@code runOn()} to introduce where each 'rail' should run on thread-vise.
+ * <p>
  * Use {@code sequential()} to merge the sources back into a single {@link Flux} or
  * {@link #subscribe(Subscriber)} if you simply want to subscribe to the merged sequence.
  * Note that other variants like {@link #subscribe(Consumer)} instead do multiple
@@ -59,8 +61,8 @@ import reactor.util.concurrent.QueueSupplier;
 public abstract class ParallelFlux<T> implements Publisher<T> {
 
 	/**
-	 * Take a Publisher and prepare to consume it on multiple 'rails' (number of CPUs) in
-	 * a round-robin fashion.
+	 * Take a Publisher and prepare to consume it on multiple 'rails' (one per CPU core)
+	 * in a round-robin fashion.
 	 *
 	 * @param <T> the value type
 	 * @param source the source Publisher
@@ -75,8 +77,8 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Take a Publisher and prepare to consume it on parallelism number of 'rails' ,
-	 * possibly ordered and round-robin fashion.
+	 * Take a Publisher and prepare to consume it on {@code parallelism} number of 'rails',
+	 * possibly ordered and in a round-robin fashion.
 	 *
 	 * @param <T> the value type
 	 * @param source the source Publisher
@@ -92,8 +94,8 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Take a Publisher and prepare to consume it on parallelism number of 'rails'
-	 * and round-robin fashion and use custom prefetch amount and queue
+	 * Take a Publisher and prepare to consume it on {@code parallelism} number of 'rails'
+	 * and in a round-robin fashion and use custom prefetch amount and queue
 	 * for dealing with the source Publisher's values.
 	 *
 	 * @param <T> the value type

@@ -35,6 +35,11 @@ public abstract class Exceptions {
 	public static final Throwable TERMINATED = new Throwable("No further exceptions");
 
 	/**
+	 * Update an empty atomic reference with the given exception, or combine further added
+	 * exceptions together as suppressed exceptions under a root Throwable with
+	 * the {@code "Multiple exceptions"} message, if the atomic reference already holds
+	 * one. This is short-circuited if the reference contains {@link #TERMINATED}.
+	 *
 	 * @param <T> the parent instance type
 	 * @param field the target field updater
 	 * @param instance the parent instance for the field
@@ -71,15 +76,15 @@ public abstract class Exceptions {
 
 	/**
 	 * @return a new {@link NullPointerException} with a cause message abiding to reactive
-	 * stream specification.
+	 * stream specification rule 2.13.
 	 */
 	public static NullPointerException argumentIsNullException() {
 		return new NullPointerException("Spec 2.13: Signal/argument cannot be null");
 	}
 
 	/**
-	 * Return an unchecked {@link RuntimeException} to be thrown that will bubble
-	 * upstream. <p>This method invokes {@link #throwIfFatal(Throwable)}.
+	 * Prepare an unchecked {@link RuntimeException} that will bubble upstream if thrown
+	 * by an operator. <p>This method invokes {@link #throwIfFatal(Throwable)}.
 	 *
 	 * @param t the root cause
 	 *
@@ -93,7 +98,7 @@ public abstract class Exceptions {
 
 	/**
 	 * @return a new {@link IllegalStateException} with a cause message abiding to
-	 * reactive stream specification.
+	 * reactive stream specification rule 2.12.
 	 */
 	public static IllegalStateException duplicateOnSubscribeException() {
 		return new IllegalStateException(
@@ -101,9 +106,13 @@ public abstract class Exceptions {
 	}
 
 	/**
-	 * Return an {@link UnsupportedOperationException}
+	 * Return an {@link UnsupportedOperationException} indicating that the error callback
+	 * on a subscriber was not implemented, yet an error was propagated.
+	 *
 	 * @param cause original error not processed by a receiver.
-	 * @return an {@link UnsupportedOperationException}
+	 * @return an {@link UnsupportedOperationException} indicating the error callback was
+	 * not implemented and holding the original propagated error.
+	 * @see #isErrorCallbackNotImplemented(Throwable)
 	 */
 	public static UnsupportedOperationException errorCallbackNotImplemented(Throwable cause) {
 		Objects.requireNonNull(cause, "cause");
@@ -116,7 +125,8 @@ public abstract class Exceptions {
 	 * error resolution but might assist implementors in dealing with boundaries (queues,
 	 * combinations and async).
 	 *
-	 * @return a {@link RuntimeException} that can be checked via {@link #isCancel}
+	 * @return a {@link RuntimeException} that can be identified via {@link #isCancel}
+	 * @see #isCancel(Throwable)
 	 */
 	public static RuntimeException failWithCancel() {
 		return new CancelException();
@@ -128,6 +138,7 @@ public abstract class Exceptions {
 	 * couldn't be emitted due to a lack of request
 	 *
 	 * @return an {@link IllegalStateException}
+	 * @see #isOverflow(Throwable)
 	 */
 	public static IllegalStateException failWithOverflow() {
 		return new OverflowException("The receiver is overrun by more signals than expected (bounded queue...)");
@@ -140,47 +151,49 @@ public abstract class Exceptions {
 	 *
 	 * @param message the exception's message
 	 * @return an {@link IllegalStateException}
+	 * @see #isOverflow(Throwable)
 	 */
 	public static IllegalStateException failWithOverflow(String message) {
 		return new OverflowException(message);
 	}
 
 	/**
-	 * @return true if the given {@link Throwable} represents an {@link #failWithOverflow() overflow}.
+	 * Check if the given exception represents an {@link #failWithOverflow() overflow}.
+	 * @param t the {@link Throwable} error to check
+	 * @return true if the given {@link Throwable} represents an overflow.
 	 */
 	public static boolean isOverflow(Throwable t) {
 		return t instanceof OverflowException;
 	}
 
 	/**
-	 * Check if the given error is a bubbled wrapped exception.
-	 *
+	 * Check if the given exception is a {@link #bubble(Throwable) bubbled} wrapped exception.
 	 * @param t the {@link Throwable} error to check
-	 *
-	 * @return true if given error is a a bubbled wrapped exception.
+	 * @return true if given {@link Throwable} is a bubbled wrapped exception.
 	 */
 	public static boolean isBubbling(Throwable t) {
 		return t instanceof BubblingException;
 	}
 
 	/**
-	 * Check if the given error is a cancel signal.
-	 *
+	 * Check if the given error is a {@link #failWithCancel() cancel signal}.
 	 * @param t the {@link Throwable} error to check
-	 *
-	 * @return true if given error is a cancellation token.
+	 * @return true if given {@link Throwable} is a cancellation token.
 	 */
 	public static boolean isCancel(Throwable t) {
 		return t instanceof CancelException;
 	}
 
 	/**
-	 * Return an {@link UnsupportedOperationException}
-	 * @param cause original error not processed by a receiver.
-	 * @return an {@link UnsupportedOperationException}
+	 * Check if the given error is a {@link #errorCallbackNotImplemented(Throwable) callback not implemented}
+	 * exception, in which case its {@link Throwable#getCause() cause} will be the propagated
+	 * error that couldn't be processed.
+	 *
+	 * @param t the {@link Throwable} error to check
+	 * @return true if given {@link Throwable} is a callback not implemented exception.
 	 */
-	public static boolean isErrorCallbackNotImplemented(Throwable cause) {
-		return cause != null && cause.getClass().equals(ErrorCallbackNotImplemented
+	public static boolean isErrorCallbackNotImplemented(Throwable t) {
+		return t != null && t.getClass().equals(ErrorCallbackNotImplemented
 				.class);
 	}
 
@@ -188,7 +201,7 @@ public abstract class Exceptions {
 	 * @param elements the invalid requested demand
 	 *
 	 * @return a new {@link IllegalArgumentException} with a cause message abiding to
-	 * reactive stream specification.
+	 * reactive stream specification rule 3.9.
 	 */
 	public static IllegalArgumentException nullOrNegativeRequestException(long elements) {
 		return new IllegalArgumentException(
@@ -196,13 +209,13 @@ public abstract class Exceptions {
 	}
 
 	/**
-	 * Return an unchecked {@link RuntimeException} to be thrown that will be propagated
+	 * Prepare an unchecked {@link RuntimeException} that should be propagated
 	 * downstream through {@link org.reactivestreams.Subscriber#onError(Throwable)}.
 	 * <p>This method invokes {@link #throwIfFatal(Throwable)}.
 	 *
 	 * @param t the root cause
 	 *
-	 * @return an unchecked exception
+	 * @return an unchecked exception to propagate through onError signals.
 	 */
 	public static RuntimeException propagate(Throwable t) {
 		throwIfFatal(t);
@@ -233,9 +246,10 @@ public abstract class Exceptions {
 
 	/**
 	 * Throws a particular {@code Throwable} only if it belongs to a set of "fatal" error
-	 * varieties. These varieties are as follows: <ul> <li>{@code BubblingException}</li>
-	 * <li>{@code ErrorCallbackNotImplemented}</li> <li>{@code VirtualMachineError}</li>
-	 * <li>{@code ThreadDeath}</li> <li>{@code LinkageError}</li> </ul>
+	 * varieties. These varieties are as follows: <ul>
+	 *     <li>{@code BubblingException} (as detectable by {@link #isBubbling(Throwable)})</li>
+	 *     <li>{@code ErrorCallbackNotImplemented} (as detectable by {@link #isErrorCallbackNotImplemented(Throwable)})</li>
+	 *     <li>{@link VirtualMachineError}</li> <li>{@link ThreadDeath}</li> <li>{@link LinkageError}</li> </ul>
 	 *
 	 * @param t the exception to evaluate
 	 */
@@ -252,8 +266,8 @@ public abstract class Exceptions {
 	/**
 	 * Throws a particular {@code Throwable} only if it belongs to a set of "fatal" error
 	 * varieties native to the JVM. These varieties are as follows:
-	 * <ul> <li>{@code VirtualMachineError}</li> <li>{@code ThreadDeath}</li>
-	 * <li>{@code LinkageError}</li> </ul>
+	 * <ul> <li>{@link VirtualMachineError}</li> <li>{@link ThreadDeath}</li>
+	 * <li>{@link LinkageError}</li> </ul>
 	 *
 	 * @param t the exception to evaluate
 	 */
@@ -270,10 +284,10 @@ public abstract class Exceptions {
 	}
 
 	/**
-	 * Unwrap a particular {@code Throwable} only if it is a wrapped exception via
-	 * {@link #bubble} or {@link #propagate}.
+	 * Unwrap a particular {@code Throwable} only if it is was wrapped via
+	 * {@link #bubble(Throwable) bubble} or {@link #propagate(Throwable) propagate}.
 	 *
-	 * @param t the exception to wrap
+	 * @param t the exception to unwrap
 	 *
 	 * @return the unwrapped exception
 	 */

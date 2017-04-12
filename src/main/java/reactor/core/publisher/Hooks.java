@@ -33,15 +33,15 @@ import reactor.util.Loggers;
 
 
 /**
- * Allows for various lifecycle override
- *
+ * A set of overridable lifecycle hooks that can be used for cross-cutting
+ * added behavior on {@link Flux}/{@link Mono} operators.
  */
 public abstract class Hooks {
 
 	/**
 	 * Override global error dropped strategy which by default bubble back the error.
 	 *
-	 * @param c the dropped error {@link Consumer} hook
+	 * @param c the {@link Consumer} to apply to dropped errors
 	 */
 	public static void onErrorDropped(Consumer<? super Throwable> c) {
 		if(log.isDebugEnabled()) {
@@ -54,7 +54,7 @@ public abstract class Hooks {
 	 * Override global data dropped strategy which by default throw {@link
 	 * reactor.core.Exceptions#failWithCancel()}
 	 *
-	 * @param c the dropped next {@link Consumer} hook
+	 * @param c the {@link Consumer} to apply to data (onNext) that is dropped
 	 */
 	public static void onNextDropped(Consumer<Object> c) {
 		if(log.isDebugEnabled()) {
@@ -64,15 +64,15 @@ public abstract class Hooks {
 	}
 
 	/**
-	 * Set a global "assembly" hook to intercept signals produced by the passed {@link
-	 * Publisher} ({@link Flux} or {@link Mono}). The passed function must result in a
-	 * value different from null, and {@link OperatorHook#ignore()} can be used to discard
-	 * a specific {@link Publisher} from transformations.
+	 * Configure a global chain of "assembly" hooks to intercept signals produced by the
+	 * passed {@link Publisher} ({@link Flux} or {@link Mono}). The passed function provides
+	 * a base {@link OperatorHook} that can be used as a kind of builder to compose several
+	 * hooks or behaviors (eg. transverse logging). {@link OperatorHook#ignore()} can be
+	 * used to prevent all hooks from applying to a specific {@link Publisher}.
 	 * <p>
 	 * Can be reset via {@link #resetOnOperator()}
 	 *
-	 * @param onOperator a callback for each assembly that must return an
-	 * {@link OperatorHook} query
+	 * @param onOperator a callback for each assembly that must return a non-null {@link OperatorHook}
 	 * @param <T> the arbitrary assembled sequence type
 	 */
 	public static <T> void onOperator(Function<? super OperatorHook<T>, ? extends OperatorHook<T>> onOperator) {
@@ -87,8 +87,8 @@ public abstract class Hooks {
 	 * Override global operator error mapping which by default add as suppressed exception
 	 * either data driven exception or error driven exception.
 	 *
-	 * @param f the operator error {@link BiFunction} mapper, given the failure and an
-	 * eventual original context (data or error) and returning an arbitrary exception.
+	 * @param f an operator error {@link BiFunction} mapper, returning an arbitrary exception
+	 * given the failure and optionally some original context (data or error).
 	 */
 	public static void onOperatorError(BiFunction<? super Throwable, Object, ?
 			extends Throwable> f) {
@@ -130,8 +130,7 @@ public abstract class Hooks {
 	}
 
 	/**
-	 * Reset global operator error mapping to adding as suppressed exception either data
-	 * driven exception or error driven exception.
+	 * Reset global operator error mapping to adding as suppressed exception.
 	 */
 	public static void resetOnOperatorError() {
 		if(log.isDebugEnabled()) {
@@ -191,9 +190,7 @@ public abstract class Hooks {
 					null, onRequestCall, onCancelCall));
 		}
 
-		final OperatorHook<T> doOnSignal(
-				SignalPeek<T> log
-		){
+		final OperatorHook<T> doOnSignal(SignalPeek<T> log){
 			if(this == IGNORE || publisher instanceof ConnectableFlux){
 				return this;
 			}
@@ -257,10 +254,11 @@ public abstract class Hooks {
 		}
 
 		/**
-		 * Apply hook only if {@link #publisher()} if operator name match the type name
-		 * (case insensitive, without Mono/Flux prefix or Fuseable suffix.
+		 * Apply hook only if one of the provided names matches the
+		 * operator underlying type name (case insensitive, without Mono/Flux prefix
+		 * or Fuseable suffix).
 		 *
-		 * @param names a list of possible names that can match
+		 * @param names a list of possible names that would match if equal
 		 * @return a possibly ignoring {@link OperatorHook}
 		 */
 		public final OperatorHook<T> ifName(String... names) {
@@ -277,10 +275,11 @@ public abstract class Hooks {
 		}
 
 		/**
-		 * Apply hook only if {@link #publisher()} if operator name match the type name
-		 * (case insensitive, without Mono/Flux prefix or Fuseable suffix.
+		 * Apply hook only if one of the provided names is contained in the
+		 * operator's underlying type name (case insensitive, without Mono/Flux prefix
+		 * or Fuseable suffix).
 		 *
-		 * @param names a list of possible names that can match
+		 * @param names a list of possible names that would match if contained
 		 * @return a possibly ignoring {@link OperatorHook}
 		 */
 		public final OperatorHook<T> ifNameContains(String... names){
@@ -299,10 +298,11 @@ public abstract class Hooks {
 		}
 
 		/**
-		 * Observe Reactive Streams signals matching the passed filter {@code options} and use
-		 * {@link Logger} support to handle trace implementation. Default will use the
-		 * passed java.util.logging. If SLF4J is available, it will be used
-		 * instead.
+		 * Observe Reactive Streams signals matching the passed filter {@code options} and
+		 * log them at {@literal INFO} level.
+		 * <p>
+		 * Logging it done through {@link Logger} so the default logging framework is
+		 * {@code java.util.logging}, but if SLF4J is available it will be used instead.
 		 * <p>
 		 * Options allow fine grained filtering of the traced signal, for instance to only
 		 * capture onNext and onError:
@@ -325,10 +325,11 @@ public abstract class Hooks {
 		}
 
 		/**
-		 * Observe Reactive Streams signals matching the passed filter {@code options} and use
-		 * {@link Logger} support to handle trace implementation. Default will use the
-		 * passed java.util.logging. If SLF4J is available, it will be used
-		 * instead.
+		 * Observe Reactive Streams signals matching the passed filter {@code options} and
+		 * log them at {@literal INFO} level.
+		 * <p>
+		 * Logging it done through {@link Logger} so the default logging framework is
+		 * {@code java.util.logging}, but if SLF4J is available it will be used instead.
 		 * <p>
 		 * Options allow fine grained filtering of the traced signal, for instance to only
 		 * capture onNext and onError:
@@ -354,10 +355,11 @@ public abstract class Hooks {
 		}
 
 		/**
-		 * Observe Reactive Streams signals matching the passed filter {@code options} and use
-		 * {@link Logger} support to handle trace implementation. Default will use the passed
-		 * {@link Level} and java.util.logging. If SLF4J is available, it will be used
-		 * instead.
+		 * Observe Reactive Streams signals matching the passed filter {@code options}and
+		 * log them at the provided level.
+		 * <p>
+		 * Logging it done through {@link Logger} so the default logging framework is
+		 * {@code java.util.logging}, but if SLF4J is available it will be used instead.
 		 * <p>
 		 * Options allow fine grained filtering of the traced signal, for instance to only
 		 * capture onNext and onError:
@@ -383,10 +385,11 @@ public abstract class Hooks {
 		}
 
 		/**
-		 * Observe Reactive Streams signals matching the passed filter {@code options} and use
-		 * {@link Logger} support to handle trace implementation. Default will use the passed
-		 * {@link Level} and java.util.logging. If SLF4J is available, it will be used
-		 * instead.
+		 * Observe Reactive Streams signals matching the passed filter {@code options} and
+		 * log them at the provided level.
+		 * <p>
+		 * Logging it done through {@link Logger} so the default logging framework is
+		 * {@code java.util.logging}, but if SLF4J is available it will be used instead.
 		 * <p>
 		 * Options allow fine grained filtering of the traced signal, for instance to only
 		 * capture onNext and onError:
@@ -421,12 +424,13 @@ public abstract class Hooks {
 		}
 
 		/**
-		 * Enable operator stack recorder and capture declaration stack. Errors are observed
-		 * and enriched with a Suppressed Exception detailing the original stack. Must be
-		 * called before producers (e.g. Flux.map, Mono.fromCallable) are actually called to
-		 * intercept the right stack information.
+		 * Enable operator stack recorder that captures a declaration stack whenever an
+		 * operator is instantiated. When errors are observed later on, they will be
+		 * enriched with a Suppressed Exception detailing the original assembly line stack.
+		 * Must be called before producers (e.g. Flux.map, Mono.fromCallable) are actually
+		 * called to intercept the right stack information.
 		 *
-		 * @return a operator stack capture {@link OperatorHook}
+		 * @return a operator stack capturing {@link OperatorHook}
 		 */
 		public OperatorHook<T> operatorStacktrace(){
 			if(this == IGNORE) return this;
@@ -435,9 +439,9 @@ public abstract class Hooks {
 		}
 
 		/**
-		 * The current publisher to decorate
+		 * The publisher being decorated
 		 *
-		 * @return The current publisher to decorate
+		 * @return The publisher being decorated
 		 */
 		public Publisher<T> publisher() {
 			return publisher;
