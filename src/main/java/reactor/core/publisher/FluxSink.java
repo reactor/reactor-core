@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 import org.reactivestreams.Subscriber;
@@ -65,15 +66,16 @@ public interface FluxSink<T> {
 	 * Attaches a {@link LongConsumer} to this {@link FluxSink} that will be notified of
 	 * any request to this sink.
 	 * <p>
-	 * For push/pull sinks created using {@link Flux#create(java.util.function.Consumer)}
-	 * or {@link Flux#create},
+	 * For push/pull sinks created using {@link Flux#create(Consumer)}
+	 * or {@link Flux#create(Consumer, FluxSink.OverflowStrategy)},
 	 * the consumer
 	 * is invoked for every request to enable a hybrid backpressure-enabled push/pull model.
 	 * When bridging with asynchronous listener-based APIs, the {@code onRequest} callback
 	 * may be used to request more data from source if required and to manage backpressure
 	 * by delivering data to sink only when requests are pending.
 	 * <p>
-	 * For push-only sinks created using {@link Flux#push},
+	 * For push-only sinks created using {@link Flux#push(Consumer)}
+	 * or {@link Flux#push(Consumer, FluxSink.OverflowStrategy)},
 	 * the consumer is invoked with an initial request of {@code Long.MAX_VALUE} when this method
 	 * is invoked.
 	 *
