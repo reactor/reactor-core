@@ -313,7 +313,7 @@ public class GuideTests {
 		Flux.just("timeout1", "unknown", "key2")
 		    .flatMap(k ->
 				    callExternalService(k)
-						    .onErrorResumeWith(error -> { // <1>
+						    .onErrorResume(error -> { // <1>
 							    if (error instanceof TimeoutException) // <2>
 								    return getFromCache(k);
 							    else if (error instanceof UnknownKeyException) // <3>
@@ -341,7 +341,7 @@ public class GuideTests {
 		Flux<String> flux =
 		Flux.just("timeout1")
 		    .flatMap(k -> callExternalService(k)
-				    .onErrorResumeWith(original -> Flux.error(
+				    .onErrorResume(original -> Flux.error(
 						    new BusinessException("oops, SLA exceeded", original))
 				    )
 		    );
