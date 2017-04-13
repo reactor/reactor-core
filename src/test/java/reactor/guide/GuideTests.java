@@ -286,12 +286,12 @@ public class GuideTests {
 	}
 
 	@Test
-	public void errorHandlingSwitchOnError() {
+	public void errorHandlingOnErrorResume() {
 		Flux<String> flux =
 				Flux.just("key1", "key2")
 				    .flatMap(k ->
 						    callExternalService(k) // <1>
-								    .switchOnError(getFromCache(k)) // <2>
+								    .onErrorResume(e -> getFromCache(k)) // <2>
 				    );
 
 		StepVerifier.create(flux)
@@ -366,7 +366,7 @@ public class GuideTests {
 				        failureStat.increment();
 				        log("uh oh, falling back, service failed for key " + k); // <2>
 				    })
-		        .switchOnError(getFromCache(k)) // <3>
+		        .onErrorResume(e -> getFromCache(k)) // <3>
 		    );
 
 		StepVerifier.create(flux)

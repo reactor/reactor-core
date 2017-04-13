@@ -4406,7 +4406,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux}
 	 */
 	public final Flux<T> onErrorReturn(T fallbackValue) {
-		return switchOnError(just(fallbackValue));
+		return onErrorResume(t -> just(fallbackValue));
 	}
 
 	/**
@@ -4422,7 +4422,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final <E extends Throwable> Flux<T> onErrorReturn(Class<E> type,
 			T fallbackValue) {
-		return switchOnError(type, just(fallbackValue));
+		return onErrorResume(type, t -> just(fallbackValue));
 	}
 
 	/**
@@ -4440,7 +4440,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	public final <E extends Throwable> Flux<T> onErrorReturn(Predicate<? super Throwable>
 			predicate, T
 			fallbackValue) {
-		return switchOnError(predicate, just(fallbackValue));
+		return onErrorResume(predicate, t -> just(fallbackValue));
 	}
 
 	/**
@@ -5683,7 +5683,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <E> the error type
 	 *
 	 * @return an alternating {@link Flux} on source onError
+	 * @deprecated will be removed in 3.1.0, use {@link #onErrorResume} instead.
 	 */
+	@Deprecated
 	public final <E extends Throwable> Flux<T> switchOnError(Class<E> type,
 			Publisher<? extends T> fallback) {
 		return onErrorResume(type, t -> fallback);
@@ -5700,7 +5702,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param fallback the alternate {@link Publisher}
 	 *
 	 * @return an alternating {@link Flux} on source onError
+	 * @deprecated will be removed in 3.1.0, use {@link #onErrorResume} instead.
 	 */
+	@Deprecated
 	public final Flux<T> switchOnError(Predicate<? super Throwable> predicate,
 			Publisher<? extends	T> fallback) {
 		return onErrorResume(predicate, t -> fallback);
@@ -5715,7 +5719,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param fallback the alternate {@link Publisher}
 	 *
 	 * @return an alternating {@link Flux} on source onError
+	 * @deprecated will be removed in 3.1.0, use {@link #onErrorResume} instead.
 	 */
+	@Deprecated
 	public final Flux<T> switchOnError(Publisher<? extends T> fallback) {
 		return onErrorResume(t -> fallback);
 	}

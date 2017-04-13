@@ -275,7 +275,7 @@ public class FluxResumeTest {
 			                        }
 			                        return t;
 		                        })
-		                        .switchOnError(Flux.range(9999, 4)))
+		                        .onErrorResume(e -> Flux.range(9999, 4)))
 		            .expectNext(1, 2, 9999, 10000, 10001, 10002)
 		            .verifyComplete();
 	}
@@ -295,7 +295,7 @@ public class FluxResumeTest {
 					s.complete();
 				});
 
-		StepVerifier.create(source.switchOnError(fallback))
+		StepVerifier.create(source.onErrorResume(e -> fallback))
 		            .expectNext("Three", "Two", "One", "1", "2")
 		            .verifyComplete();
 	}

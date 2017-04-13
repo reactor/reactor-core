@@ -2068,7 +2068,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a transformed {@link Mono}
 	 */
 	public final Mono<T> mapError(Function<Throwable, ? extends Throwable> mapper) {
-		return switchOnError(e -> Mono.error(mapper.apply(e)));
+		return onErrorResume(e -> Mono.error(mapper.apply(e)));
 	}
 
 	/**
@@ -2105,7 +2105,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final Mono<T> mapError(Predicate<? super Throwable> predicate,
 			Function<? super Throwable, ? extends Throwable> mapper) {
-		return switchOnError(predicate, e -> Mono.error(mapper.apply(e)));
+		return onErrorResume(predicate, e -> Mono.error(mapper.apply(e)));
 	}
 
 	/**
@@ -2187,12 +2187,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return an alternating {@link Mono} on source onError
 	 *
-	 * @deprecated Use {@link #switchOnError(Function)}} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
+	 * @deprecated Use {@link #onErrorResume(Function)}} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
 	 */
 	@Deprecated
 	public final Mono<T> otherwise(Function<? super Throwable, ? extends Mono<? extends
 			T>> fallback) {
-		return switchOnError(fallback);
+		return onErrorResume(fallback);
 	}
 
 	/**
@@ -2208,12 +2208,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param <E> the error type
 	 *
 	 * @return a new {@link Mono}
-	 * @deprecated Use {@link #switchOnError(Class, Function)} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
+	 * @deprecated Use {@link #onErrorResume(Class, Function)} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
 	 */
 	@Deprecated
 	public final <E extends Throwable> Mono<T> otherwise(Class<E> type,
 			Function<? super E, ? extends Mono<? extends T>> fallback) {
-		return switchOnError(type, fallback);
+		return onErrorResume(type, fallback);
 	}
 
 	/**
@@ -2228,12 +2228,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * sequence
 	 *
 	 * @return a new {@link Mono}
-	 * @deprecated Use {@link #switchOnError(Predicate, Function)} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
+	 * @deprecated Use {@link #onErrorResume(Predicate, Function)} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
 	 */
 	@Deprecated
 	public final Mono<T> otherwise(Predicate<? super Throwable> predicate,
 			Function<? super Throwable, ? extends Mono<? extends T>> fallback) {
-		return switchOnError(predicate, fallback);
+		return onErrorResume(predicate, fallback);
 	}
 
 	/**
@@ -2265,7 +2265,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @see Flux#onErrorReturn
 	 */
 	public final Mono<T> otherwiseReturn(final T fallback) {
-		return switchOnError(throwable -> just(fallback));
+		return onErrorResume(throwable -> just(fallback));
 	}
 
 	/**
@@ -2281,7 +2281,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final <E extends Throwable> Mono<T> otherwiseReturn(Class<E> type,
 			T fallbackValue) {
-		return switchOnError(type, throwable -> just(fallbackValue));
+		return onErrorResume(type, throwable -> just(fallbackValue));
 	}
 
 	/**
@@ -2298,7 +2298,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final <E extends Throwable> Mono<T> otherwiseReturn(Predicate<? super
 			Throwable> predicate, T fallbackValue) {
-		return switchOnError(predicate,  throwable -> just(fallbackValue));
+		return onErrorResume(predicate,  throwable -> just(fallbackValue));
 	}
 
 	/**
@@ -2742,11 +2742,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return an alternating {@link Mono} on source onError
 	 *
-	 * @see Flux#switchOnError
+	 * @see Flux#onErrorResume
 	 */
-	public final Mono<T> switchOnError(Function<? super Throwable, ? extends Mono<? extends
+	public final Mono<T> onErrorResume(Function<? super Throwable, ? extends Mono<? extends
 			T>> fallback) {
-		return onAssembly(new MonoSwitchOnError<>(this, fallback));
+		return onAssembly(new MonoOnErrorResume<>(this, fallback));
 	}
 
 	/**
@@ -2762,15 +2762,15 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param <E> the error type
 	 *
 	 * @return a new {@link Mono}
-	 * @see Flux#switchOnError
+	 * @see Flux#onErrorResume
 	 */
-	public final <E extends Throwable> Mono<T> switchOnError(Class<E> type,
+	public final <E extends Throwable> Mono<T> onErrorResume(Class<E> type,
 			Function<? super E, ? extends Mono<? extends T>> fallback) {
 		Objects.requireNonNull(type, "type");
 		@SuppressWarnings("unchecked")
 		Function<? super Throwable, Mono<? extends T>> handler = (Function<? super
 				Throwable, Mono<? extends T>>)fallback;
-		return switchOnError(type::isInstance, handler);
+		return onErrorResume(type::isInstance, handler);
 	}
 
 	/**
@@ -2785,12 +2785,12 @@ $	 * Subscribe to a returned fallback publisher when an error matching the given
 	 * sequence
 	 *
 	 * @return a new {@link Mono}
-	 * @see Flux#switchOnError
+	 * @see Flux#onErrorResume
 	 */
-	public final Mono<T> switchOnError(Predicate<? super Throwable> predicate,
+	public final Mono<T> onErrorResume(Predicate<? super Throwable> predicate,
 			Function<? super Throwable, ? extends Mono<? extends T>> fallback) {
 		Objects.requireNonNull(predicate, "predicate");
-		return switchOnError(e -> predicate.test(e) ? fallback.apply(e) : error(e));
+		return onErrorResume(e -> predicate.test(e) ? fallback.apply(e) : error(e));
 	}
 
 	/**

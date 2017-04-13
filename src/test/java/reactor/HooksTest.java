@@ -155,7 +155,7 @@ public class HooksTest {
 				new String[]{"FluxJust: 1", "{ \"operator\" : \"MapFuseable\" }: 2",
 						"{ \"operator\" : \"PeekFuseable\" }! false",
 						"{ \"operator\" : \"CollectList\" }! true", "MonoJust: [2]",
-						"{ \"operator\" : \"SwitchOnError\" }: [2]"});
+						"{ \"operator\" : \"OnErrorResume\" }: [2]"});
 
 		q.clear();
 
@@ -172,7 +172,7 @@ public class HooksTest {
 				new String[]{"FluxJust: 1", "{ \"operator\" : \"MapFuseable\" }: 2",
 						"{ \"operator\" : \"PeekFuseable\" }! false",
 						"{ \"operator\" : \"CollectList\" }! false", "MonoJust: [2]",
-						"{ \"operator\" : \"SwitchOnError\" }: [2]"});
+						"{ \"operator\" : \"OnErrorResume\" }: [2]"});
 
 		q.clear();
 
