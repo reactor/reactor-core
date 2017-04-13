@@ -534,7 +534,7 @@ public abstract class Operators {
 			return false;
 		}
 		if (a != null) {
-			a.cancel();
+			s.cancel();
 			reportSubscriptionSet();
 			return false;
 		}
