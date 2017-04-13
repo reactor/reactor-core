@@ -4407,7 +4407,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux}
 	 */
 	public final Flux<T> onErrorResume(Function<? super Throwable, ? extends Publisher<? extends T>> fallback) {
-		return onAssembly(new FluxResume<>(this, fallback));
+		return onAssembly(new FluxOnErrorResume<>(this, fallback));
 	}
 
 	/**

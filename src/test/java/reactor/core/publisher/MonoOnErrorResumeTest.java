@@ -27,7 +27,7 @@ public class MonoOnErrorResumeTest {
 /*
 	@Test
 	public void constructors() {
-		ConstructorTestBuilder ctb = new ConstructorTestBuilder(FluxResume.class);
+		ConstructorTestBuilder ctb = new ConstructorTestBuilder(FluxOnErrorResume.class);
 		
 		ctb.addRef("source", Flux.never());
 		ctb.addRef("nextFactory", (Function<Throwable, Publisher<Object>>)e -> Flux.never());

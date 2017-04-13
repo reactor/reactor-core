@@ -41,6 +41,6 @@ final class MonoOnErrorResume<T> extends MonoSource<T, T> {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(new FluxResume.ResumeSubscriber<>(s, nextFactory));
+		source.subscribe(new FluxOnErrorResume.ResumeSubscriber<>(s, nextFactory));
 	}
 }
