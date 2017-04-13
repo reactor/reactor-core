@@ -331,9 +331,6 @@ public class FluxFlatMapTest {
 
 		source.flatMap(v -> v == 1 ? source1 : source2, 1, 32).subscribe(ts);
 
-		source1.connect();
-		source2.connect();
-		
 		Assert.assertEquals(1, emission.get());
 		
 		ts.assertNoValues()
@@ -368,9 +365,6 @@ public class FluxFlatMapTest {
 		EmitterProcessor<Integer> source2 = EmitterProcessor.create();
 		
 		source.flatMap(v -> v == 1 ? source1 : source2, Integer.MAX_VALUE, 32).subscribe(ts);
-
-		source1.connect();
-		source2.connect();
 
 		Assert.assertEquals(1000, emission.get());
 		

@@ -580,20 +580,15 @@ public class ReplayProcessorTest {
 		assertThat(s.isCancelled()).isFalse();
 		assertThat(s.isCancelled()).isFalse();
 
-		assertThat(rp.isStarted()).isFalse();
 		assertThat(rp.getPrefetch()).isEqualTo(Integer.MAX_VALUE);
 		if(rp.getBufferSize() != Integer.MAX_VALUE) {
 			assertThat(rp.getBufferSize()).isEqualTo(1);
 		}
-		BlockingSink<String> sink = rp.connectSink();
-		assertThat(rp.connectSink().isCancelled()).isTrue();
-		rp.onComplete();
-		assertThat(rp.connectSink().isCancelled()).isTrue();
-		assertThat(rp.isStarted()).isTrue();
-
+		FluxSink<String> sink = rp.sink();
+		sink.next("test");
 		rp.onComplete();
 
-		assertThat(sink.emit("test").isCancelled()).isTrue();
+		rp.onComplete();
 
 		Exception e = new RuntimeException("test");
 		try{

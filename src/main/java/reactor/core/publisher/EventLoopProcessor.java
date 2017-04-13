@@ -221,10 +221,10 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		return r;
 	}
 
-	final ExecutorService executor;
+	final ExecutorService  executor;
 	final EventLoopContext contextClassLoader;
-	final String          name;
-	final boolean         autoCancel;
+	final String           name;
+	final boolean          autoCancel;
 
 	final RingBuffer<Slot<IN>> ringBuffer;
 	final WaitStrategy readWait = WaitStrategy.liteBlocking();

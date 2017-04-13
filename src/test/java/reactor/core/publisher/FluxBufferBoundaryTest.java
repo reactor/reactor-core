@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -314,10 +314,10 @@ public class FluxBufferBoundaryTest
 	@Test
 	public void bufferWillAcumulateMultipleListsOfValues() {
 		//given: "a source and a collected flux"
-		EmitterProcessor<Integer> numbers = EmitterProcessor.<Integer>create().connect();
+		EmitterProcessor<Integer> numbers = EmitterProcessor.create();
 
 		//non overlapping buffers
-		EmitterProcessor<Integer> boundaryFlux = EmitterProcessor.<Integer>create().connect();
+		EmitterProcessor<Integer> boundaryFlux = EmitterProcessor.create();
 
 		Mono<List<List<Integer>>> res = numbers.buffer(boundaryFlux)
 		                                       .buffer()

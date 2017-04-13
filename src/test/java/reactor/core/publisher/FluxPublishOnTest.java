@@ -1127,7 +1127,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		final ConcurrentHashMap<Object, Long> seenConsumer = new ConcurrentHashMap<>();
 
 		EmitterProcessor<Integer> d = EmitterProcessor.create();
-		BlockingSink<Integer> s = BlockingSink.create(d);
+		FluxSink<Integer> s = d.sink();
 
 		/*Cancellation c = */
 		d.publishOn(Schedulers.parallel())
@@ -1177,7 +1177,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		                            }));
 
 		for (int i = 0; i < COUNT; i++) {
-			s.submit(i);
+			s.next(i);
 		}
 
 		internalLatch.await(5, TimeUnit.SECONDS);
@@ -1193,7 +1193,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		Random random = ThreadLocalRandom.current();
 
 		EmitterProcessor<String> d = EmitterProcessor.create();
-		BlockingSink<String> s = d.connectSink();
+		FluxSink<String> s = d.sink();
 
 		Flux<Integer> tasks = d.publishOn(Schedulers.parallel())
 		                       .parallel(8)
@@ -1217,7 +1217,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		});
 
 		for (int i = 1; i <= items; i++) {
-			s.submit(String.valueOf(i));
+			s.next(String.valueOf(i));
 		}
 		latch.await(15, TimeUnit.SECONDS);
 		assertTrue(latch.getCount() + " of " + items + " items were not counted down",

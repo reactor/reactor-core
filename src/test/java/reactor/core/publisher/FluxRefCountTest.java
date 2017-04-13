@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,6 @@ public class FluxRefCountTest {
 	@Test
 	public void normal() {
 		EmitterProcessor<Integer> e = EmitterProcessor.create();
-		e.connect();
 
 		Flux<Integer> p = e.publish().refCount();
 		
@@ -75,7 +74,6 @@ public class FluxRefCountTest {
 	@Test
 	public void normalTwoSubscribers() {
 		EmitterProcessor<Integer> e = EmitterProcessor.create();
-		e.connect();
 
 		Flux<Integer> p = e.publish().refCount(2);
 		

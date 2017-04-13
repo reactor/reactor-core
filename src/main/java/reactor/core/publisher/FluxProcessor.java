@@ -89,7 +89,7 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 * Note that {@link org.reactivestreams.Processor} can extend this behavior to effectively start its subscribers.
 	 *
 	 * @return this
-	 * @deprecated Will be removed in 3.1.0 where {@link FluxProcessor#onSubscribe(Subscription)} is not required by
+	 * @deprecated Will be removed in 3.1.0. {@link FluxProcessor#onSubscribe(Subscription)} is not required by
 	 * default anymore and brings no benefit given the private scope of the
 	 * Subscription.
 	 */
