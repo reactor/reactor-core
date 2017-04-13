@@ -441,6 +441,7 @@ public final class UnicastProcessor<T>
 	}
 
 	@Override
+	@Deprecated
 	public boolean isStarted() {
 		return once == 1 && !done && !cancelled;
 	}

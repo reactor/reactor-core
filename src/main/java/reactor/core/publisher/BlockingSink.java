@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 import java.util.function.Predicate;
 
 import org.reactivestreams.Subscriber;
@@ -47,7 +48,14 @@ import reactor.core.Trackable;
  *
  * @author Stephane Maldini
  * @param <E> the element type
+ * @deprecated Will be removed in 3.1.0. There is no general replacement for BlockingSink in 3.1 but its major
+ * user {@link FluxProcessor} now offers {@link FluxProcessor#sink} that directly exposes
+ *{@link FluxSink}. In general the blocking publishing methods here can be directly
+ * addressed via the behavior of {@link FluxProcessor#sink} in a safer way. There is
+ * also {@link FluxSink#onRequest(LongConsumer)} available to now proactively deal with
+ * backpressure even in the context of producing to an arbitrary processor.
  */
+@Deprecated
 public final class BlockingSink<E>
 		implements Subscription, Consumer<E>, Disposable, Producer, Trackable, Closeable {
 	/**

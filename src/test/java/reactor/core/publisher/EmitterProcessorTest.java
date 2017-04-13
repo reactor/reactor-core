@@ -384,6 +384,7 @@ public class EmitterProcessorTest {
 	}
 
 	@Test(expected = IllegalStateException.class)
+	@Deprecated
 	public void failTooMuchSubscribers() {
 		EmitterProcessor<Integer> ep = EmitterProcessor.create(32, 2);
 		ep.subscribe();
