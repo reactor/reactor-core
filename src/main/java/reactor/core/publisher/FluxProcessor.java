@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.util.Objects;
 import java.util.Iterator;
 import java.util.concurrent.CancellationException;
 import java.util.stream.Stream;
@@ -249,8 +250,37 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 * @return a serializing {@link FluxSink}
 	 */
 	public final FluxSink<IN> sink() {
-		FluxCreate.IgnoreSink<IN> s = new FluxCreate.IgnoreSink<>(this);
+		return sink(FluxSink.OverflowStrategy.IGNORE);
+	}
+
+	/**
+	 * Create a {@link FluxSink} that safely gates multi-threaded producer
+	 * {@link Subscriber#onNext(Object)}.
+	 *
+	 * <p> The returned {@link FluxSink} will not apply any
+	 * {@link FluxSink.OverflowStrategy} and overflowing {@link FluxSink#next(Object)}
+	 * will behave in two possible ways depending on the Processor:
+	 * <ul>
+	 * <li> an unbounded processor will handle the overflow itself by dropping or
+	 * buffering </li>
+	 * <li> a bounded processor will block/spin on IGNORE strategy, or apply the
+	 * strategy behavior</li>
+	 * </ul>
+	 *
+	 * @param strategy the overflow strategy, see {@link FluxSink.OverflowStrategy}
+	 * for the
+	 * available strategies
+	 * @return a serializing {@link FluxSink}
+	 */
+	public final FluxSink<IN> sink(FluxSink.OverflowStrategy strategy) {
+		Objects.requireNonNull(strategy, "strategy");
+		if (getBufferSize() == Integer.MAX_VALUE){
+			strategy = FluxSink.OverflowStrategy.IGNORE;
+		}
+
+		FluxCreate.BaseSink<IN> s = FluxCreate.createSink(this, strategy);
 		onSubscribe(s);
+
 		if(s.isCancelled() ||
 				(isSerialized() && getBufferSize() == Integer.MAX_VALUE)){
 			return s;
