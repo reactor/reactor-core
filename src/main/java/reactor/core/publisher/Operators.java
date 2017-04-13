@@ -558,13 +558,14 @@ public abstract class Operators {
 	 * @return true if successful, false if the target was not empty or has been cancelled
 	 */
 	public static <F> boolean setOnce(AtomicReferenceFieldUpdater<F, Subscription> field, F instance, Subscription s) {
+		Objects.requireNonNull(s, "subscription");
 		Subscription a = field.get(instance);
 		if (a == CancelledSubscription.INSTANCE) {
 			s.cancel();
 			return false;
 		}
 		if (a != null) {
-			a.cancel();
+			s.cancel();
 			reportSubscriptionSet();
 			return false;
 		}
