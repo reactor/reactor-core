@@ -112,7 +112,7 @@ public class FluxResumeTest {
 	public void errorMap() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Flux.<Integer>error(new Exception()).mapError(d -> new RuntimeException("forced" + " " + "failure"))
+		Flux.<Integer>error(new Exception()).onErrorMap(d -> new RuntimeException("forced" + " " + "failure"))
 		                                    .subscribe(ts);
 
 		ts.assertNoValues()
@@ -318,7 +318,7 @@ public class FluxResumeTest {
 	@Test
 	public void mapError() {
 		StepVerifier.create(Flux.<Integer>error(new TestException())
-				.mapError(TestException.class, e -> new Exception("test")))
+				.onErrorMap(TestException.class, e -> new Exception("test")))
 				.verifyErrorMessage("test");
 	}
 

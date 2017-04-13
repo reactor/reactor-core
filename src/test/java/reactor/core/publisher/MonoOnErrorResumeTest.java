@@ -97,7 +97,7 @@ public class MonoOnErrorResumeTest {
 	public void errorMap() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Mono.<Integer>error(new Exception()).mapError(d -> new RuntimeException("forced" +
+		Mono.<Integer>error(new Exception()).onErrorMap(d -> new RuntimeException("forced" +
 				" " +
 				"failure"))
 		                                    .subscribe(ts);
@@ -160,7 +160,7 @@ public class MonoOnErrorResumeTest {
 	public void mapError() {
 		MonoProcessor<Integer> mp = MonoProcessor.create();
 		StepVerifier.create(Mono.<Integer>error(new TestException())
-				.mapError(TestException.class, e -> new Exception("test"))
+				.onErrorMap(TestException.class, e -> new Exception("test"))
 				.subscribeWith(mp))
 		            .then(() -> assertThat(mp.isError()).isTrue())
 		            .then(() -> assertThat(mp.isSuccess()).isFalse())

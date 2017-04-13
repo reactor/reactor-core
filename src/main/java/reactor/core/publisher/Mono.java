@@ -2066,9 +2066,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param mapper the error transforming {@link Function}
 	 *
 	 * @return a transformed {@link Mono}
+	 * @deprecated will be removed in 3.1.0, use {@link #onErrorMap} instead.
 	 */
+	@Deprecated
 	public final Mono<T> mapError(Function<Throwable, ? extends Throwable> mapper) {
-		return onErrorResume(e -> Mono.error(mapper.apply(e)));
+		return onErrorMap(mapper);
 	}
 
 	/**
@@ -2082,12 +2084,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param <E> the error type
 	 *
 	 * @return a transformed {@link Mono}
+	 * @deprecated will be removed in 3.1.0, use {@link #onErrorMap} instead.
 	 */
+	@Deprecated
 	public final <E extends Throwable> Mono<T> mapError(Class<E> type,
 			Function<? super E, ? extends Throwable> mapper) {
-		@SuppressWarnings("unchecked")
-		Function<Throwable, Throwable> handler = (Function<Throwable, Throwable>)mapper;
-		return mapError(type::isInstance, handler);
+		return onErrorMap(type, mapper);
 	}
 
 	/**
@@ -2102,10 +2104,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param mapper the error transforming {@link Function}
 	 *
 	 * @return a transformed {@link Mono}
+	 * @deprecated will be removed in 3.1.0, use {@link #onErrorMap} instead.
 	 */
+	@Deprecated
 	public final Mono<T> mapError(Predicate<? super Throwable> predicate,
 			Function<? super Throwable, ? extends Throwable> mapper) {
-		return onErrorResume(predicate, e -> Mono.error(mapper.apply(e)));
+		return onErrorMap(predicate, mapper);
 	}
 
 	/**
@@ -2135,6 +2139,56 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final Flux<T> mergeWith(Publisher<? extends T> other) {
 		return Flux.merge(this, other);
+	}
+
+	/**
+	 * Transform the error emitted by this {@link Mono} by applying a function.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/maperror.png" alt="">
+	 * <p>
+	 * @param mapper the error transforming {@link Function}
+	 *
+	 * @return a transformed {@link Mono}
+	 */
+	public final Mono<T> onErrorMap(Function<Throwable, ? extends Throwable> mapper) {
+		return onErrorResume(e -> Mono.error(mapper.apply(e)));
+	}
+
+	/**
+	 * Transform the error emitted by this {@link Mono} by applying a function if the
+	 * error matches the given type, otherwise let the error flow.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/maperror.png" alt="">
+	 * <p>
+	 * @param type the type to match
+	 * @param mapper the error transforming {@link Function}
+	 * @param <E> the error type
+	 *
+	 * @return a transformed {@link Mono}
+	 */
+	public final <E extends Throwable> Mono<T> onErrorMap(Class<E> type,
+			Function<? super E, ? extends Throwable> mapper) {
+		@SuppressWarnings("unchecked")
+		Function<Throwable, Throwable> handler = (Function<Throwable, Throwable>)mapper;
+		return onErrorMap(type::isInstance, handler);
+	}
+
+	/**
+	 * Transform the error emitted by this {@link Mono} by applying a function if the
+	 * error matches the given predicate, otherwise let the error flow.
+	 * <p>
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/maperror.png"
+	 * alt="">
+	 *
+	 * @param predicate the error predicate
+	 * @param mapper the error transforming {@link Function}
+	 *
+	 * @return a transformed {@link Mono}
+	 */
+	public final Mono<T> onErrorMap(Predicate<? super Throwable> predicate,
+			Function<? super Throwable, ? extends Throwable> mapper) {
+		return onErrorResume(predicate, e -> Mono.error(mapper.apply(e)));
 	}
 
 	/**
