@@ -66,7 +66,7 @@ public interface FluxSink<T> {
 	 * Ensures that calls to next, error and complete are properly serialized.
 	 * @return a new serialized {@link FluxSink}
 	 * @deprecated Use {@link Flux#create(java.util.function.Consumer)} or
-	 * {@link Flux#create(java.util.function.Consumer, OverflowStrategy)}
+	 * {@link Flux#create(java.util.function.Consumer, FluxSink.OverflowStrategy)}
 	 * to create a serialized {@link FluxSink}.
 	 */
 	@Deprecated
@@ -77,13 +77,13 @@ public interface FluxSink<T> {
 	 * any request to this sink.
 	 * <p>
 	 * For push/pull sinks created using {@link Flux#create(java.util.function.Consumer)}
-	 * or {@link Flux#create(java.util.function.Consumer, OverflowStrategy)}, the consumer
+	 * or {@link Flux#create(java.util.function.Consumer, FluxSink.OverflowStrategy)}, the consumer
 	 * is invoked for every request to enable a hybrid backpressure-enabled push/pull model.
 	 * When bridging with asynchronous listener-based APIs, the {@code onRequest} callback
 	 * may be used to request more data from source if required and to manage backpressure
 	 * by delivering data to sink only when requests are pending.
 	 * <p>
-	 * For push-only sinks created using {@link Flux#push(java.util.function.Consumer, OverflowStrategy)},
+	 * For push-only sinks created using {@link Flux#push(java.util.function.Consumer, FluxSink.OverflowStrategy)},
 	 * the consumer is invoked with an initial request of {@code Long.MAX_VALUE} when this method
 	 * is invoked.
 	 *
@@ -116,7 +116,6 @@ public interface FluxSink<T> {
      * that will be disposed in case the downstream cancels the sequence
      * via {@link org.reactivestreams.Subscription#cancel()}.
      * @param c the cancellation callback to use
-     * @return this sink
      * @deprecated use {@link #onDispose(Disposable)} for resources to be disposed
      * on any cancel signal or {@link #onCancel(Disposable)} for resources to be
      * disposed on cancel.
