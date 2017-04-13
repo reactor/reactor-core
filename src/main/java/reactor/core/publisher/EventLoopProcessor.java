@@ -47,6 +47,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 
 	/**
 	 * Whether the RingBuffer*Processor can be graphed by wrapping the individual Sequence with the target downstream
+	 * @deprecated will be removed in 3.1.0
 	 */
 	@Deprecated
 	public static final  boolean TRACEABLE_RING_BUFFER_PROCESSOR =
@@ -221,7 +222,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	}
 
 	final ExecutorService executor;
-	final ClassLoader     contextClassLoader;
+	final EventLoopContext contextClassLoader;
 	final String          name;
 	final boolean         autoCancel;
 
@@ -255,7 +256,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 
 		this.autoCancel = autoCancel;
 
-		contextClassLoader = new EventLoopContext();
+		contextClassLoader = new EventLoopContext(multiproducers);
 
 		this.name = defaultName(threadFactory, getClass());
 
@@ -284,6 +285,13 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	public Subscription upstream() {
 		return upstreamSubscription;
 	}
+
+	/**
+	 * Return the number of parked elements in the emitter backlog.
+	 *
+	 * @return the number of parked elements in the emitter backlog.
+	 */
+	public abstract long getPending();
 
 	@Override
 	public Object scan(Attr key) {
@@ -411,8 +419,14 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	}
 
 	@Override
+	@Deprecated
 	final public boolean isStarted() {
 		return upstreamSubscription != null || ringBuffer.getAsLong() != -1;
+	}
+
+	@Override
+	public boolean isSerialized() {
+		return contextClassLoader.multiproducer;
 	}
 
 	@Override
@@ -614,9 +628,12 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 
 	final static class EventLoopContext extends ClassLoader {
 
-		EventLoopContext() {
+		final boolean multiproducer;
+
+		EventLoopContext(boolean multiproducer) {
 			super(Thread.currentThread()
 			            .getContextClassLoader());
+			this.multiproducer = multiproducer;
 		}
 	}
 

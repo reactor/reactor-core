@@ -86,6 +86,7 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT>  {
 
 	@Override
 	@SuppressWarnings("unchecked")
+	@Deprecated
 	public boolean isStarted() {
 		return !(upstream instanceof FluxProcessor) || ((FluxProcessor<OUT, ?>) upstream).isStarted();
 	}

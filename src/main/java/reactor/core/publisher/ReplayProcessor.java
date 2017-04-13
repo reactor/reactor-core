@@ -430,6 +430,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
+	@Deprecated
 	public int getBufferSize() {
 		return buffer.capacity();
 	}
@@ -440,6 +441,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
+	@Deprecated
 	public boolean isStarted() {
 		return subscription != null;
 	}
@@ -561,6 +563,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
+	@Deprecated
 	public ReplayProcessor<T> connect() {
 		onSubscribe(Operators.emptySubscription());
 		return this;

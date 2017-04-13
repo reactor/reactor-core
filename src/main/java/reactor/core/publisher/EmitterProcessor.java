@@ -29,28 +29,28 @@ import reactor.core.Scannable;
 import reactor.util.concurrent.QueueSupplier;
 
 /**
- ** An implementation of a RingBuffer backed message-passing Processor implementing publish-subscribe with
- * synchronous (thread-stealing and happen-before interactions) drain loops.
+ * * An implementation of a RingBuffer backed message-passing Processor implementing
+ * publish-subscribe with synchronous (thread-stealing and happen-before interactions)
+ * drain loops.
  * <p>
  *     The default {@link #create} factories will only produce the new elements observed in
- *     the
- *     parent sequence after a given {@link Subscriber} is subscribed.
- *
+ * the parent sequence after a given {@link Subscriber} is subscribed.
  * <p>
  * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/emitter.png" alt="">
  * <p>
  *
- * @author Stephane Maldini
- *
  * @param <T> the input and output value type
+ *
+ * @author Stephane Maldini
  */
 public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements Receiver {
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size, blockingWait
-	 * Strategy and auto-cancel.
+	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE}
+	 * backlog size, blockingWait Strategy and auto-cancel.
 	 *
 	 * @param <E> Type of processed signals
+	 *
 	 * @return a fresh processor
 	 */
 	public static <E> EmitterProcessor<E> create() {
@@ -58,10 +58,12 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements Re
 	}
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size, blockingWait
-	 * Strategy and auto-cancel.
+	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE}
+	 * backlog size, blockingWait Strategy and auto-cancel.
+	 *
 	 * @param <E> Type of processed signals
      * @param autoCancel automatically cancel
+	 *
 	 * @return a fresh processor
 	 */
 	public static <E> EmitterProcessor<E> create(boolean autoCancel) {
@@ -69,10 +71,12 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements Re
 	}
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size, blockingWait
-	 * Strategy and auto-cancel.
+	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE}
+	 * backlog size, blockingWait Strategy and auto-cancel.
+	 *
 	 * @param <E> Type of processed signals
      * @param bufferSize the internal buffer size to hold signals
+	 *
 	 * @return a fresh processor
 	 */
 	public static <E> EmitterProcessor<E> create(int bufferSize) {
@@ -80,23 +84,29 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements Re
 	}
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size, blockingWait
-	 * Strategy and auto-cancel.
+	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE}
+	 * backlog size, blockingWait Strategy and auto-cancel.
+	 *
 	 * @param <E> Type of processed signals
      * @param bufferSize the internal buffer size to hold signals
      * @param concurrency the concurrency level of the emission
+	 *
 	 * @return a fresh processor
+	 * @deprecated concurrency in EmitterProcessor will be removed in 3.1.0
 	 */
+	@Deprecated
 	public static <E> EmitterProcessor<E> create(int bufferSize, int concurrency) {
 		return create(bufferSize, concurrency, true);
 	}
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size, blockingWait
-	 * Strategy and auto-cancel. 
+	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE}
+	 * backlog size, blockingWait Strategy and auto-cancel.
+	 *
 	 * @param <E> Type of processed signals
      * @param bufferSize the internal buffer size to hold signals
      * @param autoCancel automatically cancel
+	 *
 	 * @return a fresh processor
 	 */
 	public static <E> EmitterProcessor<E> create(int bufferSize, boolean autoCancel) {
@@ -104,15 +114,21 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements Re
 	}
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size, blockingWait
-	 * Strategy and auto-cancel. 
+	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE}
+	 * backlog size, blockingWait Strategy and auto-cancel.
+	 *
 	 * @param <E> Type of processed signals
 	 * @param bufferSize the internal buffer size to hold signals
 	 * @param concurrency the concurrency level of the emission
 	 * @param autoCancel automatically cancel
+	 *
 	 * @return a fresh processor
+	 * @deprecated concurrency in EmitterProcessor will be removed in 3.1.0
 	 */
-	public static <E> EmitterProcessor<E> create(int bufferSize, int concurrency, boolean autoCancel) {
+	@Deprecated
+	public static <E> EmitterProcessor<E> create(int bufferSize,
+			int concurrency,
+			boolean autoCancel) {
 		return new EmitterProcessor<>(autoCancel, concurrency, bufferSize);
 	}
 
@@ -127,6 +143,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements Re
 	private volatile boolean done;
 
 	@Override
+	@Deprecated
 	public Subscription upstream() {
 		return upstreamSubscription;
 	}
@@ -199,11 +216,17 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements Re
 	}
 
 	@Override
+	@Deprecated
 	public EmitterProcessor<T> connect() {
 		onSubscribe(Operators.emptySubscription());
 		return this;
 	}
 
+	/**
+	 * Return the number of parked elements in the emitter backlog.
+	 *
+	 * @return the number of parked elements in the emitter backlog.
+	 */
 	@Override
 	public long getPending() {
 		return (emitBuffer == null ? -1L :
@@ -351,6 +374,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> implements Re
 	}
 
 	@Override
+	@Deprecated
 	public boolean isStarted() {
 		return upstreamSubscription != null;
 	}
