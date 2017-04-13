@@ -23,7 +23,7 @@ import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class MonoOtherwiseTest {
+public class MonoSwitchOnErrorTest {
 /*
 	@Test
 	public void constructors() {
@@ -40,7 +40,7 @@ public class MonoOtherwiseTest {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Mono.just(1)
-		    .otherwise(v -> Mono.just(2))
+		    .switchOnError(v -> Mono.just(2))
 		    .subscribe(ts);
 
 		ts.assertValues(1)
@@ -53,7 +53,7 @@ public class MonoOtherwiseTest {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Mono.just(1)
-		    .otherwise(v -> Mono.just(2))
+		    .switchOnError(v -> Mono.just(2))
 		    .subscribe(ts);
 
 		ts.assertNoValues()
@@ -71,7 +71,7 @@ public class MonoOtherwiseTest {
 	public void error() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Mono.<Integer>error(new RuntimeException("forced failure")).otherwise(v -> Mono.just(
+		Mono.<Integer>error(new RuntimeException("forced failure")).switchOnError(v -> Mono.just(
 				2))
 		                                                           .subscribe(ts);
 
@@ -85,7 +85,7 @@ public class MonoOtherwiseTest {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Mono.<Integer>error(new RuntimeException("forced failure"))
-				.otherwise(e -> e.getMessage().equals("forced failure"), v -> Mono.just(2))
+				.switchOnError(e -> e.getMessage().equals("forced failure"), v -> Mono.just(2))
 				.subscribe(ts);
 
 		ts.assertValues(2)
@@ -112,7 +112,7 @@ public class MonoOtherwiseTest {
 	public void errorBackpressured() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
-		Mono.<Integer>error(new RuntimeException("forced failure")).otherwise(v -> Mono.just(
+		Mono.<Integer>error(new RuntimeException("forced failure")).switchOnError(v -> Mono.just(
 				2))
 		                                                           .subscribe(ts);
 
@@ -130,7 +130,7 @@ public class MonoOtherwiseTest {
 	public void nextFactoryThrows() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
-		Mono.<Integer>error(new RuntimeException("forced failure")).otherwise(v -> {
+		Mono.<Integer>error(new RuntimeException("forced failure")).switchOnError(v -> {
 			throw new RuntimeException("forced failure 2");
 		})
 		                                                           .subscribe(ts);
@@ -146,7 +146,7 @@ public class MonoOtherwiseTest {
 	public void nextFactoryReturnsNull() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
-		Mono.<Integer>error(new RuntimeException("forced failure")).otherwise(v -> null)
+		Mono.<Integer>error(new RuntimeException("forced failure")).switchOnError(v -> null)
 		                                                           .subscribe(ts);
 
 		ts.assertNoValues()
@@ -172,7 +172,7 @@ public class MonoOtherwiseTest {
 	public void otherwiseErrorFilter() {
 		MonoProcessor<Integer> mp = MonoProcessor.create();
 		StepVerifier.create(Mono.<Integer>error(new TestException())
-				.otherwise(TestException.class, e -> Mono.just(1))
+				.switchOnError(TestException.class, e -> Mono.just(1))
 				.subscribeWith(mp))
 		            .then(() -> assertThat(mp.isError()).isFalse())
 		            .then(() -> assertThat(mp.isSuccess()).isTrue())
@@ -185,7 +185,7 @@ public class MonoOtherwiseTest {
 	public void otherwiseErrorUnfilter() {
 		MonoProcessor<Integer> mp = MonoProcessor.create();
 		StepVerifier.create(Mono.<Integer>error(new TestException())
-				.otherwise(RuntimeException.class, e -> Mono.just(1))
+				.switchOnError(RuntimeException.class, e -> Mono.just(1))
 				.subscribeWith(mp))
 		            .then(() -> assertThat(mp.isError()).isTrue())
 		            .then(() -> assertThat(mp.isSuccess()).isFalse())

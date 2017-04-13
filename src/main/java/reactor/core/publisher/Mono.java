@@ -2068,7 +2068,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a transformed {@link Mono}
 	 */
 	public final Mono<T> mapError(Function<Throwable, ? extends Throwable> mapper) {
-		return otherwise(e -> Mono.error(mapper.apply(e)));
+		return switchOnError(e -> Mono.error(mapper.apply(e)));
 	}
 
 	/**
@@ -2105,7 +2105,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final Mono<T> mapError(Predicate<? super Throwable> predicate,
 			Function<? super Throwable, ? extends Throwable> mapper) {
-		return otherwise(predicate, e -> Mono.error(mapper.apply(e)));
+		return switchOnError(predicate, e -> Mono.error(mapper.apply(e)));
 	}
 
 	/**
@@ -2187,11 +2187,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return an alternating {@link Mono} on source onError
 	 *
-	 * @see Flux#onErrorResumeWith
+	 * @deprecated Use {@link #switchOnError(Function)}} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
 	 */
+	@Deprecated
 	public final Mono<T> otherwise(Function<? super Throwable, ? extends Mono<? extends
 			T>> fallback) {
-		return onAssembly(new MonoOtherwise<>(this, fallback));
+		return switchOnError(fallback);
 	}
 
 	/**
@@ -2207,14 +2208,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param <E> the error type
 	 *
 	 * @return a new {@link Mono}
+	 * @deprecated Use {@link #switchOnError(Class, Function)} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
 	 */
+	@Deprecated
 	public final <E extends Throwable> Mono<T> otherwise(Class<E> type,
 			Function<? super E, ? extends Mono<? extends T>> fallback) {
-		Objects.requireNonNull(type, "type");
-		@SuppressWarnings("unchecked")
-		Function<? super Throwable, Mono<? extends T>> handler = (Function<? super
-				Throwable, Mono<? extends T>>)fallback;
-		return otherwise(type::isInstance, handler);
+		return switchOnError(type, fallback);
 	}
 
 	/**
@@ -2229,11 +2228,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * sequence
 	 *
 	 * @return a new {@link Mono}
+	 * @deprecated Use {@link #switchOnError(Predicate, Function)} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
 	 */
+	@Deprecated
 	public final Mono<T> otherwise(Predicate<? super Throwable> predicate,
 			Function<? super Throwable, ? extends Mono<? extends T>> fallback) {
-		Objects.requireNonNull(predicate, "predicate");
-		return otherwise(e -> predicate.test(e) ? fallback.apply(e) : error(e));
+		return switchOnError(predicate, fallback);
 	}
 
 	/**
@@ -2245,10 +2245,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param alternate the alternate mono if this mono is empty
 	 *
 	 * @return an alternating {@link Mono} on source onComplete without elements
-	 * @see Flux#switchIfEmpty
+	 * @deprecated Use {@link #switchIfEmpty} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
 	 */
+	@Deprecated
 	public final Mono<T> otherwiseIfEmpty(Mono<? extends T> alternate) {
-		return onAssembly(new MonoOtherwiseIfEmpty<>(this, alternate));
+		return switchIfEmpty(alternate);
 	}
 
 	/**
@@ -2264,7 +2265,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @see Flux#onErrorReturn
 	 */
 	public final Mono<T> otherwiseReturn(final T fallback) {
-		return otherwise(throwable -> just(fallback));
+		return switchOnError(throwable -> just(fallback));
 	}
 
 	/**
@@ -2280,7 +2281,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final <E extends Throwable> Mono<T> otherwiseReturn(Class<E> type,
 			T fallbackValue) {
-		return otherwise(type, throwable -> just(fallbackValue));
+		return switchOnError(type, throwable -> just(fallbackValue));
 	}
 
 	/**
@@ -2297,7 +2298,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final <E extends Throwable> Mono<T> otherwiseReturn(Predicate<? super
 			Throwable> predicate, T fallbackValue) {
-		return otherwise(predicate,  throwable -> just(fallbackValue));
+		return switchOnError(predicate,  throwable -> just(fallbackValue));
 	}
 
 	/**
@@ -2729,6 +2730,82 @@ public abstract class Mono<T> implements Publisher<T> {
 	public final <E extends Subscriber<? super T>> E subscribeWith(E subscriber) {
 		subscribe(subscriber);
 		return subscriber;
+	}
+
+	/**
+	 * Subscribe to a returned fallback publisher when any error occurs.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwise.png" alt="">
+	 * <p>
+	 * @param fallback the function to map an alternative {@link Mono}
+	 *
+	 * @return an alternating {@link Mono} on source onError
+	 *
+	 * @see Flux#switchOnError
+	 */
+	public final Mono<T> switchOnError(Function<? super Throwable, ? extends Mono<? extends
+			T>> fallback) {
+		return onAssembly(new MonoSwitchOnError<>(this, fallback));
+	}
+
+	/**
+	 * Subscribe to a returned fallback publisher when an error matching the given type
+	 * occurs.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwise.png"
+	 * alt="">
+	 *
+	 * @param type the error type to match
+	 * @param fallback the {@link Function} mapping the error to a new {@link Mono}
+	 * sequence
+	 * @param <E> the error type
+	 *
+	 * @return a new {@link Mono}
+	 * @see Flux#switchOnError
+	 */
+	public final <E extends Throwable> Mono<T> switchOnError(Class<E> type,
+			Function<? super E, ? extends Mono<? extends T>> fallback) {
+		Objects.requireNonNull(type, "type");
+		@SuppressWarnings("unchecked")
+		Function<? super Throwable, Mono<? extends T>> handler = (Function<? super
+				Throwable, Mono<? extends T>>)fallback;
+		return switchOnError(type::isInstance, handler);
+	}
+
+	/**
+$	 * Subscribe to a returned fallback publisher when an error matching the given predicate
+	 * occurs.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwise.png"
+	 * alt="">
+	 *
+	 * @param predicate the error predicate to match
+	 * @param fallback the {@link Function} mapping the error to a new {@link Mono}
+	 * sequence
+	 *
+	 * @return a new {@link Mono}
+	 * @see Flux#switchOnError
+	 */
+	public final Mono<T> switchOnError(Predicate<? super Throwable> predicate,
+			Function<? super Throwable, ? extends Mono<? extends T>> fallback) {
+		Objects.requireNonNull(predicate, "predicate");
+		return switchOnError(e -> predicate.test(e) ? fallback.apply(e) : error(e));
+	}
+
+	/**
+	 * Provide an alternative {@link Mono} if this mono is completed without data
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwiseempty.png" alt="">
+	 * <p>
+	 * @param alternate the alternate mono if this mono is empty
+	 *
+	 * @return an alternating {@link Mono} on source onComplete without elements
+	 * @see Flux#switchIfEmpty
+	 */
+	public final Mono<T> switchIfEmpty(Mono<? extends T> alternate) {
+		return onAssembly(new MonoSwitchIfEmpty<>(this, alternate));
 	}
 
 	/**
