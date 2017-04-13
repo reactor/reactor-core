@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -169,11 +169,11 @@ public class FluxWindowStartEndTest {
 	@Test
 	public void windowWillAcumulateMultipleListsOfValuesOverlap() {
 		//given: "a source and a collected flux"
-		EmitterProcessor<Integer> numbers = EmitterProcessor.<Integer>create().connect();
-		EmitterProcessor<Integer> bucketOpening = EmitterProcessor.<Integer>create().connect();
+		EmitterProcessor<Integer> numbers = EmitterProcessor.create();
+		EmitterProcessor<Integer> bucketOpening = EmitterProcessor.create();
 
 		//"overlapping buffers"
-		EmitterProcessor<Integer> boundaryFlux = EmitterProcessor.<Integer>create().connect();
+		EmitterProcessor<Integer> boundaryFlux = EmitterProcessor.create();
 
 		Mono<List<List<Integer>>> res = numbers.window(bucketOpening, u -> boundaryFlux )
 		                                       .flatMap(Flux::buffer)

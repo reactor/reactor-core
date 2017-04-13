@@ -23,6 +23,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,6 +70,7 @@ import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.Logger;
 import reactor.util.Loggers;
+import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -413,7 +415,7 @@ public class FluxTests extends AbstractReactorTest {
 
 	@Test
 	public void analyticsTest() throws Exception {
-		ReplayProcessor<Integer> source = ReplayProcessor.<Integer>create().connect();
+		ReplayProcessor<Integer> source = ReplayProcessor.create();
 
 		long avgTime = 50l;
 
@@ -427,7 +429,7 @@ public class FluxTests extends AbstractReactorTest {
 		                          .groupBy(w -> w.getT1())
 								  .flatMap(w -> w.count().map(c -> Tuples.of(w.key(), c)))
 		                          .log("elapsed")
-		                          .collectSortedList((a, b) -> a.getT1().compareTo(b.getT1()))
+		                          .collectSortedList(Comparator.comparing(Tuple2::getT1))
 		                          .flatMapMany(Flux::fromIterable)
 		                          .reduce(-1L, (acc, next) -> acc > 0l ? ((next.getT1() + acc) / 2) : next.getT1())
 		                          .log("reduced-elapsed")
@@ -512,7 +514,6 @@ public class FluxTests extends AbstractReactorTest {
 		final CountDownLatch latch = new CountDownLatch(iterations);
 
 		EmitterProcessor<String> deferred = EmitterProcessor.create();
-		deferred.connect();
 		deferred.publishOn(asyncGroup)
 		        .parallel(8)
 		        .groups()
@@ -559,7 +560,6 @@ public class FluxTests extends AbstractReactorTest {
 		switch (dispatcher) {
 			case "partitioned":
 				deferred = EmitterProcessor.create();
-				deferred.connect();
 				deferred.publishOn(asyncGroup)
 				        .parallel(2)
 				        .groups()
@@ -572,7 +572,6 @@ public class FluxTests extends AbstractReactorTest {
 
 			default:
 				deferred = EmitterProcessor.create();
-				deferred.connect();
 				deferred.publishOn(asyncGroup)
 				        .map(i -> i)
 				        .scan(1, (acc, next) -> acc + next)
@@ -626,7 +625,6 @@ public class FluxTests extends AbstractReactorTest {
 				               .flatMap(Flux::just)
 				               .subscribe(i -> latch.countDown());
 		}
-		mapManydeferred.connect();
 		data = new int[iterations];
 		for (int i = 0; i < iterations; i++) {
 			data[i] = i;
@@ -700,7 +698,6 @@ public class FluxTests extends AbstractReactorTest {
 		final double TOLERANCE = 0.9;
 
 		FluxProcessor<Integer, Integer> batchingStreamDef = EmitterProcessor.create();
-		batchingStreamDef.connect();
 
 		List<Integer> testDataset = createTestDataset(NUM_MESSAGES);
 
@@ -717,9 +714,7 @@ public class FluxTests extends AbstractReactorTest {
 			                                                items.forEach(item -> latch.countDown());
 		                                                }));
 
-		testDataset.forEach(d -> {
-			batchingStreamDef.onNext(d);
-		});
+		testDataset.forEach(batchingStreamDef::onNext);
 
 		System.out.println(batchesDistribution);
 
@@ -795,7 +790,6 @@ public class FluxTests extends AbstractReactorTest {
 	@Test
 	public void shouldCorrectlyDispatchComplexFlow() throws InterruptedException {
 		EmitterProcessor<Integer> globalFeed = EmitterProcessor.create();
-		globalFeed.connect();
 
 		CountDownLatch afterSubscribe = new CountDownLatch(1);
 		CountDownLatch latch = new CountDownLatch(4);
@@ -1047,7 +1041,6 @@ public class FluxTests extends AbstractReactorTest {
 		CountDownLatch latch = new CountDownLatch(1);
 
 		final EmitterProcessor<Integer> streamBatcher = EmitterProcessor.create();
-		streamBatcher.connect();
 		streamBatcher.publishOn(asyncGroup)
 		             .bufferTimeout(batchsize, Duration.ofSeconds(timeout))
 		             .log("batched")
@@ -1182,10 +1175,8 @@ public class FluxTests extends AbstractReactorTest {
 		Phaser phaser = new Phaser(2);
 
 		Flux<Object> s1 = ReplayProcessor.cacheLastOrDefault(new Object())
-		                                 .connect()
 		                                 .publishOn(asyncGroup);
 		Flux<Object> s2 = ReplayProcessor.cacheLastOrDefault(new Object())
-		                                  .connect()
 		                                .publishOn(asyncGroup);
 
 		// The following works:
@@ -1363,7 +1354,6 @@ public class FluxTests extends AbstractReactorTest {
 	public void multiplexUsingDispatchersAndSplit() throws Exception {
 
 		final EmitterProcessor<Integer> forkEmitterProcessor = EmitterProcessor.create();
-		forkEmitterProcessor.connect();
 
 		final EmitterProcessor<Integer> computationEmitterProcessor = EmitterProcessor.create(false);
 
