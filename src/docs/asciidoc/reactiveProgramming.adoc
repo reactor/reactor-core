@@ -218,7 +218,7 @@ with how the reactive stream reacts to subscribers:
  late subscribers will receive signals emitted _after_ they subscribed. Note
  however that some hot reactive streams can cache or replay the history of
  emissions totally or partially... From a general perspective, a hot sequence
- will emit wether or not there are some subscribers listening.
+ will emit whether or not there are some subscribers listening.
 
 For more information on hot vs cold in the context of Reactor, see
 <<reactor.hotCold,this reactor-specific section>>.
