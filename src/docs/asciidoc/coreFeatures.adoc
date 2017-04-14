@@ -344,7 +344,7 @@ Flux.just(10)
 
 ==== Fallback method
 If you want more than a single default value and you have an alternative safer
-way of processing your data, you can use `switchOnError`. This would be the
+way of processing your data, you can use `onErrorResume`. This would be the
 equivalent of *(2)*.
 
 For example, if your nominal process is fetching data from an external
@@ -359,20 +359,19 @@ Flux.just("key1", "key2")
     );
 ----
 <1> for each key, we asynchronously call the external service.
-<2> if the external service call fails, we fallback to the cache for that key.
+<2> if the external service call fails, we fallback to the cache for that key. Note we
+always apply the same fallback, whatever the source error `e` is.
 
-Unlike `onErrorReturn`, `switchOnError` always falls back to the same sequence.
-However it has variants that let you filter which exceptions to fallback on,
-based either on the exception's class or a `Predicate`.
-
-For more dynamic options, `onErrorResumeWith` is the more advanced alternative.
-It takes a `Function` that maps the error to the fallback sequence to switch to:
+Like `onErrorReturn`, `onErrorResume` has variants that let you filter which exceptions
+to fallback on, based either on the exception's class or a `Predicate`. The fact that it
+takes a `Function` also allows you to choose a different fallback sequence to switch to,
+depending on the error encountered:
 [source,java]
 ----
 Flux.just("timeout1", "unknown", "key2")
     .flatMap(k ->
         callExternalService(k)
-          .onErrorResumeWith(error -> { // <1>
+          .onErrorResume(error -> { // <1>
             if (error instanceof TimeoutException) // <2>
               return getFromCache(k);
             else if (error instanceof UnknownKeyException)  // <3>
@@ -394,9 +393,18 @@ That last line inside the previous `flatMap` gives us an hint as to how item
 ----
 Flux.just("timeout1")
     .flatMap(k -> callExternalService(k)
-        .onErrorResumeWith(original -> Flux.error(
+        .onErrorResume(original -> Flux.error(
             new BusinessException("oops, SLA exceeded", original))
         )
+    );
+----
+
+But actually, there is a more straightforward way of achieving the same with `onErrorMap`:
+[source,java]
+----
+Flux.just("timeout1")
+    .flatMap(k -> callExternalService(k)
+		    .onErrorMap(original -> new BusinessException("oops, SLA exceeded", original))
     );
 ----
 

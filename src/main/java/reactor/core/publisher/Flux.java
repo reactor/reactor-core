@@ -4017,7 +4017,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param mapper the error transforming {@link Function}
 	 *
 	 * @return a transformed {@link Flux}
-	 * @deprecated will be removed in 3.1.0, use {@link #onErrorMap} instead.
+	 * @deprecated use {@link #onErrorMap} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
 	 */
 	@Deprecated
 	public final Flux<T> mapError(Function<? super Throwable, ? extends Throwable> mapper) {
@@ -4035,7 +4035,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <E> the error type
 	 *
 	 * @return a transformed {@link Flux}
-	 * @deprecated will be removed in 3.1.0, use {@link #onErrorMap} instead.
+	 * @deprecated use {@link #onErrorMap} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
 	 */
 	@Deprecated
 	public final <E extends Throwable> Flux<T> mapError(Class<E> type,
@@ -4056,7 +4056,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param mapper the error transforming {@link Function}
 	 *
 	 * @return a transformed {@link Flux}
-	 * @deprecated will be removed in 3.1.0, use {@link #onErrorMap} instead.
+	 * @deprecated use {@link #onErrorMap} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
 	 */
 	@Deprecated
 	public final Flux<T> mapError(Predicate<? super Throwable> predicate,
@@ -4350,7 +4350,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param fallback the {@link Function} mapping the error to a new {@link Publisher} sequence
 	 *
 	 * @return a new {@link Flux}
-	 * @deprecated will be removed in 3.1.0, use {@link #onErrorResume(Function)} instead.
+	 * @deprecated use {@link #onErrorResume(Function)} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
 	 */
 	@Deprecated
 	public final Flux<T> onErrorResumeWith(Function<? super Throwable, ? extends Publisher<? extends T>> fallback) {
@@ -4370,7 +4370,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <E> the error type
 	 *
 	 * @return a new {@link Flux}
-	 * @deprecated will be removed in 3.1.0, use {@link #onErrorResume(Class, Function)} instead.
+	 * @deprecated use {@link #onErrorResume(Class, Function)} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
 	 */
 	@Deprecated
 	public final <E extends Throwable> Flux<T> onErrorResumeWith(Class<E> type,
@@ -4389,7 +4389,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param fallback the {@link Function} mapping the error to a new {@link Publisher}
 	 * sequence
 	 *
-	 * @deprecated will be removed in 3.1.0, use {@link #onErrorResume(Predicate, Function)} instead.
+	 * @deprecated use {@link #onErrorResume(Predicate, Function)} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
 	 */
 	@Deprecated
 	public final Flux<T> onErrorResumeWith(Predicate<? super Throwable> predicate,
@@ -5739,7 +5739,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <E> the error type
 	 *
 	 * @return an alternating {@link Flux} on source onError
-	 * @deprecated will be removed in 3.1.0, use {@link #onErrorResume} instead.
+	 * @deprecated use {@link #onErrorResume} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
 	 */
 	@Deprecated
 	public final <E extends Throwable> Flux<T> switchOnError(Class<E> type,
@@ -5758,7 +5758,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param fallback the alternate {@link Publisher}
 	 *
 	 * @return an alternating {@link Flux} on source onError
-	 * @deprecated will be removed in 3.1.0, use {@link #onErrorResume} instead.
+	 * @deprecated use {@link #onErrorResume} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
 	 */
 	@Deprecated
 	public final Flux<T> switchOnError(Predicate<? super Throwable> predicate,
@@ -5775,7 +5775,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param fallback the alternate {@link Publisher}
 	 *
 	 * @return an alternating {@link Flux} on source onError
-	 * @deprecated will be removed in 3.1.0, use {@link #onErrorResume} instead.
+	 * @deprecated use {@link #onErrorResume} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
 	 */
 	@Deprecated
 	public final Flux<T> switchOnError(Publisher<? extends T> fallback) {

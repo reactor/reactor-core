@@ -2066,7 +2066,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param mapper the error transforming {@link Function}
 	 *
 	 * @return a transformed {@link Mono}
-	 * @deprecated will be removed in 3.1.0, use {@link #onErrorMap} instead.
+	 * @deprecated use {@link #onErrorMap} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
 	 */
 	@Deprecated
 	public final Mono<T> mapError(Function<Throwable, ? extends Throwable> mapper) {
@@ -2084,7 +2084,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param <E> the error type
 	 *
 	 * @return a transformed {@link Mono}
-	 * @deprecated will be removed in 3.1.0, use {@link #onErrorMap} instead.
+	 * @deprecated use {@link #onErrorMap} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
 	 */
 	@Deprecated
 	public final <E extends Throwable> Mono<T> mapError(Class<E> type,
@@ -2104,7 +2104,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param mapper the error transforming {@link Function}
 	 *
 	 * @return a transformed {@link Mono}
-	 * @deprecated will be removed in 3.1.0, use {@link #onErrorMap} instead.
+	 * @deprecated use {@link #onErrorMap} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
 	 */
 	@Deprecated
 	public final Mono<T> mapError(Predicate<? super Throwable> predicate,
@@ -2315,9 +2315,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param fallback the value to emit if an error occurs
 	 *
 	 * @return a new {@link Mono}
-	 *
-	 * @see Flux#onErrorReturn
+	 * @deprecated use {@link #onErrorReturn(Object)} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
 	 */
+	@Deprecated
 	public final Mono<T> otherwiseReturn(final T fallback) {
 		return onErrorResume(throwable -> just(fallback));
 	}
@@ -2332,7 +2332,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param <E> the error type
 	 *
 	 * @return a new {@link Mono}
+	 * @deprecated use {@link #onErrorReturn(Class, Object)} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
 	 */
+	@Deprecated
 	public final <E extends Throwable> Mono<T> otherwiseReturn(Class<E> type,
 			T fallbackValue) {
 		return onErrorResume(type, throwable -> just(fallbackValue));
@@ -2349,7 +2351,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param <E> the error type
 	 *
 	 * @return a new {@link Mono}
+	 * @deprecated use {@link #onErrorReturn(Predicate, Object)} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
 	 */
+	@Deprecated
 	public final <E extends Throwable> Mono<T> otherwiseReturn(Predicate<? super
 			Throwable> predicate, T fallbackValue) {
 		return onErrorResume(predicate,  throwable -> just(fallbackValue));
@@ -2845,6 +2849,50 @@ $	 * Subscribe to a returned fallback publisher when an error matching the given
 			Function<? super Throwable, ? extends Mono<? extends T>> fallback) {
 		Objects.requireNonNull(predicate, "predicate");
 		return onErrorResume(e -> predicate.test(e) ? fallback.apply(e) : error(e));
+	}
+
+	/**
+	 * Simply emit a captured fallback value when any error is observed on this {@link Mono}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwisereturn.png" alt="">
+	 * <p>
+	 * @param fallback the value to emit if an error occurs
+	 *
+	 * @return a new falling back {@link Mono}
+	 */
+	public final Mono<T> onErrorReturn(final T fallback) {
+		return onErrorResume(throwable -> just(fallback));
+	}
+
+	/**
+	 * Simply emit a captured fallback value when an error of the specified type is
+	 * observed on this {@link Mono}.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwisereturn.png" alt="">
+	 * @param type the error type to match
+	 * @param fallbackValue the value to emit if a matching error occurs
+	 * @param <E> the error type
+	 *
+	 * @return a new falling back {@link Mono}
+	 */
+	public final <E extends Throwable> Mono<T> onErrorReturn(Class<E> type, T fallbackValue) {
+		return onErrorResume(type, throwable -> just(fallbackValue));
+	}
+
+	/**
+	 * Simply emit a captured fallback value when an error matching the given predicate is
+	 * observed on this {@link Mono}.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwisereturn.png" alt="">
+	 * @param predicate the error predicate to match
+	 * @param fallbackValue the value to emit if a matching error occurs
+	 * @param <E> the error type
+	 *
+	 * @return a new {@link Mono}
+	 */
+	public final <E extends Throwable> Mono<T> onErrorReturn(Predicate<? super Throwable> predicate, T fallbackValue) {
+		return onErrorResume(predicate,  throwable -> just(fallbackValue));
 	}
 
 	/**

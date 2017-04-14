@@ -308,7 +308,7 @@ public class GuideTests {
 	}
 
 	@Test
-	public void errorHandlingResumeWith() {
+	public void errorHandlingOnErrorResumeDependingOnError() {
 		Flux<String> flux =
 		Flux.just("timeout1", "unknown", "key2")
 		    .flatMap(k ->
@@ -337,13 +337,27 @@ public class GuideTests {
 	}
 
 	@Test
-	public void errorHandlingRethrow() {
+	public void errorHandlingRethrow1() {
 		Flux<String> flux =
 		Flux.just("timeout1")
 		    .flatMap(k -> callExternalService(k)
 				    .onErrorResume(original -> Flux.error(
 						    new BusinessException("oops, SLA exceeded", original))
 				    )
+		    );
+
+		StepVerifier.create(flux)
+		            .verifyErrorMatches(e -> e instanceof BusinessException &&
+				            e.getMessage().equals("oops, SLA exceeded") &&
+				            e.getCause() instanceof TimeoutException);
+	}
+
+	@Test
+	public void errorHandlingRethrow2() {
+		Flux<String> flux =
+		Flux.just("timeout1")
+		    .flatMap(k -> callExternalService(k)
+				    .onErrorMap(original -> new BusinessException("oops, SLA exceeded", original))
 		    );
 
 		StepVerifier.create(flux)
