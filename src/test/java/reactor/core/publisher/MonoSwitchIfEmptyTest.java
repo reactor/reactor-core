@@ -18,17 +18,17 @@ package reactor.core.publisher;
 import org.junit.Test;
 import reactor.test.subscriber.AssertSubscriber;
 
-public class MonoOtherwiseIfEmptyTest {
+public class MonoSwitchIfEmptyTest {
 
 	@Test(expected = NullPointerException.class)
 	public void sourceNull() {
-		new MonoOtherwiseIfEmpty<>(null, Mono.never());
+		new MonoSwitchIfEmpty<>(null, Mono.never());
 	}
 
 	@Test(expected = NullPointerException.class)
 	public void otherNull() {
 		Mono.never()
-		    .otherwiseIfEmpty(null);
+		    .switchIfEmpty(null);
 	}
 
 	@Test
@@ -36,7 +36,7 @@ public class MonoOtherwiseIfEmptyTest {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Mono.just(1)
-		    .otherwiseIfEmpty(Mono.just(10))
+		    .switchIfEmpty(Mono.just(10))
 		    .subscribe(ts);
 
 		ts.assertValues(1)
@@ -49,7 +49,7 @@ public class MonoOtherwiseIfEmptyTest {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Mono.just(1)
-		    .otherwiseIfEmpty(Mono.just(10))
+		    .switchIfEmpty(Mono.just(10))
 		    .subscribe(ts);
 
 		ts.assertNoValues()
@@ -68,7 +68,7 @@ public class MonoOtherwiseIfEmptyTest {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Mono.<Integer>empty()
-		    .otherwiseIfEmpty(Mono.just(10))
+		    .switchIfEmpty(Mono.just(10))
 		    .subscribe(ts);
 
 		ts.assertValues(10)
@@ -81,7 +81,7 @@ public class MonoOtherwiseIfEmptyTest {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Mono.<Integer>empty()
-		    .otherwiseIfEmpty(Mono.just(10))
+		    .switchIfEmpty(Mono.just(10))
 		    .subscribe(ts);
 
 		ts.assertNoValues()

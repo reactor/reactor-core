@@ -16,31 +16,31 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.function.Function;
 
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 
 /**
- * Switches to another source if the first source turns out to be empty.
+ * Resumes the failed main sequence with another sequence returned by
+ * a function for the particular failure exception.
  *
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoOtherwiseIfEmpty<T> extends MonoSource<T, T> {
+final class MonoOnErrorResume<T> extends MonoSource<T, T> {
 
-    final Mono<? extends T> other;
+	final Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory;
 
-	public MonoOtherwiseIfEmpty(Mono<? extends T> source, Mono<? extends T> other) {
+	MonoOnErrorResume(Mono<? extends T> source,
+						   Function<? super Throwable, ? extends Mono<? extends T>>
+								   nextFactory) {
 		super(source);
-		this.other = Objects.requireNonNull(other, "other");
+		this.nextFactory = Objects.requireNonNull(nextFactory, "nextFactory");
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		FluxSwitchIfEmpty.SwitchIfEmptySubscriber<T> parent = new
-				FluxSwitchIfEmpty.SwitchIfEmptySubscriber<>(s, other);
-
-		s.onSubscribe(parent);
-
-		source.subscribe(parent);
+		source.subscribe(new FluxOnErrorResume.ResumeSubscriber<>(s, nextFactory));
 	}
 }
