@@ -61,7 +61,6 @@ import reactor.util.function.Tuple3;
 import reactor.util.function.Tuple4;
 import reactor.util.function.Tuple5;
 import reactor.util.function.Tuple6;
-import reactor.util.function.Tuple8;
 import reactor.util.function.Tuples;
 
 /**
@@ -4018,9 +4017,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param mapper the error transforming {@link Function}
 	 *
 	 * @return a transformed {@link Flux}
+	 * @deprecated will be removed in 3.1.0, use {@link #onErrorMap} instead.
 	 */
+	@Deprecated
 	public final Flux<T> mapError(Function<? super Throwable, ? extends Throwable> mapper) {
-		return onErrorResumeWith(e -> Mono.error(mapper.apply(e)));
+		return onErrorMap(mapper);
 	}
 
 	/**
@@ -4034,12 +4035,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <E> the error type
 	 *
 	 * @return a transformed {@link Flux}
+	 * @deprecated will be removed in 3.1.0, use {@link #onErrorMap} instead.
 	 */
+	@Deprecated
 	public final <E extends Throwable> Flux<T> mapError(Class<E> type,
 			Function<? super E, ? extends Throwable> mapper) {
-		@SuppressWarnings("unchecked")
-		Function<Throwable, Throwable> handler = (Function<Throwable, Throwable>)mapper;
-		return mapError(type::isInstance, handler);
+		return onErrorMap(type, mapper);
+
 	}
 
 	/**
@@ -4054,10 +4056,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param mapper the error transforming {@link Function}
 	 *
 	 * @return a transformed {@link Flux}
+	 * @deprecated will be removed in 3.1.0, use {@link #onErrorMap} instead.
 	 */
+	@Deprecated
 	public final Flux<T> mapError(Predicate<? super Throwable> predicate,
 			Function<? super Throwable, ? extends Throwable> mapper) {
-		return onErrorResumeWith(predicate, e -> Mono.error(mapper.apply(e)));
+		return onErrorMap(predicate, mapper);
 	}
 
 	/**
@@ -4287,6 +4291,113 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Transform the error emitted by this {@link Flux} by applying a function.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/maperror.png"
+	 * alt="">
+	 * <p>
+	 *
+	 * @param mapper the error transforming {@link Function}
+	 *
+	 * @return a transformed {@link Flux}
+	 */
+	public final Flux<T> onErrorMap(Function<? super Throwable, ? extends Throwable> mapper) {
+		return onErrorResume(e -> Mono.error(mapper.apply(e)));
+	}
+
+	/**
+	 * Transform the error emitted by this {@link Flux} by applying a function if the
+	 * error matches the given type, otherwise let the error flow.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/maperror.png" alt="">
+	 * <p>
+	 * @param type the class of the exception type to react to
+	 * @param mapper the error transforming {@link Function}
+	 * @param <E> the error type
+	 *
+	 * @return a transformed {@link Flux}
+	 */
+	public final <E extends Throwable> Flux<T> onErrorMap(Class<E> type,
+			Function<? super E, ? extends Throwable> mapper) {
+		@SuppressWarnings("unchecked")
+		Function<Throwable, Throwable> handler = (Function<Throwable, Throwable>)mapper;
+		return onErrorMap(type::isInstance, handler);
+	}
+
+	/**
+	 * Transform the error emitted by this {@link Flux} by applying a function if the
+	 * error matches the given predicate, otherwise let the error flow.
+	 * <p>
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/maperror.png"
+	 * alt="">
+	 *
+	 * @param predicate the error predicate
+	 * @param mapper the error transforming {@link Function}
+	 *
+	 * @return a transformed {@link Flux}
+	 */
+	public final Flux<T> onErrorMap(Predicate<? super Throwable> predicate,
+			Function<? super Throwable, ? extends Throwable> mapper) {
+		return onErrorResume(predicate, e -> Mono.error(mapper.apply(e)));
+	}
+
+	/**
+	 * Subscribe to a returned fallback publisher when any error occurs.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/onerrorresumewith.png" alt="">
+	 * <p>
+	 * @param fallback the {@link Function} mapping the error to a new {@link Publisher} sequence
+	 *
+	 * @return a new {@link Flux}
+	 * @deprecated will be removed in 3.1.0, use {@link #onErrorResume(Function)} instead.
+	 */
+	@Deprecated
+	public final Flux<T> onErrorResumeWith(Function<? super Throwable, ? extends Publisher<? extends T>> fallback) {
+		return onErrorResume(fallback);
+	}
+
+	/**
+	 * Subscribe to a returned fallback publisher when an error matching the given type
+	 * occurs.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/onerrorresumewith.png"
+	 * alt="">
+	 *
+	 * @param type the error type to match
+	 * @param fallback the {@link Function} mapping the error to a new {@link Publisher}
+	 * sequence
+	 * @param <E> the error type
+	 *
+	 * @return a new {@link Flux}
+	 * @deprecated will be removed in 3.1.0, use {@link #onErrorResume(Class, Function)} instead.
+	 */
+	@Deprecated
+	public final <E extends Throwable> Flux<T> onErrorResumeWith(Class<E> type,
+			Function<? super E, ? extends Publisher<? extends T>> fallback) {
+		return onErrorResume(type, fallback);
+	}
+
+	/**
+	 * Subscribe to a returned fallback publisher when an error matching the given type
+	 * occurs.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/onerrorresumewith.png"
+	 * alt="">
+	 *
+	 * @param predicate the error predicate to match
+	 * @param fallback the {@link Function} mapping the error to a new {@link Publisher}
+	 * sequence
+	 *
+	 * @deprecated will be removed in 3.1.0, use {@link #onErrorResume(Predicate, Function)} instead.
+	 */
+	@Deprecated
+	public final Flux<T> onErrorResumeWith(Predicate<? super Throwable> predicate,
+			Function<? super Throwable, ? extends Publisher<? extends T>> fallback) {
+		return onErrorResume(predicate, fallback);
+	}
+
+	/**
 	 * Subscribe to a returned fallback publisher when any error occurs.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/onerrorresumewith.png" alt="">
@@ -4295,8 +4406,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux}
 	 */
-	public final Flux<T> onErrorResumeWith(Function<? super Throwable, ? extends Publisher<? extends T>> fallback) {
-		return onAssembly(new FluxResume<>(this, fallback));
+	public final Flux<T> onErrorResume(Function<? super Throwable, ? extends Publisher<? extends T>> fallback) {
+		return onAssembly(new FluxOnErrorResume<>(this, fallback));
 	}
 
 	/**
@@ -4313,13 +4424,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux}
 	 */
-	public final <E extends Throwable> Flux<T> onErrorResumeWith(Class<E> type,
+	public final <E extends Throwable> Flux<T> onErrorResume(Class<E> type,
 			Function<? super E, ? extends Publisher<? extends T>> fallback) {
 		Objects.requireNonNull(type, "type");
 		@SuppressWarnings("unchecked")
 		Function<? super Throwable, Publisher<? extends T>> handler = (Function<?
 				super Throwable, Publisher<? extends T>>)fallback;
-		return onErrorResumeWith(type::isInstance, handler);
+		return onErrorResume(type::isInstance, handler);
 	}
 
 	/**
@@ -4335,10 +4446,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux}
 	 */
-	public final Flux<T> onErrorResumeWith(Predicate<? super Throwable> predicate,
+	public final Flux<T> onErrorResume(Predicate<? super Throwable> predicate,
 			Function<? super Throwable, ? extends Publisher<? extends T>> fallback) {
 		Objects.requireNonNull(predicate, "predicate");
-		return onErrorResumeWith(e -> predicate.test(e) ? fallback.apply(e) : error(e));
+		return onErrorResume(e -> predicate.test(e) ? fallback.apply(e) : error(e));
 	}
 
 	/**
@@ -4351,7 +4462,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux}
 	 */
 	public final Flux<T> onErrorReturn(T fallbackValue) {
-		return switchOnError(just(fallbackValue));
+		return onErrorResume(t -> just(fallbackValue));
 	}
 
 	/**
@@ -4367,7 +4478,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final <E extends Throwable> Flux<T> onErrorReturn(Class<E> type,
 			T fallbackValue) {
-		return switchOnError(type, just(fallbackValue));
+		return onErrorResume(type, t -> just(fallbackValue));
 	}
 
 	/**
@@ -4385,7 +4496,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	public final <E extends Throwable> Flux<T> onErrorReturn(Predicate<? super Throwable>
 			predicate, T
 			fallbackValue) {
-		return switchOnError(predicate, just(fallbackValue));
+		return onErrorResume(predicate, t -> just(fallbackValue));
 	}
 
 	/**
@@ -5628,10 +5739,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <E> the error type
 	 *
 	 * @return an alternating {@link Flux} on source onError
+	 * @deprecated will be removed in 3.1.0, use {@link #onErrorResume} instead.
 	 */
+	@Deprecated
 	public final <E extends Throwable> Flux<T> switchOnError(Class<E> type,
 			Publisher<? extends T> fallback) {
-		return onErrorResumeWith(type, t -> fallback);
+		return onErrorResume(type, t -> fallback);
 	}
 
 	/**
@@ -5645,10 +5758,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param fallback the alternate {@link Publisher}
 	 *
 	 * @return an alternating {@link Flux} on source onError
+	 * @deprecated will be removed in 3.1.0, use {@link #onErrorResume} instead.
 	 */
+	@Deprecated
 	public final Flux<T> switchOnError(Predicate<? super Throwable> predicate,
 			Publisher<? extends	T> fallback) {
-		return onErrorResumeWith(predicate, t -> fallback);
+		return onErrorResume(predicate, t -> fallback);
 	}
 
 	/**
@@ -5660,9 +5775,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param fallback the alternate {@link Publisher}
 	 *
 	 * @return an alternating {@link Flux} on source onError
+	 * @deprecated will be removed in 3.1.0, use {@link #onErrorResume} instead.
 	 */
+	@Deprecated
 	public final Flux<T> switchOnError(Publisher<? extends T> fallback) {
-		return onErrorResumeWith(t -> fallback);
+		return onErrorResume(t -> fallback);
 	}
 
 	/**

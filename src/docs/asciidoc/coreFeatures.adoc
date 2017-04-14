@@ -355,7 +355,7 @@ be a bit more out of date but is more reliable, you could do the following:
 Flux.just("key1", "key2")
     .flatMap(k ->
         callExternalService(k) // <1>
-          .switchOnError(getFromCache(k)) // <2>
+          .onErrorResume(e -> getFromCache(k)) // <2>
     );
 ----
 <1> for each key, we asynchronously call the external service.
@@ -420,7 +420,7 @@ Flux.just("unknown")
 		    	failureStat.increment();
 		    	log("uh oh, falling back, service failed for key " + k); // <2>
 		    })
-        .switchOnError(getFromCache(k)) // <3>
+        .onErrorResume(e -> getFromCache(k)) // <3>
     );
 ----
 <1> the external service call that can fail...

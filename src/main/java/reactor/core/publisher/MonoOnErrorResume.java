@@ -28,11 +28,11 @@ import org.reactivestreams.Subscriber;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoSwitchOnError<T> extends MonoSource<T, T> {
+final class MonoOnErrorResume<T> extends MonoSource<T, T> {
 
 	final Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory;
 
-	MonoSwitchOnError(Mono<? extends T> source,
+	MonoOnErrorResume(Mono<? extends T> source,
 						   Function<? super Throwable, ? extends Mono<? extends T>>
 								   nextFactory) {
 		super(source);
@@ -41,6 +41,6 @@ final class MonoSwitchOnError<T> extends MonoSource<T, T> {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(new FluxResume.ResumeSubscriber<>(s, nextFactory));
+		source.subscribe(new FluxOnErrorResume.ResumeSubscriber<>(s, nextFactory));
 	}
 }

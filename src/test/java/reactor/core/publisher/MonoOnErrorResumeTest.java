@@ -23,11 +23,11 @@ import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class MonoSwitchOnErrorTest {
+public class MonoOnErrorResumeTest {
 /*
 	@Test
 	public void constructors() {
-		ConstructorTestBuilder ctb = new ConstructorTestBuilder(FluxResume.class);
+		ConstructorTestBuilder ctb = new ConstructorTestBuilder(FluxOnErrorResume.class);
 		
 		ctb.addRef("source", Flux.never());
 		ctb.addRef("nextFactory", (Function<Throwable, Publisher<Object>>)e -> Flux.never());
@@ -40,7 +40,7 @@ public class MonoSwitchOnErrorTest {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Mono.just(1)
-		    .switchOnError(v -> Mono.just(2))
+		    .onErrorResume(v -> Mono.just(2))
 		    .subscribe(ts);
 
 		ts.assertValues(1)
@@ -53,7 +53,7 @@ public class MonoSwitchOnErrorTest {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Mono.just(1)
-		    .switchOnError(v -> Mono.just(2))
+		    .onErrorResume(v -> Mono.just(2))
 		    .subscribe(ts);
 
 		ts.assertNoValues()
@@ -71,7 +71,7 @@ public class MonoSwitchOnErrorTest {
 	public void error() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Mono.<Integer>error(new RuntimeException("forced failure")).switchOnError(v -> Mono.just(
+		Mono.<Integer>error(new RuntimeException("forced failure")).onErrorResume(v -> Mono.just(
 				2))
 		                                                           .subscribe(ts);
 
@@ -85,7 +85,7 @@ public class MonoSwitchOnErrorTest {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Mono.<Integer>error(new RuntimeException("forced failure"))
-				.switchOnError(e -> e.getMessage().equals("forced failure"), v -> Mono.just(2))
+				.onErrorResume(e -> e.getMessage().equals("forced failure"), v -> Mono.just(2))
 				.subscribe(ts);
 
 		ts.assertValues(2)
@@ -97,7 +97,7 @@ public class MonoSwitchOnErrorTest {
 	public void errorMap() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Mono.<Integer>error(new Exception()).mapError(d -> new RuntimeException("forced" +
+		Mono.<Integer>error(new Exception()).onErrorMap(d -> new RuntimeException("forced" +
 				" " +
 				"failure"))
 		                                    .subscribe(ts);
@@ -112,7 +112,7 @@ public class MonoSwitchOnErrorTest {
 	public void errorBackpressured() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
-		Mono.<Integer>error(new RuntimeException("forced failure")).switchOnError(v -> Mono.just(
+		Mono.<Integer>error(new RuntimeException("forced failure")).onErrorResume(v -> Mono.just(
 				2))
 		                                                           .subscribe(ts);
 
@@ -130,7 +130,7 @@ public class MonoSwitchOnErrorTest {
 	public void nextFactoryThrows() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
-		Mono.<Integer>error(new RuntimeException("forced failure")).switchOnError(v -> {
+		Mono.<Integer>error(new RuntimeException("forced failure")).onErrorResume(v -> {
 			throw new RuntimeException("forced failure 2");
 		})
 		                                                           .subscribe(ts);
@@ -146,7 +146,7 @@ public class MonoSwitchOnErrorTest {
 	public void nextFactoryReturnsNull() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
-		Mono.<Integer>error(new RuntimeException("forced failure")).switchOnError(v -> null)
+		Mono.<Integer>error(new RuntimeException("forced failure")).onErrorResume(v -> null)
 		                                                           .subscribe(ts);
 
 		ts.assertNoValues()
@@ -160,7 +160,7 @@ public class MonoSwitchOnErrorTest {
 	public void mapError() {
 		MonoProcessor<Integer> mp = MonoProcessor.create();
 		StepVerifier.create(Mono.<Integer>error(new TestException())
-				.mapError(TestException.class, e -> new Exception("test"))
+				.onErrorMap(TestException.class, e -> new Exception("test"))
 				.subscribeWith(mp))
 		            .then(() -> assertThat(mp.isError()).isTrue())
 		            .then(() -> assertThat(mp.isSuccess()).isFalse())
@@ -172,7 +172,7 @@ public class MonoSwitchOnErrorTest {
 	public void otherwiseErrorFilter() {
 		MonoProcessor<Integer> mp = MonoProcessor.create();
 		StepVerifier.create(Mono.<Integer>error(new TestException())
-				.switchOnError(TestException.class, e -> Mono.just(1))
+				.onErrorResume(TestException.class, e -> Mono.just(1))
 				.subscribeWith(mp))
 		            .then(() -> assertThat(mp.isError()).isFalse())
 		            .then(() -> assertThat(mp.isSuccess()).isTrue())
@@ -185,7 +185,7 @@ public class MonoSwitchOnErrorTest {
 	public void otherwiseErrorUnfilter() {
 		MonoProcessor<Integer> mp = MonoProcessor.create();
 		StepVerifier.create(Mono.<Integer>error(new TestException())
-				.switchOnError(RuntimeException.class, e -> Mono.just(1))
+				.onErrorResume(RuntimeException.class, e -> Mono.just(1))
 				.subscribeWith(mp))
 		            .then(() -> assertThat(mp.isError()).isTrue())
 		            .then(() -> assertThat(mp.isSuccess()).isFalse())
