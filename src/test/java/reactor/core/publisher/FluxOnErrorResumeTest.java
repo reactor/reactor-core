@@ -24,11 +24,11 @@ import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FluxResumeTest {
+public class FluxOnErrorResumeTest {
 /*
 	@Test
 	public void constructors() {
-		ConstructorTestBuilder ctb = new ConstructorTestBuilder(FluxResume.class);
+		ConstructorTestBuilder ctb = new ConstructorTestBuilder(FluxOnErrorResume.class);
 		
 		ctb.addRef("source", Flux.never());
 		ctb.addRef("nextFactory", (Function<Throwable, Publisher<Object>>)e -> Flux.never());
@@ -41,7 +41,7 @@ public class FluxResumeTest {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Flux.range(1, 10)
-		    .onErrorResumeWith(v -> Flux.range(11, 10))
+		    .onErrorResume(v -> Flux.range(11, 10))
 		    .subscribe(ts);
 
 		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
@@ -54,7 +54,7 @@ public class FluxResumeTest {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 10)
-		    .onErrorResumeWith(v -> Flux.range(11, 10))
+		    .onErrorResume(v -> Flux.range(11, 10))
 		    .subscribe(ts);
 
 		ts.assertNoValues()
@@ -84,7 +84,7 @@ public class FluxResumeTest {
 	public void error() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Flux.<Integer>error(new RuntimeException("forced failure")).onErrorResumeWith(v -> Flux.range(
+		Flux.<Integer>error(new RuntimeException("forced failure")).onErrorResume(v -> Flux.range(
 				11,
 				10))
 		                                                           .subscribe(ts);
@@ -98,7 +98,7 @@ public class FluxResumeTest {
 	public void errorFiltered() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Flux.<Integer>error(new RuntimeException("forced failure")).onErrorResumeWith(e -> e.getMessage()
+		Flux.<Integer>error(new RuntimeException("forced failure")).onErrorResume(e -> e.getMessage()
 		                                                                                    .equals("forced failure"),
 				v -> Mono.just(2))
 		                                                           .subscribe(ts);
@@ -112,7 +112,7 @@ public class FluxResumeTest {
 	public void errorMap() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Flux.<Integer>error(new Exception()).mapError(d -> new RuntimeException("forced" + " " + "failure"))
+		Flux.<Integer>error(new Exception()).onErrorMap(d -> new RuntimeException("forced" + " " + "failure"))
 		                                    .subscribe(ts);
 
 		ts.assertNoValues()
@@ -125,7 +125,7 @@ public class FluxResumeTest {
 	public void errorBackpressured() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
-		Flux.<Integer>error(new RuntimeException("forced failure")).onErrorResumeWith(v -> Flux.range(
+		Flux.<Integer>error(new RuntimeException("forced failure")).onErrorResume(v -> Flux.range(
 				11,
 				10))
 		                                                           .subscribe(ts);
@@ -159,7 +159,7 @@ public class FluxResumeTest {
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		tp.onErrorResumeWith(v -> Flux.range(11, 10))
+		tp.onErrorResume(v -> Flux.range(11, 10))
 		  .subscribe(ts);
 
 		tp.onNext(1);
@@ -180,7 +180,7 @@ public class FluxResumeTest {
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(10);
 
-		tp.onErrorResumeWith(v -> Flux.range(11, 10))
+		tp.onErrorResume(v -> Flux.range(11, 10))
 		  .subscribe(ts);
 
 		tp.onNext(1);
@@ -205,7 +205,7 @@ public class FluxResumeTest {
 	public void nextFactoryThrows() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
-		Flux.<Integer>error(new RuntimeException("forced failure")).onErrorResumeWith(v -> {
+		Flux.<Integer>error(new RuntimeException("forced failure")).onErrorResume(v -> {
 			throw new RuntimeException("forced failure 2");
 		})
 		                                                           .subscribe(ts);
@@ -221,7 +221,7 @@ public class FluxResumeTest {
 	public void nextFactoryReturnsNull() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
-		Flux.<Integer>error(new RuntimeException("forced failure")).onErrorResumeWith(v -> null)
+		Flux.<Integer>error(new RuntimeException("forced failure")).onErrorResume(v -> null)
 		                                                           .subscribe(ts);
 
 		ts.assertNoValues()
@@ -234,7 +234,7 @@ public class FluxResumeTest {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Exception exception = new NullPointerException("forced failure");
-		Flux.<Integer>error(exception).onErrorResumeWith(v -> {
+		Flux.<Integer>error(exception).onErrorResume(v -> {
 			throw Exceptions.propagate(v);
 		})
 		                              .subscribe(ts);
@@ -275,7 +275,7 @@ public class FluxResumeTest {
 			                        }
 			                        return t;
 		                        })
-		                        .switchOnError(Flux.range(9999, 4)))
+		                        .onErrorResume(e -> Flux.range(9999, 4)))
 		            .expectNext(1, 2, 9999, 10000, 10001, 10002)
 		            .verifyComplete();
 	}
@@ -295,7 +295,7 @@ public class FluxResumeTest {
 					s.complete();
 				});
 
-		StepVerifier.create(source.switchOnError(fallback))
+		StepVerifier.create(source.onErrorResume(e -> fallback))
 		            .expectNext("Three", "Two", "One", "1", "2")
 		            .verifyComplete();
 	}
@@ -318,14 +318,14 @@ public class FluxResumeTest {
 	@Test
 	public void mapError() {
 		StepVerifier.create(Flux.<Integer>error(new TestException())
-				.mapError(TestException.class, e -> new Exception("test")))
+				.onErrorMap(TestException.class, e -> new Exception("test")))
 				.verifyErrorMessage("test");
 	}
 
 	@Test
 	public void onErrorResumeErrorPredicate() {
 		StepVerifier.create(Flux.<Integer>error(new TestException())
-				.onErrorResumeWith(TestException.class, e -> Mono.just(1)))
+				.onErrorResume(TestException.class, e -> Mono.just(1)))
 				.expectNext(1)
 				.verifyComplete();
 	}
@@ -333,7 +333,7 @@ public class FluxResumeTest {
 	@Test
 	public void onErrorResumeErrorPredicateNot() {
 		StepVerifier.create(Flux.<Integer>error(new TestException())
-				.onErrorResumeWith(RuntimeException.class, e -> Mono.just(1)))
+				.onErrorResume(RuntimeException.class, e -> Mono.just(1)))
 				.verifyError(TestException.class);
 	}
 

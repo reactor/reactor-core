@@ -84,7 +84,7 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 
 * I have an empty sequence but...
 ** I want a value instead: `defaultIfEmpty`
-** I want another sequence instead: `Flux#switchIfEmpty`, `Mono.otherwiseIfEmpty`
+** I want another sequence instead: `switchIfEmpty`
 
 * I have a sequence but I'm not interested in values: `ignoreElements`
 ** ...and I want the completion represented as a `Mono`: `then`
@@ -171,18 +171,18 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 * I want the try/catch equivalent of...
 ** throwing: `error`
 ** catching an exception...
-*** and falling back to a default value: `Flux#onErrorReturn`
-*** and falling back to another `Flux`: `Flux#onErrorResumeWith`
-*** and wrapping and re-throwing: `.onErrorResumeWith(t -> Flux.error(new RuntimeException(t)))`
+*** and falling back to a default value: `onErrorReturn`
+*** and falling back to another `Flux` or `Mono`: `onErrorResume`
+*** and wrapping and re-throwing: `.onErrorMap(t -> new RuntimeException(t))`
 ** the finally block: `doFinally`
 ** the using pattern from Java 7: `using` factory method
 
 * I want to recover from errors...
-** by falling back: `Flux#onErrorReturn`, `Flux#onErrorResumeWith`
-*** ...but from a Mono: `Mono#otherwiseReturn`, `Mono#otherwise`
+** by falling back...
+*** to a value: `onErrorReturn`
+*** to a `Publisher` or `Mono`, possibly different ones depending on the error: `Flux#onErrorResume` and `Mono#onErrorResume`
 ** by retrying: `retry`
 *** ...triggered by a companion control Flux: `retryWhen`
-** by switching to another `Flux` depending on the error type: `switchOnError`
 
 * I want to deal with backpressure "errors"footnote:[request max from upstream and apply the strategy when downstream doesn't produce enough request]...
 ** by throwing a special `IllegalStateException`: `Flux#onBackpressureError`
