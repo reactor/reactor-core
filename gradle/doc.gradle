@@ -39,6 +39,8 @@ configure(rootProject) {
 		options.overview = "src/api/overview.html"
 		options.stylesheetFile = file("src/api/stylesheet.css")
 		options.links(rootProject.ext.javadocLinks)
+		options.tags = [ "apiNote:a:API Note:", "implSpec:a:Implementation Requirements:",
+						 "implNote:a:Implementation Note:" ]
 
 		maxMemory = "1024m"
 		destinationDir = new File(buildDir, "docs/javadoc")
