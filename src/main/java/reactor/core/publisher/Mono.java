@@ -2525,9 +2525,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Repeatedly subscribe to this {@link Mono} until a companion sequence emits an element.
-	 * <p>If the companion sequence signals when this {@link Mono} is active, the repeat
-	 * attempt is suppressed and any terminal signal will terminate this {@link Mono} with the same signal immediately.
+	 * Repeatedly subscribe to this {@link Mono} as long as the current subscription to this
+	 * {@link Mono} completes empty and the companion {@link Publisher} produces an onNext signal.
+	 * <p>
+	 * Any terminal signal will terminate the resulting {@link Mono} with the same signal immediately.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/repeatwhenempty.png" alt="">
@@ -2535,8 +2536,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param repeatFactory the {@link Function} that returns the associated {@link Publisher}
 	 * companion, given a {@link Flux} that signals each onComplete as a 0-based incrementing {@link Long}.
 	 *
-	 * @return an eventually repeated {@link Mono} on onComplete when the companion {@link Publisher} produces an
-	 * onNext signal
+	 * @return a {@link Mono} that resubscribes to this {@link Mono} if the previous subscription was empty,
+	 * as long as the companion {@link Publisher} produces an onNext signal
 	 *
 	 */
 	public final Mono<T> repeatWhenEmpty(Function<Flux<Long>, ? extends Publisher<?>> repeatFactory) {
@@ -2544,22 +2545,23 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Repeatedly subscribe to this {@link Mono} until there is an onNext signal when a companion sequence signals a
-	 * number of emitted elements.
-	 * <p>If the companion sequence signals when this {@link Mono} is active, the repeat
-	 * attempt is suppressed and any terminal signal will terminate this {@link Mono} with the same signal immediately.
-	 * <p>Emits an {@link IllegalStateException} if the max repeat is exceeded and different from {@code Integer.MAX_VALUE}.
+	 * Repeatedly subscribe to this {@link Mono} as long as the current subscription to this
+	 * {@link Mono} completes empty and the companion {@link Publisher} produces an onNext signal.
+	 * <p>
+	 * Any terminal signal will terminate the resulting {@link Mono} with the same signal immediately.
+	 * <p>
+	 * Emits an {@link IllegalStateException} if {@code maxRepeat} is exceeded (provided
+	 * it is different from {@code Integer.MAX_VALUE}).
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/repeatwhen1.png" alt="">
 	 *
-	 * @param maxRepeat the maximum repeat number of time (infinite if {@code Integer.MAX_VALUE})
+	 * @param maxRepeat the maximum number of repeats (infinite if {@code Integer.MAX_VALUE})
 	 * @param repeatFactory the {@link Function} that returns the associated {@link Publisher}
 	 * companion, given a {@link Flux} that signals each onComplete as a 0-based incrementing {@link Long}.
 	 *
-	 * @return an eventually repeated {@link Mono} on onComplete when the companion {@link Publisher} produces an
-	 * onNext signal
-	 * //FIXME
+	 * @return a {@link Mono} that resubscribes to this {@link Mono} if the previous subscription was empty,
+	 * as long as the companion {@link Publisher} produces an onNext signal and the maximum number of repeats isn't exceeded.
 	 */
 	public final Mono<T> repeatWhenEmpty(int maxRepeat, Function<Flux<Long>, ? extends Publisher<?>> repeatFactory) {
 		return Mono.defer(() -> {
