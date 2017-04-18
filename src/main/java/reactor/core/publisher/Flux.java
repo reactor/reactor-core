@@ -7023,6 +7023,26 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Return a {@link Flux} that emits the completion signal of the supplied
+	 * {@link Publisher} when this {@link Flux} onComplete or onError. If an error occur,
+	 * the error signal is replayed after the supplied {@link Publisher} is terminated.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/ignorethen.png" alt="">
+	 *
+	 * @param afterSupplier a {@link Supplier} of {@link Publisher} to wait for after
+	 * this Flux termination
+	 *
+	 * @return a new {@link Flux} emitting eventually from the supplied {@link Publisher}
+	 * @deprecated removed in 3.1, use {@link #thenEmpty(Publisher)} with
+	 * {@link #defer}. The competing overload was causing confusion and the generic was
+	 * not symmetric with {@link Mono#then(Mono)}.
+	 */
+	@Deprecated
+	public final Mono<Void> then(Supplier<? extends Publisher<Void>> afterSupplier) {
+		return thenEmpty(defer(afterSupplier));
+	}
+
+	/**
 	 * Return a {@code Mono<Void>} that waits for this {@link Flux} to complete then
 	 * for a supplied {@link Publisher Publisher&lt;Void&gt;} to also complete. The
 	 * second completion signal is replayed, or any error signal that occurs instead.
@@ -7036,22 +7056,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Mono<Void> thenEmpty(Publisher<Void> other) {
 		return new MonoIgnoreEmpty<>(this).then(MonoSource.wrap(other));
-	}
-
-	/**
-	 * Return a {@link Flux} that emits the completion signal of the supplied
-	 * {@link Publisher} when this {@link Flux} onComplete or onError. If an error occur,
-	 * the error signal is replayed after the supplied {@link Publisher} is terminated.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/ignorethen.png" alt="">
-	 *
-	 * @param afterSupplier a {@link Supplier} of {@link Publisher} to wait for after
-	 * this Flux termination
-	 *
-	 * @return a new {@link Flux} emitting eventually from the supplied {@link Publisher}
-	 */
-	public final Mono<Void> then(Supplier<? extends Publisher<Void>> afterSupplier) {
-		return thenEmpty(defer(afterSupplier));
 	}
 
 	/**
@@ -7089,7 +7093,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <V> the supplied produced type
 	 *
 	 * @return a new {@link Flux} emitting eventually from the supplied {@link Publisher}
+	 * @deprecated removed in 3.1, use {@link #thenMany(Publisher)} with
+	 * {@link #defer}. The competing overload was called unnecessary by extended
+	 * feedback and aligns with removing of Supplier of Publisher aliases elsewhere.
 	 */
+	@Deprecated
 	public final <V> Flux<V> thenMany(Supplier<? extends Publisher<V>> afterSupplier) {
 		return thenMany(defer(afterSupplier));
 	}

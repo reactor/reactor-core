@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
@@ -37,11 +38,11 @@ import reactor.core.Scannable;
  */
 final class MonoThenIgnore<T> extends Mono<T> implements Fuseable {
 
-    final Mono<?>[] ignore;
+    final Publisher<?>[] ignore;
     
     final Mono<T> last;
     
-    MonoThenIgnore(Mono<?>[] ignore, Mono<T> last) {
+    MonoThenIgnore(Publisher<?>[] ignore, Mono<T> last) {
         this.ignore = Objects.requireNonNull(ignore, "ignore");
         this.last = Objects.requireNonNull(last, "last");
     }
@@ -62,7 +63,7 @@ final class MonoThenIgnore<T> extends Mono<T> implements Fuseable {
      */
     <U> MonoThenIgnore<U> shift(Mono<U> newLast) {
         Objects.requireNonNull(newLast, "newLast");
-        Mono<?>[] a = ignore;
+        Publisher<?>[] a = ignore;
         int n = a.length;
         Mono<?>[] b = new Mono[n + 1];
         System.arraycopy(a, 0, b, 0, n);
@@ -77,7 +78,7 @@ final class MonoThenIgnore<T> extends Mono<T> implements Fuseable {
         
         final ThenAcceptInner<T> accept;
         
-        final Mono<?>[] ignoreMonos;
+        final Publisher<?>[] ignoreMonos;
 
         final Mono<T> lastMono;
 
@@ -91,7 +92,7 @@ final class MonoThenIgnore<T> extends Mono<T> implements Fuseable {
                 AtomicIntegerFieldUpdater.newUpdater(ThenIgnoreMain.class, "wip");
         
         ThenIgnoreMain(Subscriber<? super T> subscriber,
-		        Mono<?>[] ignoreMonos, Mono<T> lastMono) {
+                Publisher<?>[] ignoreMonos, Mono<T> lastMono) {
             super(subscriber);
             this.ignoreMonos = ignoreMonos;
             this.lastMono = lastMono;
@@ -117,8 +118,8 @@ final class MonoThenIgnore<T> extends Mono<T> implements Fuseable {
                 }
                 
                 if (!active) {
-                    
-                    Mono<?>[] a = ignoreMonos;
+
+                    Publisher<?>[] a = ignoreMonos;
                     int i = index;
                     if (i == a.length) {
                         ignore.clear();
@@ -145,7 +146,7 @@ final class MonoThenIgnore<T> extends Mono<T> implements Fuseable {
                         active = true;
                         m.subscribe(accept);
                     } else {
-                        Mono<?> m = a[i];
+                        Publisher<?> m = a[i];
                         index = i + 1;
                         
                         if (m instanceof Callable) {

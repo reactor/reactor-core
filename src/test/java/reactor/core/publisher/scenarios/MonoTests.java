@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,7 +111,7 @@ public class MonoTests {
 	@Test
 	public void testMonoThenManySupplier() {
 		AssertSubscriber<String> ts = AssertSubscriber.create();
-		Flux<String> test = Mono.just(1).thenMany(() -> Flux.just("A", "B"));
+		Flux<String> test = Mono.just(1).thenMany(Flux.defer(() -> Flux.just("A", "B")));
 
 		test.subscribe(ts);
 		ts.assertValues("A", "B");
@@ -147,7 +147,7 @@ public class MonoTests {
 			return "hello";
 		})
 		               .subscribeOn(Schedulers.parallel())
-		               .then(() -> Mono.just("world"))
+		               .then(Mono.just("world"))
 		               .block();
 		assertThat("Alternate mono not seen", h, is("world"));
 	}
