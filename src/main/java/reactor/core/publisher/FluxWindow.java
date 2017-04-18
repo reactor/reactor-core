@@ -112,15 +112,15 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 
 		final int size;
 
-		volatile int wip;
+		volatile int cancelled;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<WindowExactSubscriber> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(WindowExactSubscriber.class, "wip");
+		static final AtomicIntegerFieldUpdater<WindowExactSubscriber> CANCELLED =
+				AtomicIntegerFieldUpdater.newUpdater(WindowExactSubscriber.class, "cancelled");
 
-		volatile int once;
+		volatile int windowCount;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<WindowExactSubscriber> ONCE =
-				AtomicIntegerFieldUpdater.newUpdater(WindowExactSubscriber.class, "once");
+		static final AtomicIntegerFieldUpdater<WindowExactSubscriber> WINDOW_COUNT =
+				AtomicIntegerFieldUpdater.newUpdater(WindowExactSubscriber.class, "windowCount");
 
 		int index;
 
@@ -136,7 +136,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			this.actual = actual;
 			this.size = size;
 			this.processorQueueSupplier = processorQueueSupplier;
-			this.wip = 1;
+			this.windowCount = 1;
 		}
 
 		@Override
@@ -157,8 +157,8 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			int i = index;
 
 			UnicastProcessor<T> w = window;
-			if (i == 0) {
-				WIP.getAndIncrement(this);
+			if (cancelled == 0 && i == 0) {
+				WINDOW_COUNT.getAndIncrement(this);
 
 				w = new UnicastProcessor<>(processorQueueSupplier.get(), this);
 				window = w;
@@ -221,14 +221,14 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 
 		@Override
 		public void cancel() {
-			if (ONCE.compareAndSet(this, 0, 1)) {
+			if (CANCELLED.compareAndSet(this, 0, 1)) {
 				dispose();
 			}
 		}
 
 		@Override
 		public void dispose() {
-			if (WIP.decrementAndGet(this) == 0) {
+			if (WINDOW_COUNT.decrementAndGet(this) == 0) {
 				s.cancel();
 			}
 		}
@@ -240,7 +240,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 
 		@Override
 		public boolean isDisposed() {
-			return once == 1 || done;
+			return cancelled == 1 || done;
 		}
 
 		@Override
@@ -249,7 +249,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				case PARENT:
 					return s;
 				case CANCELLED:
-					return once == 1;
+					return cancelled == 1;
 				case CAPACITY:
 					return size;
 				case TERMINATED:
@@ -275,15 +275,15 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 
 		final int skip;
 
-		volatile int wip;
+		volatile int cancelled;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<WindowSkipSubscriber> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(WindowSkipSubscriber.class, "wip");
+		static final AtomicIntegerFieldUpdater<WindowSkipSubscriber> CANCELLED =
+				AtomicIntegerFieldUpdater.newUpdater(WindowSkipSubscriber.class, "cancelled");
 
-		volatile int once;
+		volatile int windowCount;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<WindowSkipSubscriber> ONCE =
-				AtomicIntegerFieldUpdater.newUpdater(WindowSkipSubscriber.class, "once");
+		static final AtomicIntegerFieldUpdater<WindowSkipSubscriber> WINDOW_COUNT =
+				AtomicIntegerFieldUpdater.newUpdater(WindowSkipSubscriber.class, "windowCount");
 
 		volatile int firstRequest;
 		@SuppressWarnings("rawtypes")
@@ -307,7 +307,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			this.size = size;
 			this.skip = skip;
 			this.processorQueueSupplier = processorQueueSupplier;
-			this.wip = 1;
+			this.windowCount = 1;
 		}
 
 		@Override
@@ -329,7 +329,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 
 			UnicastProcessor<T> w = window;
 			if (i == 0) {
-				WIP.getAndIncrement(this);
+				WINDOW_COUNT.getAndIncrement(this);
 
 				w = new UnicastProcessor<>(processorQueueSupplier.get(), this);
 				window = w;
@@ -409,19 +409,19 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 
 		@Override
 		public void cancel() {
-			if (ONCE.compareAndSet(this, 0, 1)) {
+			if (CANCELLED.compareAndSet(this, 0, 1)) {
 				dispose();
 			}
 		}
 
 		@Override
 		public boolean isDisposed() {
-			return once == 1 || done;
+			return cancelled == 1 || done;
 		}
 
 		@Override
 		public void dispose() {
-			if (WIP.decrementAndGet(this) == 0) {
+			if (WINDOW_COUNT.decrementAndGet(this) == 0) {
 				s.cancel();
 			}
 		}
@@ -437,7 +437,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				case PARENT:
 					return s;
 				case CANCELLED:
-					return once == 1;
+					return cancelled == 1;
 				case CAPACITY:
 					return size;
 				case TERMINATED:
@@ -465,17 +465,17 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 
 		final int skip;
 
-		volatile int wip;
+		volatile int cancelled;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<WindowOverlapSubscriber> WIP =
+		static final AtomicIntegerFieldUpdater<WindowOverlapSubscriber> CANCELLED =
 				AtomicIntegerFieldUpdater.newUpdater(WindowOverlapSubscriber.class,
-						"wip");
+						"cancelled");
 
-		volatile int once;
+		volatile int windowCount;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<WindowOverlapSubscriber> ONCE =
+		static final AtomicIntegerFieldUpdater<WindowOverlapSubscriber> WINDOW_COUNT =
 				AtomicIntegerFieldUpdater.newUpdater(WindowOverlapSubscriber.class,
-						"once");
+						"windowCount");
 
 		volatile int firstRequest;
 		@SuppressWarnings("rawtypes")
@@ -489,10 +489,10 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				AtomicLongFieldUpdater.newUpdater(WindowOverlapSubscriber.class,
 						"requested");
 
-		volatile int dw;
+		volatile int wip;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<WindowOverlapSubscriber> DW =
-				AtomicIntegerFieldUpdater.newUpdater(WindowOverlapSubscriber.class, "dw");
+		static final AtomicIntegerFieldUpdater<WindowOverlapSubscriber> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(WindowOverlapSubscriber.class, "wip");
 
 		int index;
 
@@ -503,8 +503,6 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		volatile boolean done;
 		Throwable error;
 
-		volatile boolean cancelled;
-
 		WindowOverlapSubscriber(Subscriber<? super Flux<T>> actual,
 				int size,
 				int skip,
@@ -514,7 +512,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			this.size = size;
 			this.skip = skip;
 			this.processorQueueSupplier = processorQueueSupplier;
-			this.wip = 1;
+			this.windowCount = 1;
 			this.queue = overflowQueue;
 		}
 
@@ -536,8 +534,8 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			int i = index;
 
 			if (i == 0) {
-				if (!cancelled) {
-					WIP.getAndIncrement(this);
+				if (cancelled == 0) {
+					WINDOW_COUNT.getAndIncrement(this);
 
 					UnicastProcessor<T> w = new UnicastProcessor<>(processorQueueSupplier.get(), this);
 
@@ -608,7 +606,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		}
 
 		void drain() {
-			if (DW.getAndIncrement(this) != 0) {
+			if (WIP.getAndIncrement(this) != 0) {
 				return;
 			}
 
@@ -651,7 +649,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 					REQUESTED.addAndGet(this, -e);
 				}
 
-				missed = DW.addAndGet(this, -missed);
+				missed = WIP.addAndGet(this, -missed);
 				if (missed == 0) {
 					break;
 				}
@@ -659,7 +657,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		}
 
 		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, Queue<?> q) {
-			if (cancelled) {
+			if (cancelled == 1) {
 				q.clear();
 				return true;
 			}
@@ -703,15 +701,14 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 
 		@Override
 		public void cancel() {
-			cancelled = true;
-			if (ONCE.compareAndSet(this, 0, 1)) {
+			if (CANCELLED.compareAndSet(this, 0, 1)) {
 				dispose();
 			}
 		}
 
 		@Override
 		public void dispose() {
-			if (WIP.decrementAndGet(this) == 0) {
+			if (WINDOW_COUNT.decrementAndGet(this) == 0) {
 				s.cancel();
 			}
 		}
@@ -723,7 +720,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 
 		@Override
 		public boolean isDisposed() {
-			return cancelled || done;
+			return cancelled == 1 || done;
 		}
 
 		@Override

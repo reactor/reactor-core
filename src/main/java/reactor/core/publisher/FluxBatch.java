@@ -268,12 +268,16 @@ abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 		@Override
 		public void cancel() {
 			if (TERMINATED.compareAndSet(this, NOT_TERMINATED, TERMINATED_WITH_CANCEL)) {
-				timer.dispose();
-				Subscription s = this.subscription;
-				if (s != null) {
-					this.subscription = null;
-					s.cancel();
-				}
+				dispose();
+			}
+		}
+
+		public void dispose() {
+			timer.dispose();
+			Subscription s = this.subscription;
+			if (s != null) {
+				this.subscription = null;
+				s.cancel();
 			}
 		}
 

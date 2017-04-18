@@ -111,8 +111,6 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 				AtomicIntegerFieldUpdater.newUpdater(WindowStartEndMainSubscriber.class,
 						"wip");
 
-		volatile boolean cancelled;
-
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<WindowStartEndMainSubscriber, Subscription>
@@ -121,23 +119,23 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 						Subscription.class,
 						"s");
 
-		volatile int once;
+		volatile int cancelled;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<WindowStartEndMainSubscriber> ONCE =
+		static final AtomicIntegerFieldUpdater<WindowStartEndMainSubscriber> CANCELLED =
 				AtomicIntegerFieldUpdater.newUpdater(WindowStartEndMainSubscriber.class,
-						"once");
+						"cancelled");
 
-		volatile int open;
+		volatile int windowCount;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<WindowStartEndMainSubscriber> OPEN =
+		static final AtomicIntegerFieldUpdater<WindowStartEndMainSubscriber> WINDOW_COUNT =
 				AtomicIntegerFieldUpdater.newUpdater(WindowStartEndMainSubscriber.class,
-						"open");
+						"windowCount");
 
 		Set<WindowStartEndEnder<T, V>> windowEnds;
 
 		Set<UnicastProcessor<T>> windows;
 
-		volatile boolean mainDone;
+		volatile boolean done;
 
 		volatile Throwable error;
 		@SuppressWarnings("rawtypes")
@@ -158,14 +156,14 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 			this.windowEnds = new HashSet<>();
 			this.windows = new HashSet<>();
 			this.processorQueueSupplier = processorQueueSupplier;
-			this.open = 1;
+			this.windowCount = 1;
 		}
 
 		@Override
 		public Object scan(Attr key) {
 			switch(key){
 				case TERMINATED:
-					return mainDone;
+					return done;
 			}
 			return InnerOperator.super.scan(key);
 		}
@@ -202,9 +200,12 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 
 		@Override
 		public void onComplete() {
-			closeMain();
+			if (done) {
+				return;
+			}
+			closeMain(false);
 			starter.cancel();
-			mainDone = true;
+			done = true;
 
 			drain();
 		}
@@ -218,10 +219,8 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 
 		@Override
 		public void cancel() {
-			cancelled = true;
-
 			starter.cancel();
-			closeMain();
+			closeMain(true);
 		}
 
 		void starterNext(U u) {
@@ -242,7 +241,10 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 		}
 
 		void starterComplete() {
-			closeMain();
+			if (done) {
+				return;
+			}
+			closeMain(false);
 			drain();
 		}
 
@@ -263,22 +265,29 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 			}
 		}
 
-		void closeMain() {
-			if (ONCE.compareAndSet(this, 0, 1)) {
+		void closeMain(boolean cancel) {
+			if (cancel) {
+				if (CANCELLED.compareAndSet(this, 0, 1)) {
+					dispose();
+				}
+			} else {
 				dispose();
 			}
 		}
 
 		@Override
 		public void dispose() {
-			if (OPEN.decrementAndGet(this) == 0) {
-				Operators.terminate(S, this);
+			if (WINDOW_COUNT.decrementAndGet(this) == 0) {
+				if (cancelled == 0)
+					Operators.terminate(S, this);
+				else
+					s.cancel();
 			}
 		}
 
 		@Override
 		public boolean isDisposed() {
-			return cancelled || mainDone;
+			return cancelled == 1 || done;
 		}
 
 		boolean add(WindowStartEndEnder<T, V> ender) {
@@ -351,7 +360,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 						return;
 					}
 
-					if (mainDone || open == 0) {
+					if (done || (windowCount == 0 && cancelled == 0)) {
 						removeAll();
 
 						for (UnicastProcessor<T> w : windows) {
@@ -362,6 +371,11 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 						a.onComplete();
 						return;
 					}
+					else if (windowCount == 0) {
+						removeAll();
+						dispose();
+						return;
+					}
 
 					Object o = q.poll();
 
@@ -370,7 +384,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 					}
 
 					if (o instanceof NewWindow) {
-						if (!cancelled && open != 0 && !mainDone) {
+						if (cancelled == 0 && windowCount != 0 && !done) {
 							@SuppressWarnings("unchecked") NewWindow<U> newWindow =
 									(NewWindow<U>) o;
 
@@ -391,7 +405,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 								continue;
 							}
 
-							OPEN.getAndIncrement(this);
+							WINDOW_COUNT.getAndIncrement(this);
 
 							UnicastProcessor<T> w = new UnicastProcessor<>(pq, this);
 
