@@ -331,9 +331,9 @@ public class HooksTest {
 		try {
 
 			ConnectableFlux<?> t = Flux.empty()
-			    .then(() -> {
+			    .then(Mono.defer(() -> {
 				    throw new RuntimeException();
-			    }).flux().publish();
+			    })).flux().publish();
 
 			t.map(d -> d).subscribe(null,
 					e -> Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
