@@ -211,6 +211,13 @@ public class FluxConcatArrayTest {
 	}
 
 	@Test
+	public void thenManySupplier(){
+		StepVerifier.create(Flux.just(1, 2, 3).thenMany(Flux.defer(() -> Flux.just("test", "test2"))))
+		            .expectNext("test", "test2")
+		            .verifyComplete();
+	}
+
+	@Test
 	public void thenManyError(){
 		StepVerifier.create(Flux.error(new Exception("test")).thenMany(Flux.just(4, 5, 6)))
 	                .verifyErrorMessage("test");
