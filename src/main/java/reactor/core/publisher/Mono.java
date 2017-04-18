@@ -3191,8 +3191,12 @@ $	 * Subscribe to a returned fallback publisher when an error matching the given
 	 * @param <V> the element type of the supplied Mono
 	 *
 	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
+	 * @deprecated removed in 3.1, use {@link #thenEmpty(Publisher)} with
+	 * {@link #defer}. The competing overload was causing confusion and the generic was
+	 * not symmetric with {@link #then(Mono)}.
 	 */
-	public final <V> Mono<V> then(final Supplier<? extends Mono<V>> sourceSupplier) {
+	@Deprecated
+	public final <V> Mono<V> then(Supplier<? extends Mono<V>> sourceSupplier) {
 		return then(defer(sourceSupplier));
 	}
 
@@ -3245,7 +3249,11 @@ $	 * Subscribe to a returned fallback publisher when an error matching the given
 	 * @param <V> the element type of the supplied Publisher
 	 *
 	 * @return a new {@link Flux} that emits from the supplied {@link Publisher}
+	 * @deprecated removed in 3.1, use {@link #thenMany(Publisher)} with
+	 * {@link #defer}. The competing overload was called unnecessary by extended
+	 * feedback and aligns with removing of Supplier of Publisher aliases elsewhere.
 	 */
+	@Deprecated
 	public final <V> Flux<V> thenMany(final Supplier<? extends Publisher<V>> afterSupplier) {
 		return thenMany(Flux.defer(afterSupplier));
 	}

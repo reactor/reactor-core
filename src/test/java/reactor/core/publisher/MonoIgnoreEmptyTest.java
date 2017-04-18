@@ -16,10 +16,7 @@
 
 package reactor.core.publisher;
 
-import java.time.Duration;
-
 import org.junit.Test;
-import org.reactivestreams.Publisher;
 import reactor.test.StepVerifier;
 
 public class MonoIgnoreEmptyTest {
@@ -35,13 +32,6 @@ public class MonoIgnoreEmptyTest {
 	public void normal() {
 		StepVerifier.create(Flux.just(1)
 		                        .thenEmpty(Flux.empty()))
-		            .expectComplete();
-	}
-
-	@Test
-	public void normal2() {
-		StepVerifier.create(Flux.empty()
-		                        .then((Flux::empty)))
 		            .expectComplete();
 	}
 

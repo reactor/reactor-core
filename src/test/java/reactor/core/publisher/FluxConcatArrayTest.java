@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -211,15 +211,8 @@ public class FluxConcatArrayTest {
 	}
 
 	@Test
-	public void thenManySupplier(){
-		StepVerifier.create(Flux.just(1, 2, 3).thenMany(() -> Flux.just("test", "test2")))
-		            .expectNext("test", "test2")
-		            .verifyComplete();
-	}
-
-	@Test
 	public void thenManyError(){
-		StepVerifier.create(Flux.error(new Exception("test")).thenMany(() -> Flux.just(4, 5, 6)))
+		StepVerifier.create(Flux.error(new Exception("test")).thenMany(Flux.just(4, 5, 6)))
 	                .verifyErrorMessage("test");
 	}
 
