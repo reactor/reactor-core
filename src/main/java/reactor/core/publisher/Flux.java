@@ -6950,23 +6950,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Ignore element from this {@link Flux} and transform its completion signal into the
-	 * emission and completion signal of a provided {@code Mono<V>}. Error signal is
-	 * replayed in the resulting {@code Mono<V>}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/ignorethen1.png" alt="">
-	 *
-	 * @param other a {@link Mono} to emit from after termination
-	 * @param <V> the element type of the supplied Mono
-	 *
-	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
-	 */
-	public final <V> Mono<V> then(Mono<V> other) {
-		return Mono.onAssembly(new MonoThenIgnore<>(new Publisher[] { this }, other));
-	}
-
-	/**
 	 * Return a {@link Flux} that emits the completion signal of the supplied
 	 * {@link Publisher} when this {@link Flux} onComplete or onError. If an error occur,
 	 * the error signal is replayed after the supplied {@link Publisher} is terminated.
@@ -6979,7 +6962,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux} emitting eventually from the supplied {@link Publisher}
 	 * @deprecated removed in 3.1, use {@link #thenEmpty(Publisher)} with
 	 * {@link #defer}. The competing overload was causing confusion and the generic was
-	 * not symmetric with {@link #then(Mono)}.
+	 * not symmetric with {@link Mono#then(Mono)}.
 	 */
 	@Deprecated
 	public final Mono<Void> then(Supplier<? extends Publisher<Void>> afterSupplier) {
