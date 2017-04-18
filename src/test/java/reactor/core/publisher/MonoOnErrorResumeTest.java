@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,11 +81,49 @@ public class MonoOnErrorResumeTest {
 	}
 
 	@Test
+	public void error2() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		Mono.<Integer>error(new RuntimeException("forced failure")).onErrorReturn(2)
+		                                                           .subscribe(ts);
+
+		ts.assertValues(2)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
 	public void errorFiltered() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		Mono.<Integer>error(new RuntimeException("forced failure"))
 				.onErrorResume(e -> e.getMessage().equals("forced failure"), v -> Mono.just(2))
+				.subscribe(ts);
+
+		ts.assertValues(2)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void errorFiltered2() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		Mono.<Integer>error(new RuntimeException("forced failure"))
+				.onErrorReturn(e -> e.getMessage().equals("forced failure"), 2)
+				.subscribe(ts);
+
+		ts.assertValues(2)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void errorFiltered3() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		Mono.<Integer>error(new RuntimeException("forced failure"))
+				.onErrorReturn(RuntimeException.class, 2)
 				.subscribe(ts);
 
 		ts.assertValues(2)

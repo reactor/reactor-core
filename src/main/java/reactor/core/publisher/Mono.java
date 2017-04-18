@@ -2907,11 +2907,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwisereturn.png" alt="">
 	 * @param predicate the error predicate to match
 	 * @param fallbackValue the value to emit if an error occurs that matches the predicate
-	 * @param <E> the error type
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public final <E extends Throwable> Mono<T> onErrorReturn(Predicate<? super Throwable> predicate, T fallbackValue) {
+	public final Mono<T> onErrorReturn(Predicate<? super Throwable> predicate, T fallbackValue) {
 		return onErrorResume(predicate,  throwable -> just(fallbackValue));
 	}
 
