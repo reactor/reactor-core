@@ -31,7 +31,7 @@ public abstract class Exceptions {
 	 * A common error message used when a reactive streams source doesn't seem to respect
 	 * backpressure signals, resulting in an operator's internal queue to be full.
 	 */
-	public static final String BACKPRESSURE_ERROR_QUEUE_FULL = "Reactive Streams source doesn't seem to respect backpressure protocol, queue is full.";
+	public static final String BACKPRESSURE_ERROR_QUEUE_FULL = "Queue is full: Reactive Streams source doesn't respect back-pressure";
 
 	/**
 	 * A singleton instance of a Throwable indicating a terminal state for exceptions,
