@@ -27,7 +27,7 @@ import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FluxBufferStartEndTest {
+public class FluxBufferWhenTest {
 
 	@Test
 	public void normal() {
@@ -38,7 +38,7 @@ public class FluxBufferStartEndTest {
 		DirectProcessor<Integer> sp3 = DirectProcessor.create();
 		DirectProcessor<Integer> sp4 = DirectProcessor.create();
 
-		sp1.buffer(sp2, v -> v == 1 ? sp3 : sp4)
+		sp1.bufferWhen(sp2, v -> v == 1 ? sp3 : sp4)
 		   .subscribe(ts);
 
 		ts.assertNoValues()
@@ -94,7 +94,7 @@ public class FluxBufferStartEndTest {
 		DirectProcessor<Integer> sp2 = DirectProcessor.create();
 		DirectProcessor<Integer> sp3 = DirectProcessor.create();
 
-		sp1.buffer(sp2, v -> sp3)
+		sp1.bufferWhen(sp2, v -> sp3)
 		   .subscribe(ts);
 
 		ts.assertNoValues()
@@ -138,7 +138,7 @@ public class FluxBufferStartEndTest {
 		//"overlapping buffers"
 		EmitterProcessor<Integer> boundaryFlux = EmitterProcessor.create();
 
-		Mono<List<List<Integer>>> res = numbers.buffer(bucketOpening, u -> boundaryFlux )
+		Mono<List<List<Integer>>> res = numbers.bufferWhen(bucketOpening, u -> boundaryFlux )
 		                                       .buffer()
 		                                       .publishNext()
 		                                       .subscribe();

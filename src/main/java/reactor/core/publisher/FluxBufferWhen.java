@@ -46,7 +46,7 @@ import reactor.core.Exceptions;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
+final class FluxBufferWhen<T, U, V, C extends Collection<? super T>>
 		extends FluxSource<T, C> {
 
 	final Publisher<U> start;
@@ -57,7 +57,7 @@ final class FluxBufferStartEnd<T, U, V, C extends Collection<? super T>>
 
 	final Supplier<? extends Queue<C>> queueSupplier;
 
-	FluxBufferStartEnd(Flux<? extends T> source,
+	FluxBufferWhen(Flux<? extends T> source,
 			Publisher<U> start,
 			Function<? super U, ? extends Publisher<V>> end,
 			Supplier<C> bufferSupplier,

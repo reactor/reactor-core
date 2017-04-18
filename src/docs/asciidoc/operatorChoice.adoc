@@ -217,7 +217,7 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 ** based on a predicate on elements: `windowUntil`
 *** ...…emitting the element that triggered the boundary in the next window (`cutBefore` variant): `.windowUntil(predicate, true)`
 *** ...keeping the window open while elements match a predicate: `windowWhile` (non-matching elements are not emitted)
-** driven by an arbitrary boundary represented by onNexts in a control Publisher: `window(Publisher)`
+** driven by an arbitrary boundary represented by onNexts in a control Publisher: `window(Publisher)`, `windowWhen`
 
 * I want to split a `Flux<T>` and buffer elements within boundaries together...
 ** into `List`...
@@ -229,7 +229,7 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 *** by an arbitrary criteria boundary: `bufferUntil(Predicate)`
 **** ...putting the element that triggered the boundary in the next buffer: `.bufferUntil(predicate, true)`
 **** ...buffering while predicate matches and dropping the element that triggered the boundary: `bufferWhile(Predicate)`
-*** driven by an arbitrary boundary represented by onNexts in a control Publisher: `buffer(Publisher)`
+*** driven by an arbitrary boundary represented by onNexts in a control Publisher: `buffer(Publisher)`, `bufferWhen`
 ** into an arbitrary "collection" type `C`: use variants like `buffer(int, Supplier<C>)`
 
 * I want to split a `Flux<T>` so that element that share a characteristic end up in the same sub-flux: `groupBy(Function<T,K>)`

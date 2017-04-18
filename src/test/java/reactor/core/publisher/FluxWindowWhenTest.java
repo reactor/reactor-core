@@ -28,7 +28,7 @@ import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FluxWindowStartEndTest {
+public class FluxWindowWhenTest {
 
 	static <T> AssertSubscriber<T> toList(Publisher<T> windows) {
 		AssertSubscriber<T> ts = AssertSubscriber.create();
@@ -53,7 +53,7 @@ public class FluxWindowStartEndTest {
 		DirectProcessor<Integer> sp3 = DirectProcessor.create();
 		DirectProcessor<Integer> sp4 = DirectProcessor.create();
 
-		sp1.window(sp2, v -> v == 1 ? sp3 : sp4)
+		sp1.windowWhen(sp2, v -> v == 1 ? sp3 : sp4)
 		   .subscribe(ts);
 
 		sp1.onNext(1);
@@ -96,7 +96,7 @@ public class FluxWindowStartEndTest {
 		DirectProcessor<Integer> sp3 = DirectProcessor.create();
 		DirectProcessor<Integer> sp4 = DirectProcessor.create();
 
-		sp1.window(sp2, v -> v == 1 ? sp3 : sp4)
+		sp1.windowWhen(sp2, v -> v == 1 ? sp3 : sp4)
 		   .subscribe(ts);
 
 		sp1.onNext(1);
@@ -139,7 +139,7 @@ public class FluxWindowStartEndTest {
 		DirectProcessor<Integer> sp3 = DirectProcessor.create();
 		DirectProcessor<Integer> sp4 = DirectProcessor.create();
 
-		sp1.window(sp2, v -> v == 1 ? sp3 : sp4)
+		sp1.windowWhen(sp2, v -> v == 1 ? sp3 : sp4)
 		   .subscribe(ts);
 
 		sp2.onNext(1);
@@ -175,7 +175,7 @@ public class FluxWindowStartEndTest {
 		//"overlapping buffers"
 		EmitterProcessor<Integer> boundaryFlux = EmitterProcessor.create();
 
-		Mono<List<List<Integer>>> res = numbers.window(bucketOpening, u -> boundaryFlux )
+		Mono<List<List<Integer>>> res = numbers.windowWhen(bucketOpening, u -> boundaryFlux )
 		                                       .flatMap(Flux::buffer)
 		                                       .buffer()
 		                                       .publishNext()
