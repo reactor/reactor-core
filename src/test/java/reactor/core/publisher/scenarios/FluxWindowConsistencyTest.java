@@ -221,7 +221,7 @@ public class FluxWindowConsistencyTest {
 		DirectProcessor<Integer> start = DirectProcessor.create();
 		DirectProcessor<Integer> end1 = DirectProcessor.create();
 		DirectProcessor<Integer> end2 = DirectProcessor.create();
-		Flux<Flux<Integer>> windows = source.window(start, v -> v == 1 ? end1 : end2);
+		Flux<Flux<Integer>> windows = source.windowWhen(start, v -> v == 1 ? end1 : end2);
 		subscribe(windows);
 		start.onNext(1);
 		generate(0, 3);
@@ -324,7 +324,7 @@ public class FluxWindowConsistencyTest {
 		DirectProcessor<Integer> start = DirectProcessor.create();
 		DirectProcessor<Integer> end1 = DirectProcessor.create();
 		DirectProcessor<Integer> end2 = DirectProcessor.create();
-		Flux<Flux<Integer>> windows = source.window(start, v -> v == 1 ? end1 : end2);
+		Flux<Flux<Integer>> windows = source.windowWhen(start, v -> v == 1 ? end1 : end2);
 		subscribe(windows);
 		start.onNext(1);
 		generate(0, 3);
@@ -429,7 +429,7 @@ public class FluxWindowConsistencyTest {
 		DirectProcessor<Integer> start = DirectProcessor.create();
 		DirectProcessor<Integer> end1 = DirectProcessor.create();
 		DirectProcessor<Integer> end2 = DirectProcessor.create();
-		Flux<Flux<Integer>> windows = source.window(start, v -> v == 1 ? end1 : end2);
+		Flux<Flux<Integer>> windows = source.windowWhen(start, v -> v == 1 ? end1 : end2);
 		subscribe(windows);
 		start.onNext(1);
 		generate(0, 4);
@@ -518,7 +518,7 @@ public class FluxWindowConsistencyTest {
 		DirectProcessor<Integer> start = DirectProcessor.create();
 		DirectProcessor<Integer> end1 = DirectProcessor.create();
 		DirectProcessor<Integer> end2 = DirectProcessor.create();
-		Flux<Flux<Integer>> windows = source.window(start, v -> v == 1 ? end1 : end2);
+		Flux<Flux<Integer>> windows = source.windowWhen(start, v -> v == 1 ? end1 : end2);
 		subscribe(windows);
 		start.onNext(1);
 		generateWithCancel(0, 6, 1);
