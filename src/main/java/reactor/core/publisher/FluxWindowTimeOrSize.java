@@ -16,8 +16,11 @@
 
 package reactor.core.publisher;
 
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+
 import reactor.core.scheduler.Scheduler;
 
 
@@ -98,13 +101,24 @@ final class FluxWindowTimeOrSize<T> extends FluxBatch<T, Flux<T>> {
 
 		Window<T> currentWindow;
 
+		volatile int cancelled;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<WindowTimeoutSubscriber> CANCELLED =
+				AtomicIntegerFieldUpdater.newUpdater(WindowTimeoutSubscriber.class, "cancelled");
+
+		volatile int windowCount;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<WindowTimeoutSubscriber> WINDOW_COUNT =
+				AtomicIntegerFieldUpdater.newUpdater(WindowTimeoutSubscriber.class,
+						"windowCount");
+
 		WindowTimeoutSubscriber(Subscriber<? super Flux<T>> actual,
 				int backlog,
 				long timespan,
 				Scheduler timer) {
 			super(actual, backlog, true, timespan, timer.createWorker());
 			this.timer = timer;
-
+			WINDOW_COUNT.lazySet(this, 1);
 		}
 
 		@Override
@@ -113,6 +127,7 @@ final class FluxWindowTimeOrSize<T> extends FluxBatch<T, Flux<T>> {
 		}
 
 		Flux<T> createWindowStream() {
+			WINDOW_COUNT.getAndIncrement(this);
 			Window<T> _currentWindow = new Window<>(timer);
 			currentWindow = _currentWindow;
 			return _currentWindow;
@@ -122,6 +137,7 @@ final class FluxWindowTimeOrSize<T> extends FluxBatch<T, Flux<T>> {
 		protected void checkedError(Throwable ev) {
 			if (currentWindow != null) {
 				currentWindow.onError(ev);
+				dispose();
 			}
 			super.checkedError(ev);
 		}
@@ -132,6 +148,7 @@ final class FluxWindowTimeOrSize<T> extends FluxBatch<T, Flux<T>> {
 				if (currentWindow != null) {
 					currentWindow.onComplete();
 					currentWindow = null;
+					dispose();
 				}
 			}
 			finally {
@@ -155,11 +172,33 @@ final class FluxWindowTimeOrSize<T> extends FluxBatch<T, Flux<T>> {
 		protected void flushCallback(T event) {
 			if (currentWindow != null) {
 				currentWindow.onComplete();
-				//currentWindow = null;
+				currentWindow = null;
+				dispose();
 			}
 		}
 
+		@Override
+		public void cancel() {
+			if (CANCELLED.compareAndSet(this, 0, 1)) {
+				dispose();
+			}
+		}
+
+		public void dispose() {
+			if (WINDOW_COUNT.decrementAndGet(this) == 0) {
+				if (cancelled == 1)
+					super.cancel();
+			}
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case CANCELLED:
+					return cancelled == 1;
+				default:
+					return super.scan(key);
+			}
+		}
 	}
-
-
 }

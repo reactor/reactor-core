@@ -32,9 +32,9 @@ import reactor.core.Scannable;
 
 
 /**
- * Splits the source sequence into continuous, non-overlapping windowEnds 
+ * Splits the source sequence into continuous, non-overlapping windowEnds
  * where the window boundary is signalled by another Publisher
- * 
+ *
  * @param <T> the input value type
  * @param <U> the boundary publisher's type (irrelevant)
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
@@ -103,28 +103,30 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 		static final AtomicLongFieldUpdater<WindowBoundaryMain> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(WindowBoundaryMain.class, "requested");
 
-		volatile int wip;
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<WindowBoundaryMain> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(WindowBoundaryMain.class, "wip");
-
 		volatile Throwable error;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<WindowBoundaryMain, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(WindowBoundaryMain.class, Throwable.class, "error");
 
-		volatile int open;
+		volatile int cancelled;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<WindowBoundaryMain> OPEN =
-				AtomicIntegerFieldUpdater.newUpdater(WindowBoundaryMain.class, "open");
+		static final AtomicIntegerFieldUpdater<WindowBoundaryMain> CANCELLED =
+				AtomicIntegerFieldUpdater.newUpdater(WindowBoundaryMain.class, "cancelled");
 
-		volatile int once;
+		volatile int windowCount;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<WindowBoundaryMain> ONCE =
-				AtomicIntegerFieldUpdater.newUpdater(WindowBoundaryMain.class, "once");
+		static final AtomicIntegerFieldUpdater<WindowBoundaryMain> WINDOW_COUNT =
+				AtomicIntegerFieldUpdater.newUpdater(WindowBoundaryMain.class, "windowCount");
+
+		volatile int wip;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<WindowBoundaryMain> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(WindowBoundaryMain.class, "wip");
+
+		boolean done;
 
 		static final Object BOUNDARY_MARKER = new Object();
-		
+
 		static final Object DONE = new Object();
 
 		WindowBoundaryMain(Subscriber<? super Flux<T>> actual,
@@ -133,7 +135,7 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 			this.actual = actual;
 			this.processorQueueSupplier = processorQueueSupplier;
 			this.window = new UnicastProcessor<>(processorQueue, this);
-			this.open = 2;
+			WINDOW_COUNT.lazySet(this, 2);
 			this.boundary = new WindowBoundaryOther<>(this);
 			this.queue = queue;
 		}
@@ -146,7 +148,9 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 				case ERROR:
 					return error;
 				case CANCELLED:
-					return s == Operators.cancelledSubscription();
+					return cancelled == 1;
+				case TERMINATED:
+					return done;
 				case PREFETCH:
 					return Integer.MAX_VALUE;
 				case REQUESTED_FROM_DOWNSTREAM:
@@ -171,6 +175,10 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 
 		@Override
 		public void onNext(T t) {
+			if (done) {
+				Operators.onNextDropped(t);
+				return;
+			}
 			synchronized (this) {
 				queue.offer(t);
 			}
@@ -179,16 +187,23 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 
 		@Override
 		public void onError(Throwable t) {
+			if (done) {
+				Operators.onErrorDropped(t);
+				return;
+			}
+			done = true;
 			boundary.cancel();
 			if (Exceptions.addThrowable(ERROR, this, t)) {
 				drain();
-			} else {
-				Operators.onErrorDropped(t);
 			}
 		}
 
 		@Override
 		public void onComplete() {
+			if (done) {
+				return;
+			}
+			done = true;
 			boundary.cancel();
 			synchronized (this) {
 				queue.offer(DONE);
@@ -198,7 +213,7 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 
 		@Override
 		public void dispose() {
-			if (OPEN.decrementAndGet(this) == 0) {
+			if (WINDOW_COUNT.decrementAndGet(this) == 0) {
 				cancelMain();
 				boundary.cancel();
 			}
@@ -206,7 +221,7 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 
 		@Override
 		public boolean isDisposed() {
-			return s == Operators.cancelledSubscription(); //FIXME add done;
+			return cancelled == 1 || done;
 		}
 
 		@Override
@@ -222,7 +237,7 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 
 		@Override
 		public void cancel() {
-			if (ONCE.compareAndSet(this, 0, 1)) {
+			if (CANCELLED.compareAndSet(this, 0, 1)) {
 				dispose();
 			}
 		}
@@ -232,7 +247,7 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 				queue.offer(BOUNDARY_MARKER);
 			}
 
-			if (once != 0) {
+			if (cancelled != 0) {
 				boundary.cancel();
 			}
 
@@ -275,46 +290,46 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 						Throwable e = Exceptions.terminate(ERROR, this);
 						if (e != Exceptions.TERMINATED) {
 							w.onError(e);
-							
+
 							a.onError(e);
 						}
 						return;
 					}
-					
+
 					Object o = q.poll();
-					
+
 					if (o == null) {
 						break;
 					}
-					
+
 					if (o == DONE) {
 						q.clear();
-						
+
 						w.onComplete();
-						
+
 						a.onComplete();
 						return;
 					}
 					if (o != BOUNDARY_MARKER) {
-						
+
 						@SuppressWarnings("unchecked")
 						T v = (T)o;
 						w.onNext(v);
 					}
 					if (o == BOUNDARY_MARKER) {
 						w.onComplete();
-						
-						if (once == 0) {
+
+						if (cancelled == 0) {
 							if (requested != 0L) {
 								Queue<T> pq = processorQueueSupplier.get();
 
-								OPEN.getAndIncrement(this);
+								WINDOW_COUNT.getAndIncrement(this);
 
 								w = new UnicastProcessor<>(pq, this);
 								window = w;
-								
+
 								a.onNext(w);
-								
+
 								if (requested != Long.MAX_VALUE) {
 									REQUESTED.decrementAndGet(this);
 								}
@@ -322,7 +337,7 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 								q.clear();
 								cancelMain();
 								boundary.cancel();
-								
+
 								a.onError(Exceptions.failWithOverflow("Could not create new window due to lack of requests"));
 								return;
 							}

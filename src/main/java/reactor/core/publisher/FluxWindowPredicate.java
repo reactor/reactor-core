@@ -140,6 +140,11 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>>
 				AtomicIntegerFieldUpdater.newUpdater(WindowPredicateMain.class,
 						"cancelled");
 
+		volatile int windowCount;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<WindowPredicateMain> WINDOW_COUNT =
+				AtomicIntegerFieldUpdater.newUpdater(WindowPredicateMain.class, "windowCount");
+
 		Subscription s;
 
 		volatile boolean outputFused;
@@ -156,6 +161,7 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>>
 			this.prefetch = prefetch;
 			this.predicate = predicate;
 			this.mode = mode;
+			WINDOW_COUNT.lazySet(this, 2);
 
 			initializeWindow();
 		}
@@ -187,6 +193,8 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>>
 		void offerNewWindow(T key, T emitInNewWindow) {
 			// if the main is cancelled, don't create new groups
 			if (cancelled == 0) {
+				WINDOW_COUNT.getAndIncrement(this);
+
 				WindowGroupedFlux<T> g = new WindowGroupedFlux<>(key, groupQueueSupplier.get(), this);
 				if (emitInNewWindow != null) {
 					g.onNext(emitInNewWindow);
@@ -261,6 +269,7 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>>
 			}
 			window = null;
 			done = true;
+			WINDOW_COUNT.decrementAndGet(this);
 			drain();
 		}
 
@@ -297,6 +306,7 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>>
 
 		void signalAsyncError() {
 			Throwable e = Exceptions.terminate(ERROR, this);
+			windowCount = 0;
 			WindowGroupedFlux<T> g = window;
 			if (g != null) {
 				g.onError(e);
@@ -316,12 +326,35 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>>
 		@Override
 		public void cancel() {
 			if (CANCELLED.compareAndSet(this, 0, 1)) {
-				s.cancel();
+				if (WINDOW_COUNT.decrementAndGet(this) == 0) {
+					s.cancel();
+				}
+				else if (!outputFused) {
+					if (WIP.getAndIncrement(this) == 0) {
+						// remove queued up but unobservable groups from the mapping
+						GroupedFlux<T, T> g;
+						while ((g = queue.poll()) != null) {
+							((WindowGroupedFlux<T>) g).cancel();
+						}
+
+						if (WIP.decrementAndGet(this) == 0) {
+							return;
+						}
+
+						drainLoop();
+					}
+				}
 			}
 		}
 
 		void groupTerminated() {
+			if (windowCount == 0) {
+				return;
+			}
 			window = null;
+			if (WINDOW_COUNT.decrementAndGet(this) == 0) {
+				s.cancel();
+			}
 		}
 
 		void drain() {
