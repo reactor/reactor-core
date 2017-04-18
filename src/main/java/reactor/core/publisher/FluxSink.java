@@ -46,7 +46,6 @@ public interface FluxSink<T> {
      * Try emitting, might throw an unchecked exception.
      * @see Subscriber#onNext(Object)
      * @param t the value to emit, not null
-     * Will return this sink from 3.1 (now void)
      */
     FluxSink<T> next(T t);
 
