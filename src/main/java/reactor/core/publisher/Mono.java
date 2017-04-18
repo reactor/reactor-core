@@ -3149,7 +3149,7 @@ $	 * Subscribe to a returned fallback publisher when an error matching the given
 	 * @param <R> the result type bound
 	 *
 	 * @return a new {@link Mono} containing the merged values
-	 * @deprecated in 3.1.0.M1 this method will be renamed `flatMap`. However, until
+	 * @apiNote in 3.1.0.M1 this method will be renamed `flatMap`. However, until
 	 * then the behavior of {@link #flatMap(Function)} remains the current one, so it is
 	 * not yet possible to anticipate this migration.
 	 */
