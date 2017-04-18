@@ -108,6 +108,16 @@ public class MonoTests {
 		peekSubscriber.assertComplete();
 	}
 
+	@Test
+	public void testMonoThenManySupplier() {
+		AssertSubscriber<String> ts = AssertSubscriber.create();
+		Flux<String> test = Mono.just(1).thenMany(Flux.defer(() -> Flux.just("A", "B")));
+
+		test.subscribe(ts);
+		ts.assertValues("A", "B");
+		ts.assertComplete();
+	}
+
 	// test issue https://github.com/reactor/reactor/issues/485
 	@Test
 	public void promiseOnErrorHandlesExceptions() throws Exception {
