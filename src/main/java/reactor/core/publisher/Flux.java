@@ -6192,19 +6192,20 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Return a {@code Mono<Void>} that waits for this {@link Flux} to complete then
-	 * for a supplied {@link Publisher Publisher&lt;Void&gt;} to also complete. The
-	 * second completion signal is replayed, or any error signal that occurs instead.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/ignorethen.png"
-	 * alt="">
+	 * Ignore element from this {@link Flux} and transform its completion signal into the
+	 * emission and completion signal of a provided {@code Mono<V>}. Error signal is
+	 * replayed in the resulting {@code Mono<V>}.
 	 *
-	 * @param other a {@link Publisher} to wait for after this Flux's termination
-	 * @return a new {@link Mono} completing when both publishers have completed in
-	 * sequence
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/ignorethen1.png" alt="">
+	 *
+	 * @param other a {@link Mono} to emit from after termination
+	 * @param <V> the element type of the supplied Mono
+	 *
+	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
 	 */
-	public final Mono<Void> thenEmpty(Publisher<Void> other) {
-		return new MonoIgnoreEmpty<>(this).then(MonoSource.wrap(other));
+	public final <V> Mono<V> then(Mono<V> other) {
+		return Mono.onAssembly(new MonoThenIgnore<>(new Publisher[] { this }, other));
 	}
 
 	/**
@@ -6218,9 +6219,29 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * this Flux termination
 	 *
 	 * @return a new {@link Flux} emitting eventually from the supplied {@link Publisher}
+	 * @deprecated removed in 3.1, use {@link #thenEmpty(Publisher)} with
+	 * {@link #defer}. The competing overload was causing confusion and the generic was
+	 * not symmetric with {@link #then(Mono)}.
 	 */
+	@Deprecated
 	public final Mono<Void> then(Supplier<? extends Publisher<Void>> afterSupplier) {
 		return thenEmpty(defer(afterSupplier));
+	}
+
+	/**
+	 * Return a {@code Mono<Void>} that waits for this {@link Flux} to complete then
+	 * for a supplied {@link Publisher Publisher&lt;Void&gt;} to also complete. The
+	 * second completion signal is replayed, or any error signal that occurs instead.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/ignorethen.png"
+	 * alt="">
+	 *
+	 * @param other a {@link Publisher} to wait for after this Flux's termination
+	 * @return a new {@link Mono} completing when both publishers have completed in
+	 * sequence
+	 */
+	public final Mono<Void> thenEmpty(Publisher<Void> other) {
+		return new MonoIgnoreEmpty<>(this).then(MonoSource.wrap(other));
 	}
 
 	/**
@@ -6258,7 +6279,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <V> the supplied produced type
 	 *
 	 * @return a new {@link Flux} emitting eventually from the supplied {@link Publisher}
+	 * @deprecated removed in 3.1, use {@link #thenMany(Publisher)} with
+	 * {@link #defer}. The competing overload was called unnecessary by extended
+	 * feedback and aligns with removing of Supplier of Publisher aliases elsewhere.
 	 */
+	@Deprecated
 	public final <V> Flux<V> thenMany(Supplier<? extends Publisher<V>> afterSupplier) {
 		return thenMany(defer(afterSupplier));
 	}
