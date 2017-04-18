@@ -136,7 +136,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			this.actual = actual;
 			this.size = size;
 			this.processorQueueSupplier = processorQueueSupplier;
-			this.windowCount = 1;
+			WINDOW_COUNT.lazySet(this, 1);
 		}
 
 		@Override
@@ -307,7 +307,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			this.size = size;
 			this.skip = skip;
 			this.processorQueueSupplier = processorQueueSupplier;
-			this.windowCount = 1;
+			WINDOW_COUNT.lazySet(this, 1);
 		}
 
 		@Override
@@ -512,7 +512,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			this.size = size;
 			this.skip = skip;
 			this.processorQueueSupplier = processorQueueSupplier;
-			this.windowCount = 1;
+			WINDOW_COUNT.lazySet(this, 1);
 			this.queue = overflowQueue;
 		}
 

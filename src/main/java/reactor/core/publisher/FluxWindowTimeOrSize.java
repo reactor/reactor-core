@@ -118,7 +118,7 @@ final class FluxWindowTimeOrSize<T> extends FluxBatch<T, Flux<T>> {
 				Scheduler timer) {
 			super(actual, backlog, true, timespan, timer.createWorker());
 			this.timer = timer;
-			windowCount = 1;
+			WINDOW_COUNT.lazySet(this, 1);
 		}
 
 		@Override
@@ -184,10 +184,10 @@ final class FluxWindowTimeOrSize<T> extends FluxBatch<T, Flux<T>> {
 			}
 		}
 
-		@Override
 		public void dispose() {
 			if (WINDOW_COUNT.decrementAndGet(this) == 0) {
-				super.dispose();
+				if (cancelled == 1)
+					super.cancel();
 			}
 		}
 

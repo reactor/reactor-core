@@ -161,7 +161,7 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>>
 			this.prefetch = prefetch;
 			this.predicate = predicate;
 			this.mode = mode;
-			this.windowCount = 2;
+			WINDOW_COUNT.lazySet(this, 2);
 
 			initializeWindow();
 		}

@@ -156,7 +156,7 @@ final class FluxWindowStartEnd<T, U, V> extends FluxSource<T, Flux<T>> {
 			this.windowEnds = new HashSet<>();
 			this.windows = new HashSet<>();
 			this.processorQueueSupplier = processorQueueSupplier;
-			this.windowCount = 1;
+			WINDOW_COUNT.lazySet(this, 1);
 		}
 
 		@Override
