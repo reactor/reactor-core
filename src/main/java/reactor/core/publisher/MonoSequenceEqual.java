@@ -330,7 +330,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 		public void onNext(T t) {
 			if (!queue.offer(t)) {
 				onError(Operators.onOperatorError(cachedSubscription, Exceptions
-						.failWithOverflow("Queue is full?!"), t));
+						.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), t));
 				return;
 			}
 			parent.drain();

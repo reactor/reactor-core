@@ -254,7 +254,7 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 			if (sourceMode != Fuseable.ASYNC) {
 				if (!queue.offer(t)) {
 					onError(Operators.onOperatorError(s,
-							Exceptions.failWithOverflow("Queue full?!"),
+							Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL),
 							t));
 					return;
 				}

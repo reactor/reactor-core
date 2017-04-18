@@ -760,7 +760,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 		boolean failOverflow(R v, Subscription toCancel){
 			Throwable e = Operators.onOperatorError(toCancel,
-					Exceptions.failWithOverflow("Scalar queue full?!"),
+					Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL),
 					v);
 
 			if (!Exceptions.addThrowable(ERROR, this, e)) {

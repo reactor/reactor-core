@@ -313,7 +313,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 							new SourceAndArray(subscribers[index], os.clone());
 
 					if (!queue.offer(sa)) {
-						innerError(Operators.onOperatorError(this, Exceptions.failWithOverflow("Queue is full?!")));
+						innerError(Operators.onOperatorError(this, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL)));
 						return;
 					}
 

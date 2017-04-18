@@ -224,7 +224,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable {
 			}
 			if (!queue.offer(t)) {
 				error = Operators.onOperatorError(s,
-						Exceptions.failWithOverflow("Queue is full?!"),
+						Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL),
 						t);
 				done = true;
 			}
@@ -711,7 +711,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable {
 				return;
 			}
 			if (!queue.offer(t)) {
-				error = Operators.onOperatorError(s, Exceptions.failWithOverflow("Queue is full?!"), t);
+				error = Operators.onOperatorError(s, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), t);
 				done = true;
 			}
 			if (trySchedule() == Scheduler.REJECTED) {

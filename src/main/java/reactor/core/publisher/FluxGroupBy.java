@@ -669,7 +669,7 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 			Subscriber<? super V> a = actual;
 
 			if (!queue.offer(t)) {
-				onError(Operators.onOperatorError(this, Exceptions.failWithOverflow("Queue is full?!"), t));
+				onError(Operators.onOperatorError(this, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), t));
 				return;
 			}
 			if (outputFused) {

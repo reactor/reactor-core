@@ -228,7 +228,7 @@ final class ParallelSource<T> extends ParallelFlux<T> implements Scannable {
 			}
 			if (sourceMode == Fuseable.NONE) {
 				if (!queue.offer(t)) {
-					onError(Operators.onOperatorError(s, Exceptions.failWithOverflow("Queue is full?!"), t));
+					onError(Operators.onOperatorError(s, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), t));
 					return;
 				}
 			}
