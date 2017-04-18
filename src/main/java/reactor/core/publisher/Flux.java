@@ -62,6 +62,7 @@ import reactor.util.function.Tuple3;
 import reactor.util.function.Tuple4;
 import reactor.util.function.Tuple5;
 import reactor.util.function.Tuple6;
+import reactor.util.function.Tuple8;
 import reactor.util.function.Tuples;
 
 /**
