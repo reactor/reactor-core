@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2016 Pivotal Software Inc, All Rights Reserved.
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,10 +39,6 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 	@Override
 	protected List<Scenario<String, Flux<String>>> scenarios_operatorSuccess() {
 		return Arrays.asList(
-				scenario(Flux::window)
-						.receive(s -> s.buffer().subscribe(b -> assertThat(b)
-								.containsExactly(item(0), item(1), item(2)))),
-
 				scenario(f -> f.window(1))
 						.receive(s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(0))),
 								s -> s.buffer().subscribe(b -> assertThat(b).containsExactly(item(1))),
@@ -62,8 +58,6 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 	@Override
 	protected List<Scenario<String, Flux<String>>> scenarios_errorFromUpstreamFailure() {
 		return Arrays.asList(
-				scenario(Flux::window),
-
 				scenario(f -> f.window(1)),
 
 				scenario(f -> f.window(1, 2)),
