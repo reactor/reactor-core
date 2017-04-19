@@ -247,7 +247,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 
 			if (!queue.offer(t)) {
 				Throwable ex = Operators.onOperatorError(s,
-						Exceptions.failWithOverflow("Queue is full?!"),
+						Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL),
 						t);
 				if (!Exceptions.addThrowable(ERROR, this, ex)) {
 					Operators.onErrorDropped(ex);

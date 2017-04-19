@@ -864,7 +864,7 @@ final class FluxZip<T, R> extends Flux<R> {
 		public void onNext(T t) {
 			if (sourceMode != ASYNC) {
 				if (!queue.offer(t)) {
-					onError(Operators.onOperatorError(s, Exceptions.failWithOverflow("Queue is full?!"), t));
+					onError(Operators.onOperatorError(s, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), t));
 					return;
 				}
 			}

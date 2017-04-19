@@ -300,7 +300,7 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 			}
 			else {
 				inner.cancel();
-				onError(Operators.onOperatorError(null, Exceptions.failWithOverflow("Queue is full?!"), value));
+				onError(Operators.onOperatorError(null, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), value));
 			}
 		}
 

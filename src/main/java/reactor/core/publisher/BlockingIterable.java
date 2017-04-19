@@ -191,7 +191,7 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 				if (v == null) {
 					run();
 
-					throw new IllegalStateException("Queue empty?!");
+					throw new IllegalStateException("Queue is empty: Expected one element to be available from the Reactive Streams source.");
 				}
 
 				long p = produced + 1;
@@ -221,7 +221,7 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 				Operators.terminate(S, this);
 
 				onError(Operators.onOperatorError(null,
-						Exceptions.failWithOverflow("Queue is full?!"),
+						Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL),
 						t));
 			}
 			else {
