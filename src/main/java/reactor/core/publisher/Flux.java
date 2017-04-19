@@ -4122,7 +4122,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux}
 	 */
 	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapperOnNext,
-			Function<? super Throwable, ? extends Publisher<? extends R>> mapperOnError,
+			Function<Throwable, ? extends Publisher<? extends R>> mapperOnError,
 			Supplier<? extends Publisher<? extends R>> mapperOnComplete) {
 		return onAssembly(new FluxFlatMap<>(
 				new FluxMapSignal<>(this, mapperOnNext, mapperOnError, mapperOnComplete),
@@ -5750,7 +5750,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a re-subscribing {@link Flux} on onError if the predicates matches.
 	 */
-	public final Flux<T> retry(Predicate<? super Throwable> retryMatcher) {
+	public final Flux<T> retry(Predicate<Throwable> retryMatcher) {
 		return onAssembly(new FluxRetryPredicate<>(this, retryMatcher));
 	}
 
@@ -5768,7 +5768,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * matches.
 	 *
 	 */
-	public final Flux<T> retry(long numRetries, Predicate<? super Throwable> retryMatcher) {
+	public final Flux<T> retry(long numRetries, Predicate<Throwable> retryMatcher) {
 		return defer(() -> retry(countingPredicate(retryMatcher, numRetries)));
 	}
 
