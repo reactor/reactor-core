@@ -30,10 +30,10 @@ import org.reactivestreams.Subscriber;
  */
 final class MonoRetryPredicate<T> extends MonoSource<T, T> {
 
-	final Predicate<Throwable> predicate;
+	final Predicate<? super Throwable> predicate;
 
 	MonoRetryPredicate(Mono<? extends T> source,
-			Predicate<Throwable> predicate) {
+			Predicate<? super Throwable> predicate) {
 		super(source);
 		this.predicate = Objects.requireNonNull(predicate, "predicate");
 	}
