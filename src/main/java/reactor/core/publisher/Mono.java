@@ -2011,7 +2011,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	@Deprecated
 	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapperOnNext,
-			Function<Throwable, ? extends Publisher<? extends R>> mapperOnError,
+			Function<? super Throwable, ? extends Publisher<? extends R>> mapperOnError,
 			Supplier<? extends Publisher<? extends R>> mapperOnComplete) {
 		return this.flatMapMany(mapperOnNext, mapperOnError, mapperOnComplete);
 	}
@@ -2049,7 +2049,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @see Flux#flatMap(Function, Function, Supplier)
 	 */
 	public final <R> Flux<R> flatMapMany(Function<? super T, ? extends Publisher<? extends R>> mapperOnNext,
-			Function<Throwable, ? extends Publisher<? extends R>> mapperOnError,
+			Function<? super Throwable, ? extends Publisher<? extends R>> mapperOnError,
 			Supplier<? extends Publisher<? extends R>> mapperOnComplete) {
 
 		return Flux.onAssembly(new FluxFlatMap<>(
@@ -2366,7 +2366,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a transformed {@link Mono}
 	 */
-	public final Mono<T> onErrorMap(Function<Throwable, ? extends Throwable> mapper) {
+	public final Mono<T> onErrorMap(Function<? super Throwable, ? extends Throwable> mapper) {
 		return onErrorResume(e -> Mono.error(mapper.apply(e)));
 	}
 
@@ -2818,7 +2818,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a re-subscribing {@link Mono} on onError if the predicates matches.
 	 */
-	public final Mono<T> retry(Predicate<Throwable> retryMatcher) {
+	public final Mono<T> retry(Predicate<? super Throwable> retryMatcher) {
 		return onAssembly(new MonoRetryPredicate<>(this, retryMatcher));
 	}
 
@@ -2836,7 +2836,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * matches.
 	 *
 	 */
-	public final Mono<T> retry(long numRetries, Predicate<Throwable> retryMatcher) {
+	public final Mono<T> retry(long numRetries, Predicate<? super Throwable> retryMatcher) {
 		return defer(() -> retry(Flux.countingPredicate(retryMatcher, numRetries)));
 	}
 
