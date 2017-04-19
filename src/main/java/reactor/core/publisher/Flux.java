@@ -2070,80 +2070,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Collect incoming values into multiple {@link List} buffers started each time an opening
-	 * companion {@link Publisher} emits. Each buffer will last until the corresponding
-	 * closing companion {@link Publisher} emits, thus releasing the buffer to the resulting {@link Flux}.
-	 * <p>
-	 * When Open signal is strictly not overlapping Close signal : dropping buffers
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/bufferopenclose.png"
-	 * alt="">
-	 * <p>
-	 * When Open signal is strictly more frequent than Close signal : overlapping buffers
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/bufferopencloseover.png"
-	 * alt="">
-	 * <p>
-	 * When Open signal is exactly coordinated with Close signal : exact buffers
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/bufferboundary.png"
-	 * alt="">
-	 *
-	 * @param bucketOpening a companion {@link Publisher} to subscribe for buffer creation signals.
-	 * @param closeSelector a factory that, given a buffer opening signal, returns a companion
-	 * {@link Publisher} to subscribe to for buffer closure and emission signals.
-	 * @param <U> the element type of the buffer-opening sequence
-	 * @param <V> the element type of the buffer-closing sequence
-	 *
-	 * @return a microbatched {@link Flux} of {@link List} delimited by an opening {@link Publisher} and a relative
-	 * closing {@link Publisher}
-	 * @deprecated will be removed in 3.1.0. Use {@link #bufferWhen(Publisher, Function)} instead.
-	 */
-	@Deprecated
-	public final <U, V> Flux<List<T>> buffer(Publisher<U> bucketOpening,
-			Function<? super U, ? extends Publisher<V>> closeSelector) {
-		return bufferWhen(bucketOpening, closeSelector, listSupplier());
-	}
-
-	/**
-	 * Collect incoming values into multiple user-defined {@link Collection} buffers started each time an opening
-	 * companion {@link Publisher} emits. Each buffer will last until the corresponding
-	 * closing companion {@link Publisher} emits, thus releasing the buffer to the resulting {@link Flux}.
-	 * <p>
-	 * When Open signal is strictly not overlapping Close signal : dropping buffers
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/bufferopenclose.png"
-	 * alt="">
-	 * <p>
-	 * When Open signal is strictly more frequent than Close signal : overlapping buffers
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/bufferopencloseover.png"
-	 * alt="">
-	 * <p>
-	 * When Open signal is exactly coordinated with Close signal : exact buffers
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/bufferboundary.png"
-	 * alt="">
-	 *
-	 * @param bucketOpening a companion {@link Publisher} to subscribe for buffer creation signals.
-	 * @param closeSelector a factory that, given a buffer opening signal, returns a companion
-	 * {@link Publisher} to subscribe to for buffer closure and emission signals.
-	 * @param bufferSupplier a {@link Supplier} of the concrete {@link Collection} to use for each buffer
-	 * @param <U> the element type of the buffer-opening sequence
-	 * @param <V> the element type of the buffer-closing sequence
-	 * @param <C> the {@link Collection} buffer type
-	 *
-	 * @return a microbatched {@link Flux} of {@link Collection} delimited by an opening {@link Publisher} and a relative
-	 * closing {@link Publisher}
-	 * @deprecated will be removed in 3.1.0. Use {@link #bufferWhen(Publisher, Function, Supplier)} instead.
-	 */
-	@Deprecated
-	public final <U, V, C extends Collection<? super T>> Flux<C> buffer(Publisher<U> bucketOpening,
-			Function<? super U, ? extends Publisher<V>> closeSelector, Supplier<C> bufferSupplier) {
-		return bufferWhen(bucketOpening, closeSelector, bufferSupplier);
-	}
-
-	/**
 	 * Collect incoming values into multiple {@link List} buffers that will be emitted by
 	 * the returned {@link Flux} every {@code timespan}.
 	 * <p>
@@ -4275,63 +4201,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the error emitted by this {@link Flux} by applying a function.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/maperror.png"
-	 * alt="">
-	 * <p>
-	 *
-	 * @param mapper the error transforming {@link Function}
-	 *
-	 * @return a transformed {@link Flux}
-	 * @deprecated use {@link #onErrorMap} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
-	 */
-	@Deprecated
-	public final Flux<T> mapError(Function<? super Throwable, ? extends Throwable> mapper) {
-		return onErrorMap(mapper);
-	}
-
-	/**
-	 * Transform the error emitted by this {@link Flux} by applying a function if the
-	 * error matches the given type, otherwise let the error flow.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/maperror.png" alt="">
-	 * <p>
-	 * @param type the class of the exception type to react to
-	 * @param mapper the error transforming {@link Function}
-	 * @param <E> the error type
-	 *
-	 * @return a transformed {@link Flux}
-	 * @deprecated use {@link #onErrorMap} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
-	 */
-	@Deprecated
-	public final <E extends Throwable> Flux<T> mapError(Class<E> type,
-			Function<? super E, ? extends Throwable> mapper) {
-		return onErrorMap(type, mapper);
-
-	}
-
-	/**
-	 * Transform the error emitted by this {@link Flux} by applying a function if the
-	 * error matches the given predicate, otherwise let the error flow.
-	 * <p>
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/maperror.png"
-	 * alt="">
-	 *
-	 * @param predicate the error predicate
-	 * @param mapper the error transforming {@link Function}
-	 *
-	 * @return a transformed {@link Flux}
-	 * @deprecated use {@link #onErrorMap} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
-	 */
-	@Deprecated
-	public final Flux<T> mapError(Predicate<? super Throwable> predicate,
-			Function<? super Throwable, ? extends Throwable> mapper) {
-		return onErrorMap(predicate, mapper);
-	}
-
-	/**
 	 * Transform the incoming onNext, onError and onComplete signals into {@link Signal}.
 	 * Since the error is materialized as a {@code Signal}, the propagation will be stopped and onComplete will be
 	 * emitted. Complete signal will first emit a {@code Signal.complete()} and then effectively complete the flux.
@@ -4609,60 +4478,6 @@ public abstract class Flux<T> implements Publisher<T> {
 		return onErrorResume(predicate, e -> Mono.error(mapper.apply(e)));
 	}
 
-	/**
-	 * Subscribe to a returned fallback publisher when any error occurs.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/onerrorresumewith.png" alt="">
-	 * <p>
-	 * @param fallback the {@link Function} mapping the error to a new {@link Publisher} sequence
-	 *
-	 * @return a new {@link Flux}
-	 * @deprecated use {@link #onErrorResume(Function)} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
-	 */
-	@Deprecated
-	public final Flux<T> onErrorResumeWith(Function<? super Throwable, ? extends Publisher<? extends T>> fallback) {
-		return onErrorResume(fallback);
-	}
-
-	/**
-	 * Subscribe to a returned fallback publisher when an error matching the given type
-	 * occurs.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/onerrorresumewith.png"
-	 * alt="">
-	 *
-	 * @param type the error type to match
-	 * @param fallback the {@link Function} mapping the error to a new {@link Publisher}
-	 * sequence
-	 * @param <E> the error type
-	 *
-	 * @return a new {@link Flux}
-	 * @deprecated use {@link #onErrorResume(Class, Function)} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
-	 */
-	@Deprecated
-	public final <E extends Throwable> Flux<T> onErrorResumeWith(Class<E> type,
-			Function<? super E, ? extends Publisher<? extends T>> fallback) {
-		return onErrorResume(type, fallback);
-	}
-
-	/**
-	 * Subscribe to a returned fallback publisher when an error matching the given type
-	 * occurs.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/onerrorresumewith.png"
-	 * alt="">
-	 *
-	 * @param predicate the error predicate to match
-	 * @param fallback the {@link Function} mapping the error to a new {@link Publisher}
-	 * sequence
-	 *
-	 * @deprecated use {@link #onErrorResume(Predicate, Function)} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
-	 */
-	@Deprecated
-	public final Flux<T> onErrorResumeWith(Predicate<? super Throwable> predicate,
-			Function<? super Throwable, ? extends Publisher<? extends T>> fallback) {
-		return onErrorResume(predicate, fallback);
-	}
 
 	/**
 	 * Subscribe to a returned fallback publisher when any error occurs.
@@ -4756,13 +4571,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/onerrorreturn.png" alt="">
 	 * @param predicate the error predicate to match
 	 * @param fallbackValue alternate value on fallback
-	 * @param <E> the error type
 	 *
 	 * @return a new {@link Flux}
 	 */
-	public final <E extends Throwable> Flux<T> onErrorReturn(Predicate<? super Throwable>
-			predicate, T
-			fallbackValue) {
+	public final Flux<T> onErrorReturn(Predicate<? super Throwable> predicate, T fallbackValue) {
 		return onErrorResume(predicate, t -> just(fallbackValue));
 	}
 
@@ -5995,61 +5807,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Subscribe to the given fallback {@link Publisher} if an error matching the given
-	 * type is observed on this {@link Flux}
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/switchonerror.png" alt="">
-	 * <p>
-	 *
-	 * @param type the error type to match to fallback
-	 * @param fallback the alternate {@link Publisher}
-	 * @param <E> the error type
-	 *
-	 * @return an alternating {@link Flux} on source onError
-	 * @deprecated use {@link #onErrorResume} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
-	 */
-	@Deprecated
-	public final <E extends Throwable> Flux<T> switchOnError(Class<E> type,
-			Publisher<? extends T> fallback) {
-		return onErrorResume(type, t -> fallback);
-	}
-
-	/**
-	 * Subscribe to the given fallback {@link Publisher} if an error matching the given
-	 * predicate is observed on this {@link Flux}
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/switchonerror.png" alt="">
-	 * <p>
-	 *
-	 * @param predicate the predicate to match an error
-	 * @param fallback the alternate {@link Publisher}
-	 *
-	 * @return an alternating {@link Flux} on source onError
-	 * @deprecated use {@link #onErrorResume} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
-	 */
-	@Deprecated
-	public final Flux<T> switchOnError(Predicate<? super Throwable> predicate,
-			Publisher<? extends	T> fallback) {
-		return onErrorResume(predicate, t -> fallback);
-	}
-
-	/**
-	 * Subscribe to the given fallback {@link Publisher} if an error is observed on this {@link Flux}
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/switchonerror.png" alt="">
-	 * <p>
-	 *
-	 * @param fallback the alternate {@link Publisher}
-	 *
-	 * @return an alternating {@link Flux} on source onError
-	 * @deprecated use {@link #onErrorResume} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
-	 */
-	@Deprecated
-	public final Flux<T> switchOnError(Publisher<? extends T> fallback) {
-		return onErrorResume(t -> fallback);
-	}
-
-	/**
 	 * Take only the first N values from this {@link Flux}.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/take.png" alt="">
@@ -6209,26 +5966,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Return a {@link Flux} that emits the completion signal of the supplied
-	 * {@link Publisher} when this {@link Flux} onComplete or onError. If an error occur,
-	 * the error signal is replayed after the supplied {@link Publisher} is terminated.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/ignorethen.png" alt="">
-	 *
-	 * @param afterSupplier a {@link Supplier} of {@link Publisher} to wait for after
-	 * this Flux termination
-	 *
-	 * @return a new {@link Flux} emitting eventually from the supplied {@link Publisher}
-	 * @deprecated removed in 3.1, use {@link #thenEmpty(Publisher)} with
-	 * {@link #defer}. The competing overload was causing confusion and the generic was
-	 * not symmetric with {@link #then(Mono)}.
-	 */
-	@Deprecated
-	public final Mono<Void> then(Supplier<? extends Publisher<Void>> afterSupplier) {
-		return thenEmpty(defer(afterSupplier));
-	}
-
-	/**
 	 * Return a {@code Mono<Void>} that waits for this {@link Flux} to complete then
 	 * for a supplied {@link Publisher Publisher&lt;Void&gt;} to also complete. The
 	 * second completion signal is replayed, or any error signal that occurs instead.
@@ -6266,26 +6003,6 @@ public abstract class Flux<T> implements Publisher<T> {
 		@SuppressWarnings("unchecked")
 		Flux<V> concat = (Flux<V>)concat(ignoreElements(), other);
 		return concat;
-	}
-
-	/**
-	 * Return a {@link Flux} that emits the sequence of the supplied {@link Publisher}
-	 * after this {@link Flux} completes, ignoring this flux elements. If an error occurs
-	 * it immediately terminates the resulting flux.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/ignorethens.png" alt="">
-	 *
-	 * @param afterSupplier a {@link Supplier} of {@link Publisher} to emit from after termination
-	 * @param <V> the supplied produced type
-	 *
-	 * @return a new {@link Flux} emitting eventually from the supplied {@link Publisher}
-	 * @deprecated removed in 3.1, use {@link #thenMany(Publisher)} with
-	 * {@link #defer}. The competing overload was called unnecessary by extended
-	 * feedback and aligns with removing of Supplier of Publisher aliases elsewhere.
-	 */
-	@Deprecated
-	public final <V> Flux<V> thenMany(Supplier<? extends Publisher<V>> afterSupplier) {
-		return thenMany(defer(afterSupplier));
 	}
 
 	/**
@@ -6353,7 +6070,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a per-item expirable {@link Flux} with a fallback {@link Publisher}
 	 */
 	public final Flux<T> timeout(Duration timeout, Publisher<? extends T> fallback, Scheduler timer) {
-		final Mono<Long> _timer = Mono.delay(timeout, timer).otherwiseReturn(0L);
+		final Mono<Long> _timer = Mono.delay(timeout, timer).onErrorReturn(0L);
 		final Function<T, Publisher<Long>> rest = o -> _timer;
 
 		if(fallback == null) {
@@ -6553,24 +6270,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by cancel
-	 * signals they receive.
-	 * e.g. {@code window().flatMap(w -> w.take(3))} will delimit window every 3.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowcancel.png" alt="">
-	 *
-	 * @return a windowing {@link Flux} of {@link Flux} buckets delimited by cancel
-	 * signals
-	 * @deprecated will be removed in 3.1.0. Prefer using other variants, like {@link #window(Publisher)},
-	 */
-	@Deprecated
-	public final Flux<Flux<T>> window() {
-		return onAssembly(new FluxWindowOnCancel<>(this, QueueSupplier.unbounded(
-				QueueSupplier.XS_BUFFER_SIZE)));
-	}
-
-	/**
 	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code maxSize}
 	 * count and starting from
 	 * the first item.
@@ -6636,40 +6335,6 @@ public abstract class Flux<T> implements Publisher<T> {
 				boundary,
 				QueueSupplier.unbounded(QueueSupplier.XS_BUFFER_SIZE),
 				QueueSupplier.unbounded(QueueSupplier.XS_BUFFER_SIZE)));
-	}
-
-	/**
-	 * Split this {@link Flux} sequence into potentially overlapping windows controlled by items of a
-	 * start {@link Publisher} and end {@link Publisher} derived from the start values.
-	 *
-	 * <p>
-	 * When Open signal is strictly not overlapping Close signal : dropping windows
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowopenclose.png" alt="">
-	 * <p>
-	 * When Open signal is strictly more frequent than Close signal : overlapping windows
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowopencloseover.png" alt="">
-	 * <p>
-	 * When Open signal is exactly coordinated with Close signal : exact windows
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowboundary.png" alt="">
-	 *
-	 * @param bucketOpening a {@link Publisher} to emit any item for a split signal and complete to terminate
-	 * @param closeSelector a {@link Function} given an opening signal and returning a {@link Publisher} that
-	 * emits to complete the window
-	 *
-	 * @param <U> the type of the sequence opening windows
-	 * @param <V> the type of the sequence closing windows opened by the bucketOpening Publisher's elements
-	 *
-	 * @return a windowing {@link Flux} delimiting its sub-sequences by a given {@link Publisher} and lasting until
-	 * a selected {@link Publisher} emits
-	 * @deprecated will be removed in 3.1.0. Use {@link #windowWhen(Publisher, Function)} instead.
-	 */
-	@Deprecated
-	public final <U, V> Flux<Flux<T>> window(Publisher<U> bucketOpening,
-			final Function<? super U, ? extends Publisher<V>> closeSelector) {
-		return windowWhen(bucketOpening, closeSelector);
 	}
 
 	/**

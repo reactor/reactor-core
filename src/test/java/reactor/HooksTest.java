@@ -45,7 +45,7 @@ public class HooksTest {
 		    .map(d -> d + 1)
 		    .doOnNext(d -> {throw new RuntimeException("test");})
 		    .collectList()
-		    .otherwiseReturn(Collections.singletonList(2))
+		    .onErrorReturn(Collections.singletonList(2))
 		    .block();
 	}
 

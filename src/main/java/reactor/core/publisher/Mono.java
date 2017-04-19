@@ -2090,59 +2090,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform any error emitted by this {@link Mono} by synchronously applying a function to it.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/maperror.png" alt="">
-	 * <p>
-	 * @param mapper the error transforming {@link Function}
-	 *
-	 * @return a transformed {@link Mono}
-	 * @deprecated use {@link #onErrorMap} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
-	 */
-	@Deprecated
-	public final Mono<T> mapError(Function<Throwable, ? extends Throwable> mapper) {
-		return onErrorMap(mapper);
-	}
-
-	/**
-	 * Transform an error emitted by this {@link Mono} by synchronously applying a function
-	 * to it if the error matches the given type. Otherwise let the error pass through.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/maperror.png" alt="">
-	 * <p>
-	 * @param type the type to match
-	 * @param mapper the error transforming {@link Function}
-	 * @param <E> the error type
-	 *
-	 * @return a transformed {@link Mono}
-	 * @deprecated use {@link #onErrorMap} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
-	 */
-	@Deprecated
-	public final <E extends Throwable> Mono<T> mapError(Class<E> type,
-			Function<? super E, ? extends Throwable> mapper) {
-		return onErrorMap(type, mapper);
-	}
-
-	/**
-	 * Transform an error emitted by this {@link Mono} by synchronously applying a function
-	 * to it if the error matches the given predicate. Otherwise let the error pass through.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/maperror.png"
-	 * alt="">
-	 *
-	 * @param predicate the error predicate
-	 * @param mapper the error transforming {@link Function}
-	 *
-	 * @return a transformed {@link Mono}
-	 * @deprecated use {@link #onErrorMap} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
-	 */
-	@Deprecated
-	public final Mono<T> mapError(Predicate<? super Throwable> predicate,
-			Function<? super Throwable, ? extends Throwable> mapper) {
-		return onErrorMap(predicate, mapper);
-	}
-
-	/**
 	 * Transform incoming onNext, onError and onComplete signals into {@link Signal} instances,
 	 * materializing these signals.
 	 * Since the error is materialized as a {@code Signal}, the propagation will be stopped and onComplete will be
@@ -2259,131 +2206,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	public final <U> Mono<U> ofType(final Class<U> clazz) {
 		Objects.requireNonNull(clazz, "clazz");
 		return filter(o -> clazz.isAssignableFrom(o.getClass())).cast(clazz);
-	}
-
-	/**
-	 * Subscribe to a fallback publisher when any error occurs, using a function to
-	 * choose the fallback depending on the error.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwise.png" alt="">
-	 * <p>
-	 * @param fallback the function to choose the fallback to an alternative {@link Mono}
-	 *
-	 * @return a {@link Mono} falling back upon source onError
-	 *
-	 * @deprecated Use {@link #onErrorResume(Function)}} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
-	 */
-	@Deprecated
-	public final Mono<T> otherwise(Function<? super Throwable, ? extends Mono<? extends
-			T>> fallback) {
-		return onErrorResume(fallback);
-	}
-
-	/**
-	 * Subscribe to a fallback publisher when an error matching the given type
-	 * occurs, using a function to choose the fallback depending on the error.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwise.png"
-	 * alt="">
-	 *
-	 * @param type the error type to match
-	 * @param fallback the function to choose the fallback to an alternative {@link Mono}
-	 * @param <E> the error type
-	 *
-	 * @return a {@link Mono} falling back upon source onError
-	 * @deprecated Use {@link #onErrorResume(Class, Function)} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
-	 */
-	@Deprecated
-	public final <E extends Throwable> Mono<T> otherwise(Class<E> type,
-			Function<? super E, ? extends Mono<? extends T>> fallback) {
-		return onErrorResume(type, fallback);
-	}
-
-	/**
-	 * Subscribe to a fallback publisher when an error matching a given predicate
-	 * occurs.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwise.png"
-	 * alt="">
-	 *
-	 * @param predicate the error predicate to match
-	 * @param fallback the function to choose the fallback to an alternative {@link Mono}
-	 * @return a {@link Mono} falling back upon source onError
-	 * @deprecated Use {@link #onErrorResume(Predicate, Function)} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
-	 */
-	@Deprecated
-	public final Mono<T> otherwise(Predicate<? super Throwable> predicate,
-			Function<? super Throwable, ? extends Mono<? extends T>> fallback) {
-		return onErrorResume(predicate, fallback);
-	}
-
-	/**
-	 * Fallback to an alternative {@link Mono} if this mono is completed without data
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwiseempty.png" alt="">
-	 * <p>
-	 * @param alternate the alternate mono if this mono is empty
-	 *
-	 * @return a {@link Mono} falling back upon source completing without elements
-	 * @deprecated Use {@link #switchIfEmpty} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
-	 */
-	@Deprecated
-	public final Mono<T> otherwiseIfEmpty(Mono<? extends T> alternate) {
-		return switchIfEmpty(alternate);
-	}
-
-	/**
-	 * Fallback to emitting a default value when any error occurs.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwisereturn.png" alt="">
-	 * <p>
-	 * @param fallback the value to emit if an error occurs
-	 *
-	 * @return a new {@link Mono}
-	 * @deprecated use {@link #onErrorReturn(Object)} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
-	 */
-	@Deprecated
-	public final Mono<T> otherwiseReturn(final T fallback) {
-		return onErrorResume(throwable -> just(fallback));
-	}
-
-	/**
-	 * Fallback to emitting a default value if an error of a specific type is observed on this
-	 * {@link Mono}
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwisereturn.png" alt="">
-	 * @param type the error type to match
-	 * @param fallbackValue the value to emit if an error occurs that matches the type
-	 * @param <E> the error type
-	 *
-	 * @return a new {@link Mono}
-	 * @deprecated use {@link #onErrorReturn(Class, Object)} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
-	 */
-	@Deprecated
-	public final <E extends Throwable> Mono<T> otherwiseReturn(Class<E> type,
-			T fallbackValue) {
-		return onErrorResume(type, throwable -> just(fallbackValue));
-	}
-
-	/**
-	 * Fallback to emitting a default value if an error matching the given predicate is
-	 * observed on this {@link Mono}
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/otherwisereturn.png" alt="">
-	 * @param predicate the error predicate to match
-	 * @param fallbackValue the value to emit if an error occurs that matches the predicate
-	 * @param <E> the error type
-	 *
-	 * @return a new {@link Mono}
-	 * @deprecated use {@link #onErrorReturn(Predicate, Object)} instead. Will be removed between 3.1.0.M2 and 3.1.0.RELEASE.
-	 */
-	@Deprecated
-	public final <E extends Throwable> Mono<T> otherwiseReturn(Predicate<? super
-			Throwable> predicate, T fallbackValue) {
-		return onErrorResume(predicate,  throwable -> just(fallbackValue));
 	}
 
 	/**
@@ -2968,29 +2790,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Let this {@link Mono} complete then play another lazily supplied Mono.
-	 * <p>
-	 * In other words ignore element from this {@link Mono} and transform its completion signal into the
-	 * emission and completion signal of a supplied {@code Mono<V>}. Error signal is
-	 * replayed in the resulting {@code Mono<V>}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/ignorethen1.png" alt="">
-	 *
-	 * @param sourceSupplier a {@link Supplier} of {@link Mono} to emit from after termination
-	 * @param <V> the element type of the supplied Mono
-	 *
-	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
-	 * @deprecated removed in 3.1, use {@link #then(Mono)} with
-	 * {@link #defer}. The competing overload was causing confusion and the generic was
-	 * not symmetric with {@link #then(Mono)}.
-	 */
-	@Deprecated
-	public final <V> Mono<V> then(Supplier<? extends Mono<V>> sourceSupplier) {
-		return then(defer(sourceSupplier));
-	}
-
-	/**
 	 * Return a {@code Mono<Void>} that waits for this {@link Mono} to complete then
 	 * for a supplied {@link Publisher Publisher&lt;Void&gt;} to also complete. The
 	 * second completion signal is replayed, or any error signal that occurs instead.
@@ -3027,29 +2826,6 @@ public abstract class Mono<T> implements Publisher<T> {
 		@SuppressWarnings("unchecked")
 		Flux<V> concat = (Flux<V>)Flux.concat(ignoreElement(), other);
 		return Flux.onAssembly(concat);
-	}
-
-	/**
-	 * Let this {@link Mono} complete then play another lazily supplied {@link Publisher}.
-	 * <p>
-	 * In other words ignore element from this mono and transform the completion signal into a
-	 * {@code Flux<V>} that will emit elements from the supplier-provided {@link Publisher}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/ignorethens.png" alt="">
-	 *
-	 * @param afterSupplier a {@link Supplier} of {@link Publisher} to emit from after
-	 * completion
-	 * @param <V> the element type of the supplied Publisher
-	 *
-	 * @return a new {@link Flux} that emits from the supplied {@link Publisher}
-	 * @deprecated removed in 3.1, use {@link #thenMany(Publisher)} with
-	 * {@link #defer}. The competing overload was called unnecessary by extended
-	 * feedback and aligns with removing of Supplier of Publisher aliases elsewhere.
-	 */
-	@Deprecated
-	public final <V> Flux<V> thenMany(final Supplier<? extends Publisher<V>> afterSupplier) {
-		return thenMany(Flux.defer(afterSupplier));
 	}
 
 	/**
@@ -3116,7 +2892,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final Mono<T> timeout(Duration timeout, Mono<? extends T> fallback,
 			Scheduler timer) {
-		final Mono<Long> _timer = Mono.delay(timeout, timer).otherwiseReturn(0L);
+		final Mono<Long> _timer = Mono.delay(timeout, timer).onErrorReturn(0L);
 
 		if(fallback == null) {
 			return onAssembly(new MonoTimeout<>(this, _timer));
