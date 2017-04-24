@@ -23,6 +23,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
@@ -41,6 +42,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Scheduler.Worker;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.Logger;
 import reactor.util.concurrent.QueueSupplier;
@@ -355,9 +357,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Convert a {@link Publisher} to a {@link Mono} without any cardinality check
 	 * (ie this method doesn't check if the source is already a Mono, nor cancels the
 	 * source past the first element). Conversion supports {@link Fuseable} sources.
+	 * Note this is an advanced interoperability operator that implies you know the
+	 * {@link Publisher} you are converting follows the {@link Mono} semantics and only
+	 * ever emits one element.
 	 *
-	 * @param source the {@link Publisher} to wrap
-	 * @param <I> input upstream type
+	 * @param source the Mono-compatible {@link Publisher} to wrap
+	 * @param <I> type of the value emitted by the publisher
 	 * @return a wrapped {@link Mono}
 	 */
 	public static <I> Mono<I> fromDirect(Publisher<? extends I> source){
@@ -1953,21 +1958,21 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * 
 	 * <p>The main purpose of this operator is to prevent certain identity-based
 	 * optimizations from happening, mostly for diagnostic purposes.
-	 * 
-	 * @return a new {@link Mono} instance
+	 *
+	 * @return a new {@link Mono} preventing {@link Publisher} / {@link Subscription} based Reactor optimizations
 	 */
 	public final Mono<T> hide() {
 	    return onAssembly(new MonoHide<>(this));
 	}
 	
 	/**
-	 * Ignores onNext signal (dropping it) and only reacts on termination.
+	 * Ignores onNext signal (dropping it) and only propagates termination events.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/ignoreelement.png" alt="">
 	 * <p>
 	 *
-	 * @return a new completable {@link Mono}.
+	 * @return a new empty {@link Mono} representing the completion of this {@link Mono}.
 	 */
 	public final Mono<T> ignoreElement() {
 		return ignoreElements(this);
@@ -2072,12 +2077,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the item emitted by this {@link Mono} by synchronously applying a function to it.
+	 * Transform the item emitted by this {@link Mono} by applying a synchronous function to it.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/map1.png" alt="">
 	 * <p>
-	 * @param mapper the synchronous transforming function
+	 * @param mapper the synchronous transforming {@link Function}
 	 * @param <R> the transformed type
 	 *
 	 * @return a new {@link Mono}
@@ -2127,7 +2132,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * @param mapper the error transforming {@link Function}
 	 *
-	 * @return a transformed {@link Mono}
+	 * @return a {@link Mono} that transforms source errors to other errors
 	 */
 	public final Mono<T> onErrorMap(Function<? super Throwable, ? extends Throwable> mapper) {
 		return onErrorResume(e -> Mono.error(mapper.apply(e)));
@@ -2139,11 +2144,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/maperror.png" alt="">
 	 * <p>
-	 * @param type the type to match
+	 * @param type the class of the exception type to react to
 	 * @param mapper the error transforming {@link Function}
 	 * @param <E> the error type
 	 *
-	 * @return a transformed {@link Mono}
+	 * @return a {@link Mono} that transforms some source errors to other errors
 	 */
 	public final <E extends Throwable> Mono<T> onErrorMap(Class<E> type,
 			Function<? super E, ? extends Throwable> mapper) {
@@ -2162,7 +2167,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param predicate the error predicate
 	 * @param mapper the error transforming {@link Function}
 	 *
-	 * @return a transformed {@link Mono}
+	 * @return a {@link Mono} that transforms some source errors to other errors
 	 */
 	public final Mono<T> onErrorMap(Predicate<? super Throwable> predicate,
 			Function<? super Throwable, ? extends Throwable> mapper) {
@@ -2193,15 +2198,15 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Evaluate the emitted value against the given {@link Class} type. If the
-	 * predicate test succeeds, the value is passed into the new {@link Mono}.
-	 * If the predicate test fails, the value is ignored.
+	 * value matches the type, it is passed into the new {@link Mono}. Otherwise the
+	 * value is ignored.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/filter.png" alt="">
 	 *
 	 * @param clazz the {@link Class} type to test values against
 	 *
-	 * @return a new {@link Mono} reduced to items converted to the matched type
+	 * @return a new {@link Mono} filtered on the requested type
 	 */
 	public final <U> Mono<U> ofType(final Class<U> clazz) {
 		Objects.requireNonNull(clazz, "clazz");
@@ -2225,7 +2230,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * consume it as many times as necessary without causing multiple subscriptions
 	 * to the upstream.
 	 *
-	 * @param transform the tranformation function
+	 * @param transform the transformation function
 	 * @param <R> the output value type
 	 *
 	 * @return a new {@link Mono}
@@ -2241,14 +2246,18 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Run onNext, onComplete and onError on a supplied {@link Scheduler}
+	 * {@link Worker Worker}.
+	 * <p>
+	 * This operator influences the threading context where the rest of the operators in
+	 * the chain below it will execute, up to a new occurrence of {@code publishOn}.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/publishon1.png" alt="">
-	 * <p> <p>
+	 * <p>
 	 * Typically used for fast publisher, slow consumer(s) scenarios.
 	 *
 	 * {@code mono.publishOn(Schedulers.single()).subscribe() }
 	 *
-	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
+	 * @param scheduler a {@link Scheduler} providing the {@link Worker} where to publish
 	 *
 	 * @return an asynchronously producing {@link Mono}
 	 */
@@ -2295,7 +2304,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Repeatedly subscribe to the source n times.
+	 * Repeatedly subscribe to the source {@literal numRepeat} times.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/repeatn.png" alt="">
@@ -2303,7 +2312,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param numRepeat the number of times to re-subscribe on onComplete
 	 *
 	 * @return a {@link Flux} that repeats on onComplete, up to the specified number of repetitions
-	 *
 	 */
 	public final Flux<T> repeat(long numRepeat) {
 		return Flux.onAssembly(new FluxRepeat<>(this, numRepeat));
@@ -2408,29 +2416,26 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Re-subscribes to this {@link Mono} sequence if it signals any error, indefinitely.
-	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/retry1.png" alt="">
 	 *
-	 * @return a re-subscribing {@link Mono} on onError
+	 * @return a {@link Mono} that retries on onError
 	 */
 	public final Mono<T> retry() {
 		return retry(Long.MAX_VALUE);
 	}
 
 	/**
-	 * Re-subscribes to this {@link Mono} sequence if it signals any error
-	 * either indefinitely or a fixed number of times.
+	 * Re-subscribes to this {@link Mono} sequence if it signals any error, for a fixed
+	 * number of times.
 	 * <p>
-	 * The times == Long.MAX_VALUE is treated as infinite retry.
-	 *
+	 * Note that passing {@literal Long.MAX_VALUE} is treated as infinite retry.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/retryn1.png" alt="">
 	 *
 	 * @param numRetries the number of times to tolerate an error
 	 *
-	 * @return a re-subscribing {@link Mono} on onError up to the specified number of retries.
-	 *
+	 * @return a {@link Mono} that retries on onError up to the specified number of retry attempts.
 	 */
 	public final Mono<T> retry(long numRetries) {
 		return onAssembly(new MonoRetry<>(this, numRetries));
@@ -2438,14 +2443,14 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Re-subscribes to this {@link Mono} sequence if it signals any error
-	 * that match the given {@link Predicate}, otherwise push the error downstream.
+	 * that matches the given {@link Predicate}, otherwise push the error downstream.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/retryb1.png" alt="">
 	 *
 	 * @param retryMatcher the predicate to evaluate if retry should occur based on a given error signal
 	 *
-	 * @return a re-subscribing {@link Mono} on onError if the predicates matches.
+	 * @return a {@link Mono} that retries on onError if the predicates matches.
 	 */
 	public final Mono<T> retry(Predicate<? super Throwable> retryMatcher) {
 		return onAssembly(new MonoRetryPredicate<>(this, retryMatcher));
@@ -2461,8 +2466,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param numRetries the number of times to tolerate an error
 	 * @param retryMatcher the predicate to evaluate if retry should occur based on a given error signal
 	 *
-	 * @return a re-subscribing {@link Mono} on onError up to the specified number of retries and if the predicate
-	 * matches.
+	 * @return a {@link Mono} that retries on onError up to the specified number of retry
+	 * attempts, only if the predicate matches.
 	 *
 	 */
 	public final Mono<T> retry(long numRetries, Predicate<? super Throwable> retryMatcher) {
@@ -2482,7 +2487,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param whenFactory the {@link Function} that returns the associated {@link Publisher}
 	 * companion, given a {@link Flux} that signals each onError as a 0-based incrementing {@link Long}.
 	 *
-	 * @return a re-subscribing {@link Mono} on onError when the companion {@link Publisher} produces an
+	 * @return a {@link Mono} that retries on onError when the companion {@link Publisher} produces an
 	 * onNext signal
 	 */
 	public final Mono<T> retryWhen(Function<Flux<Throwable>, ? extends Publisher<?>> whenFactory) {
@@ -2490,13 +2495,15 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Start the chain and request unbounded demand.
+	 * Subscribe to this {@link Mono} and request unbounded demand, then represent the
+	 * subscription as a {@link MonoProcessor} (allowing to block, cancel as well as
+	 * many other operations).
 	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/unbounded1.png" alt="">
 	 * <p>
 	 *
-	 * @return a {@link Runnable} task to execute to dispose and cancel the underlying {@link Subscription}
+	 * @return a {@link MonoProcessor} to use to either retrieve value or cancel the underlying {@link Subscription}
 	 */
 	public final MonoProcessor<T> subscribe() {
 		MonoProcessor<T> s;
@@ -2509,20 +2516,23 @@ public abstract class Mono<T> implements Publisher<T> {
 		s.connect();
 		return s;
 	}
-
+//TODO
 	/**
 	 * Subscribe a {@link Consumer} to this {@link Mono} that will consume all the
-	 * sequence.
+	 * sequence. It will request an unbounded demand ({@code Long.MAX_VALUE}).
 	 * <p>
-	 * For a passive version that observe and forward incoming data see {@link #doOnSuccess(Consumer)} and
-	 * {@link #doOnError(java.util.function.Consumer)}.
+	 * For a passive version that observe and forward incoming data see {@link #doOnNext(java.util.function.Consumer)}.
+	 * <p>
+	 * Keep in mind that since the sequence can be asynchronous, this will immediately
+	 * return control to the calling thread. This can give the impression the consumer is
+	 * not invoked when executing in a main thread or a unit test for instance.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/subscribe1.png" alt="">
 	 *
-	 * @param consumer the consumer to invoke on each value
+	 * @param consumer the consumer to invoke on each value (onNext signal)
 	 *
-	 * @return a new {@link Runnable} to dispose the {@link Subscription}
+	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
 	 */
 	public final Disposable subscribe(Consumer<? super T> consumer) {
 		Objects.requireNonNull(consumer, "consumer");
@@ -2530,11 +2540,16 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Subscribe {@link Consumer} to this {@link Mono} that will consume all the
-	 * sequence.
+	 * Subscribe to this {@link Mono} with a {@link Consumer} that will consume all the
+	 * elements in the sequence, as well as a {@link Consumer} that will handle errors.
+	 * The subscription will request an unbounded demand ({@code Long.MAX_VALUE}).
 	 * <p>
 	 * For a passive version that observe and forward incoming data see {@link #doOnSuccess(Consumer)} and
 	 * {@link #doOnError(java.util.function.Consumer)}.
+	 * <p>
+	 * Keep in mind that since the sequence can be asynchronous, this will immediately
+	 * return control to the calling thread. This can give the impression the consumer is
+	 * not invoked when executing in a main thread or a unit test for instance.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/subscribeerror1.png" alt="">
@@ -2542,7 +2557,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param consumer the consumer to invoke on each next signal
 	 * @param errorConsumer the consumer to invoke on error signal
 	 *
-	 * @return a new {@link Runnable} to dispose the {@link Subscription}
+	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
 	 */
 	public final Disposable subscribe(Consumer<? super T> consumer, Consumer<? super Throwable> errorConsumer) {
 		Objects.requireNonNull(errorConsumer, "errorConsumer");
@@ -2550,11 +2565,16 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Subscribe {@link Consumer} to this {@link Mono} that will consume all the
-	 * sequence.
+	 * Subscribe {@link Consumer} to this {@link Mono} that will respectively consume all the
+	 * elements in the sequence, handle errors and react to completion. The subscription
+	 * will request unbounded demand ({@code Long.MAX_VALUE}).
 	 * <p>
 	 * For a passive version that observe and forward incoming data see {@link #doOnSuccess(Consumer)} and
 	 * {@link #doOnError(java.util.function.Consumer)}.
+	 * <p>
+	 * Keep in mind that since the sequence can be asynchronous, this will immediately
+	 * return control to the calling thread. This can give the impression the consumer is
+	 * not invoked when executing in a main thread or a unit test for instance.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/subscribecomplete1.png" alt="">
@@ -2563,7 +2583,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param errorConsumer the consumer to invoke on error signal
 	 * @param completeConsumer the consumer to invoke on complete signal
 	 *
-	 * @return a new {@link Disposable} to dispose the {@link Subscription}
+	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
 	 */
 	public final Disposable subscribe(Consumer<? super T> consumer,
 			Consumer<? super Throwable> errorConsumer,
@@ -2572,11 +2592,18 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Subscribe {@link Consumer} to this {@link Mono} that will consume all the
-	 * sequence.
+	 * Subscribe {@link Consumer} to this {@link Mono} that will respectively consume all the
+	 * elements in the sequence, handle errors, react to completion, and request upon subscription.
+	 * It will let the provided {@link Subscription subscriptionConsumer}
+	 * request the adequate amount of data, or request unbounded demand
+	 * {@code Long.MAX_VALUE} if no such consumer is provided.
 	 * <p>
 	 * For a passive version that observe and forward incoming data see {@link #doOnSuccess(Consumer)} and
 	 * {@link #doOnError(java.util.function.Consumer)}.
+	 * <p>
+	 * Keep in mind that since the sequence can be asynchronous, this will immediately
+	 * return control to the calling thread. This can give the impression the consumer is
+	 * not invoked when executing in a main thread or a unit test for instance.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/subscribecomplete1.png" alt="">
@@ -2587,7 +2614,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param subscriptionConsumer the consumer to invoke on subscribe signal, to be used
 	 * for the initial {@link Subscription#request(long) request}, or null for max request
 	 *
-	 * @return a new {@link Disposable} to dispose the {@link Subscription}
+	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
 	 */
 	public final Disposable subscribe(Consumer<? super T> consumer,
 			Consumer<? super Throwable> errorConsumer,
@@ -2598,16 +2625,19 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Run the requests to this Publisher {@link Mono} on a given worker assigned by the supplied {@link Scheduler}.
-	 * <p>
-	 * {@code mono.subscribeOn(Schedulers.parallel()).subscribe()) }
-	 *
+	 * Run subscribe, onSubscribe and request on a specified {@link Scheduler}'s {@link Worker}.
+	 * As such, placing this operator anywhere in the chain will also impact the execution
+	 * context of onNext/onError/onComplete signals from the beginning of the chain up to
+	 * the next occurrence of a {@link #publishOn(Scheduler) publishOn}.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/subscribeon1.png" alt="">
 	 * <p>
-	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
+	 * {@code mono.subscribeOn(Schedulers.parallel()).subscribe()) }
 	 *
-	 * @return an asynchronously requesting {@link Mono}
+	 * @param scheduler a {@link Scheduler} providing the {@link Worker} where to subscribe
+	 *
+	 * @return a {@link Flux} requesting asynchronously
+	 * @see #publishOn(Scheduler)
 	 */
 	public final Mono<T> subscribeOn(Scheduler scheduler) {
 		if(this instanceof Callable) {
@@ -2624,9 +2654,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Subscribe the given {@link Subscriber} to this {@link Mono} and return said {@link Subscriber}.
+	 * Subscribe the given {@link Subscriber} to this {@link Mono} and return said
+	 * {@link Subscriber} (eg. a {@link MonoProcessor}).
 	 *
-	 * @param subscriber the {@link Subscriber} to subscribe
+	 * @param subscriber the {@link Subscriber} to subscribe with
 	 * @param <E> the reified type of the {@link Subscriber} for chaining
 	 *
 	 * @return the passed {@link Subscriber} after subscribing it to this {@link Mono}
@@ -2829,38 +2860,40 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Signal a {@link java.util.concurrent.TimeoutException} in case an item doesn't arrive before the given period.
+	 * Propagate a {@link TimeoutException} in case no item arrives within the given
+	 * {@link Duration}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timeouttime1.png" alt="">
 	 *
 	 * @param timeout the timeout before the onNext signal from this {@link Mono}
 	 *
-	 * @return an expirable {@link Mono}
+	 * @return a {@link Mono} that can time out
 	 */
 	public final Mono<T> timeout(Duration timeout) {
 		return timeout(timeout, Schedulers.parallel());
 	}
 
 	/**
-	 * Switch to a fallback {@link Mono} in case an item doesn't arrive before the given period.
+	 * Switch to a fallback {@link Mono} in case no item arrives within the given {@link Duration}.
 	 *
-	 * <p> If the given {@link Mono} is null, signal a {@link java.util.concurrent.TimeoutException}.
+	 * <p>
+	 * If the fallback {@link Mono} is null, signal a {@link TimeoutException} instead.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timeouttimefallback1.png" alt="">
 	 *
 	 * @param timeout the timeout before the onNext signal from this {@link Mono}
-	 * @param fallback the fallback {@link Mono} to subscribe when a timeout occurs
+	 * @param fallback the fallback {@link Mono} to subscribe to when a timeout occurs
 	 *
-	 * @return an expirable {@link Mono} with a fallback {@link Mono}
+	 * @return a {@link Mono} that will fallback to a different {@link Mono} in case of timeout
 	 */
 	public final Mono<T> timeout(Duration timeout, Mono<? extends T> fallback) {
 		return timeout(timeout, fallback, Schedulers.parallel());
 	}
 
 	/**
-	 * Signal a {@link java.util.concurrent.TimeoutException} error in case an item doesn't arrive before the given period,
+	 * Signal a {@link TimeoutException} error in case an item doesn't arrive before the given period,
 	 * as measured on the provided {@link Scheduler}.
 	 *
 	 * <p>
@@ -2879,7 +2912,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Switch to a fallback {@link Mono} in case an item doesn't arrive before the given period,
 	 * as measured on the provided {@link Scheduler}.
 	 *
-	 * <p> If the given {@link Mono} is null, signal a {@link java.util.concurrent.TimeoutException}.
+	 * <p> If the given {@link Mono} is null, signal a {@link TimeoutException}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timeouttimefallback1.png" alt="">
@@ -2901,7 +2934,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Signal a {@link java.util.concurrent.TimeoutException} in case the item from this {@link Mono} has
+	 * Signal a {@link TimeoutException} in case the item from this {@link Mono} has
 	 * not been emitted before the given {@link Publisher} emits.
 	 *
 	 * <p>
