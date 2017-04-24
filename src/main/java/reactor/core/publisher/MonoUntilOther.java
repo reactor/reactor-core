@@ -66,7 +66,7 @@ final class MonoUntilOther<T> extends Mono<T> {
 	 * @param trigger
 	 * @return a new {@link MonoUntilOther} instance with same source but additional trigger
 	 */
-	MonoUntilOther<T> addTrigger(Publisher<?> trigger) {
+	MonoUntilOther<T> copyWithNewTrigger(Publisher<?> trigger) {
 		Objects.requireNonNull(trigger, "trigger");
 		Publisher<?>[] oldTriggers = this.others;
 		Publisher<?>[] newTriggers = new Publisher[oldTriggers.length + 1];
@@ -87,8 +87,8 @@ final class MonoUntilOther<T> extends Mono<T> {
 	static final class UntilOtherCoordinator<T>
 			extends Operators.MonoSubscriber<T, T> {
 
-		final int                 n;
-		final boolean             delayError;
+		final int                      n;
+		final boolean                  delayError;
 		final UntilOtherSource<T> sourceSubscriber;
 		final UntilOtherTrigger[] triggerSubscribers;
 
@@ -277,7 +277,7 @@ final class MonoUntilOther<T> extends Mono<T> {
 	static final class UntilOtherTrigger<T> implements InnerConsumer<T> {
 
 		final UntilOtherCoordinator<?> parent;
-		final boolean                  cancelOnTriggerValue;
+		final boolean                       cancelOnTriggerValue;
 
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
