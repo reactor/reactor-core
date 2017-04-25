@@ -2480,7 +2480,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/retrywhen1.png" alt="">
 	 *
 	 * @param whenFactory the {@link Function} that returns the associated {@link Publisher}
-	 * companion, given a {@link Flux} that signals each onError as a 0-based incrementing {@link Long}.
+	 * companion, given a {@link Flux} that signals each onError as a Throwable item.
 	 *
 	 * @return a re-subscribing {@link Mono} on onError when the companion {@link Publisher} produces an
 	 * onNext signal
