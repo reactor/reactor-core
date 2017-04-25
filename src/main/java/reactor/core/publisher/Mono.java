@@ -1129,7 +1129,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Transform this {@link Mono} into a target type.
 	 *
+	 * <blockquote><pre>
 	 * {@code mono.as(Flux::from).subscribe() }
+	 * </pre></blockquote>
 	 *
 	 * @param transformer the {@link Function} to immediately map this {@link Mono}
 	 * into a target type
@@ -1363,7 +1365,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * target {@link Mono} type. A transformation will occur for each
 	 * {@link Subscriber}. For instance:
 	 *
+	 * <blockquote><pre>
 	 * {@code flux.compose(Mono::from).subscribe() }
+	 * </pre></blockquote>
 	 *
 	 * @param transformer the {@link Function} to lazily map this {@link Mono} into a target {@link Mono}
 	 * instance upon subscription.
@@ -2255,7 +2259,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * Typically used for fast publisher, slow consumer(s) scenarios.
 	 *
+	 * <blockquote><pre>
 	 * {@code mono.publishOn(Schedulers.single()).subscribe() }
+	 * </pre></blockquote>
 	 *
 	 * @param scheduler a {@link Scheduler} providing the {@link Worker} where to publish
 	 *
@@ -2631,8 +2637,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * the next occurrence of a {@link #publishOn(Scheduler) publishOn}.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/subscribeon1.png" alt="">
-	 * <p>
+	 *
+	 * <blockquote><pre>
 	 * {@code mono.subscribeOn(Schedulers.parallel()).subscribe()) }
+	 * </pre></blockquote>
 	 *
 	 * @param scheduler a {@link Scheduler} providing the {@link Worker} where to subscribe
 	 *
@@ -3018,8 +3026,13 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Transform this {@link Mono} in order to generate a target {@link Mono}. Unlike {@link #compose(Function)}, the
 	 * provided function is executed as part of assembly.
 	 *
-	 * {@code Function<Mono, Mono> applySchedulers = mono -> mono.subscribeOn(Schedulers.io()).publishOn(Schedulers.parallel());
-	 *        mono.transform(applySchedulers).map(v -> v * v).subscribe()}
+	 * <pre>
+	 * {@code
+	 * Function<Mono, Mono> applySchedulers = mono -> mono.subscribeOn(Schedulers.io())
+	 *                                                    .publishOn(Schedulers.parallel());
+	 * mono.transform(applySchedulers).map(v -> v * v).subscribe();
+	 * }
+	 * </pre>
 	 *
 	 * @param transformer the {@link Function} to immediately map this {@link Mono} into a target {@link Mono}
 	 * instance.

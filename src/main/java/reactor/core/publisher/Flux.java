@@ -1819,8 +1819,9 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Transform this {@link Flux} into a target type.
-	 *
+	 * <blockquote><pre>
 	 * {@code flux.as(Mono::from).subscribe() }
+	 * </pre></blockquote>
 	 *
 	 * @param transformer the {@link Function} to immediately map this {@link Flux}
 	 * into a target type instance.
@@ -2779,8 +2780,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Defer the transformation of this {@link Flux} in order to generate a target {@link Flux} type.
 	 * A transformation will occur for each {@link Subscriber}. For instance:
-	 *
+	 * <blockquote><pre>
 	 * {@code flux.compose(Mono::from).subscribe() }
+	 * </pre></blockquote>
 	 *
 	 * @param transformer the {@link Function} to lazily map this {@link Flux} into a target {@link Publisher}
 	 * instance for each new subscriber
@@ -4738,8 +4740,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/publishon.png" alt="">
 	 * <p>
 	 * Typically used for fast publisher, slow consumer(s) scenarios.
-	 *
+	 * <blockquote><pre>
 	 * {@code flux.publishOn(Schedulers.single()).subscribe() }
+	 * </pre></blockquote>
 	 *
 	 * @param scheduler a {@link Scheduler} providing the {@link Worker} where to publish
 	 *
@@ -4759,8 +4762,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/publishon.png" alt="">
 	 * <p>
 	 * Typically used for fast publisher, slow consumer(s) scenarios.
-	 *
+	 * <blockquote><pre>
 	 * {@code flux.publishOn(Schedulers.single()).subscribe() }
+	 * </pre></blockquote>
 	 *
 	 * @param scheduler a {@link Scheduler} providing the {@link Worker} where to publish
 	 * @param prefetch the asynchronous boundary capacity
@@ -4781,8 +4785,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/publishon.png" alt="">
 	 * <p>
 	 * Typically used for fast publisher, slow consumer(s) scenarios.
-	 *
+	 * <blockquote><pre>
 	 * {@code flux.publishOn(Schedulers.single()).subscribe() }
+	 * </pre></blockquote>
 	 *
 	 * @param scheduler a {@link Scheduler} providing the {@link Worker} where to publish
 	 * @param delayError should the buffer be consumed before forwarding any error
@@ -5767,8 +5772,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * Typically used for slow publisher e.g., blocking IO, fast consumer(s) scenarios.
 	 *
-	 * <p>
+	 * <blockquote><pre>
 	 * {@code flux.subscribeOn(Schedulers.single()).subscribe() }
+	 * </pre></blockquote>
 	 *
 	 * @param scheduler a {@link Scheduler} providing the {@link Worker} where to subscribe
 	 *
@@ -5793,9 +5799,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Subscribe the given {@link Subscriber} to this {@link Flux} and return said
 	 * {@link Subscriber} (eg. a {@link FluxProcessor}).
 	 *
+	 * <blockquote><pre>
 	 * {@code flux.subscribeWith(WorkQueueProcessor.create()).subscribe() }
+	 * </pre></blockquote>
 	 *
-	 * <p>If you need more control over backpressure and the request, use a {@link BaseSubscriber}.
+	 * If you need more control over backpressure and the request, use a {@link BaseSubscriber}.
 	 *
 	 * @param subscriber the {@link Subscriber} to subscribe with and return
 	 * @param <E> the reified type from the input/output subscriber
@@ -6330,12 +6338,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Transform this {@link Flux} in order to generate a target {@link Flux}. Unlike {@link #compose(Function)}, the
 	 * provided function is executed as part of assembly.
 	 *
-	 * <pre>
+	 * <blockquote><pre>
 	 * {@code
 	 * Function<Flux, Flux> applySchedulers = flux -> flux.subscribeOn(Schedulers.elastic())
 	 *                                                    .publishOn(Schedulers.parallel());
 	 * flux.transform(applySchedulers).map(v -> v * v).subscribe();}
-	 * </pre>
+	 * </pre></blockquote>
 	 *
 	 * @param transformer the {@link Function} to immediately map this {@link Flux} into a target {@link Flux}
 	 * instance.
