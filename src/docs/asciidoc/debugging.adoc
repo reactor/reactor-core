@@ -217,7 +217,7 @@ of the section of the chain that gets notified of the error:
  1. the exception originates in the first `map`
  2. it is seen by a second `map` (both in fact correspond to the
     `findAllUserByName` method)
- 3. then is is seen by a `filter` and a `transfom`, which indicates us that part of
+ 3. then it is seen by a `filter` and a `transform`, which indicates us that part of
     the chain is constructed via a reusable transformation function (here, the
     `applyFilters` utility method).
  4. finally it is seen by an `elapsed` and a `transform`. Once again, elapsed is

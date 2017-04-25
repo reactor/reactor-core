@@ -56,31 +56,36 @@ Received: *****
 ----
 
 [[faq.monoThen]]
-== My `Mono` continuation (`then` or `and`) is never called
+== My `Mono` `and` is never called
 
 .example
 [source,java]
 ----
 myMethod.process("a") // this method returns Mono<Void>
-        .then(aVoid -> myMethod.process("b")) //this is never called
+        .and(myMethod.process("b")) //this is never called
         .subscribe();
 ----
 
 If the source `Mono` is either `empty` or a `Mono<Void>` (a `Mono<Void>` is
-empty for all intent and purposes), some combinations will never be called. You
-should expect that if there is a callback and the combination depends on the
-value...
+empty for all intent and purposes), some combinations will never be called.
 
-This includes the `Function` based variant of then (`then(v -> Mono.just(1))`)
-and all versions of `and`.
+This is the typical case for the `and` operator, which by definition needs an element
+from each source to produce its output. If any of the sources are empty, `and` produces
+an empty sequence as well, so be careful of its usage eg. after a `then()`.
 
-In order to aVoid this problem and still invoke the continuation lazily, when
-the source Mono terminates, use the `Supplier` based version:
+This is even more true of the variants of `and` that take a `Function`, meaning that
+the associated Mono is chosen lazily depending on the incoming value (which never
+comes in case of an empty or `Void` sequence).
 
+You can use `.defaultIfEmpty(T)` to replace an *empty* sequence of `T` (not a `Void`
+sequence) with a default value, which could help aVoid some of these situations:
+
+.use `defaultIfEmpty` before `and`
 [source,java]
 ----
-myMethod.process("a")
-        .then(() -> myMethod.process("b")) //executed lazily
+myMethod.emptySequenceForKey("a") // this method returns empty Mono<String>
+        .defaultIfEmpty("") // this converts empty sequence to just the empty String
+        .and(aString -> myMethod.process("b")) //this is called with the empty String
         .subscribe();
 ----
 
