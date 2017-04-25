@@ -2797,9 +2797,23 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the elements emitted by this {@link Flux} asynchronously yet preserving
-	 * source ordering. Unlike {@link #flatMap(Function) flatMap}, subscription is done
-	 * by concatenating inner publishers instead of merging (no interleave).
+	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
+	 * then flatten these inner publishers into a single {@link Flux}, sequentially and
+	 * preserving order using concatenation.
+	 * <p>
+	 * There are three dimensions to this operator that can be compared with
+	 * {@link #flatMap(Function) flatMap} and {@link #flatMapSequential(Function) flatMapSequential}:
+	 * <ul>
+	 *     <li><b>Generation of inners and subscription</b>: this operator waits for one
+	 *     inner to complete before generating the next one and subscribing to it.</li>
+	 *     <li><b>Ordering of the flattened values</b>: this operator naturally preserves
+	 *     the same order as the source elements, concatenating the inners from each source
+	 *     element sequentially.</li>
+	 *     <li><b>Interleaving</b>: this operator does not let values from different inners
+	 *     interleave (concatenation).</li>
+	 * </ul>
+	 *
+	 * <p>
 	 * Errors will immediately short circuit current concat backlog.
 	 *
 	 * <p>
@@ -2816,10 +2830,25 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the elements emitted by this {@link Flux} asynchronously yet preserving
-	 * source ordering. Unlike {@link #flatMap(Function) flatMap}, subscription is done
-	 * by concatenating inner publishers instead of merging (no interleave).
-	 * Errors will immediately short circuit current concat backlog.
+	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
+	 * then flatten these inner publishers into a single {@link Flux}, sequentially and
+	 * preserving order using concatenation.
+	 * <p>
+	 * There are three dimensions to this operator that can be compared with
+	 * {@link #flatMap(Function) flatMap} and {@link #flatMapSequential(Function) flatMapSequential}:
+	 * <ul>
+	 *     <li><b>Generation of inners and subscription</b>: this operator waits for one
+	 *     inner to complete before generating the next one and subscribing to it.</li>
+	 *     <li><b>Ordering of the flattened values</b>: this operator naturally preserves
+	 *     the same order as the source elements, concatenating the inners from each source
+	 *     element sequentially.</li>
+	 *     <li><b>Interleaving</b>: this operator does not let values from different inners
+	 *     interleave (concatenation).</li>
+	 * </ul>
+	 *
+	 * <p>
+	 * Errors will immediately short circuit current concat backlog. The prefetch argument
+	 * allows to give an arbitrary prefetch size to the inner {@link Publisher}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/concatmap.png" alt="">
@@ -2837,11 +2866,24 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the elements emitted by this {@link Flux} asynchronously yet preserving
-	 * source ordering. Unlike {@link #flatMap(Function) flatMap}, subscription is done
-	 * by concatenating inner publishers instead of merging (no interleave).
+	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
+	 * then flatten these inner publishers into a single {@link Flux}, sequentially and
+	 * preserving order using concatenation.
+	 * <p>
+	 * There are three dimensions to this operator that can be compared with
+	 * {@link #flatMap(Function) flatMap} and {@link #flatMapSequential(Function) flatMapSequential}:
+	 * <ul>
+	 *     <li><b>Generation of inners and subscription</b>: this operator waits for one
+	 *     inner to complete before generating the next one and subscribing to it.</li>
+	 *     <li><b>Ordering of the flattened values</b>: this operator naturally preserves
+	 *     the same order as the source elements, concatenating the inners from each source
+	 *     element sequentially.</li>
+	 *     <li><b>Interleaving</b>: this operator does not let values from different inners
+	 *     interleave (concatenation).</li>
+	 * </ul>
 	 *
-	 * Errors will be delayed after the current concat backlog.
+	 * <p>
+	 * Errors will be delayed after all concatenated sources terminate.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/concatmap.png" alt="">
@@ -2858,11 +2900,25 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the elements emitted by this {@link Flux} asynchronously yet preserving
-	 * source ordering. Unlike {@link #flatMap(Function) flatMap}, subscription is done
-	 * by concatenating inner publishers instead of merging (no interleave).
+	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
+	 * then flatten these inner publishers into a single {@link Flux}, sequentially and
+	 * preserving order using concatenation.
+	 * <p>
+	 * There are three dimensions to this operator that can be compared with
+	 * {@link #flatMap(Function) flatMap} and {@link #flatMapSequential(Function) flatMapSequential}:
+	 * <ul>
+	 *     <li><b>Generation of inners and subscription</b>: this operator waits for one
+	 *     inner to complete before generating the next one and subscribing to it.</li>
+	 *     <li><b>Ordering of the flattened values</b>: this operator naturally preserves
+	 *     the same order as the source elements, concatenating the inners from each source
+	 *     element sequentially.</li>
+	 *     <li><b>Interleaving</b>: this operator does not let values from different inners
+	 *     interleave (concatenation).</li>
+	 * </ul>
 	 *
-	 * Errors will be delayed after all concated sources terminate.
+	 * <p>
+	 * Errors will be delayed after all concatenated sources terminate. The prefetch argument
+	 * allows to give an arbitrary prefetch size to the inner {@link Publisher}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/concatmap.png" alt="">
@@ -2882,12 +2938,26 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the elements emitted by this {@link Flux} asynchronously yet preserving
-	 * source ordering. Unlike {@link #flatMap(Function) flatMap}, subscription is done
-	 * by concatenating inner publishers instead of merging (no interleave).
+	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
+	 * then flatten these inner publishers into a single {@link Flux}, sequentially and
+	 * preserving order using concatenation.
+	 * <p>
+	 * There are three dimensions to this operator that can be compared with
+	 * {@link #flatMap(Function) flatMap} and {@link #flatMapSequential(Function) flatMapSequential}:
+	 * <ul>
+	 *     <li><b>Generation of inners and subscription</b>: this operator waits for one
+	 *     inner to complete before generating the next one and subscribing to it.</li>
+	 *     <li><b>Ordering of the flattened values</b>: this operator naturally preserves
+	 *     the same order as the source elements, concatenating the inners from each source
+	 *     element sequentially.</li>
+	 *     <li><b>Interleaving</b>: this operator does not let values from different inners
+	 *     interleave (concatenation).</li>
+	 * </ul>
 	 *
+	 * <p>
 	 * Errors will be delayed after the current concat backlog if delayUntilEnd is
-	 * false or after all sources if delayUntilEnd is true.
+	 * false or after all sources if delayUntilEnd is true. The prefetch argument
+	 * allows to give an arbitrary prefetch size to the inner {@link Publisher}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/concatmap.png" alt="">
@@ -2932,7 +3002,7 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Transform the items emitted by this {@link Flux} into {@link Iterable}, then flatten the emissions from those by
-	 * concatening them into a single {@link Flux}. The prefetch argument allows to give an arbitrary prefetch size to the merged {@link Iterable}.
+	 * concatenating them into a single {@link Flux}. The prefetch argument allows to give an arbitrary prefetch size to the merged {@link Iterable}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/concatmap.png" alt="">
@@ -3535,8 +3605,20 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the item emitted by this {@link Flux} into Publishers, then flatten the emissions from those by
-	 * merging them into a single {@link Flux}, so that they may interleave.
+	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
+	 * then flatten these inner publishers into a single {@link Flux} through merging,
+	 * which allow them to interleave.
+	 * <p>
+	 * There are three dimensions to this operator that can be compared with
+	 * {@link #flatMapSequential(Function) flatMapSequential} and {@link #concatMap(Function) concatMap}:
+	 * <ul>
+	 *     <li><b>Generation of inners and subscription</b>: this operator is eagerly
+	 *     subscribing to its inners.</li>
+	 *     <li><b>Ordering of the flattened values</b>: this operator does not necessarily preserve
+	 *     original ordering, as inner element are flattened as they arrive.</li>
+	 *     <li><b>Interleaving</b>: this operator lets values from different inners interleave
+	 *     (similar to merging the inner sequences).</li>
+	 * </ul>
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/flatmap.png" alt="">
 	 * <p>
@@ -3551,9 +3633,22 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the emissions from those by
-	 * merging them into a single {@link Flux}, so that they may interleave. The concurrency argument allows to
-	 * control how many {@link Publisher} can be subscribed to and merged in parallel.
+	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
+	 * then flatten these inner publishers into a single {@link Flux} through merging,
+	 * which allow them to interleave.
+	 * <p>
+	 * There are three dimensions to this operator that can be compared with
+	 * {@link #flatMapSequential(Function) flatMapSequential} and {@link #concatMap(Function) concatMap}:
+	 * <ul>
+	 *     <li><b>Generation of inners and subscription</b>: this operator is eagerly
+	 *     subscribing to its inners.</li>
+	 *     <li><b>Ordering of the flattened values</b>: this operator does not necessarily preserve
+	 *     original ordering, as inner element are flattened as they arrive.</li>
+	 *     <li><b>Interleaving</b>: this operator lets values from different inners interleave
+	 *     (similar to merging the inner sequences).</li>
+	 * </ul>
+	 * The concurrency argument allows to control how many {@link Publisher} can be
+	 * subscribed to and merged in parallel.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/flatmapc.png" alt="">
@@ -3570,9 +3665,22 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the emissions from those by
-	 * merging them into a single {@link Flux}, so that they may interleave. The concurrency argument allows to
-	 * control how many {@link Publisher} can be subscribed to and merged in parallel. The prefetch argument allows to give an
+	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
+	 * then flatten these inner publishers into a single {@link Flux} through merging,
+	 * which allow them to interleave.
+	 * <p>
+	 * There are three dimensions to this operator that can be compared with
+	 * {@link #flatMapSequential(Function) flatMapSequential} and {@link #concatMap(Function) concatMap}:
+	 * <ul>
+	 *     <li><b>Generation of inners and subscription</b>: this operator is eagerly
+	 *     subscribing to its inners.</li>
+	 *     <li><b>Ordering of the flattened values</b>: this operator does not necessarily preserve
+	 *     original ordering, as inner element are flattened as they arrive.</li>
+	 *     <li><b>Interleaving</b>: this operator lets values from different inners interleave
+	 *     (similar to merging the inner sequences).</li>
+	 * </ul>
+	 * The concurrency argument allows to control how many {@link Publisher} can be
+	 * subscribed to and merged in parallel. The prefetch argument allows to give an
 	 * arbitrary prefetch size to the merged {@link Publisher}.
 	 *
 	 * <p>
@@ -3591,11 +3699,24 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the emissions from those by
-	 * merging them into a single {@link Flux}, so that they may interleave. The concurrency argument allows to
-	 * control how many {@link Publisher} can be subscribed to and merged in parallel. The prefetch argument allows to give an
-	 * arbitrary prefetch size to the merged {@link Publisher}. This variant will delay any error until after the
-	 * rest of the flatMap backlog has been processed.
+	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
+	 * then flatten these inner publishers into a single {@link Flux} through merging,
+	 * which allow them to interleave.
+	 * <p>
+	 * There are three dimensions to this operator that can be compared with
+	 * {@link #flatMapSequential(Function) flatMapSequential} and {@link #concatMap(Function) concatMap}:
+	 * <ul>
+	 *     <li><b>Generation of inners and subscription</b>: this operator is eagerly
+	 *     subscribing to its inners.</li>
+	 *     <li><b>Ordering of the flattened values</b>: this operator does not necessarily preserve
+	 *     original ordering, as inner element are flattened as they arrive.</li>
+	 *     <li><b>Interleaving</b>: this operator lets values from different inners interleave
+	 *     (similar to merging the inner sequences).</li>
+	 * </ul>
+	 * The concurrency argument allows to control how many {@link Publisher} can be
+	 * subscribed to and merged in parallel. The prefetch argument allows to give an
+	 * arbitrary prefetch size to the merged {@link Publisher}. This variant will delay
+	 * any error until after the rest of the flatMap backlog has been processed.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/flatmapc.png" alt="">
@@ -3613,8 +3734,21 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the signals emitted by this {@link Flux} into Publishers, then flatten the emissions from those by
-	 * merging them into a single {@link Flux}, so that they may interleave.
+	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
+	 * then flatten these inner publishers into a single {@link Flux} through merging,
+	 * which allow them to interleave.
+	 * <p>
+	 * There are three dimensions to this operator that can be compared with
+	 * {@link #flatMapSequential(Function) flatMapSequential} and {@link #concatMap(Function) concatMap}:
+	 * <ul>
+	 *     <li><b>Generation of inners and subscription</b>: this operator is eagerly
+	 *     subscribing to its inners.</li>
+	 *     <li><b>Ordering of the flattened values</b>: this operator does not necessarily preserve
+	 *     original ordering, as inner element are flattened as they arrive.</li>
+	 *     <li><b>Interleaving</b>: this operator lets values from different inners interleave
+	 *     (similar to merging the inner sequences).</li>
+	 * </ul>
+	 * <p>
 	 * OnError will be transformed into completion signal after its mapping callback has been applied.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/flatmaps.png" alt="">
@@ -3684,11 +3818,28 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the
-	 * emissions from those by merging them into a single {@link Flux}, in order.
-	 * Unlike {@link #concatMap(Function) concatMap}, transformed inner Publishers are
-	 * subscribed to eagerly. Unlike {@link #flatMap(Function) flatMap}, their emitted
-	 * elements are merged respecting the order of the original sequence.
+	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
+	 * then flatten these inner publishers into a single {@link Flux}, but merge them in
+	 * the order of their source element.
+	 * <p>
+	 * There are three dimensions to this operator that can be compared with
+	 * {@link #flatMap(Function) flatMap} and {@link #concatMap(Function) concatMap}:
+	 * <ul>
+	 *     <li><b>Generation of inners and subscription</b>: this operator is eagerly
+	 *     subscribing to its inners (like flatMap).</li>
+	 *     <li><b>Ordering of the flattened values</b>: this operator queues elements from
+	 *     late inners until all elements from earlier inners have been emitted, thus emitting
+	 *     inner sequences as a whole, in an order that matches their source's order.</li>
+	 *     <li><b>Interleaving</b>: this operator does not let values from different inners
+	 *     interleave (similar looking result to concatMap, but due to queueing of values
+	 *     that would have been interleaved otherwise).</li>
+	 * </ul>
+	 *
+	 * <p>
+	 * That is to say, whenever a source element is emitted it is transformed to an inner
+	 * {@link Publisher}. However, if such an early inner takes more time to complete than
+	 * subsequent faster inners, the data from these faster inners will be queued until
+	 * the earlier inner completes, so as to maintain source ordering.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/flatmapsequential.png" alt="">
@@ -3704,11 +3855,30 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the
-	 * emissions from those by merging them into a single {@link Flux}, in order.
-	 * Unlike {@link #concatMap(Function) concatMap}, transformed inner Publishers are
-	 * subscribed to eagerly. Unlike {@link #flatMap(Function) flatMap}, their emitted
-	 * elements are merged respecting the order of the original sequence.
+	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
+	 * then flatten these inner publishers into a single {@link Flux}, but merge them in
+	 * the order of their source element.
+	 * <p>
+	 * There are three dimensions to this operator that can be compared with
+	 * {@link #flatMap(Function) flatMap} and {@link #concatMap(Function) concatMap}:
+	 * <ul>
+	 *     <li><b>Generation of inners and subscription</b>: this operator is eagerly
+	 *     subscribing to its inners (like flatMap).</li>
+	 *     <li><b>Ordering of the flattened values</b>: this operator queues elements from
+	 *     late inners until all elements from earlier inners have been emitted, thus emitting
+	 *     inner sequences as a whole, in an order that matches their source's order.</li>
+	 *     <li><b>Interleaving</b>: this operator does not let values from different inners
+	 *     interleave (similar looking result to concatMap, but due to queueing of values
+	 *     that would have been interleaved otherwise).</li>
+	 * </ul>
+	 *
+	 * <p>
+	 * That is to say, whenever a source element is emitted it is transformed to an inner
+	 * {@link Publisher}. However, if such an early inner takes more time to complete than
+	 * subsequent faster inners, the data from these faster inners will be queued until
+	 * the earlier inner completes, so as to maintain source ordering.
+	 *
+	 * <p>
 	 * The concurrency argument allows to control how many merged {@link Publisher} can happen in parallel.
 	 *
 	 * <p>
@@ -3726,11 +3896,30 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the
-	 * emissions from those by merging them into a single {@link Flux}, in order.
-	 * Unlike {@link #concatMap(Function) concatMap}, transformed inner Publishers are
-	 * subscribed to eagerly. Unlike {@link #flatMap(Function) flatMap}, their emitted
-	 * elements are merged respecting the order of the original sequence.
+	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
+	 * then flatten these inner publishers into a single {@link Flux}, but merge them in
+	 * the order of their source element.
+	 * <p>
+	 * There are three dimensions to this operator that can be compared with
+	 * {@link #flatMap(Function) flatMap} and {@link #concatMap(Function) concatMap}:
+	 * <ul>
+	 *     <li><b>Generation of inners and subscription</b>: this operator is eagerly
+	 *     subscribing to its inners (like flatMap).</li>
+	 *     <li><b>Ordering of the flattened values</b>: this operator queues elements from
+	 *     late inners until all elements from earlier inners have been emitted, thus emitting
+	 *     inner sequences as a whole, in an order that matches their source's order.</li>
+	 *     <li><b>Interleaving</b>: this operator does not let values from different inners
+	 *     interleave (similar looking result to concatMap, but due to queueing of values
+	 *     that would have been interleaved otherwise).</li>
+	 * </ul>
+	 *
+	 * <p>
+	 * That is to say, whenever a source element is emitted it is transformed to an inner
+	 * {@link Publisher}. However, if such an early inner takes more time to complete than
+	 * subsequent faster inners, the data from these faster inners will be queued until
+	 * the earlier inner completes, so as to maintain source ordering.
+	 *
+	 * <p>
 	 * The concurrency argument allows to control how many merged {@link Publisher}
 	 * can happen in parallel. The prefetch argument allows to give an arbitrary prefetch
 	 * size to the merged {@link Publisher}.
@@ -3751,11 +3940,30 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the
-	 * emissions from those by merging them into a single {@link Flux}, in order.
-	 * Unlike {@link #concatMap(Function) concatMap}, transformed inner Publishers are
-	 * subscribed to eagerly. Unlike {@link #flatMap(Function) flatMap}, their emitted
-	 * elements are merged respecting the order of the original sequence.
+	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
+	 * then flatten these inner publishers into a single {@link Flux}, but merge them in
+	 * the order of their source element.
+	 * <p>
+	 * There are three dimensions to this operator that can be compared with
+	 * {@link #flatMap(Function) flatMap} and {@link #concatMap(Function) concatMap}:
+	 * <ul>
+	 *     <li><b>Generation of inners and subscription</b>: this operator is eagerly
+	 *     subscribing to its inners (like flatMap).</li>
+	 *     <li><b>Ordering of the flattened values</b>: this operator queues elements from
+	 *     late inners until all elements from earlier inners have been emitted, thus emitting
+	 *     inner sequences as a whole, in an order that matches their source's order.</li>
+	 *     <li><b>Interleaving</b>: this operator does not let values from different inners
+	 *     interleave (similar looking result to concatMap, but due to queueing of values
+	 *     that would have been interleaved otherwise).</li>
+	 * </ul>
+	 *
+	 * <p>
+	 * That is to say, whenever a source element is emitted it is transformed to an inner
+	 * {@link Publisher}. However, if such an early inner takes more time to complete than
+	 * subsequent faster inners, the data from these faster inners will be queued until
+	 * the earlier inner completes, so as to maintain source ordering.
+	 *
+	 * <p>
 	 * The concurrency argument allows to control how many merged {@link Publisher}
 	 * can happen in parallel. The prefetch argument allows to give an arbitrary prefetch
 	 * size to the merged {@link Publisher}. This variant will delay any error until after the
