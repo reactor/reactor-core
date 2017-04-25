@@ -235,9 +235,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * (dropping the emitted items) and only react to completion signal.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/thens.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/ignorethen.png" alt="">
 	 * <p>
-	 * @param source the {@link Publisher to ignore}
+	 * @param source the {@link Publisher} to ignore
 	 * @param <T> the reified {@link Publisher} type
 	 *
 	 * @return a new completable {@link Mono}.
