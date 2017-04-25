@@ -569,7 +569,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
-	public void afterTerminateCallbackErrorDoesCallErrorCallback() {
+	public void afterTerminateCallbackErrorDoesNotInvokeOnError() {
 		IllegalStateException err = new IllegalStateException("test");
 		AtomicReference<Throwable> errorCallbackCapture = new AtomicReference<>();
 
@@ -591,14 +591,12 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 			fail("expected thrown exception");
 		}
 		catch (Exception e) {
-			e.getCause()
-			 .getMessage()
-			 .equals(err);
+			Assertions.assertThat(e).hasCause(err);
 		}
 		ts.assertNoValues();
 		ts.assertComplete();
 
-		assertThat(errorCallbackCapture.get(), is(err));
+		Assertions.assertThat(errorCallbackCapture.get()).isNull();
 	}
 
 	@Test
@@ -677,9 +675,9 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 			fail("expected thrown exception");
 		}
 		catch (Exception e) {
-			assertSame(err2, e.getCause());
-			assertEquals(1, err2.getSuppressed().length);
-			assertEquals(err, err2.getSuppressed()[0]);
+			assertSame(err, e.getCause());
+			assertEquals(0, err2.getSuppressed().length);
+			//err2 is never thrown
 		}
 		ts.assertNoValues();
 		ts.assertComplete();
@@ -705,12 +703,16 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 			fail("expected thrown exception");
 		}
 		catch (Exception e) {
-			assertSame(error, e.getCause());
-			assertEquals(2, error.getSuppressed().length);
+			assertSame(afterTerminate, e.getCause());
+			//afterTerminate suppressed error which itself suppressed original err
+			assertEquals(1, afterTerminate.getSuppressed().length);
+			assertEquals(error, afterTerminate.getSuppressed()[0]);
+
+			assertEquals(1, error.getSuppressed().length);
 			assertEquals(err, error.getSuppressed()[0]);
-			assertEquals(afterTerminate, error.getSuppressed()[1]);
 		}
 		ts.assertNoValues();
+		//the subscriber still sees the 'error' message since actual.onError is called before the afterTerminate callback
 		ts.assertErrorMessage("error");
 	}
 
