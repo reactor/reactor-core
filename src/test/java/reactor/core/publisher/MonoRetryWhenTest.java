@@ -33,7 +33,7 @@ public class MonoRetryWhenTest {
 			else {
 				s.error(new RuntimeException("test " + i));
 			}
-		}).retryWhen(repeat -> repeat.zipWith(Flux.range(1, 3), (t1, t2) -> t2)
+		}).retryWhen(repeat -> repeat.log().zipWith(Flux.range(1, 3), (t1, t2) -> t2)
 		                             .flatMap(time -> Mono.delay(Duration.ofSeconds(time))));
 	}
 
