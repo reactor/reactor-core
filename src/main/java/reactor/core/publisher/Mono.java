@@ -2989,9 +2989,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * T1 the current clock time in millis (as a {@link Long} measured by the
 	 * provided {@link Scheduler}) and T2 the emitted data (as a {@code T}).
 	 *
-	 * Emit a {@link reactor.util.function.Tuple2} pair of T1 {@link Long} current system time in
-	 * millis and T2 {@code T} associated data for the eventual item from this {@link Mono}
-	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timestamp1.png" alt="">
 	 *
@@ -3073,13 +3070,15 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Invoke {@link Hooks} pointcut given a {@link Mono} and returning an eventually
-	 * new {@link Mono}
+	 * To be used by custom operators: invokes assembly {@link Hooks} pointcut given a
+	 * {@link Mono}, potentially returning a new {@link Mono}. This is for example useful
+	 * to activate cross-cutting concerns at assembly time, eg. a generalized
+	 * {@link #checkpoint()}.
 	 *
 	 * @param <T> the value type
-	 * @param source the source to wrap
+	 * @param source the source to apply assembly hooks onto
 	 *
-	 * @return the potentially wrapped source
+	 * @return the source, potentially wrapped with assembly time cross-cutting behavior
 	 */
 	@SuppressWarnings("unchecked")
 	protected static <T> Mono<T> onAssembly(Mono<T> source) {

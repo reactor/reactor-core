@@ -6210,11 +6210,10 @@ public abstract class Flux<T> implements Publisher<T> {
 				fallback));
 	}
 
-	//TODO continue javadoc review from here
-
 	/**
-	 * Emit a {@link reactor.util.function.Tuple2} pair of T1 {@link Long} current system time in
-	 * millis and T2 {@code T} associated data for each item from this {@link Flux}
+	 * Emit a {@link reactor.util.function.Tuple2} pair of T1 the current clock time in
+	 * millis (as a {@link Long} measured by the {@link Schedulers#parallel() parallel}
+	 * Scheduler) and T2 the emitted data (as a {@code T}), for each item from this {@link Flux}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timestamp.png" alt="">
@@ -6226,8 +6225,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Emit a {@link reactor.util.function.Tuple2} pair of T1 {@link Long} current system time in
-	 * millis and T2 {@code T} associated data for each item from this {@link Flux}
+	 * Emit a {@link reactor.util.function.Tuple2} pair of T1 the current clock time in
+	 * millis (as a {@link Long} measured by the provided {@link Scheduler}) and T2
+	 * the emitted data (as a {@code T}), for each item from this {@link Flux}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timestamp.png" alt="">
@@ -6241,7 +6241,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform this {@link Flux} into a lazy {@link Iterable} blocking on next calls.
+	 * Transform this {@link Flux} into a lazy {@link Iterable} blocking on
+	 * {@link Iterator#next()} calls.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/toiterable.png" alt="">
@@ -6254,9 +6255,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform this {@link Flux} into a lazy {@link Iterable} blocking on next calls.
+	 * Transform this {@link Flux} into a lazy {@link Iterable} blocking on
+	 * {@link Iterator#next()} calls.
 	 *
-	 * @param batchSize the bounded capacity to produce to this {@link Flux} or {@code Integer.MAX_VALUE} for unbounded
+	 * @param batchSize the bounded capacity to prefetch from this {@link Flux} or
+	 * {@code Integer.MAX_VALUE} for unbounded demand
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/toiterablen.png" alt="">
@@ -6269,14 +6272,16 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform this {@link Flux} into a lazy {@link Iterable} blocking on next calls.
+	 * Transform this {@link Flux} into a lazy {@link Iterable} blocking on
+	 * {@link Iterator#next()} calls.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/toiterablen.png" alt="">
 	 *
-	 * @param batchSize the bounded capacity to produce to this {@link Flux} or {@code Integer.MAX_VALUE} for unbounded
-	 * @param queueProvider the supplier of the queue implementation to be used for transferring elements
-	 * across threads.
+	 * @param batchSize the bounded capacity to prefetch from this {@link Flux} or
+	 * {@code Integer.MAX_VALUE} for unbounded demand
+	 * @param queueProvider the supplier of the queue implementation to be used for storing
+	 * elements emitted faster than the iteration
 	 *
 	 * @return a blocking {@link Iterable}
 	 */
@@ -6292,7 +6297,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform this {@link Flux} into a lazy {@link Stream} blocking on next calls.
+	 * Transform this {@link Flux} into a lazy {@link Stream} blocking for each source
+	 * {@link Subscriber#onNext(Object) onNext} call.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/tostream.png" alt="">
@@ -6304,9 +6310,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform this {@link Flux} into a lazy {@link Stream} blocking on next calls.
+	 * Transform this {@link Flux} into a lazy {@link Stream} blocking for each source
+	 * {@link Subscriber#onNext(Object) onNext} call.
 	 *
-	 * @param batchSize the bounded capacity to produce to this {@link Flux} or {@code Integer.MAX_VALUE} for unbounded
+	 * @param batchSize the bounded capacity to prefetch from this {@link Flux} or
+	 * {@code Integer.MAX_VALUE} for unbounded demand
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/tostream.png" alt="">
 	 *
@@ -6322,8 +6330,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Transform this {@link Flux} in order to generate a target {@link Flux}. Unlike {@link #compose(Function)}, the
 	 * provided function is executed as part of assembly.
 	 *
-	 * {@code Function<Flux, Flux> applySchedulers = flux -> flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
-	 *        flux.transform(applySchedulers).map(v -> v * v).subscribe()}
+	 * <pre>
+	 * {@code
+	 * Function<Flux, Flux> applySchedulers = flux -> flux.subscribeOn(Schedulers.elastic())
+	 *                                                    .publishOn(Schedulers.parallel());
+	 * flux.transform(applySchedulers).map(v -> v * v).subscribe();}
+	 * </pre>
 	 *
 	 * @param transformer the {@link Function} to immediately map this {@link Flux} into a target {@link Flux}
 	 * instance.
@@ -6338,28 +6350,24 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code maxSize}
-	 * count and starting from
-	 * the first item.
-	 * Each {@link Flux} bucket will onComplete after {@code maxSize} items have been routed.
+	 * Split this {@link Flux} sequence into multiple {@link Flux} windows containing
+	 * {@code maxSize} elements (or less for the final window) and starting from the first item.
+	 * Each {@link Flux} window will onComplete after {@code maxSize} items have been routed.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsize.png" alt="">
 	 *
-	 * @param maxSize the maximum routed items before emitting onComplete per {@link Flux} bucket
+	 * @param maxSize the maximum number of items to emit in the window before closing it
 	 *
-	 * @return a windowing {@link Flux} of sized {@link Flux} buckets
+	 * @return a {@link Flux} of {@link Flux} windows based on element count
 	 */
 	public final Flux<Flux<T>> window(int maxSize) {
 		return onAssembly(new FluxWindow<>(this, maxSize, QueueSupplier.get(maxSize)));
 	}
 
 	/**
-	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code skip}
-	 * count,
-	 * starting from
-	 * the first item.
-	 * Each {@link Flux} bucket will onComplete after {@code maxSize} items have been routed.
+	 * Split this {@link Flux} sequence into multiple {@link Flux} windows of size
+	 * {@code maxSize}, that each open every {@code skip} elements in the source.
 	 *
 	 * <p>
 	 * When skip > maxSize : dropping windows
@@ -6374,10 +6382,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsize.png" alt="">
 	 *
-	 * @param maxSize the maximum routed items per {@link Flux}
-	 * @param skip the number of items to count before emitting a new bucket {@link Flux}
+	 * @param maxSize the maximum number of items to emit in the window before closing it
+	 * @param skip the number of items to count before opening and emitting a new window
 	 *
-	 * @return a windowing {@link Flux} of sized {@link Flux} buckets every skip count
+	 * @return a {@link Flux} of {@link Flux} windows based on element count and opened every skipCount
 	 */
 	public final Flux<Flux<T>> window(int maxSize, int skip) {
 		return onAssembly(new FluxWindow<>(this,
@@ -6396,7 +6404,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param boundary a {@link Publisher} to emit any item for a split signal and complete to terminate
 	 *
-	 * @return a windowing {@link Flux} delimiting its sub-sequences by a given {@link Publisher}
+	 * @return a {@link Flux} of {@link Flux} windows delimited by a given {@link Publisher}
 	 */
 	public final Flux<Flux<T>> window(Publisher<?> boundary) {
 		return onAssembly(new FluxWindowBoundary<>(this,
@@ -6406,67 +6414,27 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Split this {@link Flux} sequence into continuous, non-overlapping windows delimited by a given period.
+	 * Split this {@link Flux} sequence into continuous, non-overlapping windows that open
+	 * for a {@code timespan} {@link Duration} (as measured on the {@link Schedulers#parallel() parallel}
+	 * Scheduler).
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowtimespan.png" alt="">
 	 *
-	 * @param timespan the duration to delimit {@link Flux} windows
+	 * @param timespan the {@link Duration} to delimit {@link Flux} windows
 	 *
-	 * @return a windowing {@link Flux} of timed {@link Flux} buckets
+	 * @return a {@link Flux} of {@link Flux} windows continuously opened for a given {@link Duration}
 	 */
 	public final Flux<Flux<T>> window(Duration timespan) {
 		return window(timespan, Schedulers.parallel());
 	}
 
 	/**
-	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code timeshift}
-	 * period, starting from the first item.
-	 * Each {@link Flux} bucket will onComplete after {@code timespan} period has elapsed.
-	 *
-	 * <p>
-	 * When timeshift > timespan : dropping windows
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsizeskip.png" alt="">
-	 * <p>
-	 * When timeshift < timespan : overlapping windows
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsizeskipover.png" alt="">
-	 * <p>
-	 * When timeshift == timespan : exact windows
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsize.png" alt="">
-	 *
-	 * @param timespan the maximum {@link Flux} window duration
-	 * @param timeshift the period of time to create new {@link Flux} windows
-	 *
-	 * @return a windowing
-	 * {@link Flux} of {@link Flux} buckets delimited by an opening {@link Publisher} and a selected closing {@link Publisher}
-	 *
-	 */
-	public final Flux<Flux<T>> window(Duration timespan, Duration timeshift) {
-		return window(timespan, timeshift, Schedulers.parallel());
-	}
-
-	/**
-	 * Split this {@link Flux} sequence into continuous, non-overlapping windows delimited by a given period.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowtimespan.png" alt="">
-	 *
-	 * @param timespan the {@link Duration} to delimit {@link Flux} windows
-	 * @param timer a time-capable {@link Scheduler} instance to run on
-	 *
-	 * @return a windowing {@link Flux} of timed {@link Flux} buckets
-	 */
-	public final Flux<Flux<T>> window(Duration timespan, Scheduler timer) {
-		return window(interval(timespan, timer));
-	}
-
-	/**
-	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code timeshift}
-	 * period, starting from the first item.
-	 * Each {@link Flux} bucket will onComplete after {@code timespan} period has elapsed.
+	 * Split this {@link Flux} sequence into multiple {@link Flux} windows that open
+	 * for a given {@code timespan} {@link Duration}, after which it closes with onComplete.
+	 * Each window is opened at a regular {@code timeShift} interval, starting from the
+	 * first item.
+	 * Both durations are measured on the {@link Schedulers#parallel() parallel} Scheduler.
 	 *
 	 * <p>
 	 * When timeshift > timespan : dropping windows
@@ -6482,11 +6450,58 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsize.png" alt="">
 	 *
 	 * @param timespan the maximum {@link Flux} window {@link Duration}
-	 * @param timeshift the period of time to create new {@link Flux} windows, as a {@link Duration}
+	 * @param timeshift the period of time at which to create new {@link Flux} windows
+	 *
+	 * @return a {@link Flux} of {@link Flux} windows opened at regular intervals and
+	 * closed after a {@link Duration}
+	 *
+	 */
+	public final Flux<Flux<T>> window(Duration timespan, Duration timeshift) {
+		return window(timespan, timeshift, Schedulers.parallel());
+	}
+
+	/**
+	 * Split this {@link Flux} sequence into continuous, non-overlapping windows that open
+	 * for a {@code timespan} {@link Duration} (as measured on the provided {@link Scheduler}).
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowtimespan.png" alt="">
+	 *
+	 * @param timespan the {@link Duration} to delimit {@link Flux} windows
 	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
-	 * @return a windowing {@link Flux} of {@link Flux} buckets delimited by an opening
-	 * {@link Duration} timespan and a closing {@link Duration} timeshift
+	 * @return a {@link Flux} of {@link Flux} windows continuously opened for a given {@link Duration}
+	 */
+	public final Flux<Flux<T>> window(Duration timespan, Scheduler timer) {
+		return window(interval(timespan, timer));
+	}
+
+	/**
+	 * Split this {@link Flux} sequence into multiple {@link Flux} windows that open
+	 * for a given {@code timespan} {@link Duration}, after which it closes with onComplete.
+	 * Each window is opened at a regular {@code timeShift} interval, starting from the
+	 * first item.
+	 * Both durations are measured on the provided {@link Scheduler}.
+	 *
+	 * <p>
+	 * When timeshift > timespan : dropping windows
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsizeskip.png" alt="">
+	 * <p>
+	 * When timeshift < timespan : overlapping windows
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsizeskipover.png" alt="">
+	 * <p>
+	 * When timeshift == timespan : exact windows
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsize.png" alt="">
+	 *
+	 * @param timespan the maximum {@link Flux} window {@link Duration}
+	 * @param timeshift the period of time at which to create new {@link Flux} windows
+	 * @param timer a time-capable {@link Scheduler} instance to run on
+	 *
+	 * @return a {@link Flux} of {@link Flux} windows opened at regular intervals and
+	 * closed after a {@link Duration}
 	 */
 	public final Flux<Flux<T>> window(Duration timespan, Duration timeshift, Scheduler timer) {
 		if (timeshift.equals(timespan)) {
@@ -6496,83 +6511,89 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code maxSize} number
-	 * of items, starting from the first item. {@link Flux} windows will onComplete after a given
-	 * timespan occurs and the number of items has not be counted.
+	 * Split this {@link Flux} sequence into multiple {@link Flux} windows containing
+	 * {@code maxSize} elements (or less for the final window) and starting from the first item.
+	 * Each {@link Flux} window will onComplete once it contains {@code maxSize} elements
+	 * OR it has been open for the given {@link Duration} (as measured on the {@link Schedulers#parallel() parallel}
+	 * Scheduler).
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsizetimeout.png" alt="">
 	 *
-	 * @param maxSize the maximum {@link Flux} window items to count before onComplete
-	 * @param timespan the timeout to use to onComplete a given window if size is not counted yet
+	 * @param maxSize the maximum number of items to emit in the window before closing it
+	 * @param timespan the maximum {@link Duration} since the window was opened before closing it
 	 *
-	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
+	 * @return a {@link Flux} of {@link Flux} windows based on element count and duration
 	 */
 	public final Flux<Flux<T>> windowTimeout(int maxSize, Duration timespan) {
 		return windowTimeout(maxSize, timespan , Schedulers.parallel());
 	}
 
 	/**
-	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code maxSize} number
-	 * of items, starting from the first item. {@link Flux} windows will onComplete after a given
-	 * timespan occurs and the number of items has not be counted.
+	 * Split this {@link Flux} sequence into multiple {@link Flux} windows containing
+	 * {@code maxSize} elements (or less for the final window) and starting from the first item.
+	 * Each {@link Flux} window will onComplete once it contains {@code maxSize} elements
+	 * OR it has been open for the given {@link Duration} (as measured on the provided
+	 * {@link Scheduler}).
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsizetimeout.png" alt="">
 	 *
-	 * @param maxSize the maximum {@link Flux} window items to count before onComplete
-	 * @param timespan the timeout to use to onComplete a given window if size is not counted yet
+	 * @param maxSize the maximum number of items to emit in the window before closing it
+	 * @param timespan the maximum {@link Duration} since the window was opened before closing it
 	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
-	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
+	 * @return a {@link Flux} of {@link Flux} windows based on element count and duration
 	 */
 	public final Flux<Flux<T>> windowTimeout(int maxSize, Duration timespan, Scheduler timer) {
 		return onAssembly(new FluxWindowTimeOrSize<>(this, maxSize, timespan.toMillis(), timer));
 	}
 
 	/**
-	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given
-	 * predicate. A new window is opened each time the predicate returns true, at which
+	 * Split this {@link Flux} sequence into multiple {@link Flux} windows delimited by the
+	 * given predicate. A new window is opened each time the predicate returns true, at which
 	 * point the previous window will receive the triggering element then onComplete.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowuntilcutafter.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/windowuntil.png" alt="">
 	 *
 	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
-	 * @return a windowing {@link Flux} of {@link GroupedFlux} windows, bounded depending
+	 * @return a {@link Flux} of {@link GroupedFlux} windows, bounded depending
 	 * on the predicate and keyed with the value that triggered the new window.
 	 */
+	//TODO bump marbles URL to upcoming release tag
 	public final Flux<GroupedFlux<T, T>> windowUntil(Predicate<T> boundaryTrigger) {
 		return windowUntil(boundaryTrigger, false);
 	}
 
 	/**
-	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given
-	 * predicate. A new window is opened each time the predicate returns true.
+	 * Split this {@link Flux} sequence into multiple {@link Flux} windows delimited by the
+	 * given predicate. A new window is opened each time the predicate returns true.
 	 * <p>
 	 * If {@code cutBefore} is true, the old window will onComplete and the triggering
 	 * element will be emitted in the new window. Note it can mean that an empty window is
 	 * sometimes emitted, eg. if the first element in the sequence immediately matches the
 	 * predicate.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowuntilcutbefore.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/windowuntilcutbefore.png" alt="">
 	 * <p>
 	 * Otherwise, the triggering element will be emitted in the old window before it does
 	 * onComplete, similar to {@link #windowUntil(Predicate)}.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowuntilcutafter.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/windowuntilcutafter.png" alt="">
 	 *
 	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
 	 * @param cutBefore set to true to include the triggering element in the new window rather than the old.
-	 * @return a windowing {@link Flux} of {@link GroupedFlux} windows, bounded depending
+	 * @return a {@link Flux} of {@link GroupedFlux} windows, bounded depending
 	 * on the predicate and keyed with the value that triggered the new window.
 	 */
+	//TODO bump marbles URL to upcoming release tag
 	public final Flux<GroupedFlux<T, T>> windowUntil(Predicate<T> boundaryTrigger, boolean cutBefore) {
 		return windowUntil(boundaryTrigger, cutBefore, QueueSupplier.SMALL_BUFFER_SIZE);
 	}
 
 	/**
-	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given
+	 * Split this {@link Flux} sequence into multiple {@link Flux} windows delimited by the given
 	 * predicate and using a prefetch. A new window is opened each time the predicate
 	 * returns true.
 	 * <p>
@@ -6581,19 +6602,20 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * sometimes emitted, eg. if the first element in the sequence immediately matches the
 	 * predicate.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowuntilcutbefore.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/windowuntilcutbefore.png" alt="">
 	 * <p>
 	 * Otherwise, the triggering element will be emitted in the old window before it does
 	 * onComplete, similar to {@link #windowUntil(Predicate)}.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowuntilcutafter.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/windowuntilcutafter.png" alt="">
 	 *
 	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
 	 * @param cutBefore set to true to include the triggering element in the new window rather than the old.
 	 * @param prefetch the request size to use for this {@link Flux}.
-	 * @return a windowing {@link Flux} of {@link GroupedFlux} windows, bounded depending
+	 * @return a {@link Flux} of {@link GroupedFlux} windows, bounded depending
 	 * on the predicate and keyed with the value that triggered the new window.
 	 */
+	//TODO bump marbles URL to upcoming release tag
 	public final Flux<GroupedFlux<T, T>> windowUntil(Predicate<T> boundaryTrigger, boolean cutBefore, int prefetch) {
 		return onAssembly(new FluxWindowPredicate<>(this,
 				QueueSupplier.unbounded(prefetch),
@@ -6612,12 +6634,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * separators anywhere in the sequence, each occurrence will lead to an empty window.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowwhile.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/windowwhile.png" alt="">
 	 *
 	 * @param inclusionPredicate a predicate that triggers the next window when it becomes false.
-	 * @return a windowing {@link Flux} of {@link GroupedFlux} windows, each containing
+	 * @return a {@link Flux} of {@link GroupedFlux} windows, each containing
 	 * subsequent elements that all passed a predicate, and keyed with a separator element.
 	 */
+	//TODO bump marbles URL to upcoming release tag
 	public final Flux<GroupedFlux<T, T>> windowWhile(Predicate<T> inclusionPredicate) {
 		return windowWhile(inclusionPredicate, QueueSupplier.SMALL_BUFFER_SIZE);
 	}
@@ -6631,13 +6654,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * separators anywhere in the sequence, each occurrence will lead to an empty window.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowwhile.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/windowwhile.png" alt="">
 	 *
 	 * @param inclusionPredicate a predicate that triggers the next window when it becomes false.
 	 * @param prefetch the request size to use for this {@link Flux}.
-	 * @return a windowing {@link Flux} of {@link GroupedFlux} windows, each containing
+	 * @return a {@link Flux} of {@link GroupedFlux} windows, each containing
 	 * subsequent elements that all passed a predicate, and keyed with a separator element.
 	 */
+	//TODO bump marbles URL to upcoming release tag
 	public final Flux<GroupedFlux<T, T>> windowWhile(Predicate<T> inclusionPredicate, int prefetch) {
 		return onAssembly(new FluxWindowPredicate<>(this,
 				QueueSupplier.unbounded(prefetch),
@@ -6664,15 +6688,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowboundary.png" alt="">
 	 *
-	 * @param bucketOpening a {@link Publisher} to emit any item for a split signal and complete to terminate
+	 * @param bucketOpening a {@link Publisher} that opens a new window when it emits any item
 	 * @param closeSelector a {@link Function} given an opening signal and returning a {@link Publisher} that
-	 * emits to complete the window
+	 * will close the window when emitting
 	 *
 	 * @param <U> the type of the sequence opening windows
 	 * @param <V> the type of the sequence closing windows opened by the bucketOpening Publisher's elements
 	 *
-	 * @return a windowing {@link Flux} delimiting its sub-sequences by a given {@link Publisher} and lasting until
-	 * a selected {@link Publisher} emits
+	 * @return a {@link Flux} of {@link Flux} windows opened by signals from a first
+	 * {@link Publisher} and lasting until a selected second {@link Publisher} emits
 	 */
 	public final <U, V> Flux<Flux<T>> windowWhen(Publisher<U> bucketOpening,
 			final Function<? super U, ? extends Publisher<V>> closeSelector) {
@@ -6684,7 +6708,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Combine values from this {@link Flux} with values from another
+	 * Combine the most recently emitted values from both this {@link Flux} and another
 	 * {@link Publisher} through a {@link BiFunction} and emits the result.
 	 * <p>
 	 * The operator will drop values from this {@link Flux} until the other
@@ -6696,7 +6720,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/withlatestfrom.png" alt="">
 	 *
 	 * @param other the {@link Publisher} to combine with
-	 * @param resultSelector the bi-function called with each pair of source and other elements that should return a single value to be emitted
+	 * @param resultSelector the bi-function called with each pair of source and other
+	 * elements that should return a single value to be emitted
 	 *
 	 * @param <U> the other {@link Publisher} sequence type
 	 * @param <R> the result type
@@ -6709,12 +6734,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations of the
-	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
+	 * Zip this {@link Flux} with another {@link Publisher} source, that is to say wait
+	 * for both to emit one element and combine these elements once into a {@link Tuple2}.
+	 * The operator will continue doing so until any of the sources completes.
+	 * Errors will immediately be forwarded.
+	 * This "Step-Merge" processing is especially useful in Scatter-Gather scenarios.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/zipt.png" alt="">
 	 * <p>
-	 * @param source2 The second upstream {@link Publisher} to subscribe to.
+	 * @param source2 The second source {@link Publisher} to zip with this {@link Flux}.
 	 * @param <T2> type of the value from source2
 	 *
 	 * @return a zipped {@link Flux}
@@ -6725,15 +6753,18 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations
-	 * produced by the passed combinator from the most recent items emitted by each source until any of them
-	 * completes. Errors will immediately be forwarded.
+	 * Zip this {@link Flux} with another {@link Publisher} source, that is to say wait
+	 * for both to emit one element and combine these elements using a {@code combinator}
+	 * {@link BiFunction}
+	 * The operator will continue doing so until any of the sources completes.
+	 * Errors will immediately be forwarded.
+	 * This "Step-Merge" processing is especially useful in Scatter-Gather scenarios.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/zip.png" alt="">
 	 * <p>
-	 * @param source2 The second upstream {@link Publisher} to subscribe to.
-	 * @param combinator The aggregate function that will receive a unique value from each upstream and return the value
-	 * to signal downstream
+	 * @param source2 The second source {@link Publisher} to zip with this {@link Flux}.
+	 * @param combinator The aggregate function that will receive a unique value from each
+	 * source and return the value to signal downstream
 	 * @param <T2> type of the value from source2
 	 * @param <V> The produced output after transformation by the combinator
 	 *
@@ -6753,16 +6784,19 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations
-	 * produced by the passed combinator from the most recent items emitted by each source until any of them
-	 * completes. Errors will immediately be forwarded.
+	 * Zip this {@link Flux} with another {@link Publisher} source, that is to say wait
+	 * for both to emit one element and combine these elements using a {@code combinator}
+	 * {@link BiFunction}
+	 * The operator will continue doing so until any of the sources completes.
+	 * Errors will immediately be forwarded.
+	 * This "Step-Merge" processing is especially useful in Scatter-Gather scenarios.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/zipp.png" alt="">
 	 * <p>
-	 * @param source2 The second upstream {@link Publisher} to subscribe to.
+	 * @param source2 The second source {@link Publisher} to zip with this {@link Flux}.
 	 * @param prefetch the request size to use for this {@link Flux} and the other {@link Publisher}
-	 * @param combinator The aggregate function that will receive a unique value from each upstream and return the value
-	 * to signal downstream
+	 * @param combinator The aggregate function that will receive a unique value from each
+	 * source and return the value to signal downstream
 	 * @param <T2> type of the value from source2
 	 * @param <V> The produced output after transformation by the combinator
 	 *
@@ -6779,30 +6813,33 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations of the
-	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
+	 * Zip this {@link Flux} with another {@link Publisher} source, that is to say wait
+	 * for both to emit one element and combine these elements once into a {@link Tuple2}.
+	 * The operator will continue doing so until any of the sources completes.
+	 * Errors will immediately be forwarded.
+	 * This "Step-Merge" processing is especially useful in Scatter-Gather scenarios.
+	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/zipp.png" alt="">
 	 * <p>
-	 * @param source2 The second upstream {@link Publisher} to subscribe to.
+	 * @param source2 The second source {@link Publisher} to zip with this {@link Flux}.
 	 * @param prefetch the request size to use for this {@link Flux} and the other {@link Publisher}
 	 * @param <T2> type of the value from source2
 	 *
 	 * @return a zipped {@link Flux}
-	 *
 	 */
 	public final <T2> Flux<Tuple2<T, T2>> zipWith(Publisher<? extends T2> source2, int prefetch) {
 		return zipWith(source2, prefetch, tuple2Function());
 	}
 
 	/**
-	 * Pairwise combines as {@link Tuple2} elements of this {@link Flux} and an {@link Iterable} sequence.
-	 *
-	 * @param iterable the {@link Iterable} to pair with
+	 * Zip elements from this {@link Flux} with the content of an {@link Iterable}, that is
+	 * to say combine one element from each, pairwise, into a {@link Tuple2}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/zipwithiterable.png" alt="">
 	 *
+	 * @param iterable the {@link Iterable} to zip with
 	 * @param <T2> the value type of the other iterable sequence
 	 *
 	 * @return a zipped {@link Flux}
@@ -6814,14 +6851,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Pairwise combines elements of this
-	 * {@link Flux} and an {@link Iterable} sequence using the given zipper {@link BiFunction}.
+	 * Zip elements from this {@link Flux} with the content of an {@link Iterable}, that is
+	 * to say combine one element from each, pairwise, using the given zipper {@link BiFunction}.
+	 *
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/zipwithiterable.png" alt="">
 	 *
-	 * @param iterable the {@link Iterable} to pair with
-	 * @param zipper the {@link BiFunction} combinator
+	 * @param iterable the {@link Iterable} to zip with
+	 * @param zipper the {@link BiFunction} pair combinator
 	 *
 	 * @param <T2> the value type of the other iterable sequence
 	 * @param <V> the result type
@@ -6835,13 +6873,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Invoke {@link Hooks} pointcut given a {@link Flux} and returning an eventually
-	 * new {@link Flux}
+	 * To be used by custom operators: invokes assembly {@link Hooks} pointcut given a
+	 * {@link Flux}, potentially returning a new {@link Flux}. This is for example useful
+	 * to activate cross-cutting concerns at assembly time, eg. a generalized
+	 * {@link #checkpoint()}.
 	 *
 	 * @param <T> the value type
-	 * @param source the source to wrap
+	 * @param source the source to apply assembly hooks onto
 	 *
-	 * @return the potentially wrapped source
+	 * @return the source, potentially wrapped with assembly time cross-cutting behavior
 	 */
 	@SuppressWarnings("unchecked")
 	protected static <T> Flux<T> onAssembly(Flux<T> source) {
@@ -6853,13 +6893,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Invoke {@link Hooks} pointcut given a {@link ConnectableFlux} and returning an eventually
-	 * new {@link ConnectableFlux}
+	 * To be used by custom operators: invokes assembly {@link Hooks} pointcut given a
+	 * {@link ConnectableFlux}, potentially returning a new {@link ConnectableFlux}. This
+	 * is for example useful to activate cross-cutting concerns at assembly time, eg. a
+	 * generalized {@link #checkpoint()}.
 	 *
 	 * @param <T> the value type
-	 * @param source the source to wrap
+	 * @param source the source to apply assembly hooks onto
 	 *
-	 * @return the potentially wrapped source
+	 * @return the source, potentially wrapped with assembly time cross-cutting behavior
 	 */
 	@SuppressWarnings("unchecked")
 	protected static <T> ConnectableFlux<T> onAssembly(ConnectableFlux<T> source) {
