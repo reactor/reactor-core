@@ -249,3 +249,5 @@ TIP: Note that this returns a `Flux<GroupedFlux<K, T>>`, each inner `GroupedFlux
 ** to block until I can get the value: `Mono#block`
 *** ...with a timeout: `Mono#block(Duration)`
 ** a `CompletableFuture<T>`: `Mono#toFuture`
+** to block until it can be transformed into an `Optional<T>`: `Mono#toOptional`
+*** ...with a timeout: `Mono#toOptional(Duration)
