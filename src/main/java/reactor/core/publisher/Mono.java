@@ -3023,6 +3023,20 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Transform this {@link Mono} into a {@link Callable}, which will automatically
+	 * subscribe to this Mono upon first invoking {@link Callable#call()}. Until the
+	 * call() is made, nothing happens with the Callable.
+	 * <p>
+	 * Subsequently the state of the Mono (valued/empty/errored) will be captured and
+	 * replayed on {@link Callable#call()}.
+	 *
+	 * @return a {@link Callable}
+	 */
+	public final Callable<T> toCallable() {
+		return new MonoToCallable<>(this);
+	}
+
+	/**
 	 * Transform this {@link Mono} in order to generate a target {@link Mono}. Unlike {@link #compose(Function)}, the
 	 * provided function is executed as part of assembly.
 	 *
