@@ -32,6 +32,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
@@ -52,6 +53,7 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
 import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Scheduler.Worker;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.Logger;
 import reactor.util.concurrent.QueueSupplier;
@@ -1414,7 +1416,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <T> emitted type
 	 * @param <D> resource type
 	 *
-	 * @return new {@link Flux}
+	 * @return a new {@link Flux} built around a disposable resource
 	 */
 	public static <T, D> Flux<T> using(Callable<? extends D> resourceSupplier, Function<? super D, ? extends
 			Publisher<? extends T>> sourceSupplier, Consumer<? super D> resourceCleanup) {
@@ -1439,7 +1441,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <T> emitted type
 	 * @param <D> resource type
 	 *
-	 * @return new Stream
+	 * @return a new {@link Flux} built around a disposable resource
 	 */
 	public static <T, D> Flux<T> using(Callable<? extends D> resourceSupplier, Function<? super D, ? extends
 			Publisher<? extends T>> sourceSupplier, Consumer<? super D> resourceCleanup, boolean eager) {
@@ -1817,8 +1819,9 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Transform this {@link Flux} into a target type.
-	 *
+	 * <blockquote><pre>
 	 * {@code flux.as(Mono::from).subscribe() }
+	 * </pre></blockquote>
 	 *
 	 * @param transformer the {@link Function} to immediately map this {@link Flux}
 	 * into a target type instance.
@@ -2777,8 +2780,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Defer the transformation of this {@link Flux} in order to generate a target {@link Flux} type.
 	 * A transformation will occur for each {@link Subscriber}. For instance:
-	 *
+	 * <blockquote><pre>
 	 * {@code flux.compose(Mono::from).subscribe() }
+	 * </pre></blockquote>
 	 *
 	 * @param transformer the {@link Function} to lazily map this {@link Flux} into a target {@link Publisher}
 	 * instance for each new subscriber
@@ -2793,9 +2797,23 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the elements emitted by this {@link Flux} asynchronously yet preserving
-	 * source ordering. Unlike {@link #flatMap(Function) flatMap}, subscription is done
-	 * by concatenating inner publishers instead of merging (no interleave).
+	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
+	 * then flatten these inner publishers into a single {@link Flux}, sequentially and
+	 * preserving order using concatenation.
+	 * <p>
+	 * There are three dimensions to this operator that can be compared with
+	 * {@link #flatMap(Function) flatMap} and {@link #flatMapSequential(Function) flatMapSequential}:
+	 * <ul>
+	 *     <li><b>Generation of inners and subscription</b>: this operator waits for one
+	 *     inner to complete before generating the next one and subscribing to it.</li>
+	 *     <li><b>Ordering of the flattened values</b>: this operator naturally preserves
+	 *     the same order as the source elements, concatenating the inners from each source
+	 *     element sequentially.</li>
+	 *     <li><b>Interleaving</b>: this operator does not let values from different inners
+	 *     interleave (concatenation).</li>
+	 * </ul>
+	 *
+	 * <p>
 	 * Errors will immediately short circuit current concat backlog.
 	 *
 	 * <p>
@@ -2812,10 +2830,25 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the elements emitted by this {@link Flux} asynchronously yet preserving
-	 * source ordering. Unlike {@link #flatMap(Function) flatMap}, subscription is done
-	 * by concatenating inner publishers instead of merging (no interleave).
-	 * Errors will immediately short circuit current concat backlog.
+	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
+	 * then flatten these inner publishers into a single {@link Flux}, sequentially and
+	 * preserving order using concatenation.
+	 * <p>
+	 * There are three dimensions to this operator that can be compared with
+	 * {@link #flatMap(Function) flatMap} and {@link #flatMapSequential(Function) flatMapSequential}:
+	 * <ul>
+	 *     <li><b>Generation of inners and subscription</b>: this operator waits for one
+	 *     inner to complete before generating the next one and subscribing to it.</li>
+	 *     <li><b>Ordering of the flattened values</b>: this operator naturally preserves
+	 *     the same order as the source elements, concatenating the inners from each source
+	 *     element sequentially.</li>
+	 *     <li><b>Interleaving</b>: this operator does not let values from different inners
+	 *     interleave (concatenation).</li>
+	 * </ul>
+	 *
+	 * <p>
+	 * Errors will immediately short circuit current concat backlog. The prefetch argument
+	 * allows to give an arbitrary prefetch size to the inner {@link Publisher}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/concatmap.png" alt="">
@@ -2833,11 +2866,24 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the elements emitted by this {@link Flux} asynchronously yet preserving
-	 * source ordering. Unlike {@link #flatMap(Function) flatMap}, subscription is done
-	 * by concatenating inner publishers instead of merging (no interleave).
+	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
+	 * then flatten these inner publishers into a single {@link Flux}, sequentially and
+	 * preserving order using concatenation.
+	 * <p>
+	 * There are three dimensions to this operator that can be compared with
+	 * {@link #flatMap(Function) flatMap} and {@link #flatMapSequential(Function) flatMapSequential}:
+	 * <ul>
+	 *     <li><b>Generation of inners and subscription</b>: this operator waits for one
+	 *     inner to complete before generating the next one and subscribing to it.</li>
+	 *     <li><b>Ordering of the flattened values</b>: this operator naturally preserves
+	 *     the same order as the source elements, concatenating the inners from each source
+	 *     element sequentially.</li>
+	 *     <li><b>Interleaving</b>: this operator does not let values from different inners
+	 *     interleave (concatenation).</li>
+	 * </ul>
 	 *
-	 * Errors will be delayed after the current concat backlog.
+	 * <p>
+	 * Errors will be delayed after all concatenated sources terminate.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/concatmap.png" alt="">
@@ -2854,11 +2900,25 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the elements emitted by this {@link Flux} asynchronously yet preserving
-	 * source ordering. Unlike {@link #flatMap(Function) flatMap}, subscription is done
-	 * by concatenating inner publishers instead of merging (no interleave).
+	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
+	 * then flatten these inner publishers into a single {@link Flux}, sequentially and
+	 * preserving order using concatenation.
+	 * <p>
+	 * There are three dimensions to this operator that can be compared with
+	 * {@link #flatMap(Function) flatMap} and {@link #flatMapSequential(Function) flatMapSequential}:
+	 * <ul>
+	 *     <li><b>Generation of inners and subscription</b>: this operator waits for one
+	 *     inner to complete before generating the next one and subscribing to it.</li>
+	 *     <li><b>Ordering of the flattened values</b>: this operator naturally preserves
+	 *     the same order as the source elements, concatenating the inners from each source
+	 *     element sequentially.</li>
+	 *     <li><b>Interleaving</b>: this operator does not let values from different inners
+	 *     interleave (concatenation).</li>
+	 * </ul>
 	 *
-	 * Errors will be delayed after all concated sources terminate.
+	 * <p>
+	 * Errors will be delayed after all concatenated sources terminate. The prefetch argument
+	 * allows to give an arbitrary prefetch size to the inner {@link Publisher}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/concatmap.png" alt="">
@@ -2878,12 +2938,26 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the elements emitted by this {@link Flux} asynchronously yet preserving
-	 * source ordering. Unlike {@link #flatMap(Function) flatMap}, subscription is done
-	 * by concatenating inner publishers instead of merging (no interleave).
+	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
+	 * then flatten these inner publishers into a single {@link Flux}, sequentially and
+	 * preserving order using concatenation.
+	 * <p>
+	 * There are three dimensions to this operator that can be compared with
+	 * {@link #flatMap(Function) flatMap} and {@link #flatMapSequential(Function) flatMapSequential}:
+	 * <ul>
+	 *     <li><b>Generation of inners and subscription</b>: this operator waits for one
+	 *     inner to complete before generating the next one and subscribing to it.</li>
+	 *     <li><b>Ordering of the flattened values</b>: this operator naturally preserves
+	 *     the same order as the source elements, concatenating the inners from each source
+	 *     element sequentially.</li>
+	 *     <li><b>Interleaving</b>: this operator does not let values from different inners
+	 *     interleave (concatenation).</li>
+	 * </ul>
 	 *
+	 * <p>
 	 * Errors will be delayed after the current concat backlog if delayUntilEnd is
-	 * false or after all sources if delayUntilEnd is true.
+	 * false or after all sources if delayUntilEnd is true. The prefetch argument
+	 * allows to give an arbitrary prefetch size to the inner {@link Publisher}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/concatmap.png" alt="">
@@ -2928,7 +3002,7 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Transform the items emitted by this {@link Flux} into {@link Iterable}, then flatten the emissions from those by
-	 * concatening them into a single {@link Flux}. The prefetch argument allows to give an arbitrary prefetch size to the merged {@link Iterable}.
+	 * concatenating them into a single {@link Flux}. The prefetch argument allows to give an arbitrary prefetch size to the merged {@link Iterable}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/concatmap.png" alt="">
@@ -3417,13 +3491,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * if the sequence is shorter.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/elementat.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/elementat.png" alt="">
 	 *
 	 * @param index zero-based index of the only item to emit
 	 *
 	 * @return a {@link Mono} of the item at the specified zero-based index
 	 */
-	//TODO fix marble diagram (zero-based)
+	//TODO bump marble URL to upcoming release tag
 	public final Mono<T> elementAt(int index) {
 		return Mono.onAssembly(new MonoElementAt<>(this, index));
 	}
@@ -3433,13 +3507,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * default value if the sequence is shorter.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/elementatd.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/elementatd.png" alt="">
 	 *
 	 * @param index zero-based index of the only item to emit
 	 * @param defaultValue a default value to emit if the sequence is shorter
 	 *
 	 * @return a {@link Mono} of the item at the specified zero-based index or a default value
 	 */
+	//TODO bump marble URL to upcoming release tag
 	public final Mono<T> elementAt(int index, T defaultValue) {
 		return Mono.onAssembly(new MonoElementAt<>(this, index, defaultValue));
 	}
@@ -3530,8 +3605,20 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the item emitted by this {@link Flux} into Publishers, then flatten the emissions from those by
-	 * merging them into a single {@link Flux}, so that they may interleave.
+	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
+	 * then flatten these inner publishers into a single {@link Flux} through merging,
+	 * which allow them to interleave.
+	 * <p>
+	 * There are three dimensions to this operator that can be compared with
+	 * {@link #flatMapSequential(Function) flatMapSequential} and {@link #concatMap(Function) concatMap}:
+	 * <ul>
+	 *     <li><b>Generation of inners and subscription</b>: this operator is eagerly
+	 *     subscribing to its inners.</li>
+	 *     <li><b>Ordering of the flattened values</b>: this operator does not necessarily preserve
+	 *     original ordering, as inner element are flattened as they arrive.</li>
+	 *     <li><b>Interleaving</b>: this operator lets values from different inners interleave
+	 *     (similar to merging the inner sequences).</li>
+	 * </ul>
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/flatmap.png" alt="">
 	 * <p>
@@ -3546,9 +3633,22 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the emissions from those by
-	 * merging them into a single {@link Flux}, so that they may interleave. The concurrency argument allows to
-	 * control how many {@link Publisher} can be subscribed to and merged in parallel.
+	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
+	 * then flatten these inner publishers into a single {@link Flux} through merging,
+	 * which allow them to interleave.
+	 * <p>
+	 * There are three dimensions to this operator that can be compared with
+	 * {@link #flatMapSequential(Function) flatMapSequential} and {@link #concatMap(Function) concatMap}:
+	 * <ul>
+	 *     <li><b>Generation of inners and subscription</b>: this operator is eagerly
+	 *     subscribing to its inners.</li>
+	 *     <li><b>Ordering of the flattened values</b>: this operator does not necessarily preserve
+	 *     original ordering, as inner element are flattened as they arrive.</li>
+	 *     <li><b>Interleaving</b>: this operator lets values from different inners interleave
+	 *     (similar to merging the inner sequences).</li>
+	 * </ul>
+	 * The concurrency argument allows to control how many {@link Publisher} can be
+	 * subscribed to and merged in parallel.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/flatmapc.png" alt="">
@@ -3565,9 +3665,22 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the emissions from those by
-	 * merging them into a single {@link Flux}, so that they may interleave. The concurrency argument allows to
-	 * control how many {@link Publisher} can be subscribed to and merged in parallel. The prefetch argument allows to give an
+	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
+	 * then flatten these inner publishers into a single {@link Flux} through merging,
+	 * which allow them to interleave.
+	 * <p>
+	 * There are three dimensions to this operator that can be compared with
+	 * {@link #flatMapSequential(Function) flatMapSequential} and {@link #concatMap(Function) concatMap}:
+	 * <ul>
+	 *     <li><b>Generation of inners and subscription</b>: this operator is eagerly
+	 *     subscribing to its inners.</li>
+	 *     <li><b>Ordering of the flattened values</b>: this operator does not necessarily preserve
+	 *     original ordering, as inner element are flattened as they arrive.</li>
+	 *     <li><b>Interleaving</b>: this operator lets values from different inners interleave
+	 *     (similar to merging the inner sequences).</li>
+	 * </ul>
+	 * The concurrency argument allows to control how many {@link Publisher} can be
+	 * subscribed to and merged in parallel. The prefetch argument allows to give an
 	 * arbitrary prefetch size to the merged {@link Publisher}.
 	 *
 	 * <p>
@@ -3586,11 +3699,24 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the emissions from those by
-	 * merging them into a single {@link Flux}, so that they may interleave. The concurrency argument allows to
-	 * control how many {@link Publisher} can be subscribed to and merged in parallel. The prefetch argument allows to give an
-	 * arbitrary prefetch size to the merged {@link Publisher}. This variant will delay any error until after the
-	 * rest of the flatMap backlog has been processed.
+	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
+	 * then flatten these inner publishers into a single {@link Flux} through merging,
+	 * which allow them to interleave.
+	 * <p>
+	 * There are three dimensions to this operator that can be compared with
+	 * {@link #flatMapSequential(Function) flatMapSequential} and {@link #concatMap(Function) concatMap}:
+	 * <ul>
+	 *     <li><b>Generation of inners and subscription</b>: this operator is eagerly
+	 *     subscribing to its inners.</li>
+	 *     <li><b>Ordering of the flattened values</b>: this operator does not necessarily preserve
+	 *     original ordering, as inner element are flattened as they arrive.</li>
+	 *     <li><b>Interleaving</b>: this operator lets values from different inners interleave
+	 *     (similar to merging the inner sequences).</li>
+	 * </ul>
+	 * The concurrency argument allows to control how many {@link Publisher} can be
+	 * subscribed to and merged in parallel. The prefetch argument allows to give an
+	 * arbitrary prefetch size to the merged {@link Publisher}. This variant will delay
+	 * any error until after the rest of the flatMap backlog has been processed.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/flatmapc.png" alt="">
@@ -3608,8 +3734,21 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the signals emitted by this {@link Flux} into Publishers, then flatten the emissions from those by
-	 * merging them into a single {@link Flux}, so that they may interleave.
+	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
+	 * then flatten these inner publishers into a single {@link Flux} through merging,
+	 * which allow them to interleave.
+	 * <p>
+	 * There are three dimensions to this operator that can be compared with
+	 * {@link #flatMapSequential(Function) flatMapSequential} and {@link #concatMap(Function) concatMap}:
+	 * <ul>
+	 *     <li><b>Generation of inners and subscription</b>: this operator is eagerly
+	 *     subscribing to its inners.</li>
+	 *     <li><b>Ordering of the flattened values</b>: this operator does not necessarily preserve
+	 *     original ordering, as inner element are flattened as they arrive.</li>
+	 *     <li><b>Interleaving</b>: this operator lets values from different inners interleave
+	 *     (similar to merging the inner sequences).</li>
+	 * </ul>
+	 * <p>
 	 * OnError will be transformed into completion signal after its mapping callback has been applied.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/flatmaps.png" alt="">
@@ -3679,11 +3818,28 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the
-	 * emissions from those by merging them into a single {@link Flux}, in order.
-	 * Unlike {@link #concatMap(Function) concatMap}, transformed inner Publishers are
-	 * subscribed to eagerly. Unlike {@link #flatMap(Function) flatMap}, their emitted
-	 * elements are merged respecting the order of the original sequence.
+	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
+	 * then flatten these inner publishers into a single {@link Flux}, but merge them in
+	 * the order of their source element.
+	 * <p>
+	 * There are three dimensions to this operator that can be compared with
+	 * {@link #flatMap(Function) flatMap} and {@link #concatMap(Function) concatMap}:
+	 * <ul>
+	 *     <li><b>Generation of inners and subscription</b>: this operator is eagerly
+	 *     subscribing to its inners (like flatMap).</li>
+	 *     <li><b>Ordering of the flattened values</b>: this operator queues elements from
+	 *     late inners until all elements from earlier inners have been emitted, thus emitting
+	 *     inner sequences as a whole, in an order that matches their source's order.</li>
+	 *     <li><b>Interleaving</b>: this operator does not let values from different inners
+	 *     interleave (similar looking result to concatMap, but due to queueing of values
+	 *     that would have been interleaved otherwise).</li>
+	 * </ul>
+	 *
+	 * <p>
+	 * That is to say, whenever a source element is emitted it is transformed to an inner
+	 * {@link Publisher}. However, if such an early inner takes more time to complete than
+	 * subsequent faster inners, the data from these faster inners will be queued until
+	 * the earlier inner completes, so as to maintain source ordering.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/flatmapsequential.png" alt="">
@@ -3699,11 +3855,30 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the
-	 * emissions from those by merging them into a single {@link Flux}, in order.
-	 * Unlike {@link #concatMap(Function) concatMap}, transformed inner Publishers are
-	 * subscribed to eagerly. Unlike {@link #flatMap(Function) flatMap}, their emitted
-	 * elements are merged respecting the order of the original sequence.
+	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
+	 * then flatten these inner publishers into a single {@link Flux}, but merge them in
+	 * the order of their source element.
+	 * <p>
+	 * There are three dimensions to this operator that can be compared with
+	 * {@link #flatMap(Function) flatMap} and {@link #concatMap(Function) concatMap}:
+	 * <ul>
+	 *     <li><b>Generation of inners and subscription</b>: this operator is eagerly
+	 *     subscribing to its inners (like flatMap).</li>
+	 *     <li><b>Ordering of the flattened values</b>: this operator queues elements from
+	 *     late inners until all elements from earlier inners have been emitted, thus emitting
+	 *     inner sequences as a whole, in an order that matches their source's order.</li>
+	 *     <li><b>Interleaving</b>: this operator does not let values from different inners
+	 *     interleave (similar looking result to concatMap, but due to queueing of values
+	 *     that would have been interleaved otherwise).</li>
+	 * </ul>
+	 *
+	 * <p>
+	 * That is to say, whenever a source element is emitted it is transformed to an inner
+	 * {@link Publisher}. However, if such an early inner takes more time to complete than
+	 * subsequent faster inners, the data from these faster inners will be queued until
+	 * the earlier inner completes, so as to maintain source ordering.
+	 *
+	 * <p>
 	 * The concurrency argument allows to control how many merged {@link Publisher} can happen in parallel.
 	 *
 	 * <p>
@@ -3721,11 +3896,30 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the
-	 * emissions from those by merging them into a single {@link Flux}, in order.
-	 * Unlike {@link #concatMap(Function) concatMap}, transformed inner Publishers are
-	 * subscribed to eagerly. Unlike {@link #flatMap(Function) flatMap}, their emitted
-	 * elements are merged respecting the order of the original sequence.
+	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
+	 * then flatten these inner publishers into a single {@link Flux}, but merge them in
+	 * the order of their source element.
+	 * <p>
+	 * There are three dimensions to this operator that can be compared with
+	 * {@link #flatMap(Function) flatMap} and {@link #concatMap(Function) concatMap}:
+	 * <ul>
+	 *     <li><b>Generation of inners and subscription</b>: this operator is eagerly
+	 *     subscribing to its inners (like flatMap).</li>
+	 *     <li><b>Ordering of the flattened values</b>: this operator queues elements from
+	 *     late inners until all elements from earlier inners have been emitted, thus emitting
+	 *     inner sequences as a whole, in an order that matches their source's order.</li>
+	 *     <li><b>Interleaving</b>: this operator does not let values from different inners
+	 *     interleave (similar looking result to concatMap, but due to queueing of values
+	 *     that would have been interleaved otherwise).</li>
+	 * </ul>
+	 *
+	 * <p>
+	 * That is to say, whenever a source element is emitted it is transformed to an inner
+	 * {@link Publisher}. However, if such an early inner takes more time to complete than
+	 * subsequent faster inners, the data from these faster inners will be queued until
+	 * the earlier inner completes, so as to maintain source ordering.
+	 *
+	 * <p>
 	 * The concurrency argument allows to control how many merged {@link Publisher}
 	 * can happen in parallel. The prefetch argument allows to give an arbitrary prefetch
 	 * size to the merged {@link Publisher}.
@@ -3746,11 +3940,30 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the items emitted by this {@link Flux} into Publishers, then flatten the
-	 * emissions from those by merging them into a single {@link Flux}, in order.
-	 * Unlike {@link #concatMap(Function) concatMap}, transformed inner Publishers are
-	 * subscribed to eagerly. Unlike {@link #flatMap(Function) flatMap}, their emitted
-	 * elements are merged respecting the order of the original sequence.
+	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
+	 * then flatten these inner publishers into a single {@link Flux}, but merge them in
+	 * the order of their source element.
+	 * <p>
+	 * There are three dimensions to this operator that can be compared with
+	 * {@link #flatMap(Function) flatMap} and {@link #concatMap(Function) concatMap}:
+	 * <ul>
+	 *     <li><b>Generation of inners and subscription</b>: this operator is eagerly
+	 *     subscribing to its inners (like flatMap).</li>
+	 *     <li><b>Ordering of the flattened values</b>: this operator queues elements from
+	 *     late inners until all elements from earlier inners have been emitted, thus emitting
+	 *     inner sequences as a whole, in an order that matches their source's order.</li>
+	 *     <li><b>Interleaving</b>: this operator does not let values from different inners
+	 *     interleave (similar looking result to concatMap, but due to queueing of values
+	 *     that would have been interleaved otherwise).</li>
+	 * </ul>
+	 *
+	 * <p>
+	 * That is to say, whenever a source element is emitted it is transformed to an inner
+	 * {@link Publisher}. However, if such an early inner takes more time to complete than
+	 * subsequent faster inners, the data from these faster inners will be queued until
+	 * the earlier inner completes, so as to maintain source ordering.
+	 *
+	 * <p>
 	 * The concurrency argument allows to control how many merged {@link Publisher}
 	 * can happen in parallel. The prefetch argument allows to give an arbitrary prefetch
 	 * size to the merged {@link Publisher}. This variant will delay any error until after the
@@ -3940,8 +4153,6 @@ public abstract class Flux<T> implements Publisher<T> {
 		return any(t -> Objects.equals(value, t));
 	}
 
-	//TODO continue javadoc review from here
-
 	/**
 	 * Emit a single boolean true if this {@link Flux} sequence has at least one element.
 	 * <p>
@@ -3958,19 +4169,18 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Hides the identities of this {@link Flux} and its {@link Subscription}
-	 * as well.
+	 * Hides the identities of this {@link Flux} instance.
 	 * <p>The main purpose of this operator is to prevent certain identity-based
 	 * optimizations from happening, mostly for diagnostic purposes.
 	 *
-	 * @return a new {@link Flux} defeating any {@link Publisher} / {@link Subscription} feature-detection
+	 * @return a new {@link Flux} preventing {@link Publisher} / {@link Subscription} based Reactor optimizations
 	 */
 	public final Flux<T> hide() {
 		return new FluxHide<>(this);
 	}
 
 	/**
-	 * Ignores onNext signals (dropping them) and only reacts on termination.
+	 * Ignores onNext signals (dropping them) and only propagate termination events.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/ignoreelements.png" alt="">
@@ -4041,7 +4251,7 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Emit the last element observed before complete signal as a {@link Mono}, or emit
-	 * the defaultValue if the source was empty.
+	 * the {@code defaultValue} if the source was empty.
 	 * For a passive version use {@link #takeLast(int)}
 	 *
 	 * <p>
@@ -4181,14 +4391,13 @@ public abstract class Flux<T> implements Publisher<T> {
 		return onAssembly(new FluxLog<>(this, log));
 	}
 
-
-
 	/**
-	 * Transform the items emitted by this {@link Flux} by applying a function to each item.
+	 * Transform the items emitted by this {@link Flux} by applying a synchronous function
+	 * to each item.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/map.png" alt="">
 	 * <p>
-	 * @param mapper the transforming {@link Function}
+	 * @param mapper the synchronous transforming {@link Function}
 	 * @param <V> the transformed type
 	 *
 	 * @return a transformed {@link Flux}
@@ -4201,7 +4410,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the incoming onNext, onError and onComplete signals into {@link Signal}.
+	 * Transform incoming onNext, onError and onComplete signals into {@link Signal} instances,
+	 * materializing these signals.
 	 * Since the error is materialized as a {@code Signal}, the propagation will be stopped and onComplete will be
 	 * emitted. Complete signal will first emit a {@code Signal.complete()} and then effectively complete the flux.
 	 *
@@ -4209,13 +4419,16 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/materialize.png" alt="">
 	 *
 	 * @return a {@link Flux} of materialized {@link Signal}
+	 * @see #dematerialize()
 	 */
 	public final Flux<Signal<T>> materialize() {
 		return onAssembly(new FluxMaterialize<>(this));
 	}
 
 	/**
-	 * Merge emissions of this {@link Flux} with the provided {@link Publisher}, so that they may interleave.
+	 * Merge data from this {@link Flux} and a {@link Publisher} into an interleaved merged
+	 * sequence. Unlike {@link #concatWith(Publisher) concat}, inner sources are subscribed
+	 * to eagerly.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/merge.png" alt="">
 	 * <p>
@@ -4232,12 +4445,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Emit only the first item emitted by this {@link Flux}.
+	 * Emit only the first item emitted by this {@link Flux}, into a new {@link Mono}.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/next.png" alt="">
 	 * <p>
 	 *
-	 * @return a new {@link Mono}
+	 * @return a new {@link Mono} emitting the first value in this {@link Flux}
 	 */
 	public final Mono<T> next() {
 		return Mono.from(this);
@@ -4245,16 +4458,15 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Evaluate each accepted value against the given {@link Class} type. If the
-	 * predicate test succeeds, the value is
-	 * passed into the new {@link Flux}. If the predicate test fails, the value is ignored and a request of 1 is
-	 * emitted.
+	 * a value matches the type, it is passed into the resulting {@link Flux}. Otherwise
+	 * the value is ignored and a request of 1 is emitted.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/filter.png" alt="">
 	 *
 	 * @param clazz the {@link Class} type to test values against
 	 *
-	 * @return a new {@link Flux} reduced to items converted to the matched type
+	 * @return a new {@link Flux} filtered on items of the requested type
 	 */
 	public final <U> Flux<U> ofType(final Class<U> clazz) {
 			Objects.requireNonNull(clazz, "clazz");
@@ -4262,13 +4474,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Request an unbounded demand and push the returned {@link Flux}, or park the observed elements if not enough
-	 * demand is requested downstream. Errors will be delayed until the buffer gets consumed.
+	 * Request an unbounded demand and push to the returned {@link Flux}, or park the
+	 * observed elements if not enough demand is requested downstream. Errors will be
+	 * delayed until the buffer gets consumed.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/onbackpressurebuffer.png" alt="">
 	 *
-	 * @return a buffering {@link Flux}
+	 * @return a backpressured {@link Flux} that buffers with unbounded capacity
 	 *
 	 */
 	public final Flux<T> onBackpressureBuffer() {
@@ -4277,27 +4490,27 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Request an unbounded demand and push the returned {@link Flux}, or park the observed elements if not enough
-	 * demand is requested downstream. Errors will be immediately emitted on overflow
-	 * regardless of the pending buffer.
+	 * Request an unbounded demand and push to the returned {@link Flux}, or park the
+	 * observed elements if not enough demand is requested downstream. Errors will be
+	 * immediately emitted on overflow regardless of the pending buffer.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/onbackpressurebuffer.png" alt="">
 	 *
 	 * @param maxSize maximum buffer backlog size before immediate error
 	 *
-	 * @return a buffering {@link Flux}
+	 * @return a backpressured {@link Flux} that buffers with bounded capacity
 	 *
 	 */
 	public final Flux<T> onBackpressureBuffer(int maxSize) {
 		return onAssembly(new FluxOnBackpressureBuffer<>(this, maxSize, false, null));
 	}
 
-
 	/**
-	 * Request an unbounded demand and push the returned {@link Flux}, or park the observed elements if not enough
-	 * demand is requested downstream. Overflow error will be delayed after the current
-	 * backlog is consumed. However the {@link Consumer} will be immediately invoked.
+	 * Request an unbounded demand and push to the returned {@link Flux}, or park the
+	 * observed elements if not enough demand is requested downstream. Overflow error
+	 * will be delayed after the current backlog is consumed. However the
+	 * {@link Consumer} will be immediately invoked.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/onbackpressurebuffer.png" alt="">
@@ -4305,7 +4518,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param maxSize maximum buffer backlog size before overflow callback is called
 	 * @param onOverflow callback to invoke on overflow
 	 *
-	 * @return a buffering {@link Flux}
+	 * @return a backpressured {@link Flux} that buffers with a bounded capacity
 	 *
 	 */
 	public final Flux<T> onBackpressureBuffer(int maxSize, Consumer<? super T>
@@ -4315,7 +4528,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Request an unbounded demand and push the returned {@link Flux}, or park the observed
+	 * Request an unbounded demand and push to the returned {@link Flux}, or park the observed
 	 * elements if not enough demand is requested downstream, within a {@code maxSize}
 	 * limit. Over that limit, the overflow strategy is applied (see {@link BufferOverflowStrategy}).
 	 * <p>
@@ -4328,7 +4541,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param maxSize maximum buffer backlog size before overflow strategy is applied
 	 * @param bufferOverflowStrategy strategy to apply to overflowing elements
 	 *
-	 * @return a buffering {@link Flux}
+	 * @return a backpressured {@link Flux} that buffers up to a capacity then applies an
+	 * overflow strategy
 	 */
 	public final Flux<T> onBackpressureBuffer(int maxSize, BufferOverflowStrategy bufferOverflowStrategy) {
 		Objects.requireNonNull(bufferOverflowStrategy, "bufferOverflowStrategy");
@@ -4337,7 +4551,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Request an unbounded demand and push the returned {@link Flux}, or park the observed
+	 * Request an unbounded demand and push to the returned {@link Flux}, or park the observed
 	 * elements if not enough demand is requested downstream, within a {@code maxSize}
 	 * limit. Over that limit, the overflow strategy is applied (see {@link BufferOverflowStrategy}).
 	 * <p>
@@ -4358,7 +4572,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param onBufferOverflow callback to invoke on overflow
 	 * @param bufferOverflowStrategy strategy to apply to overflowing elements
 	 *
-	 * @return a buffering {@link Flux}
+	 * @return a backpressured {@link Flux} that buffers up to a capacity then applies an
+	 * overflow strategy
 	 */
 	public final Flux<T> onBackpressureBuffer(int maxSize, Consumer<? super T> onBufferOverflow,
 			BufferOverflowStrategy bufferOverflowStrategy) {
@@ -4369,65 +4584,63 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Request an unbounded demand and push the returned {@link Flux}, or drop the observed elements if not enough
-	 * demand is requested downstream.
+	 * Request an unbounded demand and push to the returned {@link Flux}, or drop
+	 * the observed elements if not enough demand is requested downstream.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/onbackpressuredrop.png" alt="">
 	 *
-	 * @return a dropping {@link Flux}
-	 *
+	 * @return a backpressured {@link Flux} that drops overflowing elements
 	 */
 	public final Flux<T> onBackpressureDrop() {
 		return onAssembly(new FluxOnBackpressureDrop<>(this));
 	}
 
 	/**
-	 * Request an unbounded demand and push the returned {@link Flux}, or drop and notify dropping {@link Consumer}
-	 * with the observed elements if not enough demand is requested downstream.
+	 * Request an unbounded demand and push to the returned {@link Flux}, or drop and
+	 * notify dropping {@link Consumer} with the observed elements if not enough demand
+	 * is requested downstream.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/onbackpressuredropc.png" alt="">
 	 *
 	 * @param onDropped the Consumer called when an value gets dropped due to lack of downstream requests
-	 * @return a dropping {@link Flux}
-	 *
+	 * @return a backpressured {@link Flux} that drops overflowing elements
 	 */
 	public final Flux<T> onBackpressureDrop(Consumer<? super T> onDropped) {
 		return onAssembly(new FluxOnBackpressureDrop<>(this, onDropped));
 	}
 
 	/**
-	 * Request an unbounded demand and push the returned
-	 * {@link Flux}, or emit onError fom {@link Exceptions#failWithOverflow} if not enough demand is requested
+	 * Request an unbounded demand and push to the returned {@link Flux}, or emit onError
+	 * fom {@link Exceptions#failWithOverflow} if not enough demand is requested
 	 * downstream.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/onbackpressureerror.png" alt="">
 	 *
-	 * @return an erroring {@link Flux} on backpressure
-	 *
+	 * @return a backpressured {@link Flux} that errors on overflowing elements
 	 */
 	public final Flux<T> onBackpressureError() {
 		return onBackpressureDrop(t -> { throw Exceptions.failWithOverflow();});
 	}
 
 	/**
-	 * Request an unbounded demand and push the returned {@link Flux}, or only keep the most recent observed item
-	 * if not enough demand is requested downstream.
+	 * Request an unbounded demand and push to the returned {@link Flux}, or only keep
+	 * the most recent observed item if not enough demand is requested downstream.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/onbackpressurelatest.png" alt="">
 	 *
-	 * @return a dropping {@link Flux} that will only keep a reference to the last observed item
-	 *
+	 * @return a backpressured {@link Flux} that will only keep a reference to the last observed item
 	 */
 	public final Flux<T> onBackpressureLatest() {
 		return onAssembly(new FluxOnBackpressureLatest<>(this));
 	}
 
 	/**
-	 * Transform the error emitted by this {@link Flux} by applying a function.
+	 * Transform any error emitted by this {@link Flux} by synchronously applying a function to it.
+
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/maperror.png"
 	 * alt="">
@@ -4435,15 +4648,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param mapper the error transforming {@link Function}
 	 *
-	 * @return a transformed {@link Flux}
+	 * @return a {@link Flux} that transforms source errors to other errors
 	 */
 	public final Flux<T> onErrorMap(Function<? super Throwable, ? extends Throwable> mapper) {
 		return onErrorResume(e -> Mono.error(mapper.apply(e)));
 	}
 
 	/**
-	 * Transform the error emitted by this {@link Flux} by applying a function if the
-	 * error matches the given type, otherwise let the error flow.
+	 * Transform an error emitted by this {@link Flux} by synchronously applying a function
+	 * to it if the error matches the given type. Otherwise let the error pass through.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/maperror.png" alt="">
 	 * <p>
@@ -4451,7 +4664,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param mapper the error transforming {@link Function}
 	 * @param <E> the error type
 	 *
-	 * @return a transformed {@link Flux}
+	 * @return a {@link Flux} that transforms some source errors to other errors
 	 */
 	public final <E extends Throwable> Flux<T> onErrorMap(Class<E> type,
 			Function<? super E, ? extends Throwable> mapper) {
@@ -4461,9 +4674,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the error emitted by this {@link Flux} by applying a function if the
-	 * error matches the given predicate, otherwise let the error flow.
-	 * <p>
+	 * Transform an error emitted by this {@link Flux} by synchronously applying a function
+	 * to it if the error matches the given predicate. Otherwise let the error pass through.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/maperror.png"
 	 * alt="">
@@ -4471,40 +4683,40 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param predicate the error predicate
 	 * @param mapper the error transforming {@link Function}
 	 *
-	 * @return a transformed {@link Flux}
+	 * @return a {@link Flux} that transforms some source errors to other errors
 	 */
 	public final Flux<T> onErrorMap(Predicate<? super Throwable> predicate,
 			Function<? super Throwable, ? extends Throwable> mapper) {
 		return onErrorResume(predicate, e -> Mono.error(mapper.apply(e)));
 	}
 
-
 	/**
-	 * Subscribe to a returned fallback publisher when any error occurs.
+	 * Subscribe to a returned fallback publisher when any error occurs, using a function to
+	 * choose the fallback depending on the error.
+	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/onerrorresumewith.png" alt="">
 	 * <p>
-	 * @param fallback the {@link Function} mapping the error to a new {@link Publisher} sequence
+	 * @param fallback the function to choose the fallback to an alternative {@link Publisher}
 	 *
-	 * @return a new {@link Flux}
+	 * @return a {@link Flux} falling back upon source onError
 	 */
 	public final Flux<T> onErrorResume(Function<? super Throwable, ? extends Publisher<? extends T>> fallback) {
 		return onAssembly(new FluxOnErrorResume<>(this, fallback));
 	}
 
 	/**
-	 * Subscribe to a returned fallback publisher when an error matching the given type
-	 * occurs.
+	 * Subscribe to a fallback publisher when an error matching the given type
+	 * occurs, using a function to choose the fallback depending on the error.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/onerrorresumewith.png"
 	 * alt="">
 	 *
 	 * @param type the error type to match
-	 * @param fallback the {@link Function} mapping the error to a new {@link Publisher}
-	 * sequence
+	 * @param fallback the function to choose the fallback to an alternative {@link Publisher}
 	 * @param <E> the error type
 	 *
-	 * @return a new {@link Flux}
+	 * @return a {@link Flux} falling back upon source onError
 	 */
 	public final <E extends Throwable> Flux<T> onErrorResume(Class<E> type,
 			Function<? super E, ? extends Publisher<? extends T>> fallback) {
@@ -4516,17 +4728,16 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Subscribe to a returned fallback publisher when an error matching the given type
+	 * Subscribe to a fallback publisher when an error matching a given predicate
 	 * occurs.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/onerrorresumewith.png"
 	 * alt="">
 	 *
 	 * @param predicate the error predicate to match
-	 * @param fallback the {@link Function} mapping the error to a new {@link Publisher}
-	 * sequence
+	 * @param fallback the function to choose the fallback to an alternative {@link Publisher}
 	 *
-	 * @return a new {@link Flux}
+	 * @return a {@link Flux} falling back upon source onError
 	 */
 	public final Flux<T> onErrorResume(Predicate<? super Throwable> predicate,
 			Function<? super Throwable, ? extends Publisher<? extends T>> fallback) {
@@ -4535,28 +4746,28 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Fallback to the given value if an error is observed on this {@link Flux}
+	 * Simply emit a captured fallback value when any error is observed on this {@link Flux}.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/onerrorreturn.png" alt="">
 	 * <p>
-	 * @param fallbackValue alternate value on fallback
+	 * @param fallbackValue the value to emit if an error occurs
 	 *
-	 * @return a new {@link Flux}
+	 * @return a new falling back {@link Flux}
 	 */
 	public final Flux<T> onErrorReturn(T fallbackValue) {
 		return onErrorResume(t -> just(fallbackValue));
 	}
 
 	/**
-	 * Fallback to the given value if an error of a given type is observed on this
-	 * {@link Flux}
+	 * Simply emit a captured fallback value when an error of the specified type is
+	 * observed on this {@link Flux}.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/onerrorreturn.png" alt="">
 	 * @param type the error type to match
-	 * @param fallbackValue alternate value on fallback
+	 * @param fallbackValue the value to emit if an error occurs that matches the type
 	 * @param <E> the error type
 	 *
-	 * @return a new {@link Flux}
+	 * @return a new falling back {@link Flux}
 	 */
 	public final <E extends Throwable> Flux<T> onErrorReturn(Class<E> type,
 			T fallbackValue) {
@@ -4564,25 +4775,24 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Fallback to the given value if an error matching the given predicate is
-	 * observed on this
-	 * {@link Flux}
+	 * Simply emit a captured fallback value when an error matching the given predicate is
+	 * observed on this {@link Flux}.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/onerrorreturn.png" alt="">
 	 * @param predicate the error predicate to match
-	 * @param fallbackValue alternate value on fallback
+	 * @param fallbackValue the value to emit if an error occurs that matches the predicate
 	 *
-	 * @return a new {@link Flux}
+	 * @return a new falling back {@link Flux}
 	 */
 	public final Flux<T> onErrorReturn(Predicate<? super Throwable> predicate, T fallbackValue) {
 		return onErrorResume(predicate, t -> just(fallbackValue));
 	}
 
 	/**
-	 * Detaches the both the child {@link Subscriber} and the {@link Subscription} on
+	 * Detaches both the child {@link Subscriber} and the {@link Subscription} on
 	 * termination or cancellation.
-	 * <p>This should help with odd retention scenarios when running
-	 * with non-reactor {@link Subscriber}.
+	 * <p>This is an advanced interoperability operator that should help with odd
+	 * retention scenarios when running with non-reactor {@link Subscriber}.
 	 *
 	 * @return a detachable {@link Flux}
 	 */
@@ -4591,8 +4801,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Prepare to consume this {@link Flux} on number of 'rails' matching number of CPU
-	 * in round-robin fashion.
+	 * Prepare this {@link Flux} by dividing data on a number of 'rails' matching the
+	 * number of CPU cores, in a round-robin fashion. Note that to actually perform the
+	 * work in parallel, you should call {@link ParallelFlux#runOn(Scheduler)} afterward.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/parallel.png" alt="">
@@ -4605,8 +4816,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Prepare to consume this {@link Flux} on parallelism number of 'rails'
-	 * in round-robin fashion.
+	 * Prepare this {@link Flux} by dividing data on a number of 'rails' matching the
+	 * provided {@code parallelism} parameter, in a round-robin fashion. Note that to
+	 * actually perform the work in parallel, you should call {@link ParallelFlux#runOn(Scheduler)}
+	 * afterward.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/parallel.png" alt="">
@@ -4620,9 +4833,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Prepare to consume this {@link Flux} on parallelism number of 'rails'
-	 * in round-robin fashion and use custom prefetch amount and queue
-	 * for dealing with the source {@link Flux}'s values.
+	 * Prepare this {@link Flux} by dividing data on a number of 'rails' matching the
+	 * provided {@code parallelism} parameter, in a round-robin fashion and using a
+	 * custom prefetch amount and queue for dealing with the source {@link Flux}'s values.
+	 * Note that to actually perform the work in parallel, you should call
+	 * {@link ParallelFlux#runOn(Scheduler)} afterward.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/parallel.png" alt="">
@@ -4640,12 +4855,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Prepare a {@link ConnectableFlux} which shares this {@link Flux} sequence and dispatches values to
-	 * subscribers in a backpressure-aware manner. Prefetch will default to {@link QueueSupplier#SMALL_BUFFER_SIZE}.
-	 * This will effectively turn any type of sequence into a hot sequence.
+	 * Prepare a {@link ConnectableFlux} which shares this {@link Flux} sequence and
+	 * dispatches values to subscribers in a backpressure-aware manner. Prefetch will
+	 * default to {@link QueueSupplier#SMALL_BUFFER_SIZE}. This will effectively turn
+	 * any type of sequence into a hot sequence.
 	 * <p>
-	 * Backpressure will be coordinated on {@link Subscription#request} and if any {@link Subscriber} is missing
-	 * demand (requested = 0), multicast will pause pushing/pulling.
+	 * Backpressure will be coordinated on {@link Subscription#request} and if any
+	 * {@link Subscriber} is missing demand (requested = 0), multicast will pause
+	 * pushing/pulling.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/publish.png" alt="">
 	 *
@@ -4656,11 +4873,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Prepare a {@link ConnectableFlux} which shares this {@link Flux} sequence and dispatches values to
-	 * subscribers in a backpressure-aware manner. This will effectively turn any type of sequence into a hot sequence.
+	 * Prepare a {@link ConnectableFlux} which shares this {@link Flux} sequence and
+	 * dispatches values to subscribers in a backpressure-aware manner. This will
+	 * effectively turn any type of sequence into a hot sequence.
 	 * <p>
-	 * Backpressure will be coordinated on {@link Subscription#request} and if any {@link Subscriber} is missing
-	 * demand (requested = 0), multicast will pause pushing/pulling.
+	 * Backpressure will be coordinated on {@link Subscription#request} and if any
+	 * {@link Subscriber} is missing demand (requested = 0), multicast will pause
+	 * pushing/pulling.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/publish.png" alt="">
 	 *
@@ -4706,9 +4925,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Prepare a {@link Mono} which shares this {@link Flux} sequence and dispatches the first observed item to
-	 * subscribers in a backpressure-aware manner.
-	 * This will effectively turn any type of sequence into a hot sequence when the first {@link Subscriber} subscribes.
+	 * Prepare a {@link Mono} which shares this {@link Flux} sequence and dispatches the
+	 * first observed item to subscribers in a backpressure-aware manner.
+	 * This will effectively turn any type of sequence into a hot sequence when the first
+	 * {@link Subscriber} subscribes.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/publishnext.png" alt="">
 	 *
@@ -4720,18 +4940,21 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Run onNext, onComplete and onError on a supplied {@link Scheduler}
-	 * {@link reactor.core.scheduler.Scheduler.Worker}.
-	 *
+	 * {@link Worker Worker}.
 	 * <p>
-	 * Typically used for fast publisher, slow consumer(s) scenarios.
+	 * This operator influences the threading context where the rest of the operators in
+	 * the chain below it will execute, up to a new occurrence of {@code publishOn}.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/publishon.png" alt="">
 	 * <p>
+	 * Typically used for fast publisher, slow consumer(s) scenarios.
+	 * <blockquote><pre>
 	 * {@code flux.publishOn(Schedulers.single()).subscribe() }
+	 * </pre></blockquote>
 	 *
-	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
+	 * @param scheduler a {@link Scheduler} providing the {@link Worker} where to publish
 	 *
-	 * @return a {@link Flux} producing asynchronously
+	 * @return a {@link Flux} producing asynchronously on a given {@link Scheduler}
 	 */
 	public final Flux<T> publishOn(Scheduler scheduler) {
 		return publishOn(scheduler, QueueSupplier.SMALL_BUFFER_SIZE);
@@ -4739,16 +4962,19 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Run onNext, onComplete and onError on a supplied {@link Scheduler}
-	 * {@link reactor.core.scheduler.Scheduler.Worker}.
-	 *
+	 * {@link Worker}.
 	 * <p>
-	 * Typically used for fast publisher, slow consumer(s) scenarios.
+	 * This operator influences the threading context where the rest of the operators in
+	 * the chain below it will execute, up to a new occurrence of {@code publishOn}.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/publishon.png" alt="">
 	 * <p>
+	 * Typically used for fast publisher, slow consumer(s) scenarios.
+	 * <blockquote><pre>
 	 * {@code flux.publishOn(Schedulers.single()).subscribe() }
+	 * </pre></blockquote>
 	 *
-	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
+	 * @param scheduler a {@link Scheduler} providing the {@link Worker} where to publish
 	 * @param prefetch the asynchronous boundary capacity
 	 *
 	 * @return a {@link Flux} producing asynchronously
@@ -4759,16 +4985,19 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Run onNext, onComplete and onError on a supplied {@link Scheduler}
-	 * {@link reactor.core.scheduler.Scheduler.Worker}.
-	 *
+	 * {@link Worker}.
 	 * <p>
-	 * Typically used for fast publisher, slow consumer(s) scenarios.
+	 * This operator influences the threading context where the rest of the operators in
+	 * the chain below it will execute, up to a new occurrence of {@code publishOn}.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/publishon.png" alt="">
 	 * <p>
+	 * Typically used for fast publisher, slow consumer(s) scenarios.
+	 * <blockquote><pre>
 	 * {@code flux.publishOn(Schedulers.single()).subscribe() }
+	 * </pre></blockquote>
 	 *
-	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
+	 * @param scheduler a {@link Scheduler} providing the {@link Worker} where to publish
 	 * @param delayError should the buffer be consumed before forwarding any error
 	 * @param prefetch the asynchronous boundary capacity
 	 *
@@ -4790,18 +5019,18 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Aggregate the values from this {@link Flux} sequence into an object of the same type than the
-	 * emitted items. The left/right {@link BiFunction} arguments are the N-1 and N item, ignoring sequence
-	 * with 0 or 1 element only.
+	 * Reduce the values from this {@link Flux} sequence into an single object of the same
+	 * type than the emitted items. Reduction is performed using a {@link BiFunction} that
+	 * takes the intermediate result of the reduction and the current value and returns
+	 * the next intermediate value of the reduction. It will ignore sequence with 0 or 1
+	 * elements.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/aggregate.png" alt="">
 	 *
-	 * @param aggregator the aggregating {@link BiFunction}
+	 * @param aggregator the reducing {@link BiFunction}
 	 *
 	 * @return a reduced {@link Flux}
-	 *
-	 *
 	 */
 	public final Mono<T> reduce(BiFunction<T, T, T> aggregator) {
 		if (this instanceof Callable){
@@ -4813,15 +5042,18 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Accumulate the values from this {@link Flux} sequence into an object matching an initial value type.
-	 * The arguments are the N-1 or {@literal initial} value and N current item .
+	 * Reduce the values from this {@link Flux} sequence into an single object matching the
+	 * type of a seed value. Reduction is performed using a {@link BiFunction} that
+	 * takes the intermediate result of the reduction and the current value and returns
+	 * the next intermediate value of the reduction. First element is paired with the seed
+	 * value, {@literal initial}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/reduce.png" alt="">
 	 *
 	 * @param accumulator the reducing {@link BiFunction}
-	 * @param initial the initial left argument to pass to the reducing {@link BiFunction}
-	 * @param <A> the type of the initial and reduced object
+	 * @param initial the seed, the initial leftmost argument to pass to the reducing {@link BiFunction}
+	 * @param <A> the type of the seed and the reduced object
 	 *
 	 * @return a reduced {@link Flux}
 	 *
@@ -4831,15 +5063,18 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Accumulate the values from this {@link Flux} sequence into an object matching an initial value type.
-	 * The arguments are the N-1 or {@literal initial} value and N current item .
+	 * Reduce the values from this {@link Flux} sequence into an single object matching the
+	 * type of a lazily supplied seed value. Reduction is performed using a
+	 * {@link BiFunction} that takes the intermediate result of the reduction and the
+	 * current value and returns the next intermediate value of the reduction. First
+	 * element is paired with the seed value, supplied via {@literal initial}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/reduce.png" alt="">
 	 *
 	 * @param accumulator the reducing {@link BiFunction}
-	 * @param initial the initial left argument supplied on subscription to the reducing {@link BiFunction}
-	 * @param <A> the type of the initial and reduced object
+	 * @param initial a {@link Supplier} of the seed, called on subscription and passed to the the reducing {@link BiFunction}
+	 * @param <A> the type of the seed and the reduced object
 	 *
 	 * @return a reduced {@link Flux}
 	 *
@@ -4849,7 +5084,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Repeatedly subscribe to the source completion of the previous subscription.
+	 * Repeatedly and indefinitely subscribe to the source upon completion of the
+	 * previous subscription.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/repeat.png" alt="">
@@ -4868,23 +5104,21 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param predicate the boolean to evaluate on onComplete.
 	 *
-	 * @return an eventually repeated {@link Flux} on onComplete
-	 *
+	 * @return a {@link Flux} that repeats on onComplete while the predicate matches
 	 */
 	public final Flux<T> repeat(BooleanSupplier predicate) {
 		return onAssembly(new FluxRepeatPredicate<>(this, predicate));
 	}
 
 	/**
-	 * Repeatedly subscribe to the source if the predicate returns true after completion of the previous subscription.
+	 * Repeatedly subscribe to the source {@literal numRepeat} times.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/repeatn.png" alt="">
 	 *
 	 * @param numRepeat the number of times to re-subscribe on onComplete
 	 *
-	 * @return an eventually repeated {@link Flux} on onComplete up to number of repeat specified
-	 *
+	 * @return a {@link Flux} that repeats on onComplete, up to the specified number of repetitions
 	 */
 	public final Flux<T> repeat(long numRepeat) {
 		return onAssembly(new FluxRepeat<>(this, numRepeat));
@@ -4900,32 +5134,30 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param numRepeat the number of times to re-subscribe on complete
 	 * @param predicate the boolean to evaluate on onComplete
 	 *
-	 * @return an eventually repeated {@link Flux} on onComplete up to number of repeat specified OR matching
-	 * predicate
-	 *
+	 * @return a {@link Flux} that repeats on onComplete while the predicate matches,
+	 * up to the specified number of repetitions
 	 */
 	public final Flux<T> repeat(long numRepeat, BooleanSupplier predicate) {
 		return defer( () -> repeat(countingBooleanSupplier(predicate, numRepeat)));
 	}
 
 	/**
-	 * Repeatedly subscribe to this {@link Flux} when a companion sequence signals a number of emitted elements in
-	 * response to the flux completion signal.
+	 * Repeatedly subscribe to this {@link Flux} when a companion sequence emits elements in
+	 * response to the flux completion signal. Any terminal signal from the companion
+	 * sequence will terminate the resulting {@link Flux} with the same signal immediately.
 	 * <p>If the companion sequence signals when this {@link Flux} is active, the repeat
-	 * attempt is suppressed and any terminal signal will terminate this {@link Flux} with the same signal immediately.
-	 *
+	 * attempt is suppressed.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/repeatwhen.png" alt="">
 	 *
-	 * @param whenFactory the {@link Function} providing a {@link Flux} signalling an exclusive number of
-	 * emitted elements on onComplete and returning a {@link Publisher} companion.
+	 * @param repeatFactory the {@link Function} that returns the associated {@link Publisher}
+	 * companion, given a {@link Flux} that signals each onComplete as a 0-based incrementing {@link Long}.
 	 *
-	 * @return an eventually repeated {@link Flux} on onComplete when the companion {@link Publisher} produces an
+	 * @return a {@link Flux} that repeats on onComplete when the companion {@link Publisher} produces an
 	 * onNext signal
-	 *
 	 */
-	public final Flux<T> repeatWhen(Function<Flux<Long>, ? extends Publisher<?>> whenFactory) {
-		return onAssembly(new FluxRepeatWhen<>(this, whenFactory));
+	public final Flux<T> repeatWhen(Function<Flux<Long>, ? extends Publisher<?>> repeatFactory) {
+		return onAssembly(new FluxRepeatWhen<>(this, repeatFactory));
 	}
 
 	/**
@@ -4965,7 +5197,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Turn this {@link Flux} into a connectable hot source and cache last emitted signals
 	 * for further {@link Subscriber}. Will retain each onNext up to the given per-item
 	 * expiry timeout. Completion and Error will also be replayed.
-	 * <p>
+	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/replay.png"
 	 * alt="">
@@ -4982,7 +5214,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Turn this {@link Flux} into a connectable hot source and cache last emitted signals
 	 * for further {@link Subscriber}. Will retain up to the given history size onNext
 	 * signals with a per-item ttl. Completion and Error will also be replayed.
-	 * <p>
+	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/replay.png"
 	 * alt="">
@@ -5033,32 +5265,27 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Re-subscribes to this {@link Flux} sequence if it signals any error
-	 * either indefinitely.
-	 * <p>
-	 * The times == Long.MAX_VALUE is treated as infinite retry.
-	 *
+	 * Re-subscribes to this {@link Flux} sequence if it signals any error, indefinitely.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/retry.png" alt="">
 	 *
-	 * @return a re-subscribing {@link Flux} on onError
+	 * @return a {@link Flux} that retries on onError
 	 */
 	public final Flux<T> retry() {
 		return retry(Long.MAX_VALUE);
 	}
 
 	/**
-	 * Re-subscribes to this {@link Flux} sequence if it signals any error
-	 * either indefinitely or a fixed number of times.
+	 * Re-subscribes to this {@link Flux} sequence if it signals any error, for a fixed
+	 * number of times.
 	 * <p>
-	 * The times == Long.MAX_VALUE is treated as infinite retry.
-	 *
+	 * Note that passing {@literal Long.MAX_VALUE} is treated as infinite retry.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/retryn.png" alt="">
 	 *
 	 * @param numRetries the number of times to tolerate an error
 	 *
-	 * @return a re-subscribing {@link Flux} on onError up to the specified number of retries.
+	 * @return a {@link Flux} that retries on onError up to the specified number of retry attempts.
 	 *
 	 */
 	public final Flux<T> retry(long numRetries) {
@@ -5067,14 +5294,14 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Re-subscribes to this {@link Flux} sequence if it signals any error
-	 * and the given {@link Predicate} matches otherwise push the error downstream.
+	 * that matches the given {@link Predicate}, otherwise push the error downstream.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/retryb.png" alt="">
 	 *
 	 * @param retryMatcher the predicate to evaluate if retry should occur based on a given error signal
 	 *
-	 * @return a re-subscribing {@link Flux} on onError if the predicates matches.
+	 * @return a {@link Flux} that retries on onError if the predicates matches.
 	 */
 	public final Flux<T> retry(Predicate<? super Throwable> retryMatcher) {
 		return onAssembly(new FluxRetryPredicate<>(this, retryMatcher));
@@ -5082,7 +5309,7 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Re-subscribes to this {@link Flux} sequence up to the specified number of retries if it signals any
-	 * error and the given {@link Predicate} matches otherwise push the error downstream.
+	 * error that match the given {@link Predicate}, otherwise push the error downstream.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/retrynb.png" alt="">
@@ -5090,9 +5317,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param numRetries the number of times to tolerate an error
 	 * @param retryMatcher the predicate to evaluate if retry should occur based on a given error signal
 	 *
-	 * @return a re-subscribing {@link Flux} on onError up to the specified number of retries and if the predicate
-	 * matches.
-	 *
+	 * @return a {@link Flux} that retries on onError up to the specified number of retry
+	 * attempts, only if the predicate matches.
 	 */
 	public final Flux<T> retry(long numRetries, Predicate<? super Throwable> retryMatcher) {
 		return defer(() -> retry(countingPredicate(retryMatcher, numRetries)));
@@ -5108,10 +5334,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/retrywhen.png" alt="">
 	 *
-	 * @param whenFactory the
-	 * {@link Function} providing a {@link Flux} signalling any error from the source sequence and returning a {@link Publisher} companion.
+	 * @param whenFactory the {@link Function} that returns the associated {@link Publisher}
+	 * companion, given a {@link Flux} that signals each onError as a {@link Throwable}.
 	 *
-	 * @return a re-subscribing {@link Flux} on onError when the companion {@link Publisher} produces an
+	 * @return a {@link Flux} that retries on onError when the companion {@link Publisher} produces an
 	 * onNext signal
 	 */
 	public final Flux<T> retryWhen(Function<Flux<Throwable>, ? extends Publisher<?>> whenFactory) {
@@ -5119,22 +5345,23 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Emit latest value for every given period of time.
+	 * Sample this {@link Flux} by periodically emitting an item corresponding to that
+	 * {@link Flux} latest emitted value within the periodical time window.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/sampletimespan.png" alt="">
 	 *
-	 * @param timespan the duration to emit the latest observed item
+	 * @param timespan the duration of the window after which to emit the latest observed item
 	 *
-	 * @return a sampled {@link Flux} by last item over a period of time
+	 * @return a {@link Flux} sampled to the last item seen over each periodic window
 	 */
 	public final Flux<T> sample(Duration timespan) {
 		return sample(interval(timespan));
 	}
 
 	/**
-	 * Sample this {@link Flux} and emit its latest value whenever the sampler {@link Publisher}
-	 * signals a value.
+	 * Sample this {@link Flux} by emitting an item corresponding to that {@link Flux}
+	 * latest emitted value whenever a companion sampler {@link Publisher} signals a value.
 	 * <p>
 	 * Termination of either {@link Publisher} will result in termination for the {@link Subscriber}
 	 * as well.
@@ -5145,79 +5372,85 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/sample.png" alt="">
 	 *
-	 * @param sampler the sampler {@link Publisher}
+	 * @param sampler the sampler companion {@link Publisher}
 	 *
 	 * @param <U> the type of the sampler sequence
 	 *
-	 * @return a sampled {@link Flux} by last item observed when the sampler {@link Publisher} signals
+	 * @return a {@link Flux} sampled to the last item observed each time the sampler {@link Publisher} signals
 	 */
 	public final <U> Flux<T> sample(Publisher<U> sampler) {
 		return onAssembly(new FluxSample<>(this, sampler));
 	}
 
 	/**
-	 * Take a value from this {@link Flux} then use the duration provided to skip other values.
+	 * Repeatedly take a value from this {@link Flux} then skip the values that follow
+	 * within a given duration.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/samplefirsttimespan.png" alt="">
 	 *
-	 * @param timespan the duration to exclude others values from this sequence
+	 * @param timespan the duration during which to skip values after each sample
 	 *
-	 * @return a sampled {@link Flux} by first item over a period of time
+	 * @return a {@link Flux} sampled to the first item of each duration-based window
 	 */
 	public final Flux<T> sampleFirst(Duration timespan) {
 		return sampleFirst(t -> Mono.delay(timespan));
 	}
 
 	/**
-	 * Take a value from this {@link Flux} then use the duration provided by a
-	 * generated Publisher to skip other values until that sampler {@link Publisher} signals.
+	 * Repeatedly take a value from this {@link Flux} then skip the values that follow
+	 * before the next signal from a companion sampler {@link Publisher}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/samplefirst.png" alt="">
 	 *
-	 * @param samplerFactory select a {@link Publisher} companion to signal onNext or onComplete to stop excluding
-	 * others values from this sequence
+	 * @param samplerFactory supply a companion sampler {@link Publisher} which signals the end of the skip window
 	 * @param <U> the companion reified type
 	 *
-	 * @return a sampled {@link Flux} by last item observed when the sampler signals
+	 * @return a {@link Flux} sampled to the first item observed in each window closed by the sampler signals
 	 */
 	public final <U> Flux<T> sampleFirst(Function<? super T, ? extends Publisher<U>> samplerFactory) {
 		return onAssembly(new FluxSampleFirst<>(this, samplerFactory));
 	}
 
 	/**
-	 * Emit the last value from this {@link Flux} only if there were no new values emitted
-	 * during the time window provided by a publisher for that particular last value.
+	 * Emit the latest value from this {@link Flux} only if there were no new values emitted
+	 * during the window defined by a companion {@link Publisher} derived from that particular
+	 * value.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/sampletimeout.png" alt="">
 	 *
-	 * @param throttlerFactory select a {@link Publisher} companion to signal onNext or onComplete to stop checking
-	 * others values from this sequence and emit the selecting item
+	 * @param throttlerFactory supply a companion sampler {@link Publisher} which signals
+	 * the end of the window during which no new emission should occur. If it is the case,
+	 * the original value triggering the window is emitted.
 	 * @param <U> the companion reified type
 	 *
-	 * @return a sampled {@link Flux} by last single item observed before a companion {@link Publisher} emits
+	 * @return a {@link Flux} sampled to items not followed by any other item within a window
+	 * defined by a companion {@link Publisher}
 	 */
 	public final <U> Flux<T> sampleTimeout(Function<? super T, ? extends Publisher<U>> throttlerFactory) {
 		return sampleTimeout(throttlerFactory, QueueSupplier.XS_BUFFER_SIZE);
 	}
 
 	/**
-	 * Emit the last value from this {@link Flux} only if there were no newer values emitted
-	 * during the time window provided by a publisher for that particular last value.
+	 * Emit the latest value from this {@link Flux} only if there were no new values emitted
+	 * during the window defined by a companion {@link Publisher} derived from that particular
+	 * value.
 	 * <p>The provided {@literal maxConcurrency} will keep a bounded maximum of concurrent timeouts and drop any new
 	 * items until at least one timeout terminates.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/sampletimeoutm.png" alt="">
 	 *
-	 * @param throttlerFactory select a {@link Publisher} companion to signal onNext or onComplete to stop checking
-	 * others values from this sequence and emit the selecting item
+	 * @param throttlerFactory supply a companion sampler {@link Publisher} which signals
+	 * the end of the window during which no new emission should occur. If it is the case,
+	 * the original value triggering the window is emitted.
 	 * @param maxConcurrency the maximum number of concurrent timeouts
 	 * @param <U> the throttling type
 	 *
-	 * @return a sampled {@link Flux} by last single item observed before a companion {@link Publisher} emits
+	 * @return a {@link Flux} sampled to items not followed by any other item within a window
+	 * defined by a companion {@link Publisher}
 	 */
 	public final <U> Flux<T> sampleTimeout(Function<? super T, ? extends Publisher<U>>
 			throttlerFactory, int maxConcurrency) {
@@ -5226,8 +5459,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Accumulate this {@link Flux} values with an accumulator {@link BiFunction} and
-	 * returns the intermediate results of this function.
+	 * Reduce this {@link Flux} values with an accumulator {@link BiFunction} and
+	 * also emit the intermediate results of this function.
 	 * <p>
 	 * Unlike {@link #scan(Object, BiFunction)}, this operator doesn't take an initial value
 	 * but treats the first {@link Flux} value as initial value.
@@ -5246,15 +5479,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param accumulator the accumulating {@link BiFunction}
 	 *
 	 * @return an accumulating {@link Flux}
-	 *
 	 */
 	public final Flux<T> scan(BiFunction<T, T, T> accumulator) {
 		return onAssembly(new FluxScan<>(this, accumulator));
 	}
 
 	/**
-	 * Aggregate this {@link Flux} values with the help of an accumulator {@link BiFunction}
-	 * and emits the intermediate results.
+	 * Reduce this {@link Flux} values with an accumulator {@link BiFunction} and
+	 * also emit the intermediate results of this function.
 	 * <p>
 	 * The accumulation works as follows:
 	 * <pre><code>
@@ -5268,7 +5500,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/scan.png" alt="">
 	 *
-	 * @param initial the initial argument to pass to the reduce function
+	 * @param initial the initial leftmost argument to pass to the reduce function
 	 * @param accumulator the accumulating {@link BiFunction}
 	 * @param <A> the accumulated type
 	 *
@@ -5281,8 +5513,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Aggregate this {@link Flux} values with the help of an accumulator {@link BiFunction}
-	 * and emits the intermediate results.
+	 * Reduce this {@link Flux} values with the help of an accumulator {@link BiFunction}
+	 * and also emits the intermediate results. A seed value is lazily provided by a
+	 * {@link Supplier} invoked for each {@link Subscriber}.
 	 * <p>
 	 * The accumulation works as follows:
 	 * <pre><code>
@@ -5296,8 +5529,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/scan.png" alt="">
 	 *
-	 * @param initial the initial supplier to init the first value to pass to the reduce
-	 * function
+	 * @param initial the supplier providing the seed, the leftmost parameter initially
+	 * passed to the reduce function
 	 * @param accumulator the accumulating {@link BiFunction}
 	 * @param <A> the accumulated type
 	 *
@@ -5311,15 +5544,14 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Returns a new {@link Flux} that multicasts (shares) the original {@link Flux}.
-	 * As long as
-	 * there is at least one {@link Subscriber} this {@link Flux} will be subscribed and
+	 * As long as there is at least one {@link Subscriber} this {@link Flux} will be subscribed and
 	 * emitting data.
 	 * When all subscribers have cancelled it will cancel the source
 	 * {@link Flux}.
 	 * <p>This is an alias for {@link #publish()}.{@link ConnectableFlux#refCount()}.
 	 *
-	 * @return a {@link Flux} that upon first subcribe causes the source {@link
-	 * Flux} to subscribe once only, late subscribers might therefore miss items.
+	 * @return a {@link Flux} that upon first subscribe causes the source {@link Flux}
+	 * to subscribe once, late subscribers might therefore miss items.
 	 */
 	public final Flux<T> share() {
 		return publish().refCount();
@@ -5327,13 +5559,13 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Expect and emit a single item from this {@link Flux} source or signal
-	 * {@link java.util.NoSuchElementException} (or a default generated value) for empty source,
-	 * {@link IndexOutOfBoundsException} for a multi-item source.
+	 * {@link java.util.NoSuchElementException} for an empty source, or
+	 * {@link IndexOutOfBoundsException} for a source with more than one element.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/single.png" alt="">
 	 *
-	 * @return a {@link Mono} with the eventual single item or an error signal
+	 * @return a {@link Mono} with the single item or an error signal
 	 */
     public final Mono<T> single() {
 	    if (this instanceof Callable) {
@@ -5355,16 +5587,16 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 *
-	 * Expect and emit a single item from this {@link Flux} source or signal
-	 * {@link java.util.NoSuchElementException} (or a default value) for empty source,
-	 * {@link IndexOutOfBoundsException} for a multi-item source.
+	 * Expect and emit a single item from this {@link Flux} source and emit a default
+	 * value for an empty source, but signal an {@link IndexOutOfBoundsException} for a
+	 * source with more than one element.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/singleordefault.png" alt="">
 	 * @param defaultValue  a single fallback item if this {@link Flux} is empty
 	 *
-	 * @return a {@link Mono} with the eventual single item or a supplied default value
+	 * @return a {@link Mono} with the expected single item, the supplied default value or
+	 * and error signal
 	 */
     public final Mono<T> single(T defaultValue) {
         if (this instanceof Callable) {
@@ -5386,12 +5618,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Expect and emit a zero or single item from this {@link Flux} source or
-	 * {@link IndexOutOfBoundsException} for a multi-item source.
+	 * Expect and emit a single item from this {@link Flux} source, and accept an empty
+	 * source but signal an {@link IndexOutOfBoundsException} for a source with more than
+	 * one element.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/singleorempty.png" alt="">
 	 *
-	 * @return a {@link Mono} with the eventual single item or no item
+	 * @return a {@link Mono} with the expected single item, no item or an error
 	 */
     public final Mono<T> singleOrEmpty() {
 	    if (this instanceof Callable) {
@@ -5403,14 +5636,16 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Skip next the specified number of elements from this {@link Flux}.
+	 * Skip the specified number of elements from the beginning of this {@link Flux} then
+	 * emit the remaining elements.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/skip.png" alt="">
 	 *
-	 * @param skipped the number of times to drop
+	 * @param skipped the number of elements to drop
 	 *
-	 * @return a dropping {@link Flux} until the specified skipped number of elements
+	 * @return a dropping {@link Flux} with the specified number of elements skipped at
+	 * the beginning
 	 */
 	public final Flux<T> skip(long skipped) {
 		if (skipped == 0L) {
@@ -5422,29 +5657,30 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Skip elements from this {@link Flux} for the given time period.
+	 * Skip elements from this {@link Flux} emitted within the specified initial duration.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/skiptime.png" alt="">
 	 *
-	 * @param timespan the time window to exclude next signals
+	 * @param timespan the initial time window during which to drop elements
 	 *
-	 * @return a dropping {@link Flux} until the end of the given timespan
+	 * @return a {@link Flux} dropping at the beginning until the end of the given duration
 	 */
 	public final Flux<T> skip(Duration timespan) {
 		return skip(timespan, Schedulers.parallel());
 	}
 
 	/**
-	 * Skip elements from this {@link Flux} for the given time period.
+	 * Skip elements from this {@link Flux} emitted within the specified initial duration,
+	 * as measured on the provided {@link Scheduler}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/skiptime.png" alt="">
 	 *
-	 * @param timespan the time window to exclude next signals
-	 * @param timer a time-capable {@link Scheduler} instance to run on
+	 * @param timespan the initial time window during which to drop elements
+	 * @param timer a time-capable {@link Scheduler} instance to measure the time window on
 	 *
-	 * @return a dropping {@link Flux} until the end of the given timespan
+	 * @return a {@link Flux} dropping at the beginning for the given duration
 	 */
 	public final Flux<T> skip(Duration timespan, Scheduler timer) {
 		if(!timespan.isZero()) {
@@ -5456,14 +5692,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Skip the last specified number of elements from this {@link Flux}.
+	 * Skip a specified number of elements at the end of this {@link Flux} sequence.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/skiplast.png" alt="">
 	 *
-	 * @param n the number of elements to ignore before completion
+	 * @param n the number of elements to drop before completion
 	 *
-	 * @return a dropping {@link Flux} for the specified skipped number of elements before termination
+	 * @return a {@link Flux} dropping the specified number of elements at the end of the
+	 * sequence
 	 *
 	 */
 	public final Flux<T> skipLast(int n) {
@@ -5475,14 +5712,14 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Skips values from this {@link Flux} until a {@link Predicate} returns true for the
-	 * value. Will include the matched value.
+	 * value. The resulting {@link Flux} will include and emit the matching value.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/skipuntil.png" alt="">
 	 *
-	 * @param untilPredicate the {@link Predicate} evaluating to true to stop skipping.
+	 * @param untilPredicate the {@link Predicate} evaluated to stop skipping.
 	 *
-	 * @return a dropping {@link Flux} until the {@link Predicate} matches
+	 * @return a {@link Flux} dropping until the {@link Predicate} matches
 	 */
 	public final Flux<T> skipUntil(Predicate<? super T> untilPredicate) {
 		return onAssembly(new FluxSkipUntil<>(this, untilPredicate));
@@ -5495,9 +5732,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/skipuntil.png" alt="">
 	 *
-	 * @param other the {@link Publisher} companion to coordinate with to stop skipping
+	 * @param other the companion {@link Publisher} to coordinate with to stop skipping
 	 *
-	 * @return a dropping {@link Flux} until the other {@link Publisher} emits
+	 * @return a {@link Flux} dropping until the other {@link Publisher} emits
 	 *
 	 */
 	public final Flux<T> skipUntilOther(Publisher<?> other) {
@@ -5510,45 +5747,42 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/skipwhile.png" alt="">
 	 *
-	 * @param skipPredicate the {@link Predicate} evaluating to true to keep skipping.
+	 * @param skipPredicate the {@link Predicate} that causes skipping while evaluating to true.
 	 *
-	 * @return a dropping {@link Flux} while the {@link Predicate} matches
+	 * @return a {@link Flux} dropping while the {@link Predicate} matches
 	 */
 	public final Flux<T> skipWhile(Predicate<? super T> skipPredicate) {
 		return onAssembly(new FluxSkipWhile<>(this, skipPredicate));
 	}
 
 	/**
-	 * Returns a {@link Flux} that sorts the events emitted by source {@link Flux}.
+	 * Sort elements from this {@link Flux} by collecting and sorting them in the background
+	 * then emitting the sorted sequence once this sequence completes.
 	 * Each item emitted by the {@link Flux} must implement {@link Comparable} with
-	 * respect to all
-	 * other items in the sequence.
+	 * respect to all other items in the sequence.
 	 *
 	 * <p>Note that calling {@code sort} with long, non-terminating or infinite sources
-	 * might cause {@link OutOfMemoryError}. Use sequence splitting like
-	 * {@link #window} to sort batches in that case.
+	 * might cause {@link OutOfMemoryError}. Use sequence splitting like {@link #window} to sort batches in that case.
 	 *
-	 * @throws ClassCastException
-	 *             if any item emitted by the {@link Flux} does not implement
-	 *             {@link Comparable} with respect to
-	 *             all other items emitted by the {@link Flux}
-	 * @return a sorting {@link Flux}
+	 * @throws ClassCastException if any item emitted by the {@link Flux} does not implement
+	 * {@link Comparable} with respect to all other items emitted by the {@link Flux}
+	 * @return a sorted {@link Flux}
 	 */
 	public final Flux<T> sort(){
 		return collectSortedList().flatMapIterable(identityFunction());
 	}
 
 	/**
-	 * Returns a {@link Flux} that sorts the events emitted by source {@link Flux}
-	 * given the {@link Comparator} function.
+	 * Sort elements from this {@link Flux} using a {@link Comparator} function, by
+	 * collecting and sorting elements in the background then emitting the sorted sequence
+	 * once this sequence completes.
 	 *
-	 * <p>Note that calling {@code sorted} with long, non-terminating or infinite sources
+	 * <p>Note that calling {@code sort} with long, non-terminating or infinite sources
 	 * might cause {@link OutOfMemoryError}
 	 *
-	 * @param sortFunction
-	 *            a function that compares two items emitted by this {@link Flux}
-	 *            that indicates their sort order
-	 * @return a sorting {@link Flux}
+	 * @param sortFunction a function that compares two items emitted by this {@link Flux}
+	 * to indicate their sort order
+	 * @return a sorted {@link Flux}
 	 */
 	public final Flux<T> sort(Comparator<? super T> sortFunction) {
 		return collectSortedList(sortFunction).flatMapIterable(identityFunction());
@@ -5560,9 +5794,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/startwithi.png" alt="">
 	 *
-	 * @param iterable the sequence of values to start the sequence with
+	 * @param iterable the sequence of values to start the resulting {@link Flux} with
 	 *
-	 * @return a prefixed {@link Flux} with given {@link Iterable}
+	 * @return a new {@link Flux} prefixed with elements from an {@link Iterable}
 	 */
 	public final Flux<T> startWith(Iterable<? extends T> iterable) {
 		return startWith(fromIterable(iterable));
@@ -5574,9 +5808,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/startwithv.png" alt="">
 	 *
-	 * @param values the array of values to start with
+	 * @param values the array of values to start the resulting {@link Flux} with
 	 *
-	 * @return a prefixed {@link Flux} with given values
+	 * @return a new {@link Flux} prefixed with the given elements
 	 */
 	@SafeVarargs
 	public final Flux<T> startWith(T... values) {
@@ -5584,14 +5818,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Prepend the given {@link Publisher} sequence before this {@link Flux} sequence.
+	 * Prepend the given {@link Publisher} sequence to this {@link Flux} sequence.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/startwith.png" alt="">
 	 *
 	 * @param publisher the Publisher whose values to prepend
 	 *
-	 * @return a prefixed {@link Flux} with given {@link Publisher} sequence
+	 * @return a new {@link Flux} prefixed with the given {@link Publisher} sequence
 	 */
 	public final Flux<T> startWith(Publisher<? extends T> publisher) {
 		if (this instanceof FluxConcatArray) {
@@ -5602,13 +5836,16 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Start the chain and request unbounded demand.
+	 * Subscribe to this {@link Flux} and request unbounded demand.
+	 * <p>
+	 * This version doesn't specify any consumption behavior for the events from the
+	 * chain, especially no error handling, so other variants should usually be preferred.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/unbounded.png" alt="">
 	 * <p>
 	 *
-	 * @return a {@link Disposable} task to execute to dispose and cancel the underlying {@link Subscription}
+	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
 	 */
 	public final Disposable subscribe() {
 		return subscribe(null, null, null);
@@ -5616,18 +5853,23 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Subscribe a {@link Consumer} to this {@link Flux} that will consume all the
-	 * sequence. It will request an unbounded demand.
+	 * elements in the  sequence. It will request an unbounded demand ({@code Long.MAX_VALUE}).
 	 * <p>
 	 * For a passive version that observe and forward incoming data see {@link #doOnNext(java.util.function.Consumer)}.
-	 * <p>For a version that gives you more control over backpressure and the request, see
+	 * <p>
+	 * For a version that gives you more control over backpressure and the request, see
 	 * {@link #subscribe(Subscriber)} with a {@link BaseSubscriber}.
+	 * <p>
+	 * Keep in mind that since the sequence can be asynchronous, this will immediately
+	 * return control to the calling thread. This can give the impression the consumer is
+	 * not invoked when executing in a main thread or a unit test for instance.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/subscribe.png" alt="">
 	 *
-	 * @param consumer the consumer to invoke on each value
+	 * @param consumer the consumer to invoke on each value (onNext signal)
 	 *
-	 * @return a new {@link Disposable} to dispose the {@link Subscription}
+	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
 	 */
 	public final Disposable subscribe(Consumer<? super T> consumer) {
 		Objects.requireNonNull(consumer, "consumer");
@@ -5635,12 +5877,18 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Subscribe {@link Consumer} to this {@link Flux} that will consume all the
-	 * sequence.  It will request unbounded demand {@code Long.MAX_VALUE}.
+	 * Subscribe to this {@link Flux} with a {@link Consumer} that will consume all the
+	 * elements in the sequence, as well as a {@link Consumer} that will handle errors.
+	 * The subscription will request an unbounded demand ({@code Long.MAX_VALUE}).
+	 * <p>
 	 * For a passive version that observe and forward incoming data see
 	 * {@link #doOnNext(java.util.function.Consumer)} and {@link #doOnError(java.util.function.Consumer)}.
 	 * <p>For a version that gives you more control over backpressure and the request, see
 	 * {@link #subscribe(Subscriber)} with a {@link BaseSubscriber}.
+	 * <p>
+	 * Keep in mind that since the sequence can be asynchronous, this will immediately
+	 * return control to the calling thread. This can give the impression the consumers are
+	 * not invoked when executing in a main thread or a unit test for instance.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/subscribeerror.png" alt="">
@@ -5648,7 +5896,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param consumer the consumer to invoke on each next signal
 	 * @param errorConsumer the consumer to invoke on error signal
 	 *
-	 * @return a new {@link Disposable} to dispose the {@link Subscription}
+	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
 	 */
 	public final Disposable subscribe(Consumer<? super T> consumer, Consumer<? super Throwable> errorConsumer) {
 		Objects.requireNonNull(errorConsumer, "errorConsumer");
@@ -5656,12 +5904,18 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Subscribe {@link Consumer} to this {@link Flux} that will consume all the
-	 * sequence.  It will request unbounded demand {@code Long.MAX_VALUE}.
+	 * Subscribe {@link Consumer} to this {@link Flux} that will respectively consume all the
+	 * elements in the sequence, handle errors and react to completion. The subscription
+	 * will request unbounded demand ({@code Long.MAX_VALUE}).
+	 * <p>
 	 * For a passive version that observe and forward incoming data see {@link #doOnNext(java.util.function.Consumer)},
 	 * {@link #doOnError(java.util.function.Consumer)} and {@link #doOnComplete(Runnable)}.
 	 * <p>For a version that gives you more control over backpressure and the request, see
 	 * {@link #subscribe(Subscriber)} with a {@link BaseSubscriber}.
+	 * <p>
+	 * Keep in mind that since the sequence can be asynchronous, this will immediately
+	 * return control to the calling thread. This can give the impression the consumer is
+	 * not invoked when executing in a main thread or a unit test for instance.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/subscribecomplete.png" alt="">
@@ -5670,7 +5924,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param errorConsumer the consumer to invoke on error signal
 	 * @param completeConsumer the consumer to invoke on complete signal
 	 *
-	 * @return a new {@link Disposable} to dispose the {@link Subscription}
+	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
 	 */
 	public final Disposable subscribe(Consumer<? super T> consumer,
 			Consumer<? super Throwable> errorConsumer, Runnable completeConsumer) {
@@ -5678,8 +5932,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Subscribe {@link Consumer} to this {@link Flux} that will consume all the
-	 * sequence.  It will let the provided {@link Subscription subscriptionConsumer}
+	 * Subscribe {@link Consumer} to this {@link Flux} that will respectively consume all the
+	 * elements in the sequence, handle errors, react to completion, and request upon subscription.
+	 * It will let the provided {@link Subscription subscriptionConsumer}
 	 * request the adequate amount of data, or request unbounded demand
 	 * {@code Long.MAX_VALUE} if no such consumer is provided.
 	 * <p>
@@ -5688,6 +5943,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * and {@link #doOnSubscribe(Consumer)}.
 	 * <p>For a version that gives you more control over backpressure and the request, see
 	 * {@link #subscribe(Subscriber)} with a {@link BaseSubscriber}.
+	 * <p>
+	 * Keep in mind that since the sequence can be asynchronous, this will immediately
+	 * return control to the calling thread. This can give the impression the consumer is
+	 * not invoked when executing in a main thread or a unit test for instance.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/subscribecomplete.png" alt="">
@@ -5698,7 +5957,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param subscriptionConsumer the consumer to invoke on subscribe signal, to be used
 	 * for the initial {@link Subscription#request(long) request}, or null for max request
 	 *
-	 * @return a new {@link Disposable} to dispose the {@link Subscription}
+	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
 	 */
 	public final Disposable subscribe(Consumer<? super T> consumer,
 			Consumer<? super Throwable> errorConsumer,
@@ -5712,19 +5971,23 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Run subscribe, onSubscribe and request on a supplied
-	 * {@link Scheduler}
+	 * Run subscribe, onSubscribe and request on a specified {@link Scheduler}'s {@link Worker}.
+	 * As such, placing this operator anywhere in the chain will also impact the execution
+	 * context of onNext/onError/onComplete signals from the beginning of the chain up to
+	 * the next occurrence of a {@link #publishOn(Scheduler) publishOn}.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/subscribeon.png" alt="">
 	 * <p>
 	 * Typically used for slow publisher e.g., blocking IO, fast consumer(s) scenarios.
 	 *
-	 * <p>
+	 * <blockquote><pre>
 	 * {@code flux.subscribeOn(Schedulers.single()).subscribe() }
+	 * </pre></blockquote>
 	 *
-	 * @param scheduler a checked {@link reactor.core.scheduler.Scheduler.Worker} factory
+	 * @param scheduler a {@link Scheduler} providing the {@link Worker} where to subscribe
 	 *
 	 * @return a {@link Flux} requesting asynchronously
+	 * @see #publishOn(Scheduler)
 	 */
 	public final Flux<T> subscribeOn(Scheduler scheduler) {
 		if (this instanceof Callable) {
@@ -5741,15 +6004,16 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Subscribe the given {@link Subscriber} to this {@link Flux} and return said
+	 * {@link Subscriber} (eg. a {@link FluxProcessor}).
 	 *
-	 * A chaining {@link Publisher#subscribe(Subscriber)} alternative to inline composition type conversion to a hot
-	 * emitter (e.g. {@link FluxProcessor} or {@link MonoProcessor}).
-	 *
+	 * <blockquote><pre>
 	 * {@code flux.subscribeWith(WorkQueueProcessor.create()).subscribe() }
+	 * </pre></blockquote>
 	 *
-	 * <p>If you need more control over backpressure and the request, use a {@link BaseSubscriber}.
+	 * If you need more control over backpressure and the request, use a {@link BaseSubscriber}.
 	 *
-	 * @param subscriber the {@link Subscriber} to subscribe and return
+	 * @param subscriber the {@link Subscriber} to subscribe with and return
 	 * @param <E> the reified type from the input/output subscriber
 	 *
 	 * @return the passed {@link Subscriber}
@@ -5760,28 +6024,31 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Provide an alternative if this sequence is completed without any data
+	 * Switch to an alternative {@link Publisher} if this sequence is completed without any data.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/switchifempty.png" alt="">
 	 * <p>
-	 * @param alternate the alternate publisher if this sequence is empty
+	 * @param alternate the alternative {@link Publisher} if this sequence is empty
 	 *
-	 * @return an alternating {@link Flux} on source onComplete without elements
+	 * @return a new {@link Flux} that falls back on a {@link Publisher} if source is empty
 	 */
 	public final Flux<T> switchIfEmpty(Publisher<? extends T> alternate) {
 		return onAssembly(new FluxSwitchIfEmpty<>(this, alternate));
 	}
 
 	/**
-	 * Switch to a new {@link Publisher} generated via a {@link Function} whenever this {@link Flux} produces an item.
+	 * Switch to a new {@link Publisher} generated via a {@link Function} whenever
+	 * this {@link Flux} produces an item. As such, the elements from each generated
+	 * Publisher are emitted in the resulting {@link Flux}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/switchmap.png" alt="">
 	 *
-	 * @param fn the transformation function
+	 * @param fn the {@link Function} to generate a {@link Publisher} for each source value
 	 * @param <V> the type of the return value of the transformation function
 	 *
-	 * @return an alternating {@link Flux} on source onNext
+	 * @return a new {@link Flux} that emits values from an alternative {@link Publisher}
+	 * for each source onNext
 	 *
 	 */
 	public final <V> Flux<V> switchMap(Function<? super T, Publisher<? extends V>> fn) {
@@ -5789,36 +6056,38 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Switch to a new {@link Publisher} generated via a {@link Function} whenever this {@link Flux} produces an item.
+	 * Switch to a new {@link Publisher} generated via a {@link Function} whenever
+	 * this {@link Flux} produces an item. As such, the elements from each generated
+	 * Publisher are emitted in the resulting {@link Flux}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/switchmap.png" alt="">
 	 *
-	 * @param fn the transformation function
+	 * @param fn the {@link Function} to generate a {@link Publisher} for each source value
 	 * @param prefetch the produced demand for inner sources
 	 *
 	 * @param <V> the type of the return value of the transformation function
 	 *
-	 * @return an alternating {@link Flux} on source onNext
-	 *
+	 * @return a new {@link Flux} that emits values from an alternative {@link Publisher}
+	 * for each source onNext
 	 */
 	public final <V> Flux<V> switchMap(Function<? super T, Publisher<? extends V>> fn, int prefetch) {
 		return onAssembly(new FluxSwitchMap<>(this, fn, QueueSupplier.unbounded(prefetch), prefetch));
 	}
 
 	/**
-	 * Take only the first N values from this {@link Flux}.
+	 * Take only the first N values from this {@link Flux}, if available.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/take.png" alt="">
 	 * <p>
-	 * If N is zero, the {@link Subscriber} gets completed if this {@link Flux} completes, signals an error or
-	 * signals its first value (which is not not relayed though).
+	 * If N is zero, the resulting {@link Flux} completes as soon as this {@link Flux}
+	 * signals its first value (which is not not relayed, though).
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/take0.png" alt="">
 	 * @param n the number of items to emit from this {@link Flux}
 	 *
-	 * @return a size limited {@link Flux}
+	 * @return a {@link Flux} limited to size N
 	 */
 	public final Flux<T> take(long n) {
 		if (this instanceof Fuseable) {
@@ -5828,36 +6097,38 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Relay values from this {@link Flux} until the given time period elapses.
+	 * Relay values from this {@link Flux} until the specified {@link Duration} elapses.
 	 * <p>
-	 * If the time period is zero, the {@link Subscriber} gets completed if this {@link Flux} completes, signals an
-	 * error or
-	 * signals its first value (which is not not relayed though).
+	 * If the duration is zero, the resulting {@link Flux} completes as soon as this {@link Flux}
+	 * signals its first value (which is not not relayed, though).
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/taketime.png" alt="">
 	 *
-	 * @param timespan the time window of items to emit from this {@link Flux}
+	 * @param timespan the {@link Duration} of the time window during which to emit elements
+	 * from this {@link Flux}
 	 *
-	 * @return a time limited {@link Flux}
+	 * @return a {@link Flux} limited to elements emitted within a specific duration
 	 */
 	public final Flux<T> take(Duration timespan) {
 		return take(timespan, Schedulers.parallel());
 	}
 
 	/**
-	 * Relay values from this {@link Flux} until the given time period elapses.
+	 * Relay values from this {@link Flux} until the specified {@link Duration} elapses,
+	 * as measured on the specified {@link Scheduler}.
 	 * <p>
-	 * If the time period is zero, the {@link Subscriber} gets completed if this {@link Flux} completes, signals an
-	 * error or signals its first value (which is not not relayed though).
+	 * If the duration is zero, the resulting {@link Flux} completes as soon as this {@link Flux}
+	 * signals its first value (which is not not relayed, though).
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/taketime.png" alt="">
 	 *
-	 * @param timespan the time window of items to emit from this {@link Flux}
+	 * @param timespan the {@link Duration} of the time window during which to emit elements
+	 * from this {@link Flux}
 	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
-	 * @return a time limited {@link Flux}
+	 * @return a {@link Flux} limited to elements emitted within a specific duration
 	 */
 	public final Flux<T> take(Duration timespan, Scheduler timer) {
 		if (!timespan.isZero()) {
@@ -5888,15 +6159,15 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Relay values from this {@link Flux} until the given {@link Predicate} matches.
-	 * Unlike {@link #takeWhile}, this will include the matched data.
+	 * This includes the matching data (unlike {@link #takeWhile}).
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/takeuntilp.png" alt="">
 	 *
-	 * @param predicate the {@link Predicate} to signal when to stop replaying signal
-	 * from this {@link Flux}
+	 * @param predicate the {@link Predicate} that stops the taking of values from this {@link Flux}
+	 * when returning {@literal true}.
 	 *
-	 * @return an eventually limited {@link Flux}
+	 * @return a new {@link Flux} limited by the predicate
 	 *
 	 */
 	public final Flux<T> takeUntil(Predicate<? super T> predicate) {
@@ -5909,9 +6180,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/takeuntil.png" alt="">
 	 *
-	 * @param other the {@link Publisher} to signal when to stop replaying signal from this {@link Flux}
+	 * @param other the companion {@link Publisher} that signals when to stop taking values from this {@link Flux}
 	 *
-	 * @return an eventually limited {@link Flux}
+	 * @return a new {@link Flux} limited by a companion {@link Publisher}
 	 *
 	 */
 	public final Flux<T> takeUntilOther(Publisher<?> other) {
@@ -5919,16 +6190,17 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Relay values while a predicate returns {@literal TRUE} for the values
-	 * (checked before each value is delivered).
-	 * Unlike {@link #takeUntil}, this will exclude the matched data.
+	 * Relay values from this {@link Flux} while a predicate returns {@literal TRUE}
+	 * for the values (checked before each value is delivered).
+	 * This only includes the matching data (unlike {@link #takeUntil}).
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/takewhile.png" alt="">
 	 *
-	 * @param continuePredicate the {@link Predicate} invoked each onNext returning {@literal FALSE} to terminate
+	 * @param continuePredicate the {@link Predicate} invoked each onNext returning {@literal TRUE}
+	 * to relay a value or {@literal FALSE} to terminate
 	 *
-	 * @return an eventually limited {@link Flux}
+	 * @return a new {@link Flux} taking values from the source while the predicate matches
 	 */
 	public final Flux<T> takeWhile(Predicate<? super T> continuePredicate) {
 		return onAssembly(new FluxTakeWhile<>(this, continuePredicate));
@@ -5940,7 +6212,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/ignorethen.png" alt="">
 	 * <p>
-	 * @return a new {@link Mono}
+	 * @return a new {@link Mono} representing the termination of this {@link Flux}
 	 */
 	public final Mono<Void> then() {
 		@SuppressWarnings("unchecked")
@@ -5949,7 +6221,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Ignore element from this {@link Flux} and transform its completion signal into the
+	 * Let this {@link Flux} complete then play signals from a provided {@link Mono}.
+	 * <p>
+	 * In other words ignore element from this {@link Flux} and transform its completion signal into the
 	 * emission and completion signal of a provided {@code Mono<V>}. Error signal is
 	 * replayed in the resulting {@code Mono<V>}.
 	 *
@@ -5959,7 +6233,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param other a {@link Mono} to emit from after termination
 	 * @param <V> the element type of the supplied Mono
 	 *
-	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
+	 * @return a new {@link Flux} that wait for source completion then emits from the supplied {@link Mono}
 	 */
 	public final <V> Mono<V> then(Mono<V> other) {
 		return Mono.onAssembly(new MonoThenIgnore<>(new Publisher[] { this }, other));
@@ -5982,16 +6256,18 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Return a {@link Flux} that emits the sequence of the supplied {@link Publisher}
-	 * after this {@link Flux} completes, ignoring this flux elements. If an error
-	 * occurs it immediately terminates the resulting flux.
+	 * Let this {@link Flux} complete then play another {@link Publisher}.
+	 * <p>
+	 * In other words ignore element from this flux and transform the completion signal into a
+	 * {@code Publisher<V>} that will emit elements from the provided {@link Publisher}.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/ignorethens.png" alt="">
 	 *
 	 * @param other a {@link Publisher} to emit from after termination
-	 * @param <V> the supplied produced type
+	 * @param <V> the element type of the supplied Publisher
 	 *
-	 * @return a new {@link Flux} emitting eventually from the supplied {@link Publisher}
+	 * @return a new {@link Flux} that emits from the supplied {@link Publisher} after
+	 * this Flux completes.
 	 */
 	public final <V> Flux<V> thenMany(Publisher<V> other) {
 		if (this instanceof FluxConcatArray) {
@@ -6006,25 +6282,25 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Signal a {@link java.util.concurrent.TimeoutException} in case a per-item period fires before the
-	 * next item arrives from this {@link Flux}.
+	 * Propagate a {@link TimeoutException} as soon as no item is emitted within the
+	 * given {@link Duration} from the previous emission (or the subscription for the first item).
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timeouttime.png" alt="">
 	 *
 	 * @param timeout the timeout between two signals from this {@link Flux}
 	 *
-	 * @return a per-item expirable {@link Flux}
+	 * @return a {@link Flux} that can time out on a per-item basis
 	 */
 	public final Flux<T> timeout(Duration timeout) {
 		return timeout(timeout, null, Schedulers.parallel());
 	}
 
 	/**
-	 * Switch to a fallback {@link Publisher} in case a per-item period
-	 * fires before the next item arrives from this {@link Flux}.
-	 *
-	 * <p> If the given {@link Publisher} is null, signal a {@link java.util.concurrent.TimeoutException}.
+	 * Switch to a fallback {@link Flux} as soon as no item is emitted within the
+	 * given {@link Duration} from the previous emission (or the subscription for the first item).
+	 * <p>
+	 * If the given {@link Publisher} is null, signal a {@link TimeoutException} instead.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timeouttimefallback.png" alt="">
@@ -6032,15 +6308,16 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timeout the timeout between two signals from this {@link Flux}
 	 * @param fallback the fallback {@link Publisher} to subscribe when a timeout occurs
 	 *
-	 * @return a per-item expirable {@link Flux} with a fallback {@link Publisher}
+	 * @return a {@link Flux} that will fallback to a different {@link Publisher} in case of a per-item timeout
 	 */
 	public final Flux<T> timeout(Duration timeout, Publisher<? extends T> fallback) {
 		return timeout(timeout, fallback, Schedulers.parallel());
 	}
 
 	/**
-	 * Signal a {@link java.util.concurrent.TimeoutException} error in case a per-item
-	 * period fires before the next item arrives from this {@link Flux}.
+	 * Propagate a {@link TimeoutException} as soon as no item is emitted within the
+	 * given {@link Duration} from the previous emission (or the subscription for the first
+	 * item), as measured by the specified {@link Scheduler}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timeouttime.png" alt="">
@@ -6048,17 +6325,18 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timeout the timeout {@link Duration} between two signals from this {@link Flux}
 	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
-	 * @return a per-item expirable {@link Flux}
+	 * @return a {@link Flux} that can time out on a per-item basis
 	 */
 	public final Flux<T> timeout(Duration timeout, Scheduler timer) {
 		return timeout(timeout, null, timer);
 	}
 
 	/**
-	 * Switch to a fallback {@link Publisher} in case a per-item period fires before the
-	 * next item arrives from this {@link Flux}.
-	 *
-	 * <p> If the given {@link Publisher} is null, signal a {@link java.util.concurrent.TimeoutException}.
+	 * Switch to a fallback {@link Flux} as soon as no item is emitted within the
+	 * given {@link Duration} from the previous emission (or the subscription for the
+	 * first item), as measured on the specified {@link Scheduler}.
+	 * <p>
+	 * If the given {@link Publisher} is null, signal a {@link TimeoutException} instead.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timeouttimefallback.png" alt="">
@@ -6067,7 +6345,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param fallback the fallback {@link Publisher} to subscribe when a timeout occurs
 	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
-	 * @return a per-item expirable {@link Flux} with a fallback {@link Publisher}
+	 * @return a {@link Flux} that will fallback to a different {@link Publisher} in case of a per-item timeout
 	 */
 	public final Flux<T> timeout(Duration timeout, Publisher<? extends T> fallback, Scheduler timer) {
 		final Mono<Long> _timer = Mono.delay(timeout, timer).onErrorReturn(0L);
@@ -6080,17 +6358,19 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Signal a {@link java.util.concurrent.TimeoutException} in case a first item from this {@link Flux} has
+	 * Signal a {@link TimeoutException} in case the first item from this {@link Flux} has
 	 * not been emitted before the given {@link Publisher} emits.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timeoutfirst.png" alt="">
 	 *
-	 * @param firstTimeout the timeout {@link Publisher} that must not emit before the first signal from this {@link Flux}
+	 * @param firstTimeout the companion {@link Publisher} that will trigger a timeout if
+	 * emitting before the first signal from this {@link Flux}
 	 *
 	 * @param <U> the type of the timeout Publisher
 	 *
-	 * @return an expirable {@link Flux} if the first item does not come before a {@link Publisher} signal
+	 * @return a {@link Flux} that can time out if the first item does not come before
+	 * a signal from a companion {@link Publisher}
 	 *
 	 */
 	public final <U> Flux<T> timeout(Publisher<U> firstTimeout) {
@@ -6098,9 +6378,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Signal a {@link java.util.concurrent.TimeoutException} in case a first item from this {@link Flux} has
-	 * not been emitted before the given {@link Publisher} emits. The following items will be individually timed via
-	 * the factory provided {@link Publisher}.
+	 * Signal a {@link TimeoutException} in case the first item from this {@link Flux} has
+	 * not been emitted before the {@code firstTimeout} {@link Publisher} emits, and whenever
+	 * each subsequent elements is not emitted before a {@link Publisher} generated from
+	 * the latest element signals.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timeoutall.png" alt="">
@@ -6111,8 +6392,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <U> the type of the elements of the first timeout Publisher
 	 * @param <V> the type of the elements of the subsequent timeout Publishers
 	 *
-	 * @return a first then per-item expirable {@link Flux}
-	 *
+	 * @return a {@link Flux} that can time out if each element does not come before
+	 * a signal from a per-item companion {@link Publisher}
 	 */
 	public final <U, V> Flux<T> timeout(Publisher<U> firstTimeout,
 			Function<? super T, ? extends Publisher<V>> nextTimeoutFactory) {
@@ -6120,9 +6401,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Switch to a fallback {@link Publisher} in case a first item from this {@link Flux} has
-	 * not been emitted before the given {@link Publisher} emits. The following items will be individually timed via
-	 * the factory provided {@link Publisher}.
+	 * Switch to a fallback {@link Publisher} in case the first item from this {@link Flux} has
+	 * not been emitted before the {@code firstTimeout} {@link Publisher} emits, and whenever
+	 * each subsequent elements is not emitted before a {@link Publisher} generated from
+	 * the latest element signals.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timeoutallfallback.png" alt="">
@@ -6134,8 +6416,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <U> the type of the elements of the first timeout Publisher
 	 * @param <V> the type of the elements of the subsequent timeout Publishers
 	 *
-	 * @return a first then per-item expirable {@link Flux} with a fallback {@link Publisher}
-	 *
+	 * @return a {@link Flux} that can time out if each element does not come before
+	 * a signal from a per-item companion {@link Publisher}
 	 */
 	public final <U, V> Flux<T> timeout(Publisher<U> firstTimeout,
 			Function<? super T, ? extends Publisher<V>> nextTimeoutFactory, Publisher<? extends T>
@@ -6145,8 +6427,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Emit a {@link reactor.util.function.Tuple2} pair of T1 {@link Long} current system time in
-	 * millis and T2 {@code T} associated data for each item from this {@link Flux}
+	 * Emit a {@link reactor.util.function.Tuple2} pair of T1 the current clock time in
+	 * millis (as a {@link Long} measured by the {@link Schedulers#parallel() parallel}
+	 * Scheduler) and T2 the emitted data (as a {@code T}), for each item from this {@link Flux}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timestamp.png" alt="">
@@ -6158,8 +6441,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Emit a {@link reactor.util.function.Tuple2} pair of T1 {@link Long} current system time in
-	 * millis and T2 {@code T} associated data for each item from this {@link Flux}
+	 * Emit a {@link reactor.util.function.Tuple2} pair of T1 the current clock time in
+	 * millis (as a {@link Long} measured by the provided {@link Scheduler}) and T2
+	 * the emitted data (as a {@code T}), for each item from this {@link Flux}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/timestamp.png" alt="">
@@ -6173,7 +6457,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform this {@link Flux} into a lazy {@link Iterable} blocking on next calls.
+	 * Transform this {@link Flux} into a lazy {@link Iterable} blocking on
+	 * {@link Iterator#next()} calls.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/toiterable.png" alt="">
@@ -6186,9 +6471,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform this {@link Flux} into a lazy {@link Iterable} blocking on next calls.
+	 * Transform this {@link Flux} into a lazy {@link Iterable} blocking on
+	 * {@link Iterator#next()} calls.
 	 *
-	 * @param batchSize the bounded capacity to produce to this {@link Flux} or {@code Integer.MAX_VALUE} for unbounded
+	 * @param batchSize the bounded capacity to prefetch from this {@link Flux} or
+	 * {@code Integer.MAX_VALUE} for unbounded demand
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/toiterablen.png" alt="">
@@ -6201,14 +6488,16 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform this {@link Flux} into a lazy {@link Iterable} blocking on next calls.
+	 * Transform this {@link Flux} into a lazy {@link Iterable} blocking on
+	 * {@link Iterator#next()} calls.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/toiterablen.png" alt="">
 	 *
-	 * @param batchSize the bounded capacity to produce to this {@link Flux} or {@code Integer.MAX_VALUE} for unbounded
-	 * @param queueProvider the supplier of the queue implementation to be used for transferring elements
-	 * across threads.
+	 * @param batchSize the bounded capacity to prefetch from this {@link Flux} or
+	 * {@code Integer.MAX_VALUE} for unbounded demand
+	 * @param queueProvider the supplier of the queue implementation to be used for storing
+	 * elements emitted faster than the iteration
 	 *
 	 * @return a blocking {@link Iterable}
 	 */
@@ -6224,7 +6513,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform this {@link Flux} into a lazy {@link Stream} blocking on next calls.
+	 * Transform this {@link Flux} into a lazy {@link Stream} blocking for each source
+	 * {@link Subscriber#onNext(Object) onNext} call.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/tostream.png" alt="">
@@ -6236,9 +6526,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform this {@link Flux} into a lazy {@link Stream} blocking on next calls.
+	 * Transform this {@link Flux} into a lazy {@link Stream} blocking for each source
+	 * {@link Subscriber#onNext(Object) onNext} call.
 	 *
-	 * @param batchSize the bounded capacity to produce to this {@link Flux} or {@code Integer.MAX_VALUE} for unbounded
+	 * @param batchSize the bounded capacity to prefetch from this {@link Flux} or
+	 * {@code Integer.MAX_VALUE} for unbounded demand
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/tostream.png" alt="">
 	 *
@@ -6254,8 +6546,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Transform this {@link Flux} in order to generate a target {@link Flux}. Unlike {@link #compose(Function)}, the
 	 * provided function is executed as part of assembly.
 	 *
-	 * {@code Function<Flux, Flux> applySchedulers = flux -> flux.subscribeOn(Schedulers.elastic()).publishOn(Schedulers.parallel());
-	 *        flux.transform(applySchedulers).map(v -> v * v).subscribe()}
+	 * <blockquote><pre>
+	 * {@code
+	 * Function<Flux, Flux> applySchedulers = flux -> flux.subscribeOn(Schedulers.elastic())
+	 *                                                    .publishOn(Schedulers.parallel());
+	 * flux.transform(applySchedulers).map(v -> v * v).subscribe();}
+	 * </pre></blockquote>
 	 *
 	 * @param transformer the {@link Function} to immediately map this {@link Flux} into a target {@link Flux}
 	 * instance.
@@ -6270,28 +6566,24 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code maxSize}
-	 * count and starting from
-	 * the first item.
-	 * Each {@link Flux} bucket will onComplete after {@code maxSize} items have been routed.
+	 * Split this {@link Flux} sequence into multiple {@link Flux} windows containing
+	 * {@code maxSize} elements (or less for the final window) and starting from the first item.
+	 * Each {@link Flux} window will onComplete after {@code maxSize} items have been routed.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsize.png" alt="">
 	 *
-	 * @param maxSize the maximum routed items before emitting onComplete per {@link Flux} bucket
+	 * @param maxSize the maximum number of items to emit in the window before closing it
 	 *
-	 * @return a windowing {@link Flux} of sized {@link Flux} buckets
+	 * @return a {@link Flux} of {@link Flux} windows based on element count
 	 */
 	public final Flux<Flux<T>> window(int maxSize) {
 		return onAssembly(new FluxWindow<>(this, maxSize, QueueSupplier.get(maxSize)));
 	}
 
 	/**
-	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code skip}
-	 * count,
-	 * starting from
-	 * the first item.
-	 * Each {@link Flux} bucket will onComplete after {@code maxSize} items have been routed.
+	 * Split this {@link Flux} sequence into multiple {@link Flux} windows of size
+	 * {@code maxSize}, that each open every {@code skip} elements in the source.
 	 *
 	 * <p>
 	 * When skip > maxSize : dropping windows
@@ -6306,10 +6598,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsize.png" alt="">
 	 *
-	 * @param maxSize the maximum routed items per {@link Flux}
-	 * @param skip the number of items to count before emitting a new bucket {@link Flux}
+	 * @param maxSize the maximum number of items to emit in the window before closing it
+	 * @param skip the number of items to count before opening and emitting a new window
 	 *
-	 * @return a windowing {@link Flux} of sized {@link Flux} buckets every skip count
+	 * @return a {@link Flux} of {@link Flux} windows based on element count and opened every skipCount
 	 */
 	public final Flux<Flux<T>> window(int maxSize, int skip) {
 		return onAssembly(new FluxWindow<>(this,
@@ -6328,7 +6620,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param boundary a {@link Publisher} to emit any item for a split signal and complete to terminate
 	 *
-	 * @return a windowing {@link Flux} delimiting its sub-sequences by a given {@link Publisher}
+	 * @return a {@link Flux} of {@link Flux} windows delimited by a given {@link Publisher}
 	 */
 	public final Flux<Flux<T>> window(Publisher<?> boundary) {
 		return onAssembly(new FluxWindowBoundary<>(this,
@@ -6338,67 +6630,27 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Split this {@link Flux} sequence into continuous, non-overlapping windows delimited by a given period.
+	 * Split this {@link Flux} sequence into continuous, non-overlapping windows that open
+	 * for a {@code timespan} {@link Duration} (as measured on the {@link Schedulers#parallel() parallel}
+	 * Scheduler).
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowtimespan.png" alt="">
 	 *
-	 * @param timespan the duration to delimit {@link Flux} windows
+	 * @param timespan the {@link Duration} to delimit {@link Flux} windows
 	 *
-	 * @return a windowing {@link Flux} of timed {@link Flux} buckets
+	 * @return a {@link Flux} of {@link Flux} windows continuously opened for a given {@link Duration}
 	 */
 	public final Flux<Flux<T>> window(Duration timespan) {
 		return window(timespan, Schedulers.parallel());
 	}
 
 	/**
-	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code timeshift}
-	 * period, starting from the first item.
-	 * Each {@link Flux} bucket will onComplete after {@code timespan} period has elapsed.
-	 *
-	 * <p>
-	 * When timeshift > timespan : dropping windows
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsizeskip.png" alt="">
-	 * <p>
-	 * When timeshift < timespan : overlapping windows
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsizeskipover.png" alt="">
-	 * <p>
-	 * When timeshift == timespan : exact windows
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsize.png" alt="">
-	 *
-	 * @param timespan the maximum {@link Flux} window duration
-	 * @param timeshift the period of time to create new {@link Flux} windows
-	 *
-	 * @return a windowing
-	 * {@link Flux} of {@link Flux} buckets delimited by an opening {@link Publisher} and a selected closing {@link Publisher}
-	 *
-	 */
-	public final Flux<Flux<T>> window(Duration timespan, Duration timeshift) {
-		return window(timespan, timeshift, Schedulers.parallel());
-	}
-
-	/**
-	 * Split this {@link Flux} sequence into continuous, non-overlapping windows delimited by a given period.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowtimespan.png" alt="">
-	 *
-	 * @param timespan the {@link Duration} to delimit {@link Flux} windows
-	 * @param timer a time-capable {@link Scheduler} instance to run on
-	 *
-	 * @return a windowing {@link Flux} of timed {@link Flux} buckets
-	 */
-	public final Flux<Flux<T>> window(Duration timespan, Scheduler timer) {
-		return window(interval(timespan, timer));
-	}
-
-	/**
-	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code timeshift}
-	 * period, starting from the first item.
-	 * Each {@link Flux} bucket will onComplete after {@code timespan} period has elapsed.
+	 * Split this {@link Flux} sequence into multiple {@link Flux} windows that open
+	 * for a given {@code timespan} {@link Duration}, after which it closes with onComplete.
+	 * Each window is opened at a regular {@code timeShift} interval, starting from the
+	 * first item.
+	 * Both durations are measured on the {@link Schedulers#parallel() parallel} Scheduler.
 	 *
 	 * <p>
 	 * When timeshift > timespan : dropping windows
@@ -6414,11 +6666,58 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsize.png" alt="">
 	 *
 	 * @param timespan the maximum {@link Flux} window {@link Duration}
-	 * @param timeshift the period of time to create new {@link Flux} windows, as a {@link Duration}
+	 * @param timeshift the period of time at which to create new {@link Flux} windows
+	 *
+	 * @return a {@link Flux} of {@link Flux} windows opened at regular intervals and
+	 * closed after a {@link Duration}
+	 *
+	 */
+	public final Flux<Flux<T>> window(Duration timespan, Duration timeshift) {
+		return window(timespan, timeshift, Schedulers.parallel());
+	}
+
+	/**
+	 * Split this {@link Flux} sequence into continuous, non-overlapping windows that open
+	 * for a {@code timespan} {@link Duration} (as measured on the provided {@link Scheduler}).
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowtimespan.png" alt="">
+	 *
+	 * @param timespan the {@link Duration} to delimit {@link Flux} windows
 	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
-	 * @return a windowing {@link Flux} of {@link Flux} buckets delimited by an opening
-	 * {@link Duration} timespan and a closing {@link Duration} timeshift
+	 * @return a {@link Flux} of {@link Flux} windows continuously opened for a given {@link Duration}
+	 */
+	public final Flux<Flux<T>> window(Duration timespan, Scheduler timer) {
+		return window(interval(timespan, timer));
+	}
+
+	/**
+	 * Split this {@link Flux} sequence into multiple {@link Flux} windows that open
+	 * for a given {@code timespan} {@link Duration}, after which it closes with onComplete.
+	 * Each window is opened at a regular {@code timeShift} interval, starting from the
+	 * first item.
+	 * Both durations are measured on the provided {@link Scheduler}.
+	 *
+	 * <p>
+	 * When timeshift > timespan : dropping windows
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsizeskip.png" alt="">
+	 * <p>
+	 * When timeshift < timespan : overlapping windows
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsizeskipover.png" alt="">
+	 * <p>
+	 * When timeshift == timespan : exact windows
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsize.png" alt="">
+	 *
+	 * @param timespan the maximum {@link Flux} window {@link Duration}
+	 * @param timeshift the period of time at which to create new {@link Flux} windows
+	 * @param timer a time-capable {@link Scheduler} instance to run on
+	 *
+	 * @return a {@link Flux} of {@link Flux} windows opened at regular intervals and
+	 * closed after a {@link Duration}
 	 */
 	public final Flux<Flux<T>> window(Duration timespan, Duration timeshift, Scheduler timer) {
 		if (timeshift.equals(timespan)) {
@@ -6428,83 +6727,89 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code maxSize} number
-	 * of items, starting from the first item. {@link Flux} windows will onComplete after a given
-	 * timespan occurs and the number of items has not be counted.
+	 * Split this {@link Flux} sequence into multiple {@link Flux} windows containing
+	 * {@code maxSize} elements (or less for the final window) and starting from the first item.
+	 * Each {@link Flux} window will onComplete once it contains {@code maxSize} elements
+	 * OR it has been open for the given {@link Duration} (as measured on the {@link Schedulers#parallel() parallel}
+	 * Scheduler).
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsizetimeout.png" alt="">
 	 *
-	 * @param maxSize the maximum {@link Flux} window items to count before onComplete
-	 * @param timespan the timeout to use to onComplete a given window if size is not counted yet
+	 * @param maxSize the maximum number of items to emit in the window before closing it
+	 * @param timespan the maximum {@link Duration} since the window was opened before closing it
 	 *
-	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
+	 * @return a {@link Flux} of {@link Flux} windows based on element count and duration
 	 */
 	public final Flux<Flux<T>> windowTimeout(int maxSize, Duration timespan) {
 		return windowTimeout(maxSize, timespan , Schedulers.parallel());
 	}
 
 	/**
-	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given {@code maxSize} number
-	 * of items, starting from the first item. {@link Flux} windows will onComplete after a given
-	 * timespan occurs and the number of items has not be counted.
+	 * Split this {@link Flux} sequence into multiple {@link Flux} windows containing
+	 * {@code maxSize} elements (or less for the final window) and starting from the first item.
+	 * Each {@link Flux} window will onComplete once it contains {@code maxSize} elements
+	 * OR it has been open for the given {@link Duration} (as measured on the provided
+	 * {@link Scheduler}).
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowsizetimeout.png" alt="">
 	 *
-	 * @param maxSize the maximum {@link Flux} window items to count before onComplete
-	 * @param timespan the timeout to use to onComplete a given window if size is not counted yet
+	 * @param maxSize the maximum number of items to emit in the window before closing it
+	 * @param timespan the maximum {@link Duration} since the window was opened before closing it
 	 * @param timer a time-capable {@link Scheduler} instance to run on
 	 *
-	 * @return a windowing {@link Flux} of sized or timed {@link Flux} buckets
+	 * @return a {@link Flux} of {@link Flux} windows based on element count and duration
 	 */
 	public final Flux<Flux<T>> windowTimeout(int maxSize, Duration timespan, Scheduler timer) {
 		return onAssembly(new FluxWindowTimeOrSize<>(this, maxSize, timespan.toMillis(), timer));
 	}
 
 	/**
-	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given
-	 * predicate. A new window is opened each time the predicate returns true, at which
+	 * Split this {@link Flux} sequence into multiple {@link Flux} windows delimited by the
+	 * given predicate. A new window is opened each time the predicate returns true, at which
 	 * point the previous window will receive the triggering element then onComplete.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowuntilcutafter.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/windowuntil.png" alt="">
 	 *
 	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
-	 * @return a windowing {@link Flux} of {@link GroupedFlux} windows, bounded depending
+	 * @return a {@link Flux} of {@link GroupedFlux} windows, bounded depending
 	 * on the predicate and keyed with the value that triggered the new window.
 	 */
+	//TODO bump marbles URL to upcoming release tag
 	public final Flux<GroupedFlux<T, T>> windowUntil(Predicate<T> boundaryTrigger) {
 		return windowUntil(boundaryTrigger, false);
 	}
 
 	/**
-	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given
-	 * predicate. A new window is opened each time the predicate returns true.
+	 * Split this {@link Flux} sequence into multiple {@link Flux} windows delimited by the
+	 * given predicate. A new window is opened each time the predicate returns true.
 	 * <p>
 	 * If {@code cutBefore} is true, the old window will onComplete and the triggering
 	 * element will be emitted in the new window. Note it can mean that an empty window is
 	 * sometimes emitted, eg. if the first element in the sequence immediately matches the
 	 * predicate.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowuntilcutbefore.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/windowuntilcutbefore.png" alt="">
 	 * <p>
 	 * Otherwise, the triggering element will be emitted in the old window before it does
 	 * onComplete, similar to {@link #windowUntil(Predicate)}.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowuntilcutafter.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/windowuntilcutafter.png" alt="">
 	 *
 	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
 	 * @param cutBefore set to true to include the triggering element in the new window rather than the old.
-	 * @return a windowing {@link Flux} of {@link GroupedFlux} windows, bounded depending
+	 * @return a {@link Flux} of {@link GroupedFlux} windows, bounded depending
 	 * on the predicate and keyed with the value that triggered the new window.
 	 */
+	//TODO bump marbles URL to upcoming release tag
 	public final Flux<GroupedFlux<T, T>> windowUntil(Predicate<T> boundaryTrigger, boolean cutBefore) {
 		return windowUntil(boundaryTrigger, cutBefore, QueueSupplier.SMALL_BUFFER_SIZE);
 	}
 
 	/**
-	 * Split this {@link Flux} sequence into multiple {@link Flux} delimited by the given
+	 * Split this {@link Flux} sequence into multiple {@link Flux} windows delimited by the given
 	 * predicate and using a prefetch. A new window is opened each time the predicate
 	 * returns true.
 	 * <p>
@@ -6513,19 +6818,20 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * sometimes emitted, eg. if the first element in the sequence immediately matches the
 	 * predicate.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowuntilcutbefore.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/windowuntilcutbefore.png" alt="">
 	 * <p>
 	 * Otherwise, the triggering element will be emitted in the old window before it does
 	 * onComplete, similar to {@link #windowUntil(Predicate)}.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowuntilcutafter.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/windowuntilcutafter.png" alt="">
 	 *
 	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
 	 * @param cutBefore set to true to include the triggering element in the new window rather than the old.
 	 * @param prefetch the request size to use for this {@link Flux}.
-	 * @return a windowing {@link Flux} of {@link GroupedFlux} windows, bounded depending
+	 * @return a {@link Flux} of {@link GroupedFlux} windows, bounded depending
 	 * on the predicate and keyed with the value that triggered the new window.
 	 */
+	//TODO bump marbles URL to upcoming release tag
 	public final Flux<GroupedFlux<T, T>> windowUntil(Predicate<T> boundaryTrigger, boolean cutBefore, int prefetch) {
 		return onAssembly(new FluxWindowPredicate<>(this,
 				QueueSupplier.unbounded(prefetch),
@@ -6544,12 +6850,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * separators anywhere in the sequence, each occurrence will lead to an empty window.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowwhile.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/windowwhile.png" alt="">
 	 *
 	 * @param inclusionPredicate a predicate that triggers the next window when it becomes false.
-	 * @return a windowing {@link Flux} of {@link GroupedFlux} windows, each containing
+	 * @return a {@link Flux} of {@link GroupedFlux} windows, each containing
 	 * subsequent elements that all passed a predicate, and keyed with a separator element.
 	 */
+	//TODO bump marbles URL to upcoming release tag
 	public final Flux<GroupedFlux<T, T>> windowWhile(Predicate<T> inclusionPredicate) {
 		return windowWhile(inclusionPredicate, QueueSupplier.SMALL_BUFFER_SIZE);
 	}
@@ -6563,13 +6870,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * separators anywhere in the sequence, each occurrence will lead to an empty window.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowwhile.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/windowwhile.png" alt="">
 	 *
 	 * @param inclusionPredicate a predicate that triggers the next window when it becomes false.
 	 * @param prefetch the request size to use for this {@link Flux}.
-	 * @return a windowing {@link Flux} of {@link GroupedFlux} windows, each containing
+	 * @return a {@link Flux} of {@link GroupedFlux} windows, each containing
 	 * subsequent elements that all passed a predicate, and keyed with a separator element.
 	 */
+	//TODO bump marbles URL to upcoming release tag
 	public final Flux<GroupedFlux<T, T>> windowWhile(Predicate<T> inclusionPredicate, int prefetch) {
 		return onAssembly(new FluxWindowPredicate<>(this,
 				QueueSupplier.unbounded(prefetch),
@@ -6596,15 +6904,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/windowboundary.png" alt="">
 	 *
-	 * @param bucketOpening a {@link Publisher} to emit any item for a split signal and complete to terminate
+	 * @param bucketOpening a {@link Publisher} that opens a new window when it emits any item
 	 * @param closeSelector a {@link Function} given an opening signal and returning a {@link Publisher} that
-	 * emits to complete the window
+	 * will close the window when emitting
 	 *
 	 * @param <U> the type of the sequence opening windows
 	 * @param <V> the type of the sequence closing windows opened by the bucketOpening Publisher's elements
 	 *
-	 * @return a windowing {@link Flux} delimiting its sub-sequences by a given {@link Publisher} and lasting until
-	 * a selected {@link Publisher} emits
+	 * @return a {@link Flux} of {@link Flux} windows opened by signals from a first
+	 * {@link Publisher} and lasting until a selected second {@link Publisher} emits
 	 */
 	public final <U, V> Flux<Flux<T>> windowWhen(Publisher<U> bucketOpening,
 			final Function<? super U, ? extends Publisher<V>> closeSelector) {
@@ -6616,7 +6924,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Combine values from this {@link Flux} with values from another
+	 * Combine the most recently emitted values from both this {@link Flux} and another
 	 * {@link Publisher} through a {@link BiFunction} and emits the result.
 	 * <p>
 	 * The operator will drop values from this {@link Flux} until the other
@@ -6628,7 +6936,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/withlatestfrom.png" alt="">
 	 *
 	 * @param other the {@link Publisher} to combine with
-	 * @param resultSelector the bi-function called with each pair of source and other elements that should return a single value to be emitted
+	 * @param resultSelector the bi-function called with each pair of source and other
+	 * elements that should return a single value to be emitted
 	 *
 	 * @param <U> the other {@link Publisher} sequence type
 	 * @param <R> the result type
@@ -6641,12 +6950,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations of the
-	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
+	 * Zip this {@link Flux} with another {@link Publisher} source, that is to say wait
+	 * for both to emit one element and combine these elements once into a {@link Tuple2}.
+	 * The operator will continue doing so until any of the sources completes.
+	 * Errors will immediately be forwarded.
+	 * This "Step-Merge" processing is especially useful in Scatter-Gather scenarios.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/zipt.png" alt="">
 	 * <p>
-	 * @param source2 The second upstream {@link Publisher} to subscribe to.
+	 * @param source2 The second source {@link Publisher} to zip with this {@link Flux}.
 	 * @param <T2> type of the value from source2
 	 *
 	 * @return a zipped {@link Flux}
@@ -6657,15 +6969,18 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations
-	 * produced by the passed combinator from the most recent items emitted by each source until any of them
-	 * completes. Errors will immediately be forwarded.
+	 * Zip this {@link Flux} with another {@link Publisher} source, that is to say wait
+	 * for both to emit one element and combine these elements using a {@code combinator}
+	 * {@link BiFunction}
+	 * The operator will continue doing so until any of the sources completes.
+	 * Errors will immediately be forwarded.
+	 * This "Step-Merge" processing is especially useful in Scatter-Gather scenarios.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/zip.png" alt="">
 	 * <p>
-	 * @param source2 The second upstream {@link Publisher} to subscribe to.
-	 * @param combinator The aggregate function that will receive a unique value from each upstream and return the value
-	 * to signal downstream
+	 * @param source2 The second source {@link Publisher} to zip with this {@link Flux}.
+	 * @param combinator The aggregate function that will receive a unique value from each
+	 * source and return the value to signal downstream
 	 * @param <T2> type of the value from source2
 	 * @param <V> The produced output after transformation by the combinator
 	 *
@@ -6685,16 +7000,19 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations
-	 * produced by the passed combinator from the most recent items emitted by each source until any of them
-	 * completes. Errors will immediately be forwarded.
+	 * Zip this {@link Flux} with another {@link Publisher} source, that is to say wait
+	 * for both to emit one element and combine these elements using a {@code combinator}
+	 * {@link BiFunction}
+	 * The operator will continue doing so until any of the sources completes.
+	 * Errors will immediately be forwarded.
+	 * This "Step-Merge" processing is especially useful in Scatter-Gather scenarios.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/zipp.png" alt="">
 	 * <p>
-	 * @param source2 The second upstream {@link Publisher} to subscribe to.
+	 * @param source2 The second source {@link Publisher} to zip with this {@link Flux}.
 	 * @param prefetch the request size to use for this {@link Flux} and the other {@link Publisher}
-	 * @param combinator The aggregate function that will receive a unique value from each upstream and return the value
-	 * to signal downstream
+	 * @param combinator The aggregate function that will receive a unique value from each
+	 * source and return the value to signal downstream
 	 * @param <T2> type of the value from source2
 	 * @param <V> The produced output after transformation by the combinator
 	 *
@@ -6711,30 +7029,33 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * "Step-Merge" especially useful in Scatter-Gather scenarios. The operator will forward all combinations of the
-	 * most recent items emitted by each source until any of them completes. Errors will immediately be forwarded.
+	 * Zip this {@link Flux} with another {@link Publisher} source, that is to say wait
+	 * for both to emit one element and combine these elements once into a {@link Tuple2}.
+	 * The operator will continue doing so until any of the sources completes.
+	 * Errors will immediately be forwarded.
+	 * This "Step-Merge" processing is especially useful in Scatter-Gather scenarios.
+	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/zipp.png" alt="">
 	 * <p>
-	 * @param source2 The second upstream {@link Publisher} to subscribe to.
+	 * @param source2 The second source {@link Publisher} to zip with this {@link Flux}.
 	 * @param prefetch the request size to use for this {@link Flux} and the other {@link Publisher}
 	 * @param <T2> type of the value from source2
 	 *
 	 * @return a zipped {@link Flux}
-	 *
 	 */
 	public final <T2> Flux<Tuple2<T, T2>> zipWith(Publisher<? extends T2> source2, int prefetch) {
 		return zipWith(source2, prefetch, tuple2Function());
 	}
 
 	/**
-	 * Pairwise combines as {@link Tuple2} elements of this {@link Flux} and an {@link Iterable} sequence.
-	 *
-	 * @param iterable the {@link Iterable} to pair with
+	 * Zip elements from this {@link Flux} with the content of an {@link Iterable}, that is
+	 * to say combine one element from each, pairwise, into a {@link Tuple2}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/zipwithiterable.png" alt="">
 	 *
+	 * @param iterable the {@link Iterable} to zip with
 	 * @param <T2> the value type of the other iterable sequence
 	 *
 	 * @return a zipped {@link Flux}
@@ -6746,14 +7067,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Pairwise combines elements of this
-	 * {@link Flux} and an {@link Iterable} sequence using the given zipper {@link BiFunction}.
+	 * Zip elements from this {@link Flux} with the content of an {@link Iterable}, that is
+	 * to say combine one element from each, pairwise, using the given zipper {@link BiFunction}.
+	 *
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/zipwithiterable.png" alt="">
 	 *
-	 * @param iterable the {@link Iterable} to pair with
-	 * @param zipper the {@link BiFunction} combinator
+	 * @param iterable the {@link Iterable} to zip with
+	 * @param zipper the {@link BiFunction} pair combinator
 	 *
 	 * @param <T2> the value type of the other iterable sequence
 	 * @param <V> the result type
@@ -6767,13 +7089,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Invoke {@link Hooks} pointcut given a {@link Flux} and returning an eventually
-	 * new {@link Flux}
+	 * To be used by custom operators: invokes assembly {@link Hooks} pointcut given a
+	 * {@link Flux}, potentially returning a new {@link Flux}. This is for example useful
+	 * to activate cross-cutting concerns at assembly time, eg. a generalized
+	 * {@link #checkpoint()}.
 	 *
 	 * @param <T> the value type
-	 * @param source the source to wrap
+	 * @param source the source to apply assembly hooks onto
 	 *
-	 * @return the potentially wrapped source
+	 * @return the source, potentially wrapped with assembly time cross-cutting behavior
 	 */
 	@SuppressWarnings("unchecked")
 	protected static <T> Flux<T> onAssembly(Flux<T> source) {
@@ -6785,13 +7109,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Invoke {@link Hooks} pointcut given a {@link ConnectableFlux} and returning an eventually
-	 * new {@link ConnectableFlux}
+	 * To be used by custom operators: invokes assembly {@link Hooks} pointcut given a
+	 * {@link ConnectableFlux}, potentially returning a new {@link ConnectableFlux}. This
+	 * is for example useful to activate cross-cutting concerns at assembly time, eg. a
+	 * generalized {@link #checkpoint()}.
 	 *
 	 * @param <T> the value type
-	 * @param source the source to wrap
+	 * @param source the source to apply assembly hooks onto
 	 *
-	 * @return the potentially wrapped source
+	 * @return the source, potentially wrapped with assembly time cross-cutting behavior
 	 */
 	@SuppressWarnings("unchecked")
 	protected static <T> ConnectableFlux<T> onAssembly(ConnectableFlux<T> source) {
