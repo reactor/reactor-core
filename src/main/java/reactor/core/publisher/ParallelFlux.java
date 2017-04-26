@@ -881,12 +881,20 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	public abstract void subscribe(Subscriber<? super T>[] subscribers);
 
 	/**
+	 * Subscribes to this {@link ParallelFlux} and triggers the execution chain for all
+	 * 'rails'.
+	 */
+	public final void subscribe(){
+		subscribe(null, null, null);
+	}
+
+	/**
 	 * Subscribes to this {@link ParallelFlux} by providing an onNext callback and
 	 * triggers the execution chain for all 'rails'.
 	 *
 	 * @param onNext consumer of onNext signals
 	 */
-	public void subscribe(Consumer<? super T> onNext){
+	public final void subscribe(Consumer<? super T> onNext){
 		subscribe(onNext, null, null);
 	}
 
@@ -897,7 +905,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @param onNext consumer of onNext signals
 	 * @param onError consumer of error signal
 	 */
-	public void subscribe(Consumer<? super T> onNext, Consumer<? super Throwable>
+	public final void subscribe(Consumer<? super T> onNext, Consumer<? super Throwable>
 			onError){
 		subscribe(onNext, onError, null);
 	}
@@ -910,7 +918,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @param onError consumer of error signal
 	 * @param onComplete callback on completion signal
 	 */
-	public void subscribe(Consumer<? super T> onNext, Consumer<? super Throwable>
+	public final void subscribe(Consumer<? super T> onNext, Consumer<? super Throwable>
 			onError, Runnable onComplete) {
 		subscribe(onNext, onError, onComplete, null);
 	}
@@ -925,7 +933,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @param onComplete callback on completion signal
 	 * @param onSubscribe consumer of the subscription signal
 	 */
-	public void subscribe(Consumer<? super T> onNext, Consumer<? super Throwable>
+	public final void subscribe(Consumer<? super T> onNext, Consumer<? super Throwable>
 			onError, Runnable onComplete, Consumer<? super Subscription> onSubscribe){
 
 		@SuppressWarnings("unchecked")
