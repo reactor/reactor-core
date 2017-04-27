@@ -1458,6 +1458,36 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Subscribe to this Mono and another Publisher, which will be used as a trigger for
+	 * the emission of this Mono's element. That is to say, this Mono's element is delayed
+	 * until the trigger Publisher terminates.
+	 *
+	 * @param anyPublisher the publisher which first emission or termination will trigger
+	 * the emission of this Mono's value.
+	 * @return this Mono, but delayed until the given publisher terminates.
+	 */
+	public Mono<T> delayUntilOther(Publisher<?> anyPublisher) {
+		return delayUntil(a -> anyPublisher);
+	}
+
+	/**
+	 * Subscribe to this {@link Mono} and another {@link Publisher} that is generated from
+	 * this Mono's element and which will be used as a trigger for relaying said element.
+	 * <p>
+	 * That is to say, the resulting {@link Mono} delays until this Mono's element is
+	 * emitted, generates a trigger Publisher and then delays again until the trigger
+	 * Publisher terminates.
+	 *
+	 * @param triggerProvider a {@link Function} that maps this Mono's value into a
+	 * {@link Publisher} whose first emission or termination will trigger the relaying the value.
+	 *
+	 * @return this Mono, but delayed until the derived publisher first emits or terminates.
+	 */
+	public Mono<T> delayUntil(Function<? super T, ? extends Publisher<?>> triggerProvider) {
+		return flatMap(t -> new MonoThenIgnore<>(new Publisher[] { triggerProvider.apply(t) }, Mono.just(t)));
+	}
+
+	/**
 	 * Delay the {@link Mono#subscribe(Subscriber) subscription} to this {@link Mono} source until the given
 	 * period elapses.
 	 *
@@ -3051,10 +3081,18 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Subscribe to this Mono and another Publisher, which will be used as a trigger for
 	 * the emission of this Mono's element. That is to say, this Mono's element is delayed
 	 * until the trigger Publisher emits for the first time (or terminates empty).
+	 * <p>
+	 * Contrary to {@link #delayUntilOther(Publisher) delayUntilOther}, this operator
+	 * triggers on companion first emission. Contiguous calls in a chain are also
+	 * fused, meaning that all the triggers are subscribed to at the same time as
+	 * the source and thus kind of race together. For sequential orchestration of
+	 * intermediate steps whose values you don't care about, use {@code delayUntilOther}.
 	 *
 	 * @param anyPublisher the publisher which first emission or termination will trigger
 	 * the emission of this Mono's value.
-	 * @return this Mono, but delayed until the given publisher emits first or terminates.
+	 * @return this Mono, but delayed until the given publisher first emits or terminates.
+	 * @apiNote the behavior of this operator, especially with regard to fusion, can be a
+	 * bit confusing. Probably prefer {@link #delayUntilOther(Publisher)}.
 	 */
 	public Mono<T> untilOther(Publisher<?> anyPublisher) {
 		Objects.requireNonNull(anyPublisher, "anyPublisher required");
@@ -3066,14 +3104,20 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Subscribe to this Mono and another Publisher, which will be used as a trigger for
-	 * the emission of this Mono's element, mapped through a provided function.
-	 * That is to say, this Mono's element is delayed until the trigger Publisher emits
-	 * for the first time (or terminates empty). Any error is delayed until all publishers
-	 * have triggered, and multiple errors are combined into one.
+	 * the emission of this Mono's element. That is to say, this Mono's element is delayed
+	 * until the trigger Publisher emits for the first time (or terminates empty).
+	 * <p>
+	 * Contrary to {@link #delayUntilOther(Publisher) delayUntilOther}, this operator
+	 * triggers on companion first emission. Contiguous calls in a chain are also
+	 * fused, meaning that all the triggers are subscribed to at the same time as
+	 * the source and thus kind of race together. For sequential orchestration of
+	 * intermediate steps whose values you don't care about, use {@code delayUntilOther}.
 	 *
 	 * @param anyPublisher the publisher which first emission or termination will trigger
 	 * the emission of this Mono's value.
-	 * @return this Mono, but delayed until the given publisher emits first or terminates.
+	 * @return this Mono, but delayed until the given publisher first emits or terminates.
+	 * @apiNote the behavior of this operator, especially with regard to fusion, can be a
+	 * bit confusing. Probably prefer {@link #delayUntilOther(Publisher)}.
 	 */
 	public Mono<T> untilOtherDelayError(Publisher<?> anyPublisher) {
 		Objects.requireNonNull(anyPublisher, "anyPublisher required");
