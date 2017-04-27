@@ -1475,7 +1475,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return this Mono, but delayed until the derived publisher first emits or terminates.
 	 */
 	public Mono<T> delayUntil(Function<? super T, ? extends Publisher<?>> triggerProvider) {
-		return flatMap(t -> Flux.from(triggerProvider.apply(t)).then(Mono.just(t)));
+		return flatMap(t -> new MonoThenIgnore<>(new Publisher[] { triggerProvider.apply(t) }, Mono.just(t)));
 	}
 
 	/**
