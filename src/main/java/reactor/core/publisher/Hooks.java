@@ -310,7 +310,7 @@ public abstract class Hooks {
 		 *     Operators.signalLogger(source, "category", Level.INFO, SignalType.ON_NEXT,
 		 * SignalType.ON_ERROR)
 		 *
-		 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/log.png"
+		 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M1/src/docs/marble/log.png"
 		 * alt="">
 		 *
 		 * @param category to be mapped into logger configuration (e.g.
@@ -337,7 +337,7 @@ public abstract class Hooks {
 		 *     Operators.signalLogger(source, "category", Level.INFO, SignalType.ON_NEXT,
 		 * SignalType.ON_ERROR)
 		 *
-		 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/log.png"
+		 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M1/src/docs/marble/log.png"
 		 * alt="">
 		 *
 		 * @param category to be mapped into logger configuration (e.g.
@@ -367,7 +367,7 @@ public abstract class Hooks {
 		 *     Operators.signalLogger(source, "category", Level.INFO, SignalType.ON_NEXT,
 		 * SignalType.ON_ERROR)
 		 *
-		 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/log.png"
+		 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M1/src/docs/marble/log.png"
 		 * alt="">
 		 *
 		 * @param category to be mapped into logger configuration (e.g.
@@ -397,7 +397,7 @@ public abstract class Hooks {
 		 *     Operators.signalLogger(source, "category", Level.INFO, SignalType.ON_NEXT,
 		 * SignalType.ON_ERROR)
 		 *
-		 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/log.png"
+		 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M1/src/docs/marble/log.png"
 		 * alt="">
 		 *
 		 * @param category to be mapped into logger configuration (e.g.

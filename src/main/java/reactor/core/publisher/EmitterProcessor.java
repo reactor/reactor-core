@@ -41,7 +41,7 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
  * the parent sequence after a given {@link Subscriber} is subscribed.
  * <p>
  * <p>
- * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/emitter.png"
+ * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M1/src/docs/marble/emitter.png"
  * alt="">
  * <p>
  *

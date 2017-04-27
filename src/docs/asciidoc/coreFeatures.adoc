@@ -22,7 +22,7 @@ in `Flux`, but returns a `Mono<Long>`.
 [[flux]]
 == `Flux`, an asynchronous sequence of 0-n items
 
-image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/flux.png[Flux]
+image::https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M1/src/docs/marble/flux.png[Flux]
 
 
 A `Flux<T>` is a standard `Publisher<T>` representing an asynchronous sequence
@@ -41,7 +41,7 @@ sequences are not necessarily empty: `Flux.interval(Duration)` produces a
 
 [[mono]]
 == `Mono`, an asynchronous 0-1 result
-image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/mono.png[Mono]
+image::https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M1/src/docs/marble/mono.png[Mono]
 
 A `Mono<T>` is a specialized `Publisher<T>` that emits at most one item then
 optionally terminates with an `onComplete` signal or an `onError`.

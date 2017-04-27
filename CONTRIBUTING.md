@@ -31,7 +31,7 @@ you'll get a nice green checkmark to the PR checks).
 
 ### Branch from `master`
 
-Master currently represents work toward Reactor 3.0. Please submit
+Master currently represents work toward Reactor 3.1. Please submit
 all pull requests there, even bug fixes and minor improvements. Backports to
 will be considered on a case-by-case basis.
 
