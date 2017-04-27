@@ -5151,7 +5151,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.0.6.RELEASE/src/docs/marble/repeatwhen.png" alt="">
 	 *
 	 * @param repeatFactory the {@link Function} that returns the associated {@link Publisher}
-	 * companion, given a {@link Flux} that signals each onComplete as a 0-based incrementing {@link Long}.
+	 * companion, given a {@link Flux} that signals each onComplete as a {@link Long}
+	 * representing the number of source elements emitted in the latest attempt.
 	 *
 	 * @return a {@link Flux} that repeats on onComplete when the companion {@link Publisher} produces an
 	 * onNext signal
