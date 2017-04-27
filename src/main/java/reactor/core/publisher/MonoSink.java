@@ -13,49 +13,54 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.function.LongConsumer;
 
 import reactor.core.Disposable;
 
-
 /**
  * Wrapper API around an actual downstream Subscriber
  * for emitting nothing, a single value or an error (mutually exclusive).
+ *
  * @param <T> the value type emitted
  */
 public interface MonoSink<T> {
 
-    /**
-     * Complete without any value.
-     * <p>Calling this method multiple times or after the other
-     * terminating methods has no effect.
-     */
-    void success();
+	/**
+	 * Complete without any value.
+	 * <p>Calling this method multiple times or after the other
+	 * terminating methods has no effect.
+	 */
+	void success();
 
-    /**
-     * Complete with the given value.
-     * <p>Calling this method multiple times or after the other
-     * terminating methods has no effect. Calling this method with
-     * a {@code null} value will be silently accepted as a call to
-     * {@link #success()} by standard implementations.
-     * @param value the value to complete with
-     */
-    void success(T value);
+	/**
+	 * Complete with the given value.
+	 * <p>Calling this method multiple times or after the other
+	 * terminating methods has no effect. Calling this method with
+	 * a {@code null} value will be silently accepted as a call to
+	 * {@link #success()} by standard implementations.
+	 *
+	 * @param value the value to complete with
+	 */
+	void success(T value);
 
-    /**
-     * Terminate with the give exception
-     * <p>Calling this method multiple times or after the other
-     * terminating methods has no effect.
-     * @param e the exception to complete with
-     */
+	/**
+	 * Terminate with the give exception
+	 * <p>Calling this method multiple times or after the other
+	 * terminating methods has no effect.
+	 *
+	 * @param e the exception to complete with
+	 */
 	void error(Throwable e);
 
 	/**
-	 * Attaches a {@link LongConsumer} to this {@link MonoSink} that will be notified of any
-	 * request to this sink.
+	 * Attaches a {@link LongConsumer} to this {@link MonoSink} that will be notified of
+	 * any request to this sink.
+	 *
 	 * @param consumer the consumer to invoke on each request
+	 *
 	 * @return {@link MonoSink} with a consumer that is notified of requests
 	 */
 	MonoSink<T> onRequest(LongConsumer consumer);
@@ -65,6 +70,7 @@ public interface MonoSink<T> {
 	 * downstream.cancel().
 	 *
 	 * @param d the disposable callback to use
+	 *
 	 * @return the {@link MonoSink} with resource to be disposed on cancel signal
 	 */
 	MonoSink<T> onCancel(Disposable d);
@@ -74,6 +80,7 @@ public interface MonoSink<T> {
 	 * first terminate signal which may be a cancel, complete or error signal.
 	 *
 	 * @param d the disposable callback to use
+	 *
 	 * @return the {@link MonoSink} with resource to be disposed on first terminate signal
 	 */
 	MonoSink<T> onDispose(Disposable d);
