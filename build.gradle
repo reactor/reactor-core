@@ -144,8 +144,8 @@ project.tasks.withType(Test).all {
 
 configure(rootProject) {
   repositories {
+	mavenLocal()
 	if (version.endsWith('BUILD-SNAPSHOT') || project.hasProperty('platformVersion')) {
-	  mavenLocal()
 	  maven { url 'http://repo.spring.io/libs-snapshot' }
 	}
 

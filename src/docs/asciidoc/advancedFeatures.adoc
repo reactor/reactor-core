@@ -24,7 +24,7 @@ Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
 	.transform(filterAndMap)
 	.subscribe(d -> System.out.println("Subscriber to Transformed MapAndFilter: "+d));
 ----
-image::https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M1/src/docs/marble/gs-transform.png[Transform Operator : encapsulate flows]
+image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.7.RELEASE/src/docs/marble/gs-transform.png[Transform Operator : encapsulate flows]
 
 This outputs:
 
@@ -65,7 +65,7 @@ Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
 composedFlux.subscribe(d -> System.out.println("Subscriber 1 to Composed MapAndFilter :"+d));
 composedFlux.subscribe(d -> System.out.println("Subscriber 2 to Composed MapAndFilter: "+d));
 ----
-image::https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M1/src/docs/marble/gs-compose.png[Compose Operator : Per Subscriber transformation]
+image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.7.RELEASE/src/docs/marble/gs-compose.png[Compose Operator : Per Subscriber transformation]
 
 This outputs:
 
@@ -147,7 +147,7 @@ Subscriber 2: ORANGE
 purple
 ----
 
-image::https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M1/src/docs/marble/gs-cold.png[Replaying behavior]
+image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.7.RELEASE/src/docs/marble/gs-cold.png[Replaying behavior]
 
 Compared to:
 
@@ -181,7 +181,7 @@ Subscriber 2 to Hot Source: ORANGE
 Subscriber 1 to Hot Source: PURPLE
 Subscriber 2 to Hot Source: PURPLE
 ----
-image::https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M1/src/docs/marble/gs-hot.png[Broadcasting a subscription]
+image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.7.RELEASE/src/docs/marble/gs-hot.png[Broadcasting a subscription]
 
 == Broadcast to multiple subscribers with `ConnectableFlux`
 Sometimes, you don't only want to defer some processing to the subscription time
