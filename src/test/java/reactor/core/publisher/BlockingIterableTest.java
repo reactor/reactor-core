@@ -23,9 +23,16 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Publisher;
+import reactor.core.scheduler.Schedulers;
 
 public class BlockingIterableTest {
 
@@ -120,5 +127,39 @@ public class BlockingIterableTest {
 
 		Assert.assertTrue("No maximum?", opt.isPresent());
 		Assert.assertEquals((Integer) n, opt.get());
+	}
+
+	private <V> void hotFluxToIterableOrStreamScenario(Function<Flux<Integer>, Publisher<V>> transformer,
+								  BiConsumer<V, Consumer<Integer>> processor) throws InterruptedException {
+		List<Integer> result = new ArrayList<>();
+		CountDownLatch completeLatch = new CountDownLatch(1);
+		CountDownLatch waitLatch = new CountDownLatch(1);
+		Consumer<Object> wait = (x) -> {
+			try {
+				waitLatch.await();
+			} catch (InterruptedException e) { /*ignore*/ }
+		};
+		ConnectableFlux<Integer> numbers = Flux.range(0, 1000).doOnNext(x -> waitLatch.countDown()).publish();
+		numbers
+				.transform(transformer)
+				.publishOn(Schedulers.elastic())
+				.doOnNext(wait)
+				.doOnNext(l -> processor.accept(l, result::add))
+				.doOnComplete(completeLatch::countDown)
+				.subscribe();
+
+		numbers.connect();
+		completeLatch.await();
+		Assert.assertArrayEquals(Flux.range(0, 1000).toStream().toArray(), result.toArray());
+	}
+
+	@Test(timeout = 5000)
+	public void hotFluxToStream() throws InterruptedException {
+		hotFluxToIterableOrStreamScenario(flux -> Flux.just(flux.toStream()), Stream::forEach);
+	}
+
+	@Test(timeout = 5000)
+	public void hotFluxToIterable() throws InterruptedException {
+		hotFluxToIterableOrStreamScenario(flux -> Flux.just(flux.toIterable()), Iterable::forEach);
 	}
 }
