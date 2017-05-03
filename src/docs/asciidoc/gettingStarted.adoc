@@ -127,3 +127,52 @@ dependencies {
 }
 ----
 <1> no third `:` separated section for the version, it is taken from the BOM
+
+=== Milestones and Snapshots
+Milestones and developer previews are distributed through the Spring Milestones
+repository rather than Maven Central. Add it to your build configuration file:
+
+.Milestones in Maven
+[source,xml]
+----
+<repositories>
+	<repository>
+		<id>spring-milestones</id>
+		<name>Spring Milestones Repository</name>
+		<url>https://repo.spring.io/milestone</url>
+	</repository>
+</repositories>
+----
+
+.Milestones in Gradle
+[source,groovy]
+----
+repositories {
+  maven { url 'http://repo.spring.io/milestone' }
+  mavenCentral()
+}
+----
+
+Similarly, snapshots are also available in a dedicated separate repository:
+
+.BUILD-SNAPSHOTs in Maven
+[source,xml]
+----
+<repositories>
+	<repository>
+		<id>spring-snapshots</id>
+		<name>Spring Snapshot Repository</name>
+		<url>https://repo.spring.io/snapshot</url>
+	</repository>
+</repositories>
+----
+
+.BUILD-SNAPSHOTs in Gradle
+[source,groovy]
+----
+repositories {
+  maven { url 'http://repo.spring.io/snapshot' }
+  mavenCentral()
+}
+----
+
