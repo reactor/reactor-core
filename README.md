@@ -16,6 +16,7 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
 ```groovy
     repositories {
       //maven { url 'http://repo.spring.io/snapshot' }
+      maven { url 'http://repo.spring.io/milestone' }
       mavenCentral()
     }
 
@@ -24,6 +25,9 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
       compile "io.projectreactor:reactor-core:3.1.0.M1"
     }
 ```
+
+See the [reference documentation](http://projectreactor.io/docs/core/release/reference/docs/index.html#getting)
+for more information on getting it (eg. using Maven, or on how to get milestones and snapshots).
 
 ## Getting Started
 
