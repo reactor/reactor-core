@@ -59,7 +59,7 @@ public class MonoDelayUntilTest {
 	}
 
 	@Test
-	public void triggerSequenceHasMultipleValuesCancelled() {
+	public void triggerSequenceHasMultipleValuesNotCancelled() {
 		AtomicBoolean triggerCancelled = new AtomicBoolean();
 		StepVerifier.create(Mono.just("foo")
 		                        .delayUntil(
@@ -67,7 +67,7 @@ public class MonoDelayUntilTest {
 				                                 .doOnCancel(() -> triggerCancelled.set(true))))
 		            .expectNext("foo")
 		            .verifyComplete();
-		assertThat(triggerCancelled.get()).isTrue();
+		assertThat(triggerCancelled.get()).isFalse();
 	}
 
 	@Test

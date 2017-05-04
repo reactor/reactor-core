@@ -169,8 +169,7 @@ final class MonoDelayUntil<T> extends Mono<T> {
 
 			Function<? super T, ? extends Publisher<?>> generator = otherGenerators[triggerIndex];
 			Publisher<?> p = generator.apply(value);
-			boolean cancelOnTriggerValue = !(p instanceof Mono);
-			DelayUntilTrigger triggerSubscriber = new DelayUntilTrigger(this, cancelOnTriggerValue);
+			DelayUntilTrigger triggerSubscriber = new DelayUntilTrigger(this);
 
 			this.triggerSubscribers[triggerIndex] = triggerSubscriber;
 			p.subscribe(triggerSubscriber);
@@ -245,7 +244,6 @@ final class MonoDelayUntil<T> extends Mono<T> {
 	static final class DelayUntilTrigger<T> implements InnerConsumer<T> {
 
 		final DelayUntilCoordinator<?> parent;
-		final boolean                  cancelOnTriggerValue;
 
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
@@ -253,12 +251,10 @@ final class MonoDelayUntil<T> extends Mono<T> {
 				AtomicReferenceFieldUpdater.newUpdater(DelayUntilTrigger.class, Subscription.class, "s");
 
 		boolean done;
-		Throwable error;
+		volatile Throwable error;
 
-		DelayUntilTrigger(DelayUntilCoordinator<?> parent,
-				boolean cancelOnTriggerValue) {
+		DelayUntilTrigger(DelayUntilCoordinator<?> parent) {
 			this.parent = parent;
-			this.cancelOnTriggerValue = cancelOnTriggerValue;
 		}
 
 		@Override
@@ -272,6 +268,8 @@ final class MonoDelayUntil<T> extends Mono<T> {
 					return parent;
 				case ERROR:
 					return error;
+				case PREFETCH:
+					return Integer.MAX_VALUE;
 			}
 			return null;
 		}
@@ -279,7 +277,7 @@ final class MonoDelayUntil<T> extends Mono<T> {
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.setOnce(S, this, s)) {
-				s.request(1);
+				s.request(Integer.MAX_VALUE);
 			} else {
 				s.cancel();
 			}
@@ -287,13 +285,7 @@ final class MonoDelayUntil<T> extends Mono<T> {
 
 		@Override
 		public void onNext(Object t) {
-			if (!done) {
-				done = true;
-				parent.signal();
-				if (cancelOnTriggerValue) {
-					s.cancel();
-				}
-			}
+			//NO-OP
 		}
 
 		@Override
