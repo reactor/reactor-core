@@ -240,7 +240,7 @@ chain. As such, it takes signals from downstream and replays them upstream, but
 executing the callback on a worker from the associated `Scheduler`. So it
 **affects where the subsequent operators will execute** (until another publishOn
 is chained in).
-- `scheduleOn` rather applies to the subscription process, when that backward
+- `subscribeOn` rather applies to the subscription process, when that backward
 chain is constructed. As a consequence, no matter where you place the
 `subscribeOn` in the chain, **it is always the context of the source emission**
 that is affected. However, this doesn't affect the behavior of subsequent calls
