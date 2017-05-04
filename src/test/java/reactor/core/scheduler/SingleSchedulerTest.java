@@ -15,16 +15,18 @@
  */
 package reactor.core.scheduler;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.lang.management.ManagementFactory;
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.junit.Test;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.test.StepVerifier;
+import org.junit.*;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import reactor.core.publisher.*;
+import reactor.core.scheduler.Scheduler.Worker;
+import reactor.test.StepVerifier;
 
 /**
  * @author Stephane Maldini
@@ -92,5 +94,36 @@ public class SingleSchedulerTest extends AbstractSchedulerTest {
 		finally {
 			s.dispose();
 		}
+	}
+
+	@Test
+	public void lotsOfTasks() throws Exception {
+	    System.gc();
+	    Thread.sleep(200);
+	    long before = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed();
+	    Scheduler s = Schedulers.newSingle("scheduler");
+	    try {
+	        Worker w = s.createWorker();
+	        try {
+	            CountDownLatch cdl = new CountDownLatch(1_000_000);
+	            Runnable r = cdl::countDown;
+    	        for (int i = 0; i < 1_000_000; i++) {
+    	            w.schedule(r);
+    	        }
+    	        
+    	        Assert.assertTrue(cdl.await(5, TimeUnit.SECONDS));
+
+    	        System.gc();
+    	        Thread.sleep(200);
+
+                long after = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed();
+
+    	        Assert.assertTrue(String.format("%,d -> %,d", before, after), before + 20_000_000 > after);
+	        } finally {
+	            w.dispose();
+	        }
+	    } finally {
+	        s.dispose();
+	    }
 	}
 }

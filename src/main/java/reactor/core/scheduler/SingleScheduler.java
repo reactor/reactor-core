@@ -190,7 +190,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 			try {
 				Future<?> f;
 				if (delay <= 0L) {
-					f = exec.submit(task);
+					f = exec.submit(sr);
 				}
 				else {
 					f = exec.schedule(sr, delay, unit);
