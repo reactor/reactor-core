@@ -114,7 +114,7 @@ Mono.fromCallable( () -> System.currentTimeMillis() )
 	.repeat()
     .parallel(8) //parallelism
     .runOn(Schedulers.parallel())
-    .doOnNext( d -> System.out.println("I'm on thread "+Thread.currentThread()) ).
+    .doOnNext( d -> System.out.println("I'm on thread "+Thread.currentThread()) )
     .sequential()
     .subscribe()
 ```
