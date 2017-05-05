@@ -3200,11 +3200,35 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a filtering {@link Flux} only emitting values with distinct keys
 	 */
 	public final <V> Flux<T> distinct(Function<? super T, ? extends V> keySelector) {
+		return distinct(keySelector, hashSetSupplier());
+	}
+
+	/**
+	 * For each {@link Subscriber}, track elements from this {@link Flux} that have been
+	 * seen and filter out duplicates, as compared by a key extracted through the user
+	 * provided {@link Function} and by the {@link Collection#add(Object) add method}
+	 * of the {@link Collection} supplied (typically a {@link Set}).
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M1/src/docs/marble/distinctk.png" alt="">
+	 *
+	 * @param keySelector function to compute comparison key for each element
+	 * @param distinctCollectionSupplier supplier of the {@link Collection} used for distinct
+	 * check through {@link Collection#add(Object) add} of the key.
+	 *
+	 * @param <V> the type of the key extracted from each value in this sequence
+	 * @param <C> the type of Collection used for distinct checking of keys
+	 *
+	 * @return a filtering {@link Flux} only emitting values with distinct keys
+	 */
+	public final <V, C extends Collection<? super V>> Flux<T> distinct(
+			Function<? super T, ? extends V> keySelector,
+			Supplier<C> distinctCollectionSupplier) {
 		if (this instanceof Fuseable) {
 			return onAssembly(new FluxDistinctFuseable<>(this, keySelector,
-					hashSetSupplier()));
+					distinctCollectionSupplier));
 		}
-		return onAssembly(new FluxDistinct<>(this, keySelector, hashSetSupplier()));
+		return onAssembly(new FluxDistinct<>(this, keySelector, distinctCollectionSupplier));
 	}
 
 	/**
