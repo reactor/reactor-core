@@ -101,6 +101,113 @@ limitations...
 Callbacks are very hard to compose together, quickly leading to code that is
 difficult to read and maintain ("Callback Hell").
 
+Let's take an example: showing top 5 favorites from a user on the UI, or
+suggestions if he/she doesn't have any favorite. This goes through 3 services
+(one gives favorite IDs, the other fetches favorite details, while the third
+offers suggestions with details):
+
+.Example of Callback Hell
+[source,java]
+----
+userService.getFavorites(userId, new Callback<List<String>>() { //<1>
+  public void onSuccess(List<String> list) { //<2>
+    if (list.isEmpty()) { //<3>
+      suggestionService.getSuggestions(new Callback<List<Favorite>>() {
+        public void onSuccess(List<Favorite> list) { //<4>
+          UiUtils.submitOnUiThread(() -> { //<5>
+            list.stream()
+                .limit(5)
+                .forEach(uiList::show); //<6>
+            });
+        }
+
+        public void onError(Throwable error) { //<7>
+          UiUtils.errorPopup(error);
+        }
+      });
+    } else {
+      list.stream() //<8>
+          .limit(5)
+          .forEach(favId -> favoriteService.getDetails(favId, //<9>
+            new Callback<Favorite>() {
+              public void onSuccess(Favorite details) {
+                UiUtils.submitOnUiThread(() -> uiList.show(details));
+              }
+
+              public void onError(Throwable error) {
+                UiUtils.errorPopup(error);
+              }
+            }
+          ));
+    }
+  }
+
+  public void onError(Throwable error) {
+    UiUtils.errorPopup(error);
+  }
+});
+----
+<1> We have callback-based services: a `Callback` interface with a method invoked
+when the async process was successful and one invoked in case of an error.
+<2> The first service invokes its callback with the list of favorite IDs.
+<3> If the list is empty, we must go to `suggestionService`...
+<4> ...and it gives a `List<Favorite>` to a second callback.
+<5> Since we're dealing with UI we need to ensure our consuming code will run in
+the UI thread.
+<6> We use Java 8 `Stream` to limit the number of suggestions processed to 5, and
+we show them in a graphical list in the UI.
+<7> At each level we'll repeatedly deal with errors the same way: show them in a
+popup.
+<8> Back to the favorite ID level: if the service returned a full list, then we
+need to go to the `favoriteService` to get detailed `Favorite` objects. Since we
+only want 5 of them, we first stream the list of IDs to limit it to 5.
+<9> Once again, a callback. This time we get a fully-fledged `Favorite` object
+that we'll push to the UI inside the UI thread.
+
+That's a lot of code, a bit hard to follow and with repetitive parts.Compare it
+with its equivalent in Reactor:
+
+.Example of Reactor code
+[source,java]
+----
+userService.getFavorites(userId) <1>
+           .flatMap(favoriteService::getDetails) <2>
+           .switchIfEmpty(suggestionService.getSuggestions()) <3>
+           .take(5) <4>
+           .publishOn(UiUtils.uiThreadScheduler()) <5>
+           .subscribe(uiList::show, UiUtils::errorPopup); <6>
+----
+<1> We start with a flow of favorite IDs.
+<2> We _asynchronously transform_ these into detailed `Favorite` objects (`flatMap`).
+We now have a flow of `Favorite`.
+<3> In case the flow of `Favorite` is empty, we switch to a fallback through the
+`suggestionService`.
+<4> We are only interested in at most 5 elements from the resulting flow.
+<5> At the end, we want to process each piece of data in the UI thread.
+<6> We trigger the flow by describing what to do with the final form of the data
+(show it in a UI list) and what to do in case of an error (show a popup).
+
+What if you wanted to ensure the favorite IDs are retrieved in less than 800ms,
+and otherwise get them from a cache? In the callback-based code, that looks like
+a complicated task... But in Reactor it becomes as easy as adding a `timeout`
+operator in the chain:
+
+.Example of Reactor code with timeout and fallback
+[source,java]
+----
+userService.getFavorites(userId)
+           .timeout(Duration.ofMillis(800)) <1>
+           .onErrorResume(cacheService.cachedFavoritesFor(userId)) <2>
+           .flatMap(favoriteService::getDetails) <3>
+           .switchIfEmpty(suggestionService.getSuggestions())
+           .take(5)
+           .publishOn(UiUtils.uiThreadScheduler())
+           .subscribe(uiList::show, UiUtils::errorPopup);
+----
+<1> If the part above emits nothing for more than 800ms, propagate an error...
+<2> ...and in case of any error from above, fallback to the `cacheService`.
+<3> The rest of the chain is similar to the original example.
+
 Futures are a bit better, but they are still not so good at composition, despite
 the improvements brought in Java 8 by `CompletableFuture`... Orchestrating
 multiple futures together is doable, but not that easy. Plus it is very (too?)
