@@ -16,16 +16,18 @@
 
 package reactor.core.publisher;
 
+import java.util.AbstractCollection;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 import org.junit.Test;
 import reactor.core.Fuseable;
+import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 
@@ -347,5 +349,68 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 		ts.assertNoValues()
 		  .assertNotComplete()
 		  .assertError(NullPointerException.class);
+	}
+
+	@Test
+	//see https://github.com/reactor/reactor-core/issues/577
+	public void collectionSupplierLimitedFifo() {
+		Flux<Integer> flux = Flux.just(1, 2, 3, 4, 5, 6, 1, 3, 4, 1, 1, 1, 1, 2);
+
+		StepVerifier.create(flux.distinct(Flux.identityFunction(), () -> new NaiveFifoQueue<>(5)))
+	                .expectNext(1, 2, 3, 4, 5, 6, 1, 2)
+	                .verifyComplete();
+
+		StepVerifier.create(flux.distinct(Flux.identityFunction(),
+						() -> new NaiveFifoQueue<>(3)))
+	                .expectNext(1, 2, 3, 4, 5, 6, 1, 3, 4, 2)
+	                .verifyComplete();
+	}
+
+	private static final class NaiveFifoQueue<T> extends AbstractCollection<T> {
+		final int limit;
+		int size = 0;
+		Object[] array;
+
+		public NaiveFifoQueue(int limit) {
+			this.limit = limit;
+			this.array = new Object[limit];
+		}
+
+		@Override
+		public Iterator<T> iterator() {
+			return null;
+		}
+
+		@Override
+		public void clear() {
+			this.array = new Object[limit];
+			this.size = 0;
+		}
+
+		@Override
+		public int size() {
+			return size;
+		}
+
+		@Override
+		public boolean add(T t) {
+			Objects.requireNonNull(t);
+			for (int i = 0; i < array.length; i++) {
+				if (array[i] == null) {
+					array[i] = t;
+					size++;
+					return true;
+				} else if (t.equals(array[i])) {
+					return false;
+				}
+			}
+			//at this point, no available slot and not a duplicate, drop oldest
+			Object[] old = array;
+			array = new Object[limit];
+			System.arraycopy(old, 1, array, 0, array.length - 1);
+			array[array.length - 1] = t;
+			//size doesn't change
+			return true;
+		}
 	}
 }
