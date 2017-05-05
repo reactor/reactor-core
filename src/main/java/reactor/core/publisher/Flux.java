@@ -2475,7 +2475,8 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Activate assembly tracing for this particular {@link Flux}, in case of an error
-	 * upstream of the checkpoint.
+	 * upstream of the checkpoint. Tracing incurs the cost of an exception stack trace
+	 * creation.
 	 * <p>
 	 * It should be placed towards the end of the reactive chain, as errors
 	 * triggered downstream of it cannot be observed and augmented with assembly trace.
@@ -2489,13 +2490,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Activate assembly tracing for this particular {@link Flux} and give it
 	 * a description that will be reflected in the assembly traceback in case
-	 * of an error upstream of the checkpoint.
+	 * of an error upstream of the checkpoint. Tracing incurs the cost of an
+	 * exception stack trace creation.
 	 * <p>
 	 * It should be placed towards the end of the reactive chain, as errors
 	 * triggered downstream of it cannot be observed and augmented with assembly trace.
 	 * <p>
 	 * The description could for example be a meaningful name for the assembled
-	 * flux or a wider correlation ID.
+	 * flux or a wider correlation ID, since the stack trace will always provide enough
+	 * information to locate where this Flux was assembled.
 	 *
 	 * @param description a description to include in the assembly traceback.
 	 * @return the assembly tracing {@link Flux}.
@@ -2504,6 +2507,23 @@ public abstract class Flux<T> implements Publisher<T> {
 		return new FluxOnAssembly<>(this, description);
 	}
 
+	/**
+	 * Activate assembly marker for this particular {@link Flux} by giving it
+	 * a description that will be reflected in the assembly traceback in case
+	 * of an error upstream of the checkpoint. Note that unlike {@link #checkpoint(String)},
+	 * this doesn't create a filled stack trace, avoiding the main cost of said operator.
+	 * However, as a trade-off the description must be unique enough for the user to find
+	 * out where this Flux was assembled.
+	 * <p>
+	 * It should be placed towards the end of the reactive chain, as errors
+	 * triggered downstream of it cannot be observed and augmented with assembly marker.
+	 *
+	 * @param description a unique enough description to locate assembly site of this Flux.
+	 * @return the assembly marked {@link Flux}.
+	 */
+	public final Flux<T> checkpointLight(String description) {
+		return new FluxOnAssembly<>(this, description, true);
+	}
 
 	/**
 	 * Collect all elements emitted by this {@link Flux} into a user-defined container,

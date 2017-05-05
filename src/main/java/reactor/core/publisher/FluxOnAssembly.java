@@ -70,8 +70,22 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 	 * or a wider correlation ID) and exposed as a {@link Flux}.
 	 */
 	FluxOnAssembly(Flux<? extends T> source, String description) {
+		this(source, description, false);
+	}
+
+	/**
+	 * If light, create an assembly marker that has no trace but just shows a custom
+	 * description (eg. a name for a Flux or a wider correlation ID) and exposed as a
+	 * {@link Flux}. If light == false, behaves as {@link #FluxOnAssembly(Flux, String)}.
+	 */
+	FluxOnAssembly(Flux<? extends T> source, String description, boolean light) {
 		super(source);
-		this.snapshotStack = new AssemblySnapshotException(description);
+		if (light) {
+			this.snapshotStack = new AssemblyLightSnapshotException(description);
+		}
+		else {
+			this.snapshotStack = new AssemblySnapshotException(description);
+		}
 	}
 
 	static String getStacktrace(Publisher<?> source,
@@ -233,7 +247,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 	 * {@link #getMessage() message}). Use the empty constructor if the later is not
 	 * relevant.
 	 */
-	static final class AssemblySnapshotException extends RuntimeException {
+	static class AssemblySnapshotException extends RuntimeException {
 
 		final boolean checkpointed;
 
@@ -249,6 +263,18 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		AssemblySnapshotException(String description) {
 			super(description);
 			this.checkpointed = true;
+		}
+	}
+
+	static final class AssemblyLightSnapshotException extends AssemblySnapshotException {
+
+		public AssemblyLightSnapshotException(String description) {
+			super(description);
+		}
+
+		@Override
+		public synchronized Throwable fillInStackTrace() {
+			return this; //intentionally NO-OP
 		}
 	}
 
