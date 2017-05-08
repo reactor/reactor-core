@@ -189,7 +189,7 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 ** by throwing a special `IllegalStateException`: `Flux#onBackpressureError`
 ** by dropping excess values: `Flux#onBackpressureDrop`
 *** ...except the last one seen: `Flux#onBackpressureLatest`
-** by buffering excess values (bounded or bounded): `Flux#onBackpressureBuffer`
+** by buffering excess values (bounded or unbounded): `Flux#onBackpressureBuffer`
 *** ...and applying a strategy when bounded buffer also overflows: `Flux#onBackpressureBuffer` with a `BufferOverflowStrategy`
 
 [[which.time]]
