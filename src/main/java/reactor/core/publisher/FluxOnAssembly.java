@@ -180,6 +180,15 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 
 	static void fillStacktraceHeader(StringBuilder sb, Class<?> sourceClass,
 			AssemblySnapshotException ase) {
+		if (ase.isLight()) {
+			sb.append("\nAssembly site of producer [")
+			  .append(sourceClass.getName())
+			  .append("] is identified by light checkpoint [")
+			  .append(ase.getMessage())
+			  .append("].");
+			return;
+		}
+
 		sb.append("\nAssembly trace from producer [")
 		  .append(sourceClass.getName())
 		  .append("]");
@@ -264,6 +273,10 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 			super(description);
 			this.checkpointed = true;
 		}
+
+		public boolean isLight() {
+			return false;
+		}
 	}
 
 	static final class AssemblyLightSnapshotException extends AssemblySnapshotException {
@@ -275,6 +288,11 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		@Override
 		public synchronized Throwable fillInStackTrace() {
 			return this; //intentionally NO-OP
+		}
+
+		@Override
+		public boolean isLight() {
+			return true;
 		}
 	}
 
@@ -288,9 +306,12 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		/** */
 		private static final long serialVersionUID = 5278398300974016773L;
 
-		OnAssemblyException(String message, Publisher<?> parent) {
+		OnAssemblyException(Publisher<?> parent, AssemblySnapshotException ase, String message) {
 			super(message);
-			chainOrder.add(Tuples.of(parent.hashCode(), extract(message, true), 0));
+			//skip the "error seen by" if light (no stack)
+			if (!ase.isLight()) {
+				chainOrder.add(Tuples.of(parent.hashCode(), extract(message, true), 0));
+			}
 		}
 
 		void mapLine(int indent, StringBuilder sb, String s) {
@@ -342,15 +363,19 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 
 		@Override
 		public String getMessage() {
-			StringBuilder sb = new StringBuilder(super.getMessage()).append(
-					"Error has been observed by the following operator(s):\n");
-
+			//skip the "error has been observed" traceback if mapped traceback is empty
 			synchronized (chainOrder) {
+				if (chainOrder.isEmpty()) {
+					return super.getMessage();
+				}
+
+				StringBuilder sb = new StringBuilder(super.getMessage()).append(
+						"Error has been observed by the following operator(s):\n");
 				for(Tuple3<Integer, String, Integer> t : chainOrder) {
 					mapLine(t.getT3(), sb, t.getT2());
 				}
+				return sb.toString();
 			}
-			return sb.toString();
 		}
 	}
 
@@ -436,8 +461,8 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 				}
 			}
 			if (set == null) {
-				t.addSuppressed(new OnAssemblyException(getStacktrace(parent,
-						snapshotStack), parent));
+				t.addSuppressed(new OnAssemblyException(parent, snapshotStack,
+						getStacktrace(parent, snapshotStack)));
 			}
 			else if(snapshotStack.checkpointed && t != snapshotStack){
 				t.addSuppressed(snapshotStack);
