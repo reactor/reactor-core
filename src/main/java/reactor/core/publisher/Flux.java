@@ -2767,7 +2767,7 @@ public abstract class Flux<T> implements Publisher<T> {
 		return collectList().map(list -> {
 			// Note: this assumes the list emitted by buffer() is mutable
 			if (comparator != null) {
-				Collections.sort(list, comparator);
+				list.sort(comparator);
 			} else {
 
 				List<Comparable> l = (List<Comparable>)list;

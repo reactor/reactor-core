@@ -2435,8 +2435,7 @@ public abstract class Mono<T> implements Publisher<T> {
 			Flux<Long> iterations;
 
 			if(maxRepeat == Integer.MAX_VALUE) {
-				iterations = Flux.fromStream(LongStream.range(0, Long.MAX_VALUE)
-				                                       .mapToObj(Long::new));
+				iterations = Flux.fromStream(LongStream.range(0, Long.MAX_VALUE).boxed());
 			} else {
 				iterations = Flux
 					.range(0, maxRepeat)
