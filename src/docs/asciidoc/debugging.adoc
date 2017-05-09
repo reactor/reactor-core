@@ -276,7 +276,7 @@ which serviceability is critical, *a mix of both world can be achieved with the
 You can chain this operator towards their end. The `checkpoint` operator will
 work like the hook version, but only for its link of that particular chain.
 
-Additionally, there is a `checkpoint(String)` variant that allows you to add a
+There is also a `checkpoint(String)` variant that allows you to add a
 description to the assembly traceback. It could for example be a static
 identifier or user-readable description, or a wider *correlation ID* coming from
 a header in the case of an HTTP request for instance...
@@ -293,7 +293,17 @@ Error has been observed by the following operator(s):
 ----
 <1> `fooCorrelation1234` is the description provided in `checkpoint`
 
-When both global debugging and local `checkpoint()` are enabled, checkpointed snapshot
+Last but not least, the checkpoint can also be made in a lightweight manner: using a unique
+enough description, the stack trace filling in omitted when using `checkpointLight(String)`.
+The traceback changes to only contain one line:
+
+----
+...
+	Suppressed: reactor.core.publisher.FluxOnAssembly$OnAssemblyException:
+Assembly site of producer [reactor.core.publisher.FluxElapsed] is identified by light checkpoint [light checkpoint identifier].
+----
+
+Note that When both global debugging and local `checkpoint()` are enabled, checkpointed snapshot
 stacks will be appended as suppressed error after the observing operator graph and
 following the same declarative order.
 
