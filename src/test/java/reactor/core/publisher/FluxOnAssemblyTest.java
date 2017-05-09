@@ -131,7 +131,7 @@ public class FluxOnAssemblyTest {
 		Flux<Integer> tested = Flux.range(1, 10)
 		                           .map(i -> i < 3 ? i : null)
 		                           .filter(i -> i % 2 == 0)
-		                           .checkpointLight("foo")
+		                           .checkpoint("foo", true)
 		                           .doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
 
 		StepVerifier.create(tested)
@@ -183,7 +183,7 @@ public class FluxOnAssemblyTest {
 		Mono<Object> tested = Mono.just(1)
 		                          .map(i -> null)
 		                          .filter(Objects::nonNull)
-		                          .checkpointLight("foo")
+		                          .checkpoint("foo", true)
 		                          .doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
 
 		StepVerifier.create(tested)
@@ -236,7 +236,7 @@ public class FluxOnAssemblyTest {
 		Flux<Integer> tested = Flux.range(1, 10)
 		                           .parallel(2)
 		                           .composeGroup(g -> g.map(i -> (Integer) null))
-		                           .checkpointLight("foo")
+		                           .checkpoint("foo", true)
 		                           .sequential()
 		                           .doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
 

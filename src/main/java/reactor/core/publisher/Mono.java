@@ -1364,21 +1364,24 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Activate assembly marker for this particular {@link Mono} by giving it
-	 * a description that will be reflected in the assembly traceback in case
-	 * of an error upstream of the checkpoint. Note that unlike {@link #checkpoint(String)},
-	 * this doesn't create a filled stack trace, avoiding the main cost of said operator.
+	 * By setting the {@code light} parameter to {@literal true}, activate assembly
+	 * marker for this particular {@link Mono} by giving it a description that
+	 * will be reflected in the assembly traceback in case of an error upstream of the
+	 * checkpoint. Note that unlike {@link #checkpoint(String)}, this doesn't create a
+	 * filled stack trace, avoiding the main cost of the operator.
 	 * However, as a trade-off the description must be unique enough for the user to find
-	 * out where this Mono was assembled.
+	 * out where this Mono was assembled. Having {@code light} set to {@literal false}
+	 * is the same as calling {@link #checkpoint(String)}.
 	 * <p>
 	 * It should be placed towards the end of the reactive chain, as errors
 	 * triggered downstream of it cannot be observed and augmented with assembly marker.
 	 *
 	 * @param description a unique enough description to locate assembly site of this Mono.
+	 * @param light true to make a light checkpoint without a stacktrace.
 	 * @return the assembly marked {@link Mono}.
 	 */
-	public final Mono<T> checkpointLight(String description) {
-		return new MonoOnAssembly<>(this, description, true);
+	public final Mono<T> checkpoint(String description, boolean light) {
+		return new MonoOnAssembly<>(this, description, light);
 	}
 
 	/**

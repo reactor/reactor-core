@@ -294,8 +294,8 @@ Error has been observed by the following operator(s):
 <1> `fooCorrelation1234` is the description provided in `checkpoint`
 
 Last but not least, the checkpoint can also be made in a lightweight manner: using a unique
-enough description, the stack trace filling in omitted when using `checkpointLight(String)`.
-The traceback changes to only contain one line:
+enough description, the stack trace filling in omitted when using `checkpointLight(String, boolean)`
+with the second parameter set to `true`. The traceback then changes to only contain one line:
 
 ----
 ...
