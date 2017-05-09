@@ -126,6 +126,24 @@ public class FluxOnAssemblyTest {
 	}
 
 	@Test
+	public void checkpointLight() {
+		StringWriter sw = new StringWriter();
+		Flux<Integer> tested = Flux.range(1, 10)
+		                           .map(i -> i < 3 ? i : null)
+		                           .filter(i -> i % 2 == 0)
+		                           .checkpointLight("foo")
+		                           .doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
+
+		StepVerifier.create(tested)
+		            .expectNext(2)
+		            .verifyError();
+
+		String debugStack = sw.toString();
+
+		assertThat(debugStack).contains("Assembly site of producer [reactor.core.publisher.FluxFilterFuseable] is identified by light checkpoint [foo].");
+	}
+
+	@Test
 	public void monoCheckpointEmpty() {
 		StringWriter sw = new StringWriter();
 		Mono<Object> tested = Mono.just(1)
@@ -157,6 +175,23 @@ public class FluxOnAssemblyTest {
 		String debugStack = sw.toString();
 
 		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.MonoFilterFuseable], described as [foo] :");
+	}
+
+	@Test
+	public void monoCheckpointLight() {
+		StringWriter sw = new StringWriter();
+		Mono<Object> tested = Mono.just(1)
+		                          .map(i -> null)
+		                          .filter(Objects::nonNull)
+		                          .checkpointLight("foo")
+		                          .doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
+
+		StepVerifier.create(tested)
+		            .verifyError();
+
+		String debugStack = sw.toString();
+
+		assertThat(debugStack).contains("Assembly site of producer [reactor.core.publisher.MonoFilterFuseable] is identified by light checkpoint [foo].");
 	}
 
 	@Test
@@ -193,6 +228,24 @@ public class FluxOnAssemblyTest {
 		String debugStack = sw.toString();
 
 		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.ParallelSource], described as [foo] :");
+	}
+
+	@Test
+	public void parallelFluxCheckpointLight() {
+		StringWriter sw = new StringWriter();
+		Flux<Integer> tested = Flux.range(1, 10)
+		                           .parallel(2)
+		                           .composeGroup(g -> g.map(i -> (Integer) null))
+		                           .checkpointLight("foo")
+		                           .sequential()
+		                           .doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
+
+		StepVerifier.create(tested)
+		            .verifyError();
+
+		String debugStack = sw.toString();
+
+		assertThat(debugStack).contains("Assembly site of producer [reactor.core.publisher.ParallelSource] is identified by light checkpoint [foo].");
 	}
 
 }

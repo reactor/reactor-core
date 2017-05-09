@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.core.publisher.FluxOnAssembly.AssemblyLightSnapshotException;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
 
 /**
@@ -55,6 +56,21 @@ final class ParallelFluxOnAssembly<T> extends ParallelFlux<T>
 	ParallelFluxOnAssembly(ParallelFlux<T> source, String description) {
 		this.source = source;
 		this.stacktrace = new AssemblySnapshotException(description);
+	}
+
+	/**
+	 * Create a potentially light assembly trace augmented with a description (that must
+	 * be unique enough to identify the assembly site in case of light mode),
+	 * wrapping a {@link ParallelFlux}.
+	 */
+	ParallelFluxOnAssembly(ParallelFlux<T> source, String description, boolean light) {
+		this.source = source;
+		if (light) {
+			 this.stacktrace = new AssemblyLightSnapshotException(description);
+		}
+		else {
+			this.stacktrace = new AssemblySnapshotException(description);
+		}
 	}
 
 	@Override

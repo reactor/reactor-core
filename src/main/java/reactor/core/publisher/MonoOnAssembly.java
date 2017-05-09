@@ -54,6 +54,21 @@ final class MonoOnAssembly<T> extends MonoSource<T, T> implements Fuseable, Asse
 		this.stacktrace = new AssemblySnapshotException(description);
 	}
 
+	/**
+	 * Create a potentially light assembly trace augmented with a description (that must
+	 * be unique enough to identify the assembly site in case of light mode),
+	 * wrapping a {@link ParallelFlux}.
+	 */
+	MonoOnAssembly(Mono<? extends T> source, String description, boolean light) {
+		super(source);
+		if (light) {
+			this.stacktrace = new FluxOnAssembly.AssemblyLightSnapshotException(description);
+		}
+		else {
+			this.stacktrace = new AssemblySnapshotException(description);
+		}
+	}
+
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 		FluxOnAssembly.subscribe(s, source, stacktrace);
