@@ -49,6 +49,7 @@ import reactor.core.Fuseable;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Operators;
 import reactor.core.publisher.Signal;
+import reactor.test.StepVerifier.Step;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.util.Logger;
 import reactor.util.Loggers;
@@ -307,28 +308,64 @@ final class DefaultStepVerifierBuilder<T>
 	}
 
 	@Override
+	public final DefaultStepVerifierBuilder<T> expectNext(T t) {
+		return addExpectedValues(new Object[] { t });
+	}
+
+	@Override
+	public final DefaultStepVerifierBuilder<T> expectNext(T t1, T t2) {
+		return addExpectedValues(new Object[] { t1, t2 });
+	}
+
+	@Override
+	public final DefaultStepVerifierBuilder<T> expectNext(T t1, T t2, T t3) {
+		return addExpectedValues(new Object[] { t1, t2, t3 });
+	}
+
+	@Override
+	public final DefaultStepVerifierBuilder<T> expectNext(T t1, T t2, T t3, T t4) {
+		return addExpectedValues(new Object[] { t1, t2, t3, t4 });
+	}
+
+	@Override
+	public final DefaultStepVerifierBuilder<T> expectNext(T t1, T t2, T t3, T t4, T t5) {
+		return addExpectedValues(new Object[] { t1, t2, t3, t4, t5 });
+	}
+
+	@Override
+	public final DefaultStepVerifierBuilder<T> expectNext(T t1, T t2, T t3, T t4, T t5, T t6) {
+		return addExpectedValues(new Object[] { t1, t2, t3, t4, t5, t6 });
+	}
+
+	@Override
 	@SafeVarargs
 	public final DefaultStepVerifierBuilder<T> expectNext(T... ts) {
 		Objects.requireNonNull(ts, "ts");
-		SignalEvent<T> event;
-		for (T t : ts) {
-			String desc = String.format("expectNext(%s)", t);
-			checkPotentialHang(1, desc);
-			event = new SignalEvent<>((signal, se) -> {
-				if (!signal.isOnNext()) {
-					return fail(se, "expected: onNext(%s); actual: %s", t, signal);
-				}
-				else if (!Objects.equals(t, signal.get())) {
-					return fail(se, "expected value: %s; actual value: %s", t, signal.get());
-
-				}
-				else {
-					return Optional.empty();
-				}
-			}, desc);
-			this.script.add(event);
-		}
+		Arrays.stream(ts).forEach(this::addExpectedValue);
 		return this;
+	}
+
+	@SuppressWarnings("unchecked") // cast to a known type
+	private DefaultStepVerifierBuilder<T> addExpectedValues(Object[] values) {
+		Arrays.stream(values).map(val -> (T) val).forEach(this::addExpectedValue);
+		return this;
+	}
+
+	private void addExpectedValue(T value) {
+		String desc = String.format("expectNext(%s)", value);
+		checkPotentialHang(1, desc);
+		SignalEvent<T> event = new SignalEvent<>((signal, se) -> {
+			if (!signal.isOnNext()) {
+				return fail(se, "expected: onNext(%s); actual: %s", value, signal);
+			}
+			else if (!Objects.equals(value, signal.get())) {
+				return fail(se, "expected value: %s; actual value: %s", value, signal.get());
+			}
+			else {
+				return Optional.empty();
+			}
+		}, desc);
+		this.script.add(event);
 	}
 
 	@Override
@@ -1747,7 +1784,7 @@ final class DefaultStepVerifierBuilder<T>
 	static class SubscriptionEvent<T> extends AbstractEagerEvent<T> {
 
 		final Consumer<Subscription> consumer;
-		
+
 		SubscriptionEvent(String desc) {
 			this(null, desc);
 		}
@@ -1885,7 +1922,7 @@ final class DefaultStepVerifierBuilder<T>
 	static class TaskEvent<T> extends AbstractEagerEvent<T> {
 
 		final Runnable task;
-		
+
 		TaskEvent(Runnable task, String desc) {
 			super(desc);
 			this.task = task;

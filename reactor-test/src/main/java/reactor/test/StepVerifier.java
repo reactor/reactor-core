@@ -18,6 +18,7 @@ package reactor.test;
 
 import java.time.Duration;
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -500,6 +501,87 @@ public interface StepVerifier {
 		 * @return this builder
 		 */
 		Step<T> consumeRecordedWith(Consumer<? super Collection<T>> consumer);
+
+		/**
+		 * Expect the next element received to be equal to the given value.
+		 *
+		 * @param t the value to expect
+		 *
+		 * @return this builder
+		 *
+		 * @see Subscriber#onNext(Object)
+		 */
+		Step<T> expectNext(T t);
+
+		/**
+		 * Expect the next elements received to be equal to the given values.
+		 *
+		 * @param t1 the first value to expect
+		 * @param t2 the second value to expect
+		 *
+		 * @return this builder
+		 *
+		 * @see Subscriber#onNext(Object)
+		 */
+		Step<T> expectNext(T t1, T t2);
+
+		/**
+		 * Expect the next elements received to be equal to the given values.
+		 *
+		 * @param t1 the first value to expect
+		 * @param t2 the second value to expect
+		 * @param t3 the third value to expect
+		 *
+		 * @return this builder
+		 *
+		 * @see Subscriber#onNext(Object)
+		 */
+		Step<T> expectNext(T t1, T t2, T t3);
+
+		/**
+		 * Expect the next elements received to be equal to the given values.
+		 *
+		 * @param t1 the first value to expect
+		 * @param t2 the second value to expect
+		 * @param t3 the third value to expect
+		 * @param t4 the fourth value to expect
+		 *
+		 * @return this builder
+		 *
+		 * @see Subscriber#onNext(Object)
+		 */
+		Step<T> expectNext(T t1, T t2, T t3, T t4);
+
+		/**
+		 * Expect the next elements received to be equal to the given values.
+		 *
+		 * @param t1 the first value to expect
+		 * @param t2 the second value to expect
+		 * @param t3 the third value to expect
+		 * @param t4 the fourth value to expect
+		 * @param t5 the fifth value to expect
+		 *
+		 * @return this builder
+		 *
+		 * @see Subscriber#onNext(Object)
+		 */
+		Step<T> expectNext(T t1, T t2, T t3, T t4, T t5);
+
+		/**
+		 * Expect the next elements received to be equal to the given values.
+		 *
+		 * @param t1 the first value to expect
+		 * @param t2 the second value to expect
+		 * @param t3 the third value to expect
+		 * @param t4 the fourth value to expect
+		 * @param t5 the fifth value to expect
+		 * @param t6 the sixth value to expect
+		 *
+		 * @return this builder
+		 *
+		 * @see Subscriber#onNext(Object)
+		 */
+		Step<T> expectNext(T t1, T t2, T t3, T t4, T t5, T t6);
 
 		/**
 		 * Expect the next elements received to be equal to the given values.
