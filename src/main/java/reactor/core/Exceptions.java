@@ -69,15 +69,23 @@ public abstract class Exceptions {
 				update = exception;
 			}
 			else {
-				update = new Throwable("Multiple exceptions");
-				update.addSuppressed(current);
-				update.addSuppressed(exception);
+				update = multiple(current, exception);
 			}
 
 			if (field.compareAndSet(instance, current, update)) {
 				return true;
 			}
 		}
+	}
+
+	public static RuntimeException multiple(Throwable... throwables) {
+		RuntimeException multiple = new RuntimeException("Multiple exceptions");
+		if (throwables != null) {
+			for (Throwable t : throwables) {
+				multiple.addSuppressed(t);
+			}
+		}
+		return multiple;
 	}
 
 	/**
