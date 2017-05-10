@@ -167,15 +167,15 @@ that we'll push to the UI inside the UI thread.
 That's a lot of code, a bit hard to follow and with repetitive parts.Compare it
 with its equivalent in Reactor:
 
-.Example of Reactor code
+.Example of Reactor code equivalent to callback code
 [source,java]
 ----
-userService.getFavorites(userId) <1>
-           .flatMap(favoriteService::getDetails) <2>
-           .switchIfEmpty(suggestionService.getSuggestions()) <3>
-           .take(5) <4>
-           .publishOn(UiUtils.uiThreadScheduler()) <5>
-           .subscribe(uiList::show, UiUtils::errorPopup); <6>
+userService.getFavorites(userId) // <1>
+           .flatMap(favoriteService::getDetails) // <2>
+           .switchIfEmpty(suggestionService.getSuggestions()) // <3>
+           .take(5) // <4>
+           .publishOn(UiUtils.uiThreadScheduler()) // <5>
+           .subscribe(uiList::show, UiUtils::errorPopup); // <6>
 ----
 <1> We start with a flow of favorite IDs.
 <2> We _asynchronously transform_ these into detailed `Favorite` objects (`flatMap`).
@@ -196,9 +196,9 @@ operator in the chain:
 [source,java]
 ----
 userService.getFavorites(userId)
-           .timeout(Duration.ofMillis(800)) <1>
-           .onErrorResume(cacheService.cachedFavoritesFor(userId)) <2>
-           .flatMap(favoriteService::getDetails) <3>
+           .timeout(Duration.ofMillis(800)) // <1>
+           .onErrorResume(cacheService.cachedFavoritesFor(userId)) // <2>
+           .flatMap(favoriteService::getDetails) // <3>
            .switchIfEmpty(suggestionService.getSuggestions())
            .take(5)
            .publishOn(UiUtils.uiThreadScheduler())
@@ -215,7 +215,99 @@ easy to stay in familiar territory and block on a `Future` by calling their
 `get()` method. And lastly, they lack the support for multiple values and
 advanced error handling.
 
-This might seem familiar: isn't that what Reactive Programming directly tries to
+Let's take another example: we get a list of IDs from which we want to fetch a name and
+some stat and combine these pair-wise, all of it asynchronously.
+
+.Example of `CompletableFuture` combination
+[source,java]
+----
+List<String> results = Collections.synchronizedList(new ArrayList<>());
+
+CompletableFuture<List<String>> ids = ifhIds(); // <1>
+
+CompletableFuture<Void> result = ids.thenApplyAsync(l -> { // <2>
+    Stream<CompletableFuture<Void>> zip =
+        l.stream().map(i -> { // <3>
+            CompletableFuture<String> nameTask = ifhName(i); // <4>
+            CompletableFuture<Integer> statTask = ifhStat(i); // <5>
+
+            return nameTask.thenCombineAsync(statTask, (name, stat) -> "Name " + name + " has stats " + stat) // <6>
+                           .thenAcceptAsync(combination -> results.add("Combination: " + combination)); // <7>
+        });
+
+    List<CompletableFuture<Void>> combinationList = zip.collect(Collectors.toList()); // <8>
+    CompletableFuture<String>[] combinationArray = combinationList.toArray(new CompletableFuture[combinationList.size()]);
+    return CompletableFuture.allOf(combinationArray); // <9>
+})
+    .thenRunAsync(() -> results.add("DONE")); // <10>
+
+result.join(); // <11>
+assertThat(results).contains(
+    "Combination: Name NameJoe has stats 103",
+    "Combination: Name NameBart has stats 104",
+    "Combination: Name NameHenry has stats 105",
+    "Combination: Name NameNicole has stats 106",
+    "Combination: Name NameABSLAJNFOAJNFOANFANSF has stats 121")
+.endsWith("DONE");
+----
+<1> We start off a future that gives us a list of ids to process.
+<2> We want to start some deeper asynchronous processing once we get the list.
+<3> For each element in the list...
+<4> First we'll asynchronously get the associated name...
+<5> Then we'll asynchronously get the associated task...
+<6> And we'll combine both results.
+<7> The final processing of each such result is to store it for later assertion
+<8> We now have a list of futures that represent all the combination tasks.
+<9> In order to execute these tasks, we need to convert the list to an array and pass it to
+`CompletableFuture.allOf`, which outputs a future that completes when all tasks have completed.
+<10> After all these tasks, we also want to execute a final step.
+<11> Once the whole asynchronous pipeline has been triggered, we wait for it to be processed
+and we assert the results.
+
+Since Reactor has more combination operators out of the box, this can be simplified:
+
+.Example of Reactor code equivalent to future code
+[source,java]
+----
+List<String> results = Collections.synchronizedList(new ArrayList<>());
+
+Flux<String> ids = ifhrIds(); // <1>
+
+Flux<String> combinations = ids
+    .flatMap(id -> { // <2>
+      Mono<String> nameTask = ifhrName(id); // <3>
+      Mono<Integer> statTask = ifhrStat(id); // <4>
+
+      return nameTask.and(statTask, // <5>
+        (name, stat) -> "Name " + name + " has stats " + stat);
+    })
+    .doOnNext(combination -> results.add("Combination: " + combination)) // <6>
+    .doOnComplete(() -> results.add("DONE")); // <7>
+
+combinations.blockLast(); // <8>
+assertThat(results).containsExactly( // <9>
+    "Combination: Name NameJoe has stats 103",
+    "Combination: Name NameBart has stats 104",
+    "Combination: Name NameHenry has stats 105",
+    "Combination: Name NameNicole has stats 106",
+    "Combination: Name NameABSLAJNFOAJNFOANFANSF has stats 121",
+    "DONE"
+);
+----
+<1> This time we'll start from an asynchronously provided sequence of ids (a `Flux<String>`)
+<2> For each element in the sequence, we'll asynchronously process it (`flatMap`) twice:
+<3> First we'll get the associated name
+<4> Second we'll get the associated stat
+<5> We are actually interested in asynchronously combining these 2 values
+<6> We add some decorative behavior: as soon as each value becomes available, store it in
+out test collection
+<7> Similarly, once the sequence signals its completion, add a final element in the collection.
+<8> In production, we'd continue working with the `Flux` asynchronously by further combining
+it or subscribing to it. Since we're in a test, we'll block waiting for the processing to finish
+instead.
+<9> We are now ready to assert the result.
+
+These caveats of Callback and Future seem familiar: aren't they what Reactive Programming directly tries to
 address with the `Publisher`-`Subscriber` pair?
 
 == From Imperative to Reactive Programming
