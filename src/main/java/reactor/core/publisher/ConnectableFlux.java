@@ -15,10 +15,12 @@
  */
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.function.Consumer;
 
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
+import reactor.core.scheduler.Schedulers;
 
 /**
  * The abstract base class for connectable publishers that let subscribers pile up
@@ -136,6 +138,26 @@ public abstract class ConnectableFlux<T> extends Flux<T> {
 	 */
 	public final Flux<T> refCount(int minSubscribers) {
 		return onAssembly(new FluxRefCount<>(this, minSubscribers));
+	}
+
+	/**
+	 * Connects to the upstream source when the given number of {@link org.reactivestreams.Subscriber} subscribes.
+	 * Disconnection can happen in two scenarios: when the upstream source completes (or errors) then
+	 * there is an immediate disconnection. However, when all subscribers have cancelled,
+	 * a <strong>deferred</strong> disconnection is scheduled. If any new subscriber comes
+	 * in during the {@code gracePeriod} that follows, the disconnection is cancelled.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M1/src/docs/marble/refCount.png" alt="">
+	 *
+	 * @param minSubscribers the number of subscribers expected to subscribe before connection
+	 * @param gracePeriod the {@link Duration} for which to wait for new subscribers before actually
+	 * disconnecting when all subscribers have cancelled.
+	 *
+	 * @return a reference counting {@link Flux} with a grace period for disconnection
+	 */
+	public final Flux<T> refCount(int minSubscribers, Duration gracePeriod) {
+		return onAssembly(new FluxRefCountGrace<>(this, minSubscribers, gracePeriod, Schedulers.elastic()));
 	}
 
 	static final Consumer<Disposable> NOOP_DISCONNECT = runnable -> {

@@ -15,10 +15,16 @@
  */
 package reactor.core.publisher;
 
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Disposable;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxRefCountTest {
 	/*@Test
@@ -170,5 +176,43 @@ public class FluxRefCountTest {
 
 		ts1.assertValues(1, 2, 3, 4, 5);
 		ts2.assertValues(1, 2, 3, 4, 5);
+	}
+
+	@Test
+	public void reconnectsAfterRefCountZero() {
+		AtomicLong subscriptionCount = new AtomicLong();
+		AtomicReference<SignalType> termination = new AtomicReference<>();
+
+		Flux<Integer> source = Flux.range(1, 50)
+		                           .delayElements(Duration.ofMillis(100))
+		                           .doFinally(termination::set)
+		                           .doOnSubscribe(s -> subscriptionCount.incrementAndGet());
+
+		Flux<Integer> refCounted = source.publish().refCount(2);
+
+		Disposable sub1 = refCounted.subscribe();
+		assertThat(subscriptionCount.get()).isZero();
+		assertThat(termination.get()).isNull();
+
+		Disposable sub2 = refCounted.subscribe();
+		assertThat(subscriptionCount.get()).isEqualTo(1);
+		assertThat(termination.get()).isNull();
+
+		sub1.dispose();
+		assertThat(subscriptionCount.get()).isEqualTo(1);
+		assertThat(termination.get()).isNull();
+
+		sub2.dispose();
+		assertThat(subscriptionCount.get()).isEqualTo(1);
+		assertThat(termination.get()).isEqualTo(SignalType.CANCEL);
+
+		try {
+			sub1 = refCounted.subscribe();
+			sub2 = refCounted.subscribe();
+			assertThat(subscriptionCount.get()).isEqualTo(2);
+		} finally {
+			sub1.dispose();
+			sub2.dispose();
+		}
 	}
 }
