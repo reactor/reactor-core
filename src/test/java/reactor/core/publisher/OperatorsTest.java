@@ -16,23 +16,15 @@
 
 package reactor.core.publisher;
 
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.LockSupport;
-import java.util.function.BiPredicate;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.Schedulers;
+import reactor.test.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -43,63 +35,11 @@ public class OperatorsTest {
 			AtomicLongFieldUpdater.newUpdater(OperatorsTest.class, "testRequest");
 
 
-	<T> boolean race(T initial, Function<? super T, ? extends T> race,
-			Predicate<? super T> stopRace,
-			BiPredicate<? super T, ? super T> terminate) {
-
-		Scheduler.Worker w1 = Schedulers.elastic()
-		                                .createWorker();
-		Scheduler.Worker w2 = Schedulers.elastic()
-		                                .createWorker();
-
-		try {
-
-			AtomicReference<T> ref1 = new AtomicReference<>();
-			CountDownLatch cdl1 = new CountDownLatch(1);
-			AtomicReference<T> ref2 = new AtomicReference<>();
-			CountDownLatch cdl2 = new CountDownLatch(1);
-
-			w1.schedule(() -> {
-				T state = initial;
-				while (!stopRace.test(state)) {
-					state = race.apply(state);
-					LockSupport.parkNanos(1L);
-				}
-				ref1.set(state);
-				cdl1.countDown();
-			});
-			w2.schedule(() -> {
-				T state = initial;
-				while (!stopRace.test(state)) {
-					state = race.apply(state);
-					LockSupport.parkNanos(1L);
-				}
-				ref2.set(state);
-				cdl2.countDown();
-			});
-
-			try {
-				cdl1.await();
-				cdl2.await();
-			}
-			catch (InterruptedException e) {
-				Thread.currentThread()
-				      .interrupt();
-			}
-
-			return terminate.test(ref1.get(), ref2.get());
-		}
-		finally {
-			w1.dispose();
-			w2.dispose();
-		}
-	}
-
 	@Test
 	public void addAndGetAtomicField() {
 		TEST_REQUEST.set(this, 0L);
 
-		race(0L,
+		RaceTestUtils.race(0L,
 				s -> Operators.addAndGet(TEST_REQUEST, this, 1),
 				a -> a >= 100_000L,
 				(a, b) -> a == b
