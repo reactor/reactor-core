@@ -13,7 +13,7 @@ Compare the following:
 .without chaining (incorrect)
 [source,java]
 ----
-Flux<String> secrets = Flux.just("foo", "chain");
+Flux<String> flux = Flux.just("foo", "chain");
 flux.map(secret -> secret.replaceAll(".", "*")); <1>
 flux.subscribe(next -> System.out.println("Received: " + next));
 ----
@@ -24,7 +24,7 @@ With:
 .without chaining (correct)
 [source,java]
 ----
-Flux<String> secrets = Flux.just("foo", "chain");
+Flux<String> flux = Flux.just("foo", "chain");
 flux = flux.map(secret -> secret.replaceAll(".", "*"));
 flux.subscribe(next -> System.out.println("Received: " + next));
 ----
