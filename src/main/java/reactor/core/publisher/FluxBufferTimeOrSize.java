@@ -18,25 +18,46 @@ package reactor.core.publisher;
 
 import java.util.Collection;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler;
 
 /**
  * @author Stephane Maldini
  */
-final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends FluxBatch<T, C> {
+final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends FluxSource<T, C> {
 
-	final Supplier<C> bufferSupplier;
+	final int            batchSize;
+	final Supplier<C>    bufferSupplier;
+	final Scheduler      timer;
+	final long           timespan;
 
 	FluxBufferTimeOrSize(Flux<T> source,
 			int maxSize,
 			long timespan,
 			Scheduler timer,
 			Supplier<C> bufferSupplier) {
-		super(source, maxSize, timespan, timer);
+		super(source);
+		if (timespan <= 0) {
+			throw new IllegalArgumentException("Timeout period must be strictly positive");
+		}
+		if (maxSize <= 0) {
+			throw new IllegalArgumentException("maxSize must be strictly positive");
+		}
+		this.timer = Objects.requireNonNull(timer, "Timer");
+		this.timespan = timespan;
+		this.batchSize = maxSize;
 		this.bufferSupplier = Objects.requireNonNull(bufferSupplier, "bufferSupplier");
+	}
+
+	final Subscriber<? super C> prepareSub(Subscriber<? super C> actual) {
+		return Operators.serialize(actual);
 	}
 
 	@Override
@@ -48,10 +69,47 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 				bufferSupplier));
 	}
 
-	final static class BufferTimeoutSubscriber<T, C extends Collection<? super T>> extends
-	                                                                               BatchSubscriber<T, C> {
+
+
+	final static class BufferTimeoutSubscriber<T, C extends Collection<? super T>>
+			implements InnerOperator<T, C> {
+
+		final Subscriber<? super C> actual;
+
+		final static int NOT_TERMINATED          = 0;
+		final static int TERMINATED_WITH_SUCCESS = 1;
+		final static int TERMINATED_WITH_ERROR   = 2;
+		final static int TERMINATED_WITH_CANCEL  = 3;
+
+		final int                        batchSize;
+		final long                       timespan;
+		final Scheduler.Worker           timer;
+		final Runnable                   flushTask;
+
+		protected Subscription subscription;
+
+		volatile     int                                                  terminated =
+				NOT_TERMINATED;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<BufferTimeoutSubscriber> TERMINATED =
+				AtomicIntegerFieldUpdater.newUpdater(BufferTimeoutSubscriber.class, "terminated");
+
+
+		volatile long requested;
+
+		@SuppressWarnings("rawtypes")
+		static final AtomicLongFieldUpdater<BufferTimeoutSubscriber> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(BufferTimeoutSubscriber.class, "requested");
+
+		volatile int index = 0;
+
+		static final     AtomicIntegerFieldUpdater<BufferTimeoutSubscriber> INDEX =
+				AtomicIntegerFieldUpdater.newUpdater(BufferTimeoutSubscriber.class, "index");
+
+		volatile Disposable timespanRegistration;
 
 		final Supplier<C> bufferSupplier;
+
 		volatile C values;
 
 		BufferTimeoutSubscriber(Subscriber<? super C> actual,
@@ -59,16 +117,33 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 				long timespan,
 				Scheduler.Worker timer,
 				Supplier<C> bufferSupplier) {
-			super(actual, maxSize, false, timespan, timer);
+			this.actual = actual;
+			this.timespan = timespan;
+			this.timer = timer;
+			this.flushTask = () -> {
+				if (terminated == NOT_TERMINATED) {
+					int index;
+					for(;;){
+						index = this.index;
+						if(index == 0){
+							return;
+						}
+						if(INDEX.compareAndSet(this, index, 0)){
+							break;
+						}
+					}
+					flushCallback(null);
+				}
+			};
+
+			this.batchSize = maxSize;
 			this.bufferSupplier = bufferSupplier;
 		}
 
-		@Override
 		protected void doOnSubscribe() {
 			values = bufferSupplier.get();
 		}
 
-		@Override
 		protected void checkedError(Throwable ev) {
 			synchronized (this) {
 				C v = values;
@@ -80,7 +155,6 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 			actual.onError(ev);
 		}
 
-		@Override
 		public void nextCallback(T value) {
 			synchronized (this) {
 				C v = values;
@@ -93,7 +167,6 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 			}
 		}
 
-		@Override
 		public void flushCallback(T ev) {
 			C v = values;
 			boolean flush = false;
@@ -107,6 +180,150 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 			if (flush) {
 				actual.onNext(v);
 			}
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return subscription;
+				case CANCELLED:
+					return terminated == TERMINATED_WITH_CANCEL;
+				case TERMINATED:
+					return terminated == TERMINATED_WITH_ERROR || terminated == TERMINATED_WITH_SUCCESS;
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+				case CAPACITY:
+					return batchSize;
+				case BUFFERED:
+					return batchSize - index;
+			}
+			return InnerOperator.super.scan(key);
+		}
+
+		@Override
+		public void onNext(final T value) {
+			int index;
+			for(;;){
+				index = this.index + 1;
+				if(INDEX.compareAndSet(this, index - 1, index)){
+					break;
+				}
+			}
+
+			if (index == 1) {
+				timespanRegistration =
+						timer.schedule(flushTask, timespan, TimeUnit.MILLISECONDS);
+				if (timespanRegistration == Scheduler.REJECTED) {
+					throw Operators.onRejectedExecution(this, null, value);
+				}
+			}
+
+			nextCallback(value);
+
+			if (this.index % batchSize == 0) {
+				this.index = 0;
+				if (timespanRegistration != null) {
+					timespanRegistration.dispose();
+					timespanRegistration = null;
+				}
+				flushCallback(value);
+			}
+		}
+
+		void checkedComplete() {
+			try {
+				flushCallback(null);
+			}
+			finally {
+				actual.onComplete();
+			}
+		}
+
+		/**
+		 * @return has this {@link Subscriber} terminated with success ?
+		 */
+		final boolean isCompleted() {
+			return terminated == TERMINATED_WITH_SUCCESS;
+		}
+
+		/**
+		 * @return has this {@link Subscriber} terminated with an error ?
+		 */
+		final boolean isFailed() {
+			return terminated == TERMINATED_WITH_ERROR;
+		}
+
+		@Override
+		public void request(long n) {
+			if (Operators.validate(n)) {
+				if (terminated != NOT_TERMINATED) {
+					return;
+				}
+				if (batchSize == Integer.MAX_VALUE || n == Long.MAX_VALUE) {
+					requestMore(Long.MAX_VALUE);
+				}
+				else {
+					requestMore(Operators.multiplyCap(n, batchSize));
+				}
+			}
+		}
+
+		final void requestMore(long n) {
+			Subscription s = this.subscription;
+			if (s != null) {
+				s.request(n);
+			}
+		}
+
+		@Override
+		public Subscriber<? super C> actual() {
+			return actual;
+		}
+
+		@Override
+		public void onComplete() {
+			if (TERMINATED.compareAndSet(this, NOT_TERMINATED, TERMINATED_WITH_SUCCESS)) {
+				timer.dispose();
+				checkedComplete();
+			}
+		}
+
+		@Override
+		public void onError(Throwable throwable) {
+			if (TERMINATED.compareAndSet(this, NOT_TERMINATED, TERMINATED_WITH_ERROR)) {
+				timer.dispose();
+				checkedError(throwable);
+			}
+		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			if (Operators.validate(this.subscription, s)) {
+				this.subscription = s;
+				doOnSubscribe();
+				actual.onSubscribe(this);
+			}
+		}
+
+		@Override
+		public void cancel() {
+			if (TERMINATED.compareAndSet(this, NOT_TERMINATED, TERMINATED_WITH_CANCEL)) {
+				timer.dispose();
+				Subscription s = this.subscription;
+				if (s != null) {
+					this.subscription = null;
+					s.cancel();
+				}
+			}
+		}
+
+		@Override
+		public String toString() {
+			return super.toString() + "{" + (timer != null ?
+					"timed - " + timespan + " ms" : "") + " batchSize=" +
+					index + "/" +
+					batchSize + " [" + (int) ((((float) index) / ((float) batchSize)) * 100) + "%]";
 		}
 	}
 }

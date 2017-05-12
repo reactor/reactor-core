@@ -29,6 +29,7 @@ import reactor.core.scheduler.Scheduler;
 /**
  * @author Stephane Maldini
  */
+@Deprecated
 abstract class FluxBatch<T, V> extends FluxSource<T, V> {
 
 	final int            batchSize;

@@ -56,4 +56,5 @@ public class FluxBufferTimeOrSizeTest {
 		            .assertNext(s -> assertThat(s).containsExactly(6))
 		            .verifyComplete();
 	}
+
 }
