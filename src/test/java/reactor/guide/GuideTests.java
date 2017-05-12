@@ -19,9 +19,12 @@ package reactor.guide;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -31,6 +34,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import org.junit.After;
 import org.junit.Before;
@@ -62,6 +68,91 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 
 public class GuideTests {
+
+	@Test
+	public void introFutureHell() {
+		CompletableFuture<List<String>> ids = ifhIds(); // <1>
+
+		CompletableFuture<List<String>> result = ids.thenComposeAsync(l -> { // <2>
+			Stream<CompletableFuture<String>> zip =
+					l.stream().map(i -> { // <3>
+						         CompletableFuture<String> nameTask = ifhName(i); // <4>
+						         CompletableFuture<Integer> statTask = ifhStat(i); // <5>
+
+						         return nameTask.thenCombineAsync(statTask, (name, stat) -> "Name " + name + " has stats " + stat); // <6>
+					         });
+			List<CompletableFuture<String>> combinationList = zip.collect(Collectors.toList()); // <7>
+			CompletableFuture<String>[] combinationArray = combinationList.toArray(new CompletableFuture[combinationList.size()]);
+
+			CompletableFuture<Void> allDone = CompletableFuture.allOf(combinationArray); // <8>
+			return allDone.thenApply(v -> combinationList.stream()
+			                                             .map(CompletableFuture::join) // <9>
+			                                             .collect(Collectors.toList()));
+		});
+
+		List<String> results = result.join(); // <10>
+		assertThat(results).contains(
+						"Name NameJoe has stats 103",
+						"Name NameBart has stats 104",
+						"Name NameHenry has stats 105",
+						"Name NameNicole has stats 106",
+						"Name NameABSLAJNFOAJNFOANFANSF has stats 121");
+	}
+
+	@Test
+	public void introFutureHellReactorVersion() {
+		Flux<String> ids = ifhrIds(); // <1>
+
+		Flux<String> combinations =
+				ids.flatMap(id -> { // <2>
+					Mono<String> nameTask = ifhrName(id); // <3>
+					Mono<Integer> statTask = ifhrStat(id); // <4>
+
+					return nameTask.and(statTask, // <5>
+							(name, stat) -> "Name " + name + " has stats " + stat);
+				});
+
+		Mono<List<String>> result = combinations.collectList(); // <6>
+
+		List<String> results = result.block(); // <7>
+		assertThat(results).containsExactly( // <8>
+				"Name NameJoe has stats 103",
+				"Name NameBart has stats 104",
+				"Name NameHenry has stats 105",
+				"Name NameNicole has stats 106",
+				"Name NameABSLAJNFOAJNFOANFANSF has stats 121"
+		);
+	}
+
+	private CompletableFuture<String> ifhName(String id) {
+		CompletableFuture<String> f = new CompletableFuture<>();
+		f.complete("Name" + id);
+		return f;
+	}
+
+	private CompletableFuture<Integer> ifhStat(String id) {
+		CompletableFuture<Integer> f = new CompletableFuture<>();
+		f.complete(id.length() + 100);
+		return f;
+	}
+
+	private CompletableFuture<List<String>> ifhIds() {
+		CompletableFuture<List<String>> ids = new CompletableFuture<>();
+		ids.complete(Arrays.asList("Joe", "Bart", "Henry", "Nicole", "ABSLAJNFOAJNFOANFANSF"));
+		return ids;
+	}
+
+	private Flux<String> ifhrIds() {
+		return Flux.just("Joe", "Bart", "Henry", "Nicole", "ABSLAJNFOAJNFOANFANSF");
+	}
+
+	private Mono<String> ifhrName(String id) {
+		return Mono.just("Name" + id);
+	}
+
+	private Mono<Integer> ifhrStat(String id) {
+		return Mono.just(id.length() + 100);
+	}
 
 	@Test
 	public void advancedCompose() {
@@ -775,7 +866,7 @@ public class GuideTests {
 				assertThat(withSuppressed.getSuppressed()).hasSize(1);
 				assertThat(withSuppressed.getSuppressed()[0])
 						.hasMessageStartingWith("\nAssembly trace from producer [reactor.core.publisher.MonoSingle] :")
-						.hasMessageEndingWith("Flux.single(GuideTests.java:733)\n");
+						.hasMessageEndingWith("Flux.single(GuideTests.java:824)\n");
 			});
 		}
 	}
