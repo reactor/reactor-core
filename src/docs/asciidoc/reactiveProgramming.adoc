@@ -221,34 +221,32 @@ some stat and combine these pair-wise, all of it asynchronously.
 .Example of `CompletableFuture` combination
 [source,java]
 ----
-List<String> results = Collections.synchronizedList(new ArrayList<>());
-
 CompletableFuture<List<String>> ids = ifhIds(); // <1>
 
-CompletableFuture<Void> result = ids.thenApplyAsync(l -> { // <2>
-    Stream<CompletableFuture<Void>> zip =
-        l.stream().map(i -> { // <3>
-            CompletableFuture<String> nameTask = ifhName(i); // <4>
-            CompletableFuture<Integer> statTask = ifhStat(i); // <5>
+CompletableFuture<List<String>> result = ids.thenComposeAsync(l -> { // <2>
+	Stream<CompletableFuture<String>> zip =
+			l.stream().map(i -> { // <3>
+						 CompletableFuture<String> nameTask = ifhName(i); // <4>
+						 CompletableFuture<Integer> statTask = ifhStat(i); // <5>
 
-            return nameTask.thenCombineAsync(statTask, (name, stat) -> "Name " + name + " has stats " + stat) // <6>
-                           .thenAcceptAsync(combination -> results.add("Combination: " + combination)); // <7>
-        });
+						 return nameTask.thenCombineAsync(statTask, (name, stat) -> "Name " + name + " has stats " + stat); // <6>
+					 });
+	List<CompletableFuture<String>> combinationList = zip.collect(Collectors.toList()); // <7>
+	CompletableFuture<String>[] combinationArray = combinationList.toArray(new CompletableFuture[combinationList.size()]);
 
-    List<CompletableFuture<Void>> combinationList = zip.collect(Collectors.toList()); // <8>
-    CompletableFuture<String>[] combinationArray = combinationList.toArray(new CompletableFuture[combinationList.size()]);
-    return CompletableFuture.allOf(combinationArray); // <9>
-})
-    .thenRunAsync(() -> results.add("DONE")); // <10>
+	CompletableFuture<Void> allDone = CompletableFuture.allOf(combinationArray); // <8>
+	return allDone.thenApply(v -> combinationList.stream()
+												 .map(CompletableFuture::join) // <9>
+												 .collect(Collectors.toList()));
+});
 
-result.join(); // <11>
+List<String> results = result.join(); // <10>
 assertThat(results).contains(
-    "Combination: Name NameJoe has stats 103",
-    "Combination: Name NameBart has stats 104",
-    "Combination: Name NameHenry has stats 105",
-    "Combination: Name NameNicole has stats 106",
-    "Combination: Name NameABSLAJNFOAJNFOANFANSF has stats 121")
-.endsWith("DONE");
+				"Name NameJoe has stats 103",
+				"Name NameBart has stats 104",
+				"Name NameHenry has stats 105",
+				"Name NameNicole has stats 106",
+				"Name NameABSLAJNFOAJNFOANFANSF has stats 121");
 ----
 <1> We start off a future that gives us a list of ids to process.
 <2> We want to start some deeper asynchronous processing once we get the list.
@@ -256,42 +254,41 @@ assertThat(results).contains(
 <4> First we'll asynchronously get the associated name...
 <5> Then we'll asynchronously get the associated task...
 <6> And we'll combine both results.
-<7> The final processing of each such result is to store it for later assertion
-<8> We now have a list of futures that represent all the combination tasks.
-<9> In order to execute these tasks, we need to convert the list to an array and pass it to
-`CompletableFuture.allOf`, which outputs a future that completes when all tasks have completed.
-<10> After all these tasks, we also want to execute a final step.
-<11> Once the whole asynchronous pipeline has been triggered, we wait for it to be processed
-and we assert the results.
+<7> We now have a list of futures that represent all the combination tasks.
+In order to execute these tasks, we need to convert the list to an array...
+<8> ...and pass it to `CompletableFuture.allOf`, which outputs a future that completes
+when all tasks have completed.
+<9> The tricky bit is that `allOf` returns `CompletableFuture<Void>`, so we reiterate
+over the list of futures, collecting their result via `join()` (which here doesn't block
+since `allOf` has ensure the futures are all done).
+<10> Once the whole asynchronous pipeline has been triggered, we wait for it to be processed
+and return the list of results that we can assert.
 
 Since Reactor has more combination operators out of the box, this can be simplified:
 
 .Example of Reactor code equivalent to future code
 [source,java]
 ----
-List<String> results = Collections.synchronizedList(new ArrayList<>());
-
 Flux<String> ids = ifhrIds(); // <1>
 
-Flux<String> combinations = ids
-    .flatMap(id -> { // <2>
-      Mono<String> nameTask = ifhrName(id); // <3>
-      Mono<Integer> statTask = ifhrStat(id); // <4>
+Flux<String> combinations =
+		ids.flatMap(id -> { // <2>
+			Mono<String> nameTask = ifhrName(id); // <3>
+			Mono<Integer> statTask = ifhrStat(id); // <4>
 
-      return nameTask.and(statTask, // <5>
-        (name, stat) -> "Name " + name + " has stats " + stat);
-    })
-    .doOnNext(combination -> results.add("Combination: " + combination)) // <6>
-    .doOnComplete(() -> results.add("DONE")); // <7>
+			return nameTask.and(statTask, // <5>
+					(name, stat) -> "Name " + name + " has stats " + stat);
+		});
 
-combinations.blockLast(); // <8>
-assertThat(results).containsExactly( // <9>
-    "Combination: Name NameJoe has stats 103",
-    "Combination: Name NameBart has stats 104",
-    "Combination: Name NameHenry has stats 105",
-    "Combination: Name NameNicole has stats 106",
-    "Combination: Name NameABSLAJNFOAJNFOANFANSF has stats 121",
-    "DONE"
+Mono<List<String>> result = combinations.collectList(); // <6>
+
+List<String> results = result.block(); // <7>
+assertThat(results).containsExactly( // <8>
+		"Name NameJoe has stats 103",
+		"Name NameBart has stats 104",
+		"Name NameHenry has stats 105",
+		"Name NameNicole has stats 106",
+		"Name NameABSLAJNFOAJNFOANFANSF has stats 121"
 );
 ----
 <1> This time we'll start from an asynchronously provided sequence of ids (a `Flux<String>`)
@@ -299,12 +296,10 @@ assertThat(results).containsExactly( // <9>
 <3> First we'll get the associated name
 <4> Second we'll get the associated stat
 <5> We are actually interested in asynchronously combining these 2 values
-<6> We add some decorative behavior: as soon as each value becomes available, store it in
-out test collection
-<7> Similarly, once the sequence signals its completion, add a final element in the collection.
+<6> Furthermore, we'd like to aggregate the values into a `List` as they become available.
 <8> In production, we'd continue working with the `Flux` asynchronously by further combining
 it or subscribing to it. Since we're in a test, we'll block waiting for the processing to finish
-instead.
+instead, directly returning the aggregated list of values.
 <9> We are now ready to assert the result.
 
 These caveats of Callback and Future seem familiar: aren't they what Reactive Programming directly tries to

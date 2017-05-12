@@ -71,41 +71,36 @@ public class GuideTests {
 
 	@Test
 	public void introFutureHell() {
-		List<String> results = Collections.synchronizedList(new ArrayList<>());
-
 		CompletableFuture<List<String>> ids = ifhIds(); // <1>
 
-		CompletableFuture<Void> result = ids.thenApplyAsync(l -> { // <2>
-			Stream<CompletableFuture<Void>> zip =
+		CompletableFuture<List<String>> result = ids.thenComposeAsync(l -> { // <2>
+			Stream<CompletableFuture<String>> zip =
 					l.stream().map(i -> { // <3>
 						         CompletableFuture<String> nameTask = ifhName(i); // <4>
 						         CompletableFuture<Integer> statTask = ifhStat(i); // <5>
 
-						         return nameTask.thenCombineAsync(statTask, (name, stat) -> "Name " + name + " has stats " + stat) // <6>
-						                        .thenAcceptAsync(combination -> results.add("Combination: " + combination)); // <7>
+						         return nameTask.thenCombineAsync(statTask, (name, stat) -> "Name " + name + " has stats " + stat); // <6>
 					         });
-			List<CompletableFuture<Void>> combinationList = zip.collect(Collectors.toList()); // <8>
+			List<CompletableFuture<String>> combinationList = zip.collect(Collectors.toList()); // <7>
 			CompletableFuture<String>[] combinationArray = combinationList.toArray(new CompletableFuture[combinationList.size()]);
-			return CompletableFuture.allOf(combinationArray); // <9>
-		})
-		                                    .thenRunAsync(() -> results.add("DONE")); // <10>
 
-		result.join(); // <11>
-		assertThat(results)
-				.contains(
-						"Combination: Name NameJoe has stats 103",
-						"Combination: Name NameBart has stats 104",
-						"Combination: Name NameHenry has stats 105",
-						"Combination: Name NameNicole has stats 106",
-						"Combination: Name NameABSLAJNFOAJNFOANFANSF has stats 121")
-				.endsWith("DONE");
+			CompletableFuture<Void> allDone = CompletableFuture.allOf(combinationArray); // <8>
+			return allDone.thenApply(v -> combinationList.stream()
+			                                             .map(CompletableFuture::join) // <9>
+			                                             .collect(Collectors.toList()));
+		});
+
+		List<String> results = result.join(); // <10>
+		assertThat(results).contains(
+						"Name NameJoe has stats 103",
+						"Name NameBart has stats 104",
+						"Name NameHenry has stats 105",
+						"Name NameNicole has stats 106",
+						"Name NameABSLAJNFOAJNFOANFANSF has stats 121");
 	}
-
 
 	@Test
 	public void introFutureHellReactorVersion() {
-		List<String> results = Collections.synchronizedList(new ArrayList<>());
-
 		Flux<String> ids = ifhrIds(); // <1>
 
 		Flux<String> combinations =
@@ -115,18 +110,17 @@ public class GuideTests {
 
 					return nameTask.and(statTask, // <5>
 							(name, stat) -> "Name " + name + " has stats " + stat);
-				})
-				   .doOnNext(combination -> results.add("Combination: " + combination)) // <6>
-				   .doOnComplete(() -> results.add("DONE")); // <7>
+				});
 
-		combinations.blockLast(); // <8>
-		assertThat(results).containsExactly( // <9>
-				"Combination: Name NameJoe has stats 103",
-				"Combination: Name NameBart has stats 104",
-				"Combination: Name NameHenry has stats 105",
-				"Combination: Name NameNicole has stats 106",
-				"Combination: Name NameABSLAJNFOAJNFOANFANSF has stats 121",
-				"DONE"
+		Mono<List<String>> result = combinations.collectList(); // <6>
+
+		List<String> results = result.block(); // <7>
+		assertThat(results).containsExactly( // <8>
+				"Name NameJoe has stats 103",
+				"Name NameBart has stats 104",
+				"Name NameHenry has stats 105",
+				"Name NameNicole has stats 106",
+				"Name NameABSLAJNFOAJNFOANFANSF has stats 121"
 		);
 	}
 
@@ -872,7 +866,7 @@ public class GuideTests {
 				assertThat(withSuppressed.getSuppressed()).hasSize(1);
 				assertThat(withSuppressed.getSuppressed()[0])
 						.hasMessageStartingWith("\nAssembly trace from producer [reactor.core.publisher.MonoSingle] :")
-						.hasMessageEndingWith("Flux.single(GuideTests.java:830)\n");
+						.hasMessageEndingWith("Flux.single(GuideTests.java:824)\n");
 			});
 		}
 	}
