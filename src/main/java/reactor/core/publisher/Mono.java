@@ -2531,28 +2531,28 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Subscribe to this {@link Mono} and request unbounded demand, then represent the
-	 * subscription as a {@link MonoProcessor} (allowing to block, cancel as well as
-	 * many other operations).
+	 * Subscribe to this {@link Mono} and request unbounded demand.
+	 * <p>
+	 * This version doesn't specify any consumption behavior for the events from the
+	 * chain, especially no error handling, so other variants should usually be preferred.
 	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M1/src/docs/marble/unbounded1.png" alt="">
 	 * <p>
 	 *
-	 * @return a {@link MonoProcessor} to use to either retrieve value or cancel the underlying {@link Subscription}
+	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
 	 */
-	public final MonoProcessor<T> subscribe() {
-		MonoProcessor<T> s;
+	public final Disposable subscribe() {
 		if(this instanceof MonoProcessor){
-			s = (MonoProcessor<T>)this;
+			MonoProcessor<T> s = (MonoProcessor<T>)this;
+			s.connect();
+			return s;
 		}
 		else{
-			s = new MonoProcessor<>(this);
+			return subscribeWith(new LambdaMonoSubscriber<>(null, null, null, null));
 		}
-		s.connect();
-		return s;
 	}
-//TODO
+
 	/**
 	 * Subscribe a {@link Consumer} to this {@link Mono} that will consume all the
 	 * sequence. It will request an unbounded demand ({@code Long.MAX_VALUE}).
@@ -3050,6 +3050,26 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final CompletableFuture<T> toFuture() {
 		return subscribeWith(new MonoToCompletableFuture<>());
+	}
+
+	/**
+	 * Wrap this {@link Mono} into a {@link MonoProcessor} (turning it hot and allowing to block,
+	 * cancel, as well as many other operations). The {@link MonoProcessor} should then
+	 * be {@link #subscribe() subscribed to} in order to request unbounded amount.
+	 *
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M1/src/docs/marble/unbounded1.png" alt="">
+	 * <p>
+	 *
+	 * @return a {@link MonoProcessor} to use to either retrieve value or cancel the underlying {@link Subscription}
+	 */
+	public final MonoProcessor<T> toProcessor() {
+		if (this instanceof MonoProcessor) {
+			return (MonoProcessor<T>)this;
+		}
+		else {
+			return new MonoProcessor<>(this);
+		}
 	}
 
 	/**

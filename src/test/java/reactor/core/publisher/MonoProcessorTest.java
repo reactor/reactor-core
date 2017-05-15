@@ -171,7 +171,8 @@ public class MonoProcessorTest {
 		mp.onNext(1);
 
 		MonoProcessor<Integer> mp2 = mp.map(s -> s * 2)
-		                               .subscribe();
+		                               .toProcessor();
+		mp2.subscribe();
 
 		assertThat(mp2.isTerminated()).isTrue();
 		assertThat(mp2.isSuccess()).isTrue();
@@ -185,7 +186,8 @@ public class MonoProcessorTest {
 		mp.onNext(1);
 
 		MonoProcessor<Integer> mp2 = mp.flatMap(s -> Mono.just(s * 2))
-		                               .subscribe();
+		                               .toProcessor();
+		mp2.subscribe();
 
 		assertThat(mp2.isTerminated()).isTrue();
 		assertThat(mp2.isSuccess()).isTrue();
@@ -370,7 +372,8 @@ public class MonoProcessorTest {
 		AtomicLong cancelCounter = new AtomicLong();
 		MonoProcessor<String> monoProcessor = Mono.just("foo")
 		                                          .doOnCancel(cancelCounter::incrementAndGet)
-		                                          .subscribe();
+		                                          .toProcessor();
+		monoProcessor.subscribe();
 
 		assertThat(cancelCounter.get()).isEqualTo(0);
 	}

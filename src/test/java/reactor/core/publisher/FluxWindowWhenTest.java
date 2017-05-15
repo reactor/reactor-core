@@ -175,11 +175,12 @@ public class FluxWindowWhenTest {
 		//"overlapping buffers"
 		EmitterProcessor<Integer> boundaryFlux = EmitterProcessor.create();
 
-		Mono<List<List<Integer>>> res = numbers.windowWhen(bucketOpening, u -> boundaryFlux )
+		MonoProcessor<List<List<Integer>>> res = numbers.windowWhen(bucketOpening, u -> boundaryFlux )
 		                                       .flatMap(Flux::buffer)
 		                                       .buffer()
 		                                       .publishNext()
-		                                       .subscribe();
+		                                       .toProcessor();
+		res.subscribe();
 
 		numbers.onNext(1);
 		numbers.onNext(2);

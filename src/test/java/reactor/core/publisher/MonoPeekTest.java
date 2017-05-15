@@ -115,9 +115,10 @@ public class MonoPeekTest {
 		Mono<String> mp = Mono.error(new TestException());
 		AtomicReference<Throwable> ref = new AtomicReference<>();
 
-		assertThat(mp.doOnError(RuntimeException.class, ref::set)
-		             .subscribe()
-		             .getError()).isInstanceOf(TestException.class);
+		MonoProcessor<String> processor = mp.doOnError(RuntimeException.class, ref::set)
+		                                    .toProcessor();
+		processor.subscribe();
+		assertThat(processor.getError()).isInstanceOf(TestException.class);
 
 		assertThat(ref.get()).isNull();
 	}

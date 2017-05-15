@@ -48,10 +48,11 @@ public class MonoNextTest {
 	public void cancel() {
 		TestPublisher<String> cancelTester = TestPublisher.create();
 
-		cancelTester.flux()
-		            .next()
-		            .subscribe()
-		            .cancel();
+		MonoProcessor<String> processor = cancelTester.flux()
+		                                              .next()
+		                                              .toProcessor();
+		processor.subscribe();
+		processor.cancel();
 
 		cancelTester.assertCancelled();
 	}
