@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 import reactor.core.Disposable;
@@ -38,7 +39,7 @@ public interface MonoSink<T> {
 	/**
 	 * Complete with the given value.
 	 * <p>Calling this method multiple times or after the other
-	 * terminating methods has no effect. Calling this method with
+	 * terminating methods has no effect (the value is purely ignored). Calling this method with
 	 * a {@code null} value will be silently accepted as a call to
 	 * {@link #success()} by standard implementations.
 	 *
@@ -48,8 +49,11 @@ public interface MonoSink<T> {
 
 	/**
 	 * Terminate with the give exception
-	 * <p>Calling this method multiple times or after the other
-	 * terminating methods has no effect.
+	 * <p>Calling this method multiple times or after the other terminating methods is
+	 * an unsupported operation. It will discard the exception through the
+	 * {@link Hooks#onErrorDropped(Consumer)} hook (which by default throws the exception
+	 * wrapped via {@link reactor.core.Exceptions#bubble(Throwable)}). This is to avoid
+	 * complete and silent swallowing of the exception.
 	 *
 	 * @param e the exception to complete with
 	 */
