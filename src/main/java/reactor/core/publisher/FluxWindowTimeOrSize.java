@@ -16,7 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.io.InterruptedIOException;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -136,7 +135,7 @@ final class FluxWindowTimeOrSize<T> extends FluxSource<T, Flux<T>> {
 
 		volatile int  cancelled;
 		volatile int  index;
-		volatile int  once;
+		volatile int  initialWindowEmitted;
 		volatile long requested;
 		volatile int  terminated = NOT_TERMINATED;
 		volatile int  windowCount;
@@ -148,7 +147,7 @@ final class FluxWindowTimeOrSize<T> extends FluxSource<T, Flux<T>> {
 				INDEX = AtomicIntegerFieldUpdater.newUpdater(WindowTimeoutSubscriber.class, "index");
 
 		static final AtomicIntegerFieldUpdater<WindowTimeoutSubscriber>
-				ONCE = AtomicIntegerFieldUpdater.newUpdater(WindowTimeoutSubscriber.class, "once");
+				INITIAL_WINDOW_EMITTED = AtomicIntegerFieldUpdater.newUpdater(WindowTimeoutSubscriber.class, "initialWindowEmitted");
 
 		static final AtomicLongFieldUpdater<WindowTimeoutSubscriber>
 				REQUESTED = AtomicLongFieldUpdater.newUpdater(WindowTimeoutSubscriber.class, "requested");
@@ -198,6 +197,8 @@ final class FluxWindowTimeOrSize<T> extends FluxSource<T, Flux<T>> {
 				Window<T> _currentWindow = new Window<>(timerScheduler);
 				currentWindow = _currentWindow;
 				actual.onSubscribe(this);
+				//hold on emitting the window until either the first close by timeout
+				//or the first emission, which will follow the subscribe
 			}
 		}
 
@@ -218,7 +219,7 @@ final class FluxWindowTimeOrSize<T> extends FluxSource<T, Flux<T>> {
 
 		void windowCloseByTimeout() {
 			if (currentWindow != null) {
-				if (ONCE.compareAndSet(this, 0, 1)) {
+				if (INITIAL_WINDOW_EMITTED.compareAndSet(this, 0, 1)) {
 					actual.onNext(currentWindow);
 				}
 				currentWindow.onComplete();
@@ -230,9 +231,6 @@ final class FluxWindowTimeOrSize<T> extends FluxSource<T, Flux<T>> {
 
 		void windowCloseBySize() {
 			if (currentWindow != null) {
-				if (ONCE.compareAndSet(this, 0, 1)) {
-					actual.onNext(currentWindow);
-				}
 				currentWindow.onComplete();
 				currentWindow = null;
 				dispose();
@@ -267,6 +265,11 @@ final class FluxWindowTimeOrSize<T> extends FluxSource<T, Flux<T>> {
 
 		@Override
 		public void onNext(final T value) {
+			if (currentWindow != null
+				&& INITIAL_WINDOW_EMITTED.compareAndSet(this, 0, 1)) {
+				actual.onNext(currentWindow);
+			}
+
 			int index;
 			for(;;){
 				index = this.index + 1;
@@ -305,8 +308,8 @@ final class FluxWindowTimeOrSize<T> extends FluxSource<T, Flux<T>> {
 				timer.dispose();
 				if (currentWindow != null) {
 					currentWindow.onError(throwable);
-					dispose();
 					currentWindow = null;
+					dispose();
 				}
 				actual.onError(throwable);
 			}
