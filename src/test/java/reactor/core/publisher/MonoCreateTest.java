@@ -19,9 +19,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.assertj.core.api.Assertions;
+import org.assertj.core.api.SoftAssertions;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 
+import reactor.core.Exceptions;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
@@ -160,6 +163,129 @@ public class MonoCreateTest {
 					.expectNext(5)
 					.expectComplete()
 					.verify();
+	}
+
+	@Test
+	public void sinkApiEmptySuccessAfterEmptySuccessIsIgnored() {
+		Mono<String> secondIsEmptySuccess = Mono.create(sink -> {
+			sink.success();
+			sink.success();
+		});
+
+		StepVerifier.create(secondIsEmptySuccess)
+	                .verifyComplete();
+	}
+
+	@Test
+	public void sinkApiSuccessAfterEmptySuccessIsIgnored() {
+		Mono<String> secondIsValuedSuccess = Mono.create(sink -> {
+			sink.success();
+			sink.success("foo");
+		});
+
+		StepVerifier.create(secondIsValuedSuccess)
+	                .verifyComplete();
+	}
+
+	@Test
+	public void sinkApiErrorAfterEmptySuccessBubblesAndDrops() {
+		Mono<String> secondIsError = Mono.create(sink -> {
+			sink.success();
+			sink.error(new IllegalArgumentException("boom"));
+		});
+
+		Assertions.assertThatExceptionOfType(RuntimeException.class)
+		          .isThrownBy(secondIsError::subscribe)
+		          .matches(Exceptions::isBubbling)
+		          .satisfies(e -> assertThat(Exceptions.unwrap(e)).hasMessage("boom"));
+
+		StepVerifier.create(secondIsError)
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasDroppedErrorWithMessage("boom");
+	}
+
+	@Test
+	public void sinkApiEmptySuccessAfterSuccessIsIgnored() {
+		Mono<String> secondIsEmptySuccess = Mono.create(sink -> {
+			sink.success("foo");
+			sink.success();
+		});
+
+		StepVerifier.create(secondIsEmptySuccess)
+		            .expectNext("foo")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void sinkApiSuccessAfterSuccessIsIgnored() {
+		Mono<String> secondIsValuedSuccess = Mono.create(sink -> {
+			sink.success("foo");
+			sink.success("bar");
+		});
+
+		StepVerifier.create(secondIsValuedSuccess)
+		            .expectNext("foo")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void sinkApiErrorAfterSuccessBubblesAndDrops() {
+		Mono<String> secondIsError = Mono.create(sink -> {
+			sink.success("foo");
+			sink.error(new IllegalArgumentException("boom"));
+		});
+
+		Assertions.assertThatExceptionOfType(RuntimeException.class)
+		          .isThrownBy(secondIsError::subscribe)
+		          .matches(Exceptions::isBubbling)
+		          .satisfies(e -> assertThat(Exceptions.unwrap(e)).hasMessage("boom"));
+
+		StepVerifier.create(secondIsError)
+		            .expectNext("foo")
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasDroppedErrorWithMessage("boom");
+	}
+
+	@Test
+	public void sinkApiEmptySuccessAfterErrorIsIgnored() {
+		Mono<String> secondIsEmptySuccess = Mono.create(sink -> {
+			sink.error(new IllegalArgumentException("boom"));
+			sink.success();
+		});
+
+		StepVerifier.create(secondIsEmptySuccess)
+	                .verifyErrorMessage("boom");
+	}
+
+	@Test
+	public void sinkApiSuccessAfterErrorIsIgnored() {
+		Mono<String> secondIsValuedSuccess = Mono.create(sink -> {
+			sink.error(new IllegalArgumentException("boom"));
+			sink.success("bar");
+		});
+
+		StepVerifier.create(secondIsValuedSuccess)
+	                .verifyErrorMessage("boom");
+	}
+
+	@Test
+	public void sinkApiErrorAfterErrorBubblesAndDrops() {
+		Mono<String> secondIsError = Mono.create(sink -> {
+			sink.error(new IllegalArgumentException("boom1"));
+			sink.error(new IllegalArgumentException("boom2"));
+		});
+
+		Assertions.assertThatExceptionOfType(RuntimeException.class)
+		          .isThrownBy(secondIsError::subscribe)
+		          .matches(Exceptions::isBubbling)
+		          .satisfies(e -> assertThat(Exceptions.unwrap(e)).hasMessage("boom2"));
+
+		StepVerifier.create(secondIsError)
+		            .expectErrorMessage("boom1")
+		            .verifyThenAssertThat()
+		            .hasDroppedErrorWithMessage("boom2");
 	}
 }
 
