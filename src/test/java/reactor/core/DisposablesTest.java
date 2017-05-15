@@ -14,22 +14,20 @@
  * limitations under the License.
  */
 
-package reactor.core.disposable;
+package reactor.core;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.junit.Test;
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.publisher.Hooks;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * @author Simon Baslé
- */
-public class SequentialDisposableStaticUtilsTest {
+public class DisposablesTest {
 
 	static final AtomicReferenceFieldUpdater<TestDisposable, Disposable> DISPOSABLE_UPDATER =
 			AtomicReferenceFieldUpdater.newUpdater(TestDisposable.class, Disposable.class, "disp");
@@ -69,9 +67,9 @@ public class SequentialDisposableStaticUtilsTest {
 	
 	@Test
 	public void singletonIsDisposed() {
-		assertThat(SequentialDisposable.DISPOSED.isDisposed()).isTrue();
-		SequentialDisposable.DISPOSED.dispose();
-		assertThat(SequentialDisposable.DISPOSED.isDisposed()).isTrue();
+		assertThat(Disposables.DISPOSED.isDisposed()).isTrue();
+		Disposables.DISPOSED.dispose();
+		assertThat(Disposables.DISPOSED.isDisposed()).isTrue();
 	}
 
 	@Test
@@ -79,7 +77,7 @@ public class SequentialDisposableStaticUtilsTest {
 		Hooks.onErrorDropped(e -> assertThat(e).isInstanceOf(NullPointerException.class)
 		                                       .hasMessage("next is null"));
 		try {
-			assertThat(SequentialDisposable.validate(null, null));
+			assertThat(Disposables.validate(null, null));
 		} finally {
 			Hooks.resetOnErrorDropped();
 		}
@@ -92,7 +90,7 @@ public class SequentialDisposableStaticUtilsTest {
 			TestDisposable r = new TestDisposable() {
 				@Override
 				public void run() {
-					SequentialDisposable.dispose(DISPOSABLE_UPDATER, this);
+					Disposables.dispose(DISPOSABLE_UPDATER, this);
 				}
 			};
 
@@ -107,7 +105,7 @@ public class SequentialDisposableStaticUtilsTest {
 			TestDisposable r = new TestDisposable() {
 				@Override
 				public void run() {
-					SequentialDisposable.replace(DISPOSABLE_UPDATER, this, empty());
+					Disposables.replace(DISPOSABLE_UPDATER, this, empty());
 				}
 			};
 
@@ -121,7 +119,7 @@ public class SequentialDisposableStaticUtilsTest {
 			TestDisposable r = new TestDisposable() {
 				@Override
 				public void run() {
-					SequentialDisposable.set(DISPOSABLE_UPDATER, this, empty());
+					Disposables.set(DISPOSABLE_UPDATER, this, empty());
 				}
 			};
 
@@ -133,10 +131,10 @@ public class SequentialDisposableStaticUtilsTest {
 	public void setReplaceNull() {
 		TestDisposable r = new TestDisposable();
 
-		SequentialDisposable.dispose(DISPOSABLE_UPDATER, r);
+		Disposables.dispose(DISPOSABLE_UPDATER, r);
 
-		assertThat(SequentialDisposable.set(DISPOSABLE_UPDATER, r, null)).isFalse();
-		assertThat(SequentialDisposable.replace(DISPOSABLE_UPDATER, r, null)).isFalse();
+		assertThat(Disposables.set(DISPOSABLE_UPDATER, r, null)).isFalse();
+		assertThat(Disposables.replace(DISPOSABLE_UPDATER, r, null)).isFalse();
 	}
 
 	@Test
@@ -144,7 +142,7 @@ public class SequentialDisposableStaticUtilsTest {
 		Disposable u = empty();
 		TestDisposable r = new TestDisposable(u);
 
-		SequentialDisposable.dispose(DISPOSABLE_UPDATER, r);
+		Disposables.dispose(DISPOSABLE_UPDATER, r);
 
 		assertThat(u.isDisposed()).isTrue();
 	}
@@ -155,21 +153,21 @@ public class SequentialDisposableStaticUtilsTest {
 
 		Disposable d1 = empty();
 
-		assertThat(SequentialDisposable.trySet(DISPOSABLE_UPDATER, r, d1)).isTrue();
+		assertThat(Disposables.trySet(DISPOSABLE_UPDATER, r, d1)).isTrue();
 
 		Disposable d2 = empty();
 
-		assertThat(SequentialDisposable.trySet(DISPOSABLE_UPDATER, r, d2)).isFalse();
+		assertThat(Disposables.trySet(DISPOSABLE_UPDATER, r, d2)).isFalse();
 
 		assertThat(d1.isDisposed()).isFalse();
 
 		assertThat(d2.isDisposed()).isFalse();
 
-		SequentialDisposable.dispose(DISPOSABLE_UPDATER, r);
+		Disposables.dispose(DISPOSABLE_UPDATER, r);
 
 		Disposable d3 = empty();
 
-		assertThat(SequentialDisposable.trySet(DISPOSABLE_UPDATER, r, d3)).isFalse();
+		assertThat(Disposables.trySet(DISPOSABLE_UPDATER, r, d3)).isFalse();
 
 		assertThat(d3.isDisposed()).isTrue();
 	}

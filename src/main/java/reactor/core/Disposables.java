@@ -14,25 +14,25 @@
  * limitations under the License.
  */
 
-package reactor.core.disposable;
+package reactor.core;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
 
-import reactor.core.Disposable;
 import reactor.core.publisher.Operators;
 
 /**
  * A {@link Disposable} container that allows updating/replacing its inner Disposable
  * atomically and with respect of disposing the container itself.
  *
- * Includes static utility methods to work with Disposable atomically.
+ * Utility methods to work with {@link Disposable} atomically as well as disposable
+ * wrappers for multiple disposables.
  *
  * @author Simon Baslé
  * @author David Karnok
  */
-public final class SequentialDisposable implements Disposable, Supplier<Disposable> {
+public class Disposables {
 
 	/**
 	 * A singleton {@link Disposable} that represents a disposed instance. Should not be
@@ -203,64 +203,75 @@ public final class SequentialDisposable implements Disposable, Supplier<Disposab
 	}
 
 
-	//=== End of static utility methods ===
-
-	volatile Disposable inner;
-	static final AtomicReferenceFieldUpdater<SequentialDisposable, Disposable> INNER =
-			AtomicReferenceFieldUpdater.newUpdater(SequentialDisposable.class, Disposable.class, "inner");
-
 	/**
-	 * Construct an empty {@link SequentialDisposable}.
-	 */
-	public SequentialDisposable() {
-		// nothing to do
-	}
-
-	/**
-	 * Construct a {@link SequentialDisposable} with the initial {@link Disposable} provided.
+	 * A {@link Disposable} container that allows updating/replacing its inner Disposable
+	 * atomically and with respect of disposing the container itself.
 	 *
-	 * @param initial the initial disposable, null allowed
-	 */
-	public SequentialDisposable(Disposable initial) {
-		inner = initial;
-	}
-
-	/**
-	 * Atomically set the next {@link Disposable} on this container and dispose the previous
-	 * one (if any). If the container has been disposed, fall back to disposing {@code next}.
+	 * Includes static utility methods to work with Disposable atomically.
 	 *
-	 * @param next the {@link Disposable} to set, may be null
-	 * @return true if the operation succeeded, false if the container has been disposed
-	 * @see #replace(Disposable)
+	 * @author Simon Baslé
+	 * @author David Karnok
 	 */
-	public boolean update(Disposable next) {
-		return set(INNER, this, next);
-	}
+	public static final class SequentialDisposable implements Disposable,
+	                                                          Supplier<Disposable> {
 
-	/**
-	 * Atomically set the next {@link Disposable} on this container but don't dispose the previous
-	 * one (if any). If the container has been disposed, fall back to disposing {@code next}.
-	 *
-	 * @param next the {@link Disposable} to set, may be null
-	 * @return true if the operation succeeded, false if the container has been disposed
-	 * @see #update(Disposable)
-	 */
-	public boolean replace(Disposable next) {
-		return replace(INNER, this, next);
-	}
+		volatile Disposable inner;
+		static final AtomicReferenceFieldUpdater<SequentialDisposable, Disposable> INNER =
+				AtomicReferenceFieldUpdater.newUpdater(SequentialDisposable.class, Disposable.class, "inner");
 
-	@Override
-	public Disposable get() {
-		return inner;
-	}
+		/**
+		 * Construct an empty {@link SequentialDisposable}.
+		 */
+		public SequentialDisposable() {
+			// nothing to do
+		}
 
-	@Override
-	public void dispose() {
-		dispose(INNER, this);
-	}
+		/**
+		 * Construct a {@link SequentialDisposable} with the initial {@link Disposable} provided.
+		 *
+		 * @param initial the initial disposable, null allowed
+		 */
+		public SequentialDisposable(Disposable initial) {
+			inner = initial;
+		}
 
-	@Override
-	public boolean isDisposed() {
-		return isDisposed(INNER.get(this));
+		/**
+		 * Atomically set the next {@link Disposable} on this container and dispose the previous
+		 * one (if any). If the container has been disposed, fall back to disposing {@code next}.
+		 *
+		 * @param next the {@link Disposable} to set, may be null
+		 * @return true if the operation succeeded, false if the container has been disposed
+		 * @see #replace(Disposable)
+		 */
+		public boolean update(Disposable next) {
+			return Disposables.set(INNER, this, next);
+		}
+
+		/**
+		 * Atomically set the next {@link Disposable} on this container but don't dispose the previous
+		 * one (if any). If the container has been disposed, fall back to disposing {@code next}.
+		 *
+		 * @param next the {@link Disposable} to set, may be null
+		 * @return true if the operation succeeded, false if the container has been disposed
+		 * @see #update(Disposable)
+		 */
+		public boolean replace(Disposable next) {
+			return Disposables.replace(INNER, this, next);
+		}
+
+		@Override
+		public Disposable get() {
+			return inner;
+		}
+
+		@Override
+		public void dispose() {
+			Disposables.dispose(INNER, this);
+		}
+
+		@Override
+		public boolean isDisposed() {
+			return Disposables.isDisposed(INNER.get(this));
+		}
 	}
 }
