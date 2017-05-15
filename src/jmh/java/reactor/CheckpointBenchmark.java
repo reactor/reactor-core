@@ -35,7 +35,7 @@ public class CheckpointBenchmark {
 		FakeRepository.findAllUserByName(Flux.just("pedro", "simon", "stephane"))
 		              .transform(FakeUtils1.applyFilters)
 		              .transform(FakeUtils2.enrichUser)
-		              .checkpoint("checkpoint description")
+		              .checkpoint("checkpoint description", true)
 		              .subscribe(System.out::println,
 		                      t -> {}
                       );
@@ -47,7 +47,7 @@ public class CheckpointBenchmark {
 		FakeRepository.findAllUserByName(Flux.just("pedro", "simon", "stephane"))
 		              .transform(FakeUtils1.applyFilters)
 		              .transform(FakeUtils2.enrichUser)
-		              .checkpoint("light checkpoint identifier", true)
+		              .checkpoint("light checkpoint identifier")
 		              .subscribe(System.out::println,
 				              t -> {}
 		              );

@@ -1344,44 +1344,53 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Activate assembly tracing for this particular {@link Mono} and give it
-	 * a description that will be reflected in the assembly traceback, in case of an error
-	 * upstream of the checkpoint. Tracing incurs the cost of an
-	 * exception stack trace creation.
+	 * Activate assembly marker for this particular {@link Mono} by giving it a description that
+	 * will be reflected in the assembly traceback in case of an error upstream of the
+	 * checkpoint. Note that unlike {@link #checkpoint()}, this doesn't create a
+	 * filled stack trace, avoiding the main cost of the operator.
+	 * However, as a trade-off the description must be unique enough for the user to find
+	 * out where this Mono was assembled. If you only want a generic description, and
+	 * still rely on the stack trace to find the assembly site, use the
+	 * {@link #checkpoint(String, boolean)} variant.
 	 * <p>
 	 * It should be placed towards the end of the reactive chain, as errors
 	 * triggered downstream of it cannot be observed and augmented with assembly trace.
-	 * <p>
-	 * The description could for example be a meaningful name for the assembled
-	 * mono or a wider correlation ID, since the stack trace will always provide enough
-	 * information to locate where this Flux was assembled.
 	 *
-	 * @param description a description to include in the assembly traceback.
-	 * @return the assembly tracing {@link Mono}
+	 * @param description a unique enough description to include in the light assembly traceback.
+	 * @return the assembly marked {@link Mono}
 	 */
 	public final Mono<T> checkpoint(String description) {
-		return new MonoOnAssembly<>(this, description);
+		return new MonoOnAssembly<>(this, description, true);
 	}
 
 	/**
-	 * By setting the {@code light} parameter to {@literal true}, activate assembly
-	 * marker for this particular {@link Mono} by giving it a description that
+	 * Activate assembly tracing or the lighter assembly marking depending on the
+	 * {@code forceStackTrace} option.
+	 * <p>
+	 * By setting the {@code forceStackTrace} parameter to {@literal true}, activate assembly
+	 * tracing for this particular {@link Mono} and give it a description that
 	 * will be reflected in the assembly traceback in case of an error upstream of the
-	 * checkpoint. Note that unlike {@link #checkpoint(String)}, this doesn't create a
-	 * filled stack trace, avoiding the main cost of the operator.
-	 * However, as a trade-off the description must be unique enough for the user to find
-	 * out where this Mono was assembled. Having {@code light} set to {@literal false}
-	 * is the same as calling {@link #checkpoint(String)}.
+	 * checkpoint. Note that unlike {@link #checkpoint(String)}, this will incur
+	 * the cost of an exception stack trace creation. The description could for
+	 * example be a meaningful name for the assembled mono or a wider correlation ID,
+	 * since the stack trace will always provide enough information to locate where this
+	 * Flux was assembled.
+	 * <p>
+	 * By setting {@code forceStackTrace} to {@literal false}, behaves like
+	 * {@link #checkpoint(String)} and is subject to the same caveat in choosing the
+	 * description.
 	 * <p>
 	 * It should be placed towards the end of the reactive chain, as errors
 	 * triggered downstream of it cannot be observed and augmented with assembly marker.
 	 *
-	 * @param description a unique enough description to locate assembly site of this Mono.
-	 * @param light true to make a light checkpoint without a stacktrace.
+	 * @param description a description (must be unique enough if forceStackTrace is set
+	 * to false).
+	 * @param forceStackTrace false to make a light checkpoint without a stacktrace, true
+	 * to use a stack trace.
 	 * @return the assembly marked {@link Mono}.
 	 */
-	public final Mono<T> checkpoint(String description, boolean light) {
-		return new MonoOnAssembly<>(this, description, light);
+	public final Mono<T> checkpoint(String description, boolean forceStackTrace) {
+		return new MonoOnAssembly<>(this, description, !forceStackTrace);
 	}
 
 	/**
