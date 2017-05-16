@@ -251,14 +251,11 @@ final class FluxConcatArray<T> extends Flux<T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch(key){
-				case DELAY_ERROR:
-					return true;
-				case ERROR:
-					return error;
-			}
-			return super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.DELAY_ERROR) return true;
+			if (key == ThrowableAttr.ERROR) return error;
+
+			return super.scanUnsafe(key);
 		}
 
 		@Override

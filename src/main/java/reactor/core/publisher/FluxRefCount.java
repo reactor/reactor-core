@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
@@ -81,13 +80,10 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 	}
 
 	@Override
-	public Object scan(Attr key) {
-		switch (key){
-			case PREFETCH:
-				return getPrefetch();
-			case PARENT:
-				return source;
-		}
+	public Object scanUnsafe(Attr key) {
+		if (key == IntAttr.PREFETCH) return getPrefetch();
+		if (key == ScannableAttr.PARENT) return source;
+
 		return null;
 	}
 
@@ -173,14 +169,12 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 			this.parent = parent;
 		}
 
-		@Override
-		public Object scan(Attr key) {
-			switch(key){
-				case PARENT:
-					return s;
+			@Override
+			public Object scanUnsafe(Attr key) {
+				if(key== ScannableAttr. PARENT) return s;
+
+				return InnerOperator.super.scanUnsafe(key);
 			}
-			return InnerOperator.super.scan(key);
-		}
 
 		@Override
 		public void onSubscribe(Subscription s) {

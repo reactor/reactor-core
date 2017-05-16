@@ -320,11 +320,11 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	public Object scan(Attr key) {
-		if(key == Attr.PARENT){
+	public Object scanUnsafe(Attr key) {
+		if (key == ScannableAttr.PARENT){
 			return subscription;
 		}
-		return super.scan(key);
+		return super.scanUnsafe(key);
 	}
 
 	@Override

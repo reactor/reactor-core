@@ -86,9 +86,8 @@ public class MonoSource<I, O> extends Mono<O> implements Scannable {
 	}
 
 	@Override
-	public Object scan(Scannable.Attr key) {
-		switch (key){
-			case PARENT:
+	public Object scanUnsafe(Attr key) {
+		if (key == ScannableAttr.PARENT) {
 				return source;
 		}
 		return null;

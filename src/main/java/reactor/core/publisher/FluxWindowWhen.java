@@ -160,12 +160,10 @@ final class FluxWindowWhen<T, U, V> extends FluxSource<T, Flux<T>> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch(key){
-				case TERMINATED:
-					return done;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.TERMINATED) return done;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override

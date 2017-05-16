@@ -68,12 +68,10 @@ final class FluxTakeLast<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case PARENT:
-					return s;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -188,18 +186,13 @@ final class FluxTakeLast<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case CANCELLED:
-					return cancelled;
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
-				case PARENT:
-					return s;
-				case BUFFERED:
-					return size();
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.CANCELLED) return cancelled;
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == IntAttr.BUFFERED) return size();
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override

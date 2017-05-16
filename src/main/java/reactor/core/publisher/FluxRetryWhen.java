@@ -114,11 +114,10 @@ final class FluxRetryWhen<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			if (key == Attr.CANCELLED) {
-				return cancelled;
-			}
-			return super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.CANCELLED) return cancelled;
+
+			return super.scanUnsafe(key);
 		}
 
 		@Override
@@ -208,13 +207,10 @@ final class FluxRetryWhen<T> extends FluxSource<T, T> {
 		final DirectProcessor<Throwable> completionSignal = new DirectProcessor<>();
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case PARENT:
-					return main.otherArbiter;
-				case ACTUAL:
-					return main;
-			}
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return main.otherArbiter;
+			if (key == ScannableAttr.ACTUAL) return main;
+
 			return null;
 		}
 

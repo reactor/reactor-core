@@ -27,7 +27,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 
-
 /**
  * Buffers elements into custom collections where the buffer boundary is signalled
  * by another publisher.
@@ -123,21 +122,17 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return s;
-				case CANCELLED:
-					return s == Operators.cancelledSubscription();
-				case CAPACITY:
-					C buffer = this.buffer;
-					return buffer != null ? buffer.size() : 0;
-				case PREFETCH:
-					return Integer.MAX_VALUE;
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == IntAttr.CAPACITY) {
+				C buffer = this.buffer;
+				return buffer != null ? buffer.size() : 0;
 			}
-			return InnerOperator.super.scan(key);
+			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -307,11 +302,11 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			if (key == Attr.ACTUAL) {
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.ACTUAL) {
 				return main;
 			}
-			return super.scan(key);
+			return super.scanUnsafe(key);
 		}
 
 		@Override

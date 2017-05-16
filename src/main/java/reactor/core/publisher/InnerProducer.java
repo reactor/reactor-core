@@ -35,8 +35,8 @@ interface InnerProducer<O>
 	Subscriber<? super O> actual();
 
 	@Override
-	default Object scan(Attr key){
-		if(key == Attr.ACTUAL){
+	default Object scanUnsafe(Attr key){
+		if (key == ScannableAttr.ACTUAL) {
 			return actual();
 		}
 		return null;

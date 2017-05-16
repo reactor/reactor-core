@@ -118,14 +118,11 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case CANCELLED:
-					return main == Operators.cancelledSubscription();
-				case PARENT:
-					return main;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.CANCELLED) return main == Operators.cancelledSubscription();
+			if (key == ScannableAttr.PARENT) return main;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -274,8 +271,8 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			if (key == Attr.ACTUAL) {
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.ACTUAL) {
 				return main;
 			}
 			return null;

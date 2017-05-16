@@ -78,12 +78,10 @@ final class MonoFlatMapMany<T, R> extends Flux<R> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case PARENT:
-					return main;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return main;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -213,15 +211,11 @@ final class MonoFlatMapMany<T, R> extends Flux<R> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case PARENT:
-					return parent.inner;
-				case ACTUAL:
-					return parent;
-				case REQUESTED_FROM_DOWNSTREAM:
-					return parent.requested;
-			}
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return parent.inner;
+			if (key == ScannableAttr.ACTUAL) return parent;
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return parent.requested;
+
 			return null;
 		}
 

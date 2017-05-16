@@ -130,13 +130,10 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 	}
 
 	@Override
-	public Object scan(Attr key) {
-		switch (key){
-			case PREFETCH:
-				return getPrefetch();
-			case PARENT:
-				return source;
-		}
+	public Object scanUnsafe(Attr key) {
+		if (key == IntAttr.PREFETCH) return getPrefetch();
+		if (key == ScannableAttr.PARENT) return source;
+
 		return null;
 	}
 
@@ -521,21 +518,14 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case PARENT:
-					return s;
-				case PREFETCH:
-					return prefetch;
-				case ERROR:
-					return error;
-				case BUFFERED:
-					return queue != null ? queue.size() : 0;
-				case TERMINATED:
-					return isTerminated();
-				case CANCELLED:
-					return s == Operators.cancelledSubscription();
-			}
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == IntAttr.PREFETCH) return prefetch;
+			if (key == ThrowableAttr.ERROR) return error;
+			if (key == IntAttr.BUFFERED) return queue != null ? queue.size() : 0;
+			if (key == BooleanAttr.TERMINATED) return isTerminated();
+			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
+
 			return null;
 		}
 
@@ -590,14 +580,11 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case CANCELLED:
-					return isCancelled();
-				case REQUESTED_FROM_DOWNSTREAM:
-					return isCancelled() ? 0L : requested;
-			}
-			return InnerProducer.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.CANCELLED) return isCancelled();
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return isCancelled() ? 0L : requested;
+
+			return InnerProducer.super.scanUnsafe(key);
 		}
 
 		//TODO factorize in Operators ?
@@ -663,14 +650,11 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return parent;
-				case TERMINATED:
-					return parent != null && parent.isTerminated();
-			}
-			return super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return parent;
+			if (key == BooleanAttr.TERMINATED) return parent != null && parent.isTerminated();
+
+			return super.scanUnsafe(key);
 		}
 	}
 }

@@ -64,13 +64,10 @@ final class ParallelLog<T> extends ParallelFlux<T> implements Scannable {
 	}
 
 	@Override
-	public Object scan(Attr key) {
-		switch (key){
-			case PARENT:
-				return source;
-			case PREFETCH:
-				return getPrefetch();
-		}
+	public Object scanUnsafe(Attr key) {
+		if (key == ScannableAttr.PARENT) return source;
+		if (key == IntAttr.PREFETCH) return getPrefetch();
+
 		return null;
 	}
 }

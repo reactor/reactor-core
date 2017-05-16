@@ -66,13 +66,10 @@ final class ConnectableFluxOnAssembly<T> extends ConnectableFlux<T> implements
 	}
 
 	@Override
-	public Object scan(Attr key) {
-		switch (key){
-			case PREFETCH:
-				return getPrefetch();
-			case PARENT:
-				return source;
-		}
+	public Object scanUnsafe(Attr key) {
+		if (key == IntAttr.PREFETCH) return getPrefetch();
+		if (key == ScannableAttr.PARENT) return source;
+
 		return null;
 	}
 }

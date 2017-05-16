@@ -1158,22 +1158,15 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case PARENT:
-					return processor;
-				case PREFETCH:
-					return Integer.MAX_VALUE;
-				case TERMINATED:
-					return processor.isTerminated();
-				case CANCELLED:
-					return !running.get();
-				case REQUESTED_FROM_DOWNSTREAM:
-					return pendingRequest.getAsLong();
-				case BUFFERED:
-					return processor.ringBuffer.getCursor() - sequence.getAsLong();
-			}
-			return InnerProducer.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return processor;
+			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == BooleanAttr.TERMINATED) return processor.isTerminated();
+			if (key == BooleanAttr.CANCELLED) return !running.get();
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM )return pendingRequest.getAsLong();
+			if (key == IntAttr.BUFFERED) return processor.ringBuffer.getCursor() - sequence.getAsLong();
+
+			return InnerProducer.super.scanUnsafe(key);
 		}
 
 		@Override

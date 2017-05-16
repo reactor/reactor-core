@@ -166,24 +166,16 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return s;
-				case TERMINATED:
-					return done;
-				case ERROR:
-					return error;
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
-				case CANCELLED:
-					return cancelled;
-				case PREFETCH:
-					return prefetch;
-				case BUFFERED:
-					return queue != null ? queue.size() : 0;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == ThrowableAttr.ERROR) return error;
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == BooleanAttr.CANCELLED) return cancelled;
+			if (key == IntAttr.PREFETCH) return prefetch;
+			if (key == IntAttr.BUFFERED) return queue != null ? queue.size() : 0;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override

@@ -85,15 +85,12 @@ final class FluxError<T> extends Flux<T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case ERROR:
-					return error;
-				case CANCELLED:
-				case TERMINATED:
-					return once == 1;
-			}
-			return InnerProducer.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ThrowableAttr.ERROR) return error;
+			if (key == BooleanAttr.CANCELLED || key == BooleanAttr.TERMINATED)
+				return once == 1;
+
+			return InnerProducer.super.scanUnsafe(key);
 		}
 	}
 }

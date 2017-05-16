@@ -83,27 +83,27 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT>  {
 	@Override
 	public int getBufferSize() {
 		return Scannable.from(upstream)
-		                .scanOrDefault(Attr.CAPACITY, super.getBufferSize());
+		                .scanOrDefault(IntAttr.CAPACITY, super.getBufferSize());
 	}
 
 	@Override
 	public Throwable getError() {
 		return Scannable.from(upstream)
-		                .scanOrDefault(Attr.ERROR, super.getError());
+		                .scanOrDefault(ThrowableAttr.ERROR, super.getError());
 	}
 
 	@Override
 	public boolean isTerminated() {
 		return Scannable.from(upstream)
-		                .scanOrDefault(Attr.TERMINATED, super.isTerminated());
+		                .scanOrDefault(BooleanAttr.TERMINATED, super.isTerminated());
 	}
 
 	@Override
-	public Object scan(Attr key) {
-		if(key == Attr.PARENT){
+	public Object scanUnsafe(Attr key) {
+		if (key == ScannableAttr.PARENT) {
 			return downstream;
 		}
 		return Scannable.from(upstream)
-		                .scan(key);
+		                .scanUnsafe(key);
 	}
 }

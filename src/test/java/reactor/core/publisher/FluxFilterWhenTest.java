@@ -346,33 +346,33 @@ public class FluxFilterWhenTest {
 		            .thenRequest(2)
 		            .expectNext(2)
 		            .then(() -> {
-			            assertThat(scannable.get().scan(Scannable.Attr.PARENT)).isInstanceOf(FluxRange.RangeSubscription.class);
-			            assertThat(scannable.get().scan(Scannable.Attr.ACTUAL)).isInstanceOf(FluxPeek.PeekSubscriber.class);
-			            assertThat(scannable.get().scan(Scannable.Attr.PREFETCH)).isEqualTo(3);
-			            assertThat(scannable.get().scan(Scannable.Attr.CAPACITY)).isEqualTo(4);
-			            assertThat(scannable.get().scan(Scannable.Attr.ERROR)).isNull();
-			            assertThat(scannable.get().scan(Scannable.Attr.BUFFERED )).isEqualTo(1L);
-			            assertThat(scannable.get().scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(2L);
-			            assertThat(scannable.get().scan(Scannable.Attr.CANCELLED)).isEqualTo(false);
-			            assertThat(scannable.get().scan(Scannable.Attr.TERMINATED)).isEqualTo(false);
+			            assertThat(scannable.get().scan(Scannable.ScannableAttr.PARENT)).isInstanceOf(FluxRange.RangeSubscription.class);
+			            assertThat(scannable.get().scan(Scannable.ScannableAttr.ACTUAL)).isInstanceOf(FluxPeek.PeekSubscriber.class);
+			            assertThat(scannable.get().scan(Scannable.IntAttr.PREFETCH)).isEqualTo(3);
+			            assertThat(scannable.get().scan(Scannable.IntAttr.CAPACITY)).isEqualTo(4);
+			            assertThat(scannable.get().scan(Scannable.ThrowableAttr.ERROR)).isNull();
+			            assertThat(scannable.get().scan(Scannable.IntAttr.BUFFERED )).isEqualTo(1);
+			            assertThat(scannable.get().scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(2L);
+			            assertThat(scannable.get().scan(Scannable.BooleanAttr.CANCELLED)).isEqualTo(false);
+			            assertThat(scannable.get().scan(Scannable.BooleanAttr.TERMINATED)).isEqualTo(false);
 		            })
 	                .thenRequest(2)
 	                .expectNext(4)
 	                .then(() -> {
-		                assertThat(scannable.get().scan(Scannable.Attr.ERROR)).isNull();
-		                assertThat(scannable.get().scan(Scannable.Attr.BUFFERED )).isEqualTo(2L);
-		                assertThat(scannable.get().scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(4L);
-		                assertThat(scannable.get().scan(Scannable.Attr.CANCELLED)).isEqualTo(false);
-		                assertThat(scannable.get().scan(Scannable.Attr.TERMINATED)).isEqualTo(false);
+		                assertThat(scannable.get().scan(Scannable.ThrowableAttr.ERROR)).isNull();
+		                assertThat(scannable.get().scan(Scannable.IntAttr.BUFFERED )).isEqualTo(2);
+		                assertThat(scannable.get().scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(4L);
+		                assertThat(scannable.get().scan(Scannable.BooleanAttr.CANCELLED)).isEqualTo(false);
+		                assertThat(scannable.get().scan(Scannable.BooleanAttr.TERMINATED)).isEqualTo(false);
 	                })
 	                .thenRequest(20)
 	                .expectNext(6, 8, 10)
 	                .verifyComplete();
 
-		assertThat(scannable.get().scan(Scannable.Attr.BUFFERED)).isEqualTo(6L);
-		assertThat(scannable.get().scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(24L);
-		assertThat(scannable.get().scan(Scannable.Attr.CANCELLED)).isEqualTo(false);
-		assertThat(scannable.get().scan(Scannable.Attr.TERMINATED)).isEqualTo(true);
+		assertThat(scannable.get().scan(Scannable.IntAttr.BUFFERED)).isEqualTo(6);
+		assertThat(scannable.get().scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(24L);
+		assertThat(scannable.get().scan(Scannable.BooleanAttr.CANCELLED)).isEqualTo(false);
+		assertThat(scannable.get().scan(Scannable.BooleanAttr.TERMINATED)).isEqualTo(true);
 	}
 
 	//TODO introspect errors (but is difficult due to Expections.terminate)
@@ -390,11 +390,11 @@ public class FluxFilterWhenTest {
 		StepVerifier.create(flux, 0)
 		            .thenRequest(2)
 		            .expectNext(2)
-		            .then(() -> assertThat(scannable.get().scan(Scannable.Attr.CANCELLED)).isEqualTo(false))
+		            .then(() -> assertThat(scannable.get().scan(Scannable.BooleanAttr.CANCELLED)).isEqualTo(false))
 		            .thenCancel()
 		            .verify();
 
-		assertThat(scannable.get().scan(Scannable.Attr.CANCELLED)).isEqualTo(true);
+		assertThat(scannable.get().scan(Scannable.BooleanAttr.CANCELLED)).isEqualTo(true);
 	}
 
 }

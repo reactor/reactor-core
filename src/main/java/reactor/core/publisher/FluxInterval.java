@@ -91,12 +91,10 @@ final class FluxInterval extends Flux<Long> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch(key){
-				case CANCELLED:
-					return cancelled;
-			}
-			return InnerProducer.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.CANCELLED) return cancelled;
+
+			return InnerProducer.super.scanUnsafe(key);
 		}
 
 		@Override

@@ -158,21 +158,14 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return s;
-				case ERROR:
-					return error;
-				case CANCELLED:
-					return cancelled;
-				case TERMINATED:
-					return done;
-				case PREFETCH:
-					return prefetch;
-				case BUFFERED:
-					return queue != null ? queue.size() : 0;
-			}
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == ThrowableAttr.ERROR) return error;
+			if (key == BooleanAttr.CANCELLED) return cancelled;
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == IntAttr.PREFETCH) return prefetch;
+			if (key == IntAttr.BUFFERED) return queue != null ? queue.size() : 0;
+
 			return null;
 		}
 
@@ -634,16 +627,12 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
-				case PARENT:
-					return parent;
-				case CANCELLED:
-					return once == 1;
-			}
-			return InnerProducer.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == ScannableAttr.PARENT) return parent;
+			if (key == BooleanAttr.CANCELLED) return once == 1;
+
+			return InnerProducer.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -694,12 +683,10 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case PARENT:
-					return s;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -792,12 +779,10 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case PARENT:
-					return s;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override

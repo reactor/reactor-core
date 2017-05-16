@@ -159,18 +159,13 @@ final class FluxOnBackpressureDrop<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return s;
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
-				case TERMINATED:
-					return done;
-				case PREFETCH:
-					return Integer.MAX_VALUE;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 

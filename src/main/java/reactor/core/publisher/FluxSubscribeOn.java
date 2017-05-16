@@ -187,16 +187,12 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case PARENT:
-					return s;
-				case CANCELLED:
-					return s == Operators.cancelledSubscription();
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override

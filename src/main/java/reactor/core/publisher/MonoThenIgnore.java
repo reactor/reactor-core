@@ -196,15 +196,11 @@ final class MonoThenIgnore<T> extends Mono<T> implements Fuseable {
         }
 
 	    @Override
-	    public Object scan(Attr key) {
-		    switch (key){
-			    case PARENT:
-				    return s;
-			    case ACTUAL:
-				    return parent;
-			    case CANCELLED:
-				    return s == Operators.cancelledSubscription();
-		    }
+	    public Object scanUnsafe(Attr key) {
+            if (key == ScannableAttr.PARENT) return s;
+            if (key == ScannableAttr.ACTUAL) return parent;
+            if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
+
 		    return null;
 	    }
         
@@ -254,17 +250,12 @@ final class MonoThenIgnore<T> extends Mono<T> implements Fuseable {
         }
 
         @Override
-        public Object scan(Attr key) {
-            switch (key){
-                case PARENT:
-                    return s;
-                case ACTUAL:
-                    return parent;
-	            case TERMINATED:
-                    return done;
-	            case CANCELLED:
-	            	return s == Operators.cancelledSubscription();
-            }
+        public Object scanUnsafe(Attr key) {
+            if (key == ScannableAttr.PARENT) return s;
+            if (key == ScannableAttr.ACTUAL) return parent;
+            if (key == BooleanAttr.TERMINATED) return done;
+            if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
+
             return null;
         }
 

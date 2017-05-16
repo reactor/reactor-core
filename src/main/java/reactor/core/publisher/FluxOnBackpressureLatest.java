@@ -210,24 +210,16 @@ final class FluxOnBackpressureLatest<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return s;
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
-				case TERMINATED:
-					return done;
-				case CANCELLED:
-					return cancelled;
-				case BUFFERED:
-					return value != null;
-				case ERROR:
-					return error;
-				case PREFETCH:
-					return Integer.MAX_VALUE;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == BooleanAttr.CANCELLED) return cancelled;
+			if (key == IntAttr.BUFFERED) return value != null;
+			if (key == ThrowableAttr.ERROR) return error;
+			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 	}
