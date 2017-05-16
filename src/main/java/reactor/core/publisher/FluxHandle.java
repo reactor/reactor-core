@@ -183,16 +183,12 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return s;
-				case TERMINATED:
-					return done;
-				case ERROR:
-					return error;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == ThrowableAttr.ERROR) return error;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -359,16 +355,12 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return s;
-				case TERMINATED:
-					return done;
-				case ERROR:
-					return error;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == ThrowableAttr.ERROR) return error;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 	}
 

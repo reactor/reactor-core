@@ -60,13 +60,10 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements
 	}
 
 	@Override
-	public Object scan(Attr key) {
-		switch (key){
-			case PARENT:
-				return source;
-			case PREFETCH:
-				return getPrefetch();
-		}
+	public Object scanUnsafe(Attr key) {
+		if (key == ScannableAttr.PARENT) return source;
+		if (key == IntAttr.PREFETCH) return getPrefetch();
+
 		return null;
 	}
 
@@ -116,16 +113,12 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case PARENT:
-					return s;
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
-				case CANCELLED:
-					return s == Operators.cancelledSubscription();
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override

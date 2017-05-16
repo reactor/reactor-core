@@ -70,16 +70,12 @@ final class MonoPublishOn<T> extends MonoSource<T, T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case CANCELLED:
-					return future == Flux.CANCELLED;
-				case PARENT:
-					return s;
-				case ERROR:
-					return error;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.CANCELLED) return future == Flux.CANCELLED;
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == ThrowableAttr.ERROR) return error;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override

@@ -329,7 +329,7 @@ public class MonoDelayElementTest {
 					MonoDelayElement.DelayElementSubscriber delayedSubscriber =
 							(MonoDelayElement.DelayElementSubscriber) s;
 
-					upstream.set(delayedSubscriber.scan(Scannable.Attr.PARENT));
+					upstream.set(delayedSubscriber.scan(Scannable.ScannableAttr.PARENT));
 				}))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofSeconds(2))

@@ -121,18 +121,13 @@ final class FluxSampleFirst<T, U> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case CANCELLED:
-					return s == Operators.cancelledSubscription();
-				case PARENT:
-					return s;
-				case ERROR:
-					return error;
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == ThrowableAttr.ERROR) return error;
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -249,12 +244,10 @@ final class FluxSampleFirst<T, U> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case ACTUAL:
-					return main;
-			}
-			return super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.ACTUAL) return main;
+
+			return super.scanUnsafe(key);
 		}
 
 		@Override

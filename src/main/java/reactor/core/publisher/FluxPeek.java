@@ -98,14 +98,11 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return s;
-				case TERMINATED:
-					return done;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == BooleanAttr.TERMINATED) return done;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override

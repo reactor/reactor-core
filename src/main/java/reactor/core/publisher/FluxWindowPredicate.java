@@ -274,24 +274,16 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>>
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return s;
-				case CANCELLED:
-					return cancelled == 1;
-				case PREFETCH:
-					return prefetch;
-				case TERMINATED:
-					return done;
-				case BUFFERED:
-					return queue.size();
-				case ERROR:
-					return error;
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == BooleanAttr.CANCELLED) return cancelled == 1;
+			if (key == IntAttr.PREFETCH) return prefetch;
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == IntAttr.BUFFERED) return queue.size();
+			if (key == ThrowableAttr.ERROR) return error;
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -837,22 +829,15 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>>
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return parent;
-				case CANCELLED:
-					return cancelled;
-				case TERMINATED:
-					return done;
-				case BUFFERED:
-					return queue == null ? 0 : queue.size();
-				case ERROR:
-					return error;
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return parent;
+			if (key == BooleanAttr.CANCELLED) return cancelled;
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == IntAttr.BUFFERED) return queue == null ? 0 : queue.size();
+			if (key == ThrowableAttr.ERROR) return error;
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override

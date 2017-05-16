@@ -18,7 +18,6 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
@@ -676,10 +675,9 @@ public abstract class Operators {
 		INSTANCE;
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case CANCELLED:
-					return true;
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.CANCELLED) {
+				return true;
 			}
 			return null;
 		}
@@ -732,11 +730,8 @@ public abstract class Operators {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case TERMINATED:
-					return true;
-			}
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.TERMINATED) return true;
 			return null;
 		}
 
@@ -773,15 +768,11 @@ public abstract class Operators {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return s;
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
-				case CANCELLED:
-					return isCancelled();
-			}
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == BooleanAttr.CANCELLED) return isCancelled();
+
 			return null;
 		}
 
@@ -881,16 +872,12 @@ public abstract class Operators {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case CANCELLED:
-					return isCancelled();
-				case TERMINATED:
-					return state == HAS_REQUEST_HAS_VALUE || state == NO_REQUEST_HAS_VALUE;
-				case PREFETCH:
-					return Integer.MAX_VALUE;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.CANCELLED) return isCancelled();
+			if (key == BooleanAttr.TERMINATED) return state == HAS_REQUEST_HAS_VALUE || state == NO_REQUEST_HAS_VALUE;
+			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -1142,16 +1129,14 @@ public abstract class Operators {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return missedSubscription != null ? missedSubscription : subscription;
-				case CANCELLED:
-					return isCancelled();
-				case REQUESTED_FROM_DOWNSTREAM:
-					return Operators.addCap(requested, missedRequested);
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT)
+				return missedSubscription != null ? missedSubscription : subscription;
+			if (key == BooleanAttr.CANCELLED) return isCancelled();
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM)
+				return Operators.addCap(requested, missedRequested);
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		public final boolean isUnbounded() {
@@ -1472,13 +1457,11 @@ public abstract class Operators {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case TERMINATED:
-				case CANCELLED:
-					return once == 1;
-			}
-			return InnerProducer.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.TERMINATED || key == BooleanAttr.CANCELLED)
+				return once == 1;
+
+			return InnerProducer.super.scanUnsafe(key);
 		}
 
 		@Override

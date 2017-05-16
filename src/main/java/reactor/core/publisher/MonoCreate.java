@@ -86,14 +86,11 @@ final class MonoCreate<T> extends Mono<T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case TERMINATED:
-					return state == HAS_REQUEST_HAS_VALUE || state == NO_REQUEST_HAS_VALUE;
-				case CANCELLED:
-					return disposable == Flux.CANCELLED;
-			}
-			return InnerProducer.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.TERMINATED) return state == HAS_REQUEST_HAS_VALUE || state == NO_REQUEST_HAS_VALUE;
+			if (key == BooleanAttr.CANCELLED) return disposable == Flux.CANCELLED;
+
+			return InnerProducer.super.scanUnsafe(key);
 		}
 
         @Override

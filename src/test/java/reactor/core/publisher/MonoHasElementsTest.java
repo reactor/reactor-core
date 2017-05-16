@@ -141,7 +141,7 @@ public class MonoHasElementsTest {
 				    });
 
 		assertThat(sub.get()).isInstanceOf(MonoHasElements.HasElementSubscriber.class);
-		assertThat(Scannable.from(sub.get()).scan(Scannable.Attr.PARENT).getClass()).isEqualTo(FluxHide.HideSubscriber.class);
+		assertThat(Scannable.from(sub.get()).scan(Scannable.ScannableAttr.PARENT).getClass()).isEqualTo(FluxHide.HideSubscriber.class);
 	}
 
 	@Test

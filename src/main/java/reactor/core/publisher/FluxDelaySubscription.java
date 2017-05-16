@@ -69,14 +69,11 @@ final class FluxDelaySubscription<T, U> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return s;
-				case TERMINATED:
-					return done;
-			}
-			return super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == BooleanAttr.TERMINATED) return done;
+
+			return super.scanUnsafe(key);
 		}
 
 		@Override
@@ -150,11 +147,9 @@ final class FluxDelaySubscription<T, U> extends FluxSource<T, T> {
 			}
 
 			@Override
-			public Object scan(Attr key) {
-				switch (key){
-					case ACTUAL:
-						return actual;
-				}
+			public Object scanUnsafe(Attr key) {
+				if (key == ScannableAttr.ACTUAL) return actual;
+
 				return null;
 			}
 

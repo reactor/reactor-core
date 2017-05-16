@@ -81,13 +81,10 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 	}
 
 	@Override
-	public Object scan(Attr key) {
-		switch (key){
-			case PREFETCH:
-				return getPrefetch();
-			case PARENT:
-				return source;
-		}
+	public Object scanUnsafe(Attr key) {
+		if (key == IntAttr.PREFETCH) return getPrefetch();
+		if (key == ScannableAttr.PARENT) return source;
+
 		return null;
 	}
 
@@ -173,12 +170,10 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 			}
 
 			@Override
-			public Object scan(Attr key) {
-				switch(key){
-					case PARENT:
-						return s;
-				}
-				return InnerOperator.super.scan(key);
+			public Object scanUnsafe(Attr key) {
+				if (key == ScannableAttr.PARENT) return s;
+
+				return InnerOperator.super.scanUnsafe(key);
 			}
 
 			@Override

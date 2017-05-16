@@ -135,13 +135,10 @@ final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, F
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch(key){
-				case TERMINATED:
-				case CANCELLED:
-					return terminado;
-			}
-			return InnerProducer.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.TERMINATED || key == BooleanAttr.CANCELLED) return terminado;
+
+			return InnerProducer.super.scanUnsafe(key);
 		}
 	}
 }

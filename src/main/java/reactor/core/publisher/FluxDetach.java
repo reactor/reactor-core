@@ -49,16 +49,12 @@ final class FluxDetach<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return s;
-				case TERMINATED:
-					return actual == null;
-				case CANCELLED:
-					return actual == null && s == null;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == BooleanAttr.TERMINATED) return actual == null;
+			if (key == BooleanAttr.CANCELLED) return actual == null && s == null;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override

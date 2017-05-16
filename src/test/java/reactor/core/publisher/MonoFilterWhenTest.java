@@ -305,12 +305,12 @@ public class MonoFilterWhenTest {
 
 		assertThat(subscriber.get()).isNotNull()
 	                                .isInstanceOf(Scannable.class);
-		Boolean terminated = ((Scannable) subscriber.get()).scan(Scannable.Attr.TERMINATED, Boolean.class);
+		Boolean terminated = ((Scannable) subscriber.get()).scan(Scannable.BooleanAttr.TERMINATED);
 		assertThat(terminated).isFalse();
 
 		filter.emit(Boolean.TRUE);
 
-		terminated = ((Scannable) subscriber.get()).scan(Scannable.Attr.TERMINATED, Boolean.class);
+		terminated = ((Scannable) subscriber.get()).scan(Scannable.BooleanAttr.TERMINATED);
 		assertThat(terminated).isTrue();
 	}
 

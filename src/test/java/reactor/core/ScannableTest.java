@@ -19,6 +19,7 @@ package reactor.core;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.Scannable.IntAttr.BUFFERED;
 
 /**
  * @author Stephane Maldini
@@ -26,15 +27,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ScannableTest {
 
 	static final Scannable scannable = key -> {
-		switch (key) {
-			case BUFFERED:
-				return 1;
-			case TERMINATED:
-				return true;
-			case PARENT:
-				return null;
-			case ACTUAL:
-				return (Scannable) k -> (Scannable) k2 -> null;
+		if (key.equals(Scannable.IntAttr.BUFFERED)) {
+			return 1;
+		}
+		else if (key.equals(Scannable.BooleanAttr.TERMINATED)) {
+			return true;
+		}
+		else if (key.equals(Scannable.ScannableAttr.PARENT)) {
+			return null;
+		}
+		else if (key.equals(Scannable.ScannableAttr.ACTUAL)) {
+			return (Scannable) k -> (Scannable) k2 -> null;
 		}
 		return null;
 	};
@@ -46,9 +49,34 @@ public class ScannableTest {
 		assertThat(Scannable.from("nothing").inners().count()).isEqualTo(0);
 		assertThat(Scannable.from("nothing").parents().count()).isEqualTo(0);
 		assertThat(Scannable.from("nothing").actuals().count()).isEqualTo(0);
-		assertThat(Scannable.from("nothing").scan(Scannable.Attr.TERMINATED, Boolean.class)).isNull();
-		assertThat(Scannable.from("nothing").scanOrDefault(Scannable.Attr.BUFFERED, 0)).isEqualTo(0);
-		assertThat(Scannable.from("nothing").scan(Scannable.Attr.ACTUAL)).isNull();
+		assertThat(Scannable.from("nothing").scan(Scannable.BooleanAttr.TERMINATED)).isNull();
+		assertThat(Scannable.from("nothing").scanOrDefault(Scannable.IntAttr.BUFFERED, 0)).isEqualTo(0);
+		assertThat(Scannable.from("nothing").scan(Scannable.ScannableAttr.ACTUAL)).isNull();
+	}
+
+	@Test
+	public void meaningfulDefaults() {
+		Scannable emptyScannable = key -> null;
+
+		assertThat(emptyScannable.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(0);
+		assertThat(emptyScannable.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(0);
+		assertThat(emptyScannable.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(0);
+
+		assertThat(emptyScannable.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
+
+		assertThat(emptyScannable.scan(Scannable.BooleanAttr.CANCELLED)).isNull();
+		assertThat(emptyScannable.scan(Scannable.BooleanAttr.DELAY_ERROR)).isFalse();
+		assertThat(emptyScannable.scan(Scannable.BooleanAttr.TERMINATED)).isNull();
+
+		assertThat(emptyScannable.scan(Scannable.StringAttr.NAME)).isNull();
+
+		assertThat(emptyScannable.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+
+		assertThat(emptyScannable.scan(Scannable.ScannableAttr.ACTUAL)).isNull();
+		assertThat(emptyScannable.scan(Scannable.ScannableAttr.PARENT)).isNull();
+
+		Scannable.GenericAttr<String> random = new Scannable.GenericAttr<>("foo");
+		assertThat(emptyScannable.scan(random)).isEqualToIgnoringCase("foo");
 	}
 
 	@Test
@@ -58,9 +86,9 @@ public class ScannableTest {
 		assertThat(Scannable.from(scannable).inners().count()).isEqualTo(0);
 		assertThat(Scannable.from(scannable).parents().count()).isEqualTo(0);
 		assertThat(Scannable.from(scannable).actuals().count()).isEqualTo(2);
-		assertThat(Scannable.from(scannable).scan(Scannable.Attr.TERMINATED, Boolean.class)).isTrue();
-		assertThat(Scannable.from(scannable).scanOrDefault(Scannable.Attr.BUFFERED, 0)).isEqualTo(1);
-		assertThat(Scannable.from(scannable).scan(Scannable.Attr.ACTUAL)).isEqualTo(scannable.actuals().findFirst().get());
+		assertThat(Scannable.from(scannable).scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		assertThat(Scannable.from(scannable).scanOrDefault(BUFFERED, 0)).isEqualTo(1);
+		assertThat(Scannable.from(scannable).scan(Scannable.ScannableAttr.ACTUAL)).isEqualTo(scannable.actuals().findFirst().get());
 	}
 
 	@Test

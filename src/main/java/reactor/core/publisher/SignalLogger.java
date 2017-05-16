@@ -154,11 +154,9 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	}
 
 	@Override
-	public Object scan(Attr key) {
-		switch (key){
-			case PARENT:
-				return source;
-		}
+	public Object scanUnsafe(Attr key) {
+		if (key == ScannableAttr.PARENT) return source;
+
 		return null;
 	}
 

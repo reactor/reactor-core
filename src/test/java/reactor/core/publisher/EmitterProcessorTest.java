@@ -296,7 +296,7 @@ public class EmitterProcessorTest {
 		s.next(5);
 		s.next(6);
 		s.next(7);
-		assertThat(tp.scan(Scannable.Attr.BUFFERED)).isEqualTo(3);
+		assertThat(tp.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(3);
 		assertThat(tp.isTerminated()).isFalse();
 		s.complete();
 		assertThat(tp.isTerminated()).isFalse();
@@ -528,7 +528,7 @@ public class EmitterProcessorTest {
 		first.awaitAndAssertNextValues("1", "2", "3");
 		first.cancel();
 
-		assertThat(processor.scanOrDefault(Scannable.Attr.CANCELLED, false)).isTrue();
+		assertThat(processor.scanOrDefault(Scannable.BooleanAttr.CANCELLED, false)).isTrue();
 	}
 
 	@Test

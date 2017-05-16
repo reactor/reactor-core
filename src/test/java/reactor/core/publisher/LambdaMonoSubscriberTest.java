@@ -189,12 +189,12 @@ public class LambdaMonoSubscriberTest {
 		assertTrue(MonoSource.wrap(s -> {
 			assertTrue(s instanceof LambdaMonoSubscriber);
 			LambdaMonoSubscriber<?> bfs = (LambdaMonoSubscriber<?>)s;
-			assertTrue(bfs.scan(Scannable.Attr.PREFETCH, Integer.class) == Integer.MAX_VALUE);
-			assertFalse(bfs.scan(Scannable.Attr.TERMINATED, Boolean.class));
+			assertTrue(bfs.scan(Scannable.IntAttr.PREFETCH) == Integer.MAX_VALUE);
+			assertFalse(bfs.scan(Scannable.BooleanAttr.TERMINATED));
 			bfs.onSubscribe(Operators.emptySubscription());
 			bfs.onSubscribe(Operators.emptySubscription()); // noop
 			s.onComplete();
-			assertTrue(bfs.scan(Scannable.Attr.TERMINATED, Boolean.class));
+			assertTrue(bfs.scan(Scannable.BooleanAttr.TERMINATED));
 			bfs.dispose();
 			bfs.dispose();
 		}).subscribe(s -> {}, null, () -> {}).isDisposed());
@@ -214,7 +214,7 @@ public class LambdaMonoSubscriberTest {
 				s.onComplete();
 				s.onError(new Exception("test2"));
 				s.onNext("test2");
-				assertTrue(bfs.scan(Scannable.Attr.TERMINATED, Boolean.class));
+				assertTrue(bfs.scan(Scannable.BooleanAttr.TERMINATED));
 				bfs.dispose();
 			})
 			          .subscribe(s -> {

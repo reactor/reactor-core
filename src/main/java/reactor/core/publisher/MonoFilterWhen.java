@@ -198,15 +198,14 @@ class MonoFilterWhen<T> extends MonoSource<T, T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return upstream;
-				case TERMINATED:
-					return asyncFilter != null ? asyncFilter.scan(Attr.TERMINATED) : super.scan(Attr.TERMINATED);
-				default: //CANCELLED, PREFETCH
-					return super.scan(key);
-			}
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return upstream;
+			if (key == BooleanAttr.TERMINATED) return asyncFilter != null
+					? asyncFilter.scanUnsafe(BooleanAttr.TERMINATED)
+					: super.scanUnsafe(BooleanAttr.TERMINATED);
+
+			//CANCELLED, PREFETCH
+			return super.scanUnsafe(key);
 		}
 
 		@Override
@@ -276,23 +275,15 @@ class MonoFilterWhen<T> extends MonoSource<T, T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch(key) {
-				case PARENT:
-					return parent;
-				case ACTUAL:
-					return sub;
-				case CANCELLED:
-					return sub == Operators.cancelledSubscription();
-				case TERMINATED:
-					return done;
-				case PREFETCH:
-					return Integer.MAX_VALUE;
-				case REQUESTED_FROM_DOWNSTREAM:
-					return done ? 0 : 1;
-				default:
-					return null;
-			}
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return parent;
+			if (key == ScannableAttr.ACTUAL) return sub;
+			if (key == BooleanAttr.CANCELLED) return sub == Operators.cancelledSubscription();
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return done ? 0 : 1;
+
+			return null;
 		}
 	}
 }

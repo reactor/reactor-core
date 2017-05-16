@@ -87,16 +87,12 @@ final class MonoFlatMap<T, R> extends MonoSource<T, R> implements Fuseable {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case PARENT:
-					return s;
-				case CANCELLED:
-					return s == Operators.cancelledSubscription();
-				case TERMINATED:
-					return done;
-			}
-			return super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == BooleanAttr.TERMINATED) return done;
+
+			return super.scanUnsafe(key);
 		}
 
 		@Override
@@ -206,17 +202,12 @@ final class MonoFlatMap<T, R> extends MonoSource<T, R> implements Fuseable {
 			}
 
 			@Override
-			public Object scan(Attr key) {
-				switch (key){
-					case PARENT:
-						return s;
-					case ACTUAL:
-						return parent;
-					case TERMINATED:
-						return done;
-					case CANCELLED:
-						return s == Operators.cancelledSubscription();
-				}
+			public Object scanUnsafe(Attr key) {
+				if (key == ScannableAttr.PARENT) return s;
+				if (key == ScannableAttr.ACTUAL) 	return parent;
+				if (key == BooleanAttr.TERMINATED) return done;
+				if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
+
 				return null;
 			}
 

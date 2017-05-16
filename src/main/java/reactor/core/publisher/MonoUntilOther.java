@@ -108,16 +108,12 @@ final class MonoUntilOther<T> extends Mono<T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case TERMINATED:
-					return done;
-				case PARENT:
-					return sourceSubscriber;
-				case DELAY_ERROR:
-					return delayError;
-			}
-			return super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == ScannableAttr.PARENT) return sourceSubscriber;
+			if (key == BooleanAttr.DELAY_ERROR) return delayError;
+
+			return super.scanUnsafe(key);
 		}
 
 		@Override
@@ -294,17 +290,12 @@ final class MonoUntilOther<T> extends Mono<T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case CANCELLED:
-					return s == Operators.cancelledSubscription();
-				case PARENT:
-					return s;
-				case ACTUAL:
-					return parent;
-				case ERROR:
-					return error;
-			}
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == ScannableAttr.ACTUAL) return parent;
+			if (key == ThrowableAttr.ERROR) return error;
+
 			return null;
 		}
 

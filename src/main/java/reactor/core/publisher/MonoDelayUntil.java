@@ -147,16 +147,12 @@ final class MonoDelayUntil<T> extends Mono<T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case TERMINATED:
-					return done;
-				case PARENT:
-					return actual;
-				case DELAY_ERROR:
-					return delayError;
-			}
-			return super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == ScannableAttr.PARENT) return actual;
+			if (key == BooleanAttr.DELAY_ERROR) return delayError;
+
+			return super.scanUnsafe(key);
 		}
 
 		@Override
@@ -260,19 +256,13 @@ final class MonoDelayUntil<T> extends Mono<T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case CANCELLED:
-					return s == Operators.cancelledSubscription();
-				case PARENT:
-					return s;
-				case ACTUAL:
-					return parent;
-				case ERROR:
-					return error;
-				case PREFETCH:
-					return Integer.MAX_VALUE;
-			}
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == ScannableAttr.ACTUAL) return parent;
+			if (key == ThrowableAttr.ERROR) return error;
+			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
+
 			return null;
 		}
 

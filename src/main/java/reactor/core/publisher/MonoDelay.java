@@ -92,16 +92,12 @@ final class MonoDelay extends Mono<Long> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case TERMINATED:
-					return cancel == FINISHED;
-				case CANCELLED:
-					return cancel == Flux.CANCELLED;
-				case PARENT:
-					return actual;
-			}
-			return InnerProducer.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.TERMINATED) return cancel == FINISHED;
+			if (key == BooleanAttr.CANCELLED) return cancel == Flux.CANCELLED;
+			if (key == ScannableAttr.PARENT) return actual;
+
+			return InnerProducer.super.scanUnsafe(key);
 		}
 
 		@Override

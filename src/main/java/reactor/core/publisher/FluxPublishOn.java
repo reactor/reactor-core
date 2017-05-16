@@ -515,26 +515,17 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
-				case PARENT:
-					return s;
-				case CANCELLED:
-					return cancelled;
-				case TERMINATED:
-					return done;
-				case BUFFERED:
-					return queue != null ? queue.size() : 0;
-				case ERROR:
-					return error;
-				case DELAY_ERROR:
-					return delayError;
-				case PREFETCH:
-					return prefetch;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM ) return requested;
+			if (key == ScannableAttr.PARENT ) return s;
+			if (key == BooleanAttr.CANCELLED) return cancelled;
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == IntAttr.BUFFERED) return queue != null ? queue.size() : 0;
+			if (key == ThrowableAttr.ERROR) return error;
+			if (key == BooleanAttr.DELAY_ERROR) return delayError;
+			if (key == IntAttr.PREFETCH) return prefetch;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -953,26 +944,17 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
-				case PARENT:
-					return s;
-				case CANCELLED:
-					return cancelled;
-				case TERMINATED:
-					return done;
-				case BUFFERED:
-					return queue != null ? queue.size() : 0;
-				case ERROR:
-					return error;
-				case DELAY_ERROR:
-					return delayError;
-				case PREFETCH:
-					return prefetch;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == BooleanAttr.CANCELLED) return cancelled;
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == IntAttr.BUFFERED) return queue != null ? queue.size() : 0;
+			if (key == ThrowableAttr.ERROR) return error;
+			if (key == BooleanAttr.DELAY_ERROR) return delayError;
+			if (key == IntAttr.PREFETCH) return prefetch;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		void doComplete(Subscriber<?> a) {

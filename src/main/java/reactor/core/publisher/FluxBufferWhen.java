@@ -34,7 +34,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 
-
 /**
  * buffers elements into possibly overlapping buffers whose boundaries are determined
  * by a start Publisher's element and a signal of a derived Publisher
@@ -474,25 +473,18 @@ final class FluxBufferWhen<T, U, V, C extends Collection<? super T>>
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return s;
-				case TERMINATED:
-					return done;
-				case CANCELLED:
-					return cancelled;
-				case PREFETCH:
-					return Integer.MAX_VALUE;
-				case BUFFERED:
-					return buffers.values()
-					              .stream()
-					              .mapToInt(Collection::size)
-					              .sum();
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == BooleanAttr.CANCELLED) return cancelled;
+			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == IntAttr.BUFFERED) return buffers.values()
+			                                           .stream()
+			                                           .mapToInt(Collection::size)
+			                                           .sum();
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 	}
 
@@ -528,11 +520,11 @@ final class FluxBufferWhen<T, U, V, C extends Collection<? super T>>
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			if (key == Attr.ACTUAL) {
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.ACTUAL) {
 				return main;
 			}
-			return super.scan(key);
+			return super.scanUnsafe(key);
 		}
 	}
 
@@ -554,11 +546,11 @@ final class FluxBufferWhen<T, U, V, C extends Collection<? super T>>
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			if (key == Attr.ACTUAL) {
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.ACTUAL) {
 				return main;
 			}
-			return super.scan(key);
+			return super.scanUnsafe(key);
 		}
 
 		@Override

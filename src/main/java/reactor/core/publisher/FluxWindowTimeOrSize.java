@@ -312,23 +312,15 @@ final class FluxWindowTimeOrSize<T> extends FluxSource<T, Flux<T>> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return subscription;
-				case CANCELLED:
-//					return terminated == TERMINATED_WITH_CANCEL;
-					return cancelled == 1;
-				case TERMINATED:
-					return terminated == TERMINATED_WITH_ERROR || terminated == TERMINATED_WITH_SUCCESS;
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
-				case CAPACITY:
-					return batchSize;
-				case BUFFERED:
-					return batchSize - index;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.CANCELLED) return cancelled == 1;
+			if (key == ScannableAttr.PARENT) return subscription;
+			if (key == BooleanAttr.TERMINATED) return terminated == TERMINATED_WITH_ERROR || terminated == TERMINATED_WITH_SUCCESS;
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == IntAttr.CAPACITY) return batchSize;
+			if (key == IntAttr.BUFFERED) return batchSize - index;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		/**

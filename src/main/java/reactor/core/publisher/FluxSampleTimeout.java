@@ -142,22 +142,15 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case TERMINATED:
-					return done;
-				case CANCELLED:
-					return cancelled;
-				case PARENT:
-					return s;
-				case ERROR:
-					return error;
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
-				case BUFFERED:
-					return queue.size();
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == BooleanAttr.CANCELLED) return cancelled;
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == ThrowableAttr.ERROR) return error;
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == IntAttr.BUFFERED) return queue.size();
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -358,14 +351,11 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case TERMINATED:
-					return once == 1;
-				case ACTUAL:
-					return main;
-			}
-			return super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.TERMINATED) return once == 1;
+			if (key == ScannableAttr.ACTUAL) return main;
+
+			return super.scanUnsafe(key);
 		}
 
 		@Override

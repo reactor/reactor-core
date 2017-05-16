@@ -59,14 +59,11 @@ final class MonoAll<T> extends MonoSource<T, Boolean> implements Fuseable {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case TERMINATED:
-					return done;
-				case PARENT:
-					return s;
-			}
-			return super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == ScannableAttr.PARENT) return s;
+
+			return super.scanUnsafe(key);
 		}
 
 		@Override

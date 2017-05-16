@@ -70,12 +70,10 @@ final class MonoCollectList<T, C extends Collection<? super T>> extends MonoSour
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case PARENT:
-					return s;
-			}
-			return super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+
+			return super.scanUnsafe(key);
 		}
 
 		@Override

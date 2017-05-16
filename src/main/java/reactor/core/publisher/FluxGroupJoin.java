@@ -220,20 +220,14 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
-				case CANCELLED:
-					return cancelled;
-				case BUFFERED:
-					return queue.size() / 2;
-				case TERMINATED:
-					return active == 0;
-				case ERROR:
-					return error;
-			}
-			return InnerProducer.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == BooleanAttr.CANCELLED) return cancelled;
+			if (key == IntAttr.BUFFERED) return queue.size() / 2;
+			if (key == BooleanAttr.TERMINATED) return active == 0;
+			if (key == ThrowableAttr.ERROR) return error;
+
+			return InnerProducer.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -553,15 +547,11 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case PARENT:
-					return subscription;
-				case ACTUAL:
-					return parent;
-				case CANCELLED:
-					return isDisposed();
-			}
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return subscription;
+			if (key == ScannableAttr.ACTUAL ) return parent;
+			if (key == BooleanAttr.CANCELLED) return isDisposed();
+
 			return null;
 		}
 
@@ -631,13 +621,10 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case PARENT:
-					return subscription;
-				case CANCELLED:
-					return isDisposed();
-			}
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return subscription;
+			if (key == BooleanAttr.CANCELLED) return isDisposed();
+
 			return null;
 		}
 

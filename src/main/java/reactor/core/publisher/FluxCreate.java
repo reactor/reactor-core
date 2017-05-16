@@ -264,15 +264,11 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case BUFFERED:
-					return queue.size();
-				case ERROR:
-					return error;
-				case TERMINATED:
-					return done;
-			}
+		public Object scanUnsafe(Attr key) {
+			if (key == IntAttr.BUFFERED) return queue.size();
+			if (key == ThrowableAttr.ERROR) return error;
+			if (key == BooleanAttr.TERMINATED) return done;
+
 			return null;
 		}
 	}
@@ -436,15 +432,13 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case TERMINATED:
-				case CANCELLED:
-					return disposable == CANCELLED;
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.TERMINATED || key == BooleanAttr.CANCELLED) {
+				return disposable == CANCELLED;
 			}
-			return InnerProducer.super.scan(key);
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+
+			return InnerProducer.super.scanUnsafe(key);
 		}
 	}
 
@@ -651,16 +645,12 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case BUFFERED:
-					return queue.size();
-				case TERMINATED:
-					return done;
-				case ERROR:
-					return error;
-			}
-			return super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == IntAttr.BUFFERED) return queue.size();
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == ThrowableAttr.ERROR) return error;
+
+			return super.scanUnsafe(key);
 		}
 	}
 
@@ -792,16 +782,12 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case BUFFERED:
-					return queue.get() == null ? 0 : 1;
-				case TERMINATED:
-					return done;
-				case ERROR:
-					return error;
-			}
-			return super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == IntAttr.BUFFERED) return queue.get() == null ? 0 : 1;
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == ThrowableAttr.ERROR) return error;
+
+			return super.scanUnsafe(key);
 		}
 	}
 

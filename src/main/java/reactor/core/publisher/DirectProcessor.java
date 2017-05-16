@@ -278,14 +278,11 @@ public final class DirectProcessor<T>
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case PARENT:
-					return parent;
-				case CANCELLED:
-					return cancelled;
-			}
-			return InnerProducer.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return parent;
+			if (key == BooleanAttr.CANCELLED) return cancelled;
+
+			return InnerProducer.super.scanUnsafe(key);
 		}
 
 		@Override

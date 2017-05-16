@@ -236,22 +236,15 @@ final class SerializedSubscriber<T> implements InnerOperator<T, T> {
 	}
 
 	@Override
-	public Object scan(Attr key) {
-		switch (key){
-			case PARENT:
-				return s;
-			case ERROR:
-				return error;
-			case BUFFERED:
-				return producerCapacity();
-			case CAPACITY:
-				return LinkedArrayNode.DEFAULT_CAPACITY;
-			case CANCELLED:
-				return cancelled;
-			case TERMINATED:
-				return done;
-		}
-		return InnerOperator.super.scan(key);
+	public Object scanUnsafe(Attr key) {
+		if (key == ScannableAttr.PARENT) return s;
+		if (key == ThrowableAttr.ERROR) return error;
+		if (key == IntAttr.BUFFERED) return producerCapacity();
+		if (key == IntAttr.CAPACITY) return LinkedArrayNode.DEFAULT_CAPACITY;
+		if (key == BooleanAttr.CANCELLED) return cancelled;
+		if (key == BooleanAttr.TERMINATED) return done;
+
+		return InnerOperator.super.scanUnsafe(key);
 	}
 
 	long producerCapacity() {
