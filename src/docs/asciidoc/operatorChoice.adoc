@@ -202,8 +202,10 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 
 * I want to get ticks from a clock, regular time intervals: `Flux#interval`
 
+* I want to emit a single `0` after an initial delay: static `Mono.delay`.
+
 * I want to introduce a delay...
-** between each onNext signal: `delay`
+** between each onNext signal: `Mono#delayElement`, `Flux#delayElements`
 ** before the subscription happens: `delaySubscription`
 
 [[which.window]]
