@@ -1023,6 +1023,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M1/src/docs/marble/mergeinner.png" alt="">
 	 * <p>
+	 * Note that merge is tailored to work with asynchronous sources or finite sources. When dealing with
+	 * an infinite source that doesn't already publish on a dedicated Scheduler, you must isolate that source
+	 * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
+	 * another source.
+	 *
 	 * @param source a {@link Publisher} of {@link Publisher} sources to merge
 	 * @param <T> the merged type
 	 *
@@ -1042,6 +1047,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M1/src/docs/marble/mergeinner.png" alt="">
 	 * <p>
+	 * Note that merge is tailored to work with asynchronous sources or finite sources. When dealing with
+	 * an infinite source that doesn't already publish on a dedicated Scheduler, you must isolate that source
+	 * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
+	 * another source.
+	 *
 	 * @param source a {@link Publisher} of {@link Publisher} sources to merge
 	 * @param concurrency the request produced to the main source thus limiting concurrent merge backlog
 	 * @param <T> the merged type
@@ -1060,6 +1070,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M1/src/docs/marble/mergeinner.png" alt="">
 	 * <p>
+	 * Note that merge is tailored to work with asynchronous sources or finite sources. When dealing with
+	 * an infinite source that doesn't already publish on a dedicated Scheduler, you must isolate that source
+	 * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
+	 * another source.
+	 *
 	 * @param source a {@link Publisher} of {@link Publisher} sources to merge
 	 * @param concurrency the request produced to the main source thus limiting concurrent merge backlog
 	 * @param prefetch the inner source request size
@@ -1086,6 +1101,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M1/src/docs/marble/merge.png" alt="">
 	 * <p>
+	 * Note that merge is tailored to work with asynchronous sources or finite sources. When dealing with
+	 * an infinite source that doesn't already publish on a dedicated Scheduler, you must isolate that source
+	 * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
+	 * another source.
+	 *
 	 * @param sources the {@link Iterable} of sources to merge (will be lazily iterated on subscribe)
 	 * @param <I> The source type of the data sequence
 	 *
@@ -1102,6 +1122,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M1/src/docs/marble/merge.png" alt="">
 	 * <p>
+	 * Note that merge is tailored to work with asynchronous sources or finite sources. When dealing with
+	 * an infinite source that doesn't already publish on a dedicated Scheduler, you must isolate that source
+	 * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
+	 * another source.
+	 *
 	 * @param sources the array of {@link Publisher} sources to merge
 	 * @param <I> The source type of the data sequence
 	 *
@@ -1119,6 +1144,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M1/src/docs/marble/merge.png" alt="">
 	 * <p>
+	 * Note that merge is tailored to work with asynchronous sources or finite sources. When dealing with
+	 * an infinite source that doesn't already publish on a dedicated Scheduler, you must isolate that source
+	 * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
+	 * another source.
+	 *
 	 * @param sources the array of {@link Publisher} sources to merge
 	 * @param prefetch the inner source request size
 	 * @param <I> The source type of the data sequence
@@ -1138,6 +1168,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M1/src/docs/marble/merge.png" alt="">
 	 * <p>
+	 * Note that merge is tailored to work with asynchronous sources or finite sources. When dealing with
+	 * an infinite source that doesn't already publish on a dedicated Scheduler, you must isolate that source
+	 * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
+	 * another source.
+	 *
 	 * @param sources the array of {@link Publisher} sources to merge
 	 * @param prefetch the inner source request size
 	 * @param <I> The source type of the data sequence
@@ -4023,6 +4058,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M1/src/docs/marble/groupby.png" alt="">
 	 *
+	 * <p>
+	 * The groups need to be drained and consumed downstream for groupBy to work correctly.
+	 * Notably when the criteria produces a large amount of groups, it can lead to hanging
+	 * if the groups are not suitably consumed downstream (eg. due to a {@code flatMap}
+	 * with a {@code maxConcurrency} parameter that is set too low.
+	 *
 	 * @param keyMapper the key mapping {@link Function} that evaluates an incoming data and returns a key.
 	 * @param <K> the key type extracted from each value of this sequence
 	 *
@@ -4038,6 +4079,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M1/src/docs/marble/groupby.png" alt="">
+	 *
+	 * <p>
+	 * The groups need to be drained and consumed downstream for groupBy to work correctly.
+	 * Notably when the criteria produces a large amount of groups, it can lead to hanging
+	 * if the groups are not suitably consumed downstream (eg. due to a {@code flatMap}
+	 * with a {@code maxConcurrency} parameter that is set too low.
 	 *
 	 * @param keyMapper the key mapping {@link Function} that evaluates an incoming data and returns a key.
 	 * @param prefetch the number of values to prefetch from the source
@@ -4056,6 +4103,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M1/src/docs/marble/groupby.png" alt="">
+	 *
+	 * <p>
+	 * The groups need to be drained and consumed downstream for groupBy to work correctly.
+	 * Notably when the criteria produces a large amount of groups, it can lead to hanging
+	 * if the groups are not suitably consumed downstream (eg. due to a {@code flatMap}
+	 * with a {@code maxConcurrency} parameter that is set too low.
 	 *
 	 * @param keyMapper the key mapping function that evaluates an incoming data and returns a key.
 	 * @param valueMapper the value mapping function that evaluates which data to extract for re-routing.
@@ -4077,6 +4130,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M1/src/docs/marble/groupby.png" alt="">
+	 *
+	 * <p>
+	 * The groups need to be drained and consumed downstream for groupBy to work correctly.
+	 * Notably when the criteria produces a large amount of groups, it can lead to hanging
+	 * if the groups are not suitably consumed downstream (eg. due to a {@code flatMap}
+	 * with a {@code maxConcurrency} parameter that is set too low.
 	 *
 	 * @param keyMapper the key mapping function that evaluates an incoming data and returns a key.
 	 * @param valueMapper the value mapping function that evaluates which data to extract for re-routing.
@@ -4456,6 +4515,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M1/src/docs/marble/merge.png" alt="">
 	 * <p>
+	 * Note that merge is tailored to work with asynchronous sources or finite sources. When dealing with
+	 * an infinite source that doesn't already publish on a dedicated Scheduler, you must isolate that source
+	 * in its own Scheduler, as merge would otherwise attempt to drain it before subscribing to
+	 * another source.
+	 *
 	 * @param other the {@link Publisher} to merge with
 	 *
 	 * @return a new {@link Flux}
