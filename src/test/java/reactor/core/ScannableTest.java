@@ -19,12 +19,13 @@ package reactor.core;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static reactor.core.Scannable.IntAttr.BUFFERED;
 
 /**
  * @author Stephane Maldini
  */
 public class ScannableTest {
+
+	static final Scannable.GenericAttr<String> CUSTOM_STRING = new Scannable.GenericAttr<>("global");
 
 	static final Scannable scannable = key -> {
 		if (key.equals(Scannable.IntAttr.BUFFERED)) {
@@ -68,8 +69,6 @@ public class ScannableTest {
 		assertThat(emptyScannable.scan(Scannable.BooleanAttr.DELAY_ERROR)).isFalse();
 		assertThat(emptyScannable.scan(Scannable.BooleanAttr.TERMINATED)).isNull();
 
-		assertThat(emptyScannable.scan(Scannable.StringAttr.NAME)).isNull();
-
 		assertThat(emptyScannable.scan(Scannable.ThrowableAttr.ERROR)).isNull();
 
 		assertThat(emptyScannable.scan(Scannable.ScannableAttr.ACTUAL)).isNull();
@@ -87,12 +86,17 @@ public class ScannableTest {
 		assertThat(Scannable.from(scannable).parents().count()).isEqualTo(0);
 		assertThat(Scannable.from(scannable).actuals().count()).isEqualTo(2);
 		assertThat(Scannable.from(scannable).scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
-		assertThat(Scannable.from(scannable).scanOrDefault(BUFFERED, 0)).isEqualTo(1);
+		assertThat(Scannable.from(scannable).scanOrDefault(Scannable.IntAttr.BUFFERED, 0)).isEqualTo(1);
 		assertThat(Scannable.from(scannable).scan(Scannable.ScannableAttr.ACTUAL)).isEqualTo(scannable.actuals().findFirst().get());
 	}
 
 	@Test
 	public void nullScan() {
 		assertThat(Scannable.from(null)).isNull();
+	}
+
+	@Test
+	public void globalDefaultTakesPrecedenceOverCallDefault() {
+		assertThat(scannable.scanOrDefault(CUSTOM_STRING, "bar")).isEqualTo("global");
 	}
 }
