@@ -906,7 +906,7 @@ public class FluxTests extends AbstractReactorTest {
 		}).log("points")
 		  .buffer(2)
 		  .map(pairs -> new Point(pairs.get(0), pairs.get(1)))
-		  .subscribeWith(TopicProcessor.create("tee", 32));
+		  .subscribeWith(TopicProcessor.Builder.<Point>create().name("tee").bufferSize(32).build());
 
 		Flux<InnerSample> innerSamples = points.log("inner-1")
 		                                          .filter(Point::isInner)
@@ -1311,11 +1311,17 @@ public class FluxTests extends AbstractReactorTest {
 		final Flux<Integer> forkStream2 = Flux.just(1, 2, 3)
 		                                            .log("begin-persistence");
 
-		final TopicProcessor<Integer> computationEmitterProcessor = TopicProcessor.create("computation", BACKLOG);
+		final TopicProcessor<Integer> computationEmitterProcessor = TopicProcessor.Builder.<Integer>create()
+				.name("computation")
+				.bufferSize(BACKLOG)
+				.build();
 		final Flux<String> computationStream = computationEmitterProcessor
 		                                                 .map(i -> Integer.toString(i));
 
-		final TopicProcessor<Integer> persistenceEmitterProcessor = TopicProcessor.create("persistence", BACKLOG);
+		final TopicProcessor<Integer> persistenceEmitterProcessor = TopicProcessor.Builder.<Integer>create()
+				.name("persistence")
+				.bufferSize(BACKLOG)
+				.build();
 		final Flux<String> persistenceStream = persistenceEmitterProcessor
 		                                                 .map(i -> "done " + i);
 
@@ -1357,7 +1363,7 @@ public class FluxTests extends AbstractReactorTest {
 
 		final EmitterProcessor<Integer> forkEmitterProcessor = EmitterProcessor.create();
 
-		final EmitterProcessor<Integer> computationEmitterProcessor = EmitterProcessor.create(false);
+		final EmitterProcessor<Integer> computationEmitterProcessor = EmitterProcessor.Builder.<Integer>create().autoCancel(false).build();
 
 		Scheduler computation = Schedulers.newSingle("computation");
 		Scheduler persistence = Schedulers.newSingle("persistence");
@@ -1375,7 +1381,7 @@ public class FluxTests extends AbstractReactorTest {
 				                      .doOnNext(ls -> println("Computed: ", ls))
 				                      .log("computation");
 
-		final EmitterProcessor<Integer> persistenceEmitterProcessor = EmitterProcessor.create(false);
+		final EmitterProcessor<Integer> persistenceEmitterProcessor = EmitterProcessor.Builder.<Integer>create().autoCancel(false).build();
 
 		final Flux<List<String>> persistenceStream =
 				persistenceEmitterProcessor.publishOn(persistence)

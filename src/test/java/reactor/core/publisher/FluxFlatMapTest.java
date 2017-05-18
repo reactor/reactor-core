@@ -42,23 +42,23 @@ public class FluxFlatMapTest {
 	/*@Test
 	public void constructors() {
 		ConstructorTestBuilder ctb = new ConstructorTestBuilder(FluxFlatMap.class);
-		
+
 		ctb.addRef("source", Flux.never());
 		ctb.addRef("mapper", (Function<Object, Publisher<Object>>)v -> Flux.never());
 		ctb.addInt("prefetch", 1, Integer.MAX_VALUE);
 		ctb.addInt("maxConcurrency", 1, Integer.MAX_VALUE);
 		ctb.addRef("mainQueueSupplier", (Supplier<Queue<Object>>)() -> new ConcurrentLinkedQueue<>());
 		ctb.addRef("innerQueueSupplier", (Supplier<Queue<Object>>)() -> new ConcurrentLinkedQueue<>());
-		
+
 		ctb.test();
 	}*/
 
 	@Test
 	public void normal() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		
+
 		Flux.range(1, 1000).flatMap(v -> Flux.range(v, 2)).subscribe(ts);
-		
+
 		ts.assertValueCount(2000)
 		.assertNoError()
 		.assertComplete();
@@ -67,13 +67,13 @@ public class FluxFlatMapTest {
 	@Test
 	public void normalBackpressured() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
-		
+
 		Flux.range(1, 1000).flatMap(v -> Flux.range(v, 2)).subscribe(ts);
-		
+
 		ts.assertNoValues()
 		.assertNoError()
 		.assertNotComplete();
-		
+
 		ts.request(1000);
 
 		ts.assertValueCount(1000)
@@ -86,14 +86,14 @@ public class FluxFlatMapTest {
 		.assertNoError()
 		.assertComplete();
 	}
-	
+
 	@Test
 	public void mainError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.<Integer>error(new RuntimeException("forced failure"))
 		.flatMap(v -> Flux.just(v)).subscribe(ts);
-		
+
 		ts.assertNoValues()
 		.assertError(RuntimeException.class)
 		  .assertErrorWith( e -> Assert.assertTrue(e.getMessage().contains("forced failure")))
@@ -105,7 +105,7 @@ public class FluxFlatMapTest {
 		AssertSubscriber<Object> ts = AssertSubscriber.create(0);
 
 		Flux.just(1).flatMap(v -> Flux.error(new RuntimeException("forced failure"))).subscribe(ts);
-		
+
 		ts.assertNoValues()
 		.assertError(RuntimeException.class)
 		  .assertErrorWith( e -> Assert.assertTrue(e.getMessage().contains("forced failure")))
@@ -115,9 +115,9 @@ public class FluxFlatMapTest {
 	@Test
 	public void normalQueueOpt() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		
+
 		Flux.range(1, 1000).flatMap(v -> Flux.just(v, v + 1)).subscribe(ts);
-		
+
 		ts.assertValueCount(2000)
 		.assertNoError()
 		.assertComplete();
@@ -126,13 +126,13 @@ public class FluxFlatMapTest {
 	@Test
 	public void normalQueueOptBackpressured() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
-		
+
 		Flux.range(1, 1000).flatMap(v -> Flux.just(v, v + 1)).subscribe(ts);
-		
+
 		ts.assertNoValues()
 		.assertNoError()
 		.assertNotComplete();
-		
+
 		ts.request(1000);
 
 		ts.assertValueCount(1000)
@@ -149,9 +149,9 @@ public class FluxFlatMapTest {
 	@Test
 	public void nullValue() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		
+
 		Flux.range(1, 1000).flatMap(v -> Flux.just((Integer)null)).subscribe(ts);
-		
+
 		ts.assertNoValues()
 		.assertError(NullPointerException.class)
 		.assertNotComplete();
@@ -162,7 +162,7 @@ public class FluxFlatMapTest {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.<Integer>empty().flatMap(v -> Flux.just(v)).subscribe(ts);
-		
+
 		ts.assertNoValues()
 		.assertNoError()
 		.assertComplete();
@@ -173,7 +173,7 @@ public class FluxFlatMapTest {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 		Flux.range(1, 1000).flatMap(v -> Flux.<Integer>empty()).subscribe(ts);
-		
+
 		ts.assertNoValues()
 		.assertNoError()
 		.assertComplete();
@@ -182,9 +182,9 @@ public class FluxFlatMapTest {
 	@Test
 	public void flatMapOfJust() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		
+
 		Flux.range(1, 1000).flatMap(Flux::just).subscribe(ts);
-		
+
 		ts.assertValueCount(1000)
 		.assertNoError()
 		.assertComplete();
@@ -193,11 +193,11 @@ public class FluxFlatMapTest {
 	@Test
 	public void flatMapOfMixed() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		
+
 		Flux.range(1, 1000).flatMap(
 				v -> v % 2 == 0 ? Flux.just(v) : Flux.fromIterable(Arrays.asList(v)))
 		.subscribe(ts);
-		
+
 		ts.assertValueCount(1000)
 		.assertNoError()
 		.assertComplete();
@@ -206,13 +206,13 @@ public class FluxFlatMapTest {
 	@Test
 	public void flatMapOfMixedBackpressured() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
-		
+
 		Flux.range(1, 1000).flatMap(v -> v % 2 == 0 ? Flux.just(v) : Flux.fromIterable(Arrays.asList(v))).subscribe(ts);
-		
+
 		ts.assertNoValues()
 		.assertNoError()
 		.assertNotComplete();
-		
+
 		ts.request(500);
 
 		ts.assertValueCount(500)
@@ -225,17 +225,17 @@ public class FluxFlatMapTest {
 		.assertNoError()
 		.assertComplete();
 	}
-	
+
 	@Test
 	public void flatMapOfMixedBackpressured1() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
-		
+
 		Flux.range(1, 1000).flatMap(v -> v % 2 == 0 ? Flux.just(v) : Flux.fromIterable(Arrays.asList(v))).subscribe(ts);
-		
+
 		ts.assertNoValues()
 		.assertNoError()
 		.assertNotComplete();
-		
+
 		ts.request(500);
 
 		ts.assertValueCount(500)
@@ -252,13 +252,13 @@ public class FluxFlatMapTest {
 	@Test
 	public void flatMapOfJustBackpressured() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
-		
+
 		Flux.range(1, 1000).flatMap(Flux::just).subscribe(ts);
-		
+
 		ts.assertNoValues()
 		.assertNoError()
 		.assertNotComplete();
-		
+
 		ts.request(500);
 
 		ts.assertValueCount(500)
@@ -275,13 +275,13 @@ public class FluxFlatMapTest {
 	@Test
 	public void flatMapOfJustBackpressured1() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
-		
+
 		Flux.range(1, 1000).flatMap(Flux::just).subscribe(ts);
-		
+
 		ts.assertNoValues()
 		.assertNoError()
 		.assertNotComplete();
-		
+
 		ts.request(500);
 
 		ts.assertValueCount(500)
@@ -321,33 +321,33 @@ public class FluxFlatMapTest {
 	@Test
 	public void singleSubscriberOnly() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		
+
 		AtomicInteger emission = new AtomicInteger();
-		
+
 		Flux<Integer> source = Flux.range(1, 2).doOnNext(v -> emission.getAndIncrement());
-		
+
 		EmitterProcessor<Integer> source1 = EmitterProcessor.create();
 		EmitterProcessor<Integer> source2 = EmitterProcessor.create();
 
 		source.flatMap(v -> v == 1 ? source1 : source2, 1, 32).subscribe(ts);
 
 		Assert.assertEquals(1, emission.get());
-		
+
 		ts.assertNoValues()
 		.assertNoError()
 		.assertNotComplete();
-		
+
 		Assert.assertTrue("source1 no subscribers?", source1.downstreamCount() != 0);
 		Assert.assertFalse("source2 has subscribers?", source2.downstreamCount() != 0);
-		
+
 		source1.onNext(1);
 		source2.onNext(10);
-		
+
 		source1.onComplete();
-		
+
 		source2.onNext(2);
 		source2.onComplete();
-		
+
 		ts.assertValues(1, 2)
 		.assertNoError()
 		.assertComplete();
@@ -356,31 +356,31 @@ public class FluxFlatMapTest {
 	@Test
 	public void flatMapUnbounded() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		
+
 		AtomicInteger emission = new AtomicInteger();
-		
+
 		Flux<Integer> source = Flux.range(1, 1000).doOnNext(v -> emission.getAndIncrement());
-		
+
 		EmitterProcessor<Integer> source1 = EmitterProcessor.create();
 		EmitterProcessor<Integer> source2 = EmitterProcessor.create();
-		
+
 		source.flatMap(v -> v == 1 ? source1 : source2, Integer.MAX_VALUE, 32).subscribe(ts);
 
 		Assert.assertEquals(1000, emission.get());
-		
+
 		ts.assertNoValues()
 		.assertNoError()
 		.assertNotComplete();
-		
+
 		Assert.assertTrue("source1 no subscribers?", source1.downstreamCount() != 0);
 		Assert.assertTrue("source2 no  subscribers?", source2.downstreamCount() != 0);
-		
+
 		source1.onNext(1);
 		source1.onComplete();
-		
+
 		source2.onNext(2);
 		source2.onComplete();
-		
+
 		ts.assertValueCount(1000)
 		.assertNoError()
 		.assertComplete();
@@ -389,25 +389,25 @@ public class FluxFlatMapTest {
 	@Test
 	public void syncFusionIterable() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		
+
 		List<Integer> list = new ArrayList<>();
 		for (int i = 0; i < 1000; i++) {
 			list.add(i);
 		}
-		
+
 		Flux.range(1, 1000).flatMap(v -> Flux.fromIterable(list)).subscribe(ts);
-		
+
 		ts.assertValueCount(1_000_000)
 		.assertNoError()
 		.assertComplete();
 	}
-	
+
 	@Test
 	public void syncFusionRange() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		
+
 		Flux.range(1, 1000).flatMap(v -> Flux.range(v, 1000)).subscribe(ts);
-		
+
 		ts.assertValueCount(1_000_000)
 		.assertNoError()
 		.assertComplete();
@@ -416,12 +416,12 @@ public class FluxFlatMapTest {
 	@Test
 	public void syncFusionArray() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		
+
 		Integer[] array = new Integer[1000];
 		Arrays.fill(array, 777);
-		
+
 		Flux.range(1, 1000).flatMap(v -> Flux.fromArray(array)).subscribe(ts);
-		
+
 		ts.assertValueCount(1_000_000)
 		.assertNoError()
 		.assertComplete();

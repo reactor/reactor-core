@@ -78,7 +78,7 @@ public class FizzBuzzTests extends AbstractReactorTest {
 
 		//this line causes an java.lang.ArrayIndexOutOfBoundsException unless there is a break point in ZipAction
 		// .createSubscriber()
-		TopicProcessor<String> ring = TopicProcessor.create("test", 1024);
+		TopicProcessor<String> ring = TopicProcessor.Builder.<String>create().name("test").bufferSize(1024).build();
 
 //        EmitterProcessor<String> ring = EmitterProcessor.create();
 

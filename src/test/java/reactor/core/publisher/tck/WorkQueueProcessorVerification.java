@@ -28,7 +28,7 @@ public class WorkQueueProcessorVerification extends AbstractProcessorVerificatio
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
 		System.out.println("new processor");
-		return  WorkQueueProcessor.create("rb-work", bufferSize);
+		return  WorkQueueProcessor.Builder.<Long>create().name("rb-work").bufferSize(bufferSize).build();
 	}
 
 	@Override

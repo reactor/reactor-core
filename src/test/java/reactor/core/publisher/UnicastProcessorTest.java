@@ -15,28 +15,59 @@
  */
 package reactor.core.publisher;
 
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Consumer;
 
 import org.junit.Test;
 
+import reactor.core.Disposable;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.concurrent.QueueSupplier;
+
+import static org.junit.Assert.assertEquals;
 
 public class UnicastProcessorTest {
 
     @Test
     public void secondSubscriberRejectedProperly() {
-        
-        UnicastProcessor<Integer> up = UnicastProcessor.create(new ConcurrentLinkedQueue<>());
-        
+
+        UnicastProcessor<Integer> up = UnicastProcessor.Builder.<Integer>create().queue(new ConcurrentLinkedQueue<>()).build();
+
         up.subscribe();
-        
+
         AssertSubscriber<Integer> ts = AssertSubscriber.create();
-        
+
         up.subscribe(ts);
-        
+
         ts.assertNoValues()
         .assertError(IllegalStateException.class)
         .assertNotComplete();
-        
+
+    }
+
+    @Test
+	@Deprecated
+	public void factoryMethods() {
+		Queue<Integer> overriddenQueue = QueueSupplier.<Integer>unbounded().get();
+		Disposable overriddenOnTerminate = () -> {};
+		Consumer<? super Integer> overriddenOnOverflow = t -> {};
+
+		UnicastProcessor<Integer> processor = UnicastProcessor.create();
+		assertEquals(QueueSupplier.unbounded().get().getClass(), processor.queue.getClass());
+		assertEquals(UnicastProcessor.Builder.NOOP_DISPOSABLE, processor.onTerminate);
+
+		processor = UnicastProcessor.create(overriddenQueue);
+		assertEquals(overriddenQueue, processor.queue);
+		assertEquals(UnicastProcessor.Builder.NOOP_DISPOSABLE, processor.onTerminate);
+
+		processor = UnicastProcessor.create(overriddenQueue, overriddenOnTerminate);
+		assertEquals(overriddenQueue, processor.queue);
+		assertEquals(overriddenOnTerminate, processor.onTerminate);
+
+		processor = UnicastProcessor.create(overriddenQueue, overriddenOnOverflow, overriddenOnTerminate);
+		assertEquals(overriddenQueue, processor.queue);
+		assertEquals(overriddenOnOverflow, processor.onOverflow);
+		assertEquals(overriddenOnTerminate, processor.onTerminate);
     }
 }
