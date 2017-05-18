@@ -15,9 +15,12 @@
  */
 package reactor.util;
 
+import java.io.IOException;
+
 import org.junit.Test;
 import reactor.core.Exceptions;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -50,6 +53,36 @@ public class ExceptionTests {
 		IllegalStateException ise = new IllegalStateException("foo");
 
 		assertFalse(Exceptions.isOverflow(ise));
+	}
+
+	@Test
+	public void multipleWithNullVararg() {
+		assertThat(Exceptions.multiple(null))
+				.isInstanceOf(RuntimeException.class)
+				.hasMessage("Multiple exceptions")
+	            .hasNoSuppressedExceptions();
+	}
+
+	@Test
+	public void multipleWithOneVararg() {
+		IOException e1 = new IOException("boom");
+
+		assertThat(Exceptions.multiple(e1))
+				.isInstanceOf(RuntimeException.class)
+				.hasMessage("Multiple exceptions")
+	            .hasSuppressedException(e1);
+	}
+
+	@Test
+	public void multipleWithTwoVararg() {
+		IOException e1 = new IOException("boom");
+		IllegalArgumentException  e2 = new IllegalArgumentException("boom");
+
+		assertThat(Exceptions.multiple(e1, e2))
+				.isInstanceOf(RuntimeException.class)
+				.hasMessage("Multiple exceptions")
+	            .hasSuppressedException(e1)
+	            .hasSuppressedException(e2);
 	}
 
 }

@@ -45,6 +45,7 @@ ext {
   // Testing
   assertJVersion = '3.6.1'
   testAddonVersion = '3.1.0.BUILD-SNAPSHOT'
+  mockitoVersion = '2.7.22'
   javadocLinks = ["http://docs.oracle.com/javase/8/docs/api/",
 				  "http://docs.oracle.com/javaee/6/api/",
 				  "http://www.reactive-streams.org/reactive-streams-1.0.0-javadoc/"] as String[]
@@ -187,7 +188,8 @@ configure(rootProject) {
 
     testCompile "org.hamcrest:hamcrest-library:1.3",
             "org.testng:testng:6.8.5",
-			"org.assertj:assertj-core:$assertJVersion"
+			"org.assertj:assertj-core:$assertJVersion",
+			"org.mockito:mockito-core:$mockitoVersion"
   }
 
   task loops(type: Test) {
