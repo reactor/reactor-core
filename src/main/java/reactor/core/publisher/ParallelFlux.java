@@ -148,7 +148,8 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 
 	/**
 	 * Activate assembly tracing for this particular {@link ParallelFlux}, in case of an
-	 * error upstream of the checkpoint.
+	 * error upstream of the checkpoint. Tracing incurs the cost of an exception stack trace
+	 * creation.
 	 * <p>
 	 * It should be placed towards the end of the reactive chain, as errors
 	 * triggered downstream of it cannot be observed and augmented with assembly trace.
@@ -160,21 +161,53 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Activate assembly tracing for this particular {@link ParallelFlux} and give it
-	 * a description that will be reflected in the assembly traceback, in case of an error
-	 * upstream of the checkpoint.
+	 * Activate assembly marker for this particular {@link ParallelFlux} by giving it a description that
+	 * will be reflected in the assembly traceback in case of an error upstream of the
+	 * checkpoint. Note that unlike {@link #checkpoint()}, this doesn't create a
+	 * filled stack trace, avoiding the main cost of the operator.
+	 * However, as a trade-off the description must be unique enough for the user to find
+	 * out where this ParallelFlux was assembled. If you only want a generic description, and
+	 * still rely on the stack trace to find the assembly site, use the
+	 * {@link #checkpoint(String, boolean)} variant.
 	 * <p>
 	 * It should be placed towards the end of the reactive chain, as errors
 	 * triggered downstream of it cannot be observed and augmented with assembly trace.
-	 * <p>
-	 * The description could for example be a meaningful name for the assembled
-	 * flux or a wider correlation ID.
 	 *
-	 * @param description a description to include in the assembly traceback.
-	 * @return the assembly tracing {@link ParallelFlux}
+	 * @param description a unique enough description to include in the light assembly traceback.
+	 * @return the assembly marked {@link ParallelFlux}
 	 */
 	public final ParallelFlux<T> checkpoint(String description) {
-		return new ParallelFluxOnAssembly<>(this, description);
+		return new ParallelFluxOnAssembly<>(this, description, true);
+	}
+
+	/**
+	 * Activate assembly tracing or the lighter assembly marking depending on the
+	 * {@code forceStackTrace} option.
+	 * <p>
+	 * By setting the {@code forceStackTrace} parameter to {@literal true}, activate assembly
+	 * tracing for this particular {@link ParallelFlux} and give it a description that
+	 * will be reflected in the assembly traceback in case of an error upstream of the
+	 * checkpoint. Note that unlike {@link #checkpoint(String)}, this will incur
+	 * the cost of an exception stack trace creation. The description could for
+	 * example be a meaningful name for the assembled ParallelFlux or a wider correlation ID,
+	 * since the stack trace will always provide enough information to locate where this
+	 * ParallelFlux was assembled.
+	 * <p>
+	 * By setting {@code forceStackTrace} to {@literal false}, behaves like
+	 * {@link #checkpoint(String)} and is subject to the same caveat in choosing the
+	 * description.
+	 * <p>
+	 * It should be placed towards the end of the reactive chain, as errors
+	 * triggered downstream of it cannot be observed and augmented with assembly marker.
+	 *
+	 * @param description a description (must be unique enough if forceStackTrace is set
+	 * to false).
+	 * @param forceStackTrace false to make a light checkpoint without a stacktrace, true
+	 * to use a stack trace.
+	 * @return the assembly marked {@link ParallelFlux}.
+	 */
+	public final ParallelFlux<T> checkpoint(String description, boolean forceStackTrace) {
+		return new ParallelFluxOnAssembly<>(this, description, !forceStackTrace);
 	}
 
 	/**

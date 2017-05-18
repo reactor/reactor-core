@@ -108,7 +108,25 @@ public class FluxOnAssemblyTest {
 	}
 
 	@Test
-	public void checkpointDescription() {
+	public void checkpointDescriptionAndForceStack() {
+		StringWriter sw = new StringWriter();
+		Flux<Integer> tested = Flux.range(1, 10)
+		                           .map(i -> i < 3 ? i : null)
+		                           .filter(i -> i % 2 == 0)
+		                           .checkpoint("foo", true)
+		                           .doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
+
+		StepVerifier.create(tested)
+		            .expectNext(2)
+		            .verifyError();
+
+		String debugStack = sw.toString();
+
+		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.FluxFilterFuseable], described as [foo] :");
+	}
+
+	@Test
+	public void checkpointWithDescriptionIsLight() {
 		StringWriter sw = new StringWriter();
 		Flux<Integer> tested = Flux.range(1, 10)
 		                           .map(i -> i < 3 ? i : null)
@@ -122,7 +140,7 @@ public class FluxOnAssemblyTest {
 
 		String debugStack = sw.toString();
 
-		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.FluxFilterFuseable], described as [foo] :");
+		assertThat(debugStack).contains("Assembly site of producer [reactor.core.publisher.FluxFilterFuseable] is identified by light checkpoint [foo].");
 	}
 
 	@Test
@@ -143,7 +161,24 @@ public class FluxOnAssemblyTest {
 	}
 
 	@Test
-	public void monoCheckpointDescription() {
+	public void monoCheckpointDescriptionAndForceStack() {
+		StringWriter sw = new StringWriter();
+		Mono<Object> tested = Mono.just(1)
+		                          .map(i -> null)
+		                          .filter(Objects::nonNull)
+		                          .checkpoint("foo", true)
+		                          .doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
+
+		StepVerifier.create(tested)
+		            .verifyError();
+
+		String debugStack = sw.toString();
+
+		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.MonoFilterFuseable], described as [foo] :");
+	}
+
+	@Test
+	public void monoCheckpointWithDescriptionIsLight() {
 		StringWriter sw = new StringWriter();
 		Mono<Object> tested = Mono.just(1)
 		                          .map(i -> null)
@@ -156,7 +191,7 @@ public class FluxOnAssemblyTest {
 
 		String debugStack = sw.toString();
 
-		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.MonoFilterFuseable], described as [foo] :");
+		assertThat(debugStack).contains("Assembly site of producer [reactor.core.publisher.MonoFilterFuseable] is identified by light checkpoint [foo].");
 	}
 
 	@Test
@@ -178,7 +213,25 @@ public class FluxOnAssemblyTest {
 	}
 
 	@Test
-	public void parallelFluxCheckpointDescription() {
+	public void parallelFluxCheckpointDescriptionAndForceStack() {
+		StringWriter sw = new StringWriter();
+		Flux<Integer> tested = Flux.range(1, 10)
+		                           .parallel(2)
+		                           .composeGroup(g -> g.map(i -> (Integer) null))
+		                           .checkpoint("foo", true)
+		                           .sequential()
+		                           .doOnError(t -> t.printStackTrace(new PrintWriter(sw)));
+
+		StepVerifier.create(tested)
+		            .verifyError();
+
+		String debugStack = sw.toString();
+
+		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.ParallelSource], described as [foo] :");
+	}
+
+	@Test
+	public void parallelFluxCheckpointDescriptionIsLight() {
 		StringWriter sw = new StringWriter();
 		Flux<Integer> tested = Flux.range(1, 10)
 		                           .parallel(2)
@@ -192,7 +245,7 @@ public class FluxOnAssemblyTest {
 
 		String debugStack = sw.toString();
 
-		assertThat(debugStack).contains("Assembly trace from producer [reactor.core.publisher.ParallelSource], described as [foo] :");
+		assertThat(debugStack).contains("Assembly site of producer [reactor.core.publisher.ParallelSource] is identified by light checkpoint [foo].");
 	}
 
 }
