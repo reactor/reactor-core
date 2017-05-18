@@ -70,7 +70,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 *
 	 * @param <T> Type of dispatched signal
 	 */
-	public static class Builder<T> {
+	public final static class Builder<T> {
 
 		String name;
 		ExecutorService executor;

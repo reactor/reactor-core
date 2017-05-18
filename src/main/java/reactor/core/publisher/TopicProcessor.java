@@ -73,7 +73,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 *
 	 * @param <T> Type of dispatched signal
 	 */
-	public static class Builder<T> {
+	public final static class Builder<T> {
 
 		String name;
 		ExecutorService executor;

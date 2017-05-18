@@ -48,7 +48,7 @@ public final class UnicastProcessor<T>
 	 *
 	 * @param <T> Type of dispatched signal
 	 */
-	public static class Builder<T> {
+	public final static class Builder<T> {
 
 		static final Disposable NOOP_DISPOSABLE = () -> {};
 

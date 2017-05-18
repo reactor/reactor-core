@@ -57,7 +57,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	 *
 	 * @param <T> Type of dispatched signal
 	 */
-	public static class Builder<T> {
+	public final static class Builder<T> {
 		boolean autoCancel;
 		int bufferSize;
 
