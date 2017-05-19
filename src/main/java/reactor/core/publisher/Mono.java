@@ -3214,10 +3214,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * the emission of this Mono's value.
 	 * @return this Mono, but delayed until the given publisher first emits or terminates.
 	 * @apiNote the behavior of this operator, especially with regard to fusion, can be a
-	 * bit confusing. Probably prefer {@link #delayUntilOther(Publisher)}. This might get
-	 * deprecated in the next 3.1.x version.
+	 * bit confusing. Probably prefer {@link #delayUntilOther(Publisher)}.
+	 * @deprecated This will be removed in 3.1.0, use {@link #delayUntilOther(Publisher)} instead,
+	 * associated with {@link Flux#take(long) take(1)} for {@link Flux} if you really want the onNext
+	 * triggers" behavior.
 	 */
-	//TODO update the marble URL to a tag pre-release
+	@Deprecated
 	public Mono<T> untilOther(Publisher<?> anyPublisher) {
 		Objects.requireNonNull(anyPublisher, "anyPublisher required");
 		if (this instanceof MonoUntilOther) {
@@ -3243,10 +3245,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * the emission of this Mono's value.
 	 * @return this Mono, but delayed until the given publisher first emits or terminates.
 	 * @apiNote the behavior of this operator, especially with regard to fusion, can be a
-	 * bit confusing. Probably prefer {@link #delayUntilOtherDelayError(Publisher)}. This
-	 * might get deprecated in the next 3.1.x version.
+	 * bit confusing. Probably prefer {@link #delayUntilOtherDelayError(Publisher)}.
+	 * @deprecated This will be removed in 3.1.0, use {@link #delayUntilOther(Publisher)} instead,
+	 * associated with {@link Flux#take(long) take(1)} for {@link Flux} if you really want the onNext
+	 * triggers" behavior.
 	 */
-	//TODO update the marble URL to a tag pre-release
+	@Deprecated
 	public Mono<T> untilOtherDelayError(Publisher<?> anyPublisher) {
 		Objects.requireNonNull(anyPublisher, "anyPublisher required");
 		if (this instanceof MonoUntilOther) {
