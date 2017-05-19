@@ -1504,7 +1504,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * {@link #delayUntilOtherDelayError(Publisher)}, in case one of the triggers
 	 * errors, that error is delayed until all publishers have triggered, and multiple
 	 * errors are thus combined into one. Otherwise, that error is propagated immediately
-	 * downstream.
+	 * downstream. In both cases, an error in the source is immediately propagated.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/delayUntilOther.png" alt="">
 	 *
@@ -1527,7 +1527,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * {@link #delayUntilOtherDelayError(Publisher)}) are fused together.
 	 * The triggers are subscribed to in sequence, once the previous trigger
 	 * completes. In case one of the triggers errors, that error is delayed until all
-	 * publishers have triggered, and multiple errors are thus combined into one.
+	 * publishers have triggered, and multiple errors are thus combined into one. An error
+	 * in the source is immediately propagated.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/delayUntilOther.png" alt="">
 	 *
@@ -1557,7 +1558,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * {@link #delayUntilOtherDelayError(Publisher)}, then in case one of the triggers
 	 * errors, that error is delayed until all publishers have triggered, and multiple
 	 * errors are thus combined into one. Otherwise, that error is propagated immediately
-	 * downstream.
+	 * downstream. In both cases, an error in the source is immediately propagated.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/delayUntil.png" alt="">
 	 *
@@ -1588,7 +1589,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * {@link #delayUntilOtherDelayError(Publisher)}) are fused together.
 	 * The triggers are generated and subscribed to in sequence, once the previous trigger
 	 * completes. In case one of the triggers errors, that error is delayed until all
-	 * publishers have triggered, and multiple errors are thus combined into one.
+	 * publishers have triggered, and multiple errors are thus combined into one. An error
+	 * in the source is immediately propagated.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/delayUntil.png" alt="">
 	 *

@@ -88,6 +88,8 @@ final class MonoDelayUntil<T> extends Mono<T> {
 	static final class DelayUntilCoordinator<T>
 			extends Operators.MonoSubscriber<T, T> {
 
+		static final DelayUntilTrigger[] NO_TRIGGER = new DelayUntilTrigger[0];
+
 		final int                                                n;
 		final boolean                                            delayError;
 		final Function<? super T, ? extends Publisher<?>>[] otherGenerators;
@@ -112,7 +114,7 @@ final class MonoDelayUntil<T> extends Mono<T> {
 			this.n = otherGenerators.length;
 
 			this.delayError = delayError;
-			triggerSubscribers = null;
+			triggerSubscribers = NO_TRIGGER;
 		}
 
 		@Override
@@ -163,7 +165,7 @@ final class MonoDelayUntil<T> extends Mono<T> {
 		}
 
 		private void subscribeNextTrigger(T value, int triggerIndex) {
-			if (triggerSubscribers == null) {
+			if (triggerSubscribers == NO_TRIGGER) {
 				triggerSubscribers = new DelayUntilTrigger[otherGenerators.length];
 			}
 

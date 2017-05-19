@@ -19,10 +19,13 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import org.junit.Test;
 import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscription;
+import reactor.core.Disposable;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -291,5 +294,18 @@ public class MonoDelayUntilTest {
 		)
 	                .thenAwait(Duration.ofSeconds(4))
 	                .verifyErrorMessage("boom");
+	}
+
+	@Test
+	public void immediateCancel() {
+		AtomicReference<String> value = new AtomicReference<>();
+		AtomicReference<Throwable> error = new AtomicReference<>();
+
+		Disposable s = Mono.just("foo")
+		                   .delayUntilOther(Mono.just(1))
+		                   .subscribe(value::set, error::set, () -> {}, Subscription::cancel);
+
+		assertThat(value.get()).isNull();
+		assertThat(error.get()).isNull(); //would be a NPE if trigger array wasn't pre-initialized
 	}
 }
