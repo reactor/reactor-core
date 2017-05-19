@@ -28,18 +28,12 @@ public class ScannableTest {
 	static final Scannable.GenericAttr<String> CUSTOM_STRING = new Scannable.GenericAttr<>("global");
 
 	static final Scannable scannable = key -> {
-		if (key.equals(Scannable.IntAttr.BUFFERED)) {
-			return 1;
-		}
-		else if (key.equals(Scannable.BooleanAttr.TERMINATED)) {
-			return true;
-		}
-		else if (key.equals(Scannable.ScannableAttr.PARENT)) {
-			return null;
-		}
-		else if (key.equals(Scannable.ScannableAttr.ACTUAL)) {
+		if (key == Scannable.IntAttr.BUFFERED) return 1;
+		if (key == Scannable.BooleanAttr.TERMINATED) return true;
+		if (key == Scannable.ScannableAttr.PARENT) return null;
+		if (key == Scannable.ScannableAttr.ACTUAL)
 			return (Scannable) k -> (Scannable) k2 -> null;
-		}
+
 		return null;
 	};
 

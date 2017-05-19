@@ -1163,7 +1163,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
 			if (key == BooleanAttr.TERMINATED) return processor.isTerminated();
 			if (key == BooleanAttr.CANCELLED) return !running.get();
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM )return pendingRequest.getAsLong();
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM ) return pendingRequest.getAsLong();
 			if (key == IntAttr.BUFFERED) return processor.ringBuffer.getCursor() - sequence.getAsLong();
 
 			return InnerProducer.super.scanUnsafe(key);
