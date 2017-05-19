@@ -204,7 +204,7 @@ final class MonoFlatMap<T, R> extends MonoSource<T, R> implements Fuseable {
 			@Override
 			public Object scanUnsafe(Attr key) {
 				if (key == ScannableAttr.PARENT) return s;
-				if (key == ScannableAttr.ACTUAL) 	return parent;
+				if (key == ScannableAttr.ACTUAL) return parent;
 				if (key == BooleanAttr.TERMINATED) return done;
 				if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
 
