@@ -1051,210 +1051,266 @@ public class WorkQueueProcessorTest {
 	}
 
 	@Test
-	@Deprecated
-	public void factoryMethods() {
-		String defaultName = WorkQueueProcessor.class.getSimpleName();
-		int defaultBufferSize = QueueSupplier.SMALL_BUFFER_SIZE;
-		Class<? extends WaitStrategy> defaultWaitStrategyClass = WaitStrategy.liteBlocking().getClass();
-		boolean defaultAutoCancel = true;
-		Class<?> singleSequencerClass = SingleProducerSequencer.class;
-		Class<?> sharedSequencerClass = MultiProducerRingBuffer.class;
-
-		String overriddenName = "testDeprecatedFactoryMethods";
-		ExecutorService overriddenExecutor = Executors.newSingleThreadExecutor();
-		ExecutorService overriddenRequestTaskExecutor = Executors.newSingleThreadExecutor();
-		int overriddenBufferSize = 1024;
-		WaitStrategy overriddenWaitStrategy = WaitStrategy.busySpin();
-
+	public void createDefault() {
 		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create();
-		assertEquals(defaultName, processor.name);
-		assertEquals(defaultBufferSize, processor.getBufferSize());
-		assertEquals(defaultAutoCancel, processor.autoCancel);
-		assertEquals(singleSequencerClass, processor.ringBuffer.getSequencer().getClass());
-		assertEquals(defaultWaitStrategyClass, processor.ringBuffer.getSequencer().waitStrategy.getClass());
+		assertProcessor(processor, false, null, null, null, null, null, null);
+	}
 
-		processor = WorkQueueProcessor.create(false);
-		assertEquals(defaultName, processor.name);
-		assertEquals(defaultBufferSize, processor.getBufferSize());
-		assertEquals(false, processor.autoCancel);
-		assertEquals(singleSequencerClass, processor.ringBuffer.getSequencer().getClass());
-		assertEquals(defaultWaitStrategyClass, processor.ringBuffer.getSequencer().waitStrategy.getClass());
+	@Test
+	@Deprecated
+	public void createOverrideAutoCancel() {
+		boolean autoCancel = false;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create(autoCancel);
+		assertProcessor(processor, false, null, null, null, autoCancel, null, null);
+	}
 
-		processor = WorkQueueProcessor.create(overriddenName);
-		assertEquals(overriddenName, processor.name);
-		assertEquals(defaultBufferSize, processor.getBufferSize());
-		assertEquals(defaultAutoCancel, processor.autoCancel);
-		assertEquals(singleSequencerClass, processor.ringBuffer.getSequencer().getClass());
-		assertEquals(defaultWaitStrategyClass, processor.ringBuffer.getSequencer().waitStrategy.getClass());
+	@Test
+	@Deprecated
+	public void createOverrideName() {
+		String name = "nameOverride";
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create(name);
+		assertProcessor(processor, false, name, null, null, null, null, null);
+	}
 
-		processor = WorkQueueProcessor.create(overriddenName, overriddenBufferSize);
-		assertEquals(overriddenName, processor.name);
-		assertEquals(overriddenBufferSize, processor.getBufferSize());
-		assertEquals(defaultAutoCancel, processor.autoCancel);
-		assertEquals(singleSequencerClass, processor.ringBuffer.getSequencer().getClass());
-		assertEquals(defaultWaitStrategyClass, processor.ringBuffer.getSequencer().waitStrategy.getClass());
+	@Test
+	@Deprecated
+	public void createOverrideNameBufferSize() {
+		String name = "nameOverride";
+		int bufferSize = 1024;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create(name, bufferSize);
+		assertProcessor(processor, false, name, bufferSize, null, null, null, null);
+	}
 
-		processor = WorkQueueProcessor.create(overriddenName, overriddenBufferSize, false);
-		assertEquals(overriddenName, processor.name);
-		assertEquals(overriddenBufferSize, processor.getBufferSize());
-		assertEquals(false, processor.autoCancel);
-		assertEquals(singleSequencerClass, processor.ringBuffer.getSequencer().getClass());
-		assertEquals(defaultWaitStrategyClass, processor.ringBuffer.getSequencer().waitStrategy.getClass());
+	@Test
+	@Deprecated
+	public void createOverrideNameBufferSizeAutoCancel() {
+		String name = "nameOverride";
+		int bufferSize = 1024;
+		boolean autoCancel = false;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create(name, bufferSize, autoCancel);
+		assertProcessor(processor, false, name, bufferSize, null, autoCancel, null, null);
+	}
 
-		processor = WorkQueueProcessor.create(overriddenName, overriddenBufferSize, overriddenWaitStrategy);
-		assertEquals(overriddenName, processor.name);
-		assertEquals(overriddenBufferSize, processor.getBufferSize());
-		assertEquals(defaultAutoCancel, processor.autoCancel);
-		assertEquals(singleSequencerClass, processor.ringBuffer.getSequencer().getClass());
-		assertEquals(overriddenWaitStrategy.getClass(), processor.ringBuffer.getSequencer().waitStrategy.getClass());
+	@Test
+	@Deprecated
+	public void createOverrideNameBufferSizeWaitStrategy() {
+		String name = "nameOverride";
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create(name, bufferSize, waitStrategy);
+		assertProcessor(processor, false, name, bufferSize, waitStrategy, null, null, null);
+	}
 
-		processor = WorkQueueProcessor.create(overriddenName, overriddenBufferSize, overriddenWaitStrategy, false);
-		assertEquals(overriddenName, processor.name);
-		assertEquals(overriddenBufferSize, processor.getBufferSize());
-		assertEquals(false, processor.autoCancel);
-		assertEquals(singleSequencerClass, processor.ringBuffer.getSequencer().getClass());
-		assertEquals(overriddenWaitStrategy.getClass(), processor.ringBuffer.getSequencer().waitStrategy.getClass());
+	@Test
+	@Deprecated
+	public void createDefaultExecutorOverrideAll() {
+		String name = "nameOverride";
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		boolean autoCancel = false;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create(name, bufferSize, waitStrategy, autoCancel);
+		assertProcessor(processor, false, name, bufferSize, waitStrategy, autoCancel, null, null);
+	}
 
-		processor = WorkQueueProcessor.create(overriddenExecutor);
-		assertEquals(defaultName, processor.name);
-		assertEquals(defaultBufferSize, processor.getBufferSize());
-		assertEquals(defaultAutoCancel, processor.autoCancel);
-		assertEquals(singleSequencerClass, processor.ringBuffer.getSequencer().getClass());
-		assertEquals(defaultWaitStrategyClass, processor.ringBuffer.getSequencer().waitStrategy.getClass());
-		assertEquals(overriddenExecutor, processor.executor);
+	@Test
+	@Deprecated
+	public void createOverrideExecutor() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create(executor);
+		assertProcessor(processor, false, null, null, null, null, executor, null);
+	}
 
-		processor = WorkQueueProcessor.create(overriddenExecutor, false);
-		assertEquals(defaultName, processor.name);
-		assertEquals(defaultBufferSize, processor.getBufferSize());
-		assertEquals(false, processor.autoCancel);
-		assertEquals(singleSequencerClass, processor.ringBuffer.getSequencer().getClass());
-		assertEquals(defaultWaitStrategyClass, processor.ringBuffer.getSequencer().waitStrategy.getClass());
-		assertEquals(overriddenExecutor, processor.executor);
+	@Test
+	@Deprecated
+	public void createOverrideExecutorAutoCancel() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		boolean autoCancel = false;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create(executor, autoCancel);
+		assertProcessor(processor, false, null, null, null, autoCancel, executor, null);
+	}
 
-		processor = WorkQueueProcessor.create(overriddenExecutor, overriddenBufferSize);
-		assertEquals(defaultName, processor.name);
-		assertEquals(overriddenBufferSize, processor.getBufferSize());
-		assertEquals(defaultAutoCancel, processor.autoCancel);
-		assertEquals(singleSequencerClass, processor.ringBuffer.getSequencer().getClass());
-		assertEquals(defaultWaitStrategyClass, processor.ringBuffer.getSequencer().waitStrategy.getClass());
-		assertEquals(overriddenExecutor, processor.executor);
+	@Test
+	@Deprecated
+	public void createOverrideExecutorBufferSize() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create(executor, bufferSize);
+		assertProcessor(processor, false, null, bufferSize, null, null, executor, null);
+	}
 
-		processor = WorkQueueProcessor.create(overriddenExecutor, overriddenBufferSize, false);
-		assertEquals(defaultName, processor.name);
-		assertEquals(overriddenBufferSize, processor.getBufferSize());
-		assertEquals(false, processor.autoCancel);
-		assertEquals(singleSequencerClass, processor.ringBuffer.getSequencer().getClass());
-		assertEquals(defaultWaitStrategyClass, processor.ringBuffer.getSequencer().waitStrategy.getClass());
-		assertEquals(overriddenExecutor, processor.executor);
+	@Test
+	@Deprecated
+	public void createOverrideExecutorBufferSizeAutoCancel() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		boolean autoCancel = false;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create(executor, bufferSize, autoCancel);
+		assertProcessor(processor, false, null, bufferSize, null, autoCancel, executor, null);
+	}
 
-		processor = WorkQueueProcessor.create(overriddenExecutor, overriddenBufferSize, overriddenWaitStrategy);
-		assertEquals(defaultName, processor.name);
-		assertEquals(overriddenBufferSize, processor.getBufferSize());
-		assertEquals(defaultAutoCancel, processor.autoCancel);
-		assertEquals(singleSequencerClass, processor.ringBuffer.getSequencer().getClass());
-		assertEquals(overriddenWaitStrategy.getClass(), processor.ringBuffer.getSequencer().waitStrategy.getClass());
-		assertEquals(overriddenExecutor, processor.executor);
+	@Test
+	@Deprecated
+	public void createOverrideExecutorBufferSizeWaitStrategy() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create(executor, bufferSize, waitStrategy);
+		assertProcessor(processor, false, null, bufferSize, waitStrategy, null, executor, null);
+	}
 
-		processor = WorkQueueProcessor.create(overriddenExecutor, overriddenBufferSize, overriddenWaitStrategy, false);
-		assertEquals(defaultName, processor.name);
-		assertEquals(overriddenBufferSize, processor.getBufferSize());
-		assertEquals(false, processor.autoCancel);
-		assertEquals(singleSequencerClass, processor.ringBuffer.getSequencer().getClass());
-		assertEquals(overriddenWaitStrategy.getClass(), processor.ringBuffer.getSequencer().waitStrategy.getClass());
-		assertEquals(overriddenExecutor, processor.executor);
+	@Test
+	@Deprecated
+	public void createOverrideExecutorBufferSizeWaitStrategyAutoCancel() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		boolean autoCancel = false;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create(executor, bufferSize, waitStrategy, autoCancel);
+		assertProcessor(processor, false, null, bufferSize, waitStrategy, autoCancel, executor, null);
+	}
 
-		processor = WorkQueueProcessor.create(overriddenExecutor, overriddenRequestTaskExecutor, overriddenBufferSize, overriddenWaitStrategy, false);
-		assertEquals(defaultName, processor.name);
-		assertEquals(overriddenBufferSize, processor.getBufferSize());
-		assertEquals(false, processor.autoCancel);
-		assertEquals(singleSequencerClass, processor.ringBuffer.getSequencer().getClass());
-		assertEquals(overriddenWaitStrategy.getClass(), processor.ringBuffer.getSequencer().waitStrategy.getClass());
-		assertEquals(overriddenExecutor, processor.executor);
-		assertEquals(overriddenRequestTaskExecutor, processor.requestTaskExecutor);
+	@Test
+	@Deprecated
+	public void createOverrideAll() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		ExecutorService requestTaskExecutor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		boolean autoCancel = false;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create(executor, requestTaskExecutor, bufferSize, waitStrategy, autoCancel);
+		assertProcessor(processor, false, null, bufferSize, waitStrategy, autoCancel, executor, requestTaskExecutor);
+	}
 
-		processor = WorkQueueProcessor.share(false);
-		assertEquals(defaultName, processor.name);
-		assertEquals(defaultBufferSize, processor.getBufferSize());
-		assertEquals(false, processor.autoCancel);
-		assertEquals(sharedSequencerClass, processor.ringBuffer.getSequencer().getClass());
-		assertEquals(defaultWaitStrategyClass, processor.ringBuffer.getSequencer().waitStrategy.getClass());
+	@Test
+	@Deprecated
+	public void shareOverrideAutoCancel() {
+		boolean autoCancel = false;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.share(autoCancel);
+		assertProcessor(processor, true, null, null, null, autoCancel, null, null);
+	}
 
-		processor = WorkQueueProcessor.share(overriddenName, overriddenBufferSize);
-		assertEquals(overriddenName, processor.name);
-		assertEquals(overriddenBufferSize, processor.getBufferSize());
-		assertEquals(defaultAutoCancel, processor.autoCancel);
-		assertEquals(sharedSequencerClass, processor.ringBuffer.getSequencer().getClass());
-		assertEquals(defaultWaitStrategyClass, processor.ringBuffer.getSequencer().waitStrategy.getClass());
+	@Test
+	@Deprecated
+	public void shareOverrideNameBufferSize() {
+		String name = "nameOverride";
+		int bufferSize = 1024;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.share(name, bufferSize);
+		assertProcessor(processor, true, name, bufferSize, null, null, null, null);
+	}
 
-		processor = WorkQueueProcessor.share(overriddenName, overriddenBufferSize, overriddenWaitStrategy);
-		assertEquals(overriddenName, processor.name);
-		assertEquals(overriddenBufferSize, processor.getBufferSize());
-		assertEquals(defaultAutoCancel, processor.autoCancel);
-		assertEquals(sharedSequencerClass, processor.ringBuffer.getSequencer().getClass());
-		assertEquals(overriddenWaitStrategy.getClass(), processor.ringBuffer.getSequencer().waitStrategy.getClass());
+	@Test
+	@Deprecated
+	public void shareOverrideNameBufferSizeWaitStrategy() {
+		String name = "nameOverride";
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.share(name, bufferSize, waitStrategy);
+		assertProcessor(processor, true, name, bufferSize, waitStrategy, null, null, null);
+	}
 
-		processor = WorkQueueProcessor.share(overriddenName, overriddenBufferSize, overriddenWaitStrategy, false);
-		assertEquals(overriddenName, processor.name);
-		assertEquals(overriddenBufferSize, processor.getBufferSize());
-		assertEquals(false, processor.autoCancel);
-		assertEquals(sharedSequencerClass, processor.ringBuffer.getSequencer().getClass());
-		assertEquals(overriddenWaitStrategy.getClass(), processor.ringBuffer.getSequencer().waitStrategy.getClass());
+	@Test
+	@Deprecated
+	public void shareDefaultExecutorOverrideAll() {
+		String name = "nameOverride";
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		boolean autoCancel = false;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.share(name, bufferSize, waitStrategy, autoCancel);
+		assertProcessor(processor, true, name, bufferSize, waitStrategy, autoCancel, null, null);
+	}
 
-		processor = WorkQueueProcessor.share(overriddenExecutor);
-		assertEquals(defaultName, processor.name);
-		assertEquals(defaultBufferSize, processor.getBufferSize());
-		assertEquals(defaultAutoCancel, processor.autoCancel);
-		assertEquals(sharedSequencerClass, processor.ringBuffer.getSequencer().getClass());
-		assertEquals(defaultWaitStrategyClass, processor.ringBuffer.getSequencer().waitStrategy.getClass());
-		assertEquals(overriddenExecutor, processor.executor);
+	@Test
+	@Deprecated
+	public void shareOverrideExecutor() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.share(executor);
+		assertProcessor(processor, true, null, null, null, null, executor, null);
+	}
 
-		processor = WorkQueueProcessor.share(overriddenExecutor, false);
-		assertEquals(defaultName, processor.name);
-		assertEquals(defaultBufferSize, processor.getBufferSize());
-		assertEquals(false, processor.autoCancel);
-		assertEquals(sharedSequencerClass, processor.ringBuffer.getSequencer().getClass());
-		assertEquals(defaultWaitStrategyClass, processor.ringBuffer.getSequencer().waitStrategy.getClass());
-		assertEquals(overriddenExecutor, processor.executor);
+	@Test
+	@Deprecated
+	public void shareOverrideExecutorAutoCancel() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		boolean autoCancel = false;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.share(executor, autoCancel);
+		assertProcessor(processor, true, null, null, null, autoCancel, executor, null);
+	}
 
-		processor = WorkQueueProcessor.share(overriddenExecutor, overriddenBufferSize);
-		assertEquals(defaultName, processor.name);
-		assertEquals(overriddenBufferSize, processor.getBufferSize());
-		assertEquals(defaultAutoCancel, processor.autoCancel);
-		assertEquals(sharedSequencerClass, processor.ringBuffer.getSequencer().getClass());
-		assertEquals(defaultWaitStrategyClass, processor.ringBuffer.getSequencer().waitStrategy.getClass());
-		assertEquals(overriddenExecutor, processor.executor);
+	@Test
+	@Deprecated
+	public void shareOverrideExecutorBufferSize() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.share(executor, bufferSize);
+		assertProcessor(processor, true, null, bufferSize, null, null, executor, null);
+	}
 
-		processor = WorkQueueProcessor.share(overriddenExecutor, overriddenBufferSize, false);
-		assertEquals(defaultName, processor.name);
-		assertEquals(overriddenBufferSize, processor.getBufferSize());
-		assertEquals(false, processor.autoCancel);
-		assertEquals(sharedSequencerClass, processor.ringBuffer.getSequencer().getClass());
-		assertEquals(defaultWaitStrategyClass, processor.ringBuffer.getSequencer().waitStrategy.getClass());
-		assertEquals(overriddenExecutor, processor.executor);
+	@Test
+	@Deprecated
+	public void shareOverrideExecutorBufferSizeAutoCancel() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		boolean autoCancel = false;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.share(executor, bufferSize, autoCancel);
+		assertProcessor(processor, true, null, bufferSize, null, autoCancel, executor, null);
+	}
 
-		processor = WorkQueueProcessor.share(overriddenExecutor, overriddenBufferSize, overriddenWaitStrategy);
-		assertEquals(defaultName, processor.name);
-		assertEquals(overriddenBufferSize, processor.getBufferSize());
-		assertEquals(defaultAutoCancel, processor.autoCancel);
-		assertEquals(sharedSequencerClass, processor.ringBuffer.getSequencer().getClass());
-		assertEquals(overriddenWaitStrategy.getClass(), processor.ringBuffer.getSequencer().waitStrategy.getClass());
-		assertEquals(overriddenExecutor, processor.executor);
+	@Test
+	@Deprecated
+	public void shareOverrideExecutorBufferSizeWaitStrategy() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.share(executor, bufferSize, waitStrategy);
+		assertProcessor(processor, true, null, bufferSize, waitStrategy, null, executor, null);
+	}
 
-		processor = WorkQueueProcessor.share(overriddenExecutor, overriddenBufferSize, overriddenWaitStrategy, false);
-		assertEquals(defaultName, processor.name);
-		assertEquals(overriddenBufferSize, processor.getBufferSize());
-		assertEquals(false, processor.autoCancel);
-		assertEquals(sharedSequencerClass, processor.ringBuffer.getSequencer().getClass());
-		assertEquals(overriddenWaitStrategy.getClass(), processor.ringBuffer.getSequencer().waitStrategy.getClass());
-		assertEquals(overriddenExecutor, processor.executor);
+	@Test
+	@Deprecated
+	public void shareOverrideExecutorBufferSizeWaitStrategyAutoCancel() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		boolean autoCancel = false;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.share(executor, bufferSize, waitStrategy, autoCancel);
+		assertProcessor(processor, true, null, bufferSize, waitStrategy, autoCancel, executor, null);
+	}
 
-		processor = WorkQueueProcessor.share(overriddenExecutor, overriddenRequestTaskExecutor, overriddenBufferSize, overriddenWaitStrategy, false);
-		assertEquals(defaultName, processor.name);
-		assertEquals(overriddenBufferSize, processor.getBufferSize());
-		assertEquals(false, processor.autoCancel);
-		assertEquals(sharedSequencerClass, processor.ringBuffer.getSequencer().getClass());
-		assertEquals(overriddenWaitStrategy.getClass(), processor.ringBuffer.getSequencer().waitStrategy.getClass());
-		assertEquals(overriddenExecutor, processor.executor);
-		assertEquals(overriddenRequestTaskExecutor, processor.requestTaskExecutor);
+	@Test
+	@Deprecated
+	public void shareOverrideAll() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		ExecutorService requestTaskExecutor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		boolean autoCancel = false;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.share(executor, requestTaskExecutor, bufferSize, waitStrategy, autoCancel);
+		assertProcessor(processor, true, null, bufferSize, waitStrategy, autoCancel, executor, requestTaskExecutor);
+	}
+
+	private void assertProcessor(WorkQueueProcessor<Integer> processor,
+			boolean shared,
+			String name,
+			Integer bufferSize,
+			WaitStrategy waitStrategy,
+			Boolean autoCancel,
+			ExecutorService executor,
+			ExecutorService requestTaskExecutor) {
+
+		String expectedName = name != null ? name : WorkQueueProcessor.class.getSimpleName();
+		int expectedBufferSize = bufferSize != null ? bufferSize : QueueSupplier.SMALL_BUFFER_SIZE;
+		boolean expectedAutoCancel = autoCancel != null ? autoCancel : true;
+		WaitStrategy expectedWaitStrategy = waitStrategy != null ? waitStrategy : WaitStrategy.liteBlocking();
+		Class<?> sequencerClass = shared ? MultiProducerRingBuffer.class : SingleProducerSequencer.class;
+
+		assertEquals(expectedName, processor.name);
+		assertEquals(expectedBufferSize, processor.getBufferSize());
+		assertEquals(expectedAutoCancel, processor.autoCancel);
+		assertEquals(expectedWaitStrategy.getClass(), processor.ringBuffer.getSequencer().waitStrategy.getClass());
+		assertEquals(sequencerClass, processor.ringBuffer.getSequencer().getClass());
+		if (executor != null)
+			assertEquals(executor, processor.executor);
+		if (requestTaskExecutor != null)
+			assertEquals(requestTaskExecutor, processor.requestTaskExecutor);
 	}
 }

@@ -643,30 +643,43 @@ public class EmitterProcessorTest {
 	}
 
 	@Test
-	@Deprecated
-	public void factoryMethods() {
-		int defaultBufferSize = QueueSupplier.SMALL_BUFFER_SIZE;
-		boolean defaultAutoCancel = true;
-		int overriddenBufferSize = 1024;
-
+	public void createDefault() {
 		EmitterProcessor<Integer> processor = EmitterProcessor.create();
-		assertEquals(defaultAutoCancel, processor.autoCancel);
-		assertEquals(defaultBufferSize, processor.prefetch);
-
-		processor = EmitterProcessor.create(overriddenBufferSize);
-		assertEquals(defaultAutoCancel, processor.autoCancel);
-		assertEquals(overriddenBufferSize, processor.prefetch);
-
-		processor = EmitterProcessor.create(false);
-		assertEquals(false, processor.autoCancel);
-		assertEquals(defaultBufferSize, processor.prefetch);
-
-		processor = EmitterProcessor.create(overriddenBufferSize, false);
-		assertEquals(false, processor.autoCancel);
-		assertEquals(overriddenBufferSize, processor.prefetch);
-
+		assertProcessor(processor, null, null);
 	}
 
+	@Test
+	@Deprecated
+	public void createOverrideBufferSize() {
+		int bufferSize = 1024;
+		EmitterProcessor<Integer> processor = EmitterProcessor.create(bufferSize);
+		assertProcessor(processor, bufferSize, null);
+	}
+
+	@Test
+	@Deprecated
+	public void createOverrideAutoCancel() {
+		boolean autoCancel = false;
+		EmitterProcessor<Integer> processor = EmitterProcessor.create(autoCancel);
+		assertProcessor(processor, null, autoCancel);
+	}
+
+	@Test
+	@Deprecated
+	public void createOverrideAll() {
+		int bufferSize = 1024;
+		boolean autoCancel = false;
+		EmitterProcessor<Integer> processor = EmitterProcessor.create(bufferSize, autoCancel);
+		assertProcessor(processor, bufferSize, autoCancel);
+	}
+
+	public void assertProcessor(EmitterProcessor<Integer> processor, Integer bufferSize, Boolean autoCancel) {
+		int expectedBufferSize = bufferSize != null ? bufferSize : QueueSupplier.SMALL_BUFFER_SIZE;
+		boolean expectedAutoCancel = autoCancel != null ? autoCancel : true;
+
+		assertEquals(expectedBufferSize, processor.prefetch);
+		assertEquals(expectedAutoCancel, processor.autoCancel);
+	}
 
 	/**
 	 * Concurrent substraction bound to 0 and Long.MAX_VALUE.

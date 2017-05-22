@@ -65,13 +65,13 @@ public final class UnicastProcessor<T>
 		}
 
 		Builder() {
-			queue = QueueSupplier.<T>unbounded().get();
 			this.onTerminate = NOOP_DISPOSABLE;
 			this.onOverflow = t -> {};
 		}
 
 		/**
 		 * Configures queue for this builder. Unbounded queue is used by default.
+		 * If the provided <code>queue</code> is null, default unbounded queue is used.
 		 * @param queue the buffering queue
 		 * @return builder with provided queue
 		 */
@@ -106,6 +106,7 @@ public final class UnicastProcessor<T>
 		 * @return a fresh processor
 		 */
 		public UnicastProcessor<T>  build() {
+			Queue<T> queue = this.queue != null ? this.queue : QueueSupplier.<T>unbounded().get();
 			return new UnicastProcessor<T>(queue, onOverflow, onTerminate);
 		}
 	}

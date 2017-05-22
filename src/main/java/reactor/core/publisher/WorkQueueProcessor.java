@@ -89,15 +89,14 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		}
 
 		Builder() {
-			this.name = WorkQueueProcessor.class.getSimpleName();
 			this.bufferSize = QueueSupplier.SMALL_BUFFER_SIZE;
-			this.waitStrategy = WaitStrategy.liteBlocking();
 			this.autoCancel = true;
 			this.share = false;
 		}
 
 		/**
 		 * Configures name for this builder. Default value is WorkQueueProcessor.
+		 * Name is set to default if the provided <code>name</code> is null.
 		 * @param name Use a new cached ExecutorService and assign this name to the created threads
 		 *             if {@link #executor(ExecutorService)} is not configured.
 		 * @return builder with provided name
@@ -111,7 +110,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 		/**
 		 * Configures buffer size for this builder. Default value is {@link QueueSupplier#SMALL_BUFFER_SIZE}.
-		 * @param bufferSize the internal buffer size to hold signals
+		 * @param bufferSize the internal buffer size to hold signals, must be a power of 2
 		 * @return builder with provided buffer size
 		 */
 		public Builder<T> bufferSize(int bufferSize) {
@@ -129,6 +128,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 		/**
 		 * Configures wait strategy for this builder. Default value is {@link WaitStrategy#liteBlocking()}.
+		 * Wait strategy is set to default if the provided <code>waitStrategy</code> is null.
 		 * @param waitStrategy A RingBuffer WaitStrategy to use instead of the default smart blocking wait strategy.
 		 * @return builder with provided wait strategy
 		 */
@@ -149,7 +149,8 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 		/**
 		 * Configures an {@link ExecutorService} to execute as many event-loop consuming the
-		 * ringbuffer as subscribers.
+		 * ringbuffer as subscribers. Name configured using {@link #name(String)} will be ignored
+		 * if executor is set.
 		 * @param executor A provided ExecutorService to manage threading infrastructure
 		 * @return builder with provided executor
 		 */
@@ -187,6 +188,8 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		 * @return a fresh processor
 		 */
 		public WorkQueueProcessor<T>  build() {
+			String name = this.name != null ? this.name : WorkQueueProcessor.class.getSimpleName();
+			WaitStrategy waitStrategy = this.waitStrategy != null ? this.waitStrategy : WaitStrategy.liteBlocking();
 			ThreadFactory threadFactory = this.executor != null ? null : new EventLoopFactory(name, autoCancel);
 			ExecutorService requestTaskExecutor = this.requestTaskExecutor != null ?
 					this.requestTaskExecutor : defaultRequestTaskExecutor(defaultName(threadFactory, WorkQueueProcessor.class));
@@ -764,7 +767,6 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 				autoCancel);
 	}
 
-	@SuppressWarnings("unchecked")
 	WorkQueueProcessor(ThreadFactory threadFactory,
 			ExecutorService executor,
 			int bufferSize, WaitStrategy waitStrategy, boolean share,

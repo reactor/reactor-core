@@ -47,27 +47,44 @@ public class UnicastProcessorTest {
     }
 
     @Test
-	@Deprecated
-	public void factoryMethods() {
-		Queue<Integer> overriddenQueue = QueueSupplier.<Integer>unbounded().get();
-		Disposable overriddenOnTerminate = () -> {};
-		Consumer<? super Integer> overriddenOnOverflow = t -> {};
-
+	public void createDefault() {
 		UnicastProcessor<Integer> processor = UnicastProcessor.create();
-		assertEquals(QueueSupplier.unbounded().get().getClass(), processor.queue.getClass());
-		assertEquals(UnicastProcessor.Builder.NOOP_DISPOSABLE, processor.onTerminate);
+		assertProcessor(processor, null, null, null);
+	}
 
-		processor = UnicastProcessor.create(overriddenQueue);
-		assertEquals(overriddenQueue, processor.queue);
-		assertEquals(UnicastProcessor.Builder.NOOP_DISPOSABLE, processor.onTerminate);
+	@Test
+	@Deprecated
+	public void createOverrideQueue() {
+		Queue<Integer> queue = QueueSupplier.<Integer>get(10).get();
+		UnicastProcessor<Integer> processor = UnicastProcessor.create(queue);
+		assertProcessor(processor, queue, null, null);
+	}
 
-		processor = UnicastProcessor.create(overriddenQueue, overriddenOnTerminate);
-		assertEquals(overriddenQueue, processor.queue);
-		assertEquals(overriddenOnTerminate, processor.onTerminate);
+	@Test
+	@Deprecated
+	public void createOverrideQueueOnTerminate() {
+		Disposable onTerminate = () -> {};
+		Queue<Integer> queue = QueueSupplier.<Integer>get(10).get();
+		UnicastProcessor<Integer> processor = UnicastProcessor.create(queue, onTerminate);
+		assertProcessor(processor, queue, null, onTerminate);
+	}
 
-		processor = UnicastProcessor.create(overriddenQueue, overriddenOnOverflow, overriddenOnTerminate);
-		assertEquals(overriddenQueue, processor.queue);
-		assertEquals(overriddenOnOverflow, processor.onOverflow);
-		assertEquals(overriddenOnTerminate, processor.onTerminate);
-    }
+	@Test
+	@Deprecated
+	public void createOverrideAll() {
+		Disposable onTerminate = () -> {};
+		Consumer<? super Integer> onOverflow = t -> {};
+		Queue<Integer> queue = QueueSupplier.<Integer>get(10).get();
+		UnicastProcessor<Integer> processor = UnicastProcessor.create(queue, onOverflow, onTerminate);
+		assertProcessor(processor, queue, onOverflow, onTerminate);
+	}
+
+	public void assertProcessor(UnicastProcessor<Integer> processor, Queue<Integer> queue, Consumer<? super Integer> onOverflow, Disposable onTerminate) {
+		Queue<Integer> expectedQueue = queue != null ? queue : QueueSupplier.<Integer>unbounded().get();
+		Disposable expectedOnTerminate = onTerminate != null ? onTerminate : UnicastProcessor.Builder.NOOP_DISPOSABLE;
+		assertEquals(expectedQueue.getClass(), processor.queue.getClass());
+		assertEquals(expectedOnTerminate, processor.onTerminate);
+		if (onOverflow != null)
+			assertEquals(onOverflow, processor.onOverflow);
+	}
 }
