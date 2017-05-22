@@ -206,10 +206,11 @@ public class MonoElementAtTest {
 	public void cancel() {
 		TestPublisher<String> cancelTester = TestPublisher.create();
 
-		cancelTester.flux()
-		            .elementAt(1000)
-		            .subscribe()
-		            .cancel();
+		MonoProcessor<String> processor = cancelTester.flux()
+		                                              .elementAt(1000)
+		                                              .toProcessor();
+		processor.subscribe();
+		processor.cancel();
 
 		cancelTester.assertCancelled();
 	}

@@ -1406,11 +1406,12 @@ public class FluxTests extends AbstractReactorTest {
 
 		final Semaphore doneSemaphore = new Semaphore(0);
 
-		final Mono<List<String>> listPromise = joinStream.flatMap(Flux::fromIterable)
+		final MonoProcessor<List<String>> listPromise = joinStream.flatMap(Flux::fromIterable)
 		                                                 .log("resultStream")
 		                                                 .collectList()
 		                                                 .doOnTerminate((v, e) -> doneSemaphore.release())
-		                                                 .subscribe();
+		                                                 .toProcessor();
+		listPromise.subscribe();
 
 		forkEmitterProcessor.onNext(1);
 		forkEmitterProcessor.onNext(2);

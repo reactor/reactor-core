@@ -138,10 +138,11 @@ public class FluxBufferWhenTest {
 		//"overlapping buffers"
 		EmitterProcessor<Integer> boundaryFlux = EmitterProcessor.create();
 
-		Mono<List<List<Integer>>> res = numbers.bufferWhen(bucketOpening, u -> boundaryFlux )
+		MonoProcessor<List<List<Integer>>> res = numbers.bufferWhen(bucketOpening, u -> boundaryFlux )
 		                                       .buffer()
 		                                       .publishNext()
-		                                       .subscribe();
+		                                       .toProcessor();
+		res.subscribe();
 
 		numbers.onNext(1);
 		numbers.onNext(2);

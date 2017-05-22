@@ -257,7 +257,8 @@ public class FluxSpecTests {
 //		when:"the values are filtered and result is collected"
 		MonoProcessor<List<Integer>> tap = s.distinctUntilChanged()
 		                                    .collectList()
-		                                    .subscribe();
+		                                    .toProcessor();
+		tap.subscribe();
 
 //		then:"collected must remove duplicates"
 		assertThat(tap.block()).containsExactly(1, 2, 3);
@@ -272,7 +273,7 @@ public class FluxSpecTests {
 //		when:"the values are filtered and result is collected"
 		MonoProcessor<List<Integer>> tap = s.distinctUntilChanged(it -> it % 2 == 0)
 		                                    .collectList()
-		                                    .subscribe();
+		                                    .toProcessor();
 
 //		then:"collected must remove duplicates"
 		assertThat(tap.block()).containsExactly(2, 3, 2, 5);
@@ -287,7 +288,8 @@ public class FluxSpecTests {
 //		when:"the values are filtered and result is collected"
 		MonoProcessor<List<Integer>> tap = s.distinct()
 		                                    .collectList()
-		                                    .subscribe();
+		                                    .toProcessor();
+		tap.subscribe();
 
 //		then:"collected should be without duplicates"
 		assertThat(tap.block()).containsExactly(1, 2, 3, 4);
@@ -302,7 +304,8 @@ public class FluxSpecTests {
 //		when: "the values are filtered and result is collected"
 		MonoProcessor<List<Integer>> tap = s.distinct(it -> it % 3)
 		                                    .collectList()
-		                                    .subscribe();
+		                                    .toProcessor();
+		tap.subscribe();
 
 //		then: "collected should be without duplicates"
 		assertThat(tap.block()).containsExactly(1, 2, 3);
@@ -485,7 +488,8 @@ public class FluxSpecTests {
 
 //			when: "the source accepts a value"
 		MonoProcessor<Integer> value = mapped.next()
-		                                     .subscribe();
+		                                     .toProcessor();
+		value.subscribe();
 		source.sink().next(1);
 
 //		then: "the value is mapped"
@@ -985,7 +989,8 @@ public class FluxSpecTests {
 		FluxProcessor<Integer, Integer> source =
 				EmitterProcessor.create();
 		Mono<List<Integer>> reduced = source.collectList();
-		MonoProcessor<List<Integer>> value = reduced.subscribe();
+		MonoProcessor<List<Integer>> value = reduced.toProcessor();
+		value.subscribe();
 
 //		when: "the first value is accepted"
 		source.onNext(1);
