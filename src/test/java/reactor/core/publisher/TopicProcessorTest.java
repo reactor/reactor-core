@@ -30,6 +30,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.WaitStrategy;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,7 +44,7 @@ public class TopicProcessorTest {
 
 	@Test
 	public void testShutdownSuccessfullAfterAllDataIsRequested() throws InterruptedException {
-		TopicProcessor<String> processor = TopicProcessor.create("processor", 4);
+		TopicProcessor<String> processor = TopicProcessor.Builder.<String>create().name("processor").bufferSize(4).build();
 		Publisher<String>
 				publisher = Flux.fromArray(new String[] { "1", "2", "3", "4", "5" });
 		publisher.subscribe(processor);
@@ -66,7 +67,7 @@ public class TopicProcessorTest {
 
 	@Test
 	public void testForceShutdownWhileWaitingForRequest() throws InterruptedException {
-		TopicProcessor<String> processor = TopicProcessor.create("processor", 4);
+		TopicProcessor<String> processor = TopicProcessor.Builder.<String>create().name("processor").bufferSize(4).build();
 		Publisher<String> publisher = Flux.fromArray(new String[] { "1", "2", "3", "4", "5" });
 		publisher.subscribe(processor);
 
@@ -84,7 +85,7 @@ public class TopicProcessorTest {
 
 	@Test
 	public void testForceShutdownWhileWaitingForInitialRequest() throws InterruptedException {
-		TopicProcessor<String> processor = TopicProcessor.create("processor", 4);
+		TopicProcessor<String> processor = TopicProcessor.Builder.<String>create().name("processor").bufferSize(4).build();
 		Publisher<String> publisher = new CappedPublisher(2);
 		publisher.subscribe(processor);
 
@@ -138,7 +139,7 @@ public class TopicProcessorTest {
 
 	@Test
 	public void testForceShutdownWhileWaitingForMoreData() throws InterruptedException {
-		TopicProcessor<String> processor = TopicProcessor.create("processor", 4);
+		TopicProcessor<String> processor = TopicProcessor.Builder.<String>create().name("processor").bufferSize(4).build();
 		Publisher<String> publisher = new CappedPublisher(2);
 		publisher.subscribe(processor);
 
@@ -156,7 +157,7 @@ public class TopicProcessorTest {
 
 	@Test
 	public void testForceShutdownAfterShutdown() throws InterruptedException {
-		TopicProcessor<String> processor = TopicProcessor.create("processor", 4);
+		TopicProcessor<String> processor = TopicProcessor.Builder.<String>create().name("processor").bufferSize(4).build();
 		Publisher<String> publisher = Flux.fromArray(new String[] { "1", "2", "3", "4", "5" });
 		publisher.subscribe(processor);
 
@@ -179,7 +180,7 @@ public class TopicProcessorTest {
 	@Test
 	public void testShutdown() {
 		for (int i = 0; i < 1000; i++) {
-			TopicProcessor<?> dispatcher = TopicProcessor.create("rb-test-dispose", 16);
+			TopicProcessor<?> dispatcher = TopicProcessor.Builder.<String>create().name("rb-test-dispose").bufferSize(16).build();
 			dispatcher.awaitAndShutdown();
 		}
 	}
@@ -188,7 +189,7 @@ public class TopicProcessorTest {
 
 	@Test
 	public void drainTest() throws Exception {
-		final TopicProcessor<Integer> sink = TopicProcessor.create("topic");
+		final TopicProcessor<Integer> sink = TopicProcessor.Builder.<Integer>create().name("topic").build();
 		sink.onNext(1);
 		sink.onNext(2);
 		sink.onNext(3);
@@ -231,7 +232,7 @@ public class TopicProcessorTest {
 	public void chainedTopicProcessor() throws Exception{
 		ExecutorService es = Executors.newFixedThreadPool(2);
 		try {
-			TopicProcessor<String> bc = TopicProcessor.create(es, 16);
+			TopicProcessor<String> bc = TopicProcessor.Builder.<String>create().executor(es).bufferSize(16).build();
 
 			int elems = 100;
 			CountDownLatch latch = new CountDownLatch(elems);
@@ -252,7 +253,7 @@ public class TopicProcessorTest {
 	public void testTopicProcessorGetters() {
 
 		final int TEST_BUFFER_SIZE = 16;
-		TopicProcessor<Object> processor = TopicProcessor.create("testProcessor", TEST_BUFFER_SIZE);
+		TopicProcessor<Object> processor = TopicProcessor.Builder.create().name("testProcessor").bufferSize(TEST_BUFFER_SIZE).build();
 
 		assertEquals(TEST_BUFFER_SIZE, processor.getAvailableCapacity());
 
@@ -262,23 +263,28 @@ public class TopicProcessorTest {
 
 	@Test(expected = IllegalArgumentException.class)
 	public void failNullBufferSize() {
-		TopicProcessor.create("test", 0);
+		TopicProcessor.Builder.create().name("test").bufferSize(0);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void failNonPowerOfTwo() {
-		TopicProcessor.create("test", 3);
+		TopicProcessor.Builder.create().name("test").bufferSize(3);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void failNegativeBufferSize() {
-		TopicProcessor.create("test", -1);
+		TopicProcessor.Builder.create().name("test").bufferSize(-1);
 	}
 
 	//see https://github.com/reactor/reactor-core/issues/445
 	@Test(timeout = 5_000)
 	public void testBufferSize1Shared() throws Exception {
-		TopicProcessor<String> broadcast = TopicProcessor.share("share-name", 1, true);
+		TopicProcessor<String> broadcast = TopicProcessor.Builder.<String>create()
+				.name("share-name")
+				.bufferSize(1)
+				.autoCancel(true)
+				.share(true)
+				.build();
 
 		int simultaneousSubscribers = 3000;
 		CountDownLatch latch = new CountDownLatch(simultaneousSubscribers);
@@ -302,7 +308,7 @@ public class TopicProcessorTest {
 	//see https://github.com/reactor/reactor-core/issues/445
 	@Test(timeout = 5_000)
 	public void testBufferSize1Created() throws Exception {
-		TopicProcessor<String> broadcast = TopicProcessor.create("share-name", 1, true);
+		TopicProcessor<String> broadcast = TopicProcessor.Builder.<String>create().name("share-name").bufferSize(1).autoCancel(true).build();
 
 		int simultaneousSubscribers = 3000;
 		CountDownLatch latch = new CountDownLatch(simultaneousSubscribers);
@@ -329,7 +335,7 @@ public class TopicProcessorTest {
 		String mainName = "topicProcessorRequestTask";
 		String expectedName = mainName + "[request-task]";
 
-		TopicProcessor<Object> processor = TopicProcessor.create(mainName, 8);
+		TopicProcessor<Object> processor = TopicProcessor.Builder.create().name(mainName).bufferSize(8).build();
 
 		processor.requestTask(Operators.cancelledSubscription());
 
@@ -353,9 +359,13 @@ public class TopicProcessorTest {
 		String expectedName = "topicProcessorRequestTaskCreate";
 		//NOTE: the below single executor should not be used usually as requestTask assumes it immediately gets executed
 		ExecutorService customTaskExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, expectedName));
-		TopicProcessor<Object> processor = TopicProcessor.create(
-				Executors.newCachedThreadPool(), customTaskExecutor,
-				8, WaitStrategy.liteBlocking(), true);
+		TopicProcessor<Object> processor = TopicProcessor.Builder.create()
+				.executor(Executors.newCachedThreadPool())
+				.requestTaskExecutor(customTaskExecutor)
+				.bufferSize(8)
+				.waitStrategy(WaitStrategy.liteBlocking())
+				.autoCancel(true)
+				.build();
 
 		processor.requestTask(Operators.cancelledSubscription());
 
@@ -380,9 +390,13 @@ public class TopicProcessorTest {
 		//NOTE: the below single executor should not be used usually as requestTask assumes it immediately gets executed
 		ExecutorService customTaskExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, expectedName));
 
-		TopicProcessor<Object> processor = TopicProcessor.share(
-				Executors.newCachedThreadPool(), customTaskExecutor,
-				8, WaitStrategy.liteBlocking(), true);
+		TopicProcessor<Object> processor = TopicProcessor.Builder.create().share(true)
+				.executor(Executors.newCachedThreadPool())
+				.requestTaskExecutor(customTaskExecutor)
+				.bufferSize(8)
+				.waitStrategy(WaitStrategy.liteBlocking())
+				.autoCancel(true)
+				.build();
 
 		processor.requestTask(Operators.cancelledSubscription());
 
@@ -414,4 +428,269 @@ public class TopicProcessorTest {
 		          );
 	}
 
+
+
+	@Test
+	public void createDefault() {
+		TopicProcessor<Integer> processor = TopicProcessor.create();
+		assertProcessor(processor, false, null, null, null, null, null, null);
+	}
+
+	@Test
+	@Deprecated
+	public void createOverrideAutoCancel() {
+		boolean autoCancel = false;
+		TopicProcessor<Integer> processor = TopicProcessor.create(autoCancel);
+		assertProcessor(processor, false, null, null, null, autoCancel, null, null);
+	}
+
+	@Test
+	@Deprecated
+	public void createOverrideName() {
+		String name = "nameOverride";
+		TopicProcessor<Integer> processor = TopicProcessor.create(name);
+		assertProcessor(processor, false, name, null, null, null, null, null);
+	}
+
+	@Test
+	@Deprecated
+	public void createOverrideNameBufferSize() {
+		String name = "nameOverride";
+		int bufferSize = 1024;
+		TopicProcessor<Integer> processor = TopicProcessor.create(name, bufferSize);
+		assertProcessor(processor, false, name, bufferSize, null, null, null, null);
+	}
+
+	@Test
+	@Deprecated
+	public void createOverrideNameBufferSizeAutoCancel() {
+		String name = "nameOverride";
+		int bufferSize = 1024;
+		boolean autoCancel = false;
+		TopicProcessor<Integer> processor = TopicProcessor.create(name, bufferSize, autoCancel);
+		assertProcessor(processor, false, name, bufferSize, null, autoCancel, null, null);
+	}
+
+	@Test
+	@Deprecated
+	public void createOverrideNameBufferSizeWaitStrategy() {
+		String name = "nameOverride";
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		TopicProcessor<Integer> processor = TopicProcessor.create(name, bufferSize, waitStrategy);
+		assertProcessor(processor, false, name, bufferSize, waitStrategy, null, null, null);
+	}
+
+	@Test
+	@Deprecated
+	public void createDefaultExecutorOverrideAll() {
+		String name = "nameOverride";
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		boolean autoCancel = false;
+		TopicProcessor<Integer> processor = TopicProcessor.create(name, bufferSize, waitStrategy, autoCancel);
+		assertProcessor(processor, false, name, bufferSize, waitStrategy, autoCancel, null, null);
+	}
+
+	@Test
+	@Deprecated
+	public void createOverrideExecutor() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		TopicProcessor<Integer> processor = TopicProcessor.create(executor);
+		assertProcessor(processor, false, null, null, null, null, executor, null);
+	}
+
+	@Test
+	@Deprecated
+	public void createOverrideExecutorAutoCancel() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		boolean autoCancel = false;
+		TopicProcessor<Integer> processor = TopicProcessor.create(executor, autoCancel);
+		assertProcessor(processor, false, null, null, null, autoCancel, executor, null);
+	}
+
+	@Test
+	@Deprecated
+	public void createOverrideExecutorBufferSize() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		TopicProcessor<Integer> processor = TopicProcessor.create(executor, bufferSize);
+		assertProcessor(processor, false, null, bufferSize, null, null, executor, null);
+	}
+
+	@Test
+	@Deprecated
+	public void createOverrideExecutorBufferSizeAutoCancel() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		boolean autoCancel = false;
+		TopicProcessor<Integer> processor = TopicProcessor.create(executor, bufferSize, autoCancel);
+		assertProcessor(processor, false, null, bufferSize, null, autoCancel, executor, null);
+	}
+
+	@Test
+	@Deprecated
+	public void createOverrideExecutorBufferSizeWaitStrategy() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		TopicProcessor<Integer> processor = TopicProcessor.create(executor, bufferSize, waitStrategy);
+		assertProcessor(processor, false, null, bufferSize, waitStrategy, null, executor, null);
+	}
+
+	@Test
+	@Deprecated
+	public void createOverrideExecutorBufferSizeWaitStrategyAutoCancel() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		boolean autoCancel = false;
+		TopicProcessor<Integer> processor = TopicProcessor.create(executor, bufferSize, waitStrategy, autoCancel);
+		assertProcessor(processor, false, null, bufferSize, waitStrategy, autoCancel, executor, null);
+	}
+
+	@Test
+	@Deprecated
+	public void createOverrideAll() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		ExecutorService requestTaskExecutor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		boolean autoCancel = false;
+		TopicProcessor<Integer> processor = TopicProcessor.create(executor, requestTaskExecutor, bufferSize, waitStrategy, autoCancel);
+		assertProcessor(processor, false, null, bufferSize, waitStrategy, autoCancel, executor, requestTaskExecutor);
+	}
+
+	@Test
+	@Deprecated
+	public void shareOverrideAutoCancel() {
+		boolean autoCancel = false;
+		TopicProcessor<Integer> processor = TopicProcessor.share(autoCancel);
+		assertProcessor(processor, true, null, null, null, autoCancel, null, null);
+	}
+
+	@Test
+	@Deprecated
+	public void shareOverrideNameBufferSize() {
+		String name = "nameOverride";
+		int bufferSize = 1024;
+		TopicProcessor<Integer> processor = TopicProcessor.share(name, bufferSize);
+		assertProcessor(processor, true, name, bufferSize, null, null, null, null);
+	}
+
+	@Test
+	@Deprecated
+	public void shareOverrideNameBufferSizeWaitStrategy() {
+		String name = "nameOverride";
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		TopicProcessor<Integer> processor = TopicProcessor.share(name, bufferSize, waitStrategy);
+		assertProcessor(processor, true, name, bufferSize, waitStrategy, null, null, null);
+	}
+
+	@Test
+	@Deprecated
+	public void shareDefaultExecutorOverrideAll() {
+		String name = "nameOverride";
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		boolean autoCancel = false;
+		TopicProcessor<Integer> processor = TopicProcessor.share(name, bufferSize, waitStrategy, autoCancel);
+		assertProcessor(processor, true, name, bufferSize, waitStrategy, autoCancel, null, null);
+	}
+
+	@Test
+	@Deprecated
+	public void shareOverrideExecutor() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		TopicProcessor<Integer> processor = TopicProcessor.share(executor);
+		assertProcessor(processor, true, null, null, null, null, executor, null);
+	}
+
+	@Test
+	@Deprecated
+	public void shareOverrideExecutorAutoCancel() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		boolean autoCancel = false;
+		TopicProcessor<Integer> processor = TopicProcessor.share(executor, autoCancel);
+		assertProcessor(processor, true, null, null, null, autoCancel, executor, null);
+	}
+
+	@Test
+	@Deprecated
+	public void shareOverrideExecutorBufferSize() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		TopicProcessor<Integer> processor = TopicProcessor.share(executor, bufferSize);
+		assertProcessor(processor, true, null, bufferSize, null, null, executor, null);
+	}
+
+	@Test
+	@Deprecated
+	public void shareOverrideExecutorBufferSizeAutoCancel() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		boolean autoCancel = false;
+		TopicProcessor<Integer> processor = TopicProcessor.share(executor, bufferSize, autoCancel);
+		assertProcessor(processor, true, null, bufferSize, null, autoCancel, executor, null);
+	}
+
+	@Test
+	@Deprecated
+	public void shareOverrideExecutorBufferSizeWaitStrategy() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		TopicProcessor<Integer> processor = TopicProcessor.share(executor, bufferSize, waitStrategy);
+		assertProcessor(processor, true, null, bufferSize, waitStrategy, null, executor, null);
+	}
+
+	@Test
+	@Deprecated
+	public void shareOverrideExecutorBufferSizeWaitStrategyAutoCancel() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		boolean autoCancel = false;
+		TopicProcessor<Integer> processor = TopicProcessor.share(executor, bufferSize, waitStrategy, autoCancel);
+		assertProcessor(processor, true, null, bufferSize, waitStrategy, autoCancel, executor, null);
+	}
+
+	@Test
+	@Deprecated
+	public void shareOverrideAll() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		ExecutorService requestTaskExecutor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		boolean autoCancel = false;
+		TopicProcessor<Integer> processor = TopicProcessor.share(executor, requestTaskExecutor, bufferSize, waitStrategy, autoCancel);
+		assertProcessor(processor, true, null, bufferSize, waitStrategy, autoCancel, executor, requestTaskExecutor);
+	}
+
+	private void assertProcessor(TopicProcessor<Integer> processor,
+			boolean shared,
+			String name,
+			Integer bufferSize,
+			WaitStrategy waitStrategy,
+			Boolean autoCancel,
+			ExecutorService executor,
+			ExecutorService requestTaskExecutor) {
+
+		String expectedName = name != null ? name : TopicProcessor.class.getSimpleName();
+		int expectedBufferSize = bufferSize != null ? bufferSize : QueueSupplier.SMALL_BUFFER_SIZE;
+		boolean expectedAutoCancel = autoCancel != null ? autoCancel : true;
+		WaitStrategy expectedWaitStrategy = waitStrategy != null ? waitStrategy : WaitStrategy.phasedOffLiteLock(200, 100, TimeUnit.MILLISECONDS);
+		Class<?> sequencerClass = shared ? MultiProducerRingBuffer.class : SingleProducerSequencer.class;
+
+		assertEquals(expectedName, processor.name);
+		assertEquals(expectedBufferSize, processor.getBufferSize());
+		assertEquals(expectedAutoCancel, processor.autoCancel);
+		assertEquals(expectedWaitStrategy.getClass(), processor.ringBuffer.getSequencer().waitStrategy.getClass());
+		assertEquals(sequencerClass, processor.ringBuffer.getSequencer().getClass());
+		if (executor != null)
+			assertEquals(executor, processor.executor);
+		if (requestTaskExecutor != null)
+			assertEquals(requestTaskExecutor, processor.requestTaskExecutor);
+	}
 }

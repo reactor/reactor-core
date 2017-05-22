@@ -61,7 +61,7 @@ public class BurstyWorkQueueProcessorTests {
 	@Test
 	@Ignore
 	public void test() throws Exception {
-		processor = WorkQueueProcessor.create("test-processor", RINGBUFFER_SIZE);
+		processor = WorkQueueProcessor.Builder.create().name("test-processor").bufferSize(RINGBUFFER_SIZE).build();
 
 		Flux
 				.create((emitter) -> burstyProducer(emitter, PRODUCED_MESSAGES_COUNT, BURST_SIZE))

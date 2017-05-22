@@ -136,8 +136,8 @@ public class ConsistentProcessorTests {
 	}
 
 	private void setupPipeline() {
-		processor = TopicProcessor.create(false);
-		workProcessor = WorkQueueProcessor.create(false);
+		processor = TopicProcessor.Builder.<String>create().autoCancel(false).build();
+		workProcessor = WorkQueueProcessor.Builder.<String>create().autoCancel(false).build();
 		processor.subscribe(workProcessor);
 	}
 

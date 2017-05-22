@@ -41,6 +41,7 @@ import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Stephane Maldini
@@ -52,7 +53,7 @@ public class EmitterProcessorTest {
 		final int elements = 10;
 		CountDownLatch latch = new CountDownLatch(elements + 1);
 
-		Processor<Integer, Integer> processor = EmitterProcessor.create(16);
+		Processor<Integer, Integer> processor = EmitterProcessor.Builder.<Integer>create().bufferSize(16).build();
 
 		List<Integer> list = new ArrayList<>();
 
@@ -114,7 +115,7 @@ public class EmitterProcessorTest {
 		final int elements = 10000;
 		CountDownLatch latch = new CountDownLatch(elements);
 
-		Processor<Integer, Integer> processor = EmitterProcessor.create(1024);
+		Processor<Integer, Integer> processor = EmitterProcessor.Builder.<Integer>create().bufferSize(1024).build();
 
 		EmitterProcessor<Integer> stream = EmitterProcessor.create();
 		FluxSink<Integer> session = stream.sink();
@@ -231,7 +232,7 @@ public class EmitterProcessorTest {
 
 	@Test
 	public void normalAtomicRingBufferBackpressured() {
-		EmitterProcessor<Integer> tp = EmitterProcessor.create(100);
+		EmitterProcessor<Integer> tp = EmitterProcessor.Builder.<Integer>create().bufferSize(100).build();
 		StepVerifier.create(tp, 0L)
 		            .then(() -> {
 			            Assert.assertTrue("No subscribers?", tp.hasDownstreams());
@@ -316,7 +317,7 @@ public class EmitterProcessorTest {
 
 	@Test(expected = IllegalArgumentException.class)
 	public void failNullBufferSize() {
-		EmitterProcessor.create(0);
+		EmitterProcessor.Builder.<Integer>create().bufferSize(0);
 	}
 
 	@Test(expected = NullPointerException.class)
@@ -367,7 +368,7 @@ public class EmitterProcessorTest {
 
 	@Test(expected = IllegalArgumentException.class)
 	public void failNegativeBufferSize() {
-		EmitterProcessor.create(-1);
+		EmitterProcessor.Builder.<Integer>create().bufferSize(-1);
 	}
 
 	static final List<String> DATA     = new ArrayList<>();
@@ -504,7 +505,7 @@ public class EmitterProcessorTest {
 
 	@Test
 	public void testHanging() {
-		FluxProcessor<String, String> processor = EmitterProcessor.create(2);
+		FluxProcessor<String, String> processor = EmitterProcessor.Builder.<String>create().bufferSize(2).build();
 
 		AssertSubscriber<String> first = AssertSubscriber.create(0);
 		processor.log("after-1").subscribe(first);
@@ -532,7 +533,7 @@ public class EmitterProcessorTest {
 
 	@Test
 	public void testNPE() {
-		FluxProcessor<String, String> processor = EmitterProcessor.create(8);
+		FluxProcessor<String, String> processor = EmitterProcessor.Builder.<String>create().bufferSize(8).build();
 		AssertSubscriber<String> first = AssertSubscriber.create(1);
 		processor.log().take(1).subscribe(first);
 
@@ -612,7 +613,7 @@ public class EmitterProcessorTest {
 		int N_THREADS = 3;
 		int N_ITEMS = 8;
 
-		FluxProcessor<String, String> processor = EmitterProcessor.create(4);
+		FluxProcessor<String, String> processor = EmitterProcessor.Builder.<String>create().bufferSize(4).build();
 		List<String> data = new ArrayList<>();
 		for (int i = 1; i <= N_ITEMS; i++) {
 			data.add(String.valueOf(i));
@@ -641,6 +642,44 @@ public class EmitterProcessorTest {
 
 	}
 
+	@Test
+	public void createDefault() {
+		EmitterProcessor<Integer> processor = EmitterProcessor.create();
+		assertProcessor(processor, null, null);
+	}
+
+	@Test
+	@Deprecated
+	public void createOverrideBufferSize() {
+		int bufferSize = 1024;
+		EmitterProcessor<Integer> processor = EmitterProcessor.create(bufferSize);
+		assertProcessor(processor, bufferSize, null);
+	}
+
+	@Test
+	@Deprecated
+	public void createOverrideAutoCancel() {
+		boolean autoCancel = false;
+		EmitterProcessor<Integer> processor = EmitterProcessor.create(autoCancel);
+		assertProcessor(processor, null, autoCancel);
+	}
+
+	@Test
+	@Deprecated
+	public void createOverrideAll() {
+		int bufferSize = 1024;
+		boolean autoCancel = false;
+		EmitterProcessor<Integer> processor = EmitterProcessor.create(bufferSize, autoCancel);
+		assertProcessor(processor, bufferSize, autoCancel);
+	}
+
+	public void assertProcessor(EmitterProcessor<Integer> processor, Integer bufferSize, Boolean autoCancel) {
+		int expectedBufferSize = bufferSize != null ? bufferSize : QueueSupplier.SMALL_BUFFER_SIZE;
+		boolean expectedAutoCancel = autoCancel != null ? autoCancel : true;
+
+		assertEquals(expectedBufferSize, processor.prefetch);
+		assertEquals(expectedAutoCancel, processor.autoCancel);
+	}
 
 	/**
 	 * Concurrent substraction bound to 0 and Long.MAX_VALUE.

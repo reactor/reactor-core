@@ -91,7 +91,7 @@ public class WorkQueueProcessorTest {
 	@Test
 	public void fixedThreadPoolWorkQueueRejectsSubscribers() {
 		ExecutorService executorService = Executors.newFixedThreadPool(2);
-		WorkQueueProcessor<String> bc = WorkQueueProcessor.create(executorService, 16);
+		WorkQueueProcessor<String> bc = WorkQueueProcessor.Builder.<String>create().executor(executorService).bufferSize(16).build();
 		CountDownLatch latch = new CountDownLatch(3);
 		TestWorkQueueSubscriber spec1 = new TestWorkQueueSubscriber(latch, "spec1");
 		TestWorkQueueSubscriber spec2 = new TestWorkQueueSubscriber(latch, "spec2");
@@ -123,7 +123,7 @@ public class WorkQueueProcessorTest {
 	@Test
 	public void forkJoinPoolWorkQueueRejectsSubscribers() {
 		ExecutorService executorService = Executors.newWorkStealingPool(2);
-		WorkQueueProcessor<String> bc = WorkQueueProcessor.create(executorService, 16);
+		WorkQueueProcessor<String> bc = WorkQueueProcessor.Builder.<String>create().executor(executorService).bufferSize(16).build();
 		CountDownLatch latch = new CountDownLatch(2);
 		TestWorkQueueSubscriber spec1 = new TestWorkQueueSubscriber(latch, "spec1");
 		TestWorkQueueSubscriber spec2 = new TestWorkQueueSubscriber(latch, "spec2");
@@ -152,8 +152,12 @@ public class WorkQueueProcessorTest {
 
 	@Test
 	public void highRate() throws Exception {
-		WorkQueueProcessor<String> queueProcessor =
-				WorkQueueProcessor.share("Processor", 256, liteBlocking());
+		WorkQueueProcessor<String> queueProcessor = WorkQueueProcessor.Builder.<String>create()
+				.share(true)
+				.name("Processor")
+				.bufferSize(256)
+				.waitStrategy(liteBlocking())
+				.build();
 		Scheduler timer = Schedulers.newSingle("Timer");
 		queueProcessor.bufferTimeout(32, Duration.ofMillis(2), timer)
 		              .subscribe(new Subscriber<List<String>>() {
@@ -229,7 +233,7 @@ public class WorkQueueProcessorTest {
 
 	@Test(timeout = 15000L)
 	public void disposeSubscribeNoThreadLeak() throws Exception {
-		WorkQueueProcessor<String> wq = WorkQueueProcessor.create(false);
+		WorkQueueProcessor<String> wq = WorkQueueProcessor.Builder.<String>create().autoCancel(false).build();
 
 		Disposable d = wq.subscribe();
 		d.dispose();
@@ -245,7 +249,7 @@ public class WorkQueueProcessorTest {
 	@Test
 	public void retryErrorPropagatedFromWorkQueueSubscriberCold() throws Exception {
 		AtomicInteger errors = new AtomicInteger(3);
-		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.Builder.<Integer>create().autoCancel(false).build();
 		AtomicInteger onNextSignals = new AtomicInteger();
 		wq.onNext(1);
 		wq.onNext(2);
@@ -273,7 +277,7 @@ public class WorkQueueProcessorTest {
 	@Test
 	public void retryErrorPropagatedFromWorkQueueSubscriberHot() throws Exception {
 		AtomicInteger errors = new AtomicInteger(3);
-		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.Builder.<Integer>create().autoCancel(false).build();
 		AtomicInteger onNextSignals = new AtomicInteger();
 
 		StepVerifier.create(wq.doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
@@ -303,7 +307,7 @@ public class WorkQueueProcessorTest {
 	@Test
 	public void retryErrorPropagatedFromWorkQueueSubscriberHotPoisonSignal()
 			throws Exception {
-		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.Builder.<Integer>create().autoCancel(false).build();
 		AtomicInteger onNextSignals = new AtomicInteger();
 
 		StepVerifier.create(wq.doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
@@ -333,7 +337,7 @@ public class WorkQueueProcessorTest {
 	@Test
 	public void retryErrorPropagatedFromWorkQueueSubscriberHotPoisonSignal2()
 			throws Exception {
-		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.Builder.<Integer>create().autoCancel(false).build();
 		AtomicInteger onNextSignals = new AtomicInteger();
 
 		StepVerifier.create(wq.log()
@@ -363,7 +367,7 @@ public class WorkQueueProcessorTest {
 
 	@Test()
 	public void retryNoThreadLeak() throws Exception {
-		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.Builder.<Integer>create().autoCancel(false).build();
 
 		wq.handle((integer, sink) -> sink.error(new RuntimeException()))
 		  .retry(10)
@@ -379,8 +383,8 @@ public class WorkQueueProcessorTest {
 
 	@Test
 	public void simpleTest() throws Exception {
-		final TopicProcessor<Integer> sink = TopicProcessor.create("topic");
-		final WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create("queue");
+		final TopicProcessor<Integer> sink = TopicProcessor.Builder.<Integer>create().name("topic").build();
+		final WorkQueueProcessor<Integer> processor = WorkQueueProcessor.Builder.<Integer>create().name("queue").build();
 
 		int elems = 10000;
 		CountDownLatch latch = new CountDownLatch(elems);
@@ -422,7 +426,7 @@ public class WorkQueueProcessorTest {
 	@Test
 	public void singleThreadWorkQueueDoesntRejectsSubscribers() {
 		ExecutorService executorService = Executors.newSingleThreadExecutor();
-		WorkQueueProcessor<String> bc = WorkQueueProcessor.create(executorService, 2);
+		WorkQueueProcessor<String> bc = WorkQueueProcessor.Builder.<String>create().executor(executorService).bufferSize(2).build();
 		CountDownLatch latch = new CountDownLatch(1);
 		TestWorkQueueSubscriber spec1 = new TestWorkQueueSubscriber(latch, "spec1");
 		TestWorkQueueSubscriber spec2 = new TestWorkQueueSubscriber(latch, "spec2");
@@ -448,7 +452,7 @@ public class WorkQueueProcessorTest {
 	@Test(timeout = 400)
 	public void singleThreadWorkQueueSucceedsWithOneSubscriber() {
 		ExecutorService executorService = Executors.newSingleThreadExecutor();
-		WorkQueueProcessor<String> bc = WorkQueueProcessor.create(executorService, 2);
+		WorkQueueProcessor<String> bc = WorkQueueProcessor.Builder.<String>create().executor(executorService).bufferSize(2).build();
 		CountDownLatch latch = new CountDownLatch(1);
 		TestWorkQueueSubscriber spec1 = new TestWorkQueueSubscriber(latch, "spec1");
 
@@ -554,7 +558,7 @@ public class WorkQueueProcessorTest {
 	public void chainedWorkQueueProcessor() throws Exception{
 		ExecutorService es = Executors.newFixedThreadPool(2);
 		try {
-			WorkQueueProcessor<String> bc = WorkQueueProcessor.create(es, 16);
+			WorkQueueProcessor<String> bc = WorkQueueProcessor.Builder.<String>create().executor(es).bufferSize(16).build();
 
 			int elems = 18;
 			CountDownLatch latch = new CountDownLatch(elems);
@@ -575,7 +579,7 @@ public class WorkQueueProcessorTest {
 	public void testWorkQueueProcessorGetters() {
 
 		final int TEST_BUFFER_SIZE = 16;
-		WorkQueueProcessor<Object> processor = WorkQueueProcessor.create("testProcessor", TEST_BUFFER_SIZE);
+		WorkQueueProcessor<Object> processor = WorkQueueProcessor.Builder.create().name("testProcessor").bufferSize(TEST_BUFFER_SIZE).build();
 
 		assertEquals(TEST_BUFFER_SIZE, processor.getAvailableCapacity());
 
@@ -588,17 +592,17 @@ public class WorkQueueProcessorTest {
 
 	@Test(expected = IllegalArgumentException.class)
 	public void failNonPowerOfTwo() {
-		TopicProcessor.create("test", 3);
+		WorkQueueProcessor.Builder.create().name("test").bufferSize(3);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void failNullBufferSize() {
-		WorkQueueProcessor.create("test", 0);
+		WorkQueueProcessor.Builder.create().name("test").bufferSize(0);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void failNegativeBufferSize() {
-		WorkQueueProcessor.create("test", -1);
+		WorkQueueProcessor.Builder.create().name("test").bufferSize(-1);
 	}
 
 
@@ -606,7 +610,7 @@ public class WorkQueueProcessorTest {
 	public void retryErrorPropagatedFromWorkQueueSubscriberHotPublishOn()
 			throws Exception {
 		AtomicInteger errors = new AtomicInteger(3);
-		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.Builder.<Integer>create().autoCancel(false).build();
 		AtomicInteger onNextSignals = new AtomicInteger();
 
 		StepVerifier.create(wq.log()
@@ -646,7 +650,7 @@ public class WorkQueueProcessorTest {
 	public void retryErrorPropagatedFromWorkQueueSubscriberHotPublishOnPrefetch1()
 			throws Exception {
 		AtomicInteger errors = new AtomicInteger(3);
-		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.Builder.<Integer>create().autoCancel(false).build();
 		AtomicInteger onNextSignals = new AtomicInteger();
 
 		StepVerifier.create(wq.publishOn(Schedulers.parallel(), 1)
@@ -685,7 +689,7 @@ public class WorkQueueProcessorTest {
 	@Test
 	public void retryErrorPropagatedFromWorkQueueSubscriberHotPoisonSignalPublishOn()
 			throws Exception {
-		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.Builder.<Integer>create().autoCancel(false).build();
 		AtomicInteger onNextSignals = new AtomicInteger();
 
 		StepVerifier.create(wq.publishOn(Schedulers.parallel())
@@ -721,7 +725,7 @@ public class WorkQueueProcessorTest {
 	@Test
 	public void retryErrorPropagatedFromWorkQueueSubscriberHotPoisonSignalParallel()
 			throws Exception {
-		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.Builder.<Integer>create().autoCancel(false).build();
 		AtomicInteger onNextSignals = new AtomicInteger();
 
 		Function<Flux<Integer>, Flux<Integer>> function =
@@ -769,7 +773,7 @@ public class WorkQueueProcessorTest {
 	@Test
 	public void retryErrorPropagatedFromWorkQueueSubscriberHotPoisonSignalPublishOnPrefetch1()
 			throws Exception {
-		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.Builder.<Integer>create().autoCancel(false).build();
 		AtomicInteger onNextSignals = new AtomicInteger();
 
 		StepVerifier.create(wq.publishOn(Schedulers.parallel(), 1)
@@ -805,7 +809,7 @@ public class WorkQueueProcessorTest {
 	@Test
 	public void retryErrorPropagatedFromWorkQueueSubscriberHotPoisonSignalFlatMap()
 			throws Exception {
-		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.Builder.<Integer>create().autoCancel(false).build();
 		AtomicInteger onNextSignals = new AtomicInteger();
 
 		StepVerifier.create(wq.publish()
@@ -847,7 +851,7 @@ public class WorkQueueProcessorTest {
 	@Test
 	public void retryErrorPropagatedFromWorkQueueSubscriberHotPoisonSignalFlatMapPrefetch1()
 			throws Exception {
-		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.create(false);
+		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.Builder.<Integer>create().autoCancel(false).build();
 		AtomicInteger onNextSignals = new AtomicInteger();
 
 		StepVerifier.create(wq.flatMap(i -> Mono.just(i)
@@ -885,7 +889,12 @@ public class WorkQueueProcessorTest {
 	//see https://github.com/reactor/reactor-core/issues/445
 	@Test(timeout = 5_000)
 	public void testBufferSize1Shared() throws Exception {
-		WorkQueueProcessor<String> broadcast = WorkQueueProcessor.share("share-name", 1, true);
+		WorkQueueProcessor<String> broadcast = WorkQueueProcessor.Builder.<String>create()
+				.share(true)
+				.name("share-name")
+				.bufferSize(1)
+				.autoCancel(true)
+				.build();
 
 		int simultaneousSubscribers = 3000;
 		CountDownLatch latch = new CountDownLatch(simultaneousSubscribers);
@@ -909,7 +918,11 @@ public class WorkQueueProcessorTest {
 	//see https://github.com/reactor/reactor-core/issues/445
 	@Test(timeout = 5_000)
 	public void testBufferSize1Created() throws Exception {
-		WorkQueueProcessor<String> broadcast = WorkQueueProcessor.create("share-name", 1, true);
+		WorkQueueProcessor<String> broadcast = WorkQueueProcessor.Builder.<String>create()
+				.share(true).name("share-name")
+				.bufferSize(1)
+				.autoCancel(true)
+				.build();
 
 		int simultaneousSubscribers = 3000;
 		CountDownLatch latch = new CountDownLatch(simultaneousSubscribers);
@@ -936,7 +949,7 @@ public class WorkQueueProcessorTest {
 		String mainName = "workQueueProcessorRequestTask";
 		String expectedName = mainName + "[request-task]";
 
-		WorkQueueProcessor<Object> processor = WorkQueueProcessor.create(mainName, 8);
+		WorkQueueProcessor<Object> processor = WorkQueueProcessor.Builder.create().name(mainName).bufferSize(8).build();
 
 		processor.requestTask(Operators.cancelledSubscription());
 
@@ -959,9 +972,13 @@ public class WorkQueueProcessorTest {
 		String expectedName = "workQueueProcessorRequestTaskCreate";
 		//NOTE: the below single executor should not be used usually as requestTask assumes it immediately gets executed
 		ExecutorService customTaskExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, expectedName));
-		WorkQueueProcessor<Object> processor = WorkQueueProcessor.create(
-				Executors.newCachedThreadPool(), customTaskExecutor,
-				8, WaitStrategy.liteBlocking(), true);
+		WorkQueueProcessor<Object> processor = WorkQueueProcessor.Builder.create()
+				.executor(Executors.newCachedThreadPool())
+				.requestTaskExecutor(customTaskExecutor)
+				.bufferSize(8)
+				.waitStrategy(WaitStrategy.liteBlocking())
+				.autoCancel(true)
+				.build();
 
 		processor.requestTask(Operators.cancelledSubscription());
 		processor.subscribe();
@@ -990,9 +1007,13 @@ public class WorkQueueProcessorTest {
 		String expectedName = "workQueueProcessorRequestTaskShare";
 		//NOTE: the below single executor should not be used usually as requestTask assumes it immediately gets executed
 		ExecutorService customTaskExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, expectedName));
-		WorkQueueProcessor<Object> processor = WorkQueueProcessor.share(
-				Executors.newCachedThreadPool(), customTaskExecutor,
-				8, WaitStrategy.liteBlocking(), true);
+		WorkQueueProcessor<Object> processor = WorkQueueProcessor.Builder.create()
+				.executor(Executors.newCachedThreadPool())
+				.requestTaskExecutor(customTaskExecutor)
+				.bufferSize(8)
+				.waitStrategy(WaitStrategy.liteBlocking())
+				.autoCancel(true)
+				.build();
 
 		processor.requestTask(Operators.cancelledSubscription());
 		processor.subscribe();
@@ -1027,5 +1048,269 @@ public class WorkQueueProcessorTest {
 				          customTaskExecutor,
 				          8, WaitStrategy.liteBlocking(), true, true)
 		          );
+	}
+
+	@Test
+	public void createDefault() {
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create();
+		assertProcessor(processor, false, null, null, null, null, null, null);
+	}
+
+	@Test
+	@Deprecated
+	public void createOverrideAutoCancel() {
+		boolean autoCancel = false;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create(autoCancel);
+		assertProcessor(processor, false, null, null, null, autoCancel, null, null);
+	}
+
+	@Test
+	@Deprecated
+	public void createOverrideName() {
+		String name = "nameOverride";
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create(name);
+		assertProcessor(processor, false, name, null, null, null, null, null);
+	}
+
+	@Test
+	@Deprecated
+	public void createOverrideNameBufferSize() {
+		String name = "nameOverride";
+		int bufferSize = 1024;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create(name, bufferSize);
+		assertProcessor(processor, false, name, bufferSize, null, null, null, null);
+	}
+
+	@Test
+	@Deprecated
+	public void createOverrideNameBufferSizeAutoCancel() {
+		String name = "nameOverride";
+		int bufferSize = 1024;
+		boolean autoCancel = false;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create(name, bufferSize, autoCancel);
+		assertProcessor(processor, false, name, bufferSize, null, autoCancel, null, null);
+	}
+
+	@Test
+	@Deprecated
+	public void createOverrideNameBufferSizeWaitStrategy() {
+		String name = "nameOverride";
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create(name, bufferSize, waitStrategy);
+		assertProcessor(processor, false, name, bufferSize, waitStrategy, null, null, null);
+	}
+
+	@Test
+	@Deprecated
+	public void createDefaultExecutorOverrideAll() {
+		String name = "nameOverride";
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		boolean autoCancel = false;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create(name, bufferSize, waitStrategy, autoCancel);
+		assertProcessor(processor, false, name, bufferSize, waitStrategy, autoCancel, null, null);
+	}
+
+	@Test
+	@Deprecated
+	public void createOverrideExecutor() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create(executor);
+		assertProcessor(processor, false, null, null, null, null, executor, null);
+	}
+
+	@Test
+	@Deprecated
+	public void createOverrideExecutorAutoCancel() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		boolean autoCancel = false;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create(executor, autoCancel);
+		assertProcessor(processor, false, null, null, null, autoCancel, executor, null);
+	}
+
+	@Test
+	@Deprecated
+	public void createOverrideExecutorBufferSize() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create(executor, bufferSize);
+		assertProcessor(processor, false, null, bufferSize, null, null, executor, null);
+	}
+
+	@Test
+	@Deprecated
+	public void createOverrideExecutorBufferSizeAutoCancel() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		boolean autoCancel = false;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create(executor, bufferSize, autoCancel);
+		assertProcessor(processor, false, null, bufferSize, null, autoCancel, executor, null);
+	}
+
+	@Test
+	@Deprecated
+	public void createOverrideExecutorBufferSizeWaitStrategy() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create(executor, bufferSize, waitStrategy);
+		assertProcessor(processor, false, null, bufferSize, waitStrategy, null, executor, null);
+	}
+
+	@Test
+	@Deprecated
+	public void createOverrideExecutorBufferSizeWaitStrategyAutoCancel() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		boolean autoCancel = false;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create(executor, bufferSize, waitStrategy, autoCancel);
+		assertProcessor(processor, false, null, bufferSize, waitStrategy, autoCancel, executor, null);
+	}
+
+	@Test
+	@Deprecated
+	public void createOverrideAll() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		ExecutorService requestTaskExecutor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		boolean autoCancel = false;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.create(executor, requestTaskExecutor, bufferSize, waitStrategy, autoCancel);
+		assertProcessor(processor, false, null, bufferSize, waitStrategy, autoCancel, executor, requestTaskExecutor);
+	}
+
+	@Test
+	@Deprecated
+	public void shareOverrideAutoCancel() {
+		boolean autoCancel = false;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.share(autoCancel);
+		assertProcessor(processor, true, null, null, null, autoCancel, null, null);
+	}
+
+	@Test
+	@Deprecated
+	public void shareOverrideNameBufferSize() {
+		String name = "nameOverride";
+		int bufferSize = 1024;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.share(name, bufferSize);
+		assertProcessor(processor, true, name, bufferSize, null, null, null, null);
+	}
+
+	@Test
+	@Deprecated
+	public void shareOverrideNameBufferSizeWaitStrategy() {
+		String name = "nameOverride";
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.share(name, bufferSize, waitStrategy);
+		assertProcessor(processor, true, name, bufferSize, waitStrategy, null, null, null);
+	}
+
+	@Test
+	@Deprecated
+	public void shareDefaultExecutorOverrideAll() {
+		String name = "nameOverride";
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		boolean autoCancel = false;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.share(name, bufferSize, waitStrategy, autoCancel);
+		assertProcessor(processor, true, name, bufferSize, waitStrategy, autoCancel, null, null);
+	}
+
+	@Test
+	@Deprecated
+	public void shareOverrideExecutor() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.share(executor);
+		assertProcessor(processor, true, null, null, null, null, executor, null);
+	}
+
+	@Test
+	@Deprecated
+	public void shareOverrideExecutorAutoCancel() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		boolean autoCancel = false;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.share(executor, autoCancel);
+		assertProcessor(processor, true, null, null, null, autoCancel, executor, null);
+	}
+
+	@Test
+	@Deprecated
+	public void shareOverrideExecutorBufferSize() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.share(executor, bufferSize);
+		assertProcessor(processor, true, null, bufferSize, null, null, executor, null);
+	}
+
+	@Test
+	@Deprecated
+	public void shareOverrideExecutorBufferSizeAutoCancel() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		boolean autoCancel = false;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.share(executor, bufferSize, autoCancel);
+		assertProcessor(processor, true, null, bufferSize, null, autoCancel, executor, null);
+	}
+
+	@Test
+	@Deprecated
+	public void shareOverrideExecutorBufferSizeWaitStrategy() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.share(executor, bufferSize, waitStrategy);
+		assertProcessor(processor, true, null, bufferSize, waitStrategy, null, executor, null);
+	}
+
+	@Test
+	@Deprecated
+	public void shareOverrideExecutorBufferSizeWaitStrategyAutoCancel() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		boolean autoCancel = false;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.share(executor, bufferSize, waitStrategy, autoCancel);
+		assertProcessor(processor, true, null, bufferSize, waitStrategy, autoCancel, executor, null);
+	}
+
+	@Test
+	@Deprecated
+	public void shareOverrideAll() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		ExecutorService requestTaskExecutor = Executors.newSingleThreadExecutor();
+		int bufferSize = 1024;
+		WaitStrategy waitStrategy = WaitStrategy.busySpin();
+		boolean autoCancel = false;
+		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.share(executor, requestTaskExecutor, bufferSize, waitStrategy, autoCancel);
+		assertProcessor(processor, true, null, bufferSize, waitStrategy, autoCancel, executor, requestTaskExecutor);
+	}
+
+	private void assertProcessor(WorkQueueProcessor<Integer> processor,
+			boolean shared,
+			String name,
+			Integer bufferSize,
+			WaitStrategy waitStrategy,
+			Boolean autoCancel,
+			ExecutorService executor,
+			ExecutorService requestTaskExecutor) {
+
+		String expectedName = name != null ? name : WorkQueueProcessor.class.getSimpleName();
+		int expectedBufferSize = bufferSize != null ? bufferSize : QueueSupplier.SMALL_BUFFER_SIZE;
+		boolean expectedAutoCancel = autoCancel != null ? autoCancel : true;
+		WaitStrategy expectedWaitStrategy = waitStrategy != null ? waitStrategy : WaitStrategy.liteBlocking();
+		Class<?> sequencerClass = shared ? MultiProducerRingBuffer.class : SingleProducerSequencer.class;
+
+		assertEquals(expectedName, processor.name);
+		assertEquals(expectedBufferSize, processor.getBufferSize());
+		assertEquals(expectedAutoCancel, processor.autoCancel);
+		assertEquals(expectedWaitStrategy.getClass(), processor.ringBuffer.getSequencer().waitStrategy.getClass());
+		assertEquals(sequencerClass, processor.ringBuffer.getSequencer().getClass());
+		if (executor != null)
+			assertEquals(executor, processor.executor);
+		if (requestTaskExecutor != null)
+			assertEquals(requestTaskExecutor, processor.requestTaskExecutor);
 	}
 }

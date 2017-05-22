@@ -65,6 +65,146 @@ import reactor.util.concurrent.WaitStrategy;
 public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 	/**
+	 * {@link WorkQueueProcessor} builder that can be used to create new
+	 * processors.
+	 *
+	 * @param <T> Type of dispatched signal
+	 */
+	public final static class Builder<T> {
+
+		String name;
+		ExecutorService executor;
+		ExecutorService requestTaskExecutor;
+		int bufferSize;
+		WaitStrategy waitStrategy;
+		boolean share;
+		boolean autoCancel;
+
+		/**
+		 * Creates a new {@link WorkQueueProcessor} builder with default properties.
+		 * @return new WorkQueueProcessor builder
+		 */
+		public static <T> Builder<T> create()  {
+			return new Builder<T>();
+		}
+
+		Builder() {
+			this.bufferSize = QueueSupplier.SMALL_BUFFER_SIZE;
+			this.autoCancel = true;
+			this.share = false;
+		}
+
+		/**
+		 * Configures name for this builder. Default value is WorkQueueProcessor.
+		 * Name is set to default if the provided <code>name</code> is null.
+		 * @param name Use a new cached ExecutorService and assign this name to the created threads
+		 *             if {@link #executor(ExecutorService)} is not configured.
+		 * @return builder with provided name
+		 */
+		public Builder<T> name(String name) {
+			if (executor != null)
+				throw new IllegalArgumentException("Executor service is configured, name will not be used.");
+			this.name = name;
+			return this;
+		}
+
+		/**
+		 * Configures buffer size for this builder. Default value is {@link QueueSupplier#SMALL_BUFFER_SIZE}.
+		 * @param bufferSize the internal buffer size to hold signals, must be a power of 2
+		 * @return builder with provided buffer size
+		 */
+		public Builder<T> bufferSize(int bufferSize) {
+			if (!QueueSupplier.isPowerOfTwo(bufferSize)) {
+				throw new IllegalArgumentException("bufferSize must be a power of 2 : " + bufferSize);
+			}
+
+			if (bufferSize < 1){
+				throw new IllegalArgumentException("bufferSize must be strictly positive, " +
+						"was: "+bufferSize);
+			}
+			this.bufferSize = bufferSize;
+			return this;
+		}
+
+		/**
+		 * Configures wait strategy for this builder. Default value is {@link WaitStrategy#liteBlocking()}.
+		 * Wait strategy is set to default if the provided <code>waitStrategy</code> is null.
+		 * @param waitStrategy A RingBuffer WaitStrategy to use instead of the default smart blocking wait strategy.
+		 * @return builder with provided wait strategy
+		 */
+		public Builder<T> waitStrategy(WaitStrategy waitStrategy) {
+			this.waitStrategy = waitStrategy;
+			return this;
+		}
+
+		/**
+		 * Configures auto-cancel for this builder. Default value is true.
+		 * @param autoCancel automatically cancel
+		 * @return builder with provided auto-cancel
+		 */
+		public Builder<T> autoCancel(boolean autoCancel) {
+			this.autoCancel = autoCancel;
+			return this;
+		}
+
+		/**
+		 * Configures an {@link ExecutorService} to execute as many event-loop consuming the
+		 * ringbuffer as subscribers. Name configured using {@link #name(String)} will be ignored
+		 * if executor is set.
+		 * @param executor A provided ExecutorService to manage threading infrastructure
+		 * @return builder with provided executor
+		 */
+		public Builder<T> executor(ExecutorService executor) {
+			this.executor = executor;
+			return this;
+		}
+
+		/**
+		 * Configures an additional {@link ExecutorService} that is used internally
+		 * on each subscription.
+		 * @param requestTaskExecutor internal request executor
+		 * @return builder with provided internal request executor
+		 */
+		public Builder<T> requestTaskExecutor(ExecutorService requestTaskExecutor) {
+			this.requestTaskExecutor = requestTaskExecutor;
+			return this;
+		}
+
+		/**
+		 * Configures sharing state for this builder. A shared Processor authorizes
+		 * concurrent onNext calls and is suited for multi-threaded publisher that
+		 * will fan-in data.
+		 * @param share true to support concurrent onNext calls
+		 * @return builder with specified sharing
+		 */
+		public Builder<T> share(boolean share) {
+			this.share = share;
+			return this;
+		}
+
+		/**
+		 * Creates a new {@link WorkQueueProcessor} using the properties
+		 * of this builder.
+		 * @return a fresh processor
+		 */
+		public WorkQueueProcessor<T>  build() {
+			String name = this.name != null ? this.name : WorkQueueProcessor.class.getSimpleName();
+			WaitStrategy waitStrategy = this.waitStrategy != null ? this.waitStrategy : WaitStrategy.liteBlocking();
+			ThreadFactory threadFactory = this.executor != null ? null : new EventLoopFactory(name, autoCancel);
+			ExecutorService requestTaskExecutor = this.requestTaskExecutor != null ?
+					this.requestTaskExecutor : defaultRequestTaskExecutor(defaultName(threadFactory, WorkQueueProcessor.class));
+			return new WorkQueueProcessor<>(
+					threadFactory,
+					executor,
+					requestTaskExecutor,
+					bufferSize,
+					waitStrategy,
+					share,
+					autoCancel);
+		}
+	}
+
+	/**
 	 * Create a new WorkQueueProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. <p> A new Cached ThreadExecutorPool will be
 	 * implicitly created.
@@ -72,9 +212,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @return a fresh processor
 	 */
 	public static <E> WorkQueueProcessor<E> create() {
-		return create(WorkQueueProcessor.class.getSimpleName(),
-				QueueSupplier.SMALL_BUFFER_SIZE,
-				null, true);
+		return Builder.<E>create().build();
 	}
 
 	/**
@@ -85,11 +223,11 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
+	 * @deprecated use {@link Builder#build()}
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> create(boolean autoCancel) {
-		return create(WorkQueueProcessor.class.getSimpleName(),
-				QueueSupplier.SMALL_BUFFER_SIZE,
-				null, autoCancel);
+		return Builder.<E>create().autoCancel(autoCancel).build();
 	}
 
 	/**
@@ -100,9 +238,11 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @param service A provided ExecutorService to manage threading infrastructure
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
+	 * @deprecated use {@link Builder#build()}
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> create(ExecutorService service) {
-		return create(service, QueueSupplier.SMALL_BUFFER_SIZE, null, true);
+		return Builder.<E>create().executor(service).build();
 	}
 
 	/**
@@ -115,11 +255,12 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
+	 * @deprecated use {@link Builder#build()}
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> create(ExecutorService service,
 			boolean autoCancel) {
-		return create(service, QueueSupplier.SMALL_BUFFER_SIZE, null,
-				autoCancel);
+		return Builder.<E>create().executor(service).autoCancel(autoCancel).build();
 	}
 
 	/**
@@ -130,9 +271,11 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * threads
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
+	 * @deprecated use {@link Builder#build()}
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> create(String name) {
-		return create(name, QueueSupplier.SMALL_BUFFER_SIZE);
+		return Builder.<E>create().name(name).build();
 	}
 
 	/**
@@ -144,9 +287,11 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @param bufferSize A Backlog Size to mitigate slow subscribers
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
+	 * @deprecated use {@link Builder#build()}
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> create(String name, int bufferSize) {
-		return create(name, bufferSize, null, true);
+		return Builder.<E>create().name(name).bufferSize(bufferSize).build();
 	}
 
 	/**
@@ -161,10 +306,12 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
+	 * @deprecated use {@link Builder#build()}
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> create(String name, int bufferSize,
 			boolean autoCancel) {
-		return create(name, bufferSize, null, autoCancel);
+		return Builder.<E>create().name(name).bufferSize(bufferSize).autoCancel(autoCancel).build();
 	}
 
 	/**
@@ -175,10 +322,12 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @param bufferSize A Backlog Size to mitigate slow subscribers
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
+	 * @deprecated use {@link Builder#build()}
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> create(ExecutorService service,
 			int bufferSize) {
-		return create(service, bufferSize, null, true);
+		return Builder.<E>create().executor(service).bufferSize(bufferSize).build();
 	}
 
 	/**
@@ -191,10 +340,12 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
+	 * @deprecated use {@link Builder#build()}
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> create(ExecutorService service,
 			int bufferSize, boolean autoCancel) {
-		return create(service, bufferSize, null, autoCancel);
+		return Builder.<E>create().executor(service).bufferSize(bufferSize).autoCancel(autoCancel).build();
 	}
 
 	/**
@@ -208,10 +359,12 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * smart blocking wait strategy.
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
+	 * @deprecated use {@link Builder#build()}
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> create(String name, int bufferSize,
 			WaitStrategy strategy) {
-		return create(name, bufferSize, strategy, true);
+		return Builder.<E>create().name(name).bufferSize(bufferSize).waitStrategy(strategy).build();
 	}
 
 	/**
@@ -227,14 +380,17 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
+	 * @deprecated use {@link Builder#build()}
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> create(String name, int bufferSize,
 			WaitStrategy strategy, boolean autoCancel) {
-		return new WorkQueueProcessor<>(name,
-				bufferSize,
-				strategy == null ? WaitStrategy.liteBlocking() : strategy,
-				false,
-				autoCancel);
+		return Builder.<E>create()
+				.name(name)
+				.bufferSize(bufferSize)
+				.waitStrategy(strategy)
+				.autoCancel(autoCancel)
+				.build();
 	}
 
 	/**
@@ -248,10 +404,16 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * smart blocking wait strategy.
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
+	 * @deprecated use {@link Builder#build()}
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> create(ExecutorService executor,
 			int bufferSize, WaitStrategy strategy) {
-		return create(executor, bufferSize, strategy, true);
+		return Builder.<E>create()
+				.executor(executor)
+				.bufferSize(bufferSize)
+				.waitStrategy(strategy)
+				.build();
 	}
 
 	/**
@@ -266,15 +428,17 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
+	 * @deprecated use {@link Builder#build()}
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> create(ExecutorService executor,
 			int bufferSize, WaitStrategy strategy, boolean autoCancel) {
-		return new WorkQueueProcessor<>(null,
-				executor,
-				bufferSize,
-				strategy == null ? WaitStrategy.liteBlocking() : strategy,
-				false,
-				autoCancel);
+		return Builder.<E>create()
+				.executor(executor)
+				.bufferSize(bufferSize)
+				.waitStrategy(strategy)
+				.autoCancel(autoCancel)
+				.build();
 	}
 
 	/**
@@ -293,16 +457,19 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
+	 * @deprecated use {@link Builder#build()}
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> create(ExecutorService executor,
 			ExecutorService requestTaskExecutor,
 			int bufferSize, WaitStrategy strategy, boolean autoCancel) {
-		return new WorkQueueProcessor<>(null,
-				executor, requestTaskExecutor,
-				bufferSize,
-				strategy == null ? WaitStrategy.liteBlocking() : strategy,
-				false,
-				autoCancel);
+		return Builder.<E>create()
+				.executor(executor)
+				.requestTaskExecutor(requestTaskExecutor)
+				.bufferSize(bufferSize)
+				.waitStrategy(strategy)
+				.autoCancel(autoCancel)
+				.build();
 	}
 
 	/**
@@ -314,11 +481,11 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
+	 * @deprecated use {@link Builder#build()}
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> share(boolean autoCancel) {
-		return share(WorkQueueProcessor.class.getSimpleName(),
-				QueueSupplier.SMALL_BUFFER_SIZE,
-				null, autoCancel);
+		return Builder.<E>create().share(true).autoCancel(autoCancel).build();
 	}
 
 	/**
@@ -329,9 +496,11 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @param service A provided ExecutorService to manage threading infrastructure
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
+	 * @deprecated use {@link Builder#build()}
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> share(ExecutorService service) {
-		return share(service, QueueSupplier.SMALL_BUFFER_SIZE, null, true);
+		return Builder.<E>create().share(true).executor(service).build();
 	}
 
 	/**
@@ -345,11 +514,12 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
+	 * @deprecated use {@link Builder#build()}
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> share(ExecutorService service,
 			boolean autoCancel) {
-		return share(service, QueueSupplier.SMALL_BUFFER_SIZE, null,
-				autoCancel);
+		return Builder.<E>create().share(true).executor(service).autoCancel(autoCancel).build();
 	}
 
 	/**
@@ -363,9 +533,11 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @param bufferSize A Backlog Size to mitigate slow subscribers
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
+	 * @deprecated use {@link Builder#build()}
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> share(String name, int bufferSize) {
-		return share(name, bufferSize, null, true);
+		return Builder.<E>create().share(true).name(name).bufferSize(bufferSize).build();
 	}
 
 	/**
@@ -381,10 +553,12 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
+	 * @deprecated use {@link Builder#build()}
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> share(String name, int bufferSize,
 			boolean autoCancel) {
-		return share(name, bufferSize, null, autoCancel);
+		return Builder.<E>create().share(true).name(name).bufferSize(bufferSize).autoCancel(autoCancel).build();
 	}
 
 	/**
@@ -397,10 +571,12 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @param bufferSize A Backlog Size to mitigate slow subscribers
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
+	 * @deprecated use {@link Builder#build()}
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> share(ExecutorService service,
 			int bufferSize) {
-		return share(service, bufferSize, null, true);
+		return Builder.<E>create().share(true).executor(service).bufferSize(bufferSize).build();
 	}
 
 	/**
@@ -415,10 +591,12 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
+	 * @deprecated use {@link Builder#build()}
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> share(ExecutorService service,
 			int bufferSize, boolean autoCancel) {
-		return share(service, bufferSize, null, autoCancel);
+		return Builder.<E>create().share(true).executor(service).bufferSize(bufferSize).autoCancel(autoCancel).build();
 	}
 
 	/**
@@ -434,10 +612,12 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * smart blocking wait strategy.
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
+	 * @deprecated use {@link Builder#build()}
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> share(String name, int bufferSize,
 			WaitStrategy strategy) {
-		return share(name, bufferSize, strategy, true);
+		return Builder.<E>create().share(true).name(name).bufferSize(bufferSize).waitStrategy(strategy).build();
 	}
 
 	/**
@@ -455,14 +635,17 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
+	 * @deprecated use {@link Builder#build()}
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> share(String name, int bufferSize,
 			WaitStrategy strategy, boolean autoCancel) {
-		return new WorkQueueProcessor<>(name,
-				bufferSize,
-				strategy == null ? WaitStrategy.liteBlocking() : strategy,
-				true,
-				autoCancel);
+		return Builder.<E>create().share(true)
+				.name(name)
+				.bufferSize(bufferSize)
+				.waitStrategy(strategy)
+				.autoCancel(autoCancel)
+				.build();
 	}
 
 	/**
@@ -477,10 +660,16 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * smart blocking wait strategy.
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
+	 * @deprecated use {@link Builder#build()}
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> share(ExecutorService executor,
 			int bufferSize, WaitStrategy strategy) {
-		return share(executor, bufferSize, strategy, true);
+		return Builder.<E>create().share(true)
+				.executor(executor)
+				.bufferSize(bufferSize)
+				.waitStrategy(strategy)
+				.build();
 	}
 
 	/**
@@ -497,15 +686,17 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
+	 * @deprecated use {@link Builder#build()}
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> share(ExecutorService executor,
 			int bufferSize, WaitStrategy strategy, boolean autoCancel) {
-		return new WorkQueueProcessor<>(null,
-				executor,
-				bufferSize,
-				strategy == null ? WaitStrategy.liteBlocking() : strategy,
-				true,
-				autoCancel);
+		return Builder.<E>create().share(true)
+				.executor(executor)
+				.bufferSize(bufferSize)
+				.waitStrategy(strategy)
+				.autoCancel(autoCancel)
+				.build();
 	}
 
 	/**
@@ -525,17 +716,19 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
+	 * @deprecated use {@link Builder#build()}
 	 */
+	@Deprecated
 	public static <E> WorkQueueProcessor<E> share(ExecutorService executor,
 			ExecutorService requestTaskExecutor,
 			int bufferSize, WaitStrategy strategy, boolean autoCancel) {
-		return new WorkQueueProcessor<>(null,
-				executor,
-				requestTaskExecutor,
-				bufferSize,
-				strategy == null ? WaitStrategy.liteBlocking() : strategy,
-				true,
-				autoCancel);
+		return Builder.<E>create().share(true)
+				.executor(executor)
+				.requestTaskExecutor(requestTaskExecutor)
+				.bufferSize(bufferSize)
+				.waitStrategy(strategy)
+				.autoCancel(autoCancel)
+				.build();
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -574,7 +767,6 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 				autoCancel);
 	}
 
-	@SuppressWarnings("unchecked")
 	WorkQueueProcessor(ThreadFactory threadFactory,
 			ExecutorService executor,
 			int bufferSize, WaitStrategy waitStrategy, boolean share,

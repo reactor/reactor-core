@@ -62,13 +62,13 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 	/*@Test
 	public void constructors() {
 		ConstructorTestBuilder ctb = new ConstructorTestBuilder(FluxZip.class);
-		
+
 		ctb.addRef("sources", new Publisher[0]);
 		ctb.addRef("sourcesIterable", Collections.emptyList());
 		ctb.addRef("queueSupplier", (Supplier<Queue<Object>>)() -> new ConcurrentLinkedQueue<>());
 		ctb.addInt("prefetch", 1, Integer.MAX_VALUE);
 		ctb.addRef("zipper", (Function<Object[], Object>)v -> v);
-		
+
 		ctb.test();
 	}
 	*/

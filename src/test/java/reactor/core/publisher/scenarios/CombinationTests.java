@@ -84,7 +84,7 @@ public class CombinationTests {
 	public Flux<SensorData> sensorOdd() {
 		if (sensorOdd == null) {
 			// this is the stream we publish odd-numbered events to
-			this.sensorOdd = TopicProcessor.create("odd");
+			this.sensorOdd = TopicProcessor.Builder.<SensorData>create().name("odd").build();
 
 			// add substream to "master" list
 			//allSensors().add(sensorOdd.reduce(this::computeMin).timeout(1000));
@@ -96,7 +96,7 @@ public class CombinationTests {
 	public Flux<SensorData> sensorEven() {
 		if (sensorEven == null) {
 			// this is the stream we publish even-numbered events to
-			this.sensorEven = TopicProcessor.create("even");
+			this.sensorEven = TopicProcessor.Builder.<SensorData>create().name("even").build();
 
 			// add substream to "master" list
 			//allSensors().add(sensorEven.reduce(this::computeMin).timeout(1000));
