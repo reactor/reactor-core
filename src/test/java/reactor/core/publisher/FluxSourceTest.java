@@ -68,4 +68,10 @@ public class FluxSourceTest {
 		StepVerifier.create(Mono.empty().flux())
 		            .verifyComplete();
 	}
+
+	@Test
+	public void fluxSourceDescription() {
+		String sourceAsString = Flux.just(1).checkpoint("fluxSourceDescription").toString();
+		assertTrue("Description not included: " + sourceAsString, sourceAsString.contains("\"description\" : \"fluxSourceDescription\""));
+	}
 }

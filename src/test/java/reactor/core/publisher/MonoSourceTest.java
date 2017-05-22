@@ -80,4 +80,10 @@ public class MonoSourceTest {
 	                .expectNext(1)
 	                .verifyComplete();
 	}
+
+	@Test
+	public void monoSourceDescription() {
+		String sourceAsString = Mono.just(1).checkpoint("monoSourceDescription").toString();
+		assertTrue("Description not included: " + sourceAsString, sourceAsString.contains("\"description\" : \"monoSourceDescription\""));
+	}
 }

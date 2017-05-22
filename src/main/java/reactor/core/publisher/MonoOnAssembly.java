@@ -50,7 +50,7 @@ final class MonoOnAssembly<T> extends MonoSource<T, T> implements Fuseable, Asse
 	 * or a wider correlation ID) and exposed as a {@link Mono}.
 	 */
 	MonoOnAssembly(Mono<? extends T> source, String description) {
-		super(source);
+		super(source, description);
 		this.stacktrace = new AssemblySnapshotException(description);
 	}
 
@@ -60,7 +60,7 @@ final class MonoOnAssembly<T> extends MonoSource<T, T> implements Fuseable, Asse
 	 * wrapping a {@link ParallelFlux}.
 	 */
 	MonoOnAssembly(Mono<? extends T> source, String description, boolean light) {
-		super(source);
+		super(source, description);
 		if (light) {
 			this.stacktrace = new FluxOnAssembly.AssemblyLightSnapshotException(description);
 		}

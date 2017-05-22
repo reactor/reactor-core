@@ -79,7 +79,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 	 * {@link Flux}. If light == false, behaves as {@link #FluxOnAssembly(Flux, String)}.
 	 */
 	FluxOnAssembly(Flux<? extends T> source, String description, boolean light) {
-		super(source);
+		super(source, description);
 		if (light) {
 			this.snapshotStack = new AssemblyLightSnapshotException(description);
 		}

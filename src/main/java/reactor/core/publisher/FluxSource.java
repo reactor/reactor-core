@@ -30,6 +30,7 @@ import reactor.core.Scannable;
 public class FluxSource<I, O> extends Flux<O> implements Scannable {
 
 	protected final Publisher<? extends I> source;
+	protected final String description;
 
 	/**
 	 * Unchecked wrap of {@link Publisher} as {@link Flux}, supporting {@link Fuseable} sources
@@ -51,7 +52,19 @@ public class FluxSource<I, O> extends Flux<O> implements Scannable {
 	 * @param source the {@link Publisher} to decorate
 	 */
 	protected FluxSource(Publisher<? extends I> source) {
+		this(source, null);
+	}
+
+	/**
+	 * Build a {@link FluxSource} wrapper around the passed parent {@link Publisher}
+	 * with the provided description.
+	 *
+	 * @param source the {@link Publisher} to decorate
+	 * @param description Description of source to include in {@link #toString()}. May be null.
+	 */
+	protected FluxSource(Publisher<? extends I> source, String description) {
 		this.source = Objects.requireNonNull(source);
+		this.description = description;
 	}
 
 	/**
@@ -67,15 +80,22 @@ public class FluxSource<I, O> extends Flux<O> implements Scannable {
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		return sb.append('{')
-		         .append(" \"operator\" : ")
-		         .append('"')
-		         .append(getClass().getSimpleName()
-		                           .replaceAll("Flux", ""))
-		         .append('"')
-		         .append(' ')
-		         .append('}')
-		         .toString();
+		sb = sb.append('{')
+			   .append(" \"operator\" : ")
+			   .append('"')
+			   .append(getClass().getSimpleName()
+								 .replaceAll("Flux", ""))
+			   .append('"');
+		if (description != null) {
+			sb = sb.append(", ")
+				   .append(" \"description\" : ")
+				   .append('"')
+				   .append(description)
+				   .append('"');
+		}
+		return sb.append(' ')
+				 .append('}')
+				 .toString();
 	}
 
 	@Override
