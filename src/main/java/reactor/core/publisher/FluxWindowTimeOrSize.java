@@ -211,12 +211,6 @@ final class FluxWindowTimeOrSize<T> extends FluxSource<T, Flux<T>> {
 			}
 		}
 
-		void windowPush(T event) {
-			if (currentWindow != null) {
-				currentWindow.onNext(event);
-			}
-		}
-
 		void windowCloseByTimeout() {
 			if (currentWindow != null) {
 				if (INITIAL_WINDOW_EMITTED.compareAndSet(this, 0, 1)) {
@@ -278,7 +272,9 @@ final class FluxWindowTimeOrSize<T> extends FluxSource<T, Flux<T>> {
 				}
 			}
 
-			windowPush(value);
+			if (currentWindow != null) { //not encapsulated in a method to avoid stack too deep
+				currentWindow.onNext(value);
+			}
 
 			if (index % batchSize == 0) {
 				this.index = 0;
