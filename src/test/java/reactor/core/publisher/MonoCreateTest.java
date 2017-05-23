@@ -278,8 +278,8 @@ public class MonoCreateTest {
 		});
 
 		Assertions.assertThatExceptionOfType(RuntimeException.class)
-		          .isThrownBy(secondIsError::subscribe)
-		          .matches(Exceptions::isBubbling)
+		          .isThrownBy(() -> secondIsError.subscribe(v -> {}, e -> {}))
+		          .matches(Exceptions::isBubbling, "exception is bubbling")
 		          .satisfies(e -> assertThat(Exceptions.unwrap(e)).hasMessage("boom2"));
 
 		StepVerifier.create(secondIsError)
