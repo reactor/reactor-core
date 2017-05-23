@@ -50,7 +50,7 @@ final class MonoOnAssembly<T> extends MonoSource<T, T> implements Fuseable, Asse
 	 * or a wider correlation ID) and exposed as a {@link Mono}.
 	 */
 	MonoOnAssembly(Mono<? extends T> source, String description) {
-		super(source, description);
+		super(source);
 		this.stacktrace = new AssemblySnapshotException(description);
 	}
 
@@ -60,7 +60,7 @@ final class MonoOnAssembly<T> extends MonoSource<T, T> implements Fuseable, Asse
 	 * wrapping a {@link ParallelFlux}.
 	 */
 	MonoOnAssembly(Mono<? extends T> source, String description, boolean light) {
-		super(source, description);
+		super(source);
 		if (light) {
 			this.stacktrace = new FluxOnAssembly.AssemblyLightSnapshotException(description);
 		}
@@ -72,5 +72,26 @@ final class MonoOnAssembly<T> extends MonoSource<T, T> implements Fuseable, Asse
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 		FluxOnAssembly.subscribe(s, source, stacktrace);
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb = sb.append('{')
+			   .append(" \"operator\" : ")
+			   .append('"')
+			   .append(getClass().getSimpleName()
+								 .replaceAll("Mono", ""))
+			   .append('"');
+		if (stacktrace != null) {
+			sb = sb.append(", ")
+				   .append(" \"description\" : ")
+				   .append('"')
+				   .append(stacktrace.getMessage())
+				   .append('"');
+		}
+		return sb.append(' ')
+				 .append('}')
+				 .toString();
 	}
 }

@@ -79,13 +79,34 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 	 * {@link Flux}. If light == false, behaves as {@link #FluxOnAssembly(Flux, String)}.
 	 */
 	FluxOnAssembly(Flux<? extends T> source, String description, boolean light) {
-		super(source, description);
+		super(source);
 		if (light) {
 			this.snapshotStack = new AssemblyLightSnapshotException(description);
 		}
 		else {
 			this.snapshotStack = new AssemblySnapshotException(description);
 		}
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb = sb.append('{')
+			   .append(" \"operator\" : ")
+			   .append('"')
+			   .append(getClass().getSimpleName()
+								 .replaceAll("Flux", ""))
+			   .append('"');
+		if (snapshotStack != null) {
+			sb = sb.append(", ")
+				   .append(" \"description\" : ")
+				   .append('"')
+				   .append(snapshotStack.getMessage())
+				   .append('"');
+		}
+		return sb.append(' ')
+				 .append('}')
+				 .toString();
 	}
 
 	static String getStacktrace(Publisher<?> source,

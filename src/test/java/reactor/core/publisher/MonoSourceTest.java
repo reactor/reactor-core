@@ -82,8 +82,8 @@ public class MonoSourceTest {
 	}
 
 	@Test
-	public void monoSourceDescription() {
-		String sourceAsString = Mono.just(1).checkpoint("monoSourceDescription").toString();
-		assertTrue("Description not included: " + sourceAsString, sourceAsString.contains("\"description\" : \"monoSourceDescription\""));
+	public void onAssemblyDescription() {
+		String monoOnAssemblyStr = Mono.just(1).checkpoint("onAssemblyDescription").toString();
+		assertTrue("Description not included: " + monoOnAssemblyStr, monoOnAssemblyStr.contains("\"description\" : \"onAssemblyDescription\""));
 	}
 }
