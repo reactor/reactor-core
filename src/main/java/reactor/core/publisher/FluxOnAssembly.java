@@ -88,6 +88,27 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		}
 	}
 
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb = sb.append('{')
+			   .append(" \"operator\" : ")
+			   .append('"')
+			   .append(getClass().getSimpleName()
+								 .replaceAll("Flux", ""))
+			   .append('"');
+		if (snapshotStack != null) {
+			sb = sb.append(", ")
+				   .append(" \"description\" : ")
+				   .append('"')
+				   .append(snapshotStack.getMessage())
+				   .append('"');
+		}
+		return sb.append(' ')
+				 .append('}')
+				 .toString();
+	}
+
 	static String getStacktrace(Publisher<?> source,
 			AssemblySnapshotException snapshotStack) {
 		StackTraceElement[] stes = snapshotStack.getStackTrace();

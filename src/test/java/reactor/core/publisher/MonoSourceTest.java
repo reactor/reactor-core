@@ -80,4 +80,10 @@ public class MonoSourceTest {
 	                .expectNext(1)
 	                .verifyComplete();
 	}
+
+	@Test
+	public void onAssemblyDescription() {
+		String monoOnAssemblyStr = Mono.just(1).checkpoint("onAssemblyDescription").toString();
+		assertTrue("Description not included: " + monoOnAssemblyStr, monoOnAssemblyStr.contains("\"description\" : \"onAssemblyDescription\""));
+	}
 }
