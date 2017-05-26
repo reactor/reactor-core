@@ -16,24 +16,43 @@
 
 package reactor.core.publisher;
 
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler;
 
-
-
 /**
- * WindowTimeoutSubscriber is forwarding events on a steam until {@code backlog} is reached, after that streams collected events
- * further, complete it and create a fresh new fluxion.
+ * WindowTimeoutSubscriber is forwarding events on a steam until {@code maxSize} is reached,
+ * after that streams collected events further, complete it and create a fresh new fluxion.
  * @author Stephane Maldini
  */
-final class FluxWindowTimeOrSize<T> extends FluxBatch<T, Flux<T>> {
+final class FluxWindowTimeOrSize<T> extends FluxSource<T, Flux<T>> {
 
-	FluxWindowTimeOrSize(Flux<T> source, int backlog, long timespan, Scheduler timer) {
-		super(source, backlog, timespan, timer);
+	final int            batchSize;
+	final long           timespan;
+	final Scheduler      timer;
+
+	FluxWindowTimeOrSize(Flux<T> source, int maxSize, long timespan, Scheduler timer) {
+		super(source);
+		if (timespan <= 0) {
+			throw new IllegalArgumentException("Timeout period must be strictly positive");
+		}
+		if (maxSize <= 0) {
+			throw new IllegalArgumentException("maxSize must be strictly positive");
+		}
+		this.timer = Objects.requireNonNull(timer, "Timer");
+		this.timespan = timespan;
+		this.batchSize = maxSize;
+	}
+
+	final Subscriber<? super Flux<T>> prepareSub(Subscriber<? super Flux<T>> actual) {
+		return Operators.serialize(actual);
 	}
 
 	@Override
@@ -45,7 +64,7 @@ final class FluxWindowTimeOrSize<T> extends FluxBatch<T, Flux<T>> {
 	final static class Window<T> extends Flux<T> implements InnerOperator<T, T> {
 
 		final UnicastProcessor<T> processor;
-		final Scheduler      timer;
+		final Scheduler           timer;
 
 		int count = 0;
 
@@ -95,86 +114,262 @@ final class FluxWindowTimeOrSize<T> extends FluxBatch<T, Flux<T>> {
 		}
 	}
 
-	final static class WindowTimeoutSubscriber<T> extends BatchSubscriber<T, Flux<T>> {
+	final static class WindowTimeoutSubscriber<T> implements InnerOperator<T, Flux<T>> {
 
-		final Scheduler timer;
+		final static int NOT_TERMINATED          = 0;
+		final static int TERMINATED_WITH_SUCCESS = 1;
+		final static int TERMINATED_WITH_ERROR   = 2;
+		final static int TERMINATED_WITH_CANCEL  = 3;
 
-		Window<T> currentWindow;
+		final Subscriber<? super Flux<T>> actual;
+		final int                         batchSize;
+		final Runnable                    flushTask;
+		final Scheduler.Worker            timer;
+		final Scheduler                   timerScheduler;
+		final long                        timespan;
 
-		volatile int cancelled;
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<WindowTimeoutSubscriber> CANCELLED =
-				AtomicIntegerFieldUpdater.newUpdater(WindowTimeoutSubscriber.class, "cancelled");
+		Window<T>    currentWindow;
+		Subscription subscription;
 
-		volatile int windowCount;
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<WindowTimeoutSubscriber> WINDOW_COUNT =
-				AtomicIntegerFieldUpdater.newUpdater(WindowTimeoutSubscriber.class,
-						"windowCount");
+		volatile Disposable timespanRegistration;
+
+		volatile int  cancelled;
+		volatile int  index;
+		volatile int  initialWindowEmitted;
+		volatile long requested;
+		volatile int  terminated = NOT_TERMINATED;
+		volatile int  windowCount;
+
+		static final AtomicIntegerFieldUpdater<WindowTimeoutSubscriber>
+				CANCELLED = AtomicIntegerFieldUpdater.newUpdater(WindowTimeoutSubscriber.class, "cancelled");
+
+		static final AtomicIntegerFieldUpdater<WindowTimeoutSubscriber>
+				INDEX = AtomicIntegerFieldUpdater.newUpdater(WindowTimeoutSubscriber.class, "index");
+
+		static final AtomicIntegerFieldUpdater<WindowTimeoutSubscriber>
+				INITIAL_WINDOW_EMITTED = AtomicIntegerFieldUpdater.newUpdater(WindowTimeoutSubscriber.class, "initialWindowEmitted");
+
+		static final AtomicLongFieldUpdater<WindowTimeoutSubscriber>
+				REQUESTED = AtomicLongFieldUpdater.newUpdater(WindowTimeoutSubscriber.class, "requested");
+
+		static final     AtomicIntegerFieldUpdater<WindowTimeoutSubscriber>
+				TERMINATED = AtomicIntegerFieldUpdater.newUpdater(WindowTimeoutSubscriber.class, "terminated");
+
+		static final AtomicIntegerFieldUpdater<WindowTimeoutSubscriber>
+				WINDOW_COUNT = AtomicIntegerFieldUpdater.newUpdater(WindowTimeoutSubscriber.class, "windowCount");
 
 		WindowTimeoutSubscriber(Subscriber<? super Flux<T>> actual,
-				int backlog,
+				int maxSize,
 				long timespan,
 				Scheduler timer) {
-			super(actual, backlog, true, timespan, timer.createWorker());
-			this.timer = timer;
+			this.actual = actual;
+			this.timespan = timespan;
+			this.timerScheduler = timer;
+			this.timer = timer.createWorker();
+			this.flushTask = () -> {
+				if (terminated == NOT_TERMINATED) {
+					int index;
+					for(;;){
+						index = this.index;
+						if(INDEX.compareAndSet(this, index, 0)){
+							break;
+						}
+					}
+					windowCloseByTimeout(); //this restarts a timer
+				}
+			};
+
+			this.batchSize = maxSize;
 			WINDOW_COUNT.lazySet(this, 1);
 		}
 
-		@Override
-		void doOnSubscribe() {
-
+		//this is necessary so that the case where timer is rejected from the beginning is handled correctly
+		void subscribeAndCreateWindow() {
+			timespanRegistration = timer.schedule(flushTask, timespan, TimeUnit.MILLISECONDS);
+			if (timespanRegistration == Scheduler.REJECTED) {
+				RuntimeException error = Operators.onRejectedExecution(null, null, null);
+				subscription.cancel();
+				actual.onSubscribe(this);
+				actual.onError(error);
+			}
+			else {
+				WINDOW_COUNT.getAndIncrement(this);
+				Window<T> _currentWindow = new Window<>(timerScheduler);
+				currentWindow = _currentWindow;
+				actual.onSubscribe(this);
+				//hold on emitting the window until either the first close by timeout
+				//or the first emission, which will follow the subscribe
+			}
 		}
 
-		Flux<T> createWindowStream() {
-			WINDOW_COUNT.getAndIncrement(this);
-			Window<T> _currentWindow = new Window<>(timer);
-			currentWindow = _currentWindow;
-			return _currentWindow;
+		void windowCreateAndEmit() {
+			if (timerStart()) {
+				WINDOW_COUNT.getAndIncrement(this);
+				Window<T> _currentWindow = new Window<>(timerScheduler);
+				currentWindow = _currentWindow;
+				actual.onNext(_currentWindow);
+			}
 		}
 
-		@Override
-		protected void checkedError(Throwable ev) {
+		void windowCloseByTimeout() {
 			if (currentWindow != null) {
-				currentWindow.onError(ev);
+				if (INITIAL_WINDOW_EMITTED.compareAndSet(this, 0, 1)) {
+					actual.onNext(currentWindow);
+				}
+				currentWindow.onComplete();
+				currentWindow = null;
 				dispose();
 			}
-			super.checkedError(ev);
+			windowCreateAndEmit();
 		}
 
-		@Override
-		protected void checkedComplete() {
-			try {
-				if (currentWindow != null) {
-					currentWindow.onComplete();
-					currentWindow = null;
-					dispose();
-				}
-			}
-			finally {
-				super.checkedComplete();
-			}
-		}
-
-		@Override
-		protected void firstCallback(T event) {
-			actual.onNext(createWindowStream());
-		}
-
-		@Override
-		protected void nextCallback(T event) {
-			if (currentWindow != null) {
-				currentWindow.onNext(event);
-			}
-		}
-
-		@Override
-		protected void flushCallback(T event) {
+		void windowCloseBySize() {
 			if (currentWindow != null) {
 				currentWindow.onComplete();
 				currentWindow = null;
 				dispose();
 			}
+			windowCreateAndEmit();
+		}
+
+		boolean timerStart() {
+			timespanRegistration = timer.schedule(flushTask, timespan, TimeUnit.MILLISECONDS);
+			if (timespanRegistration == Scheduler.REJECTED) {
+				RuntimeException error = Operators.onRejectedExecution(null, null, null);
+				onError(error);
+				return false;
+			}
+			return true;
+		}
+
+		void timerCancel() {
+			if (timespanRegistration != null) {
+				timespanRegistration.dispose();
+				timespanRegistration = null;
+			}
+		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			if (Operators.validate(this.subscription, s)) {
+				this.subscription = s;
+				subscribeAndCreateWindow();
+			}
+		}
+
+		@Override
+		public void onNext(final T value) {
+			if (currentWindow != null
+				&& INITIAL_WINDOW_EMITTED.compareAndSet(this, 0, 1)) {
+				actual.onNext(currentWindow);
+			}
+
+			int index;
+			for(;;){
+				index = this.index + 1;
+				if(INDEX.compareAndSet(this, index - 1, index)){
+					break;
+				}
+			}
+
+			if (currentWindow != null) { //not encapsulated in a method to avoid stack too deep
+				currentWindow.onNext(value);
+			}
+
+			if (index % batchSize == 0) {
+				this.index = 0;
+				timerCancel();
+				windowCloseBySize();
+			}
+		}
+
+		@Override
+		public void onComplete() {
+			if (TERMINATED.compareAndSet(this, NOT_TERMINATED, TERMINATED_WITH_SUCCESS)) {
+				timerCancel();
+				timer.dispose();
+				if (currentWindow != null) {
+					currentWindow.onComplete();
+					currentWindow = null;
+					dispose();
+				}
+				actual.onComplete();
+			}
+		}
+
+		@Override
+		public void onError(Throwable throwable) {
+			if (TERMINATED.compareAndSet(this, NOT_TERMINATED, TERMINATED_WITH_ERROR)) {
+				timerCancel();
+				timer.dispose();
+				if (currentWindow != null) {
+					currentWindow.onError(throwable);
+					currentWindow = null;
+					dispose();
+				}
+				actual.onError(throwable);
+			}
+		}
+
+		@Override
+		public Object scan(Attr key) {
+			switch (key) {
+				case PARENT:
+					return subscription;
+				case CANCELLED:
+//					return terminated == TERMINATED_WITH_CANCEL;
+					return cancelled == 1;
+				case TERMINATED:
+					return terminated == TERMINATED_WITH_ERROR || terminated == TERMINATED_WITH_SUCCESS;
+				case REQUESTED_FROM_DOWNSTREAM:
+					return requested;
+				case CAPACITY:
+					return batchSize;
+				case BUFFERED:
+					return batchSize - index;
+			}
+			return InnerOperator.super.scan(key);
+		}
+
+		/**
+		 * @return has this {@link Subscriber} terminated with success ?
+		 */
+		final boolean isCompleted() {
+			return terminated == TERMINATED_WITH_SUCCESS;
+		}
+
+		/**
+		 * @return has this {@link Subscriber} terminated with an error ?
+		 */
+		final boolean isFailed() {
+			return terminated == TERMINATED_WITH_ERROR;
+		}
+
+		@Override
+		public void request(long n) {
+			if (Operators.validate(n)) {
+				if (terminated != NOT_TERMINATED) {
+					return;
+				}
+				if (batchSize == Integer.MAX_VALUE || n == Long.MAX_VALUE) {
+					requestMore(Long.MAX_VALUE);
+				}
+				else {
+					requestMore(Operators.multiplyCap(n, batchSize));
+				}
+			}
+		}
+
+		final void requestMore(long n) {
+			Subscription s = this.subscription;
+			if (s != null) {
+				s.request(n);
+			}
+		}
+
+		@Override
+		public Subscriber<? super Flux<T>> actual() {
+			return actual;
 		}
 
 		@Override
@@ -184,21 +379,31 @@ final class FluxWindowTimeOrSize<T> extends FluxBatch<T, Flux<T>> {
 			}
 		}
 
+		void doCancel() {
+			if (TERMINATED.compareAndSet(this, NOT_TERMINATED, TERMINATED_WITH_CANCEL)) {
+				timer.dispose();
+				Subscription s = this.subscription;
+				if (s != null) {
+					this.subscription = null;
+					s.cancel();
+				}
+			}
+		}
+
 		public void dispose() {
 			if (WINDOW_COUNT.decrementAndGet(this) == 0) {
 				if (cancelled == 1)
-					super.cancel();
+					doCancel();
 			}
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case CANCELLED:
-					return cancelled == 1;
-				default:
-					return super.scan(key);
-			}
+		public String toString() {
+			return super.toString() + "{" + (timer != null ?
+					"timed - " + timespan + " ms" : "") + " batchSize=" +
+					index + "/" +
+					batchSize + " [" + (int) ((((float) index) / ((float) batchSize)) * 100) + "%]";
 		}
+
 	}
 }
