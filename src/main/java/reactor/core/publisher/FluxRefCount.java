@@ -156,101 +156,101 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 				DISCONNECT.getAndSet(this, Flux.CANCELLED);
 			}
 		}
+	}
 
-		static final class RefCountInner<T>
-				implements QueueSubscription<T>, InnerOperator<T, T> {
+	static final class RefCountInner<T>
+			implements QueueSubscription<T>, InnerOperator<T, T> {
 
-			final Subscriber<? super T> actual;
-			
-			final RefCountMonitor<T> parent;
-			
-			Subscription s;
-			QueueSubscription<T> qs;
+		final Subscriber<? super T> actual;
 
-			RefCountInner(Subscriber<? super T> actual, RefCountMonitor<T> parent) {
-				this.actual = actual;
-				this.parent = parent;
-			}
+		final RefCountMonitor<T> parent;
 
-			@Override
-			public Object scan(Attr key) {
-				switch(key){
-					case PARENT:
-						return s;
-				}
-				return InnerOperator.super.scan(key);
-			}
+		Subscription s;
+		QueueSubscription<T> qs;
 
-			@Override
-			public void onSubscribe(Subscription s) {
-				if (Operators.validate(this.s, s)) {
-					this.s = s;
-					actual.onSubscribe(this);
-				}
-			}
+		RefCountInner(Subscriber<? super T> actual, RefCountMonitor<T> parent) {
+			this.actual = actual;
+			this.parent = parent;
+		}
 
-			@Override
-			public void onNext(T t) {
-				actual.onNext(t);
+		@Override
+		public Object scan(Attr key) {
+			switch(key){
+				case PARENT:
+					return s;
 			}
+			return InnerOperator.super.scan(key);
+		}
 
-			@Override
-			public void onError(Throwable t) {
-				actual.onError(t);
-				parent.upstreamFinished();
+		@Override
+		public void onSubscribe(Subscription s) {
+			if (Operators.validate(this.s, s)) {
+				this.s = s;
+				actual.onSubscribe(this);
 			}
+		}
 
-			@Override
-			public void onComplete() {
-				actual.onComplete();
-				parent.upstreamFinished();
-			}
-			
-			@Override
-			public void request(long n) {
-				s.request(n);
-			}
-			
-			@Override
-			public void cancel() {
-				s.cancel();
-				parent.innerCancelled();
-			}
+		@Override
+		public void onNext(T t) {
+			actual.onNext(t);
+		}
 
-			@Override
-			public Subscriber<? super T> actual() {
-				return actual;
-			}
+		@Override
+		public void onError(Throwable t) {
+			actual.onError(t);
+			parent.upstreamFinished();
+		}
 
-			@Override
-			@SuppressWarnings("unchecked")
-			public int requestFusion(int requestedMode) {
-				if(s instanceof QueueSubscription){
-					qs = (QueueSubscription<T>)s;
-					return qs.requestFusion(requestedMode);
-				}
-				return Fuseable.NONE;
-			}
+		@Override
+		public void onComplete() {
+			actual.onComplete();
+			parent.upstreamFinished();
+		}
 
-			@Override
-			public T poll() {
-				return qs.poll();
-			}
+		@Override
+		public void request(long n) {
+			s.request(n);
+		}
 
-			@Override
-			public int size() {
-				return qs.size();
-			}
+		@Override
+		public void cancel() {
+			s.cancel();
+			parent.innerCancelled();
+		}
 
-			@Override
-			public boolean isEmpty() {
-				return qs.isEmpty();
-			}
+		@Override
+		public Subscriber<? super T> actual() {
+			return actual;
+		}
 
-			@Override
-			public void clear() {
-				qs.clear();
+		@Override
+		@SuppressWarnings("unchecked")
+		public int requestFusion(int requestedMode) {
+			if(s instanceof QueueSubscription){
+				qs = (QueueSubscription<T>)s;
+				return qs.requestFusion(requestedMode);
 			}
+			return Fuseable.NONE;
+		}
+
+		@Override
+		public T poll() {
+			return qs.poll();
+		}
+
+		@Override
+		public int size() {
+			return qs.size();
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return qs.isEmpty();
+		}
+
+		@Override
+		public void clear() {
+			qs.clear();
 		}
 	}
 }

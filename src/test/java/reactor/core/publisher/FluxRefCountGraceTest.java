@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,17 +19,13 @@ import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.assertj.core.api.Assertions;
-import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Disposable;
-import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class FluxRefCountGraceTest {
 
@@ -98,6 +94,17 @@ public class FluxRefCountGraceTest {
 		ts1.assertValues(1, 2, 3, 4, 5);
 		ts2.assertValues(1, 2, 3, 4, 5);
 	}
+
+	@Test
+	public void testFusion() {
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .replay()
+		                        .refCount(1, Duration.ofSeconds(1)))
+		            .expectFusion()
+		            .expectNext(1, 2, 3)
+		            .verifyComplete();
+	}
+
 
 	@Test
 	public void doesntDisconnectAfterRefCountZeroAndQuickResubscribe()

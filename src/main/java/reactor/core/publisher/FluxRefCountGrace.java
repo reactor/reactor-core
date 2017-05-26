@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -44,10 +44,6 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 	final Scheduler          scheduler;
 
 	RefConnection connection;
-
-	volatile Disposable timeoutTask;
-	static final AtomicReferenceFieldUpdater<FluxRefCountGrace, Disposable> TIMEOUT_TASK =
-			AtomicReferenceFieldUpdater.newUpdater(FluxRefCountGrace.class, Disposable.class, "timeoutTask");
 
 	FluxRefCountGrace(ConnectableFlux<T> source, int n, Duration gracePeriod, Scheduler scheduler) {
 		this.source = source;
@@ -97,7 +93,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 				}
 			}
 
-			source.subscribe(new RefCountSubscriber<>(s, this, conn));
+			source.subscribe(new RefCountInner<>(s, this, conn));
 
 			if (connect) {
 				source.connect(conn);
@@ -178,7 +174,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 		}
 	}
 
-	static final class RefCountSubscriber<T> implements Subscriber<T>, Subscription {
+	static final class RefCountInner<T> implements QueueSubscription<T>, InnerOperator<T, T> {
 
 		final Subscriber<? super T> actual;
 
@@ -186,13 +182,14 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 
 		final RefConnection connection;
 
-		Subscription upstream;
+		Subscription s;
+		QueueSubscription<T> qs;
 
 		volatile int parentDone;
-		static final AtomicIntegerFieldUpdater<RefCountSubscriber> PARENT_DONE =
-				AtomicIntegerFieldUpdater.newUpdater(RefCountSubscriber.class, "parentDone");
+		static final AtomicIntegerFieldUpdater<RefCountInner> PARENT_DONE =
+				AtomicIntegerFieldUpdater.newUpdater(RefCountInner.class, "parentDone");
 
-		RefCountSubscriber(Subscriber<? super T> actual, FluxRefCountGrace<T> parent,
+		RefCountInner(Subscriber<? super T> actual, FluxRefCountGrace<T> parent,
 				RefConnection connection) {
 			this.actual = actual;
 			this.parent = parent;
@@ -222,12 +219,12 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 
 		@Override
 		public void request(long n) {
-			upstream.request(n);
+			s.request(n);
 		}
 
 		@Override
 		public void cancel() {
-			upstream.cancel();
+			s.cancel();
 			if (PARENT_DONE.compareAndSet(this, 0, 1)) {
 				parent.cancel(connection);
 			}
@@ -235,11 +232,47 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (Operators.validate(upstream, s)) {
-				this.upstream = s;
+			if (Operators.validate(this.s, s)) {
+				this.s = s;
 
 				actual.onSubscribe(this);
 			}
 		}
+
+		@Override
+		@SuppressWarnings("unchecked")
+		public int requestFusion(int requestedMode) {
+			if(s instanceof QueueSubscription){
+				qs = (QueueSubscription<T>)s;
+				return qs.requestFusion(requestedMode);
+			}
+			return Fuseable.NONE;
+		}
+
+		@Override
+		public T poll() {
+			return qs.poll();
+		}
+
+		@Override
+		public int size() {
+			return qs.size();
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return qs.isEmpty();
+		}
+
+		@Override
+		public void clear() {
+			qs.clear();
+		}
+
+		@Override
+		public Subscriber<? super T> actual() {
+			return actual;
+		}
+
 	}
 }
