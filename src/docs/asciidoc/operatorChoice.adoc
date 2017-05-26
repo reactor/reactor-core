@@ -94,7 +94,8 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 ** ...and I want to switch to a `Flux` at the end: `thenMany`
 
 * I have a Mono for which I want to defer completion...
-** ...only when 1-N other publishers have all emitted (or completed): `Mono#untilOther`
+** ...only when 1-N other publishers have all emitted (or completed): `Mono#delayUntilOther`
+*** ...and deriving these publishers from the Mono value: `Mono#delayUntil(Function)`
 
 [[which.peeking]]
 == Peeking into a sequence
