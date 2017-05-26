@@ -45,10 +45,6 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 
 	RefConnection connection;
 
-	volatile Disposable timeoutTask;
-	static final AtomicReferenceFieldUpdater<FluxRefCountGrace, Disposable> TIMEOUT_TASK =
-			AtomicReferenceFieldUpdater.newUpdater(FluxRefCountGrace.class, Disposable.class, "timeoutTask");
-
 	FluxRefCountGrace(ConnectableFlux<T> source, int n, Duration gracePeriod, Scheduler scheduler) {
 		this.source = source;
 		this.n = n;
