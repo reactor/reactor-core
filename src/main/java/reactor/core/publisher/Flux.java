@@ -3520,7 +3520,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Add behavior (side-effect) triggered <strong>after</strong>the {@link Flux} terminates for any reason,
+	 * Add behavior (side-effect) triggered <strong>after</strong> the {@link Flux} terminates for any reason,
 	 * including cancellation. The terminating event ({@link SignalType#ON_COMPLETE},
 	 * {@link SignalType#ON_ERROR} and {@link SignalType#CANCEL}) is passed to the consumer,
 	 * which is executed after the signal has been passed downstream.
