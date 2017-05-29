@@ -17,7 +17,12 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxDefaultIfEmptyTest {
 
@@ -161,6 +166,37 @@ public class FluxDefaultIfEmptyTest {
 		  .assertComplete()
 		  .assertNoError();
 
+	}
+
+	@Test
+	public void scanSubscriber() {
+		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> { }, null, null);
+		FluxDefaultIfEmpty.DefaultIfEmptySubscriber<String> test =
+				new FluxDefaultIfEmpty.DefaultIfEmptySubscriber<>(actual, "bar");
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		test.onComplete();
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+	}
+
+	@Test
+	public void scanSubscriberCancelled() {
+		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxDefaultIfEmpty.DefaultIfEmptySubscriber<String> test =
+				new FluxDefaultIfEmpty.DefaultIfEmptySubscriber<>(actual, "bar");
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
 	}
 
 }

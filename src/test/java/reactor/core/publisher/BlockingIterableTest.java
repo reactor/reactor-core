@@ -26,6 +26,13 @@ import java.util.concurrent.ArrayBlockingQueue;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Subscription;
+import reactor.core.Scannable;
+import reactor.core.Scannable.IntAttr;
+import reactor.core.Scannable.ScannableAttr;
+import reactor.util.concurrent.QueueSupplier;
+
+import static org.assertj.core.api.Java6Assertions.assertThat;
 
 public class BlockingIterableTest {
 
@@ -120,5 +127,92 @@ public class BlockingIterableTest {
 
 		Assert.assertTrue("No maximum?", opt.isPresent());
 		Assert.assertEquals((Integer) n, opt.get());
+	}
+
+	@Test
+	public void scanOperator() {
+		Flux<Integer> source = Flux.range(1, 10);
+		BlockingIterable<Integer> test = new BlockingIterable<>(source, 35, QueueSupplier.one());
+
+		assertThat(test.scanUnsafe(ScannableAttr.PARENT)).describedAs("PARENT").isSameAs(source);
+
+		//type safe attributes
+		assertThat(test.scanUnsafe(IntAttr.PREFETCH)).describedAs("PREFETCH unsafe").isEqualTo(35);
+		assertThat(test.scan(IntAttr.PREFETCH)).describedAs("PREFETCH").isEqualTo(35); //FIXME
+	}
+
+	@Test
+	public void scanOperatorLargePrefetchIsLimitedToIntMax() {
+		Flux<Integer> source = Flux.range(1, 10);
+		BlockingIterable<Integer> test = new BlockingIterable<>(source,
+				Integer.MAX_VALUE + 30L,
+				QueueSupplier.one());
+
+		assertThat(test.scan(IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE); //FIXME
+	}
+
+	@Test
+	public void scanSubscriber() {
+		BlockingIterable.SubscriberIterator<String> subscriberIterator =
+				new BlockingIterable.SubscriberIterator<>(QueueSupplier.<String>one().get(), 123);
+		Subscription s = Operators.emptySubscription();
+		subscriberIterator.onSubscribe(s);
+
+		assertThat(subscriberIterator.scan(ScannableAttr.PARENT)).describedAs("PARENT").isSameAs(s);
+		assertThat(subscriberIterator.scan(Scannable.BooleanAttr.TERMINATED)).describedAs("TERMINATED").isFalse();
+		assertThat(subscriberIterator.scan(Scannable.BooleanAttr.CANCELLED)).describedAs("CANCELLED").isFalse();
+		assertThat(subscriberIterator.scan(Scannable.ThrowableAttr.ERROR)).describedAs("ERROR").isNull();
+
+		assertThat(subscriberIterator.scan(IntAttr.PREFETCH)).describedAs("PREFETCH").isEqualTo(123); //FIXME
+	}
+
+	@Test
+	public void scanSubscriberLargePrefetchIsLimitedToIntMax() {
+		BlockingIterable.SubscriberIterator<String> subscriberIterator =
+				new BlockingIterable.SubscriberIterator<>(QueueSupplier.<String>one().get(),
+						Integer.MAX_VALUE + 30L);
+
+		assertThat(subscriberIterator.scan(IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE); //FIXME
+	}
+
+	@Test
+	public void scanSubscriberTerminated() {
+		BlockingIterable.SubscriberIterator<String> test =
+				new BlockingIterable.SubscriberIterator<>(QueueSupplier.<String>one().get(), 123);
+
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).describedAs("before TERMINATED").isFalse();
+
+		test.onComplete();
+
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).describedAs("after TERMINATED").isTrue();
+	}
+
+	@Test
+	public void scanSubscriberError() {
+		BlockingIterable.SubscriberIterator<String> test = new BlockingIterable.SubscriberIterator<>(QueueSupplier.<String>one().get(),
+				123);
+		IllegalStateException error = new IllegalStateException("boom");
+
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).describedAs("before ERROR")
+		                                                    .isNull();
+
+		test.onError(error);
+
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).describedAs("after ERROR")
+		                                                       .isSameAs(error);
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+	}
+
+	@Test
+	public void scanSubscriberCancelled() {
+		BlockingIterable.SubscriberIterator<String> test = new BlockingIterable.SubscriberIterator<>(QueueSupplier.<String>one().get(),
+				123);
+
+		//simulate cancellation by offering two elements
+		test.onNext("a");
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).describedAs("before CANCELLED").isFalse();
+
+		test.onNext("b");
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).describedAs("after CANCELLED").isTrue();
 	}
 }

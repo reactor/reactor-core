@@ -15,8 +15,13 @@
  */
 package reactor.core.publisher;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -148,5 +153,32 @@ public class FluxWithLatestFromTest {
 		            .verifyError(NullPointerException.class);
 	}
 
+	@Test
+    public void scanMainSubscriber() {
+        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxWithLatestFrom.WithLatestFromSubscriber<Integer, Integer, Integer> test =
+        		new FluxWithLatestFrom.WithLatestFromSubscriber<>(actual, (i, j) -> i + j);
+        Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
 
+		Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		test.cancel();
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+    }
+
+	@Test
+    public void scanOtherSubscriber() {
+		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxWithLatestFrom.WithLatestFromSubscriber<Integer, Integer, Integer> main =
+        		new FluxWithLatestFrom.WithLatestFromSubscriber<>(actual, (i, j) -> i + j);
+        FluxWithLatestFrom.WithLatestFromOtherSubscriber<Integer> test =
+        		new FluxWithLatestFrom.WithLatestFromOtherSubscriber<>(main);
+        Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(main);
+    }
 }

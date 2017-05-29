@@ -24,9 +24,13 @@ import java.util.List;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Supplier;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
 import static org.hamcrest.Matchers.contains;
@@ -669,5 +673,44 @@ public class FluxBufferPredicateTest {
 		            .consumeNextWith(l3 -> Assert.assertThat(l3, contains("blue", "cyan")))
 		            .expectComplete()
 		            .verify();
+	}
+
+	@Test
+	public void scanMain() {
+		Subscriber<? super List> actual = new LambdaSubscriber<>(null, e -> {}, null,
+				sub -> sub.request(100));
+		List<String> initialBuffer = Arrays.asList("foo", "bar");
+		FluxBufferPredicate.BufferPredicateSubscriber<String, List<String>> test = new FluxBufferPredicate.BufferPredicateSubscriber<>(
+				actual, initialBuffer, ArrayList::new, s -> s.length() < 5,
+				FluxBufferPredicate.Mode.WHILE
+		);
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		Assertions.assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(2);
+		Assertions.assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(100L);
+		Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		test.onError(new IllegalStateException("boom"));
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+	}
+
+	@Test
+	public void scanMainCancelled() {
+		Subscriber<? super List> actual = new LambdaSubscriber<>(null, e -> {}, null,
+				sub -> sub.request(100));
+		List<String> initialBuffer = Arrays.asList("foo", "bar");
+		FluxBufferPredicate.BufferPredicateSubscriber<String, List<String>> test = new FluxBufferPredicate.BufferPredicateSubscriber<>(
+				actual, initialBuffer, ArrayList::new, s -> s.length() < 5,
+				FluxBufferPredicate.Mode.WHILE
+		);
+
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		test.cancel();
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
 	}
 }

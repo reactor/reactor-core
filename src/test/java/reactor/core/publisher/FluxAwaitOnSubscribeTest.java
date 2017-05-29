@@ -23,6 +23,9 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Scannable;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxAwaitOnSubscribeTest {
 
@@ -170,6 +173,25 @@ public class FluxAwaitOnSubscribeTest {
 		Assert.assertNull("Error: " + e.get(), e.get());
 
 		Assert.assertFalse("Cancel executed before onSubscribe finished", state2.get());
+	}
+
+	@Test
+	public void scanPostOnSubscribeSubscriber() {
+		Subscriber<String> s = new LambdaSubscriber<>(null, null, null, null);
+		FluxAwaitOnSubscribe.PostOnSubscribeSubscriber<String> test = new FluxAwaitOnSubscribe.PostOnSubscribeSubscriber<>(s);
+
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(s);
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isNull();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
+
+		test.request(2);
+		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(2L);
+
+		Subscription parent = Operators.cancelledSubscription();
+		test.onSubscribe(parent);
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
 	}
 
 }

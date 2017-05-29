@@ -19,9 +19,15 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxMapSignalTest extends FluxOperatorTest<String, String> {
 
@@ -60,16 +66,16 @@ public class FluxMapSignalTest extends FluxOperatorTest<String, String> {
 	@Test
     public void completeOnlyBackpressured() {
         AssertSubscriber<Integer> ts = AssertSubscriber.create(0L);
-        
+
         new FluxMapSignal<>(Flux.empty(), null, null, () -> 1)
         .subscribe(ts);
-        
+
         ts.assertNoValues()
         .assertNoError()
         .assertNotComplete();
-        
+
         ts.request(1);
-        
+
         ts.assertValues(1)
         .assertNoError()
         .assertComplete();
@@ -78,16 +84,16 @@ public class FluxMapSignalTest extends FluxOperatorTest<String, String> {
     @Test
     public void errorOnlyBackpressured() {
         AssertSubscriber<Integer> ts = AssertSubscriber.create(0L);
-        
+
         new FluxMapSignal<>(Flux.error(new RuntimeException()), null, e -> 1, null)
         .subscribe(ts);
-        
+
         ts.assertNoValues()
         .assertNoError()
         .assertNotComplete();
-        
+
         ts.request(1);
-        
+
         ts.assertValues(1)
         .assertNoError()
         .assertComplete();
@@ -122,4 +128,29 @@ public class FluxMapSignalTest extends FluxOperatorTest<String, String> {
 		            .expectNext(2, 10)
 		            .verifyComplete();
 	}
+
+    @Test
+    public void scanSubscriber() {
+        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxMapSignal<Object, Integer> main = new FluxMapSignal<>(Flux.empty(), null, null, () -> 1);
+        FluxMapSignal.FluxMapSignalSubscriber<Object, Integer> test =
+        		new FluxMapSignal.FluxMapSignalSubscriber<>(actual, main);
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+        test.requested = 35;
+        assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
+        assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(0); // RS: TODO non-zero size
+
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        test.onError(new IllegalStateException("boom"));
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+
+        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        test.cancel();
+        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+
+    }
 }

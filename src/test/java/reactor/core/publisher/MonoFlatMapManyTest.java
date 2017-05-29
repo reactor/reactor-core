@@ -16,45 +16,76 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoFlatMapManyTest {
 
-    @Test
-    public void normal() {
-        AssertSubscriber<Integer> ts = AssertSubscriber.create();
-        
-        Mono.just(1).hide().flatMapMany(v -> Flux.just(2).hide())
-        .subscribe(ts);
-        
-        ts.assertValues(2)
-        .assertNoError()
-        .assertComplete();
-    }
+	@Test
+	public void normal() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-    @Test
-    public void normalInnerJust() {
-        AssertSubscriber<Integer> ts = AssertSubscriber.create();
-        
-        Mono.just(1).hide().flatMapMany(v -> Flux.just(2))
-        .subscribe(ts);
-        
-        ts.assertValues(2)
-        .assertNoError()
-        .assertComplete();
-    }
+		Mono.just(1).hide().flatMapMany(v -> Flux.just(2).hide())
+		.subscribe(ts);
 
-    @Test
-    public void normalInnerEmpty() {
-        AssertSubscriber<Integer> ts = AssertSubscriber.create();
-        
-        Mono.just(1).hide().flatMapMany(v -> Flux.<Integer>empty())
-        .subscribe(ts);
-        
-        ts.assertNoValues()
-        .assertNoError()
-        .assertComplete();
-    }
+		ts.assertValues(2)
+		.assertNoError()
+		.assertComplete();
+	}
+
+	@Test
+	public void normalInnerJust() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		Mono.just(1).hide().flatMapMany(v -> Flux.just(2))
+		.subscribe(ts);
+
+		ts.assertValues(2)
+		.assertNoError()
+		.assertComplete();
+	}
+
+	@Test
+	public void normalInnerEmpty() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		Mono.just(1).hide().flatMapMany(v -> Flux.<Integer>empty())
+		.subscribe(ts);
+
+		ts.assertNoValues()
+		.assertNoError()
+		.assertComplete();
+	}
+
+	@Test
+	public void scanMain() {
+		Subscriber<Integer> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		MonoFlatMapMany.FlatMapMain<String, Integer> test = new MonoFlatMapMany.FlatMapMain<>(actual, s -> Flux.just(1, 2, 3));
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+	}
+
+	@Test
+	public void scanInner() {
+		Subscriber<Integer> mainActual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		Subscriber<Integer> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		MonoFlatMapMany.FlatMapMain<String, Integer> main = new MonoFlatMapMany.FlatMapMain<>(mainActual, s -> Flux.just(1, 2, 3));
+		MonoFlatMapMany.FlatMapInner<Integer> test = new MonoFlatMapMany.FlatMapInner<>(main, actual);
+		Subscription innerSubscription = Operators.emptySubscription();
+		test.onSubscribe(innerSubscription);
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(innerSubscription);
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(main);
+
+		main.requested = 3L;
+		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(3L);
+	}
 
 }

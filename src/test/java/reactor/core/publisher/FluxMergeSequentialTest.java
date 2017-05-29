@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -31,13 +32,19 @@ import java.util.function.Supplier;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import reactor.core.Fuseable;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+
+import reactor.core.Scannable;
+import reactor.core.publisher.FluxConcatMap.ErrorMode;
+import reactor.core.publisher.FluxMergeSequential.MergeSequentialInner;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
@@ -706,4 +713,57 @@ public class FluxMergeSequentialTest {
 		            .verifyComplete();
 	}
 
+    @Test
+    public void scanMain() {
+        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxMergeSequential.MergeSequentialMain<Integer, Integer> test =
+        		new FluxMergeSequential.MergeSequentialMain<Integer, Integer>(actual, i -> Mono.just(i),
+        				5, 123, ErrorMode.BOUNDARY, QueueSupplier.<MergeSequentialInner<Integer>>unbounded());
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.BooleanAttr.DELAY_ERROR)).isTrue();
+        test.requested = 35;
+        assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
+        assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(5);
+        test.subscribers.add(new FluxMergeSequential.MergeSequentialInner<>(test, 123));
+        assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+
+        assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        test.onError(new IllegalStateException("boom"));
+        assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isSameAs(test.error);
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+    }
+
+    @Test
+    public void scanInner() {
+        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxMergeSequential.MergeSequentialMain<Integer, Integer> main =
+        		new FluxMergeSequential.MergeSequentialMain<Integer, Integer>(actual, i -> Mono.just(i),
+        				5, 123, ErrorMode.IMMEDIATE, QueueSupplier.<MergeSequentialInner<Integer>>unbounded());
+        FluxMergeSequential.MergeSequentialInner<Integer> inner =
+        		new FluxMergeSequential.MergeSequentialInner<>(main, 123);
+        Subscription parent = Operators.emptySubscription();
+        inner.onSubscribe(parent);
+
+        assertThat(inner.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(main);
+        assertThat(inner.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        assertThat(inner.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(123);
+        inner.queue = new ConcurrentLinkedQueue<>();
+        inner.queue.add(1);
+        assertThat(inner.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+
+        assertThat(inner.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+        assertThat(inner.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        inner.queue.clear();
+        inner.setDone();
+        assertThat(inner.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+
+        assertThat(inner.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        inner.cancel();
+        assertThat(inner.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+    }
 }

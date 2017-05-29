@@ -21,10 +21,15 @@ import java.util.Arrays;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxConcatArrayTest {
 
@@ -228,6 +233,28 @@ public class FluxConcatArrayTest {
 		StepVerifier.create(Flux.just(1, 2, 3).startWith(Arrays.asList(-1, 0)))
 		            .expectNext(-1, 0, 1, 2, 3)
 		            .verifyComplete();
+	}
+
+	@Test
+	public void scanDelayErrorSubscriber() {
+		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxConcatArray.ConcatArrayDelayErrorSubscriber<String> test = new FluxConcatArray.ConcatArrayDelayErrorSubscriber<>(actual, new Publisher[0]);
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		assertThat(test.scan(Scannable.BooleanAttr.DELAY_ERROR)).isTrue();
+
+		test.missedRequested = 2;
+		test.requested = 3;
+		test.error = new IllegalStateException("boom");
+
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(5L);
+
+		test.cancel();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
 	}
 
 }

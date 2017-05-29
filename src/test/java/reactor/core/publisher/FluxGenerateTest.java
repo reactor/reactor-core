@@ -16,14 +16,18 @@
 
 package reactor.core.publisher;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxGenerateTest {
@@ -350,5 +354,42 @@ public class FluxGenerateTest {
 		  .assertFusionMode(Fuseable.NONE)
 		  .assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 	}
+
+
+    @Test
+    public void scanSubscription() {
+        Subscriber<Integer> subscriber = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxGenerate.GenerateSubscription<Integer, Integer> test =
+                new FluxGenerate.GenerateSubscription<>(subscriber, 1, (s, o) -> null, s -> {});
+
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(subscriber);
+        test.request(5);
+        assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(5L);
+        assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+    }
+
+    @Test
+    public void scanSubscriptionError() {
+        Subscriber<Integer> subscriber = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxGenerate.GenerateSubscription<Integer, Integer> test =
+                new FluxGenerate.GenerateSubscription<>(subscriber, 1, (s, o) -> null, s -> {});
+
+        test.error(new IllegalStateException("boom"));
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+        assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+    }
+
+    @Test
+    public void scanSubscriptionCancelled() {
+        Subscriber<Integer> subscriber = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxGenerate.GenerateSubscription<Integer, Integer> test =
+                new FluxGenerate.GenerateSubscription<>(subscriber, 1, (s, o) -> null, s -> {});
+
+        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        test.cancel();
+        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+    }
 
 }

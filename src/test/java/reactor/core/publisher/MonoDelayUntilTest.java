@@ -24,8 +24,10 @@ import java.util.function.Function;
 
 import org.junit.Test;
 import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -307,5 +309,56 @@ public class MonoDelayUntilTest {
 
 		assertThat(value.get()).isNull();
 		assertThat(error.get()).isNull(); //would be a NPE if trigger array wasn't pre-initialized
+	}
+
+	@Test
+	public void scanCoordinator() {
+		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		MonoDelayUntil.DelayUntilCoordinator<String> test = new MonoDelayUntil.DelayUntilCoordinator<>(
+				actual, true, new Function[3]);
+		Subscription subscription = Operators.emptySubscription();
+		test.onSubscribe(subscription);
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isNull();
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+		assertThat(test.scan(Scannable.BooleanAttr.DELAY_ERROR)).isTrue();
+		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		test.done = 2;
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		test.done = 3;
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	public void scanTrigger() {
+		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		MonoDelayUntil.DelayUntilCoordinator<String> main = new MonoDelayUntil.DelayUntilCoordinator<>(
+				actual, false, new Function[3]);
+
+		MonoDelayUntil.DelayUntilTrigger<String> test = new MonoDelayUntil.DelayUntilTrigger<>(main);
+
+		Subscription subscription = Operators.emptySubscription();
+		test.onSubscribe(subscription);
+
+		assertThat(main.scan(Scannable.BooleanAttr.DELAY_ERROR)).isFalse();
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(subscription);
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(main);
+
+		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+
+		test.error = new IllegalStateException("boom");
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
 	}
 }

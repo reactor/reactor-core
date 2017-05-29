@@ -19,8 +19,12 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.mockito.Mockito;
 import reactor.core.Disposable;
+import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxAutoConnectTest {
 
@@ -73,5 +77,16 @@ public class FluxAutoConnectTest {
 		
 		cancel.get().dispose();
 		Assert.assertFalse("sp has subscribers?", e.downstreamCount() != 0);
+	}
+
+	@Test
+	public void scanMain() {
+		ConnectableFlux<String> source = Mockito.mock(ConnectableFlux.class);
+		Mockito.when(source.getPrefetch()).thenReturn(888);
+		FluxAutoConnect<String> test = new FluxAutoConnect<>(source, 123, d -> { });
+
+		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(888);
+//		assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(123);
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(source);
 	}
 }

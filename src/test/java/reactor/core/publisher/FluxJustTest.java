@@ -20,7 +20,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -70,9 +73,9 @@ public class FluxJustTest {
     public void fused() {
         AssertSubscriber<Integer> ts = AssertSubscriber.create();
         ts.requestedFusionMode(Fuseable.ANY);
-        
+
         Flux.just(1).subscribe(ts);
-        
+
         ts.assertFuseableSource()
         .assertFusionMode(Fuseable.SYNC)
         .assertValues(1);
@@ -85,4 +88,17 @@ public class FluxJustTest {
         stream.subscribe(value::set);
         assertThat(value.get()).isEqualTo("test");
     }
+
+	@Test
+	public void scanSubscription() {
+		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, sub -> sub.request(100));
+		FluxJust.WeakScalarSubscription<Integer> test = new FluxJust.WeakScalarSubscription<>(1, actual);
+
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+	}
 }

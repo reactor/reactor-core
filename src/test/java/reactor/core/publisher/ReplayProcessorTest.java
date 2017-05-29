@@ -21,9 +21,11 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.test.subscriber.AssertSubscriber;
@@ -606,6 +608,29 @@ public class ReplayProcessorTest {
 	@Test(expected = IllegalArgumentException.class)
 	public void failNegativeBufferBoundedAndTimed() {
 		ReplayProcessor.createSizeAndTimeout(-1, Duration.ofSeconds(1));
+	}
+
+	@Test
+	public void scanProcessor() {
+		ReplayProcessor<String> test = ReplayProcessor.create(16, false);
+		Subscription subscription = Operators.emptySubscription();
+		test.onSubscribe(subscription);
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isEqualTo(subscription);
+
+		assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(16);
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+
+		test.onError(new IllegalStateException("boom"));
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+	}
+
+	@Test
+	public void scanProcessorUnboundedCapacity() {
+		ReplayProcessor<String> test = ReplayProcessor.create(16, true);
+		assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(Integer.MAX_VALUE);
 	}
 
 	@Before

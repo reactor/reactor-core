@@ -21,8 +21,14 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import org.junit.Test;
+import org.mockito.Mockito;
+import org.reactivestreams.Subscriber;
+
+import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxIterableTest {
 
@@ -123,4 +129,41 @@ public class FluxIterableTest {
 		  .assertComplete();
 	}
 
+	@Test
+	public void scanSubscription() {
+		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, sub -> sub.request(100));
+		FluxIterable.IterableSubscription<String> test =
+				new FluxIterable.IterableSubscription<>(actual, Collections.singleton("test").iterator());
+
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+		test.request(123);
+		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(123);
+
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		test.clear();
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	public void scanConditionalSubscription() {
+		Fuseable.ConditionalSubscriber<? super String> actual = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+        FluxIterable.IterableSubscriptionConditional<String> test =
+				new FluxIterable.IterableSubscriptionConditional<>(actual, Collections.singleton("test").iterator());
+
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+		test.request(123);
+		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(123);
+
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		test.clear();
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+	}
 }

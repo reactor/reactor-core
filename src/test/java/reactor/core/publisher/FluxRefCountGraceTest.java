@@ -21,6 +21,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 import reactor.core.Disposable;
+import reactor.core.Scannable;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
@@ -203,4 +205,14 @@ public class FluxRefCountGraceTest {
 		publisher.complete();
 		assertThat(termination.get()).isEqualTo(SignalType.ON_COMPLETE);
 	}
+
+	@Test
+	public void scanMain() {
+		ConnectableFlux<Integer> parent = Flux.just(10).publish();
+		FluxRefCountGrace<Integer> test = new FluxRefCountGrace<Integer>(parent, 17, Duration.ofSeconds(1), Schedulers.single());
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(256);
+	}
+
 }

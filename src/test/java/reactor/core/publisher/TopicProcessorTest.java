@@ -27,6 +27,7 @@ import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
@@ -667,6 +668,49 @@ public class TopicProcessorTest {
 		TopicProcessor<Integer> processor = TopicProcessor.share(executor, requestTaskExecutor, bufferSize, waitStrategy, autoCancel);
 		assertProcessor(processor, true, null, bufferSize, waitStrategy, autoCancel, executor, requestTaskExecutor);
 	}
+
+	@Test
+	public void scanProcessor() {
+		TopicProcessor<String> test = TopicProcessor.create("name", 16);
+		Subscription subscription = Operators.emptySubscription();
+		test.onSubscribe(subscription);
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isEqualTo(subscription);
+
+		assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(16);
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+		test.onError(new IllegalStateException("boom"));
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+	}
+
+	@Test
+	public void scanInner() {
+		TopicProcessor<String> main = TopicProcessor.create("name", 16);
+		RingBuffer.Sequence sequence = RingBuffer.newSequence(123);
+		Subscriber<String> activated = new LambdaSubscriber<>(null, e -> {}, null, null);
+
+		TopicProcessor.TopicInner<String> test = new TopicProcessor.TopicInner<>(
+				main, sequence, activated);
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(main);
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(activated);
+		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(123L);
+
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+
+		main.terminated = 1;
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+
+		test.cancel();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+	}
+
+	//TODO BUFFERED
 
 	private void assertProcessor(TopicProcessor<Integer> processor,
 			boolean shared,

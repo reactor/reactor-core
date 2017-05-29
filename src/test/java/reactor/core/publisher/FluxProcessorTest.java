@@ -25,10 +25,10 @@ import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxProcessorTest {
@@ -250,4 +250,15 @@ public class FluxProcessorTest {
 		}
 	}
 
+	@Test
+	public void scanProcessor() {
+		FluxProcessor<String, String> test = DirectProcessor.<String>create().serialize();
+
+		assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(16);
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+		test.onError(new IllegalStateException("boom"));
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+	}
 }

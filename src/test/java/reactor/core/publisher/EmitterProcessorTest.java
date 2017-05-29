@@ -42,6 +42,7 @@ import reactor.util.concurrent.QueueSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
+import static reactor.core.Scannable.IntAttr.BUFFERED;
 
 /**
  * @author Stephane Maldini
@@ -296,7 +297,7 @@ public class EmitterProcessorTest {
 		s.next(5);
 		s.next(6);
 		s.next(7);
-		assertThat(tp.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(3);
+		assertThat(tp.scan(BUFFERED)).isEqualTo(3);
 		assertThat(tp.isTerminated()).isFalse();
 		s.complete();
 		assertThat(tp.isTerminated()).isFalse();
@@ -700,5 +701,79 @@ public class EmitterProcessorTest {
 		} while (!sequence.compareAndSet(r, u));
 
 		return r;
+	}
+
+	@Test
+	public void scanMain() {
+		EmitterProcessor<Integer> test = EmitterProcessor.create();
+		assertThat(test.scan(BUFFERED)).isEqualTo(0);
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+
+		Disposable d1 = test.subscribe();
+
+		FluxSink<Integer> sink = test.sink();
+
+		sink.next(2);
+		sink.next(3);
+		sink.next(4);
+		assertThat(test.scan(BUFFERED)).isEqualTo(0);
+
+		AtomicReference<Subscription> d2 = new AtomicReference<>();
+		test.subscribe(new Subscriber<Integer>() {
+			@Override
+			public void onSubscribe(Subscription s) {
+				d2.set(s);
+			}
+
+			@Override
+			public void onNext(Integer integer) {
+
+			}
+
+			@Override
+			public void onError(Throwable t) {
+
+			}
+
+			@Override
+			public void onComplete() {
+
+			}
+		});
+		sink.next(5);
+		sink.next(6);
+		sink.next(7);
+
+		assertThat(test.scan(BUFFERED)).isEqualTo(3);
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+
+		sink.complete();
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+
+		d1.dispose();
+		d2.get().cancel();
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+
+		//other values
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isNotNull();
+		assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(QueueSupplier.SMALL_BUFFER_SIZE);
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+	}
+
+	@Test
+	public void scanMainCancelled() {
+		EmitterProcessor test = EmitterProcessor.create();
+		test.onSubscribe(Operators.cancelledSubscription());
+
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		assertThat(test.isCancelled()).isTrue();
+	}
+
+	@Test
+	public void scanMainError() {
+		EmitterProcessor test = EmitterProcessor.create();
+		test.sink().error(new IllegalStateException("boom"));
+
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
 	}
 }
