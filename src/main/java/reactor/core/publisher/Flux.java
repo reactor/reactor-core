@@ -1925,7 +1925,7 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Subscribe to this {@link Flux} and <strong>block indefinitely</strong>
-	 * until the upstream signals its first value or completes. Returns that value,
+	 * until the upstream signals its last value or completes. Returns that value,
 	 * or null if the Flux completes empty. In case the Flux errors, the original
 	 * exception is thrown (wrapped in a {@link RuntimeException} if it was a checked
 	 * exception).
@@ -1944,7 +1944,7 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Subscribe to this {@link Flux} and <strong>block</strong> until the upstream
-	 * signals its first value, completes or a timeout expires. Returns that value,
+	 * signals its last value, completes or a timeout expires. Returns that value,
 	 * or null if the Flux completes empty. In case the Flux errors, the original
 	 * exception is thrown (wrapped in a {@link RuntimeException} if it was a checked
 	 * exception). If the provided timeout expires,a {@link RuntimeException} is thrown.
