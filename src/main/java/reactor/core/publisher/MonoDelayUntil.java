@@ -148,8 +148,7 @@ final class MonoDelayUntil<T> extends Mono<T> {
 
 		@Override
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.TERMINATED) return done;
-			if (key == ScannableAttr.PARENT) return actual;
+			if (key == BooleanAttr.TERMINATED) return done == n;
 			if (key == BooleanAttr.DELAY_ERROR) return delayError;
 
 			return super.scanUnsafe(key);

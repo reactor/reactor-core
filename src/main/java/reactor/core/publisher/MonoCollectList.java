@@ -72,6 +72,7 @@ final class MonoCollectList<T, C extends Collection<? super T>> extends MonoSour
 		@Override
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
+			if (key == BooleanAttr.TERMINATED) return collection == null;
 
 			return super.scanUnsafe(key);
 		}

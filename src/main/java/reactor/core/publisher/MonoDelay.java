@@ -95,7 +95,6 @@ final class MonoDelay extends Mono<Long> {
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return cancel == FINISHED;
 			if (key == BooleanAttr.CANCELLED) return cancel == Flux.CANCELLED;
-			if (key == ScannableAttr.PARENT) return actual;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}

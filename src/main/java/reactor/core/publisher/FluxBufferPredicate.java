@@ -298,7 +298,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 			if (key == BooleanAttr.CANCELLED) return getAsBoolean();
 			if (key == IntAttr.CAPACITY) {
 				C b = buffer;
-				return b != null ? b.size() : 0L;
+				return b != null ? b.size() : 0;
 			}
 			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
 

@@ -437,7 +437,7 @@ class FluxFilterWhen<T> extends FluxSource<T, T> {
 			if (key == BooleanAttr.CANCELLED) return sub == Operators.cancelledSubscription();
 			if (key == BooleanAttr.TERMINATED) return done;
 			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return done ? 0 : 1;
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return done ? 0L : 1L;
 
 			return null;
 		}

@@ -716,7 +716,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		@Override
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
-			if (key == BooleanAttr.CANCELLED) return cancelled;
+			if (key == BooleanAttr.CANCELLED) return cancelled == 1;
 			if (key == IntAttr.CAPACITY) return size;
 			if (key == BooleanAttr.TERMINATED) return done;
 			if (key == IntAttr.BUFFERED) return queue.size() + size();

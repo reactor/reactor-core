@@ -183,74 +183,74 @@ final class MonoFlatMap<T, R> extends MonoSource<T, R> implements Fuseable {
 		void secondComplete() {
 			actual.onComplete();
 		}
+	}
 
-		static final class ThenMapInner<R> implements InnerConsumer<R> {
+	static final class ThenMapInner<R> implements InnerConsumer<R> {
 
-			final ThenMapMain<?, R> parent;
+		final ThenMapMain<?, R> parent;
 
-			volatile Subscription s;
-			@SuppressWarnings("rawtypes")
-			static final AtomicReferenceFieldUpdater<ThenMapInner, Subscription> S =
-					AtomicReferenceFieldUpdater.newUpdater(ThenMapInner.class,
-							Subscription.class,
-							"s");
+		volatile Subscription s;
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<ThenMapInner, Subscription> S =
+				AtomicReferenceFieldUpdater.newUpdater(ThenMapInner.class,
+						Subscription.class,
+						"s");
 
-			boolean done;
+		boolean done;
 
-			ThenMapInner(ThenMapMain<?, R> parent) {
-				this.parent = parent;
-			}
-
-			@Override
-			public Object scanUnsafe(Attr key) {
-				if (key == ScannableAttr.PARENT) return s;
-				if (key == ScannableAttr.ACTUAL) return parent;
-				if (key == BooleanAttr.TERMINATED) return done;
-				if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
-
-				return null;
-			}
-
-			@Override
-			public void onSubscribe(Subscription s) {
-				if (Operators.setOnce(S, this, s)) {
-					s.request(Long.MAX_VALUE);
-				}
-			}
-
-			@Override
-			public void onNext(R t) {
-				if (done) {
-					Operators.onNextDropped(t);
-					return;
-				}
-				done = true;
-				this.parent.complete(t);
-			}
-
-			@Override
-			public void onError(Throwable t) {
-				if (done) {
-					Operators.onErrorDropped(t);
-					return;
-				}
-				done = true;
-				this.parent.secondError(t);
-			}
-
-			@Override
-			public void onComplete() {
-				if (done) {
-					return;
-				}
-				done = true;
-				this.parent.secondComplete();
-			}
-
-			void cancel() {
-				Operators.terminate(S, this);
-			}
-
+		ThenMapInner(ThenMapMain<?, R> parent) {
+			this.parent = parent;
 		}
+
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == ScannableAttr.ACTUAL) return parent;
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
+
+			return null;
+		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			if (Operators.setOnce(S, this, s)) {
+				s.request(Long.MAX_VALUE);
+			}
+		}
+
+		@Override
+		public void onNext(R t) {
+			if (done) {
+				Operators.onNextDropped(t);
+				return;
+			}
+			done = true;
+			this.parent.complete(t);
+		}
+
+		@Override
+		public void onError(Throwable t) {
+			if (done) {
+				Operators.onErrorDropped(t);
+				return;
+			}
+			done = true;
+			this.parent.secondError(t);
+		}
+
+		@Override
+		public void onComplete() {
+			if (done) {
+				return;
+			}
+			done = true;
+			this.parent.secondComplete();
+		}
+
+		void cancel() {
+			Operators.terminate(S, this);
+		}
+
 	}
 }

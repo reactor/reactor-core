@@ -269,7 +269,7 @@ final class FluxCreate<T> extends Flux<T> {
 			if (key == ThrowableAttr.ERROR) return error;
 			if (key == BooleanAttr.TERMINATED) return done;
 
-			return null;
+			return sink.scanUnsafe(key);
 		}
 	}
 
