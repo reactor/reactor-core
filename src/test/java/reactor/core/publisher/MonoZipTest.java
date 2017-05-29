@@ -34,9 +34,8 @@ public class MonoZipTest {
 
 	@Test
 	public void normalIterable() {
-		StepVerifier.create(Mono.zip(args -> (int) args[0] + (int) args[1],
-				Arrays.asList(Mono.just(1),
-				Mono.just(2))))
+		StepVerifier.create(Mono.zip(Arrays.asList(Mono.just(1), Mono.just(2)),
+				args -> (int) args[0] + (int) args[1]))
 		            .expectNext(3)
 		            .verifyComplete();
 	}
