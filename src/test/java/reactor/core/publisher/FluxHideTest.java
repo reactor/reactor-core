@@ -19,9 +19,10 @@ import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.test.publisher.TestPublisher;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxHideTest {
 
@@ -115,4 +116,26 @@ public class FluxHideTest {
 
 		sfs.clear(); //NOOP
 	}
+
+	@Test
+    public void scanSubscriber() {
+        Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxHide.HideSubscriber<String> test = new FluxHide.HideSubscriber<>(actual);
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+    }
+
+	@Test
+    public void scanSuppressFuseableSubscriber() {
+        Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxHide.SuppressFuseableSubscriber<String> test = new FluxHide.SuppressFuseableSubscriber<>(actual);
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+    }
 }

@@ -19,10 +19,12 @@ package reactor.core.publisher;
 import java.util.Collection;
 import java.util.logging.Level;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.SynchronousSubscription;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.util.Logger;
 import reactor.util.Loggers;
@@ -98,6 +100,14 @@ public class SignalLoggerTests {
 		};
 
 		assertThat(sl.subscriptionAsString(s), is("SignalLoggerTests$1"));
+	}
+
+	@Test
+	public void scanSignalLogger() {
+		Mono<String> source = Mono.empty();
+		SignalLogger<String> sl = new SignalLogger<>(source, null, null, false);
+
+		Assertions.assertThat(sl.scan(Scannable.ScannableAttr.PARENT)).isSameAs(source);
 	}
 
 	//=========================================================

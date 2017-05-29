@@ -15,7 +15,13 @@
  */
 package reactor.core.publisher;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.Test;
+import org.mockito.Mockito;
+import org.reactivestreams.Subscriber;
+
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
 public class FluxErrorTest {
@@ -25,4 +31,29 @@ public class FluxErrorTest {
 		StepVerifier.create(Flux.error(new Exception("test")))
 		            .verifyErrorMessage("test");
 	}
+
+    @Test
+    public void scanSubscription() {
+        Subscriber<String> subscriber = Mockito.mock(Subscriber.class);
+        FluxError.ErrorSubscription test =
+                new FluxError.ErrorSubscription(subscriber, new IllegalStateException("boom"));
+
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(subscriber);
+        assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+        test.request(1);
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+    }
+
+    @Test
+    public void scanSubscriptionCancelled() {
+        Subscriber<String> subscriber = Mockito.mock(Subscriber.class);
+        FluxError.ErrorSubscription test =
+                new FluxError.ErrorSubscription(subscriber, new IllegalStateException("boom"));
+
+        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        test.cancel();
+        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+    }
 }

@@ -21,6 +21,9 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.Scannable;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -431,5 +434,88 @@ public class FluxBufferTest extends FluxOperatorTest<String, List<String>> {
 		               .block()).containsExactly(Arrays.asList(1, 2),
 				Arrays.asList(3, 4),
 				Arrays.asList(5));
+	}
+
+	@Test
+	public void scanExactSubscriber() {
+		Subscriber<? super List> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxBuffer.BufferExactSubscriber<String, List<String>> test = new FluxBuffer.BufferExactSubscriber<>(
+					actual, 23, ArrayList::new	);
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+		test.onNext("foo");
+
+		assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(1);
+		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(23);
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+
+		test.onError(new IllegalStateException("boom"));
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+	}
+
+	@Test
+	public void scanOverlappingSubscriber() {
+		Subscriber<? super List> actual = new LambdaSubscriber<>(null, e -> {
+		}, null, null);
+		FluxBuffer.BufferOverlappingSubscriber<String, List<String>> test =
+				new FluxBuffer.BufferOverlappingSubscriber<>(actual, 23, 5, ArrayList::new);
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+		test.onNext("foo");
+
+		assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(23);
+		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+
+		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(Long.MAX_VALUE);
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+
+		test.onError(new IllegalStateException("boom"));
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+	}
+
+	@Test
+	public void scanOverlappingSubscriberCancelled() {
+		Subscriber<? super List> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxBuffer.BufferOverlappingSubscriber<String, List<String>> test = new FluxBuffer.BufferOverlappingSubscriber<>(
+				actual, 23, 5, ArrayList::new);
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	public void scanSkipSubscriber() {
+		Subscriber<? super List> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+
+		FluxBuffer.BufferSkipSubscriber<String, List<String>> test = new FluxBuffer.BufferSkipSubscriber<>(actual, 23, 5, ArrayList::new);
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(0);
+		test.onNext("foo");
+		assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(1);
+		test.onNext("bar");
+		assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(2);
+
+		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(23);
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		test.onError(new IllegalStateException("boom"));
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
 	}
 }

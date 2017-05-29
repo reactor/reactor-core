@@ -20,8 +20,13 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxCancelOnTest {
 
@@ -46,5 +51,21 @@ public class FluxCancelOnTest {
 
 		latch.await();
 		Assert.assertNull(threadHash.get());
+	}
+
+
+	@Test
+	public void scanSubscriber() {
+		Subscriber<String> actual = new LambdaSubscriber<>(null, null, null, null);
+		FluxCancelOn.CancelSubscriber<String> test = new FluxCancelOn.CancelSubscriber<>(actual, Schedulers.single());
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+
+		test.cancel();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
 	}
 }

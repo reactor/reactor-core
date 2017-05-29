@@ -16,9 +16,14 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.Scannable;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -57,4 +62,46 @@ public class FluxBufferTimeOrSizeTest {
 		            .verifyComplete();
 	}
 
+	@Test
+	public void scanSubscriber() {
+		Subscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+
+		FluxBufferTimeOrSize.BufferTimeoutSubscriber<String, List<String>> test = new FluxBufferTimeOrSize.BufferTimeoutSubscriber<String, List<String>>(
+						actual, 123, 1000, Schedulers.elastic().createWorker(), ArrayList::new);
+
+		Subscription subscription = Operators.emptySubscription();
+		test.onSubscribe(subscription);
+
+		test.requested = 3L;
+		test.index = 100;
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(subscription);
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(3L);
+		assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(123);
+		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(23);
+
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+
+		test.onError(new IllegalStateException("boom"));
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+	}
+
+	@Test
+	public void scanSubscriberCancelled() {
+		Subscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+
+		FluxBufferTimeOrSize.BufferTimeoutSubscriber<String, List<String>> test = new FluxBufferTimeOrSize.BufferTimeoutSubscriber<String, List<String>>(
+						actual, 123, 1000, Schedulers.elastic().createWorker(), ArrayList::new);
+
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+
+		test.cancel();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+	}
 }

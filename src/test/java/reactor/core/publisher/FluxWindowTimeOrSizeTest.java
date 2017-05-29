@@ -21,15 +21,17 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+
 import reactor.core.Disposable;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
-import reactor.test.scheduler.VirtualTimeScheduler;
-
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class FluxWindowTimeOrSizeTest {
 
@@ -201,4 +203,28 @@ public class FluxWindowTimeOrSizeTest {
 		            .assertNext(l -> assertThat(l).containsExactly(1, 2))
 		            .verifyError(RejectedExecutionException.class);
 	}
+
+	@Test
+    public void scanMainSubscriber() {
+        Subscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxWindowTimeOrSize.WindowTimeoutSubscriber<Integer> test = new FluxWindowTimeOrSize.WindowTimeoutSubscriber<>(actual,
+        		123, 1000, Schedulers.single());
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+		Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+		Assertions.assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(123);
+		test.requested = 35;
+		Assertions.assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
+		Assertions.assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(123);
+
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		test.onComplete();
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		test.cancel();
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+    }
 }

@@ -16,9 +16,14 @@
 
 package reactor.core.publisher;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+
+import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class FluxSampleTest {
@@ -175,4 +180,37 @@ public class FluxSampleTest {
 		completeImmediately(false);
 	}
 
+	@Test
+    public void scanMainSubscriber() {
+        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxSample.SampleMainSubscriber<Integer> test = new FluxSample.SampleMainSubscriber<>(actual);
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+        test.requested = 35;
+        Assertions.assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
+        test.value = 5;
+        Assertions.assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        test.cancel();
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+    }
+
+	@Test
+    public void scanOtherSubscriber() {
+		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxSample.SampleMainSubscriber<Integer> main = new FluxSample.SampleMainSubscriber<>(actual);
+        FluxSample.SampleOther<Integer, Integer> test = new FluxSample.SampleOther<>(main);
+
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(main.other);
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(main);
+        Assertions.assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        main.cancelOther();
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+    }
 }

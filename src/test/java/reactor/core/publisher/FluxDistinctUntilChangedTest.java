@@ -17,11 +17,20 @@
 package reactor.core.publisher;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.Test;
+import org.mockito.Mockito;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, String> {
 
@@ -185,6 +194,38 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 		dp.onComplete();
 
 		ts.assertValues(1, 2, 3).assertComplete();
+	}
+
+	@Test
+	public void scanSubscriber() {
+		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxDistinctUntilChanged.DistinctUntilChangedSubscriber<String, Integer> test = new FluxDistinctUntilChanged.DistinctUntilChangedSubscriber<>(
+			actual, String::hashCode);
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		test.onError(new IllegalStateException("boom"));
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+	}
+
+	@Test
+	public void scanConditionalSubscriber() {
+		Fuseable.ConditionalSubscriber<String> actual = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+		FluxDistinctUntilChanged.DistinctUntilChangedConditionalSubscriber<String, Integer> test = new FluxDistinctUntilChanged.DistinctUntilChangedConditionalSubscriber<>(
+				actual, String::hashCode);
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		test.onError(new IllegalStateException("boom"));
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
 	}
 
 }

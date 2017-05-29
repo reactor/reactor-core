@@ -22,10 +22,16 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Supplier;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+
+import reactor.core.Scannable;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.concurrent.QueueSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -570,4 +576,73 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 				Arrays.asList(3, 4),
 				Arrays.asList(5));
 	}
+
+	@Test
+    public void scanExactSubscriber() {
+        Subscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxWindow.WindowExactSubscriber<Integer> test = new FluxWindow.WindowExactSubscriber<Integer>(actual,
+        		123, QueueSupplier.unbounded());
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+        Assertions.assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(123);
+
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        test.onComplete();
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        test.cancel();
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+    }
+
+	@Test
+    public void scanOverlapSubscriber() {
+        Subscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxWindow.WindowOverlapSubscriber<Integer> test = new FluxWindow.WindowOverlapSubscriber<Integer>(actual,
+        		123, 3, QueueSupplier.unbounded(), QueueSupplier.<UnicastProcessor<Integer>>unbounded().get());
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+        Assertions.assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(123);
+        test.requested = 35;
+        Assertions.assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
+        test.onNext(2);
+        Assertions.assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        Assertions.assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+        test.onError(new IllegalStateException("boom"));
+        Assertions.assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        test.cancel();
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+    }
+
+	@Test
+    public void scanSkipSubscriber() {
+        Subscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxWindow.WindowSkipSubscriber<Integer> test = new FluxWindow.WindowSkipSubscriber<Integer>(actual,
+        		123, 3, QueueSupplier.unbounded());
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+        Assertions.assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(123);
+
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        test.onComplete();
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        test.cancel();
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+    }
 }

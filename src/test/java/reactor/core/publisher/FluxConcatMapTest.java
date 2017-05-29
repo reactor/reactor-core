@@ -24,6 +24,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
@@ -768,6 +771,63 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 		assertThat(requested.get())
 				.isNotEqualTo(Integer.MAX_VALUE)
 				.isEqualTo(Long.MAX_VALUE);
+	}
+
+	@Test
+	public void scanConcatMapDelayed() {
+		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxConcatMap.ConcatMapDelayed<String, Integer> test = new FluxConcatMap.ConcatMapDelayed<>(
+				actual, s -> Mono.just(s.length()), QueueSupplier.one(), 123, true);
+
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		test.error = new IllegalStateException("boom");
+		test.queue.offer("foo");
+
+		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(123);
+		assertThat(test.scan(Scannable.BooleanAttr.DELAY_ERROR)).isTrue();
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		test.onError(new IllegalStateException("boom"));
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		test.cancelled = true;
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	public void scanConcatMapImmediate() {
+		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxConcatMap.ConcatMapImmediate<String, Integer> test = new FluxConcatMap.ConcatMapImmediate<>(
+				actual, s -> Mono.just(s.length()), QueueSupplier.one(), 123);
+
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		test.error = new IllegalStateException("boom");
+		test.queue.offer("foo");
+
+		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(123);
+		assertThat(test.scan(Scannable.BooleanAttr.DELAY_ERROR)).isFalse();
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+//		test.onError(new IllegalStateException("boom")); //TODO should the operator set done = true in onError?
+		test.onComplete();
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		test.cancelled = true;
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
 	}
 
 }

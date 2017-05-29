@@ -21,6 +21,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.util.function.Tuple2;
 
@@ -376,6 +378,61 @@ public class MonoProcessorTest {
 		monoProcessor.subscribe();
 
 		assertThat(cancelCounter.get()).isEqualTo(0);
+	}
+
+	@Test
+	public void scanProcessor() {
+		MonoProcessor<String> test = MonoProcessor.create();
+		Subscription subscription = Operators.emptySubscription();
+		test.onSubscribe(subscription);
+
+		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+
+		test.onComplete();
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+	}
+
+	@Test
+	public void scanProcessorCancelled() {
+		MonoProcessor<String> test = MonoProcessor.create();
+		Subscription subscription = Operators.emptySubscription();
+		test.onSubscribe(subscription);
+
+		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+
+		test.cancel();
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	public void scanProcessorSubscription() {
+		MonoProcessor<String> test = MonoProcessor.create();
+		Subscription subscription = Operators.emptySubscription();
+		test.onSubscribe(subscription);
+
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isNull();
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(subscription);
+
+		test.getOrStart();
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isNotNull();
+	}
+
+	@Test
+	public void scanProcessorError() {
+		MonoProcessor<String> test = MonoProcessor.create();
+		Subscription subscription = Operators.emptySubscription();
+		test.onSubscribe(subscription);
+
+		test.onError(new IllegalStateException("boom"));
+
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
 	}
 
 }

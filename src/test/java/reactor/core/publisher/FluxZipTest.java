@@ -18,8 +18,8 @@ package reactor.core.publisher;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -27,14 +27,16 @@ import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.concurrent.QueueSupplier;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
-import reactor.util.function.Tuple4;
 import reactor.util.function.Tuple7;
 import reactor.util.function.Tuples;
 
@@ -1271,4 +1273,84 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		            .expectNext(28)
 		            .verifyComplete();
 	}
+
+	@Test
+    public void scanCoordinator() {
+		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxZip.ZipCoordinator<Integer, Integer> test = new FluxZip.ZipCoordinator<Integer, Integer>(actual,
+				i -> 5, 123, QueueSupplier.unbounded(), 345);
+
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+        test.requested = 35;
+        Assertions.assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
+
+        Assertions.assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+        test.error = new IllegalStateException("boom");
+        Assertions.assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        test.cancel();
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+    }
+
+	@Test
+    public void scanInner() {
+		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxZip.ZipCoordinator<Integer, Integer> main = new FluxZip.ZipCoordinator<Integer, Integer>(actual,
+				i -> 5, 123, QueueSupplier.unbounded(), 345);
+		FluxZip.ZipInner<Integer> test = new FluxZip.ZipInner<>(main, 234, 1, QueueSupplier.unbounded());
+
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(main);
+        Assertions.assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(234);
+        test.queue = new ConcurrentLinkedQueue<>();
+        test.queue.offer(67);
+        Assertions.assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        test.queue.clear();
+        test.onComplete();
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        test.cancel();
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+    }
+
+
+	@Test
+    public void scanSingleCoordinator() {
+		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxZip.ZipSingleCoordinator<Integer, Integer> test =
+				new FluxZip.ZipSingleCoordinator<Integer, Integer>(actual, new Object[1], 1, i -> 5);
+
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+        Assertions.assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+        test.wip = 1;
+        Assertions.assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        test.wip = 0;
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        test.cancel();
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+    }
+
+	@Test
+    public void scanSingleSubscriber() {
+        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxZip.ZipSingleCoordinator<Integer, Integer> main =
+				new FluxZip.ZipSingleCoordinator<Integer, Integer>(actual, new Object[1], 1, i -> 5);
+        FluxZip.ZipSingleSubscriber<Integer> test = new FluxZip.ZipSingleSubscriber<>(main, 0);
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(main);
+        test.onNext(7);
+        Assertions.assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+    }
 }

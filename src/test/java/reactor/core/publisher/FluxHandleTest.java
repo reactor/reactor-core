@@ -24,7 +24,12 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.mockito.Mockito;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
@@ -377,4 +382,74 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
 		            .verifyComplete();
 	}
 
+    @Test
+    public void scanSubscriber() {
+        Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxHandle.HandleSubscriber<String, String> test = new FluxHandle.HandleSubscriber<>(actual, (a, b) -> {});
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        test.error = new IllegalStateException("boom");
+        assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isSameAs(test.error);
+        test.onComplete();
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+    }
+
+    @Test
+    public void scanConditionalSubscriber() {
+    	Fuseable.ConditionalSubscriber<? super Object> subscriber = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+        FluxHandle.HandleConditionalSubscriber<String, String> test =
+        		new FluxHandle.HandleConditionalSubscriber<>(subscriber, (a, b) -> {});
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(subscriber);
+
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        test.error = new IllegalStateException("boom");
+        assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isSameAs(test.error);
+        test.onComplete();
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+    }
+
+    @Test
+    public void scanFuseableSubscriber() {
+        Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxHandleFuseable.HandleFuseableSubscriber<String, String> test =
+        		new FluxHandleFuseable.HandleFuseableSubscriber<>(actual, (a, b) -> {});
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        test.error = new IllegalStateException("boom");
+        assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isSameAs(test.error);
+        test.onComplete();
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+    }
+
+    @Test
+    public void scanFuseableConditionalSubscriber() {
+    	Fuseable.ConditionalSubscriber<? super Object> subscriber = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+    	FluxHandleFuseable.HandleFuseableConditionalSubscriber<String, String> test =
+        		new FluxHandleFuseable.HandleFuseableConditionalSubscriber<>(subscriber, (a, b) -> {});
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(subscriber);
+
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        test.error = new IllegalStateException("boom");
+        assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isSameAs(test.error);
+        test.onComplete();
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+    }
 }

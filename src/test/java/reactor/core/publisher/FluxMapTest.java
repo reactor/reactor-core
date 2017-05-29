@@ -21,9 +21,16 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.junit.Test;
+import org.mockito.Mockito;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxMapTest extends FluxOperatorTest<String, String> {
 
@@ -287,4 +294,66 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 		  .assertNoError()
 		  .assertComplete();
 	}
+
+    @Test
+    public void scanSubscriber() {
+        Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxMap.MapSubscriber<Integer, String> test = new FluxMap.MapSubscriber<>(actual, i -> String.valueOf(i));
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        test.onError(new IllegalStateException("boom"));
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+    }
+
+    @Test
+    public void scanConditionalSubscriber() {
+        Fuseable.ConditionalSubscriber<String> actual = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+        FluxMap.MapConditionalSubscriber<Integer, String> test = new FluxMap.MapConditionalSubscriber<>(actual, i -> String.valueOf(i));
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        test.onError(new IllegalStateException("boom"));
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+    }
+
+    @Test
+    public void scanFuseableSubscriber() {
+        Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxMapFuseable.MapFuseableSubscriber<Integer, String> test =
+        		new FluxMapFuseable.MapFuseableSubscriber<>(actual, i -> String.valueOf(i));
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        test.onError(new IllegalStateException("boom"));
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+    }
+
+    @Test
+    public void scanFuseableConditionalSubscriber() {
+        Fuseable.ConditionalSubscriber<String> actual = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+        FluxMapFuseable.MapFuseableConditionalSubscriber<Integer, String> test =
+        		new FluxMapFuseable.MapFuseableConditionalSubscriber<>(actual, i -> String.valueOf(i));
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        test.onError(new IllegalStateException("boom"));
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+    }
 }

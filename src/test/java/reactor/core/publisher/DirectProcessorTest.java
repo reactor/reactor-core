@@ -17,9 +17,14 @@ package reactor.core.publisher;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.reactivestreams.Subscriber;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 public class DirectProcessorTest {
 
@@ -244,6 +249,23 @@ public class DirectProcessorTest {
         ts.assertValues(1)
           .assertNotComplete()
           .assertNoError();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void scanInner() {
+        Subscriber<? super String> actual = mock(Subscriber.class);
+        DirectProcessor<String> parent = new DirectProcessor<>();
+
+        DirectProcessor.DirectInner<String> test =
+                new DirectProcessor.DirectInner<>(actual, parent);
+
+        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+
+        test.cancel();
+        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
     }
 
 }

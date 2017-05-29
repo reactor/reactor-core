@@ -23,9 +23,14 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.core.publisher.FluxBufferPredicate.Mode;
 import reactor.test.StepVerifier;
 import reactor.test.StepVerifierOptions;
@@ -617,7 +622,7 @@ public class FluxWindowPredicateTest extends
 
 		assertThat(keys).containsExactly(null, "#1", "#2");
 	}
-	
+
 	@Test
 	public void groupsHaveCorrectKeysUntilCutBefore() {
 		List<String> keys = new ArrayList<>(10);
@@ -820,4 +825,67 @@ public class FluxWindowPredicateTest extends
 
 		assertThat(req.get()).isEqualTo(13); //11 elements + the prefetch
 	}
+
+	@Test
+    public void scanMainSubscriber() {
+        Subscriber<GroupedFlux<Integer, Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxWindowPredicate.WindowPredicateMain<Integer> test = new FluxWindowPredicate.WindowPredicateMain<>(actual,
+        		QueueSupplier.<GroupedFlux<Integer, Integer>>unbounded().get(), QueueSupplier.unbounded(), 123, i -> true, Mode.WHILE);
+
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+		Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+		Assertions.assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(123);
+		test.requested = 35;
+		Assertions.assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
+		test.queue.offer(Flux.just(1).groupBy(i -> i).blockFirst());
+		Assertions.assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+
+		Assertions.assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+		test.error = new IllegalStateException("boom");
+		Assertions.assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		test.onComplete();
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		test.cancel();
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+    }
+
+
+
+	@Test
+    public void scanOtherSubscriber() {
+        Subscriber<GroupedFlux<Integer, Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxWindowPredicate.WindowPredicateMain<Integer> main = new FluxWindowPredicate.WindowPredicateMain<>(actual,
+        		QueueSupplier.<GroupedFlux<Integer, Integer>>unbounded().get(), QueueSupplier.unbounded(), 123, i -> true, Mode.WHILE);
+        FluxWindowPredicate.WindowGroupedFlux<Integer> test = new FluxWindowPredicate.WindowGroupedFlux<Integer>(1,
+        		QueueSupplier.<Integer>unbounded().get(), main);
+
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+		Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(main);
+		Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isNull(); // RS: TODO Need to make actual non-null
+		test.requested = 35;
+		Assertions.assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
+		test.queue.offer(27);
+		Assertions.assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+
+		Assertions.assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+		test.error = new IllegalStateException("boom");
+		Assertions.assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		test.onComplete();
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		test.cancel();
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+    }
 }

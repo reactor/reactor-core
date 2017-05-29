@@ -18,10 +18,17 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+
+import reactor.core.Scannable;
+import reactor.core.publisher.FluxSampleTimeout.SampleTimeoutOther;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.concurrent.QueueSupplier;
 
 public class FluxSampleTimeoutTest {
 
@@ -154,5 +161,51 @@ public class FluxSampleTimeoutTest {
 		            .verifyComplete();
 	}
 
+	@Test
+    public void scanMain() {
+        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxSampleTimeout.SampleTimeoutMain<Integer, Integer> test =
+        		new FluxSampleTimeout.SampleTimeoutMain<>(actual, i -> Flux.just(i),
+        				QueueSupplier.<SampleTimeoutOther<Integer, Integer>>one().get());
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
 
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+        test.requested = 35;
+        Assertions.assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
+        test.queue.add(new FluxSampleTimeout.SampleTimeoutOther<Integer, Integer>(test, 1, 0));
+        Assertions.assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        test.error = new IllegalStateException("boom");
+        Assertions.assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+        test.onComplete();
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+    }
+
+	@Test
+    public void scanOther() {
+		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxSampleTimeout.SampleTimeoutMain<Integer, Integer> main =
+        		new FluxSampleTimeout.SampleTimeoutMain<>(actual, i -> Flux.just(i),
+        				QueueSupplier.<SampleTimeoutOther<Integer, Integer>>one().get());
+        FluxSampleTimeout.SampleTimeoutOther<Integer, Integer> test =
+        		new FluxSampleTimeout.SampleTimeoutOther<Integer, Integer>(main, 1, 0);
+
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(main.other);
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(main);
+        test.request(35);;
+        Assertions.assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
+
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        test.onComplete();
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        test.cancel();
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+    }
 }

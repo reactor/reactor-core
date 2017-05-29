@@ -18,15 +18,13 @@ package reactor.core.publisher;
 
 import java.util.Arrays;
 import java.util.List;
-
-import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
-import reactor.test.StepVerifier;
+import reactor.core.Scannable;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
@@ -274,5 +272,76 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
     @Test
     public void normalCancelBeforeComplete() {
         assertThat(Flux.just(Flux.just(1).hide().publish(v -> v)).flatMap(v -> v).blockLast()).isEqualTo(1);
+    }
+
+	@Test
+    public void scanMulticaster() {
+        FluxPublishMulticast.FluxPublishMulticaster<Integer, Integer> test =
+        		new FluxPublishMulticast.FluxPublishMulticaster<>(123, QueueSupplier.<Integer>unbounded());
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(123);
+        assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(0);
+        test.queue.add(1);
+        assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+        test.error = new IllegalArgumentException("boom");
+        assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isSameAs(test.error);
+        test.onComplete();
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+
+        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        test.cancel();
+        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+    }
+
+	@Test
+    public void scanMulticastInner() {
+		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxPublishMulticast.FluxPublishMulticaster<Integer, Integer> parent =
+        		new FluxPublishMulticast.FluxPublishMulticaster<>(123, QueueSupplier.<Integer>unbounded());
+        FluxPublishMulticast.PublishMulticastInner<Integer> test =
+        		new FluxPublishMulticast.PublishMulticastInner<>(parent, actual);
+
+        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+        test.request(789);
+        assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(789);
+
+        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        test.cancel();
+        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+    }
+
+	@Test
+    public void scanCancelMulticaster() {
+		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxPublishMulticast.FluxPublishMulticaster<Integer, Integer> parent =
+        		new FluxPublishMulticast.FluxPublishMulticaster<>(123, QueueSupplier.<Integer>unbounded());
+        FluxPublishMulticast.CancelMulticaster<Integer> test =
+        		new FluxPublishMulticast.CancelMulticaster<>(actual, parent);
+        Subscription sub = Operators.emptySubscription();
+        test.onSubscribe(sub);
+
+        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(sub);
+        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+    }
+
+	@Test
+    public void scanCancelFuseableMulticaster() {
+		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxPublishMulticast.FluxPublishMulticaster<Integer, Integer> parent =
+        		new FluxPublishMulticast.FluxPublishMulticaster<>(123, QueueSupplier.<Integer>unbounded());
+        FluxPublishMulticast.CancelFuseableMulticaster<Integer> test =
+        		new FluxPublishMulticast.CancelFuseableMulticaster<>(actual, parent);
+        Subscription sub = Operators.emptySubscription();
+        test.onSubscribe(sub);
+
+        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(sub);
+        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
     }
 }

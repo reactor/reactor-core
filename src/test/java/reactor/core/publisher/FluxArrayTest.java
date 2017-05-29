@@ -17,7 +17,15 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+import org.reactivestreams.Subscriber;
+import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxArrayTest {
 
@@ -86,5 +94,96 @@ public class FluxArrayTest {
 		ts.assertError(NullPointerException.class)
 		  .assertValues(1, 2, 3, 4, 5)
 		  .assertNotComplete();
+	}
+
+
+	@Test
+	public void scanConditionalSubscription() {
+		Fuseable.ConditionalSubscriber<? super Object> subscriber = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+
+		FluxArray.ArrayConditionalSubscription<Object> test =
+				new FluxArray.ArrayConditionalSubscription<>(subscriber,
+						new Object[]{"foo", "bar", "baz"});
+
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+
+		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(3);
+		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isZero();
+
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(subscriber);
+
+		test.poll();
+		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(2);
+		test.poll();
+
+		test.request(2);
+		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(2L);
+
+		test.poll();
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+	}
+
+	@Test
+	public void scanConditionalSubscriptionRequested() {
+		Fuseable.ConditionalSubscriber<? super Object> subscriber = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+		//the mock will not drain the request, so it can be tested
+		Mockito.when(subscriber.tryOnNext(Mockito.any()))
+		       .thenReturn(false);
+
+		FluxArray.ArrayConditionalSubscription<Object> test =
+				new FluxArray.ArrayConditionalSubscription<>(subscriber,
+						new Object[]{"foo", "bar", "baz"});
+
+		test.request(2);
+		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(2L);
+		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(3);
+	}
+
+	@Test
+	public void scanConditionalSubscriptionCancelled() {
+		Fuseable.ConditionalSubscriber<? super Object> subscriber = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+
+		FluxArray.ArrayConditionalSubscription<Object> test =
+				new FluxArray.ArrayConditionalSubscription<>(subscriber, new Object[] {"foo", "bar", "baz"});
+
+		test.cancel();
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	public void scanSubscription() {
+		Subscriber<String> subscriber = Mockito.mock(Subscriber.class);
+		FluxArray.ArraySubscription<String> test =
+				new FluxArray.ArraySubscription<>(subscriber, new String[] {"foo", "bar", "baz"});
+
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(3);
+		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(subscriber);
+
+		test.poll();
+		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(2);
+
+		test.request(2);
+		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(2L);
+
+		test.poll();
+		test.poll();
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+	}
+
+	@Test
+	public void scanSubscriptionCancelled() {
+		Subscriber<String> subscriber = Mockito.mock(Subscriber.class);
+		FluxArray.ArraySubscription<String> test =
+				new FluxArray.ArraySubscription<>(subscriber, new String[] {"foo", "bar", "baz"});
+
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+
+		test.cancel();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
 	}
 }

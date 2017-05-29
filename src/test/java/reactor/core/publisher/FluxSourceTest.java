@@ -16,8 +16,10 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class FluxSourceTest {
@@ -68,4 +70,14 @@ public class FluxSourceTest {
 		StepVerifier.create(Mono.empty().flux())
 		            .verifyComplete();
 	}
+
+	@Test
+	public void scanMain() {
+		Flux<Integer> parent = Flux.range(1,  10);
+		FluxSource<Integer, Integer> test = new FluxSource<>(parent);
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(-1);
+	}
+
 }

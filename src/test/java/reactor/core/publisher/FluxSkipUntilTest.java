@@ -18,11 +18,14 @@ package reactor.core.publisher;
 import java.util.Arrays;
 import java.util.List;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxSkipUntilTest extends FluxOperatorTest<String, String> {
 
@@ -64,4 +67,19 @@ public class FluxSkipUntilTest extends FluxOperatorTest<String, String> {
 		            .expectNext(5, 6, 7, 8, 9, 10)
 		            .verifyComplete();
 	}
+
+	@Test
+    public void scanSubscriber() {
+        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxSkipUntil.SkipUntilSubscriber<Integer> test = new FluxSkipUntil.SkipUntilSubscriber<>(actual, i -> true);
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        test.onComplete();
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+    }
 }

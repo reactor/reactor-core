@@ -314,4 +314,51 @@ public class MonoFilterWhenTest {
 		assertThat(terminated).isTrue();
 	}
 
+	@Test
+	public void scanSubscriber() {
+		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		MonoFilterWhen.MonoFilterWhenSubscriber<String> test = new MonoFilterWhen.MonoFilterWhenSubscriber<>(
+				actual, s -> Mono.just(false));
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+		//TERMINATED IS COVERED BY TEST ABOVE
+
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	public void scanFilterWhenInner() {
+		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		MonoFilterWhen.MonoFilterWhenSubscriber<String> main = new MonoFilterWhen.MonoFilterWhenSubscriber<>(
+				actual, s -> Mono.just(false));
+		MonoFilterWhen.FilterWhenInner test = new MonoFilterWhen.FilterWhenInner(main, true);
+
+		Subscription innerSubscription = Operators.emptySubscription();
+		test.onSubscribe(innerSubscription);
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(main);
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(innerSubscription);
+
+		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(1L);
+
+
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		test.onError(new IllegalStateException("boom"));
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
+
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+	}
+
 }

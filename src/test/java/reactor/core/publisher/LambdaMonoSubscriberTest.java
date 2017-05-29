@@ -261,6 +261,24 @@ public class LambdaMonoSubscriberTest {
 		Assertions.assertThat(cancelCount.get()).isEqualTo(1);
 	}
 
+	@Test
+	public void scan() {
+		LambdaMonoSubscriber<String> test = new LambdaMonoSubscriber<>(null, null, null, null);
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		Assertions.assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+
+		test.dispose();
+
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+	}
+
 	private static class TestSubscription implements Subscription {
 
 		volatile boolean isCancelled = false;
@@ -276,5 +294,4 @@ public class LambdaMonoSubscriberTest {
 			this.isCancelled = true;
 		}
 	}
-
 }

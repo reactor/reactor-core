@@ -23,7 +23,10 @@ import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -371,6 +374,22 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 		          .containsExactly("SECOND", "FIRST");
 	}
 
-	//TODO test multiple subscriptions?
+	@Test
+	public void scanSubscriber() {
+		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxDoFinally.DoFinallySubscriber<String> test = new FluxDoFinally.DoFinallySubscriber<>(actual, st -> {});
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
 
+		Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		test.onError(new IllegalStateException("boom"));
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+	}
+
+	//TODO test multiple subscriptions?
 }

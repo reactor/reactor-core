@@ -17,7 +17,13 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+
+import reactor.core.Scannable;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.util.function.Tuple2;
 
@@ -36,4 +42,15 @@ public class FluxElapsedTest {
 		            .expectNextMatches(t -> t.getT1() == 2000 && t.getT2().equals("test"))
 		            .verifyComplete();
 	}
+
+	@Test
+    public void scanSubscriber() {
+        Subscriber<Tuple2<Long, String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxElapsed.ElapsedSubscriber<String> test = new FluxElapsed.ElapsedSubscriber<>(actual, Schedulers.single());
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+    }
 }

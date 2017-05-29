@@ -21,6 +21,10 @@ import java.io.StringWriter;
 import java.util.Objects;
 
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+
+import reactor.core.Scannable;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
 import reactor.test.StepVerifier;
 
@@ -258,4 +262,16 @@ public class FluxOnAssemblyTest {
 		String parallelFluxOnAssemblyStr = Flux.range(1, 10).parallel(2).checkpoint("onAssemblyDescription").toString();
 		assertTrue("Description not included: " + parallelFluxOnAssemblyStr, parallelFluxOnAssemblyStr.contains(expectedDescription));
 	}
+
+	@Test
+    public void scanSubscriber() {
+        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxOnAssembly.OnAssemblySubscriber<Integer> test =
+        		new FluxOnAssembly.OnAssemblySubscriber<>(actual, new AssemblySnapshotException(), Flux.just(1));
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+    }
 }

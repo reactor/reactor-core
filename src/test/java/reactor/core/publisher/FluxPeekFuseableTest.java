@@ -27,9 +27,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
+import org.mockito.Mockito;
+import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
@@ -39,8 +42,6 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
 import static reactor.core.scheduler.Schedulers.parallel;
 
 public class FluxPeekFuseableTest {
@@ -630,4 +631,39 @@ public class FluxPeekFuseableTest {
 		return "x" + x + "y" + y;
 	}
 
+
+	@Test
+    public void scanFuseableSubscriber() {
+        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxPeek<Integer> peek = new FluxPeek<>(Flux.just(1), s -> {}, s -> {},
+        		e -> {}, () -> {}, () -> {}, r -> {}, () -> {});
+        FluxPeekFuseable.PeekFuseableSubscriber<Integer> test = new FluxPeekFuseable.PeekFuseableSubscriber<>(actual, peek);
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        test.onError(new IllegalStateException("boom"));
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+    }
+
+    @Test
+    public void scanFuseableConditionalSubscriber() {
+        Fuseable.ConditionalSubscriber<Integer> actual = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+        FluxPeek<Integer> peek = new FluxPeek<>(Flux.just(1), s -> {}, s -> {},
+        		e -> {}, () -> {}, () -> {}, r -> {}, () -> {});
+        FluxPeekFuseable.PeekFuseableConditionalSubscriber<Integer> test =
+        		new FluxPeekFuseable.PeekFuseableConditionalSubscriber<>(actual, peek);
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        test.onError(new IllegalStateException("boom"));
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+    }
 }

@@ -19,17 +19,15 @@ import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.assertj.core.api.Assertions;
-import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Disposable;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class FluxRefCountGraceTest {
 
@@ -86,7 +84,7 @@ public class FluxRefCountGraceTest {
 		p.subscribe().dispose();
 		p.subscribe().dispose();
 		p.subscribe().dispose();
-		
+
 		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
 		p.subscribe(ts1);
 
@@ -196,4 +194,14 @@ public class FluxRefCountGraceTest {
 		publisher.complete();
 		assertThat(termination.get()).isEqualTo(SignalType.ON_COMPLETE);
 	}
+
+	@Test
+	public void scanMain() {
+		ConnectableFlux<Integer> parent = Flux.just(10).publish();
+		FluxRefCountGrace<Integer> test = new FluxRefCountGrace<Integer>(parent, 17, Duration.ofSeconds(1), Schedulers.single());
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(256);
+	}
+
 }

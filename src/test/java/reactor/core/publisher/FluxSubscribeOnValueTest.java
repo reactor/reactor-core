@@ -18,9 +18,13 @@ package reactor.core.publisher;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
@@ -64,4 +68,22 @@ public class FluxSubscribeOnValueTest {
 			throw Exceptions.bubble(e);
 		}
 	}
+
+	@Test
+    public void scanMainSubscriber() {
+        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxSubscribeOnValue.ScheduledScalar<Integer> test =
+        		new FluxSubscribeOnValue.ScheduledScalar<Integer>(actual, 1, Schedulers.single());
+
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+        Assertions.assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        test.future = FluxSubscribeOnValue.ScheduledScalar.FINISHED;
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        test.future = Flux.CANCELLED;
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+    }
 }
