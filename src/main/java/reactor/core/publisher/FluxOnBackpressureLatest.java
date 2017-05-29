@@ -215,7 +215,7 @@ final class FluxOnBackpressureLatest<T> extends FluxSource<T, T> {
 			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == BooleanAttr.TERMINATED) return done;
 			if (key == BooleanAttr.CANCELLED) return cancelled;
-			if (key == IntAttr.BUFFERED) return value != null;
+			if (key == IntAttr.BUFFERED) return value != null ? 1 : 0;
 			if (key == ThrowableAttr.ERROR) return error;
 			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
 

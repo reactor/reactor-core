@@ -82,7 +82,6 @@ public final class MonoProcessor<O> extends Mono<O>
 	volatile Throwable       error;
 	volatile int             state;
 	volatile int             wip;
-	volatile int             requested;
 	volatile int             connected;
 
 	MonoProcessor(Publisher<? extends O> source) {
@@ -406,7 +405,6 @@ public final class MonoProcessor<O> extends Mono<O>
 		if (key == ScannableAttr.ACTUAL) return processor;
 		if (key == ScannableAttr.PARENT) return subscription;
 		if (key == ThrowableAttr.ERROR) return error;
-		if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
 		if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
 		if (key == BooleanAttr.CANCELLED) return isCancelled();
 		if (key == BooleanAttr.TERMINATED) return isTerminated();

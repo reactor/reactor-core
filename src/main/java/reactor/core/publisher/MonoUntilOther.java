@@ -109,7 +109,7 @@ final class MonoUntilOther<T> extends Mono<T> {
 
 		@Override
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == BooleanAttr.TERMINATED) return done == n;
 			if (key == ScannableAttr.PARENT) return sourceSubscriber;
 			if (key == BooleanAttr.DELAY_ERROR) return delayError;
 
@@ -219,7 +219,7 @@ final class MonoUntilOther<T> extends Mono<T> {
 		}
 	}
 
-	static final class UntilOtherSource<T> implements Subscriber<T> {
+	static final class UntilOtherSource<T> implements InnerConsumer<T> {
 
 		final UntilOtherCoordinator<T> parent;
 
@@ -263,6 +263,15 @@ final class MonoUntilOther<T> extends Mono<T> {
 			if (value == null) {
 				parent.signal();
 			}
+		}
+
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == ThrowableAttr.ERROR) return error;
+			if (key == BooleanAttr.TERMINATED) return error != null || value != null;
+			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
+
+			return null;
 		}
 
 		void cancel() {

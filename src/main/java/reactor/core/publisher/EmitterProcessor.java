@@ -384,6 +384,11 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	}
 
 	@Override
+	public int getPrefetch() {
+		return prefetch;
+	}
+
+	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == ScannableAttr.PARENT) return s;
 		if (key == IntAttr.BUFFERED) return getPending();

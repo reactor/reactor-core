@@ -190,7 +190,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 			if (key == BooleanAttr.TERMINATED) return done;
 			if (key == IntAttr.CAPACITY) {
 				C b = buffer;
-				return b != null ? b.size() : 0L;
+				return b != null ? b.size() : 0;
 			}
 			if (key == IntAttr.PREFETCH) return size;
 
@@ -341,7 +341,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 			if (key == BooleanAttr.TERMINATED) return done;
 			if (key == IntAttr.CAPACITY) {
 				C b = buffer;
-				return b != null ? b.size() : 0L;
+				return b != null ? b.size() : 0;
 			}
 			if (key == IntAttr.PREFETCH) return size;
 

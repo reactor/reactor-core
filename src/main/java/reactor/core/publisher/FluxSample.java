@@ -218,7 +218,7 @@ final class FluxSample<T, U> extends FluxSource<T, T> {
 			if (key == ScannableAttr.PARENT) return main.other;
 			if (key == ScannableAttr.ACTUAL) return main;
 			if (key == BooleanAttr.CANCELLED) return main.other == Operators.cancelledSubscription();
-			if (key == IntAttr.PREFETCH) return Long.MAX_VALUE;
+			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
 
 			return null;
 		}

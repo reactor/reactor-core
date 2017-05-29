@@ -247,7 +247,7 @@ final class SerializedSubscriber<T> implements InnerOperator<T, T> {
 		return InnerOperator.super.scanUnsafe(key);
 	}
 
-	long producerCapacity() {
+	int producerCapacity() {
 		LinkedArrayNode<T> node = tail;
 		if(node != null){
 			return node.count;

@@ -320,10 +320,17 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
+	public Throwable getError() {
+		return buffer.getError();
+	}
+
+	@Override
 	public Object scanUnsafe(Attr key) {
 		if (key == ScannableAttr.PARENT){
 			return subscription;
 		}
+		if (key == IntAttr.CAPACITY) return buffer.capacity();
+
 		return super.scanUnsafe(key);
 	}
 

@@ -155,7 +155,7 @@ final class MonoWhen<T, R> extends Mono<R> {
 
 		@Override
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == BooleanAttr.TERMINATED) return done == subscribers.length;
 			if (key == IntAttr.BUFFERED) return subscribers.length;
 			if (key == BooleanAttr.DELAY_ERROR) return delayError;
 
