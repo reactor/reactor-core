@@ -420,6 +420,28 @@ public class FluxFilterWhenTest {
     }
 
     @Test
+    public void scanSmallBuffered() {
+        Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxFilterWhen.FluxFilterWhenSubscriber<String> test = new FluxFilterWhen.FluxFilterWhenSubscriber<>(actual, t -> Mono.just(true), 789);
+
+        test.producerIndex = Integer.MAX_VALUE + 5L;
+        test.consumerIndex = Integer.MAX_VALUE + 2L;
+        assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(3);
+        assertThat(test.scan(Scannable.LongAttr.LARGE_BUFFERED)).isEqualTo(3L);
+    }
+
+    @Test
+    public void scanLargeBuffered() {
+        Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxFilterWhen.FluxFilterWhenSubscriber<String> test = new FluxFilterWhen.FluxFilterWhenSubscriber<>(actual, t -> Mono.just(true), 789);
+
+        test.producerIndex = Integer.MAX_VALUE + 5L;
+        test.consumerIndex = 2L;
+        assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(Integer.MIN_VALUE);
+        assertThat(test.scan(Scannable.LongAttr.LARGE_BUFFERED)).isEqualTo(Integer.MAX_VALUE + 3L);
+    }
+
+    @Test
     public void scanInner() {
         Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxFilterWhen.FluxFilterWhenSubscriber<String> main = new FluxFilterWhen.FluxFilterWhenSubscriber<>(actual, t -> Mono.just(true), 789);

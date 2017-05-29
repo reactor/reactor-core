@@ -1224,6 +1224,7 @@ public class FluxFlatMapTest {
         test.scalarQueue = new ConcurrentLinkedQueue<>();
         test.scalarQueue.add(1);
         assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+        assertThat(test.scan(Scannable.LongAttr.LARGE_BUFFERED)).isEqualTo(1L);
         assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
 
         assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
@@ -1235,6 +1236,23 @@ public class FluxFlatMapTest {
         assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
         test.cancel();
         assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+    }
+
+    @Test
+   public void scanMainLargeBuffered() {
+        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxFlatMap.FlatMapMain<Integer, Integer> test = new FluxFlatMap.FlatMapMain<>(actual,
+                i -> Mono.just(i), true, 5, QueueSupplier.<Integer>unbounded(), 789,  QueueSupplier.<Integer>get(789));
+
+
+        test.scalarQueue = new ConcurrentLinkedQueue<>();
+        test.scalarQueue.add(1);
+        test.scalarQueue.add(2);
+        test.scalarQueue.add(3);
+        test.size = Integer.MAX_VALUE;
+
+        assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(Integer.MIN_VALUE);
+        assertThat(test.scan(Scannable.LongAttr.LARGE_BUFFERED)).isEqualTo(Integer.MAX_VALUE + 3L);
     }
 
     @Test

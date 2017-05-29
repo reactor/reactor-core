@@ -59,6 +59,7 @@ public class SerializedSubscriberTest {
 		test.tail.count = Integer.MAX_VALUE;
 
 		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.LongAttr.LARGE_BUFFERED)).isNull();
 	}
 
 }

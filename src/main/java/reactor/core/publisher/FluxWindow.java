@@ -719,7 +719,12 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			if (key == BooleanAttr.CANCELLED) return cancelled == 1;
 			if (key == IntAttr.CAPACITY) return size;
 			if (key == BooleanAttr.TERMINATED) return done;
-			if (key == IntAttr.BUFFERED) return queue.size() + size();
+			if (key == LongAttr.LARGE_BUFFERED) return (long) queue.size() + size();
+			if (key == IntAttr.BUFFERED) {
+				long realBuffered = (long) queue.size() + size();
+				if (realBuffered < Integer.MAX_VALUE) return (int) realBuffered;
+				return Integer.MIN_VALUE;
+			}
 			if (key == ThrowableAttr.ERROR) return error;
 			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
 

@@ -360,7 +360,12 @@ class FluxFilterWhen<T> extends FluxSource<T, T> {
 				return error;
 			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == IntAttr.CAPACITY) return toFilter.length();
-			if (key == IntAttr.BUFFERED) return (int) (producerIndex - consumerIndex);
+			if (key == LongAttr.LARGE_BUFFERED) return producerIndex - consumerIndex;
+			if (key == IntAttr.BUFFERED) {
+				long realBuffered = producerIndex - consumerIndex;
+				if (realBuffered <= Integer.MAX_VALUE) return (int) realBuffered;
+				return Integer.MIN_VALUE;
+			}
 			if (key == IntAttr.PREFETCH) return bufferSize;
 
 			return InnerOperator.super.scanUnsafe(key);
