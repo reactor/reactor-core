@@ -263,7 +263,12 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 			if (key == BooleanAttr.DELAY_ERROR) return delayError;
 			if (key == IntAttr.PREFETCH) return maxConcurrency;
 			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == IntAttr.BUFFERED) return (scalarQueue != null ? scalarQueue.size() : 0) + size;
+			if (key == LongAttr.LARGE_BUFFERED) return (scalarQueue != null ? (long) scalarQueue.size() : 0L) + size;
+			if (key == IntAttr.BUFFERED) {
+				long realBuffered = (scalarQueue != null ? (long) scalarQueue.size() : 0L) + size;
+				if (realBuffered <= Integer.MAX_VALUE) return (int) realBuffered;
+				return Integer.MIN_VALUE;
+			}
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

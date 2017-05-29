@@ -710,7 +710,34 @@ public class TopicProcessorTest {
 		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
 	}
 
-	//TODO BUFFERED
+
+	@Test
+	public void scanInnerBufferedSmallHasIntRealValue() {
+		TopicProcessor<String> main = TopicProcessor.create("name", 16);
+		RingBuffer.Sequence sequence = RingBuffer.newSequence(123);
+		Subscriber<String> sub = new LambdaSubscriber<>(null, e -> {}, null, null);
+		TopicProcessor.TopicInner<String> test = new TopicProcessor.TopicInner<>(main, sequence, sub);
+
+		main.ringBuffer.getSequencer().cursor.set(Integer.MAX_VALUE + 5L);
+		test.sequence.set(6L);
+
+		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(Integer.MAX_VALUE - 1);
+		assertThat(test.scan(Scannable.LongAttr.LARGE_BUFFERED)).isEqualTo(Integer.MAX_VALUE - 1L);
+	}
+
+	@Test
+	public void scanInnerBufferedLargeHasIntMinValue() {
+		TopicProcessor<String> main = TopicProcessor.create("name", 16);
+		RingBuffer.Sequence sequence = RingBuffer.newSequence(123);
+		Subscriber<String> sub = new LambdaSubscriber<>(null, e -> {}, null, null);
+		TopicProcessor.TopicInner<String> test = new TopicProcessor.TopicInner<>(main, sequence, sub);
+
+		main.ringBuffer.getSequencer().cursor.set(Integer.MAX_VALUE + 5L);
+		test.sequence.set(2L);
+
+		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(Integer.MIN_VALUE);
+		assertThat(test.scan(Scannable.LongAttr.LARGE_BUFFERED)).isEqualTo(Integer.MAX_VALUE + 3L);
+	}
 
 	private void assertProcessor(TopicProcessor<Integer> processor,
 			boolean shared,

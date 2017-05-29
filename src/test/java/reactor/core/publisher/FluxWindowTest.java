@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -34,6 +35,7 @@ import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 
@@ -625,7 +627,43 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
         Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
     }
 
-	@Test
+    @Test
+    public void scanOverlapSubscriberSmallBuffered() {
+        Queue<UnicastProcessor<Integer>> mockQueue = Mockito.mock(Queue.class);
+
+        Subscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxWindow.WindowOverlapSubscriber<Integer> test = new FluxWindow.WindowOverlapSubscriber<Integer>(actual,
+                3,3, QueueSupplier.unbounded(), mockQueue);
+
+        when(mockQueue.size()).thenReturn(Integer.MAX_VALUE - 2);
+        //size() is 1
+        test.offer(UnicastProcessor.create());
+
+        assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(Integer.MAX_VALUE - 1);
+        assertThat(test.scan(Scannable.LongAttr.LARGE_BUFFERED)).isEqualTo(Integer.MAX_VALUE - 1L);
+    }
+
+    @Test
+    public void scanOverlapSubscriberLargeBuffered() {
+        Queue<UnicastProcessor<Integer>> mockQueue = Mockito.mock(Queue.class);
+
+        Subscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxWindow.WindowOverlapSubscriber<Integer> test = new FluxWindow.WindowOverlapSubscriber<Integer>(actual,
+                3, 3, QueueSupplier.unbounded(), mockQueue);
+
+        when(mockQueue.size()).thenReturn(Integer.MAX_VALUE);
+        //size() is 5
+        test.offer(UnicastProcessor.create());
+        test.offer(UnicastProcessor.create());
+        test.offer(UnicastProcessor.create());
+        test.offer(UnicastProcessor.create());
+        test.offer(UnicastProcessor.create());
+
+        assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(Integer.MIN_VALUE);
+        assertThat(test.scan(Scannable.LongAttr.LARGE_BUFFERED)).isEqualTo(Integer.MAX_VALUE + 5L);
+    }
+
+    @Test
     public void scanSkipSubscriber() {
         Subscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWindow.WindowSkipSubscriber<Integer> test = new FluxWindow.WindowSkipSubscriber<Integer>(actual,

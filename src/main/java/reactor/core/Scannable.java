@@ -161,7 +161,12 @@ public interface Scannable {
 		/**
 		 * A {@link Integer} attribute implemented by components with a backlog
 		 * capacity. It will expose current queue size or similar related to
-		 * user-provided held data.
+		 * user-provided held data. Note that some operators and processors CAN keep
+		 * a backlog larger than {@code Integer.MAX_VALUE}, in which case
+		 * the {@link LongAttr#LARGE_BUFFERED LongAttr} {@literal LARGE_BUFFERED}
+		 * should be used instead. Such operators will attempt to serve a BUFFERED
+		 * query but will return {@link Integer#MIN_VALUE} when actual buffer size is
+		 * oversized for int.
 		 */
 		BUFFERED(0);
 
@@ -181,6 +186,19 @@ public interface Scannable {
 	 * {@link Scannable} attributes associated with a {@link Long} value.
 	 */
 	enum LongAttr implements Attr<Long> {
+
+		/**
+		 * Similar to {@link IntAttr#BUFFERED}, but reserved for operators that can hold
+		 * a backlog of items that can grow beyond {@literal Integer.MAX_VALUE}. These
+		 * operators will also answer to a {@link IntAttr#BUFFERED} query up to the point
+		 * where their buffer is actually too large, at which point they'll return
+		 * {@literal Integer.MIN_VALUE}, which serves as a signal that this attribute
+		 * should be used instead. Defaults to {@literal null}.
+		 * <p>
+		 * {@code Flux.flatMap}, {@code Flux.filterWhen}, {@link reactor.core.publisher.TopicProcessor},
+		 * and {@code Flux.window} (with overlap) are known to use this attribute.
+		 */
+		LARGE_BUFFERED(null),
 
 		/**
 		 * A {@link Long} attribute exposing the current pending demand of a downstream
