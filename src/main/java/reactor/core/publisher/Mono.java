@@ -3218,6 +3218,25 @@ public abstract class Mono<T> implements Publisher<T> {
 		}
 	}
 
+	public final MonoProcessor<T> toProcessor(boolean connect) {
+		if (!connect)
+			return toProcessor();
+
+		MonoProcessor<T> result;
+		if (this instanceof MonoProcessor) {
+			result = (MonoProcessor<T>)this;
+		}
+		else {
+			result = new MonoProcessor<>(this);
+		}
+		result.connect();
+		return result;
+	}
+
+	public final MonoProcessor<T> toConnectedProcessor() {
+		return toProcessor(true);
+	}
+
 	/**
 	 * Transform this {@link Mono} in order to generate a target {@link Mono}. Unlike {@link #compose(Function)}, the
 	 * provided function is executed as part of assembly.
