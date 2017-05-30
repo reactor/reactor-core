@@ -43,7 +43,7 @@ public class FluxWithProcessorVerification extends AbstractFluxVerification {
 		Flux<String> otherStream = Flux.just("test", "test2", "test3");
 		System.out.println("Providing new downstream");
 		FluxProcessor<Integer, Integer> p =
-				WorkQueueProcessor.Builder.<Integer>create().name("fluxion-raw-fork").bufferSize(bufferSize).build();
+				WorkQueueProcessor.<Integer>builder().name("fluxion-raw-fork").bufferSize(bufferSize).build();
 
 		cumulated.set(0);
 		cumulatedJoin.set(0);
@@ -63,7 +63,7 @@ public class FluxWithProcessorVerification extends AbstractFluxVerification {
 						                          combinator))
 				                          .doOnNext(this::monitorThreadUse))
 				 .doOnNext(array -> cumulatedJoin.getAndIncrement())
-				 .subscribeWith(TopicProcessor.Builder.<Integer>create().name("fluxion-raw-join").bufferSize(bufferSize).build())
+				 .subscribeWith(TopicProcessor.<Integer>builder().name("fluxion-raw-join").bufferSize(bufferSize).build())
 				 .doOnError(Throwable::printStackTrace)
 				 .awaitOnSubscribe());
 	}

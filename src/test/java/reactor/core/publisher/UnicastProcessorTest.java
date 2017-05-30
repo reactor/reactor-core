@@ -32,7 +32,7 @@ public class UnicastProcessorTest {
     @Test
     public void secondSubscriberRejectedProperly() {
 
-        UnicastProcessor<Integer> up = UnicastProcessor.Builder.<Integer>create().queue(new ConcurrentLinkedQueue<>()).build();
+        UnicastProcessor<Integer> up = UnicastProcessor.<Integer>builder().queue(new ConcurrentLinkedQueue<>()).build();
 
         up.subscribe();
 
