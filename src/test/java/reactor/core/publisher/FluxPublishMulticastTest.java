@@ -147,7 +147,7 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		UnicastProcessor<Integer> up =
-				UnicastProcessor.Builder.<Integer>create().queue(QueueSupplier.<Integer>get(16).get()).build();
+				UnicastProcessor.<Integer>builder().queue(QueueSupplier.<Integer>get(16).get()).build();
 
 		up.publish(o -> zip((Object[] a) -> (Integer) a[0] + (Integer) a[1], o, o.skip(1)))
 		  .subscribe(ts);
