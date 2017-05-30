@@ -29,6 +29,8 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.util.concurrent.QueueSupplier;
 
+import static reactor.core.publisher.UnicastProcessor.Builder.NOOP_DISPOSABLE;
+
 /**
  * A Processor implementation that takes a custom queue and allows
  * only a single subscriber.
@@ -44,7 +46,10 @@ public final class UnicastProcessor<T>
 
 	/**
 	 * {@link UnicastProcessor} builder that can be used to create new
-	 * processors.
+	 * processors. Instantiate it through the {@link UnicastProcessor#builder()} static
+	 * method:
+	 * <p>
+	 * {@code UnicastProcessor<String> processor = UnicastProcessor.<String>builder().build()}
 	 *
 	 * @param <T> Type of dispatched signal
 	 */
@@ -55,14 +60,6 @@ public final class UnicastProcessor<T>
 		Queue<T> queue;
 		Disposable onTerminate;
 		Consumer<? super T> onOverflow;
-
-		/**
-		 * Creates a new {@link UnicastProcessor} builder with default properties.
-		 * @return new UnicastProcessor builder
-		 */
-		public static <T> Builder<T> create()  {
-			return new Builder<T>();
-		}
 
 		Builder() {
 			this.onTerminate = NOOP_DISPOSABLE;
@@ -112,63 +109,69 @@ public final class UnicastProcessor<T>
 	}
 
 	/**
-	 * Create a unicast {@link FluxProcessor} that will buffer on a given queue in an
-	 * unbounded fashion.
-	 *
-	 * @param <T> the relayed type
-	 * @return a unicast {@link FluxProcessor}
+	 * Create a new {@link UnicastProcessor} {@link Builder} with default properties.
+	 * @return new UnicastProcessor builder
 	 */
-	public static <T> UnicastProcessor<T> create() {
-		return Builder.<T>create().build();
+	public static <E> Builder<E> builder()  {
+		return new Builder<>();
 	}
 
 	/**
-	 * Create a unicast {@link FluxProcessor} that will buffer on a given queue in an
+	 * Create a new {@link UnicastProcessor} that will buffer on an internal queue in an
+	 * unbounded fashion.
+	 *
+	 * @param <E> the relayed type
+	 * @return a unicast {@link FluxProcessor}
+	 */
+	public static <E> UnicastProcessor<E> create() {
+		return new UnicastProcessor<E>(QueueSupplier.<E>unbounded().get(), NOOP_DISPOSABLE);
+	}
+
+	/**
+	 * Create a new {@link UnicastProcessor} that will buffer on a provided queue in an
 	 * unbounded fashion.
 	 *
 	 * @param queue the buffering queue
-	 * @param <T> the relayed type
+	 * @param <E> the relayed type
 	 * @return a unicast {@link FluxProcessor}
-	 * @deprecated use {@link Builder#build()}
+	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
 	@Deprecated
-	public static <T> UnicastProcessor<T> create(Queue<T> queue) {
-		return Builder.<T>create().queue(queue).build();
+	public static <E> UnicastProcessor<E> create(Queue<E> queue) {
+		return UnicastProcessor.<E>builder().queue(queue).build();
 	}
 
 	/**
-	 * Create a unicast {@link FluxProcessor} that will buffer on a given queue in an
+	 * Create a new {@link UnicastProcessor} that will buffer on a provided queue in an
 	 * unbounded fashion.
 	 *
 	 * @param queue the buffering queue
 	 * @param endcallback called on any terminal signal
-	 * @param <T> the relayed type
+	 * @param <E> the relayed type
 	 * @return a unicast {@link FluxProcessor}
-	 * @deprecated use {@link Builder#build()}
 	 */
-	@Deprecated
-	public static <T> UnicastProcessor<T> create(Queue<T> queue, Disposable endcallback) {
-		return Builder.<T>create().queue(queue).onTerminate(endcallback).build();
+	public static <E> UnicastProcessor<E> create(Queue<E> queue, Disposable endcallback) {
+		return new UnicastProcessor(queue, endcallback);
 	}
 
 	/**
-	 * Create a unicast {@link FluxProcessor} that will buffer on a given queue in an
+	 * Create a new {@link UnicastProcessor} that will buffer on a provided queue in an
 	 * unbounded fashion.
 	 *
 	 * @param queue the buffering queue
 	 * @param endcallback called on any terminal signal
 	 * @param onOverflow called when queue.offer return false and unicastProcessor is
 	 * about to emit onError.
-	 * @param <T> the relayed type
+	 * @param <E> the relayed type
 	 *
 	 * @return a unicast {@link FluxProcessor}
 	 * @deprecated use {@link Builder#build()}
 	 */
 	@Deprecated
-	public static <T> UnicastProcessor<T> create(Queue<T> queue,
-			Consumer<? super T> onOverflow,
+	public static <E> UnicastProcessor<E> create(Queue<E> queue,
+			Consumer<? super E> onOverflow,
 			Disposable endcallback) {
-		return Builder.<T>create().queue(queue).onOverflow(onOverflow).onTerminate(endcallback).build();
+		return UnicastProcessor.<E>builder().queue(queue).onOverflow(onOverflow).onTerminate(endcallback).build();
 	}
 
 	final Queue<T>            queue;

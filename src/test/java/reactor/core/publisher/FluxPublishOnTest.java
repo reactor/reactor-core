@@ -240,7 +240,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		UnicastProcessor<Integer> up =
-				UnicastProcessor.Builder.<Integer>create().queue(new ConcurrentLinkedQueue<>()).build();
+				UnicastProcessor.<Integer>builder().queue(new ConcurrentLinkedQueue<>()).build();
 
 		for (int i = 0; i < 1_000_000; i++) {
 			up.onNext(i);
@@ -260,7 +260,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void normalAsyncFusedBackpressured() throws Exception {
 		UnicastProcessor<Integer> up =
-				UnicastProcessor.Builder.<Integer>create().queue(QueueSupplier.<Integer>unbounded(1024).get()).build();
+				UnicastProcessor.<Integer>builder().queue(QueueSupplier.<Integer>unbounded(1024).get()).build();
 
 		for (int i = 0; i < 1_000_000; i++) {
 			up.onNext(0);
@@ -692,7 +692,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	public void mappedAsyncSourceWithNull() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		UnicastProcessor<Integer> up =
-				UnicastProcessor.Builder.<Integer>create().queue(QueueSupplier.<Integer>get(2).get()).build();
+				UnicastProcessor.<Integer>builder().queue(QueueSupplier.<Integer>get(2).get()).build();
 		up.onNext(1);
 		up.onNext(2);
 		up.onComplete();
@@ -712,7 +712,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	public void mappedAsyncSourceWithNullPostFilter() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		UnicastProcessor<Integer> up =
-				UnicastProcessor.Builder.<Integer>create().queue(QueueSupplier.<Integer>get(2).get()).build();
+				UnicastProcessor.<Integer>builder().queue(QueueSupplier.<Integer>get(2).get()).build();
 		up.onNext(1);
 		up.onNext(2);
 		up.onComplete();
@@ -794,7 +794,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void threadBoundaryPreventsInvalidFusionMap() {
 		UnicastProcessor<Integer> up =
-				UnicastProcessor.Builder.<Integer>create().queue(QueueSupplier.<Integer>get(2).get()).build();
+				UnicastProcessor.<Integer>builder().queue(QueueSupplier.<Integer>get(2).get()).build();
 
 		AssertSubscriber<String> ts = AssertSubscriber.create();
 
@@ -817,7 +817,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void threadBoundaryPreventsInvalidFusionFilter() {
 		UnicastProcessor<Integer> up =
-				UnicastProcessor.Builder.<Integer>create().queue(QueueSupplier.<Integer>get(2).get()).build();
+				UnicastProcessor.<Integer>builder().queue(QueueSupplier.<Integer>get(2).get()).build();
 
 		String s = Thread.currentThread()
 		                 .getName();

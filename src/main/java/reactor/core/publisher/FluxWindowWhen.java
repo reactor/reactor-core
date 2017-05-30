@@ -405,7 +405,7 @@ final class FluxWindowWhen<T, U, V> extends FluxSource<T, Flux<T>> {
 
 							WINDOW_COUNT.getAndIncrement(this);
 
-							UnicastProcessor<T> w = new UnicastProcessor<>(pq, this);
+							UnicastProcessor<T> w = UnicastProcessor.create(pq, this);
 
 							WindowStartEndEnder<T, V> end =
 									new WindowStartEndEnder<>(this, w);

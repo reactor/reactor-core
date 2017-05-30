@@ -157,7 +157,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
 		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
 
-		UnicastProcessor<Integer> up = UnicastProcessor.Builder.<Integer>create().queue(QueueSupplier.<Integer>get(8).get()).build();
+		UnicastProcessor<Integer> up = UnicastProcessor.<Integer>builder().queue(QueueSupplier.<Integer>get(8).get()).build();
 		up.onNext(1);
 		up.onNext(2);
 		up.onNext(3);
@@ -196,7 +196,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts1 = AssertSubscriber.create(0);
 		AssertSubscriber<Integer> ts2 = AssertSubscriber.create(0);
 
-		UnicastProcessor<Integer> up = UnicastProcessor.Builder.<Integer>create().queue(QueueSupplier.<Integer>get(8).get()).build();
+		UnicastProcessor<Integer> up = UnicastProcessor.<Integer>builder().queue(QueueSupplier.<Integer>get(8).get()).build();
 		up.onNext(1);
 		up.onNext(2);
 		up.onNext(3);

@@ -45,7 +45,7 @@ public class TopicProcessorTest {
 
 	@Test
 	public void testShutdownSuccessfullAfterAllDataIsRequested() throws InterruptedException {
-		TopicProcessor<String> processor = TopicProcessor.Builder.<String>create().name("processor").bufferSize(4).build();
+		TopicProcessor<String> processor = TopicProcessor.<String>builder().name("processor").bufferSize(4).build();
 		Publisher<String>
 				publisher = Flux.fromArray(new String[] { "1", "2", "3", "4", "5" });
 		publisher.subscribe(processor);
@@ -68,7 +68,7 @@ public class TopicProcessorTest {
 
 	@Test
 	public void testForceShutdownWhileWaitingForRequest() throws InterruptedException {
-		TopicProcessor<String> processor = TopicProcessor.Builder.<String>create().name("processor").bufferSize(4).build();
+		TopicProcessor<String> processor = TopicProcessor.<String>builder().name("processor").bufferSize(4).build();
 		Publisher<String> publisher = Flux.fromArray(new String[] { "1", "2", "3", "4", "5" });
 		publisher.subscribe(processor);
 
@@ -86,7 +86,7 @@ public class TopicProcessorTest {
 
 	@Test
 	public void testForceShutdownWhileWaitingForInitialRequest() throws InterruptedException {
-		TopicProcessor<String> processor = TopicProcessor.Builder.<String>create().name("processor").bufferSize(4).build();
+		TopicProcessor<String> processor = TopicProcessor.<String>builder().name("processor").bufferSize(4).build();
 		Publisher<String> publisher = new CappedPublisher(2);
 		publisher.subscribe(processor);
 
@@ -140,7 +140,7 @@ public class TopicProcessorTest {
 
 	@Test
 	public void testForceShutdownWhileWaitingForMoreData() throws InterruptedException {
-		TopicProcessor<String> processor = TopicProcessor.Builder.<String>create().name("processor").bufferSize(4).build();
+		TopicProcessor<String> processor = TopicProcessor.<String>builder().name("processor").bufferSize(4).build();
 		Publisher<String> publisher = new CappedPublisher(2);
 		publisher.subscribe(processor);
 
@@ -158,7 +158,7 @@ public class TopicProcessorTest {
 
 	@Test
 	public void testForceShutdownAfterShutdown() throws InterruptedException {
-		TopicProcessor<String> processor = TopicProcessor.Builder.<String>create().name("processor").bufferSize(4).build();
+		TopicProcessor<String> processor = TopicProcessor.<String>builder().name("processor").bufferSize(4).build();
 		Publisher<String> publisher = Flux.fromArray(new String[] { "1", "2", "3", "4", "5" });
 		publisher.subscribe(processor);
 
@@ -181,7 +181,7 @@ public class TopicProcessorTest {
 	@Test
 	public void testShutdown() {
 		for (int i = 0; i < 1000; i++) {
-			TopicProcessor<?> dispatcher = TopicProcessor.Builder.<String>create().name("rb-test-dispose").bufferSize(16).build();
+			TopicProcessor<?> dispatcher = TopicProcessor.<String>builder().name("rb-test-dispose").bufferSize(16).build();
 			dispatcher.awaitAndShutdown();
 		}
 	}
@@ -190,7 +190,7 @@ public class TopicProcessorTest {
 
 	@Test
 	public void drainTest() throws Exception {
-		final TopicProcessor<Integer> sink = TopicProcessor.Builder.<Integer>create().name("topic").build();
+		final TopicProcessor<Integer> sink = TopicProcessor.<Integer>builder().name("topic").build();
 		sink.onNext(1);
 		sink.onNext(2);
 		sink.onNext(3);
@@ -233,7 +233,7 @@ public class TopicProcessorTest {
 	public void chainedTopicProcessor() throws Exception{
 		ExecutorService es = Executors.newFixedThreadPool(2);
 		try {
-			TopicProcessor<String> bc = TopicProcessor.Builder.<String>create().executor(es).bufferSize(16).build();
+			TopicProcessor<String> bc = TopicProcessor.<String>builder().executor(es).bufferSize(16).build();
 
 			int elems = 100;
 			CountDownLatch latch = new CountDownLatch(elems);
@@ -254,7 +254,7 @@ public class TopicProcessorTest {
 	public void testTopicProcessorGetters() {
 
 		final int TEST_BUFFER_SIZE = 16;
-		TopicProcessor<Object> processor = TopicProcessor.Builder.create().name("testProcessor").bufferSize(TEST_BUFFER_SIZE).build();
+		TopicProcessor<Object> processor = TopicProcessor.builder().name("testProcessor").bufferSize(TEST_BUFFER_SIZE).build();
 
 		assertEquals(TEST_BUFFER_SIZE, processor.getAvailableCapacity());
 
@@ -264,23 +264,23 @@ public class TopicProcessorTest {
 
 	@Test(expected = IllegalArgumentException.class)
 	public void failNullBufferSize() {
-		TopicProcessor.Builder.create().name("test").bufferSize(0);
+		TopicProcessor.builder().name("test").bufferSize(0);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void failNonPowerOfTwo() {
-		TopicProcessor.Builder.create().name("test").bufferSize(3);
+		TopicProcessor.builder().name("test").bufferSize(3);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void failNegativeBufferSize() {
-		TopicProcessor.Builder.create().name("test").bufferSize(-1);
+		TopicProcessor.builder().name("test").bufferSize(-1);
 	}
 
 	//see https://github.com/reactor/reactor-core/issues/445
 	@Test(timeout = 5_000)
 	public void testBufferSize1Shared() throws Exception {
-		TopicProcessor<String> broadcast = TopicProcessor.Builder.<String>create()
+		TopicProcessor<String> broadcast = TopicProcessor.<String>builder()
 				.name("share-name")
 				.bufferSize(1)
 				.autoCancel(true)
@@ -309,7 +309,7 @@ public class TopicProcessorTest {
 	//see https://github.com/reactor/reactor-core/issues/445
 	@Test(timeout = 5_000)
 	public void testBufferSize1Created() throws Exception {
-		TopicProcessor<String> broadcast = TopicProcessor.Builder.<String>create().name("share-name").bufferSize(1).autoCancel(true).build();
+		TopicProcessor<String> broadcast = TopicProcessor.<String>builder().name("share-name").bufferSize(1).autoCancel(true).build();
 
 		int simultaneousSubscribers = 3000;
 		CountDownLatch latch = new CountDownLatch(simultaneousSubscribers);
@@ -336,7 +336,7 @@ public class TopicProcessorTest {
 		String mainName = "topicProcessorRequestTask";
 		String expectedName = mainName + "[request-task]";
 
-		TopicProcessor<Object> processor = TopicProcessor.Builder.create().name(mainName).bufferSize(8).build();
+		TopicProcessor<Object> processor = TopicProcessor.builder().name(mainName).bufferSize(8).build();
 
 		processor.requestTask(Operators.cancelledSubscription());
 
@@ -360,7 +360,7 @@ public class TopicProcessorTest {
 		String expectedName = "topicProcessorRequestTaskCreate";
 		//NOTE: the below single executor should not be used usually as requestTask assumes it immediately gets executed
 		ExecutorService customTaskExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, expectedName));
-		TopicProcessor<Object> processor = TopicProcessor.Builder.create()
+		TopicProcessor<Object> processor = TopicProcessor.builder()
 				.executor(Executors.newCachedThreadPool())
 				.requestTaskExecutor(customTaskExecutor)
 				.bufferSize(8)
@@ -391,7 +391,7 @@ public class TopicProcessorTest {
 		//NOTE: the below single executor should not be used usually as requestTask assumes it immediately gets executed
 		ExecutorService customTaskExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, expectedName));
 
-		TopicProcessor<Object> processor = TopicProcessor.Builder.create().share(true)
+		TopicProcessor<Object> processor = TopicProcessor.builder().share(true)
 				.executor(Executors.newCachedThreadPool())
 				.requestTaskExecutor(customTaskExecutor)
 				.bufferSize(8)

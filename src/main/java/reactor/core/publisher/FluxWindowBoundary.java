@@ -134,7 +134,7 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 				Queue<T> processorQueue, Queue<Object> queue) {
 			this.actual = actual;
 			this.processorQueueSupplier = processorQueueSupplier;
-			this.window = new UnicastProcessor<>(processorQueue, this);
+			this.window = UnicastProcessor.create(processorQueue, this);
 			WINDOW_COUNT.lazySet(this, 2);
 			this.boundary = new WindowBoundaryOther<>(this);
 			this.queue = queue;
@@ -317,7 +317,7 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 
 								WINDOW_COUNT.getAndIncrement(this);
 
-								w = new UnicastProcessor<>(pq, this);
+								w = UnicastProcessor.create(pq, this);
 								window = w;
 
 								a.onNext(w);
