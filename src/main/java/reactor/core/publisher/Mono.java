@@ -3200,8 +3200,9 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Wrap this {@link Mono} into a {@link MonoProcessor} (turning it hot and allowing to block,
-	 * cancel, as well as many other operations). The {@link MonoProcessor} should then
-	 * be {@link #subscribe() subscribed to} in order to request unbounded amount.
+	 * cancel, as well as many other operations). Note that the {@link MonoProcessor} is
+	 * {@link MonoProcessor#connect() connected to} (which is equivalent to calling subscribe
+	 * on it).
 	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M1/src/docs/marble/unbounded1.png" alt="">
@@ -3210,18 +3211,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link MonoProcessor} to use to either retrieve value or cancel the underlying {@link Subscription}
 	 */
 	public final MonoProcessor<T> toProcessor() {
-		if (this instanceof MonoProcessor) {
-			return (MonoProcessor<T>)this;
-		}
-		else {
-			return new MonoProcessor<>(this);
-		}
-	}
-
-	public final MonoProcessor<T> toProcessor(boolean connect) {
-		if (!connect)
-			return toProcessor();
-
 		MonoProcessor<T> result;
 		if (this instanceof MonoProcessor) {
 			result = (MonoProcessor<T>)this;
@@ -3231,10 +3220,6 @@ public abstract class Mono<T> implements Publisher<T> {
 		}
 		result.connect();
 		return result;
-	}
-
-	public final MonoProcessor<T> toConnectedProcessor() {
-		return toProcessor(true);
 	}
 
 	/**

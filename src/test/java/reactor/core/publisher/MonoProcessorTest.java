@@ -437,23 +437,9 @@ public class MonoProcessorTest {
 	}
 
 	@Test
-	public void monoToProcessorDoesntConnect() {
-		MonoProcessor<String> monoProcessor = Mono.just("foo").toProcessor();
-
-		assertThat(monoProcessor.connected).isZero();
-	}
-
-	@Test
-	public void monoToProcessorAndSubscribeDoesConnect() {
-		MonoProcessor<String> monoProcessor = Mono.just("foo").toProcessor();
-
-		assertThat(monoProcessor.subscribe()).isSameAs(monoProcessor);
-		assertThat(monoProcessor.connected).isEqualTo(1);
-	}
-
-	@Test
 	public void monoToProcessorReusesInstance() {
-		MonoProcessor<String> monoProcessor = Mono.just("foo").toProcessor();
+		MonoProcessor<String> monoProcessor = Mono.just("foo")
+		                                          .toProcessor();
 
 		assertThat(monoProcessor)
 				.isSameAs(monoProcessor.toProcessor())
@@ -461,39 +447,17 @@ public class MonoProcessorTest {
 	}
 
 	@Test
-	public void monoToProcessorConnect() {
+	public void monoToProcessorConnects() {
 		MonoProcessor<String> connectedProcessor = Mono.just("foo")
-		                                          .toProcessor(true);
+		                                          .toProcessor();
 
 		assertThat(connectedProcessor.connected).isEqualTo(1);
 	}
 
 	@Test
-	public void monoToProcessorConnectReusesInstance() {
-		MonoProcessor<String> connectedProcessor = Mono.just("foo")
-		                                          .toProcessor(true);
-
-		assertThat(connectedProcessor)
-				.isSameAs(connectedProcessor.toProcessor(true))
-				.isSameAs(connectedProcessor.toProcessor())
-				.isSameAs(connectedProcessor.subscribe());
-	}
-
-	@Test
 	public void monoToProcessorChain() {
 		StepVerifier.withVirtualTime(() -> Mono.just("foo")
-		                                       .toProcessor(true)
-		                                       .delayElement(Duration.ofMillis(500)))
-		            .expectSubscription()
-		            .expectNoEvent(Duration.ofMillis(500))
-		            .expectNext("foo")
-		            .verifyComplete();
-	}
-
-	@Test
-	public void monoToProcessorChain2() {
-		StepVerifier.withVirtualTime(() -> Mono.just("foo")
-		                                       .toConnectedProcessor()
+		                                       .toProcessor()
 		                                       .delayElement(Duration.ofMillis(500)))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofMillis(500))
@@ -507,7 +471,7 @@ public class MonoProcessorTest {
 		Mono<String> coldToHot = Mono.just("foo")
 		                             .doOnSubscribe(sub -> subscriptionCount.incrementAndGet())
 		                             .cache()
-		                             .toConnectedProcessor() //this actually subscribes
+		                             .toProcessor() //this actually subscribes
 		                             .filter(s -> s.length() < 4);
 
 		assertThat(subscriptionCount.get()).isEqualTo(1);
