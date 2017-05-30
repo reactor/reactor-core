@@ -71,7 +71,7 @@ final class MonoPublishOn<T> extends MonoSource<T, T> {
 
 		@Override
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.CANCELLED) return future == Flux.CANCELLED;
+			if (key == BooleanAttr.CANCELLED) return future == Disposables.DISPOSED;
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == ThrowableAttr.ERROR) return error;
 
@@ -111,7 +111,7 @@ final class MonoPublishOn<T> extends MonoSource<T, T> {
 		@Override
 		public void onComplete() {
 			if (value == null) {
-				if (schedule() == Scheduler.REJECTED && future != Flux.CANCELLED) {
+				if (schedule() == Scheduler.REJECTED && future != Disposables.DISPOSED) {
 					throw Operators.onRejectedExecution();
 				}
 			}
@@ -136,9 +136,9 @@ final class MonoPublishOn<T> extends MonoSource<T, T> {
 		@Override
 		public void cancel() {
 			Disposable c = future;
-			if (c != Flux.CANCELLED) {
-				c = FUTURE.getAndSet(this, Flux.CANCELLED);
-				if (c != null && c != Flux.CANCELLED) {
+			if (c != Disposables.DISPOSED) {
+				c = FUTURE.getAndSet(this, Disposables.DISPOSED);
+				if (c != null && c != Disposables.DISPOSED) {
 					c.dispose();
 				}
 			}
@@ -147,7 +147,7 @@ final class MonoPublishOn<T> extends MonoSource<T, T> {
 
 		@Override
 		public void run() {
-			if (future == Flux.CANCELLED) {
+			if (Disposables.isDisposed(future)) {
 				return;
 			}
 			T v = value;
@@ -156,7 +156,7 @@ final class MonoPublishOn<T> extends MonoSource<T, T> {
 				actual.onNext(v);
 			}
 
-			if (future == Flux.CANCELLED) {
+			if (Disposables.isDisposed(future)) {
 				return;
 			}
 			Throwable e = error;

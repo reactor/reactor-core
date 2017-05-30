@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Objects;
@@ -23,20 +24,18 @@ import reactor.core.publisher.FluxSubscribeOnValue.ScheduledEmpty;
 import reactor.core.publisher.FluxSubscribeOnValue.ScheduledScalar;
 import reactor.core.scheduler.Scheduler;
 
-
 /**
  * Mono indicating a scalar/empty source that subscribes on the specified scheduler.
- * 
+ *
  * @param <T>
  */
 final class MonoSubscribeOnValue<T> extends Mono<T> {
 
 	final T value;
-	
+
 	final Scheduler scheduler;
 
-	MonoSubscribeOnValue(T value,
-			Scheduler scheduler) {
+	MonoSubscribeOnValue(T value, Scheduler scheduler) {
 		this.value = value;
 		this.scheduler = Objects.requireNonNull(scheduler, "scheduler");
 	}
@@ -49,14 +48,15 @@ final class MonoSubscribeOnValue<T> extends Mono<T> {
 			s.onSubscribe(parent);
 			Disposable f = scheduler.schedule(parent);
 			if (f == Scheduler.REJECTED) {
-				if(parent.future != Flux.CANCELLED) {
+				if (parent.future != Disposables.DISPOSED) {
 					s.onError(Operators.onRejectedExecution());
 				}
 			}
 			else {
 				parent.setFuture(f);
 			}
-		} else {
+		}
+		else {
 			s.onSubscribe(new ScheduledScalar<>(s, v, scheduler));
 		}
 	}

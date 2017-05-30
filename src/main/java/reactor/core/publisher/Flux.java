@@ -3393,8 +3393,8 @@ public abstract class Flux<T> implements Publisher<T> {
 				MutableNextSignal::<T>undefined,
 				null,
 				(v, s) -> signalConsumer.accept(s.mutate(v)),
-				(e, s) -> signalConsumer.accept(Signal.<T>error(e)),
-				s -> signalConsumer.accept(Signal.<T>complete()),
+				(e, s) -> signalConsumer.accept(Signal.error(e)),
+				s -> signalConsumer.accept(Signal.complete()),
 				null, null, null);
 	}
 
@@ -7461,6 +7461,4 @@ public abstract class Flux<T> implements Publisher<T> {
 	@SuppressWarnings("rawtypes")
 	static final Function        IDENTITY_FUNCTION       = Function.identity();
 
-	static final Disposable CANCELLED = () -> {
-	};
 }

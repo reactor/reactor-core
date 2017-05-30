@@ -25,7 +25,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
 import reactor.core.Disposable;
-import reactor.core.publisher.FluxRefCountGrace.SequentialDisposable;
+import reactor.core.publisher.Disposables.SequentialDisposable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;

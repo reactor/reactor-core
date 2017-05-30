@@ -53,7 +53,7 @@ final class MonoDelay extends Mono<Long> {
 
 		Disposable f = timedScheduler.schedule(r, delay, unit);
 		if (f == Scheduler.REJECTED) {
-			if(r.cancel != Flux.CANCELLED &&
+			if(r.cancel != Disposables.DISPOSED &&
 					r.cancel != MonoDelayRunnable.FINISHED) {
 				s.onError(Operators.onRejectedExecution(r, null, null));
 			}
@@ -94,7 +94,7 @@ final class MonoDelay extends Mono<Long> {
 		@Override
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return cancel == FINISHED;
-			if (key == BooleanAttr.CANCELLED) return cancel == Flux.CANCELLED;
+			if (key == BooleanAttr.CANCELLED) return cancel == Disposables.DISPOSED;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}
@@ -103,7 +103,7 @@ final class MonoDelay extends Mono<Long> {
 		public void run() {
 			if (requested) {
 				try {
-					if (CANCEL.getAndSet(this, FINISHED) != Flux.CANCELLED) {
+					if (CANCEL.getAndSet(this, FINISHED) != Disposables.DISPOSED) {
 						actual.onNext(0L);
 						actual.onComplete();
 					}
@@ -119,9 +119,9 @@ final class MonoDelay extends Mono<Long> {
 		@Override
 		public void cancel() {
 			Disposable c = cancel;
-			if (c != Flux.CANCELLED && c != FINISHED) {
-				c =  CANCEL.getAndSet(this, Flux.CANCELLED);
-				if (c != null && c != Flux.CANCELLED && c != FINISHED) {
+			if (c != Disposables.DISPOSED && c != FINISHED) {
+				c =  CANCEL.getAndSet(this, Disposables.DISPOSED);
+				if (c != null && c != Disposables.DISPOSED && c != FINISHED) {
 					c.dispose();
 				}
 			}

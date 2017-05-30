@@ -175,7 +175,7 @@ public class OperatorsTest {
 
 	@Test
 	public void noopFluxCancelled(){
-		Flux.CANCELLED.dispose(); //noop
+		Disposables.DISPOSED.dispose(); //noop
 	}
 
 	@Test

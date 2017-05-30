@@ -88,7 +88,7 @@ final class MonoCreate<T> extends Mono<T> {
 		@Override
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return state == HAS_REQUEST_HAS_VALUE || state == NO_REQUEST_HAS_VALUE;
-			if (key == BooleanAttr.CANCELLED) return disposable == Flux.CANCELLED;
+			if (key == BooleanAttr.CANCELLED) return Disposables.isDisposed(disposable);
 
 			return InnerProducer.super.scanUnsafe(key);
 		}
@@ -237,9 +237,9 @@ final class MonoCreate<T> extends Mono<T> {
 
 		void disposeResource(boolean isCancel) {
 			Disposable d = disposable;
-			if (d != Flux.CANCELLED) {
-				d = DISPOSABLE.getAndSet(this, Flux.CANCELLED);
-				if (d != null && d != Flux.CANCELLED) {
+			if (d != Disposables.DISPOSED) {
+				d = DISPOSABLE.getAndSet(this, Disposables.DISPOSED);
+				if (d != null && d != Disposables.DISPOSED) {
 					if (isCancel && d instanceof SinkDisposable) {
 						((SinkDisposable) d).cancel();
 					}
