@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -433,6 +434,53 @@ public class MonoProcessorTest {
 
 		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
 		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+	}
+
+	@Test
+	public void monoToProcessorReusesInstance() {
+		MonoProcessor<String> monoProcessor = Mono.just("foo")
+		                                          .toProcessor();
+
+		assertThat(monoProcessor)
+				.isSameAs(monoProcessor.toProcessor())
+				.isSameAs(monoProcessor.subscribe());
+	}
+
+	@Test
+	public void monoToProcessorConnects() {
+		MonoProcessor<String> connectedProcessor = Mono.just("foo")
+		                                          .toProcessor();
+
+		assertThat(connectedProcessor.connected).isEqualTo(1);
+	}
+
+	@Test
+	public void monoToProcessorChain() {
+		StepVerifier.withVirtualTime(() -> Mono.just("foo")
+		                                       .toProcessor()
+		                                       .delayElement(Duration.ofMillis(500)))
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMillis(500))
+		            .expectNext("foo")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void monoToProcessorChainColdToHot() {
+		AtomicInteger subscriptionCount = new AtomicInteger();
+		Mono<String> coldToHot = Mono.just("foo")
+		                             .doOnSubscribe(sub -> subscriptionCount.incrementAndGet())
+		                             .cache()
+		                             .toProcessor() //this actually subscribes
+		                             .filter(s -> s.length() < 4);
+
+		assertThat(subscriptionCount.get()).isEqualTo(1);
+
+		coldToHot.block();
+		coldToHot.block();
+		coldToHot.block();
+
+		assertThat(subscriptionCount.get()).isEqualTo(1);
 	}
 
 }
