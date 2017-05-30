@@ -108,16 +108,12 @@ final class MonoUntilOther<T> extends Mono<T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case TERMINATED:
-					return done;
-				case PARENT:
-					return sourceSubscriber;
-				case DELAY_ERROR:
-					return delayError;
-			}
-			return super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.TERMINATED) return done == n;
+			if (key == ScannableAttr.PARENT) return sourceSubscriber;
+			if (key == BooleanAttr.DELAY_ERROR) return delayError;
+
+			return super.scanUnsafe(key);
 		}
 
 		@Override
@@ -223,7 +219,7 @@ final class MonoUntilOther<T> extends Mono<T> {
 		}
 	}
 
-	static final class UntilOtherSource<T> implements Subscriber<T> {
+	static final class UntilOtherSource<T> implements InnerConsumer<T> {
 
 		final UntilOtherCoordinator<T> parent;
 
@@ -269,6 +265,15 @@ final class MonoUntilOther<T> extends Mono<T> {
 			}
 		}
 
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == ThrowableAttr.ERROR) return error;
+			if (key == BooleanAttr.TERMINATED) return error != null || value != null;
+			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
+
+			return null;
+		}
+
 		void cancel() {
 			Operators.terminate(S, this);
 		}
@@ -294,17 +299,12 @@ final class MonoUntilOther<T> extends Mono<T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case CANCELLED:
-					return s == Operators.cancelledSubscription();
-				case PARENT:
-					return s;
-				case ACTUAL:
-					return parent;
-				case ERROR:
-					return error;
-			}
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == ScannableAttr.ACTUAL) return parent;
+			if (key == ThrowableAttr.ERROR) return error;
+
 			return null;
 		}
 

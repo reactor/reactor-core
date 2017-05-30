@@ -49,13 +49,10 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 	}
 
 	@Override
-	public Object scan(Attr key) {
-		switch (key){
-			case PARENT:
-				return source;
-			case PREFETCH:
-				return getPrefetch();
-		}
+	public Object scanUnsafe(Attr key) {
+		if (key == ScannableAttr.PARENT) return source;
+		if (key == IntAttr.PREFETCH) return getPrefetch();
+
 		return null;
 	}
 	
@@ -119,18 +116,13 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch(key){
-				case CANCELLED:
-					return cancelled;
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
-				case TERMINATED:
-					return done == 0;
-				case ERROR:
-					return error;
-			}
-			return InnerProducer.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.CANCELLED) return cancelled;
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == BooleanAttr.TERMINATED) return done == 0;
+			if (key == ThrowableAttr.ERROR) return error;
+
+			return InnerProducer.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -365,21 +357,14 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch(key){
-				case CANCELLED:
-					return s == Operators.cancelledSubscription();
-				case PARENT:
-					return s;
-				case ACTUAL:
-					return parent;
-				case PREFETCH:
-					return prefetch;
-				case BUFFERED:
-					return queue != null ? queue.size() : 0;
-				case TERMINATED:
-					return done;
-			}
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == ScannableAttr.ACTUAL) return parent;
+			if (key == IntAttr.PREFETCH) return prefetch;
+			if (key == IntAttr.BUFFERED) return queue != null ? queue.size() : 0;
+			if (key == BooleanAttr.TERMINATED) return done;
+
 			return null;
 		}
 		

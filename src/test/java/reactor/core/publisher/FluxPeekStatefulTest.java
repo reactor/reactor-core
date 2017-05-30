@@ -23,10 +23,13 @@ import java.util.concurrent.atomic.LongAdder;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
 
+import org.assertj.core.api.Assertions;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 
@@ -522,4 +525,22 @@ public class FluxPeekStatefulTest {
 		Assert.assertEquals(-99, state.intValue()); //original onError + afterTerminate
 	}
 
+	@Test
+    public void scanSubscriber() {
+        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxPeekStateful<Integer, String> peek = new FluxPeekStateful<>(Flux.just(1),
+        		() -> "", (t, s) -> {}, (t, s) -> {},
+        		(t, s) -> {}, s -> {}, s -> {}, (r, s) -> {}, s -> {});
+        FluxPeekStateful.PeekStatefulSubscriber<Integer, String> test =
+        		new FluxPeekStateful.PeekStatefulSubscriber<Integer, String>(actual, peek, "");
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        test.onError(new IllegalStateException("boom"));
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+    }
 }

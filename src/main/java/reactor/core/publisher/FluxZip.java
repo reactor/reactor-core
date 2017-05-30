@@ -391,14 +391,11 @@ final class FluxZip<T, R> extends Flux<R> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case TERMINATED:
-					return wip == 0;
-				case BUFFERED:
-					return wip > 0 ? scalars.length : 0;
-			}
-			return super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.TERMINATED) return wip == 0;
+			if (key == IntAttr.BUFFERED) return wip > 0 ? scalars.length : 0;
+
+			return super.scanUnsafe(key);
 		}
 
 		@Override
@@ -437,19 +434,13 @@ final class FluxZip<T, R> extends Flux<R> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case PARENT:
-					return s;
-				case TERMINATED:
-					return done;
-				case ACTUAL:
-					return parent;
-				case CANCELLED:
-					return s == Operators.cancelledSubscription();
-				case BUFFERED:
-					return parent.scalars[index] == null ? 0 : 1;
-			}
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == ScannableAttr.ACTUAL) return parent;
+			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == IntAttr.BUFFERED) return parent.scalars[index] == null ? 0 : 1;
+
 			return null;
 		}
 
@@ -580,16 +571,12 @@ final class FluxZip<T, R> extends Flux<R> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
-				case ERROR:
-					return error;
-				case CANCELLED:
-					return cancelled;
-			}
-			return InnerProducer.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == ThrowableAttr.ERROR) return error;
+			if (key == BooleanAttr.CANCELLED) return cancelled;
+
+			return InnerProducer.super.scanUnsafe(key);
 		}
 
 		void error(Throwable e, int index) {
@@ -888,21 +875,14 @@ final class FluxZip<T, R> extends Flux<R> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case PARENT:
-					return  s;
-				case ACTUAL:
-					return parent;
-				case CANCELLED:
-					return s == Operators.cancelledSubscription();
-				case BUFFERED:
-					return queue != null ? queue.size() : 0;
-				case TERMINATED:
-					return done && (queue == null || queue.isEmpty());
-				case PREFETCH:
-					return prefetch;
-			}
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return  s;
+			if (key == ScannableAttr.ACTUAL) return parent;
+			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == IntAttr.BUFFERED) return queue != null ? queue.size() : 0;
+			if (key == BooleanAttr.TERMINATED) return done && (queue == null || queue.isEmpty());
+			if (key == IntAttr.PREFETCH) return prefetch;
+
 			return null;
 		}
 

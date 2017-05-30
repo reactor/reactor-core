@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -28,7 +29,11 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor.AbortPolicy;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
@@ -338,6 +343,33 @@ public class MonoPublishOnTest {
 			latch.countDown();
 			executor.shutdownNow();
 		}
+	}
+
+	@Test
+	public void scanSubscriber() {
+		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		MonoPublishOn.PublishOnSubscriber<String> test = new MonoPublishOn.PublishOnSubscriber<>(
+				actual, Schedulers.single());
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		test.cancel();
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	public void scanSubscriberError() {
+		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		MonoPublishOn.PublishOnSubscriber<String> test = new MonoPublishOn.PublishOnSubscriber<>(
+				actual, Schedulers.single());
+
+		Assertions.assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+		test.onError(new IllegalStateException("boom"));
+		Assertions.assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
 	}
 
 }

@@ -18,7 +18,12 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -184,4 +189,40 @@ public class FluxTakeUntilOtherTest {
 		            .thenAwait(Duration.ofSeconds(2))
 		            .verifyComplete();
 	}
+
+	@Test
+    public void scanMainSubscriber() {
+        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxTakeUntilOther.TakeUntilMainSubscriber<Integer> test =
+        		new FluxTakeUntilOther.TakeUntilMainSubscriber<>(actual);
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        @SuppressWarnings("unchecked")
+		SerializedSubscriber<Integer> serialized = (SerializedSubscriber<Integer>) test.scan(Scannable.ScannableAttr.ACTUAL);
+        Assertions.assertThat(serialized.actual()).isSameAs(actual);
+
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        test.cancel();
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+    }
+
+	@Test
+    public void scanOtherSubscriber() {
+        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxTakeUntilOther.TakeUntilMainSubscriber<Integer> main =
+        		new FluxTakeUntilOther.TakeUntilMainSubscriber<>(actual);
+        FluxTakeUntilOther.TakeUntilOtherSubscriber<Integer> test =
+        		new FluxTakeUntilOther.TakeUntilOtherSubscriber<>(main);
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(main);
+
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        main.cancel();
+        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+    }
 }

@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -24,7 +25,9 @@ import java.util.concurrent.atomic.LongAdder;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.util.concurrent.QueueSupplier;
@@ -261,6 +264,50 @@ public class MonoSequenceEqualTest {
 
 		Assert.assertEquals("left has been subscribed multiple times", 1, innerSub1.intValue());
 		Assert.assertEquals("right has been subscribed multiple times", 1, innerSub2.intValue());
+	}
+
+	@Test
+	public void scanCoordinator() {
+		Subscriber<Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		MonoSequenceEqual.EqualCoordinator<String> test = new MonoSequenceEqual.EqualCoordinator<>(actual,
+						123,
+						Mono.just("foo"),
+						Mono.just("bar"),
+						(s1, s2) -> s1.equals(s2));
+
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+
+		test.cancel();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	public void scanSubscriber() {
+		Subscriber<Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		MonoSequenceEqual.EqualCoordinator<String> coordinator = new MonoSequenceEqual.EqualCoordinator<>(actual,
+						123,
+						Mono.just("foo"),
+						Mono.just("bar"),
+						(s1, s2) -> s1.equals(s2));
+
+		MonoSequenceEqual.EqualSubscriber<String> test = new MonoSequenceEqual.EqualSubscriber<>(
+				coordinator, 456);
+		test.queue.offer("foo");
+		Subscription sub = Operators.cancelledSubscription();
+		test.onSubscribe(sub);
+
+		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(456);
+		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(coordinator);
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(sub);
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		test.onError(new IllegalStateException("boom"));
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
 	}
 
 	//TODO multithreaded race between cancel and onNext, between cancel and drain, source overflow, error dropping to hook

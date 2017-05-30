@@ -27,6 +27,7 @@ import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
@@ -832,6 +833,47 @@ public class FluxGroupByTest extends
 		            .verifyComplete();
 
 		assertThat(initialRequest.get()).isEqualTo(Long.MAX_VALUE);
+	}
+
+	@Test
+	public void scanMain() {
+		Subscriber<GroupedFlux<Integer, String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxGroupBy.GroupByMain<Integer, Integer, String> test = new FluxGroupBy.GroupByMain<>(actual,
+				QueueSupplier.<GroupedFlux<Integer, String>>one().get(), QueueSupplier.<String>one(), 123, i -> i % 5, i -> String.valueOf(i));
+		Subscription sub = Operators.emptySubscription();
+        test.onSubscribe(sub);
+
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(sub);
+		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(Long.MAX_VALUE);
+		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isSameAs(123);
+		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isSameAs(0);
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+		test.error = new IllegalStateException("boom");
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isSameAs(test.error);
+	}
+
+	@Test
+	public void scanUnicastGroupedFlux() {
+		Subscriber<GroupedFlux<Integer, String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxGroupBy.GroupByMain<Integer, Integer, String> main = new FluxGroupBy.GroupByMain<>(actual,
+				QueueSupplier.<GroupedFlux<Integer, String>>one().get(), QueueSupplier.<String>one(), 123, i -> i % 5, i -> String.valueOf(i));
+		FluxGroupBy.UnicastGroupedFlux<Integer, String> test = new FluxGroupBy.UnicastGroupedFlux<Integer, String>(1,
+				QueueSupplier.<String>one().get(), main, 123);
+		Subscriber<String> sub = new LambdaSubscriber<>(null, e -> {}, null, null);
+        test.subscribe(sub);
+
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(sub);
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(main);
+		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(Long.MAX_VALUE);
+		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isSameAs(0);
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+		test.error = new IllegalStateException("boom");
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isSameAs(test.error);
 	}
 
 }

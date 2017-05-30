@@ -16,8 +16,13 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.Scannable;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoNextTest {
 
@@ -55,5 +60,20 @@ public class MonoNextTest {
 		processor.cancel();
 
 		cancelTester.assertCancelled();
+	}
+
+	@Test
+	public void scanSubscriber() {
+		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		MonoNext.NextSubscriber<String> test = new MonoNext.NextSubscriber<>(actual);
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		test.onError(new IllegalStateException("boom"));
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
 	}
 }

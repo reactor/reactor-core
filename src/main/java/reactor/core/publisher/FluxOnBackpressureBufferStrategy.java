@@ -103,26 +103,17 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return s;
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
-				case TERMINATED:
-					return done && isEmpty();
-				case CANCELLED:
-					return cancelled;
-				case BUFFERED:
-					return size();
-				case ERROR:
-					return error;
-				case PREFETCH:
-					return Integer.MAX_VALUE;
-				case DELAY_ERROR:
-					return delayError;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == BooleanAttr.TERMINATED) return done && isEmpty();
+			if (key == BooleanAttr.CANCELLED) return cancelled;
+			if (key == IntAttr.BUFFERED) return size();
+			if (key == ThrowableAttr.ERROR) return error;
+			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == BooleanAttr.DELAY_ERROR) return delayError;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override

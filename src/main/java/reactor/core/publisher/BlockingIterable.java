@@ -63,13 +63,10 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 	}
 
 	@Override
-	public Object scan(Attr key) {
-		switch (key){
-			case PREFETCH:
-				return batchSize;
-			case PARENT:
-				return source;
-		}
+	public Object scanUnsafe(Attr key) {
+		if (key == IntAttr.PREFETCH) return (int) Math.min(Integer.MAX_VALUE, batchSize); //FIXME should batchSize be forced to int?
+		if (key == ScannableAttr.PARENT) return source;
+
 		return null;
 	}
 
@@ -259,19 +256,13 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-		 	switch (key){
-			    case TERMINATED:
-				    return done;
-			    case PARENT:
-				    return  s;
-			    case CANCELLED:
-			    	return s == Operators.cancelledSubscription();
-			    case PREFETCH:
-			    	return batchSize;
-			    case ERROR:
-			    	return error;
-		    }
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == ScannableAttr.PARENT) return  s;
+			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == IntAttr.PREFETCH) return (int) Math.min(Integer.MAX_VALUE, batchSize); //FIXME should batchSize be typed int?
+			if (key == ThrowableAttr.ERROR) return error;
+
 			return null;
 		}
 	}

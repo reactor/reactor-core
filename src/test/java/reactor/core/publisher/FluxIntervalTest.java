@@ -24,10 +24,14 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
 import reactor.core.scheduler.Schedulers;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxIntervalTest {
 
@@ -137,4 +141,15 @@ public class FluxIntervalTest {
 		            .thenCancel()
 		            .verify();
 	}
+
+	@Test
+    public void scanIntervalRunnable() {
+        Subscriber<Long> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxInterval.IntervalRunnable test = new FluxInterval.IntervalRunnable(actual, Schedulers.single().createWorker());
+
+        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        test.cancel();
+        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+    }
 }

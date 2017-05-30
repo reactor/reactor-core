@@ -46,11 +46,9 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 	}
 
 	@Override
-	public Object scan(Attr key) {
-		switch (key){
-			case PARENT:
-				return source;
-		}
+	public Object scanUnsafe(Attr key) {
+		if (key == ScannableAttr.PARENT) return source;
+
 		return null;
 	}
 
@@ -109,12 +107,10 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch(key){
-				case ERROR:
-					return error;
-			}
-			return super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ThrowableAttr.ERROR) return error;
+
+			return super.scanUnsafe(key);
 		}
 
 		SlotPair<T> addValue(T value) {
@@ -226,21 +222,14 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch(key){
-				case CANCELLED:
-					return s == Operators.cancelledSubscription();
-				case PARENT:
-					return s;
-				case TERMINATED:
-					return done;
-				case ACTUAL:
-					return parent;
-				case BUFFERED:
-					return value != null ? 1 : 0;
-				case PREFETCH:
-					return Integer.MAX_VALUE;
-			}
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == ScannableAttr.ACTUAL) return parent;
+			if (key == IntAttr.BUFFERED) return value != null ? 1 : 0;
+			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
+
 			return null;
 		}
 

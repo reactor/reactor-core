@@ -140,15 +140,11 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	}
 
 	@Override
-	public Object scan(Attr key) {
-		switch (key) {
-			case TERMINATED:
-				return isTerminated();
-			case ERROR:
-				return getError();
-			case CAPACITY:
-				return getBufferSize();
-		}
+	public Object scanUnsafe(Attr key) {
+		if (key == BooleanAttr.TERMINATED) return isTerminated();
+		if (key == ThrowableAttr.ERROR) return getError();
+		if (key == IntAttr.CAPACITY) return getBufferSize();
+
 		return null;
 	}
 

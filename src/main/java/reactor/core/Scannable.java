@@ -17,7 +17,6 @@
 package reactor.core;
 
 import java.util.Iterator;
-import java.util.Objects;
 import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -39,103 +38,53 @@ import java.util.stream.StreamSupport;
 @FunctionalInterface
 public interface Scannable {
 
+	static Stream<? extends Scannable> recurse(Scannable _s, ScannableAttr key){
+		Scannable s = Scannable.from(_s.scan(key));
+		if(s == null){
+			return Stream.empty();
+		}
+		return StreamSupport.stream(Spliterators.spliteratorUnknownSize(new Iterator<Scannable>() {
+			Scannable c = s;
+
+			@Override
+			public boolean hasNext() {
+				return c != null;
+			}
+
+			@Override
+			public Scannable next() {
+				Scannable _c = c;
+				c = Scannable.from(c.scan(key));
+				return _c;
+			}
+		}, 0),false);
+	}
+
 	/**
-	 * A list of reserved keys for component state scanning
+	 * Base interface for {@link Scannable} attributes, which all can define a meaningful
+	 * default.
+	 *
+	 * @param <T> the type of data associated with an attribute
 	 */
-	enum Attr {
-		/**
-		 * Parent key exposes the direct upstream relationship of the scanned component.
-		 * It can be a Publisher source to an operator, a Subscription to a Subscriber
-		 * (main flow if ambiguous with
-		 * inner Subscriptions like flatMap), a Scheduler to a Worker.
-		 * <p>
-		 *     {@link #parents()} can be used to navigate the parent chain.
-		 */
-		PARENT,
+	@FunctionalInterface
+	interface Attr<T> {
 
 		/**
-		 * Delay_Error exposes a {@link Boolean} whether the scanned component
-		 * actively supports error delaying if it manages a backlog instead of fast
-		 * error-passing which might drop pending backlog.
-		 * <p>
-		 *     Note: This attribute usually resolves to a constant value
+		 * Meaningful and always applicable default value for the attribute, returned
+		 * instead of {@literal null} when a specific value hasn't been defined for a
+		 * component. {@literal null} if no sensible generic default is available.
+		 *
+		 * @return the default value applicable to all components or null if none.
 		 */
-		DELAY_ERROR,
-
-		/**
-		 * Prefetch is an {@link Integer} attribute defining the rate of processing in a
-		 * component
-		 * which has capacity to request and hold a backlog of data. It
-		 * usually maps to a component capacity when no arbitrary {@link #CAPACITY} is
-		 * set. {@link Integer#MAX_VALUE} signal unlimited capacity and therefore
-		 * unbounded demand.
-		 * <p>
-		 *     Note: This attribute usually resolves to a constant value
-		 */
-		PREFETCH,
-
-		/**
-		 * Return an an {@link Integer} capacity when no {@link #PREFETCH} is defined or
-		 * when an arbitrary maximum limit is applied to the backlog capacity of the
-		 * scanned component. {@link Integer#MAX_VALUE} signal unlimited capacity.
-		 * <p>
-		 *     Note: This attribute usually resolves to a constant value
-		 */
-		CAPACITY,
-
-		/**
-		 * The direct dependent component downstream reference if any. Operators in Flux/Mono for instance
-		 *  delegate to a target Subscriber, which is going to be the actual chain
-		 *  navigated with this reference key.
-		 *  <p>
-		 *      A reference chain downstream can be navigated via {@link #actuals()}.
-		 */
-		ACTUAL,
-
-		/**
-		 * a {@link Throwable} attribute which indicate an error state if the scanned
-		 * component keeps track of it.
-		 */
-		ERROR,
-
-		/**
-		 * A {@link Integer} attribute implemented by components with a backlog
-		 * capacity. It will expose current queue size or similar related to
-		 * user-provided held data.
-		 */
-		BUFFERED,
-
-		/**
-		 * A {@link Long} attribute exposing the current pending demand of a downstream
-		 * component. Note that {@link Long#MAX_VALUE} indicates an unbounded
-		 * (push-style) demand as specified in
-		 * {@link org.reactivestreams.Subscription#request(long)}.
-		 */
-		REQUESTED_FROM_DOWNSTREAM,
-
-		/**
-		 * A {@link Boolean} attribute indicating whether or not a downstream component
-		 * has interrupted consuming this scanned component, e.g., a cancelled
-		 * subscription. Note that it differs from {@link #TERMINATED} which is
-		 * intended for "normal" shutdown cycles.
-		 */
-		CANCELLED,
-
-		/**
-		 * A {@link Boolean} attribute indicating whether or not an upstream component
-		 * terminated this scanned component. e.g. a post onComplete/onError subscriber.
-		 * By opposition to {@link #CANCELLED} which determines if a downstream
-		 * component interrupted this scanned component.
-		 */
-		TERMINATED;
+		T defaultValue();
 
 		/**
 		 * A constant that represents {@link Scannable} returned via {@link #from(Object)}
 		 * when the passed non-null reference is not a {@link Scannable}
 		 */
-		static final Scannable UNAVAILABLE_SCAN = new Scannable() {
+		Scannable UNAVAILABLE_SCAN = new Scannable() {
 			@Override
-			public Object scan(Attr key) {
+			public Object scanUnsafe(Attr key) {
 				return null;
 			}
 
@@ -144,27 +93,213 @@ public interface Scannable {
 				return false;
 			}
 		};
+	}
 
-		static Stream<? extends Scannable> recurse(Scannable _s, Attr key){
-			Scannable s = Scannable.from(_s.scan(key));
-			if(s == null){
-				return Stream.empty();
-			}
-			return StreamSupport.stream(Spliterators.spliteratorUnknownSize(new Iterator<Scannable>() {
-				Scannable c = s;
+	/**
+	 * {@link Scannable} attributes associated with a {@link Scannable} component (eg.
+	 * parent or child) and can thus be used for traversal. See {@link Scannable#parents()},
+	 * {@link Scannable#inners()} and {@link Scannable#actuals()}.
+	 */
+	enum ScannableAttr implements Attr<Scannable> {
 
-				@Override
-				public boolean hasNext() {
-					return c != null;
-				}
+		/**
+		 * Parent key exposes the direct upstream relationship of the scanned component.
+		 * It can be a Publisher source to an operator, a Subscription to a Subscriber
+		 * (main flow if ambiguous with inner Subscriptions like flatMap), a Scheduler to
+		 * a Worker.
+		 * <p>
+		 * {@link Scannable#parents()} can be used to navigate the parent chain.
+		 */
+		PARENT(null),
 
-				@Override
-				public Scannable next() {
-					Scannable _c = c;
-					c = Scannable.from(c.scan(key));
-					return _c;
-				}
-			}, 0),false);
+		/**
+		 * The direct dependent component downstream reference if any. Operators in
+		 * Flux/Mono for instance delegate to a target Subscriber, which is going to be
+		 * the actual chain navigated with this reference key.
+		 * <p>
+		 *  A reference chain downstream can be navigated via {@link Scannable#actuals()}.
+		 */
+		ACTUAL(null);
+
+		final Scannable defaultValue;
+
+		ScannableAttr(Scannable defaultValue) {
+			this.defaultValue = defaultValue;
+		}
+
+		@Override
+		public Scannable defaultValue() {
+			return defaultValue;
+		}
+	}
+
+	/**
+	 * {@link Scannable} attributes associated with an {@link Integer} value.
+	 */
+	enum IntAttr implements Attr<Integer> {
+
+		/**
+		 * Prefetch is an {@link Integer} attribute defining the rate of processing in a
+		 * component which has capacity to request and hold a backlog of data. It
+		 * usually maps to a component capacity when no arbitrary {@link #CAPACITY} is
+		 * set. {@link Integer#MAX_VALUE} signal unlimited capacity and therefore
+		 * unbounded demand.
+		 * <p>
+		 * Note: This attribute usually resolves to a constant value.
+		 */
+		PREFETCH(0),
+
+		/**
+		 * Return an an {@link Integer} capacity when no {@link #PREFETCH} is defined or
+		 * when an arbitrary maximum limit is applied to the backlog capacity of the
+		 * scanned component. {@link Integer#MAX_VALUE} signal unlimited capacity.
+		 * <p>
+		 * Note: This attribute usually resolves to a constant value.
+		 */
+		CAPACITY(0),
+
+		/**
+		 * A {@link Integer} attribute implemented by components with a backlog
+		 * capacity. It will expose current queue size or similar related to
+		 * user-provided held data. Note that some operators and processors CAN keep
+		 * a backlog larger than {@code Integer.MAX_VALUE}, in which case
+		 * the {@link LongAttr#LARGE_BUFFERED LongAttr} {@literal LARGE_BUFFERED}
+		 * should be used instead. Such operators will attempt to serve a BUFFERED
+		 * query but will return {@link Integer#MIN_VALUE} when actual buffer size is
+		 * oversized for int.
+		 */
+		BUFFERED(0);
+
+		final Integer defaultValue;
+
+		IntAttr(Integer defaultValue) {
+			this.defaultValue = defaultValue;
+		}
+
+		@Override
+		public Integer defaultValue() {
+			return defaultValue;
+		}
+	}
+
+	/**
+	 * {@link Scannable} attributes associated with a {@link Long} value.
+	 */
+	enum LongAttr implements Attr<Long> {
+
+		/**
+		 * Similar to {@link IntAttr#BUFFERED}, but reserved for operators that can hold
+		 * a backlog of items that can grow beyond {@literal Integer.MAX_VALUE}. These
+		 * operators will also answer to a {@link IntAttr#BUFFERED} query up to the point
+		 * where their buffer is actually too large, at which point they'll return
+		 * {@literal Integer.MIN_VALUE}, which serves as a signal that this attribute
+		 * should be used instead. Defaults to {@literal null}.
+		 * <p>
+		 * {@code Flux.flatMap}, {@code Flux.filterWhen}, {@link reactor.core.publisher.TopicProcessor},
+		 * and {@code Flux.window} (with overlap) are known to use this attribute.
+		 */
+		LARGE_BUFFERED(null),
+
+		/**
+		 * A {@link Long} attribute exposing the current pending demand of a downstream
+		 * component. Note that {@link Long#MAX_VALUE} indicates an unbounded (push-style)
+		 * demand as specified in {@link org.reactivestreams.Subscription#request(long)}.
+		 */
+		REQUESTED_FROM_DOWNSTREAM(0L);
+
+		final Long defaultValue;
+
+		LongAttr(Long defaultValue) {
+			this.defaultValue = defaultValue;
+		}
+
+		@Override
+		public Long defaultValue() {
+			return defaultValue;
+		}
+	}
+
+	/**
+	 * {@link Scannable} attributes associated with a {@link Throwable} value.
+	 */
+	enum ThrowableAttr implements Attr<Throwable> {
+
+		/**
+		 * a {@link Throwable} attribute which indicate an error state if the scanned
+		 * component keeps track of it.
+		 */
+		ERROR(null);
+
+		final Throwable defaultValue;
+
+		ThrowableAttr(Throwable defaultValue) {
+			this.defaultValue = defaultValue;
+		}
+
+		@Override
+		public Throwable defaultValue() {
+			return defaultValue;
+		}
+	}
+
+	/**
+	 * {@link Scannable} attributes associated with a {@link Boolean} value.
+	 */
+	enum BooleanAttr implements Attr<Boolean> {
+
+		/**
+		 * Delay_Error exposes a {@link Boolean} whether the scanned component
+		 * actively supports error delaying if it manages a backlog instead of fast
+		 * error-passing which might drop pending backlog.
+		 * <p>
+		 * Note: This attribute usually resolves to a constant value.
+		 */
+		DELAY_ERROR(false),
+
+		/**
+		 * A {@link Boolean} attribute indicating whether or not a downstream component
+		 * has interrupted consuming this scanned component, e.g., a cancelled
+		 * subscription. Note that it differs from {@link #TERMINATED} which is
+		 * intended for "normal" shutdown cycles.
+		 */
+		CANCELLED(null),
+
+		/**
+		 * A {@link Boolean} attribute indicating whether or not an upstream component
+		 * terminated this scanned component. e.g. a post onComplete/onError subscriber.
+		 * By opposition to {@link #CANCELLED} which determines if a downstream
+		 * component interrupted this scanned component.
+		 */
+		TERMINATED(null);
+
+		final Boolean defaultValue;
+
+		BooleanAttr(Boolean defaultValue) {
+			this.defaultValue = defaultValue;
+		}
+
+		@Override
+		public Boolean defaultValue() {
+			return defaultValue;
+		}
+	}
+
+	/**
+	 * Unclassified and dynamically defined {@link Scannable} attributes that can be
+	 * associated with any type of value. Should be reserved for internal or very
+	 * advanced use only.
+	 */
+	final class GenericAttr<T> implements Attr<T> {
+
+		final T defaultValue;
+
+		GenericAttr(T defaultValue) {
+			this.defaultValue = defaultValue;
+		}
+
+		@Override
+		public T defaultValue() {
+			return defaultValue;
 		}
 	}
 
@@ -198,7 +333,7 @@ public interface Scannable {
 	 * chain (downward)
 	 */
 	default Stream<? extends Scannable> actuals() {
-		return Attr.recurse(this, Attr.ACTUAL);
+		return recurse(this, ScannableAttr.ACTUAL);
 	}
 
 	/**
@@ -227,54 +362,55 @@ public interface Scannable {
 	 * chain (upward)
 	 */
 	default Stream<? extends Scannable> parents() {
-		return Attr.recurse(this, Attr.PARENT);
+		return recurse(this, ScannableAttr.PARENT);
 	}
 
 	/**
-	 * Introspect a component's specific state {@link Attr attribute}, returning a
-	 * best effort value or null if the attribute doesn't make sense for that particular
-	 * component.
+	 * This method is used internally by components to define their key-value mappings
+	 * in a single place. Although it is ignoring the generic type of the {@link Attr} key,
+	 * implementors should take care to return values of the correct type, and return
+	 * {@literal null} if no specific value is available.
+	 * <p>
+	 * For public consumption of attributes, prefer using {@link #scan(Attr)}, which will
+	 * return a typed value and fall back to the key's default if the component didn't
+	 * define any mapping.
 	 *
-	 * @param key an {@link Attr} to get the operator state
-	 *
-	 * @return an eventual value or null
+	 * @param key a {@link Attr} to resolve for the component.
+	 * @return the value associated to the key for that specific component, or null if none.
 	 */
-	Object scan(Attr key);
+	Object scanUnsafe(Attr key);
 
 	/**
-	 * Introspect a component's specific state {@link Attr attribute}, returning a
-	 * best effort value casted to the provided class, or null if the attribute doesn't
-	 * make sense for that particular component.
+	 * Introspect a component's specific state {@link Attr attribute}, returning an
+	 * associated value specific to that component, or the default value associated with
+	 * the key, or null if the attribute doesn't make sense for that particular component
+	 * and has no sensible default.
 	 *
-	 * @param key a {@link Attr} to resolve the value within the context
-	 * @param type the attribute type
-	 * @return an eventual value or null if unmatched or unresolved
+	 * @param key a {@link Attr} to resolve for the component.
+	 * @return a value associated to the key or null if unmatched or unresolved
 	 *
 	 */
-	default <T> T scan(Attr key, Class<T> type) {
-		Objects.requireNonNull(type, "type");
-		Object v = scan(key);
-		if (v == null || !type.isAssignableFrom(v.getClass())) {
-			return null;
-		}
+	default <T> T scan(Attr<T> key) {
 		@SuppressWarnings("unchecked")
-		T r = (T)v;
-		return r;
+		T value = (T) scanUnsafe(key);
+		if (value == null)
+			return key.defaultValue();
+		return value;
 	}
 
 	/**
-	 * Introspect a component's specific state {@link Attr attribute}, returning a
-	 * best effort casted value or the provided default if the attribute doesn't make
-	 * sense for that particular component.
+	 * Introspect a component's specific state {@link Attr attribute}. If there's no
+	 * specific value in the component for that key, first attempt to return the key's
+	 * global default. If there is no applicable default, fall back to returning the
+	 * provided default.
 	 *
-	 * @param key a {@link Attr} to resolve the value within the context
-	 * @param defaultValue a fallback value if key doesn't resolve (also defining the return type)
+	 * @param key a {@link Attr} to resolve for the component.
+	 * @param defaultValue a fallback value if key and key's default both resolve to {@literal null}
 	 *
-	 * @return an eventual value or the default passed
+	 * @return a value associated to the key or the provided default if unmatched or unresolved
 	 */
-	default <T> T scanOrDefault(Attr key, T defaultValue) {
-		@SuppressWarnings("unchecked")
-		T v = (T) scan(key);
+	default <T> T scanOrDefault(Attr<T> key, T defaultValue) {
+		T v = scan(key);
 		if (v == null) {
 			return defaultValue;
 		}

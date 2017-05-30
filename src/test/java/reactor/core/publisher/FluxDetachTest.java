@@ -21,7 +21,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxDetachTest {
 
@@ -169,5 +173,44 @@ public class FluxDetachTest {
 		ts.assertValues(1, 2, 3);
 		ts.assertComplete();
 		ts.assertNoError();
+	}
+
+	@Test
+	public void scanSubscriber() {
+		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {
+		}, null, null);
+		FluxDetach.DetachSubscriber<String> test = new FluxDetach.DetachSubscriber<>(actual);
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		test.onError(new IllegalStateException("boom"));
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isNull();
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isNull();
+	}
+
+	@Test
+	public void scanSubscriberCancelled() {
+		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxDetach.DetachSubscriber<String> test = new FluxDetach.DetachSubscriber<>(actual);
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+
+		test.cancel();
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isNull();
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isNull();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
 	}
 }

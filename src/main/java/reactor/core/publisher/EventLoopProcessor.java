@@ -280,12 +280,10 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	public abstract long getPending();
 
 	@Override
-	public Object scan(Attr key) {
-		switch(key){
-			case PARENT:
-				return upstreamSubscription;
-		}
-		return super.scan(key);
+	public Object scanUnsafe(Attr key) {
+		if (key == ScannableAttr.PARENT) return upstreamSubscription;
+
+		return super.scanUnsafe(key);
 	}
 
 	/**

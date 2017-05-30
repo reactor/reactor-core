@@ -189,12 +189,12 @@ public class LambdaMonoSubscriberTest {
 		assertTrue(MonoSource.wrap(s -> {
 			assertTrue(s instanceof LambdaMonoSubscriber);
 			LambdaMonoSubscriber<?> bfs = (LambdaMonoSubscriber<?>)s;
-			assertTrue(bfs.scan(Scannable.Attr.PREFETCH, Integer.class) == Integer.MAX_VALUE);
-			assertFalse(bfs.scan(Scannable.Attr.TERMINATED, Boolean.class));
+			assertTrue(bfs.scan(Scannable.IntAttr.PREFETCH) == Integer.MAX_VALUE);
+			assertFalse(bfs.scan(Scannable.BooleanAttr.TERMINATED));
 			bfs.onSubscribe(Operators.emptySubscription());
 			bfs.onSubscribe(Operators.emptySubscription()); // noop
 			s.onComplete();
-			assertTrue(bfs.scan(Scannable.Attr.TERMINATED, Boolean.class));
+			assertTrue(bfs.scan(Scannable.BooleanAttr.TERMINATED));
 			bfs.dispose();
 			bfs.dispose();
 		}).subscribe(s -> {}, null, () -> {}).isDisposed());
@@ -214,7 +214,7 @@ public class LambdaMonoSubscriberTest {
 				s.onComplete();
 				s.onError(new Exception("test2"));
 				s.onNext("test2");
-				assertTrue(bfs.scan(Scannable.Attr.TERMINATED, Boolean.class));
+				assertTrue(bfs.scan(Scannable.BooleanAttr.TERMINATED));
 				bfs.dispose();
 			})
 			          .subscribe(s -> {
@@ -261,6 +261,24 @@ public class LambdaMonoSubscriberTest {
 		Assertions.assertThat(cancelCount.get()).isEqualTo(1);
 	}
 
+	@Test
+	public void scan() {
+		LambdaMonoSubscriber<String> test = new LambdaMonoSubscriber<>(null, null, null, null);
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		Assertions.assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+
+		test.dispose();
+
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+	}
+
 	private static class TestSubscription implements Subscription {
 
 		volatile boolean isCancelled = false;
@@ -276,5 +294,4 @@ public class LambdaMonoSubscriberTest {
 			this.isCancelled = true;
 		}
 	}
-
 }

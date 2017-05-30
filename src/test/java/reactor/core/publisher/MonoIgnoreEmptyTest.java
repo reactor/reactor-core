@@ -17,7 +17,12 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoIgnoreEmptyTest {
 
@@ -33,6 +38,17 @@ public class MonoIgnoreEmptyTest {
 		StepVerifier.create(Flux.just(1)
 		                        .then())
 		            .expectComplete();
+	}
+
+	@Test
+	public void scanSubscriber() {
+		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		MonoIgnoreEmpty.IgnoreElementsSubscriber<String> test = new MonoIgnoreEmpty.IgnoreElementsSubscriber<>(actual);
+		Subscription sub = Operators.emptySubscription();
+		test.onSubscribe(sub);
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(sub);
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
 	}
 
 }

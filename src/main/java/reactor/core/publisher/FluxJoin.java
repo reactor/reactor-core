@@ -181,20 +181,14 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
-				case CANCELLED:
-					return cancelled;
-				case BUFFERED:
-					return queue.size() / 2;
-				case TERMINATED:
-					return active == 0;
-				case ERROR:
-					return error;
-			}
-			return InnerProducer.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == BooleanAttr.CANCELLED) return cancelled;
+			if (key == IntAttr.BUFFERED) return queue.size() / 2;
+			if (key == BooleanAttr.TERMINATED) return active == 0;
+			if (key == ThrowableAttr.ERROR) return error;
+
+			return InnerProducer.super.scanUnsafe(key);
 		}
 
 		@Override

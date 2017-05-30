@@ -19,9 +19,15 @@ package reactor.core.publisher;
 import java.util.Arrays;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+
+import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.concurrent.QueueSupplier;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxGroupJoinTest {
 
@@ -266,5 +272,78 @@ public class FluxGroupJoinTest {
 		ts.assertErrorMessage("Forced failure")
 		  .assertNotComplete()
 		  .assertNoValues();
+	}
+
+	@Test
+	public void scanGroupJoinSubscription() {
+		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, sub -> sub.request(100));
+		FluxGroupJoin.GroupJoinSubscription<String, String, String, String, String> test =
+				new FluxGroupJoin.GroupJoinSubscription<String, String, String, String, String>(actual,
+						s -> Mono.just(s),
+						s -> Mono.just(s),
+						(l, r) -> l,
+						QueueSupplier.unbounded().get(),
+						QueueSupplier.<String>one());
+
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+		test.request(123);
+		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(123);
+		test.queue.add(5);
+		test.queue.add(10);
+		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+
+		test.error = new IllegalArgumentException("boom");
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isSameAs(test.error);
+
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		test.active = 0;
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	public void scanLeftRightSubscriber() {
+		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null,
+				sub -> sub.request(100));
+		FluxGroupJoin.GroupJoinSubscription<String, String, String, String, String> parent =
+				new FluxGroupJoin.GroupJoinSubscription<String, String, String, String, String>(actual,
+						s -> Mono.just(s),
+						s -> Mono.just(s),
+						(l, r) -> l,
+						QueueSupplier.unbounded().get(),
+						QueueSupplier.<String>one());
+		FluxGroupJoin.LeftRightSubscriber test = new FluxGroupJoin.LeftRightSubscriber(parent, true);
+		Subscription sub = Operators.emptySubscription();
+		test.onSubscribe(sub);
+
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(parent);
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(sub);
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		test.dispose();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	public void scanLeftRightEndSubscriber() {
+		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null,
+				sub -> sub.request(100));
+		FluxGroupJoin.GroupJoinSubscription<String, String, String, String, String> parent =
+				new FluxGroupJoin.GroupJoinSubscription<String, String, String, String, String>(actual,
+						s -> Mono.just(s),
+						s -> Mono.just(s),
+						(l, r) -> l,
+						QueueSupplier.unbounded().get(),
+						QueueSupplier.<String>one());
+		FluxGroupJoin.LeftRightEndSubscriber test = new FluxGroupJoin.LeftRightEndSubscriber(parent, false, 1);
+		Subscription sub = Operators.emptySubscription();
+		test.onSubscribe(sub);
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(sub);
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		test.dispose();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
 	}
 }

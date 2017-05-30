@@ -20,6 +20,9 @@ import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
@@ -279,5 +282,35 @@ public class FluxDematerializeTest extends FluxOperatorTest<Signal<String>, Stri
 		            .expectNext("Two")
 		            .expectNext("One")
 		            .verifyComplete();
+	}
+
+	@Test
+	public void scanSubscriber() {
+		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null,
+				sub -> sub.request(100));
+		FluxDematerialize.DematerializeSubscriber<String> test =
+				new FluxDematerialize.DematerializeSubscriber<>(actual);
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(100L);
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(0);
+		test.value = "foo";
+		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		test.onError(new IllegalStateException("boom"));
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+
+
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
 	}
 }

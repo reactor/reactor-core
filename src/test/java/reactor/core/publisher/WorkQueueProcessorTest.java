@@ -40,6 +40,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
@@ -1286,6 +1287,50 @@ public class WorkQueueProcessorTest {
 		boolean autoCancel = false;
 		WorkQueueProcessor<Integer> processor = WorkQueueProcessor.share(executor, requestTaskExecutor, bufferSize, waitStrategy, autoCancel);
 		assertProcessor(processor, true, null, bufferSize, waitStrategy, autoCancel, executor, requestTaskExecutor);
+	}
+
+	@Test
+	public void scanProcessor() {
+		WorkQueueProcessor<String> test = WorkQueueProcessor.create("name", 16);
+		Subscription subscription = Operators.emptySubscription();
+		test.onSubscribe(subscription);
+
+		Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isEqualTo(subscription);
+
+		Assertions.assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(16);
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		Assertions.assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+
+		test.onError(new IllegalStateException("boom"));
+		Assertions.assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+	}
+
+	@Test
+	public void scanInner() {
+		WorkQueueProcessor<String> main = WorkQueueProcessor.create("name", 16);
+		Subscriber<String> subscriber = new LambdaSubscriber<>(null, e -> {}, null, null);
+
+		WorkQueueProcessor.WorkQueueInner<String> test = new WorkQueueProcessor.WorkQueueInner<>(
+				subscriber, main);
+
+		Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(main);
+		Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(subscriber);
+		Assertions.assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		Assertions.assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
+
+		test.pendingRequest.set(123);
+		Assertions.assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(123L);
+
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+
+		main.terminated = 1;
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+
+		test.cancel();
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
 	}
 
 	private void assertProcessor(WorkQueueProcessor<Integer> processor,

@@ -18,18 +18,20 @@ package reactor.core.publisher;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Subscription;
+
 import reactor.core.Disposable;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
-import static org.hamcrest.CoreMatchers.equalTo;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
@@ -473,4 +475,77 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		dp.onComplete();
 	}
 
+	@Test
+    public void scanMain() {
+        Flux<Integer> parent = Flux.just(1);
+        FluxPublish<Integer> test = new FluxPublish<>(parent, 123, QueueSupplier.<Integer>unbounded());
+
+        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(123);
+    }
+
+	@Test
+    public void scanSubscriber() {
+        FluxPublish<Integer> main = new FluxPublish<>(Flux.just(1), 123, QueueSupplier.<Integer>unbounded());
+        FluxPublish.PublishSubscriber<Integer> test = new FluxPublish.PublishSubscriber<>(789, main);
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(789);
+        test.queue.add(5);
+        assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+        test.error = new IllegalArgumentException("boom");
+        assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isSameAs(test.error);
+        test.onComplete();
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+
+        test = new FluxPublish.PublishSubscriber<>(789, main);
+        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        test.onSubscribe(Operators.cancelledSubscription());
+        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+    }
+
+	@Test
+    public void scanInner() {
+		FluxPublish<Integer> main = new FluxPublish<>(Flux.just(1), 123, QueueSupplier.<Integer>unbounded());
+        FluxPublish.PublishSubscriber<Integer> parent = new FluxPublish.PublishSubscriber<>(789, main);
+        Subscription sub = Operators.emptySubscription();
+        parent.onSubscribe(sub);
+        FluxPublish.PublishInner<Integer> test = new FluxPublish.PublishInner<>(parent);
+
+        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(parent);
+        test.parent = parent;
+        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        test.request(35);
+        assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
+
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        parent.terminate();
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+
+        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        test.cancel();
+        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+    }
+
+	@Test
+    public void scanPubSubInner() {
+		FluxPublish<Integer> main = new FluxPublish<>(Flux.just(1), 123, QueueSupplier.<Integer>unbounded());
+        FluxPublish.PublishSubscriber<Integer> parent = new FluxPublish.PublishSubscriber<>(789, main);
+        Subscription sub = Operators.emptySubscription();
+        parent.onSubscribe(sub);
+        FluxPublish.PubSubInner<Integer> test = new FluxPublish.PublishInner<>(parent);
+
+        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(parent);
+        test.request(35);
+        assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
+
+        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        test.cancel();
+        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+    }
 }

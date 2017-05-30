@@ -49,13 +49,10 @@ final class ParallelReduceSeed<T, R> extends ParallelFlux<R> implements
 	}
 
 	@Override
-	public Object scan(Scannable.Attr key) {
-		switch (key){
-			case PARENT:
-				return source;
-			case PREFETCH:
-				return getPrefetch();
-		}
+	public Object scanUnsafe(Scannable.Attr key) {
+		if (key == ScannableAttr.PARENT) return source;
+		if (key == IntAttr.PREFETCH) return getPrefetch();
+
 		return null;
 	}
 

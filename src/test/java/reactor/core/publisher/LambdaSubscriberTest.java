@@ -18,8 +18,10 @@ package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
+import reactor.core.Scannable;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
@@ -171,6 +173,24 @@ public class LambdaSubscriberTest {
 		assertThat("unexpected onError", errorHolder.get(), is(nullValue()));
 		assertThat("subscription has been cancelled despite fatal exception",
 				testSubscription.isCancelled, is(not(true)));
+	}
+
+	@Test
+	public void scan() {
+		LambdaSubscriber<String> test = new LambdaSubscriber<>(null, null, null, null);
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		Assertions.assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+
+		test.dispose();
+
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
 	}
 
 	private static class TestSubscription implements Subscription {

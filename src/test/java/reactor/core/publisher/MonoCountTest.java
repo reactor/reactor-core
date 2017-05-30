@@ -16,8 +16,16 @@
 
 package reactor.core.publisher;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MonoCountTest {
 
@@ -50,6 +58,28 @@ public class MonoCountTest {
 		ts.assertValues(10L)
 		  .assertComplete()
 		  .assertNoError();
+	}
+
+	@Test
+	public void scanCountSubscriber() {
+		Subscriber<Long> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		MonoCount.CountSubscriber<String> test = new MonoCount.CountSubscriber<>(actual);
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+		//only TERMINATED state evaluated is one from Operators: hasValue
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		test.onComplete();
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
 	}
 
 }

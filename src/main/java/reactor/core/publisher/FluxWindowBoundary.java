@@ -141,24 +141,16 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return s;
-				case ERROR:
-					return error;
-				case CANCELLED:
-					return cancelled == 1;
-				case TERMINATED:
-					return done;
-				case PREFETCH:
-					return Integer.MAX_VALUE;
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
-				case BUFFERED:
-					return queue.size();
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == ThrowableAttr.ERROR) return error;
+			if (key == BooleanAttr.CANCELLED) return cancelled == 1;
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == IntAttr.BUFFERED) return queue.size();
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -388,11 +380,11 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			if (key == Attr.ACTUAL) {
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.ACTUAL) {
 				return main;
 			}
-			return super.scan(key);
+			return super.scanUnsafe(key);
 		}
 
 		@Override

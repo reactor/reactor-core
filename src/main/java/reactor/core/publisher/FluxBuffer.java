@@ -185,19 +185,16 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return s;
-				case TERMINATED:
-					return done;
-				case CAPACITY:
-					C b = buffer;
-					return b != null ? b.size() : 0L;
-				case PREFETCH:
-					return size;
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == IntAttr.CAPACITY) {
+				C b = buffer;
+				return b != null ? b.size() : 0;
 			}
-			return InnerOperator.super.scan(key);
+			if (key == IntAttr.PREFETCH) return size;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 	}
 
@@ -339,19 +336,16 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 			return actual;
 		}
 
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return s;
-				case TERMINATED:
-					return done;
-				case CAPACITY:
-					C b = buffer;
-					return b != null ? b.size() : 0L;
-				case PREFETCH:
-					return size;
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == IntAttr.CAPACITY) {
+				C b = buffer;
+				return b != null ? b.size() : 0;
 			}
-			return InnerOperator.super.scan(key);
+			if (key == IntAttr.PREFETCH) return size;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 	}
 
@@ -523,22 +517,15 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return s;
-				case TERMINATED:
-					return done;
-				case CANCELLED:
-					return cancelled;
-				case CAPACITY:
-					return size() * size;
-				case PREFETCH:
-					return Integer.MAX_VALUE;
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == BooleanAttr.CANCELLED) return cancelled;
+			if (key == IntAttr.CAPACITY) return size() * size;
+			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 	}

@@ -22,6 +22,9 @@ import java.util.Arrays;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.function.Tuple2;
@@ -461,5 +464,58 @@ public class MonoWhenTest {
 
 		StepVerifier.create(Mono.when(voidPublishers))
 		            .verifyErrorMatches(e -> e == boom1);
+	}
+
+	@Test
+	public void scanCoordinator() {
+		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		MonoWhen.WhenCoordinator<String> test = new MonoWhen.WhenCoordinator<>(
+				actual, 2, true, a -> String.valueOf(a[0]));
+
+		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(2);
+		assertThat(test.scan(Scannable.BooleanAttr.DELAY_ERROR)).isTrue();
+
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		test.signalError(new IllegalStateException("boom"));
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse(); //done == 1
+		test.signalError(new IllegalStateException("boom2")); // done == 2
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	public void scanCoordinatorNotDoneUntilN() {
+		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		MonoWhen.WhenCoordinator<String> test = new MonoWhen.WhenCoordinator<>(
+				actual, 10, true, a -> String.valueOf(a[0]));
+
+		test.done = 9;
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+
+		test.done = 10;
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+	}
+
+	@Test
+	public void scanWhenInner() {
+		Subscriber<? super String> actual = new LambdaMonoSubscriber<>(null, null, null, null);
+		MonoWhen.WhenCoordinator<String> coordinator = new MonoWhen.WhenCoordinator<>(actual, 2, false, a -> null);
+		MonoWhen.WhenInner<String> test = new MonoWhen.WhenInner<>(coordinator);
+		Subscription innerSub = Operators.cancelledSubscription();
+		test.onSubscribe(innerSub);
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(innerSub);
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(coordinator);
+
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+
+		test.error = new IllegalStateException("boom");
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
 	}
 }

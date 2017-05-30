@@ -165,24 +165,16 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case CANCELLED:
-					return cancelled;
-				case PARENT:
-					return s;
-				case TERMINATED:
-					return done;
-				case ERROR:
-					return error;
-				case PREFETCH:
-					return bufferSize;
-				case BUFFERED:
-					return queue.size();
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.CANCELLED) return cancelled;
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == ThrowableAttr.ERROR) return error;
+			if (key == IntAttr.PREFETCH) return bufferSize;
+			if (key == IntAttr.BUFFERED) return queue.size();
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -457,17 +449,12 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case CANCELLED:
-					return s == Operators.cancelledSubscription();
-				case PARENT:
-					return s;
-				case ACTUAL:
-					return parent;
-				case PREFETCH:
-					return bufferSize;
-			}
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == ScannableAttr.ACTUAL) return parent;
+			if (key == IntAttr.PREFETCH) return bufferSize;
+
 			return null;
 		}
 

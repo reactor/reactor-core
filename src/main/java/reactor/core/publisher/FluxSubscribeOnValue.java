@@ -108,16 +108,12 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 		}
 
 		@Override
-		public Object scan(Scannable.Attr key) {
-			switch (key){
-				case CANCELLED:
-					return future == CANCELLED;
-				case TERMINATED:
-					return future == FINISHED;
-				case BUFFERED:
-					return value != null ? 1 : 0;
-			}
-			return InnerProducer.super.scan(key);
+		public Object scanUnsafe(Scannable.Attr key) {
+			if (key == BooleanAttr.CANCELLED) return future == CANCELLED;
+			if (key == BooleanAttr.TERMINATED) return future == FINISHED;
+			if (key == IntAttr.BUFFERED) return value != null ? 1 : 0;
+
+			return InnerProducer.super.scanUnsafe(key);
 		}
 
 		@Override

@@ -82,7 +82,6 @@ public final class MonoProcessor<O> extends Mono<O>
 	volatile Throwable       error;
 	volatile int             state;
 	volatile int             wip;
-	volatile int             requested;
 	volatile int             connected;
 
 	MonoProcessor(Publisher<? extends O> source) {
@@ -402,23 +401,13 @@ public final class MonoProcessor<O> extends Mono<O>
 	}
 
 	@Override
-	public Object scan(Attr key) {
-		switch (key){
-			case ACTUAL:
-				return processor;
-			case PARENT:
-				return subscription;
-			case ERROR:
-				return error;
-			case REQUESTED_FROM_DOWNSTREAM:
-				return requested;
-			case PREFETCH:
-				return Integer.MAX_VALUE;
-			case CANCELLED:
-				return isCancelled();
-			case TERMINATED:
-				return isTerminated();
-		}
+	public Object scanUnsafe(Attr key) {
+		if (key == ScannableAttr.ACTUAL) return processor;
+		if (key == ScannableAttr.PARENT) return subscription;
+		if (key == ThrowableAttr.ERROR) return error;
+		if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
+		if (key == BooleanAttr.CANCELLED) return isCancelled();
+		if (key == BooleanAttr.TERMINATED) return isTerminated();
 		return null;
 	}
 

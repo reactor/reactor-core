@@ -352,28 +352,23 @@ class FluxFilterWhen<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return upstream;
-				case TERMINATED:
-					return done;
-				case CANCELLED:
-					return cancelled;
-				case ERROR:
-					//FIXME ERROR is often reset by Exceptions.terminate :(
-					return error;
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
-				case CAPACITY:
-					return toFilter.length();
-				case BUFFERED:
-					return producerIndex - consumerIndex;
-				case PREFETCH:
-					return bufferSize;
-				default:
-					return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return upstream;
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == BooleanAttr.CANCELLED) return cancelled;
+			if (key == ThrowableAttr.ERROR) //FIXME ERROR is often reset by Exceptions.terminate :(
+				return error;
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == IntAttr.CAPACITY) return toFilter.length();
+			if (key == LongAttr.LARGE_BUFFERED) return producerIndex - consumerIndex;
+			if (key == IntAttr.BUFFERED) {
+				long realBuffered = producerIndex - consumerIndex;
+				if (realBuffered <= Integer.MAX_VALUE) return (int) realBuffered;
+				return Integer.MIN_VALUE;
 			}
+			if (key == IntAttr.PREFETCH) return bufferSize;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -441,23 +436,15 @@ class FluxFilterWhen<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch(key) {
-				case PARENT:
-					return parent;
-				case ACTUAL:
-					return sub;
-				case CANCELLED:
-					return sub == Operators.cancelledSubscription();
-				case TERMINATED:
-					return done;
-				case PREFETCH:
-					return Integer.MAX_VALUE;
-				case REQUESTED_FROM_DOWNSTREAM:
-					return done ? 0 : 1;
-				default:
-					return null;
-			}
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return parent;
+			if (key == ScannableAttr.ACTUAL) return sub;
+			if (key == BooleanAttr.CANCELLED) return sub == Operators.cancelledSubscription();
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return done ? 0L : 1L;
+
+			return null;
 		}
 	}
 }

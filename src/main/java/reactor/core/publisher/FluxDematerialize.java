@@ -67,22 +67,15 @@ final class FluxDematerialize<T> extends FluxSource<Signal<T>, T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return s;
-				case TERMINATED:
-					return done;
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
-				case ERROR:
-					return error;
-				case CANCELLED:
-					return cancelled;
-				case BUFFERED:
-					return size();
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == ThrowableAttr.ERROR) return error;
+			if (key == BooleanAttr.CANCELLED) return cancelled;
+			if (key == IntAttr.BUFFERED) return size();
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override

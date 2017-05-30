@@ -255,26 +255,22 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return s;
-				case CANCELLED:
-					return cancelled;
-				case ERROR:
-					return error;
-				case TERMINATED:
-					return done && (scalarQueue == null || scalarQueue.isEmpty());
-				case DELAY_ERROR:
-					return delayError;
-				case PREFETCH:
-					return maxConcurrency;
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
-				case BUFFERED:
-					return (scalarQueue != null ? scalarQueue.size() : 0) + size;
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == BooleanAttr.CANCELLED) return cancelled;
+			if (key == ThrowableAttr.ERROR) return error;
+			if (key == BooleanAttr.TERMINATED) return done && (scalarQueue == null || scalarQueue.isEmpty());
+			if (key == BooleanAttr.DELAY_ERROR) return delayError;
+			if (key == IntAttr.PREFETCH) return maxConcurrency;
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == LongAttr.LARGE_BUFFERED) return (scalarQueue != null ? (long) scalarQueue.size() : 0L) + size;
+			if (key == IntAttr.BUFFERED) {
+				long realBuffered = (scalarQueue != null ? (long) scalarQueue.size() : 0L) + size;
+				if (realBuffered <= Integer.MAX_VALUE) return (int) realBuffered;
+				return Integer.MIN_VALUE;
 			}
-			return InnerOperator.super.scan(key);
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@SuppressWarnings("unchecked")
@@ -951,21 +947,14 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return s;
-				case ACTUAL:
-					return parent;
-				case TERMINATED:
-					return done && (queue == null || queue.isEmpty());
-				case CANCELLED:
-					return s == Operators.cancelledSubscription();
-				case BUFFERED:
-					return queue == null ? 0 : queue.size();
-				case PREFETCH:
-					return prefetch;
-			}
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == ScannableAttr.ACTUAL) return parent;
+			if (key == BooleanAttr.TERMINATED) return done && (queue == null || queue.isEmpty());
+			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == IntAttr.BUFFERED) return queue == null ? 0 : queue.size();
+			if (key == IntAttr.PREFETCH) return prefetch;
+
 			return null;
 		}
 	}

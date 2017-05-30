@@ -54,12 +54,10 @@ final class FluxDefaultIfEmpty<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return s;
-			}
-			return super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+
+			return super.scanUnsafe(key);
 		}
 
 		@Override

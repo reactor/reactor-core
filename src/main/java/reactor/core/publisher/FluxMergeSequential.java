@@ -167,24 +167,16 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return s;
-				case ERROR:
-					return error;
-				case TERMINATED:
-					return done && subscribers.isEmpty();
-				case DELAY_ERROR:
-					return errorMode != ErrorMode.IMMEDIATE;
-				case PREFETCH:
-					return maxConcurrency;
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
-				case BUFFERED:
-					return subscribers.size();
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == ThrowableAttr.ERROR) return error;
+			if (key == BooleanAttr.TERMINATED) return done && subscribers.isEmpty();
+			if (key == BooleanAttr.DELAY_ERROR) return errorMode != ErrorMode.IMMEDIATE;
+			if (key == IntAttr.PREFETCH) return maxConcurrency;
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == IntAttr.BUFFERED) return subscribers.size();
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -511,21 +503,14 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return subscription;
-				case ACTUAL:
-					return parent;
-				case TERMINATED:
-					return done && (queue == null || queue.isEmpty());
-				case CANCELLED:
-					return subscription == Operators.cancelledSubscription();
-				case BUFFERED:
-					return queue == null ? 0 : queue.size();
-				case PREFETCH:
-					return prefetch;
-			}
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return subscription;
+			if (key == ScannableAttr.ACTUAL) return parent;
+			if (key == BooleanAttr.TERMINATED) return done && (queue == null || queue.isEmpty());
+			if (key == BooleanAttr.CANCELLED) return subscription == Operators.cancelledSubscription();
+			if (key == IntAttr.BUFFERED) return queue == null ? 0 : queue.size();
+			if (key == IntAttr.PREFETCH) return prefetch;
+
 			return null;
 		}
 

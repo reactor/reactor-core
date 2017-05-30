@@ -19,7 +19,10 @@ import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -65,5 +68,33 @@ public class MonoDelayTest {
 
 		Thread.sleep(110);
 		assertThat(counter.intValue()).isEqualTo(4);
+	}
+
+	@Test
+	public void scanDelayRunnable() {
+		Subscriber<Long> actual = new LambdaMonoSubscriber<>(null, e -> {
+		}, null, null);
+		MonoDelay.MonoDelayRunnable test = new MonoDelay.MonoDelayRunnable(actual);
+
+		actual.onSubscribe(test);
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isNull();
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		test.request(1);
+		test.run();
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+	}
+
+	@Test
+	public void scanDelayRunnableCancelled() {
+		Subscriber<Long> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		MonoDelay.MonoDelayRunnable test = new MonoDelay.MonoDelayRunnable(actual);
+
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
 	}
 }

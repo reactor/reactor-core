@@ -67,15 +67,11 @@ final class FluxTakeUntilOther<T, U> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case CANCELLED:
-					return main.other == Operators.cancelledSubscription();
-				case PARENT:
-					return main.other;
-				case ACTUAL:
-					return main;
-			}
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.CANCELLED) return main.other == Operators.cancelledSubscription();
+			if (key == ScannableAttr.PARENT) return main.other;
+			if (key == ScannableAttr.ACTUAL) return main;
+
 			return null;
 		}
 
@@ -135,14 +131,11 @@ final class FluxTakeUntilOther<T, U> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case PARENT:
-					return main;
-				case CANCELLED:
-					return main == Operators.cancelledSubscription();
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return main;
+			if (key == BooleanAttr.CANCELLED) return main == Operators.cancelledSubscription();
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override

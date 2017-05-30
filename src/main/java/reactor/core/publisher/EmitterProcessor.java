@@ -384,16 +384,17 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	}
 
 	@Override
-	public Object scan(Attr key) {
-		switch (key) {
-			case PARENT:
-				return s;
-			case BUFFERED:
-				return getPending();
-			case CANCELLED:
-				return isCancelled();
-		}
-		return super.scan(key);
+	public int getPrefetch() {
+		return prefetch;
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == ScannableAttr.PARENT) return s;
+		if (key == IntAttr.BUFFERED) return getPending();
+		if (key == BooleanAttr.CANCELLED) return isCancelled();
+
+		return super.scanUnsafe(key);
 	}
 
 	final void drain() {

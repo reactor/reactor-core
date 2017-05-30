@@ -140,16 +140,11 @@ final class LambdaSubscriber<T>
 	}
 
 	@Override
-	public Object scan(Attr key) {
-		switch (key){
-			case PARENT:
-				return subscription;
-			case PREFETCH:
-				return Integer.MAX_VALUE;
-			case TERMINATED:
-			case CANCELLED:
-				return isDisposed();
-		}
+	public Object scanUnsafe(Attr key) {
+		if (key == ScannableAttr.PARENT) return subscription;
+		if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
+		if (key == BooleanAttr.TERMINATED || key == BooleanAttr.CANCELLED) return isDisposed();
+
 		return null;
 	}
 

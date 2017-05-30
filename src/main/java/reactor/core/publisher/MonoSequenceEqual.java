@@ -98,12 +98,10 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case CANCELLED:
-					return cancelled;
-			}
-			return InnerProducer.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.CANCELLED) return cancelled;
+
+			return InnerProducer.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -298,23 +296,15 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case TERMINATED:
-					return done;
-				case ACTUAL:
-					return parent;
-				case ERROR:
-					return error;
-				case CANCELLED:
-					return subscription == Operators.cancelledSubscription();
-				case PARENT:
-					return subscription;
-				case PREFETCH:
-					return bufferSize;
-				case BUFFERED:
-					return queue.size();
-			}
+		public Object scanUnsafe(Attr key) {
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == ScannableAttr.ACTUAL) return parent;
+			if (key == ThrowableAttr.ERROR) return error;
+			if (key == BooleanAttr.CANCELLED) return subscription == Operators.cancelledSubscription();
+			if (key == ScannableAttr.PARENT) return subscription;
+			if (key == IntAttr.PREFETCH) return bufferSize;
+			if (key == IntAttr.BUFFERED) return queue.size();
+
 			return null;
 		}
 

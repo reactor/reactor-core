@@ -21,14 +21,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
 import org.junit.Test;
 
+import org.reactivestreams.Subscriber;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
 import reactor.core.publisher.FluxCreate.BufferAsyncSink;
 import reactor.core.publisher.FluxCreate.SerializedSink;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
@@ -1033,5 +1034,85 @@ public class FluxCreateTest {
 				}
 			}
 		}
+	}
+
+	@Test
+	public void scanBaseSink() {
+		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxCreate.BaseSink<String> test = new FluxCreate.BaseSink<String>(actual) {
+			@Override
+			public FluxSink<String> next(String s) {
+				return this;
+			}
+		};
+		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
+		test.request(100);
+		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(100L);
+
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+
+		test.cancel();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+	}
+
+	@Test
+	public void scanBufferAsyncSink() {
+		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		BufferAsyncSink<String> test = new BufferAsyncSink<>(actual, 123);
+		test.queue.offer("foo");
+
+		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+
+		test.error(new IllegalStateException("boom"));
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+	}
+
+	@Test
+	public void scanLatestAsyncSink() {
+		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxCreate.LatestAsyncSink<String> test = new FluxCreate.LatestAsyncSink<>(actual);
+
+		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(0);
+		test.queue.set("foo");
+		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+
+		test.error(new IllegalStateException("boom"));
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+	}
+
+	@Test
+	public void scanSerializedSink() {
+		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxCreate.BaseSink<String> decorated = new FluxCreate.LatestAsyncSink<>(actual);
+		SerializedSink<String> test = new SerializedSink<>(decorated);
+
+		test.queue.offer("foo");
+		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+		assertThat(decorated.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(0);
+
+		decorated.request(100);
+		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(100L);
+		decorated.cancel();
+		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+
+		test.error = new IllegalStateException("boom");
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+
 	}
 }

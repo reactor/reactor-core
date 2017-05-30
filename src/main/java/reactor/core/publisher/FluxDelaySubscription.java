@@ -61,22 +61,19 @@ final class FluxDelaySubscription<T, U> extends FluxSource<T, T> {
 
 		boolean done;
 
-		DelaySubscriptionOtherSubscriber(Subscriber<? super T> actual, Publisher<?
-				extends T> source) {
+		DelaySubscriptionOtherSubscriber(Subscriber<? super T> actual, Publisher<? extends T> source) {
 			this.actual = actual;
 			this.source = source;
 
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return s;
-				case TERMINATED:
-					return done;
-			}
-			return super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == ScannableAttr.ACTUAL) return actual;
+			if (key == BooleanAttr.TERMINATED) return done;
+
+			return super.scanUnsafe(key);
 		}
 
 		@Override
@@ -135,50 +132,46 @@ final class FluxDelaySubscription<T, U> extends FluxSource<T, T> {
 		void subscribeSource() {
 			source.subscribe(new DelaySubscriptionMainSubscriber<>(actual, this));
 		}
+	}
 
-		static final class DelaySubscriptionMainSubscriber<T>
-				implements InnerConsumer<T> {
+	static final class DelaySubscriptionMainSubscriber<T>
+			implements InnerConsumer<T> {
 
-			final Subscriber<? super T> actual;
+		final Subscriber<? super T> actual;
 
-			final DelaySubscriptionOtherSubscriber<?, ?> arbiter;
+		final DelaySubscriptionOtherSubscriber<?, ?> arbiter;
 
-			DelaySubscriptionMainSubscriber(Subscriber<? super T> actual,
-					DelaySubscriptionOtherSubscriber<?, ?> arbiter) {
-				this.actual = actual;
-				this.arbiter = arbiter;
-			}
+		DelaySubscriptionMainSubscriber(Subscriber<? super T> actual,
+				DelaySubscriptionOtherSubscriber<?, ?> arbiter) {
+			this.actual = actual;
+			this.arbiter = arbiter;
+		}
 
-			@Override
-			public Object scan(Attr key) {
-				switch (key){
-					case ACTUAL:
-						return actual;
-				}
-				return null;
-			}
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.ACTUAL) return actual;
 
-			@Override
-			public void onSubscribe(Subscription s) {
-				arbiter.set(s);
-			}
+			return null;
+		}
 
-			@Override
-			public void onNext(T t) {
-				actual.onNext(t);
-			}
+		@Override
+		public void onSubscribe(Subscription s) {
+			arbiter.set(s);
+		}
 
-			@Override
-			public void onError(Throwable t) {
-				actual.onError(t);
-			}
+		@Override
+		public void onNext(T t) {
+			actual.onNext(t);
+		}
 
-			@Override
-			public void onComplete() {
-				actual.onComplete();
-			}
+		@Override
+		public void onError(Throwable t) {
+			actual.onError(t);
+		}
 
-
+		@Override
+		public void onComplete() {
+			actual.onComplete();
 		}
 	}
 }

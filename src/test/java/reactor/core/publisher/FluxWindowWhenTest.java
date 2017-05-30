@@ -20,11 +20,17 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.concurrent.QueueSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -253,4 +259,20 @@ public class FluxWindowWhenTest {
 		            .assertNext(t -> assertThat(t).containsExactly(7, 8))
 		            .verifyComplete();
 	}
+
+	@Test
+    public void scanMainSubscriber() {
+        Subscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        FluxWindowWhen.WindowStartEndMainSubscriber<Integer, Integer, Integer> test =
+        		new FluxWindowWhen.WindowStartEndMainSubscriber<>(actual, QueueSupplier.one().get(),
+        		s -> Flux.just(s), QueueSupplier.unbounded());
+        Subscription parent = Operators.emptySubscription();
+        test.onSubscribe(parent);
+
+		Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		test.onComplete();
+		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+    }
 }

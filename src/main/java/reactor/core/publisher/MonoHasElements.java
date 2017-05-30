@@ -19,6 +19,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
@@ -47,12 +48,10 @@ final class MonoHasElements<T> extends MonoSource<T, Boolean> implements Fuseabl
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key){
-				case PARENT:
-					return s;
-			}
-			return super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+
+			return super.scanUnsafe(key);
 		}
 
 		@Override
@@ -94,11 +93,11 @@ final class MonoHasElements<T> extends MonoSource<T, Boolean> implements Fuseabl
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			if (key == Attr.PARENT) {
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) {
 				return s;
 			}
-			return super.scan(key);
+			return super.scanUnsafe(key);
 		}
 
 		@Override

@@ -175,22 +175,15 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return s;
-				case TERMINATED:
-					return done;
-				case CANCELLED:
-					return cancelled;
-				case PREFETCH:
-					return prefetch;
-				case BUFFERED:
-					return queue != null ? queue.size() : 0;
-				case ERROR:
-					return error;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == BooleanAttr.CANCELLED) return cancelled;
+			if (key == IntAttr.PREFETCH) return prefetch;
+			if (key == IntAttr.BUFFERED) return queue != null ? queue.size() : 0;
+			if (key == ThrowableAttr.ERROR) return error;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -514,24 +507,16 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return s;
-				case TERMINATED:
-					return done;
-				case CANCELLED:
-					return cancelled;
-				case PREFETCH:
-					return prefetch;
-				case BUFFERED:
-					return queue != null ? queue.size() : 0;
-				case ERROR:
-					return error;
-				case DELAY_ERROR:
-					return true;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == BooleanAttr.CANCELLED) return cancelled;
+			if (key == IntAttr.PREFETCH) return prefetch;
+			if (key == IntAttr.BUFFERED) return queue != null ? queue.size() : 0;
+			if (key == ThrowableAttr.ERROR) return error;
+			if (key == BooleanAttr.DELAY_ERROR) return true;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override

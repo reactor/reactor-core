@@ -244,18 +244,13 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return s;
-				case CANCELLED:
-					return cancelled == 1;
-				case CAPACITY:
-					return size;
-				case TERMINATED:
-					return done;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == BooleanAttr.CANCELLED) return cancelled == 1;
+			if (key == IntAttr.CAPACITY) return size;
+			if (key == BooleanAttr.TERMINATED) return done;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -432,18 +427,13 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return s;
-				case CANCELLED:
-					return cancelled == 1;
-				case CAPACITY:
-					return size;
-				case TERMINATED:
-					return done;
-			}
-			return InnerOperator.super.scan(key);
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == BooleanAttr.CANCELLED) return cancelled == 1;
+			if (key == IntAttr.CAPACITY) return size;
+			if (key == BooleanAttr.TERMINATED) return done;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -724,24 +714,21 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		}
 
 		@Override
-		public Object scan(Attr key) {
-			switch (key) {
-				case PARENT:
-					return s;
-				case CANCELLED:
-					return cancelled;
-				case CAPACITY:
-					return size;
-				case TERMINATED:
-					return done;
-				case BUFFERED:
-					return queue.size() + size();
-				case ERROR:
-					return error;
-				case REQUESTED_FROM_DOWNSTREAM:
-					return requested;
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) return s;
+			if (key == BooleanAttr.CANCELLED) return cancelled == 1;
+			if (key == IntAttr.CAPACITY) return size;
+			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == LongAttr.LARGE_BUFFERED) return (long) queue.size() + size();
+			if (key == IntAttr.BUFFERED) {
+				long realBuffered = (long) queue.size() + size();
+				if (realBuffered < Integer.MAX_VALUE) return (int) realBuffered;
+				return Integer.MIN_VALUE;
 			}
-			return InnerOperator.super.scan(key);
+			if (key == ThrowableAttr.ERROR) return error;
+			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+
+			return InnerOperator.super.scanUnsafe(key);
 		}
 
 		@Override

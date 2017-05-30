@@ -16,8 +16,10 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class MonoSourceTest {
@@ -85,5 +87,13 @@ public class MonoSourceTest {
 	public void onAssemblyDescription() {
 		String monoOnAssemblyStr = Mono.just(1).checkpoint("onAssemblyDescription").toString();
 		assertTrue("Description not included: " + monoOnAssemblyStr, monoOnAssemblyStr.contains("\"description\" : \"onAssemblyDescription\""));
+	}
+
+	@Test
+	public void scanSubscriber() {
+		Flux<String> source = Flux.just("foo");
+		MonoSource<String, Integer> test = new MonoSource<>(source);
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(source);
 	}
 }
