@@ -237,7 +237,10 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 
 	/**
 	 * Create a new {@link TopicProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size, blockingWait
-	 * Strategy and auto-cancel. <p> A new Cached ThreadExecutorPool will be implicitly created.
+	 * Strategy and auto-cancel.
+	 * <p>
+	 * A new Cached ThreadExecutorPool will be implicitly
+	 * created and will use the passed name to qualify the created threads.
 	 * @param name processor thread logical name
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
@@ -298,18 +301,15 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	}
 
 	/**
-	 * Create a new TopicProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
-	 * blockingWait Strategy and the passed auto-cancel setting. <p> A new Cached
-	 * ThreadExecutorPool will be implicitly created and will use the passed name to
+	 * Create a new TopicProcessor using the provided backlog size, with a blockingWait Strategy
+	 * and auto-cancellation. <p> A new Cached ThreadExecutorPool will be implicitly created and will use the passed name to
 	 * qualify the created threads.
 	 * @param name Use a new Cached ExecutorService and assign this name to the created
 	 * threads
 	 * @param bufferSize A Backlog Size to mitigate slow subscribers
 	 * @param <E> Type of processed signals
 	 * @return the fresh TopicProcessor instance
-	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
-	@Deprecated
 	public static <E> TopicProcessor<E> create(String name, int bufferSize) {
 		return TopicProcessor.<E>builder().name(name).bufferSize(bufferSize).build();
 	}
@@ -334,7 +334,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	}
 
 	/**
-	 * Create a new TopicProcessor using passed backlog size, blockingWait Strategy
+	 * Create a new TopicProcessor using passed backlog size, a blockingWait Strategy
 	 * and will auto-cancel. <p> The passed {@link ExecutorService}
 	 * will execute as many event-loop consuming the ringbuffer as subscribers.
 	 * @param service A provided ExecutorService to manage threading infrastructure
@@ -350,7 +350,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	}
 
 	/**
-	 * Create a new TopicProcessor using passed backlog size, blockingWait Strategy
+	 * Create a new TopicProcessor using passed backlog size, a blockingWait Strategy
 	 * and the auto-cancel argument. <p> The passed {@link ExecutorService}
 	 * will execute as many event-loop consuming the ringbuffer as subscribers.
 	 * @param service A provided ExecutorService to manage threading infrastructure
@@ -522,7 +522,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	}
 
 	/**
-	 * Create a new TopicProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new shared TopicProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A Shared Processor
 	 * authorizes concurrent onNext calls and is suited for multi-threaded publisher that
 	 * will fan-in data. <p> A new Cached ThreadExecutorPool will be implicitly created.
@@ -538,7 +538,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	}
 
 	/**
-	 * Create a new TopicProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new shared TopicProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. <p> A Shared Processor authorizes concurrent
 	 * onNext calls and is suited for multi-threaded publisher that will fan-in data. <p>
 	 * The passed {@link ExecutorService} will execute as many
@@ -554,7 +554,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	}
 
 	/**
-	 * Create a new TopicProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new shared TopicProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A Shared Processor
 	 * authorizes concurrent onNext calls and is suited for multi-threaded publisher that
 	 * will fan-in data. <p> The passed {@link ExecutorService} will
@@ -573,25 +573,26 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	}
 
 	/**
-	 * Create a new TopicProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
-	 * blockingWait Strategy and the passed auto-cancel setting. <p> A Shared Processor
-	 * authorizes concurrent onNext calls and is suited for multi-threaded publisher that
-	 * will fan-in data. <p> A new Cached ThreadExecutorPool will be implicitly created
-	 * and will use the passed name to qualify the created threads.
+	 * Create a new shared TopicProcessor using the passed backlog size, with a blockingWait
+	 * Strategy and auto-cancellation.
+	 * <p>
+	 * A Shared Processor authorizes concurrent onNext calls and is suited for multi-threaded
+	 * publisher that will fan-in data.
+	 * <p>
+	 * A new Cached ThreadExecutorPool will be implicitly created and will use the passed
+	 * name to qualify the created threads.
 	 * @param name Use a new Cached ExecutorService and assign this name to the created
 	 * threads
 	 * @param bufferSize A Backlog Size to mitigate slow subscribers
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
-	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
-	@Deprecated
 	public static <E> TopicProcessor<E> share(String name, int bufferSize) {
 		return TopicProcessor.<E>builder().share(true).name(name).bufferSize(bufferSize).build();
 	}
 
 	/**
-	 * Create a new TopicProcessor using the blockingWait Strategy, passed backlog
+	 * Create a new shared TopicProcessor using the blockingWait Strategy, passed backlog
 	 * size, and auto-cancel settings. <p> A Shared Processor authorizes concurrent onNext
 	 * calls and is suited for multi-threaded publisher that will fan-in data. <p> The
 	 * passed {@link ExecutorService} will execute as many event-loop
@@ -616,7 +617,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	}
 
 	/**
-	 * Create a new TopicProcessor using passed backlog size, blockingWait Strategy
+	 * Create a new shared TopicProcessor using passed backlog size, blockingWait Strategy
 	 * and will auto-cancel. <p> A Shared Processor authorizes concurrent onNext calls and
 	 * is suited for multi-threaded publisher that will fan-in data. <p> The passed {@link
 	 * ExecutorService} will execute as many event-loop consuming the
@@ -637,7 +638,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	}
 
 	/**
-	 * Create a new TopicProcessor using passed backlog size, blockingWait Strategy
+	 * Create a new shared TopicProcessor using passed backlog size, blockingWait Strategy
 	 * and the auto-cancel argument. <p> A Shared Processor authorizes concurrent onNext
 	 * calls and is suited for multi-threaded publisher that will fan-in data. <p> The
 	 * passed {@link ExecutorService} will execute as many event-loop
@@ -661,7 +662,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	}
 
 	/**
-	 * Create a new TopicProcessor using passed backlog size, wait strategy and will
+	 * Create a new shared TopicProcessor using passed backlog size, wait strategy and will
 	 * auto-cancel. <p> A Shared Processor authorizes concurrent onNext calls and is
 	 * suited for multi-threaded publisher that will fan-in data. <p> A new Cached
 	 * ThreadExecutorPool will be implicitly created and will use the passed name to
@@ -686,7 +687,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	}
 
 	/**
-	 * Create a new TopicProcessor using passed backlog size, wait strategy and
+	 * Create a new shared TopicProcessor using passed backlog size, wait strategy and
 	 * signal supplier. The created processor will auto-cancel and is shared. <p> A Shared
 	 * Processor authorizes concurrent onNext calls and is suited for multi-threaded
 	 * publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be
@@ -711,7 +712,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	}
 
 	/**
-	 * Create a new TopicProcessor using passed backlog size, wait strategy and
+	 * Create a new shared TopicProcessor using passed backlog size, wait strategy and
 	 * signal supplier. The created processor will auto-cancel and is shared. <p> A Shared
 	 * Processor authorizes concurrent onNext calls and is suited for multi-threaded
 	 * publisher that will fan-in data. <p> A new Cached ThreadExecutorPool will be
@@ -740,7 +741,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	}
 
 	/**
-	 * Create a new TopicProcessor using passed backlog size, wait strategy and
+	 * Create a new shared TopicProcessor using passed backlog size, wait strategy and
 	 * auto-cancel settings. <p> A Shared Processor authorizes concurrent onNext calls and
 	 * is suited for multi-threaded publisher that will fan-in data. <p> A new Cached
 	 * ThreadExecutorPool will be implicitly created and will use the passed name to
@@ -769,7 +770,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	}
 
 	/**
-	 * Create a new TopicProcessor using passed backlog size, wait strategy and will
+	 * Create a new shared TopicProcessor using passed backlog size, wait strategy and will
 	 * auto-cancel. <p> A Shared Processor authorizes concurrent onNext calls and is
 	 * suited for multi-threaded publisher that will fan-in data. <p> The passed {@link
 	 * ExecutorService} will execute as many event-loop consuming the
@@ -794,7 +795,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	}
 
 	/**
-	 * Create a new TopicProcessor using passed backlog size, wait strategy and
+	 * Create a new shared TopicProcessor using passed backlog size, wait strategy and
 	 * auto-cancel settings. <p> A Shared Processor authorizes concurrent onNext calls and
 	 * is suited for multi-threaded publisher that will fan-in data. <p> The passed {@link
 	 * ExecutorService} will execute as many event-loop consuming the
@@ -822,7 +823,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	}
 
 	/**
-	 * Create a new TopicProcessor using passed backlog size, wait strategy and
+	 * Create a new shared TopicProcessor using passed backlog size, wait strategy and
 	 * auto-cancel settings. <p> A Shared Processor authorizes concurrent onNext calls and
 	 * is suited for multi-threaded publisher that will fan-in data. <p> The passed {@link
 	 * ExecutorService} will execute as many event-loop consuming the
