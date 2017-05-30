@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.core;
+package reactor.core.publisher;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +24,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
-import reactor.core.Disposables.SequentialDisposable;
+import reactor.core.Disposable;
+import reactor.core.publisher.FluxRefCountGrace.SequentialDisposable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
