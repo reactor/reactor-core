@@ -180,7 +180,7 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
 		UnicastProcessor<Integer> up =
-				UnicastProcessor.Builder.<Integer>create().queue(new ConcurrentLinkedQueue<>()).build();
+				UnicastProcessor.<Integer>builder().queue(new ConcurrentLinkedQueue<>()).build();
 
 		up.filter(v -> (v & 1) == 0)
 		  .subscribe(ts);
@@ -200,7 +200,7 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Object> ts = AssertSubscriber.create(1);
 
 		UnicastProcessor<Integer> up =
-				UnicastProcessor.Builder.<Integer>create().queue(new ConcurrentLinkedQueue<>()).build();
+				UnicastProcessor.<Integer>builder().queue(new ConcurrentLinkedQueue<>()).build();
 
 		Flux.just(1)
 		    .hide()
@@ -226,7 +226,7 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Object> ts = AssertSubscriber.create(1);
 
 		UnicastProcessor<Integer> up =
-				UnicastProcessor.Builder.<Integer>create().queue(new ConcurrentLinkedQueue<>()).build();
+				UnicastProcessor.<Integer>builder().queue(new ConcurrentLinkedQueue<>()).build();
 
 		Flux.just(1)
 		    .hide()

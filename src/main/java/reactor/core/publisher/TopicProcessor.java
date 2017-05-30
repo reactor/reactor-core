@@ -69,7 +69,10 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 
 	/**
 	 * {@link TopicProcessor} builder that can be used to create new
-	 * processors.
+	 * processors. Instantiate it through the {@link TopicProcessor#builder()} static
+	 * method:
+	 * <p>
+	 * {@code TopicProcessor<String> processor = TopicProcessor.<String>builder().build()}
 	 *
 	 * @param <T> Type of dispatched signal
 	 */
@@ -83,14 +86,6 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 		boolean share;
 		boolean autoCancel;
 		Supplier<T> signalSupplier;
-
-		/**
-		 * Creates a new {@link TopicProcessor} builder with default properties.
-		 * @return new TopicProcessor builder
-		 */
-		public static <T> Builder<T> create()  {
-			return new Builder<T>();
-		}
 
 		Builder() {
 			this.bufferSize = QueueSupplier.SMALL_BUFFER_SIZE;
@@ -220,6 +215,14 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	}
 
 	/**
+	 * Create a new {@link TopicProcessor} {@link Builder} with default properties.
+	 * @return new TopicProcessor builder
+	 */
+	public static <E> Builder<E> builder()  {
+		return new Builder<>();
+	}
+
+	/**
 	 * Create a new TopicProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. <p> A new Cached ThreadExecutorPool will be
 	 * implicitly created.
@@ -227,7 +230,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * @return a fresh processor
 	 */
 	public static <E> TopicProcessor<E> create() {
-		return Builder.<E>create().build();
+		return TopicProcessor.<E>builder().build();
 	}
 
 	/**
@@ -236,11 +239,11 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * @param name processor thread logical name
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
-	 * @deprecated use {@link Builder#build()}
+	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
 	@Deprecated
 	public static <E> TopicProcessor<E> create(String name) {
-		return Builder.<E>create().name(name).build();
+		return TopicProcessor.<E>builder().name(name).build();
 	}
 
 
@@ -252,11 +255,11 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
-	 * @deprecated use {@link Builder#build()}
+	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
 	@Deprecated
 	public static <E> TopicProcessor<E> create(boolean autoCancel) {
-		return Builder.<E>create().autoCancel(autoCancel).build();
+		return TopicProcessor.<E>builder().autoCancel(autoCancel).build();
 	}
 
 	/**
@@ -267,11 +270,11 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * @param service A provided ExecutorService to manage threading infrastructure
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
-	 * @deprecated use {@link Builder#build()}
+	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
 	@Deprecated
 	public static <E> TopicProcessor<E> create(ExecutorService service) {
-		return Builder.<E>create().executor(service).build();
+		return TopicProcessor.<E>builder().executor(service).build();
 	}
 
 	/**
@@ -284,12 +287,12 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
-	 * @deprecated use {@link Builder#build()}
+	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
 	@Deprecated
 	public static <E> TopicProcessor<E> create(ExecutorService service,
 	                                                boolean autoCancel) {
-		return Builder.<E>create().executor(service).autoCancel(autoCancel).build();
+		return TopicProcessor.<E>builder().executor(service).autoCancel(autoCancel).build();
 	}
 
 	/**
@@ -302,11 +305,11 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * @param bufferSize A Backlog Size to mitigate slow subscribers
 	 * @param <E> Type of processed signals
 	 * @return the fresh TopicProcessor instance
-	 * @deprecated use {@link Builder#build()}
+	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
 	@Deprecated
 	public static <E> TopicProcessor<E> create(String name, int bufferSize) {
-		return Builder.<E>create().name(name).bufferSize(bufferSize).build();
+		return TopicProcessor.<E>builder().name(name).bufferSize(bufferSize).build();
 	}
 
 	/**
@@ -320,12 +323,12 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
-	 * @deprecated use {@link Builder#build()}
+	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
 	@Deprecated
 	public static <E> TopicProcessor<E> create(String name, int bufferSize,
 	                                                boolean autoCancel) {
-		return Builder.<E>create().name(name).bufferSize(bufferSize).autoCancel(autoCancel).build();
+		return TopicProcessor.<E>builder().name(name).bufferSize(bufferSize).autoCancel(autoCancel).build();
 	}
 
 	/**
@@ -336,12 +339,12 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * @param bufferSize A Backlog Size to mitigate slow subscribers
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
-	 * @deprecated use {@link Builder#build()}
+	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
 	@Deprecated
 	public static <E> TopicProcessor<E> create(ExecutorService service,
 	                                                int bufferSize) {
-		return Builder.<E>create().executor(service).bufferSize(bufferSize).build();
+		return TopicProcessor.<E>builder().executor(service).bufferSize(bufferSize).build();
 	}
 
 	/**
@@ -354,12 +357,12 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
-	 * @deprecated use {@link Builder#build()}
+	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
 	@Deprecated
 	public static <E> TopicProcessor<E> create(ExecutorService service,
 	                                                int bufferSize, boolean autoCancel) {
-		return Builder.<E>create().executor(service).bufferSize(bufferSize).autoCancel(autoCancel).build();
+		return TopicProcessor.<E>builder().executor(service).bufferSize(bufferSize).autoCancel(autoCancel).build();
 	}
 
 	/**
@@ -373,12 +376,12 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * blocking wait strategy.
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
-	 * @deprecated use {@link Builder#build()}
+	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
 	@Deprecated
 	public static <E> TopicProcessor<E> create(String name, int bufferSize,
 	                                                WaitStrategy strategy) {
-		return Builder.<E>create().name(name).bufferSize(bufferSize).waitStrategy(strategy).build();
+		return TopicProcessor.<E>builder().name(name).bufferSize(bufferSize).waitStrategy(strategy).build();
 	}
 
 	/**
@@ -395,13 +398,13 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * buffer
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
-	 * @deprecated use {@link Builder#build()}
+	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
 	@Deprecated
 	public static <E> TopicProcessor<E> create(String name, int bufferSize,
 	                                                WaitStrategy strategy,
 	                                                Supplier<E> signalSupplier) {
-		return Builder.<E>create()
+		return TopicProcessor.<E>builder()
 				.name(name)
 				.bufferSize(bufferSize)
 				.waitStrategy(strategy)
@@ -422,13 +425,13 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
-	 * @deprecated use {@link Builder#build()}
+	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
 	@Deprecated
 	public static <E> TopicProcessor<E> create(String name, int bufferSize,
 	                                                WaitStrategy strategy,
 	                                                boolean autoCancel) {
-		return Builder.<E>create()
+		return TopicProcessor.<E>builder()
 				.name(name)
 				.bufferSize(bufferSize)
 				.waitStrategy(strategy)
@@ -446,13 +449,13 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * blocking wait strategy.
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
-	 * @deprecated use {@link Builder#build()}
+	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
 	@Deprecated
 	public static <E> TopicProcessor<E> create(ExecutorService service,
 	                                                int bufferSize,
 	                                                WaitStrategy strategy) {
-		return Builder.<E>create()
+		return TopicProcessor.<E>builder()
 				.executor(service)
 				.bufferSize(bufferSize)
 				.waitStrategy(strategy)
@@ -471,13 +474,13 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
-	 * @deprecated use {@link Builder#build()}
+	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
 	@Deprecated
 	public static <E> TopicProcessor<E> create(ExecutorService service,
 	                                                int bufferSize, WaitStrategy strategy,
 	                                                boolean autoCancel) {
-		return Builder.<E>create()
+		return TopicProcessor.<E>builder()
 				.executor(service)
 				.bufferSize(bufferSize)
 				.waitStrategy(strategy)
@@ -501,13 +504,13 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
-	 * @deprecated use {@link Builder#build()}
+	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
 	@Deprecated
 	public static <E> TopicProcessor<E> create(ExecutorService service, ExecutorService requestTaskExecutor,
 	                                                int bufferSize, WaitStrategy strategy,
 	                                                boolean autoCancel) {
-		return Builder.<E>create()
+		return TopicProcessor.<E>builder()
 				.executor(service)
 				.requestTaskExecutor(requestTaskExecutor)
 				.bufferSize(bufferSize)
@@ -525,11 +528,11 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
-	 * @deprecated use {@link Builder#build()}
+	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
 	@Deprecated
 	public static <E> TopicProcessor<E> share(boolean autoCancel) {
-		return Builder.<E>create().share(true).autoCancel(autoCancel).build();
+		return TopicProcessor.<E>builder().share(true).autoCancel(autoCancel).build();
 	}
 
 	/**
@@ -541,11 +544,11 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * @param service A provided ExecutorService to manage threading infrastructure
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
-	 * @deprecated use {@link Builder#build()}
+	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
 	@Deprecated
 	public static <E> TopicProcessor<E> share(ExecutorService service) {
-		return Builder.<E>create().share(true).executor(service).build();
+		return TopicProcessor.<E>builder().share(true).executor(service).build();
 	}
 
 	/**
@@ -559,12 +562,12 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
-	 * @deprecated use {@link Builder#build()}
+	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
 	@Deprecated
 	public static <E> TopicProcessor<E> share(ExecutorService service,
 	                                               boolean autoCancel) {
-		return Builder.<E>create().share(true).executor(service).autoCancel(autoCancel).build();
+		return TopicProcessor.<E>builder().share(true).executor(service).autoCancel(autoCancel).build();
 	}
 
 	/**
@@ -578,11 +581,11 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * @param bufferSize A Backlog Size to mitigate slow subscribers
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
-	 * @deprecated use {@link Builder#build()}
+	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
 	@Deprecated
 	public static <E> TopicProcessor<E> share(String name, int bufferSize) {
-		return Builder.<E>create().share(true).name(name).bufferSize(bufferSize).build();
+		return TopicProcessor.<E>builder().share(true).name(name).bufferSize(bufferSize).build();
 	}
 
 	/**
@@ -598,12 +601,12 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
-	 * @deprecated use {@link Builder#build()}
+	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
 	@Deprecated
 	public static <E> TopicProcessor<E> share(String name, int bufferSize,
 	                                               boolean autoCancel) {
-		return Builder.<E>create().share(true)
+		return TopicProcessor.<E>builder().share(true)
 				.name(name)
 				.bufferSize(bufferSize)
 				.autoCancel(autoCancel)
@@ -620,12 +623,12 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * @param bufferSize A Backlog Size to mitigate slow subscribers
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
-	 * @deprecated use {@link Builder#build()}
+	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
 	@Deprecated
 	public static <E> TopicProcessor<E> share(ExecutorService service,
 	                                               int bufferSize) {
-		return Builder.<E>create().share(true)
+		return TopicProcessor.<E>builder().share(true)
 				.executor(service)
 				.bufferSize(bufferSize)
 				.build();
@@ -643,12 +646,12 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
-	 * @deprecated use {@link Builder#build()}
+	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
 	@Deprecated
 	public static <E> TopicProcessor<E> share(ExecutorService service,
 	                                               int bufferSize, boolean autoCancel) {
-		return Builder.<E>create().share(true)
+		return TopicProcessor.<E>builder().share(true)
 				.executor(service)
 				.bufferSize(bufferSize)
 				.autoCancel(autoCancel)
@@ -668,12 +671,12 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * blocking wait strategy.
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
-	 * @deprecated use {@link Builder#build()}
+	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
 	@Deprecated
 	public static <E> TopicProcessor<E> share(String name, int bufferSize,
 	                                               WaitStrategy strategy) {
-		return Builder.<E>create().share(true)
+		return TopicProcessor.<E>builder().share(true)
 				.name(name)
 				.bufferSize(bufferSize)
 				.waitStrategy(strategy)
@@ -693,12 +696,12 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * buffer
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
-	 * @deprecated use {@link Builder#build()}
+	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
 	@Deprecated
 	public static <E> TopicProcessor<E> share(String name, int bufferSize,
 	                                               Supplier<E> signalSupplier) {
-		return Builder.<E>create().share(true)
+		return TopicProcessor.<E>builder().share(true)
 				.name(name)
 				.bufferSize(bufferSize)
 				.signalSupplier(signalSupplier)
@@ -720,13 +723,13 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * @param <E> Type of processed signals
 	 * @param signalSupplier the supplier of signals
 	 * @return a fresh processor
-	 * @deprecated use {@link Builder#build()}
+	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
 	@Deprecated
 	public static <E> TopicProcessor<E> share(String name, int bufferSize,
 			WaitStrategy waitStrategy,
 			Supplier<E> signalSupplier) {
-		return Builder.<E>create().share(true)
+		return TopicProcessor.<E>builder().share(true)
 				.name(name)
 				.bufferSize(bufferSize)
 				.waitStrategy(waitStrategy)
@@ -749,13 +752,13 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
-	 * @deprecated use {@link Builder#build()}
+	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
 	@Deprecated
 	public static <E> TopicProcessor<E> share(String name, int bufferSize,
 	                                               WaitStrategy strategy,
 	                                               boolean autoCancel) {
-		return Builder.<E>create().share(true)
+		return TopicProcessor.<E>builder().share(true)
 				.name(name)
 				.bufferSize(bufferSize)
 				.waitStrategy(strategy)
@@ -775,13 +778,13 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * blocking wait strategy.
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
-	 * @deprecated use {@link Builder#build()}
+	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
 	@Deprecated
 	public static <E> TopicProcessor<E> share(ExecutorService service,
 	                                               int bufferSize,
 	                                               WaitStrategy strategy) {
-		return Builder.<E>create().share(true)
+		return TopicProcessor.<E>builder().share(true)
 				.executor(service)
 				.bufferSize(bufferSize)
 				.waitStrategy(strategy)
@@ -802,13 +805,13 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
-	 * @deprecated use {@link Builder#build()}
+	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
 	@Deprecated
 	public static <E> TopicProcessor<E> share(ExecutorService service,
 	                                               int bufferSize, WaitStrategy strategy,
 	                                               boolean autoCancel) {
-		return Builder.<E>create().share(true)
+		return TopicProcessor.<E>builder().share(true)
 				.executor(service)
 				.bufferSize(bufferSize)
 				.waitStrategy(strategy)
@@ -833,14 +836,14 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	 * subscribers ?
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
-	 * @deprecated use {@link Builder#build()}
+	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
 	@Deprecated
 	public static <E> TopicProcessor<E> share(ExecutorService service,
 			ExecutorService requestTaskExecutor,
 			int bufferSize, WaitStrategy strategy,
 			boolean autoCancel) {
-		return Builder.<E>create().share(true)
+		return TopicProcessor.<E>builder().share(true)
 				.executor(service)
 				.requestTaskExecutor(requestTaskExecutor)
 				.bufferSize(bufferSize)
