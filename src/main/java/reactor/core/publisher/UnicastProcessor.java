@@ -29,6 +29,8 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.util.concurrent.QueueSupplier;
 
+import static reactor.core.publisher.UnicastProcessor.Builder.NOOP_DISPOSABLE;
+
 /**
  * A Processor implementation that takes a custom queue and allows
  * only a single subscriber.
@@ -115,18 +117,18 @@ public final class UnicastProcessor<T>
 	}
 
 	/**
-	 * Create a unicast {@link FluxProcessor} that will buffer on a given queue in an
+	 * Create a new {@link UnicastProcessor} that will buffer on an internal queue in an
 	 * unbounded fashion.
 	 *
 	 * @param <E> the relayed type
 	 * @return a unicast {@link FluxProcessor}
 	 */
 	public static <E> UnicastProcessor<E> create() {
-		return UnicastProcessor.<E>builder().build();
+		return new UnicastProcessor<E>(QueueSupplier.<E>unbounded().get(), NOOP_DISPOSABLE);
 	}
 
 	/**
-	 * Create a unicast {@link FluxProcessor} that will buffer on a given queue in an
+	 * Create a new {@link UnicastProcessor} that will buffer on a provided queue in an
 	 * unbounded fashion.
 	 *
 	 * @param queue the buffering queue
@@ -140,22 +142,20 @@ public final class UnicastProcessor<T>
 	}
 
 	/**
-	 * Create a unicast {@link FluxProcessor} that will buffer on a given queue in an
+	 * Create a new {@link UnicastProcessor} that will buffer on a provided queue in an
 	 * unbounded fashion.
 	 *
 	 * @param queue the buffering queue
 	 * @param endcallback called on any terminal signal
 	 * @param <E> the relayed type
 	 * @return a unicast {@link FluxProcessor}
-	 * @deprecated use {@link Builder#build()}
 	 */
-	@Deprecated
 	public static <E> UnicastProcessor<E> create(Queue<E> queue, Disposable endcallback) {
-		return UnicastProcessor.<E>builder().queue(queue).onTerminate(endcallback).build();
+		return new UnicastProcessor(queue, endcallback);
 	}
 
 	/**
-	 * Create a unicast {@link FluxProcessor} that will buffer on a given queue in an
+	 * Create a new {@link UnicastProcessor} that will buffer on a provided queue in an
 	 * unbounded fashion.
 	 *
 	 * @param queue the buffering queue

@@ -160,7 +160,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			if (cancelled == 0 && i == 0) {
 				WINDOW_COUNT.getAndIncrement(this);
 
-				w = new UnicastProcessor<>(processorQueueSupplier.get(), this);
+				w = UnicastProcessor.create(processorQueueSupplier.get(), this);
 				window = w;
 
 				actual.onNext(w);
@@ -326,7 +326,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 			if (i == 0) {
 				WINDOW_COUNT.getAndIncrement(this);
 
-				w = new UnicastProcessor<>(processorQueueSupplier.get(), this);
+				w = UnicastProcessor.create(processorQueueSupplier.get(), this);
 				window = w;
 
 				actual.onNext(w);
@@ -527,7 +527,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 				if (cancelled == 0) {
 					WINDOW_COUNT.getAndIncrement(this);
 
-					UnicastProcessor<T> w = new UnicastProcessor<>(processorQueueSupplier.get(), this);
+					UnicastProcessor<T> w = UnicastProcessor.create(processorQueueSupplier.get(), this);
 
 					offer(w);
 

@@ -33,7 +33,7 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.EMPTY;
 import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
 
 /**
- * * An implementation of a RingBuffer backed message-passing Processor implementing
+ * An implementation of a RingBuffer backed message-passing Processor implementing
  * publish-subscribe with synchronous (thread-stealing and happen-before interactions)
  * drain loops.
  * <p>
@@ -125,7 +125,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 
 	/**
 	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE}
-	 * backlog size, blockingWait Strategy and auto-cancel.
+	 * backlog size, blockingWait Strategy and the provided auto-cancel.
 	 *
 	 * @param <E> Type of processed signals
 	 * @param autoCancel automatically cancel
@@ -139,23 +139,21 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	}
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE}
-	 * backlog size, blockingWait Strategy and auto-cancel.
+	 * Create a new {@link EmitterProcessor} using the provided backlog size, a
+	 * blockingWait Strategy and auto-cancel.
 	 *
 	 * @param <E> Type of processed signals
 	 * @param bufferSize the internal buffer size to hold signals
 	 *
 	 * @return a fresh processor
-	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
-	@Deprecated
 	public static <E> EmitterProcessor<E> create(int bufferSize) {
-		return EmitterProcessor.<E>builder().bufferSize(bufferSize).build();
+		return new EmitterProcessor(true, bufferSize);
 	}
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE}
-	 * backlog size, blockingWait Strategy and auto-cancel.
+	 * Create a new {@link EmitterProcessor} using the provided backlog size and auto-cancellation,
+	 * and a blockingWait Strategy.
 	 *
 	 * @param <E> Type of processed signals
 	 * @param bufferSize the internal buffer size to hold signals

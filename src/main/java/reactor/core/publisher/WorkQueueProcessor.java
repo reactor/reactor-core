@@ -290,9 +290,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @param bufferSize A Backlog Size to mitigate slow subscribers
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
-	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
-	@Deprecated
 	public static <E> WorkQueueProcessor<E> create(String name, int bufferSize) {
 		return WorkQueueProcessor.<E>builder().name(name).bufferSize(bufferSize).build();
 	}
@@ -476,7 +474,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	}
 
 	/**
-	 * Create a new WorkQueueProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new shared WorkQueueProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A Shared Processor
 	 * authorizes concurrent onNext calls and is suited for multi-threaded publisher that
 	 * will fan-in data. <p> A new Cached ThreadExecutorPool will be implicitly created.
@@ -492,7 +490,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	}
 
 	/**
-	 * Create a new WorkQueueProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new shared WorkQueueProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. The passed {@link
 	 * ExecutorService} will execute as many event-loop consuming the
 	 * ringbuffer as subscribers.
@@ -507,7 +505,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	}
 
 	/**
-	 * Create a new WorkQueueProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new shared WorkQueueProcessor using {@link QueueSupplier#SMALL_BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and the passed auto-cancel setting. <p> A Shared Processor
 	 * authorizes concurrent onNext calls and is suited for multi-threaded publisher that
 	 * will fan-in data. <p> The passed {@link ExecutorService} will
@@ -526,7 +524,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	}
 
 	/**
-	 * Create a new WorkQueueProcessor using the passed buffer size, blockingWait
+	 * Create a new shared WorkQueueProcessor using the passed buffer size, blockingWait
 	 * Strategy and auto-cancel. <p> A Shared Processor authorizes concurrent onNext calls
 	 * and is suited for multi-threaded publisher that will fan-in data. <p> A new Cached
 	 * ThreadExecutorPool will be implicitly created and will use the passed name to
@@ -536,15 +534,13 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @param bufferSize A Backlog Size to mitigate slow subscribers
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
-	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
-	@Deprecated
 	public static <E> WorkQueueProcessor<E> share(String name, int bufferSize) {
 		return WorkQueueProcessor.<E>builder().share(true).name(name).bufferSize(bufferSize).build();
 	}
 
 	/**
-	 * Create a new WorkQueueProcessor using the passed buffer size, blockingWait
+	 * Create a new shared WorkQueueProcessor using the passed buffer size, blockingWait
 	 * Strategy and the passed auto-cancel setting. <p> A Shared Processor authorizes
 	 * concurrent onNext calls and is suited for multi-threaded publisher that will fan-in
 	 * data. <p> A new Cached ThreadExecutorPool will be implicitly created and will use
@@ -565,7 +561,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	}
 
 	/**
-	 * Create a new WorkQueueProcessor using the passed buffer size, blockingWait
+	 * Create a new shared WorkQueueProcessor using the passed buffer size, blockingWait
 	 * Strategy and auto-cancel. <p> A Shared Processor authorizes concurrent onNext calls
 	 * and is suited for multi-threaded publisher that will fan-in data. <p> The passed
 	 * {@link ExecutorService} will execute as many event-loop
@@ -583,7 +579,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	}
 
 	/**
-	 * Create a new WorkQueueProcessor using the passed buffer size, blockingWait
+	 * Create a new shared WorkQueueProcessor using the passed buffer size, blockingWait
 	 * Strategy and auto-cancel. <p> A Shared Processor authorizes concurrent onNext calls
 	 * and is suited for multi-threaded publisher that will fan-in data. <p> The passed
 	 * {@link ExecutorService} will execute as many event-loop
@@ -603,7 +599,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	}
 
 	/**
-	 * Create a new WorkQueueProcessor using the passed buffer size, blockingWait
+	 * Create a new shared WorkQueueProcessor using the passed buffer size, blockingWait
 	 * Strategy and auto-cancel. <p> A Shared Processor authorizes concurrent onNext calls
 	 * and is suited for multi-threaded publisher that will fan-in data. <p> A new Cached
 	 * ThreadExecutorPool will be implicitly created and will use the passed name to
@@ -624,7 +620,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	}
 
 	/**
-	 * Create a new WorkQueueProcessor using the passed buffer size, blockingWait
+	 * Create a new shared WorkQueueProcessor using the passed buffer size, blockingWait
 	 * Strategy and auto-cancel settings. <p> A Shared Processor authorizes concurrent
 	 * onNext calls and is suited for multi-threaded publisher that will fan-in data. <p>
 	 * A new Cached ThreadExecutorPool will be implicitly created and will use the passed
@@ -652,7 +648,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	}
 
 	/**
-	 * Create a new WorkQueueProcessor using the passed buffer size and blockingWait
+	 * Create a new shared WorkQueueProcessor using the passed buffer size and blockingWait
 	 * Strategy settings but will auto-cancel. <p> A Shared Processor authorizes
 	 * concurrent onNext calls and is suited for multi-threaded publisher that will fan-in
 	 * data. <p> The passed {@link ExecutorService} will execute as
@@ -676,7 +672,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	}
 
 	/**
-	 * Create a new WorkQueueProcessor using the passed buffer size, wait strategy
+	 * Create a new shared WorkQueueProcessor using the passed buffer size, wait strategy
 	 * and auto-cancel settings. <p> A Shared Processor authorizes concurrent onNext calls
 	 * and is suited for multi-threaded publisher that will fan-in data. <p> The passed
 	 * {@link ExecutorService} will execute as many event-loop
@@ -703,7 +699,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	}
 
 	/**
-	 * Create a new WorkQueueProcessor using the passed buffer size, wait strategy
+	 * Create a new shared WorkQueueProcessor using the passed buffer size, wait strategy
 	 * and auto-cancel settings. <p> A Shared Processor authorizes concurrent onNext calls
 	 * and is suited for multi-threaded publisher that will fan-in data. <p> The passed
 	 * {@link ExecutorService} will execute as many event-loop
