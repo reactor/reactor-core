@@ -24,8 +24,13 @@ import reactor.core.Disposable;
 
 /**
  * Provides an abstract asynchronous boundary to operators.
- * <p>
- * Implementations that use an underlying {@link ExecutorService} or
+ *
+ * @implNote This is a {@link FunctionalInterface} for convenience, with default implementation
+ * of scheduling methods delegating to a new {@link Worker} created via
+ * {@link #createWorker()} on each invocation. Additionally, the {@link #dispose()} method
+ * does nothing, which is likely less than optimal.
+ *
+ * @implSpec Implementations that use an underlying {@link ExecutorService} or
  * {@link ScheduledExecutorService} should instantiate it through a {@link Supplier}
  * passed through the relevant {@link Schedulers} hook
  * ({@link Schedulers#decorateExecutorService(String, Supplier)} or
@@ -34,6 +39,7 @@ import reactor.core.Disposable;
  * @author Stephane Maldini
  * @author Simon Baslé
  */
+@FunctionalInterface
 public interface Scheduler extends Disposable {
 
 	/**
@@ -48,7 +54,9 @@ public interface Scheduler extends Disposable {
 	 * @return the {@link Disposable} instance that let's one cancel this particular task.
 	 * If the {@link Scheduler} has been shut down, the {@link #REJECTED} {@link Disposable} instance is returned.
 	 */
-	Disposable schedule(Runnable task);
+	default Disposable schedule(Runnable task) {
+		return createWorker().schedule(task);
+	}
 
 	/**
 	 * Schedules the execution of the given task with the given delay amount.
@@ -64,7 +72,7 @@ public interface Scheduler extends Disposable {
 	 * or {@link #REJECTED} if the Scheduler is not capable of scheduling periodically.
 	 */
 	default Disposable schedule(Runnable task, long delay, TimeUnit unit) {
-		return REJECTED;
+		return createWorker().schedule(task, delay, unit);
 	}
 
 	/**
@@ -86,7 +94,7 @@ public interface Scheduler extends Disposable {
 	 * or {@link #REJECTED} if the Scheduler is not capable of scheduling periodically.
 	 */
 	default Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
-		return REJECTED;
+		return createWorker().schedulePeriodically(task, initialDelay, period, unit);
 	}
 
 	/**
@@ -123,6 +131,7 @@ public interface Scheduler extends Disposable {
 	 *
 	 * <p>The Scheduler may choose to ignore this instruction.
 	 *
+	 * @implSpec Implement a sensible {@link #isDisposed()} when implementing this method.
 	 */
 	default void dispose() {
 	}
@@ -142,9 +151,14 @@ public interface Scheduler extends Disposable {
 	 * A worker representing an asynchronous boundary that executes tasks in
 	 * a FIFO order, guaranteed non-concurrently with respect to each other.
 	 *
+	 * @implNote This is a {@link FunctionalInterface} for convenience, but the default
+	 * implementation rejects timed executions and does nothing on {@link #dispose()},
+	 * which is likely not optimal.
+	 *
 	 * @author Stephane Maldini
 	 * @author Simon Baslé
 	 */
+	@FunctionalInterface
 	interface Worker extends Disposable {
 
 		/**
@@ -193,6 +207,16 @@ public interface Scheduler extends Disposable {
 		 */
 		default Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
 			return REJECTED;
+		}
+
+		/**
+		 * {@inheritDoc}
+		 *
+		 * @implSpec Implement a sensible {@link #isDisposed()} when implementing this method.
+		 */
+		@Override
+		default void dispose() {
+			//NO-OP
 		}
 	}
 	

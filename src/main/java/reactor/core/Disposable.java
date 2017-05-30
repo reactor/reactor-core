@@ -32,8 +32,8 @@ public interface Disposable {
 
 	/**
 	 * Optionally return {@literal true} when the resource or task is disposed.
-	 * <p>
-	 * Implementations are not required to track disposition and as such may never
+	 *
+	 * @implSpec Implementations are not required to track disposition and as such may never
 	 * return {@literal true} even when disposed. However, they MUST only return true
 	 * when there's a guarantee the resource or task is disposed.
 	 *
