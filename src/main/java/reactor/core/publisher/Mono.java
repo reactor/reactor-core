@@ -1117,9 +1117,34 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
+	public static <T, V> Mono<V> zip(final Iterable<?extends Mono<? extends T>> monos,
+			final Function<? super Object[], ? extends V> combinator) {
+		return MonoSource.wrap(new FluxZip<>(monos, combinator, QueueSupplier.<T>one(), 1));
+	}
+
+	/**
+	 * Zip the values from given monos together using a combinator function, producing a
+	 * new {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
+	 * have been fulfilled.
+	 * If any Mono terminates without value, the returned sequence will be terminated immediately and pending results cancelled.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M1/src/docs/marble/zip1.png" alt="">
+	 * <p>
+	 *
+	 * @param combinator the combinator {@link Function}
+	 * @param monos The monos to use.
+	 * @param <T> The type of the function result.
+	 * @param <V> The result type
+	 *
+	 * @return a {@link Mono}.
+	 * @deprecated will be removed in 3.1.0.RELEASE at most. Swapt the arguments to us
+	 * {@link #zip(Iterable, Function)})} instead.
+	 */
+	@Deprecated
 	public static <T, V> Mono<V> zip(final Function<? super Object[], ? extends V> combinator, final Iterable<?
 			extends Mono<? extends T>> monos) {
-		return MonoSource.wrap(new FluxZip<>(monos, combinator, QueueSupplier.<T>one(), 1));
+		return zip(monos, combinator);
 	}
 
 //	 ==============================================================================================================
