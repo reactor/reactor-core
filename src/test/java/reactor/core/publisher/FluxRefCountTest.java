@@ -233,8 +233,7 @@ public class FluxRefCountTest {
 	public void scanInner() {
 		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, sub -> sub.request(100));
 		FluxRefCount<Integer> main = new FluxRefCount<Integer>(Flux.just(10).publish(), 17);
-		FluxRefCount.RefCountMonitor.RefCountInner<Integer> test =
-				new FluxRefCount.RefCountMonitor.RefCountInner<Integer>(actual, new FluxRefCount.RefCountMonitor<>(1, main));
+		FluxRefCount.RefCountInner<Integer> test = new FluxRefCount.RefCountInner<Integer>(actual, new FluxRefCount.RefCountMonitor<>(1, main));
 		Subscription sub = Operators.emptySubscription();
 		test.onSubscribe(sub);
 
