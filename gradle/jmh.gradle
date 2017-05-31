@@ -1,0 +1,111 @@
+/*
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
+ * JMH from @jzillmann - https://gist.github.com/jzillmann/754bf625d43b91fcff295935cbfd1bff
+ */
+sourceSets {
+  jmh {
+	compileClasspath += sourceSets.test.runtimeClasspath
+	runtimeClasspath += sourceSets.test.runtimeClasspath
+  }
+}
+
+dependencies {
+  jmhCompile project
+  jmhCompile 'org.openjdk.jmh:jmh-core:1.18'
+  jmhCompile 'org.openjdk.jmh:jmh-generator-annprocess:1.18'
+}
+
+task ('jmhHelp', description:'Print help for the jmh task') {
+  doLast {
+	println ""
+	println "Usage of jmh tasks:"
+	println ""
+
+	println "Only execute specific benchmark(s):"
+	println "\t./gradlew jmh -Pinclude=\".*MyBenchmark.*\""
+
+	println ""
+	println "Specify extra profilers:"
+	println "\t./gradlew jmh -Pprofilers=\"gc,stack\""
+
+	println ""
+	println "Prominent profilers (for full list call jmhProfilers task):"
+	println "\tcomp - JitCompilations, tune your iterations"
+	println "\tstack - which methods used most time"
+	println "\tgc - print garbage collection stats"
+	println "\ths_thr - thread usage"
+
+	println ""
+	println "Change report format from JSON to one of [CSV, JSON, NONE, SCSV, TEXT]:"
+	println "\t./gradlew jmh -Pformat=csv"
+
+	println ""
+	println "Specify JVM arguments:"
+	println "\t./gradlew jmh -PjvmArgs=\"-Dtest.cluster=local\""
+
+	println ""
+	println "Resources:"
+	println "\thttp://tutorials.jenkov.com/java-performance/jmh.html (Introduction)"
+	println "\thttp://hg.openjdk.java.net/code-tools/jmh/file/tip/jmh-samples/src/main/java/org/openjdk/jmh/samples/ (Samples)"
+  }
+}
+
+task jmhProfilers(type: JavaExec, description:'Lists the available profilers for the jmh task', group: 'Development') {
+  classpath = sourceSets.jmh.runtimeClasspath
+  main = 'org.openjdk.jmh.Main'
+  args '-lprof'
+}
+
+task jmh(type: JavaExec, description: 'Executing JMH benchmarks') {
+  classpath = sourceSets.jmh.runtimeClasspath
+  main = 'org.openjdk.jmh.Main'
+
+  def include = project.properties.get('include', '');
+  def exclude = project.properties.get('exclude');
+  def format = project.properties.get('format', 'json');
+  def profilers = project.properties.get('profilers');
+  def jvmArgs = project.properties.get('jvmArgs')
+
+  def resultFile = file("build/reports/jmh/result.${format}")
+
+  args include
+  if(exclude) {
+	args '-e', exclude
+  }
+  args '-foe', 'true'   //fail-on-error
+  args '-v', 'NORMAL'   //verbosity [SILENT, NORMAL, EXTRA]
+  if(profilers) {
+	profilers.split(',').each {
+	  args '-prof', it
+	}
+  }
+  args '-jvmArgsPrepend', '-Xmx3072m'
+  args '-jvmArgsPrepend', '-Xms3072m'
+  if(jvmArgs) {
+	for(jvmArg in jvmArgs.split(' ')) {
+	  args '-jvmArgsPrepend', jvmArg
+	}
+  }
+  args '-rf', format
+  args '-rff', resultFile
+
+  doFirst {
+	println "\nExecuting JMH with: $args \n"
+	resultFile.parentFile.mkdirs()
+  }
+}

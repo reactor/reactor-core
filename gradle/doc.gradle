@@ -14,41 +14,7 @@
  * limitations under the License.
  */
 configure(rootProject) {
-	apply plugin: "java"
 	apply plugin: 'org.asciidoctor.convert'
-
-	javadoc {
-	  dependsOn jar
-		group = "Reactor Core Javadoc"
-
-		description = "Generates aggregated Javadoc API documentation."
-		title = "Reactor Core $version"
-
-		if (JavaVersion.current().isJava8Compatible()) {
-			compileTestJava.options.compilerArgs += "-parameters"
-			tasks.withType(Javadoc) {
-				options.addStringOption('Xdoclint:none', '-quiet')
-			}
-		}
-
-		options.addStringOption('charSet', 'UTF-8')
-
-		options.memberLevel = org.gradle.external.javadoc.JavadocMemberLevel.PROTECTED
-		options.author = true
-		options.header = "Reactor Core"
-		options.overview = "src/api/overview.html"
-		options.stylesheetFile = file("src/api/stylesheet.css")
-		options.links(rootProject.ext.javadocLinks)
-		options.tags = [ "apiNote:a:API Note:", "implSpec:a:Implementation Requirements:",
-						 "implNote:a:Implementation Note:" ]
-
-		maxMemory = "1024m"
-		destinationDir = new File(buildDir, "docs/javadoc")
-	  source rootProject.sourceSets.main.allJava
-	  doFirst {
-		classpath = files(rootProject.sourceSets.main.compileClasspath)
-	  }
-	}
 
 	asciidoctor {
 		sources {
