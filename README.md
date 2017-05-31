@@ -66,7 +66,7 @@ A Reactive Streams Publisher constrained to *ZERO* or *ONE* element with appropr
 Mono in action :
 ```java
 Mono.fromCallable(System::currentTimeMillis)
-    .then(time -> Mono.first(serviceA.findRecent(time), serviceB.findRecent(time)))
+    .flatMap(time -> Mono.first(serviceA.findRecent(time), serviceB.findRecent(time)))
     .timeout(Duration.ofSeconds(3), errorHandler::fallback)
     .doOnSuccess(r -> serviceM.incrementSuccess())
     .subscribe(System.out::println);
@@ -96,7 +96,7 @@ Mono.fromCallable( () -> System.currentTimeMillis() )
 	.repeat()
     .publishOn(Schedulers.single())
     .log("foo.bar")
-    .flatMap(time ->
+    .flatMapMany(time ->
         Mono.fromCallable(() -> { Thread.sleep(1000); return time; })
             .subscribeOn(Schedulers.parallel())
     , 8) //maxConcurrency 8
@@ -127,7 +127,7 @@ producing non concurrently, use `Flux#create`, `Mono#create`.
 ```java
 Flux.create(sink -> {
          ActionListener al = e -> {
-            emitter.next(textField.getText());
+            sink.next(textField.getText());
          };
 
          // without cancellation support:
@@ -151,7 +151,7 @@ Most of this cool stuff uses bounded ring buffer implementation under the hood t
 
 ## What's more in it ?
 
-"Operator Fusion" (flow optimizers), health state observers, helpers to build custom reactive components, bounded queue generator, hash-wheel timer, converters from/to Java 9 Flow, Publisher and Java 8 CompletableFuture. The `reactor-addons` repository contains a `reactor-test` project with test features like the [`StepVerifier`](http://projectreactor.io/docs/test/release/api/index.html?reactor/test/StepVerifier.html).
+"Operator Fusion" (flow optimizers), health state observers, helpers to build custom reactive components, bounded queue generator, hash-wheel timer, converters from/to Java 9 Flow, Publisher and Java 8 CompletableFuture. The repository contains a `reactor-test` project with test features like the [`StepVerifier`](http://projectreactor.io/docs/test/release/api/index.html?reactor/test/StepVerifier.html).
 
 -------------------------------------
 
