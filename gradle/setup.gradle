@@ -19,22 +19,20 @@ task wrapper(type: Wrapper, description: "Create a Gradle self-download wrapper"
 	gradleVersion = "$gradleVersion"
 }
 
-
-configure(rootProject) {
-  	apply from: "$gradleScriptDir/doc.gradle"
+configure(subprojects) { p ->
 	apply plugin: 'propdeps-maven'
 	apply plugin: 'maven'
 
 	install {
 		repositories.mavenInstaller {
-			customizePom(pom, rootProject)
+			customizePom(pom, project)
 		}
 	}
 
 	jar {
 		manifest.attributes["Created-By"] = "${System.getProperty("java.version")} (${System.getProperty("java.specification.vendor")})"
-		manifest.attributes["Implementation-Title"] = rootProject.name
-		manifest.attributes["Implementation-Version"] = rootProject.version
+		manifest.attributes["Implementation-Title"] = project.name
+		manifest.attributes["Implementation-Version"] = project.version
 	}
 
 	task sourcesJar(type: Jar) {
@@ -50,7 +48,6 @@ configure(rootProject) {
 	artifacts {
 		archives sourcesJar
 		archives javadocJar
-	  	archives docsZip
 	}
 }
 
@@ -70,7 +67,7 @@ def customizePom(pom, gradleProject) {
 		generatedPom.project {
 			name = gradleProject.description
 			description = gradleProject.description
-			url = 'https://github.com/reactor/reactor'
+			url = 'https://github.com/reactor/reactor-core'
 			organization {
 				name = 'reactor'
 				url = 'http://github.com/reactor'
@@ -111,7 +108,7 @@ def customizePom(pom, gradleProject) {
 			}
 			issueManagement {
 				system = "GitHub Issues"
-				url = "https://github.com/reactor/reactor/issues"
+				url = "https://github.com/reactor/reactor-core/issues"
 			}
 		}
 	}

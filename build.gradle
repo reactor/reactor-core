@@ -16,27 +16,28 @@
 
 buildscript {
   repositories {
-    maven { url "http://repo.spring.io/plugins-release" }
+	maven { url "http://repo.spring.io/plugins-release" }
   }
   dependencies {
-    classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.7',
-            'io.spring.gradle:spring-io-plugin:0.0.4.RELEASE',
-            'com.github.jengelman.gradle.plugins:shadow:1.2.0',
-            'org.asciidoctor:asciidoctorj-pdf:1.5.0-alpha.11'
+	classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.7',
+			'io.spring.gradle:spring-io-plugin:0.0.4.RELEASE',
+			'com.github.jengelman.gradle.plugins:shadow:1.2.0',
+			'org.asciidoctor:asciidoctorj-pdf:1.5.0-alpha.11'
   }
 }
 
 plugins {
   id 'org.asciidoctor.convert' version '1.5.2'
-  id "me.champeau.gradle.jmh" version "0.3.1"
 }
+
+apply from: "gradle/doc.gradle"
+apply from: "gradle/setup.gradle"
 
 description = 'Non-Blocking Reactive Foundation for the JVM'
 group = 'io.projectreactor'
 
 ext {
-  gradleVersion = '3.1'
-  gradleScriptDir = "${rootProject.projectDir}/gradle"
+  gradleVersion = '3.5'
 
   // Logging
   slf4jVersion = '1.7.12'
@@ -44,8 +45,8 @@ ext {
 
   // Testing
   assertJVersion = '3.6.1'
-  testAddonVersion = '3.1.0.BUILD-SNAPSHOT'
   mockitoVersion = '2.7.22'
+
   javadocLinks = ["http://docs.oracle.com/javase/8/docs/api/",
 				  "http://docs.oracle.com/javaee/6/api/",
 				  "http://www.reactive-streams.org/reactive-streams-1.0.0-javadoc/"] as String[]
@@ -58,93 +59,13 @@ ext {
 
 }
 
-apply plugin: 'java'
-apply plugin: 'jacoco'
-apply from: "$gradleScriptDir/setup.gradle"
-apply plugin: 'propdeps'
-apply plugin: 'osgi'
-apply from: "${gradleScriptDir}/ide.gradle"
 
-jacoco {
-  toolVersion = '0.7.7.201606060606'
-}
+configure(subprojects) { p ->
+  apply plugin: 'java'
+  apply plugin: 'jacoco'
+  apply plugin: 'propdeps'
+  apply plugin: 'osgi'
 
-jacocoTestReport {
-  reports {
-	xml.enabled = true
-	html.enabled = true
-  }
-}
-
-if (project.hasProperty('platformVersion')) {
-  apply plugin: 'spring-io'
-
-  dependencyManagement {
-    springIoTestRuntime {
-      imports {
-        mavenBom "io.spring.platform:platform-bom:$platformVersion"
-      }
-    }
-  }
-}
-
-[compileJava, compileTestJava]*.options*.compilerArgs = ["-Xlint:-varargs", // intentionally disabled
-														 "-Xlint:cast",
-														 "-Xlint:classfile",
-														 "-Xlint:dep-ann",
-														 "-Xlint:divzero",
-														 "-Xlint:empty",
-														 "-Xlint:finally",
-														 "-Xlint:overrides",
-														 "-Xlint:path",
-														 "-Xlint:processing",
-														 "-Xlint:static",
-														 "-Xlint:try",
-														 "-Xlint:deprecation",
-														 "-Xlint:unchecked",
-														 "-Xlint:-serial",      // intentionally disabled
-														 "-Xlint:-options",     // intentionally disabled
-														 "-Xlint:-fallthrough", // intentionally disabled
-														 "-Xlint:-rawtypes"     // TODO enable and fix warnings
-]
-
-compileJava {
-  sourceCompatibility = 1.8
-  targetCompatibility = 1.8
-}
-
-compileTestJava {
-  sourceCompatibility = 1.8
-  targetCompatibility = 1.8
-}
-
-if (JavaVersion.current().isJava8Compatible()) {
-  compileTestJava.options.compilerArgs += "-parameters"
-  tasks.withType(Javadoc) {
-	options.addStringOption('Xdoclint:none', '-quiet')
-  }
-}
-
-[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
-
-
-project.tasks.withType(Test).all {
-  systemProperty("java.awt.headless", "true")
-  systemProperty("reactor.trace.cancel", "true")
-  systemProperty("reactor.trace.nocapacity", "true")
-  systemProperty("testGroups", project.properties.get("testGroups"))
-  scanForTestClasses = false
-  include '**/*Tests.*'
-  include '**/*Test.*'
-  include '**/*Spec.*'
-  if(!version.contains("SNAPSHOT")){
-	include '**/*Loop.*'
-  }
-  exclude '**/*Abstract*.*'
-  exclude '**/*OperatorTest*.*'
-}
-
-configure(rootProject) {
   repositories {
 	mavenLocal()
 	if (version.endsWith('BUILD-SNAPSHOT') || project.hasProperty('platformVersion')) {
@@ -158,36 +79,152 @@ configure(rootProject) {
 
   }
 
-  configurations {
-    compileOnly.extendsFrom jsr166backport
-    testCompile.extendsFrom jsr166backport
+  jacoco {
+	toolVersion = '0.7.7.201606060606'
   }
 
-// dependencies that are common across all java projects
+  jacocoTestReport {
+	reports {
+	  xml.enabled = true
+	  html.enabled = true
+	}
+  }
+
+  [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+  [compileJava, compileTestJava]*.options*.compilerArgs =
+		  ["-Xlint:-varargs", // intentionally disabled
+		   "-Xlint:cast",
+		   "-Xlint:classfile",
+		   "-Xlint:dep-ann",
+		   "-Xlint:divzero",
+		   "-Xlint:empty",
+		   "-Xlint:finally",
+		   "-Xlint:overrides",
+		   "-Xlint:path",
+		   "-Xlint:processing",
+		   "-Xlint:static",
+		   "-Xlint:try",
+		   "-Xlint:deprecation",
+		   "-Xlint:unchecked",
+		   "-Xlint:-serial",      // intentionally disabled
+		   "-Xlint:-options",     // intentionally disabled
+		   "-Xlint:-fallthrough", // intentionally disabled
+		   "-Xlint:-rawtypes"     // TODO enable and fix warnings
+		  ]
+
+  compileJava {
+	sourceCompatibility = 1.8
+	targetCompatibility = 1.8
+  }
+
+  compileTestJava {
+	sourceCompatibility = 1.8
+	targetCompatibility = 1.8
+  }
+
+  javadoc {
+	dependsOn jar
+	group = "Reactor Core Javadoc"
+	description = "Generates aggregated Javadoc API documentation."
+	title = "Reactor Core $version"
+
+	options.addStringOption('charSet', 'UTF-8')
+
+	options.memberLevel = org.gradle.external.javadoc.JavadocMemberLevel.PROTECTED
+	options.author = true
+	options.header = "$p.name"
+	options.overview = "$rootDir/src/api/overview.html"
+	options.stylesheetFile = file("$rootDir/src/api/stylesheet.css")
+	options.links(rootProject.ext.javadocLinks)
+	options.tags = [ "apiNote:a:API Note:", "implSpec:a:Implementation Requirements:",
+					 "implNote:a:Implementation Note:" ]
+
+	maxMemory = "1024m"
+	destinationDir = new File(p.buildDir, "docs/javadoc")
+	source p.sourceSets.main.allJava
+	doFirst {
+	  classpath = files(p.sourceSets.main.compileClasspath)
+	}
+  }
+
+  if (JavaVersion.current().isJava8Compatible()) {
+	compileTestJava.options.compilerArgs += "-parameters"
+	p.tasks.withType(Javadoc) {
+	  options.addStringOption('Xdoclint:none', '-quiet')
+	}
+  }
+
+  test {
+	testLogging {
+	  events "passed", "failed"
+	  showExceptions true
+	  exceptionFormat "full"
+	  maxGranularity 3
+	}
+  }
+
+  p.tasks.withType(Test).all {
+	systemProperty("java.awt.headless", "true")
+	systemProperty("reactor.trace.cancel", "true")
+	systemProperty("reactor.trace.nocapacity", "true")
+	systemProperty("testGroups", p.properties.get("testGroups"))
+	scanForTestClasses = false
+	include '**/*Tests.*'
+	include '**/*Test.*'
+	include '**/*Spec.*'
+	if (!version.contains("SNAPSHOT")) {
+	  include '**/*Loop.*'
+	}
+	exclude '**/*Abstract*.*'
+	exclude '**/*OperatorTest*.*'
+  }
+}
+
+if (project.hasProperty('platformVersion')) {
+  apply plugin: 'spring-io'
+
+  dependencyManagement {
+	springIoTestRuntime {
+	  imports {
+		mavenBom "io.spring.platform:platform-bom:$platformVersion"
+	  }
+	}
+  }
+}
+
+
+project('reactor-core') {
+  apply from: rootProject.file('gradle/jmh.gradle')
+
+  configurations {
+	compileOnly.extendsFrom jsr166backport
+	testCompile.extendsFrom jsr166backport
+  }
+
   dependencies {
-    // Reactive Streams
-    compile "org.reactivestreams:reactive-streams:1.0.0"
-    testCompile "org.reactivestreams:reactive-streams-tck:1.0.0"
+	// Reactive Streams
+	compile "org.reactivestreams:reactive-streams:1.0.0"
+	testCompile "org.reactivestreams:reactive-streams-tck:1.0.0"
 
-    // JSR-305 annotations
-    optional "com.google.code.findbugs:jsr305:3.0.0"
+	// JSR-305 annotations
+	optional "com.google.code.findbugs:jsr305:3.0.0"
 
-    //Optional Logging Operator
-    optional "org.slf4j:slf4j-api:$slf4jVersion"
+	//Optional Logging Operator
+	optional "org.slf4j:slf4j-api:$slf4jVersion"
 
-    //Optional JDK 9 Converter
-    jsr166backport "io.projectreactor:jsr166:1.0.0.RELEASE"
-	
+	//Optional JDK 9 Converter
+	jsr166backport "io.projectreactor:jsr166:1.0.0.RELEASE"
+
 	testCompile 'junit:junit:4.12'
 
 	testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
-    // Testing
-	testCompile("io.projectreactor.addons:reactor-test:$testAddonVersion"){
+	// Testing
+	testCompile(project(":reactor-test")) {
 	  exclude module: 'reactor-core'
 	}
 
-    testCompile "org.hamcrest:hamcrest-library:1.3",
-            "org.testng:testng:6.8.5",
+	testCompile "org.hamcrest:hamcrest-library:1.3",
+			"org.testng:testng:6.8.5",
 			"org.assertj:assertj-core:$assertJVersion",
 			"org.mockito:mockito-core:$mockitoVersion"
   }
@@ -205,14 +242,6 @@ configure(rootProject) {
 
   sourceSets.test.resources.srcDirs = ["src/test/resources", "src/test/java"]
 
-  test {
-	  testLogging {
-		events  "passed", "failed"
-		showExceptions true
-		exceptionFormat "full"
-		maxGranularity 3
-	}
-  }
 
   if (!JavaVersion.current().isJava9Compatible()) {
 	test {
@@ -220,15 +249,16 @@ configure(rootProject) {
 	}
   }
 
-
   jar {
-    manifest {
+	manifest {
 	  attributes 'Implementation-Title': 'reactor-core',
-		'Implementation-Version': version
-      instruction 'Import-Package', bundleImportPackages.join(',')
-    }
+			  'Implementation-Version': version
+	  instruction 'Import-Package', bundleImportPackages.join(',')
+	}
   }
+
+  jacocoTestReport.dependsOn testNG
+  check.dependsOn jacocoTestReport
 }
 
-jacocoTestReport.dependsOn testNG
-check.dependsOn jacocoTestReport
+assemble.dependsOn docsZip
