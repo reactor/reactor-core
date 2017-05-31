@@ -261,4 +261,18 @@ project('reactor-core') {
   check.dependsOn jacocoTestReport
 }
 
+project('reactor-test') {
+  description = 'Reactor Test support'
+
+  dependencies {
+	compile project(":reactor-core")
+
+	testCompile 'junit:junit:4.12'
+
+	testCompile "org.hamcrest:hamcrest-library:1.3",
+			"org.assertj:assertj-core:$assertJVersion",
+			"org.mockito:mockito-core:$mockitoVersion"
+  }
+}
+
 assemble.dependsOn docsZip
