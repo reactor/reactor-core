@@ -33,8 +33,6 @@ plugins {
 apply from: "gradle/doc.gradle"
 apply from: "gradle/setup.gradle"
 
-description = 'Non-Blocking Reactive Foundation for the JVM'
-group = 'io.projectreactor'
 
 ext {
   gradleVersion = '3.5'
@@ -65,6 +63,9 @@ configure(subprojects) { p ->
   apply plugin: 'jacoco'
   apply plugin: 'propdeps'
   apply plugin: 'osgi'
+
+  description = 'Non-Blocking Reactive Foundation for the JVM'
+  group = 'io.projectreactor'
 
   repositories {
 	mavenLocal()
