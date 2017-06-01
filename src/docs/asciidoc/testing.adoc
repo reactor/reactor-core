@@ -5,8 +5,8 @@ Whether you have written a simple chain of Reactor operators or your very own
 operator, automated testing is always a good idea.
 
 Reactor comes with a few elements dedicated to testing, gathered into their own
-artifact: `reactor-test`. You can find that project https://github.com/reactor/reactor-addons/tree/master/reactor-test/src[on Github]
-inside of the _reactor-addons_ repository.
+artifact: `reactor-test`. You can find that project https://github.com/reactor/reactor-core/tree/master/reactor-test/src[on Github]
+inside of the _reactor-core repository.
 
 To use it in your tests, add it as a test dependency:
 
@@ -14,7 +14,7 @@ To use it in your tests, add it as a test dependency:
 [source,xml]
 ----
 <dependency>
-    <groupId>io.projectreactor.addons</groupId>
+    <groupId>io.projectreactor</groupId>
     <artifactId>reactor-test</artifactId>
     <scope>test</scope>
     <1>
@@ -26,7 +26,7 @@ To use it in your tests, add it as a test dependency:
 [source,groovy]
 ----
 dependencies {
-   testcompile 'io.projectreactor.addons:reactor-test'
+   testcompile 'io.projectreactor:reactor-test'
 }
 ----
 
