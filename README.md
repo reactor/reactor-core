@@ -169,8 +169,7 @@ https://www.infoq.com/articles/reactor-by-example
 
 ## Beyond Reactor Core
 - Everything to jump outside the JVM with the non-blocking drivers from [Reactor IPC](http://github.com/reactor/reactor-ipc).
-- [Reactor Addons](http://github.com/reactor/reactor-addons) provide for testing support, 
-adapters and extra operators for Reactor 3.
+- [Reactor Addons](http://github.com/reactor/reactor-addons) provide for adapters and extra operators for Reactor 3.
 
 -------------------------------------
 _Powered by [Reactive Streams Commons](http://github.com/reactor/reactive-streams-commons)_
