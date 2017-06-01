@@ -297,10 +297,10 @@ assertThat(results).containsExactly( // <8>
 <4> Second we'll get the associated stat
 <5> We are actually interested in asynchronously combining these 2 values
 <6> Furthermore, we'd like to aggregate the values into a `List` as they become available.
-<8> In production, we'd continue working with the `Flux` asynchronously by further combining
+<7> In production, we'd continue working with the `Flux` asynchronously by further combining
 it or subscribing to it. Since we're in a test, we'll block waiting for the processing to finish
 instead, directly returning the aggregated list of values.
-<9> We are now ready to assert the result.
+<8> We are now ready to assert the result.
 
 These caveats of Callback and Future seem familiar: aren't they what Reactive Programming directly tries to
 address with the `Publisher`-`Subscriber` pair?

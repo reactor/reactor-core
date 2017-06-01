@@ -44,7 +44,7 @@ public class VirtualTimeScheduler implements Scheduler {
 	/**
 	 * Create a new {@link VirtualTimeScheduler} without enabling it. Call
 	 * {@link #getOrSet(VirtualTimeScheduler)} to enable it on
-	 * {@link Schedulers.Factory} factories.
+	 * {@link reactor.core.scheduler.Schedulers.Factory} factories.
 	 *
 	 * @return a new {@link VirtualTimeScheduler} intended for timed-only
 	 * {@link Schedulers} factories.
@@ -54,7 +54,7 @@ public class VirtualTimeScheduler implements Scheduler {
 	}
 
 	/**
-	 * Assign a single newly created {@link VirtualTimeScheduler} to all {@link Schedulers.Factory}
+	 * Assign a single newly created {@link VirtualTimeScheduler} to all {@link reactor.core.scheduler.Schedulers.Factory}
 	 * factories. While the method is thread safe, its usually advised to execute such
 	 * wide-impact BEFORE all tested code runs (setup etc). The created scheduler is returned.
 	 *
@@ -66,7 +66,7 @@ public class VirtualTimeScheduler implements Scheduler {
 
 	/**
 	 * Assign an externally created {@link VirtualTimeScheduler} to the relevant
-	 * {@link Schedulers.Factory} factories, depending on how it was created (see
+	 * {@link reactor.core.scheduler.Schedulers.Factory} factories, depending on how it was created (see
 	 * {@link #create()} and {@link #create()}). Note that the returned scheduler
 	 * should always be captured and used going forward, as the provided scheduler can be
 	 * superseded by a matching scheduler that has already been enabled.
@@ -83,7 +83,7 @@ public class VirtualTimeScheduler implements Scheduler {
 
 	/**
 	 * Assign an externally created {@link VirtualTimeScheduler} to the relevant
-	 * {@link Schedulers.Factory} factories, depending on how it was created (see
+	 * {@link reactor.core.scheduler.Schedulers.Factory} factories, depending on how it was created (see
 	 * {@link #create()} and {@link #create()}). Contrary to
 	 * {@link #getOrSet(VirtualTimeScheduler)}, the provided scheduler is always used, even
 	 * if a matching scheduler is currently enabled.
