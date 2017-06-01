@@ -34,6 +34,10 @@ a:active {
     text-decoration:none;
     color:#6db33f;
 }
+a[href^="http"] {
+    color: #16906a;
+}
+
 a[name] {
     color:#353833;
 }
