@@ -258,6 +258,12 @@ project('reactor-core') {
 	}
   }
 
+  artifacts {
+	archives sourcesJar
+	archives javadocJar
+	archives docsZip
+  }
+
   jacocoTestReport.dependsOn testNG
   check.dependsOn jacocoTestReport
 }

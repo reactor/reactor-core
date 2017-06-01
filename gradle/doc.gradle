@@ -20,7 +20,7 @@ configure(rootProject) {
 		sources {
 			include "index.asciidoc"
 		}
-		outputDir file("$buildDir/asciidoc")
+		outputDir file("$buildDir/reactor-code/build/asciidoc")
 		backends = ['html5', 'pdf']
 		logDocuments = true
 		options = [
@@ -42,9 +42,9 @@ configure(rootProject) {
 
 	task docsZip(type: Zip, dependsOn: asciidoctor) {
 	  baseName = 'reactor-core-docs'
-	  from("$buildDir/asciidoc/pdf/reactor-core-reference-guide-${version}.pdf") { into ("docs/") }
-	  from("$buildDir/asciidoc/html5/index.html") { into("docs/") }
-	  from("$buildDir/asciidoc/html5/images") { into("images/") }
+	  from("$buildDir/reactor-code/build/asciidoc/pdf/reactor-core-reference-guide-${version}.pdf") { into ("docs/") }
+	  from("$buildDir/reactor-code/build/asciidoc/html5/index.html") { into("docs/") }
+	  from("$buildDir/reactor-code/build/asciidoc/html5/images") { into("images/") }
 	}
 }
 
