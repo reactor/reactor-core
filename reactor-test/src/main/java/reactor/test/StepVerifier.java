@@ -807,7 +807,7 @@ public interface StepVerifier {
 		/**
 		 * Expect the source {@link Publisher} to NOT run with Reactor Fusion flow
 		 * optimization. It will check if publisher is {@link Fuseable} or
-		 * subscription is a {@link Fuseable.QueueSubscription}.
+		 * subscription is a {@link reactor.core.Fuseable.QueueSubscription}.
 		 *
 		 * @return this builder
 		 *
