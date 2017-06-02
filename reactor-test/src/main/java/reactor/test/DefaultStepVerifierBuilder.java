@@ -66,6 +66,12 @@ import javax.annotation.Nullable;
 final class DefaultStepVerifierBuilder<T>
 		implements StepVerifier.FirstStep<T> {
 
+	/**
+	 * the timeout used locally by {@link DefaultStepVerifier#verify()}, changed by
+	 * {@link StepVerifier#setDefaultTimeout(Duration)}
+	 */
+	static Duration defaultVerifyTimeout = StepVerifier.DEFAULT_VERIFY_TIMEOUT;
+
 	static void checkPositive(long n) {
 		if (n < 0) {
 			throw new IllegalArgumentException("'n' should be >= 0 but was " + n);
@@ -636,7 +642,7 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		public Duration verify() {
-			return verify(Duration.ZERO);
+			return verify(defaultVerifyTimeout);
 		}
 
 		@Override
@@ -1015,7 +1021,7 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		public Duration verify() {
-			return verify(Duration.ZERO);
+			return verify(defaultVerifyTimeout);
 		}
 
 		@Override
