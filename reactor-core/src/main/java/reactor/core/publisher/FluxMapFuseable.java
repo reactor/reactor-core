@@ -23,6 +23,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import javax.annotation.Nullable;
 
 /**
  * Maps the values of the source publisher one-on-one via a mapper function.
@@ -162,6 +163,7 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public R poll() {
 			T v = s.poll();
 			if (v != null) {
@@ -223,6 +225,7 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return done;
@@ -324,6 +327,7 @@ final class FluxMapFuseable<T, R> extends FluxSource<T, R> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public R poll() {
 			T v = s.poll();
 			if (v != null) {

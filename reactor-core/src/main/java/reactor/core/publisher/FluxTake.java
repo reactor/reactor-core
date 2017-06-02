@@ -22,6 +22,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.Fuseable.QueueSubscription;
+import javax.annotation.Nullable;
 
 /**
  * Takes only the first N values from the source Publisher.
@@ -162,6 +163,7 @@ final class FluxTake<T> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return done;
 			if (key == ScannableAttr.PARENT) return s;
@@ -307,6 +309,7 @@ final class FluxTake<T> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return done;
 			if (key == ScannableAttr.PARENT) return s;
@@ -433,6 +436,7 @@ final class FluxTake<T> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return done;
 			if (key == ScannableAttr.PARENT) return qs;
@@ -453,6 +457,7 @@ final class FluxTake<T> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			if (done) {
 				return null;

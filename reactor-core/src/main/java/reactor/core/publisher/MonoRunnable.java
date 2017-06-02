@@ -21,7 +21,7 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 
 import org.reactivestreams.Subscriber;
-
+import javax.annotation.Nullable;
 
 /**
  * Executes the runnable whenever a Subscriber subscribes to this Mono.
@@ -46,18 +46,21 @@ final class MonoRunnable extends Mono<Void> implements Callable<Void> {
     }
     
     @Override
+    @Nullable
     public Void block(Duration m) {
         run.run();
         return null;
     }
 
     @Override
+    @Nullable
     public Void block() {
-	    run.run();
-	    return null;
+        run.run();
+        return null;
     }
 
     @Override
+    @Nullable
     public Void call() throws Exception {
         run.run();
         return null;

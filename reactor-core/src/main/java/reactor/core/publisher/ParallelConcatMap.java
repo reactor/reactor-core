@@ -24,6 +24,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
+import javax.annotation.Nullable;
 
 /**
  * Concatenates the generated Publishers on each rail.
@@ -56,6 +57,7 @@ final class ParallelConcatMap<T, R> extends ParallelFlux<R> implements Scannable
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == ScannableAttr.PARENT) return source;
 		if (key == IntAttr.PREFETCH) return getPrefetch();

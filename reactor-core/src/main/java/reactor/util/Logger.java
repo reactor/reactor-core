@@ -15,8 +15,6 @@
  */
 package reactor.util;
 
-import java.util.logging.Level;
-
 /**
  * Logger interface designed for internal Reactor usage.
  */

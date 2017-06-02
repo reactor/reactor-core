@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import javax.annotation.Nullable;
 
 /**
  * Buffers all values from the source Publisher and emits it as a single Collection.
@@ -70,6 +71,7 @@ final class MonoCollectList<T, C extends Collection<? super T>> extends MonoSour
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return collection == null;

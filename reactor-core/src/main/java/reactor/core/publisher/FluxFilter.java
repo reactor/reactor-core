@@ -23,6 +23,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
+import javax.annotation.Nullable;
 
 /**
  * Filters out values that make a filter function return false.
@@ -101,7 +102,7 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public boolean tryOnNext(T t) {
+		public boolean tryOnNext(@Nullable T t) {
 			if (done) {
 				Operators.onNextDropped(t);
 				return false;
@@ -142,6 +143,7 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return done;
@@ -216,7 +218,7 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public boolean tryOnNext(T t) {
+		public boolean tryOnNext(@Nullable T t) {
 			if (done) {
 				Operators.onNextDropped(t);
 				return false;
@@ -254,6 +256,7 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return done;

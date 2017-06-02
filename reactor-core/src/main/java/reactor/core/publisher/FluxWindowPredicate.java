@@ -31,8 +31,7 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxBufferPredicate.Mode;
-
-
+import javax.annotation.Nullable;
 
 /**
  * Cut a sequence into non-overlapping windows where each window boundary is determined by
@@ -190,7 +189,7 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>>
 			queue.offer(g);
 		}
 
-		void offerNewWindow(T key, T emitInNewWindow) {
+		void offerNewWindow(T key, @Nullable T emitInNewWindow) {
 			// if the main is cancelled, don't create new groups
 			if (cancelled == 0) {
 				WINDOW_COUNT.getAndIncrement(this);
@@ -274,6 +273,7 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>>
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.CANCELLED) return cancelled == 1;
@@ -475,6 +475,7 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>>
 		}
 
 		@Override
+		@Nullable
 		public GroupedFlux<T, T> poll() {
 			return queue.poll();
 		}
@@ -510,6 +511,7 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>>
 		final T key;
 
 		@Override
+		@Nullable
 		public T key() {
 			return key;
 		}
@@ -554,7 +556,8 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>>
 
 		int produced;
 
-		WindowGroupedFlux(T key,
+		WindowGroupedFlux(
+				@Nullable T key,
 				Queue<T> queue,
 				WindowPredicateMain<T> parent) {
 			this.key = key;
@@ -786,6 +789,7 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>>
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			T v = queue.poll();
 			if (v != null) {
@@ -829,6 +833,7 @@ final class FluxWindowPredicate<T> extends FluxSource<T, GroupedFlux<T, T>>
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return parent;
 			if (key == BooleanAttr.CANCELLED) return cancelled;

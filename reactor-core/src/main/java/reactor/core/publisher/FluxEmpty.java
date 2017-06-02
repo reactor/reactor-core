@@ -17,7 +17,7 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
-
+import javax.annotation.Nullable;
 
 /**
  * Represents an empty publisher which only calls onSubscribe and onComplete.
@@ -53,6 +53,7 @@ extends Flux<Object>
 	}
 
 	@Override
+	@Nullable
 	public Object call() {
 		return null; /* Scalar optimizations on empty */
 	}

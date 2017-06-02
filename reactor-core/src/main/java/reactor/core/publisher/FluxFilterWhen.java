@@ -26,6 +26,7 @@ import org.reactivestreams.*;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.concurrent.QueueSupplier;
+import javax.annotation.Nullable;
 
 /**
  * Maps each upstream value into a single {@code true} or {@code false} value provided by
@@ -90,6 +91,7 @@ class FluxFilterWhen<T> extends FluxSource<T, T> {
 		static final AtomicReferenceFieldUpdater<FluxFilterWhenSubscriber, FilterWhenInner>CURRENT   =
 				AtomicReferenceFieldUpdater.newUpdater(FluxFilterWhenSubscriber.class, FilterWhenInner.class, "current");
 
+		@SuppressWarnings("ConstantConditions")
 		static final FilterWhenInner INNER_CANCELLED = new FilterWhenInner(null, false);
 
 		static final int STATE_FRESH   = 0;
@@ -352,6 +354,7 @@ class FluxFilterWhen<T> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return upstream;
 			if (key == BooleanAttr.TERMINATED) return done;
@@ -436,6 +439,7 @@ class FluxFilterWhen<T> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return parent;
 			if (key == ScannableAttr.ACTUAL) return sub;

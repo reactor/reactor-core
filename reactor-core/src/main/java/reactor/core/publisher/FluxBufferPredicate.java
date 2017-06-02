@@ -30,6 +30,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable.ConditionalSubscriber;
+import javax.annotation.Nullable;
 
 /**
  * Buffers elements into custom collections where the buffer boundary is determined by
@@ -219,6 +220,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 			return !requestMore;
 		}
 
+		@Nullable
 		private C triggerNewBuffer() {
 			C b = buffer;
 
@@ -324,6 +326,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 		}
 
 		@Override
+		@Nullable
 		public C poll() {
 			C b = buffer;
 			if (b != null && !b.isEmpty()) {
@@ -334,6 +337,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 		}
 
 		@Override
+		@Nullable
 		public C peek() {
 			return buffer;
 		}

@@ -21,6 +21,7 @@ import java.util.function.Predicate;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import javax.annotation.Nullable;
 
 /**
  * Emits a single boolean true if any of the values of the source sequence match
@@ -59,6 +60,7 @@ final class MonoAny<T> extends MonoSource<T, Boolean> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return done;
 			if (key == ScannableAttr.PARENT) return s;

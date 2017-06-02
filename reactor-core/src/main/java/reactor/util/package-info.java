@@ -17,4 +17,8 @@
 /**
  * Miscellaneous utility classes, such as loggers, tuples or queue suppliers and implementations.
  */
+@NonNullApi
 package reactor.util;
+
+import reactor.util.lang.NonNullApi;
+import javax.annotation.Nullable;

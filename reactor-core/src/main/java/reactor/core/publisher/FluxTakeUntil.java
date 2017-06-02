@@ -20,6 +20,7 @@ import java.util.function.Predicate;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import javax.annotation.Nullable;
 
 /**
  * Relays values until a predicate returns
@@ -114,6 +115,7 @@ final class FluxTakeUntil<T> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return done;
 			if (key == ScannableAttr.PARENT) return s;

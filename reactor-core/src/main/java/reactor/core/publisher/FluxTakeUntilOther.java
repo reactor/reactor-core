@@ -23,7 +23,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
-
+import javax.annotation.Nullable;
 
 /**
  * Relays values from the main Publisher until another Publisher signals an event.
@@ -67,6 +67,7 @@ final class FluxTakeUntilOther<T, U> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.CANCELLED) return main.other == Operators.cancelledSubscription();
 			if (key == ScannableAttr.PARENT) return main.other;
@@ -131,6 +132,7 @@ final class FluxTakeUntilOther<T, U> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return main;
 			if (key == BooleanAttr.CANCELLED) return main == Operators.cancelledSubscription();

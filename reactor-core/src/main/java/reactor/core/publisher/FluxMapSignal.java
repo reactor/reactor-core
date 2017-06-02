@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import javax.annotation.Nullable;
 
 /**
  * Maps the values of the source publisher one-on-one via a mapper function.
@@ -48,12 +49,12 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
      * @param mapperError the error mapper function
      * @param mapperComplete the complete mapper function
      *
-     * @throws NullPointerException if either {@code source} or {@code mapper} is null.
+     * @throws NullPointerException if either {@code source} is null or all {@code mapper} are null.
      */
     FluxMapSignal(Publisher<? extends T> source,
-            Function<? super T, ? extends R> mapperNext,
-            Function<? super Throwable, ? extends R> mapperError,
-            Supplier<? extends R>            mapperComplete) {
+		    @Nullable Function<? super T, ? extends R> mapperNext,
+		    @Nullable Function<? super Throwable, ? extends R> mapperError,
+		    @Nullable Supplier<? extends R> mapperComplete) {
         super(source);
 	    if(mapperNext == null && mapperError == null && mapperComplete == null){
 		    throw new IllegalArgumentException("Map Signal needs at least one valid mapper");
@@ -223,6 +224,7 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
         }
 
         @Override
+        @Nullable
         public R poll() {
             R v = value;
             if (v != null) {
@@ -233,6 +235,7 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
         }
 
 	    @Override
+	    @Nullable
 	    public Object scanUnsafe(Attr key) {
 		    if (key == ScannableAttr.PARENT) return s;
 		    if (key == BooleanAttr.TERMINATED) return done;
@@ -244,6 +247,7 @@ final class FluxMapSignal<T, R> extends FluxSource<T, R> {
 	    }
 
 	    @Override
+	    @Nullable
         public R peek() {
             return value;
         }

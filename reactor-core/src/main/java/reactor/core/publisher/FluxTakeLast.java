@@ -22,6 +22,7 @@ import java.util.function.BooleanSupplier;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import javax.annotation.Nullable;
 
 /**
  * Emits the last N values the source emitted before its completion.
@@ -68,6 +69,7 @@ final class FluxTakeLast<T> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 
@@ -186,6 +188,7 @@ final class FluxTakeLast<T> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.CANCELLED) return cancelled;
 			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;

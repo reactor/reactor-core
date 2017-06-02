@@ -21,6 +21,7 @@ import java.util.Objects;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import javax.annotation.Nullable;
 
 /**
  * Given a set of source Publishers the values of that Publisher is forwarded to the
@@ -47,6 +48,7 @@ final class MonoFirst<T> extends Mono<T> {
 		this.iterable = Objects.requireNonNull(iterable);
 	}
 
+	@Nullable
 	Mono<T> orAdditionalSource(Mono<? extends T> other) {
 		if (array != null) {
 			int n = array.length;

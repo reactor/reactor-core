@@ -19,6 +19,7 @@ import java.util.ArrayDeque;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import javax.annotation.Nullable;
 
 /**
  * Skips the last N elements from the source stream.
@@ -92,6 +93,7 @@ final class FluxSkipLast<T> extends FluxSource<T, T> {
 
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == IntAttr.PREFETCH) return n;

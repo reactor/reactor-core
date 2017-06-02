@@ -28,7 +28,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-
+import javax.annotation.Nullable;
 
 /**
  * Takes a value from upstream then uses the duration provided by a
@@ -121,6 +121,7 @@ final class FluxSampleFirst<T, U> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
 			if (key == ScannableAttr.PARENT) return s;
@@ -244,6 +245,7 @@ final class FluxSampleFirst<T, U> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.ACTUAL) return main;
 

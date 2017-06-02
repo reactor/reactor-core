@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import javax.annotation.Nullable;
 
 /**
  * Aggregates the source values with the help of an accumulator
@@ -80,6 +81,7 @@ final class MonoReduceSeed<T, R> extends MonoSource<T, R> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return done;
 			if (key == ScannableAttr.PARENT) return s;

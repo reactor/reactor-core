@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
-
+import javax.annotation.Nullable;
 
 /**
  * Emits the contents of a wrapped (shared) array.
@@ -173,6 +173,7 @@ final class FluxArray<T> extends Flux<T> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			int i = index;
 			T[] a = array;
@@ -208,6 +209,7 @@ final class FluxArray<T> extends Flux<T> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return isEmpty();
 			if (key == IntAttr.BUFFERED) return size();
@@ -341,6 +343,7 @@ final class FluxArray<T> extends Flux<T> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return isEmpty();
 			if (key == IntAttr.BUFFERED) return size();
@@ -351,6 +354,7 @@ final class FluxArray<T> extends Flux<T> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			int i = index;
 			T[] a = array;

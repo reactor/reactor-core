@@ -34,6 +34,7 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.concurrent.QueueSupplier;
+import javax.annotation.Nullable;
 
 /**
  * @param <T>
@@ -58,8 +59,9 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 		void produced(long n);
 
-		void node(Object node);
+		void node(@Nullable Object node);
 
+		@Nullable
 		Object node();
 
 		int tailIndex();
@@ -83,6 +85,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 		void onError(Throwable ex);
 
+		@Nullable
 		Throwable getError();
 
 		void onComplete();
@@ -91,6 +94,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 		boolean isDone();
 
+		@Nullable
 		T poll(ReplaySubscription<T> rs);
 
 		void clear(ReplaySubscription<T> rs);
@@ -111,7 +115,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 			final T    value;
 			final long time;
 
-			TimedNode(T value, long time) {
+			TimedNode(@Nullable T value, long time) {
 				this.value = value;
 				this.time = time;
 			}
@@ -278,6 +282,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		}
 
 		@Override
+		@Nullable
 		public Throwable getError() {
 			return error;
 		}
@@ -311,6 +316,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		}
 
 		@Override
+		@Nullable
 		public T poll(ReplaySubscription<T> rs) {
 			TimedNode<T> node = latestHead(rs);
 			TimedNode<T> next;
@@ -450,6 +456,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		}
 
 		@Override
+		@Nullable
 		public Throwable getError() {
 			return error;
 		}
@@ -638,6 +645,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		}
 
 		@Override
+		@Nullable
 		public T poll(ReplaySubscription<T> rs) {
 			int index = rs.index();
 			if (index == size) {
@@ -868,6 +876,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		}
 
 		@Override
+		@Nullable
 		public Throwable getError() {
 			return error;
 		}
@@ -884,12 +893,13 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 			final T value;
 
-			Node(T value) {
+			Node(@Nullable T value) {
 				this.value = value;
 			}
 		}
 
 		@Override
+		@Nullable
 		public T poll(ReplaySubscription<T> rs) {
 			@SuppressWarnings("unchecked") Node<T> node = (Node<T>) rs.node();
 			if (node == null) {
@@ -962,7 +972,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 	FluxReplay(Publisher<T> source,
 			int history,
 			long ttl,
-			Scheduler scheduler) {
+			@Nullable Scheduler scheduler) {
 		this.source = Objects.requireNonNull(source, "source");
 		this.history = history;
 		if(history < 0){
@@ -1046,6 +1056,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Scannable.Attr key) {
 		if (key == IntAttr.PREFETCH) return getPrefetch();
 		if (key == ScannableAttr.PARENT) return source;
@@ -1267,6 +1278,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
@@ -1341,6 +1353,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return parent;
 			if (key == BooleanAttr.TERMINATED) return parent != null && parent.isTerminated();
@@ -1389,6 +1402,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			ReplaySubscriber<T> p = parent;
 			if(p != null){
@@ -1421,7 +1435,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		}
 
 		@Override
-		public void node(Object node) {
+		public void node(@Nullable Object node) {
 			this.node = node;
 		}
 
@@ -1430,9 +1444,8 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 			return fusionMode;
 		}
 
-
-
 		@Override
+		@Nullable
 		public Object node() {
 			return node;
 		}

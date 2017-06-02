@@ -22,6 +22,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler;
+import javax.annotation.Nullable;
 
 /**
  * Schedules the emission of the value or completion of the wrapped Mono via
@@ -70,6 +71,7 @@ final class MonoPublishOn<T> extends MonoSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.CANCELLED) return future == Disposables.DISPOSED;
 			if (key == ScannableAttr.PARENT) return s;
@@ -117,6 +119,7 @@ final class MonoPublishOn<T> extends MonoSource<T, T> {
 			}
 		}
 
+		@Nullable
 		Disposable schedule() {
 			if (future == null) {
 				Disposable c = scheduler.schedule(this);

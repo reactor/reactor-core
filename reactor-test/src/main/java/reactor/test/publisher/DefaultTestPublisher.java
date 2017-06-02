@@ -28,6 +28,7 @@ import reactor.core.Fuseable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
+import javax.annotation.Nullable;
 
 /**
  * A default implementation of a {@link TestPublisher}.
@@ -328,7 +329,7 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 	}
 
 	@Override
-	public DefaultTestPublisher<T> next(T t) {
+	public DefaultTestPublisher<T> next(@Nullable T t) {
 		if (!violations.contains(Violation.ALLOW_NULL)) {
 			Objects.requireNonNull(t, "emitted values must be non-null");
 		}

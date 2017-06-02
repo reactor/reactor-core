@@ -28,6 +28,7 @@ final class ParallelArraySource<T> extends ParallelFlux<T> {
 	final Publisher<T>[] sources;
 	
 	ParallelArraySource(Publisher<T>[] sources) {
+		//noinspection ConstantConditions
 		if (sources == null || sources.length == 0) {
 			throw new IllegalArgumentException("Zero publishers not supported");
 		}

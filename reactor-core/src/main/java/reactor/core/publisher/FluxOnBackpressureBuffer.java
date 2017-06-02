@@ -26,6 +26,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.util.concurrent.QueueSupplier;
+import javax.annotation.Nullable;
 
 /**
  * @author Stephane Maldini
@@ -40,7 +41,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxSource<O, O> implements Fuse
 	FluxOnBackpressureBuffer(Flux<? extends O> source,
 			int bufferSize,
 			boolean unbounded,
-			Consumer<? super O> onOverflow) {
+			@Nullable Consumer<? super O> onOverflow) {
 		super(source);
 		if (bufferSize < 1) {
 			throw new IllegalArgumentException("Buffer Size must be strictly positive");
@@ -96,7 +97,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxSource<O, O> implements Fuse
 				int bufferSize,
 				boolean unbounded,
 				boolean delayError,
-				Consumer<? super T> onOverflow) {
+				@Nullable Consumer<? super T> onOverflow) {
 			this.actual = actual;
 			this.delayError = delayError;
 			this.onOverflow = onOverflow;
@@ -114,6 +115,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxSource<O, O> implements Fuse
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
@@ -312,6 +314,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxSource<O, O> implements Fuse
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			return queue.poll();
 		}

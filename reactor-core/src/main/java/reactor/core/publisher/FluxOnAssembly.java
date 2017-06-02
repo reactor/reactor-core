@@ -26,6 +26,7 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuples;
+import javax.annotation.Nullable;
 
 /**
  * Captures the current stacktrace when this publisher is created and
@@ -69,7 +70,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 	 * Create an assembly trace augmented with a custom description (eg. a name for a Flux
 	 * or a wider correlation ID) and exposed as a {@link Flux}.
 	 */
-	FluxOnAssembly(Flux<? extends T> source, String description) {
+	FluxOnAssembly(Flux<? extends T> source, @Nullable String description) {
 		this(source, description, false);
 	}
 
@@ -78,7 +79,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 	 * description (eg. a name for a Flux or a wider correlation ID) and exposed as a
 	 * {@link Flux}. If light == false, behaves as {@link #FluxOnAssembly(Flux, String)}.
 	 */
-	FluxOnAssembly(Flux<? extends T> source, String description, boolean light) {
+	FluxOnAssembly(Flux<? extends T> source, @Nullable String description, boolean light) {
 		super(source);
 		if (light) {
 			this.snapshotStack = new AssemblyLightSnapshotException(description);
@@ -109,7 +110,8 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 				 .toString();
 	}
 
-	static String getStacktrace(Publisher<?> source,
+	static String getStacktrace(
+			@Nullable Publisher<?> source,
 			AssemblySnapshotException snapshotStack) {
 		StackTraceElement[] stes = snapshotStack.getStackTrace();
 
@@ -226,7 +228,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 	@SuppressWarnings("unchecked")
 	static <T> void subscribe(Subscriber<? super T> s,
 			Publisher<? extends T> source,
-			AssemblySnapshotException snapshotStack) {
+			@Nullable AssemblySnapshotException snapshotStack) {
 
 		if(snapshotStack != null) {
 			if (s instanceof ConditionalSubscriber) {
@@ -290,7 +292,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		 * @param description a description for the assembly traceback.
 		 * Use {@link #AssemblySnapshotException()} rather than null if not relevant.
 		 */
-		AssemblySnapshotException(String description) {
+		AssemblySnapshotException(@Nullable String description) {
 			super(description);
 			this.checkpointed = true;
 		}
@@ -302,7 +304,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 
 	static final class AssemblyLightSnapshotException extends AssemblySnapshotException {
 
-		public AssemblyLightSnapshotException(String description) {
+		public AssemblyLightSnapshotException(@Nullable String description) {
 			super(description);
 		}
 
@@ -350,6 +352,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		}
 
 		void add(Publisher<?> parent, String stacktrace) {
+			//noinspection ConstantConditions
 			int key = getParentOrThis(Scannable.from(parent));
 			synchronized (chainOrder) {
 				int i = 0;
@@ -359,7 +362,9 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 				Tuple3<Integer, String, Integer> tmp;
 				while(j >= 0){
 					tmp = chainOrder.get(j);
+					//noinspection ConstantConditions
 					if(tmp.getT1() == key){
+						//noinspection ConstantConditions
 						i = tmp.getT3();
 						break;
 					}
@@ -393,6 +398,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 				StringBuilder sb = new StringBuilder(super.getMessage()).append(
 						"Error has been observed by the following operator(s):\n");
 				for(Tuple3<Integer, String, Integer> t : chainOrder) {
+					//noinspection ConstantConditions
 					mapLine(t.getT3(), sb, t.getT2());
 				}
 				return sb.toString();
@@ -432,6 +438,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 
@@ -531,6 +538,7 @@ final class FluxOnAssembly<T> extends FluxSource<T, T> implements Fuseable, Asse
 		}
 
 		@Override
+		@Nullable
 		final public T poll() {
 			try {
 				return qs.poll();

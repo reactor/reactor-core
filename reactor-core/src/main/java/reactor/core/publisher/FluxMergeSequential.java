@@ -34,7 +34,7 @@ import reactor.core.Fuseable.QueueSubscription;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
 import reactor.util.concurrent.QueueSupplier;
-
+import javax.annotation.Nullable;
 
 /**
  * Maps each upstream value into a Publisher and concatenates them into one
@@ -167,6 +167,7 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == ThrowableAttr.ERROR) return error;
@@ -364,6 +365,7 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 
 				if (inner != null) {
 					Queue<R> q = inner.queue();
+					//noinspection ConstantConditions
 					if (q != null) {
 						while (e != r) {
 							if (cancelled) {
@@ -503,6 +505,7 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return subscription;
 			if (key == ScannableAttr.ACTUAL) return parent;

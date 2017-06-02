@@ -17,4 +17,7 @@
 /**
  * {@link reactor.util.function.Tuples Tuples} provide a type-safe way to specify multiple parameters.
  */
+@NonNullApi
 package reactor.util.function;
+
+import reactor.util.lang.NonNullApi;

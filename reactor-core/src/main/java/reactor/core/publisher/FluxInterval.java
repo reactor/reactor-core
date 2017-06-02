@@ -24,7 +24,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
-
+import javax.annotation.Nullable;
 
 /**
  * Periodically emits an ever increasing long value either via a ScheduledExecutorService
@@ -91,6 +91,7 @@ final class FluxInterval extends Flux<Long> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.CANCELLED) return cancelled;
 

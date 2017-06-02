@@ -32,8 +32,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-
-
+import javax.annotation.Nullable;
 
 /**
  * Combines the latest values from multiple sources through a function.
@@ -267,6 +266,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return done;
 			if (key == BooleanAttr.CANCELLED) return cancelled;
@@ -435,6 +435,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 					catch (Throwable ex) {
 						ex = Operators.onOperatorError(this,	ex,	v.array);
 						Exceptions.addThrowable(ERROR, this, ex);
+						//noinspection ConstantConditions
 						ex = Exceptions.terminate(ERROR, this);
 						actual.onError(ex);
 						return;
@@ -520,6 +521,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public R poll() {
 			SourceAndArray e = queue.poll();
 			if (e == null) {
@@ -615,6 +617,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return  s;
 			if (key == ScannableAttr.ACTUAL) return parent;

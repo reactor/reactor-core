@@ -23,6 +23,7 @@ import java.util.function.BooleanSupplier;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import javax.annotation.Nullable;
 
 /**
  * @author Stephane Maldini
@@ -62,6 +63,7 @@ final class FluxMaterialize<T> extends FluxSource<T, Signal<T>> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return terminalSignal != null;
@@ -153,6 +155,7 @@ final class FluxMaterialize<T> extends FluxSource<T, Signal<T>> {
         }
 
         @Override
+        @Nullable
         @SuppressWarnings("unchecked")
         public Signal<T> poll() {
             Signal<T> v = terminalSignal;
@@ -164,6 +167,7 @@ final class FluxMaterialize<T> extends FluxSource<T, Signal<T>> {
         }
 
         @Override
+        @Nullable
         public Signal<T> peek() {
             return empty == terminalSignal ? null : terminalSignal;
         }
@@ -178,6 +182,6 @@ final class FluxMaterialize<T> extends FluxSource<T, Signal<T>> {
             return terminalSignal == null || terminalSignal == empty ? 0 : 1;
         }
 
-		static final Signal empty = Signal.next(null);
+		static final Signal empty = new ImmutableSignal<>(SignalType.ON_NEXT, null, null, null);;
 	}
 }

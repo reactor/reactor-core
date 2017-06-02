@@ -22,6 +22,7 @@ import java.util.concurrent.Callable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import javax.annotation.Nullable;
 
 /**
  * A micro API for stream fusion, in particular marks producers that support a {@link QueueSubscription}.
@@ -104,17 +105,18 @@ public interface Fuseable {
 		int requestFusion(int requestedMode);
 
 		@Override
+		@Nullable
 		default T peek() {
 			throw new UnsupportedOperationException("Operators should not use this method!");
 		}
 
 		@Override
-		default boolean add(T t) {
+		default boolean add(@Nullable T t) {
 			throw new UnsupportedOperationException("Operators should not use this method!");
 		}
 
 		@Override
-		default boolean offer(T t) {
+		default boolean offer(@Nullable T t) {
 			throw new UnsupportedOperationException("Operators should not use this method!");
 		}
 
@@ -129,7 +131,7 @@ public interface Fuseable {
 		}
 
 		@Override
-		default boolean contains(Object o) {
+		default boolean contains(@Nullable Object o) {
 			throw new UnsupportedOperationException("Operators should not use this method!");
 		}
 
@@ -149,7 +151,7 @@ public interface Fuseable {
 		}
 
 		@Override
-		default boolean remove(Object o) {
+		default boolean remove(@Nullable Object o) {
 			throw new UnsupportedOperationException("Operators should not use this method!");
 		}
 
@@ -201,6 +203,7 @@ public interface Fuseable {
 	 */
 	interface ScalarCallable<T> extends Callable<T> {
         @Override
+        @Nullable
         T call();
 	}
 }

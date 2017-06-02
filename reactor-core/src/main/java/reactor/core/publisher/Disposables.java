@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
 
 import reactor.core.Disposable;
+import javax.annotation.Nullable;
 
 /**
  * A {@link Disposable} container that allows updating/replacing its inner Disposable
@@ -58,7 +59,7 @@ final class Disposables {
 	 * @param newValue the new Disposable to set
 	 * @return true if successful, false if the field contains the {@link #DISPOSED} instance.
 	 */
-	public static <T> boolean set(AtomicReferenceFieldUpdater<T, Disposable> updater, T holder, Disposable newValue) {
+	public static <T> boolean set(AtomicReferenceFieldUpdater<T, Disposable> updater, T holder, @Nullable Disposable newValue) {
 		for (;;) {
 			Disposable current = updater.get(holder);
 			if (current == DISPOSED) {
@@ -114,7 +115,7 @@ final class Disposables {
 	 * @return true if the operation succeeded, false if the target field contained
 	 * the common {@link #DISPOSED} instance and the given disposable is not null but is disposed.
 	 */
-	public static <T> boolean replace(AtomicReferenceFieldUpdater<T, Disposable> updater, T holder, Disposable newValue) {
+	public static <T> boolean replace(AtomicReferenceFieldUpdater<T, Disposable> updater, T holder, @Nullable Disposable newValue) {
 		for (;;) {
 			Disposable current = updater.get(holder);
 			if (current == DISPOSED) {
@@ -160,7 +161,8 @@ final class Disposables {
 	 * @param next the next {@link Disposable}, expected to be non-null
 	 * @return true if the validation succeeded
 	 */
-	public static boolean validate(Disposable current, Disposable next) {
+	public static boolean validate(@Nullable Disposable current, Disposable next) {
+		//noinspection ConstantConditions
 		if (next == null) {
 			Operators.onErrorDropped(new NullPointerException("next is null"));
 			return false;
@@ -246,11 +248,12 @@ final class Disposables {
 		 * @return true if the operation succeeded, false if the container has been disposed
 		 * @see #update(Disposable)
 		 */
-		public boolean replace(Disposable next) {
+		public boolean replace(@Nullable Disposable next) {
 			return Disposables.replace(INNER, this, next);
 		}
 
 		@Override
+		@Nullable
 		public Disposable get() {
 			return inner;
 		}

@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import javax.annotation.Nonnull;
+
 import javax.annotation.Nullable;
 
 /**
@@ -41,7 +41,7 @@ public class Tuple2<T1, T2> implements Iterable<Object>, Serializable {
 	final T1 t1;
 	final T2 t2;
 
-	Tuple2(T1 t1, T2 t2) {
+	Tuple2(@Nullable T1 t1, @Nullable T2 t2) {
 		this.t1 = t1;
 		this.t2 = t2;
 	}
@@ -51,6 +51,7 @@ public class Tuple2<T1, T2> implements Iterable<Object>, Serializable {
 	 *
 	 * @return The first object
 	 */
+	@Nullable
 	public T1 getT1() {
 		return t1;
 	}
@@ -60,6 +61,7 @@ public class Tuple2<T1, T2> implements Iterable<Object>, Serializable {
 	 *
 	 * @return The second object
 	 */
+	@Nullable
 	public T2 getT2() {
 		return t2;
 	}
@@ -101,14 +103,13 @@ public class Tuple2<T1, T2> implements Iterable<Object>, Serializable {
 		return new Object[]{t1, t2};
 	}
 
-	@Nonnull
 	@Override
 	public Iterator<Object> iterator() {
 		return Collections.unmodifiableList(toList()).iterator();
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}

@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import javax.annotation.Nullable;
 
 /**
  * Runs the source in unbounded mode and emits only the latest value
@@ -210,6 +211,7 @@ final class FluxOnBackpressureLatest<T> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;

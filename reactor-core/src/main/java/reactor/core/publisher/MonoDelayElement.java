@@ -23,6 +23,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler;
+import javax.annotation.Nullable;
 
 /**
  * Emits the first value emitted by a given source publisher, delayed by some time amount
@@ -73,6 +74,7 @@ final class MonoDelayElement<T> extends MonoSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return done;
 			if (key == ScannableAttr.PARENT) return s;

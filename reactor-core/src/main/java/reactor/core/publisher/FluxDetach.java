@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import javax.annotation.Nullable;
 
 /**
  * Detaches the both the child Subscriber and the Subscription on
@@ -49,6 +50,7 @@ final class FluxDetach<T> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return actual == null;

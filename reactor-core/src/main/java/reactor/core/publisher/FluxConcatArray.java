@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Exceptions;
+import javax.annotation.Nullable;
 
 /**
  * Concatenates a fixed array of Publishers' values.
@@ -251,6 +252,7 @@ final class FluxConcatArray<T> extends Flux<T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.DELAY_ERROR) return true;
 			if (key == ThrowableAttr.ERROR) return error;

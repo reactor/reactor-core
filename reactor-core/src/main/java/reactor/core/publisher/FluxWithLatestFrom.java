@@ -25,7 +25,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
-
+import javax.annotation.Nullable;
 
 /**
  * Combines values from a main Publisher with values from another
@@ -118,6 +118,7 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.CANCELLED) return main == Operators.cancelledSubscription();
 			if (key == ScannableAttr.PARENT) return main;
@@ -271,6 +272,7 @@ final class FluxWithLatestFrom<T, U, R> extends FluxSource<T, R> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.ACTUAL) {
 				return main;

@@ -23,6 +23,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import javax.annotation.Nullable;
 
 /**
  * Maps the values of the source publisher one-on-one via a handler function.
@@ -87,7 +88,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R> implements Fuseabl
 		}
 
 		@Override
-		public boolean tryOnNext(T t) {
+		public boolean tryOnNext(@Nullable T t) {
 			if (done) {
 				Operators.onNextDropped(t);
 				return true;
@@ -186,6 +187,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R> implements Fuseabl
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return done;
@@ -210,6 +212,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R> implements Fuseabl
 		}
 
 		@Override
+		@Nullable
 		public R poll() {
 			if (sourceMode == ASYNC) {
 				if (done) {
@@ -389,7 +392,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R> implements Fuseabl
 		}
 
 		@Override
-		public boolean tryOnNext(T t) {
+		public boolean tryOnNext(@Nullable T t) {
 			if (done) {
 				Operators.onNextDropped(t);
 				return true;
@@ -463,6 +466,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R> implements Fuseabl
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return done;
@@ -487,6 +491,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R> implements Fuseabl
 		}
 
 		@Override
+		@Nullable
 		public R poll() {
 			if (sourceMode == ASYNC) {
 				if (done) {

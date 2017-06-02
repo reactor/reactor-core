@@ -23,4 +23,7 @@
  *
  * @author Stephane Maldini
  */
+@NonNullApi
 package reactor.adapter;
+
+import reactor.util.lang.NonNullApi;

@@ -27,7 +27,7 @@ import java.util.stream.Stream;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
-
+import javax.annotation.Nullable;
 
 /**
  * Given sorted rail sequences (according to the provided comparator) as List
@@ -64,6 +64,7 @@ final class ParallelMergeSort<T> extends Flux<T> implements Scannable {
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == ScannableAttr.PARENT) return source;
 		if (key == IntAttr.PREFETCH) return getPrefetch();
@@ -136,6 +137,7 @@ final class ParallelMergeSort<T> extends Flux<T> implements Scannable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ThrowableAttr.ERROR) return error;
 			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
@@ -259,7 +261,7 @@ final class ParallelMergeSort<T> extends Flux<T> implements Scannable {
 					e++;
 				}
 
-				if (e == r) {
+				if (e == r) { //TODO investigate condition always true
 					if (cancelled) {
 						Arrays.fill(lists, null);
 						return;
@@ -327,6 +329,7 @@ final class ParallelMergeSort<T> extends Flux<T> implements Scannable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
 			if (key == ScannableAttr.PARENT) return s;

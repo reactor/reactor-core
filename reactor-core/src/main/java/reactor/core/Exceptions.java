@@ -18,6 +18,7 @@ package reactor.core;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import javax.annotation.Nullable;
 
 /**
  * Global Reactor Core Exception handling and utils to operate on.
@@ -80,6 +81,7 @@ public abstract class Exceptions {
 
 	public static RuntimeException multiple(Throwable... throwables) {
 		RuntimeException multiple = new RuntimeException("Multiple exceptions");
+		//noinspection ConstantConditions
 		if (throwables != null) {
 			for (Throwable t : throwables) {
 				multiple.addSuppressed(t);
@@ -176,7 +178,7 @@ public abstract class Exceptions {
 	 * @param t the {@link Throwable} error to check
 	 * @return true if the given {@link Throwable} represents an overflow.
 	 */
-	public static boolean isOverflow(Throwable t) {
+	public static boolean isOverflow(@Nullable Throwable t) {
 		return t instanceof OverflowException;
 	}
 
@@ -185,7 +187,7 @@ public abstract class Exceptions {
 	 * @param t the {@link Throwable} error to check
 	 * @return true if given {@link Throwable} is a bubbled wrapped exception.
 	 */
-	public static boolean isBubbling(Throwable t) {
+	public static boolean isBubbling(@Nullable Throwable t) {
 		return t instanceof BubblingException;
 	}
 
@@ -194,7 +196,7 @@ public abstract class Exceptions {
 	 * @param t the {@link Throwable} error to check
 	 * @return true if given {@link Throwable} is a cancellation token.
 	 */
-	public static boolean isCancel(Throwable t) {
+	public static boolean isCancel(@Nullable Throwable t) {
 		return t instanceof CancelException;
 	}
 
@@ -206,9 +208,8 @@ public abstract class Exceptions {
 	 * @param t the {@link Throwable} error to check
 	 * @return true if given {@link Throwable} is a callback not implemented exception.
 	 */
-	public static boolean isErrorCallbackNotImplemented(Throwable t) {
-		return t != null && t.getClass().equals(ErrorCallbackNotImplemented
-				.class);
+	public static boolean isErrorCallbackNotImplemented(@Nullable Throwable t) {
+		return t != null && t.getClass().equals(ErrorCallbackNotImplemented.class);
 	}
 
 	/**
@@ -249,6 +250,7 @@ public abstract class Exceptions {
 	 *
 	 * @return the previously masked throwable
 	 */
+	@Nullable
 	public static <T> Throwable terminate(AtomicReferenceFieldUpdater<T, Throwable> field,
 			T instance) {
 		Throwable current = field.get(instance);
@@ -267,7 +269,7 @@ public abstract class Exceptions {
 	 *
 	 * @param t the exception to evaluate
 	 */
-	public static void throwIfFatal(Throwable t) {
+	public static void throwIfFatal(@Nullable Throwable t) {
 		if (t instanceof BubblingException) {
 			throw (BubblingException) t;
 		}
@@ -285,7 +287,7 @@ public abstract class Exceptions {
 	 *
 	 * @param t the exception to evaluate
 	 */
-	public static void throwIfJvmFatal(Throwable t) {
+	public static void throwIfJvmFatal(@Nullable Throwable t) {
 		if (t instanceof VirtualMachineError) {
 			throw (VirtualMachineError) t;
 		}

@@ -25,7 +25,7 @@ import org.reactivestreams.Subscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
-
+import javax.annotation.Nullable;
 
 /**
  * Executes a Callable and emits its value on the given Scheduler.
@@ -118,6 +118,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.CANCELLED) return state == HAS_CANCELLED;
 			if (key == IntAttr.BUFFERED) return value != null ? 1 : 0;
@@ -157,6 +158,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			if (fusionState == HAS_VALUE) {
 				fusionState = COMPLETE;

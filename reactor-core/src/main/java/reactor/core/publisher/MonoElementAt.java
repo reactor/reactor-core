@@ -20,6 +20,7 @@ import java.util.Objects;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import javax.annotation.Nullable;
 
 /**
  * Emits only the element at the given index position or signals a
@@ -75,6 +76,7 @@ final class MonoElementAt<T> extends MonoSource<T, T> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return done;
 			if (key == ScannableAttr.PARENT) return s;

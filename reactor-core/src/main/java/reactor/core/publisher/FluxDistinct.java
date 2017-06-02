@@ -26,6 +26,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.Fuseable.QueueSubscription;
+import javax.annotation.Nullable;
 
 /**
  * For each subscriber, tracks the source values that have been seen and
@@ -263,7 +264,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 		}
 
 		@Override
-		public boolean tryOnNext(T t) {
+		public boolean tryOnNext(@Nullable T t) {
 			if (done) {
 				Operators.onNextDropped(t);
 				return true;
@@ -332,6 +333,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return done;
@@ -382,7 +384,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 		}
 
 		@Override
-		public boolean tryOnNext(T t) {
+		public boolean tryOnNext(@Nullable T t) {
 
 			if (sourceMode == Fuseable.ASYNC) {
 				actual.onNext(null);
@@ -475,6 +477,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			if (sourceMode == Fuseable.ASYNC) {
 				long dropped = 0;

@@ -31,8 +31,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-
-
+import javax.annotation.Nullable;
 
 /**
  * Shares a sequence for the duration of a function that may transform it and
@@ -158,6 +157,7 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == ThrowableAttr.ERROR) return error;
@@ -627,6 +627,7 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == ScannableAttr.PARENT) return parent;
@@ -683,6 +684,7 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 
@@ -752,6 +754,7 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			// should not be called because fusion is always rejected
 			return null;
@@ -779,6 +782,7 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 
@@ -832,6 +836,7 @@ final class FluxPublishMulticast<T, R> extends FluxSource<T, R> implements Fusea
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			return s.poll();
 		}

@@ -21,6 +21,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import javax.annotation.Nullable;
 
 /**
  * A connecting {@link Flux} Publisher (right-to-left from a composition chain perspective)
@@ -79,6 +80,7 @@ public class FluxSource<I, O> extends Flux<O> implements Scannable {
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == IntAttr.PREFETCH) return getPrefetch();
 		if (key == ScannableAttr.PARENT) return source;

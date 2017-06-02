@@ -27,7 +27,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
-
+import javax.annotation.Nullable;
 
 final class MonoFlatMapMany<T, R> extends Flux<R> {
 
@@ -78,6 +78,7 @@ final class MonoFlatMapMany<T, R> extends Flux<R> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return main;
 
@@ -211,6 +212,7 @@ final class MonoFlatMapMany<T, R> extends Flux<R> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return parent.inner;
 			if (key == ScannableAttr.ACTUAL) return parent;

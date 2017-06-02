@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.scheduler.Scheduler;
+import javax.annotation.Nullable;
 
 import static reactor.core.scheduler.Scheduler.REJECTED;
 
@@ -65,6 +66,7 @@ final class FluxCancelOn<T> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.CANCELLED) return cancelled == 1;

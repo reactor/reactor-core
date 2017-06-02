@@ -49,12 +49,12 @@ import reactor.core.Fuseable;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Operators;
 import reactor.core.publisher.Signal;
-import reactor.test.StepVerifier.Step;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
+import javax.annotation.Nullable;
 
 /**
  * Default implementation of {@link StepVerifier.Step} and
@@ -102,7 +102,7 @@ final class DefaultStepVerifierBuilder<T>
 	int  expectedFusionMode  = -1;
 
 	DefaultStepVerifierBuilder(StepVerifierOptions options,
-			Supplier<? extends Publisher<? extends T>> sourceSupplier) {
+			@Nullable Supplier<? extends Publisher<? extends T>> sourceSupplier) {
 		this.initialRequest = options.getInitialRequest();
 		this.options = options;
 		this.vtsLookup = options.getVirtualTimeSchedulerSupplier();
@@ -511,7 +511,7 @@ final class DefaultStepVerifierBuilder<T>
 	@Override
 	public DefaultStepVerifierBuilder<T> thenRequest(long n) {
 		checkStrictlyPositive(n);
-		this.script.add(new RequestEvent<T>(n, "thenRequest"));
+		this.script.add(new RequestEvent<>(n, "thenRequest"));
 		this.hangCheckRequested = Operators.addCap(hangCheckRequested, n);
 		return this;
 	}
@@ -751,7 +751,7 @@ final class DefaultStepVerifierBuilder<T>
 				int requestedFusionMode,
 				int expectedFusionMode,
 				boolean debugEnabled,
-				VirtualTimeScheduler vts) {
+				@Nullable VirtualTimeScheduler vts) {
 			this.virtualTimeScheduler = vts;
 			this.requestedFusionMode = requestedFusionMode;
 			this.expectedFusionMode = expectedFusionMode;
@@ -776,7 +776,7 @@ final class DefaultStepVerifierBuilder<T>
 			this.requested = initialRequest;
 		}
 
-		static <R> Queue<Event<R>> conflateScript(List<Event<R>> script, Logger logger) {
+		static <R> Queue<Event<R>> conflateScript(List<Event<R>> script, @Nullable Logger logger) {
 			ConcurrentLinkedQueue<Event<R>> queue = new ConcurrentLinkedQueue<>(script);
 			ConcurrentLinkedQueue<Event<R>> conflated = new ConcurrentLinkedQueue<>();
 
@@ -1042,7 +1042,7 @@ final class DefaultStepVerifierBuilder<T>
 		 * @param msg the message for the error
 		 * @param arguments the optional formatter arguments to the message
 		 */
-		final void setFailure(Event<T> event, String msg, Object... arguments) {
+		final void setFailure(@Nullable Event<T> event, String msg, Object... arguments) {
 			setFailure(event, null, msg, arguments);
 		}
 
@@ -1056,7 +1056,7 @@ final class DefaultStepVerifierBuilder<T>
 		 * @param msg the message for the error
 		 * @param arguments the optional formatter arguments to the message
 		 */
-		final void setFailure(Event<T> event, Signal<T> actualSignal, String msg, Object... arguments) {
+		final void setFailure(@Nullable Event<T> event, @Nullable Signal<T> actualSignal, String msg, Object... arguments) {
 			Exceptions.addThrowable(ERRORS, this, fail(event, msg, arguments).get());
 			maybeCancel(actualSignal);
 			this.completeLatch.countDown();
@@ -1068,6 +1068,7 @@ final class DefaultStepVerifierBuilder<T>
 			this.completeLatch.countDown();
 		}
 
+		@Nullable
 		final Subscription cancel() {
 			Subscription s =
 					this.getAndSet(Operators.cancelledSubscription());
@@ -1081,7 +1082,7 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		/** Cancels this subscriber if the actual signal is null or not a complete/error */
-		final void maybeCancel(Signal<T> actualSignal) {
+		final void maybeCancel(@Nullable Signal<T> actualSignal) {
 			if (actualSignal == null || (!actualSignal.isOnComplete() && !actualSignal.isOnError())) {
 				cancel();
 			}
@@ -1594,6 +1595,7 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		public StepVerifier.Assertions hasDropped(Object... values) {
+			//noinspection ConstantConditions
 			satisfies(() -> values != null && values.length > 0, () -> "Require non-empty values");
 			List<Object> valuesList = Arrays.asList(values);
 			return satisfies(() -> droppedElements.containsAll(valuesList),
@@ -1602,6 +1604,7 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		public StepVerifier.Assertions hasDroppedExactly(Object... values) {
+			//noinspection ConstantConditions
 			satisfies(() -> values != null && values.length > 0, () -> "Require non-empty values");
 			List<Object> valuesList = Arrays.asList(values);
 			return satisfies(() -> droppedElements.containsAll(valuesList)
@@ -1622,6 +1625,7 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		public StepVerifier.Assertions hasDroppedErrorOfType(Class<? extends Throwable> clazz) {
+			//noinspection ConstantConditions
 			satisfies(() -> clazz != null, () -> "Require non-null clazz");
 			hasDroppedErrors(1);
 			return satisfies(() -> clazz.isInstance(droppedErrors.peek()),
@@ -1630,6 +1634,7 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		public StepVerifier.Assertions hasDroppedErrorMatching(Predicate<Throwable> matcher) {
+			//noinspection ConstantConditions
 			satisfies(() -> matcher != null, () -> "Require non-null matcher");
 			hasDroppedErrors(1);
 			return satisfies(() -> matcher.test(droppedErrors.peek()),
@@ -1638,6 +1643,7 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		public StepVerifier.Assertions hasDroppedErrorWithMessage(String message) {
+			//noinspection ConstantConditions
 			satisfies(() -> message != null, () -> "Require non-null message");
 			hasDroppedErrors(1);
 			String actual = droppedErrors.peek().getMessage();
@@ -1648,6 +1654,7 @@ final class DefaultStepVerifierBuilder<T>
 		@Override
 		public StepVerifier.Assertions hasDroppedErrorWithMessageContaining(
 				String messagePart) {
+			//noinspection ConstantConditions
 			satisfies(() -> messagePart != null, () -> "Require non-null messagePart");
 			hasDroppedErrors(1);
 			String actual = droppedErrors.peek().getMessage();
@@ -1657,6 +1664,7 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		public StepVerifier.Assertions hasDroppedErrorsMatching(Predicate<Collection<Throwable>> matcher) {
+			//noinspection ConstantConditions
 			satisfies(() -> matcher != null, () -> "Require non-null matcher");
 			hasDroppedErrors();
 			return satisfies(() -> matcher.test(droppedErrors),
@@ -1665,6 +1673,7 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		public StepVerifier.Assertions hasDroppedErrorsSatisfying(Consumer<Collection<Throwable>> asserter) {
+			//noinspection ConstantConditions
 			satisfies(() -> asserter != null, () -> "Require non-null asserter");
 			hasDroppedErrors();
 			asserter.accept(droppedErrors);
@@ -1692,6 +1701,7 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		public StepVerifier.Assertions hasOperatorErrorOfType(Class<? extends Throwable> clazz) {
+			//noinspection ConstantConditions
 			satisfies(() -> clazz != null, () -> "Require non-null clazz");
 			hasOneOperatorErrorWithError();
 			return satisfies(() -> clazz.isInstance(operatorErrors.peek().getT1()),
@@ -1701,6 +1711,7 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		public StepVerifier.Assertions hasOperatorErrorMatching(Predicate<Throwable> matcher) {
+			//noinspection ConstantConditions
 			satisfies(() -> matcher != null, () -> "Require non-null matcher");
 			hasOneOperatorErrorWithError();
 			return satisfies(() -> matcher.test(operatorErrors.peek().getT1()),
@@ -1709,6 +1720,7 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		public StepVerifier.Assertions hasOperatorErrorWithMessage(String message) {
+			//noinspection ConstantConditions
 			satisfies(() -> message != null, () -> "Require non-null message");
 			hasOneOperatorErrorWithError();
 			String actual = operatorErrors.peek().getT1().getMessage();
@@ -1719,6 +1731,7 @@ final class DefaultStepVerifierBuilder<T>
 		@Override
 		public StepVerifier.Assertions hasOperatorErrorWithMessageContaining(
 				String messagePart) {
+			//noinspection ConstantConditions
 			satisfies(() -> messagePart != null, () -> "Require non-null messagePart");
 			hasOneOperatorErrorWithError();
 			String actual = operatorErrors.peek().getT1().getMessage();
@@ -1728,6 +1741,7 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		public StepVerifier.Assertions hasOperatorErrorsMatching(Predicate<Collection<Tuple2<Throwable, ?>>> matcher) {
+			//noinspection ConstantConditions
 			satisfies(() -> matcher != null, () -> "Require non-null matcher");
 			hasOperatorErrors();
 			return satisfies(() -> matcher.test(operatorErrors),
@@ -1736,6 +1750,7 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		public StepVerifier.Assertions hasOperatorErrorsSatisfying(Consumer<Collection<Tuple2<Throwable, ?>>> asserter) {
+			//noinspection ConstantConditions
 			satisfies(() -> asserter != null, () -> "Require non-null asserter");
 			hasOperatorErrors();
 			asserter.accept(operatorErrors);
@@ -1789,7 +1804,7 @@ final class DefaultStepVerifierBuilder<T>
 			this(null, desc);
 		}
 
-		SubscriptionEvent(Consumer<Subscription> consumer, String desc) {
+		SubscriptionEvent(@Nullable Consumer<Subscription> consumer, String desc) {
 			super(desc);
 			this.consumer = consumer;
 		}
@@ -1897,6 +1912,7 @@ final class DefaultStepVerifierBuilder<T>
 			this.consumer = null;
 		}
 
+		@Nullable
 		Collection<T> get() {
 			return supplier != null ? supplier.get() : null;
 		}
@@ -1923,13 +1939,15 @@ final class DefaultStepVerifierBuilder<T>
 
 		final Runnable task;
 
-		TaskEvent(Runnable task, String desc) {
+		TaskEvent(@Nullable Runnable task, String desc) {
 			super(desc);
 			this.task = task;
 		}
 
 		void run(DefaultVerifySubscriber<T> parent) throws Exception {
-			task.run();
+			if (task != null) {
+				task.run();
+			}
 		}
 	}
 
@@ -2052,9 +2070,9 @@ final class DefaultStepVerifierBuilder<T>
 				return iterator.hasNext() ? EXPECT_MORE : Optional.empty();
 
 			}
-			if (iterator != null && iterator.hasNext() || signal.isOnError()) {
+			if (iterator.hasNext() || signal.isOnError()) {
 				return fail(this, "expected next value: %s; actual signal: %s; iterable: %s",
-						iterator != null && iterator.hasNext() ? iterator.next() : "none",
+						iterator.hasNext() ? iterator.next() : "none",
 						signal, iterable);
 			}
 			return Optional.empty();
@@ -2101,9 +2119,9 @@ final class DefaultStepVerifierBuilder<T>
 		}
 	}
 
-	static Optional<AssertionError> fail(Event<?> event, String msg, Object... args) {
+	static Optional<AssertionError> fail(@Nullable Event<?> event, String msg, Object... args) {
 		String prefix = "expectation failed (";
-		if (event != null && event.getDescription() != null) {
+		if (event != null && event.getDescription().length() > 0) {
 			prefix = String.format("expectation \"%s\" failed (", event.getDescription());
 		}
 

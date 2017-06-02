@@ -24,6 +24,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
+import javax.annotation.Nullable;
 
 /**
  * Subscribes to the source Publisher asynchronously through a scheduler function or
@@ -187,6 +188,7 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();

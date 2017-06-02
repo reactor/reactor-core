@@ -22,6 +22,7 @@ import java.util.function.BiFunction;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import javax.annotation.Nullable;
 
 /**
  * Pairwise combines elements of a publisher and an iterable sequence through a function.
@@ -99,6 +100,7 @@ final class FluxZipIterable<T, U, R> extends FluxSource<T, R> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return done;
 			if (key == ScannableAttr.PARENT) return s;

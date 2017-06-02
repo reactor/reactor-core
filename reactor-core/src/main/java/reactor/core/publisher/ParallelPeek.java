@@ -20,6 +20,7 @@ import java.util.function.LongConsumer;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import javax.annotation.Nullable;
 
 /**
  * Execute a Consumer in each 'rail' for the current element passing through.
@@ -40,14 +41,14 @@ final class ParallelPeek<T> extends ParallelFlux<T> implements SignalPeek<T>{
 	final Runnable onCancel;
 
 	ParallelPeek(ParallelFlux<T> source,
-			Consumer<? super T> onNext,
-			Consumer<? super T> onAfterNext,
-			Consumer<? super Throwable> onError,
-			Runnable onComplete,
-			Runnable onAfterTerminated,
-			Consumer<? super Subscription> onSubscribe,
-			LongConsumer onRequest,
-			Runnable onCancel
+			@Nullable Consumer<? super T> onNext,
+			@Nullable Consumer<? super T> onAfterNext,
+			@Nullable Consumer<? super Throwable> onError,
+			@Nullable Runnable onComplete,
+			@Nullable Runnable onAfterTerminated,
+			@Nullable Consumer<? super Subscription> onSubscribe,
+			@Nullable LongConsumer onRequest,
+			@Nullable Runnable onCancel
 	) {
 		this.source = source;
 
@@ -89,21 +90,25 @@ final class ParallelPeek<T> extends ParallelFlux<T> implements SignalPeek<T>{
 	}
 
 	@Override
+	@Nullable
 	public Consumer<? super Subscription> onSubscribeCall() {
 		return onSubscribe;
 	}
 
 	@Override
+	@Nullable
 	public Consumer<? super T> onNextCall() {
 		return onNext;
 	}
 
 	@Override
+	@Nullable
 	public Consumer<? super Throwable> onErrorCall() {
 		return onError;
 	}
 
 	@Override
+	@Nullable
 	public Runnable onCompleteCall() {
 		return onComplete;
 	}
@@ -114,21 +119,25 @@ final class ParallelPeek<T> extends ParallelFlux<T> implements SignalPeek<T>{
 	}
 
 	@Override
+	@Nullable
 	public LongConsumer onRequestCall() {
 		return onRequest;
 	}
 
 	@Override
+	@Nullable
 	public Runnable onCancelCall() {
 		return onCancel;
 	}
 
 	@Override
+	@Nullable
 	public Consumer<? super T> onAfterNextCall() {
 		return onAfterNext;
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == ScannableAttr.PARENT) return source;
 		if (key == IntAttr.PREFETCH) return getPrefetch();

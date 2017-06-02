@@ -31,6 +31,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
+import javax.annotation.Nullable;
 
 /**
  * Splits the source sequence into potentially overlapping windowEnds controlled by items
@@ -160,6 +161,7 @@ final class FluxWindowWhen<T, U, V> extends FluxSource<T, Flux<T>> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return done;
 

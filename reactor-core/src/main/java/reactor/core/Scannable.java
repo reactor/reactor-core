@@ -21,6 +21,8 @@ import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import javax.annotation.Nullable;
+
 /**
  * A Scannable component exposes state in a non strictly memory consistent way and
  * results should be understood as best-effort hint of the underlying state. This is
@@ -76,6 +78,7 @@ public interface Scannable {
 		 *
 		 * @return the default value applicable to all components or null if none.
 		 */
+		@Nullable
 		T defaultValue();
 
 		/**
@@ -123,11 +126,12 @@ public interface Scannable {
 
 		final Scannable defaultValue;
 
-		ScannableAttr(Scannable defaultValue) {
+		ScannableAttr(@Nullable Scannable defaultValue) {
 			this.defaultValue = defaultValue;
 		}
 
 		@Override
+		@Nullable
 		public Scannable defaultValue() {
 			return defaultValue;
 		}
@@ -172,11 +176,12 @@ public interface Scannable {
 
 		final Integer defaultValue;
 
-		IntAttr(Integer defaultValue) {
+		IntAttr(@Nullable Integer defaultValue) {
 			this.defaultValue = defaultValue;
 		}
 
 		@Override
+		@Nullable
 		public Integer defaultValue() {
 			return defaultValue;
 		}
@@ -209,11 +214,12 @@ public interface Scannable {
 
 		final Long defaultValue;
 
-		LongAttr(Long defaultValue) {
+		LongAttr(@Nullable Long defaultValue) {
 			this.defaultValue = defaultValue;
 		}
 
 		@Override
+		@Nullable
 		public Long defaultValue() {
 			return defaultValue;
 		}
@@ -232,11 +238,12 @@ public interface Scannable {
 
 		final Throwable defaultValue;
 
-		ThrowableAttr(Throwable defaultValue) {
+		ThrowableAttr(@Nullable Throwable defaultValue) {
 			this.defaultValue = defaultValue;
 		}
 
 		@Override
+		@Nullable
 		public Throwable defaultValue() {
 			return defaultValue;
 		}
@@ -274,11 +281,12 @@ public interface Scannable {
 
 		final Boolean defaultValue;
 
-		BooleanAttr(Boolean defaultValue) {
+		BooleanAttr(@Nullable Boolean defaultValue) {
 			this.defaultValue = defaultValue;
 		}
 
 		@Override
+		@Nullable
 		public Boolean defaultValue() {
 			return defaultValue;
 		}
@@ -293,11 +301,12 @@ public interface Scannable {
 
 		final T defaultValue;
 
-		GenericAttr(T defaultValue) {
+		GenericAttr(@Nullable T defaultValue) {
 			this.defaultValue = defaultValue;
 		}
 
 		@Override
+		@Nullable
 		public T defaultValue() {
 			return defaultValue;
 		}
@@ -315,7 +324,8 @@ public interface Scannable {
 	 * that isn't actually scannable.
 	 */
 	@SuppressWarnings("unchecked")
-	static Scannable from(Object o) {
+	@Nullable
+	static Scannable from(@Nullable Object o) {
 		if (o == null) {
 			return null;
 		}
@@ -378,6 +388,7 @@ public interface Scannable {
 	 * @param key a {@link Attr} to resolve for the component.
 	 * @return the value associated to the key for that specific component, or null if none.
 	 */
+	@Nullable
 	Object scanUnsafe(Attr key);
 
 	/**
@@ -390,6 +401,7 @@ public interface Scannable {
 	 * @return a value associated to the key or null if unmatched or unresolved
 	 *
 	 */
+	@Nullable
 	default <T> T scan(Attr<T> key) {
 		@SuppressWarnings("unchecked")
 		T value = (T) scanUnsafe(key);
@@ -409,7 +421,8 @@ public interface Scannable {
 	 *
 	 * @return a value associated to the key or the provided default if unmatched or unresolved
 	 */
-	default <T> T scanOrDefault(Attr<T> key, T defaultValue) {
+	@Nullable
+	default <T> T scanOrDefault(Attr<T> key, @Nullable T defaultValue) {
 		T v = scan(key);
 		if (v == null) {
 			return defaultValue;

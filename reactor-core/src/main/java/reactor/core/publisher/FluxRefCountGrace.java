@@ -28,6 +28,7 @@ import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
+import javax.annotation.Nullable;
 
 /**
  * @author Simon Baslé
@@ -57,6 +58,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == IntAttr.PREFETCH) return getPrefetch();
 		if (key == ScannableAttr.PARENT) return source;
@@ -245,6 +247,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			return qs.poll();
 		}

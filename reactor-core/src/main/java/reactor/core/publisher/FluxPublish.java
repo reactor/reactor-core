@@ -32,6 +32,7 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import javax.annotation.Nullable;
 
 /**
  * A connectable publisher which shares an underlying source and dispatches source values
@@ -130,6 +131,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == IntAttr.PREFETCH) return getPrefetch();
 		if (key == ScannableAttr.PARENT) return source;
@@ -332,7 +334,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 					}
 				}
 
-				if (j < 0) {
+				if (j < 0) { //TODO investigate condition always false
 					return;
 				}
 
@@ -518,6 +520,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == IntAttr.PREFETCH) return prefetch;
@@ -580,6 +583,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.CANCELLED) return isCancelled();
 			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return isCancelled() ? 0L : requested;
@@ -650,6 +654,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return parent;
 			if (key == BooleanAttr.TERMINATED) return parent != null && parent.isTerminated();

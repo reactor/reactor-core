@@ -27,7 +27,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-
+import javax.annotation.Nullable;
 
 /**
  * Concatenates a several Mono sources with a final Mono source by
@@ -196,6 +196,7 @@ final class MonoThenIgnore<T> extends Mono<T> implements Fuseable {
         }
 
 	    @Override
+        @Nullable
 	    public Object scanUnsafe(Attr key) {
             if (key == ScannableAttr.PARENT) return s;
             if (key == ScannableAttr.ACTUAL) return parent;
@@ -250,6 +251,7 @@ final class MonoThenIgnore<T> extends Mono<T> implements Fuseable {
         }
 
         @Override
+        @Nullable
         public Object scanUnsafe(Attr key) {
             if (key == ScannableAttr.PARENT) return s;
             if (key == ScannableAttr.ACTUAL) return parent;

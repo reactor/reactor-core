@@ -24,7 +24,7 @@ import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
-
+import javax.annotation.Nullable;
 
 /**
  * Publisher indicating a scalar/empty source that subscribes on the specified scheduler.
@@ -38,7 +38,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 	
 	final Scheduler scheduler;
 
-	FluxSubscribeOnValue(T value,
+	FluxSubscribeOnValue(@Nullable T value,
 			Scheduler scheduler) {
 		this.value = value;
 		this.scheduler = Objects.requireNonNull(scheduler, "scheduler");
@@ -108,10 +108,11 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Scannable.Attr key) {
 			if (key == BooleanAttr.CANCELLED) return future == Disposables.DISPOSED;
 			if (key == BooleanAttr.TERMINATED) return future == FINISHED;
-			if (key == IntAttr.BUFFERED) return value != null ? 1 : 0;
+			if (key == IntAttr.BUFFERED) return 1;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}
@@ -170,6 +171,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			if (fusionState == HAS_VALUE) {
 				fusionState = COMPLETE;
@@ -253,6 +255,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public Void poll() {
 			return null;
 		}

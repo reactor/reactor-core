@@ -18,7 +18,6 @@ package reactor.test;
 
 import java.time.Duration;
 import java.util.Collection;
-import java.util.List;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -167,7 +166,7 @@ public interface StepVerifier {
 	 */
 	static <T> FirstStep<T> withVirtualTime(Supplier<? extends Publisher<? extends T>> scenarioSupplier,
 			long n) {
-		return withVirtualTime(scenarioSupplier, () -> VirtualTimeScheduler.getOrSet(), n);
+		return withVirtualTime(scenarioSupplier, VirtualTimeScheduler::getOrSet, n);
 	}
 
 	/**

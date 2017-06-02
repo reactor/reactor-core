@@ -23,6 +23,7 @@ import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
+import javax.annotation.Nullable;
 
 /**
  * Captures the current stacktrace when this connectable publisher is created and
@@ -66,6 +67,7 @@ final class ConnectableFluxOnAssembly<T> extends ConnectableFlux<T> implements
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == IntAttr.PREFETCH) return getPrefetch();
 		if (key == ScannableAttr.PARENT) return source;

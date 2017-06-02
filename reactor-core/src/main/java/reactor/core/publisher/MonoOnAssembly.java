@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
+import javax.annotation.Nullable;
 
 /**
  * Captures the current stacktrace when this publisher is created and makes it
@@ -49,7 +50,7 @@ final class MonoOnAssembly<T> extends MonoSource<T, T> implements Fuseable, Asse
 	 * Create an assembly trace augmented with a custom description (eg. a name for a Mono
 	 * or a wider correlation ID) and exposed as a {@link Mono}.
 	 */
-	MonoOnAssembly(Mono<? extends T> source, String description) {
+	MonoOnAssembly(Mono<? extends T> source, @Nullable String description) {
 		super(source);
 		this.stacktrace = new AssemblySnapshotException(description);
 	}

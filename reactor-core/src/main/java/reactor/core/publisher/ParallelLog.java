@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Scannable;
+import javax.annotation.Nullable;
 
 /**
  * Execute a Consumer in each 'rail' for the current element passing through.
@@ -64,6 +65,7 @@ final class ParallelLog<T> extends ParallelFlux<T> implements Scannable {
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == ScannableAttr.PARENT) return source;
 		if (key == IntAttr.PREFETCH) return getPrefetch();

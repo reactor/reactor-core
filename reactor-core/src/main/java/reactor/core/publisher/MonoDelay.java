@@ -23,7 +23,7 @@ import org.reactivestreams.Subscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
-
+import javax.annotation.Nullable;
 
 /**
  * Emits a single 0L value delayed by some time amount with a help of
@@ -92,6 +92,7 @@ final class MonoDelay extends Mono<Long> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return cancel == FINISHED;
 			if (key == BooleanAttr.CANCELLED) return cancel == Disposables.DISPOSED;

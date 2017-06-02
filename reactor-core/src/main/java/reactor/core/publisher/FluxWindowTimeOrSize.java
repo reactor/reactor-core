@@ -26,6 +26,7 @@ import org.reactivestreams.Subscription;
 
 import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler;
+import javax.annotation.Nullable;
 
 /**
  * WindowTimeoutSubscriber is forwarding events on a steam until {@code maxSize} is reached,
@@ -312,6 +313,7 @@ final class FluxWindowTimeOrSize<T> extends FluxSource<T, Flux<T>> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.CANCELLED) return cancelled == 1;
 			if (key == ScannableAttr.PARENT) return subscription;

@@ -19,6 +19,8 @@ package reactor.util.function;
 import java.util.Collection;
 import java.util.function.Function;
 
+import javax.annotation.Nullable;
+
 /**
  * A {@literal Tuples} is an immutable {@link Collection} of objects, each of which can be of an arbitrary type.
  *
@@ -37,6 +39,7 @@ public abstract class Tuples implements Function {
 	 * @throws IllegalArgumentException if the array is not of length 1-8
 	 */
 	public static Tuple2 fromArray(Object[] list) {
+		//noinspection ConstantConditions
 		if (list == null || list.length == 0) {
 			throw new IllegalArgumentException("null or empty array, need between 1 and 8 values");
 		}
@@ -71,7 +74,7 @@ public abstract class Tuples implements Function {
 	 * @param <T2> The type of the second value.
 	 * @return The new {@link Tuple2}.
 	 */
-	public static <T1, T2> Tuple2<T1, T2> of(T1 t1, T2 t2) {
+	public static <T1, T2> Tuple2<T1, T2> of(@Nullable T1 t1, @Nullable T2 t2) {
 		return new Tuple2<>(t1, t2);
 	}
 
@@ -86,7 +89,10 @@ public abstract class Tuples implements Function {
 	 * @param <T3> The type of the third value.
 	 * @return The new {@link Tuple3}.
 	 */
-	public static <T1, T2, T3> Tuple3<T1, T2, T3> of(T1 t1, T2 t2, T3 t3) {
+	public static <T1, T2, T3> Tuple3<T1, T2, T3> of(
+			@Nullable T1 t1,
+			@Nullable T2 t2,
+			@Nullable T3 t3) {
 		return new Tuple3<>(t1, t2, t3);
 	}
 
@@ -103,7 +109,11 @@ public abstract class Tuples implements Function {
 	 * @param <T4> The type of the fourth value.
 	 * @return The new {@link Tuple4}.
 	 */
-	public static <T1, T2, T3, T4> Tuple4<T1, T2, T3, T4> of(T1 t1, T2 t2, T3 t3, T4 t4) {
+	public static <T1, T2, T3, T4> Tuple4<T1, T2, T3, T4> of(
+			@Nullable T1 t1,
+			@Nullable T2 t2,
+			@Nullable T3 t3,
+			@Nullable T4 t4) {
 		return new Tuple4<>(t1, t2, t3, t4);
 	}
 
@@ -122,7 +132,12 @@ public abstract class Tuples implements Function {
 	 * @param <T5> The type of the fifth value.
 	 * @return The new {@link Tuple5}.
 	 */
-	public static <T1, T2, T3, T4, T5> Tuple5<T1, T2, T3, T4, T5> of(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5) {
+	public static <T1, T2, T3, T4, T5> Tuple5<T1, T2, T3, T4, T5> of(
+			@Nullable T1 t1,
+			@Nullable T2 t2,
+			@Nullable T3 t3,
+			@Nullable T4 t4,
+			@Nullable T5 t5) {
 		return new Tuple5<>(t1, t2, t3, t4, t5);
 	}
 
@@ -143,8 +158,13 @@ public abstract class Tuples implements Function {
 	 * @param <T6> The type of the sixth value.
 	 * @return The new {@link Tuple6}.
 	 */
-	public static <T1, T2, T3, T4, T5, T6> Tuple6<T1, T2, T3, T4, T5, T6> of(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6
-	  t6) {
+	public static <T1, T2, T3, T4, T5, T6> Tuple6<T1, T2, T3, T4, T5, T6> of(
+			@Nullable T1 t1,
+			@Nullable T2 t2,
+			@Nullable T3 t3,
+			@Nullable T4 t4,
+			@Nullable T5 t5,
+			@Nullable T6 t6) {
 		return new Tuple6<>(t1, t2, t3, t4, t5, t6);
 	}
 
@@ -167,8 +187,14 @@ public abstract class Tuples implements Function {
 	 * @param <T7> The type of the seventh value.
 	 * @return The new {@link Tuple7}.
 	 */
-	public static <T1, T2, T3, T4, T5, T6, T7> Tuple7<T1, T2, T3, T4, T5, T6, T7> of(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5,
-	                                                                                 T6 t6, T7 t7) {
+	public static <T1, T2, T3, T4, T5, T6, T7> Tuple7<T1, T2, T3, T4, T5, T6, T7> of(
+			@Nullable T1 t1,
+			@Nullable T2 t2,
+			@Nullable T3 t3,
+			@Nullable T4 t4,
+			@Nullable T5 t5,
+			@Nullable T6 t6,
+			@Nullable T7 t7) {
 		return new Tuple7<>(t1, t2, t3, t4, t5, t6, t7);
 	}
 
@@ -193,10 +219,15 @@ public abstract class Tuples implements Function {
 	 * @param <T8> The type of the eighth value.
 	 * @return The new {@link Tuple8}.
 	 */
-	public static <T1, T2, T3, T4, T5, T6, T7, T8> Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> of(T1 t1, T2 t2, T3 t3, T4
-	  t4,
-	                                                                                         T5 t5, T6 t6, T7 t7,
-	                                                                                         T8 t8) {
+	public static <T1, T2, T3, T4, T5, T6, T7, T8> Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> of(
+			@Nullable T1 t1,
+			@Nullable T2 t2,
+			@Nullable T3 t3,
+			@Nullable T4 t4,
+			@Nullable T5 t5,
+			@Nullable T6 t6,
+			@Nullable T7 t7,
+			@Nullable T8 t8) {
 		return new Tuple8<>(t1, t2, t3, t4, t5, t6, t7, t8);
 	}
 

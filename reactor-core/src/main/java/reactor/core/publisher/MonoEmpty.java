@@ -20,7 +20,7 @@ import java.time.Duration;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
-
+import javax.annotation.Nullable;
 
 /**
  * Represents an empty publisher which only calls onSubscribe and onComplete.
@@ -57,16 +57,19 @@ extends Mono<Object>
 	}
 
 	@Override
+	@Nullable
 	public Object call() {
 		return null; /* Scalar optimizations on empty */
 	}
 
 	@Override
+	@Nullable
 	public Object block(Duration m) {
 		return null;
 	}
 
 	@Override
+	@Nullable
 	public Object block() {
 		return null;
 	}

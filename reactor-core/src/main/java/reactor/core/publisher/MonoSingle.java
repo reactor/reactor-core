@@ -22,6 +22,7 @@ import java.util.Objects;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import javax.annotation.Nullable;
 
 /**
  * Expects and emits a single item from the source or signals
@@ -43,7 +44,7 @@ final class MonoSingle<T> extends MonoSource<T, T> implements Fuseable {
 	}
 
 	MonoSingle(Flux<? extends T> source,
-			T defaultValue,
+			@Nullable T defaultValue,
 			boolean completeOnEmpty) {
 		super(source);
 		this.defaultValue = completeOnEmpty ? defaultValue :
@@ -68,6 +69,7 @@ final class MonoSingle<T> extends MonoSource<T, T> implements Fuseable {
 		boolean done;
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return done;
 			if (key == ScannableAttr.PARENT) return s;

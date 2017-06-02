@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import javax.annotation.Nullable;
 
 /**
  * Counts the number of values in the source sequence.
@@ -48,6 +49,7 @@ final class MonoCount<T> extends MonoSource<T, Long> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 

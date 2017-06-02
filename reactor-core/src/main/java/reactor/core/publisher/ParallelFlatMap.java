@@ -22,6 +22,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Scannable;
+import javax.annotation.Nullable;
 
 /**
  * Flattens the generated Publishers on each rail.
@@ -61,6 +62,7 @@ final class ParallelFlatMap<T, R> extends ParallelFlux<R> implements Scannable{
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == ScannableAttr.PARENT) return source;
 		if (key == IntAttr.PREFETCH) return getPrefetch();

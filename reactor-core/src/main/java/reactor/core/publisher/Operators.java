@@ -30,7 +30,7 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-
+import javax.annotation.Nullable;
 
 /**
  * An helper to support "Operator" writing, handle noop subscriptions, validate request
@@ -91,6 +91,7 @@ public abstract class Operators {
 	 * @return the QueueSubscription instance or null
 	 */
 	@SuppressWarnings("unchecked")
+	@Nullable
 	public static <T> Fuseable.QueueSubscription<T> as(Subscription s) {
 		if (s instanceof Fuseable.QueueSubscription) {
 			return (Fuseable.QueueSubscription<T>) s;
@@ -135,7 +136,7 @@ public abstract class Operators {
 	 *
 	 * @throws IllegalArgumentException if subscriber is null and demand is negative or 0.
 	 */
-	public static boolean checkRequest(long n, Subscriber<?> subscriber) {
+	public static boolean checkRequest(long n, @Nullable Subscriber<?> subscriber) {
 		if(subscriber == null){
 			checkRequest(n);
 			return true;
@@ -244,7 +245,7 @@ public abstract class Operators {
 	 * @param e the exception to handle
 	 * @param root the optional root cause to suppress
 	 */
-	public static void onErrorDropped(Throwable e, Throwable root) {
+	public static void onErrorDropped(Throwable e, @Nullable Throwable root) {
 		if(root != null && root != e) {
 			e.addSuppressed(root);
 		}
@@ -271,6 +272,7 @@ public abstract class Operators {
 	 * @param t the dropped data
 	 */
 	public static <T> void onNextDropped(T t) {
+		//noinspection ConstantConditions
 		if(t != null) {
 			Consumer<Object> hook = Hooks.onNextDroppedHook;
 			if (hook == null) {
@@ -305,7 +307,7 @@ public abstract class Operators {
 	 * @return mapped {@link Throwable}
 	 *
 	 */
-	public static Throwable onOperatorError(Subscription subscription, Throwable error) {
+	public static Throwable onOperatorError(@Nullable Subscription subscription, Throwable error) {
 		return onOperatorError(subscription, error, null);
 	}
 
@@ -323,8 +325,9 @@ public abstract class Operators {
 	 * @return mapped {@link Throwable}
 	 *
 	 */
-	public static Throwable onOperatorError(Subscription subscription, Throwable
-			error, Object dataSignal) {
+	public static Throwable onOperatorError(@Nullable Subscription subscription,
+			Throwable error,
+			@Nullable Object dataSignal) {
 
 		Exceptions.throwIfFatal(error);
 		if(subscription != null) {
@@ -374,7 +377,10 @@ public abstract class Operators {
 	 * @param suppressed a Throwable to be suppressed by the {@link RejectedExecutionException} (or null if not relevant)
 	 * @param dataSignal a value to be passed to {@link #onOperatorError(Subscription, Throwable, Object)} (or null if not relevant)
 	 */
-	public static RuntimeException onRejectedExecution(Subscription subscription, Throwable suppressed, Object dataSignal) {
+	public static RuntimeException onRejectedExecution(
+			@Nullable Subscription subscription,
+			@Nullable Throwable suppressed,
+			@Nullable Object dataSignal) {
 		RejectedExecutionException ree = new RejectedExecutionException("Scheduler unavailable");
 		if (suppressed != null) {
 			ree.addSuppressed(suppressed);
@@ -617,7 +623,7 @@ public abstract class Operators {
 	 * @param next new Subscription
 	 * @return true if Subscription can be used
 	 */
-	public static boolean validate(Subscription current, Subscription next) {
+	public static boolean validate(@Nullable Subscription current, Subscription next) {
 		Objects.requireNonNull(next, "Subscription cannot be null");
 		if (current != null) {
 			next.cancel();
@@ -654,8 +660,7 @@ public abstract class Operators {
 	 * @return true if terminated or null, false if the subscription was already
 	 * terminated
 	 */
-	static <F> boolean setTerminated(AtomicReferenceFieldUpdater<F,
-			Subscription> field,
+	static <F> boolean setTerminated(AtomicReferenceFieldUpdater<F, Subscription> field,
 			F instance) {
 		Subscription a = field.get(instance);
 		if (a != CancelledSubscription.INSTANCE) {
@@ -675,6 +680,7 @@ public abstract class Operators {
 		INSTANCE;
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.CANCELLED) {
 				return true;
@@ -715,6 +721,7 @@ public abstract class Operators {
 		}
 
 		@Override
+		@Nullable
 		public Object poll() {
 			return null;
 		}
@@ -730,6 +737,7 @@ public abstract class Operators {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return true;
 			return null;
@@ -768,6 +776,7 @@ public abstract class Operators {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
@@ -872,6 +881,7 @@ public abstract class Operators {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.CANCELLED) return isCancelled();
 			if (key == BooleanAttr.TERMINATED) return state == HAS_REQUEST_HAS_VALUE || state == NO_REQUEST_HAS_VALUE;
@@ -974,6 +984,7 @@ public abstract class Operators {
 		}
 
 		@Override
+		@Nullable
 		public final O poll() {
 			if (STATE.get(this) == FUSED_READY) {
 				STATE.lazySet(this, FUSED_CONSUMED);
@@ -1129,6 +1140,7 @@ public abstract class Operators {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT)
 				return missedSubscription != null ? missedSubscription : subscription;
@@ -1448,6 +1460,7 @@ public abstract class Operators {
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			if (once == 0) {
 				ONCE.lazySet(this, 1);
@@ -1457,6 +1470,7 @@ public abstract class Operators {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED || key == BooleanAttr.CANCELLED)
 				return once == 1;

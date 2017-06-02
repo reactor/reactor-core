@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.io.Serializable;
 
 import org.reactivestreams.Subscription;
+import javax.annotation.Nullable;
 
 /**
  * The common implementation of a {@link Signal} (serializable and immutable).
@@ -38,7 +39,7 @@ final class ImmutableSignal<T> extends Signal<T> implements Serializable {
 
 	private transient final Subscription subscription;
 
-	ImmutableSignal(SignalType type, T value, Throwable e, Subscription subscription) {
+	ImmutableSignal(SignalType type, @Nullable T value, @Nullable Throwable e, @Nullable Subscription subscription) {
 		this.value = value;
 		this.subscription = subscription;
 		this.throwable = e;
@@ -46,16 +47,19 @@ final class ImmutableSignal<T> extends Signal<T> implements Serializable {
 	}
 
 	@Override
+	@Nullable
 	public Throwable getThrowable() {
 		return throwable;
 	}
 
 	@Override
+	@Nullable
 	public Subscription getSubscription() {
 		return subscription;
 	}
 
 	@Override
+	@Nullable
 	public T get() {
 		return value;
 	}

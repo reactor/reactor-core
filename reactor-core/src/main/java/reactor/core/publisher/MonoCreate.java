@@ -23,8 +23,7 @@ import java.util.function.LongConsumer;
 import org.reactivestreams.Subscriber;
 import reactor.core.Disposable;
 import reactor.core.publisher.FluxCreate.SinkDisposable;
-
-
+import javax.annotation.Nullable;
 
 /**
  * Wraps a the downstream Subscriber into a single emission object
@@ -86,6 +85,7 @@ final class MonoCreate<T> extends Mono<T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return state == HAS_REQUEST_HAS_VALUE || state == NO_REQUEST_HAS_VALUE;
 			if (key == BooleanAttr.CANCELLED) return Disposables.isDisposed(disposable);
@@ -106,7 +106,7 @@ final class MonoCreate<T> extends Mono<T> {
         }
 
         @Override
-        public void success(T value) {
+        public void success(@Nullable T value) {
             if (value == null) {
                 success();
                 return;
@@ -164,6 +164,7 @@ final class MonoCreate<T> extends Mono<T> {
 
 		@Override
 		public MonoSink<T> onCancel(Disposable d) {
+			//noinspection ConstantConditions
 			if (d != null) {
 				SinkDisposable sd = new SinkDisposable(null, d);
 				if (!DISPOSABLE.compareAndSet(this, null, sd)) {
@@ -180,6 +181,7 @@ final class MonoCreate<T> extends Mono<T> {
 
 		@Override
 		public MonoSink<T> onDispose(Disposable d) {
+			//noinspection ConstantConditions
 			if (d != null) {
 				SinkDisposable sd = new SinkDisposable(d, null);
 				if (!DISPOSABLE.compareAndSet(this, null, sd)) {

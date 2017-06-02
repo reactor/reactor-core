@@ -22,6 +22,8 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
+import javax.annotation.Nullable;
+
 /**
  * Provide a 1-producer/1-consumer ready queue adapted for a given capacity.
  *
@@ -217,11 +219,13 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 		}
 
 		@Override
+		@Nullable
 		public T peek() {
 			return get();
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			T v = get();
 			if (v != null) {

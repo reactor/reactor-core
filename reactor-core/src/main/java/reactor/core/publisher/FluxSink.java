@@ -22,7 +22,6 @@ import java.util.function.LongConsumer;
 import org.reactivestreams.Subscriber;
 import reactor.core.Disposable;
 
-
 /**
  * Wrapper API around a downstream Subscriber for emitting any number of
  * next signals followed by zero or one onError/onComplete.

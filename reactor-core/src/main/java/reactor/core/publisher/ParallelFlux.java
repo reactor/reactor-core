@@ -38,7 +38,7 @@ import reactor.core.publisher.FluxConcatMap.ErrorMode;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.Logger;
 import reactor.util.concurrent.QueueSupplier;
-
+import javax.annotation.Nullable;
 
 /**
  * A ParallelFlux publishes to an array of Subscribers, in parallel 'rails' (or
@@ -650,7 +650,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return a new unaltered {@link ParallelFlux}
 	 */
-	public final ParallelFlux<T> log(String category) {
+	public final ParallelFlux<T> log(@Nullable String category) {
 		return log(category, Level.INFO);
 	}
 
@@ -678,7 +678,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return a new unaltered {@link ParallelFlux}
 	 */
-	public final ParallelFlux<T> log(String category,
+	public final ParallelFlux<T> log(@Nullable String category,
 			Level level,
 			SignalType... options) {
 		return log(category, level, false, options);
@@ -710,7 +710,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return a new unaltered {@link ParallelFlux}
 	 */
-	public final ParallelFlux<T> log(String category,
+	public final ParallelFlux<T> log(@Nullable String category,
 			Level level,
 			boolean showOperatorLine,
 			SignalType... options) {
@@ -938,7 +938,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @param onNext consumer of onNext signals
 	 * @param onError consumer of error signal
 	 */
-	public final void subscribe(Consumer<? super T> onNext, Consumer<? super Throwable>
+	public final void subscribe(@Nullable Consumer<? super T> onNext, Consumer<? super Throwable>
 			onError){
 		subscribe(onNext, onError, null);
 	}
@@ -951,8 +951,10 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @param onError consumer of error signal
 	 * @param onComplete callback on completion signal
 	 */
-	public final void subscribe(Consumer<? super T> onNext, Consumer<? super Throwable>
-			onError, Runnable onComplete) {
+	public final void subscribe(
+			@Nullable Consumer<? super T> onNext,
+			@Nullable Consumer<? super Throwable> onError,
+			@Nullable Runnable onComplete) {
 		subscribe(onNext, onError, onComplete, null);
 	}
 
@@ -966,8 +968,11 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @param onComplete callback on completion signal
 	 * @param onSubscribe consumer of the subscription signal
 	 */
-	public final void subscribe(Consumer<? super T> onNext, Consumer<? super Throwable>
-			onError, Runnable onComplete, Consumer<? super Subscription> onSubscribe){
+	public final void subscribe(
+			@Nullable Consumer<? super T> onNext,
+			@Nullable Consumer<? super Throwable> onError,
+			@Nullable Runnable onComplete,
+			@Nullable Consumer<? super Subscription> onSubscribe){
 
 		@SuppressWarnings("unchecked")
 		Subscriber<T>[] subscribers = new Subscriber[parallelism()];
@@ -1130,14 +1135,14 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 
 	@SuppressWarnings("unchecked")
 	static <T> ParallelFlux<T> doOnSignal(ParallelFlux<T> source,
-			Consumer<? super T> onNext,
-			Consumer<? super T> onAfterNext,
-			Consumer<? super Throwable> onError,
-			Runnable onComplete,
-			Runnable onAfterTerminate,
-			Consumer<? super Subscription> onSubscribe,
-			LongConsumer onRequest,
-			Runnable onCancel) {
+			@Nullable Consumer<? super T> onNext,
+			@Nullable Consumer<? super T> onAfterNext,
+			@Nullable Consumer<? super Throwable> onError,
+			@Nullable Runnable onComplete,
+			@Nullable Runnable onAfterTerminate,
+			@Nullable Consumer<? super Subscription> onSubscribe,
+			@Nullable LongConsumer onRequest,
+			@Nullable Runnable onCancel) {
 		return onAssembly(new ParallelPeek<>(source,
 				onNext,
 				onAfterNext,

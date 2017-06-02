@@ -22,6 +22,7 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import javax.annotation.Nullable;
 
 /**
  * A domain representation of a Reactive Stream signal.
@@ -34,6 +35,7 @@ import org.reactivestreams.Subscription;
  */
 public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super T>> {
 
+	//FIXME avoid loading subclass in superinterface?
 	private static final Signal<Void> ON_COMPLETE =
 			new ImmutableSignal<>(SignalType.ON_COMPLETE, null, null, null);
 
@@ -112,6 +114,7 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	 *
 	 * @return the Throwable associated with this (onError) signal, or null if not relevant
 	 */
+	@Nullable
 	public abstract Throwable getThrowable();
 
 	/**
@@ -120,6 +123,7 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	 * @return the Subscription associated with this (onSubscribe) signal, or null if not
 	 * relevant
 	 */
+	@Nullable
 	public abstract Subscription getSubscription();
 
 	/**
@@ -128,6 +132,7 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	 * @return the item associated with this (onNext) signal, or null if not relevant
 	 */
 	@Override
+	@Nullable
 	public abstract T get();
 
 	/**
@@ -224,7 +229,7 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	//concrete implementations to be compared together, and discourage them
 	//to implement additional state.
 	@Override
-	public final boolean equals(Object o) {
+	public final boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
@@ -254,12 +259,13 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 
 	@Override
 	public final int hashCode() {
-		int result = getType() != null ? getType().hashCode() : 0;
+		int result = getType().hashCode();
 		if (isOnError()) {
 			return  31 * result + (getThrowable() != null ? getThrowable().hashCode() :
 					0);
 		}
 		if (isOnNext()) {
+			//noinspection ConstantConditions
 			return  31 * result + (get() != null ? get().hashCode() : 0);
 		}
 		if (isOnSubscribe()) {

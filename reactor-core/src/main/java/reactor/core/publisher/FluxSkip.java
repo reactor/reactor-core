@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import javax.annotation.Nullable;
 
 /**
  * Skips the first N elements from a reactive stream.
@@ -90,6 +91,7 @@ final class FluxSkip<T> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 

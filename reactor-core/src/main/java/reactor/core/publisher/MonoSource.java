@@ -21,7 +21,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-
+import javax.annotation.Nullable;
 
 /**
  * A decorating {@link Mono} {@link Publisher} that exposes {@link Mono} API over an arbitrary {@link Publisher}
@@ -86,6 +86,7 @@ public class MonoSource<I, O> extends Mono<O> implements Scannable {
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == ScannableAttr.PARENT) {
 				return source;

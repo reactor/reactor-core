@@ -22,6 +22,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
+import javax.annotation.Nullable;
 
 /**
  * Peek into the lifecycle and sequence signals, with a state supplier to be
@@ -40,6 +41,7 @@ interface SignalPeekStateful<T, S> extends Scannable {
 	 *
 	 * @return A consumer that will observe {@link Subscriber#onSubscribe(Subscription)}
 	 */
+	@Nullable
 	BiConsumer<? super Subscription, S> onSubscribeCall();
 
 	/**
@@ -47,6 +49,7 @@ interface SignalPeekStateful<T, S> extends Scannable {
 	 *
 	 * @return A consumer that will observe {@link Subscriber#onNext(Object)}
 	 */
+	@Nullable
 	BiConsumer<? super T, S> onNextCall();
 
 	/**
@@ -54,6 +57,7 @@ interface SignalPeekStateful<T, S> extends Scannable {
 	 *
 	 * @return A consumer that will observe {@link Subscriber#onError(Throwable)}
 	 */
+	@Nullable
 	BiConsumer<? super Throwable, S> onErrorCall();
 
 	/**
@@ -61,6 +65,7 @@ interface SignalPeekStateful<T, S> extends Scannable {
 	 *
 	 * @return A task that will run on {@link Subscriber#onComplete()}
 	 */
+	@Nullable
 	Consumer<S> onCompleteCall();
 
 	/**
@@ -68,6 +73,7 @@ interface SignalPeekStateful<T, S> extends Scannable {
 	 *
 	 * @return A task will run after termination via {@link Subscriber#onComplete()} or {@link Subscriber#onError(Throwable)}
 	 */
+	@Nullable
 	Consumer<S> onAfterTerminateCall();
 
 	/**
@@ -75,6 +81,7 @@ interface SignalPeekStateful<T, S> extends Scannable {
 	 *
 	 * @return A consumer of long that will observe {@link Subscription#request(long)}}
 	 */
+	@Nullable
 	BiConsumer<Long, S> onRequestCall();
 
 	/**
@@ -82,6 +89,7 @@ interface SignalPeekStateful<T, S> extends Scannable {
 	 *
 	 * @return A task that will run on {@link Subscription#cancel()}
 	 */
+	@Nullable
 	Consumer<S> onCancelCall();
 
 }

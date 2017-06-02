@@ -23,6 +23,7 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
+import javax.annotation.Nullable;
 
 /**
  * Ensures each 'rail' from upstream runs on a Worker from a Scheduler.
@@ -50,6 +51,7 @@ final class ParallelRunOn<T> extends ParallelFlux<T> implements Scannable, Fusea
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == ScannableAttr.PARENT) return source;
 		if (key == IntAttr.PREFETCH) return getPrefetch();

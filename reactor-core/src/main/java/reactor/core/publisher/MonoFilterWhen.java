@@ -27,6 +27,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import javax.annotation.Nullable;
 
 /**
  * Maps the upstream value into a single {@code true} or {@code false} value
@@ -83,7 +84,8 @@ class MonoFilterWhen<T> extends MonoSource<T, T> {
 
 		static final AtomicReferenceFieldUpdater<MonoFilterWhenSubscriber, FilterWhenInner> ASYNC_FILTER =
 				AtomicReferenceFieldUpdater.newUpdater(MonoFilterWhenSubscriber.class, FilterWhenInner.class, "asyncFilter");
-		
+
+		@SuppressWarnings("ConstantConditions")
 		static final FilterWhenInner INNER_CANCELLED = new FilterWhenInner(null, false);
 
 		MonoFilterWhenSubscriber(Subscriber<? super T> actual, Function<? super T, ? extends Publisher<Boolean>> asyncPredicate) {
@@ -180,7 +182,7 @@ class MonoFilterWhen<T> extends MonoSource<T, T> {
 			}
 		}
 
-		void innerResult(Boolean item) {
+		void innerResult(@Nullable Boolean item) {
 			if (item != null && item) {
 				//will reset the value with itself, but using parent's `value` saves a field
 				complete(value);
@@ -198,6 +200,7 @@ class MonoFilterWhen<T> extends MonoSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return upstream;
 			if (key == BooleanAttr.TERMINATED) return asyncFilter != null
@@ -275,6 +278,7 @@ class MonoFilterWhen<T> extends MonoSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return parent;
 			if (key == ScannableAttr.ACTUAL) return sub;

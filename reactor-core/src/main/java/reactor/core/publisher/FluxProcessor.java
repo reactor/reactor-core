@@ -27,6 +27,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import javax.annotation.Nullable;
 
 /**
  * A base processor that exposes {@link Flux} API for {@link Processor}.
@@ -103,6 +104,7 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 *
 	 * @return Current error if any, default to null
 	 */
+	@Nullable
 	public Throwable getError() {
 		return null;
 	}
@@ -140,6 +142,7 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == BooleanAttr.TERMINATED) return isTerminated();
 		if (key == ThrowableAttr.ERROR) return getError();

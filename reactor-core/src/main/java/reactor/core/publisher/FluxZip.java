@@ -35,7 +35,7 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-
+import javax.annotation.Nullable;
 
 /**
  * Repeatedly takes one item from all source Publishers and
@@ -106,6 +106,7 @@ final class FluxZip<T, R> extends Flux<R> {
 	}
 
 	@SuppressWarnings({"unchecked", "rawtypes"})
+	@Nullable
 	FluxZip<T, R> zipAdditionalSource(Publisher source, BiFunction zipper) {
 		Publisher[] oldSources = sources;
 		if (oldSources != null && this.zipper instanceof PairwiseZipper) {
@@ -255,6 +256,7 @@ final class FluxZip<T, R> extends Flux<R> {
 			}
 		}
 
+		//TODO investigate can scalars be null?
 		handleBoth(s, srcs, scalars, n, sc);
 	}
 
@@ -391,6 +393,7 @@ final class FluxZip<T, R> extends Flux<R> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return wip == 0;
 			if (key == IntAttr.BUFFERED) return wip > 0 ? scalars.length : 0;
@@ -434,6 +437,7 @@ final class FluxZip<T, R> extends Flux<R> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return done;
@@ -571,6 +575,7 @@ final class FluxZip<T, R> extends Flux<R> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == ThrowableAttr.ERROR) return error;
@@ -659,6 +664,7 @@ final class FluxZip<T, R> extends Flux<R> {
 								cancelAll();
 
 								Exceptions.addThrowable(ERROR, this, ex);
+								//noinspection ConstantConditions
 								ex = Exceptions.terminate(ERROR, this);
 
 								a.onError(ex);
@@ -683,6 +689,7 @@ final class FluxZip<T, R> extends Flux<R> {
 						cancelAll();
 
 						Exceptions.addThrowable(ERROR, this, ex);
+						//noinspection ConstantConditions
 						ex = Exceptions.terminate(ERROR, this);
 
 						a.onError(ex);
@@ -737,6 +744,7 @@ final class FluxZip<T, R> extends Flux<R> {
 								cancelAll();
 
 								Exceptions.addThrowable(ERROR, this, ex);
+								//noinspection ConstantConditions
 								ex = Exceptions.terminate(ERROR, this);
 
 								a.onError(ex);
@@ -875,6 +883,7 @@ final class FluxZip<T, R> extends Flux<R> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return  s;
 			if (key == ScannableAttr.ACTUAL) return parent;

@@ -33,6 +33,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
+import javax.annotation.Nullable;
 
 /**
  * buffers elements into possibly overlapping buffers whose boundaries are determined
@@ -473,6 +474,7 @@ final class FluxBufferWhen<T, U, V, C extends Collection<? super T>>
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return done;
@@ -520,6 +522,7 @@ final class FluxBufferWhen<T, U, V, C extends Collection<? super T>>
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.ACTUAL) {
 				return main;
@@ -546,6 +549,7 @@ final class FluxBufferWhen<T, U, V, C extends Collection<? super T>>
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.ACTUAL) {
 				return main;

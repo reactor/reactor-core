@@ -22,6 +22,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.publisher.FluxPeekFuseable.PeekConditionalSubscriber;
+import javax.annotation.Nullable;
 
 /**
  * Peeks out values that make a filter function return false.
@@ -45,10 +46,14 @@ final class MonoPeek<T> extends MonoSource<T, T> implements SignalPeek<T> {
 
 	final Runnable onCancelCall;
 
-	MonoPeek(Mono<? extends T> source, Consumer<? super Subscription> onSubscribeCall,
-			Consumer<? super T> onNextCall, Consumer<? super Throwable> onErrorCall, Runnable
-			onCompleteCall,
-			Runnable onAfterTerminateCall, LongConsumer onRequestCall, Runnable onCancelCall) {
+	MonoPeek(Mono<? extends T> source,
+			@Nullable Consumer<? super Subscription> onSubscribeCall,
+			@Nullable Consumer<? super T> onNextCall,
+			@Nullable Consumer<? super Throwable> onErrorCall,
+			@Nullable Runnable onCompleteCall,
+			@Nullable Runnable onAfterTerminateCall,
+			@Nullable LongConsumer onRequestCall,
+			@Nullable Runnable onCancelCall) {
 		super(source);
 		this.onSubscribeCall = onSubscribeCall;
 		this.onNextCall = onNextCall;
@@ -71,36 +76,43 @@ final class MonoPeek<T> extends MonoSource<T, T> implements SignalPeek<T> {
 	}
 
 	@Override
+	@Nullable
 	public Consumer<? super Subscription> onSubscribeCall() {
 		return onSubscribeCall;
 	}
 
 	@Override
+	@Nullable
 	public Consumer<? super T> onNextCall() {
 		return onNextCall;
 	}
 
 	@Override
+	@Nullable
 	public Consumer<? super Throwable> onErrorCall() {
 		return onErrorCall;
 	}
 
 	@Override
+	@Nullable
 	public Runnable onCompleteCall() {
 		return onCompleteCall;
 	}
 
 	@Override
+	@Nullable
 	public Runnable onAfterTerminateCall() {
 		return onAfterTerminateCall;
 	}
 
 	@Override
+	@Nullable
 	public LongConsumer onRequestCall() {
 		return onRequestCall;
 	}
 
 	@Override
+	@Nullable
 	public Runnable onCancelCall() {
 		return onCancelCall;
 	}

@@ -25,7 +25,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
-
+import javax.annotation.Nullable;
 
 /**
  * Waits for a Mono source to produce a value or terminate, as well as a Publisher source
@@ -108,6 +108,7 @@ final class MonoUntilOther<T> extends Mono<T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return done == n;
 			if (key == ScannableAttr.PARENT) return sourceSubscriber;
@@ -266,6 +267,7 @@ final class MonoUntilOther<T> extends Mono<T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ThrowableAttr.ERROR) return error;
 			if (key == BooleanAttr.TERMINATED) return error != null || value != null;
@@ -299,6 +301,7 @@ final class MonoUntilOther<T> extends Mono<T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
 			if (key == ScannableAttr.PARENT) return s;

@@ -25,7 +25,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
-
+import javax.annotation.Nullable;
 
 /**
  * Given a set of source Publishers the values of that Publisher is forwarded to the
@@ -144,6 +144,7 @@ final class FluxFirstEmitting<T> extends Flux<T> {
 	 *
 	 * @return the new FluxFirstEmitting instance or null if the Amb runs with an Iterable
 	 */
+	@Nullable
 	FluxFirstEmitting<T> ambAdditionalSource(Publisher<? extends T> source) {
 		if (array != null) {
 			int n = array.length;
@@ -181,6 +182,7 @@ final class FluxFirstEmitting<T> extends Flux<T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.CANCELLED) return cancelled;
 
@@ -290,6 +292,7 @@ final class FluxFirstEmitting<T> extends Flux<T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.CANCELLED) return parent.cancelled;

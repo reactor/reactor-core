@@ -20,6 +20,7 @@ import java.util.Objects;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import javax.annotation.Nullable;
 
 /**
  * Emits a scalar value if the source sequence turns out to be empty.
@@ -54,6 +55,7 @@ final class FluxDefaultIfEmpty<T> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 

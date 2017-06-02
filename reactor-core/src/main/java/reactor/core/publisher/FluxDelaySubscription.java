@@ -20,8 +20,7 @@ import java.util.Objects;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
-
+import javax.annotation.Nullable;
 
 /**
  * Delays the subscription to the main source until another Publisher
@@ -68,6 +67,7 @@ final class FluxDelaySubscription<T, U> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == ScannableAttr.ACTUAL) return actual;
@@ -148,6 +148,7 @@ final class FluxDelaySubscription<T, U> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.ACTUAL) return actual;
 

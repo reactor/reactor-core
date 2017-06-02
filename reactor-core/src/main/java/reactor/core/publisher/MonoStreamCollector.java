@@ -24,6 +24,7 @@ import java.util.stream.Collector;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import javax.annotation.Nullable;
 
 /**
  * Collects the values from the source sequence into a {@link java.util.stream.Collector}
@@ -94,6 +95,7 @@ final class MonoStreamCollector<T, A, R> extends MonoSource<T, R> implements Fus
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return done;
 			if (key == ScannableAttr.PARENT) return s;

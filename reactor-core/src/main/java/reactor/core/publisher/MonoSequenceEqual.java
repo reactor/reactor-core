@@ -28,6 +28,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.concurrent.QueueSupplier;
+import javax.annotation.Nullable;
 
 import static reactor.core.publisher.Operators.cancelledSubscription;
 
@@ -98,6 +99,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.CANCELLED) return cancelled;
 
@@ -296,6 +298,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return done;
 			if (key == ScannableAttr.ACTUAL) return parent;

@@ -19,6 +19,7 @@ import java.util.function.Predicate;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Scannable;
+import javax.annotation.Nullable;
 
 /**
  * Filters each 'rail' of the source ParallelFlux with a predicate function.
@@ -37,6 +38,7 @@ final class ParallelFilter<T> extends ParallelFlux<T> implements Scannable{
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == ScannableAttr.PARENT) return source;
 		if (key == IntAttr.PREFETCH) return getPrefetch();

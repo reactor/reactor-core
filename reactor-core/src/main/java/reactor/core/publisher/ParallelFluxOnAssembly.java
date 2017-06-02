@@ -21,6 +21,7 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxOnAssembly.AssemblyLightSnapshotException;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
+import javax.annotation.Nullable;
 
 /**
  * Captures the current stacktrace when this connectable publisher is created and makes it
@@ -53,7 +54,7 @@ final class ParallelFluxOnAssembly<T> extends ParallelFlux<T>
 	 * Create an assembly trace augmented with a custom description (eg. a name for a
 	 * ParallelFlux or a wider correlation ID), wrapping a {@link ParallelFlux}.
 	 */
-	ParallelFluxOnAssembly(ParallelFlux<T> source, String description) {
+	ParallelFluxOnAssembly(ParallelFlux<T> source, @Nullable String description) {
 		this.source = source;
 		this.stacktrace = new AssemblySnapshotException(description);
 	}
@@ -113,6 +114,7 @@ final class ParallelFluxOnAssembly<T> extends ParallelFlux<T>
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == ScannableAttr.PARENT) return source;
 		if (key == IntAttr.PREFETCH) return getPrefetch();
@@ -128,16 +130,14 @@ final class ParallelFluxOnAssembly<T> extends ParallelFlux<T>
 			   .append('"')
 			   .append(getClass().getSimpleName()
 								 .replaceAll("Flux", ""))
-			   .append('"');
-		if (stacktrace != null) {
-			sb = sb.append(", ")
-				   .append(" \"description\" : ")
-				   .append('"')
-				   .append(stacktrace.getMessage())
-				   .append('"');
-		}
-		return sb.append(' ')
-				 .append('}')
-				 .toString();
+			   .append('"')
+			   .append(", ")
+		       .append(" \"description\" : ")
+		       .append('"')
+		       .append(stacktrace.getMessage())
+		       .append('"')
+		       .append(' ')
+		       .append('}');
+		return sb.toString();
 	}
 }

@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import org.reactivestreams.Subscription;
+import javax.annotation.Nullable;
 
 /**
  * A {@link Signal} flavour that is dedicated to the {@link SignalType#ON_NEXT ON_NEXT}
@@ -53,21 +54,24 @@ public class MutableNextSignal<T> extends Signal<T> {
 
 	private T t;
 
-	MutableNextSignal(T t) {
+	MutableNextSignal(@Nullable T t) {
 		this.t = t;
 	}
 
 	@Override
+	@Nullable
 	public Throwable getThrowable() {
 		return null;
 	}
 
 	@Override
+	@Nullable
 	public Subscription getSubscription() {
 		return null;
 	}
 
 	@Override
+	@Nullable
 	public T get() {
 		return t;
 	}
