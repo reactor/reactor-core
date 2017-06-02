@@ -23,8 +23,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.publisher.FluxPeekFuseable.PeekConditionalSubscriber;
-
-
+import javax.annotation.Nullable;
 
 /**
  * Peek into the lifecycle events and signals of a sequence.
@@ -54,13 +53,14 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 
 	final Runnable onCancelCall;
 
-	FluxPeek(Flux<? extends T> source, Consumer<? super Subscription> onSubscribeCall,
-			Consumer<? super T> onNextCall,
-			Consumer<? super Throwable> onErrorCall,
-			Runnable onCompleteCall,
-			Runnable onAfterTerminateCall,
-			LongConsumer onRequestCall,
-			Runnable onCancelCall) {
+	FluxPeek(Flux<? extends T> source,
+			@Nullable Consumer<? super Subscription> onSubscribeCall,
+			@Nullable Consumer<? super T> onNextCall,
+			@Nullable Consumer<? super Throwable> onErrorCall,
+			@Nullable Runnable onCompleteCall,
+			@Nullable Runnable onAfterTerminateCall,
+			@Nullable LongConsumer onRequestCall,
+			@Nullable Runnable onCancelCall) {
 		super(source);
 		this.onSubscribeCall = onSubscribeCall;
 		this.onNextCall = onNextCall;
@@ -98,6 +98,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return done;
@@ -109,6 +110,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 		public void request(long n) {
 			if(parent.onRequestCall() != null) {
 				try {
+					//noinspection ConstantConditions
 					parent.onRequestCall().accept(n);
 				}
 				catch (Throwable e) {
@@ -123,6 +125,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 		public void cancel() {
 			if(parent.onCancelCall() != null) {
 				try {
+					//noinspection ConstantConditions
 					parent.onCancelCall().run();
 				}
 				catch (Throwable e) {
@@ -138,6 +141,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 			if(Operators.validate(this.s, s)) {
 				if (parent.onSubscribeCall() != null) {
 					try {
+						//noinspection ConstantConditions
 						parent.onSubscribeCall()
 						      .accept(s);
 					}
@@ -159,6 +163,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 			}
 			if(parent.onNextCall() != null) {
 				try {
+					//noinspection ConstantConditions
 					parent.onNextCall().accept(t);
 				}
 				catch (Throwable e) {
@@ -179,6 +184,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 			done = true;
 			if(parent.onErrorCall() != null) {
 				try {
+					//noinspection ConstantConditions
 					parent.onErrorCall().accept(t);
 				}
 				catch (Throwable e) {
@@ -200,6 +206,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 
 			if(parent.onAfterTerminateCall() != null) {
 				try {
+					//noinspection ConstantConditions
 					parent.onAfterTerminateCall().run();
 				}
 				catch (Throwable e) {
@@ -215,6 +222,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 			}
 			if(parent.onCompleteCall() != null) {
 				try {
+					//noinspection ConstantConditions
 					parent.onCompleteCall().run();
 				}
 				catch (Throwable e) {
@@ -228,6 +236,7 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 
 			if(parent.onAfterTerminateCall() != null) {
 				try {
+					//noinspection ConstantConditions
 					parent.onAfterTerminateCall().run();
 				}
 				catch (Throwable e) {
@@ -244,36 +253,43 @@ final class FluxPeek<T> extends FluxSource<T, T> implements SignalPeek<T> {
 	}
 
 	@Override
+	@Nullable
 	public Consumer<? super Subscription> onSubscribeCall() {
 		return onSubscribeCall;
 	}
 
 	@Override
+	@Nullable
 	public Consumer<? super T> onNextCall() {
 		return onNextCall;
 	}
 
 	@Override
+	@Nullable
 	public Consumer<? super Throwable> onErrorCall() {
 		return onErrorCall;
 	}
 
 	@Override
+	@Nullable
 	public Runnable onCompleteCall() {
 		return onCompleteCall;
 	}
 
 	@Override
+	@Nullable
 	public Runnable onAfterTerminateCall() {
 		return onAfterTerminateCall;
 	}
 
 	@Override
+	@Nullable
 	public LongConsumer onRequestCall() {
 		return onRequestCall;
 	}
 
 	@Override
+	@Nullable
 	public Runnable onCancelCall() {
 		return onCancelCall;
 	}

@@ -31,6 +31,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import javax.annotation.Nullable;
 
 /**
  * Concatenates values from Iterable sequences generated via a mapper function.
@@ -166,6 +167,7 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return done;
@@ -625,6 +627,7 @@ final class FluxFlattenIterable<T, R> extends FluxSource<T, R> implements Fuseab
 		}
 
 		@Override
+		@Nullable
 		public R poll() {
 			Iterator<? extends R> it = current;
 			for (; ; ) {

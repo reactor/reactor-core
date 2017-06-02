@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import javax.annotation.Nullable;
 
 /**
  * Hides the identities of the upstream Publisher object and its Subscription
@@ -83,6 +84,7 @@ final class FluxHide<T> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 
@@ -112,6 +114,7 @@ final class FluxHide<T> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 
@@ -149,6 +152,7 @@ final class FluxHide<T> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			return null;
 		}

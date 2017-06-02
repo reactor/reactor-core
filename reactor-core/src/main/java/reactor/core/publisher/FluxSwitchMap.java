@@ -31,7 +31,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-
+import javax.annotation.Nullable;
 
 /**
  * Switches to a new Publisher generated via a function whenever the upstream produces an
@@ -50,6 +50,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 
 	final int bufferSize;
 
+	@SuppressWarnings("ConstantConditions")
 	static final SwitchMapInner<Object> CANCELLED_INNER =
 			new SwitchMapInner<>(null, 0, Long.MAX_VALUE);
 
@@ -165,6 +166,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.CANCELLED) return cancelled;
 			if (key == ScannableAttr.PARENT) return s;
@@ -392,7 +394,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		}
 
 		void innerNext(SwitchMapInner<R> inner, R value) {
-			queueBiAtomic.test(inner, value);
+			queueBiAtomic.test(inner, value); //TODO investigate null
 			drain();
 		}
 
@@ -449,6 +451,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
 			if (key == ScannableAttr.PARENT) return s;

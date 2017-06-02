@@ -23,6 +23,7 @@ import reactor.core.Disposable;
 import reactor.core.publisher.FluxSubscribeOnValue.ScheduledEmpty;
 import reactor.core.publisher.FluxSubscribeOnValue.ScheduledScalar;
 import reactor.core.scheduler.Scheduler;
+import javax.annotation.Nullable;
 
 /**
  * Mono indicating a scalar/empty source that subscribes on the specified scheduler.
@@ -35,7 +36,7 @@ final class MonoSubscribeOnValue<T> extends Mono<T> {
 
 	final Scheduler scheduler;
 
-	MonoSubscribeOnValue(T value, Scheduler scheduler) {
+	MonoSubscribeOnValue(@Nullable T value, Scheduler scheduler) {
 		this.value = value;
 		this.scheduler = Objects.requireNonNull(scheduler, "scheduler");
 	}

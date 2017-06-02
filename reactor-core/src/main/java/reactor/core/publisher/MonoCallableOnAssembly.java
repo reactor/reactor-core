@@ -22,6 +22,7 @@ import java.util.concurrent.Callable;
 import org.reactivestreams.Subscriber;
 import reactor.core.Exceptions;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
+import javax.annotation.Nullable;
 
 /**
  * Captures the current stacktrace when this publisher is created and makes it
@@ -48,12 +49,14 @@ final class MonoCallableOnAssembly<T> extends MonoSource<T, T>
 	}
 
 	@Override
+	@Nullable
 	public T block() {
 		//duration is ignored below
 		return block(Duration.ZERO);
 	}
 
 	@Override
+	@Nullable
 	@SuppressWarnings("unchecked")
 	public T block(Duration timeout) {
 		try {
@@ -72,6 +75,7 @@ final class MonoCallableOnAssembly<T> extends MonoSource<T, T>
 
 	@SuppressWarnings("unchecked")
 	@Override
+	@Nullable
 	public T call() throws Exception {
 		return ((Callable<T>) source).call();
 	}

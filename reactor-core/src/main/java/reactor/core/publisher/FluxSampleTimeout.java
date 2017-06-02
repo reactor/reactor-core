@@ -30,7 +30,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-
+import javax.annotation.Nullable;
 
 /**
  * Emits the last value from upstream only if there were no newer values emitted
@@ -142,6 +142,7 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return done;
 			if (key == BooleanAttr.CANCELLED) return cancelled;
@@ -351,6 +352,7 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return once == 1;
 			if (key == ScannableAttr.ACTUAL) return main;

@@ -23,6 +23,7 @@ import java.util.function.BooleanSupplier;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import javax.annotation.Nullable;
 
 /**
  * @author Stephane Maldini
@@ -67,6 +68,7 @@ final class FluxDematerialize<T> extends FluxSource<Signal<T>, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return done;
@@ -189,11 +191,13 @@ final class FluxDematerialize<T> extends FluxSource<Signal<T>, T> {
 		}
 
 		@Override
+		@Nullable
 		public T peek() {
 			return value;
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			T v = value;
 			if (v != null) {

@@ -15,6 +15,8 @@
  */
 package reactor.core.publisher;
 
+import javax.annotation.Nullable;
+
 /**
  * Represents a sequence of events which has an associated key.
  *
@@ -27,5 +29,6 @@ public abstract class GroupedFlux<K, V> extends Flux<V> {
 	 * Return the key of the {@link GroupedFlux}.
 	 * @return the key
 	 */
+	@Nullable
 	public abstract K key();
 }

@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import javax.annotation.Nullable;
 
 /**
  * Subscriber that makes sure signals are delivered sequentially in case the onNext, onError or onComplete methods are
@@ -236,6 +237,7 @@ final class SerializedSubscriber<T> implements InnerOperator<T, T> {
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == ScannableAttr.PARENT) return s;
 		if (key == ThrowableAttr.ERROR) return error;

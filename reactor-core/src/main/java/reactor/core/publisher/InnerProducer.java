@@ -18,7 +18,7 @@ package reactor.core.publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
-
+import javax.annotation.Nullable;
 
 /**
  *
@@ -35,6 +35,7 @@ interface InnerProducer<O>
 	Subscriber<? super O> actual();
 
 	@Override
+	@Nullable
 	default Object scanUnsafe(Attr key){
 		if (key == ScannableAttr.ACTUAL) {
 			return actual();

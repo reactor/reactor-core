@@ -52,6 +52,7 @@ import reactor.util.function.Tuple4;
 import reactor.util.function.Tuple5;
 import reactor.util.function.Tuple6;
 import reactor.util.function.Tuples;
+import javax.annotation.Nullable;
 
 /**
  * A Reactive Streams {@link Publisher} with basic rx operators that completes successfully by emitting an element, or
@@ -344,8 +345,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/fromfuture.png" alt="">
 	 * <p>
-	 * @param completionStage {@link CompletionStage} that will produce the value or null to
-	 * complete immediately
+	 * @param completionStage {@link CompletionStage} that will produce a value (or a null to
+	 * complete immediately)
 	 * @param <T> type of the expected value
 	 * @return A {@link Mono}.
 	 */
@@ -378,8 +379,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/fromfuture.png" alt="">
 	 * <p>
-	 * @param future {@link CompletableFuture} that will produce the value or null to
-	 * complete immediately
+	 * @param future {@link CompletableFuture} that will produce a value (or a null to
+	 * complete immediately)
 	 * @param <T> type of the expected value
 	 * @return A {@link Mono}.
 	 * @see #fromCompletionStage(CompletionStage) fromCompletionStage for a generalization
@@ -463,7 +464,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static <T> Mono<T> justOrEmpty(Optional<? extends T> data) {
+	public static <T> Mono<T> justOrEmpty(@Nullable Optional<? extends T> data) {
 		return data != null && data.isPresent() ? just(data.get()) : empty();
 	}
 
@@ -479,7 +480,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static <T> Mono<T> justOrEmpty(T data) {
+	public static <T> Mono<T> justOrEmpty(@Nullable T data) {
 		return data != null ? just(data) : empty();
 	}
 
@@ -579,9 +580,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return new {@link Mono}
 	 */
-	public static <T, D> Mono<T> using(Callable<? extends D> resourceSupplier, Function<?
-			super D, ? extends
-			Mono<? extends T>> sourceSupplier, Consumer<? super D> resourceCleanup, boolean eager) {
+	public static <T, D> Mono<T> using(Callable<? extends D> resourceSupplier,
+			Function<? super D, ? extends Mono<? extends T>> sourceSupplier,
+			Consumer<? super D> resourceCleanup,
+			boolean eager) {
 		return onAssembly(new MonoUsing<>(resourceSupplier, sourceSupplier,
 				resourceCleanup, eager));
 	}
@@ -605,9 +607,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return new {@link Mono}
 	 */
-	public static <T, D> Mono<T> using(Callable<? extends D> resourceSupplier, Function<?
-			super D, ? extends
-			Mono<? extends T>> sourceSupplier, Consumer<? super D> resourceCleanup) {
+	public static <T, D> Mono<T> using(Callable<? extends D> resourceSupplier,
+			Function<? super D, ? extends Mono<? extends T>> sourceSupplier,
+			Consumer<? super D> resourceCleanup) {
 		return using(resourceSupplier, sourceSupplier, resourceCleanup, true);
 	}
 
@@ -1283,6 +1285,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return T the result
 	 */
+	@Nullable
 	public T block() {
 		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>();
 		subscribe(subscriber);
@@ -1306,6 +1309,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return T the result
 	 */
+	@Nullable
 	public T block(Duration timeout) {
 		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>();
 		subscribe(subscriber);
@@ -2190,7 +2194,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public final Mono<T> log(String category) {
+	public final Mono<T> log(@Nullable String category) {
 		return log(category, Level.INFO);
 	}
 
@@ -2215,7 +2219,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Mono}
 	 *
 	 */
-	public final Mono<T> log(String category, Level level, SignalType... options) {
+	public final Mono<T> log(@Nullable String category, Level level, SignalType... options) {
 		return log(category, level, false, options);
 	}
 
@@ -2243,7 +2247,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new unaltered {@link Mono}
 	 */
-	public final Mono<T> log(String category,
+	public final Mono<T> log(@Nullable String category,
 			Level level,
 			boolean showOperatorLine,
 			SignalType... options) {
@@ -2741,7 +2745,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
 	 */
-	public final Disposable subscribe(Consumer<? super T> consumer, Consumer<? super Throwable> errorConsumer) {
+	public final Disposable subscribe(@Nullable Consumer<? super T> consumer, Consumer<? super Throwable> errorConsumer) {
 		Objects.requireNonNull(errorConsumer, "errorConsumer");
 		return subscribe(consumer, errorConsumer, null);
 	}
@@ -2767,9 +2771,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
 	 */
-	public final Disposable subscribe(Consumer<? super T> consumer,
-			Consumer<? super Throwable> errorConsumer,
-			Runnable completeConsumer) {
+	public final Disposable subscribe(
+			@Nullable Consumer<? super T> consumer,
+			@Nullable Consumer<? super Throwable> errorConsumer,
+			@Nullable Runnable completeConsumer) {
 		return subscribe(consumer, errorConsumer, completeConsumer, null);
 	}
 
@@ -2798,10 +2803,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
 	 */
-	public final Disposable subscribe(Consumer<? super T> consumer,
-			Consumer<? super Throwable> errorConsumer,
-			Runnable completeConsumer,
-			Consumer<? super Subscription> subscriptionConsumer) {
+	public final Disposable subscribe(
+			@Nullable Consumer<? super T> consumer,
+			@Nullable Consumer<? super Throwable> errorConsumer,
+			@Nullable Runnable completeConsumer,
+			@Nullable Consumer<? super Subscription> subscriptionConsumer) {
 		return subscribeWith(new LambdaMonoSubscriber<>(consumer, errorConsumer,
 				completeConsumer, subscriptionConsumer));
 	}
@@ -3107,7 +3113,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return an expirable {@link Mono} with a fallback {@link Mono}
 	 */
-	public final Mono<T> timeout(Duration timeout, Mono<? extends T> fallback,
+	public final Mono<T> timeout(Duration timeout, @Nullable Mono<? extends T> fallback,
 			Scheduler timer) {
 		final Mono<Long> _timer = Mono.delay(timeout, timer).onErrorReturn(0L);
 
@@ -3335,13 +3341,13 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	@SuppressWarnings("unchecked")
 	static <T> Mono<T> doOnSignal(Mono<T> source,
-			Consumer<? super Subscription> onSubscribe,
-			Consumer<? super T> onNext,
-			Consumer<? super Throwable> onError,
-			Runnable onComplete,
-			Runnable onAfterTerminate,
-			LongConsumer onRequest,
-			Runnable onCancel) {
+			@Nullable Consumer<? super Subscription> onSubscribe,
+			@Nullable Consumer<? super T> onNext,
+			@Nullable Consumer<? super Throwable> onError,
+			@Nullable Runnable onComplete,
+			@Nullable Runnable onAfterTerminate,
+			@Nullable LongConsumer onRequest,
+			@Nullable Runnable onCancel) {
 		if (source instanceof Fuseable) {
 			return onAssembly(new MonoPeekFuseable<>(source,
 					onSubscribe,

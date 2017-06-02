@@ -18,6 +18,8 @@ package reactor.util;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 
+import javax.annotation.Nullable;
+
 /**
  * Expose static methods to get a logger depending on the environment (SLF4J or
  * {@link java.util.logging.Logger java.util.logging.Logger}).
@@ -307,7 +309,8 @@ public abstract class Loggers {
 			logger.log(Level.SEVERE, msg, t);
 		}
 
-		private String format(String from, Object... arguments){
+		@Nullable
+		private String format(@Nullable String from, @Nullable Object... arguments){
 			if(from != null) {
 				String computed = from;
 				if (arguments != null && arguments.length != 0) {

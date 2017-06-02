@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Scannable;
+import javax.annotation.Nullable;
 
 /**
  * Hides the identities of the upstream Publisher object and its Subscription as well.
@@ -44,6 +45,7 @@ final class ParallelFluxHide<T> extends ParallelFlux<T> implements Scannable{
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == ScannableAttr.PARENT) return source;
 		if (key == IntAttr.PREFETCH) return getPrefetch();

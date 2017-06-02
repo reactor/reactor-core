@@ -44,4 +44,7 @@
  **
  * @author Stephane Maldini
  */
+@NonNullApi
 package reactor.core.publisher;
+
+import reactor.util.lang.NonNullApi;

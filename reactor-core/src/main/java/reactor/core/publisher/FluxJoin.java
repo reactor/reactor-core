@@ -38,6 +38,7 @@ import reactor.core.publisher.FluxGroupJoin.JoinSupport;
 import reactor.core.publisher.FluxGroupJoin.LeftRightEndSubscriber;
 import reactor.core.publisher.FluxGroupJoin.LeftRightSubscriber;
 import reactor.util.concurrent.OpenHashSet;
+import javax.annotation.Nullable;
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
@@ -181,6 +182,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == BooleanAttr.CANCELLED) return cancelled;

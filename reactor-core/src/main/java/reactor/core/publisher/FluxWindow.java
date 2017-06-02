@@ -29,6 +29,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
+import javax.annotation.Nullable;
 
 /**
  * Splits the source sequence into possibly overlapping publishers.
@@ -244,6 +245,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.CANCELLED) return cancelled == 1;
@@ -427,6 +429,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.CANCELLED) return cancelled == 1;
@@ -714,6 +717,7 @@ final class FluxWindow<T> extends FluxSource<T, Flux<T>> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.CANCELLED) return cancelled == 1;

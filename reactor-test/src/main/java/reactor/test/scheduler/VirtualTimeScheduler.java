@@ -31,6 +31,7 @@ import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.concurrent.QueueSupplier;
+import javax.annotation.Nullable;
 
 /**
  * A {@link Scheduler} that uses a virtual clock, allowing to manipulate time
@@ -470,7 +471,7 @@ public class VirtualTimeScheduler implements Scheduler {
 		}
 	}
 
-	static boolean replace(AtomicReference<Disposable> ref, Disposable c) {
+	static boolean replace(AtomicReference<Disposable> ref, @Nullable Disposable c) {
 		for (; ; ) {
 			Disposable current = ref.get();
 			if (current == CANCELLED) {

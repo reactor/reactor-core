@@ -19,6 +19,7 @@ import java.util.function.Function;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Scannable;
+import javax.annotation.Nullable;
 
 /**
  * Maps each 'rail' of the source ParallelFlux with a mapper function.
@@ -38,6 +39,7 @@ final class ParallelMap<T, R> extends ParallelFlux<R> implements Scannable {
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == ScannableAttr.PARENT) return source;
 		if (key == IntAttr.PREFETCH) return getPrefetch();

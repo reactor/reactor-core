@@ -20,6 +20,7 @@ import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 import reactor.core.Disposable;
+import javax.annotation.Nullable;
 
 /**
  * Wrapper API around an actual downstream Subscriber
@@ -45,7 +46,7 @@ public interface MonoSink<T> {
 	 *
 	 * @param value the value to complete with
 	 */
-	void success(T value);
+	void success(@Nullable T value);
 
 	/**
 	 * Terminate with the give exception

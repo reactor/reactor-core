@@ -24,7 +24,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
-
+import javax.annotation.Nullable;
 
 /**
  * Skips values from the main publisher until the other publisher signals
@@ -64,6 +64,7 @@ final class FluxSkipUntilOther<T, U> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.CANCELLED) return main.other == Operators.cancelledSubscription();
 			if (key == ScannableAttr.PARENT) return main.other;
@@ -146,6 +147,7 @@ final class FluxSkipUntilOther<T, U> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return main;
 			if (key == BooleanAttr.CANCELLED) return main == Operators.cancelledSubscription();

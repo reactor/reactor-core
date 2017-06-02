@@ -28,6 +28,7 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.concurrent.QueueSupplier;
+import javax.annotation.Nullable;
 
 import static reactor.core.publisher.FluxPublish.PublishSubscriber.EMPTY;
 import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
@@ -225,6 +226,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
+		//noinspection ConstantConditions
 		if (s == null) {
 			throw Exceptions.argumentIsNullException();
 		}
@@ -360,17 +362,13 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	}
 
 	@Override
+	@Nullable
 	public Throwable getError() {
 		return error;
 	}
 
 	/**
-	 * Return whether has all subcribers cancelled and {@link #create(boolean)} auto
-	 * shutdown argument
-	 * been set to true.
-	 *
-	 * @return whether has all subcribers cancelled and {@link #create(boolean)} auto
-	 * shutdown argument been set to true.
+	 * @return true if all subscribers have actually been cancelled and the processor auto shut down
 	 */
 	public boolean isCancelled() {
 		return Operators.cancelledSubscription() == s;
@@ -392,6 +390,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == ScannableAttr.PARENT) return s;
 		if (key == IntAttr.BUFFERED) return getPending();

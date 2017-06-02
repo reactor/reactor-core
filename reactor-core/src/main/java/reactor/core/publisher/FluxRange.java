@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
-
+import javax.annotation.Nullable;
 
 /**
  * Emits a range of integer values.
@@ -177,6 +177,7 @@ final class FluxRange extends Flux<Integer>
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.CANCELLED) return cancelled;
 			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
@@ -186,6 +187,7 @@ final class FluxRange extends Flux<Integer>
 		}
 
 		@Override
+		@Nullable
 		public Integer poll() {
 			long i = index;
 			if (i == end) {
@@ -335,6 +337,7 @@ final class FluxRange extends Flux<Integer>
 		}
 
 		@Override
+		@Nullable
 		public Integer poll() {
 			long i = index;
 			if (i == end) {

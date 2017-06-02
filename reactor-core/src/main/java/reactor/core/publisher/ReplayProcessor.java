@@ -31,6 +31,7 @@ import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.concurrent.QueueSupplier;
+import javax.annotation.Nullable;
 
 import static reactor.core.publisher.FluxReplay.ReplaySubscriber.EMPTY;
 import static reactor.core.publisher.FluxReplay.ReplaySubscriber.TERMINATED;
@@ -80,7 +81,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 *
 	 * @return a non interruptable last item cached pub-sub {@link ReplayProcessor}
 	 */
-	public static <T> ReplayProcessor<T> cacheLastOrDefault(T value) {
+	public static <T> ReplayProcessor<T> cacheLastOrDefault(@Nullable T value) {
 		ReplayProcessor<T> b = create(1);
 		if (value != null) {
 			b.onNext(value);
@@ -304,6 +305,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
+		//noinspection ConstantConditions
 		if (s == null) {
 			throw Exceptions.argumentIsNullException();
 		}
@@ -320,11 +322,13 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
+	@Nullable
 	public Throwable getError() {
 		return buffer.getError();
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == ScannableAttr.PARENT){
 			return subscription;
@@ -528,6 +532,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			return buffer.poll(this);
 		}
@@ -571,7 +576,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		}
 
 		@Override
-		public void node(Object node) {
+		public void node(@Nullable Object node) {
 			this.node = node;
 		}
 
@@ -581,6 +586,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		}
 
 		@Override
+		@Nullable
 		public Object node() {
 			return node;
 		}

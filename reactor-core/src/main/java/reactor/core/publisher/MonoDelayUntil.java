@@ -26,6 +26,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
+import javax.annotation.Nullable;
 
 /**
  * Waits for a Mono source to terminate or produce a value, in which case the value is
@@ -149,6 +150,7 @@ final class MonoDelayUntil<T> extends Mono<T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return done == n;
 			if (key == BooleanAttr.DELAY_ERROR) return delayError;
@@ -259,6 +261,7 @@ final class MonoDelayUntil<T> extends Mono<T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
 			if (key == ScannableAttr.PARENT) return s;

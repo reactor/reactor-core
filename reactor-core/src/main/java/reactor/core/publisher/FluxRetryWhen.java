@@ -24,8 +24,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
-
-
+import javax.annotation.Nullable;
 
 /**
  * retries a source when a companion sequence signals
@@ -114,6 +113,7 @@ final class FluxRetryWhen<T> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.CANCELLED) return cancelled;
 
@@ -207,6 +207,7 @@ final class FluxRetryWhen<T> extends FluxSource<T, T> {
 		final DirectProcessor<Throwable> completionSignal = new DirectProcessor<>();
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return main.otherArbiter;
 			if (key == ScannableAttr.ACTUAL) return main;

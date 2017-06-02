@@ -27,7 +27,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-
+import javax.annotation.Nullable;
 
 /**
  * Dispatches the values from upstream in a round robin fashion to subscribers which are
@@ -68,6 +68,7 @@ final class ParallelSource<T> extends ParallelFlux<T> implements Scannable {
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Scannable.Attr key) {
 		if (key == ScannableAttr.PARENT) return source;
 		if (key == IntAttr.PREFETCH) return getPrefetch();
@@ -140,6 +141,7 @@ final class ParallelSource<T> extends ParallelFlux<T> implements Scannable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == IntAttr.PREFETCH) return prefetch;
@@ -485,6 +487,7 @@ final class ParallelSource<T> extends ParallelFlux<T> implements Scannable {
 			}
 
 			@Override
+			@Nullable
 			public Object scanUnsafe(Attr key) {
 				if (key == ScannableAttr.PARENT) return parent;
 

@@ -27,6 +27,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import javax.annotation.Nullable;
 
 /**
  * Buffers a certain number of subsequent elements and emits the buffers.
@@ -185,6 +186,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return done;
@@ -336,6 +338,8 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 			return actual;
 		}
 
+		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return done;
@@ -517,6 +521,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxSource<T,
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return done;

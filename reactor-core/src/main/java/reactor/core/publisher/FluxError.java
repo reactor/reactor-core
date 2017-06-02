@@ -20,7 +20,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscriber;
-
+import javax.annotation.Nullable;
 
 /**
  * Emits a constant or generated Throwable instance to Subscribers.
@@ -85,6 +85,7 @@ final class FluxError<T> extends Flux<T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ThrowableAttr.ERROR) return error;
 			if (key == BooleanAttr.CANCELLED || key == BooleanAttr.TERMINATED)

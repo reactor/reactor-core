@@ -34,6 +34,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import javax.annotation.Nullable;
 
 /**
  * An iterable that consumes a Publisher in a blocking fashion.
@@ -63,6 +64,7 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == IntAttr.PREFETCH) return (int) Math.min(Integer.MAX_VALUE, batchSize); //FIXME should batchSize be forced to int?
 		if (key == ScannableAttr.PARENT) return source;
@@ -256,6 +258,7 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return done;
 			if (key == ScannableAttr.PARENT) return  s;

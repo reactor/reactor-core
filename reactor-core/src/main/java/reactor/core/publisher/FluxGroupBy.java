@@ -32,8 +32,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-
-
+import javax.annotation.Nullable;
 
 /**
  * Groups upstream items into their own Publisher sequence based on a key selector.
@@ -243,6 +242,7 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return done;
@@ -261,7 +261,7 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 		}
 
 		void signalAsyncError() {
-			Throwable e = Exceptions.terminate(ERROR, this);
+			Throwable e = Exceptions.terminate(ERROR, this); //TODO investigate if e == null
 			groupCount = 0;
 			for (UnicastGroupedFlux<K, V> g : groupMap.values()) {
 				g.onError(e);
@@ -433,6 +433,7 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 		}
 
 		@Override
+		@Nullable
 		public GroupedFlux<K, V> poll() {
 			return queue.poll();
 		}
@@ -729,6 +730,7 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 		}
 
 		@Override
+		@Nullable
 		public V poll() {
 			V v = queue.poll();
 			if (v != null) {
@@ -772,6 +774,7 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return parent;
 			if (key == BooleanAttr.TERMINATED) return done;

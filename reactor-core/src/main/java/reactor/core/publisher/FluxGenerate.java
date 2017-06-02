@@ -24,7 +24,7 @@ import java.util.function.Consumer;
 import org.reactivestreams.Subscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-
+import javax.annotation.Nullable;
 
 /**
  * Generate signals one-by-one via a function callback.
@@ -37,7 +37,7 @@ import reactor.core.Fuseable;
  * @param <S> the custom state per subscriber
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
-final class FluxGenerate<T, S> 
+final class FluxGenerate<T, S>
 extends Flux<T> implements Fuseable {
 
 
@@ -121,6 +121,7 @@ extends Flux<T> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return terminate;
 			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
@@ -145,6 +146,7 @@ extends Flux<T> implements Fuseable {
 				error(new IllegalStateException("More than one call to onNext"));
 				return;
 			}
+			//noinspection ConstantConditions
 			if (t == null) {
 				error(new NullPointerException("The generator produced a null value"));
 				return;
@@ -312,6 +314,7 @@ extends Flux<T> implements Fuseable {
 		}
 		
 		@Override
+		@Nullable
 		public T poll() {
 			S s = state;
 

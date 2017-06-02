@@ -31,6 +31,7 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.concurrent.WaitStrategy;
+import javax.annotation.Nullable;
 
 /**
  * A {@code MonoProcessor} is a {@link Mono} extension that implements stateful semantics. Multi-subscribe is allowed.
@@ -84,11 +85,11 @@ public final class MonoProcessor<O> extends Mono<O>
 	volatile int             wip;
 	volatile int             connected;
 
-	MonoProcessor(Publisher<? extends O> source) {
+	MonoProcessor(@Nullable Publisher<? extends O> source) {
 		this(source, WaitStrategy.sleeping());
 	}
 
-	MonoProcessor(Publisher<? extends O> source, WaitStrategy waitStrategy) {
+	MonoProcessor(@Nullable Publisher<? extends O> source, WaitStrategy waitStrategy) {
 		this.source = source;
 		this.waitStrategy = Objects.requireNonNull(waitStrategy, "waitStrategy");
 	}
@@ -116,6 +117,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	}
 
 	@Override
+	@Nullable
 	public O block() {
 		return block(Duration.ofSeconds(300));
 	}
@@ -130,6 +132,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	 * not completed
 	 */
 	@Override
+	@Nullable
 	public O block(Duration timeout) {
 		try {
 			if (!isPending()) {
@@ -180,6 +183,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	 *
 	 * @return the produced {@link Throwable} error if any or null
 	 */
+	@Nullable
 	public final Throwable getError() {
 		return error;
 	}
@@ -337,6 +341,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	 *
 	 * @throws RuntimeException if the {@link MonoProcessor} was completed with an error
 	 */
+	@Nullable
 	public O peek() {
 		int endState = this.state;
 
@@ -401,6 +406,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == ScannableAttr.ACTUAL) return processor;
 		if (key == ScannableAttr.PARENT) return subscription;
@@ -432,6 +438,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	 * @return the number of active {@link Subscriber} or {@literal -1} if untracked
 	 */
 	public final long downstreamCount() {
+		//noinspection ConstantConditions
 		return Scannable.from(processor).inners().count();
 	}
 

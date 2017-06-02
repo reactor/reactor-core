@@ -26,7 +26,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-
+import javax.annotation.Nullable;
 
 /**
  * Given a Mono source, applies a function on its single item and continues
@@ -87,6 +87,7 @@ final class MonoFlatMap<T, R> extends MonoSource<T, R> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
@@ -203,6 +204,7 @@ final class MonoFlatMap<T, R> extends MonoSource<T, R> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == ScannableAttr.ACTUAL) return parent;

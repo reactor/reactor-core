@@ -18,6 +18,7 @@ package reactor.test;
 import java.util.function.Supplier;
 
 import reactor.test.scheduler.VirtualTimeScheduler;
+import javax.annotation.Nullable;
 
 /**
  * Options for a {@link StepVerifier}, including the initial request amount,
@@ -98,6 +99,7 @@ public class StepVerifierOptions {
 	 * {@link StepVerifier} receiving these options.
 	 *
 	 */
+	@Nullable
 	public Supplier<? extends VirtualTimeScheduler> getVirtualTimeSchedulerSupplier() {
 		return vtsLookup;
 	}

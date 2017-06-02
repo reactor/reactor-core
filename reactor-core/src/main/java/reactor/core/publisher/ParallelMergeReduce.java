@@ -25,7 +25,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-
+import javax.annotation.Nullable;
 
 /**
  * Reduces all 'rails' into a single value which then gets reduced into a single
@@ -46,6 +46,7 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == ScannableAttr.PARENT) return source;
 
@@ -107,12 +108,14 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ThrowableAttr.ERROR) return error;
 
 			return super.scanUnsafe(key);
 		}
 
+		@Nullable
 		SlotPair<T> addValue(T value) {
 			for (; ; ) {
 				SlotPair<T> curr = current;
@@ -161,7 +164,7 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 			}
 		}
 
-		void innerComplete(T value) {
+		void innerComplete(@Nullable T value) {
 			if (value != null) {
 				for (; ; ) {
 					SlotPair<T> sp = addValue(value);
@@ -222,6 +225,7 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
 			if (key == ScannableAttr.PARENT) return s;

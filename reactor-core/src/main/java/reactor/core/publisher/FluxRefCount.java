@@ -25,7 +25,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-
+import javax.annotation.Nullable;
 
 /**
  * Connects to the underlying Flux once the given number of Subscribers subscribed
@@ -80,6 +80,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == IntAttr.PREFETCH) return getPrefetch();
 		if (key == ScannableAttr.PARENT) return source;
@@ -155,12 +156,13 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 			this.parent = parent;
 		}
 
-			@Override
-			public Object scanUnsafe(Attr key) {
-				if(key== ScannableAttr. PARENT) return s;
+		@Override
+		@Nullable
+		public Object scanUnsafe(Attr key) {
+			if(key== ScannableAttr. PARENT) return s;
 
-				return InnerOperator.super.scanUnsafe(key);
-			}
+			return InnerOperator.super.scanUnsafe(key);
+		}
 
 		@Override
 		public void onSubscribe(Subscription s) {
@@ -214,6 +216,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			return qs.poll();
 		}

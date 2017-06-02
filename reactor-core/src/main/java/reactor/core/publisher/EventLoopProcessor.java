@@ -35,6 +35,7 @@ import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.WaitStrategy;
+import javax.annotation.Nullable;
 
 /**
  * A base processor used by executor backed processors to take care of their ExecutorService
@@ -44,7 +45,9 @@ import reactor.util.concurrent.WaitStrategy;
 abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		implements Runnable {
 
-	static <E> Flux<E> coldSource(RingBuffer<Slot<E>> ringBuffer, Throwable t, Throwable error,
+	static <E> Flux<E> coldSource(RingBuffer<Slot<E>> ringBuffer,
+			@Nullable Throwable t,
+			@Nullable Throwable error,
 			RingBuffer.Sequence start){
 		Flux<E> bufferIterable = generate(start::getAsLong, (seq, sink) -> {
 			long s = seq + 1;
@@ -87,7 +90,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	 */
 	static Runnable createRequestTask(Subscription upstream,
 			Runnable stopCondition,
-			Consumer<Long> postWaitCallback,
+			@Nullable Consumer<Long> postWaitCallback,
 			LongSupplier readCount,
 			WaitStrategy waitStrategy,
 			Subscriber<?> errorSubscriber,
@@ -229,8 +232,8 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 
 	EventLoopProcessor(
 			int bufferSize,
-			ThreadFactory threadFactory,
-			ExecutorService executor,
+			@Nullable ThreadFactory threadFactory,
+			@Nullable ExecutorService executor,
 			boolean autoCancel,
 			boolean multiproducers,
 			Supplier<Slot<IN>> factory,
@@ -280,6 +283,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	public abstract long getPending();
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == ScannableAttr.PARENT) return upstreamSubscription;
 
@@ -295,7 +299,8 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	 * @param clazz
 	 * @return the name to use in thread pools
 	 */
-	protected static String defaultName(ThreadFactory threadFactory, Class<? extends EventLoopProcessor> clazz) {
+	protected static String defaultName(@Nullable ThreadFactory threadFactory,
+			Class<? extends EventLoopProcessor> clazz) {
 		String name = threadFactory instanceof Supplier ? ((Supplier)
 				threadFactory).get().toString() : null;
 		return null != name ? name : clazz.getSimpleName();
@@ -383,6 +388,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	}
 
 	@Override
+	@Nullable
 	final public Throwable getError() {
 		return error;
 	}
@@ -521,7 +527,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 
 		 RequestTask(Subscription upstream,
 				Runnable stopCondition,
-				Consumer<Long> postWaitCallback,
+				 @Nullable Consumer<Long> postWaitCallback,
 				LongSupplier readCount,
 				WaitStrategy waitStrategy,
 				Subscriber<?> errorSubscriber,

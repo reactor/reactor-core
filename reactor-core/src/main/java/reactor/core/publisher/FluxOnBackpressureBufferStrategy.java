@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
+import javax.annotation.Nullable;
 
 /**
  * Buffers values if the subscriber doesn't request fast enough, bounding the
@@ -42,7 +43,7 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 
 	FluxOnBackpressureBufferStrategy(Flux<? extends O> source,
 			int bufferSize,
-			Consumer<? super O> onBufferOverflow,
+			@Nullable Consumer<? super O> onBufferOverflow,
 			BufferOverflowStrategy bufferOverflowStrategy) {
 		super(source);
 		this.bufferSize = bufferSize;
@@ -90,10 +91,11 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 				AtomicLongFieldUpdater.newUpdater(BackpressureBufferDropOldestSubscriber.class,
 						"requested");
 
-		BackpressureBufferDropOldestSubscriber(Subscriber<? super T> actual,
+		BackpressureBufferDropOldestSubscriber(
+				Subscriber<? super T> actual,
 				int bufferSize,
 				boolean delayError,
-				Consumer<? super T> onOverflow,
+				@Nullable Consumer<? super T> onOverflow,
 				BufferOverflowStrategy overflowStrategy) {
 			this.actual = actual;
 			this.delayError = delayError;
@@ -103,6 +105,7 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
@@ -207,7 +210,7 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 
 			for (; ; ) {
 				Subscriber<? super T> a = actual;
-				if (a != null) {
+				if (a != null) { //TODO investigate null (can actual be null?)
 					innerDrain(a);
 					return;
 				}

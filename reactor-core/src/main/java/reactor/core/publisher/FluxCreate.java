@@ -31,8 +31,7 @@ import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
 import reactor.util.concurrent.QueueSupplier;
-
-
+import javax.annotation.Nullable;
 
 /**
  * Provides a multi-valued sink API for a callback that is called for
@@ -129,6 +128,7 @@ final class FluxCreate<T> extends Flux<T> {
 			if (sink.isCancelled() || done) {
 				return this;
 			}
+			//noinspection ConstantConditions
 			if (t == null) {
 				throw new NullPointerException("t is null in sink.next(t)");
 			}
@@ -157,6 +157,7 @@ final class FluxCreate<T> extends Flux<T> {
 				Operators.onErrorDropped(t);
 				return;
 			}
+			//noinspection ConstantConditions
 			if (t == null) {
 				throw new NullPointerException("t is null in sink.error(t)");
 			}
@@ -198,6 +199,7 @@ final class FluxCreate<T> extends Flux<T> {
 
 					if (ERROR.get(this) != null) {
 						q.clear();
+						//noinspection ConstantConditions
 						e.error(Exceptions.terminate(ERROR, this));
 						return;
 					}
@@ -264,6 +266,7 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == IntAttr.BUFFERED) return queue.size();
 			if (key == ThrowableAttr.ERROR) return error;
@@ -396,7 +399,7 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 
 		@Override
-		public final FluxSink<T> onCancel(Disposable d) {
+		public final FluxSink<T> onCancel(@Nullable Disposable d) {
 			if (d != null) {
 				SinkDisposable sd = new SinkDisposable(null, d);
 				if (!DISPOSABLE.compareAndSet(this, null, sd)) {
@@ -414,7 +417,7 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 
 		@Override
-		public final FluxSink<T> onDispose(Disposable d) {
+		public final FluxSink<T> onDispose(@Nullable Disposable d) {
 			if (d != null) {
 				SinkDisposable sd = new SinkDisposable(d, null);
 				if (!DISPOSABLE.compareAndSet(this, null, sd)) {
@@ -432,6 +435,7 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED || key == BooleanAttr.CANCELLED) {
 				return Disposables.isDisposed(disposable);
@@ -645,6 +649,7 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == IntAttr.BUFFERED) return queue.size();
 			if (key == BooleanAttr.TERMINATED) return done;
@@ -782,6 +787,7 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == IntAttr.BUFFERED) return queue.get() == null ? 0 : 1;
 			if (key == BooleanAttr.TERMINATED) return done;
@@ -797,7 +803,7 @@ final class FluxCreate<T> extends Flux<T> {
 
 		Disposable disposable;
 
-		SinkDisposable(Disposable disposable, Disposable onCancel) {
+		SinkDisposable(@Nullable Disposable disposable, @Nullable Disposable onCancel) {
 			this.disposable = disposable;
 			this.onCancel = onCancel;
 		}

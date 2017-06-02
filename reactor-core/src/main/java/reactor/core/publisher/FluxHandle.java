@@ -21,6 +21,7 @@ import java.util.function.BiConsumer;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import javax.annotation.Nullable;
 
 /**
  * Maps the values of the source publisher one-on-one via a handler function as long as the handler function result is
@@ -110,7 +111,7 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
-		public boolean tryOnNext(T t) {
+		public boolean tryOnNext(@Nullable T t) {
 			if (done) {
 				Operators.onNextDropped(t);
 				return false;
@@ -183,6 +184,7 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return done;
@@ -266,7 +268,7 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
-		public boolean tryOnNext(T t) {
+		public boolean tryOnNext(@Nullable T t) {
 			if (done) {
 				Operators.onNextDropped(t);
 				return false;
@@ -355,6 +357,7 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return done;

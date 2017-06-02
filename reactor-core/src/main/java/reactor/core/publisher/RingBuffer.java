@@ -29,6 +29,7 @@ import java.util.function.Supplier;
 
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.WaitStrategy;
+import javax.annotation.Nullable;
 import sun.misc.Unsafe;
 
 import static java.util.Arrays.copyOf;
@@ -158,7 +159,7 @@ abstract class RingBuffer<E> implements LongSupplier {
 	static <E> RingBuffer<E> createSingleProducer(Supplier<E> factory,
 			int bufferSize,
 			WaitStrategy waitStrategy,
-			Runnable spinObserver) {
+			@Nullable Runnable spinObserver) {
 		SingleProducerSequencer sequencer = new SingleProducerSequencer(bufferSize, waitStrategy, spinObserver);
 
 		if (hasUnsafe() && QueueSupplier.isPowerOfTwo(bufferSize)) {
@@ -195,7 +196,7 @@ abstract class RingBuffer<E> implements LongSupplier {
 	 *
 	 * @return the minimum sequence found or Long.MAX_VALUE if the array is empty.
 	 */
-	static long getMinimumSequence(Sequence excludeSequence, final Sequence[] sequences, long minimum) {
+	static long getMinimumSequence(@Nullable Sequence excludeSequence, final Sequence[] sequences, long minimum) {
 		for (int i = 0, n = sequences.length; i < n; i++) {
 			if (excludeSequence == null || sequences[i] != excludeSequence) {
 				long value = sequences[i].getAsLong();
@@ -572,7 +573,7 @@ abstract class RingBufferProducer {
 	 * @param waitStrategy The {@link WaitStrategy} to use.
 	 * @param spinObserver an iteration observer
 	 */
-	RingBufferProducer(int bufferSize, WaitStrategy waitStrategy, Runnable spinObserver) {
+	RingBufferProducer(int bufferSize, WaitStrategy waitStrategy, @Nullable Runnable spinObserver) {
 		this.spinObserver = spinObserver;
 		this.bufferSize = bufferSize;
 		this.waitStrategy = waitStrategy;
@@ -624,7 +625,7 @@ abstract class RingBufferProducer {
 	 * @return The minimum gating sequence or the cursor sequence if
 	 * no sequences have been added.
 	 */
-	long getMinimumSequence(RingBuffer.Sequence excludeSequence) {
+	long getMinimumSequence(@Nullable RingBuffer.Sequence excludeSequence) {
 		return RingBuffer.getMinimumSequence(excludeSequence, gatingSequences, cursor.getAsLong());
 	}
 
@@ -702,7 +703,7 @@ abstract class RingBufferProducer {
 abstract class SingleProducerSequencerPad extends RingBufferProducer
 {
 	protected long p1, p2, p3, p4, p5, p6, p7;
-	SingleProducerSequencerPad(int bufferSize, WaitStrategy waitStrategy, Runnable spinObserver)
+	SingleProducerSequencerPad(int bufferSize, WaitStrategy waitStrategy, @Nullable Runnable spinObserver)
 	{
 		super(bufferSize, waitStrategy, spinObserver);
 	}
@@ -710,7 +711,7 @@ abstract class SingleProducerSequencerPad extends RingBufferProducer
 
 abstract class SingleProducerSequencerFields extends SingleProducerSequencerPad
 {
-	SingleProducerSequencerFields(int bufferSize, WaitStrategy waitStrategy, Runnable spinObserver)
+	SingleProducerSequencerFields(int bufferSize, WaitStrategy waitStrategy, @Nullable Runnable spinObserver)
 	{
 		super(bufferSize, waitStrategy, spinObserver);
 	}
@@ -738,7 +739,7 @@ final class SingleProducerSequencer extends SingleProducerSequencerFields {
 	 * @param waitStrategy for those waiting on sequences.
 	 * @param spinObserver the runnable to call on a spin-wait
 	 */
-	SingleProducerSequencer(int bufferSize, final WaitStrategy waitStrategy, Runnable spinObserver) {
+	SingleProducerSequencer(int bufferSize, final WaitStrategy waitStrategy, @Nullable Runnable spinObserver) {
 		super(bufferSize, waitStrategy, spinObserver);
 	}
 
@@ -891,7 +892,7 @@ final class NotFunRingBuffer<E> extends NotFunRingBufferFields<E>
 	}
 
 	@Override
-	long getMinimumGatingSequence(Sequence sequence)
+	long getMinimumGatingSequence(@Nullable Sequence sequence)
 	{
 		return sequenceProducer.getMinimumSequence(sequence);
 	}
@@ -1079,7 +1080,7 @@ final class UnsafeRingBuffer<E> extends RingBufferFields<E>
 	}
 
 	@Override
-	long getMinimumGatingSequence(Sequence sequence)
+	long getMinimumGatingSequence(@Nullable Sequence sequence)
 	{
 		return sequenceProducer.getMinimumSequence(sequence);
 	}

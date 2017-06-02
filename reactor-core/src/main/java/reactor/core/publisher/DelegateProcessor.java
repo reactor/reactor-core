@@ -23,6 +23,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import javax.annotation.Nullable;
 
 /**
  * @author Stephane Maldini
@@ -60,6 +61,7 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT>  {
 
 	@Override
 	public void subscribe(Subscriber<? super OUT> s) {
+		//noinspection ConstantConditions
 		if (s == null) {
 			throw Exceptions.argumentIsNullException();
 		}
@@ -76,33 +78,40 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT>  {
 
 	@Override
 	public Stream<? extends Scannable> inners() {
+		//noinspection ConstantConditions
 		return Scannable.from(upstream)
 		                .inners();
 	}
 
 	@Override
 	public int getBufferSize() {
+		//noinspection ConstantConditions
 		return Scannable.from(upstream)
 		                .scanOrDefault(IntAttr.CAPACITY, super.getBufferSize());
 	}
 
 	@Override
+	@Nullable
 	public Throwable getError() {
+		//noinspection ConstantConditions
 		return Scannable.from(upstream)
 		                .scanOrDefault(ThrowableAttr.ERROR, super.getError());
 	}
 
 	@Override
 	public boolean isTerminated() {
+		//noinspection ConstantConditions
 		return Scannable.from(upstream)
 		                .scanOrDefault(BooleanAttr.TERMINATED, super.isTerminated());
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == ScannableAttr.PARENT) {
 			return downstream;
 		}
+		//noinspection ConstantConditions
 		return Scannable.from(upstream)
 		                .scanUnsafe(key);
 	}

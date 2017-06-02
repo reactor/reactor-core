@@ -23,7 +23,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
-
+import javax.annotation.Nullable;
 
 /**
  * Connects to the underlying Flux once the given amount of Subscribers
@@ -69,6 +69,7 @@ final class FluxAutoConnect<T> extends Flux<T>
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == IntAttr.PREFETCH) return getPrefetch();
 		if (key == ScannableAttr.PARENT) return source;

@@ -26,6 +26,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
+import javax.annotation.Nullable;
 
 /**
  * Buffers elements into custom collections where the buffer boundary is signalled
@@ -122,6 +123,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
@@ -242,6 +244,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 			}
 			Operators.onErrorDropped(t);
 		}
+
 		void otherNext() {
 			C c;
 
@@ -302,6 +305,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.ACTUAL) {
 				return main;

@@ -20,4 +20,7 @@
  *
  * @author Stephane Maldini
  */
+@NonNullApi
 package reactor.core.scheduler;
+
+import reactor.util.lang.NonNullApi;

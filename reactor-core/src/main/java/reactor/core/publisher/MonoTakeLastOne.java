@@ -21,6 +21,7 @@ import java.util.Objects;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import javax.annotation.Nullable;
 
 /**
  * Take the very last value from a Publisher source and and emit that one.
@@ -54,7 +55,7 @@ final class MonoTakeLastOne<T> extends MonoSource<T, T> implements Fuseable {
 		Subscription s;
 
 		TakeLastOneSubscriber(Subscriber<? super T> actual,
-				T defaultValue,
+				@Nullable T defaultValue,
 				boolean mustEmit) {
 			super(actual);
 			this.defaultValue = defaultValue;
@@ -74,6 +75,7 @@ final class MonoTakeLastOne<T> extends MonoSource<T, T> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 

@@ -24,6 +24,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import javax.annotation.Nullable;
 
 /**
  * Dispatches onNext, onError and onComplete signals to zero-to-many Subscribers.
@@ -115,6 +116,7 @@ public final class DirectProcessor<T>
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
+		//noinspection ConstantConditions
 		if (s == null) {
 			throw Exceptions.argumentIsNullException();
 		}
@@ -237,6 +239,7 @@ public final class DirectProcessor<T>
 	}
 
 	@Override
+	@Nullable
 	public Throwable getError() {
 		if (subscribers == TERMINATED) {
 			return error;
@@ -278,6 +281,7 @@ public final class DirectProcessor<T>
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return parent;
 			if (key == BooleanAttr.CANCELLED) return cancelled;

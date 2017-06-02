@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
-
+import javax.annotation.Nullable;
 
 /**
  * Emits the contents of an Iterable source.
@@ -62,6 +62,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 	 */
 	@SuppressWarnings("unchecked")
 	static <T> void subscribe(Subscriber<? super T> s, Iterator<? extends T> it) {
+		//noinspection ConstantConditions
 		if (it == null) {
 			Operators.error(s, new NullPointerException("The iterator is null"));
 			return;
@@ -274,6 +275,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.CANCELLED) return cancelled;
 			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
@@ -305,6 +307,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			if (!isEmpty()) {
 				T c;
@@ -519,6 +522,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.CANCELLED) return cancelled;
 			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
@@ -550,6 +554,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			if (!isEmpty()) {
 				T c;

@@ -28,6 +28,7 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.util.concurrent.QueueSupplier;
+import javax.annotation.Nullable;
 
 /**
  * A Processor implementation that takes a custom queue and allows
@@ -70,7 +71,7 @@ public final class UnicastProcessor<T>
 		 * @param queue the buffering queue
 		 * @return builder with provided queue
 		 */
-		public Builder<T> queue(Queue<T> queue) {
+		public Builder<T> queue(@Nullable Queue<T> queue) {
 			this.queue = queue;
 			return this;
 		}
@@ -430,6 +431,7 @@ public final class UnicastProcessor<T>
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
+		//noinspection ConstantConditions
 		if (s == null) {
 			throw Exceptions.argumentIsNullException();
 		}
@@ -473,6 +475,7 @@ public final class UnicastProcessor<T>
 	}
 
 	@Override
+	@Nullable
 	public T poll() {
 		return queue.poll();
 	}
@@ -512,6 +515,7 @@ public final class UnicastProcessor<T>
 	}
 
 	@Override
+	@Nullable
 	public Throwable getError() {
 		return error;
 	}

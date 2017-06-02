@@ -63,6 +63,7 @@ import reactor.util.function.Tuple4;
 import reactor.util.function.Tuple5;
 import reactor.util.function.Tuple6;
 import reactor.util.function.Tuples;
+import javax.annotation.Nullable;
 
 /**
  * A Reactive Streams {@link Publisher} with rx operators that emits 0 to N elements, and then completes
@@ -1898,6 +1899,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return the first value or null
 	 */
+	@Nullable
 	public final T blockFirst() {
 		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>();
 		subscribe(subscriber);
@@ -1917,6 +1919,7 @@ public abstract class Flux<T> implements Publisher<T> {
  	 * @param timeout maximum time period to wait for before raising a {@link RuntimeException}
 	 * @return the first value or null
 	 */
+	@Nullable
 	public final T blockFirst(Duration timeout) {
 		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>();
 		subscribe(subscriber);
@@ -1935,6 +1938,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return the first value or null
 	 */
+	@Nullable
 	public final T blockLast() {
 		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>();
 		subscribe(subscriber);
@@ -1955,6 +1959,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timeout maximum time period to wait for before raising a {@link RuntimeException}
 	 * @return the first value or null
 	 */
+	@Nullable
 	public final T blockLast(Duration timeout) {
 		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>();
 		subscribe(subscriber);
@@ -2829,7 +2834,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Mono} of a sorted {@link List} of all values from this {@link Flux}
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public final Mono<List<T>> collectSortedList(Comparator<? super T> comparator) {
+	public final Mono<List<T>> collectSortedList(@Nullable Comparator<? super T> comparator) {
 		return collectList().map(list -> {
 			// Note: this assumes the list emitted by buffer() is mutable
 			if (comparator != null) {
@@ -4465,7 +4470,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} that logs signals
 	 */
-	public final Flux<T> log(String category, Level level, SignalType... options) {
+	public final Flux<T> log(@Nullable String category, Level level, SignalType... options) {
 		return log(category, level, false, options);
 	}
 
@@ -4492,7 +4497,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} that logs signals
 	 */
-	public final Flux<T> log(String category,
+	public final Flux<T> log(@Nullable String category,
 			Level level,
 			boolean showOperatorLine,
 			SignalType... options) {
@@ -4640,8 +4645,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a backpressured {@link Flux} that buffers with a bounded capacity
 	 *
 	 */
-	public final Flux<T> onBackpressureBuffer(int maxSize, Consumer<? super T>
-			onOverflow) {
+	public final Flux<T> onBackpressureBuffer(int maxSize, Consumer<? super T> onOverflow) {
 		Objects.requireNonNull(onOverflow, "onOverflow");
 		return onAssembly(new FluxOnBackpressureBuffer<>(this, maxSize, false, onOverflow));
 	}
@@ -6018,7 +6022,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
 	 */
-	public final Disposable subscribe(Consumer<? super T> consumer, Consumer<? super Throwable> errorConsumer) {
+	public final Disposable subscribe(@Nullable Consumer<? super T> consumer, Consumer<? super Throwable> errorConsumer) {
 		Objects.requireNonNull(errorConsumer, "errorConsumer");
 		return subscribe(consumer, errorConsumer, null);
 	}
@@ -6046,8 +6050,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
 	 */
-	public final Disposable subscribe(Consumer<? super T> consumer,
-			Consumer<? super Throwable> errorConsumer, Runnable completeConsumer) {
+	public final Disposable subscribe(
+			@Nullable Consumer<? super T> consumer,
+			@Nullable Consumer<? super Throwable> errorConsumer,
+			@Nullable Runnable completeConsumer) {
 		return subscribe(consumer, errorConsumer, completeConsumer, null);
 	}
 
@@ -6079,10 +6085,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
 	 */
-	public final Disposable subscribe(Consumer<? super T> consumer,
-			Consumer<? super Throwable> errorConsumer,
-			Runnable completeConsumer,
-			Consumer<? super Subscription> subscriptionConsumer) {
+	public final Disposable subscribe(
+			@Nullable Consumer<? super T> consumer,
+			@Nullable Consumer<? super Throwable> errorConsumer,
+			@Nullable Runnable completeConsumer,
+			@Nullable Consumer<? super Subscription> subscriptionConsumer) {
 		LambdaSubscriber<T> consumerAction = new LambdaSubscriber<>(consumer,
 				errorConsumer, completeConsumer, subscriptionConsumer);
 
@@ -6430,7 +6437,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} that will fallback to a different {@link Publisher} in case of a per-item timeout
 	 */
-	public final Flux<T> timeout(Duration timeout, Publisher<? extends T> fallback) {
+	public final Flux<T> timeout(Duration timeout, @Nullable Publisher<? extends T> fallback) {
 		return timeout(timeout, fallback, Schedulers.parallel());
 	}
 
@@ -6467,7 +6474,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} that will fallback to a different {@link Publisher} in case of a per-item timeout
 	 */
-	public final Flux<T> timeout(Duration timeout, Publisher<? extends T> fallback, Scheduler timer) {
+	public final Flux<T> timeout(Duration timeout,
+			@Nullable Publisher<? extends T> fallback,
+			Scheduler timer) {
 		final Mono<Long> _timer = Mono.delay(timeout, timer).onErrorReturn(0L);
 		final Function<T, Publisher<Long>> rest = o -> _timer;
 
@@ -6621,7 +6630,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a blocking {@link Iterable}
 	 */
-	public final Iterable<T> toIterable(long batchSize, Supplier<Queue<T>> queueProvider) {
+	public final Iterable<T> toIterable(long batchSize, @Nullable Supplier<Queue<T>> queueProvider) {
 		final Supplier<Queue<T>> provider;
 		if(queueProvider == null){
 			provider = QueueSupplier.get((int)Math.min(Integer.MAX_VALUE, batchSize));
@@ -7277,13 +7286,13 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	@SuppressWarnings("unchecked")
 	static <T> Flux<T> doOnSignal(Flux<T> source,
-			Consumer<? super Subscription> onSubscribe,
-			Consumer<? super T> onNext,
-			Consumer<? super Throwable> onError,
-			Runnable onComplete,
-			Runnable onAfterTerminate,
-			LongConsumer onRequest,
-			Runnable onCancel) {
+			@Nullable Consumer<? super Subscription> onSubscribe,
+			@Nullable Consumer<? super T> onNext,
+			@Nullable Consumer<? super Throwable> onError,
+			@Nullable Runnable onComplete,
+			@Nullable Runnable onAfterTerminate,
+			@Nullable LongConsumer onRequest,
+			@Nullable Runnable onCancel) {
 		if (source instanceof Fuseable) {
 			return onAssembly(new FluxPeekFuseable<>(source,
 					onSubscribe,
@@ -7310,13 +7319,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	static <T,S> Flux<T> doOnSignalStateful(Flux<T> source,
 			Supplier<S> stateSeeder,
-			BiConsumer<? super Subscription, S> onSubscribe,
-			BiConsumer<? super T, S> onNext,
-			BiConsumer<? super Throwable, S> onError,
-			Consumer<S> onComplete,
-			Consumer<S> onAfterTerminate,
-			BiConsumer<Long, S> onRequest,
-			Consumer<S> onCancel) {
+			@Nullable BiConsumer<? super Subscription, S> onSubscribe,
+			@Nullable BiConsumer<? super T, S> onNext,
+			@Nullable BiConsumer<? super Throwable, S> onError,
+			@Nullable Consumer<S> onComplete,
+			@Nullable Consumer<S> onAfterTerminate,
+			@Nullable BiConsumer<Long, S> onRequest,
+			@Nullable Consumer<S> onCancel) {
 		//TODO Fuseable version?
 		return onAssembly(new FluxPeekStateful<>(source,
 				stateSeeder,

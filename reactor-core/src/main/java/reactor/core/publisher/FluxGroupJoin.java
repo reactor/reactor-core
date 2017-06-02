@@ -36,8 +36,7 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.concurrent.OpenHashSet;
-
-
+import javax.annotation.Nullable;
 
 /**
  * A Publisher that correlates two Publishers when they overlap in time and groups the
@@ -220,6 +219,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == BooleanAttr.CANCELLED) return cancelled;
@@ -547,6 +547,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return subscription;
 			if (key == ScannableAttr.ACTUAL ) return parent;
@@ -621,6 +622,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return subscription;
 			if (key == BooleanAttr.CANCELLED) return isDisposed();

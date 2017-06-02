@@ -22,6 +22,7 @@ import java.util.function.Predicate;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import javax.annotation.Nullable;
 
 /**
  * Filters out values that make a filter function return false.
@@ -109,7 +110,7 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T> implements Fuseable {
 		}
 
 		@Override
-		public boolean tryOnNext(T t) {
+		public boolean tryOnNext(@Nullable T t) {
 			if (done) {
 				Operators.onNextDropped(t);
 				return false;
@@ -151,6 +152,7 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return done;
@@ -174,6 +176,7 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			if (sourceMode == ASYNC) {
 				long dropped = 0;
@@ -288,7 +291,7 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T> implements Fuseable {
 		}
 
 		@Override
-		public boolean tryOnNext(T t) {
+		public boolean tryOnNext(@Nullable T t) {
 			if (done) {
 				Operators.onNextDropped(t);
 				return false;
@@ -326,6 +329,7 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return done;
@@ -349,6 +353,7 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			if (sourceMode == ASYNC) {
 				long dropped = 0;

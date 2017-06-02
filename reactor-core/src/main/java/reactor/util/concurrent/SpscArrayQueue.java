@@ -21,6 +21,8 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.atomic.*;
 
+import javax.annotation.Nullable;
+
 /**
  * A bounded, array backed, single-producer single-consumer queue.
  * 
@@ -55,6 +57,7 @@ final class SpscArrayQueue<T> extends SpscArrayQueueP3<T> implements Queue<T> {
 	}
 	
 	@Override
+	@Nullable
 	public T poll() {
 		long ci = consumerIndex;
 		int offset = (int)ci & mask;
@@ -68,6 +71,7 @@ final class SpscArrayQueue<T> extends SpscArrayQueueP3<T> implements Queue<T> {
 	}
 	
 	@Override
+	@Nullable
 	public T peek() {
 		int offset = (int)consumerIndex & mask;
 		return get(offset);

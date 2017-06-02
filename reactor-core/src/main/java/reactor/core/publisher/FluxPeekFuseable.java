@@ -23,8 +23,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-
-
+import javax.annotation.Nullable;
 
 /**
  * Peek into the lifecycle events and signals of a sequence.
@@ -57,13 +56,13 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 	final Runnable onCancelCall;
 
 	FluxPeekFuseable(Flux<? extends T> source,
-			Consumer<? super Subscription> onSubscribeCall,
-			Consumer<? super T> onNextCall,
-			Consumer<? super Throwable> onErrorCall,
-			Runnable onCompleteCall,
-			Runnable onAfterTerminateCall,
-			LongConsumer onRequestCall,
-			Runnable onCancelCall) {
+			@Nullable Consumer<? super Subscription> onSubscribeCall,
+			@Nullable Consumer<? super T> onNextCall,
+			@Nullable Consumer<? super Throwable> onErrorCall,
+			@Nullable Runnable onCompleteCall,
+			@Nullable Runnable onAfterTerminateCall,
+			@Nullable LongConsumer onRequestCall,
+			@Nullable Runnable onCancelCall) {
 		super(source);
 
 		this.onSubscribeCall = onSubscribeCall;
@@ -100,6 +99,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 		volatile boolean done;
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return done;
@@ -117,6 +117,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 		public void request(long n) {
 			if (parent.onRequestCall() != null) {
 				try {
+					//noinspection ConstantConditions
 					parent.onRequestCall()
 					      .accept(n);
 				}
@@ -132,6 +133,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 		public void cancel() {
 			if (parent.onCancelCall() != null) {
 				try {
+					//noinspection ConstantConditions
 					parent.onCancelCall()
 					      .run();
 				}
@@ -149,8 +151,8 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 			if(Operators.validate(this.s, s)) {
 				if (parent.onSubscribeCall() != null) {
 					try {
-						parent.onSubscribeCall()
-						      .accept(s);
+						//noinspection ConstantConditions
+						parent.onSubscribeCall().accept(s);
 					}
 					catch (Throwable e) {
 						Operators.error(actual, Operators.onOperatorError(s, e));
@@ -174,6 +176,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 				}
 				if (parent.onNextCall() != null) {
 					try {
+						//noinspection ConstantConditions
 						parent.onNextCall()
 						      .accept(t);
 					}
@@ -196,6 +199,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 			if (parent.onErrorCall() != null) {
 				Exceptions.throwIfFatal(t);
 				try {
+					//noinspection ConstantConditions
 					parent.onErrorCall().accept(t);
 				}
 				catch (Throwable e) {
@@ -216,6 +220,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 
 			if (parent.onAfterTerminateCall() != null) {
 				try {
+					//noinspection ConstantConditions
 					parent.onAfterTerminateCall()
 					      .run();
 				}
@@ -238,6 +243,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 			else {
 				if (parent.onCompleteCall() != null) {
 					try {
+						//noinspection ConstantConditions
 						parent.onCompleteCall()
 						      .run();
 					}
@@ -252,6 +258,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 
 				if (parent.onAfterTerminateCall() != null) {
 					try {
+						//noinspection ConstantConditions
 						parent.onAfterTerminateCall()
 						      .run();
 					}
@@ -268,11 +275,13 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			boolean d = done;
 			T v = s.poll();
 			if (v != null && parent.onNextCall() != null) {
 				try {
+					//noinspection ConstantConditions
 					parent.onNextCall()
 					      .accept(v);
 				}
@@ -343,6 +352,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return done;
@@ -354,6 +364,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 		public void request(long n) {
 			if (parent.onRequestCall() != null) {
 				try {
+					//noinspection ConstantConditions
 					parent.onRequestCall()
 					      .accept(n);
 				}
@@ -369,6 +380,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 		public void cancel() {
 			if (parent.onCancelCall() != null) {
 				try {
+					//noinspection ConstantConditions
 					parent.onCancelCall()
 					      .run();
 				}
@@ -386,6 +398,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 			if(Operators.validate(this.s, s)) {
 				if (parent.onSubscribeCall() != null) {
 					try {
+						//noinspection ConstantConditions
 						parent.onSubscribeCall()
 						      .accept(s);
 					}
@@ -411,6 +424,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 				}
 				if (parent.onNextCall() != null) {
 					try {
+						//noinspection ConstantConditions
 						parent.onNextCall()
 						      .accept(t);
 					}
@@ -432,6 +446,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 
 			if (parent.onNextCall() != null) {
 				try {
+					//noinspection ConstantConditions
 					parent.onNextCall()
 					      .accept(t);
 				}
@@ -453,6 +468,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 			if (parent.onErrorCall() != null) {
 				Exceptions.throwIfFatal(t);
 				try {
+					//noinspection ConstantConditions
 					parent.onErrorCall().accept(t);
 				}
 				catch (Throwable e) {
@@ -473,6 +489,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 
 			if (parent.onAfterTerminateCall() != null) {
 				try {
+					//noinspection ConstantConditions
 					parent.onAfterTerminateCall().run();
 				}
 				catch (Throwable e) {
@@ -494,6 +511,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 			else {
 				if (parent.onCompleteCall() != null) {
 					try {
+						//noinspection ConstantConditions
 						parent.onCompleteCall()
 						      .run();
 					}
@@ -507,6 +525,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 
 				if (parent.onAfterTerminateCall() != null) {
 					try {
+						//noinspection ConstantConditions
 						parent.onAfterTerminateCall()
 						      .run();
 					}
@@ -523,11 +542,13 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			boolean d = done;
 			T v = s.poll();
 			if (v != null && parent.onNextCall() != null) {
 				try {
+					//noinspection ConstantConditions
 					parent.onNextCall()
 					      .accept(v);
 				}
@@ -578,36 +599,43 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 	}
 
 	@Override
+	@Nullable
 	public Consumer<? super Subscription> onSubscribeCall() {
 		return onSubscribeCall;
 	}
 
 	@Override
+	@Nullable
 	public Consumer<? super T> onNextCall() {
 		return onNextCall;
 	}
 
 	@Override
+	@Nullable
 	public Consumer<? super Throwable> onErrorCall() {
 		return onErrorCall;
 	}
 
 	@Override
+	@Nullable
 	public Runnable onCompleteCall() {
 		return onCompleteCall;
 	}
 
 	@Override
+	@Nullable
 	public Runnable onAfterTerminateCall() {
 		return onAfterTerminateCall;
 	}
 
 	@Override
+	@Nullable
 	public LongConsumer onRequestCall() {
 		return onRequestCall;
 	}
 
 	@Override
+	@Nullable
 	public Runnable onCancelCall() {
 		return onCancelCall;
 	}
@@ -633,6 +661,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 		public void request(long n) {
 			if (parent.onRequestCall() != null) {
 				try {
+					//noinspection ConstantConditions
 					parent.onRequestCall()
 					      .accept(n);
 				}
@@ -648,6 +677,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 		public void cancel() {
 			if (parent.onCancelCall() != null) {
 				try {
+					//noinspection ConstantConditions
 					parent.onCancelCall()
 					      .run();
 				}
@@ -664,6 +694,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 			if(Operators.validate(this.s, s)) {
 				if (parent.onSubscribeCall() != null) {
 					try {
+						//noinspection ConstantConditions
 						parent.onSubscribeCall()
 						      .accept(s);
 					}
@@ -678,6 +709,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return done;
@@ -693,6 +725,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 			}
 			if (parent.onNextCall() != null) {
 				try {
+					//noinspection ConstantConditions
 					parent.onNextCall()
 					      .accept(t);
 				}
@@ -705,7 +738,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 		}
 
 		@Override
-		public boolean tryOnNext(T t) {
+		public boolean tryOnNext(@Nullable T t) {
 			if (done) {
 				Operators.onNextDropped(t);
 				return false;
@@ -713,6 +746,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 
 			if (parent.onNextCall() != null) {
 				try {
+					//noinspection ConstantConditions
 					parent.onNextCall()
 					      .accept(t);
 				}
@@ -734,6 +768,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 			if (parent.onErrorCall() != null) {
 				Exceptions.throwIfFatal(t);
 				try {
+					//noinspection ConstantConditions
 					parent.onErrorCall().accept(t);
 				}
 				catch (Throwable e) {
@@ -754,6 +789,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 
 			if (parent.onAfterTerminateCall() != null) {
 				try {
+					//noinspection ConstantConditions
 					parent.onAfterTerminateCall()
 					      .run();
 				}
@@ -770,6 +806,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 			}
 			if (parent.onCompleteCall() != null) {
 				try {
+					//noinspection ConstantConditions
 					parent.onCompleteCall()
 					      .run();
 				}
@@ -784,6 +821,7 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 
 			if (parent.onAfterTerminateCall() != null) {
 				try {
+					//noinspection ConstantConditions
 					parent.onAfterTerminateCall()
 					      .run();
 				}

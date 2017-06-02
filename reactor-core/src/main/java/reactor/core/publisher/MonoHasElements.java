@@ -20,6 +20,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import javax.annotation.Nullable;
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
@@ -48,6 +49,7 @@ final class MonoHasElements<T> extends MonoSource<T, Boolean> implements Fuseabl
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 
@@ -93,6 +95,7 @@ final class MonoHasElements<T> extends MonoSource<T, Boolean> implements Fuseabl
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) {
 				return s;

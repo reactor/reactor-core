@@ -22,6 +22,7 @@ import java.util.function.Consumer;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import javax.annotation.Nullable;
 
 /**
  * Drops values if the subscriber doesn't request fast enough.
@@ -159,6 +160,7 @@ final class FluxOnBackpressureDrop<T> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;

@@ -29,7 +29,7 @@ import reactor.core.Fuseable;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-
+import javax.annotation.Nullable;
 
 /**
  * A logging interceptor that intercepts all reactive calls and trace them.
@@ -66,7 +66,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	static final String LOG_TEMPLATE_FUSEABLE = "| {}({})";
 
 	SignalLogger(Publisher<IN> source,
-			String category,
+			@Nullable String category,
 			Level level,
 			boolean correlateStack,
 			SignalType... options) {
@@ -74,11 +74,11 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	}
 
 	SignalLogger(Publisher<IN> source,
-			String category,
+			@Nullable String category,
 			Level level,
 			boolean correlateStack,
 			Function<String, Logger> loggerSupplier,
-			SignalType... options) {
+			@Nullable SignalType... options) {
 
 		this.source = Objects.requireNonNull(source, "source");
 		this.id = IDS.getAndIncrement();
@@ -154,6 +154,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == ScannableAttr.PARENT) return source;
 
@@ -183,13 +184,15 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	}
 
 	@Override
+	@Nullable
 	public Consumer<? super Subscription> onSubscribeCall() {
 		if ((options & ON_SUBSCRIBE) == ON_SUBSCRIBE && (level != Level.INFO || log.isInfoEnabled())) {
 			return s -> log(SignalType.ON_SUBSCRIBE, subscriptionAsString(s), source);
 		}
 		return null;
 	}
-	String subscriptionAsString(Subscription s) {
+
+	String subscriptionAsString(@Nullable Subscription s) {
 		if (s == null) {
 			return "null subscription";
 		}
@@ -214,6 +217,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	}
 
 	@Override
+	@Nullable
 	public Consumer<? super IN> onNextCall() {
 		if ((options & ON_NEXT) == ON_NEXT && (level != Level.INFO || log.isInfoEnabled())) {
 			return d -> log(SignalType.ON_NEXT, d, source);
@@ -222,6 +226,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	}
 
 	@Override
+	@Nullable
 	public Consumer<? super Throwable> onErrorCall() {
 		if ((options & ON_ERROR) == ON_ERROR && log.isErrorEnabled()) {
 			String line = fuseable ? LOG_TEMPLATE_FUSEABLE : LOG_TEMPLATE;
@@ -238,6 +243,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	}
 
 	@Override
+	@Nullable
 	public Runnable onCompleteCall() {
 		if ((options & ON_COMPLETE) == ON_COMPLETE && (level != Level.INFO || log.isInfoEnabled())) {
 			return () -> log(SignalType.ON_COMPLETE, "", source);
@@ -246,6 +252,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	}
 
 	@Override
+	@Nullable
 	public Runnable onAfterTerminateCall() {
 		if ((options & AFTER_TERMINATE) == AFTER_TERMINATE && (level != Level.INFO || log.isInfoEnabled())) {
 			return () -> log(SignalType.AFTER_TERMINATE, "", source);
@@ -254,6 +261,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	}
 
 	@Override
+	@Nullable
 	public LongConsumer onRequestCall() {
 		if ((options & REQUEST) == REQUEST && (level != Level.INFO || log.isInfoEnabled())) {
 			return n -> log(SignalType.REQUEST,
@@ -264,6 +272,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	}
 
 	@Override
+	@Nullable
 	public Runnable onCancelCall() {
 		if ((options & CANCEL) == CANCEL && (level != Level.INFO || log.isInfoEnabled())) {
 			return () -> log(SignalType.CANCEL, "", source);

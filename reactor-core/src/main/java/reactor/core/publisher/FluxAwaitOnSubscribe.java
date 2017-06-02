@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import javax.annotation.Nullable;
 
 /**
  * Intercepts the onSubscribe call and makes sure calls to Subscription methods only
@@ -130,6 +131,7 @@ final class FluxAwaitOnSubscribe<T> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();

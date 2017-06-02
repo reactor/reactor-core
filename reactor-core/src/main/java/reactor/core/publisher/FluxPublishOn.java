@@ -29,6 +29,7 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
+import javax.annotation.Nullable;
 
 /**
  * Emits events on a different thread specified by a scheduler callback.
@@ -218,6 +219,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable {
 				}
 				return;
 			}
+
 			if (done) {
 				Operators.onNextDropped(t);
 				return;
@@ -282,6 +284,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable {
 			}
 		}
 
+		@Nullable
 		Disposable trySchedule() {
 			if (WIP.getAndIncrement(this) != 0) {
 				return null;
@@ -515,6 +518,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM ) return requested;
 			if (key == ScannableAttr.PARENT ) return s;
@@ -544,6 +548,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			T v = queue.poll();
 			if (v != null && sourceMode != SYNC) {
@@ -693,10 +698,11 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable {
 		public void onNext(T t) {
 			if (t == null) {//async fusion
 				if (trySchedule() == Scheduler.REJECTED) {
-					throw Operators.onRejectedExecution(this, null, t);
+					throw Operators.onRejectedExecution(this, null, null);
 				}
 				return;
 			}
+
 			if (done) {
 				Operators.onNextDropped(t);
 				return;
@@ -759,6 +765,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable {
 			}
 		}
 
+		@Nullable
 		Disposable trySchedule() {
 			if (WIP.getAndIncrement(this) != 0) {
 				return null;
@@ -944,6 +951,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == ScannableAttr.PARENT) return s;
@@ -1021,6 +1029,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			T v = queue.poll();
 			if (v != null && sourceMode != SYNC) {

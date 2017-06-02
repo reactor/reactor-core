@@ -27,6 +27,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler;
+import javax.annotation.Nullable;
 
 /**
  * @author Stephane Maldini
@@ -167,7 +168,7 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 			}
 		}
 
-		public void flushCallback(T ev) {
+		public void flushCallback(@Nullable T ev) { //TODO investigate ev not used
 			C v = values;
 			boolean flush = false;
 			synchronized (this) {
@@ -183,6 +184,7 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return subscription;
 			if (key == BooleanAttr.CANCELLED) return terminated == TERMINATED_WITH_CANCEL;

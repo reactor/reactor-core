@@ -28,7 +28,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-
+import javax.annotation.Nullable;
 
 /**
  * Maps each upstream value into a Publisher and concatenates them into one
@@ -175,6 +175,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return done;
@@ -507,6 +508,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return done;
@@ -756,7 +758,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 		long produced;
 
 		ConcatMapInner(FluxConcatMapSupport<R> parent) {
-			super(null);
+			super(null); //TODO investigate null
 			this.parent = parent;
 		}
 

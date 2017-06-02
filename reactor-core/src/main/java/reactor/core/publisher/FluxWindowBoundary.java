@@ -29,7 +29,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-
+import javax.annotation.Nullable;
 
 /**
  * Splits the source sequence into continuous, non-overlapping windowEnds
@@ -141,6 +141,7 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == ThrowableAttr.ERROR) return error;
@@ -380,6 +381,7 @@ final class FluxWindowBoundary<T, U> extends FluxSource<T, Flux<T>> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.ACTUAL) {
 				return main;

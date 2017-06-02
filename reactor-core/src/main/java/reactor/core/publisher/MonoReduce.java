@@ -22,6 +22,7 @@ import java.util.function.BiFunction;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import javax.annotation.Nullable;
 
 /**
  * Aggregates the source items with an aggregator function and returns the last result.
@@ -61,6 +62,7 @@ final class MonoReduce<T> extends MonoSource<T, T> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return done;
 			if (key == ScannableAttr.PARENT) return s;

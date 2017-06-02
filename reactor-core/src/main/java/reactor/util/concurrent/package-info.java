@@ -21,4 +21,7 @@
  *
  * @author Stephane Maldini
  */
+@NonNullApi
 package reactor.util.concurrent;
+
+import reactor.util.lang.NonNullApi;

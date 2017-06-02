@@ -30,7 +30,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-
+import javax.annotation.Nullable;
 
 /**
  * A set of overridable lifecycle hooks that can be used for cross-cutting
@@ -158,9 +158,10 @@ public abstract class Hooks {
 		 * @return an observing {@link OperatorHook}
 		 */
 		public final OperatorHook<T> doOnEach(
-				Consumer<? super T> onNextCall,
-				Consumer<? super Throwable> onErrorCall,
-				Runnable onCompleteCall, Runnable onAfterTerminateCall) {
+				@Nullable Consumer<? super T> onNextCall,
+				@Nullable Consumer<? super Throwable> onErrorCall,
+				@Nullable Runnable onCompleteCall,
+				@Nullable Runnable onAfterTerminateCall) {
 			return doOnSignal(new FluxPeek<>(Flux.never(),
 					null,
 					onNextCall,
@@ -180,8 +181,9 @@ public abstract class Hooks {
 		 * @return an observing {@link OperatorHook}
 		 */
 		public final OperatorHook<T> doOnLifecycle(
-				Consumer<? super Subscription> onSubscribeCall,
-				LongConsumer onRequestCall, Runnable onCancelCall) {
+				@Nullable Consumer<? super Subscription> onSubscribeCall,
+				@Nullable LongConsumer onRequestCall,
+				@Nullable Runnable onCancelCall) {
 			return doOnSignal(new FluxPeek<>(Flux.never(),
 					onSubscribeCall,
 					null,
@@ -231,7 +233,7 @@ public abstract class Hooks {
 
 		/**
 		 * Apply hook only if {@link #publisher()} is {@link Flux}
-		 * @return a possibly ignoring {@link OperatorHook}
+		 * @return a {@link OperatorHook} ignoring source that are not {@link Flux}
 		 */
 		public final OperatorHook<T> ifFlux(){
 			return publisher() instanceof Flux ? this : OperatorHook.IGNORE;
@@ -239,7 +241,7 @@ public abstract class Hooks {
 
 		/**
 		 * Apply hook only if {@link #publisher()} is {@link Mono}
-		 * @return a possibly ignoring {@link OperatorHook}
+		 * @return a {@link OperatorHook} ignoring source that are not {@link Mono}
 		 */
 		public final OperatorHook<T> ifMono(){
 			return publisher() instanceof Mono ? this : OperatorHook.IGNORE;
@@ -247,7 +249,7 @@ public abstract class Hooks {
 
 		/**
 		 * Apply hook only if {@link #publisher()} is {@link ParallelFlux}
-		 * @return a possibly ignoring {@link OperatorHook}
+		 * @return a {@link OperatorHook} ignoring source that are not {@link ParallelFlux}
 		 */
 		public final OperatorHook<T> ifParallelFlux(){
 			return publisher() instanceof ParallelFlux ? this : OperatorHook.IGNORE;
@@ -320,7 +322,7 @@ public abstract class Hooks {
 		 *
 		 * @return a logging {@link OperatorHook}
 		 */
-		public OperatorHook<T> log(String category, SignalType... options){
+		public OperatorHook<T> log(@Nullable String category, SignalType... options){
 			return log(category, Level.INFO, options);
 		}
 
@@ -349,7 +351,7 @@ public abstract class Hooks {
 		 *
 		 * @return a logging {@link OperatorHook}
 		 */
-		public OperatorHook<T> log(String category, boolean showOperatorLine,
+		public OperatorHook<T> log(@Nullable String category, boolean showOperatorLine,
 				SignalType... options){
 			return log(category, Level.INFO, showOperatorLine, options);
 		}
@@ -378,7 +380,7 @@ public abstract class Hooks {
 		 *
 		 * @return a logging {@link OperatorHook}
 		 */
-		public OperatorHook<T> log(String category, Level level, SignalType... options){
+		public OperatorHook<T> log(@Nullable String category, Level level, SignalType... options){
 			Objects.requireNonNull(level, "level");
 			return doOnSignal(new SignalLogger<>(publisher, category, level, false,
 					options));
@@ -410,7 +412,7 @@ public abstract class Hooks {
 		 *
 		 * @return a logging {@link OperatorHook}
 		 */
-		public OperatorHook<T> log(String category, Level level, boolean showOperatorLine,
+		public OperatorHook<T> log(@Nullable String category, Level level, boolean showOperatorLine,
 				SignalType... options){
 			if(this == IGNORE) return this;
 			Objects.requireNonNull(level, "level");
@@ -447,6 +449,7 @@ public abstract class Hooks {
 			return publisher;
 		}
 
+		@SuppressWarnings("ConstantConditions")
 		static final OperatorHook IGNORE = new OperatorHook(null);
 
 		final Publisher<T> publisher;
@@ -461,8 +464,11 @@ public abstract class Hooks {
 			this(p, false, null, null, null);
 		}
 
-		OperatorHook(Publisher<T> p, boolean traced, String tracedCategory, Level
-				tracedLevel, SignalType[] tracedSignals) {
+		OperatorHook(Publisher<T> p,
+				boolean traced,
+				@Nullable String tracedCategory,
+				@Nullable Level tracedLevel,
+				@Nullable SignalType[] tracedSignals) {
 			this.traced = traced;
 			this.publisher = p;
 			this.tracedSignals = tracedSignals;
@@ -479,7 +485,7 @@ public abstract class Hooks {
 
 	static {
 		boolean globalTrace =
-				Boolean.parseBoolean(System.getProperty("reactor.trace" + ".operatorStacktrace",
+				Boolean.parseBoolean(System.getProperty("reactor.trace.operatorStacktrace",
 						"false"));
 
 		if (globalTrace) {
@@ -495,7 +501,7 @@ public abstract class Hooks {
 
 		final Function<? super OperatorHook<T>, ? extends OperatorHook<T>> hook;
 
-		OnOperatorHook(Function<? super OperatorHook<T>, ? extends OperatorHook<T>> hook) {
+		OnOperatorHook(@Nullable Function<? super OperatorHook<T>, ? extends OperatorHook<T>> hook) {
 			this.hook = hook;
 		}
 

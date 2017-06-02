@@ -24,6 +24,7 @@ import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
+import javax.annotation.Nullable;
 
 /**
  * @author Stephane Maldini
@@ -60,6 +61,7 @@ final class FluxElapsed<T> extends FluxSource<T, Tuple2<Long, T>> implements Fus
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 
@@ -128,6 +130,7 @@ final class FluxElapsed<T> extends FluxSource<T, Tuple2<Long, T>> implements Fus
 		}
 
 		@Override
+		@Nullable
 		public Tuple2<Long, T> poll() {
 			T data = qs.poll();
 			if(data != null){

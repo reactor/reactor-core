@@ -16,9 +16,6 @@
 
 package reactor.util.function;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
@@ -42,7 +39,8 @@ public class Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> extends
 
 	final T8 t8;
 
-	Tuple8(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8) {
+	Tuple8(@Nullable T1 t1, @Nullable T2 t2, @Nullable T3 t3, @Nullable T4 t4,
+			@Nullable T5 t5, @Nullable T6 t6, @Nullable T7 t7, @Nullable T8 t8) {
 		super(t1, t2, t3, t4, t5, t6, t7);
 		this.t8 = t8;
 	}
@@ -52,6 +50,7 @@ public class Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> extends
 	 *
 	 * @return The eighth object
 	 */
+	@Nullable
 	public T8 getT8() {
 		return t8;
 	}
@@ -87,7 +86,7 @@ public class Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> extends
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) return true;
 		if (!(o instanceof Tuple8)) return false;
 		if (!super.equals(o)) return false;

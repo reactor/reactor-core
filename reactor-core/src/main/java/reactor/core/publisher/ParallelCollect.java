@@ -24,6 +24,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import javax.annotation.Nullable;
 
 /**
  * Reduce the sequence of values in each 'rail' to a single value.
@@ -48,6 +49,7 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Scannable, 
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == ScannableAttr.PARENT) return source;
 		if (key == IntAttr.PREFETCH) return getPrefetch();

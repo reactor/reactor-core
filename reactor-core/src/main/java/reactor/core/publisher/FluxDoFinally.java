@@ -25,6 +25,7 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.Fuseable.QueueSubscription;
+import javax.annotation.Nullable;
 
 /**
  * Hook into the lifecycle events and signals of a {@link Flux} and execute
@@ -95,6 +96,7 @@ final class FluxDoFinally<T> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED || key == BooleanAttr.CANCELLED)
@@ -195,6 +197,7 @@ final class FluxDoFinally<T> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			if (qs == null) {
 				return null;
@@ -222,7 +225,7 @@ final class FluxDoFinally<T> extends FluxSource<T, T> {
 
 		@Override
 		@SuppressWarnings("unchecked")
-		public boolean tryOnNext(T t) {
+		public boolean tryOnNext(@Nullable T t) {
 			return ((ConditionalSubscriber<? super T>)actual).tryOnNext(t);
 		}
 	}
@@ -237,7 +240,7 @@ final class FluxDoFinally<T> extends FluxSource<T, T> {
 
 		@Override
 		@SuppressWarnings("unchecked")
-		public boolean tryOnNext(T t) {
+		public boolean tryOnNext(@Nullable T t) {
 			return ((ConditionalSubscriber<? super T>)actual).tryOnNext(t);
 		}
 	}

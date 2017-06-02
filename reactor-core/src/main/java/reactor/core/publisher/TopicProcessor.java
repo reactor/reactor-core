@@ -30,6 +30,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.WaitStrategy;
+import javax.annotation.Nullable;
 
 /**
  ** An implementation of a RingBuffer backed message-passing Processor implementing publish-subscribe with async event
@@ -100,7 +101,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 		 *             if {@link #executor(ExecutorService)} is not configured.
 		 * @return builder with provided name
 		 */
-		public Builder<T> name(String name) {
+		public Builder<T> name(@Nullable String name) {
 			if (executor != null)
 				throw new IllegalArgumentException("Executor service is configured, name will not be used.");
 			this.name = name;
@@ -131,7 +132,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 		 * @param waitStrategy A RingBuffer WaitStrategy to use instead of the default blocking wait strategy.
 		 * @return builder with provided wait strategy
 		 */
-		public Builder<T> waitStrategy(WaitStrategy waitStrategy) {
+		public Builder<T> waitStrategy(@Nullable WaitStrategy waitStrategy) {
 			this.waitStrategy = waitStrategy;
 			return this;
 		}
@@ -153,7 +154,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 		 * @param executor A provided ExecutorService to manage threading infrastructure
 		 * @return builder with provided executor
 		 */
-		public Builder<T> executor(ExecutorService executor) {
+		public Builder<T> executor(@Nullable ExecutorService executor) {
 			this.executor = executor;
 			return this;
 		}
@@ -165,7 +166,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 		 * @param requestTaskExecutor internal request executor
 		 * @return builder with provided internal request executor
 		 */
-		public Builder<T> requestTaskExecutor(ExecutorService requestTaskExecutor) {
+		public Builder<T> requestTaskExecutor(@Nullable ExecutorService requestTaskExecutor) {
 			this.requestTaskExecutor = requestTaskExecutor;
 			return this;
 		}
@@ -187,7 +188,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 		 * @param signalSupplier A supplier of dispatched signals to preallocate
 		 * @return builder with provided signal supplier
 		 */
-		public Builder<T> signalSupplier(Supplier<T> signalSupplier) {
+		public Builder<T> signalSupplier(@Nullable Supplier<T> signalSupplier) {
 			this.signalSupplier = signalSupplier;
 			return this;
 		}
@@ -858,9 +859,12 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 
 	final ExecutorService requestTaskExecutor;
 
-	TopicProcessor(String name, int bufferSize,
-	                            WaitStrategy waitStrategy, boolean shared,
-	                            boolean autoCancel, final Supplier<E> signalSupplier) {
+	TopicProcessor(String name,
+			int bufferSize,
+			WaitStrategy waitStrategy,
+			boolean shared,
+			boolean autoCancel,
+			@Nullable final Supplier<E> signalSupplier) {
 		this(new EventLoopFactory(name, autoCancel),
 				null,
 				bufferSize,
@@ -870,26 +874,28 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 				signalSupplier);
 	}
 
-	TopicProcessor(ThreadFactory threadFactory,
-			ExecutorService executor,
+	TopicProcessor(
+			@Nullable ThreadFactory threadFactory,
+			@Nullable ExecutorService executor,
 			int bufferSize,
 			WaitStrategy waitStrategy,
 			boolean shared,
 			boolean autoCancel,
-			final Supplier<E> signalSupplier) {
+			@Nullable final Supplier<E> signalSupplier) {
 		this(threadFactory, executor,
 				defaultRequestTaskExecutor(defaultName(threadFactory, TopicProcessor.class)),
 				bufferSize, waitStrategy, shared, autoCancel, signalSupplier);
 	}
 
-	TopicProcessor(ThreadFactory threadFactory,
-			ExecutorService executor,
+	TopicProcessor(
+			@Nullable ThreadFactory threadFactory,
+			@Nullable ExecutorService executor,
 			ExecutorService requestTaskExecutor,
 			int bufferSize,
 			WaitStrategy waitStrategy,
 			boolean shared,
 			boolean autoCancel,
-			final Supplier<E> signalSupplier) {
+			@Nullable final Supplier<E> signalSupplier) {
 		super(bufferSize, threadFactory, executor, autoCancel, shared, () -> {
 			Slot<E> signal = new Slot<>();
 			if (signalSupplier != null) {
@@ -907,6 +913,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 
 	@Override
 	public void subscribe(final Subscriber<? super E> subscriber) {
+		//noinspection ConstantConditions
 		if (subscriber == null) {
 			throw Exceptions.argumentIsNullException();
 		}
@@ -1161,6 +1168,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return processor;
 			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;

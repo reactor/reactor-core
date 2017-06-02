@@ -21,7 +21,7 @@ import java.util.function.LongConsumer;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
-
+import javax.annotation.Nullable;
 
 /**
  * Peek into the lifecycle and sequence signals.
@@ -37,6 +37,7 @@ interface SignalPeek<T> extends Scannable {
 	 *
 	 * @return A consumer that will observe {@link Subscriber#onSubscribe(Subscription)}
 	 */
+	@Nullable
 	Consumer<? super Subscription> onSubscribeCall();
 
 	/**
@@ -44,7 +45,7 @@ interface SignalPeek<T> extends Scannable {
 	 *
 	 * @return A consumer that will observe {@link Subscriber#onNext(Object)}
 	 */
-
+	@Nullable
 	Consumer<? super T> onNextCall();
 
 	/**
@@ -52,6 +53,7 @@ interface SignalPeek<T> extends Scannable {
 	 *
 	 * @return A consumer that will observe {@link Subscriber#onError(Throwable)}
 	 */
+	@Nullable
 	Consumer<? super Throwable> onErrorCall();
 
 	/**
@@ -59,6 +61,7 @@ interface SignalPeek<T> extends Scannable {
 	 *
 	 * @return A task that will run on {@link Subscriber#onComplete()}
 	 */
+	@Nullable
 	Runnable onCompleteCall();
 
 	/**
@@ -66,6 +69,7 @@ interface SignalPeek<T> extends Scannable {
 	 *
 	 * @return A task will run after termination via {@link Subscriber#onComplete()} or {@link Subscriber#onError(Throwable)}
 	 */
+	@Nullable
 	Runnable onAfterTerminateCall();
 
 	/**
@@ -73,6 +77,7 @@ interface SignalPeek<T> extends Scannable {
 	 *
 	 * @return A consumer of long that will observe {@link Subscription#request(long)}}
 	 */
+	@Nullable
 	LongConsumer onRequestCall();
 
 	/**
@@ -80,12 +85,14 @@ interface SignalPeek<T> extends Scannable {
 	 *
 	 * @return A task that will run on {@link Subscription#cancel()}
 	 */
+	@Nullable
 	Runnable onCancelCall();
 
 	/**
 	 * A task that will run after (finally) {@link Subscriber#onNext(Object)}
 	 * @return A task that will run after (finally) {@link Subscriber#onNext(Object)}
 	 */
+	@Nullable
 	default Consumer<? super T> onAfterNextCall(){
 		return null;
 	}

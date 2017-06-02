@@ -23,8 +23,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-
-
+import javax.annotation.Nullable;
 
 /**
  * Exposes the 'rails' as individual GroupedFlux instances, keyed by the rail index (zero based).
@@ -60,6 +59,7 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == ScannableAttr.PARENT) return source;
 		if (key == IntAttr.PREFETCH) return getPrefetch();
@@ -113,6 +113,7 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;

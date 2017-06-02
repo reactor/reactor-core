@@ -36,22 +36,22 @@ import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.WaitStrategy;
+import javax.annotation.Nullable;
 
 /**
  ** An implementation of a RingBuffer backed message-passing Processor implementing work-queue distribution with
  * async event loops.
  * <p>
  * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/workqueue.png" alt="">
- *     <p>
- *         Created from {@link #share}, the {@link WorkQueueProcessor} will authorize concurrent publishing
- *         (multi-producer) from its receiving side {@link Subscriber#onNext(Object)}.
- *         {@link WorkQueueProcessor} is able to replay up to its buffer size number of failed signals (either
- *         dropped or
- *         fatally throwing on child {@link Subscriber#onNext}).
+ * <p>
+ * Created from {@link #share()}, the {@link WorkQueueProcessor} will authorize concurrent publishing
+ * (multi-producer) from its receiving side {@link Subscriber#onNext(Object)}.
+ * {@link WorkQueueProcessor} is able to replay up to its buffer size number of failed signals (either
+ * dropped or fatally throwing on child {@link Subscriber#onNext}).
+ * <p>
  * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/workqueuef.png" alt="">
  * <p>
- *     The
- * processor is very similar to {@link TopicProcessor} but
+ * The processor is very similar to {@link TopicProcessor} but
  * only partially respects the Reactive Streams contract. <p> The purpose of this
  * processor is to distribute the signals to only one of the subscribed subscribers and to
  * share the demand amongst all subscribers. The scenario is akin to Executor or
@@ -59,6 +59,7 @@ import reactor.util.concurrent.WaitStrategy;
  * respecting a round-robin distribution all the time. <p> The core use for this component
  * is to scale up easily without suffering the overhead of an Executor and without using
  * dedicated queues by subscriber, which is less used memory, less GC, more win.
+ *
  * @param <E> Type of dispatched signal
  * @author Stephane Maldini
  */
@@ -96,7 +97,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		 *             if {@link #executor(ExecutorService)} is not configured.
 		 * @return builder with provided name
 		 */
-		public Builder<T> name(String name) {
+		public Builder<T> name(@Nullable String name) {
 			if (executor != null)
 				throw new IllegalArgumentException("Executor service is configured, name will not be used.");
 			this.name = name;
@@ -127,7 +128,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		 * @param waitStrategy A RingBuffer WaitStrategy to use instead of the default smart blocking wait strategy.
 		 * @return builder with provided wait strategy
 		 */
-		public Builder<T> waitStrategy(WaitStrategy waitStrategy) {
+		public Builder<T> waitStrategy(@Nullable WaitStrategy waitStrategy) {
 			this.waitStrategy = waitStrategy;
 			return this;
 		}
@@ -149,7 +150,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		 * @param executor A provided ExecutorService to manage threading infrastructure
 		 * @return builder with provided executor
 		 */
-		public Builder<T> executor(ExecutorService executor) {
+		public Builder<T> executor(@Nullable ExecutorService executor) {
 			this.executor = executor;
 			return this;
 		}
@@ -160,7 +161,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		 * @param requestTaskExecutor internal request executor
 		 * @return builder with provided internal request executor
 		 */
-		public Builder<T> requestTaskExecutor(ExecutorService requestTaskExecutor) {
+		public Builder<T> requestTaskExecutor(@Nullable ExecutorService requestTaskExecutor) {
 			this.requestTaskExecutor = requestTaskExecutor;
 			return this;
 		}
@@ -770,8 +771,9 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 				autoCancel);
 	}
 
-	WorkQueueProcessor(ThreadFactory threadFactory,
-			ExecutorService executor,
+	WorkQueueProcessor(
+			@Nullable ThreadFactory threadFactory,
+			@Nullable ExecutorService executor,
 			int bufferSize, WaitStrategy waitStrategy, boolean share,
 	                                boolean autoCancel) {
 		this(threadFactory, executor, defaultRequestTaskExecutor(defaultName(threadFactory, WorkQueueProcessor.class)),
@@ -779,8 +781,10 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	}
 
 	@SuppressWarnings("unchecked")
-	WorkQueueProcessor(ThreadFactory threadFactory,
-			ExecutorService executor, ExecutorService requestTaskExecutor,
+	WorkQueueProcessor(
+			@Nullable ThreadFactory threadFactory,
+			@Nullable ExecutorService executor,
+			ExecutorService requestTaskExecutor,
 			int bufferSize, WaitStrategy waitStrategy, boolean share,
 	                                boolean autoCancel) {
 		super(bufferSize, threadFactory,
@@ -800,6 +804,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 	@Override
 	public void subscribe(final Subscriber<? super E> subscriber) {
+		//noinspection ConstantConditions
 		if (subscriber == null) {
 			throw Exceptions.argumentIsNullException();
 		}
@@ -1174,7 +1179,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 			}
 		}
 
-		boolean reschedule(Slot<T> event) {
+		boolean reschedule(@Nullable Slot<T> event) {
 			if (event != null &&
 					event.value != null) {
 				processor.claimedDisposed.add(event.value);
@@ -1197,6 +1202,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT ) return processor;
 			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;

@@ -16,7 +16,9 @@
 
 package reactor.core.scheduler;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RejectedExecutionException;
@@ -284,8 +286,10 @@ final class ExecutorServiceScheduler implements Scheduler {
 	 */
 	static final class ExecutorServiceSchedulerRunnable implements Runnable, Disposable {
 
+		@SuppressWarnings("ConstantConditions")
 		static final ExecutorServiceWorker DISPOSED_PARENT = new ExecutorServiceWorker(null, false);
-		static final ExecutorServiceWorker DONE_PARENT = new ExecutorServiceWorker(null, false);
+		@SuppressWarnings("ConstantConditions")
+		static final ExecutorServiceWorker DONE_PARENT     = new ExecutorServiceWorker(null, false);
 
 		final Runnable task;
 

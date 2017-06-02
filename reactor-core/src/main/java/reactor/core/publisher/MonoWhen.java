@@ -27,7 +27,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
-
+import javax.annotation.Nullable;
 
 /**
  * Waits for all Mono sources to produce a value or terminate, and if
@@ -77,6 +77,7 @@ final class MonoWhen<T, R> extends Mono<R> {
 	}
 
 	@SuppressWarnings("unchecked")
+	@Nullable
 	Mono<R> whenAdditionalSource(Publisher source, BiFunction zipper) {
 		Publisher[] oldSources = sources;
 		if (oldSources != null && this.zipper instanceof FluxZip.PairwiseZipper) {
@@ -154,6 +155,7 @@ final class MonoWhen<T, R> extends Mono<R> {
         }
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return done == subscribers.length;
 			if (key == IntAttr.BUFFERED) return subscribers.length;
@@ -274,6 +276,7 @@ final class MonoWhen<T, R> extends Mono<R> {
         }
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
 			if (key == ScannableAttr.PARENT) return s;

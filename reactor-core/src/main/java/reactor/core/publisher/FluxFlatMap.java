@@ -32,7 +32,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-
+import javax.annotation.Nullable;
 
 /**
  * Maps a sequence of values each into a Publisher and flattens them
@@ -255,6 +255,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.CANCELLED) return cancelled;
@@ -383,7 +384,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 
 		}
 
-		void emitScalar(R v) {
+		void emitScalar(@Nullable R v) {
 			if (v == null) {
 				if (maxConcurrency != Integer.MAX_VALUE) {
 					int p = produced + 1;
@@ -947,6 +948,7 @@ final class FluxFlatMap<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == ScannableAttr.ACTUAL) return parent;

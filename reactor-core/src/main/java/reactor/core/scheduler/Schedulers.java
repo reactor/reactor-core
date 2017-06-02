@@ -332,7 +332,7 @@ public abstract class Schedulers {
 	 * the error has been passed to the thread uncaughtErrorHandler, which is not the
 	 * case when a fatal error occurs (see {@link Exceptions#throwIfJvmFatal(Throwable)}).
 	 *
-	 * @param c the new hook to set, or null to ignore (default).
+	 * @param c the new hook to set.
 	 */
 	public static void onHandleError(BiConsumer<Thread, ? super Throwable> c) {
 		log.info("Hooking new default: onHandleError");

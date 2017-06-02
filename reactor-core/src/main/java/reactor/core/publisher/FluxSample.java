@@ -25,7 +25,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-
+import javax.annotation.Nullable;
 
 /**
  * Samples the main source and emits its latest value whenever the other Publisher
@@ -112,6 +112,7 @@ final class FluxSample<T, U> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
 			if (key == ScannableAttr.PARENT) return main;
@@ -197,6 +198,7 @@ final class FluxSample<T, U> extends FluxSource<T, T> {
 		}
 
 		@SuppressWarnings("unchecked")
+		@Nullable
 		T getAndNullValue() {
 			return (T) VALUE.getAndSet(this, null);
 		}
@@ -214,6 +216,7 @@ final class FluxSample<T, U> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return main.other;
 			if (key == ScannableAttr.ACTUAL) return main;

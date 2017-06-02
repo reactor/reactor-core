@@ -26,7 +26,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-
+import javax.annotation.Nullable;
 
 /**
  * Merges the individual 'rails' of the source ParallelFlux, unordered,
@@ -49,6 +49,7 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == ScannableAttr.PARENT) return source;
 		if (key == IntAttr.PREFETCH) return getPrefetch();
@@ -116,6 +117,7 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.CANCELLED) return cancelled;
 			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
@@ -357,6 +359,7 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
 			if (key == ScannableAttr.PARENT) return s;

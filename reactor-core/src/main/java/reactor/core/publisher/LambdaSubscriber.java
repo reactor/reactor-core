@@ -23,6 +23,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
+import javax.annotation.Nullable;
 
 /**
  * An unbounded Java Lambda adapter to {@link Subscriber}
@@ -57,10 +58,11 @@ final class LambdaSubscriber<T>
 	 * @param subscriptionConsumer A {@link Consumer} called with the {@link Subscription}
 	 * to perform initial request, or null to request max
 	 */
-	LambdaSubscriber(Consumer<? super T> consumer,
-			Consumer<? super Throwable> errorConsumer,
-			Runnable completeConsumer,
-			Consumer<? super Subscription> subscriptionConsumer) {
+	LambdaSubscriber(
+			@Nullable Consumer<? super T> consumer,
+			@Nullable Consumer<? super Throwable> errorConsumer,
+			@Nullable Runnable completeConsumer,
+			@Nullable Consumer<? super Subscription> subscriptionConsumer) {
 		this.consumer = consumer;
 		this.errorConsumer = errorConsumer;
 		this.completeConsumer = completeConsumer;
@@ -140,6 +142,7 @@ final class LambdaSubscriber<T>
 	}
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == ScannableAttr.PARENT) return subscription;
 		if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;

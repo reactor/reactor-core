@@ -20,7 +20,7 @@ import java.util.Objects;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
-
+import javax.annotation.Nullable;
 
 /**
  * A Stream that emits only one value and then complete.
@@ -74,7 +74,7 @@ final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, F
 		final T                     value;
 		final Subscriber<? super T> actual;
 
-		WeakScalarSubscription(T value, Subscriber<? super T> actual) {
+		WeakScalarSubscription(@Nullable T value, Subscriber<? super T> actual) {
 			this.value = value;
 			this.actual = actual;
 		}
@@ -106,6 +106,7 @@ final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, F
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			if (!terminado) {
 				terminado = true;
@@ -135,6 +136,7 @@ final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, F
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED || key == BooleanAttr.CANCELLED) return terminado;
 

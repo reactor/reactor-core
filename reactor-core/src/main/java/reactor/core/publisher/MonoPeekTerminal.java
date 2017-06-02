@@ -23,6 +23,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import javax.annotation.Nullable;
 
 /**
  * Peeks the value of a {@link Mono} and execute terminal callbacks accordingly, allowing
@@ -40,9 +41,9 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T> implements Fuseable {
 	final Consumer<? super T>              onSuccessCall;
 
 	MonoPeekTerminal(Mono<? extends T> source,
-			Consumer<? super T> onSuccessCall,
-			BiConsumer<? super T, Throwable> onTerminateCall,
-			BiConsumer<? super T, Throwable> onAfterTerminateCall) {
+			@Nullable Consumer<? super T> onSuccessCall,
+			@Nullable BiConsumer<? super T, Throwable> onTerminateCall,
+			@Nullable BiConsumer<? super T, Throwable> onAfterTerminateCall) {
 		super(source);
 		this.onAfterTerminateCall = onAfterTerminateCall;
 		this.onTerminateCall = onTerminateCall;
@@ -117,6 +118,7 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == BooleanAttr.TERMINATED) return done;
 			if (key == ScannableAttr.PARENT) return s;
@@ -324,6 +326,7 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T> implements Fuseable {
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			boolean d = done;
 			T v = queueSubscription.poll();

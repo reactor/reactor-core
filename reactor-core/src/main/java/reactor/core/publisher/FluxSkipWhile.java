@@ -21,6 +21,7 @@ import java.util.function.Predicate;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable.ConditionalSubscriber;
+import javax.annotation.Nullable;
 
 /**
  * Skips source values while a predicate returns
@@ -151,6 +152,7 @@ final class FluxSkipWhile<T> extends FluxSource<T, T> {
 		}
 
 		@Override
+		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return done;

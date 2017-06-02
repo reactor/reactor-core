@@ -21,6 +21,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import javax.annotation.Nullable;
 
 /**
  * A {@link Publisher} that you can directly manipulate, triggering
@@ -146,10 +147,10 @@ public abstract class TestPublisher<T> implements Publisher<T> {
 	/**
 	 * Send 1 {@link Subscriber#onNext(Object) onNext} signal to the subscribers.
 	 *
-	 * @param value the item to emit
+	 * @param value the item to emit (can be null if the relevant {@link Violation} is set)
 	 * @return this {@link TestPublisher} for chaining.
 	 */
-	public abstract TestPublisher<T> next(T value);
+	public abstract TestPublisher<T> next(@Nullable T value);
 
 	/**
 	 * Triggers an {@link Subscriber#onError(Throwable) error} signal to the subscribers.
@@ -175,7 +176,7 @@ public abstract class TestPublisher<T> implements Publisher<T> {
 	 * @see #next(Object) next
 	 */
 	@SafeVarargs
-	public final TestPublisher<T> next(T first, T... rest) {
+	public final TestPublisher<T> next(@Nullable T first, T... rest) {
 		Objects.requireNonNull(rest, "rest array is null, please cast to T if null T required");
 		next(first);
 		for (T t : rest) {

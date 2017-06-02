@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
+import javax.annotation.Nullable;
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
@@ -69,6 +70,7 @@ abstract class BlockingSingleSubscriber<T> extends CountDownLatch
 	 *
 	 * @return the first value or null if the source is empty
 	 */
+	@Nullable
 	final T blockingGet() {
 		if (getCount() != 0) {
 			try {
@@ -98,6 +100,7 @@ abstract class BlockingSingleSubscriber<T> extends CountDownLatch
 	 *
 	 * @return the first value or null if the source is empty
 	 */
+	@Nullable
 	final T blockingGet(long timeout, TimeUnit unit) {
 		if (getCount() != 0) {
 			try {
@@ -126,6 +129,7 @@ abstract class BlockingSingleSubscriber<T> extends CountDownLatch
 
 
 	@Override
+	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == BooleanAttr.TERMINATED) return getCount() == 0;
 		if (key == ScannableAttr.PARENT) return  s;

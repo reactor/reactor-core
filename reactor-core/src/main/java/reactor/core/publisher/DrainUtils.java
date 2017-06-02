@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BooleanSupplier;
 
 import org.reactivestreams.Subscriber;
+import javax.annotation.Nullable;
 
 abstract class DrainUtils {
 
@@ -268,7 +269,8 @@ abstract class DrainUtils {
             Queue<T> queue,
             AtomicLongFieldUpdater<F> field,
             F instance,
-            BooleanSupplier isCancelled, Throwable error) {
+            BooleanSupplier isCancelled,
+		    @Nullable Throwable error) {
 
         long e = n & COMPLETED_MASK;
 
@@ -339,7 +341,8 @@ abstract class DrainUtils {
             Queue<T> queue,
             AtomicLongFieldUpdater<F> field,
             F instance,
-            BooleanSupplier isCancelled, Throwable error) {
+            BooleanSupplier isCancelled,
+		    @Nullable Throwable error) {
 
         if (queue.isEmpty()) {
             if (error == null) {
