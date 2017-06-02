@@ -28,6 +28,7 @@ buildscript {
 
 plugins {
   id 'org.asciidoctor.convert' version '1.5.2'
+  id "me.champeau.gradle.jmh" version "0.3.1" apply false
 }
 
 apply from: "gradle/doc.gradle"
@@ -195,7 +196,8 @@ if (project.hasProperty('platformVersion')) {
 
 
 project('reactor-core') {
-  apply from: rootProject.file('gradle/jmh.gradle')
+  apply plugin: 'idea' //needed to avoid IDEA seeing the jmh folder as source
+  apply plugin: 'me.champeau.gradle.jmh'
 
   configurations {
 	compileOnly.extendsFrom jsr166backport
