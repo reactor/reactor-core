@@ -72,10 +72,10 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 	static final class ScanSeedCoordinator<T, R>
 			extends Operators.MultiSubscriptionSubscriber<R, R> {
 
-		final         Supplier<R>                 initialSupplier;
-		private final Publisher<? extends T>      source;
-		private final BiFunction<R, ? super T, R> accumulator;
-		volatile      int                         wip;
+		final    Supplier<R>                 initialSupplier;
+		final    Publisher<? extends T>      source;
+		final    BiFunction<R, ? super T, R> accumulator;
+		volatile int                         wip;
 		long produced;
 		private ScanSeedSubscriber<T, R> seedSubscriber;
 
