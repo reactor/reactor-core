@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
@@ -58,17 +59,93 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 
 	@Override
 	public void subscribe(Subscriber<? super R> s) {
-		R initialValue;
+		ScanSeedCoordinator<T, R> coordinator =
+				new ScanSeedCoordinator<>(s, source, accumulator, initialSupplier);
 
-		try {
-			initialValue = Objects.requireNonNull(initialSupplier.get(),
-					"The initial value supplied is null");
+		s.onSubscribe(coordinator);
+
+		if (!coordinator.isCancelled()) {
+			coordinator.onComplete();
 		}
-		catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
-			return;
+	}
+
+	static final class ScanSeedCoordinator<T, R>
+			extends Operators.MultiSubscriptionSubscriber<R, R> {
+
+		final         Supplier<R>                 initialSupplier;
+		private final Publisher<? extends T>      source;
+		private final BiFunction<R, ? super T, R> accumulator;
+		volatile      int                         wip;
+		long produced;
+		private ScanSeedSubscriber<T, R> seedSubscriber;
+
+		public ScanSeedCoordinator(Subscriber<? super R> actual,
+				Publisher<? extends T> source,
+				BiFunction<R, ? super T, R> accumulator,
+				Supplier<R> initialSupplier) {
+			super(actual);
+			this.source = source;
+			this.accumulator = accumulator;
+			this.initialSupplier = initialSupplier;
 		}
-		source.subscribe(new ScanSeedSubscriber<>(s, accumulator, initialValue));
+
+		@Override
+		public void onComplete() {
+			if (WIP.getAndIncrement(this) == 0) {
+				do {
+					if (isCancelled()) {
+						return;
+					}
+
+					if (null != seedSubscriber && subscription == seedSubscriber) {
+						actual.onComplete();
+						return;
+					}
+
+					long c = produced;
+					if (c != 0L) {
+						produced = 0L;
+						produced(c);
+					}
+
+					if (null == seedSubscriber) {
+						R initialValue;
+
+						try {
+							initialValue = Objects.requireNonNull(initialSupplier.get(),
+									"The initial value supplied is null");
+						}
+						catch (Throwable e) {
+							onError(Operators.onOperatorError(e));
+							return;
+						}
+
+						onSubscribe(Operators.scalarSubscription(this, initialValue));
+						seedSubscriber =
+								new ScanSeedSubscriber<>(this, accumulator, initialValue);
+					}
+					else {
+						source.subscribe(seedSubscriber);
+					}
+
+					if (isCancelled()) {
+						return;
+					}
+				}
+				while (WIP.decrementAndGet(this) != 0);
+			}
+
+		}
+
+		@Override
+		public void onNext(R r) {
+			produced++;
+			actual.onNext(r);
+		}
+
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<ScanSeedCoordinator> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(ScanSeedCoordinator.class, "wip");
 	}
 
 	static final class ScanSeedSubscriber<T, R> implements InnerOperator<T, R> {
@@ -82,9 +159,6 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 		R value;
 
 		boolean done;
-
-		volatile int state;
-		long produced;
 
 		ScanSeedSubscriber(Subscriber<? super R> actual,
 				BiFunction<R, ? super T, R> accumulator,
@@ -101,7 +175,6 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public void cancel() {
-			STATE.set(this, CANCELLED);
 			s.cancel();
 		}
 
@@ -131,8 +204,6 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 				return;
 			}
 
-			sendSeed();
-
 			R r = value;
 
 			try {
@@ -144,7 +215,7 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 				return;
 			}
 
-			serializedOnNext(r);
+			actual.onNext(r);
 			value = r;
 		}
 
@@ -152,30 +223,13 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 		public void onSubscribe(Subscription s) {
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
-
 				actual.onSubscribe(this);
 			}
 		}
 
 		@Override
 		public void request(long n) {
-			if (Operators.validate(n)) {
-				if (STATE.get(this) == 0) {
-					if (sendSeed()) {
-						if (n == Long.MAX_VALUE) {
-							s.request(n);
-						}
-						else {
-							s.request(Math.max(0, n - 1));
-						}
-					} else {
-						s.request(n);
-					}
-				}
-				else {
-					s.request(n);
-				}
-			}
+			s.request(n);
 		}
 
 		@Override
@@ -186,32 +240,7 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 			if (key == BooleanAttr.TERMINATED) {
 				return done;
 			}
-			if (key == IntAttr.BUFFERED) {
-				return value != null ? 1 : 0;
-			}
-
 			return InnerOperator.super.scanUnsafe(key);
 		}
-
-		private boolean sendSeed() {
-			if (STATE.compareAndSet(this, 0, SENT_SEED)) {
-				serializedOnNext(value);
-				return true;
-			}
-			return false;
-		}
-
-		// concurrent calls to request at the start could yield concurrent calls to
-		// onNext. this will have low-to-no contention after the initial state has emitted
-		private synchronized void serializedOnNext(R value) {
-			actual.onNext(value);
-		}
-
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<ScanSeedSubscriber> STATE     =
-				AtomicIntegerFieldUpdater.newUpdater(ScanSeedSubscriber.class, "state");
-		static final int                                           SENT_SEED = 1;
-		static final int                                           CANCELLED = 2;
-
 	}
 }

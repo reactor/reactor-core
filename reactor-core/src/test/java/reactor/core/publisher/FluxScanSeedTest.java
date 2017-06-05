@@ -172,8 +172,6 @@ public class FluxScanSeedTest extends FluxOperatorTest<String, String> {
 
         Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
         Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
-        test.value = 5;
-        Assertions.assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
 
         Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
         test.onComplete();
