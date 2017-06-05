@@ -62,6 +62,16 @@ public class FluxScanSeedTest extends FluxOperatorTest<String, String> {
 		);
 	}
 
+	@Override
+	protected List<Scenario<String, String>> scenarios_errorFromUpstreamFailure() {
+		return Arrays.asList(
+				// We have to skip the first element because the generic tests do not
+				// handle the seed being sent in response to demand prior to the tests
+				// throwing an error.
+				scenario(f -> f.scan(item(0), (a, b) -> a).skip(1))
+		);
+	}
+
 	@Test(expected = NullPointerException.class)
 	public void sourceNull() {
 		new FluxScanSeed<>(null, () -> 1, (a, b) -> a);
@@ -162,8 +172,6 @@ public class FluxScanSeedTest extends FluxOperatorTest<String, String> {
 
         Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
         Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
-        test.requested = 35;
-        Assertions.assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
         test.value = 5;
         Assertions.assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
 
@@ -171,4 +179,19 @@ public class FluxScanSeedTest extends FluxOperatorTest<String, String> {
         test.onComplete();
         Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
     }
+
+	@Test
+	public void onlyConsumerPartOfRange() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		Flux.<Integer>create(sink -> {
+			sink.next(1);
+			sink.next(2);
+			sink.next(3);
+		}).scan(0, (a, b) -> b)
+		  .subscribe(ts);
+
+		ts.assertValues(0, 1, 2, 3)
+		  .assertNoError();
+	}
 }

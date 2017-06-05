@@ -17,15 +17,12 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
-import static reactor.core.publisher.DrainUtils.COMPLETED_MASK;
-import static reactor.core.publisher.DrainUtils.REQUESTED_MASK;
 
 /**
  * Aggregates the source values with the help of an accumulator function
@@ -74,8 +71,7 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 		source.subscribe(new ScanSeedSubscriber<>(s, accumulator, initialValue));
 	}
 
-	static final class ScanSeedSubscriber<T, R>
-			implements InnerOperator<T, R> {
+	static final class ScanSeedSubscriber<T, R> implements InnerOperator<T, R> {
 
 		final Subscriber<? super R> actual;
 
@@ -87,11 +83,7 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 
 		boolean done;
 
-		volatile long requested;
-		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<ScanSeedSubscriber> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(ScanSeedSubscriber.class, "requested");
-
+		volatile int state;
 		long produced;
 
 		ScanSeedSubscriber(Subscriber<? super R> actual,
@@ -103,37 +95,23 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
-		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s)) {
-				this.s = s;
-
-				actual.onSubscribe(this);
-			}
+		public Subscriber<? super R> actual() {
+			return actual;
 		}
 
 		@Override
-		public void onNext(T t) {
+		public void cancel() {
+			STATE.set(this, CANCELLED);
+			s.cancel();
+		}
+
+		@Override
+		public void onComplete() {
 			if (done) {
-				Operators.onNextDropped(t);
 				return;
 			}
-
-			R r = value;
-
-			produced++;
-
-			actual.onNext(r);
-
-			try {
-				r = Objects.requireNonNull(accumulator.apply(r, t),
-						"The accumulator returned a null value");
-			}
-			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
-				return;
-			}
-
-			value = r;
+			done = true;
+			actual.onComplete();
 		}
 
 		@Override
@@ -147,90 +125,74 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
-		public void onComplete() {
+		public void onNext(T t) {
 			if (done) {
+				Operators.onNextDropped(t);
 				return;
 			}
-			done = true;
 
-			R v = value;
+			R r = value;
 
-			long p = produced;
-			long r = requested;
-			if (r != Long.MAX_VALUE && p != 0L) {
-				r = REQUESTED.addAndGet(this, -p);
+			try {
+				r = Objects.requireNonNull(accumulator.apply(r, t),
+						"The accumulator returned a null value");
+			}
+			catch (Throwable e) {
+				onError(Operators.onOperatorError(s, e, t));
+				return;
 			}
 
-			for (; ; ) {
-				// if any request amount is still available, emit the value and complete
-				if ((r & REQUESTED_MASK) != 0L) {
-					actual.onNext(v);
-					actual.onComplete();
-					return;
-				}
-				// NO_REQUEST_NO_VALUE -> NO_REQUEST_HAS_VALUE
-				if (REQUESTED.compareAndSet(this, 0, COMPLETED_MASK)) {
-					return;
-				}
+			actual.onNext(r);
+			value = r;
+		}
 
-				r = requested;
+		@Override
+		public void onSubscribe(Subscription s) {
+			if (Operators.validate(this.s, s)) {
+				this.s = s;
+
+				actual.onSubscribe(this);
 			}
 		}
 
 		@Override
 		public void request(long n) {
-			if (Operators.validate(n)) {
-				for (; ; ) {
+			if (STATE.compareAndSet(this, 0, SENT_SEED)) {
+				actual.onNext(value);
 
-					long r = requested;
-
-					// NO_REQUEST_HAS_VALUE 
-					if (r == COMPLETED_MASK) {
-						// any positive request value will do here
-						// transition to HAS_REQUEST_HAS_VALUE
-						if (REQUESTED.compareAndSet(this,
-								COMPLETED_MASK,
-								COMPLETED_MASK | 1)) {
-							actual.onNext(value);
-							actual.onComplete();
-						}
-						return;
-					}
-
-					// HAS_REQUEST_HAS_VALUE
-					if (r < 0L) {
-						return;
-					}
-
-					// transition to HAS_REQUEST_NO_VALUE
-					long u = Operators.addCap(r, n);
-					if (REQUESTED.compareAndSet(this, r, u)) {
-						s.request(n);
-						return;
-					}
+				if (n == Long.MAX_VALUE) {
+					s.request(n);
 				}
+				else {
+					s.request(Math.max(0, n - 1));
+				}
+			}
+			else {
+				s.request(n);
 			}
 		}
 
 		@Override
-		public void cancel() {
-			s.cancel();
-		}
-
-		@Override
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == BooleanAttr.TERMINATED) return done;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == IntAttr.BUFFERED) return value != null ? 1 : 0;
+			if (key == ScannableAttr.PARENT) {
+				return s;
+			}
+			if (key == BooleanAttr.TERMINATED) {
+				return done;
+			}
+			if (key == IntAttr.BUFFERED) {
+				return value != null ? 1 : 0;
+			}
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
 
-		@Override
-		public Subscriber<? super R> actual() {
-			return actual;
-		}
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<ScanSeedSubscriber> STATE =
+				AtomicIntegerFieldUpdater.newUpdater(ScanSeedSubscriber.class,
+						"state");
+		static final int SENT_SEED = 1;
+		static final int CANCELLED = 2;
 
 	}
 }
