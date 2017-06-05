@@ -131,6 +131,8 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 				return;
 			}
 
+			sendSeed();
+
 			R r = value;
 
 			try {
@@ -142,7 +144,7 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 				return;
 			}
 
-			actual.onNext(r);
+			serializedOnNext(r);
 			value = r;
 		}
 
@@ -157,18 +159,22 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 
 		@Override
 		public void request(long n) {
-			if (STATE.compareAndSet(this, 0, SENT_SEED)) {
-				actual.onNext(value);
-
-				if (n == Long.MAX_VALUE) {
-					s.request(n);
+			if (Operators.validate(n)) {
+				if (STATE.get(this) == 0) {
+					if (sendSeed()) {
+						if (n == Long.MAX_VALUE) {
+							s.request(n);
+						}
+						else {
+							s.request(Math.max(0, n - 1));
+						}
+					} else {
+						s.request(n);
+					}
 				}
 				else {
-					s.request(Math.max(0, n - 1));
+					s.request(n);
 				}
-			}
-			else {
-				s.request(n);
 			}
 		}
 
@@ -187,12 +193,25 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 			return InnerOperator.super.scanUnsafe(key);
 		}
 
+		private boolean sendSeed() {
+			if (STATE.compareAndSet(this, 0, SENT_SEED)) {
+				serializedOnNext(value);
+				return true;
+			}
+			return false;
+		}
+
+		// concurrent calls to request at the start could yield concurrent calls to
+		// onNext. this will have low-to-no contention after the initial state has emitted
+		private synchronized void serializedOnNext(R value) {
+			actual.onNext(value);
+		}
+
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<ScanSeedSubscriber> STATE =
-				AtomicIntegerFieldUpdater.newUpdater(ScanSeedSubscriber.class,
-						"state");
-		static final int SENT_SEED = 1;
-		static final int CANCELLED = 2;
+		static final AtomicIntegerFieldUpdater<ScanSeedSubscriber> STATE     =
+				AtomicIntegerFieldUpdater.newUpdater(ScanSeedSubscriber.class, "state");
+		static final int                                           SENT_SEED = 1;
+		static final int                                           CANCELLED = 2;
 
 	}
 }
