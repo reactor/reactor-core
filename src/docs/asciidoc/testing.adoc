@@ -104,7 +104,8 @@ sequence to be tested. This offers a choice of methods that allow you to:
 For terminal events, the corresponding expectation methods (`expectComplete()`,
 `expectError()` and all its variants) will switch to an API where you cannot
 express expectations anymore. In that last step, all you can do is perform some
-additional configuration on the `StepVerifier` then *trigger the verification*.
+additional configuration on the `StepVerifier` then *trigger the verification*, eg. with
+`verify()`.
 
 What happens at this point is that the StepVerifier subscribes to the tested
 flux/mono and plays the sequence, comparing each new signal with the next step
@@ -118,6 +119,12 @@ terminal expectations with a call to `verify()`: `verifyComplete()`,
 
 Note that if one of the lambda-based expectations throws an `AssertionError`, it
 will be reported as is, failing the test. This is useful for custom assertions.
+
+TIP: The `verify()` method and derived shortcut methods (`verifyThenAssertThat`,
+`verifyComplete()`, etc.) has no timeout by default, meaning it can block
+indefinitely. You can use `StepVerifier.setDefaultTimeout(Duration)` to globally
+set a timeout for these methods, or specify one on a per-call basis with
+`verify(Duration)`.
 
 == Manipulating Time
 Another very interesting capability of `StepVerifier` is the way it can be used
