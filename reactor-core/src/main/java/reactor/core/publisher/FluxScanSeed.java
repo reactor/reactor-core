@@ -17,15 +17,13 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
-import static reactor.core.publisher.DrainUtils.COMPLETED_MASK;
-import static reactor.core.publisher.DrainUtils.REQUESTED_MASK;
 
 /**
  * Aggregates the source values with the help of an accumulator function
@@ -61,21 +59,96 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 
 	@Override
 	public void subscribe(Subscriber<? super R> s) {
-		R initialValue;
+		ScanSeedCoordinator<T, R> coordinator =
+				new ScanSeedCoordinator<>(s, source, accumulator, initialSupplier);
 
-		try {
-			initialValue = Objects.requireNonNull(initialSupplier.get(),
-					"The initial value supplied is null");
+		s.onSubscribe(coordinator);
+
+		if (!coordinator.isCancelled()) {
+			coordinator.onComplete();
 		}
-		catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
-			return;
-		}
-		source.subscribe(new ScanSeedSubscriber<>(s, accumulator, initialValue));
 	}
 
-	static final class ScanSeedSubscriber<T, R>
-			implements InnerOperator<T, R> {
+	static final class ScanSeedCoordinator<T, R>
+			extends Operators.MultiSubscriptionSubscriber<R, R> {
+
+		final    Supplier<R>                 initialSupplier;
+		final    Publisher<? extends T>      source;
+		final    BiFunction<R, ? super T, R> accumulator;
+		volatile int                         wip;
+		long produced;
+		private ScanSeedSubscriber<T, R> seedSubscriber;
+
+		public ScanSeedCoordinator(Subscriber<? super R> actual,
+				Publisher<? extends T> source,
+				BiFunction<R, ? super T, R> accumulator,
+				Supplier<R> initialSupplier) {
+			super(actual);
+			this.source = source;
+			this.accumulator = accumulator;
+			this.initialSupplier = initialSupplier;
+		}
+
+		@Override
+		public void onComplete() {
+			if (WIP.getAndIncrement(this) == 0) {
+				do {
+					if (isCancelled()) {
+						return;
+					}
+
+					if (null != seedSubscriber && subscription == seedSubscriber) {
+						actual.onComplete();
+						return;
+					}
+
+					long c = produced;
+					if (c != 0L) {
+						produced = 0L;
+						produced(c);
+					}
+
+					if (null == seedSubscriber) {
+						R initialValue;
+
+						try {
+							initialValue = Objects.requireNonNull(initialSupplier.get(),
+									"The initial value supplied is null");
+						}
+						catch (Throwable e) {
+							onError(Operators.onOperatorError(e));
+							return;
+						}
+
+						onSubscribe(Operators.scalarSubscription(this, initialValue));
+						seedSubscriber =
+								new ScanSeedSubscriber<>(this, accumulator, initialValue);
+					}
+					else {
+						source.subscribe(seedSubscriber);
+					}
+
+					if (isCancelled()) {
+						return;
+					}
+				}
+				while (WIP.decrementAndGet(this) != 0);
+			}
+
+		}
+
+		@Override
+		public void onNext(R r) {
+			produced++;
+			actual.onNext(r);
+		}
+
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<ScanSeedCoordinator> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(ScanSeedCoordinator.class, "wip");
+	}
+
+	static final class ScanSeedSubscriber<T, R> implements InnerOperator<T, R> {
 
 		final Subscriber<? super R> actual;
 
@@ -87,13 +160,6 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 
 		boolean done;
 
-		volatile long requested;
-		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<ScanSeedSubscriber> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(ScanSeedSubscriber.class, "requested");
-
-		long produced;
-
 		ScanSeedSubscriber(Subscriber<? super R> actual,
 				BiFunction<R, ? super T, R> accumulator,
 				R initialValue) {
@@ -103,37 +169,22 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
-		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s)) {
-				this.s = s;
-
-				actual.onSubscribe(this);
-			}
+		public Subscriber<? super R> actual() {
+			return actual;
 		}
 
 		@Override
-		public void onNext(T t) {
+		public void cancel() {
+			s.cancel();
+		}
+
+		@Override
+		public void onComplete() {
 			if (done) {
-				Operators.onNextDropped(t);
 				return;
 			}
-
-			R r = value;
-
-			produced++;
-
-			actual.onNext(r);
-
-			try {
-				r = Objects.requireNonNull(accumulator.apply(r, t),
-						"The accumulator returned a null value");
-			}
-			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
-				return;
-			}
-
-			value = r;
+			done = true;
+			actual.onComplete();
 		}
 
 		@Override
@@ -147,90 +198,49 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 		}
 
 		@Override
-		public void onComplete() {
+		public void onNext(T t) {
 			if (done) {
+				Operators.onNextDropped(t);
 				return;
 			}
-			done = true;
 
-			R v = value;
+			R r = value;
 
-			long p = produced;
-			long r = requested;
-			if (r != Long.MAX_VALUE && p != 0L) {
-				r = REQUESTED.addAndGet(this, -p);
+			try {
+				r = Objects.requireNonNull(accumulator.apply(r, t),
+						"The accumulator returned a null value");
+			}
+			catch (Throwable e) {
+				onError(Operators.onOperatorError(s, e, t));
+				return;
 			}
 
-			for (; ; ) {
-				// if any request amount is still available, emit the value and complete
-				if ((r & REQUESTED_MASK) != 0L) {
-					actual.onNext(v);
-					actual.onComplete();
-					return;
-				}
-				// NO_REQUEST_NO_VALUE -> NO_REQUEST_HAS_VALUE
-				if (REQUESTED.compareAndSet(this, 0, COMPLETED_MASK)) {
-					return;
-				}
+			actual.onNext(r);
+			value = r;
+		}
 
-				r = requested;
+		@Override
+		public void onSubscribe(Subscription s) {
+			if (Operators.validate(this.s, s)) {
+				this.s = s;
+				actual.onSubscribe(this);
 			}
 		}
 
 		@Override
 		public void request(long n) {
-			if (Operators.validate(n)) {
-				for (; ; ) {
-
-					long r = requested;
-
-					// NO_REQUEST_HAS_VALUE 
-					if (r == COMPLETED_MASK) {
-						// any positive request value will do here
-						// transition to HAS_REQUEST_HAS_VALUE
-						if (REQUESTED.compareAndSet(this,
-								COMPLETED_MASK,
-								COMPLETED_MASK | 1)) {
-							actual.onNext(value);
-							actual.onComplete();
-						}
-						return;
-					}
-
-					// HAS_REQUEST_HAS_VALUE
-					if (r < 0L) {
-						return;
-					}
-
-					// transition to HAS_REQUEST_NO_VALUE
-					long u = Operators.addCap(r, n);
-					if (REQUESTED.compareAndSet(this, r, u)) {
-						s.request(n);
-						return;
-					}
-				}
-			}
-		}
-
-		@Override
-		public void cancel() {
-			s.cancel();
+			s.request(n);
 		}
 
 		@Override
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == BooleanAttr.TERMINATED) return done;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == IntAttr.BUFFERED) return value != null ? 1 : 0;
-
+			if (key == ScannableAttr.PARENT) {
+				return s;
+			}
+			if (key == BooleanAttr.TERMINATED) {
+				return done;
+			}
 			return InnerOperator.super.scanUnsafe(key);
 		}
-
-		@Override
-		public Subscriber<? super R> actual() {
-			return actual;
-		}
-
 	}
 }
