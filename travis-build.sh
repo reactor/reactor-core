@@ -19,13 +19,11 @@ elif [ "$TRAVIS_BRANCH" == "master" ] || [ "$TRAVIS_BRANCH" == "3.0.x" ]; then
     ./gradlew check
 else
     COMMIT_RANGE=${TRAVIS_COMMIT_RANGE/.../..}
-    if ! git diff --quiet "$COMMIT_RANGE" -- ; then
-        echo "travis commit range diff failed, probably new PR or force push, falling back to single commit"
+    echo "travis push build, looking at files in $COMMIT_RANGE"
+    COMMIT_CONTENT=`git diff --name-only $COMMIT_RANGE` || {
+        echo "travis commit range diff failed, probably new PR or force push, falling back to single commit $TRAVIS_COMMIT"
         COMMIT_CONTENT=`git diff-tree --no-commit-id --name-only -r $TRAVIS_COMMIT`
-    else
-        echo "travis push build, looking at files in $COMMIT_RANGE"
-        COMMIT_CONTENT=`git diff --name-only $COMMIT_RANGE`
-    fi
+    }
     echo "commits content: $COMMIT_CONTENT"
     echo $COMMIT_CONTENT | grep -qv '^reactor-test/' && {
       echo "something else than reactor-test was touched -> full test"
