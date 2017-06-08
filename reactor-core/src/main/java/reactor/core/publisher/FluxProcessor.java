@@ -23,10 +23,10 @@ import java.util.stream.Stream;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.util.context.ContextRelay;
 import javax.annotation.Nullable;
 
 /**
@@ -205,7 +205,7 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 			strategy = FluxSink.OverflowStrategy.IGNORE;
 		}
 
-		FluxCreate.BaseSink<IN> s = FluxCreate.createSink(this, strategy);
+		FluxCreate.BaseSink<IN> s = FluxCreate.createSink(this, strategy, ContextRelay.getOrEmpty(this));
 		onSubscribe(s);
 
 		if(s.isCancelled() ||
@@ -213,15 +213,5 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 			return s;
 		}
 		return new FluxCreate.SerializedSink<>(s);
-	}
-
-	/**
-	 * Note: From 3.1 this is to be left unimplemented
-	 */
-	@Override
-	public void subscribe(Subscriber<? super OUT> s) {
-		if (s == null) {
-			throw Exceptions.argumentIsNullException();
-		}
 	}
 }

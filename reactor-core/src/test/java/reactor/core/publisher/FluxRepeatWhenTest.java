@@ -30,6 +30,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -372,7 +373,7 @@ public class FluxRepeatWhenTest {
     public void scanMainSubscriber() {
         Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxRepeatWhen.RepeatWhenMainSubscriber<Integer> test =
-        		new FluxRepeatWhen.RepeatWhenMainSubscriber<>(actual, null, Flux.empty());
+        		new FluxRepeatWhen.RepeatWhenMainSubscriber<>(actual, null, Flux.empty(), Context.empty());
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -390,7 +391,7 @@ public class FluxRepeatWhenTest {
     public void scanOtherSubscriber() {
 		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxRepeatWhen.RepeatWhenMainSubscriber<Integer> main =
-        		new FluxRepeatWhen.RepeatWhenMainSubscriber<>(actual, null, Flux.empty());
+        		new FluxRepeatWhen.RepeatWhenMainSubscriber<>(actual, null, Flux.empty(), Context.empty());
         FluxRepeatWhen.RepeatWhenOtherSubscriber test = new FluxRepeatWhen.RepeatWhenOtherSubscriber();
         test.main = main;
 
@@ -403,7 +404,7 @@ public class FluxRepeatWhenTest {
 		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		Subscriber<Long> signaller = new LambdaSubscriber<>(null, e -> {}, null, null);
 		Flux<Integer> when = Flux.empty();
-		FluxRepeatWhen.RepeatWhenMainSubscriber<Integer> main = new FluxRepeatWhen.RepeatWhenMainSubscriber<>(actual, signaller, when);
+		FluxRepeatWhen.RepeatWhenMainSubscriber<Integer> main = new FluxRepeatWhen.RepeatWhenMainSubscriber<>(actual, signaller, when, Context.empty());
 
 		List<Scannable> inners = main.inners().collect(Collectors.toList());
 

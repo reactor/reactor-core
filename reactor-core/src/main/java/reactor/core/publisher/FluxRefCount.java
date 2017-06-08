@@ -25,6 +25,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -59,7 +60,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 	}
 	
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context context) {
 		RefCountMonitor<T> state;
 		
 		for (;;) {
@@ -74,7 +75,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 				state = u;
 			}
 			
-			state.subscribe(s);
+			state.subscribe(s, context);
 			break;
 		}
 	}
@@ -109,11 +110,11 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 			this.parent = parent;
 		}
 		
-		void subscribe(Subscriber<? super T> s) {
+		void subscribe(Subscriber<? super T> s, Context context) {
 			// FIXME think about what happens when subscribers come and go below the connection threshold concurrently
 
 			RefCountInner<T> inner = new RefCountInner<>(s, this);
-			parent.source.subscribe(inner);
+			parent.source.subscribe(inner, context);
 			
 			if (SUBSCRIBERS.incrementAndGet(this) == n) {
 				parent.source.connect(this);

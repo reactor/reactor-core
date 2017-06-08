@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Subscriber;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -41,7 +42,7 @@ final class FluxError<T> extends Flux<T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context context) {
 		if (whenRequested) {
 			s.onSubscribe(new ErrorSubscription(s, error));
 		}

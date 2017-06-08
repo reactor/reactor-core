@@ -19,6 +19,7 @@ import java.util.Objects;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import reactor.util.context.Context;
 
 /**
  * Switches to another source if the first source turns out to be empty.
@@ -26,7 +27,7 @@ import org.reactivestreams.Subscriber;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxSwitchIfEmpty<T> extends FluxSource<T, T> {
+final class FluxSwitchIfEmpty<T> extends FluxOperator<T, T> {
 
 	final Publisher<? extends T> other;
 
@@ -37,12 +38,12 @@ final class FluxSwitchIfEmpty<T> extends FluxSource<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
-		SwitchIfEmptySubscriber<T> parent = new SwitchIfEmptySubscriber<>(s, other);
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
+		SwitchIfEmptySubscriber<T> parent = new SwitchIfEmptySubscriber<>(s, other, ctx);
 
 		s.onSubscribe(parent);
 
-		source.subscribe(parent);
+		source.subscribe(parent, ctx);
 	}
 
 	static final class SwitchIfEmptySubscriber<T>
@@ -53,8 +54,8 @@ final class FluxSwitchIfEmpty<T> extends FluxSource<T, T> {
 		boolean once;
 
 		SwitchIfEmptySubscriber(Subscriber<? super T> actual,
-				Publisher<? extends T> other) {
-			super(actual);
+				Publisher<? extends T> other, Context ctx) {
+			super(actual, ctx);
 			this.other = other;
 		}
 

@@ -21,6 +21,7 @@ import java.util.function.Predicate;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import javax.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Relays values while a predicate returns
@@ -29,7 +30,7 @@ import javax.annotation.Nullable;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxTakeWhile<T> extends FluxSource<T, T> {
+final class FluxTakeWhile<T> extends FluxOperator<T, T> {
 
 	final Predicate<? super T> predicate;
 
@@ -39,8 +40,8 @@ final class FluxTakeWhile<T> extends FluxSource<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(new TakeWhileSubscriber<>(s, predicate));
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
+		source.subscribe(new TakeWhileSubscriber<>(s, predicate), ctx);
 	}
 
 	static final class TakeWhileSubscriber<T>

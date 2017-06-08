@@ -21,6 +21,7 @@ import java.util.function.Predicate;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable.ConditionalSubscriber;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -30,7 +31,7 @@ import javax.annotation.Nullable;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxSkipWhile<T> extends FluxSource<T, T> {
+final class FluxSkipWhile<T> extends FluxOperator<T, T> {
 
 	final Predicate<? super T> predicate;
 
@@ -40,8 +41,8 @@ final class FluxSkipWhile<T> extends FluxSource<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(new SkipWhileSubscriber<>(s, predicate));
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
+		source.subscribe(new SkipWhileSubscriber<>(s, predicate), ctx);
 	}
 
 	static final class SkipWhileSubscriber<T>

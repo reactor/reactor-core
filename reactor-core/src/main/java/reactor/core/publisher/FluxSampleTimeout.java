@@ -30,6 +30,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -41,7 +42,7 @@ import javax.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
+final class FluxSampleTimeout<T, U> extends FluxOperator<T, T> {
 
 	final Function<? super T, ? extends Publisher<U>> throttler;
 
@@ -62,7 +63,7 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 
 		Queue<SampleTimeoutOther<T, U>> q = (Queue) queueSupplier.get();
 
@@ -70,24 +71,18 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 
 		s.onSubscribe(main);
 
-		source.subscribe(main);
+		source.subscribe(main, ctx);
 	}
 
 	static final class SampleTimeoutMain<T, U>
-
-			implements InnerOperator<T, T>, InnerProducer<T> {
+			extends CachedContextProducer<T>
+			implements InnerOperator<T, T> {
 
 		final Function<? super T, ? extends Publisher<U>> throttler;
 
 		final Queue<SampleTimeoutOther<T, U>> queue;
-		final Subscriber<? super T>           actual;
 
 		volatile Subscription s;
-
-		@Override
-		public final Subscriber<? super T> actual() {
-			return actual;
-		}
 
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SampleTimeoutMain, Subscription> S =
@@ -131,7 +126,7 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 		SampleTimeoutMain(Subscriber<? super T> actual,
 				Function<? super T, ? extends Publisher<U>> throttler,
 				Queue<SampleTimeoutOther<T, U>> queue) {
-			this.actual = actual;
+			super(actual);
 			this.throttler = throttler;
 			this.queue = queue;
 		}
@@ -349,6 +344,11 @@ final class FluxSampleTimeout<T, U> extends FluxSource<T, T> {
 			this.main = main;
 			this.value = value;
 			this.index = index;
+		}
+
+		@Override
+		public Context currentContext() {
+			return main.currentContext();
 		}
 
 		@Override

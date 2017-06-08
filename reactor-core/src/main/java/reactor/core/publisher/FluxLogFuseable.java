@@ -16,8 +16,15 @@
 
 package reactor.core.publisher;
 
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
+
 import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.util.context.Context;
+import reactor.util.context.ContextRelay;
 
 /**
  * Peek into the lifecycle events and signals of a sequence.
@@ -32,7 +39,7 @@ import reactor.core.Fuseable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxLogFuseable<T> extends FluxSource<T, T>
+final class FluxLogFuseable<T> extends FluxOperator<T, T>
 		implements Fuseable {
 
 	final SignalPeek<T> log;
@@ -44,12 +51,12 @@ final class FluxLogFuseable<T> extends FluxSource<T, T>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 		if (s instanceof ConditionalSubscriber) {
 			source.subscribe(new FluxPeekFuseable.PeekFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
-					log));
+					log), ctx);
 			return;
 		}
-		source.subscribe(new FluxPeekFuseable.PeekFuseableSubscriber<>(s, log));
+		source.subscribe(new FluxPeekFuseable.PeekFuseableSubscriber<>(s, log), ctx);
 	}
 }

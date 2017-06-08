@@ -27,6 +27,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -294,7 +295,7 @@ public class MonoFilterWhenTest {
 		TestPublisher<Boolean> filter = TestPublisher.create();
 		new MonoFilterWhen<>(new Mono<Integer>() {
 			@Override
-			public void subscribe(Subscriber<? super Integer> s) {
+			public void subscribe(Subscriber<? super Integer> s, Context ctx) {
 				subscriber.set(s);
 				//NON-EMPTY SOURCE WILL TRIGGER FILTER SUBSCRIPTION
 				s.onNext(2);
@@ -318,7 +319,7 @@ public class MonoFilterWhenTest {
 	public void scanSubscriber() {
 		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoFilterWhen.MonoFilterWhenSubscriber<String> test = new MonoFilterWhen.MonoFilterWhenSubscriber<>(
-				actual, s -> Mono.just(false));
+				actual, s -> Mono.just(false), Context.empty());
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
@@ -338,7 +339,7 @@ public class MonoFilterWhenTest {
 	public void scanFilterWhenInner() {
 		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoFilterWhen.MonoFilterWhenSubscriber<String> main = new MonoFilterWhen.MonoFilterWhenSubscriber<>(
-				actual, s -> Mono.just(false));
+				actual, s -> Mono.just(false), Context.empty());
 		MonoFilterWhen.FilterWhenInner test = new MonoFilterWhen.FilterWhenInner(main, true);
 
 		Subscription innerSubscription = Operators.emptySubscription();

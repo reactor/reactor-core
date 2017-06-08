@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.publisher.FluxPeekFuseable.PeekConditionalSubscriber;
+import reactor.util.context.Context;
 
 /**
  * Peek into the lifecycle events and signals of a sequence.
@@ -31,7 +32,7 @@ import reactor.core.publisher.FluxPeekFuseable.PeekConditionalSubscriber;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoLog<T> extends MonoSource<T, T> {
+final class MonoLog<T> extends MonoOperator<T, T> {
 
 	final SignalPeek<T> log;
 
@@ -41,14 +42,14 @@ final class MonoLog<T> extends MonoSource<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 		if (s instanceof ConditionalSubscriber) {
 			@SuppressWarnings("unchecked") // javac, give reason to suppress because inference anomalies
 					ConditionalSubscriber<T> s2 = (ConditionalSubscriber<T>) s;
-			source.subscribe(new PeekConditionalSubscriber<>(s2, log));
+			source.subscribe(new PeekConditionalSubscriber<>(s2, log), ctx);
 			return;
 		}
-		source.subscribe(new FluxPeek.PeekSubscriber<>(s, log));
+		source.subscribe(new FluxPeek.PeekSubscriber<>(s, log), ctx);
 	}
 
 }

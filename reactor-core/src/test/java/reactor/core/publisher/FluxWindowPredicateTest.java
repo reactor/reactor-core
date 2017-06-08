@@ -37,6 +37,7 @@ import reactor.test.StepVerifierOptions;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.publisher.TestPublisher;
 import reactor.util.concurrent.QueueSupplier;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -830,7 +831,7 @@ public class FluxWindowPredicateTest extends
     public void scanMainSubscriber() {
         Subscriber<GroupedFlux<Integer, Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWindowPredicate.WindowPredicateMain<Integer> test = new FluxWindowPredicate.WindowPredicateMain<>(actual,
-        		QueueSupplier.<GroupedFlux<Integer, Integer>>unbounded().get(), QueueSupplier.unbounded(), 123, i -> true, Mode.WHILE);
+        		QueueSupplier.<GroupedFlux<Integer, Integer>>unbounded().get(), QueueSupplier.unbounded(), 123, i -> true, Mode.WHILE, Context.empty());
 
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
@@ -862,9 +863,9 @@ public class FluxWindowPredicateTest extends
     public void scanOtherSubscriber() {
         Subscriber<GroupedFlux<Integer, Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWindowPredicate.WindowPredicateMain<Integer> main = new FluxWindowPredicate.WindowPredicateMain<>(actual,
-        		QueueSupplier.<GroupedFlux<Integer, Integer>>unbounded().get(), QueueSupplier.unbounded(), 123, i -> true, Mode.WHILE);
+        		QueueSupplier.<GroupedFlux<Integer, Integer>>unbounded().get(), QueueSupplier.unbounded(), 123, i -> true, Mode.WHILE, Context.empty());
         FluxWindowPredicate.WindowGroupedFlux<Integer> test = new FluxWindowPredicate.WindowGroupedFlux<Integer>(1,
-        		QueueSupplier.<Integer>unbounded().get(), main);
+        		QueueSupplier.<Integer>unbounded().get(), main, Context.empty());
 
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);

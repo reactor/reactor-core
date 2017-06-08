@@ -23,6 +23,7 @@ import org.reactivestreams.Subscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
+import reactor.util.context.Context;
 
 
 /**
@@ -43,7 +44,7 @@ final class MonoSubscribeOnCallable<T> extends Mono<T> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context context) {
 		FluxSubscribeOnCallable.CallableSubscribeOnSubscription<T> parent =
 				new FluxSubscribeOnCallable.CallableSubscribeOnSubscription<>(s, callable, scheduler);
 		s.onSubscribe(parent);

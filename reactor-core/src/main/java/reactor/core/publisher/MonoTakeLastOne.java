@@ -21,6 +21,7 @@ import java.util.Objects;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -28,7 +29,7 @@ import javax.annotation.Nullable;
  *
  * @param <T> the value type
  */
-final class MonoTakeLastOne<T> extends MonoSource<T, T> implements Fuseable {
+final class MonoTakeLastOne<T> extends MonoOperator<T, T> implements Fuseable {
 
 	final T defaultValue;
 
@@ -43,8 +44,8 @@ final class MonoTakeLastOne<T> extends MonoSource<T, T> implements Fuseable {
 	}
 
     @Override
-    public void subscribe(Subscriber<? super T> s) {
-        source.subscribe(new TakeLastOneSubscriber<>(s, defaultValue, true));
+    public void subscribe(Subscriber<? super T> s, Context ctx) {
+        source.subscribe(new TakeLastOneSubscriber<>(s, defaultValue, true), ctx);
     }
 
 	static final class TakeLastOneSubscriber<T>

@@ -32,6 +32,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import javax.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Switches to a new Publisher generated via a function whenever the upstream produces an
@@ -42,7 +43,7 @@ import javax.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
+final class FluxSwitchMap<T, R> extends FluxOperator<T, R> {
 
 	final Function<? super T, ? extends Publisher<? extends R>> mapper;
 
@@ -54,7 +55,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 	static final SwitchMapInner<Object> CANCELLED_INNER =
 			new SwitchMapInner<>(null, 0, Long.MAX_VALUE);
 
-	FluxSwitchMap(Publisher<? extends T> source,
+	FluxSwitchMap(ContextualPublisher<? extends T> source,
 			Function<? super T, ? extends Publisher<? extends R>> mapper,
 			Supplier<? extends Queue<Object>> queueSupplier,
 			int bufferSize) {
@@ -73,7 +74,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R> s) {
+	public void subscribe(Subscriber<? super R> s, Context ctx) {
 		if (FluxFlatMap.trySubscribeScalarMap(source, s, mapper, false)) {
 			return;
 		}
@@ -81,10 +82,11 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		source.subscribe(new SwitchMapMain<T, R>(s,
 				mapper,
 				queueSupplier.get(),
-				bufferSize));
+				bufferSize), ctx);
 	}
 
 	static final class SwitchMapMain<T, R>
+			extends CachedContextProducer<R>
 			implements InnerOperator<T, R> {
 
 		final Function<? super T, ? extends Publisher<? extends R>> mapper;
@@ -94,18 +96,12 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		final BiPredicate<Object, Object> queueBiAtomic;
 
 		final int                   bufferSize;
-		final Subscriber<? super R> actual;
 
 		Subscription s;
 
 		volatile boolean done;
 
 		volatile Throwable error;
-
-		@Override
-		public final Subscriber<? super R> actual() {
-			return actual;
-		}
 
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SwitchMapMain, Throwable> ERROR =
@@ -152,7 +148,7 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 				Function<? super T, ? extends Publisher<? extends R>> mapper,
 				Queue<Object> queue,
 				int bufferSize) {
-			this.actual = actual;
+			super(actual);
 			this.mapper = mapper;
 			this.queue = queue;
 			this.bufferSize = bufferSize;
@@ -456,6 +452,11 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 			this.bufferSize = bufferSize;
 			this.limit = bufferSize - (bufferSize >> 2);
 			this.index = index;
+		}
+
+		@Override
+		public Context currentContext() {
+			return parent.currentContext();
 		}
 
 		@Override

@@ -16,18 +16,20 @@
 package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
+import reactor.util.context.Context;
 
 /**
  * @author Stephane Maldini
  */
-final class MonoMaterialize<T> extends MonoSource<T, Signal<T>> {
+final class MonoMaterialize<T> extends MonoOperator<T, Signal<T>> {
 
 	MonoMaterialize(Mono<T> source) {
 		super(source);
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super Signal<T>> subscriber) {
-		source.subscribe(new FluxMaterialize.MaterializeSubscriber<>(new MonoNext.NextSubscriber<Signal<T>>(subscriber)));
+	public void subscribe(Subscriber<? super Signal<T>> subscriber, Context ctx) {
+		source.subscribe(new FluxMaterialize.MaterializeSubscriber<>(new MonoNext.NextSubscriber<Signal<T>>(subscriber)),
+				ctx);
 	}
 }

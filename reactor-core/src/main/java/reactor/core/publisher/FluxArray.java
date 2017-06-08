@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -54,7 +55,7 @@ final class FluxArray<T> extends Flux<T> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context context) {
 		subscribe(s, array);
 	}
 

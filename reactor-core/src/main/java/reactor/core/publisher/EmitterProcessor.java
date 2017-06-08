@@ -28,6 +28,7 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.concurrent.QueueSupplier;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 import static reactor.core.publisher.FluxPublish.PublishSubscriber.EMPTY;
@@ -225,7 +226,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 		//noinspection ConstantConditions
 		if (s == null) {
 			throw Exceptions.argumentIsNullException();

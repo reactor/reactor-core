@@ -24,19 +24,20 @@ import java.util.function.BooleanSupplier;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import javax.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * @author Stephane Maldini
  */
-final class FluxDematerialize<T> extends FluxSource<Signal<T>, T> {
+final class FluxDematerialize<T> extends FluxOperator<Signal<T>, T> {
 
 	FluxDematerialize(Flux<Signal<T>> source) {
 		super(source);
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> subscriber) {
-		source.subscribe(new DematerializeSubscriber<>(subscriber));
+	public void subscribe(Subscriber<? super T> subscriber, Context ctx) {
+		source.subscribe(new DematerializeSubscriber<>(subscriber), ctx);
 	}
 
 	static final class DematerializeSubscriber<T> extends AbstractQueue<T>

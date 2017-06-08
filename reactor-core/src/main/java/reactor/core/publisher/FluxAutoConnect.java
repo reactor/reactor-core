@@ -19,10 +19,10 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -56,8 +56,8 @@ final class FluxAutoConnect<T> extends Flux<T>
 	}
 	
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(s);
+	public void subscribe(Subscriber<? super T> s, Context context) {
+		source.subscribe(s, context);
 		if (remaining > 0 && REMAINING.decrementAndGet(this) == 0) {
 			source.connect(cancelSupport);
 		}

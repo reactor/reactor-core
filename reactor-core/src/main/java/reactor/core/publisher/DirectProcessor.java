@@ -13,25 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import javax.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Dispatches onNext, onError and onComplete signals to zero-to-many Subscribers.
  * <p>
  * <p>
- * This implementation signals an IllegalStateException if a Subscriber is not ready to receive a value due to not
- * requesting enough.
+ * This implementation signals an IllegalStateException if a Subscriber is not ready to
+ * receive a value due to not requesting enough.
  * <p>
  * <p>
  * The implementation ignores Subscriptions set via onSubscribe.
@@ -41,13 +43,13 @@ import javax.annotation.Nullable;
  *
  * @param <T> the input and output value type
  */
-public final class DirectProcessor<T>
-		extends FluxProcessor<T, T> {
-
+public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 
 	/**
 	 * Create a new {@link DirectProcessor}
+	 *
 	 * @param <E> Type of processed signals
+	 *
 	 * @return a fresh processor
 	 */
 	public static <E> DirectProcessor<E> create() {
@@ -61,12 +63,13 @@ public final class DirectProcessor<T>
 	private static final DirectInner[] TERMINATED = new DirectInner[0];
 
 	@SuppressWarnings("unchecked")
-	private volatile	 DirectInner<T>[]                                           subscribers = EMPTY;
+	private volatile     DirectInner<T>[] subscribers = EMPTY;
 	@SuppressWarnings("rawtypes")
-	private static final AtomicReferenceFieldUpdater<DirectProcessor, DirectInner[]>SUBSCRIBERS =
-	  AtomicReferenceFieldUpdater.newUpdater(DirectProcessor.class,
-		DirectInner[].class,
-		"subscribers");
+	private static final AtomicReferenceFieldUpdater<DirectProcessor, DirectInner[]>
+	                                      SUBSCRIBERS =
+			AtomicReferenceFieldUpdater.newUpdater(DirectProcessor.class,
+					DirectInner[].class,
+					"subscribers");
 
 	Throwable error;
 
@@ -83,7 +86,8 @@ public final class DirectProcessor<T>
 		Objects.requireNonNull(s, "s");
 		if (subscribers != TERMINATED) {
 			s.request(Long.MAX_VALUE);
-		} else {
+		}
+		else {
 			s.cancel();
 		}
 	}
@@ -115,7 +119,7 @@ public final class DirectProcessor<T>
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 		//noinspection ConstantConditions
 		if (s == null) {
 			throw Exceptions.argumentIsNullException();
@@ -128,11 +132,13 @@ public final class DirectProcessor<T>
 			if (p.cancelled) {
 				remove(p);
 			}
-		} else {
+		}
+		else {
 			Throwable e = error;
 			if (e != null) {
 				s.onError(e);
-			} else {
+			}
+			else {
 				s.onComplete();
 			}
 		}
@@ -258,7 +264,7 @@ public final class DirectProcessor<T>
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<DirectInner> REQUESTED =
-		  AtomicLongFieldUpdater.newUpdater(DirectInner.class, "requested");
+				AtomicLongFieldUpdater.newUpdater(DirectInner.class, "requested");
 
 		DirectInner(Subscriber<? super T> actual, DirectProcessor<T> parent) {
 			this.actual = actual;
@@ -283,8 +289,12 @@ public final class DirectProcessor<T>
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return parent;
-			if (key == BooleanAttr.CANCELLED) return cancelled;
+			if (key == ScannableAttr.PARENT) {
+				return parent;
+			}
+			if (key == BooleanAttr.CANCELLED) {
+				return cancelled;
+			}
 
 			return InnerProducer.super.scanUnsafe(key);
 		}
@@ -303,7 +313,8 @@ public final class DirectProcessor<T>
 				return;
 			}
 			parent.remove(this);
-			actual.onError(Exceptions.failWithOverflow("Can't deliver value due to lack of requests"));
+			actual.onError(Exceptions.failWithOverflow(
+					"Can't deliver value due to lack of requests"));
 		}
 
 		void onError(Throwable e) {

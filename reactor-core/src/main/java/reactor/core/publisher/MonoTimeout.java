@@ -21,6 +21,7 @@ import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import reactor.util.context.Context;
 
 /**
  * Signals a timeout (or switches to another sequence) in case a per-item generated
@@ -32,7 +33,7 @@ import org.reactivestreams.Subscriber;
  * @param <V> the value type for the timeout for the subsequent items
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoTimeout<T, U, V> extends MonoSource<T, T> {
+final class MonoTimeout<T, U, V> extends MonoOperator<T, T> {
 
 	final Publisher<U> firstTimeout;
 
@@ -58,12 +59,12 @@ final class MonoTimeout<T, U, V> extends MonoSource<T, T> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 
 		Subscriber<T> serial = Operators.serialize(s);
 
 		FluxTimeout.TimeoutMainSubscriber<T, V> main =
-				new FluxTimeout.TimeoutMainSubscriber<>(serial, NEVER, other);
+				new FluxTimeout.TimeoutMainSubscriber<>(serial, NEVER, other, ctx);
 
 		serial.onSubscribe(main);
 
@@ -74,6 +75,6 @@ final class MonoTimeout<T, U, V> extends MonoSource<T, T> {
 
 		firstTimeout.subscribe(ts);
 
-		source.subscribe(main);
+		source.subscribe(main, ctx);
 	}
 }

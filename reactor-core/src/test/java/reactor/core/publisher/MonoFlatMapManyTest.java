@@ -20,6 +20,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -64,7 +65,8 @@ public class MonoFlatMapManyTest {
 	@Test
 	public void scanMain() {
 		Subscriber<Integer> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MonoFlatMapMany.FlatMapMain<String, Integer> test = new MonoFlatMapMany.FlatMapMain<>(actual, s -> Flux.just(1, 2, 3));
+		MonoFlatMapMany.FlatMapManyMain<String, Integer> test = new MonoFlatMapMany.FlatMapManyMain<>
+				(actual, s -> Flux.just(1, 2, 3), Context.empty());
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
@@ -76,8 +78,10 @@ public class MonoFlatMapManyTest {
 	public void scanInner() {
 		Subscriber<Integer> mainActual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		Subscriber<Integer> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MonoFlatMapMany.FlatMapMain<String, Integer> main = new MonoFlatMapMany.FlatMapMain<>(mainActual, s -> Flux.just(1, 2, 3));
-		MonoFlatMapMany.FlatMapInner<Integer> test = new MonoFlatMapMany.FlatMapInner<>(main, actual);
+		MonoFlatMapMany.FlatMapManyMain<String, Integer> main = new MonoFlatMapMany.FlatMapManyMain<>
+				(mainActual, s -> Flux.just(1, 2, 3), Context.empty());
+		MonoFlatMapMany.FlatMapManyInner<Integer> test = new MonoFlatMapMany.FlatMapManyInner<>(main,
+				actual);
 		Subscription innerSubscription = Operators.emptySubscription();
 		test.onSubscribe(innerSubscription);
 

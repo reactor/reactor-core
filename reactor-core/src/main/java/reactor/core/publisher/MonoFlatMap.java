@@ -21,12 +21,13 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import javax.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Given a Mono source, applies a function on its single item and continues
@@ -36,7 +37,7 @@ import javax.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoFlatMap<T, R> extends MonoSource<T, R> implements Fuseable {
+final class MonoFlatMap<T, R> extends MonoOperator<T, R> implements Fuseable {
 
 	final Function<? super T, ? extends Mono<? extends R>> mapper;
 
@@ -47,43 +48,52 @@ final class MonoFlatMap<T, R> extends MonoSource<T, R> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R> s) {
+	public void subscribe(Subscriber<? super R> s, Context ctx) {
 
 		if (FluxFlatMap.trySubscribeScalarMap(source, s, mapper, true)) {
 			return;
 		}
 
-		ThenMapMain<T, R> manager = new ThenMapMain<>(s, mapper);
+		FlatMapMain<T, R> manager = new FlatMapMain<>(s, mapper, ctx);
 		s.onSubscribe(manager);
 
-		source.subscribe(manager);
+		source.subscribe(manager, ctx);
 	}
 
-	static final class ThenMapMain<T, R> extends Operators.MonoSubscriber<T, R> {
+	static final class FlatMapMain<T, R> extends Operators.MonoSubscriber<T, R> {
 
 		final Function<? super T, ? extends Mono<? extends R>> mapper;
 
-		final ThenMapInner<R> second;
+		final FlatMapInner<R> second;
+
+		final Context ctx;
 
 		boolean done;
 
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ThenMapMain, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(ThenMapMain.class,
+		static final AtomicReferenceFieldUpdater<FlatMapMain, Subscription> S =
+				AtomicReferenceFieldUpdater.newUpdater(FlatMapMain.class,
 						Subscription.class,
 						"s");
 
-		ThenMapMain(Subscriber<? super R> subscriber,
-				Function<? super T, ? extends Mono<? extends R>> mapper) {
+		FlatMapMain(Subscriber<? super R> subscriber,
+				Function<? super T, ? extends Mono<? extends R>> mapper,
+				Context ctx) {
 			super(subscriber);
 			this.mapper = mapper;
-			this.second = new ThenMapInner<>(this);
+			this.ctx = ctx;
+			this.second = new FlatMapInner<>(this);
 		}
 
 		@Override
 		public Stream<? extends Scannable> inners() {
 			return Stream.of(second);
+		}
+
+		@Override
+		public Context currentContext() {
+			return ctx;
 		}
 
 		@Override
@@ -186,25 +196,31 @@ final class MonoFlatMap<T, R> extends MonoSource<T, R> implements Fuseable {
 		}
 	}
 
-	static final class ThenMapInner<R> implements InnerConsumer<R> {
+	static final class FlatMapInner<R> implements InnerConsumer<R> {
 
-		final ThenMapMain<?, R> parent;
+		final FlatMapMain<?, R> parent;
 
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ThenMapInner, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(ThenMapInner.class,
+		static final AtomicReferenceFieldUpdater<FlatMapInner, Subscription> S =
+				AtomicReferenceFieldUpdater.newUpdater(FlatMapInner.class,
 						Subscription.class,
 						"s");
 
 		boolean done;
 
-		ThenMapInner(ThenMapMain<?, R> parent) {
+		FlatMapInner(FlatMapMain<?, R> parent) {
 			this.parent = parent;
 		}
 
+
 		@Override
+		public Context currentContext() {
+			return parent.ctx;
+		}
+
 		@Nullable
+		@Override
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == ScannableAttr.ACTUAL) return parent;

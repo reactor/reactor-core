@@ -23,6 +23,8 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.util.context.Context;
+import reactor.util.context.ContextRelay;
 import javax.annotation.Nullable;
 
 /**
@@ -43,19 +45,19 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super GroupedFlux<Integer, T>> s) {
+	public void subscribe(Subscriber<? super GroupedFlux<Integer, T>> s, Context ctx) {
 		int n = source.parallelism();
 
 		@SuppressWarnings("unchecked")
 		ParallelInnerGroup<T>[] groups = new ParallelInnerGroup[n];
 
 		for (int i = 0; i < n; i++) {
-			groups[i] = new ParallelInnerGroup<>(i);
+			groups[i] = new ParallelInnerGroup<>(i, ctx);
 		}
 
 		FluxArray.subscribe(s, groups);
 
-		source.subscribe(groups);
+		source.subscribe(groups, ctx);
 	}
 
 	@Override
@@ -70,6 +72,8 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements
 	static final class ParallelInnerGroup<T> extends GroupedFlux<Integer, T>
 	implements InnerOperator<T, T> {
 		final int key;
+
+		final Context ctx;
 
 		volatile int once;
 		@SuppressWarnings("rawtypes")
@@ -88,7 +92,8 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements
 
 		Subscriber<? super T> actual;
 
-		ParallelInnerGroup(int key) {
+		ParallelInnerGroup(int key, Context ctx) {
+			this.ctx = ctx;
 			this.key = key;
 		}
 
@@ -98,9 +103,10 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements
 		}
 
 		@Override
-		public void subscribe(Subscriber<? super T> s) {
+		public void subscribe(Subscriber<? super T> s, Context context) {
 			if (ONCE.compareAndSet(this, 0, 1)) {
 				this.actual = s;
+				ContextRelay.set(s, ctx);
 				s.onSubscribe(this);
 			} else {
 				Operators.error(s, new IllegalStateException("This ParallelGroup can be subscribed to at most once."));

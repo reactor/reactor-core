@@ -23,6 +23,7 @@ import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.Fuseable.QueueSubscription;
 import javax.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Takes only the first N values from the source Publisher.
@@ -33,7 +34,7 @@ import javax.annotation.Nullable;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxTake<T> extends FluxSource<T, T> {
+final class FluxTake<T> extends FluxOperator<T, T> {
 
 	final long n;
 
@@ -47,13 +48,13 @@ final class FluxTake<T> extends FluxSource<T, T> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 			if (s instanceof ConditionalSubscriber) {
 				source.subscribe(new TakeConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
-						n));
+						n), ctx);
 			}
 			else {
-				source.subscribe(new TakeSubscriber<>(s, n));
+				source.subscribe(new TakeSubscriber<>(s, n), ctx);
 			}
 	}
 

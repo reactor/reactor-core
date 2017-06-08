@@ -24,6 +24,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
 import javax.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Relays values from the main Publisher until another Publisher signals an event.
@@ -32,7 +33,7 @@ import javax.annotation.Nullable;
  * @param <U> the value type of the other Publisher
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxTakeUntilOther<T, U> extends FluxSource<T, T> {
+final class FluxTakeUntilOther<T, U> extends FluxOperator<T, T> {
 
 	final Publisher<U> other;
 
@@ -47,14 +48,14 @@ final class FluxTakeUntilOther<T, U> extends FluxSource<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 		TakeUntilMainSubscriber<T> mainSubscriber = new TakeUntilMainSubscriber<>(s);
 
 		TakeUntilOtherSubscriber<U> otherSubscriber = new TakeUntilOtherSubscriber<>(mainSubscriber);
 
 		other.subscribe(otherSubscriber);
 
-		source.subscribe(mainSubscriber);
+		source.subscribe(mainSubscriber, ctx);
 	}
 
 	static final class TakeUntilOtherSubscriber<U> implements InnerConsumer<U> {
@@ -64,6 +65,11 @@ final class FluxTakeUntilOther<T, U> extends FluxSource<T, T> {
 
 		TakeUntilOtherSubscriber(TakeUntilMainSubscriber<?> main) {
 			this.main = main;
+		}
+
+		@Override
+		public Context currentContext() {
+			return main.currentContext();
 		}
 
 		@Override
@@ -108,15 +114,10 @@ final class FluxTakeUntilOther<T, U> extends FluxSource<T, T> {
 	}
 
 	static final class TakeUntilMainSubscriber<T>
+			extends CachedContextProducer<T>
 			implements InnerOperator<T, T> {
 
-		final Subscriber<? super T> actual;
 		volatile Subscription       main;
-
-		@Override
-		public final Subscriber<? super T> actual() {
-			return actual;
-		}
 
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<TakeUntilMainSubscriber, Subscription> MAIN =
@@ -128,7 +129,7 @@ final class FluxTakeUntilOther<T, U> extends FluxSource<T, T> {
 		  AtomicReferenceFieldUpdater.newUpdater(TakeUntilMainSubscriber.class, Subscription.class, "other");
 
 		TakeUntilMainSubscriber(Subscriber<? super T> actual) {
-			this.actual = Operators.serialize(actual);
+			super(Operators.serialize(actual));
 		}
 
 		@Override
@@ -137,7 +138,7 @@ final class FluxTakeUntilOther<T, U> extends FluxSource<T, T> {
 			if (key == ScannableAttr.PARENT) return main;
 			if (key == BooleanAttr.CANCELLED) return main == Operators.cancelledSubscription();
 
-			return InnerOperator.super.scanUnsafe(key);
+			return super.scanUnsafe(key);
 		}
 
 		@Override

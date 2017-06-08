@@ -21,14 +21,19 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
  * A connecting {@link Flux} Publisher (right-to-left from a composition chain perspective)
+ * @deprecated This class will be package scoped in 3.1, consider moving to
+ * {@link FluxOperator}
  * @param <I> Upstream type
  * @param <O> Downstream type
  */
+@Deprecated
 public class FluxSource<I, O> extends Flux<O> implements Scannable {
+
 
 	protected final Publisher<? extends I> source;
 
@@ -61,7 +66,7 @@ public class FluxSource<I, O> extends Flux<O> implements Scannable {
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super O> s) {
+	public void subscribe(Subscriber<? super O> s, Context context) {
 		source.subscribe((Subscriber<? super I>) s);
 	}
 

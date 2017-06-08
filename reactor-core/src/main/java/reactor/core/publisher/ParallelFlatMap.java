@@ -19,9 +19,9 @@ import java.util.Queue;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
+import org.reactivestreams.*;
 import reactor.core.Scannable;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -81,7 +81,7 @@ final class ParallelFlatMap<T, R> extends ParallelFlux<R> implements Scannable{
 	}
 	
 	@Override
-	public void subscribe(Subscriber<? super R>[] subscribers) {
+	public void subscribe(Subscriber<? super R>[] subscribers, Context ctx) {
 		if (!validate(subscribers)) {
 			return;
 		}
@@ -96,7 +96,7 @@ final class ParallelFlatMap<T, R> extends ParallelFlux<R> implements Scannable{
 					maxConcurrency, mainQueueSupplier, prefetch, innerQueueSupplier);
 		}
 		
-		source.subscribe(parents);
+		source.subscribe(parents, ctx);
 	}
 
 	static <T, R> Subscriber<T> subscriber(Subscriber<? super R> s,

@@ -26,6 +26,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -39,7 +40,7 @@ import javax.annotation.Nullable;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
 final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
-		extends FluxSource<T, C> {
+		extends FluxOperator<T, C> {
 
 	final Publisher<U> other;
 
@@ -59,7 +60,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super C> s) {
+	public void subscribe(Subscriber<? super C> s, Context ctx) {
 		C buffer;
 
 		try {
@@ -83,25 +84,20 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 
 		other.subscribe(boundary);
 
-		source.subscribe(parent);
+		source.subscribe(parent, ctx);
 	}
 
 	static final class BufferBoundaryMain<T, U, C extends Collection<? super T>>
+			extends CachedContextProducer<C>
 			implements InnerOperator<T, C> {
 
 		final Supplier<C>           bufferSupplier;
-		final Subscriber<? super C> actual;
 
 		BufferBoundaryOther<U> other;
 
 		C buffer;
 
 		volatile Subscription s;
-
-		@Override
-		public final Subscriber<? super C> actual() {
-			return actual;
-		}
 
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<BufferBoundaryMain, Subscription> S =
@@ -117,7 +113,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 		BufferBoundaryMain(Subscriber<? super C> actual,
 				C buffer,
 				Supplier<C> bufferSupplier) {
-			this.actual = actual;
+			super(actual);
 			this.buffer = buffer;
 			this.bufferSupplier = bufferSupplier;
 		}
@@ -302,6 +298,11 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 			if (set(s)) {
 				s.request(Long.MAX_VALUE);
 			}
+		}
+
+		@Override
+		public Context currentContext() {
+			return main.currentContext();
 		}
 
 		@Override

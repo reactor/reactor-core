@@ -22,6 +22,7 @@ import java.util.Objects;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import javax.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Given a set of source Publishers the values of that Publisher is forwarded to the
@@ -64,7 +65,7 @@ final class MonoFirst<T> extends Mono<T> {
 	@SuppressWarnings("unchecked")
 	@Override
 	//TODO mutualize with FluxFirstEmitting
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 		Publisher<? extends T>[] a = array;
 		int n;
 		if (a == null) {
@@ -139,7 +140,7 @@ final class MonoFirst<T> extends Mono<T> {
 		}
 
 		FluxFirstEmitting.RaceCoordinator<T> coordinator =
-				new FluxFirstEmitting.RaceCoordinator<>(n);
+				new FluxFirstEmitting.RaceCoordinator<>(n, ctx);
 
 		coordinator.subscribe(a, n, s);
 	}

@@ -23,6 +23,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import javax.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Peek into the lifecycle events and signals of a sequence, passing around
@@ -38,7 +39,7 @@ import javax.annotation.Nullable;
  * @param <S> the state type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxPeekStateful<T, S> extends FluxSource<T, T>
+final class FluxPeekStateful<T, S> extends FluxOperator<T, T>
 		implements SignalPeekStateful<T, S> {
 
 	final Supplier<S> stateSeeder;
@@ -78,10 +79,10 @@ final class FluxPeekStateful<T, S> extends FluxSource<T, T>
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 		//TODO fuseable version?
 		//TODO conditional version?
-		source.subscribe(new PeekStatefulSubscriber<>(s, this, stateSeeder.get()));
+		source.subscribe(new PeekStatefulSubscriber<>(s, this, stateSeeder.get()), ctx);
 	}
 
 	static final class PeekStatefulSubscriber<T, S> implements InnerOperator<T, T> {

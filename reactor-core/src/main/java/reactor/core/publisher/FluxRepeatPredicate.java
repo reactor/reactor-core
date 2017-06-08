@@ -21,6 +21,7 @@ import java.util.function.BooleanSupplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import reactor.util.context.Context;
 
 /**
  * Repeatedly subscribes to the source if the predicate returns true after
@@ -29,20 +30,20 @@ import org.reactivestreams.Subscriber;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxRepeatPredicate<T> extends FluxSource<T, T> {
+final class FluxRepeatPredicate<T> extends FluxOperator<T, T> {
 
 	final BooleanSupplier predicate;
 
-	FluxRepeatPredicate(Publisher<? extends T> source, BooleanSupplier predicate) {
+	FluxRepeatPredicate(ContextualPublisher<? extends T> source, BooleanSupplier predicate) {
 		super(source);
 		this.predicate = Objects.requireNonNull(predicate, "predicate");
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 
 		RepeatPredicateSubscriber<T> parent = new RepeatPredicateSubscriber<>(source,
-				s, predicate);
+				s, predicate, ctx);
 
 		s.onSubscribe(parent);
 
@@ -66,8 +67,8 @@ final class FluxRepeatPredicate<T> extends FluxSource<T, T> {
 		long produced;
 
 		RepeatPredicateSubscriber(Publisher<? extends T> source,
-				Subscriber<? super T> actual, BooleanSupplier predicate) {
-			super(actual);
+				Subscriber<? super T> actual, BooleanSupplier predicate, Context ctx) {
+			super(actual, ctx);
 			this.source = source;
 			this.predicate = predicate;
 		}

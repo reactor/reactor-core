@@ -15,29 +15,29 @@
  */
 package reactor.core.publisher;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import reactor.util.context.Context;
 import reactor.core.Scannable;
 import javax.annotation.Nullable;
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoHasElements<T> extends MonoSource<T, Boolean> implements Fuseable {
+final class MonoHasElements<T> extends MonoOperator<T, Boolean> implements Fuseable {
 
-	MonoHasElements(Publisher<? extends T> source) {
+	MonoHasElements(ContextualPublisher<? extends T> source) {
 		super(source);
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super Boolean> s) {
+	public void subscribe(Subscriber<? super Boolean> s, Context ctx) {
 		if (source instanceof Mono) {
-			source.subscribe(new HasElementSubscriber<>(s));
+			source.subscribe(new HasElementSubscriber<>(s), ctx);
 		}
 		else {
-			source.subscribe(new HasElementsSubscriber<>(s));
+			source.subscribe(new HasElementsSubscriber<>(s), ctx);
 		}
 	}
 

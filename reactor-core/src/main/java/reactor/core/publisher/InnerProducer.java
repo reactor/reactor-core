@@ -17,12 +17,14 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.util.context.ContextRelay;
 import reactor.core.Scannable;
 import javax.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  *
- * {@link InnerProducer} is a {@link Scannable} {@link Subscription} that produces
+ * {@link InnerProducer} is a {@link reactor.core.Scannable} {@link Subscription} that produces
  * data to an {@link #actual()} {@link Subscriber}
  *
  * @param <O> output operator produced type
@@ -30,9 +32,19 @@ import javax.annotation.Nullable;
  * @author Stephane Maldini
  */
 interface InnerProducer<O>
-		extends Scannable, Subscription {
+		extends ContextRelay, Scannable, Subscription {
 
 	Subscriber<? super O> actual();
+
+	@Override
+	default Context currentContext() {
+		return ContextRelay.getOrEmpty(actual());
+	}
+
+	@Override
+	default void onContext(Context context) {
+		ContextRelay.set(actual(), context);
+	}
 
 	@Override
 	@Nullable

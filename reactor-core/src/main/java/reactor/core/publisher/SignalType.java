@@ -51,9 +51,17 @@ public enum SignalType {
 	 */
 	ON_COMPLETE,
 	/**
-	 * A signal that can be propagated AFTER an operator has terminated
+	 * A signal when an operator completes
 	 */
-	AFTER_TERMINATE;
+	AFTER_TERMINATE,
+	/**
+	 * A context read signal that is pulled
+	 */
+	CURRENT_CONTEXT,
+	/**
+	 * A context signal that can be propagated from parent source
+	 */
+	ON_CONTEXT;
 
 	@Override
 	public String toString() {
@@ -70,6 +78,10 @@ public enum SignalType {
 				return "request";
 			case CANCEL:
 				return "cancel";
+			case CURRENT_CONTEXT:
+				return "parent";
+			case ON_CONTEXT:
+				return "onContext";
 			case AFTER_TERMINATE:
 				return "afterTerminate";
 			default:

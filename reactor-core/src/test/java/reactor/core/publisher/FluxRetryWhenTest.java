@@ -29,6 +29,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -320,7 +321,7 @@ public class FluxRetryWhenTest {
     public void scanMainSubscriber() {
         Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxRetryWhen.RetryWhenMainSubscriber<Integer> test =
-        		new FluxRetryWhen.RetryWhenMainSubscriber<>(actual, null, Flux.empty());
+        		new FluxRetryWhen.RetryWhenMainSubscriber<>(actual, null, Flux.empty(), Context.empty());
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -338,7 +339,7 @@ public class FluxRetryWhenTest {
     public void scanOtherSubscriber() {
 		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxRetryWhen.RetryWhenMainSubscriber<Integer> main =
-        		new FluxRetryWhen.RetryWhenMainSubscriber<>(actual, null, Flux.empty());
+        		new FluxRetryWhen.RetryWhenMainSubscriber<>(actual, null, Flux.empty(), Context.empty());
         FluxRetryWhen.RetryWhenOtherSubscriber test = new FluxRetryWhen.RetryWhenOtherSubscriber();
         test.main = main;
 

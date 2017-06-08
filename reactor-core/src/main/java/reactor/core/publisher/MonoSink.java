@@ -17,9 +17,11 @@
 package reactor.core.publisher;
 
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.LongConsumer;
 
 import reactor.core.Disposable;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -38,6 +40,16 @@ public interface MonoSink<T> {
 	void success();
 
 	/**
+	 * Immediately propagate a {@link Context} to the child {@link Subscriber} given an
+	 * eventually non empty parent {@link Context}.
+	 *
+	 * @param doOnContext a {@link Function} given the parent context and producing a
+	 * new one to be pushed
+	 * @return this sink
+	 */
+	MonoSink<T> contextualize(Function<Context, Context> doOnContext);
+
+    /**
 	 * Complete with the given value.
 	 * <p>Calling this method multiple times or after the other
 	 * terminating methods has no effect (the value is purely ignored). Calling this method with

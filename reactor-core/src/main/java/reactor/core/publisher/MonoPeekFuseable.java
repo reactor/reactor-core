@@ -22,6 +22,7 @@ import java.util.function.LongConsumer;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -31,7 +32,7 @@ import javax.annotation.Nullable;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  *
  */
-final class MonoPeekFuseable<T> extends MonoSource<T, T>
+final class MonoPeekFuseable<T> extends MonoOperator<T, T>
 		implements Fuseable, SignalPeek<T> {
 
 	final Consumer<? super Subscription> onSubscribeCall;
@@ -42,8 +43,6 @@ final class MonoPeekFuseable<T> extends MonoSource<T, T>
 
 	final Runnable onCompleteCall;
 
-	final Runnable onAfterTerminateCall;
-
 	final LongConsumer onRequestCall;
 
 	final Runnable onCancelCall;
@@ -53,7 +52,6 @@ final class MonoPeekFuseable<T> extends MonoSource<T, T>
 			@Nullable Consumer<? super T> onNextCall,
 			@Nullable Consumer<? super Throwable> onErrorCall,
 			@Nullable Runnable onCompleteCall,
-			@Nullable Runnable onAfterTerminateCall,
 			@Nullable LongConsumer onRequestCall,
 			@Nullable Runnable onCancelCall) {
 		super(source);
@@ -62,20 +60,19 @@ final class MonoPeekFuseable<T> extends MonoSource<T, T>
 		this.onNextCall = onNextCall;
 		this.onErrorCall = onErrorCall;
 		this.onCompleteCall = onCompleteCall;
-		this.onAfterTerminateCall = onAfterTerminateCall;
 		this.onRequestCall = onRequestCall;
 		this.onCancelCall = onCancelCall;
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 		if (s instanceof ConditionalSubscriber) {
 			source.subscribe(new FluxPeekFuseable.PeekFuseableConditionalSubscriber<>((ConditionalSubscriber<?
-					super T>) s, this));
+					super T>) s, this), ctx);
 			return;
 		}
-		source.subscribe(new FluxPeekFuseable.PeekFuseableSubscriber<>(s, this));
+		source.subscribe(new FluxPeekFuseable.PeekFuseableSubscriber<>(s, this), ctx);
 	}
 
 	@Override
@@ -105,7 +102,7 @@ final class MonoPeekFuseable<T> extends MonoSource<T, T>
 	@Override
 	@Nullable
 	public Runnable onAfterTerminateCall() {
-		return onAfterTerminateCall;
+		return null;
 	}
 
 	@Override

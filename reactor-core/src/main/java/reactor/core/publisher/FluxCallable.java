@@ -21,6 +21,7 @@ import java.util.concurrent.Callable;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
+import reactor.util.context.Context;
 
 
 /**
@@ -37,7 +38,7 @@ final class FluxCallable<T> extends Flux<T> implements Callable<T>, Fuseable {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context context) {
 		Operators.MonoSubscriber<T, T> wrapper = new Operators.MonoSubscriber<>(s);
 		s.onSubscribe(wrapper);
 

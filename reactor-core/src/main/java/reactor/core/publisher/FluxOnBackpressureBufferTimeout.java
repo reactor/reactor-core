@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -30,6 +30,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.Logger;
 import reactor.util.Loggers;
+import reactor.util.context.Context;
 
 /**
  * Buffers values if the subscriber doesn't request fast enough, bounding the
@@ -41,7 +42,7 @@ import reactor.util.Loggers;
  * @author David Karnok
  */
 //see https://github.com/akarnokd/RxJava2Extensions/blob/master/src/main/java/hu/akarnokd/rxjava2/operators/FlowableOnBackpressureTimeout.java
-final class FluxOnBackpressureBufferTimeout<O> extends FluxSource<O, O> {
+final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 
 	private static final Logger LOGGER = Loggers.getLogger(FluxOnBackpressureBufferTimeout.class);
 
@@ -62,11 +63,11 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxSource<O, O> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super O> s) {
+	public void subscribe(Subscriber<? super O> s, Context ctx) {
 		source.subscribe(new BackpressureBufferTimeoutSubscriber<>(s,
 				ttl, ttlScheduler,
 				bufferSize,
-				onBufferEviction));
+				onBufferEviction), ctx);
 	}
 
 	@Override

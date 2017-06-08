@@ -34,6 +34,7 @@ import reactor.core.Fuseable.QueueSubscription;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
 import reactor.util.concurrent.QueueSupplier;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -44,7 +45,7 @@ import javax.annotation.Nullable;
  * @param <R> the output value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
+final class FluxMergeSequential<T, R> extends FluxOperator<T, R> {
 
 	final ErrorMode errorMode;
 
@@ -56,7 +57,7 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 
 	final Supplier<Queue<MergeSequentialInner<R>>> queueSupplier;
 
-	FluxMergeSequential(Publisher<? extends T> source,
+	FluxMergeSequential(ContextualPublisher<? extends T> source,
 			Function<? super T, ? extends Publisher<? extends R>> mapper,
 			int maxConcurrency, int prefetch, ErrorMode errorMode) {
 		this(source, mapper, maxConcurrency, prefetch, errorMode,
@@ -64,7 +65,7 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 	}
 
 	//for testing purpose
-	FluxMergeSequential(Publisher<? extends T> source,
+	FluxMergeSequential(ContextualPublisher<? extends T> source,
 			Function<? super T, ? extends Publisher<? extends R>> mapper,
 			int maxConcurrency, int prefetch, ErrorMode errorMode,
 			Supplier<Queue<MergeSequentialInner<R>>> queueSupplier) {
@@ -83,7 +84,7 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R> s) {
+	public void subscribe(Subscriber<? super R> s, Context ctx) {
 		if (FluxFlatMap.trySubscribeScalarMap(source, s, mapper, false)) {
 			return;
 		}
@@ -94,12 +95,12 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 				prefetch,
 				errorMode,
 				queueSupplier);
-		source.subscribe(parent);
+		source.subscribe(parent, ctx);
 	}
 
 	static final class MergeSequentialMain<T, R>
-
-			implements InnerOperator<T, R>, InnerProducer<R> {
+			extends CachedContextProducer<R>
+			implements InnerOperator<T, R> {
 
 		/** the mapper giving the inner publisher for each source value */
 		final Function<? super T, ? extends Publisher<? extends R>> mapper;
@@ -116,7 +117,6 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 		 * publishers or just until the completion of the currently merged inner publisher
 		 */
 		final ErrorMode             errorMode;
-		final Subscriber<? super R> actual;
 
 		Subscription s;
 
@@ -148,7 +148,7 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 				Function<? super T, ? extends Publisher<? extends R>> mapper,
 				int maxConcurrency, int prefetch, ErrorMode errorMode,
 				Supplier<Queue<MergeSequentialInner<R>>> queueSupplier) {
-			this.actual = actual;
+			super(actual);
 			this.mapper = mapper;
 			this.maxConcurrency = maxConcurrency;
 			this.prefetch = prefetch;
@@ -159,11 +159,6 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 		@Override
 		public Stream<? extends Scannable> inners() {
 			return Stream.of(subscribers.peek());
-		}
-
-		@Override
-		public final Subscriber<? super R> actual() {
-			return actual;
 		}
 
 		@Override
@@ -502,6 +497,11 @@ final class FluxMergeSequential<T, R> extends FluxSource<T, R> {
 			this.parent = parent;
 			this.prefetch = prefetch;
 			this.limit = prefetch - (prefetch >> 2);
+		}
+
+		@Override
+		public Context currentContext() {
+			return parent.currentContext();
 		}
 
 		@Override

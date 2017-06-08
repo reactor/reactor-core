@@ -16,11 +16,12 @@
 
 package reactor.core.publisher;
 
-import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.LongConsumer;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Disposable;
+import reactor.util.context.Context;
 
 /**
  * Wrapper API around a downstream Subscriber for emitting any number of
@@ -29,6 +30,16 @@ import reactor.core.Disposable;
  * @param <T> the value type
  */
 public interface FluxSink<T> {
+
+	/**
+	 * Immediately propagate a {@link Context} to the child {@link Subscriber} given an
+	 * eventually non empty parent {@link Context}.
+	 *
+	 * @param doOnContext a {@link Function} given the parent context and producing a
+	 * new one to be pushed
+	 * @return this sink
+	 */
+	FluxSink<T> contextualize(Function<Context, Context> doOnContext);
 
 	/**
      * @see Subscriber#onComplete()

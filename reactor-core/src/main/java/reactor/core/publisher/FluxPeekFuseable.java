@@ -23,6 +23,8 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.util.context.Context;
+import reactor.util.context.ContextRelay;
 import javax.annotation.Nullable;
 
 /**
@@ -38,7 +40,7 @@ import javax.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxPeekFuseable<T> extends FluxSource<T, T>
+final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 		implements Fuseable, SignalPeek<T> {
 
 	final Consumer<? super Subscription> onSubscribeCall;
@@ -76,13 +78,13 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 		if (s instanceof ConditionalSubscriber) {
 			source.subscribe(new PeekFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
-					this));
+					this), ctx);
 			return;
 		}
-		source.subscribe(new PeekFuseableSubscriber<>(s, this));
+		source.subscribe(new PeekFuseableSubscriber<>(s, this), ctx);
 	}
 
 	static final class PeekFuseableSubscriber<T>
@@ -111,6 +113,23 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 				SignalPeek<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
+		}
+
+		@Override
+		public void onContext(Context context) {
+			if(parent.onContextPropagateCall() != null) {
+				parent.onContextPropagateCall().accept(context);
+			}
+			InnerOperator.super.onContext(context);
+		}
+
+		@Override
+		public Context currentContext() {
+			Context c = ContextRelay.getOrEmpty(actual);
+			if(!c.isEmpty() && parent.onContextParentCall() != null) {
+				parent.onContextParentCall().accept(c);
+			}
+			return c;
 		}
 
 		@Override
@@ -364,6 +383,23 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 				SignalPeek<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
+		}
+
+		@Override
+		public void onContext(Context context) {
+			if(parent.onContextPropagateCall() != null) {
+				parent.onContextPropagateCall().accept(context);
+			}
+			InnerOperator.super.onContext(context);
+		}
+
+		@Override
+		public Context currentContext() {
+			Context c = ContextRelay.getOrEmpty(actual);
+			if(!c.isEmpty() && parent.onContextParentCall() != null) {
+				parent.onContextParentCall().accept(c);
+			}
+			return c;
 		}
 
 		@Override
@@ -685,6 +721,23 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 				SignalPeek<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
+		}
+
+		@Override
+		public void onContext(Context context) {
+			if(parent.onContextPropagateCall() != null) {
+				parent.onContextPropagateCall().accept(context);
+			}
+			InnerOperator.super.onContext(context);
+		}
+
+		@Override
+		public Context currentContext() {
+			Context c = ContextRelay.getOrEmpty(actual);
+			if(!c.isEmpty() && parent.onContextParentCall() != null) {
+				parent.onContextParentCall().accept(c);
+			}
+			return c;
 		}
 
 		@Override

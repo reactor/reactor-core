@@ -22,6 +22,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.publisher.Flux;
+import reactor.util.context.Context;
 
 /**
  * Convert a Java 9+ {@literal Flow.Publisher} to/from a Reactive Streams {@link Publisher}.
@@ -62,7 +63,7 @@ public abstract class JdkFlowAdapter {
         }
 
         @Override
-        public void subscribe(final Subscriber<? super T> s) {
+        public void subscribe(final Subscriber<? super T> s, Context ctx) {
         	pub.subscribe(new SubscriberToRS<>(s));
         }
     }

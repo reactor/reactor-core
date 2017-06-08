@@ -24,6 +24,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -63,7 +64,7 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Scannable, 
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super C>[] subscribers) {
+	public void subscribe(Subscriber<? super C>[] subscribers, Context ctx) {
 		if (!validate(subscribers)) {
 			return;
 		}
@@ -89,7 +90,7 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Scannable, 
 					collector);
 		}
 
-		source.subscribe(parents);
+		source.subscribe(parents, ctx);
 	}
 
 	void reportError(Subscriber<?>[] subscribers, Throwable ex) {

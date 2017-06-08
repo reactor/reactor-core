@@ -23,6 +23,7 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -60,7 +61,7 @@ final class ParallelRunOn<T> extends ParallelFlux<T> implements Scannable, Fusea
 	}
 	
 	@Override
-	public void subscribe(Subscriber<? super T>[] subscribers) {
+	public void subscribe(Subscriber<? super T>[] subscribers, Context ctx) {
 		if (!validate(subscribers)) {
 			return;
 		}
@@ -81,7 +82,7 @@ final class ParallelRunOn<T> extends ParallelFlux<T> implements Scannable, Fusea
 			parents[i] = parent;
 		}
 		
-		source.subscribe(parents);
+		source.subscribe(parents, ctx);
 	}
 
 	@Override

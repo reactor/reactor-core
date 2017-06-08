@@ -23,6 +23,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import javax.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Filters out values that make a filter function return false.
@@ -31,7 +32,7 @@ import javax.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxFilterFuseable<T> extends FluxSource<T, T> implements Fuseable {
+final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable {
 
 	final Predicate<? super T> predicate;
 
@@ -42,13 +43,13 @@ final class FluxFilterFuseable<T> extends FluxSource<T, T> implements Fuseable {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 		if (s instanceof ConditionalSubscriber) {
 			source.subscribe(new FilterFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
-					predicate));
+					predicate), ctx);
 			return;
 		}
-		source.subscribe(new FilterFuseableSubscriber<>(s, predicate));
+		source.subscribe(new FilterFuseableSubscriber<>(s, predicate), ctx);
 	}
 
 	static final class FilterFuseableSubscriber<T>

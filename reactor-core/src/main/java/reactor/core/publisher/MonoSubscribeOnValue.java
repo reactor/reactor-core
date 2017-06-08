@@ -23,6 +23,7 @@ import reactor.core.Disposable;
 import reactor.core.publisher.FluxSubscribeOnValue.ScheduledEmpty;
 import reactor.core.publisher.FluxSubscribeOnValue.ScheduledScalar;
 import reactor.core.scheduler.Scheduler;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -42,7 +43,7 @@ final class MonoSubscribeOnValue<T> extends Mono<T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context context) {
 		T v = value;
 		if (v == null) {
 			ScheduledEmpty parent = new ScheduledEmpty(s);

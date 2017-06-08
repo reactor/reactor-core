@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Scannable;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -54,7 +55,7 @@ final class ParallelFluxHide<T> extends ParallelFlux<T> implements Scannable{
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T>[] subscribers) {
+	public void subscribe(Subscriber<? super T>[] subscribers, Context ctx) {
 		if (!validate(subscribers)) {
 			return;
 		}
@@ -66,6 +67,6 @@ final class ParallelFluxHide<T> extends ParallelFlux<T> implements Scannable{
 			parents[i] = new FluxHide.HideSubscriber<>(subscribers[i]);
 		}
 
-		source.subscribe(parents);
+		source.subscribe(parents, ctx);
 	}
 }

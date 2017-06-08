@@ -22,6 +22,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -30,7 +31,7 @@ import javax.annotation.Nullable;
  *
  * @param <T> the value type
  */
-final class MonoPublishOn<T> extends MonoSource<T, T> {
+final class MonoPublishOn<T> extends MonoOperator<T, T> {
 
 	final Scheduler scheduler;
 
@@ -40,8 +41,8 @@ final class MonoPublishOn<T> extends MonoSource<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(new PublishOnSubscriber<T>(s, scheduler));
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
+		source.subscribe(new PublishOnSubscriber<T>(s, scheduler), ctx);
 	}
 
 	static final class PublishOnSubscriber<T>

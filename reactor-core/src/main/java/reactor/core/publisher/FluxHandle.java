@@ -21,6 +21,7 @@ import java.util.function.BiConsumer;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -30,7 +31,7 @@ import javax.annotation.Nullable;
  * @param <T> the source value type
  * @param <R> the result value type
  */
-final class FluxHandle<T, R> extends FluxSource<T, R> {
+final class FluxHandle<T, R> extends FluxOperator<T, R> {
 
 	final BiConsumer<? super T, SynchronousSink<R>> handler;
 
@@ -41,13 +42,13 @@ final class FluxHandle<T, R> extends FluxSource<T, R> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super R> s) {
+	public void subscribe(Subscriber<? super R> s, Context ctx) {
 		if (s instanceof Fuseable.ConditionalSubscriber) {
 			Fuseable.ConditionalSubscriber<? super R> cs = (Fuseable.ConditionalSubscriber<? super R>) s;
-			source.subscribe(new HandleConditionalSubscriber<>(cs, handler));
+			source.subscribe(new HandleConditionalSubscriber<>(cs, handler), ctx);
 			return;
 		}
-		source.subscribe(new HandleSubscriber<>(s, handler));
+		source.subscribe(new HandleSubscriber<>(s, handler), ctx);
 	}
 
 	static final class HandleSubscriber<T, R>

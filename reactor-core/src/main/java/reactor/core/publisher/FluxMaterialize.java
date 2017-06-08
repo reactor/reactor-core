@@ -23,20 +23,21 @@ import java.util.function.BooleanSupplier;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
  * @author Stephane Maldini
  */
-final class FluxMaterialize<T> extends FluxSource<T, Signal<T>> {
+final class FluxMaterialize<T> extends FluxOperator<T, Signal<T>> {
 
 	FluxMaterialize(Flux<T> source) {
 		super(source);
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super Signal<T>> subscriber) {
-		source.subscribe(new MaterializeSubscriber<T>(subscriber));
+	public void subscribe(Subscriber<? super Signal<T>> subscriber, Context ctx) {
+		source.subscribe(new MaterializeSubscriber<T>(subscriber), ctx);
 	}
 
 	final static class MaterializeSubscriber<T>
@@ -182,6 +183,6 @@ final class FluxMaterialize<T> extends FluxSource<T, Signal<T>> {
             return terminalSignal == null || terminalSignal == empty ? 0 : 1;
         }
 
-		static final Signal empty = new ImmutableSignal<>(SignalType.ON_NEXT, null, null, null);;
+		static final Signal empty = new ImmutableSignal<>(SignalType.ON_NEXT, null, null, null);
 	}
 }

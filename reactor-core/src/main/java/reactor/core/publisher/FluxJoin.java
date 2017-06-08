@@ -38,6 +38,7 @@ import reactor.core.publisher.FluxGroupJoin.JoinSupport;
 import reactor.core.publisher.FluxGroupJoin.LeftRightEndSubscriber;
 import reactor.core.publisher.FluxGroupJoin.LeftRightSubscriber;
 import reactor.util.concurrent.OpenHashSet;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -45,7 +46,7 @@ import javax.annotation.Nullable;
  * @since 3.0
  */
 final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
-                                                            FluxSource<TLeft, R> {
+                                                            FluxOperator<TLeft, R> {
 
 	final Publisher<? extends TRight> other;
 
@@ -72,7 +73,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R> s) {
+	public void subscribe(Subscriber<? super R> s, Context ctx) {
 
 		JoinSubscription<TLeft, TRight, TLeftEnd, TRightEnd, R> parent =
 				new JoinSubscription<>(s,
@@ -88,13 +89,13 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 		LeftRightSubscriber right = new LeftRightSubscriber(parent, false);
 		parent.cancellations.add(right);
 
-		source.subscribe(left);
+		source.subscribe(left, ctx);
 		other.subscribe(right);
 	}
 
 	static final class JoinSubscription<TLeft, TRight, TLeftEnd, TRightEnd, R>
-
-			implements JoinSupport, InnerProducer<R> {
+			extends CachedContextProducer<R>
+			implements JoinSupport {
 
 		final Queue<Object>               queue;
 		final BiPredicate<Object, Object> queueBiOffer;
@@ -110,7 +111,6 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 		final Function<? super TRight, ? extends Publisher<TRightEnd>> rightEnd;
 
 		final BiFunction<? super TLeft, ? super TRight, ? extends R> resultSelector;
-		final Subscriber<? super R>                                  actual;
 
 		volatile int wip;
 
@@ -156,7 +156,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 				Function<? super TRight, ? extends Publisher<TRightEnd>> rightEnd,
 				BiFunction<? super TLeft, ? super TRight, ? extends R> resultSelector,
 				Queue<Object> queue) {
-			this.actual = actual;
+			super(actual);
 			this.cancellations = new OpenHashSet<>();
 			this.queue = queue;
 			if (!(queue instanceof BiPredicate)) {
@@ -177,11 +177,6 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 		}
 
 		@Override
-		public final Subscriber<? super R> actual() {
-			return actual;
-		}
-
-		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
@@ -190,7 +185,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 			if (key == BooleanAttr.TERMINATED) return active == 0;
 			if (key == ThrowableAttr.ERROR) return error;
 
-			return InnerProducer.super.scanUnsafe(key);
+			return super.scanUnsafe(key);
 		}
 
 		@Override

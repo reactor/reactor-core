@@ -29,6 +29,7 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -38,7 +39,7 @@ import javax.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable {
+final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 
 	final Scheduler scheduler;
 
@@ -70,7 +71,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 		Worker worker;
 
 		try {
@@ -89,7 +90,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable {
 					worker,
 					delayError,
 					prefetch,
-					queueSupplier));
+					queueSupplier), ctx);
 			return;
 		}
 		source.subscribe(new PublishOnSubscriber<>(s,
@@ -97,7 +98,7 @@ final class FluxPublishOn<T> extends FluxSource<T, T> implements Fuseable {
 				worker,
 				delayError,
 				prefetch,
-				queueSupplier));
+				queueSupplier), ctx);
 	}
 
 	static final class PublishOnSubscriber<T>

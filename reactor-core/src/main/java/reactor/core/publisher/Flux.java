@@ -59,6 +59,8 @@ import reactor.core.scheduler.Scheduler.Worker;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.Logger;
 import reactor.util.concurrent.QueueSupplier;
+import reactor.util.context.Context;
+import reactor.util.context.ContextRelay;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuple4;
@@ -83,6 +85,12 @@ import reactor.util.function.Tuples;
  * <p>Note that using state in the {@code java.util.function} / lambdas used within Flux operators
  * should be avoided, as these may be shared between several {@link Subscriber Subscribers}.
  *
+ * <p> {@link #subscribe(Subscriber, Context)} is an extension to
+ * {@link #subscribe(Subscriber)} used internally for {@link Context} passing. User
+ * provided {@link Subscriber} may
+ * be passed to this "subscribe" extension but will loose the available
+ * per-subscribe @link Hooks#onSubscriber}.
+ *
  * @param <T> the element type of this Reactive Streams {@link Publisher}
  *
  * @author Sebastien Deleuze
@@ -92,7 +100,7 @@ import reactor.util.function.Tuples;
  *
  * @see Mono
  */
-public abstract class Flux<T> implements Publisher<T> {
+public abstract class Flux<T> implements ContextualPublisher<T> {
 
 //	 ==============================================================================================================
 //	 Static Generators
@@ -144,10 +152,10 @@ public abstract class Flux<T> implements Publisher<T> {
 		if (sources.length == 1) {
             Publisher<? extends T> source = sources[0];
             if (source instanceof Fuseable) {
-	            return onAssembly(new FluxMapFuseable<>(source,
+	            return onAssembly(new FluxMapFuseable<>(Operators.contextual(source),
 			            v -> combinator.apply(new Object[]{v})));
             }
-			return onAssembly(new FluxMap<>(source,
+			return onAssembly(new FluxMap<>(Operators.contextual(source),
 					v -> combinator.apply(new Object[]{v})));
 		}
 
@@ -404,7 +412,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux} concatenating all inner sources sequences
 	 */
 	public static <T> Flux<T> concat(Publisher<? extends Publisher<? extends T>> sources, int prefetch) {
-		return onAssembly(new FluxConcatMap<>(sources,
+		return onAssembly(new FluxConcatMap<>(Operators.contextual(sources),
 				identityFunction(),
 				QueueSupplier.get(prefetch), prefetch,
 				FluxConcatMap.ErrorMode.IMMEDIATE));
@@ -469,7 +477,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux} concatenating all inner sources sequences until complete or error
 	 */
 	public static <T> Flux<T> concatDelayError(Publisher<? extends Publisher<? extends T>> sources, int prefetch) {
-		return onAssembly(new FluxConcatMap<>(sources,
+		return onAssembly(new FluxConcatMap<>(Operators.contextual(sources),
 				identityFunction(),
 				QueueSupplier.get(prefetch), prefetch,
 				FluxConcatMap.ErrorMode.END));
@@ -499,7 +507,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public static <T> Flux<T> concatDelayError(Publisher<? extends Publisher<? extends
 			T>> sources, boolean delayUntilEnd, int prefetch) {
-		return onAssembly(new FluxConcatMap<>(sources,
+		return onAssembly(new FluxConcatMap<>(Operators.contextual(sources),
 				identityFunction(),
 				QueueSupplier.get(prefetch), prefetch,
 				delayUntilEnd ? FluxConcatMap.ErrorMode.END : FluxConcatMap.ErrorMode.BOUNDARY));
@@ -1085,7 +1093,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public static <T> Flux<T> merge(Publisher<? extends Publisher<? extends T>> source, int concurrency, int prefetch) {
 		return onAssembly(new FluxFlatMap<>(
-				source,
+				Operators.contextual(source),
 				identityFunction(),
 				false,
 				concurrency,
@@ -1430,7 +1438,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link FluxProcessor} accepting publishers and producing T
 	 */
 	public static <T> Flux<T> switchOnNext(Publisher<? extends Publisher<? extends T>> mergedPublishers, int prefetch) {
-		return onAssembly(new FluxSwitchMap<>(mergedPublishers,
+		return onAssembly(new FluxSwitchMap<>(Operators.contextual(mergedPublishers),
 				identityFunction(),
 				QueueSupplier.unbounded(prefetch), prefetch));
 	}
@@ -1763,10 +1771,10 @@ public abstract class Flux<T> implements Publisher<T> {
 		if (sources.length == 1) {
 		    Publisher<? extends I> source = sources[0];
 		    if (source instanceof Fuseable) {
-			    return onAssembly(new FluxMapFuseable<>(source,
+			    return onAssembly(new FluxMapFuseable<>(Operators.contextual(source),
 					    v -> combinator.apply(new Object[]{v})));
 		    }
-			return onAssembly(new FluxMap<>(source,
+			return onAssembly(new FluxMap<>(Operators.contextual(source),
 					v -> combinator.apply(new Object[]{v})));
 		}
 
@@ -1803,7 +1811,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			Publisher<?>> sources,
 			final Function<? super TUPLE, ? extends V> combinator) {
 
-		return onAssembly(new FluxBuffer<>(sources, Integer.MAX_VALUE, listSupplier())
+		return onAssembly(new FluxBuffer<>(Operators.contextual(sources), Integer.MAX_VALUE, listSupplier())
 		                    .flatMap(new Function<List<? extends Publisher<?>>, Publisher<V>>() {
 			                    @Override
 			                    public Publisher<V> apply(List<? extends Publisher<?>> publishers) {
@@ -3114,6 +3122,39 @@ public abstract class Flux<T> implements Publisher<T> {
 			return fluxConcatArray.concatAdditionalSourceLast(other);
 		}
 		return concat(this, other);
+	}
+
+	/**
+	 * Propagate a new {@link Context} given an eventual older parent {@link Context}.
+	 * If the returned {@link Context} is empty, the propagation will be halted.
+	 * <p>
+	 *     Lifecycle for {@link Context} propagation is as such :
+	 *     <ul>
+	 *     <li> #1 During right-to-left subscribe(Subscriber) phase, contextualize will
+	 *     read
+	 *     the target {@link Subscriber} context if any and cache it.</li>
+	 *     <li> #2-A Before left-to-right onSubscribe(Subscription), {@link Context}
+	 *     might be propagated from parent. If this happens, the given
+	 *     {@link BiFunction} will be invoked with the cached {@link Context} and the
+	 *     propagating {@link Context}
+	 *     </li>
+	 *     <li> #2-B If no context was propagated before left-to-right onSubscribe
+	 *     (Subscription) phase, contextualize will
+	 *     call the given {@link BiFunction} during onSubscribe(Subscription) with the
+	 *     cached
+	 *     {@link Context} and an empty one. Thus contextualize
+	 *     will first propagate the resulting {@link Context} if non empty before
+	 *     the downstream actual {@code Subscriber#onSubscribe(Subscription)}</li>
+	 *     </ul>
+	 *
+	 * @param doOnContext the bifunction taking a previous {@link Context} state
+	 *  and a candidate new one to propagate.
+	 *
+	 * @return a contextualized {@link Flux}
+	 */
+	public final Flux<T> contextualize(BiFunction<Context, Context, Context>
+			doOnContext) {
+		return new FluxContextualize<>(this, doOnContext);
 	}
 
 	/**
@@ -4757,9 +4798,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * overflow strategy
 	 */
 	public final Flux<T> onBackpressureBuffer(Duration ttl, int maxSize, Consumer<? super T> onBufferEviction) {
-		Objects.requireNonNull(ttl, "ttl");
-		Objects.requireNonNull(onBufferEviction, "onBufferEviction");
-		return onAssembly(new FluxOnBackpressureBufferTimeout<>(this, ttl, Schedulers.elastic(), maxSize, onBufferEviction));
+		return onBackpressureBuffer(ttl, maxSize, onBufferEviction, Schedulers.parallel());
 	}
 
 	/**
@@ -6179,6 +6218,12 @@ public abstract class Flux<T> implements Publisher<T> {
 		return consumerAction;
 	}
 
+	@Override
+	public final void subscribe(Subscriber<? super T> actual) {
+		actual = Operators.onSubscriber(actual);
+		subscribe(actual, ContextRelay.getOrEmpty(actual));
+	}
+
 	/**
 	 * Run subscribe, onSubscribe and request on a specified {@link Scheduler}'s {@link Worker}.
 	 * As such, placing this operator anywhere in the chain will also impact the execution
@@ -6461,7 +6506,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * sequence
 	 */
 	public final Mono<Void> thenEmpty(Publisher<Void> other) {
-		return new MonoIgnoreEmpty<>(this).then(MonoSource.wrap(other));
+		return new MonoIgnoreEmpty<>(this).then(Mono.fromDirect(other));
 	}
 
 	/**
@@ -7473,7 +7518,7 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	static <T> Flux<T> mergeSequential(Publisher<? extends Publisher<? extends T>> sources,
 			boolean delayError, int maxConcurrency, int prefetch) {
-		return onAssembly(new FluxMergeSequential<>(sources,
+		return onAssembly(new FluxMergeSequential<>(Operators.contextual(sources),
 				identityFunction(),
 				maxConcurrency, prefetch, delayError ? FluxConcatMap.ErrorMode.END :
 				FluxConcatMap.ErrorMode.IMMEDIATE));

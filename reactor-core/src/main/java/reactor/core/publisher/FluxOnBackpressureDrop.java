@@ -22,6 +22,7 @@ import java.util.function.Consumer;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -30,7 +31,7 @@ import javax.annotation.Nullable;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxOnBackpressureDrop<T> extends FluxSource<T, T> {
+final class FluxOnBackpressureDrop<T> extends FluxOperator<T, T> {
 
 	static final Consumer<Object> NOOP = t -> {
 
@@ -55,8 +56,8 @@ final class FluxOnBackpressureDrop<T> extends FluxSource<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(new DropSubscriber<>(s, onDrop));
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
+		source.subscribe(new DropSubscriber<>(s, onDrop), ctx);
 	}
 
 	static final class DropSubscriber<T>

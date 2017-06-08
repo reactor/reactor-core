@@ -28,7 +28,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -40,7 +40,7 @@ import javax.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxConcatMap<T, R> extends FluxSource<T, R> {
+final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 
 	final Function<? super T, ? extends Publisher<? extends R>> mapper;
 
@@ -69,26 +69,28 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 	static <T, R> Subscriber<T> subscriber(Subscriber<? super R> s,
 			Function<? super T, ? extends Publisher<? extends R>> mapper,
 			Supplier<? extends Queue<T>> queueSupplier,
-			int prefetch, ErrorMode errorMode) {
+			int prefetch, ErrorMode errorMode, Context ctx) {
 		switch (errorMode) {
 			case BOUNDARY:
 				return new ConcatMapDelayed<>(s,
 						mapper,
 						queueSupplier,
 						prefetch,
-						false);
+						false,
+						ctx);
 			case END:
 				return new ConcatMapDelayed<>(s,
 						mapper,
 						queueSupplier,
 						prefetch,
-						true);
+						true,
+						ctx);
 			default:
-				return new ConcatMapImmediate<>(s, mapper, queueSupplier, prefetch);
+				return new ConcatMapImmediate<>(s, mapper, queueSupplier, prefetch, ctx);
 		}
 	}
 
-	FluxConcatMap(Publisher<? extends T> source,
+	FluxConcatMap(ContextualPublisher<? extends T> source,
 			Function<? super T, ? extends Publisher<? extends R>> mapper,
 			Supplier<? extends Queue<T>> queueSupplier,
 			int prefetch,
@@ -109,13 +111,14 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R> s) {
+	public void subscribe(Subscriber<? super R> s, Context ctx) {
 
 		if (FluxFlatMap.trySubscribeScalarMap(source, s, mapper, false)) {
 			return;
 		}
 
-		source.subscribe(subscriber(s, mapper, queueSupplier, prefetch, errorMode));
+		source.subscribe(subscriber(s, mapper, queueSupplier, prefetch, errorMode, ctx),
+				ctx);
 	}
 
 	static final class ConcatMapImmediate<T, R>
@@ -166,13 +169,13 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 
 		ConcatMapImmediate(Subscriber<? super R> actual,
 				Function<? super T, ? extends Publisher<? extends R>> mapper,
-				Supplier<? extends Queue<T>> queueSupplier, int prefetch) {
+				Supplier<? extends Queue<T>> queueSupplier, int prefetch, Context ctx) {
 			this.actual = actual;
 			this.mapper = mapper;
 			this.queueSupplier = queueSupplier;
 			this.prefetch = prefetch;
 			this.limit = prefetch - (prefetch >> 2);
-			this.inner = new ConcatMapInner<>(this);
+			this.inner = new ConcatMapInner<>(this, ctx);
 		}
 
 		@Override
@@ -493,14 +496,14 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 		ConcatMapDelayed(Subscriber<? super R> actual,
 				Function<? super T, ? extends Publisher<? extends R>> mapper,
 				Supplier<? extends Queue<T>> queueSupplier,
-				int prefetch, boolean veryEnd) {
+				int prefetch, boolean veryEnd, Context ctx) {
 			this.actual = actual;
 			this.mapper = mapper;
 			this.queueSupplier = queueSupplier;
 			this.prefetch = prefetch;
 			this.limit = prefetch - (prefetch >> 2);
 			this.veryEnd = veryEnd;
-			this.inner = new ConcatMapInner<>(this);
+			this.inner = new ConcatMapInner<>(this, ctx);
 		}
 
 		@Override
@@ -762,9 +765,13 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 
 		long produced;
 
-		ConcatMapInner(FluxConcatMapSupport<?, R> parent) {
-			super(Operators.emptySubscriber());
+		ConcatMapInner(FluxConcatMapSupport<?, R> parent, Context ctx) {
+			super(Operators.emptySubscriber(), ctx); //TODO investigate null
 			this.parent = parent;
+		}
+
+		@Override
+		public void onContext(Context context) {
 		}
 
 		@Nullable

@@ -20,7 +20,7 @@ import java.util.concurrent.CompletionStage;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
-
+import reactor.util.context.Context;
 
 /**
  * Emits the value or error produced by the wrapped CompletionStage.
@@ -41,7 +41,7 @@ extends Mono<T>
     }
 
     @Override
-    public void subscribe(Subscriber<? super T> s) {
+    public void subscribe(Subscriber<? super T> s, Context context) {
         Operators.MonoSubscriber<T, T>
                 sds = new Operators.MonoSubscriber<>(s);
 

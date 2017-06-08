@@ -158,7 +158,7 @@ public abstract class ConnectableFlux<T> extends Flux<T> {
 	 * @return a reference counting {@link Flux} with a grace period for disconnection
 	 */
 	public final Flux<T> refCount(int minSubscribers, Duration gracePeriod) {
-		return refCount(minSubscribers, gracePeriod, Schedulers.elastic());
+		return refCount(minSubscribers, gracePeriod, Schedulers.parallel());
 	}
 
 	/**

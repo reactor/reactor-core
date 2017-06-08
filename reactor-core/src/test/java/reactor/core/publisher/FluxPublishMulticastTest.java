@@ -28,6 +28,7 @@ import reactor.core.Scannable;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
+import reactor.util.context.Context;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
@@ -277,7 +278,7 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 	@Test
     public void scanMulticaster() {
         FluxPublishMulticast.FluxPublishMulticaster<Integer, Integer> test =
-        		new FluxPublishMulticast.FluxPublishMulticaster<>(123, QueueSupplier.<Integer>unbounded());
+        		new FluxPublishMulticast.FluxPublishMulticaster<>(123, QueueSupplier.<Integer>unbounded(), Context.empty());
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -303,7 +304,7 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
     public void scanMulticastInner() {
 		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxPublishMulticast.FluxPublishMulticaster<Integer, Integer> parent =
-        		new FluxPublishMulticast.FluxPublishMulticaster<>(123, QueueSupplier.<Integer>unbounded());
+        		new FluxPublishMulticast.FluxPublishMulticaster<>(123, QueueSupplier.<Integer>unbounded(), Context.empty());
         FluxPublishMulticast.PublishMulticastInner<Integer> test =
         		new FluxPublishMulticast.PublishMulticastInner<>(parent, actual);
 
@@ -321,7 +322,7 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
     public void scanCancelMulticaster() {
 		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxPublishMulticast.FluxPublishMulticaster<Integer, Integer> parent =
-        		new FluxPublishMulticast.FluxPublishMulticaster<>(123, QueueSupplier.<Integer>unbounded());
+        		new FluxPublishMulticast.FluxPublishMulticaster<>(123, QueueSupplier.<Integer>unbounded(), Context.empty());
         FluxPublishMulticast.CancelMulticaster<Integer> test =
         		new FluxPublishMulticast.CancelMulticaster<>(actual, parent);
         Subscription sub = Operators.emptySubscription();
@@ -335,7 +336,7 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
     public void scanCancelFuseableMulticaster() {
 		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxPublishMulticast.FluxPublishMulticaster<Integer, Integer> parent =
-        		new FluxPublishMulticast.FluxPublishMulticaster<>(123, QueueSupplier.<Integer>unbounded());
+        		new FluxPublishMulticast.FluxPublishMulticaster<>(123, QueueSupplier.<Integer>unbounded(), Context.empty());
         FluxPublishMulticast.CancelFuseableMulticaster<Integer> test =
         		new FluxPublishMulticast.CancelFuseableMulticaster<>(actual, parent);
         Subscription sub = Operators.emptySubscription();

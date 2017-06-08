@@ -504,7 +504,7 @@ public class FluxPeekFuseableTest {
 	public void conditionalFusionAvailable() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		FluxSource.wrap(u -> {
+		Flux.from(u -> {
 			if (!(u instanceof Fuseable.ConditionalSubscriber)) {
 				Operators.error(u,
 						new IllegalArgumentException("The subscriber is not conditional: " + u));

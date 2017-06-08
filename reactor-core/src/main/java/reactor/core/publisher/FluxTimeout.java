@@ -24,6 +24,7 @@ import java.util.function.Function;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.util.context.Context;
 
 /**
  * Signals a timeout (or switches to another sequence) in case a per-item
@@ -36,7 +37,7 @@ import org.reactivestreams.Subscription;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
+final class FluxTimeout<T, U, V> extends FluxOperator<T, T> {
 
 	final Publisher<U> firstTimeout;
 
@@ -64,11 +65,11 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 		Subscriber<T> serial = Operators.serialize(s);
 
 		TimeoutMainSubscriber<T, V> main =
-				new TimeoutMainSubscriber<>(serial, itemTimeout, other);
+				new TimeoutMainSubscriber<>(serial, itemTimeout, other, ctx);
 
 		serial.onSubscribe(main);
 
@@ -78,7 +79,7 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 
 		firstTimeout.subscribe(ts);
 
-		source.subscribe(main);
+		source.subscribe(main, ctx);
 	}
 
 	static final class TimeoutMainSubscriber<T, V>
@@ -105,8 +106,8 @@ final class FluxTimeout<T, U, V> extends FluxSource<T, T> {
 
 		TimeoutMainSubscriber(Subscriber<? super T> actual,
 				Function<? super T, ? extends Publisher<V>> itemTimeout,
-				Publisher<? extends T> other) {
-			super(actual);
+				Publisher<? extends T> other, Context ctx) {
+			super(actual, ctx);
 			this.itemTimeout = itemTimeout;
 			this.other = other;
 		}

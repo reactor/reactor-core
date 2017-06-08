@@ -20,10 +20,11 @@ import java.util.Queue;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
+import org.reactivestreams.*;
+
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -76,7 +77,7 @@ final class ParallelConcatMap<T, R> extends ParallelFlux<R> implements Scannable
 	}
 	
 	@Override
-	public void subscribe(Subscriber<? super R>[] subscribers) {
+	public void subscribe(Subscriber<? super R>[] subscribers, Context ctx) {
 		if (!validate(subscribers)) {
 			return;
 		}
@@ -88,9 +89,9 @@ final class ParallelConcatMap<T, R> extends ParallelFlux<R> implements Scannable
 		
 		for (int i = 0; i < n; i++) {
 			parents[i] = FluxConcatMap.subscriber(subscribers[i], mapper,
-					queueSupplier, prefetch, errorMode);
+					queueSupplier, prefetch, errorMode, ctx);
 		}
 		
-		source.subscribe(parents);
+		source.subscribe(parents, ctx);
 	}
 }

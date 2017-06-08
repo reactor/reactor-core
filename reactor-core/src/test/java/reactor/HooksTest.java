@@ -17,13 +17,16 @@
 package reactor;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.logging.Level;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
 import reactor.core.publisher.ConnectableFlux;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
@@ -33,7 +36,10 @@ import reactor.core.publisher.ParallelFlux;
 import reactor.core.publisher.SignalType;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Stephane Maldini
@@ -323,6 +329,25 @@ public class HooksTest {
 			Hooks.resetOnOperator();
 		}
 		throw new IllegalStateException();
+	}
+
+	@Test
+	public void testOnSubscriber() throws Exception {
+		List<Subscriber> l = new ArrayList<>();
+		Hooks.onSubscriber((s, c) -> {
+			l.add(s);
+			return s;
+		});
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .map(m -> m)
+		                        .takeUntilOther(Mono.never())
+		                        .flatMap(d -> Mono.just(d).hide()))
+		            .expectNext(1, 2, 3)
+		            .verifyComplete();
+
+		Hooks.resetOnSubscriber();
+
+		assertThat(l).hasSize(5);
 	}
 
 	@Test

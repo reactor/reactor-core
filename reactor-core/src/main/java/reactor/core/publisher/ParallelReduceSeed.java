@@ -24,6 +24,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -64,7 +65,7 @@ final class ParallelReduceSeed<T, R> extends ParallelFlux<R> implements
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R>[] subscribers) {
+	public void subscribe(Subscriber<? super R>[] subscribers, Context ctx) {
 		if (!validate(subscribers)) {
 			return;
 		}
@@ -88,7 +89,7 @@ final class ParallelReduceSeed<T, R> extends ParallelFlux<R> implements
 					new ParallelReduceSeedSubscriber<>(subscribers[i], initialValue, reducer);
 		}
 
-		source.subscribe(parents);
+		source.subscribe(parents, ctx);
 	}
 
 	void reportError(Subscriber<?>[] subscribers, Throwable ex) {

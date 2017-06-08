@@ -21,6 +21,7 @@ import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import reactor.util.context.Context;
 
 /**
  * retries a source when a companion sequence signals an item in response to the main's
@@ -33,7 +34,7 @@ import org.reactivestreams.Subscriber;
  * @param <T> the source value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoRetryWhen<T> extends MonoSource<T, T> {
+final class MonoRetryWhen<T> extends MonoOperator<T, T> {
 
 	final Function<? super Flux<Throwable>, ? extends Publisher<?>>
 			whenSourceFactory;
@@ -46,7 +47,7 @@ final class MonoRetryWhen<T> extends MonoSource<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
-		FluxRetryWhen.subscribe(s, whenSourceFactory, source);
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
+		FluxRetryWhen.subscribe(s, whenSourceFactory, source, ctx);
 	}
 }

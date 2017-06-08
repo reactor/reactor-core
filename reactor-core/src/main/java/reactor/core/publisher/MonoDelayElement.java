@@ -24,6 +24,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler;
 import javax.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Emits the first value emitted by a given source publisher, delayed by some time amount
@@ -34,7 +35,7 @@ import javax.annotation.Nullable;
  * @author Simon Baslé
  * TODO : Review impl
  */
-final class MonoDelayElement<T> extends MonoSource<T, T> {
+final class MonoDelayElement<T> extends MonoOperator<T, T> {
 
 	final Scheduler timedScheduler;
 
@@ -50,8 +51,9 @@ final class MonoDelayElement<T> extends MonoSource<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(new DelayElementSubscriber<>(s, timedScheduler, delay, unit));
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
+		source.subscribe(new DelayElementSubscriber<>(s, timedScheduler, delay, unit),
+				ctx);
 	}
 
 	static final class DelayElementSubscriber<T> extends Operators.MonoSubscriber<T,T> {

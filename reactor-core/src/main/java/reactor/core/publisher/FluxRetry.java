@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import reactor.util.context.Context;
 
 /**
  * Repeatedly subscribes to the source sequence if it signals any error
@@ -29,7 +30,7 @@ import org.reactivestreams.Subscriber;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxRetry<T> extends FluxSource<T, T> {
+final class FluxRetry<T> extends FluxOperator<T, T> {
 
 	final long times;
 
@@ -42,8 +43,8 @@ final class FluxRetry<T> extends FluxSource<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
-		RetrySubscriber<T> parent = new RetrySubscriber<>(source, s, times);
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
+		RetrySubscriber<T> parent = new RetrySubscriber<>(source, s, times, ctx);
 
 		s.onSubscribe(parent);
 
@@ -66,8 +67,8 @@ final class FluxRetry<T> extends FluxSource<T, T> {
 
 		long produced;
 
-		RetrySubscriber(Publisher<? extends T> source, Subscriber<? super T> actual, long remaining) {
-			super(actual);
+		RetrySubscriber(Publisher<? extends T> source, Subscriber<? super T> actual, long remaining, Context ctx) {
+			super(actual, ctx);
 			this.source = source;
 			this.remaining = remaining;
 		}
