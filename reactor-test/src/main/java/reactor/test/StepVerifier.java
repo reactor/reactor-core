@@ -24,6 +24,8 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import javax.annotation.Nullable;
+
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -82,6 +84,40 @@ import reactor.util.function.Tuple2;
  * @author Simon Baslé
  */
 public interface StepVerifier {
+
+	/**
+	 * Default verification timeout (see {@link #verify()}) is "no timeout".
+	 *
+	 * @see #setDefaultTimeout(Duration)
+	 * @see #resetDefaultTimeout()
+	 */
+	Duration DEFAULT_VERIFY_TIMEOUT = Duration.ZERO;
+
+	/**
+	 * Set the {@link #verify()} timeout for all {@link StepVerifier} created through the
+	 * factory methods ({@link #create(Publisher)}, {@link #withVirtualTime(Supplier)}, etc.).
+	 * <p>
+	 * This affects ALL such verifiers created after this call, until a call to either
+	 * this method or {@link #resetDefaultTimeout()}.
+	 *
+	 * @param timeout the timeout to use for {@link #verify()} calls on all {@link StepVerifier}
+	 * created through the factory methods after this call. {@literal null} is interpreted
+	 * as a call to {@link #resetDefaultTimeout()}.
+	 */
+	static void setDefaultTimeout(@Nullable Duration timeout) {
+		DefaultStepVerifierBuilder.defaultVerifyTimeout =
+				timeout == null ? DEFAULT_VERIFY_TIMEOUT : timeout;
+	}
+
+	/**
+	 * Reset the {@link #verify()} timeout to the "unlimited" default.
+	 * <p>
+	 * This affects ALL such verifiers created after this call, until a call to
+	 * {@link #setDefaultTimeout(Duration)}.
+	 */
+	static void resetDefaultTimeout() {
+		setDefaultTimeout(null);
+	}
 
 	/**
 	 * Prepare a new {@code StepVerifier} in an uncontrolled environment:
@@ -236,15 +272,18 @@ public interface StepVerifier {
 	StepVerifier log();
 
 	/**
-	 * Verify the signals received by this subscriber. This method will
-	 * <strong>block</strong> until the stream has been terminated (either
-	 * through {@link Subscriber#onComplete()}, {@link Subscriber#onError(Throwable)} or
+	 * Verify the signals received by this subscriber. Unless a default timeout has been
+	 * set before construction of the {@link StepVerifier} via {@link StepVerifier#setDefaultTimeout(Duration),
+	 * this method will <strong>block</strong> until the stream has been terminated
+	 * (either through {@link Subscriber#onComplete()}, {@link Subscriber#onError(Throwable)} or
 	 * {@link Subscription#cancel()}). Depending on the declared expectations and actions,
 	 * notably in case of undersized manual requests, such a verification could also block
 	 * indefinitely.
 	 *
 	 * @return the actual {@link Duration} the verification took.
 	 * @throws AssertionError in case of expectation failures
+	 * @see #verify(Duration) verify(Duration) to put a specific timeout
+	 * @see #setDefaultTimeout setDefaultTimeout(Duration) to change the global default timeout
 	 */
 	Duration verify() throws AssertionError;
 
@@ -252,11 +291,14 @@ public interface StepVerifier {
 	 * Verify the signals received by this subscriber. This method will
 	 * <strong>block</strong> for up to the given duration or until the stream has been
 	 * terminated (either through {@link Subscriber#onComplete()},
-	 * {@link Subscriber#onError(Throwable)} or {@link Subscription#cancel()}).
+	 * {@link Subscriber#onError(Throwable)} or {@link Subscription#cancel()}). Use
+	 * {@link Duration#ZERO} for an unlimited wait for termination.
 	 *
+	 * @param duration the maximum duration to wait for the sequence to terminate, or
+	 * {@link Duration#ZERO} for unlimited wait.
 	 * @return the actual {@link Duration} the verification took.
 	 * @throws AssertionError in case of expectation failures, or when the verification
-	 *                        times out
+	 * times out
 	 */
 	Duration verify(Duration duration) throws AssertionError;
 
@@ -264,11 +306,13 @@ public interface StepVerifier {
 	 * {@link #verify() Verifies} the signals received by this subscriber, then exposes
 	 * various {@link Assertions assertion methods} on the final state.
 	 * <p>
-	 * Note this method will <strong>block</strong> until the stream has been
-	 * terminated (either through {@link Subscriber#onComplete()},
+	 * Note that like {@link #verify()}, this method will <strong>block</strong> until
+	 * the stream has been terminated (either through {@link Subscriber#onComplete()},
 	 * {@link Subscriber#onError(Throwable)} or {@link Subscription#cancel()}).
 	 * Depending on the declared expectations and actions, notably in case of undersized
-	 * manual requests, such a verification could also block indefinitely.
+	 * manual requests, such a verification could also block indefinitely. Use
+	 * {@link #setDefaultTimeout(Duration)} to globally add a timeout on verify()-derived
+	 * methods.
 	 *
 	 * @return the actual {@link Duration} the verification took.
 	 * @throws AssertionError in case of expectation failures
@@ -358,7 +402,7 @@ public interface StepVerifier {
 		 * This is a convenience method that calls {@link #verify()} in addition to the
 		 * expectation. Explicitly use the expect method and verification method
 		 * separately if you need something more specific (like activating logging or
-		 * putting a timeout).
+		 * changing the default timeout).
 		 *
 		 * @return the actual {@link Duration} the verification took.
 		 *
@@ -375,7 +419,7 @@ public interface StepVerifier {
 		 * This is a convenience method that calls {@link #verify()} in addition to the
 		 * expectation. Explicitly use the expect method and verification method
 		 * separately if you need something more specific (like activating logging or
-		 * putting a timeout).
+		 * changing the default timeout).
 		 *
 		 * @param clazz the expected error type
 		 * @return the actual {@link Duration} the verification took.
@@ -393,7 +437,7 @@ public interface StepVerifier {
 		 * This is a convenience method that calls {@link #verify()} in addition to the
 		 * expectation. Explicitly use the expect method and verification method
 		 * separately if you need something more specific (like activating logging or
-		 * putting a timeout).
+		 * changing the default timeout).
 		 *
 		 * @param errorMessage the expected error message
 		 * @return the actual {@link Duration} the verification took.
@@ -411,7 +455,7 @@ public interface StepVerifier {
 		 * This is a convenience method that calls {@link #verify()} in addition to the
 		 * expectation. Explicitly use the expect method and verification method
 		 * separately if you need something more specific (like activating logging or
-		 * putting a timeout).
+		 * changing the default timeout).
 		 *
 		 * @param predicate the predicate to test on the next received error
 		 * @return the actual {@link Duration} the verification took.
@@ -429,7 +473,7 @@ public interface StepVerifier {
 		 * This is a convenience method that calls {@link #verify()} in addition to the
 		 * expectation. Explicitly use the expect method and verification method
 		 * separately if you need something more specific (like activating logging or
-		 * putting a timeout).
+		 * changing the default timeout).
 		 *
 		 * @return the actual {@link Duration} the verification took.
 		 *
