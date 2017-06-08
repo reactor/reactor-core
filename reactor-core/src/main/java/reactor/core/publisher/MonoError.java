@@ -20,6 +20,7 @@ import java.util.Objects;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Exceptions;
+import reactor.util.context.Context;
 
 
 /**
@@ -47,7 +48,7 @@ final class MonoError<T> extends Mono<T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context context) {
 		Operators.error(s, Operators.onOperatorError(error));
 	}
 }

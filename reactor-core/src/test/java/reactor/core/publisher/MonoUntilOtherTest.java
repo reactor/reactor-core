@@ -25,6 +25,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -216,7 +217,7 @@ public class MonoUntilOtherTest {
 	public void scanCoordinator() {
 		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoUntilOther.UntilOtherCoordinator<String> test = new MonoUntilOther.UntilOtherCoordinator<>(
-				actual, true, 1);
+				actual, true, 1, Context.empty());
 
 		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
 		assertThat(test.scan(Scannable.BooleanAttr.DELAY_ERROR)).isTrue();
@@ -238,7 +239,7 @@ public class MonoUntilOtherTest {
 	public void scanCoordinatorNotDoneUntilN() {
 		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoUntilOther.UntilOtherCoordinator<String> test = new MonoUntilOther.UntilOtherCoordinator<>(
-				actual, true, 10);
+				actual, true, 10, Context.empty());
 
 		test.done = 9;
 		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
@@ -251,7 +252,7 @@ public class MonoUntilOtherTest {
 	public void scanCoordinatorSource() {
 		Subscriber<String> ignored = new LambdaMonoSubscriber<>(null, null, null, null);
 		MonoUntilOther.UntilOtherCoordinator<String> coordinator = new MonoUntilOther.UntilOtherCoordinator<>(
-				ignored, true, 123);
+				ignored, true, 123, Context.empty());
 
 		assertThat(coordinator.scan(Scannable.ScannableAttr.PARENT))
 				.isInstanceOf(MonoUntilOther.UntilOtherSource.class)
@@ -277,7 +278,7 @@ public class MonoUntilOtherTest {
 	public void scanUntilOtherTrigger() {
 		Subscriber<String> ignored = new LambdaMonoSubscriber<>(null, null, null, null);
 		MonoUntilOther.UntilOtherCoordinator<String> coordinator = new MonoUntilOther.UntilOtherCoordinator<>(
-				ignored, true, 123);
+				ignored, true, 123, Context.empty());
 
 		MonoUntilOther.UntilOtherTrigger<String> test = new MonoUntilOther.UntilOtherTrigger<>(
 				coordinator, true);

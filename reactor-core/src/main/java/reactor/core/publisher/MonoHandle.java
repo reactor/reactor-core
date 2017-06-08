@@ -19,6 +19,7 @@ import java.util.Objects;
 import java.util.function.BiConsumer;
 
 import org.reactivestreams.Subscriber;
+import reactor.util.context.Context;
 
 /**
  * Maps the values of the source publisher one-on-one via a mapper function. If the result is not {code null} then the
@@ -29,7 +30,7 @@ import org.reactivestreams.Subscriber;
  * @param <R> the result value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoHandle<T, R> extends MonoSource<T, R> {
+final class MonoHandle<T, R> extends MonoOperator<T, R> {
 
 	final BiConsumer<? super T, SynchronousSink<R>> handler;
 
@@ -39,7 +40,7 @@ final class MonoHandle<T, R> extends MonoSource<T, R> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R> s) {
-		source.subscribe(new FluxHandle.HandleSubscriber<>(s, handler));
+	public void subscribe(Subscriber<? super R> s, Context ctx) {
+		source.subscribe(new FluxHandle.HandleSubscriber<>(s, handler), ctx);
 	}
 }

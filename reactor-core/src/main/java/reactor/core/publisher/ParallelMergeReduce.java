@@ -25,6 +25,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -54,16 +55,18 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 		MergeReduceMain<T> parent =
-				new MergeReduceMain<>(s, source.parallelism(), reducer);
+				new MergeReduceMain<>(s, source.parallelism(), reducer, ctx);
 		s.onSubscribe(parent);
 
-		source.subscribe(parent.subscribers);
+		source.subscribe(parent.subscribers, ctx);
 	}
 
 	static final class MergeReduceMain<T>
 			extends Operators.MonoSubscriber<T, T> {
+
+		final Context context;
 
 		final MergeReduceInner<T>[] subscribers;
 
@@ -94,17 +97,23 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 
 		MergeReduceMain(Subscriber<? super T> subscriber,
 				int n,
-				BiFunction<T, T, T> reducer) {
+				BiFunction<T, T, T> reducer,
+				Context context) {
 			super(subscriber);
 			@SuppressWarnings("unchecked") MergeReduceInner<T>[] a =
 					new MergeReduceInner[n];
-
+			this.context = context;
 			for (int i = 0; i < n; i++) {
 				a[i] = new MergeReduceInner<>(this, reducer);
 			}
 			this.subscribers = a;
 			this.reducer = reducer;
 			REMAINING.lazySet(this, n);
+		}
+
+		@Override
+		public Context currentContext() {
+			return context;
 		}
 
 		@Override
@@ -222,6 +231,11 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 				BiFunction<T, T, T> reducer) {
 			this.parent = parent;
 			this.reducer = reducer;
+		}
+
+		@Override
+		public Context currentContext() {
+			return parent.currentContext();
 		}
 
 		@Override

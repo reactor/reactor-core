@@ -19,6 +19,7 @@ import java.util.Objects;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import reactor.util.context.Context;
 
 /**
  * Delays the subscription to the main source until another Publisher
@@ -28,7 +29,7 @@ import org.reactivestreams.Subscriber;
  * @param <U> the other source type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoDelaySubscription<T, U> extends MonoSource<T, T> {
+final class MonoDelaySubscription<T, U> extends MonoOperator<T, T> {
 
 	final Publisher<U> other;
 
@@ -38,8 +39,8 @@ final class MonoDelaySubscription<T, U> extends MonoSource<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 		other.subscribe(new FluxDelaySubscription.DelaySubscriptionOtherSubscriber<>(s,
-				source));
+				source, ctx));
 	}
 }

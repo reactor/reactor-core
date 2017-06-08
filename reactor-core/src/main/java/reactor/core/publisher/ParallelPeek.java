@@ -20,6 +20,7 @@ import java.util.function.LongConsumer;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -63,7 +64,7 @@ final class ParallelPeek<T> extends ParallelFlux<T> implements SignalPeek<T>{
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T>[] subscribers) {
+	public void subscribe(Subscriber<? super T>[] subscribers, Context ctx) {
 		if (!validate(subscribers)) {
 			return;
 		}
@@ -76,7 +77,7 @@ final class ParallelPeek<T> extends ParallelFlux<T> implements SignalPeek<T>{
 			parents[i] = new FluxPeek.PeekSubscriber<>(subscribers[i], this);
 		}
 		
-		source.subscribe(parents);
+		source.subscribe(parents, ctx);
 	}
 
 	@Override

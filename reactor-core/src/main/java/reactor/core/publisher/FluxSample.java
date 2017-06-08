@@ -25,6 +25,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -43,7 +44,7 @@ import javax.annotation.Nullable;
  * @param <U> the value type of the sampler (irrelevant)
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxSample<T, U> extends FluxSource<T, T> {
+final class FluxSample<T, U> extends FluxOperator<T, T> {
 
 	final Publisher<U> other;
 
@@ -58,7 +59,7 @@ final class FluxSample<T, U> extends FluxSource<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 
 		Subscriber<T> serial = Operators.serialize(s);
 
@@ -68,15 +69,14 @@ final class FluxSample<T, U> extends FluxSource<T, T> {
 
 		other.subscribe(new SampleOther<>(main));
 
-		source.subscribe(main);
+		source.subscribe(main, ctx);
 	}
 
 	static final class SampleMainSubscriber<T>
-			implements InnerOperator<T, T>, InnerProducer<T> {
+		extends CachedContextProducer<T>
+			implements InnerOperator<T, T> {
 
-		final Subscriber<? super T> actual;
-		volatile T                  value;
-
+		volatile T value;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SampleMainSubscriber, Object> VALUE =
 		  AtomicReferenceFieldUpdater.newUpdater(SampleMainSubscriber.class, Object.class, "value");
@@ -97,13 +97,9 @@ final class FluxSample<T, U> extends FluxSource<T, T> {
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<SampleMainSubscriber> REQUESTED =
 		  AtomicLongFieldUpdater.newUpdater(SampleMainSubscriber.class, "requested");
-		SampleMainSubscriber(Subscriber<? super T> actual) {
-			this.actual = actual;
-		}
 
-		@Override
-		public final Subscriber<? super T> actual() {
-			return actual;
+		SampleMainSubscriber(Subscriber<? super T> actual) {
+			super(actual);
 		}
 
 		@Override
@@ -224,6 +220,11 @@ final class FluxSample<T, U> extends FluxSource<T, T> {
 			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
 
 			return null;
+		}
+
+		@Override
+		public Context currentContext() {
+			return main.currentContext();
 		}
 
 		@Override

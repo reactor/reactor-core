@@ -28,6 +28,8 @@ import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
+import reactor.util.context.Context;
+
 import javax.annotation.Nullable;
 
 /**
@@ -67,7 +69,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 		for (; ; ) {
 			RefConnection conn;
 
@@ -90,7 +92,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 				}
 			}
 
-			source.subscribe(new RefCountInner<>(s, this, conn));
+			source.subscribe(new RefCountInner<>(s, this, conn), ctx);
 
 			if (connect) {
 				source.connect(conn);

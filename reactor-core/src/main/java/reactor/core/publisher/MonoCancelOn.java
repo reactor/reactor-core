@@ -18,8 +18,9 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.scheduler.Scheduler;
+import reactor.util.context.Context;
 
-final class MonoCancelOn<T> extends MonoSource<T, T> {
+final class MonoCancelOn<T> extends MonoOperator<T, T> {
 
 	final Scheduler scheduler;
 
@@ -29,7 +30,7 @@ final class MonoCancelOn<T> extends MonoSource<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(new FluxCancelOn.CancelSubscriber<T>(s, scheduler));
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
+		source.subscribe(new FluxCancelOn.CancelSubscriber<T>(s, scheduler), ctx);
 	}
 }

@@ -22,6 +22,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
+import reactor.util.context.Context;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 import javax.annotation.Nullable;
@@ -29,7 +30,7 @@ import javax.annotation.Nullable;
 /**
  * @author Stephane Maldini
  */
-final class FluxElapsed<T> extends FluxSource<T, Tuple2<Long, T>> implements Fuseable {
+final class FluxElapsed<T> extends FluxOperator<T, Tuple2<Long, T>> implements Fuseable {
 
 	final Scheduler scheduler;
 
@@ -39,8 +40,8 @@ final class FluxElapsed<T> extends FluxSource<T, Tuple2<Long, T>> implements Fus
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super Tuple2<Long, T>> s) {
-		source.subscribe(new ElapsedSubscriber<T>(s, scheduler));
+	public void subscribe(Subscriber<? super Tuple2<Long, T>> s, Context ctx) {
+		source.subscribe(new ElapsedSubscriber<T>(s, scheduler), ctx);
 	}
 
 	static final class ElapsedSubscriber<T>

@@ -22,35 +22,25 @@ import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import javax.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * A decorating {@link Mono} {@link Publisher} that exposes {@link Mono} API over an arbitrary {@link Publisher}
  * Useful to create operators which return a {@link Mono}, e.g. :
  * {@code
- *    flux.as(f -> MonoSource.wrap(f))
+ *    flux.as(Mono::fromDirect)
  *        .then(d -> Mono.delay(Duration.ofSeconds(1))
  *        .block();
  * }
+ * @deprecated This class will be package scoped in 3.1, consider moving to
+ * {@link MonoOperator}. Use {@link Mono#fromDirect} to wrap
  * @param <I> delegate {@link Publisher} type
  * @param <O> produced type
  */
+@Deprecated
 public class MonoSource<I, O> extends Mono<O> implements Scannable {
 
 	protected final Publisher<? extends I> source;
-
-	/**
-	 * Unchecked wrap of {@link Publisher} as {@link Mono}, supporting {@link Fuseable} sources
-	 *
-	 * @param source the {@link Publisher} to wrap
-	 * @param <I> input upstream type
-	 * @return a wrapped {@link Mono}
-	 */
-	public static <I> Mono<I> wrap(Publisher<? extends I> source){
-		if(source instanceof Fuseable){
-			return new FuseableMonoSource<>(source);
-		}
-		return new MonoSource<>(source);
-	}
 
 	/**
 	 * Build a {@link MonoSource} wrapper around the passed parent {@link Publisher}
@@ -67,7 +57,7 @@ public class MonoSource<I, O> extends Mono<O> implements Scannable {
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super O> s) {
+	public void subscribe(Subscriber<? super O> s, Context context) {
 		source.subscribe((Subscriber<? super I>) s);
 	}
 

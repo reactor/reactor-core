@@ -25,6 +25,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -216,7 +217,7 @@ public class FluxDelaySubscriptionTest {
 				sub -> sub.request(100));
 		Flux<String> source = Flux.just("foo", "bar");
 		FluxDelaySubscription.DelaySubscriptionOtherSubscriber<String, Integer> arbiter = new FluxDelaySubscription.DelaySubscriptionOtherSubscriber<String, Integer>(
-				actual, source);
+				actual, source, Context.empty());
 		FluxDelaySubscription.DelaySubscriptionMainSubscriber<String> test = new FluxDelaySubscription.DelaySubscriptionMainSubscriber<String>(
 				actual, arbiter);
 
@@ -229,7 +230,7 @@ public class FluxDelaySubscriptionTest {
 				sub -> sub.request(100));
 		Flux<String> source = Flux.just("foo", "bar");
 		FluxDelaySubscription.DelaySubscriptionOtherSubscriber<String, Integer> test = new FluxDelaySubscription.DelaySubscriptionOtherSubscriber<String, Integer>(
-				actual, source);
+				actual, source, Context.empty());
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 

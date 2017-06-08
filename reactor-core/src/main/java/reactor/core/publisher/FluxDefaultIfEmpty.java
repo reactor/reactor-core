@@ -20,6 +20,7 @@ import java.util.Objects;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -28,7 +29,7 @@ import javax.annotation.Nullable;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxDefaultIfEmpty<T> extends FluxSource<T, T> {
+final class FluxDefaultIfEmpty<T> extends FluxOperator<T, T> {
 
 	final T value;
 
@@ -38,8 +39,8 @@ final class FluxDefaultIfEmpty<T> extends FluxSource<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(new DefaultIfEmptySubscriber<>(s, value));
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
+		source.subscribe(new DefaultIfEmptySubscriber<>(s, value), ctx);
 	}
 
 	static final class DefaultIfEmptySubscriber<T>

@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
+import reactor.util.context.Context;
 
 /**
  * Detaches the both the child Subscriber and the Subscription on
@@ -26,15 +27,15 @@ import org.reactivestreams.Subscriber;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoDetach<T> extends MonoSource<T, T> {
+final class MonoDetach<T> extends MonoOperator<T, T> {
 
 	MonoDetach(Mono<? extends T> source) {
 		super(source);
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(new FluxDetach.DetachSubscriber<>(s));
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
+		source.subscribe(new FluxDetach.DetachSubscriber<>(s), ctx);
 	}
 
 }

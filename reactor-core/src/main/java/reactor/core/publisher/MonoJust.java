@@ -20,6 +20,7 @@ import java.util.Objects;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
+import reactor.util.context.Context;
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
@@ -50,7 +51,7 @@ extends Mono<T>
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 		s.onSubscribe(Operators.scalarSubscription(s, value));
 	}
 }

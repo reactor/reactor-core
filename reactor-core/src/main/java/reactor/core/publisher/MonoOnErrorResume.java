@@ -20,6 +20,7 @@ import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import reactor.util.context.Context;
 
 /**
  * Resumes the failed main sequence with another sequence returned by
@@ -28,7 +29,7 @@ import org.reactivestreams.Subscriber;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoOnErrorResume<T> extends MonoSource<T, T> {
+final class MonoOnErrorResume<T> extends MonoOperator<T, T> {
 
 	final Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory;
 
@@ -40,7 +41,7 @@ final class MonoOnErrorResume<T> extends MonoSource<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(new FluxOnErrorResume.ResumeSubscriber<>(s, nextFactory));
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
+		source.subscribe(new FluxOnErrorResume.ResumeSubscriber<>(s, nextFactory, ctx), ctx);
 	}
 }

@@ -27,12 +27,14 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
  * @author Stephane Maldini
  */
-final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends FluxSource<T, C> {
+final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends FluxOperator<T,
+		C> {
 
 	final int            batchSize;
 	final Supplier<C>    bufferSupplier;
@@ -62,12 +64,12 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super C> subscriber) {
+	public void subscribe(Subscriber<? super C> subscriber, Context ctx) {
 		source.subscribe(new BufferTimeoutSubscriber<>(prepareSub(subscriber),
 				batchSize,
 				timespan,
 				timer.createWorker(),
-				bufferSupplier));
+				bufferSupplier), ctx);
 	}
 
 
@@ -145,7 +147,7 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 			values = bufferSupplier.get();
 		}
 
-		protected void checkedError(Throwable ev) {
+		void checkedError(Throwable ev) {
 			synchronized (this) {
 				C v = values;
 				if(v != null) {
@@ -156,7 +158,7 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 			actual.onError(ev);
 		}
 
-		public void nextCallback(T value) {
+		void nextCallback(T value) {
 			synchronized (this) {
 				C v = values;
 				if(v == null) {
@@ -168,7 +170,7 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 			}
 		}
 
-		public void flushCallback(@Nullable T ev) { //TODO investigate ev not used
+		void flushCallback(@Nullable T ev) { //TODO investigate ev not used
 			C v = values;
 			boolean flush = false;
 			synchronized (this) {

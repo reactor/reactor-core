@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -34,7 +35,7 @@ import javax.annotation.Nullable;
  * @author Stephane Maldini
  * @author Simon Baslé
  */
-final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
+final class FluxOnBackpressureBufferStrategy<O> extends FluxOperator<O, O> {
 
 	final Consumer<? super O>    onBufferOverflow;
 	final int                    bufferSize;
@@ -53,10 +54,10 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super O> s) {
+	public void subscribe(Subscriber<? super O> s, Context ctx) {
 		source.subscribe(new BackpressureBufferDropOldestSubscriber<>(s,
 				bufferSize,
-				delayError, onBufferOverflow, bufferOverflowStrategy));
+				delayError, onBufferOverflow, bufferOverflowStrategy), ctx);
 	}
 
 	@Override

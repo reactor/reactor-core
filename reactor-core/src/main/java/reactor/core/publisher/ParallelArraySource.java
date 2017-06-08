@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import reactor.util.context.Context;
 
 /**
  * Wraps multiple Publishers into a ParallelFlux which runs them
@@ -41,7 +42,7 @@ final class ParallelArraySource<T> extends ParallelFlux<T> {
 	}
 	
 	@Override
-	public void subscribe(Subscriber<? super T>[] subscribers) {
+	public void subscribe(Subscriber<? super T>[] subscribers, Context ctx) {
 		if (!validate(subscribers)) {
 			return;
 		}
@@ -49,7 +50,7 @@ final class ParallelArraySource<T> extends ParallelFlux<T> {
 		int n = subscribers.length;
 		
 		for (int i = 0; i < n; i++) {
-			sources[i].subscribe(subscribers[i]);
+			Operators.contextual(sources[i]).subscribe(subscribers[i], ctx);
 		}
 	}
 }

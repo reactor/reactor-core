@@ -18,10 +18,10 @@ package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import javax.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Emits a single item at most from the source.
@@ -30,15 +30,15 @@ import javax.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoNext<T> extends MonoSource<T, T> {
+final class MonoNext<T> extends MonoOperator<T, T> {
 
-	MonoNext(Publisher<? extends T> source) {
+	MonoNext(ContextualPublisher<? extends T> source) {
 		super(source);
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(new NextSubscriber<>(s));
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
+		source.subscribe(new NextSubscriber<>(s), ctx);
 	}
 
 	static final class NextSubscriber<T> implements InnerOperator<T, T> {

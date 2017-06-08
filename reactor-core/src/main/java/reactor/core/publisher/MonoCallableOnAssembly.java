@@ -23,6 +23,7 @@ import org.reactivestreams.Subscriber;
 import reactor.core.Exceptions;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
 import javax.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Captures the current stacktrace when this publisher is created and makes it
@@ -38,7 +39,7 @@ import javax.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
-final class MonoCallableOnAssembly<T> extends MonoSource<T, T>
+final class MonoCallableOnAssembly<T> extends MonoOperator<T, T>
 		implements Callable<T>, AssemblyOp {
 
 	final AssemblySnapshotException stacktrace;
@@ -69,8 +70,8 @@ final class MonoCallableOnAssembly<T> extends MonoSource<T, T>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super T> s) {
-		FluxOnAssembly.subscribe(s, source, stacktrace);
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
+		FluxOnAssembly.subscribe(s, source, stacktrace, ctx);
 	}
 
 	@SuppressWarnings("unchecked")

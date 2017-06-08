@@ -550,7 +550,7 @@ public class MonoPeekAfterTest {
 		AtomicReference<Integer> afterTerminateInvocation = new AtomicReference<>();
 		AtomicReference<Throwable> error = new AtomicReference<>();
 
-		Mono<Integer> source = MonoSource.wrap(Flux.range(55, 1));
+		Mono<Integer> source = Mono.fromDirect(Flux.range(55, 1));
 
 		Mono<Integer> mono = new MonoPeekTerminal<>(source,
 				successInvocation::set,

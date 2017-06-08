@@ -20,6 +20,7 @@ import java.util.function.Consumer;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
+import reactor.util.context.Context;
 
 /**
  * Hook with fusion into the lifecycle events and signals of a {@link Mono}
@@ -34,7 +35,7 @@ import reactor.core.Fuseable;
  * @param <T> the value type
  * @author Simon Baslé
  */
-final class MonoDoFinallyFuseable<T> extends MonoSource<T, T> implements Fuseable {
+final class MonoDoFinallyFuseable<T> extends MonoOperator<T, T> implements Fuseable {
 
 	final Consumer<SignalType> onFinally;
 
@@ -44,8 +45,8 @@ final class MonoDoFinallyFuseable<T> extends MonoSource<T, T> implements Fuseabl
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(FluxDoFinally.createSubscriber(s, onFinally, true));
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
+		source.subscribe(FluxDoFinally.createSubscriber(s, onFinally, true), ctx);
 	}
 
 }

@@ -20,6 +20,7 @@ import java.util.function.Function;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
+import reactor.util.context.Context;
 
 /**
  * Maps the values of the source publisher one-on-one via a mapper function.
@@ -28,7 +29,7 @@ import reactor.core.Fuseable;
  * @param <R> the result value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoMap<T, R> extends MonoSource<T, R> {
+final class MonoMap<T, R> extends MonoOperator<T, R> {
 
 	final Function<? super T, ? extends R> mapper;
 
@@ -46,12 +47,12 @@ final class MonoMap<T, R> extends MonoSource<T, R> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super R> s) {
+	public void subscribe(Subscriber<? super R> s, Context ctx) {
 		if (s instanceof Fuseable.ConditionalSubscriber) {
 			Fuseable.ConditionalSubscriber<? super R> cs = (Fuseable.ConditionalSubscriber<? super R>) s;
-			source.subscribe(new FluxMap.MapConditionalSubscriber<>(cs, mapper));
+			source.subscribe(new FluxMap.MapConditionalSubscriber<>(cs, mapper), ctx);
 			return;
 		}
-		source.subscribe(new FluxMap.MapSubscriber<>(s, mapper));
+		source.subscribe(new FluxMap.MapSubscriber<>(s, mapper), ctx);
 	}
 }

@@ -222,13 +222,6 @@ final class Disposables {
 				AtomicReferenceFieldUpdater.newUpdater(SequentialDisposable.class, Disposable.class, "inner");
 
 		/**
-		 * Construct an empty {@link SequentialDisposable}.
-		 */
-		public SequentialDisposable() {
-			// nothing to do
-		}
-
-		/**
 		 * Atomically set the next {@link Disposable} on this container and dispose the previous
 		 * one (if any). If the container has been disposed, fall back to disposing {@code next}.
 		 *

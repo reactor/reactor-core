@@ -28,30 +28,32 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
 import javax.annotation.Nullable;
+import reactor.util.context.Context;
 
-final class MonoFlatMapMany<T, R> extends Flux<R> {
+final class MonoFlatMapMany<T, R> extends FluxOperator<T, R> {
 
-	final Mono<? extends T> source;
 
 	final Function<? super T, ? extends Publisher<? extends R>> mapper;
 
 	MonoFlatMapMany(Mono<? extends T> source,
 			Function<? super T, ? extends Publisher<? extends R>> mapper) {
-		this.source = source;
+		super(source);
 		this.mapper = mapper;
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R> s) {
+	public void subscribe(Subscriber<? super R> s, Context ctx) {
 		if (FluxFlatMap.trySubscribeScalarMap(source, s, mapper, false)) {
 			return;
 		}
-		source.subscribe(new FlatMapMain<T, R>(s, mapper));
+		source.subscribe(new FlatMapManyMain<T, R>(s, mapper, ctx), ctx);
 	}
 
-	static final class FlatMapMain<T, R> implements InnerOperator<T, R> {
+	static final class FlatMapManyMain<T, R> implements InnerOperator<T, R> {
 
 		final Subscriber<? super R> actual;
+
+		final Context ctx;
 
 		final Function<? super T, ? extends Publisher<? extends R>> mapper;
 
@@ -59,22 +61,29 @@ final class MonoFlatMapMany<T, R> extends Flux<R> {
 
 		volatile Subscription inner;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<FlatMapMain, Subscription> INNER =
-				AtomicReferenceFieldUpdater.newUpdater(FlatMapMain.class,
+		static final AtomicReferenceFieldUpdater<FlatMapManyMain, Subscription> INNER =
+				AtomicReferenceFieldUpdater.newUpdater(FlatMapManyMain.class,
 						Subscription.class,
 						"inner");
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<FlatMapMain> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(FlatMapMain.class, "requested");
+		static final AtomicLongFieldUpdater<FlatMapManyMain> REQUESTED =
+				AtomicLongFieldUpdater.newUpdater(FlatMapManyMain.class, "requested");
 
 		boolean hasValue;
 
-		FlatMapMain(Subscriber<? super R> actual,
-				Function<? super T, ? extends Publisher<? extends R>> mapper) {
+		FlatMapManyMain(Subscriber<? super R> actual,
+				Function<? super T, ? extends Publisher<? extends R>> mapper,
+				Context ctx) {
+			this.ctx = ctx;
 			this.actual = actual;
 			this.mapper = mapper;
+		}
+
+		@Override
+		public Context currentContext() {
+			return ctx;
 		}
 
 		@Override
@@ -179,7 +188,7 @@ final class MonoFlatMapMany<T, R> extends Flux<R> {
 				return;
 			}
 
-			p.subscribe(new FlatMapInner<>(this, actual));
+			p.subscribe(new FlatMapManyInner<>(this, actual));
 		}
 
 		@Override
@@ -199,16 +208,21 @@ final class MonoFlatMapMany<T, R> extends Flux<R> {
 		}
 	}
 
-	static final class FlatMapInner<R> implements InnerConsumer<R> {
+	static final class FlatMapManyInner<R> implements InnerConsumer<R> {
 
-		final FlatMapMain<?, R> parent;
+		final FlatMapManyMain<?, R> parent;
 
 		final Subscriber<? super R> actual;
 
-		FlatMapInner(FlatMapMain<?, R> parent,
+		FlatMapManyInner(FlatMapManyMain<?, R> parent,
 				Subscriber<? super R> actual) {
 			this.parent = parent;
 			this.actual = actual;
+		}
+
+		@Override
+		public Context currentContext() {
+			return parent.ctx;
 		}
 
 		@Override

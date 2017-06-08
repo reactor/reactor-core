@@ -20,6 +20,7 @@ import java.util.function.BiConsumer;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
+import reactor.util.context.Context;
 
 /**
  * Maps the values of the source publisher one-on-one via a mapper function.
@@ -30,7 +31,7 @@ import reactor.core.Fuseable;
  * @param <R> the result value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoHandleFuseable<T, R> extends MonoSource<T, R>
+final class MonoHandleFuseable<T, R> extends MonoOperator<T, R>
 		implements Fuseable {
 
 	final BiConsumer<? super T, SynchronousSink<R>> handler;
@@ -42,8 +43,9 @@ final class MonoHandleFuseable<T, R> extends MonoSource<T, R>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super R> s) {
-		source.subscribe(new FluxHandleFuseable.HandleFuseableSubscriber<>(s, handler));
+	public void subscribe(Subscriber<? super R> s, Context ctx) {
+		source.subscribe(new FluxHandleFuseable.HandleFuseableSubscriber<>(s, handler),
+				ctx);
 	}
 
 }

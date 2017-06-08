@@ -31,6 +31,7 @@ import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -777,7 +778,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 	public void scanConcatMapDelayed() {
 		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxConcatMap.ConcatMapDelayed<String, Integer> test = new FluxConcatMap.ConcatMapDelayed<>(
-				actual, s -> Mono.just(s.length()), QueueSupplier.one(), 123, true);
+				actual, s -> Mono.just(s.length()), QueueSupplier.one(), 123, true, Context.empty());
 
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
@@ -805,7 +806,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 	public void scanConcatMapImmediate() {
 		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxConcatMap.ConcatMapImmediate<String, Integer> test = new FluxConcatMap.ConcatMapImmediate<>(
-				actual, s -> Mono.just(s.length()), QueueSupplier.one(), 123);
+				actual, s -> Mono.just(s.length()), QueueSupplier.one(), 123, Context.empty());
 
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);

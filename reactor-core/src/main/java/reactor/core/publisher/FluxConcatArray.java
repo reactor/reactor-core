@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Exceptions;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -43,7 +44,7 @@ final class FluxConcatArray<T> extends Flux<T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 		Publisher<? extends T>[] a = array;
 
 		if (a.length == 0) {
@@ -63,7 +64,7 @@ final class FluxConcatArray<T> extends Flux<T> {
 
 		if (delayError) {
 			ConcatArrayDelayErrorSubscriber<T> parent = new
-					ConcatArrayDelayErrorSubscriber<>(s, a);
+					ConcatArrayDelayErrorSubscriber<>(s, a, ctx);
 
 			s.onSubscribe(parent);
 
@@ -72,7 +73,7 @@ final class FluxConcatArray<T> extends Flux<T> {
 			}
 			return;
 		}
-		ConcatArraySubscriber<T> parent = new ConcatArraySubscriber<>(s, a);
+		ConcatArraySubscriber<T> parent = new ConcatArraySubscriber<>(s, a, ctx);
 
 		s.onSubscribe(parent);
 
@@ -116,7 +117,8 @@ final class FluxConcatArray<T> extends Flux<T> {
 		Publisher<? extends V>[] newArray = new Publisher[n + 1];
 		//noinspection SuspiciousSystemArraycopy
 		System.arraycopy(array, 0, newArray, 0, n);
-		newArray[n - 1] = new MonoIgnoreEmpty<>(newArray[n - 1]);
+		newArray[n - 1] = new MonoIgnoreEmpty<>(Operators.contextual(newArray[n
+				- 1]));
 		newArray[n] = source;
 
 		return new FluxConcatArray<>(delayError, newArray);
@@ -157,8 +159,8 @@ final class FluxConcatArray<T> extends Flux<T> {
 		long produced;
 
 		ConcatArraySubscriber(Subscriber<? super T> actual, Publisher<? extends T>[]
-				sources) {
-			super(actual);
+				sources, Context ctx) {
+			super(actual, ctx);
 			this.sources = sources;
 		}
 
@@ -230,8 +232,8 @@ final class FluxConcatArray<T> extends Flux<T> {
 		long produced;
 
 		ConcatArrayDelayErrorSubscriber(Subscriber<? super T> actual, Publisher<?
-				extends T>[] sources) {
-			super(actual);
+				extends T>[] sources, Context ctx) {
+			super(actual, ctx);
 			this.sources = sources;
 		}
 

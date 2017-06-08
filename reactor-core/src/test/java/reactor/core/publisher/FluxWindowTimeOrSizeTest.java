@@ -31,6 +31,8 @@ import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.util.context.Context;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxWindowTimeOrSizeTest {
@@ -208,7 +210,7 @@ public class FluxWindowTimeOrSizeTest {
     public void scanMainSubscriber() {
         Subscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWindowTimeOrSize.WindowTimeoutSubscriber<Integer> test = new FluxWindowTimeOrSize.WindowTimeoutSubscriber<>(actual,
-        		123, 1000, Schedulers.single());
+        		123, 1000, Schedulers.single(), Context.empty());
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 

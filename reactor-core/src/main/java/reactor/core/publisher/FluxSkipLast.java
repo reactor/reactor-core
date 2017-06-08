@@ -19,6 +19,7 @@ import java.util.ArrayDeque;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -27,7 +28,7 @@ import javax.annotation.Nullable;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxSkipLast<T> extends FluxSource<T, T> {
+final class FluxSkipLast<T> extends FluxOperator<T, T> {
 
 	final int n;
 
@@ -40,8 +41,8 @@ final class FluxSkipLast<T> extends FluxSource<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(new SkipLastSubscriber<>(s, n));
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
+		source.subscribe(new SkipLastSubscriber<>(s, n), ctx);
 	}
 
 	//Fixme Does not implement ConditionalSubscriber until the full chain of operators

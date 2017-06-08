@@ -26,6 +26,7 @@ import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 import javax.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Executes a Callable and emits its value on the given Scheduler.
@@ -45,7 +46,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context context) {
 		CallableSubscribeOnSubscription<T> parent =
 				new CallableSubscribeOnSubscription<>(s, callable, scheduler);
 		s.onSubscribe(parent);

@@ -34,6 +34,7 @@ import reactor.core.publisher.Operators.MonoSubscriber;
 import reactor.core.publisher.Operators.MultiSubscriptionSubscriber;
 import reactor.core.publisher.Operators.ScalarSubscription;
 import reactor.test.RaceTestUtils;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -263,7 +264,7 @@ public class OperatorsTest {
 	@Test
 	public void scanMultiSubscriptionSubscriber() {
 		Subscriber<Integer> actual = new LambdaSubscriber<>(null, null, null, null);
-		MultiSubscriptionSubscriber<Integer, Integer> test = new MultiSubscriptionSubscriber<Integer, Integer>(actual) {
+		MultiSubscriptionSubscriber<Integer, Integer> test = new MultiSubscriptionSubscriber<Integer, Integer>(actual, Context.empty()) {
 			@Override
 			public void onNext(Integer t) {
 			}

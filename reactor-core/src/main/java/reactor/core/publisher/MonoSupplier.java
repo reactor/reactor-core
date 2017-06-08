@@ -22,6 +22,7 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
+import reactor.util.context.Context;
 
 /**
  * Executes a Supplier function and emits a single value to each individual Subscriber.
@@ -40,7 +41,7 @@ extends Mono<T>
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 
 		Operators.MonoSubscriber<T, T>
 				sds = new Operators.MonoSubscriber<>(s);

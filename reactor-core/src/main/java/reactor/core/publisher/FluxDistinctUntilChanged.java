@@ -23,6 +23,7 @@ import javax.annotation.Nullable;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable.ConditionalSubscriber;
+import reactor.util.context.Context;
 
 /**
  * Filters out subsequent and repeated elements.
@@ -31,7 +32,7 @@ import reactor.core.Fuseable.ConditionalSubscriber;
  * @param <K> the key type used for comparing subsequent elements
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxDistinctUntilChanged<T, K> extends FluxSource<T, T> {
+final class FluxDistinctUntilChanged<T, K> extends FluxOperator<T, T> {
 
 	final Function<? super T, K>            keyExtractor;
 	final BiPredicate<? super K, ? super K> keyComparator;
@@ -46,13 +47,13 @@ final class FluxDistinctUntilChanged<T, K> extends FluxSource<T, T> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 		if (s instanceof ConditionalSubscriber) {
 			source.subscribe(new DistinctUntilChangedConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
-					keyExtractor, keyComparator));
+					keyExtractor, keyComparator), ctx);
 		}
 		else {
-			source.subscribe(new DistinctUntilChangedSubscriber<>(s, keyExtractor, keyComparator));
+			source.subscribe(new DistinctUntilChangedSubscriber<>(s, keyExtractor, keyComparator), ctx);
 		}
 	}
 

@@ -31,6 +31,8 @@ import reactor.core.Fuseable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import javax.annotation.Nullable;
+import reactor.util.context.Context;
+
 
 /**
  * A set of overridable lifecycle hooks that can be used for cross-cutting
@@ -99,6 +101,27 @@ public abstract class Hooks {
 	}
 
 	/**
+	 * Set a global "assembly" hook to intercept signals produced by the passed
+	 * terminating {@link Subscriber}. The passed
+	 * function must result in a
+	 * value different from null.
+	 * <p>
+	 * Can be reset via {@link #resetOnSubscriber()} ()}
+	 *
+	 * @param onSubscriber a callback for each terminal {@link Publisher#subscribe(Subscriber)}
+	 * @param <T> the arbitrary assembled sequence type
+	 */
+	public static <T> void onSubscriber(BiFunction<? super Subscriber<? super T>, ? super Context, ? extends Subscriber<? super T>> onSubscriber) {
+		if (log.isDebugEnabled()) {
+			log.debug("Hooking new default : onSubscriber");
+		}
+		@SuppressWarnings("unchecked") BiFunction<? super Subscriber<?>, ? super Context, ? extends Subscriber<?>>
+				_onSubscriberHook =
+				(BiFunction<? super Subscriber<?>, ? super Context, ? extends Subscriber<?>>) onSubscriber;
+		onSubscriberHook = _onSubscriberHook;
+	}
+
+	/**
 	 * Reset global error dropped strategy to bubbling back the error.
 	 */
 	public static void resetOnErrorDropped() {
@@ -127,6 +150,16 @@ public abstract class Hooks {
 			log.debug("Reset to factory defaults : onOperator");
 		}
 		onOperatorHook = null;
+	}
+
+	/**
+	 * Reset global "assembly" hook tracking
+	 */
+	public static void resetOnSubscriber() {
+		if (log.isDebugEnabled()) {
+			log.debug("Reset to factory defaults : onSubscriber");
+		}
+		onSubscriberHook = null;
 	}
 
 	/**
@@ -478,6 +511,8 @@ public abstract class Hooks {
 	}
 
 	static volatile OnOperatorHook<?>           onOperatorHook;
+	static volatile BiFunction<? super Subscriber<?>, ? super Context, ? extends Subscriber<?>>
+	                                            onSubscriberHook;
 	static volatile Consumer<? super Throwable> onErrorDroppedHook;
 	static volatile Consumer<Object>            onNextDroppedHook;
 	static volatile BiFunction<? super Throwable, Object, ? extends Throwable>

@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 
 import org.reactivestreams.Publisher;
@@ -23,20 +24,48 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.util.context.Context;
+import reactor.util.context.ContextRelay;
 import javax.annotation.Nullable;
 
 /**
  * @author Stephane Maldini
  */
-final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT>  {
+final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
+		implements ContextRelay {
 
 	final Publisher<OUT> downstream;
 	final Subscriber<IN> upstream;
+
+	volatile Context context;
+
+	static final AtomicReferenceFieldUpdater<DelegateProcessor, Context> C =
+			AtomicReferenceFieldUpdater.newUpdater(DelegateProcessor.class, Context
+					.class, "context");
 
 	DelegateProcessor(Publisher<OUT> downstream,
 			Subscriber<IN> upstream) {
 		this.downstream = Objects.requireNonNull(downstream, "Downstream must not be null");
 		this.upstream = Objects.requireNonNull(upstream, "Upstream must not be null");
+		if (context == null) {
+			C.lazySet(this, ContextRelay.getOrEmpty(upstream));
+		}
+		else {
+			C.lazySet(this, context);
+		}
+	}
+
+	@Override
+	public void onContext(Context context) {
+		if(context != Context.empty() &&
+				C.compareAndSet(this, Context.empty(), context)){
+			ContextRelay.set(upstream, context);
+		}
+	}
+
+	@Override
+	public Context currentContext() {
+		return ContextRelay.getOrEmpty(upstream);
 	}
 
 	@Override
@@ -60,11 +89,13 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT>  {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super OUT> s) {
+	public void subscribe(Subscriber<? super OUT> s, Context ctx) {
 		//noinspection ConstantConditions
 		if (s == null) {
 			throw Exceptions.argumentIsNullException();
 		}
+		Context c = context;
+		ContextRelay.set(s, c);
 		downstream.subscribe(s);
 	}
 

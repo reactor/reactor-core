@@ -22,7 +22,7 @@ import java.util.stream.Stream;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
-
+import reactor.util.context.Context;
 
 /**
  * Emits the contents of a Stream source.
@@ -40,7 +40,7 @@ final class FluxStream<T> extends Flux<T> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context context) {
 		Iterator<? extends T> it;
 
 		try {

@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.util.function.Consumer;
 
 import org.reactivestreams.Subscriber;
+import reactor.util.context.Context;
 
 /**
  * Hook into the lifecycle events and signals of a {@link Mono} and execute
@@ -33,7 +34,7 @@ import org.reactivestreams.Subscriber;
  * @param <T> the value type
  * @author Simon Baslé
  */
-final class MonoDoFinally<T> extends MonoSource<T, T> {
+final class MonoDoFinally<T> extends MonoOperator<T, T> {
 
 	final Consumer<SignalType> onFinally;
 
@@ -43,8 +44,8 @@ final class MonoDoFinally<T> extends MonoSource<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(FluxDoFinally.createSubscriber(s, onFinally, false));
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
+		source.subscribe(FluxDoFinally.createSubscriber(s, onFinally, false), ctx);
 	}
 
 }

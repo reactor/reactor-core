@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
+import reactor.util.context.Context;
 
 /**
  * Wraps another Publisher/Mono and hides its identity, including its
@@ -27,14 +28,14 @@ import org.reactivestreams.Subscriber;
  * @param <T> the value type
  * 
  */
-final class MonoHide<T> extends MonoSource<T, T> {
+final class MonoHide<T> extends MonoOperator<T, T> {
 
     MonoHide(Mono<? extends T> source) {
         super(source);
     }
     
     @Override
-    public void subscribe(Subscriber<? super T> s) {
-        source.subscribe(new FluxHide.HideSubscriber<>(s));
+    public void subscribe(Subscriber<? super T> s, Context ctx) {
+        source.subscribe(new FluxHide.HideSubscriber<>(s), ctx);
     }
 }

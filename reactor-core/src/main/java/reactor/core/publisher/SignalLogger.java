@@ -29,6 +29,7 @@ import reactor.core.Fuseable;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
 import reactor.util.Logger;
 import reactor.util.Loggers;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -40,6 +41,8 @@ import javax.annotation.Nullable;
  */
 final class SignalLogger<IN> implements SignalPeek<IN> {
 
+	final static int CONTEXT_PARENT    = 0b1000000000;
+	final static int CONTEXT_PROPAGATE = 0b0100000000;
 	final static int SUBSCRIBE         = 0b0010000000;
 	final static int ON_SUBSCRIBE      = 0b0001000000;
 	final static int ON_NEXT           = 0b0000100000;
@@ -49,7 +52,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	final static int CANCEL            = 0b0000000010;
 	final static int AFTER_TERMINATE   = 0b0000000001;
 	final static int ALL               =
-			CANCEL | ON_COMPLETE | ON_ERROR | REQUEST | ON_SUBSCRIBE | ON_NEXT | SUBSCRIBE;
+			CONTEXT_PARENT | CONTEXT_PROPAGATE | CANCEL | ON_COMPLETE | ON_ERROR | REQUEST | ON_SUBSCRIBE | ON_NEXT | SUBSCRIBE;
 
 	final static AtomicLong IDS = new AtomicLong(1);
 
@@ -127,6 +130,12 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 				if (option == SignalType.CANCEL) {
 					opts |= CANCEL;
 				}
+				else if (option == SignalType.CURRENT_CONTEXT) {
+					opts |= CONTEXT_PARENT;
+				}
+				else if (option == SignalType.ON_CONTEXT) {
+					opts |= CONTEXT_PROPAGATE;
+				}
 				else if (option == SignalType.ON_SUBSCRIBE) {
 					opts |= ON_SUBSCRIBE;
 				}
@@ -188,6 +197,15 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	public Consumer<? super Subscription> onSubscribeCall() {
 		if ((options & ON_SUBSCRIBE) == ON_SUBSCRIBE && (level != Level.INFO || log.isInfoEnabled())) {
 			return s -> log(SignalType.ON_SUBSCRIBE, subscriptionAsString(s), source);
+		}
+		return null;
+	}
+
+	@Nullable
+	@Override
+	public Consumer<? super Context> onContextPropagateCall() {
+		if ((options & CONTEXT_PROPAGATE) == CONTEXT_PROPAGATE && (level != Level.INFO || log.isInfoEnabled())) {
+			return c -> log(SignalType.ON_CONTEXT, c, source);
 		}
 		return null;
 	}

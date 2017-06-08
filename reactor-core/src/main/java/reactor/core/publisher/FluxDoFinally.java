@@ -25,6 +25,7 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.Fuseable.QueueSubscription;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -40,7 +41,7 @@ import javax.annotation.Nullable;
  * @param <T> the value type
  * @author Simon Baslé
  */
-final class FluxDoFinally<T> extends FluxSource<T, T> {
+final class FluxDoFinally<T> extends FluxOperator<T, T> {
 
 	final Consumer<SignalType> onFinally;
 
@@ -69,8 +70,8 @@ final class FluxDoFinally<T> extends FluxSource<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(createSubscriber(s, onFinally, false));
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
+		source.subscribe(createSubscriber(s, onFinally, false), ctx);
 	}
 
 	static class DoFinallySubscriber<T> implements InnerOperator<T, T> {

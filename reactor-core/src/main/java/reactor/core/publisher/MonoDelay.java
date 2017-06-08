@@ -24,6 +24,7 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import javax.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Emits a single 0L value delayed by some time amount with a help of
@@ -46,7 +47,7 @@ final class MonoDelay extends Mono<Long> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super Long> s) {
+	public void subscribe(Subscriber<? super Long> s, Context context) {
 		MonoDelayRunnable r = new MonoDelayRunnable(s);
 
 		s.onSubscribe(r);

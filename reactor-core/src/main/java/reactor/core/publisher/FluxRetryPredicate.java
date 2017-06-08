@@ -21,6 +21,7 @@ import java.util.function.Predicate;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import reactor.util.context.Context;
 
 /**
  * Repeatedly subscribes to the source if the predicate returns true after
@@ -29,7 +30,7 @@ import org.reactivestreams.Subscriber;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxRetryPredicate<T> extends FluxSource<T, T> {
+final class FluxRetryPredicate<T> extends FluxOperator<T, T> {
 
 	final Predicate<? super Throwable> predicate;
 
@@ -39,10 +40,10 @@ final class FluxRetryPredicate<T> extends FluxSource<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 
 		RetryPredicateSubscriber<T> parent = new RetryPredicateSubscriber<>(source, s,
-				predicate);
+				predicate, ctx);
 
 		s.onSubscribe(parent);
 
@@ -66,8 +67,8 @@ final class FluxRetryPredicate<T> extends FluxSource<T, T> {
 		long produced;
 
 		RetryPredicateSubscriber(Publisher<? extends T> source,
-				Subscriber<? super T> actual, Predicate<? super Throwable> predicate) {
-			super(actual);
+				Subscriber<? super T> actual, Predicate<? super Throwable> predicate, Context ctx) {
+			super(actual, ctx);
 			this.source = source;
 			this.predicate = predicate;
 		}

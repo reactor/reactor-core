@@ -22,7 +22,9 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
@@ -30,7 +32,8 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-import javax.annotation.Nullable;
+import reactor.util.context.Context;
+import reactor.util.context.ContextRelay;
 
 /**
  * An helper to support "Operator" writing, handle noop subscriptions, validate request
@@ -156,6 +159,25 @@ public abstract class Operators {
 	public static void complete(Subscriber<?> s) {
 		s.onSubscribe(EmptySubscription.INSTANCE);
 		s.onComplete();
+	}
+
+	@SuppressWarnings("unchecked")
+	static <T> ContextualPublisher<T> contextual(Publisher<T> source) {
+		if (source instanceof ContextualPublisher) {
+			return (ContextualPublisher<T>) source;
+		}
+		Objects.requireNonNull(source, "source");
+		return new ContextualPublisher<T>() {
+			@Override
+			public void subscribe(Subscriber<? super T> actual, Context context) {
+				source.subscribe(actual);
+			}
+
+			@Override
+			public void subscribe(Subscriber<? super T> s) {
+				source.subscribe(s);
+			}
+		};
 	}
 
 	/**
@@ -392,6 +414,26 @@ public abstract class Operators {
 	}
 
 	/**
+	 * Apply {@link Hooks#onSubscriber(BiFunction)} hook to the passed
+	 * {@link Subscriber} and return eventually transformed subscriber.
+	 *
+	 * @param actual the {@link Subscriber} to apply hook on
+	 * @param <T> passed subscriber type
+	 *
+	 * @return an eventually transformed {@link Subscriber}
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> Subscriber<? super T> onSubscriber(Subscriber<? super T> actual) {
+		BiFunction<? super Subscriber<?>, ? super Context, ? extends Subscriber<?>> hook =
+				Hooks.onSubscriberHook;
+		if (hook != null) {
+			return (Subscriber<? super T>) hook.apply(actual,
+					ContextRelay.getOrEmpty(actual));
+		}
+		return actual;
+	}
+
+	/**
 	 * Concurrent subtraction bound to 0, mostly used to decrement a request tracker by
 	 * the amount produced by the operator. Any concurrent write will "happen before"
 	 * this operation.
@@ -613,6 +655,16 @@ public abstract class Operators {
 			}
 		}
 		return false;
+	}
+
+	@SuppressWarnings("unchecked")
+	static <T> void trySubscribeContext(Publisher<T> source, Subscriber<? super T> s, Context ctx) {
+		if (source instanceof ContextualPublisher) {
+			((ContextualPublisher<T>) source).subscribe(s, ctx);
+		}
+		else{
+			source.subscribe(s);
+		}
 	}
 
 	/**
@@ -1145,6 +1197,8 @@ public abstract class Operators {
 
 		final Subscriber<? super O> actual;
 
+		final Context context;
+
 		protected boolean unbounded;
 		/**
 		 * The current subscription which may null if no Subscriptions have been set.
@@ -1160,13 +1214,20 @@ public abstract class Operators {
 		volatile int wip;
 		volatile boolean cancelled;
 
-		public MultiSubscriptionSubscriber(Subscriber<? super O> actual) {
+		public MultiSubscriptionSubscriber(Subscriber<? super O> actual, Context
+				context) {
 			this.actual = actual;
+			this.context = context;
 		}
 
 		@Override
 		public Subscriber<? super O> actual() {
 			return actual;
+		}
+
+		@Override
+		public Context currentContext() {
+			return context;
 		}
 
 		@Override

@@ -24,6 +24,8 @@ import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
+import reactor.util.context.Context;
+
 import javax.annotation.Nullable;
 
 /**
@@ -56,7 +58,7 @@ final class FluxInterval extends Flux<Long> {
 	}
 	
 	@Override
-	public void subscribe(Subscriber<? super Long> s) {
+	public void subscribe(Subscriber<? super Long> s, Context context) {
 		Worker w = timedScheduler.createWorker();
 
 		IntervalRunnable r = new IntervalRunnable(s, w);

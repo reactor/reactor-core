@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
+import reactor.util.context.Context;
 
 /**
  * Peek into the lifecycle events and signals of a sequence.
@@ -32,7 +33,7 @@ import reactor.core.Fuseable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoLogFuseable<T> extends MonoSource<T, T>
+final class MonoLogFuseable<T> extends MonoOperator<T, T>
 		implements Fuseable {
 
 	final SignalPeek<T> log;
@@ -44,12 +45,12 @@ final class MonoLogFuseable<T> extends MonoSource<T, T>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 		if (s instanceof ConditionalSubscriber) {
 			source.subscribe(new FluxPeekFuseable.PeekFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
-					log));
+					log), ctx);
 			return;
 		}
-		source.subscribe(new FluxPeekFuseable.PeekFuseableSubscriber<>(s, log));
+		source.subscribe(new FluxPeekFuseable.PeekFuseableSubscriber<>(s, log), ctx);
 	}
 }

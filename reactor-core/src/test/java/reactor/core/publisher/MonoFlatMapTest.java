@@ -21,6 +21,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -53,8 +54,8 @@ public class MonoFlatMapTest {
 	@Test
 	public void scanMain() {
 		Subscriber<Integer> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MonoFlatMap.ThenMapMain<String, Integer> test = new MonoFlatMap.ThenMapMain<>(
-				actual, s -> Mono.just(s.length()));
+		MonoFlatMap.FlatMapMain<String, Integer> test = new MonoFlatMap.FlatMapMain<>(
+				actual, s -> Mono.just(s.length()), Context.empty());
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
@@ -75,8 +76,9 @@ public class MonoFlatMapTest {
 	@Test
 	public void scanInner() {
 		Subscriber<Integer> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MonoFlatMap.ThenMapMain<String, Integer> main = new MonoFlatMap.ThenMapMain<>(actual, s -> Mono.just(s.length()));
-		MonoFlatMap.ThenMapInner<Integer> test = new MonoFlatMap.ThenMapInner<>(main);
+		MonoFlatMap.FlatMapMain<String, Integer> main = new MonoFlatMap.FlatMapMain<>(actual, s
+				-> Mono.just(s.length()), Context.empty());
+		MonoFlatMap.FlatMapInner<Integer> test = new MonoFlatMap.FlatMapInner<>(main);
 		Subscription innerSubscription = Operators.emptySubscription();
 		test.onSubscribe(innerSubscription);
 

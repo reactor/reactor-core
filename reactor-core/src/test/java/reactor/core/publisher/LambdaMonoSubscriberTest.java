@@ -186,7 +186,7 @@ public class LambdaMonoSubscriberTest {
 
 	@Test
 	public void emptyMonoState(){
-		assertTrue(MonoSource.wrap(s -> {
+		assertTrue(Mono.fromDirect(s -> {
 			assertTrue(s instanceof LambdaMonoSubscriber);
 			LambdaMonoSubscriber<?> bfs = (LambdaMonoSubscriber<?>)s;
 			assertTrue(bfs.scan(Scannable.IntAttr.PREFETCH) == Integer.MAX_VALUE);
@@ -207,7 +207,7 @@ public class LambdaMonoSubscriberTest {
 		Hooks.onErrorDropped(e -> assertTrue(e.getMessage().equals("test2")));
 		Hooks.onNextDropped(d -> assertTrue(d.equals("test2")));
 		try {
-			MonoSource.wrap(s -> {
+			Mono.fromDirect(s -> {
 				assertTrue(s instanceof LambdaMonoSubscriber);
 				LambdaMonoSubscriber<?> bfs = (LambdaMonoSubscriber<?>) s;
 				Operators.error(s, new Exception("test"));

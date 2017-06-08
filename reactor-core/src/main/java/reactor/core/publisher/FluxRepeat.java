@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import reactor.util.context.Context;
 
 /**
  * Repeatedly subscribes to the source and relays its values either
@@ -29,11 +30,11 @@ import org.reactivestreams.Subscriber;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxRepeat<T> extends FluxSource<T, T> {
+final class FluxRepeat<T> extends FluxOperator<T, T> {
 
 	final long times;
 
-	FluxRepeat(Publisher<? extends T> source, long times) {
+	FluxRepeat(ContextualPublisher<? extends T> source, long times) {
 		super(source);
 		if (times < 0L) {
 			throw new IllegalArgumentException("times >= 0 required");
@@ -42,13 +43,13 @@ final class FluxRepeat<T> extends FluxSource<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 		if (times == 0) {
 			Operators.complete(s);
 			return;
 		}
 
-		RepeatSubscriber<T> parent = new RepeatSubscriber<>(source, s, times);
+		RepeatSubscriber<T> parent = new RepeatSubscriber<>(source, s, times, ctx);
 
 		s.onSubscribe(parent);
 
@@ -71,8 +72,8 @@ final class FluxRepeat<T> extends FluxSource<T, T> {
 
 		long produced;
 
-		RepeatSubscriber(Publisher<? extends T> source, Subscriber<? super T> actual, long remaining) {
-			super(actual);
+		RepeatSubscriber(Publisher<? extends T> source, Subscriber<? super T> actual, long remaining, Context ctx) {
+			super(actual, ctx);
 			this.source = source;
 			this.remaining = remaining;
 		}

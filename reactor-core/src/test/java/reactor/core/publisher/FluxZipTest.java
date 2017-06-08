@@ -35,6 +35,7 @@ import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
+import reactor.util.context.Context;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuple7;
@@ -1278,7 +1279,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
     public void scanCoordinator() {
 		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxZip.ZipCoordinator<Integer, Integer> test = new FluxZip.ZipCoordinator<Integer, Integer>(actual,
-				i -> 5, 123, QueueSupplier.unbounded(), 345);
+				i -> 5, 123, QueueSupplier.unbounded(), 345, Context.empty());
 
         Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
         test.requested = 35;
@@ -1297,7 +1298,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
     public void scanInner() {
 		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxZip.ZipCoordinator<Integer, Integer> main = new FluxZip.ZipCoordinator<Integer, Integer>(actual,
-				i -> 5, 123, QueueSupplier.unbounded(), 345);
+				i -> 5, 123, QueueSupplier.unbounded(), 345, Context.empty());
 		FluxZip.ZipInner<Integer> test = new FluxZip.ZipInner<>(main, 234, 1, QueueSupplier.unbounded());
 
         Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(main);
@@ -1321,7 +1322,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
     public void scanSingleCoordinator() {
 		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxZip.ZipSingleCoordinator<Integer, Integer> test =
-				new FluxZip.ZipSingleCoordinator<Integer, Integer>(actual, new Object[1], 1, i -> 5);
+				new FluxZip.ZipSingleCoordinator<Integer, Integer>(actual, new Object[1], 1, i -> 5, Context.empty());
 
         Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
         Assertions.assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
@@ -1341,7 +1342,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
     public void scanSingleSubscriber() {
         Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxZip.ZipSingleCoordinator<Integer, Integer> main =
-				new FluxZip.ZipSingleCoordinator<Integer, Integer>(actual, new Object[1], 1, i -> 5);
+				new FluxZip.ZipSingleCoordinator<Integer, Integer>(actual, new Object[1], 1, i -> 5, Context.empty());
         FluxZip.ZipSingleSubscriber<Integer> test = new FluxZip.ZipSingleSubscriber<>(main, 0);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);

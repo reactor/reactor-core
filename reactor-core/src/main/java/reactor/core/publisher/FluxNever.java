@@ -17,7 +17,7 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-
+import reactor.util.context.Context;
 
 /**
  * Represents an never publisher which only calls onSubscribe.
@@ -37,7 +37,7 @@ extends Flux<Object> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super Object> s) {
+	public void subscribe(Subscriber<? super Object> s, Context context) {
 		s.onSubscribe(Operators.emptySubscription());
 	}
 

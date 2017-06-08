@@ -22,10 +22,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.hamcrest.Matchers;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
+import reactor.util.context.Context;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
@@ -76,6 +78,95 @@ public class BaseSubscriberTest {
 
 		latch.await(500, TimeUnit.MILLISECONDS);
 		assertThat(lastValue.get(), is(10));
+	}
+
+	@Test
+	public void contextPassing() throws InterruptedException {
+		CountDownLatch latch = new CountDownLatch(1);
+		AtomicInteger lastValue = new AtomicInteger(0);
+		AtomicReference<Context> c = new AtomicReference<>();
+		AtomicReference<Context> innerC = new AtomicReference<>();
+
+		Flux<Integer> intFlux = Flux.range(1, 1000)
+		                            //old: test=baseSubscriber
+		                            //next: test=baseSubscriber_range
+		                            .contextualize((old, next) -> next.put("test", old.get("test") + "_range"))
+		                            .log()
+		                            .flatMap(d -> Flux.just(d)
+		                                              //old: test=baseSubscriber_range
+		                                              //next: test=baseSubscriber_range_innerFlatmap
+		                                              .contextualize((old, next) -> {
+			                                              if (innerC.get() == null) {
+				                                              innerC.set(next.put("test", old.get("test") + "_innerFlatmap"));
+			                                              }
+			                                              return Context.empty();
+		                                              })
+		                                              .log())
+		                            .map(d -> d)
+		                            .distinct()
+		                            //old: test=baseSubscriber_range
+		                            //next: test=baseSubscriber_range_distinct
+		                            .contextualize((old, next) -> next.put("test",
+				                            next.getOrDefault("test", old.get("test") + "_distinct")))
+		                            .log();
+		intFlux.subscribe(new BaseSubscriber<Integer>() {
+
+			@Override
+			public Context currentContext() {
+				return Context.empty()
+				              .put("test", "baseSubscriber");
+			}
+
+			@Override
+			protected void hookOnContext(Context context) {
+				c.set(context);
+			}
+
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				request(1);
+			}
+
+			@Override
+			public void hookOnNext(Integer integer) {
+				assertTrue("unexpected previous value for " + integer,
+						lastValue.compareAndSet(integer - 1, integer));
+				if (integer < 10) {
+					request(1);
+				}
+				else {
+					cancel();
+				}
+			}
+
+			@Override
+			protected void hookOnComplete() {
+				fail("expected cancellation, not completion");
+			}
+
+			@Override
+			protected void hookOnError(Throwable throwable) {
+				fail("expected cancellation, not error " + throwable);
+			}
+
+			@Override
+			protected void hookFinally(SignalType type) {
+				latch.countDown();
+				assertThat(type, is(SignalType.CANCEL));
+			}
+		});
+
+		latch.await(500, TimeUnit.MILLISECONDS);
+		assertThat(lastValue.get(), is(10));
+
+		assertThat(c.get()
+		            .get("test"), is("baseSubscriber_distinct_range"));
+
+		assertThat(c.get()
+		            .get("test2"), Matchers.nullValue());
+
+		assertThat(innerC.get()
+		                 .get("test"), is("baseSubscriber_distinct_range_innerFlatmap"));
 	}
 
 	@Test

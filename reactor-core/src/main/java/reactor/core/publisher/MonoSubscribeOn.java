@@ -24,6 +24,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -33,7 +34,7 @@ import javax.annotation.Nullable;
  *
  * @param <T> the value type
  */
-final class MonoSubscribeOn<T> extends MonoSource<T, T> {
+final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 
 	final Scheduler scheduler;
 
@@ -43,7 +44,7 @@ final class MonoSubscribeOn<T> extends MonoSource<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 		Scheduler.Worker worker = scheduler.createWorker();
 
 		SubscribeOnSubscriber<T> parent = new SubscribeOnSubscriber<>(source, s, worker);

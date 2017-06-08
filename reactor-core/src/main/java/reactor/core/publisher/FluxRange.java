@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 import javax.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Emits a range of integer values.
@@ -48,7 +49,7 @@ final class FluxRange extends Flux<Integer>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super Integer> s) {
+	public void subscribe(Subscriber<? super Integer> s, Context context) {
 		long st = start;
 		long en = end;
 		if (st == en) {

@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import reactor.util.context.Context;
 
 /**
  * Concatenates a fixed array of Publishers' values.
@@ -39,7 +40,7 @@ final class FluxConcatIterable<T> extends Flux<T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 
 		Iterator<? extends Publisher<? extends T>> it;
 
@@ -52,7 +53,7 @@ final class FluxConcatIterable<T> extends Flux<T> {
 			return;
 		}
 
-		ConcatIterableSubscriber<T> parent = new ConcatIterableSubscriber<>(s, it);
+		ConcatIterableSubscriber<T> parent = new ConcatIterableSubscriber<>(s, it, ctx);
 
 		s.onSubscribe(parent);
 
@@ -75,8 +76,8 @@ final class FluxConcatIterable<T> extends Flux<T> {
 		long produced;
 
 		ConcatIterableSubscriber(Subscriber<? super T> actual,
-				Iterator<? extends Publisher<? extends T>> it) {
-			super(actual);
+				Iterator<? extends Publisher<? extends T>> it, Context ctx) {
+			super(actual, ctx);
 			this.it = it;
 		}
 

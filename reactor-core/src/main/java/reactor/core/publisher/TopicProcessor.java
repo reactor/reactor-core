@@ -30,6 +30,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.WaitStrategy;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -912,7 +913,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	}
 
 	@Override
-	public void subscribe(final Subscriber<? super E> subscriber) {
+	public void subscribe(final Subscriber<? super E> subscriber, Context ctx) {
 		//noinspection ConstantConditions
 		if (subscriber == null) {
 			throw Exceptions.argumentIsNullException();

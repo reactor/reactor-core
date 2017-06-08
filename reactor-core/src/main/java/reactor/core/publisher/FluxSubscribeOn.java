@@ -24,6 +24,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -33,7 +34,7 @@ import javax.annotation.Nullable;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxSubscribeOn<T> extends FluxSource<T, T> {
+final class FluxSubscribeOn<T> extends FluxOperator<T, T> {
 
 	final Scheduler scheduler;
 	
@@ -46,7 +47,7 @@ final class FluxSubscribeOn<T> extends FluxSource<T, T> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 		Worker worker;
 		
 		try {

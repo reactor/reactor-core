@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 import org.reactivestreams.Subscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -70,7 +71,7 @@ extends Flux<T> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context context) {
 		S state;
 
 		try {

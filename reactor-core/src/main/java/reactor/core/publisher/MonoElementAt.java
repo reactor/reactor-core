@@ -21,6 +21,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import javax.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Emits only the element at the given index position or signals a
@@ -29,7 +30,7 @@ import javax.annotation.Nullable;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoElementAt<T> extends MonoSource<T, T> implements Fuseable {
+final class MonoElementAt<T> extends MonoOperator<T, T> implements Fuseable {
 
 	final long index;
 
@@ -54,8 +55,8 @@ final class MonoElementAt<T> extends MonoSource<T, T> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(new ElementAtSubscriber<>(s, index, defaultValue));
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
+		source.subscribe(new ElementAtSubscriber<>(s, index, defaultValue), ctx);
 	}
 
 	static final class ElementAtSubscriber<T>

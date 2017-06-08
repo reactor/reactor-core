@@ -20,11 +20,11 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import javax.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Aggregates the source values with the help of an accumulator function
@@ -44,7 +44,7 @@ import javax.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxScanSeed<T, R> extends FluxSource<T, R> {
+final class FluxScanSeed<T, R> extends FluxOperator<T, R> {
 
 	final BiFunction<R, ? super T, R> accumulator;
 
@@ -59,9 +59,9 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R> s) {
+	public void subscribe(Subscriber<? super R> s, Context ctx) {
 		ScanSeedCoordinator<T, R> coordinator =
-				new ScanSeedCoordinator<>(s, source, accumulator, initialSupplier);
+				new ScanSeedCoordinator<>(s, source, accumulator, initialSupplier, ctx);
 
 		s.onSubscribe(coordinator);
 
@@ -74,17 +74,18 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 			extends Operators.MultiSubscriptionSubscriber<R, R> {
 
 		final    Supplier<R>                 initialSupplier;
-		final    Publisher<? extends T>      source;
+		final    ContextualPublisher<? extends T>      source;
 		final    BiFunction<R, ? super T, R> accumulator;
 		volatile int                         wip;
 		long produced;
 		private ScanSeedSubscriber<T, R> seedSubscriber;
 
-		public ScanSeedCoordinator(Subscriber<? super R> actual,
-				Publisher<? extends T> source,
+		ScanSeedCoordinator(Subscriber<? super R> actual,
+				ContextualPublisher<? extends T> source,
 				BiFunction<R, ? super T, R> accumulator,
-				Supplier<R> initialSupplier) {
-			super(actual);
+				Supplier<R> initialSupplier,
+				Context ctx) {
+			super(actual, ctx);
 			this.source = source;
 			this.accumulator = accumulator;
 			this.initialSupplier = initialSupplier;
@@ -126,7 +127,7 @@ final class FluxScanSeed<T, R> extends FluxSource<T, R> {
 								new ScanSeedSubscriber<>(this, accumulator, initialValue);
 					}
 					else {
-						source.subscribe(seedSubscriber);
+						source.subscribe(seedSubscriber, context);
 					}
 
 					if (isCancelled()) {

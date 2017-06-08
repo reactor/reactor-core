@@ -28,6 +28,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import javax.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Maps the upstream value into a single {@code true} or {@code false} value
@@ -40,7 +41,7 @@ import javax.annotation.Nullable;
  * @param <T> the input value type
  * @author Simon Baslé
  */
-class MonoFilterWhen<T> extends MonoSource<T, T> {
+class MonoFilterWhen<T> extends MonoOperator<T, T> {
 
 	final Function<? super T, ? extends Publisher<Boolean>> asyncPredicate;
 
@@ -51,8 +52,9 @@ class MonoFilterWhen<T> extends MonoSource<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(new MonoFilterWhenSubscriber<>(s, asyncPredicate));
+	public void subscribe(Subscriber<? super T> s, Context context) {
+		source.subscribe(new MonoFilterWhenSubscriber<>(s, asyncPredicate, context),
+				context);
 	}
 
 	static final class MonoFilterWhenSubscriber<T> extends Operators.MonoSubscriber<T, T> {
@@ -88,9 +90,18 @@ class MonoFilterWhen<T> extends MonoSource<T, T> {
 		@SuppressWarnings("ConstantConditions")
 		static final FilterWhenInner INNER_CANCELLED = new FilterWhenInner(null, false);
 
-		MonoFilterWhenSubscriber(Subscriber<? super T> actual, Function<? super T, ? extends Publisher<Boolean>> asyncPredicate) {
+		final Context context;
+
+		MonoFilterWhenSubscriber(Subscriber<? super T> actual, Function<? super T, ?
+				extends Publisher<Boolean>> asyncPredicate, Context context) {
 			super(actual);
+			this.context = context;
 			this.asyncPredicate = asyncPredicate;
+		}
+
+		@Override
+		public Context currentContext() {
+			return context;
 		}
 
 		@Override
@@ -262,6 +273,11 @@ class MonoFilterWhen<T> extends MonoSource<T, T> {
 			} else {
 				Operators.onErrorDropped(t);
 			}
+		}
+
+		@Override
+		public Context currentContext() {
+			return parent.context;
 		}
 
 		@Override

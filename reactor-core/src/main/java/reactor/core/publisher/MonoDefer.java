@@ -21,6 +21,7 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import reactor.util.context.Context;
 
 /**
  * Defers the creation of the actual Publisher the Subscriber will be subscribed to.
@@ -38,7 +39,7 @@ final class MonoDefer<T> extends Mono<T> {
 	}
 
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 		Publisher<? extends T> p;
 
 		try {
@@ -50,6 +51,11 @@ final class MonoDefer<T> extends Mono<T> {
 			return;
 		}
 
-		p.subscribe(s);
+		if (p instanceof ContextualPublisher) {
+			((ContextualPublisher<T>) p).subscribe(s, ctx);
+		}
+		else{
+			p.subscribe(s);
+		}
 	}
 }

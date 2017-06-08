@@ -22,6 +22,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
 import javax.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Peek into the lifecycle and sequence signals.
@@ -97,4 +98,19 @@ interface SignalPeek<T> extends Scannable {
 		return null;
 	}
 
+	/**
+	 * A task that will run on {@link Context} propagation from upstream to downstream
+	 * @return A task that will run on {@link Context} propagation from upstream to downstream
+	 */
+	default Consumer<? super Context> onContextPropagateCall(){
+		return null;
+	}
+
+	/**
+	 * A task that will run on {@link Context} read from downstream to upstream
+	 * @return A task that will run on {@link Context} propagation from upstream to downstream
+	 */
+	default Consumer<? super Context> onContextParentCall(){
+		return null;
+	}
 }

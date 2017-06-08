@@ -23,6 +23,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
@@ -34,7 +35,7 @@ import javax.annotation.Nullable;
  * @author Simon Baslé
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoPeekTerminal<T> extends MonoSource<T, T> implements Fuseable {
+final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable {
 
 	final BiConsumer<? super T, Throwable> onAfterTerminateCall;
 	final BiConsumer<? super T, Throwable> onTerminateCall;
@@ -52,13 +53,13 @@ final class MonoPeekTerminal<T> extends MonoSource<T, T> implements Fuseable {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super T> s) {
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
 		if (s instanceof ConditionalSubscriber) {
 			source.subscribe(new MonoTerminalPeekSubscriber<>((ConditionalSubscriber<? super T>) s,
-					this));
+					this), ctx);
 			return;
 		}
-		source.subscribe(new MonoTerminalPeekSubscriber<>(s, this));
+		source.subscribe(new MonoTerminalPeekSubscriber<>(s, this), ctx);
 	}
 
 	/*

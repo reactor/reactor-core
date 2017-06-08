@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
+import reactor.util.context.Context;
 
 /**
  * Emits the last N values the source emitted before its completion.
@@ -24,15 +25,15 @@ import reactor.core.Fuseable;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxTakeLastOne<T> extends FluxSource<T, T> implements Fuseable {
+final class FluxTakeLastOne<T> extends FluxOperator<T, T> implements Fuseable {
 
 	FluxTakeLastOne(Flux<? extends T> source) {
 		super(source);
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s) {
-		source.subscribe(new MonoTakeLastOne.TakeLastOneSubscriber<>(s, null, false));
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
+		source.subscribe(new MonoTakeLastOne.TakeLastOneSubscriber<>(s, null, false), ctx);
 	}
 
 	@Override
