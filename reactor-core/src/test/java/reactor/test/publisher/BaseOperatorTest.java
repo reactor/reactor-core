@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
+import javax.annotation.Nullable;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -931,7 +933,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 		};
 	}
 
-	final void touchInner(Object t){
+	final void touchInner(@Nullable Object t){
 		if(t == null) return;
 		Scannable o = Scannable.from(t);
 		o.scan(Scannable.ScannableAttr.ACTUAL);
@@ -948,7 +950,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 	}
 
 	@SuppressWarnings("unchecked")
-	final void touchTreeState(Object parent){
+	final void touchTreeState(@Nullable Object parent){
 		if (parent == null) {
 			return;
 		}

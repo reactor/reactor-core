@@ -144,12 +144,9 @@ public class FluxMaterializeTest
 	public void materialize() {
 		StepVerifier.create(Flux.just("Three", "Two", "One")
 		                        .materialize())
-		            .expectNextMatches(s -> s.isOnNext() && s.get()
-		                                                     .equals("Three"))
-		            .expectNextMatches(s -> s.isOnNext() && s.get()
-		                                                     .equals("Two"))
-		            .expectNextMatches(s -> s.isOnNext() && s.get()
-		                                                     .equals("One"))
+		            .expectNextMatches(s -> s.isOnNext() && "Three".equals(s.get()))
+		            .expectNextMatches(s -> s.isOnNext() && "Two".equals(s.get()))
+		            .expectNextMatches(s -> s.isOnNext() && "One".equals(s.get()))
 		            .expectNextMatches(Signal::isOnComplete)
 		            .verifyComplete();
 	}
@@ -159,13 +156,10 @@ public class FluxMaterializeTest
 		StepVerifier.create(Flux.just("Three", "Two")
 		                        .concatWith(Flux.error(new RuntimeException("test")))
 		                        .materialize())
-		            .expectNextMatches(s -> s.isOnNext() && s.get()
-		                                                     .equals("Three"))
-		            .expectNextMatches(s -> s.isOnNext() && s.get()
-		                                                     .equals("Two"))
-		            .expectNextMatches(s -> s.isOnError() && s.getThrowable()
-		                                                      .getMessage()
-		                                                      .equals("test"))
+		            .expectNextMatches(s -> s.isOnNext() && "Three".equals(s.get()))
+		            .expectNextMatches(s -> s.isOnNext() && "Two".equals(s.get()))
+		            .expectNextMatches(s -> s.isOnError() && s.getThrowable() != null
+				            && "test".equals(s.getThrowable().getMessage()))
 		            .verifyComplete();
 	}
 

@@ -17,6 +17,8 @@ package reactor.core;
 
 import java.util.Collections;
 
+import javax.annotation.Nullable;
+
 import org.junit.Test;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -71,6 +73,7 @@ public class CoreTest {
 		}
 
 		@Override
+		@Nullable
 		public Integer poll() {
 			return null;
 		}

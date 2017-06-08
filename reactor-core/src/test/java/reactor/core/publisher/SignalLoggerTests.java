@@ -60,37 +60,32 @@ public class SignalLoggerTests {
 
 	@Test
 	public void nullSubscriptionAsString() {
-		SignalLogger sl = new SignalLogger<>(Mono.empty(), null, null, false);
-
-		assertThat(sl.subscriptionAsString(null), is("null subscription"));
+		assertThat(SignalLogger.subscriptionAsString(null), is("null subscription"));
 	}
 
 	@Test
 	public void normalSubscriptionAsString() {
-		SignalLogger sl = new SignalLogger<>(Mono.empty(), null, null, false);
 		Subscription s = new FluxPeek.PeekSubscriber<>(null, null);
 
-		assertThat(sl.subscriptionAsString(s), is("FluxPeek.PeekSubscriber"));
+		assertThat(SignalLogger.subscriptionAsString(s), is("FluxPeek.PeekSubscriber"));
 	}
 
 	@Test
 	public void synchronousSubscriptionAsString() {
-		SignalLogger sl = new SignalLogger<>(Mono.empty(), null, null, false);
 		SynchronousSubscription<Object> s = new FluxArray.ArraySubscription<>(null, null);
 
-		assertThat(sl.subscriptionAsString(s), is("[Synchronous Fuseable] FluxArray.ArraySubscription"));
+		assertThat(SignalLogger.subscriptionAsString(s), is("[Synchronous Fuseable] FluxArray.ArraySubscription"));
 	}
+
 	@Test
 	public void queueSubscriptionAsString() {
-		SignalLogger sl = new SignalLogger<>(Mono.empty(), null, null, false);
 		Fuseable.QueueSubscription<Object> s = Operators.EmptySubscription.INSTANCE;
 
-		assertThat(sl.subscriptionAsString(s), is("[Fuseable] Operators.EmptySubscription"));
+		assertThat(SignalLogger.subscriptionAsString(s), is("[Fuseable] Operators.EmptySubscription"));
 	}
 
 	@Test
 	public void anonymousSubscriptionAsString() {
-		SignalLogger sl = new SignalLogger<>(Mono.empty(), null, null, false);
 		Subscription s = new Subscription() {
 			@Override
 			public void request(long n) {}
@@ -99,13 +94,13 @@ public class SignalLoggerTests {
 			public void cancel() {}
 		};
 
-		assertThat(sl.subscriptionAsString(s), is("SignalLoggerTests$1"));
+		assertThat(SignalLogger.subscriptionAsString(s), is("SignalLoggerTests$1"));
 	}
 
 	@Test
 	public void scanSignalLogger() {
 		Mono<String> source = Mono.empty();
-		SignalLogger<String> sl = new SignalLogger<>(source, null, null, false);
+		SignalLogger<String> sl = new SignalLogger<>(source, null, Level.INFO, false);
 
 		Assertions.assertThat(sl.scan(Scannable.ScannableAttr.PARENT)).isSameAs(source);
 	}

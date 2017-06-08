@@ -210,7 +210,8 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxSource<O, O> {
 
 			for (; ; ) {
 				Subscriber<? super T> a = actual;
-				if (a != null) { //TODO investigate null (can actual be null?)
+				//noinspection ConstantConditions
+				if (a != null) {
 					innerDrain(a);
 					return;
 				}

@@ -21,6 +21,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 
+import javax.annotation.Nullable;
+
 import org.reactivestreams.Publisher;
 import reactor.test.StepVerifier;
 
@@ -51,12 +53,12 @@ public class OperatorScenario<I, PI extends Publisher<? extends I>, O, PO extend
 	String                         description    = null;
 	Consumer<StepVerifier.Step<O>> verifier       = null;
 
-	OperatorScenario(Function<PI, ? extends PO> body, Exception stack) {
+	OperatorScenario(@Nullable Function<PI, ? extends PO> body, @Nullable Exception stack) {
 		this.body = body;
 		this.stack = stack;
 	}
 
-	public OperatorScenario<I, PI, O, PO> applyAllOptions(OperatorScenario<I, PI, O, PO> source) {
+	public OperatorScenario<I, PI, O, PO> applyAllOptions(@Nullable OperatorScenario<I, PI, O, PO> source) {
 		if (source == null) {
 			return this;
 		}
@@ -203,6 +205,7 @@ public class OperatorScenario<I, PI extends Publisher<? extends I>, O, PO extend
 		return this;
 	}
 
+	@Nullable
 	final Consumer<StepVerifier.Step<O>> verifier() {
 		return verifier;
 	}
@@ -266,10 +269,12 @@ public class OperatorScenario<I, PI extends Publisher<? extends I>, O, PO extend
 		return step;
 	}
 
+	@Nullable
 	final Function<PI, ? extends PO> body() {
 		return body;
 	}
 
+	@Nullable
 	final String description() {
 		return description;
 	}

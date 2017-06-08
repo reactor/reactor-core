@@ -264,7 +264,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 		}
 
 		@Override
-		public boolean tryOnNext(@Nullable T t) {
+		public boolean tryOnNext(T t) {
 			if (done) {
 				Operators.onNextDropped(t);
 				return true;
@@ -384,7 +384,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 		}
 
 		@Override
-		public boolean tryOnNext(@Nullable T t) {
+		public boolean tryOnNext(T t) {
 
 			if (sourceMode == Fuseable.ASYNC) {
 				actual.onNext(null);

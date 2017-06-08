@@ -382,8 +382,8 @@ public class FluxWindowPredicateTest extends
 
 	private <T> Predicate<? super Signal<T>> signalErrorMessage(String expectedMessage) {
 		return signal -> signal.isOnError()
-				&& signal.getThrowable().getMessage() != null
-				&& signal.getThrowable().getMessage().equals(expectedMessage);
+				&& signal.getThrowable() != null
+				&& expectedMessage.equals(signal.getThrowable().getMessage());
 	}
 
 	@Test

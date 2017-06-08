@@ -262,6 +262,7 @@ public class FluxSkipUntilOtherTest extends FluxOperatorTest<String, String> {
 
         Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
         SerializedSubscriber<?> serialized = (SerializedSubscriber<?>) test.scan(Scannable.ScannableAttr.ACTUAL);
+        Assertions.assertThat(serialized).isNotNull();
         Assertions.assertThat(serialized.actual()).isSameAs(actual);
 
         Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();

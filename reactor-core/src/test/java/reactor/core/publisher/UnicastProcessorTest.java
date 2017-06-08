@@ -19,6 +19,8 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 
+import javax.annotation.Nullable;
+
 import org.junit.Test;
 
 import reactor.core.Disposable;
@@ -79,7 +81,10 @@ public class UnicastProcessorTest {
 		assertProcessor(processor, queue, onOverflow, onTerminate);
 	}
 
-	public void assertProcessor(UnicastProcessor<Integer> processor, Queue<Integer> queue, Consumer<? super Integer> onOverflow, Disposable onTerminate) {
+	public void assertProcessor(UnicastProcessor<Integer> processor,
+			@Nullable Queue<Integer> queue,
+			@Nullable Consumer<? super Integer> onOverflow,
+			@Nullable Disposable onTerminate) {
 		Queue<Integer> expectedQueue = queue != null ? queue : QueueSupplier.<Integer>unbounded().get();
 		Disposable expectedOnTerminate = onTerminate != null ? onTerminate : UnicastProcessor.Builder.NOOP_DISPOSABLE;
 		assertEquals(expectedQueue.getClass(), processor.queue.getClass());

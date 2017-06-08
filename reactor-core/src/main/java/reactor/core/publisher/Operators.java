@@ -672,8 +672,47 @@ public abstract class Operators {
 		return false;
 	}
 
+	/**
+	 * A {@link Subscriber} that is expected to be used as a placeholder and
+	 * never actually be called. All methods log an error.
+	 *
+	 * @param <T> the type of data (ignored)
+	 * @return a placeholder subscriber
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> Subscriber<T> nullSubscriber() {
+		return (Subscriber<T>) NULL_SUBSCRIBER;
+	}
+
 	Operators() {
 	}
+
+
+	static final Subscriber<?> NULL_SUBSCRIBER = new Subscriber<Object>() {
+		@Override
+		public void onSubscribe(Subscription s) {
+			Throwable e = new IllegalStateException("onSubscribe should not be used");
+			log.error("Unexpected call to Operators.nullSubscriber()", e);
+		}
+
+		@Override
+		public void onNext(Object o) {
+			Throwable e = new IllegalStateException("onNext should not be used, got " + o);
+			log.error("Unexpected call to Operators.nullSubscriber()", e);
+		}
+
+		@Override
+		public void onError(Throwable t) {
+			Throwable e = new IllegalStateException("onError should not be used", t);
+			log.error("Unexpected call to Operators.nullSubscriber()", e);
+		}
+
+		@Override
+		public void onComplete() {
+			Throwable e = new IllegalStateException("onComplete should not be used");
+			log.error("Unexpected call to Operators.nullSubscriber()", e);
+		}
+	};
 
 	//
 	enum CancelledSubscription implements Subscription, Scannable {

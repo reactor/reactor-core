@@ -22,6 +22,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import javax.annotation.Nullable;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -262,7 +264,7 @@ public class CombinationTests {
 		}
 
 		@Override
-		public int compareTo(SensorData other) {
+		public int compareTo(@Nullable SensorData other) {
 			if (null == other) {
 				return 1;
 			}

@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscriber;
@@ -384,6 +386,7 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 		}
 
 		@Override
+		@Nullable
 		public Iterator<T> iterator() {
 			return null;
 		}

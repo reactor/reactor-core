@@ -21,6 +21,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 
+import javax.annotation.Nullable;
+
 import org.reactivestreams.Subscription;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -50,7 +52,7 @@ public abstract class ParallelOperatorTest<I, O>
 			return new Scenario<>(scenario, new Exception("scenario:"));
 		}
 
-		Scenario(Function<ParallelFlux<I>, ? extends ParallelFlux<O>> scenario, Exception stack) {
+		Scenario(@Nullable Function<ParallelFlux<I>, ? extends ParallelFlux<O>> scenario, @Nullable Exception stack) {
 			super(scenario, stack);
 		}
 

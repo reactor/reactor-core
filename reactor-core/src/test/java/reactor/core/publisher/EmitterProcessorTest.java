@@ -25,6 +25,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
+import javax.annotation.Nullable;
+
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -602,6 +604,7 @@ public class EmitterProcessorTest {
 					.assertComplete();
 		}
 
+		@Nullable
 		public Throwable getLastException() {
 			return lastException;
 		}
@@ -674,7 +677,9 @@ public class EmitterProcessorTest {
 		assertProcessor(processor, bufferSize, autoCancel);
 	}
 
-	public void assertProcessor(EmitterProcessor<Integer> processor, Integer bufferSize, Boolean autoCancel) {
+	public void assertProcessor(EmitterProcessor<Integer> processor,
+			@Nullable Integer bufferSize,
+			@Nullable Boolean autoCancel) {
 		int expectedBufferSize = bufferSize != null ? bufferSize : QueueSupplier.SMALL_BUFFER_SIZE;
 		boolean expectedAutoCancel = autoCancel != null ? autoCancel : true;
 

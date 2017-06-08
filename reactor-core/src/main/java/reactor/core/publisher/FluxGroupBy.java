@@ -262,6 +262,9 @@ final class FluxGroupBy<T, K, V> extends FluxSource<T, GroupedFlux<K, V>>
 
 		void signalAsyncError() {
 			Throwable e = Exceptions.terminate(ERROR, this); //TODO investigate if e == null
+			if (e == null) {
+				e = new IllegalStateException("FluxGroupBy.signalAsyncError called without error set");
+			}
 			groupCount = 0;
 			for (UnicastGroupedFlux<K, V> g : groupMap.values()) {
 				g.onError(e);

@@ -192,7 +192,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 		return null;
 	}
 
-	String subscriptionAsString(@Nullable Subscription s) {
+	static String subscriptionAsString(@Nullable Subscription s) {
 		if (s == null) {
 			return "null subscription";
 		}

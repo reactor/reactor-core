@@ -15,6 +15,8 @@
  */
 package reactor.test.publisher;
 
+import javax.annotation.Nullable;
+
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 import reactor.core.publisher.Flux;
@@ -28,6 +30,7 @@ final class FluxEmptySyncFuseable<T> extends Flux<T> implements Fuseable {
 	public void subscribe(Subscriber<? super T> s) {
 		s.onSubscribe(new SynchronousSubscription<T>() {
 			@Override
+			@Nullable
 			public T poll() {
 				return null;
 			}

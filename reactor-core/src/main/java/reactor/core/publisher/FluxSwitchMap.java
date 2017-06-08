@@ -394,7 +394,15 @@ final class FluxSwitchMap<T, R> extends FluxSource<T, R> {
 		}
 
 		void innerNext(SwitchMapInner<R> inner, R value) {
-			queueBiAtomic.test(inner, value); //TODO investigate null
+			if (queueBiAtomic != null) {
+				//the queue is a "BiQueue" from Reactor, test(A, B) actually does double insertion
+				queueBiAtomic.test(inner, value);
+			}
+			else {
+				//the queue is a regular queue, a bit more overhead to do double insertion
+				queue.offer(inner);
+				queue.offer(value);
+			}
 			drain();
 		}
 
