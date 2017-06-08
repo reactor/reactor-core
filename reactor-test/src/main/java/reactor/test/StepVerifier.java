@@ -24,6 +24,8 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import javax.annotation.Nullable;
+
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -99,9 +101,10 @@ public interface StepVerifier {
 	 * this method or {@link #resetDefaultTimeout()}.
 	 *
 	 * @param timeout the timeout to use for {@link #verify()} calls on all {@link StepVerifier}
-	 * created through the factory methods after this call.
+	 * created through the factory methods after this call. {@literal null} is interpreted
+	 * as a call to {@link #resetDefaultTimeout()}.
 	 */
-	static void setDefaultTimeout(Duration timeout) {
+	static void setDefaultTimeout(@Nullable Duration timeout) {
 		DefaultStepVerifierBuilder.defaultVerifyTimeout =
 				timeout == null ? DEFAULT_VERIFY_TIMEOUT : timeout;
 	}
