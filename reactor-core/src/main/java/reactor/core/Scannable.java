@@ -20,10 +20,7 @@ import java.util.Iterator;
 import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
 import javax.annotation.Nullable;
-
-import com.sun.istack.internal.localization.NullLocalizable;
 
 /**
  * A Scannable component exposes state in a non strictly memory consistent way and
