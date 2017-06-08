@@ -49,7 +49,7 @@ public interface Scannable {
 
 			@Override
 			public boolean hasNext() {
-				return c != null;
+				return c != null && c.isScanAvailable();
 			}
 
 			@Override
