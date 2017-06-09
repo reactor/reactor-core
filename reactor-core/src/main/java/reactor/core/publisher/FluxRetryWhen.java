@@ -111,14 +111,6 @@ final class FluxRetryWhen<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.CANCELLED) return cancelled;
-
-			return super.scanUnsafe(key);
-		}
-
-		@Override
 		public Stream<? extends Scannable> inners() {
 			return Stream.of(Scannable.from(signaller), otherArbiter);
 		}

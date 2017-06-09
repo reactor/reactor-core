@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.assertj.core.api.Assertions;
@@ -27,6 +28,8 @@ import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxRepeatWhenTest {
 
@@ -47,6 +50,98 @@ public class FluxRepeatWhenTest {
 		ts.assertValues(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 		  .assertComplete()
 		  .assertNoError();
+	}
+
+	@Test
+	public void cancelsOther() {
+		AtomicBoolean cancelled = new AtomicBoolean();
+		Flux<Integer> when = Flux.range(1, 10)
+		                         .doOnCancel(() -> cancelled.set(true));
+
+		StepVerifier.create(Flux.just(1).repeatWhen(other -> when))
+		            .thenCancel()
+		            .verify();
+
+		assertThat(cancelled.get()).isTrue();
+	}
+
+	@Test
+	public void directOtherErrorPreventsSubscribe() {
+		AtomicBoolean sourceSubscribed = new AtomicBoolean();
+		AtomicBoolean sourceCancelled = new AtomicBoolean();
+		Flux<Integer> source = Flux.just(1)
+		                           .doOnSubscribe(sub -> sourceSubscribed.set(true))
+		                           .doOnCancel(() -> sourceCancelled.set(true));
+
+		Flux<Integer> repeat = source.repeatWhen(other -> Mono.error(new IllegalStateException("boom")));
+
+		StepVerifier.create(repeat)
+		            .expectSubscription()
+		            .verifyErrorMessage("boom");
+
+		assertThat(sourceSubscribed.get()).isFalse();
+		assertThat(sourceCancelled.get()).isFalse();
+	}
+
+	@Test
+	public void lateOtherErrorCancelsSource() {
+		AtomicBoolean sourceSubscribed = new AtomicBoolean();
+		AtomicBoolean sourceCancelled = new AtomicBoolean();
+		AtomicInteger count = new AtomicInteger();
+		Flux<Integer> source = Flux.just(1)
+		                           .doOnSubscribe(sub -> sourceSubscribed.set(true))
+		                           .doOnCancel(() -> sourceCancelled.set(true));
+
+
+		Flux<Integer> repeat = source.repeatWhen(other -> other.flatMap(l ->
+				count.getAndIncrement() == 0 ? Mono.just(l) : Mono.<Long>error(new IllegalStateException("boom"))));
+
+		StepVerifier.create(repeat)
+		            .expectSubscription()
+		            .expectNext(1)
+		            .expectNext(1)
+		            .verifyErrorMessage("boom");
+
+		assertThat(sourceSubscribed.get()).isTrue();
+		assertThat(sourceCancelled.get()).isTrue();
+	}
+
+	@Test
+	public void directOtherEmptyPreventsSubscribe() {
+		AtomicBoolean sourceSubscribed = new AtomicBoolean();
+		AtomicBoolean sourceCancelled = new AtomicBoolean();
+		Flux<Integer> source = Flux.just(1)
+		                           .doOnSubscribe(sub -> sourceSubscribed.set(true))
+		                           .doOnCancel(() -> sourceCancelled.set(true));
+
+		Flux<Integer> repeat = source.repeatWhen(other -> Flux.empty());
+
+		StepVerifier.create(repeat)
+		            .expectSubscription()
+		            .verifyComplete();
+
+		assertThat(sourceSubscribed.get()).isFalse();
+		assertThat(sourceCancelled.get()).isFalse();
+	}
+
+	@Test
+	public void lateOtherEmptyCancelsSource() {
+		AtomicBoolean sourceSubscribed = new AtomicBoolean();
+		AtomicBoolean sourceCancelled = new AtomicBoolean();
+		Flux<Integer> source = Flux.just(1)
+		                           .doOnSubscribe(sub -> sourceSubscribed.set(true))
+		                           .doOnCancel(() -> sourceCancelled.set(true));
+
+		Flux<Integer> repeat = source.repeatWhen(other -> other.take(1));
+
+		StepVerifier.create(repeat)
+		            .expectSubscription()
+		            .expectNext(1) //original
+		            .expectNext(1) //repeat
+		            .verifyComplete(); //repeat terminated
+
+		assertThat(sourceSubscribed.get()).isTrue();
+		assertThat(sourceCancelled.get()).isTrue();
 	}
 
 	@Test
@@ -259,14 +354,14 @@ public class FluxRepeatWhenTest {
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
-        Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
         test.requested = 35;
-        Assertions.assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
+        assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
 
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
         test.cancel();
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
     }
 
 	@Test
@@ -277,7 +372,7 @@ public class FluxRepeatWhenTest {
         FluxRepeatWhen.RepeatWhenOtherSubscriber test = new FluxRepeatWhen.RepeatWhenOtherSubscriber();
         test.main = main;
 
-        Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(main.otherArbiter);
-        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(main);
+        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(main.otherArbiter);
+        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(main);
     }
 }

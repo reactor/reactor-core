@@ -52,7 +52,6 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-
 		RepeatWhenOtherSubscriber other = new RepeatWhenOtherSubscriber();
 		Subscriber<Long> signaller = Operators.serialize(other.completionSignal);
 
@@ -108,14 +107,6 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 			this.signaller = signaller;
 			this.source = source;
 			this.otherArbiter = new Operators.DeferredSubscription();
-		}
-
-		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.CANCELLED) return cancelled;
-
-			return super.scanUnsafe(key);
 		}
 
 		@Override
