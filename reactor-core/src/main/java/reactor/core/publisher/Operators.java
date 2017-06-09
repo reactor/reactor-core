@@ -680,37 +680,37 @@ public abstract class Operators {
 	 * @return a placeholder subscriber
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> Subscriber<T> nullSubscriber() {
-		return (Subscriber<T>) NULL_SUBSCRIBER;
+	public static <T> Subscriber<T> emptySubscriber() {
+		return (Subscriber<T>) EMPTY_SUBSCRIBER;
 	}
 
 	Operators() {
 	}
 
 
-	static final Subscriber<?> NULL_SUBSCRIBER = new Subscriber<Object>() {
+	static final Subscriber<?> EMPTY_SUBSCRIBER = new Subscriber<Object>() {
 		@Override
 		public void onSubscribe(Subscription s) {
 			Throwable e = new IllegalStateException("onSubscribe should not be used");
-			log.error("Unexpected call to Operators.nullSubscriber()", e);
+			log.error("Unexpected call to Operators.emptySubscriber()", e);
 		}
 
 		@Override
 		public void onNext(Object o) {
 			Throwable e = new IllegalStateException("onNext should not be used, got " + o);
-			log.error("Unexpected call to Operators.nullSubscriber()", e);
+			log.error("Unexpected call to Operators.emptySubscriber()", e);
 		}
 
 		@Override
 		public void onError(Throwable t) {
 			Throwable e = new IllegalStateException("onError should not be used", t);
-			log.error("Unexpected call to Operators.nullSubscriber()", e);
+			log.error("Unexpected call to Operators.emptySubscriber()", e);
 		}
 
 		@Override
 		public void onComplete() {
 			Throwable e = new IllegalStateException("onComplete should not be used");
-			log.error("Unexpected call to Operators.nullSubscriber()", e);
+			log.error("Unexpected call to Operators.emptySubscriber()", e);
 		}
 	};
 

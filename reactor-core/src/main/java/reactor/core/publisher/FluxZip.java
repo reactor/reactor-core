@@ -218,9 +218,9 @@ final class FluxZip<T, R> extends Flux<R> {
 	@SuppressWarnings("unchecked")
 	void handleArrayMode(Subscriber<? super R> s, Publisher<? extends T>[] srcs) {
 
+		Object[] scalars = null; //optimisation: if no scalar source, no array creation
 		int n = srcs.length;
 
-		Object[] scalars = new Object[n]; //could be full of nulls if no Callable, which will be ignored by handleBoth
 		int sc = 0;
 
 		for (int j = 0; j < n; j++) {
@@ -246,6 +246,10 @@ final class FluxZip<T, R> extends Flux<R> {
 				if (v == null) {
 					Operators.complete(s);
 					return;
+				}
+
+				if (scalars == null) {
+					scalars = new Object[n];
 				}
 
 				scalars[j] = v;
@@ -274,10 +278,10 @@ final class FluxZip<T, R> extends Flux<R> {
 	 */
 	void handleBoth(Subscriber<? super R> s,
 			Publisher<? extends T>[] srcs,
-			Object[] scalars,
+			@Nullable Object[] scalars,
 			int n,
 			int sc) {
-		if (sc != 0) {
+		if (sc != 0 && scalars != null) {
 			if (n != sc) {
 				ZipSingleCoordinator<T, R> coordinator =
 						new ZipSingleCoordinator<>(s, scalars, n, zipper);
@@ -307,7 +311,6 @@ final class FluxZip<T, R> extends Flux<R> {
 
 		}
 		else {
-
 			ZipCoordinator<T, R> coordinator =
 					new ZipCoordinator<>(s, zipper, n, queueSupplier, prefetch);
 

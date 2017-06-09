@@ -763,7 +763,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 		long produced;
 
 		ConcatMapInner(FluxConcatMapSupport<?, R> parent) {
-			super(Operators.nullSubscriber());
+			super(Operators.emptySubscriber());
 			this.parent = parent;
 		}
 
