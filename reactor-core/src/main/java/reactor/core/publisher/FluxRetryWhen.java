@@ -100,8 +100,6 @@ final class FluxRetryWhen<T> extends FluxSource<T, T> {
 		static final AtomicIntegerFieldUpdater<RetryWhenMainSubscriber> WIP =
 		  AtomicIntegerFieldUpdater.newUpdater(RetryWhenMainSubscriber.class, "wip");
 
-		volatile boolean cancelled;
-
 		long produced;
 		
 		RetryWhenMainSubscriber(Subscriber<? super T> actual, Subscriber<Throwable> signaller,
@@ -127,14 +125,11 @@ final class FluxRetryWhen<T> extends FluxSource<T, T> {
 
 		@Override
 		public void cancel() {
-			if (cancelled) {
-				return;
+			if (!cancelled) {
+				cancelWhen();
+				super.cancel();
 			}
-			cancelled = true;
 
-			cancelWhen();
-
-			super.cancel();
 		}
 
 		void cancelWhen() {
@@ -186,14 +181,12 @@ final class FluxRetryWhen<T> extends FluxSource<T, T> {
 		}
 
 		void whenError(Throwable e) {
-			cancelled = true;
 			super.cancel();
 
 			actual.onError(e);
 		}
 
 		void whenComplete() {
-			cancelled = true;
 			super.cancel();
 
 			actual.onComplete();

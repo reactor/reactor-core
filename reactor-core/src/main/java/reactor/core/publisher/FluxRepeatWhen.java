@@ -99,8 +99,6 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 				AtomicIntegerFieldUpdater.newUpdater(RepeatWhenMainSubscriber.class,
 						"wip");
 
-		volatile boolean cancelled;
-
 		long produced;
 
 		RepeatWhenMainSubscriber(Subscriber<? super T> actual,
@@ -127,14 +125,10 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 
 		@Override
 		public void cancel() {
-			if (cancelled) {
-				return;
+			if (!cancelled) {
+				cancelWhen();
+				super.cancel();
 			}
-			cancelled = true;
-
-			cancelWhen();
-
-			super.cancel();
 		}
 
 		@Override
@@ -186,14 +180,12 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 		}
 
 		void whenError(Throwable e) {
-			cancelled = true;
 			super.cancel();
 
 			actual.onError(e);
 		}
 
 		void whenComplete() {
-			cancelled = true;
 			super.cancel();
 
 			actual.onComplete();
