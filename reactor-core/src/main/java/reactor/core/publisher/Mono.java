@@ -3007,7 +3007,7 @@ public abstract class Mono<T> implements Publisher<T> {
             MonoThenIgnore<T> a = (MonoThenIgnore<T>) this;
             return a.shift(other);
 		}
-		return onAssembly(new MonoThenIgnore<>(new Mono[] { this }, other));
+		return onAssembly(new MonoThenIgnore<>(new Publisher[] { this }, other));
 	}
 
 	/**

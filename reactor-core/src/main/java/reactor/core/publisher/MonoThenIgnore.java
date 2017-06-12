@@ -65,7 +65,7 @@ final class MonoThenIgnore<T> extends Mono<T> implements Fuseable {
         Objects.requireNonNull(newLast, "newLast");
         Publisher<?>[] a = ignore;
         int n = a.length;
-        Mono<?>[] b = new Mono[n + 1];
+        Publisher<?>[] b = new Publisher[n + 1];
         System.arraycopy(a, 0, b, 0, n);
         b[n] = last;
         
