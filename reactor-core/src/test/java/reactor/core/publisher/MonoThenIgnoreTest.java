@@ -120,4 +120,24 @@ public class MonoThenIgnoreTest {
 		test.cancel();
 		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
 	}
+
+	//see https://github.com/reactor/reactor-core/issues/661
+	@Test
+	public void fluxThenMonoAndShift() {
+		StepVerifier.create(Flux.just("Good Morning", "Hello")
+		                        .then(Mono.just("Good Afternoon"))
+		                        .then(Mono.just("Bye")))
+		            .expectNext("Bye")
+		            .verifyComplete();
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/661
+	@Test
+	public void monoThenMonoAndShift() {
+		StepVerifier.create(Mono.just("Good Morning")
+		                        .then(Mono.just("Good Afternoon"))
+		                        .then(Mono.just("Bye")))
+		            .expectNext("Bye")
+		            .verifyComplete();
+	}
 }
