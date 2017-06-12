@@ -195,6 +195,54 @@ public class FluxCreateTest {
 	}
 
 	@Test
+	public void fluxCreateOnDispose() {
+		int count = 5;
+		AtomicInteger onDispose = new AtomicInteger();
+		AtomicInteger onCancel = new AtomicInteger();
+		class Emitter {
+
+			final FluxSink<Integer> sink;
+
+			Emitter(FluxSink<Integer> sink) {
+				this.sink = sink;
+			}
+
+			public void emit(long n) {
+				for (int i = 0; i < n; i++)
+					sink.next(i);
+				sink.complete();
+			}
+		}
+		Flux<Integer> flux1 = Flux.<Integer>create(s -> {
+			Emitter emitter = new Emitter(s);
+			s.onDispose(() -> onDispose.incrementAndGet());
+			s.onCancel(() -> onCancel.incrementAndGet());
+			s.onRequest(emitter::emit);
+		});
+		StepVerifier.create(flux1, count)
+					.expectNextCount(count)
+					.expectComplete()
+					.verify();
+		assertThat(onDispose.get()).isEqualTo(1);
+		assertThat(onCancel.get()).isEqualTo(0);
+
+		onDispose.set(0);
+		onCancel.set(0);
+		Flux<Integer> flux2 = Flux.<Integer>create(s -> {
+			Emitter emitter = new Emitter(s);
+			s.onRequest(emitter::emit);
+			s.onDispose(() -> onDispose.incrementAndGet());
+			s.onCancel(() -> onCancel.incrementAndGet());
+		});
+		StepVerifier.create(flux2, count)
+					.expectNextCount(count)
+					.expectComplete()
+					.verify();
+		assertThat(onDispose.get()).isEqualTo(1);
+		assertThat(onCancel.get()).isEqualTo(0);
+	}
+
+	@Test
 	public void fluxCreateBufferedBackpressured() {
 		Flux<String> created = Flux.create(s -> {
 			assertThat(s.requestedFromDownstream()).isEqualTo(1);
