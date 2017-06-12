@@ -422,7 +422,9 @@ final class FluxCreate<T> extends Flux<T> {
 				SinkDisposable sd = new SinkDisposable(d, null);
 				if (!DISPOSABLE.compareAndSet(this, null, sd)) {
 					Disposable c = disposable;
-					if (c instanceof SinkDisposable) {
+					if (c == Disposables.DISPOSED)
+						d.dispose();
+					else if (c instanceof SinkDisposable) {
 						SinkDisposable current = (SinkDisposable) c;
 						if (current.disposable == null)
 							current.disposable = d;
