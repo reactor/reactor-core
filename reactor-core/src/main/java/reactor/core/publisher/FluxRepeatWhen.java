@@ -52,7 +52,6 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
-
 		RepeatWhenOtherSubscriber other = new RepeatWhenOtherSubscriber();
 		Subscriber<Long> signaller = Operators.serialize(other.completionSignal);
 
@@ -99,8 +98,6 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 				AtomicIntegerFieldUpdater.newUpdater(RepeatWhenMainSubscriber.class,
 						"wip");
 
-		volatile boolean cancelled;
-
 		long produced;
 
 		RepeatWhenMainSubscriber(Subscriber<? super T> actual,
@@ -113,28 +110,16 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.CANCELLED) return cancelled;
-
-			return super.scanUnsafe(key);
-		}
-
-		@Override
 		public Stream<? extends Scannable> inners() {
 			return Stream.of(Scannable.from(signaller), otherArbiter);
 		}
 
 		@Override
 		public void cancel() {
-			if (cancelled) {
-				return;
+			if (!cancelled) {
+				otherArbiter.cancel();
+				super.cancel();
 			}
-			cancelled = true;
-
-			cancelWhen();
-
-			super.cancel();
 		}
 
 		@Override
@@ -163,10 +148,6 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 			signaller.onNext(p);
 		}
 
-		void cancelWhen() {
-			otherArbiter.cancel();
-		}
-
 		void setWhen(Subscription w) {
 			otherArbiter.set(w);
 		}
@@ -186,14 +167,12 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 		}
 
 		void whenError(Throwable e) {
-			cancelled = true;
 			super.cancel();
 
 			actual.onError(e);
 		}
 
 		void whenComplete() {
-			cancelled = true;
 			super.cancel();
 
 			actual.onComplete();
