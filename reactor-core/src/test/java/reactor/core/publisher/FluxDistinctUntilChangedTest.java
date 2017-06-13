@@ -17,9 +17,10 @@
 package reactor.core.publisher;
 
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.Objects;
+import java.util.function.BiPredicate;
+import java.util.function.Function;
 
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -55,12 +56,17 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 
 	@Test(expected = NullPointerException.class)
 	public void sourceNull() {
-		new FluxDistinctUntilChanged<>(null, v -> v);
+		new FluxDistinctUntilChanged<>(null, v -> v, (k1, k2) -> true);
 	}
 
 	@Test(expected = NullPointerException.class)
 	public void keyExtractorNull() {
 		Flux.never().distinctUntilChanged(null);
+	}
+
+	@Test(expected = NullPointerException.class)
+	public void predicateNull() {
+		Flux.never().distinctUntilChanged(v -> v, null);
 	}
 
 	@Test
@@ -163,6 +169,19 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 		  .assertComplete()
 		  .assertNoError();
 	}
+	
+	@Test
+	public void withKeyComparator() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		Flux.range(1, 10)
+		    .distinctUntilChanged(Function.identity(), (a,b) -> b - a < 4)
+		    .subscribe(ts);
+
+		ts.assertValues(1, 5, 9)
+		  .assertComplete()
+		  .assertNoError();
+	}
 
 	@Test
 	public void keySelectorThrows() {
@@ -175,6 +194,22 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 		    .subscribe(ts);
 
 		ts.assertNoValues()
+		  .assertNotComplete()
+		  .assertError(RuntimeException.class)
+		  .assertErrorMessage("forced failure");
+	}
+
+	@Test
+	public void keyComparatorThrows() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		Flux.range(1, 10)
+		    .distinctUntilChanged(Function.identity(), (v1,v2) -> {
+			    throw new RuntimeException("forced failure");
+		    })
+		    .subscribe(ts);
+
+		ts.assertValues(1)
 		  .assertNotComplete()
 		  .assertError(RuntimeException.class)
 		  .assertErrorMessage("forced failure");
@@ -200,7 +235,7 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 	public void scanSubscriber() {
 		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxDistinctUntilChanged.DistinctUntilChangedSubscriber<String, Integer> test = new FluxDistinctUntilChanged.DistinctUntilChangedSubscriber<>(
-			actual, String::hashCode);
+			actual, String::hashCode, Objects::equals);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
@@ -216,7 +251,7 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 	public void scanConditionalSubscriber() {
 		Fuseable.ConditionalSubscriber<String> actual = Mockito.mock(Fuseable.ConditionalSubscriber.class);
 		FluxDistinctUntilChanged.DistinctUntilChangedConditionalSubscriber<String, Integer> test = new FluxDistinctUntilChanged.DistinctUntilChangedConditionalSubscriber<>(
-				actual, String::hashCode);
+				actual, String::hashCode, Objects::equals);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
