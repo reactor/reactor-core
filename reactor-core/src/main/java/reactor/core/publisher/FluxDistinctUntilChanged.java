@@ -18,11 +18,11 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable.ConditionalSubscriber;
-import javax.annotation.Nullable;
 
 /**
  * Filters out subsequent and repeated elements.
@@ -111,9 +111,26 @@ final class FluxDistinctUntilChanged<T, K> extends FluxSource<T, T> {
 				return true;
 			}
 
-			if (null != lastKey && keyComparator.test(lastKey, k)) {
+			if (null == lastKey) {
+				lastKey = k;
+				actual.onNext(t);
+				return true;
+			}
+
+			boolean equiv;
+
+			try {
+				equiv = keyComparator.test(lastKey, k);
+			}
+			catch (Throwable e) {
+				onError(Operators.onOperatorError(s, e, t));
+				return true;
+			}
+
+			if (equiv) {
 				return false;
 			}
+
 			lastKey = k;
 			actual.onNext(t);
 			return true;
@@ -220,9 +237,25 @@ final class FluxDistinctUntilChanged<T, K> extends FluxSource<T, T> {
 				return true;
 			}
 
-			if (null != lastKey && keyComparator.test(lastKey, k)) {
+			if (null == lastKey) {
+				lastKey = k;
+				return actual.tryOnNext(t);
+			}
+
+			boolean equiv;
+
+			try {
+				equiv = keyComparator.test(lastKey, k);
+			}
+			catch (Throwable e) {
+				onError(Operators.onOperatorError(s, e, t));
+				return true;
+			}
+
+			if (equiv) {
 				return false;
 			}
+
 			lastKey = k;
 			return actual.tryOnNext(t);
 		}

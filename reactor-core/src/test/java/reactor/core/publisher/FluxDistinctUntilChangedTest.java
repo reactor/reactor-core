@@ -200,6 +200,22 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 	}
 
 	@Test
+	public void keyComparatorThrows() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+
+		Flux.range(1, 10)
+		    .distinctUntilChanged(Function.identity(), (v1,v2) -> {
+			    throw new RuntimeException("forced failure");
+		    })
+		    .subscribe(ts);
+
+		ts.assertValues(1)
+		  .assertNotComplete()
+		  .assertError(RuntimeException.class)
+		  .assertErrorMessage("forced failure");
+	}
+
+	@Test
 	public void allDistinctConditional() {
 		DirectProcessor<Integer> dp = new DirectProcessor<>();
 
