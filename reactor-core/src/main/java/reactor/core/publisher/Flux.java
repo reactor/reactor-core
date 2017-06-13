@@ -4707,6 +4707,58 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Request an unbounded demand and push to the returned {@link Flux}, or park the observed
+	 * elements if not enough demand is requested downstream, within a {@code maxSize}
+	 * limit and for a maximum {@link Duration} of {@code ttl} (as measured on the
+	 * {@link Schedulers#elastic() elastic Scheduler}). Over that limit, oldest
+	 * elements from the source are dropped.
+	 * <p>
+	 * Elements evicted based on the TTL are passed to a cleanup {@link Consumer}, which
+	 * is also immediately invoked when there is an overflow.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/onbackpressurebuffer.png" alt="">
+	 *
+	 * @param ttl maximum {@link Duration} for which an element is kept in the backlog
+	 * @param maxSize maximum buffer backlog size before overflow callback is called
+	 * @param onBufferEviction callback to invoke once TTL is reached or on overflow
+	 *
+	 * @return a backpressured {@link Flux} that buffers with a TTL and up to a capacity then applies an
+	 * overflow strategy
+	 */
+	public final Flux<T> onBackpressureBuffer(Duration ttl, int maxSize, Consumer<? super T> onBufferEviction) {
+		Objects.requireNonNull(ttl, "ttl");
+		Objects.requireNonNull(onBufferEviction, "onBufferEviction");
+		return onAssembly(new FluxOnBackpressureBufferTimeout<>(this, ttl, Schedulers.elastic(), maxSize, onBufferEviction));
+	}
+
+	/**
+	 * Request an unbounded demand and push to the returned {@link Flux}, or park the observed
+	 * elements if not enough demand is requested downstream, within a {@code maxSize}
+	 * limit and for a maximum {@link Duration} of {@code ttl} (as measured on the provided
+	 * {@link Scheduler}). Over that limit, oldest elements from the source are dropped.
+	 * <p>
+	 * Elements evicted based on the TTL are passed to a cleanup {@link Consumer}, which
+	 * is also immediately invoked when there is an overflow.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/onbackpressurebuffer.png" alt="">
+	 *
+	 * @param ttl maximum {@link Duration} for which an element is kept in the backlog
+	 * @param maxSize maximum buffer backlog size before overflow callback is called
+	 * @param onBufferEviction callback to invoke once TTL is reached or on overflow
+	 * @param scheduler the scheduler on which to run the timeout check
+	 *
+	 * @return a backpressured {@link Flux} that buffers with a TTL and up to a capacity then applies an
+	 * overflow strategy
+	 */
+	public final Flux<T> onBackpressureBuffer(Duration ttl, int maxSize, Consumer<? super T> onBufferEviction, Scheduler scheduler) {
+		Objects.requireNonNull(ttl, "ttl");
+		Objects.requireNonNull(onBufferEviction, "onBufferEviction");
+		return onAssembly(new FluxOnBackpressureBufferTimeout<>(this, ttl, scheduler, maxSize, onBufferEviction));
+	}
+
+	/**
 	 * Request an unbounded demand and push to the returned {@link Flux}, or drop
 	 * the observed elements if not enough demand is requested downstream.
 	 *
