@@ -19,6 +19,7 @@ package reactor.core.scheduler;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -472,6 +473,21 @@ public abstract class Schedulers {
 		}
 
 		/**
+		 * Override this method to decorate {@link ForkJoinPool} internally used by
+		 * Reactor's various {@link Scheduler} implementations, allowing to tune the
+		 * {@link ForkJoinPool} backing implementation.
+		 *
+		 * @param schedulerType a name hinting at the flavor of Scheduler being tuned.
+		 * @param actual the default backing implementation, provided lazily as a Supplier
+		 * so that you can bypass instantiation completely if you want to replace it.
+		 * @return the internal {@link ForkJoinPool} instance to use.
+		 */
+		default ForkJoinPool decorateForkJoinPool(String schedulerType,
+				Supplier<? extends ForkJoinPool> actual) {
+			return actual.get();
+		}
+
+		/**
 		 * {@link Scheduler} that dynamically creates Workers resources and caches
 		 * eventually, reusing them once the Workers have been shut down.
 		 * <p>
@@ -696,6 +712,11 @@ public abstract class Schedulers {
 	static ScheduledExecutorService decorateScheduledExecutorService(String schedulerType,
 			Supplier<? extends ScheduledExecutorService> actual) {
 		return factory.decorateScheduledExecutorService(schedulerType, actual);
+	}
+
+	static ForkJoinPool decorateForkJoinPool(String schedulerType,
+			Supplier<? extends ForkJoinPool> actual) {
+		return factory.decorateForkJoinPool(schedulerType, actual);
 	}
 
 }

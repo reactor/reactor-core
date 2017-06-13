@@ -19,6 +19,7 @@ package reactor.core.scheduler;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RejectedExecutionException;
@@ -51,6 +52,10 @@ final class ExecutorServiceScheduler implements Scheduler {
 		if (executorService instanceof ScheduledExecutorService) {
 			this.executor = Schedulers.decorateScheduledExecutorService("ExecutorService",
 					() -> (ScheduledExecutorService) executorService);
+		}
+		else if (executorService instanceof ForkJoinPool) {
+			this.executor = Schedulers.decorateForkJoinPool("ExecutorService",
+					() -> (ForkJoinPool) executorService);
 		}
 		else {
 			this.executor = Schedulers.decorateExecutorService("ExecutorService",
