@@ -17,14 +17,15 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -61,6 +62,25 @@ public class FluxRetryWhenTest {
 		            .verify();
 
 		assertThat(cancelled.get()).isTrue();
+	}
+
+	@Test
+	public void cancelTwiceCancelsOtherOnce() {
+		AtomicInteger cancelled = new AtomicInteger();
+		Flux<Integer> when = Flux.range(1, 10)
+		                         .doOnCancel(cancelled::incrementAndGet);
+
+		justError.retryWhen(other -> when)
+		         .subscribe(new BaseSubscriber<Integer>() {
+			         @Override
+			         protected void hookOnSubscribe(Subscription subscription) {
+				         subscription.request(1);
+				         subscription.cancel();
+				         subscription.cancel();
+			         }
+		         });
+
+		assertThat(cancelled.get()).isEqualTo(1);
 	}
 
 	@Test
@@ -325,4 +345,17 @@ public class FluxRetryWhenTest {
         Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(main.otherArbiter);
         Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(main);
     }
+
+
+	@Test
+	public void inners() {
+		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		Subscriber<Throwable> signaller = new LambdaSubscriber<>(null, e -> {}, null, null);
+		Flux<Integer> when = Flux.empty();
+		FluxRetryWhen.RetryWhenMainSubscriber<Integer> main = new FluxRetryWhen.RetryWhenMainSubscriber<>(actual, signaller, when);
+
+		List<Scannable> inners = main.inners().collect(Collectors.toList());
+
+		assertThat(inners).containsExactly((Scannable) signaller, main.otherArbiter);
+	}
 }

@@ -117,7 +117,7 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 		@Override
 		public void cancel() {
 			if (!cancelled) {
-				cancelWhen();
+				otherArbiter.cancel();
 				super.cancel();
 			}
 		}
@@ -146,10 +146,6 @@ final class FluxRepeatWhen<T> extends FluxSource<T, T> {
 
 			otherArbiter.request(1);
 			signaller.onNext(p);
-		}
-
-		void cancelWhen() {
-			otherArbiter.cancel();
 		}
 
 		void setWhen(Subscription w) {

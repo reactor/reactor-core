@@ -118,14 +118,10 @@ final class FluxRetryWhen<T> extends FluxSource<T, T> {
 		@Override
 		public void cancel() {
 			if (!cancelled) {
-				cancelWhen();
+				otherArbiter.cancel();
 				super.cancel();
 			}
 
-		}
-
-		void cancelWhen() {
-			otherArbiter.cancel();
 		}
 
 		public void setWhen(Subscription w) {
