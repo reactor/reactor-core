@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -44,6 +45,7 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -63,7 +65,6 @@ import reactor.util.function.Tuple4;
 import reactor.util.function.Tuple5;
 import reactor.util.function.Tuple6;
 import reactor.util.function.Tuples;
-import javax.annotation.Nullable;
 
 /**
  * A Reactive Streams {@link Publisher} with rx operators that emits 0 to N elements, and then completes
@@ -3318,7 +3319,8 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Filter out subsequent repetitions of an element (that is, if they arrive right after
-	 * one another), as compared by a key extracted through the user provided {@link Function}.
+	 * one another), as compared by a key extracted through the user provided {@link Function}
+	 * using equality.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/distinctuntilchangedk.png" alt="">
@@ -3331,7 +3333,30 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * the same key (yet element keys can repeat in the overall sequence)
 	 */
 	public final <V> Flux<T> distinctUntilChanged(Function<? super T, ? extends V> keySelector) {
-		return onAssembly(new FluxDistinctUntilChanged<>(this, keySelector));
+		return distinctUntilChanged(keySelector, Objects::equals);
+	}
+
+	/**
+	 * Filter out subsequent repetitions of an element (that is, if they arrive right
+	 * after one another), as compared by a key extracted through the user provided {@link
+	 * Function} and then comparing keys with the supplied {@link BiPredicate}.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/distinctuntilchangedk.png"
+	 * alt="">
+	 *
+	 * @param keySelector function to compute comparison key for each element
+	 * @param keyComparator predicate used to compare keys.
+	 * @param <V> the type of the key extracted from each value in this sequence
+	 *
+	 * @return a filtering {@link Flux} with only one occurrence in a row of each element
+	 * of the same key for which the predicate returns true (yet element keys can repeat
+	 * in the overall sequence)
+	 */
+	public final <V> Flux<T> distinctUntilChanged(Function<? super T, ? extends V> keySelector,
+			BiPredicate<? super V, ? super V> keyComparator) {
+		return onAssembly(new FluxDistinctUntilChanged<>(this,
+				keySelector,
+				keyComparator));
 	}
 
 	/**

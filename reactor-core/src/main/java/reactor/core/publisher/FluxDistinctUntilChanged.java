@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 
 import org.reactivestreams.Subscriber;
@@ -32,11 +33,15 @@ import javax.annotation.Nullable;
  */
 final class FluxDistinctUntilChanged<T, K> extends FluxSource<T, T> {
 
-	final Function<? super T, K> keyExtractor;
+	final Function<? super T, K>            keyExtractor;
+	final BiPredicate<? super K, ? super K> keyComparator;
 
-	FluxDistinctUntilChanged(Flux<? extends T> source, Function<? super T, K> keyExtractor) {
+	FluxDistinctUntilChanged(Flux<? extends T> source,
+			Function<? super T, K> keyExtractor,
+			BiPredicate<? super K, ? super K> keyComparator) {
 		super(source);
 		this.keyExtractor = Objects.requireNonNull(keyExtractor, "keyExtractor");
+		this.keyComparator = Objects.requireNonNull(keyComparator, "keyComparator");
 	}
 
 	@Override
@@ -44,10 +49,10 @@ final class FluxDistinctUntilChanged<T, K> extends FluxSource<T, T> {
 	public void subscribe(Subscriber<? super T> s) {
 		if (s instanceof ConditionalSubscriber) {
 			source.subscribe(new DistinctUntilChangedConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
-					keyExtractor));
+					keyExtractor, keyComparator));
 		}
 		else {
-			source.subscribe(new DistinctUntilChangedSubscriber<>(s, keyExtractor));
+			source.subscribe(new DistinctUntilChangedSubscriber<>(s, keyExtractor, keyComparator));
 		}
 	}
 
@@ -56,6 +61,7 @@ final class FluxDistinctUntilChanged<T, K> extends FluxSource<T, T> {
 		final Subscriber<? super T> actual;
 
 		final Function<? super T, K> keyExtractor;
+		final BiPredicate<? super K, ? super K> keyComparator;
 
 		Subscription s;
 
@@ -64,9 +70,11 @@ final class FluxDistinctUntilChanged<T, K> extends FluxSource<T, T> {
 		K lastKey;
 
 		DistinctUntilChangedSubscriber(Subscriber<? super T> actual,
-													   Function<? super T, K> keyExtractor) {
+				Function<? super T, K> keyExtractor,
+				BiPredicate<? super K, ? super K> keyComparator) {
 			this.actual = actual;
 			this.keyExtractor = keyExtractor;
+			this.keyComparator = keyComparator;
 		}
 
 		@Override
@@ -103,8 +111,7 @@ final class FluxDistinctUntilChanged<T, K> extends FluxSource<T, T> {
 				return true;
 			}
 
-			if (Objects.equals(lastKey, k)) {
-				lastKey = k;
+			if (null != lastKey && keyComparator.test(lastKey, k)) {
 				return false;
 			}
 			lastKey = k;
@@ -163,6 +170,7 @@ final class FluxDistinctUntilChanged<T, K> extends FluxSource<T, T> {
 		final ConditionalSubscriber<? super T> actual;
 
 		final Function<? super T, K> keyExtractor;
+		final BiPredicate<? super K, ? super K> keyComparator;
 
 		Subscription s;
 
@@ -171,9 +179,11 @@ final class FluxDistinctUntilChanged<T, K> extends FluxSource<T, T> {
 		K lastKey;
 
 		DistinctUntilChangedConditionalSubscriber(ConditionalSubscriber<? super T> actual,
-				Function<? super T, K> keyExtractor) {
+				Function<? super T, K> keyExtractor,
+				BiPredicate<? super K, ? super K> keyComparator) {
 			this.actual = actual;
 			this.keyExtractor = keyExtractor;
+			this.keyComparator = keyComparator;
 		}
 
 		@Override
@@ -210,8 +220,7 @@ final class FluxDistinctUntilChanged<T, K> extends FluxSource<T, T> {
 				return true;
 			}
 
-			if (Objects.equals(lastKey, k)) {
-				lastKey = k;
+			if (null != lastKey && keyComparator.test(lastKey, k)) {
 				return false;
 			}
 			lastKey = k;
