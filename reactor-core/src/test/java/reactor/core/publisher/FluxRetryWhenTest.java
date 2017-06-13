@@ -353,7 +353,8 @@ public class FluxRetryWhenTest {
 		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		Subscriber<Throwable> signaller = new LambdaSubscriber<>(null, e -> {}, null, null);
 		Flux<Integer> when = Flux.empty();
-		FluxRetryWhen.RetryWhenMainSubscriber<Integer> main = new FluxRetryWhen.RetryWhenMainSubscriber<>(actual, signaller, when);
+		FluxRetryWhen.RetryWhenMainSubscriber<Integer> main = new FluxRetryWhen
+				.RetryWhenMainSubscriber<>(actual, signaller, when, Context.empty());
 
 		List<Scannable> inners = main.inners().collect(Collectors.toList());
 
