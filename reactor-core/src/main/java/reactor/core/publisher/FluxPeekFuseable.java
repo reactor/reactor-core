@@ -278,7 +278,22 @@ final class FluxPeekFuseable<T> extends FluxSource<T, T>
 		@Nullable
 		public T poll() {
 			boolean d = done;
-			T v = s.poll();
+			T v;
+			try {
+				v = s.poll();
+			}
+			catch (Throwable e) {
+				if (parent.onErrorCall() != null) {
+					try {
+						parent.onErrorCall()
+						      .accept(e);
+					}
+					catch (Throwable errorCallbackError) {
+						throw Exceptions.propagate(Operators.onOperatorError(s, errorCallbackError, e));
+					}
+				}
+				throw Exceptions.propagate(Operators.onOperatorError(s, e));
+			}
 			if (v != null && parent.onNextCall() != null) {
 				try {
 					//noinspection ConstantConditions

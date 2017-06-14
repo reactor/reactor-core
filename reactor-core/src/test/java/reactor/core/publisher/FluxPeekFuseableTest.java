@@ -34,6 +34,7 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
@@ -577,6 +578,44 @@ public class FluxPeekFuseableTest {
 		  .assertComplete();
 
 		Assert.assertTrue("onComplete not called back", onTerminate.get());
+	}
+
+	@Test
+	public void fusedDoOnNextOnErrorBothFailing() {
+		ConnectableFlux<Integer> f = Flux.just(1)
+		                                 .doOnNext(i -> {
+			                                 throw new IllegalArgumentException("fromOnNext");
+		                                 })
+		                                 .doOnError(e -> {
+			                                 throw new IllegalStateException("fromOnError", e);
+		                                 })
+		                                 .publish();
+
+		StepVerifier.create(f)
+		            .then(f::connect)
+		            .verifyErrorMatches(e -> e instanceof IllegalStateException
+				            && "fromOnError".equals(e.getMessage())
+				            && e.getCause() instanceof IllegalArgumentException
+				            && "fromOnNext".equals(e.getCause().getMessage()));
+	}
+
+	@Test
+	public void fusedDoOnNextCallsOnErrorWhenFailing() {
+		AtomicBoolean passedOnError = new AtomicBoolean();
+
+		ConnectableFlux<Integer> f = Flux.just(1)
+		                                 .doOnNext(i -> {
+			                                 throw new IllegalArgumentException("fromOnNext");
+		                                 })
+		                                 .doOnError(e -> passedOnError.set(true))
+		                                 .publish();
+
+		StepVerifier.create(f)
+		            .then(f::connect)
+		            .verifyErrorMatches(e -> e instanceof IllegalArgumentException
+				            && "fromOnNext".equals(e.getMessage()));
+
+		Assertions.assertThat(passedOnError.get()).isTrue();
 	}
 
 	@Test
