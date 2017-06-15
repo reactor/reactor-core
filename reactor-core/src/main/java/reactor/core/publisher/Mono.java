@@ -1567,9 +1567,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/delayUntilOther.png" alt="">
 	 *
-	 * @param anyPublisher the publisher which first emission or termination will trigger
-	 * the emission of this Mono's value.
-	 * @return this Mono, but delayed until the given publisher first emits or terminates.
+	 * @param anyPublisher the publisher which termination will trigger the emission of
+	 * this Mono's value.
+	 * @return this Mono, but delayed until the given publisher terminates.
 	 */
 	//TODO update the marble URL to a tag pre-release
 	public Mono<T> delayUntilOtherDelayError(Publisher<?> anyPublisher) {
@@ -1598,9 +1598,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/delayUntil.png" alt="">
 	 *
 	 * @param triggerProvider a {@link Function} that maps this Mono's value into a
-	 * {@link Publisher} whose first emission or termination will trigger the relaying the value.
+	 * {@link Publisher} whose termination will trigger relaying the value.
 	 *
-	 * @return this Mono, but delayed until the derived publisher first emits or terminates.
+	 * @return this Mono, but delayed until the derived publisher terminates.
 	 */
 	//TODO update the marble URL to a tag pre-release
 	public Mono<T> delayUntil(Function<? super T, ? extends Publisher<?>> triggerProvider) {
