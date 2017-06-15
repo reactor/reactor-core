@@ -676,7 +676,7 @@ public class FluxPeekFuseableTest {
 
 		StepVerifier.create(f)
 		            .then(f::connect)
-		            .consumeErrorWith(e -> {
+		            .verifyErrorSatisfies(e -> {
 					            assertThat(e)
 					                      .isInstanceOf(IllegalStateException.class)
 					                      .hasMessage("fromOnError2")
@@ -686,8 +686,7 @@ public class FluxPeekFuseableTest {
 					                      .hasCauseInstanceOf(IllegalArgumentException.class);
 					            assertThat(e.getCause().getCause())
 					                      .hasMessage("fromOnNext");
-				            })
-		            .verify();
+				            });
 	}
 
 	@Test
@@ -746,7 +745,7 @@ public class FluxPeekFuseableTest {
 
 		StepVerifier.create(f)
 		            .then(f::connect)
-		            .consumeErrorWith(e -> {
+		            .verifyErrorSatisfies(e -> {
 					            assertThat(e)
 					                      .isInstanceOf(IllegalStateException.class)
 					                      .hasMessage("fromOnError2")
@@ -756,8 +755,7 @@ public class FluxPeekFuseableTest {
 					                      .hasCauseInstanceOf(IllegalArgumentException.class);
 					            assertThat(e.getCause().getCause())
 					                      .hasMessage("fromOnNext");
-				            })
-		            .verify();
+				            });
 	}
 
 	@Test
