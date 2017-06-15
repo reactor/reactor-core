@@ -401,8 +401,7 @@ public class StepVerifierTests {
 				            }
 			            })
 			            .verify())
-	            .withMessage("expectation \"consumeErrorWith\" failed (assertion failed on " +
-			            "exception <java.lang.IllegalArgumentException>: IllegalArgumentException)");
+	            .withMessage("IllegalArgumentException");
 	}
 
 	@Test
