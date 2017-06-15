@@ -420,7 +420,7 @@ public class MonoWhenTest {
 		StepVerifier.create(Mono.whenDelayError(
 				Arrays.asList(Mono.just("foo"), Mono.<String>error(boom1), Mono.<String>error(boom2)),
 				Tuples.fn3()))
-		            .verifyErrorMatches(e -> e.getMessage().equals("Multiple errors") &&
+		            .verifyErrorMatches(e -> e.getMessage().equals("Multiple exceptions") &&
 				            e.getSuppressed()[0] == boom1 &&
 				            e.getSuppressed()[1] == boom2);
 	}
@@ -447,7 +447,7 @@ public class MonoWhenTest {
 				Mono.<Void>error(boom2));
 
 		StepVerifier.create(Mono.whenDelayError(voidPublishers))
-		            .verifyErrorMatches(e -> e.getMessage().equals("Multiple errors") &&
+		            .verifyErrorMatches(e -> e.getMessage().equals("Multiple exceptions") &&
 				            e.getSuppressed()[0] == boom1 &&
 				            e.getSuppressed()[1] == boom2);
 	}

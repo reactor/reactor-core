@@ -137,7 +137,7 @@ public class MonoDelayUntilTest {
 				Mono.just("ok"), a -> Mono.<Integer>error(boom1))
 				.delayUntilDelayError(a -> Mono.error(boom2))
 		)
-		            .verifyErrorMatches(e -> e.getMessage().equals("Multiple errors") &&
+		            .verifyErrorMatches(e -> e.getMessage().equals("Multiple exceptions") &&
 				            e.getSuppressed()[0] == boom1 &&
 				            e.getSuppressed()[1] == boom2);
 	}
