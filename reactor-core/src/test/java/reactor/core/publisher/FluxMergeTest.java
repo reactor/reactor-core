@@ -116,7 +116,6 @@ public class FluxMergeTest {
 				Flux.range(1, 4)
 		))
 		            .expectNext(1, 2, 3, 4)
-		            .consumeErrorWith(e -> assertThat(e).isEqualTo(boom))
-		            .verify();
+		            .verifyErrorSatisfies(e -> assertThat(e).isEqualTo(boom));
 	}
 }

@@ -305,10 +305,9 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 				false);
 
 		StepVerifier.create(test)
-		            .consumeErrorWith(e -> assertThat(e)
+		            .verifyErrorSatisfies(e -> assertThat(e)
 				            .hasMessage("resourceCleanup")
-				            .is(suppressingFactory))
-		            .verify();
+				            .is(suppressingFactory));
 
 	}
 

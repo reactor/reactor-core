@@ -169,13 +169,13 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 			String m = scenario.producerError.getMessage();
 			Consumer<StepVerifier.Step<O>> errorVerifier = step -> {
 				try {
-					step.consumeErrorWith(e -> {
+					step.verifyErrorSatisfies(e -> {
 						if (e instanceof NullPointerException || e instanceof IllegalStateException || e.getMessage()
 						                                                                                .equals(m)) {
 							return;
 						}
 						throw Exceptions.propagate(e);
-					}).verify();
+					});
 //						step.expectErrorMessage(m)
 //						.verifyThenAssertThat()
 //						.hasOperatorErrorWithMessage(m);
