@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.assertj.core.api.Assertions;
+import org.assertj.core.internal.Predicates;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -39,6 +40,7 @@ import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
 import static java.lang.Thread.sleep;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -360,13 +362,13 @@ public class FluxPeekFuseableTest {
 			fail("expected thrown exception");
 		}
 		catch (Exception e) {
-			Assertions.assertThat(e).hasCause(err);
+			assertThat(e).hasCause(err);
 		}
 		ts.assertNoValues();
 		ts.assertComplete();
 
 		//the onError wasn't invoked:
-		Assertions.assertThat(errorCallbackCapture.get()).isNull();
+		assertThat(errorCallbackCapture.get()).isNull();
 	}
 
 	@Test
@@ -389,7 +391,7 @@ public class FluxPeekFuseableTest {
 		ts.assertNoValues();
 		ts.assertComplete();
 
-		assertThat(errorCallbackCapture.get(), is(nullValue()));
+		Assert.assertThat(errorCallbackCapture.get(), is(nullValue()));
 
 
 		//same with after error
@@ -410,7 +412,7 @@ public class FluxPeekFuseableTest {
 		ts.assertNoValues();
 		ts.assertError(NullPointerException.class);
 
-		assertThat(errorCallbackCapture.get(), is(instanceOf(NullPointerException.class)));
+		Assert.assertThat(errorCallbackCapture.get(), is(instanceOf(NullPointerException.class)));
 	}
 
 	@Test
@@ -546,8 +548,9 @@ public class FluxPeekFuseableTest {
 		  .assertComplete();
 	}
 
+	//TODO was these 2 tests supposed to trigger sync fusion and go through poll() ?
 	@Test
-	public void syncCompleteCalled() {
+	public void noFusionCompleteCalled() {
 		AtomicBoolean onComplete = new AtomicBoolean();
 
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
@@ -564,7 +567,7 @@ public class FluxPeekFuseableTest {
 	}
 
 	@Test
-	public void syncdoAfterTerminateCalled() {
+	public void noFusionAfterTerminateCalled() {
 		AtomicBoolean onTerminate = new AtomicBoolean();
 
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
@@ -578,6 +581,64 @@ public class FluxPeekFuseableTest {
 		  .assertComplete();
 
 		Assert.assertTrue("onComplete not called back", onTerminate.get());
+	}
+
+	@Test
+	public void syncPollCompleteCalled() {
+		AtomicBoolean onComplete = new AtomicBoolean();
+		ConnectableFlux<Integer> f = Flux.just(1)
+		                                .doOnComplete(() -> onComplete.set(true))
+		                                .publish();
+		StepVerifier.create(f)
+		            .then(f::connect)
+		            .expectNext(1)
+		            .verifyComplete();
+
+		assertThat(onComplete.get()).withFailMessage("onComplete not called back").isTrue();
+	}
+
+	@Test
+	public void syncPollConditionalCompleteCalled() {
+		AtomicBoolean onComplete = new AtomicBoolean();
+		ConnectableFlux<Integer> f = Flux.just(1)
+		                                .doOnComplete(() -> onComplete.set(true))
+		                                .filter(v -> true)
+		                                .publish();
+		StepVerifier.create(f)
+		            .then(f::connect)
+		            .expectNext(1)
+		            .verifyComplete();
+
+		assertThat(onComplete.get()).withFailMessage("onComplete not called back").isTrue();
+	}
+
+	@Test
+	public void syncPollAfterTerminateCalled() {
+		AtomicBoolean onAfterTerminate = new AtomicBoolean();
+		ConnectableFlux<Integer> f = Flux.just(1)
+		                                .doAfterTerminate(() -> onAfterTerminate.set(true))
+		                                .publish();
+		StepVerifier.create(f)
+		            .then(f::connect)
+		            .expectNext(1)
+		            .verifyComplete();
+
+		assertThat(onAfterTerminate.get()).withFailMessage("onAfterTerminate not called back").isTrue();
+	}
+
+	@Test
+	public void syncPollConditionalAfterTerminateCalled() {
+		AtomicBoolean onAfterTerminate = new AtomicBoolean();
+		ConnectableFlux<Integer> f = Flux.just(1)
+		                                .doAfterTerminate(() -> onAfterTerminate.set(true))
+		                                .filter(v -> true)
+		                                .publish();
+		StepVerifier.create(f)
+		            .then(f::connect)
+		            .expectNext(1)
+		            .verifyComplete();
+
+		assertThat(onAfterTerminate.get()).withFailMessage("onAfterTerminate not called back").isTrue();
 	}
 
 	@Test
@@ -600,6 +661,36 @@ public class FluxPeekFuseableTest {
 	}
 
 	@Test
+	public void fusedDoOnNextOnErrorDoOnErrorAllFailing() {
+		ConnectableFlux<Integer> f = Flux.just(1)
+		                                 .doOnNext(i -> {
+			                                 throw new IllegalArgumentException("fromOnNext");
+		                                 })
+		                                 .doOnError(e -> {
+			                                 throw new IllegalStateException("fromOnError", e);
+		                                 })
+		                                 .doOnError(e -> {
+			                                 throw new IllegalStateException("fromOnError2", e);
+		                                 })
+		                                 .publish();
+
+		StepVerifier.create(f)
+		            .then(f::connect)
+		            .consumeErrorWith(e -> {
+					            assertThat(e)
+					                      .isInstanceOf(IllegalStateException.class)
+					                      .hasMessage("fromOnError2")
+					                      .hasCauseInstanceOf(IllegalStateException.class);
+					            assertThat(e.getCause())
+					                      .hasMessage("fromOnError")
+					                      .hasCauseInstanceOf(IllegalArgumentException.class);
+					            assertThat(e.getCause().getCause())
+					                      .hasMessage("fromOnNext");
+				            })
+		            .verify();
+	}
+
+	@Test
 	public void fusedDoOnNextCallsOnErrorWhenFailing() {
 		AtomicBoolean passedOnError = new AtomicBoolean();
 
@@ -615,7 +706,78 @@ public class FluxPeekFuseableTest {
 		            .verifyErrorMatches(e -> e instanceof IllegalArgumentException
 				            && "fromOnNext".equals(e.getMessage()));
 
-		Assertions.assertThat(passedOnError.get()).isTrue();
+		assertThat(passedOnError.get()).isTrue();
+	}
+
+	@Test
+	public void conditionalFusedDoOnNextOnErrorBothFailing() {
+		ConnectableFlux<Integer> f = Flux.just(1)
+		                                 .doOnNext(i -> {
+			                                 throw new IllegalArgumentException("fromOnNext");
+		                                 })
+		                                 .doOnError(e -> {
+			                                 throw new IllegalStateException("fromOnError", e);
+		                                 })
+		                                 .filter(v -> true)
+		                                 .publish();
+
+		StepVerifier.create(f)
+		            .then(f::connect)
+		            .verifyErrorMatches(e -> e instanceof IllegalStateException
+				            && "fromOnError".equals(e.getMessage())
+				            && e.getCause() instanceof IllegalArgumentException
+				            && "fromOnNext".equals(e.getCause().getMessage()));
+	}
+
+	@Test
+	public void conditionalFusedDoOnNextOnErrorDoOnErrorAllFailing() {
+		ConnectableFlux<Integer> f = Flux.just(1)
+		                                 .doOnNext(i -> {
+			                                 throw new IllegalArgumentException("fromOnNext");
+		                                 })
+		                                 .doOnError(e -> {
+			                                 throw new IllegalStateException("fromOnError", e);
+		                                 })
+		                                 .doOnError(e -> {
+			                                 throw new IllegalStateException("fromOnError2", e);
+		                                 })
+		                                 .filter(v -> true)
+		                                 .publish();
+
+		StepVerifier.create(f)
+		            .then(f::connect)
+		            .consumeErrorWith(e -> {
+					            assertThat(e)
+					                      .isInstanceOf(IllegalStateException.class)
+					                      .hasMessage("fromOnError2")
+					                      .hasCauseInstanceOf(IllegalStateException.class);
+					            assertThat(e.getCause())
+					                      .hasMessage("fromOnError")
+					                      .hasCauseInstanceOf(IllegalArgumentException.class);
+					            assertThat(e.getCause().getCause())
+					                      .hasMessage("fromOnNext");
+				            })
+		            .verify();
+	}
+
+	@Test
+	public void conditionalFusedDoOnNextCallsOnErrorWhenFailing() {
+		AtomicBoolean passedOnError = new AtomicBoolean();
+
+		ConnectableFlux<Integer> f = Flux.just(1)
+		                                 .doOnNext(i -> {
+			                                 throw new IllegalArgumentException("fromOnNext");
+		                                 })
+		                                 .doOnError(e -> passedOnError.set(true))
+		                                 .filter(v -> true)
+		                                 .publish();
+
+		StepVerifier.create(f)
+		            .then(f::connect)
+		            .verifyErrorMatches(e -> e instanceof IllegalArgumentException
+				            && "fromOnNext".equals(e.getMessage()));
+
+		assertThat(passedOnError.get()).isTrue();
 	}
 
 	@Test
@@ -680,12 +842,12 @@ public class FluxPeekFuseableTest {
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
-        Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
 
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
         test.onError(new IllegalStateException("boom"));
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
     }
 
     @Test
@@ -698,11 +860,11 @@ public class FluxPeekFuseableTest {
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
-        Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
 
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
         test.onError(new IllegalStateException("boom"));
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
     }
 }
