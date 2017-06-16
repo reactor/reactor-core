@@ -378,6 +378,19 @@ public interface StepVerifier {
 		StepVerifier expectErrorMatches(Predicate<Throwable> predicate);
 
 		/**
+		 * Expect an error and assert it via assertion(s) provided as a {@link Consumer}.
+		 * Any {@link AssertionError} thrown by the consumer has its message propagated
+		 * through a new StepVerifier-specific AssertionError.
+		 *
+		 * @param assertionConsumer the consumer that applies assertion(s) on the next received error
+		 *
+		 * @return the built verification scenario, ready to be verified
+		 *
+		 * @see Subscriber#onError(Throwable)
+		 */
+		StepVerifier expectErrorSatisfies(Consumer<Throwable> assertionConsumer);
+
+		/**
 		 * Expect the completion signal.
 		 *
 		 * @return the built verification scenario, ready to be verified
@@ -465,6 +478,27 @@ public interface StepVerifier {
 		 * @see Subscriber#onError(Throwable)
 		 */
 		Duration verifyErrorMatches(Predicate<Throwable> predicate);
+
+		/**
+		 * Trigger the {@link #verify() verification}, expecting an error as terminal event
+		 * which gets asserted via assertion(s) provided as a {@link Consumer}.
+		 * Any {@link AssertionError} thrown by the consumer has its message propagated
+		 * through a new StepVerifier-specific AssertionError.
+		 * <p>
+		 * This is a convenience method that calls {@link #verify()} in addition to the
+		 * expectation. Explicitly use the expect method and verification method
+		 * separately if you need something more specific (like activating logging or
+		 * changing the default timeout).
+		 *
+		 * @param assertionConsumer the consumer that applies assertion(s) on the next received error
+		 *
+		 * @return the actual {@link Duration} the verification took.
+		 *
+		 * @see #expectErrorSatisfies(Consumer)
+		 * @see #verify()
+		 * @see Subscriber#onError(Throwable)
+		 */
+		Duration verifyErrorSatisfies(Consumer<Throwable> assertionConsumer);
 
 		/**
 		 * Trigger the {@link #verify() verification}, expecting a completion signal

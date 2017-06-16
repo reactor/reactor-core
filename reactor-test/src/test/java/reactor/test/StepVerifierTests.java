@@ -362,6 +362,31 @@ public class StepVerifierTests {
 	}
 
 	@Test
+	public void errorSatisfies() {
+		Flux<String> flux = Flux.just("foo")
+		                        .concatWith(Mono.error(new IllegalArgumentException()));
+
+		StepVerifier.create(flux)
+		            .expectNext("foo")
+		            .expectErrorSatisfies(t -> assertThat(t).isInstanceOf(IllegalArgumentException.class))
+		            .verify();
+	}
+
+	@Test
+	public void errorSatisfiesInvalid() {
+		Flux<String> flux = Flux.just("foo")
+		                        .concatWith(Mono.error(new IllegalArgumentException()));
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(flux)
+		            .expectNext("foo")
+		            .expectErrorSatisfies(t -> assertThat(t).hasMessage("foo"))
+		            .verify())
+	            .withMessage("expectation \"expectErrorSatisfies\" failed (assertion failed on exception <java.lang.IllegalArgumentException>: " +
+			            "\nExpecting message:\n <\"foo\">\nbut was:\n <null>)");
+	}
+
+	@Test
 	public void consumeErrorWith() {
 		Flux<String> flux = Flux.just("foo")
 		                        .concatWith(Mono.error(new IllegalArgumentException()));
@@ -1321,7 +1346,7 @@ public class StepVerifierTests {
 	}
 
 	@Test
-	public void verifyErrorPredicateTriggersVerificationFail() {
+	public void verifyErrorPredicateTriggersVerificationFailBadSignal() {
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(() -> StepVerifier.create(Flux.empty())
 				                              .verifyErrorMatches(e -> e instanceof IllegalArgumentException))
@@ -1329,9 +1354,40 @@ public class StepVerifierTests {
 	}
 
 	@Test
+	public void verifyErrorPredicateTriggersVerificationFailNoMatch() {
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(Flux.error(new IllegalArgumentException("boom")))
+				                              .verifyErrorMatches(e -> e.getMessage() == null))
+		        .withMessage("expectation \"expectErrorMatches\" failed (predicate failed on exception: java.lang.IllegalArgumentException: boom)");
+	}
+
+	@Test
 	public void verifyErrorPredicateTriggersVerificationSuccess() {
 		StepVerifier.create(Flux.error(new IllegalArgumentException("boom")))
 		            .verifyErrorMatches(e -> e instanceof IllegalArgumentException);
+	}
+
+	@Test
+	public void verifyErrorAssertionTriggersVerificationFailBadSignal() {
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(Flux.empty())
+				                              .verifyErrorSatisfies(e -> assertThat(e).isNotNull()))
+		        .withMessage("expectation \"verifyErrorSatisfies\" failed (expected: onError(); actual: onComplete())");
+	}
+
+	@Test
+	public void verifyErrorAssertionTriggersVerificationFailNoMatch() {
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(Flux.error(new IllegalArgumentException("boom")))
+				                              .verifyErrorSatisfies(e -> assertThat(e).hasMessage("foo")))
+		        .withMessage("expectation \"verifyErrorSatisfies\" failed (assertion failed on exception <java.lang.IllegalArgumentException: boom>: "
+				        + "\nExpecting message:\n <\"foo\">\nbut was:\n <\"boom\">)");
+	}
+
+	@Test
+	public void verifyErrorAssertionTriggersVerificationSuccess() {
+		StepVerifier.create(Flux.error(new IllegalArgumentException("boom")))
+		            .verifyErrorSatisfies(e -> assertThat(e).hasMessage("boom"));
 	}
 
 	@Test

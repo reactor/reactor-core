@@ -74,8 +74,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 	void assertRejected(StepVerifier.Step<String> step) {
 		try {
-			step.consumeErrorWith(e -> Assert.assertTrue(Exceptions.unwrap(e) instanceof RejectedExecutionException))
-			    .verify();
+			step.verifyErrorSatisfies(e -> Assert.assertTrue(Exceptions.unwrap(e) instanceof RejectedExecutionException));
 		}
 		catch (Exception e) {
 			assertTrue(Exceptions.unwrap(e) instanceof RejectedExecutionException);

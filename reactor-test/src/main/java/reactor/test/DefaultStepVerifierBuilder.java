@@ -40,6 +40,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -54,7 +55,6 @@ import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
-import javax.annotation.Nullable;
 
 /**
  * Default implementation of {@link StepVerifier.Step} and
@@ -128,15 +128,26 @@ final class DefaultStepVerifierBuilder<T>
 	@Override
 	public DefaultStepVerifier<T> consumeErrorWith(Consumer<Throwable> consumer) {
 		Objects.requireNonNull(consumer, "consumer");
+		return consumeErrorWith(consumer, "consumeErrorWith", false);
+	}
+
+	private DefaultStepVerifier<T> consumeErrorWith(Consumer<Throwable> assertionConsumer, String description, boolean wrap) {
+		Objects.requireNonNull(assertionConsumer, "assertionConsumer");
 		SignalEvent<T> event = new SignalEvent<>((signal, se) -> {
 			if (!signal.isOnError()) {
 				return fail(se, "expected: onError(); actual: %s", signal);
 			}
 			else {
-				consumer.accept(signal.getThrowable());
-				return Optional.empty();
+				try {
+					assertionConsumer.accept(signal.getThrowable());
+					return Optional.empty();
+				}
+				catch (AssertionError e) {
+					if (wrap) return fail(se, "assertion failed on exception <%s>: %s", signal.getThrowable(), e.getMessage());
+					throw e;
+				}
 			}
-		}, "consumeErrorWith");
+		}, description);
 		this.script.add(event);
 		return build();
 	}
@@ -286,6 +297,11 @@ final class DefaultStepVerifierBuilder<T>
 		}, "expectErrorMatches");
 		this.script.add(event);
 		return build();
+	}
+
+	@Override
+	public DefaultStepVerifier<T> expectErrorSatisfies(Consumer<Throwable> assertionConsumer) {
+		return consumeErrorWith(assertionConsumer, "expectErrorSatisfies", true);
 	}
 
 	@Override
@@ -507,6 +523,11 @@ final class DefaultStepVerifierBuilder<T>
 	@Override
 	public Duration verifyErrorMatches(Predicate<Throwable> predicate) {
 		return expectErrorMatches(predicate).verify();
+	}
+
+	@Override
+	public Duration verifyErrorSatisfies(Consumer<Throwable> assertionConsumer) {
+		return consumeErrorWith(assertionConsumer, "verifyErrorSatisfies", true).verify();
 	}
 
 	@Override

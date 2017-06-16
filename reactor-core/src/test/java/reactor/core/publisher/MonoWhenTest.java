@@ -320,8 +320,7 @@ public class MonoWhenTest {
 		            .then(() -> assertThat(mp.isError()).isTrue())
 		            .then(() -> assertThat(mp.isSuccess()).isFalse())
 		            .then(() -> assertThat(mp.isTerminated()).isTrue())
-		            .consumeErrorWith(e -> assertThat(e).hasMessage("test1"))
-		            .verify();
+		            .verifyErrorSatisfies(e -> assertThat(e).hasMessage("test1"));
 	}
 
 	@Test
