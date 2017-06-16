@@ -25,13 +25,13 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import javax.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -85,17 +85,14 @@ final class FluxSwitchMap<T, R> extends FluxOperator<T, R> {
 				bufferSize), ctx);
 	}
 
-	static final class SwitchMapMain<T, R>
-			extends CachedContextProducer<R>
-			implements InnerOperator<T, R> {
+	static final class SwitchMapMain<T, R> implements InnerOperator<T, R> {
 
 		final Function<? super T, ? extends Publisher<? extends R>> mapper;
 
-		final Queue<Object> queue;
-
+		final Queue<Object>               queue;
 		final BiPredicate<Object, Object> queueBiAtomic;
-
-		final int                   bufferSize;
+		final int                         bufferSize;
+		final Subscriber<? super R>       actual;
 
 		Subscription s;
 
@@ -148,7 +145,7 @@ final class FluxSwitchMap<T, R> extends FluxOperator<T, R> {
 				Function<? super T, ? extends Publisher<? extends R>> mapper,
 				Queue<Object> queue,
 				int bufferSize) {
-			super(actual);
+			this.actual = actual;
 			this.mapper = mapper;
 			this.queue = queue;
 			this.bufferSize = bufferSize;
@@ -159,6 +156,11 @@ final class FluxSwitchMap<T, R> extends FluxOperator<T, R> {
 			else {
 				this.queueBiAtomic = null;
 			}
+		}
+
+		@Override
+		public final Subscriber<? super R> actual() {
+			return actual;
 		}
 
 		@Override

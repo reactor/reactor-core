@@ -42,7 +42,7 @@ interface InnerProducer<O>
 	}
 
 	@Override
-	default void onContext(Context context) {
+	default void onContextUpdate(Context context) {
 		ContextRelay.set(actual(), context);
 	}
 

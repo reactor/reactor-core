@@ -66,7 +66,7 @@ public class MonoFlatMapManyTest {
 	public void scanMain() {
 		Subscriber<Integer> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoFlatMapMany.FlatMapManyMain<String, Integer> test = new MonoFlatMapMany.FlatMapManyMain<>
-				(actual, s -> Flux.just(1, 2, 3), Context.empty());
+				(actual, s -> Flux.just(1, 2, 3));
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
@@ -79,7 +79,7 @@ public class MonoFlatMapManyTest {
 		Subscriber<Integer> mainActual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		Subscriber<Integer> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoFlatMapMany.FlatMapManyMain<String, Integer> main = new MonoFlatMapMany.FlatMapManyMain<>
-				(mainActual, s -> Flux.just(1, 2, 3), Context.empty());
+				(mainActual, s -> Flux.just(1, 2, 3));
 		MonoFlatMapMany.FlatMapManyInner<Integer> test = new MonoFlatMapMany.FlatMapManyInner<>(main,
 				actual);
 		Subscription innerSubscription = Operators.emptySubscription();

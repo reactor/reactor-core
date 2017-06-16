@@ -43,7 +43,7 @@ final class FluxRetryPredicate<T> extends FluxOperator<T, T> {
 	public void subscribe(Subscriber<? super T> s, Context ctx) {
 
 		RetryPredicateSubscriber<T> parent = new RetryPredicateSubscriber<>(source, s,
-				predicate, ctx);
+				predicate);
 
 		s.onSubscribe(parent);
 
@@ -67,8 +67,8 @@ final class FluxRetryPredicate<T> extends FluxOperator<T, T> {
 		long produced;
 
 		RetryPredicateSubscriber(Publisher<? extends T> source,
-				Subscriber<? super T> actual, Predicate<? super Throwable> predicate, Context ctx) {
-			super(actual, ctx);
+				Subscriber<? super T> actual, Predicate<? super Throwable> predicate) {
+			super(actual);
 			this.source = source;
 			this.predicate = predicate;
 		}

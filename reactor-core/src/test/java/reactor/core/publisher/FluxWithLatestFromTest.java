@@ -24,6 +24,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.context.Context;
 
 public class FluxWithLatestFromTest {
 
@@ -178,7 +179,7 @@ public class FluxWithLatestFromTest {
         		new FluxWithLatestFrom.WithLatestFromOtherSubscriber<>(main);
         Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
-
+		Assertions.assertThat(test.currentContext()).isEqualTo(Context.empty());
         Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(main);
     }
 }

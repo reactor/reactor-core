@@ -15,39 +15,41 @@
  */
 package reactor.core.publisher;
 
+import javax.annotation.Nullable;
+
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.util.context.Context;
-import reactor.core.Scannable;
-import javax.annotation.Nullable;
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoHasElements<T> extends MonoOperator<T, Boolean> implements Fuseable {
+final class MonoHasElement<T> extends MonoOperator<T, Boolean> implements Fuseable {
 
-	MonoHasElements(Flux<? extends T> source) {
+	MonoHasElement(Mono<? extends T> source) {
 		super(source);
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super Boolean> s, Context ctx) {
-		source.subscribe(new HasElementsSubscriber<>(s), ctx);
+		source.subscribe(new HasElementSubscriber<>(s), ctx);
 	}
 
-	static final class HasElementsSubscriber<T> extends Operators.MonoSubscriber<T, Boolean> {
+	static final class HasElementSubscriber<T>
+			extends Operators.MonoSubscriber<T, Boolean> {
 		Subscription s;
 
-		HasElementsSubscriber(Subscriber<? super Boolean> actual) {
+		HasElementSubscriber(Subscriber<? super Boolean> actual) {
 			super(actual);
 		}
 
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-
+			if (key == ScannableAttr.PARENT) {
+				return s;
+			}
 			return super.scanUnsafe(key);
 		}
 
@@ -69,8 +71,7 @@ final class MonoHasElements<T> extends MonoOperator<T, Boolean> implements Fusea
 
 		@Override
 		public void onNext(T t) {
-			s.cancel();
-
+			//here we avoid the cancel because the source is assumed to be a Mono
 			complete(true);
 		}
 

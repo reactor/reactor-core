@@ -60,55 +60,61 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		MergeSequentialMain<T> parent = new MergeSequentialMain<>(ctx, s, source
+		MergeSequentialMain<T> parent = new MergeSequentialMain<>(s, source
 				.parallelism(), prefetch, queueSupplier);
 		s.onSubscribe(parent);
 		source.subscribe(parent.subscribers, ctx);
 	}
 	
-	static final class MergeSequentialMain<T> extends CachedContextProducer<T> {
+	static final class MergeSequentialMain<T> implements InnerProducer<T> {
+
 		final MergeSequentialInner<T>[] subscribers;
 		
 		final Supplier<Queue<T>>    queueSupplier;
-
-		volatile Throwable error;
+		final Subscriber<? super T> actual;
 
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<MergeSequentialMain, Throwable> ERROR =
 				AtomicReferenceFieldUpdater.newUpdater(MergeSequentialMain.class, Throwable.class, "error");
-		
+
 		volatile int wip;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<MergeSequentialMain> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(MergeSequentialMain.class, "wip");
-		
 		volatile long requested;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<MergeSequentialMain> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(MergeSequentialMain.class, "requested");
-		
 		volatile boolean cancelled;
 
 		volatile int done;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<MergeSequentialMain> DONE =
 				AtomicIntegerFieldUpdater.newUpdater(MergeSequentialMain.class, "done");
+		volatile Throwable error;
 
-		MergeSequentialMain(Context ctx, Subscriber<? super T> actual, int n, int
+		MergeSequentialMain(Subscriber<? super T> actual, int n, int
 				prefetch,
 				Supplier<Queue<T>> queueSupplier) {
-			super(actual);
-			this.context = ctx;
+			this.actual = actual;
 			this.queueSupplier = queueSupplier;
 			@SuppressWarnings("unchecked")
 			MergeSequentialInner<T>[] a = new MergeSequentialInner[n];
-			
+
 			for (int i = 0; i < n; i++) {
 				a[i] = new MergeSequentialInner<>(this, prefetch);
 			}
-			
+
 			this.subscribers = a;
 			DONE.lazySet(this, n);
+		}
+
+		@Override
+		public final Subscriber<? super T> actual() {
+			return actual;
 		}
 
 		@Override
@@ -119,7 +125,7 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 			if (key == BooleanAttr.TERMINATED) return done == 0;
 			if (key == ThrowableAttr.ERROR) return error;
 
-			return super.scanUnsafe(key);
+			return InnerProducer.super.scanUnsafe(key);
 		}
 
 		@Override

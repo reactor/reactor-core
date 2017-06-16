@@ -18,16 +18,21 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.*;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.*;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Maps each upstream value into a single {@code true} or {@code false} value provided by
@@ -59,17 +64,15 @@ class FluxFilterWhen<T> extends FluxOperator<T, T> {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		source.subscribe(new FluxFilterWhenSubscriber<>(s, asyncPredicate, bufferSize,
-				ctx), ctx);
+		source.subscribe(new FluxFilterWhenSubscriber<>(s, asyncPredicate, bufferSize), ctx);
 	}
 
-	static final class FluxFilterWhenSubscriber<T>
-			extends CachedContextProducer<T>
-			implements InnerOperator<T, T> {
+	static final class FluxFilterWhenSubscriber<T> implements InnerOperator<T, T> {
 
 		final Function<? super T, ? extends Publisher<Boolean>> asyncPredicate;
 		final int                                               bufferSize;
 		final AtomicReferenceArray<T>                           toFilter;
+		final Subscriber<? super T>                             actual;
 
 		int          consumed;
 		long         consumerIndex;
@@ -103,12 +106,16 @@ class FluxFilterWhen<T> extends FluxOperator<T, T> {
 
 		FluxFilterWhenSubscriber(Subscriber<? super T> actual,
 				Function<? super T, ? extends Publisher<Boolean>> asyncPredicate,
-				int bufferSize, Context context) {
-			super(actual);
-			this.context = context;
+				int bufferSize) {
+			this.actual = actual;
 			this.toFilter = new AtomicReferenceArray<>(QueueSupplier.ceilingNextPowerOfTwo(bufferSize));
 			this.asyncPredicate = asyncPredicate;
 			this.bufferSize = bufferSize;
+		}
+
+		@Override
+		public final Subscriber<? super T> actual() {
+			return actual;
 		}
 
 		@Override

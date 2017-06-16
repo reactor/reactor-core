@@ -73,9 +73,9 @@ final class FluxWithLatestFrom<T, U, R> extends FluxOperator<T, R> {
 		source.subscribe(main, ctx);
 	}
 
-	static final class WithLatestFromSubscriber<T, U, R> extends CachedContextProducer<R>
-			implements InnerOperator<T, R> {
+	static final class WithLatestFromSubscriber<T, U, R> implements InnerOperator<T, R> {
 
+		final Subscriber<? super R> actual;
 		final BiFunction<? super T, ? super U, ? extends R> combiner;
 
 		volatile Subscription main;
@@ -99,7 +99,7 @@ final class FluxWithLatestFrom<T, U, R> extends FluxOperator<T, R> {
 
 		WithLatestFromSubscriber(Subscriber<? super R> actual,
 				BiFunction<? super T, ? super U, ? extends R> combiner) {
-			super(actual);
+			this.actual = actual;
 			this.combiner = combiner;
 		}
 
@@ -110,6 +110,11 @@ final class FluxWithLatestFrom<T, U, R> extends FluxOperator<T, R> {
 					Operators.reportSubscriptionSet();
 				}
 			}
+		}
+
+		@Override
+		public Subscriber<? super R> actual() {
+			return actual;
 		}
 
 		@Override

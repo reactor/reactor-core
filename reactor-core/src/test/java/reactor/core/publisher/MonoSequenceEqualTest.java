@@ -274,7 +274,7 @@ public class MonoSequenceEqualTest {
 						123,
 						Mono.just("foo"),
 						Mono.just("bar"),
-						(s1, s2) -> s1.equals(s2), Context.empty());
+						(s1, s2) -> s1.equals(s2));
 
 		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
 		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
@@ -290,7 +290,7 @@ public class MonoSequenceEqualTest {
 						123,
 						Mono.just("foo"),
 						Mono.just("bar"),
-						(s1, s2) -> s1.equals(s2), Context.empty());
+						(s1, s2) -> s1.equals(s2));
 
 		MonoSequenceEqual.EqualSubscriber<String> test = new MonoSequenceEqual.EqualSubscriber<>(
 				coordinator, 456);

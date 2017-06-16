@@ -98,9 +98,7 @@ final class FluxMergeSequential<T, R> extends FluxOperator<T, R> {
 		source.subscribe(parent, ctx);
 	}
 
-	static final class MergeSequentialMain<T, R>
-			extends CachedContextProducer<R>
-			implements InnerOperator<T, R> {
+	static final class MergeSequentialMain<T, R> implements InnerOperator<T, R> {
 
 		/** the mapper giving the inner publisher for each source value */
 		final Function<? super T, ? extends Publisher<? extends R>> mapper;
@@ -117,6 +115,8 @@ final class FluxMergeSequential<T, R> extends FluxOperator<T, R> {
 		 * publishers or just until the completion of the currently merged inner publisher
 		 */
 		final ErrorMode             errorMode;
+
+		final Subscriber<? super R> actual;
 
 		Subscription s;
 
@@ -148,12 +148,17 @@ final class FluxMergeSequential<T, R> extends FluxOperator<T, R> {
 				Function<? super T, ? extends Publisher<? extends R>> mapper,
 				int maxConcurrency, int prefetch, ErrorMode errorMode,
 				Supplier<Queue<MergeSequentialInner<R>>> queueSupplier) {
-			super(actual);
+			this.actual = actual;
 			this.mapper = mapper;
 			this.maxConcurrency = maxConcurrency;
 			this.prefetch = prefetch;
 			this.errorMode = errorMode;
 			this.subscribers = queueSupplier.get();
+		}
+
+		@Override
+		public final Subscriber<? super R> actual() {
+			return actual;
 		}
 
 		@Override

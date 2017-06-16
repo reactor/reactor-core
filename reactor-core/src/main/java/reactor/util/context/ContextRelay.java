@@ -50,7 +50,7 @@ public interface ContextRelay {
 	@SuppressWarnings("unchecked")
 	static void set(Object o, Context c) {
 		if (o != Context.empty() && o instanceof ContextRelay) {
-			((ContextRelay) o).onContext(c);
+			((ContextRelay) o).onContextUpdate(c);
 		}
 	}
 
@@ -61,7 +61,7 @@ public interface ContextRelay {
 	 *
 	 * @param context a new {@link Context} to propagate
 	 */
-	default void onContext(Context context) {
+	default void onContextUpdate(Context context) {
 	}
 
 	/**

@@ -64,7 +64,7 @@ final class FluxConcatArray<T> extends Flux<T> {
 
 		if (delayError) {
 			ConcatArrayDelayErrorSubscriber<T> parent = new
-					ConcatArrayDelayErrorSubscriber<>(s, a, ctx);
+					ConcatArrayDelayErrorSubscriber<>(s, a);
 
 			s.onSubscribe(parent);
 
@@ -73,7 +73,7 @@ final class FluxConcatArray<T> extends Flux<T> {
 			}
 			return;
 		}
-		ConcatArraySubscriber<T> parent = new ConcatArraySubscriber<>(s, a, ctx);
+		ConcatArraySubscriber<T> parent = new ConcatArraySubscriber<>(s, a);
 
 		s.onSubscribe(parent);
 
@@ -159,8 +159,8 @@ final class FluxConcatArray<T> extends Flux<T> {
 		long produced;
 
 		ConcatArraySubscriber(Subscriber<? super T> actual, Publisher<? extends T>[]
-				sources, Context ctx) {
-			super(actual, ctx);
+				sources) {
+			super(actual);
 			this.sources = sources;
 		}
 
@@ -232,8 +232,8 @@ final class FluxConcatArray<T> extends Flux<T> {
 		long produced;
 
 		ConcatArrayDelayErrorSubscriber(Subscriber<? super T> actual, Publisher<?
-				extends T>[] sources, Context ctx) {
-			super(actual, ctx);
+				extends T>[] sources) {
+			super(actual);
 			this.sources = sources;
 		}
 

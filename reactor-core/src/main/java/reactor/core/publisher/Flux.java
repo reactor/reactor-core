@@ -3374,7 +3374,7 @@ public abstract class Flux<T> implements ContextualPublisher<T> {
 	 * the same key (yet element keys can repeat in the overall sequence)
 	 */
 	public final <V> Flux<T> distinctUntilChanged(Function<? super T, ? extends V> keySelector) {
-		return distinctUntilChanged(keySelector, Objects::equals);
+		return distinctUntilChanged(keySelector, equalPredicate());
 	}
 
 	/**
@@ -7576,6 +7576,11 @@ public abstract class Flux<T> implements ContextualPublisher<T> {
 	}
 
 	@SuppressWarnings("unchecked")
+	static <U, V> BiPredicate<U, V> equalPredicate() {
+		return OBJECT_EQUAL;
+	}
+
+	@SuppressWarnings("unchecked")
 	static <T> Function<T, T> identityFunction(){
 		return IDENTITY_FUNCTION;
 	}
@@ -7594,6 +7599,7 @@ public abstract class Flux<T> implements ContextualPublisher<T> {
 	static final BooleanSupplier ALWAYS_BOOLEAN_SUPPLIER = () -> true;
 	@SuppressWarnings("rawtypes")
 	static final Function        HASHCODE_EXTRACTOR      = Object::hashCode;
+	static final BiPredicate     OBJECT_EQUAL            = Object::equals;
 	@SuppressWarnings("rawtypes")
 	static final Function        IDENTITY_FUNCTION       = Function.identity();
 

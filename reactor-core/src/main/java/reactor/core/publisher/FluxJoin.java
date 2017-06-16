@@ -94,8 +94,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 	}
 
 	static final class JoinSubscription<TLeft, TRight, TLeftEnd, TRightEnd, R>
-			extends CachedContextProducer<R>
-			implements JoinSupport {
+			implements JoinSupport, InnerProducer<R> {
 
 		final Queue<Object>               queue;
 		final BiPredicate<Object, Object> queueBiOffer;
@@ -111,6 +110,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 		final Function<? super TRight, ? extends Publisher<TRightEnd>> rightEnd;
 
 		final BiFunction<? super TLeft, ? super TRight, ? extends R> resultSelector;
+		final Subscriber<? super R>                                  actual;
 
 		volatile int wip;
 
@@ -156,7 +156,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 				Function<? super TRight, ? extends Publisher<TRightEnd>> rightEnd,
 				BiFunction<? super TLeft, ? super TRight, ? extends R> resultSelector,
 				Queue<Object> queue) {
-			super(actual);
+			this.actual = actual;
 			this.cancellations = new OpenHashSet<>();
 			this.queue = queue;
 			if (!(queue instanceof BiPredicate)) {
@@ -169,6 +169,11 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 			this.rightEnd = rightEnd;
 			this.resultSelector = resultSelector;
 			ACTIVE.lazySet(this, 2);
+		}
+
+		@Override
+		public final Subscriber<? super R> actual() {
+			return actual;
 		}
 
 		@Override
@@ -185,7 +190,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 			if (key == BooleanAttr.TERMINATED) return active == 0;
 			if (key == ThrowableAttr.ERROR) return error;
 
-			return super.scanUnsafe(key);
+			return InnerProducer.super.scanUnsafe(key);
 		}
 
 		@Override

@@ -125,8 +125,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 	}
 
 	static final class GroupJoinSubscription<TLeft, TRight, TLeftEnd, TRightEnd, R>
-			extends CachedContextProducer<R>
-			implements JoinSupport {
+			implements JoinSupport, InnerProducer<R> {
 
 		final Queue<Object>               queue;
 		final BiPredicate<Object, Object> queueBiOffer;
@@ -144,6 +143,8 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		final BiFunction<? super TLeft, ? super Flux<TRight>, ? extends R> resultSelector;
 
 		final Supplier<? extends Queue<TRight>> processorQueueSupplier;
+
+		final Subscriber<? super R>             actual;
 
 		int leftIndex;
 
@@ -191,7 +192,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 				Queue<Object> queue,
 				Supplier<? extends
 						Queue<TRight>> processorQueueSupplier) {
-			super(actual);
+			this.actual = actual;
 			this.cancellations = new OpenHashSet<>();
 			this.queue = queue;
 			this.processorQueueSupplier = processorQueueSupplier;
@@ -205,6 +206,11 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 			this.rightEnd = rightEnd;
 			this.resultSelector = resultSelector;
 			ACTIVE.lazySet(this, 2);
+		}
+
+		@Override
+		public final Subscriber<? super R> actual() {
+			return actual;
 		}
 
 		@Override
@@ -224,7 +230,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 			if (key == BooleanAttr.TERMINATED) return active == 0;
 			if (key == ThrowableAttr.ERROR) return error;
 
-			return super.scanUnsafe(key);
+			return InnerProducer.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -544,9 +550,14 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		}
 
 		@Override
-		public void onContext(Context context) {
+		public Context currentContext() {
+			return parent.currentContext();
+		}
+
+		@Override
+		public void onContextUpdate(Context context) {
 			if(isLeft){
-				parent.onContext(context);
+				parent.onContextUpdate(context);
 			}
 		}
 

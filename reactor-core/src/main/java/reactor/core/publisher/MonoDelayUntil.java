@@ -83,8 +83,7 @@ final class MonoDelayUntil<T> extends Mono<T> {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		DelayUntilCoordinator<T> parent = new DelayUntilCoordinator<>(s,
-				delayError, otherGenerators, ctx);
+		DelayUntilCoordinator<T> parent = new DelayUntilCoordinator<>(s, delayError, otherGenerators);
 		s.onSubscribe(parent);
 		source.subscribe(parent, ctx);
 	}
@@ -94,7 +93,6 @@ final class MonoDelayUntil<T> extends Mono<T> {
 
 		static final DelayUntilTrigger[] NO_TRIGGER = new DelayUntilTrigger[0];
 
-		final Context ctx;
 		final int                                                n;
 		final boolean                                            delayError;
 		final Function<? super T, ? extends Publisher<?>>[] otherGenerators;
@@ -112,13 +110,11 @@ final class MonoDelayUntil<T> extends Mono<T> {
 
 		DelayUntilCoordinator(Subscriber<? super T> subscriber,
 				boolean delayError,
-				Function<? super T, ? extends Publisher<?>>[] otherGenerators, Context
-				ctx) {
+				Function<? super T, ? extends Publisher<?>>[] otherGenerators) {
 			super(subscriber);
 			this.otherGenerators = otherGenerators;
 			//don't consider the source as this is only used from when there is a value
 			this.n = otherGenerators.length;
-			this.ctx = ctx;
 			this.delayError = delayError;
 			triggerSubscribers = NO_TRIGGER;
 		}
@@ -150,11 +146,6 @@ final class MonoDelayUntil<T> extends Mono<T> {
 			if (value == null) {
 				actual.onComplete();
 			}
-		}
-
-		@Override
-		public Context currentContext() {
-			return ctx;
 		}
 
 		@Override
@@ -271,7 +262,7 @@ final class MonoDelayUntil<T> extends Mono<T> {
 
 		@Override
 		public Context currentContext() {
-			return parent.ctx;
+			return parent.currentContext();
 		}
 
 		@Override

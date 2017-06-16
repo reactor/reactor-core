@@ -43,7 +43,7 @@ final class MonoRetryPredicate<T> extends MonoOperator<T, T> {
 	public void subscribe(Subscriber<? super T> s, Context ctx) {
 
 		FluxRetryPredicate.RetryPredicateSubscriber<T> parent =
-				new FluxRetryPredicate.RetryPredicateSubscriber<>(source, s, predicate, ctx);
+				new FluxRetryPredicate.RetryPredicateSubscriber<>(source, s, predicate);
 
 		s.onSubscribe(parent);
 

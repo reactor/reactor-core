@@ -62,7 +62,7 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 		Subscriber<T> serial = Operators.serialize(s);
 
 		RepeatWhenMainSubscriber<T> main =
-				new RepeatWhenMainSubscriber<>(serial, signaller, source, ctx);
+				new RepeatWhenMainSubscriber<>(serial, signaller, source);
 		other.main = main;
 
 		serial.onSubscribe(main);
@@ -104,8 +104,8 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 
 		RepeatWhenMainSubscriber(Subscriber<? super T> actual,
 				Subscriber<Long> signaller,
-				Publisher<? extends T> source, Context ctx) {
-			super(actual, ctx);
+				Publisher<? extends T> source) {
+			super(actual);
 			this.signaller = signaller;
 			this.source = source;
 			this.otherArbiter = new Operators.DeferredSubscription();
@@ -190,7 +190,7 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 
 		@Override
 		public Context currentContext() {
-			return main.context;
+			return main.currentContext();
 		}
 
 		@Override
@@ -224,7 +224,7 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 
 		@Override
 		public void subscribe(Subscriber<? super Long> s, Context ctx) {
-			ContextRelay.set(s, main.context);
+			ContextRelay.set(s, main.currentContext());
 			completionSignal.subscribe(s);
 		}
 

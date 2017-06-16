@@ -109,11 +109,11 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 		}
 
 		@Override
-		public void onContext(Context context) {
+		public void onContextUpdate(Context context) {
 			if(parent.onContextPropagateCall() != null) {
 				parent.onContextPropagateCall().accept(context);
 			}
-			InnerOperator.super.onContext(context);
+			InnerOperator.super.onContextUpdate(context);
 		}
 
 		@Override

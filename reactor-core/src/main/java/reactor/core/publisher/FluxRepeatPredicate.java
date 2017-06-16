@@ -43,7 +43,7 @@ final class FluxRepeatPredicate<T> extends FluxOperator<T, T> {
 	public void subscribe(Subscriber<? super T> s, Context ctx) {
 
 		RepeatPredicateSubscriber<T> parent = new RepeatPredicateSubscriber<>(source,
-				s, predicate, ctx);
+				s, predicate);
 
 		s.onSubscribe(parent);
 
@@ -67,8 +67,8 @@ final class FluxRepeatPredicate<T> extends FluxOperator<T, T> {
 		long produced;
 
 		RepeatPredicateSubscriber(Publisher<? extends T> source,
-				Subscriber<? super T> actual, BooleanSupplier predicate, Context ctx) {
-			super(actual, ctx);
+				Subscriber<? super T> actual, BooleanSupplier predicate) {
+			super(actual);
 			this.source = source;
 			this.predicate = predicate;
 		}

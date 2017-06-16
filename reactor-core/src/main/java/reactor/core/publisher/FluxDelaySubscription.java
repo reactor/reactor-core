@@ -86,7 +86,7 @@ final class FluxDelaySubscription<T, U> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		public void onContext(Context context) {
+		public void onContextUpdate(Context context) {
 			//IGNORE
 		}
 
@@ -162,7 +162,7 @@ final class FluxDelaySubscription<T, U> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		public void onContext(Context context) {
+		public void onContextUpdate(Context context) {
 			ContextRelay.set(actual, context);
 		}
 

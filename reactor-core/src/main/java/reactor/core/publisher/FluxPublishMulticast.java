@@ -186,6 +186,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 		@Override
 		public void subscribe(Subscriber<? super T> s, Context ctx) {
 			PublishMulticastInner<T> pcs = new PublishMulticastInner<>(this, s);
+			ContextRelay.set(s, ctx);
 			s.onSubscribe(pcs);
 
 			if (add(pcs)) {

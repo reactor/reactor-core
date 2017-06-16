@@ -288,7 +288,7 @@ final class FluxZip<T, R> extends Flux<R> {
 		if (sc != 0 && scalars != null) {
 			if (n != sc) {
 				ZipSingleCoordinator<T, R> coordinator =
-						new ZipSingleCoordinator<>(s, scalars, n, zipper, ctx);
+						new ZipSingleCoordinator<>(s, scalars, n, zipper);
 
 				s.onSubscribe(coordinator);
 
@@ -316,7 +316,7 @@ final class FluxZip<T, R> extends Flux<R> {
 		}
 		else {
 			ZipCoordinator<T, R> coordinator =
-					new ZipCoordinator<>(s, zipper, n, queueSupplier, prefetch, ctx);
+					new ZipCoordinator<>(s, zipper, n, queueSupplier, prefetch);
 
 			s.onSubscribe(coordinator);
 
@@ -330,8 +330,6 @@ final class FluxZip<T, R> extends Flux<R> {
 
 		final Object[] scalars;
 
-		final Context context;
-
 		final ZipSingleSubscriber<T>[] subscribers;
 
 		volatile int wip;
@@ -343,10 +341,8 @@ final class FluxZip<T, R> extends Flux<R> {
 		ZipSingleCoordinator(Subscriber<? super R> subscriber,
 				Object[] scalars,
 				int n,
-				Function<? super Object[], ? extends R> zipper,
-				Context context) {
+				Function<? super Object[], ? extends R> zipper) {
 			super(subscriber);
-			this.context = context;
 			this.zipper = zipper;
 			this.scalars = scalars;
 			ZipSingleSubscriber<T>[] a = new ZipSingleSubscriber[n];
@@ -460,7 +456,7 @@ final class FluxZip<T, R> extends Flux<R> {
 
 		@Override
 		public Context currentContext() {
-			return parent.context;
+			return parent.currentContext();
 		}
 
 		@Override
@@ -528,8 +524,6 @@ final class FluxZip<T, R> extends Flux<R> {
 
 		final Function<? super Object[], ? extends R> zipper;
 
-		final Context context;
-
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<ZipCoordinator> WIP =
@@ -555,10 +549,9 @@ final class FluxZip<T, R> extends Flux<R> {
 				Function<? super Object[], ? extends R> zipper,
 				int n,
 				Supplier<? extends Queue<T>> queueSupplier,
-				int prefetch, Context ctx) {
+				int prefetch) {
 			this.actual = actual;
 			this.zipper = zipper;
-			this.context= ctx;
 			@SuppressWarnings("unchecked") ZipInner<T>[] a = new ZipInner[n];
 			for (int i = 0; i < n; i++) {
 				a[i] = new ZipInner<>(this, prefetch, i, queueSupplier);
@@ -898,7 +891,7 @@ final class FluxZip<T, R> extends Flux<R> {
 
 		@Override
 		public Context currentContext() {
-			return parent.context;
+			return parent.currentContext();
 		}
 
 		@Override

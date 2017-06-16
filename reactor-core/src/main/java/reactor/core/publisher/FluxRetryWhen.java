@@ -60,7 +60,7 @@ final class FluxRetryWhen<T> extends FluxOperator<T, T> {
 		Subscriber<T> serial = Operators.serialize(s);
 
 		RetryWhenMainSubscriber<T> main =
-				new RetryWhenMainSubscriber<>(serial, signaller, source, ctx);
+				new RetryWhenMainSubscriber<>(serial, signaller, source);
 		other.main = main;
 
 		serial.onSubscribe(main);
@@ -105,8 +105,8 @@ final class FluxRetryWhen<T> extends FluxOperator<T, T> {
 		long produced;
 		
 		RetryWhenMainSubscriber(Subscriber<? super T> actual, Subscriber<Throwable> signaller,
-												Publisher<? extends T> source, Context ctx) {
-			super(actual, ctx);
+												Publisher<? extends T> source) {
+			super(actual);
 			this.signaller = signaller;
 			this.source = source;
 			this.otherArbiter = new Operators.DeferredSubscription();
@@ -191,7 +191,7 @@ final class FluxRetryWhen<T> extends FluxOperator<T, T> {
 
 		@Override
 		public Context currentContext() {
-			return main.context;
+			return main.currentContext();
 		}
 
 		@Override
@@ -225,7 +225,7 @@ final class FluxRetryWhen<T> extends FluxOperator<T, T> {
 
 		@Override
 		public void subscribe(Subscriber<? super Throwable> s, Context ctx) {
-			ContextRelay.set(s, main.context);
+			ContextRelay.set(s, main.currentContext());
 			completionSignal.subscribe(s);
 		}
 	}

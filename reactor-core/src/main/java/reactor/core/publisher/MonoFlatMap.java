@@ -54,7 +54,7 @@ final class MonoFlatMap<T, R> extends MonoOperator<T, R> implements Fuseable {
 			return;
 		}
 
-		FlatMapMain<T, R> manager = new FlatMapMain<>(s, mapper, ctx);
+		FlatMapMain<T, R> manager = new FlatMapMain<>(s, mapper);
 		s.onSubscribe(manager);
 
 		source.subscribe(manager, ctx);
@@ -66,8 +66,6 @@ final class MonoFlatMap<T, R> extends MonoOperator<T, R> implements Fuseable {
 
 		final FlatMapInner<R> second;
 
-		final Context ctx;
-
 		boolean done;
 
 		volatile Subscription s;
@@ -78,22 +76,15 @@ final class MonoFlatMap<T, R> extends MonoOperator<T, R> implements Fuseable {
 						"s");
 
 		FlatMapMain(Subscriber<? super R> subscriber,
-				Function<? super T, ? extends Mono<? extends R>> mapper,
-				Context ctx) {
+				Function<? super T, ? extends Mono<? extends R>> mapper) {
 			super(subscriber);
 			this.mapper = mapper;
-			this.ctx = ctx;
 			this.second = new FlatMapInner<>(this);
 		}
 
 		@Override
 		public Stream<? extends Scannable> inners() {
 			return Stream.of(second);
-		}
-
-		@Override
-		public Context currentContext() {
-			return ctx;
 		}
 
 		@Override
@@ -216,7 +207,7 @@ final class MonoFlatMap<T, R> extends MonoOperator<T, R> implements Fuseable {
 
 		@Override
 		public Context currentContext() {
-			return parent.ctx;
+			return parent.currentContext();
 		}
 
 		@Nullable

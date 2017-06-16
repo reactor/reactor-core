@@ -62,7 +62,7 @@ final class FluxContextualize<T> extends FluxOperator<T, T> implements Fuseable 
 		final ConditionalSubscriber<? super T>      actualConditional;
 		final BiFunction<Context, Context, Context> doOnContext;
 
-		final Context context;
+		volatile Context context;
 
 		QueueSubscription<T> qs;
 		Subscription         s;
@@ -92,7 +92,7 @@ final class FluxContextualize<T> extends FluxOperator<T, T> implements Fuseable 
 		}
 
 		@Override
-		public void onContext(Context context) {
+		public void onContextUpdate(Context context) {
 			Context c;
 			try {
 				c = doOnContext.apply(this.context, context);
@@ -102,7 +102,8 @@ final class FluxContextualize<T> extends FluxOperator<T, T> implements Fuseable 
 				return;
 			}
 			if(c != this.context) {
-				InnerOperator.super.onContext(c);
+				this.context = c;
+				InnerOperator.super.onContextUpdate(c);
 			}
 		}
 

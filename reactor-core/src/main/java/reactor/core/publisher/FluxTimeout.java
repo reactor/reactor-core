@@ -69,7 +69,7 @@ final class FluxTimeout<T, U, V> extends FluxOperator<T, T> {
 		Subscriber<T> serial = Operators.serialize(s);
 
 		TimeoutMainSubscriber<T, V> main =
-				new TimeoutMainSubscriber<>(serial, itemTimeout, other, ctx);
+				new TimeoutMainSubscriber<>(serial, itemTimeout, other);
 
 		serial.onSubscribe(main);
 
@@ -106,8 +106,8 @@ final class FluxTimeout<T, U, V> extends FluxOperator<T, T> {
 
 		TimeoutMainSubscriber(Subscriber<? super T> actual,
 				Function<? super T, ? extends Publisher<V>> itemTimeout,
-				Publisher<? extends T> other, Context ctx) {
-			super(actual, ctx);
+				Publisher<? extends T> other) {
+			super(actual);
 			this.itemTimeout = itemTimeout;
 			this.other = other;
 		}

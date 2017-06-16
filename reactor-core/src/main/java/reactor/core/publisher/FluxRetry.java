@@ -44,7 +44,7 @@ final class FluxRetry<T> extends FluxOperator<T, T> {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		RetrySubscriber<T> parent = new RetrySubscriber<>(source, s, times, ctx);
+		RetrySubscriber<T> parent = new RetrySubscriber<>(source, s, times);
 
 		s.onSubscribe(parent);
 
@@ -67,8 +67,8 @@ final class FluxRetry<T> extends FluxOperator<T, T> {
 
 		long produced;
 
-		RetrySubscriber(Publisher<? extends T> source, Subscriber<? super T> actual, long remaining, Context ctx) {
-			super(actual, ctx);
+		RetrySubscriber(Publisher<? extends T> source, Subscriber<? super T> actual, long remaining) {
+			super(actual);
 			this.source = source;
 			this.remaining = remaining;
 		}

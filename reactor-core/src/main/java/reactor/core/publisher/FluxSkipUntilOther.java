@@ -121,10 +121,12 @@ final class FluxSkipUntilOther<T, U> extends FluxOperator<T, T> {
 	}
 
 	static final class SkipUntilMainSubscriber<T>
-			extends CachedContextProducer<T>
 			implements InnerOperator<T, T> {
 
-		volatile Subscription main;
+		final Subscriber<? super T> actual;
+
+		volatile Subscription       main;
+
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SkipUntilMainSubscriber, Subscription>
 				MAIN =
@@ -143,7 +145,12 @@ final class FluxSkipUntilOther<T, U> extends FluxOperator<T, T> {
 		volatile boolean gate;
 
 		SkipUntilMainSubscriber(Subscriber<? super T> actual) {
-			super(Operators.serialize(actual));
+			this.actual = Operators.serialize(actual);
+		}
+
+		@Override
+		public final Subscriber<? super T> actual() {
+			return actual;
 		}
 
 		@Override

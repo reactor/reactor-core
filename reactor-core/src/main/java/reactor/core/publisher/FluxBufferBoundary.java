@@ -77,23 +77,20 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 						source instanceof FluxInterval ? s : Operators.serialize(s),
 						buffer, bufferSupplier);
 
-		BufferBoundaryOther<U> boundary = new BufferBoundaryOther<>(parent);
-		parent.other = boundary;
-
 		s.onSubscribe(parent);
 
-		other.subscribe(boundary);
+		other.subscribe(parent.other);
 
 		source.subscribe(parent, ctx);
 	}
 
 	static final class BufferBoundaryMain<T, U, C extends Collection<? super T>>
-			extends CachedContextProducer<C>
 			implements InnerOperator<T, C> {
 
 		final Supplier<C>           bufferSupplier;
+		final Subscriber<? super C> actual;
 
-		BufferBoundaryOther<U> other;
+		final BufferBoundaryOther<U> other;
 
 		C buffer;
 
@@ -113,9 +110,15 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 		BufferBoundaryMain(Subscriber<? super C> actual,
 				C buffer,
 				Supplier<C> bufferSupplier) {
-			super(actual);
+			this.actual = actual;
 			this.buffer = buffer;
 			this.bufferSupplier = bufferSupplier;
+			this.other = new BufferBoundaryOther<>(this);
+		}
+
+		@Override
+		public Subscriber<? super C> actual() {
+			return actual;
 		}
 
 		@Override

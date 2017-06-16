@@ -90,7 +90,6 @@ final class MonoUntilOther<T> extends Mono<T> {
 			extends Operators.MonoSubscriber<T, T> {
 
 		final int                      n;
-		final Context             context;
 		final boolean                  delayError;
 		final UntilOtherSource<T> sourceSubscriber;
 		final UntilOtherTrigger[] triggerSubscribers;
@@ -104,7 +103,6 @@ final class MonoUntilOther<T> extends Mono<T> {
 				int n, Context context) {
 			super(subscriber);
 			this.n = n;
-			this.context = context;
 			this.delayError = delayError;
 			sourceSubscriber = new UntilOtherSource<>(this);
 			triggerSubscribers = new UntilOtherTrigger[n - 1];
@@ -316,7 +314,7 @@ final class MonoUntilOther<T> extends Mono<T> {
 
 		@Override
 		public Context currentContext() {
-			return parent.context;
+			return parent.currentContext();
 		}
 
 		@Override

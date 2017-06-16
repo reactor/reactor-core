@@ -30,7 +30,7 @@ final class MonoSwitchIfEmpty<T> extends MonoOperator<T, T> {
 
     final Mono<? extends T> other;
 
-	public MonoSwitchIfEmpty(Mono<? extends T> source, Mono<? extends T> other) {
+	MonoSwitchIfEmpty(Mono<? extends T> source, Mono<? extends T> other) {
 		super(source);
 		this.other = Objects.requireNonNull(other, "other");
 	}
@@ -38,7 +38,7 @@ final class MonoSwitchIfEmpty<T> extends MonoOperator<T, T> {
 	@Override
 	public void subscribe(Subscriber<? super T> s, Context ctx) {
 		FluxSwitchIfEmpty.SwitchIfEmptySubscriber<T> parent = new
-				FluxSwitchIfEmpty.SwitchIfEmptySubscriber<>(s, other, ctx);
+				FluxSwitchIfEmpty.SwitchIfEmptySubscriber<>(s, other);
 
 		s.onSubscribe(parent);
 

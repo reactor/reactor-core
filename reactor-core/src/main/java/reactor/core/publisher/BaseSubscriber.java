@@ -61,7 +61,7 @@ public abstract class BaseSubscriber<T> implements Subscriber<T>, Subscription,
 	}
 
 	@Override
-	public final void onContext(Context context) {
+	public final void onContextUpdate(Context context) {
 		hookOnContext(context);
 	}
 

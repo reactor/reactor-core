@@ -121,7 +121,7 @@ final class MonoWhen<T, R> extends Mono<R> {
         }
 
 	    WhenCoordinator<R> parent =
-			    new WhenCoordinator<>(s, n, delayError, zipper, context);
+			    new WhenCoordinator<>(s, n, delayError, zipper);
 	    s.onSubscribe(parent);
         parent.subscribe(a);
     }
@@ -135,8 +135,6 @@ final class MonoWhen<T, R> extends Mono<R> {
 
 		final Function<? super Object[], ? extends R> zipper;
 
-		final Context context;
-
 		volatile int done;
         @SuppressWarnings("rawtypes")
         static final AtomicIntegerFieldUpdater<WhenCoordinator> DONE =
@@ -146,10 +144,8 @@ final class MonoWhen<T, R> extends Mono<R> {
         WhenCoordinator(Subscriber<? super R> subscriber,
 		        int n,
 		        boolean delayError,
-		        Function<? super Object[], ? extends R> zipper,
-                Context context) {
+		        Function<? super Object[], ? extends R> zipper) {
 	        super(subscriber);
-	        this.context = context;
             this.delayError = delayError;
 	        this.zipper = zipper;
 	        subscribers = new WhenInner[n];
@@ -292,7 +288,7 @@ final class MonoWhen<T, R> extends Mono<R> {
 
 		@Override
 		public Context currentContext() {
-			return parent.context;
+			return parent.currentContext();
 		}
 
 		@Override

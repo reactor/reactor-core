@@ -53,7 +53,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 
 	@Override
 	public void subscribe(Subscriber<? super Boolean> s, Context ctx) {
-		EqualCoordinator<T> ec = new EqualCoordinator<>(s, bufferSize, first, second, comparer, ctx);
+		EqualCoordinator<T> ec = new EqualCoordinator<>(s, bufferSize, first, second, comparer);
 		s.onSubscribe(ec);
 		ec.subscribe();
 	}
@@ -65,7 +65,6 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 		final Publisher<? extends T> second;
 		final EqualSubscriber<T> firstSubscriber;
 		final EqualSubscriber<T> secondSubscriber;
-		final Context context;
 
 		volatile boolean cancelled;
 
@@ -85,10 +84,8 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 
 		EqualCoordinator(Subscriber<? super Boolean> actual, int bufferSize,
 				Publisher<? extends T> first, Publisher<? extends T> second,
-				BiPredicate<? super T, ? super T> comparer,
-				Context context) {
+				BiPredicate<? super T, ? super T> comparer) {
 			this.actual = actual;
-			this.context = context;
 			this.first = first;
 			this.second = second;
 			this.comparer = comparer;
@@ -302,7 +299,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 
 		@Override
 		public Context currentContext() {
-			return parent.context;
+			return parent.currentContext();
 		}
 
 		@Override

@@ -1197,8 +1197,6 @@ public abstract class Operators {
 
 		final Subscriber<? super O> actual;
 
-		final Context context;
-
 		protected boolean unbounded;
 		/**
 		 * The current subscription which may null if no Subscriptions have been set.
@@ -1214,20 +1212,13 @@ public abstract class Operators {
 		volatile int wip;
 		volatile boolean cancelled;
 
-		public MultiSubscriptionSubscriber(Subscriber<? super O> actual, Context
-				context) {
+		public MultiSubscriptionSubscriber(Subscriber<? super O> actual) {
 			this.actual = actual;
-			this.context = context;
 		}
 
 		@Override
 		public Subscriber<? super O> actual() {
 			return actual;
-		}
-
-		@Override
-		public Context currentContext() {
-			return context;
 		}
 
 		@Override

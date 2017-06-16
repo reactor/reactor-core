@@ -321,7 +321,7 @@ public class FluxRetryWhenTest {
     public void scanMainSubscriber() {
         Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxRetryWhen.RetryWhenMainSubscriber<Integer> test =
-        		new FluxRetryWhen.RetryWhenMainSubscriber<>(actual, null, Flux.empty(), Context.empty());
+        		new FluxRetryWhen.RetryWhenMainSubscriber<>(actual, null, Flux.empty());
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -339,7 +339,7 @@ public class FluxRetryWhenTest {
     public void scanOtherSubscriber() {
 		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxRetryWhen.RetryWhenMainSubscriber<Integer> main =
-        		new FluxRetryWhen.RetryWhenMainSubscriber<>(actual, null, Flux.empty(), Context.empty());
+        		new FluxRetryWhen.RetryWhenMainSubscriber<>(actual, null, Flux.empty());
         FluxRetryWhen.RetryWhenOtherSubscriber test = new FluxRetryWhen.RetryWhenOtherSubscriber();
         test.main = main;
 
@@ -354,7 +354,7 @@ public class FluxRetryWhenTest {
 		Subscriber<Throwable> signaller = new LambdaSubscriber<>(null, e -> {}, null, null);
 		Flux<Integer> when = Flux.empty();
 		FluxRetryWhen.RetryWhenMainSubscriber<Integer> main = new FluxRetryWhen
-				.RetryWhenMainSubscriber<>(actual, signaller, when, Context.empty());
+				.RetryWhenMainSubscriber<>(actual, signaller, when);
 
 		List<Scannable> inners = main.inners().collect(Collectors.toList());
 
