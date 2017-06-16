@@ -25,6 +25,7 @@ import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
+import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -84,7 +85,7 @@ public class FluxRefCountGraceTest {
 		p.subscribe().dispose();
 		p.subscribe().dispose();
 		p.subscribe().dispose();
-		
+
 		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
 		p.subscribe(ts1);
 
@@ -215,4 +216,25 @@ public class FluxRefCountGraceTest {
 		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(256);
 	}
 
+	@Test
+	public void shouldNotRetainSubscriptionToSourceWhenComplete() throws Exception {
+		VirtualTimeScheduler scheduler = VirtualTimeScheduler.create();
+		Duration gracePeriod = Duration.ofMillis(10);
+		Flux<String> f = Flux.just("hello world")
+		                     .replay(1)
+		                     .refCount(1, gracePeriod, scheduler);
+
+		AssertSubscriber<String> s = AssertSubscriber.create();
+		f.subscribe(s);
+
+		scheduler.advanceTimeBy(gracePeriod);
+
+		StepVerifier.create(f.next())
+		            .expectNext("hello world")
+		            .verifyComplete();
+
+		scheduler.advanceTimeBy(gracePeriod);
+
+		s.assertValueCount(1).assertNoError().assertComplete();
+	}
 }

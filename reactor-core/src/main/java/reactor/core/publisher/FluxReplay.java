@@ -1129,6 +1129,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		}
 
 		@Override
+		@SuppressWarnings("unchecked")
 		public void onError(Throwable t) {
 			ReplayBuffer<T> b = buffer;
 			if (b.isDone()) {
@@ -1142,10 +1143,15 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 				for (ReplaySubscription<T> rs : a) {
 					b.replay(rs);
 				}
+
+				synchronized (this) {
+					subscribers = EMPTY;
+				}
 			}
 		}
 
 		@Override
+		@SuppressWarnings("unchecked")
 		public void onComplete() {
 			ReplayBuffer<T> b = buffer;
 			if (!b.isDone()) {
@@ -1155,6 +1161,10 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 				for (ReplaySubscription<T> rs : a) {
 					b.replay(rs);
+				}
+
+				synchronized (this) {
+					subscribers = EMPTY;
 				}
 			}
 		}
