@@ -56,7 +56,7 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 	}
 
 	@Override
-	public void onContext(Context context) {
+	public void onContextUpdate(Context context) {
 		if(context != Context.empty() &&
 				C.compareAndSet(this, Context.empty(), context)){
 			ContextRelay.set(upstream, context);

@@ -64,7 +64,7 @@ final class MonoTimeout<T, U, V> extends MonoOperator<T, T> {
 		Subscriber<T> serial = Operators.serialize(s);
 
 		FluxTimeout.TimeoutMainSubscriber<T, V> main =
-				new FluxTimeout.TimeoutMainSubscriber<>(serial, NEVER, other, ctx);
+				new FluxTimeout.TimeoutMainSubscriber<>(serial, NEVER, other);
 
 		serial.onSubscribe(main);
 

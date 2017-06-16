@@ -49,7 +49,7 @@ final class FluxRepeat<T> extends FluxOperator<T, T> {
 			return;
 		}
 
-		RepeatSubscriber<T> parent = new RepeatSubscriber<>(source, s, times, ctx);
+		RepeatSubscriber<T> parent = new RepeatSubscriber<>(source, s, times);
 
 		s.onSubscribe(parent);
 
@@ -72,8 +72,8 @@ final class FluxRepeat<T> extends FluxOperator<T, T> {
 
 		long produced;
 
-		RepeatSubscriber(Publisher<? extends T> source, Subscriber<? super T> actual, long remaining, Context ctx) {
-			super(actual, ctx);
+		RepeatSubscriber(Publisher<? extends T> source, Subscriber<? super T> actual, long remaining) {
+			super(actual);
 			this.source = source;
 			this.remaining = remaining;
 		}

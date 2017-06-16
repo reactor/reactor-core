@@ -470,7 +470,7 @@ public class MonoWhenTest {
 	public void scanCoordinator() {
 		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoWhen.WhenCoordinator<String> test = new MonoWhen.WhenCoordinator<>(
-				actual, 2, true, a -> String.valueOf(a[0]), Context.empty());
+				actual, 2, true, a -> String.valueOf(a[0]));
 
 		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
 		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(2);
@@ -493,7 +493,7 @@ public class MonoWhenTest {
 	public void scanCoordinatorNotDoneUntilN() {
 		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoWhen.WhenCoordinator<String> test = new MonoWhen.WhenCoordinator<>(
-				actual, 10, true, a -> String.valueOf(a[0]), Context.empty());
+				actual, 10, true, a -> String.valueOf(a[0]));
 
 		test.done = 9;
 		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
@@ -505,7 +505,7 @@ public class MonoWhenTest {
 	@Test
 	public void scanWhenInner() {
 		Subscriber<? super String> actual = new LambdaMonoSubscriber<>(null, null, null, null);
-		MonoWhen.WhenCoordinator<String> coordinator = new MonoWhen.WhenCoordinator<>(actual, 2, false, a -> null, Context.empty());
+		MonoWhen.WhenCoordinator<String> coordinator = new MonoWhen.WhenCoordinator<>(actual, 2, false, a -> null);
 		MonoWhen.WhenInner<String> test = new MonoWhen.WhenInner<>(coordinator);
 		Subscription innerSub = Operators.cancelledSubscription();
 		test.onSubscribe(innerSub);

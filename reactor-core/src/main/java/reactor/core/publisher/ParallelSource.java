@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -28,7 +29,6 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Dispatches the values from upstream in a round robin fashion to subscribers which are
@@ -37,7 +37,7 @@ import javax.annotation.Nullable;
  * @param <T> the value type
  */
 final class ParallelSource<T> extends ParallelFlux<T> implements Scannable {
-	final ContextualPublisher<? extends T> source;
+	final Flux<? extends T> source;
 	
 	final int parallelism;
 	
@@ -52,7 +52,7 @@ final class ParallelSource<T> extends ParallelFlux<T> implements Scannable {
 		if (prefetch <= 0) {
 			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
 		}
-		this.source = Operators.contextual(source);
+		this.source = Flux.from(source);
 		this.parallelism = parallelism;
 		this.prefetch = prefetch;
 		this.queueSupplier = queueSupplier;

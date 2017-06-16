@@ -141,7 +141,7 @@ public class MonoHasElementsTest {
 					    s.request(Long.MAX_VALUE);
 				    });
 
-		assertThat(sub.get()).isInstanceOf(MonoHasElements.HasElementSubscriber.class);
+		assertThat(sub.get()).isInstanceOf(MonoHasElement.HasElementSubscriber.class);
 		assertThat(Scannable.from(sub.get()).scan(Scannable.ScannableAttr.PARENT).getClass()).isEqualTo(FluxHide.HideSubscriber.class);
 	}
 
@@ -240,7 +240,7 @@ public class MonoHasElementsTest {
 	@Test
 	public void scanHasElement() {
 		Subscriber<? super Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MonoHasElements.HasElementSubscriber<String> test = new MonoHasElements.HasElementSubscriber<>(actual);
+		MonoHasElement.HasElementSubscriber<String> test = new MonoHasElement.HasElementSubscriber<>(actual);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
@@ -259,7 +259,7 @@ public class MonoHasElementsTest {
 	@Test
 	public void scanHasElementNoTerminatedOnError() {
 		Subscriber<? super Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MonoHasElements.HasElementSubscriber<String> test = new MonoHasElements.HasElementSubscriber<>(actual);
+		MonoHasElement.HasElementSubscriber<String> test = new MonoHasElement.HasElementSubscriber<>(actual);
 
 		test.onError(new IllegalStateException("boom"));
 		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
@@ -269,7 +269,7 @@ public class MonoHasElementsTest {
 	@Test
 	public void scanHasElementCancelled() {
 		Subscriber<? super Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MonoHasElements.HasElementSubscriber<String> test = new MonoHasElements.HasElementSubscriber<>(actual);
+		MonoHasElement.HasElementSubscriber<String> test = new MonoHasElement.HasElementSubscriber<>(actual);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 

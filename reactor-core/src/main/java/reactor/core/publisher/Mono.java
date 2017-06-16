@@ -2150,7 +2150,7 @@ public abstract class Mono<T> implements ContextualPublisher<T> {
 	 * otherwise
 	 */
 	public final Mono<Boolean> hasElement() {
-		return onAssembly(new MonoHasElements<>(this));
+		return onAssembly(new MonoHasElement<>(this));
 	}
 
 	/**

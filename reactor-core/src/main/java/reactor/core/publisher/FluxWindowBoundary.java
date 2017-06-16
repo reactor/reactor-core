@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -30,7 +31,6 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Splits the source sequence into continuous, non-overlapping windowEnds
@@ -77,7 +77,6 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 	}
 
 	static final class WindowBoundaryMain<T, U>
-			extends CachedContextProducer<Flux<T>>
 			implements InnerOperator<T, Flux<T>>, Disposable {
 
 		final Supplier<? extends Queue<T>> processorQueueSupplier;
@@ -85,6 +84,7 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 		final WindowBoundaryOther<U> boundary;
 
 		final Queue<Object>               queue;
+		final Subscriber<? super Flux<T>> actual;
 
 		UnicastProcessor<T> window;
 
@@ -127,13 +127,19 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 
 		WindowBoundaryMain(Subscriber<? super Flux<T>> actual,
 				Supplier<? extends Queue<T>> processorQueueSupplier,
-				Queue<T> processorQueue, Queue<Object> queue) {
-			super(actual);
+				Queue<T> processorQueue,
+				Queue<Object> queue) {
+			this.actual = actual;
 			this.processorQueueSupplier = processorQueueSupplier;
 			this.window = new UnicastProcessor<>(processorQueue, this);
 			WINDOW_COUNT.lazySet(this, 2);
 			this.boundary = new WindowBoundaryOther<>(this);
 			this.queue = queue;
+		}
+
+		@Override
+		public final Subscriber<? super Flux<T>> actual() {
+			return actual;
 		}
 
 		@Override

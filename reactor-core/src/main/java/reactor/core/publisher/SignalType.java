@@ -55,11 +55,11 @@ public enum SignalType {
 	 */
 	AFTER_TERMINATE,
 	/**
-	 * A context read signal that is pulled
+	 * A context read signal
 	 */
 	CURRENT_CONTEXT,
 	/**
-	 * A context signal that can be propagated from parent source
+	 * A context update signal
 	 */
 	ON_CONTEXT;
 
@@ -79,9 +79,9 @@ public enum SignalType {
 			case CANCEL:
 				return "cancel";
 			case CURRENT_CONTEXT:
-				return "parent";
+				return "currentContext";
 			case ON_CONTEXT:
-				return "onContext";
+				return "onContextUpdate";
 			case AFTER_TERMINATE:
 				return "afterTerminate";
 			default:

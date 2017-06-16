@@ -28,13 +28,13 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * buffers elements into possibly overlapping buffers whose boundaries are determined
@@ -91,13 +91,13 @@ final class FluxBufferWhen<T, U, V, C extends Collection<? super T>>
 	}
 
 	static final class BufferStartEndMainSubscriber<T, U, V, C extends Collection<? super T>>
-			extends CachedContextProducer<C>
 			implements InnerOperator<T, C> {
 		final Supplier<C> bufferSupplier;
 
 		final Queue<C> queue;
 
 		final Function<? super U, ? extends Publisher<V>> end;
+		final Subscriber<? super C>                       actual;
 
 		Set<Subscription> endSubscriptions;
 
@@ -150,7 +150,7 @@ final class FluxBufferWhen<T, U, V, C extends Collection<? super T>>
 				Supplier<C> bufferSupplier,
 				Queue<C> queue,
 				Function<? super U, ? extends Publisher<V>> end) {
-			super(actual);
+			this.actual = actual;
 			this.bufferSupplier = bufferSupplier;
 			this.buffers = new HashMap<>();
 			this.endSubscriptions = new HashSet<>();
@@ -165,6 +165,11 @@ final class FluxBufferWhen<T, U, V, C extends Collection<? super T>>
 			if (Operators.setOnce(S, this, s)) {
 				s.request(Long.MAX_VALUE);
 			}
+		}
+
+		@Override
+		public final Subscriber<? super C> actual() {
+			return actual;
 		}
 
 		@Override

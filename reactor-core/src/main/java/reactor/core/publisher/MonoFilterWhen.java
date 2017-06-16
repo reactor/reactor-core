@@ -90,18 +90,10 @@ class MonoFilterWhen<T> extends MonoOperator<T, T> {
 		@SuppressWarnings("ConstantConditions")
 		static final FilterWhenInner INNER_CANCELLED = new FilterWhenInner(null, false);
 
-		final Context context;
-
 		MonoFilterWhenSubscriber(Subscriber<? super T> actual, Function<? super T, ?
 				extends Publisher<Boolean>> asyncPredicate, Context context) {
 			super(actual);
-			this.context = context;
 			this.asyncPredicate = asyncPredicate;
-		}
-
-		@Override
-		public Context currentContext() {
-			return context;
 		}
 
 		@Override
@@ -277,7 +269,7 @@ class MonoFilterWhen<T> extends MonoOperator<T, T> {
 
 		@Override
 		public Context currentContext() {
-			return parent.context;
+			return parent.currentContext();
 		}
 
 		@Override

@@ -146,7 +146,7 @@ public class FluxFirstEmittingTest {
     @Test
     public void scanSubscriber() {
         Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-        FluxFirstEmitting.RaceCoordinator<String> parent = new FluxFirstEmitting.RaceCoordinator<>(1, Context.empty());
+        FluxFirstEmitting.RaceCoordinator<String> parent = new FluxFirstEmitting.RaceCoordinator<>(1);
         FluxFirstEmitting.FirstEmittingSubscriber<String> test = new FluxFirstEmitting.FirstEmittingSubscriber<>(actual, parent, 1);
         Subscription sub = Operators.emptySubscription();
         test.onSubscribe(sub);
@@ -161,7 +161,7 @@ public class FluxFirstEmittingTest {
     @Test
     public void scanRaceCoordinator() {
         Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-        FluxFirstEmitting.RaceCoordinator<String> parent = new FluxFirstEmitting.RaceCoordinator<>(1, Context.empty());
+        FluxFirstEmitting.RaceCoordinator<String> parent = new FluxFirstEmitting.RaceCoordinator<>(1);
         FluxFirstEmitting.FirstEmittingSubscriber<String> test = new FluxFirstEmitting.FirstEmittingSubscriber<>(actual, parent, 1);
         Subscription sub = Operators.emptySubscription();
         test.onSubscribe(sub);

@@ -50,7 +50,7 @@ final class MonoThenIgnore<T> extends Mono<T> implements Fuseable {
     
     @Override
     public void subscribe(Subscriber<? super T> s, Context ctx) {
-        ThenIgnoreMain<T> manager = new ThenIgnoreMain<>(s, ignore, last, ctx);
+        ThenIgnoreMain<T> manager = new ThenIgnoreMain<>(s, ignore, last);
         s.onSubscribe(manager);
         
         manager.drain();
@@ -81,8 +81,6 @@ final class MonoThenIgnore<T> extends Mono<T> implements Fuseable {
         
         final Publisher<?>[] ignoreMonos;
 
-        final Context context;
-
         final Mono<T> lastMono;
 
         int index;
@@ -95,13 +93,12 @@ final class MonoThenIgnore<T> extends Mono<T> implements Fuseable {
                 AtomicIntegerFieldUpdater.newUpdater(ThenIgnoreMain.class, "wip");
         
         ThenIgnoreMain(Subscriber<? super T> subscriber,
-		        Publisher<?>[] ignoreMonos, Mono<T> lastMono, Context context) {
+		        Publisher<?>[] ignoreMonos, Mono<T> lastMono) {
             super(subscriber);
             this.ignoreMonos = ignoreMonos;
             this.lastMono = lastMono;
             this.ignore = new ThenIgnoreInner(this);
             this.accept = new ThenAcceptInner<>(this);
-            this.context = context;
         }
 
 	    @Override
@@ -217,7 +214,7 @@ final class MonoThenIgnore<T> extends Mono<T> implements Fuseable {
 
 	    @Override
 	    public Context currentContext() {
-		    return parent.context;
+		    return parent.currentContext();
 	    }
 
         @Override
@@ -271,7 +268,7 @@ final class MonoThenIgnore<T> extends Mono<T> implements Fuseable {
 
         @Override
         public Context currentContext() {
-            return parent.context;
+            return parent.currentContext();
         }
 
         @Override

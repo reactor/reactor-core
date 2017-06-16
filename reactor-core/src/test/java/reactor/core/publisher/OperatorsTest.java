@@ -264,7 +264,7 @@ public class OperatorsTest {
 	@Test
 	public void scanMultiSubscriptionSubscriber() {
 		Subscriber<Integer> actual = new LambdaSubscriber<>(null, null, null, null);
-		MultiSubscriptionSubscriber<Integer, Integer> test = new MultiSubscriptionSubscriber<Integer, Integer>(actual, Context.empty()) {
+		MultiSubscriptionSubscriber<Integer, Integer> test = new MultiSubscriptionSubscriber<Integer, Integer>(actual) {
 			@Override
 			public void onNext(Integer t) {
 			}

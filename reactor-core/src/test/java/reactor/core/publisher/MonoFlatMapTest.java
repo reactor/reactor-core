@@ -55,7 +55,7 @@ public class MonoFlatMapTest {
 	public void scanMain() {
 		Subscriber<Integer> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoFlatMap.FlatMapMain<String, Integer> test = new MonoFlatMap.FlatMapMain<>(
-				actual, s -> Mono.just(s.length()), Context.empty());
+				actual, s -> Mono.just(s.length()));
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
@@ -77,7 +77,7 @@ public class MonoFlatMapTest {
 	public void scanInner() {
 		Subscriber<Integer> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoFlatMap.FlatMapMain<String, Integer> main = new MonoFlatMap.FlatMapMain<>(actual, s
-				-> Mono.just(s.length()), Context.empty());
+				-> Mono.just(s.length()));
 		MonoFlatMap.FlatMapInner<Integer> test = new MonoFlatMap.FlatMapInner<>(main);
 		Subscription innerSubscription = Operators.emptySubscription();
 		test.onSubscribe(innerSubscription);

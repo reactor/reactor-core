@@ -22,6 +22,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.LongSupplier;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
@@ -32,7 +33,6 @@ import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.concurrent.WaitStrategy;
 import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * A {@code MonoProcessor} is a {@link Mono} extension that implements stateful semantics. Multi-subscribe is allowed.
@@ -75,8 +75,8 @@ public final class MonoProcessor<O> extends Mono<O>
 		return new MonoProcessor<>(null, waitStrategy);
 	}
 
-	final ContextualPublisher<? extends O> source;
-	final WaitStrategy waitStrategy;
+	final Publisher<? extends O> source;
+	final WaitStrategy           waitStrategy;
 
 	Subscription subscription;
 	volatile Processor<O, O> processor;
@@ -86,11 +86,11 @@ public final class MonoProcessor<O> extends Mono<O>
 	volatile int             wip;
 	volatile int             connected;
 
-	MonoProcessor(@Nullable ContextualPublisher<? extends O> source) {
+	MonoProcessor(@Nullable Publisher<? extends O> source) {
 		this(source, WaitStrategy.sleeping());
 	}
 
-	MonoProcessor(@Nullable ContextualPublisher<? extends O> source, WaitStrategy waitStrategy) {
+	MonoProcessor(@Nullable Publisher<? extends O> source, WaitStrategy waitStrategy) {
 		this.source = source;
 		this.waitStrategy = Objects.requireNonNull(waitStrategy, "waitStrategy");
 	}

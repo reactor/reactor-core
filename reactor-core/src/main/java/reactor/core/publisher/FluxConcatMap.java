@@ -175,7 +175,7 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 			this.queueSupplier = queueSupplier;
 			this.prefetch = prefetch;
 			this.limit = prefetch - (prefetch >> 2);
-			this.inner = new ConcatMapInner<>(this, ctx);
+			this.inner = new ConcatMapInner<>(this);
 		}
 
 		@Override
@@ -503,7 +503,7 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 			this.prefetch = prefetch;
 			this.limit = prefetch - (prefetch >> 2);
 			this.veryEnd = veryEnd;
-			this.inner = new ConcatMapInner<>(this, ctx);
+			this.inner = new ConcatMapInner<>(this);
 		}
 
 		@Override
@@ -765,13 +765,18 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 
 		long produced;
 
-		ConcatMapInner(FluxConcatMapSupport<?, R> parent, Context ctx) {
-			super(Operators.emptySubscriber(), ctx); //TODO investigate null
+		ConcatMapInner(FluxConcatMapSupport<?, R> parent) {
+			super(Operators.emptySubscriber());
 			this.parent = parent;
 		}
 
 		@Override
-		public void onContext(Context context) {
+		public Context currentContext() {
+			return parent.currentContext();
+		}
+
+		@Override
+		public void onContextUpdate(Context context) {
 		}
 
 		@Nullable

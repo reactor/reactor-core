@@ -58,7 +58,7 @@ final class ParallelMergeSort<T> extends Flux<T> implements Scannable {
 	@Override
 	public void subscribe(Subscriber<? super T> s, Context ctx) {
 		MergeSortMain<T> parent =
-				new MergeSortMain<>(ctx, s, source.parallelism(), comparator);
+				new MergeSortMain<>(s, source.parallelism(), comparator);
 		s.onSubscribe(parent);
 
 		source.subscribe(parent.subscribers, ctx);
@@ -73,7 +73,7 @@ final class ParallelMergeSort<T> extends Flux<T> implements Scannable {
 		return null;
 	}
 
-	static final class MergeSortMain<T> extends CachedContextProducer<T> {
+	static final class MergeSortMain<T> implements InnerProducer<T> {
 
 		final MergeSortInner<T>[] subscribers;
 
@@ -82,6 +82,7 @@ final class ParallelMergeSort<T> extends Flux<T> implements Scannable {
 		final int[] indexes;
 
 		final Comparator<? super T> comparator;
+		final Subscriber<? super T> actual;
 
 		volatile int wip;
 
@@ -112,13 +113,11 @@ final class ParallelMergeSort<T> extends Flux<T> implements Scannable {
 						"error");
 
 		@SuppressWarnings("unchecked")
-		MergeSortMain(Context ctx, Subscriber<? super T> actual,
+		MergeSortMain(Subscriber<? super T> actual,
 				int n,
 				Comparator<? super T> comparator) {
-			super(actual);
-			this.context = ctx;
 			this.comparator = comparator;
-
+			this.actual = actual;
 			MergeSortInner<T>[] s = new MergeSortInner[n];
 
 			for (int i = 0; i < n; i++) {
@@ -131,6 +130,11 @@ final class ParallelMergeSort<T> extends Flux<T> implements Scannable {
 		}
 
 		@Override
+		public final Subscriber<? super T> actual() {
+			return actual;
+		}
+
+		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ThrowableAttr.ERROR) return error;
@@ -138,7 +142,7 @@ final class ParallelMergeSort<T> extends Flux<T> implements Scannable {
 			if (key == BooleanAttr.CANCELLED) return cancelled;
 			if (key == IntAttr.BUFFERED) return subscribers.length - remaining;
 
-			return super.scanUnsafe(key);
+			return InnerProducer.super.scanUnsafe(key);
 		}
 
 		@Override

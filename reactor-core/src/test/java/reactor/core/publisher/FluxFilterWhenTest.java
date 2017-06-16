@@ -403,7 +403,7 @@ public class FluxFilterWhenTest {
     @Test
     public void scanSubscriber() {
         Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-        FluxFilterWhen.FluxFilterWhenSubscriber<String> test = new FluxFilterWhen.FluxFilterWhenSubscriber<>(actual, t -> Mono.just(true), 789, Context.empty());
+        FluxFilterWhen.FluxFilterWhenSubscriber<String> test = new FluxFilterWhen.FluxFilterWhenSubscriber<>(actual, t -> Mono.just(true), 789);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -424,7 +424,7 @@ public class FluxFilterWhenTest {
     @Test
     public void scanSmallBuffered() {
         Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-        FluxFilterWhen.FluxFilterWhenSubscriber<String> test = new FluxFilterWhen.FluxFilterWhenSubscriber<>(actual, t -> Mono.just(true), 789, Context.empty());
+        FluxFilterWhen.FluxFilterWhenSubscriber<String> test = new FluxFilterWhen.FluxFilterWhenSubscriber<>(actual, t -> Mono.just(true), 789);
 
         test.producerIndex = Integer.MAX_VALUE + 5L;
         test.consumerIndex = Integer.MAX_VALUE + 2L;
@@ -435,7 +435,7 @@ public class FluxFilterWhenTest {
     @Test
     public void scanLargeBuffered() {
         Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-        FluxFilterWhen.FluxFilterWhenSubscriber<String> test = new FluxFilterWhen.FluxFilterWhenSubscriber<>(actual, t -> Mono.just(true), 789, Context.empty());
+        FluxFilterWhen.FluxFilterWhenSubscriber<String> test = new FluxFilterWhen.FluxFilterWhenSubscriber<>(actual, t -> Mono.just(true), 789);
 
         test.producerIndex = Integer.MAX_VALUE + 5L;
         test.consumerIndex = 2L;
@@ -446,7 +446,7 @@ public class FluxFilterWhenTest {
     @Test
     public void scanInner() {
         Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-        FluxFilterWhen.FluxFilterWhenSubscriber<String> main = new FluxFilterWhen.FluxFilterWhenSubscriber<>(actual, t -> Mono.just(true), 789, Context.empty());
+        FluxFilterWhen.FluxFilterWhenSubscriber<String> main = new FluxFilterWhen.FluxFilterWhenSubscriber<>(actual, t -> Mono.just(true), 789);
 
         FluxFilterWhen.FilterWhenInner test = new FluxFilterWhen.FilterWhenInner(main, true);
         Subscription sub = Operators.emptySubscription();

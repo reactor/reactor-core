@@ -46,14 +46,12 @@ final class MonoFlatMapMany<T, R> extends FluxOperator<T, R> {
 		if (FluxFlatMap.trySubscribeScalarMap(source, s, mapper, false)) {
 			return;
 		}
-		source.subscribe(new FlatMapManyMain<T, R>(s, mapper, ctx), ctx);
+		source.subscribe(new FlatMapManyMain<T, R>(s, mapper), ctx);
 	}
 
 	static final class FlatMapManyMain<T, R> implements InnerOperator<T, R> {
 
 		final Subscriber<? super R> actual;
-
-		final Context ctx;
 
 		final Function<? super T, ? extends Publisher<? extends R>> mapper;
 
@@ -74,16 +72,9 @@ final class MonoFlatMapMany<T, R> extends FluxOperator<T, R> {
 		boolean hasValue;
 
 		FlatMapManyMain(Subscriber<? super R> actual,
-				Function<? super T, ? extends Publisher<? extends R>> mapper,
-				Context ctx) {
-			this.ctx = ctx;
+				Function<? super T, ? extends Publisher<? extends R>> mapper) {
 			this.actual = actual;
 			this.mapper = mapper;
-		}
-
-		@Override
-		public Context currentContext() {
-			return ctx;
 		}
 
 		@Override
@@ -222,7 +213,7 @@ final class MonoFlatMapMany<T, R> extends FluxOperator<T, R> {
 
 		@Override
 		public Context currentContext() {
-			return parent.ctx;
+			return parent.currentContext();
 		}
 
 		@Override

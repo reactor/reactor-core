@@ -140,7 +140,7 @@ final class MonoFirst<T> extends Mono<T> {
 		}
 
 		FluxFirstEmitting.RaceCoordinator<T> coordinator =
-				new FluxFirstEmitting.RaceCoordinator<>(n, ctx);
+				new FluxFirstEmitting.RaceCoordinator<>(n);
 
 		coordinator.subscribe(a, n, s);
 	}

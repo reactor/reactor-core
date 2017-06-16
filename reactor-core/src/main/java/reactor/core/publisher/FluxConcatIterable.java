@@ -53,7 +53,7 @@ final class FluxConcatIterable<T> extends Flux<T> {
 			return;
 		}
 
-		ConcatIterableSubscriber<T> parent = new ConcatIterableSubscriber<>(s, it, ctx);
+		ConcatIterableSubscriber<T> parent = new ConcatIterableSubscriber<>(s, it);
 
 		s.onSubscribe(parent);
 
@@ -76,8 +76,8 @@ final class FluxConcatIterable<T> extends Flux<T> {
 		long produced;
 
 		ConcatIterableSubscriber(Subscriber<? super T> actual,
-				Iterator<? extends Publisher<? extends T>> it, Context ctx) {
-			super(actual, ctx);
+				Iterator<? extends Publisher<? extends T>> it) {
+			super(actual);
 			this.it = it;
 		}
 

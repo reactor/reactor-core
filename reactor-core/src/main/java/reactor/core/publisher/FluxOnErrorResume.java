@@ -44,7 +44,7 @@ final class FluxOnErrorResume<T> extends FluxOperator<T, T> {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		source.subscribe(new ResumeSubscriber<>(s, nextFactory, ctx), ctx);
+		source.subscribe(new ResumeSubscriber<>(s, nextFactory), ctx);
 	}
 
 	static final class ResumeSubscriber<T>
@@ -55,8 +55,8 @@ final class FluxOnErrorResume<T> extends FluxOperator<T, T> {
 		boolean second;
 
 		ResumeSubscriber(Subscriber<? super T> actual,
-				Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory, Context ctx) {
-			super(actual, ctx);
+				Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory) {
+			super(actual);
 			this.nextFactory = nextFactory;
 		}
 

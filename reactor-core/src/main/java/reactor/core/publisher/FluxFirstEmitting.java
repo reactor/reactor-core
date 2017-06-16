@@ -130,7 +130,7 @@ final class FluxFirstEmitting<T> extends Flux<T> {
 			return;
 		}
 
-		RaceCoordinator<T> coordinator = new RaceCoordinator<>(n, ctx);
+		RaceCoordinator<T> coordinator = new RaceCoordinator<>(n);
 
 		coordinator.subscribe(a, n, s);
 	}
@@ -164,8 +164,6 @@ final class FluxFirstEmitting<T> extends Flux<T> {
 
 		final FirstEmittingSubscriber<T>[] subscribers;
 
-		final Context context;
-
 		volatile boolean cancelled;
 
 		volatile int wip;
@@ -174,10 +172,9 @@ final class FluxFirstEmitting<T> extends Flux<T> {
 				AtomicIntegerFieldUpdater.newUpdater(RaceCoordinator.class, "wip");
 
 		@SuppressWarnings("unchecked")
-		RaceCoordinator(int n, Context ctx) {
+		RaceCoordinator(int n) {
 			subscribers = new FirstEmittingSubscriber[n];
 			wip = Integer.MIN_VALUE;
-			context = ctx;
 		}
 
 		@Override
@@ -296,13 +293,8 @@ final class FluxFirstEmitting<T> extends Flux<T> {
 		}
 
 		@Override
-		public void onContext(Context context) {
+		public void onContextUpdate(Context context) {
 			//IGNORE ambiguous context
-		}
-
-		@Override
-		public Context currentContext() {
-			return parent.context;
 		}
 
 		@Override

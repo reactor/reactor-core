@@ -317,8 +317,7 @@ public class MonoDelayUntilTest {
 		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		@SuppressWarnings("unchecked")
 		Function<? super String, ? extends Publisher<?>>[] otherGenerators = new Function[3];
-		MonoDelayUntil.DelayUntilCoordinator<String> test = new MonoDelayUntil.DelayUntilCoordinator<>(
-				actual, true, otherGenerators);
+		MonoDelayUntil.DelayUntilCoordinator<String> test = new MonoDelayUntil.DelayUntilCoordinator<>(actual, true, otherGenerators);
 		Subscription subscription = Operators.emptySubscription();
 		test.onSubscribe(subscription);
 

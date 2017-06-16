@@ -113,9 +113,9 @@ final class FluxTakeUntilOther<T, U> extends FluxOperator<T, T> {
 		}
 	}
 
-	static final class TakeUntilMainSubscriber<T>
-			extends CachedContextProducer<T>
-			implements InnerOperator<T, T> {
+	static final class TakeUntilMainSubscriber<T> implements InnerOperator<T, T> {
+
+		final Subscriber<? super T> actual;
 
 		volatile Subscription       main;
 
@@ -129,7 +129,7 @@ final class FluxTakeUntilOther<T, U> extends FluxOperator<T, T> {
 		  AtomicReferenceFieldUpdater.newUpdater(TakeUntilMainSubscriber.class, Subscription.class, "other");
 
 		TakeUntilMainSubscriber(Subscriber<? super T> actual) {
-			super(Operators.serialize(actual));
+			this.actual = Operators.serialize(actual);
 		}
 
 		@Override
@@ -138,7 +138,12 @@ final class FluxTakeUntilOther<T, U> extends FluxOperator<T, T> {
 			if (key == ScannableAttr.PARENT) return main;
 			if (key == BooleanAttr.CANCELLED) return main == Operators.cancelledSubscription();
 
-			return super.scanUnsafe(key);
+			return InnerOperator.super.scanUnsafe(key);
+		}
+
+		@Override
+		public final Subscriber<? super T> actual() {
+			return actual;
 		}
 
 		@Override

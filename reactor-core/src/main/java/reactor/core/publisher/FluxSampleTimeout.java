@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -31,7 +32,6 @@ import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Emits the last value from upstream only if there were no newer values emitted
@@ -74,13 +74,11 @@ final class FluxSampleTimeout<T, U> extends FluxOperator<T, T> {
 		source.subscribe(main, ctx);
 	}
 
-	static final class SampleTimeoutMain<T, U>
-			extends CachedContextProducer<T>
-			implements InnerOperator<T, T> {
+	static final class SampleTimeoutMain<T, U>implements InnerOperator<T, T> {
 
 		final Function<? super T, ? extends Publisher<U>> throttler;
-
-		final Queue<SampleTimeoutOther<T, U>> queue;
+		final Queue<SampleTimeoutOther<T, U>>             queue;
+		final Subscriber<? super T>                       actual;
 
 		volatile Subscription s;
 
@@ -126,7 +124,7 @@ final class FluxSampleTimeout<T, U> extends FluxOperator<T, T> {
 		SampleTimeoutMain(Subscriber<? super T> actual,
 				Function<? super T, ? extends Publisher<U>> throttler,
 				Queue<SampleTimeoutOther<T, U>> queue) {
-			super(actual);
+			this.actual = actual;
 			this.throttler = throttler;
 			this.queue = queue;
 		}
@@ -147,6 +145,11 @@ final class FluxSampleTimeout<T, U> extends FluxOperator<T, T> {
 			if (key == IntAttr.BUFFERED) return queue.size();
 
 			return InnerOperator.super.scanUnsafe(key);
+		}
+
+		@Override
+		public final Subscriber<? super T> actual() {
+			return actual;
 		}
 
 		@Override

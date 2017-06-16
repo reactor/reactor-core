@@ -16,16 +16,17 @@
 
 package reactor.core.publisher;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -34,7 +35,6 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.context.Context;
 import reactor.util.context.ContextRelay;
-import javax.annotation.Nullable;
 
 /**
  * Groups upstream items into their own Publisher sequence based on a key selector.
@@ -93,21 +93,16 @@ final class FluxGroupBy<T, K, V> extends FluxOperator<T, GroupedFlux<K, V>>
 	}
 
 	static final class GroupByMain<T, K, V>
-			extends CachedContextProducer<GroupedFlux<K, V>>
 			implements QueueSubscription<GroupedFlux<K, V>>,
 			           InnerOperator<T, GroupedFlux<K, V>> {
 
-		final Function<? super T, ? extends K> keySelector;
-
-		final Function<? super T, ? extends V> valueSelector;
-
-		final Queue<GroupedFlux<K, V>> queue;
-
-		final Supplier<? extends Queue<V>> groupQueueSupplier;
-
-		final int prefetch;
-
-		final ConcurrentMap<K, UnicastGroupedFlux<K, V>> groupMap;
+		final Function<? super T, ? extends K>      keySelector;
+		final Function<? super T, ? extends V>      valueSelector;
+		final Queue<GroupedFlux<K, V>>              queue;
+		final Supplier<? extends Queue<V>>          groupQueueSupplier;
+		final int                                   prefetch;
+		final Map<K, UnicastGroupedFlux<K, V>>      groupMap;
+		final Subscriber<? super GroupedFlux<K, V>> actual;
 
 		volatile int wip;
 
@@ -148,7 +143,7 @@ final class FluxGroupBy<T, K, V> extends FluxOperator<T, GroupedFlux<K, V>>
 				int prefetch,
 				Function<? super T, ? extends K> keySelector,
 				Function<? super T, ? extends V> valueSelector) {
-			super(actual);
+			this.actual = actual;
 			this.queue = queue;
 			this.groupQueueSupplier = groupQueueSupplier;
 			this.prefetch = prefetch;
@@ -156,6 +151,11 @@ final class FluxGroupBy<T, K, V> extends FluxOperator<T, GroupedFlux<K, V>>
 			this.keySelector = keySelector;
 			this.valueSelector = valueSelector;
 			GROUP_COUNT.lazySet(this, 1);
+		}
+
+		@Override
+		public final Subscriber<? super GroupedFlux<K, V>> actual() {
+			return actual;
 		}
 
 		@Override

@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -33,7 +34,6 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Combines the latest values from multiple sources through a function.
@@ -175,16 +175,13 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 	}
 
 	static final class CombineLatestCoordinator<T, R>
-			extends CachedContextProducer<R>
-			implements QueueSubscription<R> {
+			implements QueueSubscription<R>, InnerProducer<R> {
 
-		final Function<Object[], R> combiner;
-
+		final Function<Object[], R>   combiner;
 		final CombineLatestInner<T>[] subscribers;
-
-		final Queue<SourceAndArray> queue;
-
-		final Object[]              latest;
+		final Queue<SourceAndArray>   queue;
+		final Object[]                latest;
+		final Subscriber<? super R>   actual;
 
 		boolean outputFused;
 
@@ -223,7 +220,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 				int n,
 				Queue<SourceAndArray> queue,
 				int bufferSize) {
-			super(actual);
+		 	this.actual = actual;
 			this.combiner = combiner;
 			@SuppressWarnings("unchecked") CombineLatestInner<T>[] a =
 					new CombineLatestInner[n];
@@ -233,6 +230,11 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 			this.subscribers = a;
 			this.latest = new Object[n];
 			this.queue = queue;
+		}
+
+		@Override
+		public final Subscriber<? super R> actual() {
+			return actual;
 		}
 
 		@Override
@@ -269,7 +271,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 			if (key == ThrowableAttr.ERROR) return error;
 			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
 
-			return super.scanUnsafe(key);
+			return InnerProducer.super.scanUnsafe(key);
 		}
 
 		void subscribe(Publisher<? extends T>[] sources, int n) {

@@ -65,10 +65,10 @@ final class FluxSampleFirst<T, U> extends FluxOperator<T, T> {
 		return Integer.MAX_VALUE;
 	}
 
-	static final class SampleFirstMain<T, U> extends CachedContextProducer<T>
-			implements InnerOperator<T, T> {
+	static final class SampleFirstMain<T, U> implements InnerOperator<T, T> {
 
 		final Function<? super T, ? extends Publisher<U>> throttler;
+		final Subscriber<? super T>                       actual;
 
 		volatile boolean gate;
 
@@ -106,8 +106,13 @@ final class FluxSampleFirst<T, U> extends FluxOperator<T, T> {
 
 		SampleFirstMain(Subscriber<? super T> actual,
 				Function<? super T, ? extends Publisher<U>> throttler) {
-			super(actual);
+			this.actual = actual;
 			this.throttler = throttler;
+		}
+
+		@Override
+		public final Subscriber<? super T> actual() {
+			return actual;
 		}
 
 		@Override

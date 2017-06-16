@@ -194,9 +194,9 @@ final class FluxWindowTimeOrSize<T> extends FluxOperator<T, Flux<T>> {
 		}
 
 		@Override
-		public void onContext(Context context) {
+		public void onContextUpdate(Context context) {
 			ctx = context;
-			InnerOperator.super.onContext(context);
+			InnerOperator.super.onContextUpdate(context);
 		}
 
 		//this is necessary so that the case where timer is rejected from the beginning is handled correctly
