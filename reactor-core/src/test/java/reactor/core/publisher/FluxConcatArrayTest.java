@@ -26,8 +26,6 @@ import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.function.Tuple2;
-import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

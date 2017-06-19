@@ -19,7 +19,7 @@ package reactor.util.function
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-object O1; object O2; object O3; object O4;
+object O1; object O2; object O3; object O4
 object O5; object O6; object O7; object O8
 
 class TupleDestructuringTests {

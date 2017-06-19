@@ -24,8 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.assertj.core.api.Assertions;
-import org.assertj.core.internal.Predicates;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;

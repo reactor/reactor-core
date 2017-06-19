@@ -17,7 +17,6 @@
 package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 import reactor.test.StepVerifier;
