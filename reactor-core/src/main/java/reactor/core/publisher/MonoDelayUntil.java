@@ -77,7 +77,7 @@ final class MonoDelayUntil<T> extends Mono<T> {
 		Function<? super T, ? extends Publisher<?>>[] newTriggers = new Function[oldTriggers.length + 1];
 		System.arraycopy(oldTriggers, 0, newTriggers, 0, oldTriggers.length);
 		newTriggers[oldTriggers.length] = triggerGenerator;
-		return new MonoDelayUntil<>(this.delayError ? true : delayError, this.source, newTriggers);
+		return new MonoDelayUntil<>(this.delayError || delayError, this.source, newTriggers);
 	}
 
 	@Override
