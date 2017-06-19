@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.junit.Assert;
@@ -80,13 +81,13 @@ public class FluxBufferWhenTest {
 
 		sp4.onComplete();
 
-		ts.assertValues(Arrays.asList(2, 3, 4), Arrays.asList(6))
+		ts.assertValues(Arrays.asList(2, 3, 4), Collections.singletonList(6))
 		  .assertNoError()
 		  .assertNotComplete();
 
 		sp1.onComplete();
 
-		ts.assertValues(Arrays.asList(2, 3, 4), Arrays.asList(6))
+		ts.assertValues(Arrays.asList(2, 3, 4), Collections.singletonList(6))
 		  .assertNoError()
 		  .assertComplete();
 	}
@@ -162,8 +163,7 @@ public class FluxBufferWhenTest {
 
 		//"the collected overlapping lists are available"
 		assertThat(res.block()).containsExactly(Arrays.asList(3, 5),
-				Arrays.asList(5),
-				Arrays.asList());
+				Collections.singletonList(5), Collections.emptyList());
 	}
 
 	Flux<List<Integer>> scenario_bufferWillSubdivideAnInputFluxOverlapTime() {
@@ -261,6 +261,7 @@ public class FluxBufferWhenTest {
 		FluxBufferWhen.BufferStartEndMainSubscriber<String, Integer, Long, List<String>> test = new FluxBufferWhen.BufferStartEndMainSubscriber<>(
 				actual, ArrayList::new, QueueSupplier.<List<String>>one().get(), u -> Mono.just(1L));
 		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
 		test.cancel();
 		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
 	}
@@ -268,10 +269,11 @@ public class FluxBufferWhenTest {
 
 	@Test
 	public void scanStartEndEnder() {
+		//noinspection ConstantConditions
 		FluxBufferWhen.BufferStartEndMainSubscriber<String, Integer, Long, List<String>> main = new FluxBufferWhen.BufferStartEndMainSubscriber<>(
 				null, ArrayList::new, QueueSupplier.<List<String>>one().get(), u -> Mono.just(1L));
 
-		FluxBufferWhen.BufferStartEndEnder test = new FluxBufferWhen.BufferStartEndEnder(main, Arrays.asList("foo", "bar"), 1);
+		FluxBufferWhen.BufferStartEndEnder test = new FluxBufferWhen.BufferStartEndEnder<>(main, Arrays.asList("foo", "bar"), 1);
 
 		test.request(4); //request is forwarded directly to parent, no parent = we track it
 		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(4L);
@@ -293,10 +295,11 @@ public class FluxBufferWhenTest {
 
 	@Test
 	public void scanStartEndStarter() {
+		//noinspection ConstantConditions
 		FluxBufferWhen.BufferStartEndMainSubscriber<String, Integer, Long, List<String>> main = new FluxBufferWhen.BufferStartEndMainSubscriber<>(
 				null, ArrayList::new, QueueSupplier.<List<String>>one().get(), u -> Mono.just(1L));
 
-		FluxBufferWhen.BufferStartEndStarter test = new FluxBufferWhen.BufferStartEndStarter(main);
+		FluxBufferWhen.BufferStartEndStarter test = new FluxBufferWhen.BufferStartEndStarter<>(main);
 
 		test.request(4); //request is forwarded directly to parent, no parent = we track it
 		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(4L);

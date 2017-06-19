@@ -57,7 +57,8 @@ public class ExceptionTests {
 
 	@Test
 	public void multipleWithNullVararg() {
-		assertThat(Exceptions.multiple(null))
+		//noinspection ConstantConditions
+		assertThat(Exceptions.multiple((Throwable[]) null))
 				.isInstanceOf(RuntimeException.class)
 				.hasMessage("Multiple exceptions")
 	            .hasNoSuppressedExceptions();

@@ -850,7 +850,8 @@ public class FluxPeekFuseableTest {
 
     @Test
     public void scanFuseableConditionalSubscriber() {
-        Fuseable.ConditionalSubscriber<Integer> actual = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+	    @SuppressWarnings("unchecked")
+	    Fuseable.ConditionalSubscriber<Integer> actual = Mockito.mock(Fuseable.ConditionalSubscriber.class);
         FluxPeek<Integer> peek = new FluxPeek<>(Flux.just(1), s -> {}, s -> {},
         		e -> {}, () -> {}, () -> {}, r -> {}, () -> {});
         FluxPeekFuseable.PeekFuseableConditionalSubscriber<Integer> test =

@@ -312,7 +312,8 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 
     @Test
     public void scanConditionalSubscriber() {
-        Fuseable.ConditionalSubscriber<String> actual = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+	    @SuppressWarnings("unchecked")
+	    Fuseable.ConditionalSubscriber<String> actual = Mockito.mock(Fuseable.ConditionalSubscriber.class);
         FluxMap.MapConditionalSubscriber<Integer, String> test = new FluxMap.MapConditionalSubscriber<>(actual, i -> String.valueOf(i));
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
@@ -343,7 +344,8 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 
     @Test
     public void scanFuseableConditionalSubscriber() {
-        Fuseable.ConditionalSubscriber<String> actual = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+	    @SuppressWarnings("unchecked")
+	    Fuseable.ConditionalSubscriber<String> actual = Mockito.mock(Fuseable.ConditionalSubscriber.class);
         FluxMapFuseable.MapFuseableConditionalSubscriber<Integer, String> test =
         		new FluxMapFuseable.MapFuseableConditionalSubscriber<>(actual, i -> String.valueOf(i));
         Subscription parent = Operators.emptySubscription();

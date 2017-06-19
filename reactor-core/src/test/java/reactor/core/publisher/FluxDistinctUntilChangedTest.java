@@ -249,6 +249,7 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 
 	@Test
 	public void scanConditionalSubscriber() {
+		@SuppressWarnings("unchecked")
 		Fuseable.ConditionalSubscriber<String> actual = Mockito.mock(Fuseable.ConditionalSubscriber.class);
 		FluxDistinctUntilChanged.DistinctUntilChangedConditionalSubscriber<String, Integer> test = new FluxDistinctUntilChanged.DistinctUntilChangedConditionalSubscriber<>(
 				actual, String::hashCode, Objects::equals);

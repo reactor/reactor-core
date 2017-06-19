@@ -314,8 +314,10 @@ public class MonoDelayUntilTest {
 	@Test
 	public void scanCoordinator() {
 		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		@SuppressWarnings("unchecked")
+		Function<? super String, ? extends Publisher<?>>[] otherGenerators = new Function[3];
 		MonoDelayUntil.DelayUntilCoordinator<String> test = new MonoDelayUntil.DelayUntilCoordinator<>(
-				actual, true, new Function[3]);
+				actual, true, otherGenerators);
 		Subscription subscription = Operators.emptySubscription();
 		test.onSubscribe(subscription);
 
@@ -339,8 +341,10 @@ public class MonoDelayUntilTest {
 	@Test
 	public void scanTrigger() {
 		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		@SuppressWarnings("unchecked")
+		Function<? super String, ? extends Publisher<?>>[] otherGenerators = new Function[3];
 		MonoDelayUntil.DelayUntilCoordinator<String> main = new MonoDelayUntil.DelayUntilCoordinator<>(
-				actual, false, new Function[3]);
+				actual, false, otherGenerators);
 
 		MonoDelayUntil.DelayUntilTrigger<String> test = new MonoDelayUntil.DelayUntilTrigger<>(main);
 

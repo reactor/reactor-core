@@ -292,9 +292,9 @@ public class MonoFilterWhenTest {
 	public void scanTerminatedOnlyTrueIfFilterTerminated() {
 		AtomicReference<Subscriber> subscriber = new AtomicReference<>();
 		TestPublisher<Boolean> filter = TestPublisher.create();
-		new MonoFilterWhen(new Mono() {
+		new MonoFilterWhen<>(new Mono<Integer>() {
 			@Override
-			public void subscribe(Subscriber s) {
+			public void subscribe(Subscriber<? super Integer> s) {
 				subscriber.set(s);
 				//NON-EMPTY SOURCE WILL TRIGGER FILTER SUBSCRIPTION
 				s.onNext(2);

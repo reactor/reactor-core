@@ -150,6 +150,7 @@ public class FluxIterableTest {
 
 	@Test
 	public void scanConditionalSubscription() {
+		@SuppressWarnings("unchecked")
 		Fuseable.ConditionalSubscriber<? super String> actual = Mockito.mock(Fuseable.ConditionalSubscriber.class);
         FluxIterable.IterableSubscriptionConditional<String> test =
 				new FluxIterable.IterableSubscriptionConditional<>(actual, Collections.singleton("test").iterator());

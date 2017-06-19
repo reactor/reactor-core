@@ -70,7 +70,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @NonNullApi
 public class GuideTests {
 
-	@Test
+	@Test @SuppressWarnings("unchecked")
 	public void introFutureHell() {
 		CompletableFuture<List<String>> ids = ifhIds(); // <1>
 

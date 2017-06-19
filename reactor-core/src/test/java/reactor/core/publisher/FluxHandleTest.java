@@ -401,7 +401,8 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
 
     @Test
     public void scanConditionalSubscriber() {
-    	Fuseable.ConditionalSubscriber<? super Object> subscriber = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+	    @SuppressWarnings("unchecked")
+	    Fuseable.ConditionalSubscriber<? super Object> subscriber = Mockito.mock(Fuseable.ConditionalSubscriber.class);
         FluxHandle.HandleConditionalSubscriber<String, String> test =
         		new FluxHandle.HandleConditionalSubscriber<>(subscriber, (a, b) -> {});
         Subscription parent = Operators.emptySubscription();
@@ -437,8 +438,9 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
 
     @Test
     public void scanFuseableConditionalSubscriber() {
-    	Fuseable.ConditionalSubscriber<? super Object> subscriber = Mockito.mock(Fuseable.ConditionalSubscriber.class);
-    	FluxHandleFuseable.HandleFuseableConditionalSubscriber<String, String> test =
+	    @SuppressWarnings("unchecked")
+	    Fuseable.ConditionalSubscriber<? super Object> subscriber = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+	    FluxHandleFuseable.HandleFuseableConditionalSubscriber<String, String> test =
         		new FluxHandleFuseable.HandleFuseableConditionalSubscriber<>(subscriber, (a, b) -> {});
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);

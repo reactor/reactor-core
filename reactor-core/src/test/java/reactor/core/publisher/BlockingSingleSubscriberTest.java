@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class BlockingSingleSubscriberTest {
 
-	BlockingSingleSubscriber test = new BlockingSingleSubscriber() {
+	BlockingSingleSubscriber<Object> test = new BlockingSingleSubscriber<Object>() {
 		@Override
 		public void onNext(Object o) { }
 

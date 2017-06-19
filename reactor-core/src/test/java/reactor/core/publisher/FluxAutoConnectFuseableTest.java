@@ -26,6 +26,7 @@ public class FluxAutoConnectFuseableTest {
 
 	@Test
 	public void scanMain() {
+		@SuppressWarnings("unchecked")
 		ConnectableFlux<String> source = Mockito.mock(ConnectableFlux.class);
 		Mockito.when(source.getPrefetch()).thenReturn(888);
 		FluxAutoConnectFuseable<String> test = new FluxAutoConnectFuseable<>(source, 123, d -> { });
