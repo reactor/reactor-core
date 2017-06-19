@@ -34,7 +34,8 @@ public class FluxErrorTest {
 
     @Test
     public void scanSubscription() {
-        Subscriber<String> subscriber = Mockito.mock(Subscriber.class);
+	    @SuppressWarnings("unchecked")
+	    Subscriber<String> subscriber = Mockito.mock(Subscriber.class);
         FluxError.ErrorSubscription test =
                 new FluxError.ErrorSubscription(subscriber, new IllegalStateException("boom"));
 
@@ -48,7 +49,8 @@ public class FluxErrorTest {
 
     @Test
     public void scanSubscriptionCancelled() {
-        Subscriber<String> subscriber = Mockito.mock(Subscriber.class);
+	    @SuppressWarnings("unchecked")
+	    Subscriber<String> subscriber = Mockito.mock(Subscriber.class);
         FluxError.ErrorSubscription test =
                 new FluxError.ErrorSubscription(subscriber, new IllegalStateException("boom"));
 

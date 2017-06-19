@@ -99,6 +99,7 @@ public class FluxArrayTest {
 
 	@Test
 	public void scanConditionalSubscription() {
+		@SuppressWarnings("unchecked")
 		Fuseable.ConditionalSubscriber<? super Object> subscriber = Mockito.mock(Fuseable.ConditionalSubscriber.class);
 
 		FluxArray.ArrayConditionalSubscription<Object> test =
@@ -126,6 +127,7 @@ public class FluxArrayTest {
 
 	@Test
 	public void scanConditionalSubscriptionRequested() {
+		@SuppressWarnings("unchecked")
 		Fuseable.ConditionalSubscriber<? super Object> subscriber = Mockito.mock(Fuseable.ConditionalSubscriber.class);
 		//the mock will not drain the request, so it can be tested
 		Mockito.when(subscriber.tryOnNext(Mockito.any()))
@@ -142,6 +144,7 @@ public class FluxArrayTest {
 
 	@Test
 	public void scanConditionalSubscriptionCancelled() {
+		@SuppressWarnings("unchecked")
 		Fuseable.ConditionalSubscriber<? super Object> subscriber = Mockito.mock(Fuseable.ConditionalSubscriber.class);
 
 		FluxArray.ArrayConditionalSubscription<Object> test =
@@ -154,6 +157,7 @@ public class FluxArrayTest {
 
 	@Test
 	public void scanSubscription() {
+		@SuppressWarnings("unchecked")
 		Subscriber<String> subscriber = Mockito.mock(Subscriber.class);
 		FluxArray.ArraySubscription<String> test =
 				new FluxArray.ArraySubscription<>(subscriber, new String[] {"foo", "bar", "baz"});
@@ -177,6 +181,7 @@ public class FluxArrayTest {
 
 	@Test
 	public void scanSubscriptionCancelled() {
+		@SuppressWarnings("unchecked")
 		Subscriber<String> subscriber = Mockito.mock(Subscriber.class);
 		FluxArray.ArraySubscription<String> test =
 				new FluxArray.ArraySubscription<>(subscriber, new String[] {"foo", "bar", "baz"});

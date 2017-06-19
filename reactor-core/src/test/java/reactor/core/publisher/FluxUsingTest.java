@@ -331,6 +331,7 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 
 	@Test
     public void scanConditionalSubscriber() {
+		@SuppressWarnings("unchecked")
 		Fuseable.ConditionalSubscriber<Integer> actual = Mockito.mock(Fuseable.ConditionalSubscriber.class);
 		FluxUsing.UsingConditionalSubscriber<Integer, String> test =
 				new FluxUsing.UsingConditionalSubscriber<>(actual, s -> {}, "", true);

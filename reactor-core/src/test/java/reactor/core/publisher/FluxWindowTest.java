@@ -629,7 +629,8 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 
     @Test
     public void scanOverlapSubscriberSmallBuffered() {
-        Queue<UnicastProcessor<Integer>> mockQueue = Mockito.mock(Queue.class);
+	    @SuppressWarnings("unchecked")
+	    Queue<UnicastProcessor<Integer>> mockQueue = Mockito.mock(Queue.class);
 
         Subscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWindow.WindowOverlapSubscriber<Integer> test = new FluxWindow.WindowOverlapSubscriber<Integer>(actual,
@@ -645,7 +646,8 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 
     @Test
     public void scanOverlapSubscriberLargeBuffered() {
-        Queue<UnicastProcessor<Integer>> mockQueue = Mockito.mock(Queue.class);
+	    @SuppressWarnings("unchecked")
+	    Queue<UnicastProcessor<Integer>> mockQueue = Mockito.mock(Queue.class);
 
         Subscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWindow.WindowOverlapSubscriber<Integer> test = new FluxWindow.WindowOverlapSubscriber<Integer>(actual,

@@ -29,16 +29,16 @@ public class DelegateProcessorTest {
 
 	@Test
 	public void scanReturnsDownStreamForParentElseDelegates() {
-		Publisher downstream = Mockito.mock(Publisher.class);
+		Publisher<?> downstream = Mockito.mock(Publisher.class);
 
 		IllegalStateException boom = new IllegalStateException("boom");
-		InnerConsumer upstream = Mockito.mock(InnerConsumer.class);
+		InnerConsumer<?> upstream = Mockito.mock(InnerConsumer.class);
 		when(upstream.scanUnsafe(Scannable.ThrowableAttr.ERROR))
 				.thenReturn(boom);
 		when(upstream.scanUnsafe(Scannable.BooleanAttr.DELAY_ERROR))
 				.thenReturn(true);
 
-		DelegateProcessor processor = new DelegateProcessor(
+		DelegateProcessor<?, ?> processor = new DelegateProcessor<>(
 				downstream, upstream);
 
 		assertThat(processor.scan(Scannable.ScannableAttr.PARENT)).isSameAs(downstream);

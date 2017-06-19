@@ -19,6 +19,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
@@ -63,12 +65,14 @@ public class MonoStreamCollectorTest {
 	@Test
 	public void scanStreamCollectorSubscriber() {
 		Subscriber<List<String>> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		Collector<String, Integer, List<String>> collector = (Collector<String, Integer, List<String>>) Collectors.<String>toList();
+		Collector<String, ?, List<String>> collector = Collectors.toList();
+		@SuppressWarnings("unchecked")
+		BiConsumer<Integer, String> accumulator = (BiConsumer<Integer, String>) collector.accumulator();
+		@SuppressWarnings("unchecked")
+		Function<Integer, List<String>> finisher = (Function<Integer, List<String>>) collector.finisher();
+
 		MonoStreamCollector.StreamCollectorSubscriber<String, Integer, List<String>> test = new MonoStreamCollector.StreamCollectorSubscriber<>(
-				actual,
-				1,
-				collector.accumulator(),
-				collector.finisher());
+				actual, 1, accumulator, finisher);
 		Subscription parent = Operators.emptySubscription();
 
 		test.onSubscribe(parent);

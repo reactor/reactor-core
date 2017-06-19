@@ -143,6 +143,7 @@ public class FluxRangeTest {
 
 	@Test
 	public void scanConditionalSubscription() {
+		@SuppressWarnings("unchecked")
 		Fuseable.ConditionalSubscriber<Integer> actual = Mockito.mock(Fuseable.ConditionalSubscriber.class);
 		FluxRange.RangeSubscriptionConditional test = new FluxRange.RangeSubscriptionConditional(actual, 1L, 10L);
 

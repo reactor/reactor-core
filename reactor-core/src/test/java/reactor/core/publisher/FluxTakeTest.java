@@ -612,6 +612,7 @@ public class FluxTakeTest {
 
 	@Test
     public void scanConditionalSubscriber() {
+		@SuppressWarnings("unchecked")
 		Fuseable.ConditionalSubscriber<Integer> actual = Mockito.mock(Fuseable.ConditionalSubscriber.class);
 		FluxTake.TakeConditionalSubscriber<Integer> test = new FluxTake.TakeConditionalSubscriber<>(actual, 5);
         Subscription parent = Operators.emptySubscription();

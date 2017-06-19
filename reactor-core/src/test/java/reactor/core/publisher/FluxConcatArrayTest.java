@@ -238,7 +238,9 @@ public class FluxConcatArrayTest {
 	@Test
 	public void scanDelayErrorSubscriber() {
 		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		FluxConcatArray.ConcatArrayDelayErrorSubscriber<String> test = new FluxConcatArray.ConcatArrayDelayErrorSubscriber<>(actual, new Publisher[0]);
+		@SuppressWarnings("unchecked")
+		Publisher<String>[] emptyPub = (Publisher<String>[]) new Publisher[0];
+		FluxConcatArray.ConcatArrayDelayErrorSubscriber<String> test = new FluxConcatArray.ConcatArrayDelayErrorSubscriber<>(actual, emptyPub);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 

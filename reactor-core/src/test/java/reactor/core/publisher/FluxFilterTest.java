@@ -264,7 +264,8 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
 
     @Test
     public void scanConditionalSubscriber() {
-        Fuseable.ConditionalSubscriber<String> actual = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+	    @SuppressWarnings("unchecked")
+	    Fuseable.ConditionalSubscriber<String> actual = Mockito.mock(Fuseable.ConditionalSubscriber.class);
         FluxFilter.FilterConditionalSubscriber<String> test = new FluxFilter.FilterConditionalSubscriber<>(actual, t -> true);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);

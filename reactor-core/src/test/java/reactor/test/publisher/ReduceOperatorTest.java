@@ -246,7 +246,7 @@ public abstract class ReduceOperatorTest<I, O>
 		if(scenario.producerCount() == 0){
 			return (Flux<I>)Flux.empty();
 		}
-		return (Flux<I>)Flux.just(scenario.producingMapper.apply(0));
+		return Flux.just(scenario.producingMapper.apply(0));
 	}
 
 	@Override

@@ -442,6 +442,7 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void scanConditionalSubscriber() {
+		@SuppressWarnings("unchecked")
 		Fuseable.ConditionalSubscriber<String> actual = Mockito.mock(Fuseable.ConditionalSubscriber.class);
 		FluxDistinct.DistinctConditionalSubscriber<String, Integer, Set<Integer>> test =
 				new FluxDistinct.DistinctConditionalSubscriber<>(actual, new HashSet<>(), String::hashCode);

@@ -1281,6 +1281,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 	@Test
     public void scanConditionalSubscriber() {
+		@SuppressWarnings("unchecked")
 		Fuseable.ConditionalSubscriber<Integer> actual = Mockito.mock(Fuseable.ConditionalSubscriber.class);
         FluxPublishOn.PublishOnConditionalSubscriber<Integer> test =
         		new FluxPublishOn.PublishOnConditionalSubscriber<>(actual, Schedulers.single(),
