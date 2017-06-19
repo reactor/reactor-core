@@ -19,15 +19,14 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import javax.annotation.Nullable;
 
 /**
  * A base processor that exposes {@link Flux} API for {@link Processor}.
@@ -202,7 +201,9 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	public final FluxSink<IN> sink(FluxSink.OverflowStrategy strategy) {
 		Objects.requireNonNull(strategy, "strategy");
 		if (getBufferSize() == Integer.MAX_VALUE){
-			strategy = FluxSink.OverflowStrategy.IGNORE;
+			if (strategy != FluxSink.OverflowStrategy.IGNORE) {
+				throw new IllegalArgumentException("Cannot use overflow strategy of " + strategy + " on " + this + " with unlimited buffer");
+			}
 		}
 
 		FluxCreate.BaseSink<IN> s = FluxCreate.createSink(this, strategy);

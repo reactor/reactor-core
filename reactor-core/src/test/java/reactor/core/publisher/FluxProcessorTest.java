@@ -21,14 +21,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.assertj.core.api.Assertions;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.reactivestreams.Subscriber;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxProcessorTest {
@@ -260,5 +264,16 @@ public class FluxProcessorTest {
 		test.onError(new IllegalStateException("boom"));
 		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
 		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+	}
+
+	@Test
+	public void shouldFailWhenUsingNonIgnoreStrategyOnInfiniteBuffer() throws Exception {
+		FluxProcessor<String, String> test = UnicastProcessor.create();
+
+		assertThat(test.getBufferSize()).isEqualTo(Integer.MAX_VALUE);
+
+		Assertions.assertThatExceptionOfType(IllegalArgumentException.class)
+		          .isThrownBy(() -> test.sink(FluxSink.OverflowStrategy.BUFFER))
+		          .withMessage("Cannot use overflow strategy of BUFFER on UnicastProcessor with unlimited buffer");
 	}
 }
