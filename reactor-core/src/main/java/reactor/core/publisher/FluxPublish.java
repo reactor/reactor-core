@@ -119,7 +119,14 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 				c = u;
 			}
 
-			if (c.trySubscribe(inner)) {
+			if (c.add(inner)) {
+				if (inner.isCancelled()) {
+					c.remove(inner);
+				}
+				else {
+					inner.parent = c;
+				}
+				c.drain();
 				break;
 			}
 		}
@@ -360,20 +367,6 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 
 		boolean tryConnect() {
 			return connected == 0 && CONNECTED.compareAndSet(this, 0, 1);
-		}
-
-		boolean trySubscribe(PublishInner<T> inner) {
-			if (add(inner)) {
-				if (inner.isCancelled()) {
-					remove(inner);
-				}
-				else {
-					inner.parent = this;
-				}
-				drain();
-				return true;
-			}
-			return false;
 		}
 
 		final void drain() {

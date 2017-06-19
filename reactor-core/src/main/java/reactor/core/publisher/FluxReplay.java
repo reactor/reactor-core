@@ -1011,9 +1011,9 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		ReplaySubscriber<T> s;
 		for (; ; ) {
 			s = connection;
-			if (s == null || s.isTerminated()) {
+			if (s == null) {
 				ReplaySubscriber<T> u = newState();
-				if (!CONNECTION.compareAndSet(this, s, u)) {
+				if (!CONNECTION.compareAndSet(this, null, u)) {
 					continue;
 				}
 
@@ -1033,25 +1033,29 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 	@Override
 	public void subscribe(Subscriber<? super T> s) {
 		ReplayInner<T> inner = new ReplayInner<>(s);
-		s.onSubscribe(inner);
 		for (; ; ) {
-			if (inner.isCancelled()) {
-				break;
-			}
-
 			ReplaySubscriber<T> c = connection;
-			if (c == null || c.isTerminated()) {
+			if (c == null) {
 				ReplaySubscriber<T> u = newState();
-				if (!CONNECTION.compareAndSet(this, c, u)) {
+				if (!CONNECTION.compareAndSet(this, null, u)) {
 					continue;
 				}
 
 				c = u;
 			}
 
-			if (c.trySubscribe(inner)) {
-				break;
+			c.add(inner);
+
+			s.onSubscribe(inner);
+
+			if (inner.isCancelled()) {
+				c.remove(inner);
 			}
+
+			inner.parent = c;
+			c.buffer.replay(inner);
+
+			break;
 		}
 	}
 
@@ -1137,9 +1141,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 			else {
 				b.onError(t);
 
-				ReplaySubscription<T>[] a = subscribers;
-
-				for (ReplaySubscription<T> rs : a) {
+				for (ReplaySubscription<T> rs : terminate()) {
 					b.replay(rs);
 				}
 			}
@@ -1151,9 +1153,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 			if (!b.isDone()) {
 				b.onComplete();
 
-				ReplaySubscription<T>[] a = subscribers;
-
-				for (ReplaySubscription<T> rs : a) {
+				for (ReplaySubscription<T> rs : terminate()) {
 					b.replay(rs);
 				}
 			}
@@ -1166,18 +1166,16 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 			}
 			if (Operators.terminate(S, this)) {
 				cancelled = true;
-				if (WIP.getAndIncrement(this) != 0) {
-					return;
-				}
-				disconnectAction();
-			}
-		}
 
-		void disconnectAction() {
-			CancellationException ex = new CancellationException("Disconnected");
-			buffer.onError(ex);
-			for (ReplaySubscription<T> inner : terminate()) {
-				inner.actual().onError(ex);
+				CONNECTION.lazySet(parent, null);
+
+				CancellationException ex = new CancellationException("Disconnected");
+				buffer.onError(ex);
+
+				for (ReplaySubscription<T> inner : terminate()) {
+					buffer.replay(inner);
+				}
+
 			}
 		}
 
@@ -1263,20 +1261,6 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 			return connected == 0 && CONNECTED.compareAndSet(this, 0, 1);
 		}
 
-		boolean trySubscribe(ReplayInner<T> inner) {
-			if (add(inner)) {
-				if (inner.isCancelled()) {
-					remove(inner);
-				}
-				else {
-					inner.parent = this;
-					buffer.replay(inner);
-				}
-				return true;
-			}
-			return false;
-		}
-
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
@@ -1298,7 +1282,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 		@Override
 		public boolean isDisposed() {
-			return cancelled || buffer.isDone();
+			return cancelled;
 		}
 
 	}

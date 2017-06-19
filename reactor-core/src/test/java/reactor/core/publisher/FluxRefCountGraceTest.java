@@ -25,6 +25,7 @@ import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
+import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -204,6 +205,28 @@ public class FluxRefCountGraceTest {
 		//since the TestPublisher doesn't cleanup on termination, we can re-evaluate the doFinally
 		publisher.complete();
 		assertThat(termination.get()).isEqualTo(SignalType.ON_COMPLETE);
+	}
+
+	@Test
+	public void shouldNotRetainSubscriptionToSourceWhenComplete() throws Exception {
+		VirtualTimeScheduler scheduler = VirtualTimeScheduler.create();
+		Duration gracePeriod = Duration.ofMillis(10);
+		Flux<String> f = Flux.just("hello world")
+		                     .replay(1)
+		                     .refCount(1, gracePeriod, scheduler);
+
+		AssertSubscriber<String> s = AssertSubscriber.create();
+		f.subscribe(s);
+
+		scheduler.advanceTimeBy(gracePeriod);
+
+		StepVerifier.create(f.next())
+		            .expectNext("hello world")
+		            .verifyComplete();
+
+		scheduler.advanceTimeBy(gracePeriod);
+
+		s.assertValueCount(1).assertNoError().assertComplete();
 	}
 
 	@Test
