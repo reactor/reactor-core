@@ -28,6 +28,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import reactor.core.Disposable;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
@@ -247,7 +248,8 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		                                         .delayElements(Duration.ofMillis(1000))
 		                                         .replay(2, Duration.ofMillis(2000))
 		                                         .autoConnect()
-		                                         .elapsed();
+		                                         .elapsed()
+				.log();
 
 		StepVerifier.create(source)
 		            .expectFusion(Fuseable.ANY)
@@ -267,10 +269,10 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void cancel() {
-		ConnectableFlux<Integer> replay = Flux.range(1, 5)
+		ConnectableFlux<Integer> replay = UnicastProcessor.<Integer>create()
 		                                             .replay(2);
-		Disposable subscribed = replay.subscribe(v -> {},
-				e -> fail(e.toString()));
+
+		replay.subscribe(v -> {}, e -> { throw Exceptions.propagate(e); });
 
 		Disposable connected = replay.connect();
 
@@ -278,7 +280,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 		//propagated by connect().dipose()
 		assertThatExceptionOfType(RuntimeException.class)
 				.isThrownBy(connected::dispose)
-	            .withMessage("java.util.concurrent.CancellationException: Disconnected");
+	            .withMessage("Disconnected");
 
 		boolean cancelled = ((FluxReplay.ReplaySubscriber) connected).cancelled;
 		assertThat(cancelled).isTrue();
@@ -299,7 +301,9 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
         FluxReplay<Integer> main = new FluxReplay<>(Flux.just(1), 2, 1000, Schedulers.single());
         FluxReplay.ReplayInner<Integer> test = new FluxReplay.ReplayInner<>(actual);
         FluxReplay.ReplaySubscriber<Integer> parent = new FluxReplay.ReplaySubscriber<>(new FluxReplay.UnboundedReplayBuffer<>(10), main);
-        parent.trySubscribe(test);
+        parent.add(test);
+        test.parent = parent;
+        parent.buffer.replay(test);
 
         Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
         Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
