@@ -15,6 +15,7 @@
  */
 
 buildscript {
+  ext.kotlinVersion = '1.1.2-5'
   repositories {
 	maven { url "http://repo.spring.io/plugins-release" }
   }
@@ -22,7 +23,8 @@ buildscript {
 	classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.7',
 			'io.spring.gradle:spring-io-plugin:0.0.4.RELEASE',
 			'com.github.jengelman.gradle.plugins:shadow:1.2.0',
-			'org.asciidoctor:asciidoctorj-pdf:1.5.0-alpha.11'
+			'org.asciidoctor:asciidoctorj-pdf:1.5.0-alpha.11',
+			"org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}"
   }
 }
 
@@ -61,6 +63,7 @@ ext {
 
 configure(subprojects) { p ->
   apply plugin: 'java'
+  apply plugin: 'kotlin'
   apply plugin: 'jacoco'
   apply plugin: 'propdeps'
   apply plugin: 'osgi'
@@ -122,6 +125,14 @@ configure(subprojects) { p ->
   compileTestJava {
 	sourceCompatibility = 1.8
 	targetCompatibility = 1.8
+  }
+
+  compileKotlin {
+	kotlinOptions.jvmTarget = "1.8"
+  }
+
+  compileTestKotlin {
+	kotlinOptions.jvmTarget = "1.8"
   }
 
   if (JavaVersion.current().isJava8Compatible()) {
@@ -189,6 +200,8 @@ project('reactor-core') {
 
 	//Optional Logging Operator
 	optional "org.slf4j:slf4j-api:$slf4jVersion"
+
+	optional("org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}")
 
 	//Optional JDK 9 Converter
 	jsr166backport "io.projectreactor:jsr166:1.0.0.RELEASE"
