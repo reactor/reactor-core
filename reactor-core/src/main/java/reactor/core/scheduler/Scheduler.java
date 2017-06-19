@@ -29,7 +29,8 @@ import reactor.core.Disposable;
  * {@link ScheduledExecutorService} should instantiate it through a {@link Supplier}
  * passed through the relevant {@link Schedulers} hook
  * ({@link Schedulers#decorateExecutorService(String, Supplier)} or
- * {@link Schedulers#decorateScheduledExecutorService(String, Supplier)}).
+ * {@link Schedulers#decorateScheduledExecutorService(String, Supplier)} or
+ * {@link Schedulers#decorateForkJoinPool(String, Supplier)}).
  *
  * @author Stephane Maldini
  * @author Simon Baslé
@@ -97,18 +98,18 @@ public interface Scheduler extends Disposable {
 	default long now(TimeUnit unit) {
 		return unit.convert(System.currentTimeMillis(), TimeUnit.MILLISECONDS);
 	}
-	
+
 	/**
 	 * Creates a worker of this Scheduler that executed task in a strict
 	 * FIFO order, guaranteed non-concurrently with each other.
 	 * <p>
 	 * Once the Worker is no longer in use, one should call dispose() on it to
 	 * release any resources the particular Scheduler may have used.
-	 * 
+	 *
 	 * <p>Tasks scheduled with this worker run in FIFO order and strictly non-concurrently, but
 	 * there are no ordering guarantees between different Workers created from the same
 	 * Scheduler.
-	 * 
+	 *
 	 * @return the Worker instance.
 	 */
 	Worker createWorker();
@@ -195,7 +196,7 @@ public interface Scheduler extends Disposable {
 			return REJECTED;
 		}
 	}
-	
+
 	/**
 	 * Returned by the schedule() methods if the Scheduler or the Worker has ben shut down,
 	 * or is incapable of scheduling tasks with a delay/periodically (not "time capable").
