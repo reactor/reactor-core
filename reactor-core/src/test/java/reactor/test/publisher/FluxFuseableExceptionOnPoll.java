@@ -15,6 +15,8 @@
  */
 package reactor.test.publisher;
 
+import javax.annotation.Nullable;
+
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
@@ -106,6 +108,7 @@ final class FluxFuseableExceptionOnPoll<T> extends FluxSource<T, T>
 		}
 
 		@Override
+		@Nullable
 		public T poll() {
 			T t = qs.poll();
 			if (t != null) {

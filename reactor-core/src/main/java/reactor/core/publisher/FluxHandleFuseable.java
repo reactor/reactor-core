@@ -88,7 +88,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R> implements Fuseabl
 		}
 
 		@Override
-		public boolean tryOnNext(@Nullable T t) {
+		public boolean tryOnNext(T t) {
 			if (done) {
 				Operators.onNextDropped(t);
 				return true;
@@ -392,7 +392,7 @@ final class FluxHandleFuseable<T, R> extends FluxSource<T, R> implements Fuseabl
 		}
 
 		@Override
-		public boolean tryOnNext(@Nullable T t) {
+		public boolean tryOnNext(T t) {
 			if (done) {
 				Operators.onNextDropped(t);
 				return true;

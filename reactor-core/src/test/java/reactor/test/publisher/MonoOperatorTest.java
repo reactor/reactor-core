@@ -22,6 +22,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 
+import javax.annotation.Nullable;
+
 import org.reactivestreams.Subscription;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -51,7 +53,7 @@ public abstract class MonoOperatorTest<I, O>
 			return new Scenario<>(scenario, new Exception("scenario:"));
 		}
 
-		Scenario(Function<Mono<I>, ? extends Mono<O>> scenario, Exception stack) {
+		Scenario(@Nullable Function<Mono<I>, ? extends Mono<O>> scenario, @Nullable Exception stack) {
 			super(scenario, stack);
 		}
 
@@ -178,7 +180,7 @@ public abstract class MonoOperatorTest<I, O>
 		}
 
 		@Override
-		public Scenario<I, O> applyAllOptions(OperatorScenario<I, Mono<I>, O, Mono<O>> source) {
+		public Scenario<I, O> applyAllOptions(@Nullable OperatorScenario<I, Mono<I>, O, Mono<O>> source) {
 			super.applyAllOptions(source);
 			return this;
 		}

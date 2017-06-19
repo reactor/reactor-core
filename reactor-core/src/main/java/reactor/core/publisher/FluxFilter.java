@@ -102,7 +102,7 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public boolean tryOnNext(@Nullable T t) {
+		public boolean tryOnNext(T t) {
 			if (done) {
 				Operators.onNextDropped(t);
 				return false;
@@ -218,7 +218,7 @@ final class FluxFilter<T> extends FluxSource<T, T> {
 		}
 
 		@Override
-		public boolean tryOnNext(@Nullable T t) {
+		public boolean tryOnNext(T t) {
 			if (done) {
 				Operators.onNextDropped(t);
 				return false;

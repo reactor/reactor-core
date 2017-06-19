@@ -33,6 +33,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import javax.annotation.Nullable;
+
 import org.assertj.core.api.Assertions;
 import org.hamcrest.CoreMatchers;
 import org.junit.AfterClass;
@@ -1314,6 +1316,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		}
 
 		@Override
+		@Nullable
 		public Worker createWorker() {
 			return null;
 		}

@@ -21,6 +21,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.Nullable;
+
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Condition;
 import org.junit.Test;
@@ -741,12 +743,12 @@ public class TopicProcessorTest {
 
 	private void assertProcessor(TopicProcessor<Integer> processor,
 			boolean shared,
-			String name,
-			Integer bufferSize,
-			WaitStrategy waitStrategy,
-			Boolean autoCancel,
-			ExecutorService executor,
-			ExecutorService requestTaskExecutor) {
+			@Nullable String name,
+			@Nullable Integer bufferSize,
+			@Nullable WaitStrategy waitStrategy,
+			@Nullable Boolean autoCancel,
+			@Nullable ExecutorService executor,
+			@Nullable ExecutorService requestTaskExecutor) {
 
 		String expectedName = name != null ? name : TopicProcessor.class.getSimpleName();
 		int expectedBufferSize = bufferSize != null ? bufferSize : QueueSupplier.SMALL_BUFFER_SIZE;

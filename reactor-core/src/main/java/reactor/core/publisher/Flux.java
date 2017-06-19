@@ -3854,9 +3854,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
+	 * Transform the signals emitted by this {@link Flux} asynchronously into Publishers,
 	 * then flatten these inner publishers into a single {@link Flux} through merging,
-	 * which allow them to interleave.
+	 * which allow them to interleave. Note that at least one of the signal mappers must
+	 * be provided, and all provided mappers must produce a publisher.
 	 * <p>
 	 * There are three dimensions to this operator that can be compared with
 	 * {@link #flatMapSequential(Function) flatMapSequential} and {@link #concatMap(Function) concatMap}:
@@ -3873,16 +3874,20 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/flatmaps.png" alt="">
 	 * <p>
-	 * @param mapperOnNext the {@link Function} to call on next data and returning a sequence to merge
-	 * @param mapperOnError the {@link Function} to call on error signal and returning a sequence to merge
-	 * @param mapperOnComplete the {@link Function} to call on complete signal and returning a sequence to merge
+	 * @param mapperOnNext the {@link Function} to call on next data and returning a sequence to merge.
+	 * Use {@literal null} to ignore (provided at least one other mapper is specified).
+	 * @param mapperOnError the {@link Function} to call on error signal and returning a sequence to merge.
+	 * Use {@literal null} to ignore (provided at least one other mapper is specified).
+	 * @param mapperOnComplete the {@link Function} to call on complete signal and returning a sequence to merge.
+	 * Use {@literal null} to ignore (provided at least one other mapper is specified).
 	 * @param <R> the output {@link Publisher} type target
 	 *
 	 * @return a new {@link Flux}
 	 */
-	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapperOnNext,
-			Function<? super Throwable, ? extends Publisher<? extends R>> mapperOnError,
-			Supplier<? extends Publisher<? extends R>> mapperOnComplete) {
+	public final <R> Flux<R> flatMap(
+			@Nullable Function<? super T, ? extends Publisher<? extends R>> mapperOnNext,
+			@Nullable Function<? super Throwable, ? extends Publisher<? extends R>> mapperOnError,
+			@Nullable Supplier<? extends Publisher<? extends R>> mapperOnComplete) {
 		return onAssembly(new FluxFlatMap<>(
 				new FluxMapSignal<>(this, mapperOnNext, mapperOnError, mapperOnComplete),
 				identityFunction(),

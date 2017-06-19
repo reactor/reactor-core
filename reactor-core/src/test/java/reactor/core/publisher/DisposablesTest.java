@@ -77,7 +77,7 @@ public class DisposablesTest {
 		Hooks.onErrorDropped(e -> assertThat(e).isInstanceOf(NullPointerException.class)
 		                                       .hasMessage("next is null"));
 		try {
-			assertThat(Disposables.validate(null, null));
+			assertThat(Disposables.validate(null, null)).isFalse();
 		} finally {
 			Hooks.resetOnErrorDropped();
 		}

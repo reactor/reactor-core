@@ -86,7 +86,9 @@ public class ScannableTest {
 
 	@Test
 	public void nullScan() {
-		assertThat(Scannable.from(null)).isNull();
+		assertThat(Scannable.from(null))
+				.isNotNull()
+				.isSameAs(Scannable.Attr.NULL_SCAN);
 	}
 
 	@Test

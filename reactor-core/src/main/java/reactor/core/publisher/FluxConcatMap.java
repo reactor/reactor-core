@@ -28,6 +28,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+
 import javax.annotation.Nullable;
 
 /**
@@ -118,7 +119,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 	}
 
 	static final class ConcatMapImmediate<T, R>
-			implements InnerOperator<T, R>, FluxConcatMapSupport<R> {
+			implements FluxConcatMapSupport<T, R> {
 
 		final Subscriber<? super R> actual;
 
@@ -184,7 +185,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 			if (key == IntAttr.BUFFERED) return queue != null ? queue.size() : 0;
 			if (key == ThrowableAttr.ERROR) return error;
 
-			return InnerOperator.super.scanUnsafe(key);
+			return FluxConcatMapSupport.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -447,7 +448,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 	}
 
 	static final class ConcatMapDelayed<T, R>
-			implements InnerOperator<T, R>, FluxConcatMapSupport<R> {
+			implements FluxConcatMapSupport<T, R> {
 
 		final Subscriber<? super R> actual;
 
@@ -518,7 +519,7 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 			if (key == ThrowableAttr.ERROR) return error;
 			if (key == BooleanAttr.DELAY_ERROR) return true;
 
-			return InnerOperator.super.scanUnsafe(key);
+			return FluxConcatMapSupport.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -741,7 +742,11 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 		}
 	}
 
-	interface FluxConcatMapSupport<T> {
+	/**
+	 * @param <I> input type consumed by the InnerOperator
+	 * @param <T> output type, as forwarded by the inner this helper supports
+	 */
+	interface FluxConcatMapSupport<I, T> extends InnerOperator<I, T> {
 
 		void innerNext(T value);
 
@@ -753,13 +758,21 @@ final class FluxConcatMap<T, R> extends FluxSource<T, R> {
 	static final class ConcatMapInner<R>
 			extends Operators.MultiSubscriptionSubscriber<R, R> {
 
-		final FluxConcatMapSupport<R> parent;
+		final FluxConcatMapSupport<?, R> parent;
 
 		long produced;
 
-		ConcatMapInner(FluxConcatMapSupport<R> parent) {
-			super(null); //TODO investigate null
+		ConcatMapInner(FluxConcatMapSupport<?, R> parent) {
+			super(Operators.emptySubscriber());
 			this.parent = parent;
+		}
+
+		@Nullable
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.ACTUAL) return parent;
+
+			return super.scanUnsafe(key);
 		}
 
 		@Override

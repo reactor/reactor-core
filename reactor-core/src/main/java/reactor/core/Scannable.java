@@ -20,7 +20,6 @@ import java.util.Iterator;
 import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
 import javax.annotation.Nullable;
 
 /**
@@ -42,7 +41,7 @@ public interface Scannable {
 
 	static Stream<? extends Scannable> recurse(Scannable _s, ScannableAttr key){
 		Scannable s = Scannable.from(_s.scan(key));
-		if(s == null){
+		if(!s.isScanAvailable()) {
 			return Stream.empty();
 		}
 		return StreamSupport.stream(Spliterators.spliteratorUnknownSize(new Iterator<Scannable>() {
@@ -50,7 +49,7 @@ public interface Scannable {
 
 			@Override
 			public boolean hasNext() {
-				return c != null;
+				return c != null && c.isScanAvailable();
 			}
 
 			@Override
@@ -86,6 +85,22 @@ public interface Scannable {
 		 * when the passed non-null reference is not a {@link Scannable}
 		 */
 		Scannable UNAVAILABLE_SCAN = new Scannable() {
+			@Override
+			public Object scanUnsafe(Attr key) {
+				return null;
+			}
+
+			@Override
+			public boolean isScanAvailable() {
+				return false;
+			}
+		};
+
+		/**
+		 * A constant that represents {@link Scannable} returned via {@link #from(Object)}
+		 * when the passed reference is null
+		 */
+		Scannable NULL_SCAN = new Scannable() {
 			@Override
 			public Object scanUnsafe(Attr key) {
 				return null;
@@ -313,21 +328,18 @@ public interface Scannable {
 	}
 
 	/**
-	 * Attempt to cast the Object to a {@link Scannable}. Return null if the
-	 * value is null, or a default object if the value is not a {@link Scannable}.
-	 * The default object is a constant {@link Scannable} that return false on
-	 * {@link Scannable#isScanAvailable}.
+	 * Attempt to cast the Object to a {@link Scannable}. Return {@link Attr#NULL_SCAN} if
+	 * the value is null, or {@link Attr#UNAVAILABLE_SCAN} if the value is not a {@link Scannable}.
+	 * Both are constant {@link Scannable} that return false on {@link Scannable#isScanAvailable}.
 	 *
 	 * @param o a reference to cast
 	 *
-	 * @return the casted {@link Scannable}, null or a default {@link Scannable} instance
-	 * that isn't actually scannable.
+	 * @return the casted {@link Scannable}, or one of two default {@link Scannable} instances
+	 * that aren't actually scannable (one for nulls, one for non-scannable references)
 	 */
-	@SuppressWarnings("unchecked")
-	@Nullable
 	static Scannable from(@Nullable Object o) {
 		if (o == null) {
-			return null;
+			return Attr.NULL_SCAN;
 		}
 		if (o instanceof Scannable) {
 			return ((Scannable) o);

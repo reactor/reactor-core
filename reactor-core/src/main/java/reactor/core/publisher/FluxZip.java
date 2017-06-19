@@ -80,6 +80,9 @@ final class FluxZip<T, R> extends Flux<R> {
 			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
 		}
 		this.sources = Objects.requireNonNull(sources, "sources");
+		if (sources.length == 0) {
+			throw new IllegalArgumentException("at least one source is required");
+		}
 		this.sourcesIterable = null;
 		this.zipper = Objects.requireNonNull(zipper, "zipper");
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
@@ -215,11 +218,9 @@ final class FluxZip<T, R> extends Flux<R> {
 	@SuppressWarnings("unchecked")
 	void handleArrayMode(Subscriber<? super R> s, Publisher<? extends T>[] srcs) {
 
+		Object[] scalars = null; //optimisation: if no scalar source, no array creation
 		int n = srcs.length;
 
-		//assert n > 0;
-
-		Object[] scalars = null;
 		int sc = 0;
 
 		for (int j = 0; j < n; j++) {
@@ -256,16 +257,31 @@ final class FluxZip<T, R> extends Flux<R> {
 			}
 		}
 
-		//TODO investigate can scalars be null?
 		handleBoth(s, srcs, scalars, n, sc);
 	}
 
+	/**
+	 * Handle values either from the iterable mode or array mode, taking into account the
+	 * possibility that some sources were already resolved (being {@link Callable}):
+	 *
+	 *  - if all sources have been resolved (sc == n), simply apply the mapper
+	 *  - if some sources have been resolved (n > sc > 0), use a coordinator with the sparse
+	 *  array, which will subscribe to unresolved sources only
+	 *  - if no source is resolved, none was callable: use a coordinator without the sparse
+	 *  array, resulting on an inner subscription for each source
+	 *
+	 * @param s the subscriber
+	 * @param srcs the array of sources, some of which can be callable
+	 * @param scalars a sparse array of values resolved for the callable sources, null if not resolved
+	 * @param n the number of sources
+	 * @param sc the number of already resolved sources in the scalars array
+	 */
 	void handleBoth(Subscriber<? super R> s,
 			Publisher<? extends T>[] srcs,
-			Object[] scalars,
+			@Nullable Object[] scalars,
 			int n,
 			int sc) {
-		if (sc != 0) {
+		if (sc != 0 && scalars != null) {
 			if (n != sc) {
 				ZipSingleCoordinator<T, R> coordinator =
 						new ZipSingleCoordinator<>(s, scalars, n, zipper);
@@ -295,7 +311,6 @@ final class FluxZip<T, R> extends Flux<R> {
 
 		}
 		else {
-
 			ZipCoordinator<T, R> coordinator =
 					new ZipCoordinator<>(s, zipper, n, queueSupplier, prefetch);
 

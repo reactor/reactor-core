@@ -86,7 +86,7 @@ public class MonoThenIgnoreTest {
 	@Test
 	public void scanThenAcceptInner() {
 		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MonoThenIgnore.ThenIgnoreMain<String> main = new MonoThenIgnore.ThenIgnoreMain<>(actual, new Publisher[0], null);
+		MonoThenIgnore.ThenIgnoreMain<String> main = new MonoThenIgnore.ThenIgnoreMain<>(actual, new Publisher[0], Mono.just("foo"));
 
 		MonoThenIgnore.ThenAcceptInner<String> test = new MonoThenIgnore.ThenAcceptInner<>(main);
 		Subscription parent = Operators.emptySubscription();
@@ -107,7 +107,7 @@ public class MonoThenIgnoreTest {
 	@Test
 	public void scanThenIgnoreInner() {
 		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MonoThenIgnore.ThenIgnoreMain<String> main = new MonoThenIgnore.ThenIgnoreMain<>(actual, new Publisher[0], null);
+		MonoThenIgnore.ThenIgnoreMain<String> main = new MonoThenIgnore.ThenIgnoreMain<>(actual, new Publisher[0], Mono.just("foo"));
 
 		MonoThenIgnore.ThenIgnoreInner test = new MonoThenIgnore.ThenIgnoreInner(main);
 		Subscription parent = Operators.emptySubscription();

@@ -225,7 +225,7 @@ final class FluxDoFinally<T> extends FluxSource<T, T> {
 
 		@Override
 		@SuppressWarnings("unchecked")
-		public boolean tryOnNext(@Nullable T t) {
+		public boolean tryOnNext(T t) {
 			return ((ConditionalSubscriber<? super T>)actual).tryOnNext(t);
 		}
 	}
@@ -240,7 +240,7 @@ final class FluxDoFinally<T> extends FluxSource<T, T> {
 
 		@Override
 		@SuppressWarnings("unchecked")
-		public boolean tryOnNext(@Nullable T t) {
+		public boolean tryOnNext(T t) {
 			return ((ConditionalSubscriber<? super T>)actual).tryOnNext(t);
 		}
 	}

@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
@@ -24,6 +26,7 @@ import org.reactivestreams.Subscription;
 
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
@@ -137,6 +140,18 @@ public class FluxSwitchMapTest {
 		ts.assertValues(10, 20, 300, 400)
 		  .assertNoError()
 		  .assertComplete();
+	}
+
+	@Test
+	public void switchRegularQueue() {
+		Flux<String> source = Flux.just("a", "bb", "ccc");
+		FluxSwitchMap<String, Integer> test = new FluxSwitchMap<>(
+				source, s -> Flux.range(1, s.length()),
+				ConcurrentLinkedQueue::new, 128);
+
+		StepVerifier.create(test)
+		            .expectNext(1, 1, 2, 1, 2, 3)
+		            .verifyComplete();
 	}
 
 	@Test
