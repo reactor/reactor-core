@@ -32,22 +32,13 @@ import reactor.util.context.Context;
  *        .then(d -> Mono.delay(Duration.ofSeconds(1))
  *        .block();
  * }
- * @deprecated This class will be package scoped in 3.1, consider moving to
- * {@link MonoOperator}. Use {@link Mono#fromDirect} to wrap
  * @param <I> delegate {@link Publisher} type
- * @param <O> produced type
  */
-@Deprecated
-public class MonoSource<I, O> extends Mono<O> implements Scannable {
+final class MonoSource<I> extends Mono<I> implements Scannable {
 
-	protected final Publisher<? extends I> source;
+	final Publisher<? extends I> source;
 
-	/**
-	 * Build a {@link MonoSource} wrapper around the passed parent {@link Publisher}
-	 *
-	 * @param source the {@link Publisher} to decorate
-	 */
-	protected MonoSource(Publisher<? extends I> source) {
+	MonoSource(Publisher<? extends I> source) {
 		this.source = Objects.requireNonNull(source);
 	}
 
@@ -57,22 +48,8 @@ public class MonoSource<I, O> extends Mono<O> implements Scannable {
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super O> s, Context context) {
-		source.subscribe((Subscriber<? super I>) s);
-	}
-
-	@Override
-	public String toString() {
-		StringBuilder sb = new StringBuilder();
-		return sb.append('{')
-		         .append(" \"operator\" : ")
-		         .append('"')
-		         .append(getClass().getSimpleName()
-		                           .replaceAll("Mono", ""))
-		         .append('"')
-		         .append(' ')
-		         .append('}')
-		         .toString();
+	public void subscribe(Subscriber<? super I> s, Context context) {
+		source.subscribe(s);
 	}
 
 	@Override
@@ -84,10 +61,4 @@ public class MonoSource<I, O> extends Mono<O> implements Scannable {
 		return null;
 	}
 
-	static final class FuseableMonoSource<I> extends MonoSource<I, I>
-			implements Fuseable{
-		FuseableMonoSource(Publisher<? extends I> source) {
-			super(source);
-		}
-	}
 }

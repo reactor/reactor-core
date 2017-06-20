@@ -370,7 +370,7 @@ public abstract class Mono<T> implements ContextualPublisher<T> {
 	 */
 	public static <I> Mono<I> fromDirect(Publisher<? extends I> source){
 		if(source instanceof Fuseable){
-			return new MonoSource.FuseableMonoSource<>(source);
+			return new MonoSourceFuseable<>(source);
 		}
 		return new MonoSource<>(source);
 	}
@@ -2137,7 +2137,7 @@ public abstract class Mono<T> implements ContextualPublisher<T> {
 		    @SuppressWarnings("unchecked") Callable<T> thiz = (Callable<T>) this;
 		    return Flux.onAssembly(new FluxCallable<>(thiz));
 	    }
-		return FluxSource.wrap(this);
+		return Flux.wrap(this);
 	}
 
 	/**
