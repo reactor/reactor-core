@@ -19,15 +19,14 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import javax.annotation.Nullable;
 
 /**
  * A base processor that exposes {@link Flux} API for {@link Processor}.
@@ -184,25 +183,31 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	 * Create a {@link FluxSink} that safely gates multi-threaded producer
 	 * {@link Subscriber#onNext(Object)}.
 	 *
-	 * <p> The returned {@link FluxSink} will not apply any
+	 * <p>If this {@link FluxProcessor} has {@link #getBufferSize()} of
+	 * {@link Integer#MAX_VALUE} then this method will fail with a
+	 * {@link IllegalArgumentException}
+	 * if a {@link FluxSink.OverflowStrategy} other than
+	 * {@link FluxSink.OverflowStrategy#IGNORE} is specified. If backpressure is needed
+	 * in this situation, onBackpressureXXX methods (eg,
+	 * {@link Flux#onBackpressureLatest()} may be used).
+	 *
+	 * <p>Otherwise, the returned {@link FluxSink} will not apply any
 	 * {@link FluxSink.OverflowStrategy} and overflowing {@link FluxSink#next(Object)}
-	 * will behave in two possible ways depending on the Processor:
-	 * <ul>
-	 * <li> an unbounded processor will handle the overflow itself by dropping or
-	 * buffering </li>
-	 * <li> a bounded processor will block/spin on IGNORE strategy, or apply the
-	 * strategy behavior</li>
-	 * </ul>
+	 * will block/spin on IGNORE strategy, or apply the strategy behavior
 	 *
 	 * @param strategy the overflow strategy, see {@link FluxSink.OverflowStrategy}
 	 * for the
 	 * available strategies
 	 * @return a serializing {@link FluxSink}
+	 * @throws IllegalArgumentException If the buffer size of this processor is
+	 * unlimited and a non-IGNORE strategy is specified
 	 */
 	public final FluxSink<IN> sink(FluxSink.OverflowStrategy strategy) {
 		Objects.requireNonNull(strategy, "strategy");
 		if (getBufferSize() == Integer.MAX_VALUE){
-			strategy = FluxSink.OverflowStrategy.IGNORE;
+			if (strategy != FluxSink.OverflowStrategy.IGNORE) {
+				throw new IllegalArgumentException("Cannot use overflow strategy of " + strategy + " on " + this + " with unlimited buffer");
+			}
 		}
 
 		FluxCreate.BaseSink<IN> s = FluxCreate.createSink(this, strategy);
