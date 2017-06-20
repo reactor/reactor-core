@@ -74,7 +74,16 @@ public class FluxSourceTest {
 	@Test
 	public void scanMain() {
 		Flux<Integer> parent = Flux.range(1,  10);
-		FluxSource<Integer, Integer> test = new FluxSource<>(parent);
+		FluxSource<Integer> test = new FluxSource<>(parent);
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(-1);
+	}
+
+	@Test
+	public void scanMainHide() {
+		Flux<Integer> parent = Flux.range(1,  10).hide();
+		FluxSource<Integer> test = new FluxSource<>(parent);
 
 		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(-1);

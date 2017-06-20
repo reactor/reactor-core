@@ -92,7 +92,15 @@ public class MonoSourceTest {
 	@Test
 	public void scanSubscriber() {
 		Flux<String> source = Flux.just("foo");
-		MonoSource<String, Integer> test = new MonoSource<>(source);
+		MonoSource<String> test = new MonoSource<>(source);
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(source);
+	}
+
+	@Test
+	public void scanSubscriberHide() {
+		Flux<String> source = Flux.just("foo").hide();
+		MonoSource<String> test = new MonoSource<>(source);
 
 		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(source);
 	}

@@ -750,7 +750,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 	public void conditionalFusionAvailable() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		FluxSource.wrap(u -> {
+		Flux.wrap(u -> {
 			if (!(u instanceof Fuseable.ConditionalSubscriber)) {
 				Operators.error(u,
 						new IllegalArgumentException("The subscriber is not conditional: " + u));
@@ -759,10 +759,10 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 				Operators.complete(u);
 			}
 		})
-		          .doOnNext(v -> {
+		    .doOnNext(v -> {
 		          })
-		          .filter(v -> true)
-		          .subscribe(ts);
+		    .filter(v -> true)
+		    .subscribe(ts);
 
 		ts.assertNoError()
 		  .assertNoValues()
@@ -773,7 +773,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 	public void conditionalFusionAvailableWithFuseable() {
 		AssertSubscriber<Object> ts = AssertSubscriber.create();
 
-		FluxSource.wrap(u -> {
+		Flux.wrap(u -> {
 			if (!(u instanceof Fuseable.ConditionalSubscriber)) {
 				Operators.error(u,
 						new IllegalArgumentException("The subscriber is not conditional: " + u));
@@ -782,10 +782,10 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 				Operators.complete(u);
 			}
 		})
-		          .doOnNext(v -> {
+		    .doOnNext(v -> {
 		          })
-		          .filter(v -> true)
-		          .subscribe(ts);
+		    .filter(v -> true)
+		    .subscribe(ts);
 
 		ts.assertNoError()
 		  .assertNoValues()

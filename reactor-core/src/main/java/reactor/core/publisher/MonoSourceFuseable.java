@@ -16,35 +16,27 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
- * A connecting {@link Flux} Publisher (right-to-left from a composition chain perspective)
- *
- * @param <I> Upstream type
+ * @author Stephane Maldini
  */
-final class FluxSource<I> extends Flux<I> implements Scannable {
-
+final class MonoSourceFuseable<I> extends Mono<I> implements Fuseable, Scannable {
 
 	final Publisher<? extends I> source;
 
-	/**
-	 * Build a {@link FluxSource} wrapper around the passed parent {@link Publisher}
-	 *
-	 * @param source the {@link Publisher} to decorate
-	 */
-	FluxSource(Publisher<? extends I> source) {
+	MonoSourceFuseable(Publisher<? extends I> source) {
 		this.source = Objects.requireNonNull(source);
 	}
 
 	/**
-	 * Default is simply delegating and decorating with {@link Flux} API. Note this
+	 * Default is simply delegating and decorating with {@link Mono} API. Note this
 	 * assumes an identity between input and output types.
 	 */
 	@Override
@@ -56,9 +48,9 @@ final class FluxSource<I> extends Flux<I> implements Scannable {
 	@Override
 	@Nullable
 	public Object scanUnsafe(Attr key) {
-		if (key == IntAttr.PREFETCH) return getPrefetch();
-		if (key == ScannableAttr.PARENT) return source;
+		if (key == ScannableAttr.PARENT) {
+			return source;
+		}
 		return null;
 	}
-
 }

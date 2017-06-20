@@ -812,7 +812,7 @@ public abstract class Flux<T> implements ContextualPublisher<T> {
             }
 			return empty();
 		}
-		return onAssembly(FluxSource.wrap(source));
+		return onAssembly(wrap(source));
 	}
 
 	/**
@@ -7588,6 +7588,20 @@ public abstract class Flux<T> implements ContextualPublisher<T> {
 	@SuppressWarnings("unchecked")
 	static <A, B> BiFunction<A, B, Tuple2<A, B>> tuple2Function() {
 		return TUPLE2_BIFUNCTION;
+	}
+
+	/**
+	 * Unchecked wrap of {@link Publisher} as {@link Flux}, supporting {@link Fuseable} sources
+	 *
+	 * @param source the {@link Publisher} to wrap
+	 * @param <I> input upstream type
+	 * @return a wrapped {@link Flux}
+	 */
+	static <I> Flux<I> wrap(Publisher<? extends I> source){
+		if(source instanceof Fuseable){
+			return new FluxSourceFuseable<>(source);
+		}
+		return new FluxSource<>(source);
 	}
 
 	@SuppressWarnings("rawtypes")
