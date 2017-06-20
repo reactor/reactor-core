@@ -19,8 +19,6 @@ package reactor.core.scheduler;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -286,57 +284,6 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * {@link Scheduler} that hosts a fixed pool of single-threaded ExecutorService-based
-	 * workers and is suited for parallel work.
-	 *
-	 * @param name Thread prefix
-	 *
-	 * @return a new {@link Scheduler} that hosts a fixed pool of single-threaded
-	 * ExecutorService-based workers and is suited for parallel work
-	 */
-	public static Scheduler newForkJoinPool(String name) {
-		return newForkJoinPool(name, Runtime.getRuntime().availableProcessors());
-	}
-
-	/**
-	 * {@link Scheduler} that utilizes a {@link java.util.concurrent.ForkJoinPool} for
-	 * workers and is suited for parallel work. Since the ForkJoinPool does not support
-	 * periodic or delayed scheduling, a single ScheduledExecutorService is used to
-	 * enqueue any tasks that are delayed or periodic
-	 *
-	 * @param name Thread prefix
-	 * @param parallelism Number of worker threads
-	 *
-	 * @return a new {@link Scheduler} that utilizes a ForkJoinPool
-	 */
-	public static Scheduler newForkJoinPool(String name, int parallelism) {
-		return newForkJoinPool(parallelism,
-				new SchedulerForkJoinWorkerThreadFactory(name,
-						ForkJoinPoolScheduler.COUNTER),
-				new SchedulerThreadFactory(name + ForkJoinPoolScheduler.FORK_JOIN_POOL_TIMER_SUFFIX,
-						true,
-						ForkJoinPoolScheduler.COUNTER));
-	}
-
-	/**
-	 * {@link Scheduler} that utilizes a {@link java.util.concurrent.ForkJoinPool} for
-	 * workers and is suited for parallel work. Since the ForkJoinPool does not support
-	 * periodic or delayed scheduling, a single ScheduledExecutorService is used to
-	 * enqueue any tasks that are delayed or periodic
-	 *
-	 * @param parallelism Number of worker threads
-	 * @param workerThreadFactory factory for ForkJoinPool thrads
-	 * @param threadFactory  factory for single scheduler thread
-	 *
-	 * @return a new {@link Scheduler} that utilizes a ForkJoinPool
-	 */
-	public static Scheduler newForkJoinPool(int parallelism,
-			ForkJoinPool.ForkJoinWorkerThreadFactory workerThreadFactory,
-			ThreadFactory threadFactory) {
-		return factory.newForkJoinPool(parallelism, workerThreadFactory, threadFactory);
-	}
-
-	/**
 	 * {@link Scheduler} that hosts a single-threaded ExecutorService-based worker and is
 	 * suited for parallel work.
 	 *
@@ -567,20 +514,6 @@ public abstract class Schedulers {
 		default Scheduler newSingle(ThreadFactory threadFactory) {
 			return new SingleScheduler(threadFactory);
 		}
-
-		/**
-		 * {@link Scheduler} that utilizes a {@link java.util.concurrent.ForkJoinPool} for
-		 * workers and is suited for parallel work. Since the ForkJoinPool does not support
-		 * periodic or delayed scheduling, a single ScheduledExecutorService is used to
-		 * enqueue any tasks that are delayed or periodic
-		 *
-		 * @return a new {@link Scheduler} that utilizes a ForkJoinPool
-		 */
-		default Scheduler newForkJoinPool(int parallelism,
-				ForkJoinPool.ForkJoinWorkerThreadFactory workerThreadFactory,
-				ThreadFactory threadFactory) {
-			return new ForkJoinPoolScheduler(parallelism, workerThreadFactory, threadFactory);
-		}
 	}
 
 	// Internals
@@ -668,32 +601,6 @@ public abstract class Schedulers {
 		@Override
 		public String get() {
 			return name;
-		}
-	}
-
-	static final class SchedulerForkJoinWorkerThread extends ForkJoinWorkerThread {
-
-		SchedulerForkJoinWorkerThread(String name, ForkJoinPool pool) {
-			super(pool);
-			setName(name);
-		}
-	}
-
-	static final class SchedulerForkJoinWorkerThreadFactory
-			implements ForkJoinPool.ForkJoinWorkerThreadFactory {
-
-		final String     name;
-		final AtomicLong COUNTER;
-
-		SchedulerForkJoinWorkerThreadFactory(String name, AtomicLong COUNTER) {
-			this.name = name;
-			this.COUNTER = COUNTER;
-		}
-
-		@Override
-		public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
-			return new SchedulerForkJoinWorkerThread(name + "-" + COUNTER.incrementAndGet(),
-					pool);
 		}
 	}
 
