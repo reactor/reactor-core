@@ -830,7 +830,7 @@ public abstract class Mono<T> implements ContextualPublisher<T> {
 			return empty();
 		}
 		if (sources.length == 1) {
-			return from(sources[0]);
+			return empty(sources[0]);
 		}
 		return onAssembly(new MonoWhen<>(false, VOID_FUNCTION, sources));
 	}
@@ -1049,7 +1049,7 @@ public abstract class Mono<T> implements ContextualPublisher<T> {
 			return empty();
 		}
 		if (sources.length == 1) {
-			return from(sources[0]);
+			return empty(sources[0]);
 		}
 		return onAssembly(new MonoWhen<>(true, VOID_FUNCTION, sources));
 	}
@@ -2091,13 +2091,9 @@ public abstract class Mono<T> implements ContextualPublisher<T> {
 			Function<? super Throwable, ? extends Publisher<? extends R>> mapperOnError,
 			Supplier<? extends Publisher<? extends R>> mapperOnComplete) {
 
-		return Flux.onAssembly(new FluxFlatMap<>(
-				new FluxMapSignal<>(this, mapperOnNext, mapperOnError, mapperOnComplete),
-				Flux.identityFunction(),
-				false,
-				Integer.MAX_VALUE,
-				QueueSupplier.xs(), QueueSupplier.XS_BUFFER_SIZE,
-				QueueSupplier.xs()
+		return Flux.onAssembly(new MonoFlatMapMany<>(
+				new MonoMapSignal<>(this, mapperOnNext, mapperOnError, mapperOnComplete),
+				Flux.identityFunction()
 		));
 	}
 
@@ -2116,7 +2112,7 @@ public abstract class Mono<T> implements ContextualPublisher<T> {
 	 *
 	 */
 	public final <R> Flux<R> flatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
-		return Flux.onAssembly(new FluxFlattenIterable<>(this, mapper, Integer
+		return Flux.onAssembly(new MonoFlattenIterable<>(this, mapper, Integer
 				.MAX_VALUE, QueueSupplier.one()));
 	}
 
@@ -2455,11 +2451,7 @@ public abstract class Mono<T> implements ContextualPublisher<T> {
 	 */
 	public final <R> Mono<R> publish(Function<? super Mono<T>, ? extends Mono<? extends
 			R>> transform) {
-		return fromDirect(new FluxPublishMulticast<>(this, f -> transform.apply(from(f)),
-				Integer
-				.MAX_VALUE,
-				QueueSupplier
-				.one()));
+		return onAssembly(new MonoPublishMulticast<>(this, transform));
 	}
 
 	/**
@@ -2520,7 +2512,7 @@ public abstract class Mono<T> implements ContextualPublisher<T> {
 	 *
 	 */
 	public final Flux<T> repeat(BooleanSupplier predicate) {
-		return Flux.onAssembly(new FluxRepeatPredicate<>(this, predicate));
+		return Flux.onAssembly(new MonoRepeatPredicate<>(this, predicate));
 	}
 
 	/**
@@ -2534,7 +2526,10 @@ public abstract class Mono<T> implements ContextualPublisher<T> {
 	 * @return a {@link Flux} that repeats on onComplete, up to the specified number of repetitions
 	 */
 	public final Flux<T> repeat(long numRepeat) {
-		return Flux.onAssembly(new FluxRepeat<>(this, numRepeat));
+		if(numRepeat == 0){
+			return Flux.empty();
+		}
+		return Flux.onAssembly(new MonoRepeat<>(this, numRepeat));
 	}
 
 	/**
@@ -2572,7 +2567,7 @@ public abstract class Mono<T> implements ContextualPublisher<T> {
 	 * onNext signal
 	 */
 	public final Flux<T> repeatWhen(Function<Flux<Long>, ? extends Publisher<?>> repeatFactory) {
-		return Flux.onAssembly(new FluxRepeatWhen<>(this, repeatFactory));
+		return Flux.onAssembly(new MonoRepeatWhen<>(this, repeatFactory));
 	}
 
 	/**
@@ -3380,6 +3375,7 @@ public abstract class Mono<T> implements ContextualPublisher<T> {
 	public String toString() {
 		return getClass().getSimpleName();
 	}
+
 
 	@SuppressWarnings("unchecked")
 	static <T> Mono<T> doOnSignal(Mono<T> source,

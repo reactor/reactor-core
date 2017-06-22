@@ -34,14 +34,13 @@ final class FluxRepeatPredicate<T> extends FluxOperator<T, T> {
 
 	final BooleanSupplier predicate;
 
-	FluxRepeatPredicate(ContextualPublisher<? extends T> source, BooleanSupplier predicate) {
+	FluxRepeatPredicate(Flux<? extends T> source, BooleanSupplier predicate) {
 		super(source);
 		this.predicate = Objects.requireNonNull(predicate, "predicate");
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super T> s, Context ctx) {
-
 		RepeatPredicateSubscriber<T> parent = new RepeatPredicateSubscriber<>(source,
 				s, predicate);
 

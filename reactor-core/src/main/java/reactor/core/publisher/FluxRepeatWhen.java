@@ -45,7 +45,7 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 
 	final Function<? super Flux<Long>, ? extends Publisher<?>> whenSourceFactory;
 
-	FluxRepeatWhen(ContextualPublisher<? extends T> source,
+	FluxRepeatWhen(Flux<? extends T> source,
 			Function<? super Flux<Long>, ? extends Publisher<?>> whenSourceFactory) {
 		super(source);
 		this.whenSourceFactory =

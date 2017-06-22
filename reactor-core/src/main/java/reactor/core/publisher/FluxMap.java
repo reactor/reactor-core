@@ -45,7 +45,7 @@ final class FluxMap<T, R> extends FluxOperator<T, R> {
 	 *
 	 * @throws NullPointerException if either {@code source} or {@code mapper} is null.
 	 */
-	FluxMap(ContextualPublisher<? extends T> source,
+	FluxMap(Flux<? extends T> source,
 			Function<? super T, ? extends R> mapper) {
 		super(source);
 		this.mapper = Objects.requireNonNull(mapper, "mapper");

@@ -51,7 +51,7 @@ final class FluxMapSignal<T, R> extends FluxOperator<T, R> {
      *
      * @throws NullPointerException if either {@code source} is null or all {@code mapper} are null.
      */
-    FluxMapSignal(ContextualPublisher<? extends T> source,
+    FluxMapSignal(Flux<? extends T> source,
 		    @Nullable Function<? super T, ? extends R> mapperNext,
 		    @Nullable Function<? super Throwable, ? extends R> mapperError,
 		    @Nullable Supplier<? extends R> mapperComplete) {
@@ -67,7 +67,7 @@ final class FluxMapSignal<T, R> extends FluxOperator<T, R> {
 
     @Override
     public void subscribe(Subscriber<? super R> s, Context ctx) {
-        source.subscribe(new FluxMapSignalSubscriber<>(s, this), ctx);
+        source.subscribe(new FluxMapSignalSubscriber<>(s, mapperNext, mapperError, mapperComplete), ctx);
     }
 
     static final class FluxMapSignalSubscriber<T, R> 
@@ -76,7 +76,9 @@ final class FluxMapSignal<T, R> extends FluxOperator<T, R> {
 		               BooleanSupplier {
 
         final Subscriber<? super R>            actual;
-        final FluxMapSignal<T, R> parent;
+	    final Function<? super T, ? extends R> mapperNext;
+	    final Function<? super Throwable, ? extends R> mapperError;
+	    final Supplier<? extends R>            mapperComplete;
 
         boolean done;
 
@@ -93,9 +95,14 @@ final class FluxMapSignal<T, R> extends FluxOperator<T, R> {
         
         long produced;
         
-        FluxMapSignalSubscriber(Subscriber<? super R> actual, FluxMapSignal<T, R> parent) {
+        FluxMapSignalSubscriber(Subscriber<? super R> actual,
+		        @Nullable Function<? super T, ? extends R> mapperNext,
+		        @Nullable Function<? super Throwable, ? extends R> mapperError,
+		        @Nullable Supplier<? extends R>            mapperComplete) {
             this.actual = actual;
-            this.parent = parent;
+            this.mapperNext = mapperNext;
+            this.mapperError = mapperError;
+            this.mapperComplete = mapperComplete;
         }
 
         @Override
@@ -105,7 +112,7 @@ final class FluxMapSignal<T, R> extends FluxOperator<T, R> {
 
                 actual.onSubscribe(this);
 
-                if (parent.mapperNext == null) {
+                if (mapperNext == null) {
 		            s.request(Long.MAX_VALUE);
 	            }
 	        }
@@ -118,14 +125,14 @@ final class FluxMapSignal<T, R> extends FluxOperator<T, R> {
                 return;
             }
 
-	        if (parent.mapperNext == null) {
+	        if (mapperNext == null) {
 		        return;
 		    }
 
             R v;
 
             try {
-                v = Objects.requireNonNull(parent.mapperNext.apply(t),
+                v = Objects.requireNonNull(mapperNext.apply(t),
 		                "The mapper returned a null value.");
             }
             catch (Throwable e) {
@@ -147,7 +154,7 @@ final class FluxMapSignal<T, R> extends FluxOperator<T, R> {
 
             done = true;
 
-	        if(parent.mapperError == null){
+	        if(mapperError == null){
 		        actual.onError(t);
 		        return;
 	        }
@@ -155,7 +162,7 @@ final class FluxMapSignal<T, R> extends FluxOperator<T, R> {
 	        R v;
 
 	        try {
-		        v = Objects.requireNonNull(parent.mapperError.apply(t),
+		        v = Objects.requireNonNull(mapperError.apply(t),
 				        "The mapper returned a null value.");
 	        }
 	        catch (Throwable e) {
@@ -179,7 +186,7 @@ final class FluxMapSignal<T, R> extends FluxOperator<T, R> {
             }
             done = true;
 
-	        if(parent.mapperComplete == null){
+	        if(mapperComplete == null){
 		        actual.onComplete();
 		        return;
 	        }
@@ -187,7 +194,7 @@ final class FluxMapSignal<T, R> extends FluxOperator<T, R> {
 	        R v;
 
 	        try {
-		        v = Objects.requireNonNull(parent.mapperComplete.get(),
+		        v = Objects.requireNonNull(mapperComplete.get(),
 				        "The mapper returned a null value.");
 	        }
 	        catch (Throwable e) {

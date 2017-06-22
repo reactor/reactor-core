@@ -228,7 +228,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable, As
 
 	@SuppressWarnings("unchecked")
 	static <T> void subscribe(Subscriber<? super T> s,
-			ContextualPublisher<? extends T> source,
+			Flux<? extends T> source,
 			@Nullable AssemblySnapshotException snapshotStack,
 			Context ctx) {
 

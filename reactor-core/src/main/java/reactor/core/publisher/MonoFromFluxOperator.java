@@ -17,29 +17,28 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-
 import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import reactor.core.Scannable;
 
 /**
- * A decorating {@link Flux} {@link Publisher} that exposes {@link Flux} API over an
- * arbitrary {@link Publisher} Useful to create operators which return a {@link Flux}.
+ * A decorating {@link Mono} {@link Publisher} that exposes {@link Mono} API over an
+ * arbitrary {@link Publisher} Useful to create operators which return a {@link Mono}.
  *
  * @param <I> delegate {@link Publisher} type
  * @param <O> produced type
  */
-public abstract class FluxOperator<I, O> extends Flux<O> implements Scannable {
+abstract class MonoFromFluxOperator<I, O> extends Mono<O> implements Scannable {
 
 	protected final Flux<? extends I> source;
 
 	/**
-	 * Build a {@link FluxOperator} wrapper around the passed parent {@link Publisher}
+	 * Build a {@link MonoFromFluxOperator} wrapper around the passed parent {@link Publisher}
 	 *
 	 * @param source the {@link Publisher} to decorate
 	 */
-	protected FluxOperator(Flux<? extends I> source) {
+	protected MonoFromFluxOperator(Flux<? extends I> source) {
 		this.source = Objects.requireNonNull(source);
 	}
 
@@ -50,7 +49,7 @@ public abstract class FluxOperator<I, O> extends Flux<O> implements Scannable {
 		         .append(" \"operator\" : ")
 		         .append('"')
 		         .append(getClass().getSimpleName()
-		                           .replaceAll("Flux", ""))
+		                           .replaceAll("Mono", ""))
 		         .append('"')
 		         .append(' ')
 		         .append('}')
@@ -60,7 +59,7 @@ public abstract class FluxOperator<I, O> extends Flux<O> implements Scannable {
 	@Override
 	@Nullable
 	public Object scanUnsafe(Attr key) {
-		if (key == IntAttr.PREFETCH) return getPrefetch();
+		if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
 		if (key == ScannableAttr.PARENT) return source;
 		return null;
 	}

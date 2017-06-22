@@ -32,15 +32,15 @@ import reactor.util.context.Context;
  */
 final class MonoDefer<T> extends Mono<T> {
 
-	final Supplier<? extends Publisher<? extends T>> supplier;
+	final Supplier<? extends Mono<? extends T>> supplier;
 
-	MonoDefer(Supplier<? extends Publisher<? extends T>> supplier) {
+	MonoDefer(Supplier<? extends Mono<? extends T>> supplier) {
 		this.supplier = Objects.requireNonNull(supplier, "supplier");
 	}
 
 	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		Publisher<? extends T> p;
+		Mono<? extends T> p;
 
 		try {
 			p = Objects.requireNonNull(supplier.get(),
@@ -51,11 +51,6 @@ final class MonoDefer<T> extends Mono<T> {
 			return;
 		}
 
-		if (p instanceof ContextualPublisher) {
-			((ContextualPublisher<T>) p).subscribe(s, ctx);
-		}
-		else{
-			p.subscribe(s);
-		}
+		p.subscribe(s, ctx);
 	}
 }

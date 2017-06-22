@@ -17,7 +17,6 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-
 import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
@@ -30,16 +29,16 @@ import reactor.core.Scannable;
  * @param <I> delegate {@link Publisher} type
  * @param <O> produced type
  */
-public abstract class FluxOperator<I, O> extends Flux<O> implements Scannable {
+abstract class FluxFromMonoOperator<I, O> extends Flux<O> implements Scannable {
 
-	protected final Flux<? extends I> source;
+	protected final Mono<? extends I> source;
 
 	/**
-	 * Build a {@link FluxOperator} wrapper around the passed parent {@link Publisher}
+	 * Build a {@link FluxFromMonoOperator} wrapper around the passed parent {@link Publisher}
 	 *
 	 * @param source the {@link Publisher} to decorate
 	 */
-	protected FluxOperator(Flux<? extends I> source) {
+	protected FluxFromMonoOperator(Mono<? extends I> source) {
 		this.source = Objects.requireNonNull(source);
 	}
 

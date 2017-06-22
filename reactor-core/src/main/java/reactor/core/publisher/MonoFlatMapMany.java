@@ -30,7 +30,7 @@ import reactor.core.Scannable;
 import javax.annotation.Nullable;
 import reactor.util.context.Context;
 
-final class MonoFlatMapMany<T, R> extends FluxOperator<T, R> {
+final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
 
 
 	final Function<? super T, ? extends Publisher<? extends R>> mapper;

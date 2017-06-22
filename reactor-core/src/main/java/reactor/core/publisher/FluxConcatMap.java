@@ -90,7 +90,7 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 		}
 	}
 
-	FluxConcatMap(ContextualPublisher<? extends T> source,
+	FluxConcatMap(Flux<? extends T> source,
 			Function<? super T, ? extends Publisher<? extends R>> mapper,
 			Supplier<? extends Queue<T>> queueSupplier,
 			int prefetch,

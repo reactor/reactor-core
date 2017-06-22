@@ -33,7 +33,7 @@ public interface FluxSink<T> {
 
 	/**
 	 * Immediately propagate a {@link Context} to the child {@link Subscriber} given an
-	 * eventually non empty parent {@link Context}.
+	 * potentially non empty subscribing {@link Context}.
 	 *
 	 * @param doOnContext a {@link Function} given the parent context and producing a
 	 * new one to be pushed

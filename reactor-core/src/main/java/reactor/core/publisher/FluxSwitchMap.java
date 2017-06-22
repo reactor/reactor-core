@@ -55,7 +55,7 @@ final class FluxSwitchMap<T, R> extends FluxOperator<T, R> {
 	static final SwitchMapInner<Object> CANCELLED_INNER =
 			new SwitchMapInner<>(null, 0, Long.MAX_VALUE);
 
-	FluxSwitchMap(ContextualPublisher<? extends T> source,
+	FluxSwitchMap(Flux<? extends T> source,
 			Function<? super T, ? extends Publisher<? extends R>> mapper,
 			Supplier<? extends Queue<Object>> queueSupplier,
 			int bufferSize) {

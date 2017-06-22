@@ -21,6 +21,7 @@ import java.util.concurrent.Callable;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Exceptions;
+import reactor.core.Fuseable;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
 import javax.annotation.Nullable;
 import reactor.util.context.Context;
@@ -71,7 +72,17 @@ final class MonoCallableOnAssembly<T> extends MonoOperator<T, T>
 	@Override
 	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		FluxOnAssembly.subscribe(s, source, stacktrace, ctx);
+		if (s instanceof Fuseable.ConditionalSubscriber) {
+			Fuseable.ConditionalSubscriber<? super T>
+					cs = (Fuseable.ConditionalSubscriber<? super T>) s;
+			source.subscribe(new FluxOnAssembly.OnAssemblyConditionalSubscriber<>(cs,
+					stacktrace,
+					source), ctx);
+		}
+		else {
+			source.subscribe(new FluxOnAssembly.OnAssemblySubscriber<>(s, stacktrace, source),
+					ctx);
+		}
 	}
 
 	@SuppressWarnings("unchecked")

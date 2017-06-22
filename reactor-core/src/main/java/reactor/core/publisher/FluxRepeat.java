@@ -34,21 +34,16 @@ final class FluxRepeat<T> extends FluxOperator<T, T> {
 
 	final long times;
 
-	FluxRepeat(ContextualPublisher<? extends T> source, long times) {
+	FluxRepeat(Flux<? extends T> source, long times) {
 		super(source);
-		if (times < 0L) {
-			throw new IllegalArgumentException("times >= 0 required");
+		if (times <= 0L) {
+			throw new IllegalArgumentException("times > 0 required");
 		}
 		this.times = times;
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		if (times == 0) {
-			Operators.complete(s);
-			return;
-		}
-
 		RepeatSubscriber<T> parent = new RepeatSubscriber<>(source, s, times);
 
 		s.onSubscribe(parent);

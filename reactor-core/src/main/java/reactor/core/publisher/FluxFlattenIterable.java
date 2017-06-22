@@ -49,7 +49,7 @@ final class FluxFlattenIterable<T, R> extends FluxOperator<T, R> implements Fuse
 
 	final Supplier<Queue<T>> queueSupplier;
 
-	FluxFlattenIterable(ContextualPublisher<? extends T> source,
+	FluxFlattenIterable(Flux<? extends T> source,
 			Function<? super T, ? extends Iterable<? extends R>> mapper,
 			int prefetch,
 			Supplier<Queue<T>> queueSupplier) {
