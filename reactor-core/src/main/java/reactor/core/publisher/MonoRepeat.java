@@ -15,42 +15,39 @@
  */
 package reactor.core.publisher;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.util.context.Context;
 
 /**
- * Wraps multiple Publishers into a ParallelFlux which runs them
- * in parallel.
- * 
+ * Repeatedly subscribes to the source and relays its values either
+ * indefinitely or a fixed number of times.
+ * <p>
+ * The times == Long.MAX_VALUE is treated as infinite repeat.
+ *
  * @param <T> the value type
+ * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class ParallelArraySource<T> extends ParallelFlux<T> {
-	final Publisher<T>[] sources;
-	
-	ParallelArraySource(Publisher<T>[] sources) {
-		//noinspection ConstantConditions
-		if (sources == null || sources.length == 0) {
-			throw new IllegalArgumentException("Zero publishers not supported");
+final class MonoRepeat<T> extends FluxFromMonoOperator<T, T> {
+
+	final long times;
+
+	MonoRepeat(Mono<? extends T> source, long times) {
+		super(source);
+		if (times <= 0L) {
+			throw new IllegalArgumentException("times > 0 required");
 		}
-		this.sources = sources;
+		this.times = times;
 	}
 
 	@Override
-	public int parallelism() {
-		return sources.length;
-	}
-	
-	@Override
-	public void subscribe(Subscriber<? super T>[] subscribers, Context ctx) {
-		if (!validate(subscribers)) {
-			return;
-		}
-		
-		int n = subscribers.length;
-		
-		for (int i = 0; i < n; i++) {
-			Flux.from(sources[i]).subscribe(subscribers[i], ctx);
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
+		FluxRepeat.RepeatSubscriber<T> parent =
+				new FluxRepeat.RepeatSubscriber<>(source, s, times);
+
+		s.onSubscribe(parent);
+
+		if (!parent.isCancelled()) {
+			parent.onComplete();
 		}
 	}
 }

@@ -153,7 +153,7 @@ public abstract class Hooks {
 	}
 
 	/**
-	 * Reset global "assembly" hook tracking
+	 * Reset global "subscriber" hook tracking
 	 */
 	public static void resetOnSubscriber() {
 		if (log.isDebugEnabled()) {

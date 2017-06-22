@@ -152,10 +152,10 @@ public abstract class Flux<T> implements ContextualPublisher<T> {
 		if (sources.length == 1) {
             Publisher<? extends T> source = sources[0];
             if (source instanceof Fuseable) {
-	            return onAssembly(new FluxMapFuseable<>(Operators.contextual(source),
+	            return onAssembly(new FluxMapFuseable<>(from(source),
 			            v -> combinator.apply(new Object[]{v})));
             }
-			return onAssembly(new FluxMap<>(Operators.contextual(source),
+			return onAssembly(new FluxMap<>(from(source),
 					v -> combinator.apply(new Object[]{v})));
 		}
 
@@ -412,7 +412,7 @@ public abstract class Flux<T> implements ContextualPublisher<T> {
 	 * @return a new {@link Flux} concatenating all inner sources sequences
 	 */
 	public static <T> Flux<T> concat(Publisher<? extends Publisher<? extends T>> sources, int prefetch) {
-		return onAssembly(new FluxConcatMap<>(Operators.contextual(sources),
+		return onAssembly(new FluxConcatMap<>(from(sources),
 				identityFunction(),
 				QueueSupplier.get(prefetch), prefetch,
 				FluxConcatMap.ErrorMode.IMMEDIATE));
@@ -477,7 +477,7 @@ public abstract class Flux<T> implements ContextualPublisher<T> {
 	 * @return a new {@link Flux} concatenating all inner sources sequences until complete or error
 	 */
 	public static <T> Flux<T> concatDelayError(Publisher<? extends Publisher<? extends T>> sources, int prefetch) {
-		return onAssembly(new FluxConcatMap<>(Operators.contextual(sources),
+		return onAssembly(new FluxConcatMap<>(from(sources),
 				identityFunction(),
 				QueueSupplier.get(prefetch), prefetch,
 				FluxConcatMap.ErrorMode.END));
@@ -507,7 +507,7 @@ public abstract class Flux<T> implements ContextualPublisher<T> {
 	 */
 	public static <T> Flux<T> concatDelayError(Publisher<? extends Publisher<? extends
 			T>> sources, boolean delayUntilEnd, int prefetch) {
-		return onAssembly(new FluxConcatMap<>(Operators.contextual(sources),
+		return onAssembly(new FluxConcatMap<>(from(sources),
 				identityFunction(),
 				QueueSupplier.get(prefetch), prefetch,
 				delayUntilEnd ? FluxConcatMap.ErrorMode.END : FluxConcatMap.ErrorMode.BOUNDARY));
@@ -812,7 +812,7 @@ public abstract class Flux<T> implements ContextualPublisher<T> {
             }
 			return empty();
 		}
-		return onAssembly(wrap(source));
+		return wrap(source);
 	}
 
 	/**
@@ -1093,7 +1093,7 @@ public abstract class Flux<T> implements ContextualPublisher<T> {
 	 */
 	public static <T> Flux<T> merge(Publisher<? extends Publisher<? extends T>> source, int concurrency, int prefetch) {
 		return onAssembly(new FluxFlatMap<>(
-				Operators.contextual(source),
+				from(source),
 				identityFunction(),
 				false,
 				concurrency,
@@ -1438,7 +1438,7 @@ public abstract class Flux<T> implements ContextualPublisher<T> {
 	 * @return a {@link FluxProcessor} accepting publishers and producing T
 	 */
 	public static <T> Flux<T> switchOnNext(Publisher<? extends Publisher<? extends T>> mergedPublishers, int prefetch) {
-		return onAssembly(new FluxSwitchMap<>(Operators.contextual(mergedPublishers),
+		return onAssembly(new FluxSwitchMap<>(from(mergedPublishers),
 				identityFunction(),
 				QueueSupplier.unbounded(prefetch), prefetch));
 	}
@@ -1771,10 +1771,10 @@ public abstract class Flux<T> implements ContextualPublisher<T> {
 		if (sources.length == 1) {
 		    Publisher<? extends I> source = sources[0];
 		    if (source instanceof Fuseable) {
-			    return onAssembly(new FluxMapFuseable<>(Operators.contextual(source),
+			    return onAssembly(new FluxMapFuseable<>(from(source),
 					    v -> combinator.apply(new Object[]{v})));
 		    }
-			return onAssembly(new FluxMap<>(Operators.contextual(source),
+			return onAssembly(new FluxMap<>(from(source),
 					v -> combinator.apply(new Object[]{v})));
 		}
 
@@ -1811,7 +1811,7 @@ public abstract class Flux<T> implements ContextualPublisher<T> {
 			Publisher<?>> sources,
 			final Function<? super TUPLE, ? extends V> combinator) {
 
-		return onAssembly(new FluxBuffer<>(Operators.contextual(sources), Integer.MAX_VALUE, listSupplier())
+		return onAssembly(new FluxBuffer<>(from(sources), Integer.MAX_VALUE, listSupplier())
 		                    .flatMap(new Function<List<? extends Publisher<?>>, Publisher<V>>() {
 			                    @Override
 			                    public Publisher<V> apply(List<? extends Publisher<?>> publishers) {
@@ -4648,7 +4648,12 @@ public abstract class Flux<T> implements ContextualPublisher<T> {
 	 * @return a new {@link Mono} emitting the first value in this {@link Flux}
 	 */
 	public final Mono<T> next() {
-		return Mono.from(this);
+		if(this instanceof Callable){
+			@SuppressWarnings("unchecked")
+			Callable<T> m = (Callable<T>)this;
+			return convertToMono(m);
+		}
+		return Mono.onAssembly(new MonoNext<>(this));
 	}
 
 	/**
@@ -5365,6 +5370,9 @@ public abstract class Flux<T> implements ContextualPublisher<T> {
 	 * @return a {@link Flux} that repeats on onComplete, up to the specified number of repetitions
 	 */
 	public final Flux<T> repeat(long numRepeat) {
+		if(numRepeat == 0L){
+			return empty();
+		}
 		return onAssembly(new FluxRepeat<>(this, numRepeat));
 	}
 
@@ -7518,7 +7526,7 @@ public abstract class Flux<T> implements ContextualPublisher<T> {
 
 	static <T> Flux<T> mergeSequential(Publisher<? extends Publisher<? extends T>> sources,
 			boolean delayError, int maxConcurrency, int prefetch) {
-		return onAssembly(new FluxMergeSequential<>(Operators.contextual(sources),
+		return onAssembly(new FluxMergeSequential<>(from(sources),
 				identityFunction(),
 				maxConcurrency, prefetch, delayError ? FluxConcatMap.ErrorMode.END :
 				FluxConcatMap.ErrorMode.IMMEDIATE));

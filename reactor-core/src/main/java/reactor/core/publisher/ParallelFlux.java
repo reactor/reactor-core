@@ -61,7 +61,7 @@ import javax.annotation.Nullable;
  *
  * @param <T> the value type
  */
-public abstract class ParallelFlux<T> implements ContextualPublisher<T> {
+public abstract class ParallelFlux<T> implements Publisher<T> {
 
 	/**
 	 * Take a Publisher and prepare to consume it on multiple 'rails' (one per CPU core)
@@ -914,7 +914,7 @@ public abstract class ParallelFlux<T> implements ContextualPublisher<T> {
 	 * @param subscribers the subscribers array to run in parallel, the number of items
 	 * must be equal to the parallelism level of this ParallelFlux
 	 */
-	public void subscribe(Subscriber<? super T>[] subscribers){
+	public final void subscribe(Subscriber<? super T>[] subscribers){
 		subscribe(subscribers, Context.empty());
 	}
 
@@ -926,10 +926,7 @@ public abstract class ParallelFlux<T> implements ContextualPublisher<T> {
 	 * must be equal to the parallelism level of this ParallelFlux
 	 * @param ctx a subscribe-time optional {@link Context}
 	 */
-	public void subscribe(Subscriber<? super T>[] subscribers, Context ctx){
-		throw new UnsupportedOperationException("#subscribe(Subscriber[]) or #subscribe" +
-					"(Subscriber[], Context) must be implemented by the enclosing Mono");
-	}
+	protected abstract void subscribe(Subscriber<? super T>[] subscribers, Context ctx);
 
 	/**
 	 * Subscribes to this {@link ParallelFlux} and triggers the execution chain for all
@@ -993,26 +990,15 @@ public abstract class ParallelFlux<T> implements ContextualPublisher<T> {
 			@Nullable Consumer<? super Subscription> onSubscribe){
 
 		@SuppressWarnings("unchecked")
-		Subscriber<T>[] subscribers = new Subscriber[parallelism()];
+		Subscriber<? super T>[] subscribers = new Subscriber[parallelism()];
 
 		int i = 0;
 		while(i < subscribers.length){
-			subscribers[i++] = new LambdaSubscriber<>(onNext, onError, onComplete, onSubscribe);
+			subscribers[i++] =
+					Operators.onSubscriber(new LambdaSubscriber<>(onNext, onError, onComplete, onSubscribe));
 		}
 
 		subscribe(subscribers, Context.empty());
-	}
-
-	/**
-	 * Merge the rails into a {@link #sequential()} Flux and
-	 * {@link Flux#subscribe(Subscriber) subscribe} to said Flux.
-	 *
-	 * @param s the subscriber to use on {@link #sequential()} Flux
-	 * @param ctx an optional {@link Context}
-	 */
-	@Override
-	public final void subscribe(Subscriber<? super T> s, Context ctx) {
-		sequential().subscribe(new FluxHide.SuppressFuseableSubscriber<>(s), ctx);
 	}
 
 	/**
@@ -1025,7 +1011,9 @@ public abstract class ParallelFlux<T> implements ContextualPublisher<T> {
 	@SuppressWarnings("unchecked")
 	public final void subscribe(Subscriber<? super T> s) {
 		s = Operators.onSubscriber(s);
-		subscribe(s, ContextRelay.getOrEmpty(s));
+		sequential().subscribe(
+				new FluxHide.SuppressFuseableSubscriber<>(s),
+				ContextRelay.getOrEmpty(s));
 	}
 
 	/**

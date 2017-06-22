@@ -16,10 +16,11 @@
 
 package reactor.core.publisher;
 
+import javax.annotation.Nullable;
+
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
-import javax.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -73,27 +74,36 @@ final class MonoOnAssembly<T> extends MonoOperator<T, T> implements Fuseable, As
 
 	@Override
 	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		FluxOnAssembly.subscribe(s, source, stacktrace, ctx);
+		if (s instanceof ConditionalSubscriber) {
+			@SuppressWarnings("unchecked") ConditionalSubscriber<? super T> cs =
+					(ConditionalSubscriber<? super T>) s;
+			source.subscribe(new FluxOnAssembly.OnAssemblyConditionalSubscriber<>(cs,
+					stacktrace,
+					source), ctx);
+		}
+		else {
+			source.subscribe(new FluxOnAssembly.OnAssemblySubscriber<>(s,
+					stacktrace,
+					source), ctx);
+		}
 	}
 
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		sb = sb.append('{')
-			   .append(" \"operator\" : ")
-			   .append('"')
-			   .append(getClass().getSimpleName()
+		return sb.append('{')
+		       .append(" \"operator\" : ")
+		       .append('"')
+		       .append(getClass().getSimpleName()
 								 .replaceAll("Mono", ""))
-			   .append('"');
-		if (stacktrace != null) {
-			sb = sb.append(", ")
-				   .append(" \"description\" : ")
-				   .append('"')
-				   .append(stacktrace.getMessage())
-				   .append('"');
-		}
-		return sb.append(' ')
-				 .append('}')
-				 .toString();
+		       .append('"')
+		       .append(", ")
+		       .append(" \"description\" : ")
+		       .append('"')
+		       .append(stacktrace.getMessage())
+		       .append('"')
+		       .append(' ')
+		       .append('}')
+		       .toString();
 	}
 }

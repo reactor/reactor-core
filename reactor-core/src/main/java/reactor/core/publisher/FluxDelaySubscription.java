@@ -16,13 +16,14 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.function.Consumer;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.util.context.ContextRelay;
 import reactor.util.context.Context;
-import javax.annotation.Nullable;
+import reactor.util.context.ContextRelay;
 
 /**
  * Delays the subscription to the main source until another Publisher
@@ -32,7 +33,8 @@ import javax.annotation.Nullable;
  * @param <U> the other source type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxDelaySubscription<T, U> extends FluxOperator<T, T> {
+final class FluxDelaySubscription<T, U> extends FluxOperator<T, T>
+		implements Consumer<FluxDelaySubscription.DelaySubscriptionOtherSubscriber<T, U>> {
 
 	final Publisher<U> other;
 
@@ -48,13 +50,18 @@ final class FluxDelaySubscription<T, U> extends FluxOperator<T, T> {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		other.subscribe(new DelaySubscriptionOtherSubscriber<>(s, source, ctx));
+		other.subscribe(new DelaySubscriptionOtherSubscriber<>(s, this, ctx));
+	}
+
+	@Override
+	public void accept(DelaySubscriptionOtherSubscriber<T, U> s) {
+		source.subscribe(new DelaySubscriptionMainSubscriber<>(s.actual, s), s.ctx);
 	}
 
 	static final class DelaySubscriptionOtherSubscriber<T, U>
 			extends Operators.DeferredSubscription implements InnerOperator<U, T> {
 
-		final ContextualPublisher<? extends T> source;
+		final Consumer<FluxDelaySubscription.DelaySubscriptionOtherSubscriber<T, U>> source;
 
 		final Subscriber<? super T> actual;
 
@@ -64,7 +71,9 @@ final class FluxDelaySubscription<T, U> extends FluxOperator<T, T> {
 
 		boolean done;
 
-		DelaySubscriptionOtherSubscriber(Subscriber<? super T> actual, ContextualPublisher<? extends T> source, Context ctx) {
+		DelaySubscriptionOtherSubscriber(Subscriber<? super T> actual,
+				Consumer<FluxDelaySubscription.DelaySubscriptionOtherSubscriber<T, U>> source,
+				Context ctx) {
 			this.actual = actual;
 			this.source = source;
 			this.ctx = ctx;
@@ -120,7 +129,7 @@ final class FluxDelaySubscription<T, U> extends FluxOperator<T, T> {
 			done = true;
 			s.cancel();
 
-			subscribeSource();
+			source.accept(this);
 		}
 
 		@Override
@@ -140,11 +149,7 @@ final class FluxDelaySubscription<T, U> extends FluxOperator<T, T> {
 			}
 			done = true;
 
-			subscribeSource();
-		}
-
-		void subscribeSource() {
-			source.subscribe(new DelaySubscriptionMainSubscriber<>(actual, this), ctx);
+			source.accept(this);
 		}
 	}
 

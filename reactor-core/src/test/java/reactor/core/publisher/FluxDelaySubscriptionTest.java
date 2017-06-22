@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.function.Consumer;
 
 import org.junit.Test;
 import org.reactivestreams.Publisher;
@@ -215,9 +216,8 @@ public class FluxDelaySubscriptionTest {
 	public void scanMainSubscriber() {
 		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null,
 				sub -> sub.request(100));
-		Flux<String> source = Flux.just("foo", "bar");
 		FluxDelaySubscription.DelaySubscriptionOtherSubscriber<String, Integer> arbiter = new FluxDelaySubscription.DelaySubscriptionOtherSubscriber<String, Integer>(
-				actual, source, Context.empty());
+				actual, s -> {}, Context.empty());
 		FluxDelaySubscription.DelaySubscriptionMainSubscriber<String> test = new FluxDelaySubscription.DelaySubscriptionMainSubscriber<String>(
 				actual, arbiter);
 
@@ -228,9 +228,8 @@ public class FluxDelaySubscriptionTest {
 	public void scanOtherSubscriber() {
 		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null,
 				sub -> sub.request(100));
-		Flux<String> source = Flux.just("foo", "bar");
 		FluxDelaySubscription.DelaySubscriptionOtherSubscriber<String, Integer> test = new FluxDelaySubscription.DelaySubscriptionOtherSubscriber<String, Integer>(
-				actual, source, Context.empty());
+				actual, s -> {}, Context.empty());
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 

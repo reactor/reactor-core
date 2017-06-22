@@ -1,0 +1,82 @@
+/*
+ * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package reactor.core.publisher;
+
+import java.util.Objects;
+import java.util.function.Function;
+
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import reactor.util.context.Context;
+
+/**
+ * Repeats a source when a companion sequence signals an item in response to the main's
+ * completion signal
+ * <p>
+ * <p>If the companion sequence signals when the main source is active, the repeat attempt
+ * is suppressed and any terminal signal will terminate the main source with the same
+ * signal immediately.
+ *
+ * @param <T> the source value type
+ *
+ * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
+ */
+final class MonoRepeatWhen<T> extends FluxFromMonoOperator<T, T> {
+
+	final Function<? super Flux<Long>, ? extends Publisher<?>> whenSourceFactory;
+
+	MonoRepeatWhen(Mono<? extends T> source,
+			Function<? super Flux<Long>, ? extends Publisher<?>> whenSourceFactory) {
+		super(source);
+		this.whenSourceFactory =
+				Objects.requireNonNull(whenSourceFactory, "whenSourceFactory");
+	}
+
+	@Override
+	public void subscribe(Subscriber<? super T> s, Context ctx) {
+		FluxRepeatWhen.RepeatWhenOtherSubscriber other =
+				new FluxRepeatWhen.RepeatWhenOtherSubscriber();
+		Subscriber<Long> signaller = Operators.serialize(other.completionSignal);
+
+		signaller.onSubscribe(Operators.emptySubscription());
+
+		Subscriber<T> serial = Operators.serialize(s);
+
+		FluxRepeatWhen.RepeatWhenMainSubscriber<T> main =
+				new FluxRepeatWhen.RepeatWhenMainSubscriber<>(serial, signaller, source);
+		other.main = main;
+
+		serial.onSubscribe(main);
+
+		Publisher<?> p;
+
+		try {
+			p = Objects.requireNonNull(whenSourceFactory.apply(other),
+					"The whenSourceFactory returned a null Publisher");
+		}
+		catch (Throwable e) {
+			s.onError(Operators.onOperatorError(e));
+			return;
+		}
+
+		p.subscribe(other);
+
+		if (!main.cancelled) {
+			source.subscribe(main, ctx);
+		}
+	}
+}

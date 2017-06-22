@@ -25,7 +25,6 @@ import javax.annotation.Nullable;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.util.context.Context;
-import reactor.util.context.ContextRelay;
 
 /**
  * Aggregates the source values with the help of an accumulator function
@@ -62,7 +61,7 @@ final class FluxScanSeed<T, R> extends FluxOperator<T, R> {
 	@Override
 	public void subscribe(Subscriber<? super R> s, Context ctx) {
 		ScanSeedCoordinator<T, R> coordinator =
-				new ScanSeedCoordinator<>(s, source, accumulator, initialSupplier);
+				new ScanSeedCoordinator<>(s, from(source), accumulator, initialSupplier);
 
 		s.onSubscribe(coordinator);
 
@@ -75,14 +74,13 @@ final class FluxScanSeed<T, R> extends FluxOperator<T, R> {
 			extends Operators.MultiSubscriptionSubscriber<R, R> {
 
 		final    Supplier<R>                 initialSupplier;
-		final    ContextualPublisher<? extends T>      source;
+		final    Flux<? extends T>           source;
 		final    BiFunction<R, ? super T, R> accumulator;
 		volatile int                         wip;
 		long produced;
 		private ScanSeedSubscriber<T, R> seedSubscriber;
 
-		ScanSeedCoordinator(Subscriber<? super R> actual,
-				ContextualPublisher<? extends T> source,
+		ScanSeedCoordinator(Subscriber<? super R> actual, Flux<? extends T> source,
 				BiFunction<R, ? super T, R> accumulator,
 				Supplier<R> initialSupplier) {
 			super(actual);

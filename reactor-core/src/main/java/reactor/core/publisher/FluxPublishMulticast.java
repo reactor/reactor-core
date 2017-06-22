@@ -53,7 +53,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 
 	final int prefetch;
 
-	FluxPublishMulticast(ContextualPublisher<? extends T> source,
+	FluxPublishMulticast(Flux<? extends T> source,
 			Function<? super Flux<T>, ? extends Publisher<? extends R>> transform,
 			int prefetch,
 			Supplier<? extends Queue<T>> queueSupplier) {

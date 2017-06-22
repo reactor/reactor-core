@@ -20,6 +20,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 
+import org.reactivestreams.Subscriber;
 import reactor.core.Disposable;
 import reactor.util.context.Context;
 import javax.annotation.Nullable;
@@ -41,7 +42,7 @@ public interface MonoSink<T> {
 
 	/**
 	 * Immediately propagate a {@link Context} to the child {@link Subscriber} given an
-	 * eventually non empty parent {@link Context}.
+	 * eventually non empty subscribing {@link Context}.
 	 *
 	 * @param doOnContext a {@link Function} given the parent context and producing a
 	 * new one to be pushed

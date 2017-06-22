@@ -16,38 +16,36 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.function.Consumer;
+import java.util.function.BooleanSupplier;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.util.context.Context;
 
 /**
- * Delays the subscription to the main source until another Publisher
- * signals a value or completes.
+ * Repeatedly subscribes to the source if the predicate returns true after
+ * completion of the previous subscription.
  *
- * @param <T> the main source value type
- * @param <U> the other source type
+ * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoDelaySubscription<T, U> extends MonoOperator<T, T>
-		implements Consumer<FluxDelaySubscription.DelaySubscriptionOtherSubscriber<T, U>> {
+final class MonoRepeatPredicate<T> extends FluxFromMonoOperator<T, T> {
 
-	final Publisher<U> other;
+	final BooleanSupplier predicate;
 
-	MonoDelaySubscription(Mono<? extends T> source, Publisher<U> other) {
+	MonoRepeatPredicate(Mono<? extends T> source, BooleanSupplier predicate) {
 		super(source);
-		this.other = Objects.requireNonNull(other, "other");
+		this.predicate = Objects.requireNonNull(predicate, "predicate");
 	}
 
 	@Override
 	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		other.subscribe(new FluxDelaySubscription.DelaySubscriptionOtherSubscriber<>(s,
-				this, ctx));
-	}
-	@Override
-	public void accept(FluxDelaySubscription.DelaySubscriptionOtherSubscriber<T, U> s) {
-		source.subscribe(new FluxDelaySubscription.DelaySubscriptionMainSubscriber<>(s.actual, s), s.ctx);
-	}
+		FluxRepeatPredicate.RepeatPredicateSubscriber<T> parent = new FluxRepeatPredicate.RepeatPredicateSubscriber<>(source,
+				s, predicate);
 
+		s.onSubscribe(parent);
+
+		if (!parent.isCancelled()) {
+			parent.resubscribe();
+		}
+	}
 }

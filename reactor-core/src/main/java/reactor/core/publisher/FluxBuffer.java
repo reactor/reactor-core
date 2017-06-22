@@ -45,11 +45,11 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 
 	final Supplier<C> bufferSupplier;
 
-	FluxBuffer(ContextualPublisher<? extends T> source, int size, Supplier<C> bufferSupplier) {
+	FluxBuffer(Flux<? extends T> source, int size, Supplier<C> bufferSupplier) {
 		this(source, size, size, bufferSupplier);
 	}
 
-	FluxBuffer(ContextualPublisher<? extends T> source,
+	FluxBuffer(Flux<? extends T> source,
 			int size,
 			int skip,
 			Supplier<C> bufferSupplier) {

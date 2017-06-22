@@ -134,7 +134,8 @@ public class FluxMapSignalTest extends FluxOperatorTest<String, String> {
         Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxMapSignal<Object, Integer> main = new FluxMapSignal<>(Flux.empty(), null, null, () -> 1);
         FluxMapSignal.FluxMapSignalSubscriber<Object, Integer> test =
-        		new FluxMapSignal.FluxMapSignalSubscriber<>(actual, main);
+        		new FluxMapSignal.FluxMapSignalSubscriber<>(actual, main.mapperNext,
+				        main.mapperError, main.mapperComplete);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 

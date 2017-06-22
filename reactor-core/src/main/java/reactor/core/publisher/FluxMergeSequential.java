@@ -57,7 +57,7 @@ final class FluxMergeSequential<T, R> extends FluxOperator<T, R> {
 
 	final Supplier<Queue<MergeSequentialInner<R>>> queueSupplier;
 
-	FluxMergeSequential(ContextualPublisher<? extends T> source,
+	FluxMergeSequential(Flux<? extends T> source,
 			Function<? super T, ? extends Publisher<? extends R>> mapper,
 			int maxConcurrency, int prefetch, ErrorMode errorMode) {
 		this(source, mapper, maxConcurrency, prefetch, errorMode,
@@ -65,7 +65,7 @@ final class FluxMergeSequential<T, R> extends FluxOperator<T, R> {
 	}
 
 	//for testing purpose
-	FluxMergeSequential(ContextualPublisher<? extends T> source,
+	FluxMergeSequential(Flux<? extends T> source,
 			Function<? super T, ? extends Publisher<? extends R>> mapper,
 			int maxConcurrency, int prefetch, ErrorMode errorMode,
 			Supplier<Queue<MergeSequentialInner<R>>> queueSupplier) {

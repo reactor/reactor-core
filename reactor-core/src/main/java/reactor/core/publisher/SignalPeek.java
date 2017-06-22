@@ -102,6 +102,7 @@ interface SignalPeek<T> extends Scannable {
 	 * A task that will run on {@link Context} propagation from upstream to downstream
 	 * @return A task that will run on {@link Context} propagation from upstream to downstream
 	 */
+	@Nullable
 	default Consumer<? super Context> onContextPropagateCall(){
 		return null;
 	}
@@ -110,6 +111,7 @@ interface SignalPeek<T> extends Scannable {
 	 * A task that will run on {@link Context} read from downstream to upstream
 	 * @return A task that will run on {@link Context} propagation from upstream to downstream
 	 */
+	@Nullable
 	default Consumer<? super Context> onContextParentCall(){
 		return null;
 	}

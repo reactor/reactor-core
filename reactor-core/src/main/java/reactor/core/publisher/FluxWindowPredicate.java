@@ -295,7 +295,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 
 		@Override
 		public Stream<? extends Scannable> inners() {
-			return Stream.of(window);
+			return  window == null ? Stream.empty() : Stream.of(window);
 		}
 
 		@Override

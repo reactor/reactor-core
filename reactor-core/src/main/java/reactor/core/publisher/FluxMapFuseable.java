@@ -47,7 +47,7 @@ final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable
 	 *
 	 * @throws NullPointerException if either {@code source} or {@code mapper} is null.
 	 */
-	FluxMapFuseable(ContextualPublisher<? extends T> source,
+	FluxMapFuseable(Flux<? extends T> source,
 			Function<? super T, ? extends R> mapper) {
 		super(source);
 		this.mapper = Objects.requireNonNull(mapper, "mapper");
