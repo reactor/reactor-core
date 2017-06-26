@@ -85,7 +85,7 @@ import javax.annotation.Nullable;
  *
  * @see Flux
  */
-public abstract class Mono<T> implements ContextualPublisher<T> {
+public abstract class Mono<T> implements Publisher<T> {
 
 //	 ==============================================================================================================
 //	 Static Generators
@@ -247,8 +247,8 @@ public abstract class Mono<T> implements ContextualPublisher<T> {
 	 */
 	public static <T> Mono<Void> empty(Publisher<T> source) {
 		@SuppressWarnings("unchecked")
-		Mono<Void> then = (Mono<Void>)new MonoIgnoreEmpty<>(Operators.contextual(source));
-		return onAssembly(then);
+		Mono<Void> then = (Mono<Void>)ignoreElements(source);
+		return then;
 	}
 
 	/**
@@ -315,15 +315,12 @@ public abstract class Mono<T> implements ContextualPublisher<T> {
 			Mono<T> casted = (Mono<T>) source;
 			return casted;
 		}
-		if (source instanceof Fuseable.ScalarCallable) {
+		if (source instanceof Flux) {
 			@SuppressWarnings("unchecked")
-            T t = ((Fuseable.ScalarCallable<T>) source).call();
-            if (t != null) {
-                return just(t);
-            }
-			return empty();
+			Flux<T> casted = (Flux<T>) source;
+			return casted.next();
 		}
-		return onAssembly(new MonoNext<>(Operators.contextual(source)));
+		return onAssembly(new MonoFromPublisher<>(source));
 	}
 
 	/**
@@ -435,7 +432,7 @@ public abstract class Mono<T> implements ContextualPublisher<T> {
 	 * @return a new completable {@link Mono}.
 	 */
 	public static <T> Mono<T> ignoreElements(Publisher<T> source) {
-		return onAssembly(new MonoIgnoreEmpty<>(Operators.contextual(source)));
+		return onAssembly(new MonoIgnorePublisher<>(source));
 	}
 
 	/**
@@ -2090,11 +2087,7 @@ public abstract class Mono<T> implements ContextualPublisher<T> {
 	public final <R> Flux<R> flatMapMany(Function<? super T, ? extends Publisher<? extends R>> mapperOnNext,
 			Function<? super Throwable, ? extends Publisher<? extends R>> mapperOnError,
 			Supplier<? extends Publisher<? extends R>> mapperOnComplete) {
-
-		return Flux.onAssembly(new MonoFlatMapMany<>(
-				new MonoMapSignal<>(this, mapperOnNext, mapperOnError, mapperOnComplete),
-				Flux.identityFunction()
-		));
+		return flux().flatMap(mapperOnNext, mapperOnError, mapperOnComplete);
 	}
 
 	/**
@@ -2189,7 +2182,7 @@ public abstract class Mono<T> implements ContextualPublisher<T> {
 	 * @return a new empty {@link Mono} representing the completion of this {@link Mono}.
 	 */
 	public final Mono<T> ignoreElement() {
-		return ignoreElements(this);
+		return onAssembly(new MonoIgnoreElement<>(this));
 	}
 
 	/**
@@ -2848,6 +2841,20 @@ public abstract class Mono<T> implements ContextualPublisher<T> {
 	}
 
 	/**
+	 * An internal {@link Publisher#subscribe(Subscriber)} implemented by
+	 * both reactive sources {@link Flux} and {@link Mono}.
+	 * <p>
+	 * In addition to behave as expected by {@link Publisher#subscribe(Subscriber)}
+	 * in a controlled manner, it supports {@link Context} passing.
+	 *
+	 * @param actual the {@link Subscriber} interested into the published sequence
+	 * @param context a {@link Context} to provide to the operational chain.
+	 *
+	 * @see Publisher#subscribe(Subscriber)
+	 */
+	protected abstract void subscribe(Subscriber<? super T> actual, Context context);
+
+	/**
 	 * Run subscribe, onSubscribe and request on a specified {@link Scheduler}'s {@link Worker}.
 	 * As such, placing this operator anywhere in the chain will also impact the execution
 	 * context of onNext/onError/onComplete signals from the beginning of the chain up to
@@ -3038,11 +3045,11 @@ public abstract class Mono<T> implements ContextualPublisher<T> {
 	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
 	 */
 	public final <V> Mono<V> then(Mono<V> other) {
-		if (this instanceof MonoThenIgnore) {
-            MonoThenIgnore<T> a = (MonoThenIgnore<T>) this;
+		if (this instanceof MonoIgnoreThen) {
+            MonoIgnoreThen<T> a = (MonoIgnoreThen<T>) this;
             return a.shift(other);
 		}
-		return onAssembly(new MonoThenIgnore<>(new Publisher[] { this }, other));
+		return onAssembly(new MonoIgnoreThen<>(new Publisher[] { this }, other));
 	}
 
 	/**
@@ -3058,11 +3065,11 @@ public abstract class Mono<T> implements ContextualPublisher<T> {
 	 * sequence
 	 */
 	public final Mono<Void> thenEmpty(Publisher<Void> other) {
-		if (this instanceof MonoThenIgnore) {
-			MonoThenIgnore<T> a = (MonoThenIgnore<T>) this;
+		if (this instanceof MonoIgnoreThen) {
+			MonoIgnoreThen<T> a = (MonoIgnoreThen<T>) this;
 			return a.shift(fromDirect(other));
 		}
-		return onAssembly(new MonoThenIgnore<>(new Publisher[] { this }, fromDirect(other)));
+		return onAssembly(new MonoIgnoreThen<>(new Publisher[] { this }, fromDirect(other)));
 	}
 
 	/**

@@ -37,13 +37,13 @@ import javax.annotation.Nullable;
  *
  * @param <T> the final value type
  */
-final class MonoThenIgnore<T> extends Mono<T> implements Fuseable {
+final class MonoIgnoreThen<T> extends Mono<T> implements Fuseable {
 
     final Publisher<?>[] ignore;
     
     final Mono<T> last;
     
-    MonoThenIgnore(Publisher<?>[] ignore, Mono<T> last) {
+    MonoIgnoreThen(Publisher<?>[] ignore, Mono<T> last) {
         this.ignore = Objects.requireNonNull(ignore, "ignore");
         this.last = Objects.requireNonNull(last, "last");
     }
@@ -62,7 +62,7 @@ final class MonoThenIgnore<T> extends Mono<T> implements Fuseable {
      * @param newLast the new last Mono instance
      * @return the new operator set up
      */
-    <U> MonoThenIgnore<U> shift(Mono<U> newLast) {
+    <U> MonoIgnoreThen<U> shift(Mono<U> newLast) {
         Objects.requireNonNull(newLast, "newLast");
         Publisher<?>[] a = ignore;
         int n = a.length;
@@ -70,7 +70,7 @@ final class MonoThenIgnore<T> extends Mono<T> implements Fuseable {
         System.arraycopy(a, 0, b, 0, n);
         b[n] = last;
         
-        return new MonoThenIgnore<>(b, newLast);
+        return new MonoIgnoreThen<>(b, newLast);
     }
     
     static final class ThenIgnoreMain<T>

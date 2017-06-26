@@ -29,7 +29,8 @@ import javax.annotation.Nullable;
  *
  * @param <T> the value type
  */
-final class MonoTakeLastOne<T> extends MonoOperator<T, T> implements Fuseable {
+final class MonoTakeLastOne<T> extends MonoFromFluxOperator<T, T>
+		implements Fuseable {
 
 	final T defaultValue;
 

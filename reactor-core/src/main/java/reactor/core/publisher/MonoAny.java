@@ -34,7 +34,8 @@ import javax.annotation.Nullable;
  * @param <T> the source value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoAny<T> extends MonoOperator<T, Boolean> implements Fuseable {
+final class MonoAny<T> extends MonoFromFluxOperator<T, Boolean>
+		implements Fuseable {
 
 	final Predicate<? super T> predicate;
 

@@ -30,9 +30,9 @@ import reactor.util.context.Context;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoNext<T> extends MonoOperator<T, T> {
+final class MonoNext<T> extends MonoFromFluxOperator<T, T> {
 
-	MonoNext(ContextualPublisher<? extends T> source) {
+	MonoNext(Flux<? extends T> source) {
 		super(source);
 	}
 

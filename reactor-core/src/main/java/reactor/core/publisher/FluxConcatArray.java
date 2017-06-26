@@ -117,8 +117,7 @@ final class FluxConcatArray<T> extends Flux<T> {
 		Publisher<? extends V>[] newArray = new Publisher[n + 1];
 		//noinspection SuspiciousSystemArraycopy
 		System.arraycopy(array, 0, newArray, 0, n);
-		newArray[n - 1] = new MonoIgnoreEmpty<>(Operators.contextual(newArray[n
-				- 1]));
+		newArray[n - 1] = Mono.ignoreElements(newArray[n - 1]);
 		newArray[n] = source;
 
 		return new FluxConcatArray<>(delayError, newArray);

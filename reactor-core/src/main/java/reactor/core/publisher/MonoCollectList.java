@@ -32,7 +32,8 @@ import reactor.util.context.Context;
  * @param <T> the source value type
  * @param <C> the collection type that takes any supertype of T
  */
-final class MonoCollectList<T, C extends Collection<? super T>> extends MonoOperator<T, C>
+final class MonoCollectList<T, C extends Collection<? super T>>
+		extends MonoFromFluxOperator<T, C>
 		implements Fuseable {
 
 	final Supplier<C> collectionSupplier;
