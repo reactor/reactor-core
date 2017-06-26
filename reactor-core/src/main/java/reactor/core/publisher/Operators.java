@@ -161,25 +161,6 @@ public abstract class Operators {
 		s.onComplete();
 	}
 
-	@SuppressWarnings("unchecked")
-	static <T> ContextualPublisher<T> contextual(Publisher<T> source) {
-		if (source instanceof ContextualPublisher) {
-			return (ContextualPublisher<T>) source;
-		}
-		Objects.requireNonNull(source, "source");
-		return new ContextualPublisher<T>() {
-			@Override
-			public void subscribe(Subscriber<? super T> actual, Context context) {
-				source.subscribe(actual);
-			}
-
-			@Override
-			public void subscribe(Subscriber<? super T> s) {
-				source.subscribe(s);
-			}
-		};
-	}
-
 	/**
 	 * Return a singleton {@link Subscriber} that does not check for double onSubscribe
 	 * and purely request Long.MAX. If an error is received it will raise a
@@ -655,16 +636,6 @@ public abstract class Operators {
 			}
 		}
 		return false;
-	}
-
-	@SuppressWarnings("unchecked")
-	static <T> void trySubscribeContext(Publisher<T> source, Subscriber<? super T> s, Context ctx) {
-		if (source instanceof ContextualPublisher) {
-			((ContextualPublisher<T>) source).subscribe(s, ctx);
-		}
-		else{
-			source.subscribe(s);
-		}
 	}
 
 	/**

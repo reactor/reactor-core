@@ -32,14 +32,14 @@ import reactor.core.Scannable;
  */
 public abstract class MonoOperator<I, O> extends Mono<O> implements Scannable {
 
-	protected final ContextualPublisher<? extends I> source;
+	protected final Mono<? extends I> source;
 
 	/**
 	 * Build a {@link MonoOperator} wrapper around the passed parent {@link Publisher}
 	 *
 	 * @param source the {@link Publisher} to decorate
 	 */
-	protected MonoOperator(ContextualPublisher<? extends I> source) {
+	protected MonoOperator(Mono<? extends I> source) {
 		this.source = Objects.requireNonNull(source);
 	}
 

@@ -15,9 +15,10 @@
  */
 package reactor.core.publisher;
 
+import javax.annotation.Nullable;
+
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import javax.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -26,9 +27,9 @@ import reactor.util.context.Context;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoIgnoreEmpty<T> extends MonoOperator<T, T> {
+final class MonoIgnoreElements<T> extends MonoFromFluxOperator<T, T> {
 
-	MonoIgnoreEmpty(ContextualPublisher<? extends T> source) {
+	MonoIgnoreElements(Flux<? extends T> source) {
 		super(source);
 	}
 

@@ -92,16 +92,37 @@ public class MonoSourceTest {
 	@Test
 	public void scanSubscriber() {
 		Flux<String> source = Flux.just("foo");
-		MonoSource<String> test = new MonoSource<>(source);
+		Mono<String> test = Mono.fromDirect(source);
 
-		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(source);
+		assertThat(Scannable.from(test).scan(Scannable.ScannableAttr.PARENT)).isSameAs(source);
+		assertThat(Scannable.from(test).scan(Scannable.ScannableAttr.ACTUAL)).isNull();
 	}
+
 
 	@Test
 	public void scanSubscriberHide() {
 		Flux<String> source = Flux.just("foo").hide();
-		MonoSource<String> test = new MonoSource<>(source);
+		Mono<String> test = Mono.fromDirect(source);
+
+		assertThat(Scannable.from(test).scan(Scannable.ScannableAttr.PARENT)).isSameAs(source);
+		assertThat(Scannable.from(test).scan(Scannable.ScannableAttr.ACTUAL)).isNull();
+	}
+
+	@Test
+	public void scanSubscriberIgnore() {
+		Flux<String> source = Flux.just("foo");
+		MonoIgnorePublisher<String> test = new MonoIgnorePublisher<>(source);
 
 		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(source);
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isNull();
+	}
+
+	@Test
+	public void scanSubscriberFrom() {
+		Flux<String> source = Flux.just("foo");
+		MonoFromPublisher<String> test = new MonoFromPublisher<>(source);
+
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(source);
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isNull();
 	}
 }

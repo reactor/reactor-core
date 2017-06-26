@@ -57,7 +57,7 @@ final class FluxFuseableExceptionOnPoll<T> extends FluxOperator<T, T>
 
 	@Override
 	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		source.subscribe(new FuseableExceptionOnPollSubscriber<>(s, exception), ctx);
+		source.subscribe(new FuseableExceptionOnPollSubscriber<>(s, exception));
 	}
 
 	static final class FuseableExceptionOnPollSubscriber<T>

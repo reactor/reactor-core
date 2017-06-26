@@ -100,19 +100,19 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable {
 		}
 
 		if (p instanceof Fuseable) {
-			Operators.trySubscribeContext(p, new UsingFuseableSubscriber<>(s,
+			from(p).subscribe(new UsingFuseableSubscriber<>(s,
 					resourceCleanup,
 					resource,
 					eager), ctx);
 		}
 		else if (s instanceof ConditionalSubscriber) {
-			Operators.trySubscribeContext(p, new UsingConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
+			from(p).subscribe(new UsingConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
 					resourceCleanup,
 					resource,
 					eager), ctx);
 		}
 		else {
-			Operators.trySubscribeContext(p, new UsingSubscriber<>(s, resourceCleanup,
+			from(p).subscribe(new UsingSubscriber<>(s, resourceCleanup,
 					resource, eager), ctx);
 		}
 	}

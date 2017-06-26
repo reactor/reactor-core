@@ -25,7 +25,8 @@ import javax.annotation.Nullable;
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoHasElements<T> extends MonoOperator<T, Boolean> implements Fuseable {
+final class MonoHasElements<T> extends MonoFromFluxOperator<T, Boolean>
+		implements Fuseable {
 
 	MonoHasElements(Flux<? extends T> source) {
 		super(source);

@@ -32,7 +32,8 @@ import javax.annotation.Nullable;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoReduce<T> extends MonoOperator<T, T> implements Fuseable {
+final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
+		implements Fuseable {
 
 	final BiFunction<T, T, T> aggregator;
 

@@ -28,7 +28,7 @@ import reactor.util.context.Context;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  *
  */
-final class MonoCount<T> extends MonoOperator<T, Long> implements Fuseable {
+final class MonoCount<T> extends MonoFromFluxOperator<T, Long> implements Fuseable {
 
 	MonoCount(Flux<? extends T> source) {
 		super(source);

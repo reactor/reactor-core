@@ -30,7 +30,8 @@ import reactor.util.context.Context;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoElementAt<T> extends MonoOperator<T, T> implements Fuseable {
+final class MonoElementAt<T> extends MonoFromFluxOperator<T, T>
+		implements Fuseable {
 
 	final long index;
 

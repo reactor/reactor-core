@@ -43,7 +43,8 @@ public class MonoIgnoreEmptyTest {
 	@Test
 	public void scanSubscriber() {
 		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MonoIgnoreEmpty.IgnoreElementsSubscriber<String> test = new MonoIgnoreEmpty.IgnoreElementsSubscriber<>(actual);
+		MonoIgnoreElements.IgnoreElementsSubscriber<String> test = new
+				MonoIgnoreElements.IgnoreElementsSubscriber<>(actual);
 		Subscription sub = Operators.emptySubscription();
 		test.onSubscribe(sub);
 

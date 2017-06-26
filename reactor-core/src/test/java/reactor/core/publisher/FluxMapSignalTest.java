@@ -124,7 +124,10 @@ public class FluxMapSignalTest extends FluxOperatorTest<String, String> {
 		StepVerifier.create(Mono.just(1)
 		                        .flatMapMany(d -> Flux.just(d * 2),
 				                        e -> Flux.just(99),
-				                        () -> Flux.just(10)))
+				                        () -> Flux.just(10)).doOnComplete(() -> {
+			System.out.println("test");
+				})
+		.log())
 		            .expectNext(2, 10)
 		            .verifyComplete();
 	}

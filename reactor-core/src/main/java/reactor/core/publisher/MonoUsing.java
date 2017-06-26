@@ -46,14 +46,14 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable {
 
 	final Callable<S> resourceSupplier;
 
-	final Function<? super S, ? extends Publisher<? extends T>> sourceFactory;
+	final Function<? super S, ? extends Mono<? extends T>> sourceFactory;
 
 	final Consumer<? super S> resourceCleanup;
 
 	final boolean eager;
 
 	MonoUsing(Callable<S> resourceSupplier,
-			Function<? super S, ? extends Publisher<? extends T>> sourceFactory,
+			Function<? super S, ? extends Mono<? extends T>> sourceFactory,
 			Consumer<? super S> resourceCleanup,
 			boolean eager) {
 		this.resourceSupplier =
@@ -76,7 +76,7 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable {
 			return;
 		}
 
-		Publisher<? extends T> p;
+		Mono<? extends T> p;
 
 		try {
 			p = Objects.requireNonNull(sourceFactory.apply(resource),
@@ -97,19 +97,20 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable {
 		}
 
 		if (p instanceof Fuseable) {
-			Operators.trySubscribeContext(p, new FluxUsing.UsingFuseableSubscriber<>(s,
+			p.subscribe(new FluxUsing.UsingFuseableSubscriber<>(s,
 					resourceCleanup,
 					resource,
 					eager), ctx);
 		}
 		else if (s instanceof ConditionalSubscriber) {
-			Operators.trySubscribeContext(p, new FluxUsing.UsingConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
+			p.subscribe(new FluxUsing.UsingConditionalSubscriber<>((ConditionalSubscriber<? super
+					T>) s,
 					resourceCleanup,
 					resource,
 					eager), ctx);
 		}
 		else {
-			Operators.trySubscribeContext(p, new FluxUsing.UsingSubscriber<>(s,
+			p.subscribe(new FluxUsing.UsingSubscriber<>(s,
 					resourceCleanup,
 					resource,
 					eager), ctx);

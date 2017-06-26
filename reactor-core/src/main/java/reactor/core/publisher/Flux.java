@@ -85,7 +85,7 @@ import reactor.util.function.Tuples;
  * <p>Note that using state in the {@code java.util.function} / lambdas used within Flux operators
  * should be avoided, as these may be shared between several {@link Subscriber Subscribers}.
  *
- * <p> {@link #subscribe(Subscriber, Context)} is an extension to
+ * <p> {@link #subscribe(Subscriber, Context)} is an internal extension to
  * {@link #subscribe(Subscriber)} used internally for {@link Context} passing. User
  * provided {@link Subscriber} may
  * be passed to this "subscribe" extension but will loose the available
@@ -100,7 +100,7 @@ import reactor.util.function.Tuples;
  *
  * @see Mono
  */
-public abstract class Flux<T> implements ContextualPublisher<T> {
+public abstract class Flux<T> implements Publisher<T> {
 
 //	 ==============================================================================================================
 //	 Static Generators
@@ -4379,7 +4379,7 @@ public abstract class Flux<T> implements ContextualPublisher<T> {
 	 * @return a new empty {@link Mono} representing the completion of this {@link Flux}.
 	 */
 	public final Mono<T> ignoreElements() {
-		return Mono.ignoreElements(this);
+		return Mono.onAssembly(new MonoIgnoreElements<>(this));
 	}
 
 	/**
@@ -6233,6 +6233,20 @@ public abstract class Flux<T> implements ContextualPublisher<T> {
 	}
 
 	/**
+	 * An internal {@link Publisher#subscribe(Subscriber)} implemented by
+	 * both reactive sources {@link Flux} and {@link Mono}.
+	 * <p>
+	 * In addition to behave as expected by {@link Publisher#subscribe(Subscriber)}
+	 * in a controlled manner, it supports {@link Context} passing.
+	 *
+	 * @param actual the {@link Subscriber} interested into the published sequence
+	 * @param context a {@link Context} to provide to the operational chain.
+	 *
+	 * @see Flux#subscribe(Subscriber)
+	 */
+	protected abstract void subscribe(Subscriber<? super T> actual, Context context);
+
+	/**
 	 * Run subscribe, onSubscribe and request on a specified {@link Scheduler}'s {@link Worker}.
 	 * As such, placing this operator anywhere in the chain will also impact the execution
 	 * context of onNext/onError/onComplete signals from the beginning of the chain up to
@@ -6478,7 +6492,7 @@ public abstract class Flux<T> implements ContextualPublisher<T> {
 	 */
 	public final Mono<Void> then() {
 		@SuppressWarnings("unchecked")
-		Mono<Void> then = (Mono<Void>) new MonoIgnoreEmpty<>(this);
+		Mono<Void> then = (Mono<Void>) new MonoIgnoreElements<>(this);
 		return Mono.onAssembly(then);
 	}
 
@@ -6498,7 +6512,7 @@ public abstract class Flux<T> implements ContextualPublisher<T> {
 	 * @return a new {@link Flux} that wait for source completion then emits from the supplied {@link Mono}
 	 */
 	public final <V> Mono<V> then(Mono<V> other) {
-		return Mono.onAssembly(new MonoThenIgnore<>(new Publisher[] { this }, other));
+		return Mono.onAssembly(new MonoIgnoreThen<>(new Publisher[] { this }, other));
 	}
 
 	/**
@@ -6514,7 +6528,7 @@ public abstract class Flux<T> implements ContextualPublisher<T> {
 	 * sequence
 	 */
 	public final Mono<Void> thenEmpty(Publisher<Void> other) {
-		return new MonoIgnoreEmpty<>(this).then(Mono.fromDirect(other));
+		return then(Mono.fromDirect(other));
 	}
 
 	/**

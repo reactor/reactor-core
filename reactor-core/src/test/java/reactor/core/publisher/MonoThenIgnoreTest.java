@@ -24,7 +24,6 @@ import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
-import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -87,9 +86,9 @@ public class MonoThenIgnoreTest {
 	@Test
 	public void scanThenAcceptInner() {
 		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MonoThenIgnore.ThenIgnoreMain<String> main = new MonoThenIgnore.ThenIgnoreMain<>(actual, new Publisher[0], Mono.just("foo"));
+		MonoIgnoreThen.ThenIgnoreMain<String> main = new MonoIgnoreThen.ThenIgnoreMain<>(actual, new Publisher[0], Mono.just("foo"));
 
-		MonoThenIgnore.ThenAcceptInner<String> test = new MonoThenIgnore.ThenAcceptInner<>(main);
+		MonoIgnoreThen.ThenAcceptInner<String> test = new MonoIgnoreThen.ThenAcceptInner<>(main);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
@@ -108,9 +107,9 @@ public class MonoThenIgnoreTest {
 	@Test
 	public void scanThenIgnoreInner() {
 		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MonoThenIgnore.ThenIgnoreMain<String> main = new MonoThenIgnore.ThenIgnoreMain<>(actual, new Publisher[0], Mono.just("foo"));
+		MonoIgnoreThen.ThenIgnoreMain<String> main = new MonoIgnoreThen.ThenIgnoreMain<>(actual, new Publisher[0], Mono.just("foo"));
 
-		MonoThenIgnore.ThenIgnoreInner test = new MonoThenIgnore.ThenIgnoreInner(main);
+		MonoIgnoreThen.ThenIgnoreInner test = new MonoIgnoreThen.ThenIgnoreInner(main);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
