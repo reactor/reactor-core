@@ -32,7 +32,7 @@ import javax.annotation.Nullable;
 public class MutableNextSignal<T> extends Signal<T> {
 
 	/**
-	 * Create a new {@link MutableNextSignal} that hasn't had a value set yet.
+	 * Create a new {@link MutableNextSignal} that hasn't had a value push yet.
 	 *
 	 * @param <T> the type of the onNext elements.
 	 * @return a new mutable next {@link Signal}

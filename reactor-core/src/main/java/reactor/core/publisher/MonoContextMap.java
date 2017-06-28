@@ -20,16 +20,14 @@ import java.util.Objects;
 import java.util.function.BiFunction;
 
 import org.reactivestreams.Subscriber;
-import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.util.context.Context;
-import reactor.util.context.ContextRelay;
 
-final class MonoContextualize<T> extends MonoOperator<T, T> implements Fuseable {
+final class MonoContextMap<T> extends MonoOperator<T, T> implements Fuseable {
 
 	final BiFunction<Context, Context, Context> doOnContext;
 
-	MonoContextualize(Mono<? extends T> source,
+	MonoContextMap(Mono<? extends T> source,
 			BiFunction<Context, Context, Context> doOnContext) {
 		super(source);
 		this.doOnContext = Objects.requireNonNull(doOnContext, "doOnContext");
@@ -47,9 +45,9 @@ final class MonoContextualize<T> extends MonoOperator<T, T> implements Fuseable 
 			return;
 		}
 		if(c != ctx){
-			ContextRelay.set(s, c);
+			Context.push(s, c);
 		}
-		source.subscribe(new FluxContextualize.ContextualizeSubscriber<>(s,
+		source.subscribe(new FluxContextMap.ContextMapSubscriber<>(s,
 						doOnContext, c),
 				c);
 	}

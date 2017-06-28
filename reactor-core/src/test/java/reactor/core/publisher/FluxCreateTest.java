@@ -214,7 +214,7 @@ public class FluxCreateTest {
 				sink.complete();
 			}
 		}
-		Flux<Integer> flux1 = Flux.<Integer>create(s -> {
+		Flux<Integer> flux1 = Flux.create(s -> {
 			Emitter emitter = new Emitter(s);
 			s.onDispose(() -> onDispose.incrementAndGet());
 			s.onCancel(() -> onCancel.incrementAndGet());
@@ -229,7 +229,7 @@ public class FluxCreateTest {
 
 		onDispose.set(0);
 		onCancel.set(0);
-		Flux<Integer> flux2 = Flux.<Integer>create(s -> {
+		Flux<Integer> flux2 = Flux.create(s -> {
 			Emitter emitter = new Emitter(s);
 			s.onRequest(emitter::emit);
 			s.onDispose(() -> onDispose.incrementAndGet());
@@ -870,29 +870,6 @@ public class FluxCreateTest {
 	}
 
 	@Test
-	public void context() {
-		AtomicInteger x = new AtomicInteger();
-		Flux.create(s -> s.contextualize(c -> c.put("test", c.<Integer>get("test") + 1))
-		                  .next("1")
-		                  .next("2")
-		                  .complete())
-		    .subscribe(new BaseSubscriber<Object>() {
-			    @Override
-			    public Context currentContext() {
-				    return Context.empty()
-				                  .put("test", 1);
-			    }
-
-			    @Override
-			    protected void hookOnContext(Context context) {
-				    x.set(context.get("test"));
-			    }
-		    });
-
-		assertThat(x.get()).isEqualTo(2);
-	}
-
-	@Test
 	public void fluxPushOnRequest() {
 		AtomicInteger index = new AtomicInteger(1);
 		AtomicInteger onRequest = new AtomicInteger();
@@ -1111,7 +1088,7 @@ public class FluxCreateTest {
 	@Test
 	public void scanBaseSink() {
 		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		FluxCreate.BaseSink<String> test = new FluxCreate.BaseSink<String>(actual, Context.empty()) {
+		FluxCreate.BaseSink<String> test = new FluxCreate.BaseSink<String>(actual) {
 			@Override
 			public FluxSink<String> next(String s) {
 				return this;
@@ -1134,7 +1111,7 @@ public class FluxCreateTest {
 	@Test
 	public void scanBufferAsyncSink() {
 		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		BufferAsyncSink<String> test = new BufferAsyncSink<>(actual, 123, Context.empty());
+		BufferAsyncSink<String> test = new BufferAsyncSink<>(actual, 123);
 		test.queue.offer("foo");
 
 		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
@@ -1150,7 +1127,7 @@ public class FluxCreateTest {
 	@Test
 	public void scanLatestAsyncSink() {
 		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		FluxCreate.LatestAsyncSink<String> test = new FluxCreate.LatestAsyncSink<>(actual, Context.empty());
+		FluxCreate.LatestAsyncSink<String> test = new FluxCreate.LatestAsyncSink<>(actual);
 
 		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(0);
 		test.queue.set("foo");
@@ -1167,7 +1144,7 @@ public class FluxCreateTest {
 	@Test
 	public void scanSerializedSink() {
 		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		FluxCreate.BaseSink<String> decorated = new FluxCreate.LatestAsyncSink<>(actual, Context.empty());
+		FluxCreate.BaseSink<String> decorated = new FluxCreate.LatestAsyncSink<>(actual);
 		SerializedSink<String> test = new SerializedSink<>(decorated);
 
 		test.queue.offer("foo");

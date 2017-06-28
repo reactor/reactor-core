@@ -60,7 +60,6 @@ import reactor.core.scheduler.Schedulers;
 import reactor.util.Logger;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.context.Context;
-import reactor.util.context.ContextRelay;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuple4;
@@ -2315,7 +2314,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * the resulting {@link Flux} each time the given predicate returns true. Note that
 	 * the buffer into which the element that triggers the predicate to return true
 	 * (and thus closes a buffer) is included depends on the {@code cutBefore} parameter:
-	 * set it to true to include the boundary element in the newly opened buffer, false to
+	 * push it to true to include the boundary element in the newly opened buffer, false to
 	 * include it in the closed buffer (as in {@link #bufferUntil(Predicate)}).
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/buffersize.png"
@@ -2326,7 +2325,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * termination.
 	 *
 	 * @param predicate a predicate that triggers the next buffer when it becomes true.
-	 * @param cutBefore set to true to include the triggering element in the new buffer rather than the old.
+	 * @param cutBefore push to true to include the triggering element in the new buffer rather than the old.
 	 * @return a microbatched {@link Flux} of {@link List}
 	 */
 	public final Flux<List<T>> bufferUntil(Predicate<? super T> predicate, boolean cutBefore) {
@@ -2575,7 +2574,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * It should be placed towards the end of the reactive chain, as errors
 	 * triggered downstream of it cannot be observed and augmented with assembly marker.
 	 *
-	 * @param description a description (must be unique enough if forceStackTrace is set
+	 * @param description a description (must be unique enough if forceStackTrace is push
 	 * to false).
 	 * @param forceStackTrace false to make a light checkpoint without a stacktrace, true
 	 * to use a stack trace.
@@ -3130,19 +3129,18 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 *     Lifecycle for {@link Context} propagation is as such :
 	 *     <ul>
-	 *     <li> #1 During right-to-left subscribe(Subscriber) phase, contextualize will
-	 *     read
-	 *     the target {@link Subscriber} context if any and cache it.</li>
-	 *     <li> #2-A Before left-to-right onSubscribe(Subscription), {@link Context}
+	 *     <li> #1 During right-to-left subscribe phase, contextMap will
+	 *     read the target {@link Subscriber} context if any and cache it.</li>
+	 *     <li> #2 During left-to-right onSubscribe(Subscription), {@link Context}
 	 *     might be propagated from parent. If this happens, the given
 	 *     {@link BiFunction} will be invoked with the cached {@link Context} and the
 	 *     propagating {@link Context}
 	 *     </li>
 	 *     <li> #2-B If no context was propagated before left-to-right onSubscribe
-	 *     (Subscription) phase, contextualize will
+	 *     (Subscription) phase, contextMap will
 	 *     call the given {@link BiFunction} during onSubscribe(Subscription) with the
 	 *     cached
-	 *     {@link Context} and an empty one. Thus contextualize
+	 *     {@link Context} and an empty one. Thus contextMap
 	 *     will first propagate the resulting {@link Context} if non empty before
 	 *     the downstream actual {@code Subscriber#onSubscribe(Subscription)}</li>
 	 *     </ul>
@@ -3152,9 +3150,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a contextualized {@link Flux}
 	 */
-	public final Flux<T> contextualize(BiFunction<Context, Context, Context>
+	public final Flux<T> contextMap(BiFunction<Context, Context, Context>
 			doOnContext) {
-		return new FluxContextualize<>(this, doOnContext);
+		return new FluxContextMap<>(this, doOnContext);
 	}
 
 	/**
@@ -4169,7 +4167,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * The groups need to be drained and consumed downstream for groupBy to work correctly.
 	 * Notably when the criteria produces a large amount of groups, it can lead to hanging
 	 * if the groups are not suitably consumed downstream (eg. due to a {@code flatMap}
-	 * with a {@code maxConcurrency} parameter that is set too low.
+	 * with a {@code maxConcurrency} parameter that is push too low.
 	 *
 	 * @param keyMapper the key mapping {@link Function} that evaluates an incoming data and returns a key.
 	 * @param <K> the key type extracted from each value of this sequence
@@ -4191,7 +4189,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * The groups need to be drained and consumed downstream for groupBy to work correctly.
 	 * Notably when the criteria produces a large amount of groups, it can lead to hanging
 	 * if the groups are not suitably consumed downstream (eg. due to a {@code flatMap}
-	 * with a {@code maxConcurrency} parameter that is set too low.
+	 * with a {@code maxConcurrency} parameter that is push too low.
 	 *
 	 * @param keyMapper the key mapping {@link Function} that evaluates an incoming data and returns a key.
 	 * @param prefetch the number of values to prefetch from the source
@@ -4215,7 +4213,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * The groups need to be drained and consumed downstream for groupBy to work correctly.
 	 * Notably when the criteria produces a large amount of groups, it can lead to hanging
 	 * if the groups are not suitably consumed downstream (eg. due to a {@code flatMap}
-	 * with a {@code maxConcurrency} parameter that is set too low.
+	 * with a {@code maxConcurrency} parameter that is push too low.
 	 *
 	 * @param keyMapper the key mapping function that evaluates an incoming data and returns a key.
 	 * @param valueMapper the value mapping function that evaluates which data to extract for re-routing.
@@ -4242,7 +4240,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * The groups need to be drained and consumed downstream for groupBy to work correctly.
 	 * Notably when the criteria produces a large amount of groups, it can lead to hanging
 	 * if the groups are not suitably consumed downstream (eg. due to a {@code flatMap}
-	 * with a {@code maxConcurrency} parameter that is set too low.
+	 * with a {@code maxConcurrency} parameter that is push too low.
 	 *
 	 * @param keyMapper the key mapping function that evaluates an incoming data and returns a key.
 	 * @param valueMapper the value mapping function that evaluates which data to extract for re-routing.
@@ -6229,7 +6227,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	@Override
 	public final void subscribe(Subscriber<? super T> actual) {
 		actual = Operators.onNewSubscriber(this, actual);
-		subscribe(actual, ContextRelay.getOrEmpty(actual));
+		subscribe(actual, Context.from(actual));
 	}
 
 	/**
@@ -7077,7 +7075,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/windowuntilcutafter.png" alt="">
 	 *
 	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
-	 * @param cutBefore set to true to include the triggering element in the new window rather than the old.
+	 * @param cutBefore push to true to include the triggering element in the new window rather than the old.
 	 * @return a {@link Flux} of {@link GroupedFlux} windows, bounded depending
 	 * on the predicate and keyed with the value that triggered the new window.
 	 */
@@ -7104,7 +7102,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/windowuntilcutafter.png" alt="">
 	 *
 	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
-	 * @param cutBefore set to true to include the triggering element in the new window rather than the old.
+	 * @param cutBefore push to true to include the triggering element in the new window rather than the old.
 	 * @param prefetch the request size to use for this {@link Flux}.
 	 * @return a {@link Flux} of {@link GroupedFlux} windows, bounded depending
 	 * on the predicate and keyed with the value that triggered the new window.

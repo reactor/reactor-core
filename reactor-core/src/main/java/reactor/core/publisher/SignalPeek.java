@@ -112,7 +112,7 @@ interface SignalPeek<T> extends Scannable {
 	 * @return A task that will run on {@link Context} propagation from upstream to downstream
 	 */
 	@Nullable
-	default Consumer<? super Context> onContextParentCall(){
+	default Consumer<? super Context> onCurrentContextCall(){
 		return null;
 	}
 }

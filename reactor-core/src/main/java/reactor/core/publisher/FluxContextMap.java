@@ -25,13 +25,12 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.util.context.Context;
-import reactor.util.context.ContextRelay;
 
-final class FluxContextualize<T> extends FluxOperator<T, T> implements Fuseable {
+final class FluxContextMap<T> extends FluxOperator<T, T> implements Fuseable {
 
 	final BiFunction<Context, Context, Context> doOnContext;
 
-	FluxContextualize(Flux<? extends T> source,
+	FluxContextMap(Flux<? extends T> source,
 			BiFunction<Context, Context, Context> doOnContext) {
 		super(source);
 		this.doOnContext = Objects.requireNonNull(doOnContext, "doOnContext");
@@ -39,22 +38,10 @@ final class FluxContextualize<T> extends FluxOperator<T, T> implements Fuseable 
 
 	@Override
 	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		Context c;
-
-		try {
-			c = doOnContext.apply(ctx, Context.empty());
-		}
-		catch (Throwable t) {
-			Operators.error(s, Operators.onOperatorError(t));
-			return;
-		}
-		if(c != ctx){
-			ContextRelay.set(s, c);
-		}
-		source.subscribe(new ContextualizeSubscriber<>(s, doOnContext, c), c);
+		source.subscribe(new ContextMapSubscriber<>(s, doOnContext, ctx), ctx);
 	}
 
-	static final class ContextualizeSubscriber<T>
+	static final class ContextMapSubscriber<T>
 			implements ConditionalSubscriber<T>, InnerOperator<T, T>,
 			           QueueSubscription<T> {
 
@@ -64,11 +51,12 @@ final class FluxContextualize<T> extends FluxOperator<T, T> implements Fuseable 
 
 		volatile Context context;
 
+		boolean updated;
 		QueueSubscription<T> qs;
 		Subscription         s;
 
 		@SuppressWarnings("unchecked")
-		ContextualizeSubscriber(Subscriber<? super T> actual,
+		ContextMapSubscriber(Subscriber<? super T> actual,
 				BiFunction<Context, Context, Context> doOnContext,
 				Context context) {
 			this.actual = actual;
@@ -93,6 +81,7 @@ final class FluxContextualize<T> extends FluxOperator<T, T> implements Fuseable 
 
 		@Override
 		public void onContextUpdate(Context context) {
+			updated = true;
 			Context c;
 			try {
 				c = doOnContext.apply(this.context, context);
@@ -120,7 +109,9 @@ final class FluxContextualize<T> extends FluxOperator<T, T> implements Fuseable 
 				if (s instanceof QueueSubscription) {
 					this.qs = (QueueSubscription<T>) s;
 				}
-
+				if(!updated) {
+					onContextUpdate(Context.empty());
+				}
 				actual.onSubscribe(this);
 			}
 		}

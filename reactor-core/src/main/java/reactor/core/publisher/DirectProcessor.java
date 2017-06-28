@@ -36,7 +36,7 @@ import reactor.util.context.Context;
  * receive a value due to not requesting enough.
  * <p>
  * <p>
- * The implementation ignores Subscriptions set via onSubscribe.
+ * The implementation ignores Subscriptions push via onSubscribe.
  * <p>
  * <p>
  * A terminated DirectProcessor will emit the terminal signal to late subscribers.

@@ -24,9 +24,9 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Disposable;
-import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import reactor.util.context.ContextRelay;
+import reactor.util.context.Context;
+
 import javax.annotation.Nullable;
 
 /**
@@ -205,7 +205,7 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 			strategy = FluxSink.OverflowStrategy.IGNORE;
 		}
 
-		FluxCreate.BaseSink<IN> s = FluxCreate.createSink(this, strategy, ContextRelay.getOrEmpty(this));
+		FluxCreate.BaseSink<IN> s = FluxCreate.createSink(this, strategy);
 		onSubscribe(s);
 
 		if(s.isCancelled() ||

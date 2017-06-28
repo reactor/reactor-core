@@ -306,7 +306,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 	//common n unused item or dropped
 	protected final I item(int i) {
 		if (defaultScenario.producingMapper == null) {
-			throw Exceptions.bubble(new Exception("No producer set in " + "defaultScenario"));
+			throw Exceptions.bubble(new Exception("No producer push in " + "defaultScenario"));
 		}
 		return defaultScenario.producingMapper
 		                      .apply(i);
@@ -315,14 +315,14 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 	//unprocessable exception (dropped)
 	protected final RuntimeException droppedException() {
 		if (defaultScenario.droppedError == null) {
-			throw Exceptions.bubble(new Exception("No dropped exception set in " + "defaultScenario"));
+			throw Exceptions.bubble(new Exception("No dropped exception push in " + "defaultScenario"));
 		}
 		return defaultScenario.droppedError;
 	}
 
 	protected final RuntimeException exception() {
 		if (defaultScenario.producerError == null) {
-			throw Exceptions.bubble(new Exception("No exception set in " + "defaultScenario"));
+			throw Exceptions.bubble(new Exception("No exception push in " + "defaultScenario"));
 		}
 		return defaultScenario.producerError;
 	}

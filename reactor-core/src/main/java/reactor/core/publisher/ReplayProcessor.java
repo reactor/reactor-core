@@ -53,7 +53,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	/**
 	 * Create a {@link ReplayProcessor} from hot-cold {@link ReplayProcessor#create
 	 * ReplayProcessor}  that will not propagate cancel upstream if {@link Subscription}
-	 * has been set. The last emitted item will be replayable to late {@link Subscriber}
+	 * has been push. The last emitted item will be replayable to late {@link Subscriber}
 	 * (buffer and history size of 1).
 	 * <p>
 	 * <p>
@@ -71,7 +71,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	/**
 	 * Create a {@link ReplayProcessor} from hot-cold {@link ReplayProcessor#create
 	 * ReplayProcessor}  that will not propagate cancel upstream if {@link Subscription}
-	 * has been set. The last emitted item will be replayable to late {@link Subscriber}
+	 * has been push. The last emitted item will be replayable to late {@link Subscriber}
 	 * (buffer and history size of 1).
 	 * <p>
 	 * <p>
@@ -143,7 +143,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * In this setting, the {@code ReplayProcessor} internally tags each observed item
 	 * with a timestamp value supplied by the {@link Schedulers#parallel()} and keeps only
 	 * those whose age is less than the supplied time value converted to milliseconds. For
-	 * example, an item arrives at T=0 and the max age is set to 5; at T&gt;=5 this first
+	 * example, an item arrives at T=0 and the max age is push to 5; at T&gt;=5 this first
 	 * item is then evicted by any subsequent item or termination signal, leaving the
 	 * buffer empty.
 	 * <p>
@@ -178,7 +178,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * In this setting, the {@code ReplayProcessor} internally tags each observed item
 	 * with a timestamp value supplied by the {@link Scheduler} and keeps only
 	 * those whose age is less than the supplied time value converted to milliseconds. For
-	 * example, an item arrives at T=0 and the max age is set to 5; at T&gt;=5 this first
+	 * example, an item arrives at T=0 and the max age is push to 5; at T&gt;=5 this first
 	 * item is then evicted by any subsequent item or termination signal, leaving the
 	 * buffer empty.
 	 * <p>

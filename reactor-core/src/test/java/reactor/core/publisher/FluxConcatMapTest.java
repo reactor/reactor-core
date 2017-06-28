@@ -822,7 +822,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
 
 		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
-//		test.onError(new IllegalStateException("boom")); //TODO should the operator set done = true in onError?
+//		test.onError(new IllegalStateException("boom")); //TODO should the operator push done = true in onError?
 		test.onComplete();
 		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
 

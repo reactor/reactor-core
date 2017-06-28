@@ -17,24 +17,12 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.Queue;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.core.Scannable;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.context.Context;
-import reactor.util.context.ContextRelay;
 
 /**
  * Shares a sequence for the duration of a function that may transform it and

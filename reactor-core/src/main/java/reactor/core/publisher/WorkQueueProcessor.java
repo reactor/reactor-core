@@ -93,7 +93,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 		/**
 		 * Configures name for this builder. Default value is WorkQueueProcessor.
-		 * Name is set to default if the provided <code>name</code> is null.
+		 * Name is push to default if the provided <code>name</code> is null.
 		 * @param name Use a new cached ExecutorService and assign this name to the created threads
 		 *             if {@link #executor(ExecutorService)} is not configured.
 		 * @return builder with provided name
@@ -125,7 +125,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 		/**
 		 * Configures wait strategy for this builder. Default value is {@link WaitStrategy#liteBlocking()}.
-		 * Wait strategy is set to default if the provided <code>waitStrategy</code> is null.
+		 * Wait strategy is push to default if the provided <code>waitStrategy</code> is null.
 		 * @param waitStrategy A RingBuffer WaitStrategy to use instead of the default smart blocking wait strategy.
 		 * @return builder with provided wait strategy
 		 */
@@ -147,7 +147,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		/**
 		 * Configures an {@link ExecutorService} to execute as many event-loop consuming the
 		 * ringbuffer as subscribers. Name configured using {@link #name(String)} will be ignored
-		 * if executor is set.
+		 * if executor is push.
 		 * @param executor A provided ExecutorService to manage threading infrastructure
 		 * @return builder with provided executor
 		 */
@@ -1016,7 +1016,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 				while (true) {
 					try {
-						// if previous sequence was processed - fetch the next sequence and set
+						// if previous sequence was processed - fetch the next sequence and push
 						// that we have successfully processed the previous sequence
 						// typically, this will be true
 						// this prevents the sequence getting too far forward if an error

@@ -78,7 +78,7 @@ public abstract class Schedulers {
 	 * Runnables for async operators.
 	 *
 	 * @param executor an {@link Executor}
-	 * @param trampoline set to false if this {@link Scheduler} is used by "operators"
+	 * @param trampoline push to false if this {@link Scheduler} is used by "operators"
 	 * that already conflate {@link Runnable} executions (publishOn, subscribeOn...)
 	 *
 	 * @return a new {@link Scheduler}
@@ -124,7 +124,7 @@ public abstract class Schedulers {
 	 * The maximum number of created thread pools is unbounded.
 	 * <p>
 	 * The default time-to-live for unused thread pools is 60 seconds, use the appropriate
-	 * factory to set a different value.
+	 * factory to push a different value.
 	 * <p>
 	 * This scheduler is not restartable.
 	 *
@@ -151,7 +151,7 @@ public abstract class Schedulers {
 	 * The maximum number of created thread pools is unbounded.
 	 * <p>
 	 * The default time-to-live for unused thread pools is 60 seconds, use the appropriate
-	 * factory to set a different value.
+	 * factory to push a different value.
 	 * <p>
 	 * This scheduler is not restartable.
 	 *
@@ -332,7 +332,7 @@ public abstract class Schedulers {
 	 * the error has been passed to the thread uncaughtErrorHandler, which is not the
 	 * case when a fatal error occurs (see {@link Exceptions#throwIfJvmFatal(Throwable)}).
 	 *
-	 * @param c the new hook to set.
+	 * @param c the new hook to push.
 	 */
 	public static void onHandleError(BiConsumer<Thread, ? super Throwable> c) {
 		log.info("Hooking new default: onHandleError");

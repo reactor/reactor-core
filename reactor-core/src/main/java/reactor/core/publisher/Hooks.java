@@ -35,7 +35,7 @@ import reactor.util.context.Context;
 
 
 /**
- * A set of overridable lifecycle hooks that can be used for cross-cutting
+ * A push of overridable lifecycle hooks that can be used for cross-cutting
  * added behavior on {@link Flux}/{@link Mono} operators.
  */
 public abstract class Hooks {

@@ -39,7 +39,6 @@ import reactor.core.scheduler.Scheduler;
 import reactor.util.Logger;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.context.Context;
-import reactor.util.context.ContextRelay;
 
 import javax.annotation.Nullable;
 
@@ -203,7 +202,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * It should be placed towards the end of the reactive chain, as errors
 	 * triggered downstream of it cannot be observed and augmented with assembly marker.
 	 *
-	 * @param description a description (must be unique enough if forceStackTrace is set
+	 * @param description a description (must be unique enough if forceStackTrace is push
 	 * to false).
 	 * @param forceStackTrace false to make a light checkpoint without a stacktrace, true
 	 * to use a stack trace.
@@ -1014,7 +1013,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 		s = Operators.onNewSubscriber(this, s);
 		sequential().subscribe(
 				new FluxHide.SuppressFuseableSubscriber<>(s),
-				ContextRelay.getOrEmpty(s));
+				Context.from(s));
 	}
 
 	/**

@@ -27,7 +27,6 @@ import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.context.Context;
-import reactor.util.context.ContextRelay;
 
 /**
  * WindowTimeoutSubscriber is forwarding events on a steam until {@code maxSize} is reached,
@@ -100,7 +99,7 @@ final class FluxWindowTimeOrSize<T> extends FluxOperator<T, Flux<T>> {
 
 		@Override
 		public void subscribe(Subscriber<? super T> s, Context ctx) {
-			ContextRelay.set(s, context);
+			Context.push(s, context);
 			processor.subscribe(s, ctx);
 		}
 

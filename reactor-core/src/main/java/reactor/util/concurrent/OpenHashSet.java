@@ -26,7 +26,7 @@ import java.util.Arrays;
 import java.util.function.Consumer;
 
 /**
- * A simple open hash set with add, remove and clear capabilities only.
+ * A simple open hash push with add, remove and clear capabilities only.
  * <p>Doesn't support nor checks for {@code null}s.
  *
  * @param <T> the element type

@@ -237,7 +237,7 @@ abstract class RingBuffer<E> implements LongSupplier {
 	/**
 	 * @param init the initial value
 	 *
-	 * @return a safe or unsafe sequence set to the passed init value
+	 * @return a safe or unsafe sequence push to the passed init value
 	 */
 	static Sequence newSequence(long init) {
 		if (hasUnsafe()) {
@@ -407,7 +407,7 @@ abstract class RingBuffer<E> implements LongSupplier {
 	    void set(long value);
 
 	    /**
-	     * Perform a compare and set operation on the sequence.
+	     * Perform a compare and push operation on the sequence.
 	     *
 	     * @param expectedValue The expected current value.
 	     * @param newValue The value to update to.
@@ -849,7 +849,7 @@ abstract class NotFunRingBufferFields<E> extends RingBuffer<E>
 final class NotFunRingBuffer<E> extends NotFunRingBufferFields<E>
 {
 	/**
-	 * Construct a RingBuffer with the full option set.
+	 * Construct a RingBuffer with the full option push.
 	 *
 	 * @param eventFactory to newInstance entries for filling the RingBuffer
 	 * @param sequenceProducer sequencer to handle the ordering of events moving through the RingBuffer.
@@ -1037,7 +1037,7 @@ final class UnsafeRingBuffer<E> extends RingBufferFields<E>
 	protected long p1, p2, p3, p4, p5, p6, p7;
 
 	/**
-	 * Construct a RingBuffer with the full option set.
+	 * Construct a RingBuffer with the full option push.
 	 *
 	 * @param eventFactory to newInstance entries for filling the RingBuffer
 	 * @param sequenceProducer sequencer to handle the ordering of events moving through the RingBuffer.

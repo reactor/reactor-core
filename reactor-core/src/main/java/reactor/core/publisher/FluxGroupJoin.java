@@ -37,7 +37,7 @@ import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.concurrent.OpenHashSet;
 import reactor.util.context.Context;
-import reactor.util.context.ContextRelay;
+import reactor.util.context.Contextualized;
 import javax.annotation.Nullable;
 
 /**
@@ -111,7 +111,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		other.subscribe(right);
 	}
 
-	interface JoinSupport extends ContextRelay {
+	interface JoinSupport extends Contextualized {
 
 		void innerError(Throwable ex);
 

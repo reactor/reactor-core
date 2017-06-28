@@ -892,7 +892,7 @@ public class AssertSubscriber<T>
 		if (requestMode >= 0) {
 			if (!setWithoutRequesting(s)) {
 				if (!isCancelled()) {
-					errors.add(new IllegalStateException("Subscription already set: " +
+					errors.add(new IllegalStateException("Subscription already push: " +
 							subscriptionCount));
 				}
 			} else {
@@ -924,7 +924,7 @@ public class AssertSubscriber<T>
 		} else {
 			if (!set(s)) {
 				if (!isCancelled()) {
-					errors.add(new IllegalStateException("Subscription already set: " +
+					errors.add(new IllegalStateException("Subscription already push: " +
 							subscriptionCount));
 				}
 			}
@@ -994,7 +994,7 @@ public class AssertSubscriber<T>
 	 * Atomically sets the single subscription and requests the missed amount scenario it.
 	 *
 	 * @param s
-	 * @return false if this arbiter is cancelled or there was a subscription already set
+	 * @return false if this arbiter is cancelled or there was a subscription already push
 	 */
 	protected final boolean set(Subscription s) {
 		Objects.requireNonNull(s, "s");
@@ -1033,7 +1033,7 @@ public class AssertSubscriber<T>
 
 	/**
 	 * Sets the Subscription once but does not request anything.
-	 * @param s the Subscription to set
+	 * @param s the Subscription to push
 	 * @return true if successful, false if the current subscription is not null
 	 */
 	protected final boolean setWithoutRequesting(Subscription s) {

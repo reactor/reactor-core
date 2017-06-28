@@ -59,7 +59,7 @@ public class VirtualTimeScheduler implements Scheduler {
 	 * factories. While the method is thread safe, its usually advised to execute such
 	 * wide-impact BEFORE all tested code runs (setup etc). The created scheduler is returned.
 	 *
-	 * @return the VirtualTimeScheduler that was created and set through the factory
+	 * @return the VirtualTimeScheduler that was created and push through the factory
 	 */
 	public static VirtualTimeScheduler getOrSet() {
 		return enable(VirtualTimeScheduler::new, false);
@@ -129,7 +129,7 @@ public class VirtualTimeScheduler implements Scheduler {
 			}
 			VirtualTimeScheduler newS = schedulerSupplier.get();
 			if (newS == CURRENT.get()) {
-				return newS; //nothing to do, it has already been set in the past
+				return newS; //nothing to do, it has already been push in the past
 			}
 
 			if (CURRENT.compareAndSet(s, newS)) {

@@ -115,27 +115,6 @@ public class MonoCreateTest {
 	}
 
 	@Test
-	public void context() {
-		AtomicInteger x = new AtomicInteger();
-		Mono.create(s -> s.contextualize(c -> c.put("test", c.<Integer>get("test") + 1))
-		                  .success("success"))
-		    .subscribe(new BaseSubscriber<Object>() {
-			    @Override
-			    public Context currentContext() {
-				    return Context.empty()
-				                  .put("test", 1);
-			    }
-
-			    @Override
-			    protected void hookOnContext(Context context) {
-				    x.set(context.get("test"));
-			    }
-		    });
-
-		assertThat(x.get()).isEqualTo(2);
-	}
-
-	@Test
 	public void monoCreateOnCancel() {
 		AtomicBoolean cancelled = new AtomicBoolean();
 		Mono.create(s -> s.onCancel(() -> cancelled.set(true)).success("test")).block();
@@ -314,7 +293,7 @@ public class MonoCreateTest {
 	@Test
 	public void scanDefaultMonoSink() {
 		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MonoCreate.DefaultMonoSink<String> test = new MonoCreate.DefaultMonoSink<>(actual, Context.empty());
+		MonoCreate.DefaultMonoSink<String> test = new MonoCreate.DefaultMonoSink<>(actual);
 
 		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
 
@@ -327,7 +306,7 @@ public class MonoCreateTest {
 	@Test
 	public void scanDefaultMonoSinkCancelTerminates() {
 		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MonoCreate.DefaultMonoSink<String> test = new MonoCreate.DefaultMonoSink<>(actual, Context.empty());
+		MonoCreate.DefaultMonoSink<String> test = new MonoCreate.DefaultMonoSink<>(actual);
 
 		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
 		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();

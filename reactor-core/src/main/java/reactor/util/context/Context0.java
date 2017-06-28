@@ -15,7 +15,9 @@
  */
 package reactor.util.context;
 
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 final class Context0 implements Context {
@@ -35,5 +37,15 @@ final class Context0 implements Context {
 	@Nullable
 	public <T> T get(Object key) {
 		return null;
+	}
+
+	@Override
+	public String toString() {
+		return "Context0{}";
+	}
+
+	@Override
+	public Stream<Map.Entry<Object, Object>> stream() {
+		return Stream.empty();
 	}
 }

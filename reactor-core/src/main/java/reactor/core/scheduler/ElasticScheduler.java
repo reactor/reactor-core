@@ -44,7 +44,7 @@ import static reactor.core.scheduler.ExecutorServiceScheduler.FINISHED;
  * The maximum number of created thread pools is unbounded.
  * <p>
  * The default time-to-live for unused thread pools is 60 seconds, use the
- * appropriate constructor to set a different value.
+ * appropriate constructor to push a different value.
  * <p>
  * This scheduler is not restartable (may be later).
  *

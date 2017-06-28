@@ -23,7 +23,6 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.util.context.Context;
-import reactor.util.context.ContextRelay;
 
 /**
  * Delays the subscription to the main source until another Publisher
@@ -168,7 +167,7 @@ final class FluxDelaySubscription<T, U> extends FluxOperator<T, T>
 
 		@Override
 		public void onContextUpdate(Context context) {
-			ContextRelay.set(actual, context);
+			Context.push(actual, context);
 		}
 
 		@Override

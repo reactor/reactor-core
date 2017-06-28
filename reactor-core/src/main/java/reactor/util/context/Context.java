@@ -16,6 +16,8 @@
 
 package reactor.util.context;
 
+import java.util.Map;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 /**
@@ -43,6 +45,35 @@ public interface Context {
 	 */
 	static Context empty() {
 		return Context0.INSTANCE;
+	}
+
+	/**
+	 * Try pulling a {@link Context} from the given reference if of
+	 * {@link Contextualized} type.
+	 *
+	 * @param o the reference to push to if instance of {@link Contextualized}
+	 * @return the pulled {@link Context} or {@link Context#empty()}
+	 */
+	@SuppressWarnings("unchecked")
+	static Context from(Object o) {
+		if(o instanceof Contextualized){
+			return ((Contextualized)o).currentContext();
+		}
+		return empty();
+	}
+
+	/**
+	 * Try pushing the passed {@link Context} to the given reference if of
+	 * {@link Contextualized} type.
+	 *
+	 * @param o the reference to push to if instance of {@link Contextualized}
+	 * @param c the {@link Context} to push
+	 */
+	static void push(Object o, Context c) {
+		if (o != empty() && o instanceof Contextualized) {
+			@SuppressWarnings("unchecked") Contextualized cr = (Contextualized) o;
+			cr.onContextUpdate(c);
+		}
 	}
 
 	/**
@@ -113,4 +144,11 @@ public interface Context {
 	default boolean isEmpty() {
 		return this == empty();
 	}
+
+	/**
+	 * Stream key/value pairs from this {@link Context}
+	 *
+	 * @return a {@link Stream} of key/value pairs held by this context
+	 */
+	Stream<Map.Entry<Object,Object>> stream();
 }

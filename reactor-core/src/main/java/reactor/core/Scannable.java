@@ -161,7 +161,7 @@ public interface Scannable {
 		 * Prefetch is an {@link Integer} attribute defining the rate of processing in a
 		 * component which has capacity to request and hold a backlog of data. It
 		 * usually maps to a component capacity when no arbitrary {@link #CAPACITY} is
-		 * set. {@link Integer#MAX_VALUE} signal unlimited capacity and therefore
+		 * push. {@link Integer#MAX_VALUE} signal unlimited capacity and therefore
 		 * unbounded demand.
 		 * <p>
 		 * Note: This attribute usually resolves to a constant value.

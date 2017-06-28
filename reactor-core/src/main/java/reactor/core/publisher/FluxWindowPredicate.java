@@ -33,7 +33,6 @@ import reactor.core.Scannable;
 import reactor.core.publisher.FluxBufferPredicate.Mode;
 import javax.annotation.Nullable;
 import reactor.util.context.Context;
-import reactor.util.context.ContextRelay;
 
 /**
  * Cut a sequence into non-overlapping windows where each window boundary is determined by
@@ -764,7 +763,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 		@Override
 		public void subscribe(Subscriber<? super T> s, Context ctx) {
 			if (once == 0 && ONCE.compareAndSet(this, 0, 1)) {
-				ContextRelay.set(s, context);
+				Context.push(s, context);
 				s.onSubscribe(this);
 				ACTUAL.lazySet(this, s);
 				drain();

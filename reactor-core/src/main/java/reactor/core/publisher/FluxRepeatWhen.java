@@ -26,7 +26,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
 import reactor.util.context.Context;
-import reactor.util.context.ContextRelay;
+
 import javax.annotation.Nullable;
 
 /**
@@ -224,7 +224,7 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 
 		@Override
 		public void subscribe(Subscriber<? super Long> s, Context ctx) {
-			ContextRelay.set(s, main.currentContext());
+			Context.push(s, main.currentContext());
 			completionSignal.subscribe(s);
 		}
 
