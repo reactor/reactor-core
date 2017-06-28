@@ -24,7 +24,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.context.Context;
-import reactor.util.context.ContextRelay;
+
 import javax.annotation.Nullable;
 
 /**
@@ -106,7 +106,7 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements
 		public void subscribe(Subscriber<? super T> s, Context context) {
 			if (ONCE.compareAndSet(this, 0, 1)) {
 				this.actual = s;
-				ContextRelay.set(s, ctx);
+				Context.push(s, ctx);
 				s.onSubscribe(this);
 			} else {
 				Operators.error(s, new IllegalStateException("This ParallelGroup can be subscribed to at most once."));

@@ -18,11 +18,13 @@ package reactor.util.context;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 @SuppressWarnings("unchecked")
 final class ContextN extends HashMap<Object, Object>
-		implements Context {
+		implements Context, Function<Map.Entry<Object, Object>, Map.Entry<Object, Object>> {
 
 	ContextN(Object key1, Object value1, Object key2, Object value2) {
 		super(2, 1f);
@@ -56,5 +58,20 @@ final class ContextN extends HashMap<Object, Object>
 			return defaultValue;
 		}
 		return v;
+	}
+
+	@Override
+	public Stream<Entry<Object, Object>> stream() {
+		return entrySet().stream().map(this);
+	}
+
+	@Override
+	public Entry<Object, Object> apply(Entry<Object, Object> o) {
+		return new Context1(o.getKey(), o.getValue());
+	}
+
+	@Override
+	public String toString() {
+		return "ContextN"+super.toString();
 	}
 }

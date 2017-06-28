@@ -27,7 +27,6 @@ import reactor.core.Disposable;
 import reactor.core.publisher.FluxCreate.SinkDisposable;
 import javax.annotation.Nullable;
 import reactor.util.context.Context;
-import reactor.util.context.ContextRelay;
 
 /**
  * Wraps a the downstream Subscriber into a single emission object
@@ -45,13 +44,14 @@ final class MonoCreate<T> extends Mono<T> {
 
     @Override
     public void subscribe(Subscriber<? super T> s, Context ctx) {
-	    DefaultMonoSink<T> emitter = new DefaultMonoSink<>(s, ctx);
+	    DefaultMonoSink<T> emitter = new DefaultMonoSink<>(s);
 
         s.onSubscribe(emitter);
 
         try {
             callback.accept(emitter);
-        } catch (Throwable ex) {
+        }
+        catch (Throwable ex) {
             emitter.error(Operators.onOperatorError(ex));
         }
     }
@@ -60,8 +60,6 @@ final class MonoCreate<T> extends Mono<T> {
 			implements MonoSink<T>, InnerProducer<T> {
 
 		final Subscriber<? super T> actual;
-
-		final Context context;
 
 		volatile Disposable disposable;
 		@SuppressWarnings("rawtypes")
@@ -85,20 +83,8 @@ final class MonoCreate<T> extends Mono<T> {
         static final int HAS_REQUEST_NO_VALUE = 2;
         static final int HAS_REQUEST_HAS_VALUE = 3;
 
-		DefaultMonoSink(Subscriber<? super T> actual, Context ctx) {
+		DefaultMonoSink(Subscriber<? super T> actual) {
 			this.actual = actual;
-			this.context = ctx;
-		}
-
-		@Override
-		public MonoSink<T> contextualize(Function<Context, Context> doOnContext) {
-			if (compareAndSet(false, true)) {
-				Context c = doOnContext.apply(context);
-				if(c != context) {
-					ContextRelay.set(actual, c);
-				}
-			}
-			return this;
 		}
 
 		@Override

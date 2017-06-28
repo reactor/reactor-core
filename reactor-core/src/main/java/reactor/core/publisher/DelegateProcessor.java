@@ -25,14 +25,14 @@ import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.context.Context;
-import reactor.util.context.ContextRelay;
+import reactor.util.context.Contextualized;
 import javax.annotation.Nullable;
 
 /**
  * @author Stephane Maldini
  */
 final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
-		implements ContextRelay {
+		implements Contextualized {
 
 	final Publisher<OUT> downstream;
 	final Subscriber<IN> upstream;
@@ -48,7 +48,7 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 		this.downstream = Objects.requireNonNull(downstream, "Downstream must not be null");
 		this.upstream = Objects.requireNonNull(upstream, "Upstream must not be null");
 		if (context == null) {
-			C.lazySet(this, ContextRelay.getOrEmpty(upstream));
+			C.lazySet(this, Context.from(upstream));
 		}
 		else {
 			C.lazySet(this, context);
@@ -59,13 +59,13 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 	public void onContextUpdate(Context context) {
 		if(context != Context.empty() &&
 				C.compareAndSet(this, Context.empty(), context)){
-			ContextRelay.set(upstream, context);
+			Context.push(upstream, context);
 		}
 	}
 
 	@Override
 	public Context currentContext() {
-		return ContextRelay.getOrEmpty(upstream);
+		return Context.from(upstream);
 	}
 
 	@Override
@@ -95,7 +95,7 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 			throw Exceptions.argumentIsNullException();
 		}
 		Context c = context;
-		ContextRelay.set(s, c);
+		Context.push(s, c);
 		downstream.subscribe(s);
 	}
 

@@ -17,7 +17,7 @@ package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.util.context.ContextRelay;
+import reactor.util.context.Contextualized;
 import reactor.core.Scannable;
 import javax.annotation.Nullable;
 import reactor.util.context.Context;
@@ -32,18 +32,18 @@ import reactor.util.context.Context;
  * @author Stephane Maldini
  */
 interface InnerProducer<O>
-		extends ContextRelay, Scannable, Subscription {
+		extends Contextualized, Scannable, Subscription {
 
 	Subscriber<? super O> actual();
 
 	@Override
 	default Context currentContext() {
-		return ContextRelay.getOrEmpty(actual());
+		return Context.from(actual());
 	}
 
 	@Override
 	default void onContextUpdate(Context context) {
-		ContextRelay.set(actual(), context);
+		Context.push(actual(), context);
 	}
 
 	@Override

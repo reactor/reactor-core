@@ -34,7 +34,6 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.context.Context;
-import reactor.util.context.ContextRelay;
 
 /**
  * Groups upstream items into their own Publisher sequence based on a key selector.
@@ -259,7 +258,7 @@ final class FluxGroupBy<T, K, V> extends FluxOperator<T, GroupedFlux<K, V>>
 		void signalAsyncError() {
 			Throwable e = Exceptions.terminate(ERROR, this); //TODO investigate if e == null
 			if (e == null) {
-				e = new IllegalStateException("FluxGroupBy.signalAsyncError called without error set");
+				e = new IllegalStateException("FluxGroupBy.signalAsyncError called without error push");
 			}
 			groupCount = 0;
 			for (UnicastGroupedFlux<K, V> g : groupMap.values()) {
@@ -697,7 +696,7 @@ final class FluxGroupBy<T, K, V> extends FluxOperator<T, GroupedFlux<K, V>>
 		@Override
 		public void subscribe(Subscriber<? super V> s, Context context) {
 			if (once == 0 && ONCE.compareAndSet(this, 0, 1)) {
-				ContextRelay.set(s, context);
+				Context.push(s, context);
 				s.onSubscribe(this);
 				ACTUAL.lazySet(this, s);
 				drain();

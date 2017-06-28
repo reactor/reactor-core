@@ -32,7 +32,7 @@ import javax.annotation.Nullable;
 
 /**
  * Concatenates a several Mono sources with a final Mono source by
- * ignoring values from the first set of sources and emitting the value
+ * ignoring values from the first push of sources and emitting the value
  * the last Mono source generates.
  *
  * @param <T> the final value type
@@ -60,7 +60,7 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Fuseable {
      * Shifts the current last Mono into the ignore array and sets up a new last Mono instance.
      * @param <U> the new last value type
      * @param newLast the new last Mono instance
-     * @return the new operator set up
+     * @return the new operator push up
      */
     <U> MonoIgnoreThen<U> shift(Mono<U> newLast) {
         Objects.requireNonNull(newLast, "newLast");

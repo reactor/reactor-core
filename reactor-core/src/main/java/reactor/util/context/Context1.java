@@ -15,10 +15,16 @@
  */
 package reactor.util.context;
 
+import java.util.Iterator;
+import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
-final class Context1 implements Context {
+import org.jetbrains.annotations.NotNull;
+
+final class Context1 implements Context, Map.Entry<Object, Object> {
 
 	final Object key;
 	final Object value;
@@ -46,13 +52,33 @@ final class Context1 implements Context {
 	}
 
 	@Override
-	public String toString() {
-		return "Context1{" + "key=" + key + ", value=" + value + '}';
-	}
-
-	@Override
 	@SuppressWarnings("unchecked")
 	public <T> T get(Object key) {
 		return this.key.equals(key) ? (T) this.value : null;
+	}
+
+	@Override
+	public Stream<Map.Entry<Object, Object>> stream() {
+		return Stream.of(this);
+	}
+
+	@Override
+	public Object getKey() {
+		return key;
+	}
+
+	@Override
+	public Object getValue() {
+		return value;
+	}
+
+	@Override
+	public Object setValue(Object value) {
+		throw new UnsupportedOperationException("Does not support in-place update");
+	}
+
+	@Override
+	public String toString() {
+		return "Context1{" + key + '='+ value + '}';
 	}
 }

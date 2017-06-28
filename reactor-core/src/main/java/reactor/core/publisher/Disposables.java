@@ -52,11 +52,11 @@ final class Disposables {
 	};
 
 	/**
-	 * Atomically set the field to a {@link Disposable} and dispose the old content.
+	 * Atomically push the field to a {@link Disposable} and dispose the old content.
 	 *
 	 * @param updater the target field updater
 	 * @param holder the target instance holding the field
-	 * @param newValue the new Disposable to set
+	 * @param newValue the new Disposable to push
 	 * @return true if successful, false if the field contains the {@link #DISPOSED} instance.
 	 */
 	public static <T> boolean set(AtomicReferenceFieldUpdater<T, Disposable> updater, T holder, @Nullable Disposable newValue) {
@@ -78,7 +78,7 @@ final class Disposables {
 	}
 
 	/**
-	 * Atomically set the field to the given non-null {@link Disposable} and return true,
+	 * Atomically push the field to the given non-null {@link Disposable} and return true,
 	 * or return false if the field is non-null.
 	 * If the target field contains the common {@link #DISPOSED} instance, the supplied disposable
 	 * is disposed. If the field contains other non-null {@link Disposable}, an {@link IllegalStateException}
@@ -86,7 +86,7 @@ final class Disposables {
 	 *
 	 * @param updater the target field updater
 	 * @param holder the target instance holding the field
-	 * @param newValue the new Disposable to set, not null
+	 * @param newValue the new Disposable to push, not null
 	 * @return true if the operation succeeded, false
 	 */
 	public static <T> boolean setOnce(AtomicReferenceFieldUpdater<T, Disposable> updater, T holder, Disposable newValue) {
@@ -102,7 +102,7 @@ final class Disposables {
 	}
 
 	private static void reportDisposableSet() {
-		Operators.onErrorDropped(new IllegalStateException("Disposable already set"));
+		Operators.onErrorDropped(new IllegalStateException("Disposable already push"));
 	}
 
 	/**
@@ -111,7 +111,7 @@ final class Disposables {
 	 *
 	 * @param updater the target field updater
 	 * @param holder the target instance holding the field
-	 * @param newValue the new Disposable to set, null allowed
+	 * @param newValue the new Disposable to push, null allowed
 	 * @return true if the operation succeeded, false if the target field contained
 	 * the common {@link #DISPOSED} instance and the given disposable is not null but is disposed.
 	 */
@@ -176,12 +176,12 @@ final class Disposables {
 	}
 
 	/**
-	 * Atomically try to set the given {@link Disposable} on the field if it is null or
+	 * Atomically try to push the given {@link Disposable} on the field if it is null or
 	 * disposes it if the field contains {@link #DISPOSED}.
 	 *
 	 * @param updater the target field updater
 	 * @param holder the target instance holding the field
-	 * @param newValue the disposable to set
+	 * @param newValue the disposable to push
 	 * @return true if successful, false otherwise
 	 */
 	public static <T> boolean trySet(AtomicReferenceFieldUpdater<T, Disposable> updater, T holder, Disposable newValue) {
@@ -222,10 +222,10 @@ final class Disposables {
 				AtomicReferenceFieldUpdater.newUpdater(SequentialDisposable.class, Disposable.class, "inner");
 
 		/**
-		 * Atomically set the next {@link Disposable} on this container and dispose the previous
+		 * Atomically push the next {@link Disposable} on this container and dispose the previous
 		 * one (if any). If the container has been disposed, fall back to disposing {@code next}.
 		 *
-		 * @param next the {@link Disposable} to set, may be null
+		 * @param next the {@link Disposable} to push, may be null
 		 * @return true if the operation succeeded, false if the container has been disposed
 		 * @see #replace(Disposable)
 		 */
@@ -234,10 +234,10 @@ final class Disposables {
 		}
 
 		/**
-		 * Atomically set the next {@link Disposable} on this container but don't dispose the previous
+		 * Atomically push the next {@link Disposable} on this container but don't dispose the previous
 		 * one (if any). If the container has been disposed, fall back to disposing {@code next}.
 		 *
-		 * @param next the {@link Disposable} to set, may be null
+		 * @param next the {@link Disposable} to push, may be null
 		 * @return true if the operation succeeded, false if the container has been disposed
 		 * @see #update(Disposable)
 		 */

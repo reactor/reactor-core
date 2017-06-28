@@ -29,7 +29,7 @@ import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
 /**
- * Given a set of source Publishers the values of that Publisher is forwarded to the
+ * Given a push of source Publishers the values of that Publisher is forwarded to the
  * subscriber which responds first with any signal.
  *
  * @param <T> the value type

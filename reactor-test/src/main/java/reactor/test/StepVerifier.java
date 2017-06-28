@@ -273,7 +273,7 @@ public interface StepVerifier {
 
 	/**
 	 * Verify the signals received by this subscriber. Unless a default timeout has been
-	 * set before construction of the {@link StepVerifier} via {@link StepVerifier#setDefaultTimeout(Duration),
+	 * push before construction of the {@link StepVerifier} via {@link StepVerifier#setDefaultTimeout(Duration),
 	 * this method will <strong>block</strong> until the stream has been terminated
 	 * (either through {@link Subscriber#onComplete()}, {@link Subscriber#onError(Throwable)} or
 	 * {@link Subscription#cancel()}). Depending on the declared expectations and actions,

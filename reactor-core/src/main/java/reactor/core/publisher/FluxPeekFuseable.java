@@ -24,7 +24,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.util.context.Context;
-import reactor.util.context.ContextRelay;
+
 import javax.annotation.Nullable;
 
 /**
@@ -125,9 +125,9 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 
 		@Override
 		public Context currentContext() {
-			Context c = ContextRelay.getOrEmpty(actual);
-			if(!c.isEmpty() && parent.onContextParentCall() != null) {
-				parent.onContextParentCall().accept(c);
+			Context c = Context.from(actual);
+			if(!c.isEmpty() && parent.onCurrentContextCall() != null) {
+				parent.onCurrentContextCall().accept(c);
 			}
 			return c;
 		}
@@ -395,9 +395,9 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 
 		@Override
 		public Context currentContext() {
-			Context c = ContextRelay.getOrEmpty(actual);
-			if(!c.isEmpty() && parent.onContextParentCall() != null) {
-				parent.onContextParentCall().accept(c);
+			Context c = Context.from(actual);
+			if(!c.isEmpty() && parent.onCurrentContextCall() != null) {
+				parent.onCurrentContextCall().accept(c);
 			}
 			return c;
 		}
@@ -733,9 +733,9 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 
 		@Override
 		public Context currentContext() {
-			Context c = ContextRelay.getOrEmpty(actual);
-			if(!c.isEmpty() && parent.onContextParentCall() != null) {
-				parent.onContextParentCall().accept(c);
+			Context c = Context.from(actual);
+			if(!c.isEmpty() && parent.onCurrentContextCall() != null) {
+				parent.onCurrentContextCall().accept(c);
 			}
 			return c;
 		}

@@ -20,10 +20,9 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.util.context.ContextRelay;
+import reactor.util.context.Contextualized;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
-import reactor.util.context.Context;
 
 /**
  * A simple base class for a {@link Subscriber} implementation that lets the user
@@ -45,7 +44,7 @@ import reactor.util.context.Context;
  * @author Simon Baslé
  */
 public abstract class BaseSubscriber<T> implements Subscriber<T>, Subscription,
-                                                   Disposable, ContextRelay {
+                                                   Disposable, Contextualized {
 
 	volatile Subscription subscription;
 
@@ -58,11 +57,6 @@ public abstract class BaseSubscriber<T> implements Subscriber<T>, Subscription,
 	 */
 	protected Subscription upstream() {
 		return subscription;
-	}
-
-	@Override
-	public final void onContextUpdate(Context context) {
-		hookOnContext(context);
 	}
 
 	@Override
@@ -108,13 +102,6 @@ public abstract class BaseSubscriber<T> implements Subscriber<T>, Subscription,
 	 * Optional hook for completion processing. Defaults to doing nothing.
 	 */
 	protected void hookOnComplete() {
-		// NO-OP
-	}
-
-	/**
-	 * Optional hook for context handling. Defaults to doing nothing.
-	 */
-	protected void hookOnContext(Context context) {
 		// NO-OP
 	}
 
@@ -212,7 +199,7 @@ public abstract class BaseSubscriber<T> implements Subscriber<T>, Subscription,
 				hookOnComplete();
 			}
 			catch (Throwable throwable) {
-				//onError itself will short-circuit due to the CancelledSubscription being set above
+				//onError itself will short-circuit due to the CancelledSubscription being push above
 				hookOnError(Operators.onOperatorError(throwable));
 			}
 			finally {

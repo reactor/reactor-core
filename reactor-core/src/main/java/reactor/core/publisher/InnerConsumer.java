@@ -16,8 +16,7 @@
 package reactor.core.publisher;
 
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.util.context.ContextRelay;
+import reactor.util.context.Contextualized;
 import reactor.core.Scannable;
 
 /**
@@ -29,5 +28,5 @@ import reactor.core.Scannable;
  * @author Stephane Maldini
  */
 interface InnerConsumer<I>
-		extends ContextRelay, Subscriber<I>, Scannable {
+		extends Contextualized, Subscriber<I>, Scannable {
 }

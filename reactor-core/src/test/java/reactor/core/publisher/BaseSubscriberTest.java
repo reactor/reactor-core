@@ -82,91 +82,79 @@ public class BaseSubscriberTest {
 
 	@Test
 	public void contextPassing() throws InterruptedException {
-		CountDownLatch latch = new CountDownLatch(1);
-		AtomicInteger lastValue = new AtomicInteger(0);
 		AtomicReference<Context> c = new AtomicReference<>();
 		AtomicReference<Context> innerC = new AtomicReference<>();
 
-		Flux<Integer> intFlux = Flux.range(1, 1000)
-		                            //old: test=baseSubscriber
-		                            //next: test=baseSubscriber_range
-		                            .contextualize((old, next) -> next.put("test", old.get("test") + "_range"))
-		                            .log()
-		                            .flatMap(d -> Flux.just(d)
-		                                              //old: test=baseSubscriber_range
-		                                              //next: test=baseSubscriber_range_innerFlatmap
-		                                              .contextualize((old, next) -> {
-			                                              if (innerC.get() == null) {
-				                                              innerC.set(next.put("test", old.get("test") + "_innerFlatmap"));
-			                                              }
-			                                              return Context.empty();
-		                                              })
-		                                              .log())
-		                            .map(d -> d)
-		                            .distinct()
-		                            //old: test=baseSubscriber_range
-		                            //next: test=baseSubscriber_range_distinct
-		                            .contextualize((old, next) -> next.put("test",
-				                            next.getOrDefault("test", old.get("test") + "_distinct")))
-		                            .log();
-		intFlux.subscribe(new BaseSubscriber<Integer>() {
-
-			@Override
-			public Context currentContext() {
-				return Context.empty()
-				              .put("test", "baseSubscriber");
-			}
-
-			@Override
-			protected void hookOnContext(Context context) {
-				c.set(context);
-			}
-
-			@Override
-			protected void hookOnSubscribe(Subscription subscription) {
-				request(1);
-			}
-
-			@Override
-			public void hookOnNext(Integer integer) {
-				assertTrue("unexpected previous value for " + integer,
-						lastValue.compareAndSet(integer - 1, integer));
-				if (integer < 10) {
-					request(1);
+		Flux.range(1, 1000)
+		    //old: test=baseSubscriber
+		    //next: empty
+		    //return: test=baseSubscriber_range
+		    .contextMap((old, next) -> next.put("test", old.get("test") + "_range"))
+		    .log()
+		    .flatMapSequential(d -> Mono.just(d)
+		                      //old: test=baseSubscriber_range_take
+		                      //next: test=baseSubscriber_range_innerFlatmap
+		                      //return: old (discarded since inner)
+		                      .contextMap((old, next) -> {
+			                      if (innerC.get() == null) {
+				                      innerC.set(next.put("test", old.get("test") + "_innerFlatmap"));
+			                      }
+			                      return old;
+		                      })
+		                      .log())
+		    .map(d -> d)
+		    .take(10)
+		    //old: test=baseSubscriber
+		    //next: test=baseSubscriber_range
+		    //return: test=baseSubscriber_range_take
+		    .contextMap((old, next) -> next.put("test", next.get("test") + "_take"))
+		    .log()
+		    .subscribe(new BaseSubscriber<Integer>() {
+				@Override
+				public Context currentContext() {
+					return Context.empty()
+					              .put("test", "baseSubscriber");
 				}
-				else {
-					cancel();
+
+				@Override
+				public void onContextUpdate(Context context) {
+					c.set(context);
 				}
-			}
-
-			@Override
-			protected void hookOnComplete() {
-				fail("expected cancellation, not completion");
-			}
-
-			@Override
-			protected void hookOnError(Throwable throwable) {
-				fail("expected cancellation, not error " + throwable);
-			}
-
-			@Override
-			protected void hookFinally(SignalType type) {
-				latch.countDown();
-				assertThat(type, is(SignalType.CANCEL));
-			}
 		});
 
-		latch.await(500, TimeUnit.MILLISECONDS);
-		assertThat(lastValue.get(), is(10));
-
 		assertThat(c.get()
-		            .get("test"), is("baseSubscriber_distinct_range"));
+		            .get("test"), is("baseSubscriber_range_take"));
 
 		assertThat(c.get()
 		            .get("test2"), Matchers.nullValue());
 
 		assertThat(innerC.get()
-		                 .get("test"), is("baseSubscriber_distinct_range_innerFlatmap"));
+		                 .get("test"), is("baseSubscriber_range_take_innerFlatmap"));
+	}
+
+	@Test
+	public void contextPassing2() throws InterruptedException {
+		AtomicReference<String> innerC = new AtomicReference<>();
+
+		Flux.range(1, 1000)
+		    .contextMap((old, next) -> next.put("test", "foo"))
+		    .log()
+		    .flatMapSequential(d ->
+				    Mono.just(d)
+				        .contextMap((old, next) -> {
+					        if (innerC.get() == null) {
+						        innerC.set(""+ old.get("test") + old.get("test2"));
+					        }
+					        return old;
+				        })
+				        .log())
+		    .map(d -> d)
+		    .take(10)
+		    .contextMap((old, next) -> next.put("test2", "bar"))
+		    .log()
+		    .subscribe();
+
+		assertThat(innerC.get(), is("foobar"));
 	}
 
 	@Test

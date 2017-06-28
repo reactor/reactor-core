@@ -47,7 +47,6 @@ import reactor.core.scheduler.Schedulers;
 import reactor.util.Logger;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.context.Context;
-import reactor.util.context.ContextRelay;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuple4;
@@ -573,7 +572,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param resourceSupplier a {@link Callable} that is called on subscribe to create the resource
 	 * @param sourceSupplier a {@link Mono} factory to create the Mono depending on the created resource
 	 * @param resourceCleanup invoked on completion to clean-up the resource
-	 * @param eager set to true to clean before terminating downstream subscribers
+	 * @param eager push to true to clean before terminating downstream subscribers
 	 * @param <T> emitted type
 	 * @param <D> resource type
 	 *
@@ -1411,7 +1410,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * It should be placed towards the end of the reactive chain, as errors
 	 * triggered downstream of it cannot be observed and augmented with assembly marker.
 	 *
-	 * @param description a description (must be unique enough if forceStackTrace is set
+	 * @param description a description (must be unique enough if forceStackTrace is push
 	 * to false).
 	 * @param forceStackTrace false to make a light checkpoint without a stacktrace, true
 	 * to use a stack trace.
@@ -1484,8 +1483,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a contextualized {@link Mono}
 	 */
-	public final Mono<T> contextualize(BiFunction<Context, Context, Context> doOnContext) {
-		return new MonoContextualize<>(this, doOnContext);
+	public final Mono<T> contextMap(BiFunction<Context, Context, Context> doOnContext) {
+		return new MonoContextMap<>(this, doOnContext);
 	}
 
 
@@ -2837,7 +2836,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	@Override
 	public final void subscribe(Subscriber<? super T> actual) {
 		actual = Operators.onNewSubscriber(this, actual);
-		subscribe(actual, ContextRelay.getOrEmpty(actual));
+		subscribe(actual, Context.from(actual));
 	}
 
 	/**

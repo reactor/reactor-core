@@ -856,8 +856,8 @@ public class FluxSpecTests {
 
 	@Test
 	public void knownSetOfValuesCanBeReduced() {
-//		"A known set of values can be reduced"
-//		given: "a composable with a known set of values"
+//		"A known push of values can be reduced"
+//		given: "a composable with a known push of values"
 		Flux<Integer> source = Flux.fromIterable(Arrays.asList(1, 2, 3, 4, 5));
 
 //		when: "a reduce function is registered"
@@ -876,8 +876,8 @@ public class FluxSpecTests {
 
 	@Test
 	public void whenReducingKnownSetOfValuesOnlyFinalValueIsPassedToConsumers() {
-//		"When reducing a known set of values, only the final value is passed to consumers"
-//		given: "a composable with a known set of values and a reduce function"
+//		"When reducing a known push of values, only the final value is passed to consumers"
+//		given: "a composable with a known push of values and a reduce function"
 		Mono<Integer> reduced = Flux.just(1, 2, 3, 4, 5).reduce(new Reduction());
 
 //		when: "a consumer is registered"

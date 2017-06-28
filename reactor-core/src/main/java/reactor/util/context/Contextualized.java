@@ -17,42 +17,13 @@
 package reactor.util.context;
 
 /**
- * A {@link Context} passing component able to fetch or propagate an arbitrary context
+ * A {@link Context} aware component able to fetch or propagate an arbitrary context
  * into dependent components such as a chain of operators.
  *
  * @author Stephane Maldini
  * @since 3.1.0
  */
-public interface ContextRelay {
-
-	/**
-	 * Try pulling a {@link Context} from the given reference if of
-	 * {@link ContextRelay} type.
-	 *
-	 * @param o the reference to push to if instance of {@link ContextRelay}
-	 * @return the pulled {@link Context} or {@link Context#empty()}
-	 */
-	@SuppressWarnings("unchecked")
-	static Context getOrEmpty(Object o) {
-		if(o instanceof ContextRelay){
-			return ((ContextRelay)o).currentContext();
-		}
-		return Context.empty();
-	}
-
-	/**
-	 * Try pushing the passed {@link Context} to the given reference if of
-	 * {@link ContextRelay} type.
-	 *
-	 * @param o the reference to push to if instance of {@link ContextRelay}
-	 * @param c the {@link Context} to push
-	 */
-	@SuppressWarnings("unchecked")
-	static void set(Object o, Context c) {
-		if (o != Context.empty() && o instanceof ContextRelay) {
-			((ContextRelay) o).onContextUpdate(c);
-		}
-	}
+public interface Contextualized {
 
 	/**
 	 * Synchronously push a {@link Context} to dependent components which can include

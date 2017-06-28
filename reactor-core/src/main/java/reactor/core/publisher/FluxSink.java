@@ -32,16 +32,6 @@ import reactor.util.context.Context;
 public interface FluxSink<T> {
 
 	/**
-	 * Immediately propagate a {@link Context} to the child {@link Subscriber} given an
-	 * potentially non empty subscribing {@link Context}.
-	 *
-	 * @param doOnContext a {@link Function} given the parent context and producing a
-	 * new one to be pushed
-	 * @return this sink
-	 */
-	FluxSink<T> contextualize(Function<Context, Context> doOnContext);
-
-	/**
      * @see Subscriber#onComplete()
      */
     void complete();

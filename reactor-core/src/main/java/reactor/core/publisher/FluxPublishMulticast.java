@@ -32,7 +32,7 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.context.Context;
-import reactor.util.context.ContextRelay;
+
 import javax.annotation.Nullable;
 
 /**
@@ -186,11 +186,11 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 		@Override
 		public void subscribe(Subscriber<? super T> s, Context ctx) {
 			PublishMulticastInner<T> pcs = new PublishMulticastInner<>(this, s);
-			ContextRelay.set(s, ctx);
+			Context.push(s, ctx);
 			s.onSubscribe(pcs);
 
 			if (add(pcs)) {
-				ContextRelay.set(s, context);
+				Context.push(s, context);
 				if (pcs.once != 0) {
 					removeAndDrain(pcs);
 				}

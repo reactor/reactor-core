@@ -20,7 +20,6 @@ import java.util.function.LongConsumer;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.util.context.ContextRelay;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.publisher.FluxPeekFuseable.PeekConditionalSubscriber;
@@ -118,9 +117,9 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 
 		@Override
 		public Context currentContext() {
-			Context c = ContextRelay.getOrEmpty(actual);
-			if(!c.isEmpty() && parent.onContextParentCall() != null) {
-				parent.onContextParentCall().accept(c);
+			Context c = Context.from(actual);
+			if(!c.isEmpty() && parent.onCurrentContextCall() != null) {
+				parent.onCurrentContextCall().accept(c);
 			}
 			return c;
 		}

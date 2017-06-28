@@ -16,15 +16,9 @@
 
 package reactor.core.publisher;
 
-import java.util.function.Consumer;
-import java.util.function.LongConsumer;
-
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.util.context.Context;
-import reactor.util.context.ContextRelay;
 
 /**
  * Peek into the lifecycle events and signals of a sequence.
