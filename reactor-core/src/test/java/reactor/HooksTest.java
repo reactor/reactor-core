@@ -27,6 +27,7 @@ import java.util.logging.Level;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
+import reactor.core.Scannable;
 import reactor.core.publisher.ConnectableFlux;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
@@ -334,7 +335,9 @@ public class HooksTest {
 	@Test
 	public void testOnSubscriber() throws Exception {
 		List<Subscriber> l = new ArrayList<>();
-		Hooks.onSubscriber((s, c) -> {
+		Hooks.onNewSubscriber((p, s) -> {
+			System.out.println(Scannable.from(p).parents().count());
+			System.out.println(Scannable.from(p));
 			l.add(s);
 			return s;
 		});

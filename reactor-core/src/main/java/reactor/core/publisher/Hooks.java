@@ -111,13 +111,18 @@ public abstract class Hooks {
 	 * @param onSubscriber a callback for each terminal {@link Publisher#subscribe(Subscriber)}
 	 * @param <T> the arbitrary assembled sequence type
 	 */
-	public static <T> void onSubscriber(BiFunction<? super Subscriber<? super T>, ? super Context, ? extends Subscriber<? super T>> onSubscriber) {
+	public static <T> void onNewSubscriber(BiFunction<? super Publisher<T>,
+			? super Subscriber<T>, ? extends Subscriber<T>>
+			onSubscriber) {
 		if (log.isDebugEnabled()) {
-			log.debug("Hooking new default : onSubscriber");
+			log.debug("Hooking new default : onNewSubscriber");
 		}
-		@SuppressWarnings("unchecked") BiFunction<? super Subscriber<?>, ? super Context, ? extends Subscriber<?>>
+		@SuppressWarnings("unchecked") BiFunction<? super Publisher<?>, ? super Subscriber<?>,
+		? extends Subscriber<?>>
 				_onSubscriberHook =
-				(BiFunction<? super Subscriber<?>, ? super Context, ? extends Subscriber<?>>) onSubscriber;
+				(BiFunction<? super Publisher<?>, ? super Subscriber<?>, ? extends
+						Subscriber<?>>)
+		onSubscriber;
 		onSubscriberHook = _onSubscriberHook;
 	}
 
@@ -157,7 +162,7 @@ public abstract class Hooks {
 	 */
 	public static void resetOnSubscriber() {
 		if (log.isDebugEnabled()) {
-			log.debug("Reset to factory defaults : onSubscriber");
+			log.debug("Reset to factory defaults : onNewSubscriber");
 		}
 		onSubscriberHook = null;
 	}
@@ -511,7 +516,7 @@ public abstract class Hooks {
 	}
 
 	static volatile OnOperatorHook<?>           onOperatorHook;
-	static volatile BiFunction<? super Subscriber<?>, ? super Context, ? extends Subscriber<?>>
+	static volatile BiFunction<? super Publisher<?>, ? super Subscriber<?>, ? extends Subscriber<?>>
 	                                            onSubscriberHook;
 	static volatile Consumer<? super Throwable> onErrorDroppedHook;
 	static volatile Consumer<Object>            onNextDroppedHook;

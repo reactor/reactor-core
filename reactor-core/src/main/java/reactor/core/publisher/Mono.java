@@ -1462,7 +1462,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 *     Lifecycle for {@link Context} propagation is as such :
 	 *     <ul>
-	 *     <li> #1 During right-to-left subscribe(Subscriber) phase, contextualize will
+	 *     <li> #1 During right-to-left subscribe(Subscriber) phase, requestContext will
 	 *     read
 	 *     the target {@link Subscriber} context if any and cache it.</li>
 	 *     <li> #2-A Before left-to-right onSubscribe(Subscription), {@link Context}
@@ -1471,10 +1471,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *     propagating {@link Context}
 	 *     </li>
 	 *     <li> #2-B If no context was propagated before left-to-right onSubscribe
-	 *     (Subscription) phase, contextualize will
+	 *     (Subscription) phase, requestContext will
 	 *     call the given {@link BiFunction} during onSubscribe(Subscription) with the
 	 *     cached
-	 *     {@link Context} and an empty one. Thus contextualize
+	 *     {@link Context} and an empty one. Thus requestContext
 	 *     will first propagate the resulting {@link Context} if non empty before
 	 *     the downstream actual {@code Subscriber#onSubscribe(Subscription)}</li>
 	 *     </ul>
@@ -2836,23 +2836,23 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	@Override
 	public final void subscribe(Subscriber<? super T> actual) {
-		actual = Operators.onSubscriber(actual);
+		actual = Operators.onNewSubscriber(this, actual);
 		subscribe(actual, ContextRelay.getOrEmpty(actual));
 	}
 
 	/**
-	 * An internal {@link Publisher#subscribe(Subscriber)} implemented by
-	 * both reactive sources {@link Flux} and {@link Mono}.
+	 * An internal {@link Publisher#subscribe(Subscriber)} that will bypass
+	 * {@link Hooks#onNewSubscriber(BiFunction)} extension.
 	 * <p>
 	 * In addition to behave as expected by {@link Publisher#subscribe(Subscriber)}
-	 * in a controlled manner, it supports {@link Context} passing.
+	 * in a controlled manner, it supports direct subscribe-time {@link Context} passing.
 	 *
 	 * @param actual the {@link Subscriber} interested into the published sequence
 	 * @param context a {@link Context} to provide to the operational chain.
 	 *
 	 * @see Publisher#subscribe(Subscriber)
 	 */
-	protected abstract void subscribe(Subscriber<? super T> actual, Context context);
+	public abstract void subscribe(Subscriber<? super T> actual, Context context);
 
 	/**
 	 * Run subscribe, onSubscribe and request on a specified {@link Scheduler}'s {@link Worker}.

@@ -395,21 +395,25 @@ public abstract class Operators {
 	}
 
 	/**
-	 * Apply {@link Hooks#onSubscriber(BiFunction)} hook to the passed
+	 * Apply {@link Hooks#onNewSubscriber(BiFunction)} hook to the passed
 	 * {@link Subscriber} and return eventually transformed subscriber.
 	 *
+	 * @param source the {@link Publisher} subscribed to
 	 * @param actual the {@link Subscriber} to apply hook on
 	 * @param <T> passed subscriber type
 	 *
 	 * @return an eventually transformed {@link Subscriber}
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> Subscriber<? super T> onSubscriber(Subscriber<? super T> actual) {
-		BiFunction<? super Subscriber<?>, ? super Context, ? extends Subscriber<?>> hook =
+	public static <T> Subscriber<? super T> onNewSubscriber(Publisher<? extends T> source,
+			Subscriber<? super	T> actual) {
+
+		BiFunction<? super Publisher<?>, ? super Subscriber<?>, ? extends Subscriber<?>> hook =
 				Hooks.onSubscriberHook;
+
 		if (hook != null) {
-			return (Subscriber<? super T>) hook.apply(actual,
-					ContextRelay.getOrEmpty(actual));
+			return Objects.requireNonNull((Subscriber<? super T>) hook.apply(source, actual),
+					"Hooks returned null subscriber");
 		}
 		return actual;
 	}

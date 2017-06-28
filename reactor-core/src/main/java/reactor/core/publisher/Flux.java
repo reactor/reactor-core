@@ -89,7 +89,7 @@ import reactor.util.function.Tuples;
  * {@link #subscribe(Subscriber)} used internally for {@link Context} passing. User
  * provided {@link Subscriber} may
  * be passed to this "subscribe" extension but will loose the available
- * per-subscribe @link Hooks#onSubscriber}.
+ * per-subscribe @link Hooks#onNewSubscriber}.
  *
  * @param <T> the element type of this Reactive Streams {@link Publisher}
  *
@@ -6228,23 +6228,23 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	@Override
 	public final void subscribe(Subscriber<? super T> actual) {
-		actual = Operators.onSubscriber(actual);
+		actual = Operators.onNewSubscriber(this, actual);
 		subscribe(actual, ContextRelay.getOrEmpty(actual));
 	}
 
 	/**
-	 * An internal {@link Publisher#subscribe(Subscriber)} implemented by
-	 * both reactive sources {@link Flux} and {@link Mono}.
+	 * An internal {@link Publisher#subscribe(Subscriber)} that will bypass
+	 * {@link Hooks#onNewSubscriber(BiFunction)} extension.
 	 * <p>
 	 * In addition to behave as expected by {@link Publisher#subscribe(Subscriber)}
-	 * in a controlled manner, it supports {@link Context} passing.
+	 * in a controlled manner, it supports direct subscribe-time {@link Context} passing.
 	 *
 	 * @param actual the {@link Subscriber} interested into the published sequence
 	 * @param context a {@link Context} to provide to the operational chain.
 	 *
 	 * @see Flux#subscribe(Subscriber)
 	 */
-	protected abstract void subscribe(Subscriber<? super T> actual, Context context);
+	public abstract void subscribe(Subscriber<? super T> actual, Context context);
 
 	/**
 	 * Run subscribe, onSubscribe and request on a specified {@link Scheduler}'s {@link Worker}.
