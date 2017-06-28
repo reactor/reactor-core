@@ -396,10 +396,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * @param runnable {@link Runnable} that will be executed before emitting the completion signal
 	 *
+	 * @param <T> an arbitrary generic
 	 * @return A {@link Mono}.
 	 */
-	public static Mono<Void> fromRunnable(Runnable runnable) {
-		return onAssembly(new MonoRunnable(runnable));
+	public static <T> Mono<T> fromRunnable(Runnable runnable) {
+		return onAssembly(new MonoRunnable<>(runnable));
 	}
 
 	/**
