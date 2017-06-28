@@ -995,7 +995,8 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 		int i = 0;
 		while(i < subscribers.length){
 			subscribers[i++] =
-					Operators.onSubscriber(new LambdaSubscriber<>(onNext, onError, onComplete, onSubscribe));
+					Operators.onNewSubscriber(this, new LambdaSubscriber<>(onNext,
+							onError, onComplete, onSubscribe));
 		}
 
 		subscribe(subscribers, Context.empty());
@@ -1010,7 +1011,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	@Override
 	@SuppressWarnings("unchecked")
 	public final void subscribe(Subscriber<? super T> s) {
-		s = Operators.onSubscriber(s);
+		s = Operators.onNewSubscriber(this, s);
 		sequential().subscribe(
 				new FluxHide.SuppressFuseableSubscriber<>(s),
 				ContextRelay.getOrEmpty(s));
