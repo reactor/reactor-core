@@ -1122,31 +1122,6 @@ public abstract class Mono<T> implements Publisher<T> {
 		return fromDirect(new FluxZip<>(monos, combinator, QueueSupplier.<T>one(), 1));
 	}
 
-	/**
-	 * Zip the values from given monos together using a combinator function, producing a
-	 * new {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
-	 * have been fulfilled.
-	 * If any Mono terminates without value, the returned sequence will be terminated immediately and pending results cancelled.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/zip1.png" alt="">
-	 * <p>
-	 *
-	 * @param combinator the combinator {@link Function}
-	 * @param monos The monos to use.
-	 * @param <T> The type of the function result.
-	 * @param <V> The result type
-	 *
-	 * @return a {@link Mono}.
-	 * @deprecated will be removed in 3.1.0.RELEASE at most. Swapt the arguments to us
-	 * {@link #zip(Iterable, Function)})} instead.
-	 */
-	@Deprecated
-	public static <T, V> Mono<V> zip(final Function<? super Object[], ? extends V> combinator, final Iterable<?
-			extends Mono<? extends T>> monos) {
-		return zip(monos, combinator);
-	}
-
 //	 ==============================================================================================================
 //	 Operators
 //	 ==============================================================================================================
@@ -3293,68 +3268,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final <V> Mono<V> transform(Function<? super Mono<T>, ? extends Publisher<V>> transformer) {
 		return onAssembly(from(transformer.apply(this)));
-	}
-
-	/**
-	 * Subscribe to this Mono and another Publisher, which will be used as a trigger for
-	 * the emission of this Mono's element. That is to say, this Mono's element is delayed
-	 * until the trigger Publisher emits for the first time (or terminates empty).
-	 * <p>
-	 * Contrary to {@link #delayUntilOther(Publisher) delayUntilOther}, this operator
-	 * triggers on companion first emission. Contiguous calls in a chain are also more
-	 * deeply fused, meaning that all the triggers are subscribed to at the same time as
-	 * the source and thus kind of race together. For sequential orchestration of
-	 * intermediate steps whose values you don't care about, use {@code delayUntilOther}.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/untilOther.png" alt="">
-	 *
-	 * @param anyPublisher the publisher which first emission or termination will trigger
-	 * the emission of this Mono's value.
-	 * @return this Mono, but delayed until the given publisher first emits or terminates.
-	 * @apiNote the behavior of this operator, especially with regard to fusion, can be a
-	 * bit confusing. Probably prefer {@link #delayUntilOther(Publisher)}.
-	 * @deprecated This will be removed in 3.1.0, use {@link #delayUntilOther(Publisher)} instead,
-	 * associated with {@link Flux#take(long) take(1)} for {@link Flux} if you really want the onNext
-	 * triggers" behavior.
-	 */
-	@Deprecated
-	public Mono<T> untilOther(Publisher<?> anyPublisher) {
-		Objects.requireNonNull(anyPublisher, "anyPublisher required");
-		if (this instanceof MonoUntilOther) {
-			return ((MonoUntilOther<T>) this).copyWithNewTrigger(anyPublisher);
-		}
-		return onAssembly(new MonoUntilOther<>(false, this, anyPublisher));
-	}
-
-	/**
-	 * Subscribe to this Mono and another Publisher, which will be used as a trigger for
-	 * the emission of this Mono's element. That is to say, this Mono's element is delayed
-	 * until the trigger Publisher emits for the first time (or terminates empty).
-	 * <p>
-	 * Contrary to {@link #delayUntilOtherDelayError(Publisher) delayUntilOther}, this operator
-	 * triggers on companion first emission. Contiguous calls in a chain are also more
-	 * deeply fused, meaning that all the triggers are subscribed to at the same time as
-	 * the source and thus kind of race together. For sequential orchestration of
-	 * intermediate steps whose values you don't care about, use {@code delayUntilOtherDelayError}.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/untilOther.png" alt="">
-	 *
-	 * @param anyPublisher the publisher which first emission or termination will trigger
-	 * the emission of this Mono's value.
-	 * @return this Mono, but delayed until the given publisher first emits or terminates.
-	 * @apiNote the behavior of this operator, especially with regard to fusion, can be a
-	 * bit confusing. Probably prefer {@link #delayUntilOtherDelayError(Publisher)}.
-	 * @deprecated This will be removed in 3.1.0, use {@link #delayUntilOther(Publisher)} instead,
-	 * associated with {@link Flux#take(long) take(1)} for {@link Flux} if you really want the onNext
-	 * triggers" behavior.
-	 */
-	@Deprecated
-	public Mono<T> untilOtherDelayError(Publisher<?> anyPublisher) {
-		Objects.requireNonNull(anyPublisher, "anyPublisher required");
-		if (this instanceof MonoUntilOther) {
-			return ((MonoUntilOther<T>) this).copyWithNewTrigger(anyPublisher);
-		}
-		return onAssembly(new MonoUntilOther<>(true, this, anyPublisher));
 	}
 
 	/**
