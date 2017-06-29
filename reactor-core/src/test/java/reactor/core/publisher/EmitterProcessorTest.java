@@ -647,6 +647,44 @@ public class EmitterProcessorTest {
 	}
 
 	@Test
+	public void testThreadAffinity() throws InterruptedException {
+		int count = 10;
+		Scheduler[] schedulers = new Scheduler[4];
+		CountDownLatch[] latches = new CountDownLatch[schedulers.length];
+		for (int i = 0; i < schedulers.length; i++) {
+			schedulers[i] = Schedulers.newSingle("scheduler" + i + '-');
+			latches[i] = new CountDownLatch(count);
+		}
+		EmitterProcessor<Integer> processor = EmitterProcessor.create();
+		processor.publishOn(schedulers[0])
+			 .share();
+		processor.publishOn(schedulers[1])
+				 .subscribe(i -> {
+						assertThat(Thread.currentThread().getName().contains("scheduler1")).isTrue();
+						latches[1].countDown();
+					});
+		processor.publishOn(schedulers[2])
+				 .map(i -> {
+						assertThat(Thread.currentThread().getName().contains("scheduler2")).isTrue();
+						latches[2].countDown();
+						return i;
+					})
+				 .publishOn(schedulers[3])
+				 .doOnNext(i -> {
+						assertThat(Thread.currentThread().getName().contains("scheduler3")).isTrue();
+						latches[3].countDown();
+					})
+				 .subscribe();
+		for (int i = 0; i < 10; i++)
+			processor.onNext(i);
+		processor.onComplete();
+
+		for (int i = 1; i < latches.length; i++)
+			assertThat(latches[i].await(5, TimeUnit.SECONDS)).isTrue();
+		assertThat(latches[0].getCount()).isEqualTo(count);
+	}
+
+	@Test
 	public void createDefault() {
 		EmitterProcessor<Integer> processor = EmitterProcessor.create();
 		assertProcessor(processor, null, null);

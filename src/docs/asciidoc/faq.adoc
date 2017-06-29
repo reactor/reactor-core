@@ -139,4 +139,28 @@ java.lang.IllegalArgumentException at 18:02:29.964
 <2> second retry after about 200ms
 <3> third retry after about 300ms
 
+== How do I ensure thread affinity using `publishOn()`?
+
+As described in <<schedulers, Schedulers>>, `publishOn()` can be used to switch
+execution contexts. The `publishOn` operator influences the threading context
+where the rest of the operators in the chain below it will execute, up to a new
+occurrence of `publishOn`. So the placement of `publishOn` is significant.
+
+For instance, in the example below, the `transform` function in `map()` is executed
+on a worker of `scheduler1` and the `processNext` method in `doOnNext()` is executed
+on a worker of `scheduler2`. Single threaded schedulers may be used to ensure thread affinity
+for different stages in the chain or different subscribers.
+
+
+[source,java]
+----
+EmitterProcessor<Integer> processor = EmitterProcessor.create();
+processor.publishOn(scheduler1)
+         .map(i -> transform(i))
+         .publishOn(scheduler2)
+         .doOnNext(i -> processNext(i))
+         .subscribe();
+----
+
+
 //TODO reactive gems
