@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.hamcrest.Matchers;
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.util.context.Context;
 
 import static org.hamcrest.Matchers.is;
@@ -27,7 +28,7 @@ import static org.junit.Assert.assertThat;
 /**
  * @author Stephane Maldini
  */
-public class ContextMapTest {
+public class ContextTests {
 
 	@Test
 	public void contextPassing() throws InterruptedException {
@@ -103,4 +104,83 @@ public class ContextMapTest {
 		assertThat(innerC.get(), is("foobar"));
 	}
 
+	@Test
+	public void contextGet() throws InterruptedException {
+
+		StepVerifier.create(Flux.range(1, 1000)
+		                        .contextMap(ctx -> ctx.put("test", "foo"))
+		                        .log()
+		                        .map(d -> d)
+		                        .contextGet((d, c) -> c.get("test") + "" + d)
+		                        .skip(3)
+		                        .take(3)
+		                        .contextMap(ctx -> ctx.put("test2", "bar"))
+		                        .map(d -> d)
+		                        .map(d -> d)
+		                        .contextGet((d, c) -> c.get("test2") + "" + d)
+		                        .log())
+		            .expectNext("barfoo4")
+		            .expectNext("barfoo5")
+		            .expectNext("barfoo6")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void contextGetHide() throws InterruptedException {
+
+		StepVerifier.create(Flux.range(1, 1000)
+		                        .hide()
+		                        .contextMap(ctx -> ctx.put("test", "foo"))
+		                        .log()
+		                        .map(d -> d)
+		                        .contextGet((d, c) -> c.get("test") + "" + d)
+		                        .skip(3)
+		                        .take(3)
+		                        .contextMap(ctx -> ctx.put("test2", "bar"))
+		                        .map(d -> d)
+		                        .map(d -> d)
+		                        .contextGet((d, c) -> c.get("test2") + "" + d)
+		                        .log())
+		            .expectNext("barfoo4")
+		            .expectNext("barfoo5")
+		            .expectNext("barfoo6")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void contextGetMono() throws InterruptedException {
+
+		StepVerifier.create(Mono.just(1)
+		                        .contextMap(ctx -> ctx.put("test", "foo"))
+		                        .log()
+		                        .map(d -> d)
+		                        .contextGet((d, c) -> c.get("test") + "" + d)
+		                        .map(d -> d)
+		                        .map(d -> d)
+		                        .contextMap(ctx -> ctx.put("test2", "bar"))
+		                        .map(d -> d)
+		                        .map(d -> d)
+		                        .contextGet((d, c) -> c.get("test2") + "" + d)
+		                        .log())
+		            .expectNext("barfoo1")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void contextGetHideMono() throws InterruptedException {
+
+		StepVerifier.create(Mono.just(1)
+		                        .hide()
+		                        .contextMap(ctx -> ctx.put("test", "foo"))
+		                        .log()
+		                        .map(d -> d)
+		                        .contextGet((d, c) -> c.get("test") + "" + d)
+		                        .contextMap(ctx -> ctx.put("test2", "bar"))
+		                        .map(d -> d)
+		                        .map(d -> d)
+		                        .contextGet((d, c) -> c.get("test2") + "" + d)
+		                        .log())
+		            .expectNext("barfoo1")
+		            .verifyComplete();
+	}
 }

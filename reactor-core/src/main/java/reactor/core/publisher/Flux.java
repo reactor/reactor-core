@@ -3149,10 +3149,26 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *  and returning a candidate new one to propagate (if != and not empty).
 	 *
 	 * @return a contextualized {@link Flux}
+	 * @see Context
 	 */
 	public final Flux<T> contextMap(Function<Context, Context>
 			doOnContext) {
 		return new FluxContextMap<>(this, doOnContext);
+	}
+
+	/**
+	 * Evaluate {@link Context} information for each received element and allow for
+	 * transforming the produced sequence.
+	 *
+	 * @param doOnContext the bifunction evaluating each item with the current
+	 * {@link Context}
+	 *
+	 * @return a {@link Flux} injecting {@link Context} in the produced sequence
+	 * @see Context
+	 * @see #contextMap
+	 */
+	public final <V> Flux<V> contextGet(BiFunction<? super T, Context, ? extends V> doOnContext) {
+		return new FluxContextGet<>(this, doOnContext);
 	}
 
 	/**
