@@ -15,7 +15,10 @@
  */
 package reactor.core.publisher;
 
+import java.lang.ref.WeakReference;
 import java.time.Duration;
+import java.util.Date;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -28,8 +31,96 @@ import reactor.test.StepVerifier;
 import reactor.util.function.Tuple2;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class MonoProcessorTest {
+
+	@Test
+	public void noRetentionOnTermination() throws InterruptedException {
+		Date date = new Date();
+		CompletableFuture<Date> future = new CompletableFuture<>();
+
+		WeakReference<Date> refDate = new WeakReference<>(date);
+		WeakReference<CompletableFuture<Date>> refFuture = new WeakReference<>(future);
+
+		Mono<Date> source = Mono.fromFuture(future);
+		Mono<String> data = source.map(Date::toString).cache();
+
+		future.complete(date);
+		assertThat(data.block()).isEqualTo(date.toString());
+
+		date = null;
+		future = null;
+		source = null;
+		System.gc();
+
+		int cycles;
+		for (cycles = 10; cycles > 0 ; cycles--) {
+			if (refDate.get() == null && refFuture.get() == null) break;
+			Thread.sleep(100);
+		}
+
+		assertThat(refFuture.get()).isNull();
+		assertThat(refDate.get()).isNull();
+		assertThat(cycles).isNotZero()
+		                  .isPositive();
+	}
+
+	@Test
+	public void noRetentionOnTerminationError() throws InterruptedException {
+		CompletableFuture<Date> future = new CompletableFuture<>();
+
+		WeakReference<CompletableFuture<Date>> refFuture = new WeakReference<>(future);
+
+		Mono<Date> source = Mono.fromFuture(future);
+		Mono<String> data = source.map(Date::toString).cache();
+
+		future.completeExceptionally(new IllegalStateException());
+
+		assertThatExceptionOfType(IllegalStateException.class)
+				.isThrownBy(data::block);
+
+		future = null;
+		source = null;
+		System.gc();
+
+		int cycles;
+		for (cycles = 10; cycles > 0 ; cycles--) {
+			if (refFuture.get() == null) break;
+			Thread.sleep(100);
+		}
+
+		assertThat(refFuture.get()).isNull();
+		assertThat(cycles).isNotZero()
+		                  .isPositive();
+	}
+
+	@Test
+	public void noRetentionOnTerminationCancel() throws InterruptedException {
+		CompletableFuture<Date> future = new CompletableFuture<>();
+
+		WeakReference<CompletableFuture<Date>> refFuture = new WeakReference<>(future);
+
+		Mono<Date> source = Mono.fromFuture(future);
+		Mono<String> data = source.map(Date::toString).cache();
+
+		future = null;
+		source = null;
+
+		data.subscribe().dispose();
+
+		System.gc();
+
+		int cycles;
+		for (cycles = 10; cycles > 0 ; cycles--) {
+			if (refFuture.get() == null) break;
+			Thread.sleep(100);
+		}
+
+		assertThat(refFuture.get()).isNull();
+		assertThat(cycles).isNotZero()
+		                  .isPositive();
+	}
 
 	@Test(expected = IllegalStateException.class)
 	public void MonoProcessorResultNotAvailable() {
