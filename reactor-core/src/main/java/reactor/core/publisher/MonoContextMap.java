@@ -35,21 +35,7 @@ final class MonoContextMap<T> extends MonoOperator<T, T> implements Fuseable {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		Context c;
-
-		try {
-			c = doOnContext.apply(ctx, Context.empty());
-		}
-		catch (Throwable t) {
-			Operators.error(s, Operators.onOperatorError(t));
-			return;
-		}
-		if(c != ctx){
-			Context.push(s, c);
-		}
-		source.subscribe(new FluxContextMap.ContextMapSubscriber<>(s,
-						doOnContext, c),
-				c);
+		source.subscribe(new FluxContextMap.ContextMapSubscriber<>(s, doOnContext, ctx), ctx);
 	}
 
 }
