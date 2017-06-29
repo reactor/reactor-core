@@ -18,7 +18,7 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.function.BiFunction;
-
+import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
@@ -28,10 +28,9 @@ import reactor.util.context.Context;
 
 final class FluxContextMap<T> extends FluxOperator<T, T> implements Fuseable {
 
-	final BiFunction<Context, Context, Context> doOnContext;
+	final Function<Context, Context> doOnContext;
 
-	FluxContextMap(Flux<? extends T> source,
-			BiFunction<Context, Context, Context> doOnContext) {
+	FluxContextMap(Flux<? extends T> source, Function<Context, Context> doOnContext) {
 		super(source);
 		this.doOnContext = Objects.requireNonNull(doOnContext, "doOnContext");
 	}
@@ -45,9 +44,9 @@ final class FluxContextMap<T> extends FluxOperator<T, T> implements Fuseable {
 			implements ConditionalSubscriber<T>, InnerOperator<T, T>,
 			           QueueSubscription<T> {
 
-		final Subscriber<? super T>                 actual;
-		final ConditionalSubscriber<? super T>      actualConditional;
-		final BiFunction<Context, Context, Context> doOnContext;
+		final Subscriber<? super T>            actual;
+		final ConditionalSubscriber<? super T> actualConditional;
+		final Function<Context, Context>       doOnContext;
 
 		volatile Context context;
 
@@ -57,7 +56,7 @@ final class FluxContextMap<T> extends FluxOperator<T, T> implements Fuseable {
 
 		@SuppressWarnings("unchecked")
 		ContextMapSubscriber(Subscriber<? super T> actual,
-				BiFunction<Context, Context, Context> doOnContext,
+				Function<Context, Context> doOnContext,
 				Context context) {
 			this.actual = actual;
 			this.context = context;
@@ -84,7 +83,7 @@ final class FluxContextMap<T> extends FluxOperator<T, T> implements Fuseable {
 			updated = true;
 			Context c;
 			try {
-				c = doOnContext.apply(this.context, context);
+				c = doOnContext.apply(context);
 			}
 			catch (Throwable t) {
 				actual.onError(Operators.onOperatorError(s, t));
@@ -110,7 +109,7 @@ final class FluxContextMap<T> extends FluxOperator<T, T> implements Fuseable {
 					this.qs = (QueueSubscription<T>) s;
 				}
 				if(!updated) {
-					onContextUpdate(Context.empty());
+					onContextUpdate(this.context);
 				}
 				actual.onSubscribe(this);
 			}

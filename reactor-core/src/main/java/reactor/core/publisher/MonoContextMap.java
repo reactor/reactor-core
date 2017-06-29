@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.Fuseable;
@@ -25,10 +26,10 @@ import reactor.util.context.Context;
 
 final class MonoContextMap<T> extends MonoOperator<T, T> implements Fuseable {
 
-	final BiFunction<Context, Context, Context> doOnContext;
+	final Function<Context, Context> doOnContext;
 
 	MonoContextMap(Mono<? extends T> source,
-			BiFunction<Context, Context, Context> doOnContext) {
+			Function<Context, Context> doOnContext) {
 		super(source);
 		this.doOnContext = Objects.requireNonNull(doOnContext, "doOnContext");
 	}
