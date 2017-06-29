@@ -24,6 +24,7 @@ import java.util.stream.Stream;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.context.Context;
 import javax.annotation.Nullable;
@@ -182,9 +183,7 @@ final class MonoUntilOther<T> extends Mono<T> {
 						compositeError.addSuppressed(e);
 					} else
 					if (error != null) {
-						compositeError = new Throwable("Multiple errors");
-						compositeError.addSuppressed(error);
-						compositeError.addSuppressed(e);
+						compositeError = Exceptions.multiple(error, e);
 					} else {
 						error = e;
 					}
