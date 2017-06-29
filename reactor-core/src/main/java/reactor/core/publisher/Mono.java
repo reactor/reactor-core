@@ -365,6 +365,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a wrapped {@link Mono}
 	 */
 	public static <I> Mono<I> fromDirect(Publisher<? extends I> source){
+		if(source instanceof Mono){
+			@SuppressWarnings("unchecked")
+			Mono<I> m = (Mono<I>)source;
+			return m;
+		}
 		if(source instanceof Fuseable){
 			return new MonoSourceFuseable<>(source);
 		}
