@@ -346,7 +346,7 @@ public class FluxFilterWhenTest {
 		                         });
 
 		StepVerifier.create(flux, 0)
-		            .thenRequest(2)
+		            .thenRequest(1)
 		            .expectNext(2)
 		            .then(() -> {
 			            assertThat(scannable.get().scan(Scannable.ScannableAttr.PARENT)).isInstanceOf(FluxRange.RangeSubscription.class);
@@ -355,25 +355,25 @@ public class FluxFilterWhenTest {
 			            assertThat(scannable.get().scan(Scannable.IntAttr.CAPACITY)).isEqualTo(4);
 			            assertThat(scannable.get().scan(Scannable.ThrowableAttr.ERROR)).isNull();
 			            assertThat(scannable.get().scan(Scannable.IntAttr.BUFFERED )).isEqualTo(1);
-			            assertThat(scannable.get().scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(2L);
+			            assertThat(scannable.get().scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(1L);
 			            assertThat(scannable.get().scan(Scannable.BooleanAttr.CANCELLED)).isEqualTo(false);
 			            assertThat(scannable.get().scan(Scannable.BooleanAttr.TERMINATED)).isEqualTo(false);
 		            })
-	                .thenRequest(2)
+	                .thenRequest(1)
 	                .expectNext(4)
 	                .then(() -> {
 		                assertThat(scannable.get().scan(Scannable.ThrowableAttr.ERROR)).isNull();
 		                assertThat(scannable.get().scan(Scannable.IntAttr.BUFFERED )).isEqualTo(2);
-		                assertThat(scannable.get().scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(4L);
+		                assertThat(scannable.get().scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(2L);
 		                assertThat(scannable.get().scan(Scannable.BooleanAttr.CANCELLED)).isEqualTo(false);
 		                assertThat(scannable.get().scan(Scannable.BooleanAttr.TERMINATED)).isEqualTo(false);
 	                })
-	                .thenRequest(20)
+	                .thenRequest(3)
 	                .expectNext(6, 8, 10)
 	                .verifyComplete();
 
 		assertThat(scannable.get().scan(Scannable.IntAttr.BUFFERED)).isEqualTo(6);
-		assertThat(scannable.get().scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(24L);
+		assertThat(scannable.get().scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(5);
 		assertThat(scannable.get().scan(Scannable.BooleanAttr.CANCELLED)).isEqualTo(false);
 		assertThat(scannable.get().scan(Scannable.BooleanAttr.TERMINATED)).isEqualTo(true);
 	}
@@ -391,7 +391,7 @@ public class FluxFilterWhenTest {
 		                         });
 
 		StepVerifier.create(flux, 0)
-		            .thenRequest(2)
+		            .thenRequest(1)
 		            .expectNext(2)
 		            .then(() -> assertThat(scannable.get().scan(Scannable.BooleanAttr.CANCELLED)).isEqualTo(false))
 		            .thenCancel()
@@ -466,4 +466,32 @@ public class FluxFilterWhenTest {
         test.cancel();
         assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
     }
+
+	@Test
+	public void filterAllOut() {
+		final int[] calls = { 0 };
+
+		StepVerifier.create(
+				Flux.range(1, 1000)
+				    .doOnNext(v -> calls[0]++)
+				    .filterWhen(v -> Mono.just(false), 16)
+				    .flatMap(ignore -> Flux.just(0)))
+		            .verifyComplete();
+
+		assertThat(calls[0]).isEqualTo(1000);
+	}
+
+	@Test
+	public void filterAllOutHidden() {
+		final int[] calls = { 0 };
+
+		StepVerifier.create(
+				Flux.range(1, 1000)
+		        .doOnNext(v -> calls[0]++)
+		        .filterWhen(v -> Mono.just(false).hide(), 16)
+		        .flatMap(ignore -> Flux.just(0)))
+		            .verifyComplete();
+
+		assertThat(calls[0]).isEqualTo(1000);
+	}
 }
