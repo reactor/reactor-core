@@ -54,13 +54,11 @@ public class FluxSourceTest {
 	@Test
 	public void wrap() {
 		Flux<Integer> m = Flux.wrap(Flux.just(1));
-		assertTrue(m instanceof FluxJust);
 		StepVerifier.create(m)
 		            .expectNext(1)
 		            .verifyComplete();
 
 		m = Flux.wrap(Flux.just(1).hide());
-		assertTrue(m instanceof FluxJust);
 		StepVerifier.create(m)
 		            .expectNext(1)
 		            .verifyComplete();
