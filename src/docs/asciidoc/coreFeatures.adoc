@@ -730,3 +730,26 @@ yourself if you have tried these two alternatives before:
 
 If after exploring the above alternatives you still think you need a `Processor`,
 head to the <<processor>> appendix to learn about the different implementations.
+
+=== Producing from multiple threads
+`FluxProcessor` sinks safely gate multi-threaded producers and can be used
+by applications that generate data from multiple threads concurrently.
+For example, a thread-safe serialized sink can be created for `UnicastProcessor`:
+
+[source,java]
+----
+UnicastProcessor<Integer> processor = UnicastProcessor.create();
+FluxSink<Integer> sink = processor.sink(overflowStrategy);
+----
+
+Multiple producer threads may concurrently generate data on this serialized sink:
+[source,java]
+----
+sink.next(n);
+----
+
+Overflow from `next` will behave in two possible ways depending on the `Processor`:
+
+- an unbounded processor will handle the overflow itself by dropping or buffering
+- a bounded processor will block/spin on `IGNORE` strategy, or apply the `overflowStrategy` behavior specified for `sink`.
+

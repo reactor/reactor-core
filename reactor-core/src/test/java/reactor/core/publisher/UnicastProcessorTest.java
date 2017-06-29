@@ -17,6 +17,8 @@ package reactor.core.publisher;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
@@ -24,6 +26,7 @@ import javax.annotation.Nullable;
 import org.junit.Test;
 
 import reactor.core.Disposable;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
@@ -48,7 +51,29 @@ public class UnicastProcessorTest {
 
     }
 
-    @Test
+	@Test
+	public void multiThreadedProducer() {
+		UnicastProcessor<Integer> processor = UnicastProcessor.create();
+		FluxSink<Integer> sink = processor.sink();
+		int nThreads = 5;
+		int countPerThread = 10000;
+		ExecutorService executor = Executors.newFixedThreadPool(nThreads);
+		for (int i = 0; i < 5; i++) {
+			Runnable generator = () -> {
+				for (int j = 0; j < countPerThread; j++) {
+					sink.next(j);
+				}
+			};
+			executor.submit(generator);
+		}
+		StepVerifier.create(processor)
+					.expectNextCount(nThreads * countPerThread)
+					.thenCancel()
+					.verify();
+		executor.shutdownNow();
+	}
+
+	@Test
 	public void createDefault() {
 		UnicastProcessor<Integer> processor = UnicastProcessor.create();
 		assertProcessor(processor, null, null, null);
