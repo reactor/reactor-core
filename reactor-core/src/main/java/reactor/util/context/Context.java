@@ -112,7 +112,7 @@ public interface Context {
 	@Nullable
 	default <T> T get(Class<T> key){
 		T v = get((Object)key);
-		if(key.isInstance(key)){
+		if(key.isInstance(v)){
 			return v;
 		}
 		return null;
