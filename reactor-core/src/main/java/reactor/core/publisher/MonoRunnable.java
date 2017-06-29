@@ -27,7 +27,7 @@ import javax.annotation.Nullable;
 /**
  * Executes the runnable whenever a Subscriber subscribes to this Mono.
  */
-final class MonoRunnable extends Mono<Void> implements Callable<Void> {
+final class MonoRunnable<T> extends Mono<T> implements Callable<Void> {
 
     final Runnable run;
     
@@ -36,7 +36,7 @@ final class MonoRunnable extends Mono<Void> implements Callable<Void> {
     }
 
     @Override
-    public void subscribe(Subscriber<? super Void> s, Context context) {
+    public void subscribe(Subscriber<? super T> s, Context context) {
         try {
             run.run();
         } catch (Throwable ex) {
@@ -48,14 +48,14 @@ final class MonoRunnable extends Mono<Void> implements Callable<Void> {
     
     @Override
     @Nullable
-    public Void block(Duration m) {
+    public T block(Duration m) {
         run.run();
         return null;
     }
 
     @Override
     @Nullable
-    public Void block() {
+    public T block() {
         run.run();
         return null;
     }

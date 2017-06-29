@@ -37,7 +37,7 @@ public class MonoRunnableTest {
 	public void normal() {
 		AssertSubscriber<Void> ts = AssertSubscriber.create();
 
-		Mono.fromRunnable(() -> {
+		Mono.<Void>fromRunnable(() -> {
 		})
 		    .subscribe(ts);
 
@@ -50,7 +50,7 @@ public class MonoRunnableTest {
 	public void normalBackpressured() {
 		AssertSubscriber<Void> ts = AssertSubscriber.create(0);
 
-		Mono.fromRunnable(() -> {
+		Mono.<Void>fromRunnable(() -> {
 		})
 		    .hide()
 		    .subscribe(ts);
@@ -102,7 +102,7 @@ public class MonoRunnableTest {
 	public void nonFused() {
 		AssertSubscriber<Void> ts = AssertSubscriber.create();
 
-		Mono.fromRunnable(() -> {
+		Mono.<Void>fromRunnable(() -> {
 		})
 		    .subscribe(ts);
 
