@@ -2531,7 +2531,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return the assembly tracing {@link Flux}.
 	 */
 	public final Flux<T> checkpoint() {
-		return new FluxOnAssembly<>(this, null);
+		return checkpoint(null, true);
 	}
 
 	/**
@@ -2551,7 +2551,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return the assembly marked {@link Flux}
 	 */
 	public final Flux<T> checkpoint(String description) {
-		return new FluxOnAssembly<>(this, description, true);
+		return checkpoint(Objects.requireNonNull(description), false);
 	}
 
 	/**
@@ -2580,7 +2580,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * to use a stack trace.
 	 * @return the assembly marked {@link Flux}.
 	 */
-	public final Flux<T> checkpoint(String description, boolean forceStackTrace) {
+	public final Flux<T> checkpoint(@Nullable String description, boolean forceStackTrace) {
 		return new FluxOnAssembly<>(this, description, !forceStackTrace);
 	}
 

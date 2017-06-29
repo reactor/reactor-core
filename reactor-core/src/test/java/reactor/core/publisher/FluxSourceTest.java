@@ -47,6 +47,21 @@ public class FluxSourceTest {
 		Flux<Integer> m = Flux.from(Mono.just(1));
 		assertTrue(m instanceof FluxJust);
 		StepVerifier.create(m)
+		            .expectNext(1);
+	}
+
+
+	@Test
+	public void wrap() {
+		Flux<Integer> m = Flux.wrap(Flux.just(1));
+		assertTrue(m instanceof FluxJust);
+		StepVerifier.create(m)
+		            .expectNext(1)
+		            .verifyComplete();
+
+		m = Flux.wrap(Flux.just(1).hide());
+		assertTrue(m instanceof FluxJust);
+		StepVerifier.create(m)
 		            .expectNext(1)
 		            .verifyComplete();
 	}

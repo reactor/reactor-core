@@ -68,17 +68,9 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable, As
 	}
 
 	/**
-	 * Create an assembly trace augmented with a custom description (eg. a name for a Flux
-	 * or a wider correlation ID) and exposed as a {@link Flux}.
-	 */
-	FluxOnAssembly(Flux<? extends T> source, @Nullable String description) {
-		this(source, description, false);
-	}
-
-	/**
 	 * If light, create an assembly marker that has no trace but just shows a custom
 	 * description (eg. a name for a Flux or a wider correlation ID) and exposed as a
-	 * {@link Flux}. If light == false, behaves as {@link #FluxOnAssembly(Flux, String)}.
+	 * {@link Flux}.
 	 */
 	FluxOnAssembly(Flux<? extends T> source, @Nullable String description, boolean light) {
 		super(source);

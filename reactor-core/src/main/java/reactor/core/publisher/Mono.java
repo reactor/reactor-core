@@ -1343,7 +1343,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return the assembly tracing {@link Mono}
 	 */
 	public final Mono<T> checkpoint() {
-		return new MonoOnAssembly<>(this, null);
+		return checkpoint(null, true);
 	}
 
 	/**
@@ -1363,7 +1363,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return the assembly marked {@link Mono}
 	 */
 	public final Mono<T> checkpoint(String description) {
-		return new MonoOnAssembly<>(this, description, true);
+		return checkpoint(Objects.requireNonNull(description), false);
 	}
 
 	/**
@@ -1392,7 +1392,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * to use a stack trace.
 	 * @return the assembly marked {@link Mono}.
 	 */
-	public final Mono<T> checkpoint(String description, boolean forceStackTrace) {
+	public final Mono<T> checkpoint(@Nullable String description, boolean forceStackTrace) {
 		return new MonoOnAssembly<>(this, description, !forceStackTrace);
 	}
 
@@ -3040,11 +3040,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * sequence
 	 */
 	public final Mono<Void> thenEmpty(Publisher<Void> other) {
-		if (this instanceof MonoIgnoreThen) {
-			MonoIgnoreThen<T> a = (MonoIgnoreThen<T>) this;
-			return a.shift(fromDirect(other));
-		}
-		return onAssembly(new MonoIgnoreThen<>(new Publisher[] { this }, fromDirect(other)));
+		return then(fromDirect(other));
 	}
 
 	/**
