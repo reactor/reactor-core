@@ -289,12 +289,8 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) {
-				return parent;
-			}
-			if (key == BooleanAttr.CANCELLED) {
-				return cancelled;
-			}
+			if (key == ScannableAttr.PARENT) return parent;
+			if (key == BooleanAttr.CANCELLED) return cancelled;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}
