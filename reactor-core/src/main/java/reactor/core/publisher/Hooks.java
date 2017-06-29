@@ -101,28 +101,20 @@ public abstract class Hooks {
 	}
 
 	/**
-	 * Set a global "assembly" hook to intercept signals produced by the passed
-	 * terminating {@link Subscriber}. The passed
-	 * function must result in a
-	 * value different from null.
+	 * Set a global "subscription" hook to intercept signals produced by the passed
+	 * terminal {@link Subscriber}. The passed function must result in a value different from null.
 	 * <p>
 	 * Can be reset via {@link #resetOnSubscriber()} ()}
 	 *
 	 * @param onSubscriber a callback for each terminal {@link Publisher#subscribe(Subscriber)}
-	 * @param <T> the arbitrary assembled sequence type
+	 * @param <T> the arbitrary subscribed sequence type
 	 */
-	public static <T> void onNewSubscriber(BiFunction<? super Publisher<T>,
-			? super Subscriber<T>, ? extends Subscriber<T>>
-			onSubscriber) {
+	public static <T> void onNewSubscriber(BiFunction<? super Publisher<T>, ? super Subscriber<T>, ? extends Subscriber<T>> onSubscriber) {
 		if (log.isDebugEnabled()) {
 			log.debug("Hooking new default : onNewSubscriber");
 		}
-		@SuppressWarnings("unchecked") BiFunction<? super Publisher<?>, ? super Subscriber<?>,
-		? extends Subscriber<?>>
-				_onSubscriberHook =
-				(BiFunction<? super Publisher<?>, ? super Subscriber<?>, ? extends
-						Subscriber<?>>)
-		onSubscriber;
+		@SuppressWarnings("unchecked") BiFunction<? super Publisher<?>, ? super Subscriber<?>, ? extends Subscriber<?>> _onSubscriberHook =
+				(BiFunction<? super Publisher<?>, ? super Subscriber<?>, ? extends Subscriber<?>>) onSubscriber;
 		onSubscriberHook = _onSubscriberHook;
 	}
 

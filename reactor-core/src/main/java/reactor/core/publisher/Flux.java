@@ -3124,26 +3124,31 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Propagate a new {@link Context} given an eventual older parent {@link Context}.
-	 * If the returned {@link Context} is empty, the propagation will be halted.
+	 * Enrich a potentially empty upstream {@link Context}, producing a new {@link Context}
+	 * that is propagated downstream. If the returned {@link Context} is empty, the
+	 * propagation will be halted. The method is potentially invoked twice.
 	 * <p>
-	 *     Lifecycle for {@link Context} propagation is as such :
-	 *     <ul>
-	 *     <li> #1 During right-to-left subscribe phase, contextMap will
-	 *     read the target {@link Subscriber} context if any and cache it.</li>
-	 *     <li> #2 During left-to-right onSubscribe(Subscription), {@link Context}
-	 *     might be propagated from parent. If this happens, the given
-	 *     {@link BiFunction} will be invoked with the cached {@link Context} and the
-	 *     propagating {@link Context}
+	 * Lifecycle for {@link Context} propagation is as such :
+	 * <ol>
+	 *     <li>
+	 *         During right-to-left {@code subscribe()} phase, contextMap will read the target
+	 *         {@link Subscriber} context if any and cache it.
 	 *     </li>
-	 *     <li> #2-B If no context was propagated before left-to-right onSubscribe
-	 *     (Subscription) phase, contextMap will
-	 *     call the given {@link BiFunction} during onSubscribe(Subscription) with the
-	 *     cached
-	 *     {@link Context} and an empty one. Thus contextMap
-	 *     will first propagate the resulting {@link Context} if non empty before
-	 *     the downstream actual {@code Subscriber#onSubscribe(Subscription)}</li>
-	 *     </ul>
+	 *     <li>
+	 *         During left-to-right {@code onSubscribe(Subscription)}, {@link Context}
+	 *         might be propagated from parent. If this happens, the given
+	 *         {@link BiFunction} will be invoked with the cached {@link Context} and the
+	 *         propagating {@link Context}. This allows you to compare the initial context
+	 *         from subscriber with the upstream context.
+	 *     </li>
+	 *     <li>
+	 *         If no context was propagated before left-to-right {@code onSubscribe(Subscription)}
+	 *         phase, contextMap will call the given {@link BiFunction} during {@code onSubscribe(Subscription)}
+	 *         with the cached {@link Context} and an empty one. Thus contextMap will first propagate
+	 *         the resulting {@link Context} if non empty before the downstream actual
+	 *         {@code Subscriber#onSubscribe(Subscription)}
+	 *     </li>
+	 * </ol>
 	 *
 	 * @param doOnContext the bifunction taking a previous {@link Context} state
 	 *  and a candidate new one to propagate.
