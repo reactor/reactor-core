@@ -76,6 +76,7 @@ class FluxFilterWhen<T> extends FluxOperator<T, T> {
 
 		int          consumed;
 		long         consumerIndex;
+		long         emitted;
 		Boolean      innerResult;
 		long         producerIndex;
 		Subscription upstream;
@@ -197,6 +198,7 @@ class FluxFilterWhen<T> extends FluxOperator<T, T> {
 
 			int missed = 1;
 			int limit = bufferSize - (bufferSize >> 2);
+			long e = emitted;
 			long ci = consumerIndex;
 			int f = consumed;
 			int m = toFilter.length() - 1;
@@ -205,7 +207,7 @@ class FluxFilterWhen<T> extends FluxOperator<T, T> {
 			for (;;) {
 				long r = requested;
 
-				while (ci != r) {
+				while (e != r) {
 					if (cancelled) {
 						clear();
 						return;
@@ -257,6 +259,7 @@ class FluxFilterWhen<T> extends FluxOperator<T, T> {
 
 								if (u != null && u) {
 									a.onNext(t);
+									e++;
 								}
 							} else {
 								FilterWhenInner inner = new FilterWhenInner(this, !(p instanceof Mono));
@@ -281,6 +284,7 @@ class FluxFilterWhen<T> extends FluxOperator<T, T> {
 
 						if (u != null && u) {
 							a.onNext(t);
+							e++;
 						}
 
 						toFilter.lazySet(offset, null);
@@ -295,7 +299,7 @@ class FluxFilterWhen<T> extends FluxOperator<T, T> {
 					}
 				}
 
-				if (ci == r) {
+				if (e == r) {
 					if (cancelled) {
 						clear();
 						return;
@@ -322,6 +326,7 @@ class FluxFilterWhen<T> extends FluxOperator<T, T> {
 				if (missed == w) {
 					consumed = f;
 					consumerIndex = ci;
+					emitted = e;
 					missed = WIP.addAndGet(this, -missed);
 					if (missed == 0) {
 						break;
