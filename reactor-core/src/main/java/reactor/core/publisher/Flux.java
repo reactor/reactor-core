@@ -7622,7 +7622,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <I> input upstream type
 	 * @return a wrapped {@link Flux}
 	 */
+	@SuppressWarnings("unchecked")
 	static <I> Flux<I> wrap(Publisher<? extends I> source){
+		if(source instanceof Mono){
+			if(source instanceof Fuseable){
+				return new FluxSourceMonoFuseable<>((Mono<I>)source);
+			}
+			return new FluxSourceMono<>((Mono<I>)source);
+		}
 		if(source instanceof Fuseable){
 			return new FluxSourceFuseable<>(source);
 		}
