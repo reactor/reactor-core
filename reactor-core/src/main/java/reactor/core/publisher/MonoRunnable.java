@@ -27,7 +27,7 @@ import javax.annotation.Nullable;
 /**
  * Executes the runnable whenever a Subscriber subscribes to this Mono.
  */
-final class MonoRunnable<T> extends Mono<T> implements Callable<T> {
+final class MonoRunnable<T> extends Mono<T> implements Callable<Void> {
 
     final Runnable run;
     
@@ -62,7 +62,7 @@ final class MonoRunnable<T> extends Mono<T> implements Callable<T> {
 
     @Override
     @Nullable
-    public T call() throws Exception {
+    public Void call() throws Exception {
         run.run();
         return null;
     }
