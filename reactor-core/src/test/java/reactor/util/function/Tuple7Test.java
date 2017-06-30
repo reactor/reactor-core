@@ -19,30 +19,18 @@ package reactor.util.function;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class Tuple7Test {
 
-	private Tuple7<Integer, Integer, Integer, Integer, Integer, Integer, Integer> empty =
-			new Tuple7<>(null, null, null, null, null, null, null);
 	private Tuple7<Integer, Integer, Integer, Integer, Integer, Integer, Integer> full =
 			new Tuple7<>(1, 2, 3, 4, 5, 6, 7);
 
 	@Test
-	public void sparseToString() {
-		assertThat(new Tuple7<>(null, 2, 3, 4, 5, 6, 7))
-				.hasToString("[,2,3,4,5,6,7]");
-
-		assertThat(new Tuple7<>(1, 2, 3, 4, null, null, 7))
-				.hasToString("[1,2,3,4,,,7]");
-
-		assertThat(new Tuple7<>(1, 2, 3, 4, 5, 6, null))
-				.hasToString("[1,2,3,4,5,6,]");
-	}
-
-	@Test
-	public void nullsCountedInSize() {
-		assertThat(empty.size()).isEqualTo(7);
-		assertThat(empty).hasSize(7);
+	public void nullT7Rejected() {
+		assertThatExceptionOfType(NullPointerException.class)
+				.isThrownBy(() -> new Tuple7<>(1, 2, 3, 4, 5, 6, null))
+				.withMessage("t7");
 	}
 
 	@Test
@@ -65,21 +53,6 @@ public class Tuple7Test {
 	}
 
 	@Test
-	public void sparseIsNotSameAsSmaller() {
-		Tuple7<Integer, Integer, Integer, Integer, Integer, Integer, Integer> sparseLeft = new Tuple7<>(null, 1, 2, 3, 4, 5, 6);
-		Tuple7<Integer, Integer, Integer, Integer, Integer, Integer, Integer> sparseRight = new Tuple7<>(1, 2, 3, 4, 5, 6, null);
-		Tuple6<Integer, Integer, Integer, Integer, Integer, Integer> smaller = new Tuple6<>(1, 2, 3, 4, 5, 6);
-
-		assertThat(sparseLeft.hashCode())
-				.isNotEqualTo(sparseRight.hashCode())
-				.isNotEqualTo(smaller.hashCode());
-
-		assertThat(sparseLeft)
-				.isNotEqualTo(sparseRight)
-				.isNotEqualTo(smaller);
-	}
-
-	@Test
 	public void equalityOfSameReference() {
 		assertThat(full).isEqualTo(full);
 	}
@@ -92,12 +65,7 @@ public class Tuple7Test {
 
 	@Test
 	public void t7Combinations() {
-		assertThat(new Tuple7<>(1, 2, 3, 4, 5, 6, null))
-				.isEqualTo(new Tuple7<>(1, 2, 3, 4, 5, 6, null))
-				.isNotEqualTo(new Tuple7<>(1, 2, 3, 4, 5, 6, 10));
-
 		assertThat(new Tuple7<>(1, 2, 3, 4, 5, 6, 7))
-				.isNotEqualTo(new Tuple7<>(1, 2, 3, 4, 5, 6, null))
 				.isNotEqualTo(new Tuple7<>(1, 2, 3, 4, 5, 6, 10))
 				.isEqualTo(new Tuple7<>(1, 2, 3, 4, 5, 6, 7));
 	}

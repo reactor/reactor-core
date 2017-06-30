@@ -71,26 +71,21 @@ public class TupleTests {
 	public void fromArrayRejects0() {
 		assertThatExceptionOfType(IllegalArgumentException.class)
 		          .isThrownBy(() -> Tuples.fromArray(new Object[0]))
-		          .withMessageStartingWith("null or empty array, need between 1 and 8 values");
+		          .withMessageStartingWith("null or too small array, need between 2 and 8 values");
+	}
+
+	@Test
+	public void fromArrayRejects1() {
+		assertThatExceptionOfType(IllegalArgumentException.class)
+		          .isThrownBy(() -> Tuples.fromArray(new Object[1]))
+		          .withMessageStartingWith("null or too small array, need between 2 and 8 values");
 	}
 
 	@Test
 	public void fromArrayRejectsNull() {
 		assertThatExceptionOfType(IllegalArgumentException.class)
 		          .isThrownBy(() -> Tuples.fromArray(null))
-		          .withMessageStartingWith("null or empty array, need between 1 and 8 values");
-	}
-
-	@Test
-	@SuppressWarnings("unchecked")
-	public void tuple2CreatedFromArray1() {
-		Integer[] source = new Integer[] { 1 };
-		Tuple2 expected = Tuples.of(1, null);
-		Tuple2 actual = Tuples.fromArray(source);
-
-		assertThat(actual)
-		          .isExactlyInstanceOf(Tuple2.class)
-		          .isEqualTo(expected);
+		          .withMessageStartingWith("null or too small array, need between 2 and 8 values");
 	}
 
 	@Test
@@ -183,7 +178,7 @@ public class TupleTests {
 
 		assertThatExceptionOfType(IllegalArgumentException.class)
 		          .isThrownBy(() -> Tuples.fromArray(source))
-		          .withMessage("too many arguments (9), need between 1 and 8 values");
+		          .withMessage("too many arguments (9), need between 2 and 8 values");
 	}
 
 	@Test

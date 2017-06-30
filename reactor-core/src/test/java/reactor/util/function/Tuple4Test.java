@@ -19,28 +19,17 @@ package reactor.util.function;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class Tuple4Test {
 
-	private Tuple4<Integer, Integer, Integer, Integer> empty = new Tuple4<>(null, null, null, null);
 	private Tuple4<Integer, Integer, Integer, Integer> full = new Tuple4<>(1, 2, 3, 4);
 
 	@Test
-	public void sparseToString() {
-		assertThat(new Tuple4<>(null, 2, 3, 4))
-				.hasToString("[,2,3,4]");
-
-		assertThat(new Tuple4<>(1, null, 3, 4))
-				.hasToString("[1,,3,4]");
-
-		assertThat(new Tuple4<>(1, 2, 3,null))
-				.hasToString("[1,2,3,]");
-	}
-
-	@Test
-	public void nullsCountedInSize() {
-		assertThat(empty.size()).isEqualTo(4);
-		assertThat(empty).hasSize(4);
+	public void nullT4Rejected() {
+		assertThatExceptionOfType(NullPointerException.class)
+				.isThrownBy(() -> new Tuple4<>(1, 2, 3, null))
+				.withMessage("t4");
 	}
 
 	@Test
@@ -63,21 +52,6 @@ public class Tuple4Test {
 	}
 
 	@Test
-	public void sparseIsNotSameAsSmaller() {
-		Tuple4<Integer, Integer, Integer, Integer> sparseLeft = new Tuple4<>(null, 1, 2, 3);
-		Tuple4<Integer, Integer, Integer, Integer> sparseRight = new Tuple4<>(1, 2, 3, null);
-		Tuple3<Integer, Integer, Integer> smaller = new Tuple3<>(1, 2, 3);
-
-		assertThat(sparseLeft.hashCode())
-				.isNotEqualTo(sparseRight.hashCode())
-				.isNotEqualTo(smaller.hashCode());
-
-		assertThat(sparseLeft)
-				.isNotEqualTo(sparseRight)
-				.isNotEqualTo(smaller);
-	}
-
-	@Test
 	public void equalityOfSameReference() {
 		assertThat(full).isEqualTo(full);
 	}
@@ -90,12 +64,7 @@ public class Tuple4Test {
 
 	@Test
 	public void t4Combinations() {
-		assertThat(new Tuple4<>(1, 2, 3, null))
-				.isEqualTo(new Tuple4<>(1, 2, 3, null))
-				.isNotEqualTo(new Tuple4<>(1, 2, 3, 10));
-
 		assertThat(new Tuple4<>(1, 2, 3, 4))
-				.isNotEqualTo(new Tuple4<>(1, 2, 3, null))
 				.isNotEqualTo(new Tuple4<>(1, 2, 3, 10))
 				.isEqualTo(new Tuple4<>(1, 2, 3, 4));
 	}
