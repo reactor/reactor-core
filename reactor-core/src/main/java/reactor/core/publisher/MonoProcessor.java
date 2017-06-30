@@ -235,7 +235,27 @@ public final class MonoProcessor<O> extends Mono<O>
 
 	@Override
 	public final void onComplete() {
-		onNext(null);
+		Subscription s = subscription;
+		int state = this.state;
+		if ((source != null && s == null) || state >= STATE_SUCCESS_VALUE) {
+			return;
+		}
+		subscription = null;
+		source = null;
+
+		final int finalState = STATE_COMPLETE_NO_VALUE;
+
+		for (; ; ) {
+			if (STATE.compareAndSet(this, state, finalState)) {
+				waitStrategy.signalAllWhenBlocking();
+				break;
+			}
+			state = this.state;
+		}
+
+		if (WIP.getAndIncrement(this) == 0) {
+			drainLoop();
+		}
 	}
 
 	@Override
@@ -269,7 +289,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	}
 
 	@Override
-	public final void onNext(@Nullable O value) {
+	public final void onNext(O value) {
 		Subscription s = subscription;
 
 		if (value != null && ((source != null && s == null) || this.value != null)) {
@@ -286,7 +306,7 @@ public final class MonoProcessor<O> extends Mono<O>
 				s.cancel();
 			}
 		}
-		else {
+		else { //shouldn't happen
 			finalState = STATE_COMPLETE_NO_VALUE;
 		}
 
