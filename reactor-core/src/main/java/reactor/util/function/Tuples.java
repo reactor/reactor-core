@@ -466,15 +466,16 @@ public abstract class Tuples implements Function {
 	}
 
 	/**
-	 * Builds a string representation suitable of the values suitable for a Tuple of any
-	 * size by accepting an array of elements. This outputs the String representation of
-	 * each object, comma separated. It manages nulls as well by putting an empty string
-	 * and the comma.
+	 * Prepare a string representation of the values suitable for a Tuple of any
+	 * size by accepting an array of elements. This builds a {@link StringBuilder}
+	 * containing the String representation of each object, comma separated. It manages
+	 * nulls as well by putting an empty string and the comma.
 	 *
 	 * @param values the values of the tuple to represent
-	 * @return the String representation of the values in the Tuple.
+	 * @return a {@link StringBuilder} initialized with the string representation of the
+	 * values in the Tuple.
 	 */
-	static StringBuilder tupleToString(Object... values) {
+	static StringBuilder tupleStringRepresentation(Object... values) {
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < values.length; i++) {
 			Object t = values[i];

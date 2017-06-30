@@ -145,6 +145,6 @@ public class Tuple2<T1, T2> implements Iterable<Object>, Serializable {
 	 */
 	@Override
 	public final String toString() {
-		return Tuples.tupleToString(toArray()).insert(0, '[').append(']').toString();
+		return Tuples.tupleStringRepresentation(toArray()).insert(0, '[').append(']').toString();
 	}
 }

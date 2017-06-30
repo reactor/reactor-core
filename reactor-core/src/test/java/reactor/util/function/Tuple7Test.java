@@ -69,4 +69,14 @@ public class Tuple7Test {
 				.isNotEqualTo(new Tuple7<>(1, 2, 3, 4, 5, 6, 10))
 				.isEqualTo(new Tuple7<>(1, 2, 3, 4, 5, 6, 7));
 	}
+
+	@Test
+	public void sanityTestHashcode() {
+		Tuple7<Integer, Integer, Integer, Integer, Integer, Integer, Integer> same = new Tuple7<>(1, 2, 3, 4, 5, 6, 7);
+		Tuple7<Integer, Integer, Integer, Integer, Integer, Integer, Integer> different = new Tuple7<>(1, 2, 3, 4, 5, 6,1);
+
+		assertThat(full.hashCode())
+				.isEqualTo(same.hashCode())
+				.isNotEqualTo(different.hashCode());
+	}
 }

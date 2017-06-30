@@ -68,4 +68,14 @@ public class Tuple5Test {
 				.isNotEqualTo(new Tuple5<>(1, 2, 3, 4, 10))
 				.isEqualTo(new Tuple5<>(1, 2, 3, 4, 5));
 	}
+
+	@Test
+	public void sanityTestHashcode() {
+		Tuple5<Integer, Integer, Integer, Integer, Integer> same = new Tuple5<>(1, 2, 3, 4, 5);
+		Tuple5<Integer, Integer, Integer, Integer, Integer> different = new Tuple5<>(1, 2, 3, 4, 1);
+
+		assertThat(full.hashCode())
+				.isEqualTo(same.hashCode())
+				.isNotEqualTo(different.hashCode());
+	}
 }

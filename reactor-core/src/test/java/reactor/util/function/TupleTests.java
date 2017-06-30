@@ -407,4 +407,18 @@ public class TupleTests {
 		assertThat(result).isEqualTo(36);
 	}
 
+	@Test
+	public void tupleStringRepresentationFull() {
+		assertThat(Tuples.tupleStringRepresentation(1, 2, 3, 4, 5)
+		                 .toString())
+				.isEqualTo("1,2,3,4,5");
+	}
+
+	@Test
+	public void tupleStringRepresentationSparse() {
+		assertThat(Tuples.tupleStringRepresentation(null, 2, null, 4, 5, null)
+		                 .toString())
+				.isEqualTo(",2,,4,5,");
+	}
+
 }

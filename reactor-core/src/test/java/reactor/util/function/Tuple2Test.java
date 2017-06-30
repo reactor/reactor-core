@@ -85,4 +85,14 @@ public class Tuple2Test {
 		        .isNotEqualTo(otherFull);
 	}
 
+	@Test
+	public void sanityTestHashcode() {
+		Tuple2<Integer, Integer> same = new Tuple2<>(1, 2);
+		Tuple2<Integer, Integer> different = new Tuple2<>(2, 1);
+
+		assertThat(full.hashCode())
+				.isEqualTo(same.hashCode())
+				.isNotEqualTo(different.hashCode());
+	}
+
 }
