@@ -3126,7 +3126,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Enrich a potentially empty upstream {@link Context}, producing a new {@link Context}
 	 * that is propagated downstream. If the returned {@link Context} is empty, the
-	 * propagation will be halted. The method is potentially invoked twice.
+	 * propagation will be halted.
 	 * <p>
 	 * Lifecycle for {@link Context} propagation is as such :
 	 * <ol>
