@@ -3165,6 +3165,37 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Enrich a potentially empty downstream {@link Context}, producing a new
+	 * {@link Context}
+	 * that is propagated upstream. If the returned {@link Context} is empty, the
+	 * propagation will be halted.
+	 * <p>
+	 * Lifecycle for {@link Context} propagation is as such :
+	 * <ol>
+	 *     <li>
+	 *         During right-to-left {@code subscribe(Subscriber)} phase, contextInit will
+	 *         read the target {@link Subscriber} context and call the given
+	 *         {@link Function}.
+	 *     </li>
+	 *     <li>
+	 *         contextInit will then propagate the resulting {@link Context} upstream
+	 *         using {@code Flux#subscribe(Subscriber,Context)} is invoked.
+	 *     </li>
+	 * </ol>
+	 * <p>
+	 * Note this all happens once per-subscription, not on each onNext.
+	 *
+	 * @param doOnContext the function taking a previous {@link Context} state
+	 *  and returning a new one, propagated if not empty and different from the original.
+	 *
+	 * @return a contextualized {@link Flux}
+	 * @see Context
+	 */
+	public final Flux<T> contextStart(Function<Context, Context> doOnContext) {
+		return new FluxContextStart<>(this, doOnContext);
+	}
+
+	/**
 	 * When receiving an element, inspect the current {@link Context} information and
 	 * allow to map to a new value depending on source value and context. Note that the
 	 * {@link Context} is immutable, so any attempt at modifying it as a side effect will

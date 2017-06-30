@@ -17,7 +17,6 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -50,7 +49,7 @@ final class FluxContextMap<T> extends FluxOperator<T, T> implements Fuseable {
 
 		volatile Context context;
 
-		boolean updated;
+		boolean              once;
 		QueueSubscription<T> qs;
 		Subscription         s;
 
@@ -80,7 +79,10 @@ final class FluxContextMap<T> extends FluxOperator<T, T> implements Fuseable {
 
 		@Override
 		public void onContextUpdate(Context context) {
-			updated = true;
+			if (once) {
+				return;
+			}
+			once = true;
 			Context c;
 			try {
 				c = doOnContext.apply(context);
@@ -108,9 +110,7 @@ final class FluxContextMap<T> extends FluxOperator<T, T> implements Fuseable {
 				if (s instanceof QueueSubscription) {
 					this.qs = (QueueSubscription<T>) s;
 				}
-				if(!updated) {
-					onContextUpdate(this.context);
-				}
+				onContextUpdate(this.context);
 				actual.onSubscribe(this);
 			}
 		}

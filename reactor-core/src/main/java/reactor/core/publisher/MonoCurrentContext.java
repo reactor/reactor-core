@@ -28,11 +28,6 @@ final class MonoCurrentContext extends Mono<Context> {
 
 	@SuppressWarnings("unchecked")
 	public void subscribe(Subscriber<? super Context> s, Context ctx) {
-		//FIXME should not do this if context lifecycle was subscribe time only
-		Context.push(s, ctx);
-		ctx = Context.from(s);
-		//...
-
 		if (ctx != Context.empty()) {
 			s.onSubscribe(Operators.scalarSubscription(s, ctx));
 		}

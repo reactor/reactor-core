@@ -131,7 +131,10 @@ public class ContextTests {
 		StepVerifier.create(Mono.just("foo")
 		                        .flatMap(d -> Mono.currentContext()
 		                                          .map(c -> d + c.get(Integer.class)))
-		                        .contextMap(ctx -> ctx.put(Integer.class, 1))
+		                        .contextStart(ctx ->
+				                        ctx.put(Integer.class, ctx.get(Integer.class) + 1))
+		                        .flatMapMany(Mono::just)
+		                        .contextStart(ctx -> ctx.put(Integer.class, 0))
 		                        .log())
 		            .expectNext("foo1")
 		            .verifyComplete();
