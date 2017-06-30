@@ -653,7 +653,8 @@ public class EmitterProcessorTest {
 		CountDownLatch[] latches = new CountDownLatch[schedulers.length];
 		for (int i = 0; i < schedulers.length; i++) {
 			schedulers[i] = Schedulers.newSingle("scheduler" + i + '-');
-			latches[i] = new CountDownLatch(count);
+			int expectedCount = i == 1 ? count * 2 : count;
+			latches[i] = new CountDownLatch(expectedCount);
 		}
 		EmitterProcessor<Integer> processor = EmitterProcessor.create();
 		processor.publishOn(schedulers[0])
@@ -663,6 +664,8 @@ public class EmitterProcessorTest {
 						assertThat(Thread.currentThread().getName().contains("scheduler1")).isTrue();
 						latches[1].countDown();
 					});
+		for (int i = 0; i < count; i++)
+			processor.onNext(i);
 		processor.publishOn(schedulers[2])
 				 .map(i -> {
 						assertThat(Thread.currentThread().getName().contains("scheduler2")).isTrue();
@@ -675,7 +678,7 @@ public class EmitterProcessorTest {
 						latches[3].countDown();
 					})
 				 .subscribe();
-		for (int i = 0; i < 10; i++)
+		for (int i = 0; i < count; i++)
 			processor.onNext(i);
 		processor.onComplete();
 
