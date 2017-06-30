@@ -280,8 +280,23 @@ Let's go through each mean of error handling one-by-one. When relevant we'll
 make a parallel with imperative world's `try` patterns.
 
 === Error handling operators
-The `onError` at the end of the chain is akin to a `try/catch` block. There,
-execution skips to the catch in case an Exception is thrown:
+You may be familiar with several ways of dealing with exceptions in a try/catch
+block. Most notably:
+
+ 1. catch and return a static default value
+ 2. catch and execute an alternative path (fallback method)
+ 3. catch and dynamically compute a fallback value
+ 4. catch, wrap to a `BusinessException` and re-throw
+ 5. catch, log an error specific message and re-throw
+ 6. the `finally` block to clean up resources, or a Java 7's "try-with-resource" construct
+
+All of these have equivalent in Reactor, in the form of error handling operators.
+
+Before looking into these operators, let's first try to establish a parallel between a
+reactive chain and a try-catch block.
+
+When subscribing, the `onError` callback at the end of the chain is akin to a `catch`
+block. There, execution skips to the catch in case an Exception is thrown:
 [source,java]
 ----
 Flux<String> s = Flux.range(1, 10)
@@ -313,18 +328,10 @@ try {
 <2> ...the rest of the loops is skipped...
 <3> ...and the execution goes straight to here.
 
-Now that we've established a parallel, you may be familiar with several ways of
-dealing with exceptions in a try/catch block. Most notably:
+Now that we've established a parallel, we'll look at the different error handling
+cases and their equivalent operators.
 
- 1. catch and return a default value
- 2. catch and execute an alternative path (fallback method)
- 3. catch, wrap to a `BusinessException` and re-throw
- 4. catch, log an error specific message and re-throw
- 5. the `finally` block to clean up resources, or a Java 7's "try-with-resource" construct
-
-All of these have equivalent in Reactor, in the form of error handling operators.
-
-==== Default value
+==== Static fallback value
 The equivalent of **(1)** is `onErrorReturn`:
 [source,java]
 ----
@@ -386,9 +393,30 @@ Flux.just("timeout1", "unknown", "key2")
 <3> If the source says the key is unknown, let's create a new entry.
 <4> In all other cases, "re-throw".
 
+=== Dynamic fallback value
+Even if you don't have an alternative safer way of processing your data, you might want
+to compute a fallback value out of the exception you received (*(3)*).
+
+For instance, if your return type has a variant dedicated to holding an exception
+(think `Future.complete(T success)` vs `Future.completeExceptionally(Throwable error)`),
+you could simply instantiate the error-holding variant and pass the exception.
+
+This can be done in the same way than the fallback method solution, using `onErrorResume`.
+You just need a tiny bit of boilerplate:
+
+[source,java]
+----
+erroringFlux.onErrorResume(error -> Mono.just( // <1>
+	myWrapper.fromError(error) // <2>
+));
+----
+<1> The boilerplate secret sauce is to use `Mono.just` with `onErrorResume`
+<2> You then wrap the exception into the adhoc class, or otherwise compute the value out of the exception...
+
+
 ==== Catch and rethrow
-That last line inside the previous `flatMap` gives us an hint as to how item
-*(3)* (catch wrap and rethrow) could be achieved:
+Back in the "fallback method" example, the last line inside the `flatMap` gives us an hint
+as to how item *(4)* (catch wrap and rethrow) could be achieved:
 [source,java]
 ----
 Flux.just("timeout1")
@@ -411,7 +439,7 @@ Flux.just("timeout1")
 ==== Log or react on the side
 For cases where you want the error to continue propagating, but you still want
 to react to it without modifying the sequence (for instance logging it like in
-item *(4)*), there is the `doOnError` operator. This operator as well as all
+item *(5)*), there is the `doOnError` operator. This operator as well as all
 `doOn` prefixed operators are sometimes referred to as a "side-effect". That is
 because they allow to peek inside the sequence's events without modifying them.
 
@@ -438,7 +466,7 @@ Flux.just("unknown")
 ==== Using resources and the finally block
 The last parallel to draw with the imperative world is the cleaning up that can
 be done either via a Java 7 "try-with-resources" construct or the use of the
-`finally` block (*(5)*). Both have their Reactor equivalent, actually: `using`
+`finally` block (*(6)*). Both have their Reactor equivalent, actually: `using`
 and `doFinally`:
 [source,java]
 ----
