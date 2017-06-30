@@ -167,6 +167,21 @@ public abstract class Mono<T> implements Publisher<T> {
 	public static <T> Mono<T> create(Consumer<MonoSink<T>> callback) {
 	    return onAssembly(new MonoCreate<>(callback));
 	}
+
+	/**
+	 * Create a {@link Mono} emitting the {@link Context} available on subscribe.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/just.png" alt="">
+	 * <p>
+	 *
+	 * @return a new {@link Mono} emitting current context
+	 * @see #subscribe(Subscriber, Context)
+	 */
+	public static  Mono<Context> currentContext() {
+		return onAssembly(MonoCurrentContext.INSTANCE);
+	}
+
 	/**
 	 * Create a {@link Mono} provider that will {@link Supplier#get supply} a target {@link Mono} to subscribe to for
 	 * each {@link Subscriber} downstream.
@@ -175,7 +190,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/defer1.png" alt="">
 	 * <p>
 	 * @param supplier a {@link Mono} factory
-	 * 
+	 *
 	 * @param <T> the element type of the returned Mono instance
 	 *
 	 * @return a new {@link Mono} factory
