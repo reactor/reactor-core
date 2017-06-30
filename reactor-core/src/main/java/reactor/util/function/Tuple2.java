@@ -21,29 +21,29 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-
+import java.util.Objects;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
- * A tuple that holds two values
+ * A tuple that holds two non-null values.
  *
- * @param <T1> The type of the first value held by this tuple
- * @param <T2> The type of the second value held by this tuple
+ * @param <T1> The type of the first non-null value held by this tuple
+ * @param <T2> The type of the second non-null value held by this tuple
  * @author Jon Brisbin
  * @author Stephane Maldini
  */
 @SuppressWarnings("rawtypes")
 public class Tuple2<T1, T2> implements Iterable<Object>, Serializable {
 
-	/** */
-    private static final long serialVersionUID = 4839927936743208499L;
+	private static final long serialVersionUID = -3518082018884860684L;
 
-	final T1 t1;
-	final T2 t2;
+	@Nonnull final T1 t1;
+	@Nonnull final T2 t2;
 
-	Tuple2(@Nullable T1 t1, @Nullable T2 t2) {
-		this.t1 = t1;
-		this.t2 = t2;
+	Tuple2(T1 t1, T2 t2) {
+		this.t1 = Objects.requireNonNull(t1, "t1");
+		this.t2 = Objects.requireNonNull(t2, "t2");
 	}
 
 	/**
@@ -51,7 +51,6 @@ public class Tuple2<T1, T2> implements Iterable<Object>, Serializable {
 	 *
 	 * @return The first object
 	 */
-	@Nullable
 	public T1 getT1() {
 		return t1;
 	}
@@ -61,7 +60,6 @@ public class Tuple2<T1, T2> implements Iterable<Object>, Serializable {
 	 *
 	 * @return The second object
 	 */
-	@Nullable
 	public T2 getT2() {
 		return t2;
 	}
@@ -71,7 +69,7 @@ public class Tuple2<T1, T2> implements Iterable<Object>, Serializable {
 	 * Get the object at the given index.
 	 *
 	 * @param index The index of the object to retrieve. Starts at 0.
-	 * @return The object. Might be {@literal null}.
+	 * @return The object or {@literal null} if out of bounds.
 	 */
 	@Nullable
 	public Object get(int index) {
@@ -119,16 +117,15 @@ public class Tuple2<T1, T2> implements Iterable<Object>, Serializable {
 
 		Tuple2<?, ?> tuple2 = (Tuple2<?, ?>) o;
 
-		return (t1 != null ? t1.equals(tuple2.t1) : tuple2.t1 == null) &&
-				(t2 != null ? t2.equals(tuple2.t2) : tuple2.t2 == null);
+		return t1.equals(tuple2.t1) && t2.equals(tuple2.t2);
 
 	}
 
 	@Override
 	public int hashCode() {
 		int result = size();
-		result = 31 * result + (t1 != null ? t1.hashCode() : 0);
-		result = 31 * result + (t2 != null ? t2.hashCode() : 0);
+		result = 31 * result + t1.hashCode();
+		result = 31 * result + t2.hashCode();
 		return result;
 	}
 
@@ -142,26 +139,12 @@ public class Tuple2<T1, T2> implements Iterable<Object>, Serializable {
 	}
 
 	/**
-	 * String representation that can be adjusted for higher-cardinality Tuples in order
-	 * to show all values hold. Default to the t1 and t2 values separated by a comma.
-	 */
-	protected StringBuilder innerToString() {
-		StringBuilder sb = new StringBuilder();
-		if (t1 != null) sb.append(t1);
-		sb.append(',');
-		if (t2 != null) sb.append(t2);
-		return sb;
-	}
-
-	/**
 	 * A Tuple String representation is the comma separated list of values, enclosed
-	 * in square brackets. Note that intermediate {@literal null} values are represented
-	 * as the empty String, like {@code [value1,,value3]} for a Tuple3 or {@code [,value2]}
-	 * for a Tuple2.
+	 * in square brackets.
 	 * @return the Tuple String representation
 	 */
 	@Override
 	public final String toString() {
-		return innerToString().insert(0, '[').append(']').toString();
+		return Tuples.tupleToString(toArray()).insert(0, '[').append(']').toString();
 	}
 }

@@ -16,31 +16,32 @@
 
 package reactor.util.function;
 
+import java.util.Objects;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
- * A tuple that holds seven values
+ * A tuple that holds seven non-null values
  *
- * @param <T1> The type of the first value held by this tuple
- * @param <T2> The type of the second value held by this tuple
- * @param <T3> The type of the third value held by this tuple
- * @param <T4> The type of the fourth value held by this tuple
- * @param <T5> The type of the fifth value held by this tuple
- * @param <T6> The type of the sixth value held by this tuple
- * @param <T7> The type of the seventh value held by this tuple
+ * @param <T1> The type of the first non-null value held by this tuple
+ * @param <T2> The type of the second non-null value held by this tuple
+ * @param <T3> The type of the third non-null value held by this tuple
+ * @param <T4> The type of the fourth non-null value held by this tuple
+ * @param <T5> The type of the fifth non-null value held by this tuple
+ * @param <T6> The type of the sixth non-null value held by this tuple
+ * @param <T7> The type of the seventh non-null value held by this tuple
  * @author Jon Brisbin
  * @author Stephane Maldini
  */
 public class Tuple7<T1, T2, T3, T4, T5, T6, T7> extends Tuple6<T1, T2, T3, T4, T5, T6> {
 
-	private static final long serialVersionUID = 8273600047065201704L;
+	private static final long serialVersionUID = -8002391247456579281L;
 
-	final T7 t7;
+	@Nonnull final T7 t7;
 
-	Tuple7(@Nullable T1 t1, @Nullable T2 t2, @Nullable T3 t3, @Nullable T4 t4,
-			@Nullable T5 t5, @Nullable T6 t6, @Nullable T7 t7) {
+	Tuple7(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7) {
 		super( t1, t2, t3, t4, t5, t6);
-		this.t7 = t7;
+		this.t7 = Objects.requireNonNull(t7, "t7");
 	}
 
 	/**
@@ -48,7 +49,6 @@ public class Tuple7<T1, T2, T3, T4, T5, T6, T7> extends Tuple6<T1, T2, T3, T4, T
 	 *
 	 * @return The seventh object
 	 */
-	@Nullable
 	public T7 getT7() {
 		return t7;
 	}
@@ -90,26 +90,19 @@ public class Tuple7<T1, T2, T3, T4, T5, T6, T7> extends Tuple6<T1, T2, T3, T4, T
 		@SuppressWarnings("rawtypes")
         Tuple7 tuple7 = (Tuple7) o;
 
-		return t7 != null ? t7.equals(tuple7.t7) : tuple7.t7 == null;
+		return t7.equals(tuple7.t7);
 
 	}
 
 	@Override
 	public int hashCode() {
 		int result = super.hashCode();
-		result = 31 * result + (t7 != null ? t7.hashCode() : 0);
+		result = 31 * result + t7.hashCode();
 		return result;
 	}
 
 	@Override
 	public int size() {
 		return 7;
-	}
-
-	@Override
-	public StringBuilder innerToString() {
-		StringBuilder sb = super.innerToString().append(',');
-		if (t7 != null) sb.append(t7);
-		return sb;
 	}
 }
