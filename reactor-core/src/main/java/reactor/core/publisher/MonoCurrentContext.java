@@ -33,6 +33,11 @@ final class MonoCurrentContext extends Mono<Context> {
 		ctx = Context.from(s);
 		//...
 
-		s.onSubscribe(Operators.scalarSubscription(s, ctx));
+		if (ctx != Context.empty()) {
+			s.onSubscribe(Operators.scalarSubscription(s, ctx));
+		}
+		else {
+			Operators.complete(s);
+		}
 	}
 }

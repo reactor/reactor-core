@@ -138,6 +138,16 @@ public class ContextTests {
 	}
 
 	@Test
+	public void currentContextEmpty() throws InterruptedException {
+
+		StepVerifier.create(Mono.just("foo")
+		                        .flatMap(d -> Mono.currentContext()
+		                                          .map(c -> d + c.get(Integer.class)))
+		                        .log())
+		            .verifyComplete();
+	}
+
+	@Test
 	public void contextGetHide() throws InterruptedException {
 
 		StepVerifier.create(Flux.range(1, 1000)
