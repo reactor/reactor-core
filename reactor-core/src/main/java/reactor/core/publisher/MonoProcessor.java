@@ -75,10 +75,11 @@ public final class MonoProcessor<O> extends Mono<O>
 		return new MonoProcessor<>(null, waitStrategy);
 	}
 
-	final Publisher<? extends O> source;
-	final WaitStrategy           waitStrategy;
+	final WaitStrategy       waitStrategy;
 
-	Subscription subscription;
+	Publisher<? extends O>   source;
+	Subscription             subscription;
+
 	volatile Processor<O, O> processor;
 	volatile O               value;
 	volatile Throwable       error;
@@ -248,6 +249,7 @@ public final class MonoProcessor<O> extends Mono<O>
 
 		this.error = cause;
 		subscription = null;
+		source = null;
 
 		int state = this.state;
 		for (; ; ) {
@@ -267,7 +269,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	}
 
 	@Override
-	public final void onNext(O value) {
+	public final void onNext(@Nullable O value) {
 		Subscription s = subscription;
 
 		if (value != null && ((source != null && s == null) || this.value != null)) {
@@ -287,6 +289,9 @@ public final class MonoProcessor<O> extends Mono<O>
 		else {
 			finalState = STATE_COMPLETE_NO_VALUE;
 		}
+
+		source = null;
+
 		int state = this.state;
 		for (; ; ) {
 			if (state != STATE_READY && state != STATE_SUBSCRIBED && state != STATE_POST_SUBSCRIBED) {
@@ -482,6 +487,7 @@ public final class MonoProcessor<O> extends Mono<O>
 			if (subscription != null) {
 				if (state == STATE_CANCELLED && PROCESSOR.getAndSet(this, NOOP_PROCESSOR) != NOOP_PROCESSOR) {
 					this.subscription = null;
+					this.source = null;
 					subscription.cancel();
 					return;
 				}
