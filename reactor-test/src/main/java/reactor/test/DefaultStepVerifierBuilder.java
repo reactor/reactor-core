@@ -1731,9 +1731,9 @@ final class DefaultStepVerifierBuilder<T>
 			//noinspection ConstantConditions
 			satisfies(() -> clazz != null, () -> "Require non-null clazz");
 			hasOneOperatorErrorWithError();
-			return satisfies(() -> clazz.isInstance(operatorErrors.peek().getT1()),
+			return satisfies(() -> clazz.isInstance(operatorErrors.peek().getT1().get()),
 					() -> String.format("Expected operator error to be of type %s, was %s.",
-							clazz.getCanonicalName(), operatorErrors.peek().getT1().getClass().getCanonicalName()));
+							clazz.getCanonicalName(), operatorErrors.peek().getT1().get().getClass().getCanonicalName()));
 		}
 
 		@Override
