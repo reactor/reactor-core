@@ -638,11 +638,11 @@ final class DefaultStepVerifierBuilder<T>
 			//plug in the correct hooks
 			Queue<Object> droppedElements = new ConcurrentLinkedQueue<>();
 			Queue<Throwable> droppedErrors = new ConcurrentLinkedQueue<>();
-			Queue<Tuple2<Throwable, ?>> operatorErrors = new ConcurrentLinkedQueue<>();
+			Queue<Tuple2<Optional<Throwable>, Optional<?>>> operatorErrors = new ConcurrentLinkedQueue<>();
 			Hooks.onErrorDropped(droppedErrors::offer);
 			Hooks.onNextDropped(droppedElements::offer);
 			Hooks.onOperatorError((t, d) -> {
-				operatorErrors.offer(Tuples.of(t, d));
+				operatorErrors.offer(Tuples.of(Optional.ofNullable(t), Optional.ofNullable(d)));
 				return t;
 			});
 
@@ -1017,11 +1017,11 @@ final class DefaultStepVerifierBuilder<T>
 			//plug in the correct hooks
 			Queue<Object> droppedElements = new ConcurrentLinkedQueue<>();
 			Queue<Throwable> droppedErrors = new ConcurrentLinkedQueue<>();
-			Queue<Tuple2<Throwable, ?>> operatorErrors = new ConcurrentLinkedQueue<>();
+			Queue<Tuple2<Optional<Throwable>, Optional<?>>> operatorErrors = new ConcurrentLinkedQueue<>();
 			Hooks.onErrorDropped(droppedErrors::offer);
 			Hooks.onNextDropped(droppedElements::offer);
 			Hooks.onOperatorError((t, d) -> {
-				operatorErrors.offer(Tuples.of(t, d));
+				operatorErrors.offer(Tuples.of(Optional.ofNullable(t), Optional.ofNullable(d)));
 				return t;
 			});
 
@@ -1595,12 +1595,12 @@ final class DefaultStepVerifierBuilder<T>
 
 		private final Queue<Object> droppedElements;
 		private final Queue<Throwable> droppedErrors;
-		private final Queue<Tuple2<Throwable, ?>> operatorErrors;
+		private final Queue<Tuple2<Optional<Throwable>, Optional<?>>> operatorErrors;
 		private final Duration duration;
 
 		DefaultStepVerifierAssertions(Queue<Object> droppedElements,
 				Queue<Throwable> droppedErrors,
-				Queue<Tuple2<Throwable, ?>> operatorErrors,
+				Queue<Tuple2<Optional<Throwable>, Optional<?>>> operatorErrors,
 				Duration duration) {
 			this.droppedElements = droppedElements;
 			this.droppedErrors = droppedErrors;
@@ -1721,7 +1721,7 @@ final class DefaultStepVerifierBuilder<T>
 		StepVerifier.Assertions hasOneOperatorErrorWithError() {
 			satisfies(() -> operatorErrors.size() == 1,
 					() -> String.format("Expected exactly one operator error, %d found.", operatorErrors.size()));
-			satisfies(() -> operatorErrors.peek().getT1() != null,
+			satisfies(() -> operatorErrors.peek().getT1().isPresent(),
 					() -> "Expected exactly one operator error with an actual throwable content, no throwable found.");
 			return this;
 		}
@@ -1741,7 +1741,7 @@ final class DefaultStepVerifierBuilder<T>
 			//noinspection ConstantConditions
 			satisfies(() -> matcher != null, () -> "Require non-null matcher");
 			hasOneOperatorErrorWithError();
-			return satisfies(() -> matcher.test(operatorErrors.peek().getT1()),
+			return satisfies(() -> matcher.test(operatorErrors.peek().getT1().orElse(null)),
 					() -> String.format("Expected operator error matching the given predicate, did not match: <%s>.", operatorErrors.peek()));
 		}
 
@@ -1750,7 +1750,7 @@ final class DefaultStepVerifierBuilder<T>
 			//noinspection ConstantConditions
 			satisfies(() -> message != null, () -> "Require non-null message");
 			hasOneOperatorErrorWithError();
-			String actual = operatorErrors.peek().getT1().getMessage();
+			String actual = operatorErrors.peek().getT1().get().getMessage();
 			return satisfies(() -> message.equals(actual),
 					() -> String.format("Expected operator error with message <\"%s\">, was <\"%s\">.", message, actual));
 		}
@@ -1761,13 +1761,13 @@ final class DefaultStepVerifierBuilder<T>
 			//noinspection ConstantConditions
 			satisfies(() -> messagePart != null, () -> "Require non-null messagePart");
 			hasOneOperatorErrorWithError();
-			String actual = operatorErrors.peek().getT1().getMessage();
+			String actual = operatorErrors.peek().getT1().get().getMessage();
 			return satisfies(() -> actual != null && actual.contains(messagePart),
 					() -> String.format("Expected operator error with message containing <\"%s\">, was <\"%s\">.", messagePart, actual));
 		}
 
 		@Override
-		public StepVerifier.Assertions hasOperatorErrorsMatching(Predicate<Collection<Tuple2<Throwable, ?>>> matcher) {
+		public StepVerifier.Assertions hasOperatorErrorsMatching(Predicate<Collection<Tuple2<Optional<Throwable>, Optional<?>>>> matcher) {
 			//noinspection ConstantConditions
 			satisfies(() -> matcher != null, () -> "Require non-null matcher");
 			hasOperatorErrors();
@@ -1776,7 +1776,7 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		@Override
-		public StepVerifier.Assertions hasOperatorErrorsSatisfying(Consumer<Collection<Tuple2<Throwable, ?>>> asserter) {
+		public StepVerifier.Assertions hasOperatorErrorsSatisfying(Consumer<Collection<Tuple2<Optional<Throwable>, Optional<?>>>> asserter) {
 			//noinspection ConstantConditions
 			satisfies(() -> asserter != null, () -> "Require non-null asserter");
 			hasOperatorErrors();

@@ -19,6 +19,7 @@ package reactor.test;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -1044,14 +1045,14 @@ public interface StepVerifier {
 		 * Assert that the tested publisher has triggered the {@link Hooks#onOperatorError(BiFunction) onOperatorError} hook
 		 * once or more, and assert the errors and optionally associated data as a collection.
 		 */
-		Assertions hasOperatorErrorsSatisfying(Consumer<Collection<Tuple2<Throwable, ?>>> errorsConsumer);
+		Assertions hasOperatorErrorsSatisfying(Consumer<Collection<Tuple2<Optional<Throwable>, Optional<?>>>> errorsConsumer);
 
 		/**
 		 * Assert that the tested publisher has triggered the {@link Hooks#onOperatorError(BiFunction) onOperatorError} hook
 		 * once or more, and check that the collection of errors and their optionally
 		 * associated data matches a predicate.
 		 */
-		Assertions hasOperatorErrorsMatching(Predicate<Collection<Tuple2<Throwable, ?>>> errorsConsumer);
+		Assertions hasOperatorErrorsMatching(Predicate<Collection<Tuple2<Optional<Throwable>, Optional<?>>>> errorsConsumer);
 
 		/**
 		 * Assert that the whole verification took strictly less than the provided
