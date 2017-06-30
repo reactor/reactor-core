@@ -366,8 +366,8 @@ public class StepVerifierAssertionsTests {
 			fail("expected an AssertionError");
 		}
 		catch (AssertionError ae) {
-			assertThat(ae).hasMessage("Expected operator error matching the given predicate," +
-					" did not match: <[java.lang.IllegalStateException: boom1,]>.");
+			assertThat(ae).hasMessage("Expected operator error matching the given predicate, " +
+					"did not match: <[Optional[java.lang.IllegalStateException: boom1],Optional.empty]>.");
 		}
 	}
 
@@ -412,9 +412,9 @@ public class StepVerifierAssertionsTests {
 			fail("expected an AssertionError");
 		}
 		catch (AssertionError ae) {
-			assertThat(ae).hasMessageEndingWith("Expected size:<3> but was:<2> in:\n" +
-					"<[[java.lang.IllegalStateException: boom2,],\n" +
-					"    [java.lang.IllegalStateException: boom3,]]>");
+			assertThat(ae).hasMessageStartingWith("\nExpected size:<3> but was:<2> in:\n")
+			              .hasMessageContaining("boom2")
+			              .hasMessageContaining("boom3");
 		}
 	}
 
@@ -436,9 +436,10 @@ public class StepVerifierAssertionsTests {
 			fail("expected an AssertionError");
 		}
 		catch (AssertionError ae) {
-			assertThat(ae).hasMessage("Expected collection of operator errors matching the" +
-					" given predicate, did not match: <[[java.lang.IllegalStateException: boom2,]," +
-					" [java.lang.IllegalStateException: boom3,]]>.");
+			assertThat(ae).hasMessageStartingWith("Expected collection of operator errors matching the" +
+					" given predicate, did not match: <[[")
+			              .hasMessageContaining("boom2")
+			              .hasMessageContaining("boom3");
 		}
 	}
 

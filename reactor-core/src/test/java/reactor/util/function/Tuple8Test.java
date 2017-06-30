@@ -19,30 +19,18 @@ package reactor.util.function;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class Tuple8Test {
 
-	private Tuple8<Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer> empty =
-			new Tuple8<>(null, null, null, null, null, null, null, null);
 	private Tuple8<Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer> full =
 			new Tuple8<>(1, 2, 3, 4, 5, 6, 7, 8);
 
 	@Test
-	public void sparseToString() {
-		assertThat(new Tuple8<>(null, 2, 3, 4, 5, 6, 7, 8))
-				.hasToString("[,2,3,4,5,6,7,8]");
-
-		assertThat(new Tuple8<>(1, 2, 3, 4, 5, null, null, 8))
-				.hasToString("[1,2,3,4,5,,,8]");
-
-		assertThat(new Tuple8<>(1, 2, 3, 4, 5, 6, 7, null))
-				.hasToString("[1,2,3,4,5,6,7,]");
-	}
-
-	@Test
-	public void nullsCountedInSize() {
-		assertThat(empty.size()).isEqualTo(8);
-		assertThat(empty).hasSize(8);
+	public void nullT8Rejected() {
+		assertThatExceptionOfType(NullPointerException.class)
+				.isThrownBy(() -> new Tuple8<>(1, 2, 3, 4, 5, 6, 7, null))
+				.withMessage("t8");
 	}
 
 	@Test
@@ -65,21 +53,6 @@ public class Tuple8Test {
 	}
 
 	@Test
-	public void sparseIsNotSameAsSmaller() {
-		Tuple8<Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer> sparseLeft = new Tuple8<>(null, 1, 2, 3, 4, 5, 6, 7);
-		Tuple8<Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer> sparseRight = new Tuple8<>(1, 2, 3, 4, 5, 6, 7, null);
-		Tuple7<Integer, Integer, Integer, Integer, Integer, Integer, Integer> smaller = new Tuple7<>(1, 2, 3, 4, 5, 6, 7);
-
-		assertThat(sparseLeft.hashCode())
-				.isNotEqualTo(sparseRight.hashCode())
-	            .isNotEqualTo(smaller.hashCode());
-
-		assertThat(sparseLeft)
-				.isNotEqualTo(sparseRight)
-	            .isNotEqualTo(smaller);
-	}
-
-	@Test
 	public void equalityOfSameReference() {
 		assertThat(full).isEqualTo(full);
 	}
@@ -92,13 +65,20 @@ public class Tuple8Test {
 
 	@Test
 	public void t8Combinations() {
-		assertThat(new Tuple8<>(1, 2, 3, 4, 5, 6, 7, null))
-				.isEqualTo(new Tuple8<>(1, 2, 3, 4, 5, 6, 7, null))
-				.isNotEqualTo(new Tuple8<>(1, 2, 3, 4, 5, 6, 7, 10));
-
 		assertThat(new Tuple8<>(1, 2, 3, 4, 5, 6, 7, 8))
-				.isNotEqualTo(new Tuple8<>(1, 2, 3, 4, 5, 6, 7, null))
 				.isNotEqualTo(new Tuple8<>(1, 2, 3, 4, 5, 6, 7, 10))
 				.isEqualTo(new Tuple8<>(1, 2, 3, 4, 5, 6, 7, 8));
+	}
+
+	@Test
+	public void sanityTestHashcode() {
+		Tuple8<Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer>
+				same = new Tuple8<>(1, 2, 3, 4, 5, 6, 7, 8);
+		Tuple8<Integer, Integer, Integer, Integer, Integer, Integer, Integer, Integer>
+				different = new Tuple8<>(1, 2, 3, 4, 5, 6, 7, 1);
+
+		assertThat(full.hashCode())
+				.isEqualTo(same.hashCode())
+				.isNotEqualTo(different.hashCode());
 	}
 }

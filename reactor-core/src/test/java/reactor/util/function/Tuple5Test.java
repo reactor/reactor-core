@@ -19,28 +19,17 @@ package reactor.util.function;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class Tuple5Test {
 
-	private Tuple5<Integer, Integer, Integer, Integer, Integer> empty = new Tuple5<>(null, null, null, null, null);
 	private Tuple5<Integer, Integer, Integer, Integer, Integer> full = new Tuple5<>(1, 2, 3, 4, 5);
 
 	@Test
-	public void sparseToString() {
-		assertThat(new Tuple5<>(null, 2, 3, 4, 5))
-				.hasToString("[,2,3,4,5]");
-
-		assertThat(new Tuple5<>(1, null, null, 4, 5))
-				.hasToString("[1,,,4,5]");
-
-		assertThat(new Tuple5<>(1, 2, 3, 4, null))
-				.hasToString("[1,2,3,4,]");
-	}
-
-	@Test
-	public void nullsCountedInSize() {
-		assertThat(empty.size()).isEqualTo(5);
-		assertThat(empty).hasSize(5);
+	public void nullT5Rejected() {
+		assertThatExceptionOfType(NullPointerException.class)
+				.isThrownBy(() -> new Tuple5<>(1, 2, 3, 4, null))
+				.withMessage("t5");
 	}
 
 	@Test
@@ -63,21 +52,6 @@ public class Tuple5Test {
 	}
 
 	@Test
-	public void sparseIsNotSameAsSmaller() {
-		Tuple5<Integer, Integer, Integer, Integer, Integer> sparseLeft = new Tuple5<>(null, 1, 2, 3, 4);
-		Tuple5<Integer, Integer, Integer, Integer, Integer> sparseRight = new Tuple5<>(1, 2, 3, 4, null);
-		Tuple4<Integer, Integer, Integer, Integer> smaller = new Tuple4<>(1, 2, 3, 4);
-
-		assertThat(sparseLeft.hashCode())
-				.isNotEqualTo(sparseRight.hashCode())
-				.isNotEqualTo(smaller.hashCode());
-
-		assertThat(sparseLeft)
-				.isNotEqualTo(sparseRight)
-				.isNotEqualTo(smaller);
-	}
-
-	@Test
 	public void equalityOfSameReference() {
 		assertThat(full).isEqualTo(full);
 	}
@@ -90,13 +64,18 @@ public class Tuple5Test {
 
 	@Test
 	public void t5Combinations() {
-		assertThat(new Tuple5<>(1, 2, 3, 4, null))
-				.isEqualTo(new Tuple5<>(1, 2, 3, 4, null))
-				.isNotEqualTo(new Tuple5<>(1, 2, 3, 4, 10));
-
 		assertThat(new Tuple5<>(1, 2, 3, 4, 5))
-				.isNotEqualTo(new Tuple5<>(1, 2, 3, 4, null))
 				.isNotEqualTo(new Tuple5<>(1, 2, 3, 4, 10))
 				.isEqualTo(new Tuple5<>(1, 2, 3, 4, 5));
+	}
+
+	@Test
+	public void sanityTestHashcode() {
+		Tuple5<Integer, Integer, Integer, Integer, Integer> same = new Tuple5<>(1, 2, 3, 4, 5);
+		Tuple5<Integer, Integer, Integer, Integer, Integer> different = new Tuple5<>(1, 2, 3, 4, 1);
+
+		assertThat(full.hashCode())
+				.isEqualTo(same.hashCode())
+				.isNotEqualTo(different.hashCode());
 	}
 }

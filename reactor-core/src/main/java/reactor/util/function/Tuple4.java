@@ -16,27 +16,29 @@
 
 package reactor.util.function;
 
+import java.util.Objects;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
- * A tuple that holds four values
+ * A tuple that holds four non-null values
  *
- * @param <T1> The type of the first value held by this tuple
- * @param <T2> The type of the second value held by this tuple
- * @param <T3> The type of the third value held by this tuple
- * @param <T4> The type of the fourth value held by this tuple
+ * @param <T1> The type of the first non-null value held by this tuple
+ * @param <T2> The type of the second non-null value held by this tuple
+ * @param <T3> The type of the third non-null value held by this tuple
+ * @param <T4> The type of the fourth non-null value held by this tuple
  * @author Jon Brisbin
  * @author Stephane Maldini
  */
 public class Tuple4<T1, T2, T3, T4> extends Tuple3<T1, T2, T3> {
 
-	private static final long serialVersionUID = 8075447176142642390L;
+	private static final long serialVersionUID = -4898704078143033129L;
 
-	final T4 t4;
+	@Nonnull final T4 t4;
 
-	Tuple4(@Nullable T1 t1, @Nullable T2 t2, @Nullable T3 t3, @Nullable T4 t4) {
+	Tuple4(T1 t1, T2 t2, T3 t3, T4 t4) {
 		super( t1, t2, t3);
-		this.t4 = t4;
+		this.t4 = Objects.requireNonNull(t4, "t4");
 	}
 
 	/**
@@ -44,7 +46,6 @@ public class Tuple4<T1, T2, T3, T4> extends Tuple3<T1, T2, T3> {
 	 *
 	 * @return The fourth object
 	 */
-	@Nullable
 	public T4 getT4() {
 		return t4;
 	}
@@ -80,26 +81,19 @@ public class Tuple4<T1, T2, T3, T4> extends Tuple3<T1, T2, T3> {
 		@SuppressWarnings("rawtypes")
         Tuple4 tuple4 = (Tuple4) o;
 
-		return t4 != null ? t4.equals(tuple4.t4) : tuple4.t4 == null;
+		return t4.equals(tuple4.t4);
 
 	}
 
 	@Override
 	public int hashCode() {
 		int result = super.hashCode();
-		result = 31 * result + (t4 != null ? t4.hashCode() : 0);
+		result = 31 * result + t4.hashCode();
 		return result;
 	}
 
 	@Override
 	public int size() {
 		return 4;
-	}
-
-	@Override
-	public StringBuilder innerToString() {
-		StringBuilder sb = super.innerToString().append(',');
-		if (t4 != null) sb.append(t4);
-		return sb;
 	}
 }

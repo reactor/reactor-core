@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.util.concurrent.TimeUnit;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -25,7 +26,6 @@ import reactor.core.scheduler.Scheduler;
 import reactor.util.context.Context;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
-import javax.annotation.Nullable;
 
 /**
  * @author Stephane Maldini
@@ -41,7 +41,7 @@ final class FluxElapsed<T> extends FluxOperator<T, Tuple2<Long, T>> implements F
 
 	@Override
 	public void subscribe(Subscriber<? super Tuple2<Long, T>> s, Context ctx) {
-		source.subscribe(new ElapsedSubscriber<T>(s, scheduler), ctx);
+		source.subscribe(new ElapsedSubscriber<>(s, scheduler), ctx);
 	}
 
 	static final class ElapsedSubscriber<T>

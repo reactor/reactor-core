@@ -16,28 +16,30 @@
 
 package reactor.util.function;
 
+import java.util.Objects;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
- * A tuple that holds five values
+ * A tuple that holds five non-null values
  *
- * @param <T1> The type of the first value held by this tuple
- * @param <T2> The type of the second value held by this tuple
- * @param <T3> The type of the third value held by this tuple
- * @param <T4> The type of the fourth value held by this tuple
- * @param <T5> The type of the fifth value held by this tuple
+ * @param <T1> The type of the first non-null value held by this tuple
+ * @param <T2> The type of the second non-null value held by this tuple
+ * @param <T3> The type of the third non-null value held by this tuple
+ * @param <T4> The type of the fourth non-null value held by this tuple
+ * @param <T5> The type of the fifth non-null value held by this tuple
  * @author Jon Brisbin
  * @author Stephane Maldini
  */
 public class Tuple5<T1, T2, T3, T4, T5> extends Tuple4<T1, T2, T3, T4> {
 
-	private static final long serialVersionUID = -5866370282498275773L;
+	private static final long serialVersionUID = 3541548454198133275L;
 
-	final T5 t5;
+	@Nonnull final T5 t5;
 
-	Tuple5(@Nullable T1 t1, @Nullable T2 t2, @Nullable T3 t3, @Nullable T4 t4, @Nullable T5 t5) {
+	Tuple5(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5) {
 		super(t1, t2, t3, t4);
-		this.t5 = t5;
+		this.t5 = Objects.requireNonNull(t5, "t5");
 	}
 
 	/**
@@ -45,7 +47,6 @@ public class Tuple5<T1, T2, T3, T4, T5> extends Tuple4<T1, T2, T3, T4> {
 	 *
 	 * @return The fifth object
 	 */
-	@Nullable
 	public T5 getT5() {
 		return t5;
 	}
@@ -83,26 +84,19 @@ public class Tuple5<T1, T2, T3, T4, T5> extends Tuple4<T1, T2, T3, T4> {
 		@SuppressWarnings("rawtypes")
         Tuple5 tuple5 = (Tuple5) o;
 
-		return t5 != null ? t5.equals(tuple5.t5) : tuple5.t5 == null;
+		return t5.equals(tuple5.t5);
 
 	}
 
 	@Override
 	public int hashCode() {
 		int result = super.hashCode();
-		result = 31 * result + (t5 != null ? t5.hashCode() : 0);
+		result = 31 * result + t5.hashCode();
 		return result;
 	}
 
 	@Override
 	public int size() {
 		return 5;
-	}
-
-	@Override
-	public StringBuilder innerToString() {
-		StringBuilder sb = super.innerToString().append(',');
-		if (t5 != null) sb.append(t5);
-		return sb;
 	}
 }

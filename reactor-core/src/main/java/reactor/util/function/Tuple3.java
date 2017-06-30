@@ -16,26 +16,28 @@
 
 package reactor.util.function;
 
+import java.util.Objects;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
- * A tuple that holds three values
+ * A tuple that holds three non-null values.
  *
- * @param <T1> The type of the first value held by this tuple
- * @param <T2> The type of the second value held by this tuple
- * @param <T3> The type of the third value held by this tuple
+ * @param <T1> The type of the first non-null value held by this tuple
+ * @param <T2> The type of the second non-null value held by this tuple
+ * @param <T3> The type of the third non-null value held by this tuple
  * @author Jon Brisbin
  * @author Stephane Maldini
  */
 public class Tuple3<T1, T2, T3> extends Tuple2<T1, T2> {
 
-	private static final long serialVersionUID = 6315773492205460562L;
+	private static final long serialVersionUID = -4430274211524723033L;
 
-	final T3 t3;
+	@Nonnull final T3 t3;
 
-	Tuple3(@Nullable T1 t1, @Nullable T2 t2, @Nullable T3 t3) {
+	Tuple3(T1 t1, T2 t2, T3 t3) {
 		super(t1, t2);
-		this.t3 = t3;
+		this.t3 = Objects.requireNonNull(t3, "t3");
 	}
 
 	/**
@@ -43,7 +45,6 @@ public class Tuple3<T1, T2, T3> extends Tuple2<T1, T2> {
 	 *
 	 * @return The third object
 	 */
-	@Nullable
 	public T3 getT3() {
 		return t3;
 	}
@@ -77,7 +78,7 @@ public class Tuple3<T1, T2, T3> extends Tuple2<T1, T2> {
 		@SuppressWarnings("rawtypes")
         Tuple3 tuple3 = (Tuple3) o;
 
-		return t3 != null ? t3.equals(tuple3.t3) : tuple3.t3 == null;
+		return t3.equals(tuple3.t3);
 	}
 
 	@Override
@@ -88,14 +89,7 @@ public class Tuple3<T1, T2, T3> extends Tuple2<T1, T2> {
 	@Override
 	public int hashCode() {
 		int result = super.hashCode();
-		result = 31 * result + (t3 != null ? t3.hashCode() : 0);
+		result = 31 * result + t3.hashCode();
 		return result;
-	}
-
-	@Override
-	public StringBuilder innerToString() {
-		StringBuilder sb = super.innerToString().append(',');
-		if (t3 != null) sb.append(t3);
-		return sb;
 	}
 }

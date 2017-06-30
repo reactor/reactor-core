@@ -16,6 +16,8 @@
 
 package reactor.util.function;
 
+import java.util.Objects;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
@@ -32,14 +34,13 @@ import javax.annotation.Nullable;
  */
 public class Tuple6<T1, T2, T3, T4, T5, T6> extends Tuple5<T1, T2, T3, T4, T5> {
 
-	private static final long serialVersionUID = -4214053259792235250L;
+	private static final long serialVersionUID = 770306356087176830L;
 
-	final T6 t6;
+	@Nonnull final T6 t6;
 
-	Tuple6(@Nullable T1 t1, @Nullable T2 t2, @Nullable T3 t3, @Nullable T4 t4,
-			@Nullable T5 t5, @Nullable T6 t6) {
+	Tuple6(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6) {
 		super(t1, t2, t3, t4, t5);
-		this.t6 = t6;
+		this.t6 = Objects.requireNonNull(t6, "t6");
 	}
 
 	/**
@@ -47,7 +48,6 @@ public class Tuple6<T1, T2, T3, T4, T5, T6> extends Tuple5<T1, T2, T3, T4, T5> {
 	 *
 	 * @return The sixth object
 	 */
-	@Nullable
 	public T6 getT6() {
 		return t6;
 	}
@@ -87,26 +87,19 @@ public class Tuple6<T1, T2, T3, T4, T5, T6> extends Tuple5<T1, T2, T3, T4, T5> {
 		@SuppressWarnings("rawtypes")
         Tuple6 tuple6 = (Tuple6) o;
 
-		return t6 != null ? t6.equals(tuple6.t6) : tuple6.t6 == null;
+		return t6.equals(tuple6.t6);
 
 	}
 
 	@Override
 	public int hashCode() {
 		int result = super.hashCode();
-		result = 31 * result + (t6 != null ? t6.hashCode() : 0);
+		result = 31 * result + t6.hashCode();
 		return result;
 	}
 
 	@Override
 	public int size() {
 		return 6;
-	}
-
-	@Override
-	public StringBuilder innerToString() {
-		StringBuilder sb = super.innerToString().append(',');
-		if (t6 != null) sb.append(t6);
-		return sb;
 	}
 }

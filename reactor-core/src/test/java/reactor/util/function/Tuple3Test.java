@@ -19,28 +19,17 @@ package reactor.util.function;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class Tuple3Test {
 
-	private Tuple3<Integer, Integer, Integer> empty = new Tuple3<>(null, null, null);
 	private Tuple3<Integer, Integer, Integer> full = new Tuple3<>(1, 2, 3);
 
 	@Test
-	public void sparseToString() {
-		assertThat(new Tuple3<>(null, 2, 3))
-				.hasToString("[,2,3]");
-
-		assertThat(new Tuple3<>(1, null, 3))
-				.hasToString("[1,,3]");
-
-		assertThat(new Tuple3<>(1, 2, null))
-				.hasToString("[1,2,]");
-	}
-
-	@Test
-	public void nullsCountedInSize() {
-		assertThat(empty.size()).isEqualTo(3);
-		assertThat(empty).hasSize(3);
+	public void nullT3Rejected() {
+		assertThatExceptionOfType(NullPointerException.class)
+				.isThrownBy(() -> new Tuple3<>(1, 2, null))
+				.withMessage("t3");
 	}
 
 	@Test
@@ -63,21 +52,6 @@ public class Tuple3Test {
 	}
 
 	@Test
-	public void sparseIsNotSameAsSmaller() {
-		Tuple3<Integer, Integer, Integer> sparseLeft = new Tuple3<>(null, 1, 2);
-		Tuple3<Integer, Integer, Integer> sparseRight = new Tuple3<>(1, 2, null);
-		Tuple2<Integer, Integer> smaller = new Tuple2<>(1, 2);
-
-		assertThat(sparseLeft.hashCode())
-				.isNotEqualTo(sparseRight.hashCode())
-				.isNotEqualTo(smaller.hashCode());
-
-		assertThat(sparseLeft)
-				.isNotEqualTo(sparseRight)
-				.isNotEqualTo(smaller);
-	}
-
-	@Test
 	public void equalityOfSameReference() {
 		assertThat(full).isEqualTo(full);
 	}
@@ -90,13 +64,18 @@ public class Tuple3Test {
 
 	@Test
 	public void t3Combinations() {
-		assertThat(new Tuple3<>(1, 2, null))
-				.isEqualTo(new Tuple3<>(1, 2, null))
-	            .isNotEqualTo(new Tuple3<>(1, 2, 10));
-
 		assertThat(new Tuple3<>(1, 2, 3))
-				.isNotEqualTo(new Tuple3<>(1, 2, null))
 				.isNotEqualTo(new Tuple3<>(1, 2, 10))
 	            .isEqualTo(new Tuple3<>(1, 2, 3));
+	}
+
+	@Test
+	public void sanityTestHashcode() {
+		Tuple3<Integer, Integer, Integer> same = new Tuple3<>(1, 2, 3);
+		Tuple3<Integer, Integer, Integer> different = new Tuple3<>(1, 2, 1);
+
+		assertThat(full.hashCode())
+				.isEqualTo(same.hashCode())
+				.isNotEqualTo(different.hashCode());
 	}
 }

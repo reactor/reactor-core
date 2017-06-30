@@ -19,25 +19,24 @@ package reactor.util.function;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class Tuple2Test {
 
-	private Tuple2<Integer, Integer> empty = new Tuple2<>(null, null);
 	private Tuple2<Integer, Integer> full = new Tuple2<>(1, 2);
 
 	@Test
-	public void sparseToString() {
-		assertThat(new Tuple2<Integer, Integer>(null, 2))
-				.hasToString("[,2]");
-
-		assertThat(new Tuple2<Integer, Integer>(1, null))
-				.hasToString("[1,]");
+	public void nullT1Rejected() {
+		assertThatExceptionOfType(NullPointerException.class)
+				.isThrownBy(() -> new Tuple2<>(null, 2))
+				.withMessage("t1");
 	}
 
 	@Test
-	public void nullsCountedInSize() {
-		assertThat(empty.size()).isEqualTo(2);
-		assertThat(empty).hasSize(2);
+	public void nullT2Rejected() {
+		assertThatExceptionOfType(NullPointerException.class)
+				.isThrownBy(() -> new Tuple2<>(1, null))
+				.withMessage("t2");
 	}
 
 	@Test
@@ -60,18 +59,6 @@ public class Tuple2Test {
 	}
 
 	@Test
-	public void sparseIsNotSameLeftAndRight() {
-		Tuple2<Integer, Integer> sparseLeft = new Tuple2<>(null, 1);
-		Tuple2<Integer, Integer> sparseRight = new Tuple2<>(1, null);
-
-		assertThat(sparseLeft.hashCode())
-				.isNotEqualTo(sparseRight.hashCode());
-
-		assertThat(sparseLeft)
-				.isNotEqualTo(sparseRight);
-	}
-
-	@Test
 	public void equalityOfSameReference() {
 		assertThat(full).isEqualTo(full);
 	}
@@ -83,33 +70,29 @@ public class Tuple2Test {
 	}
 
 	@Test
-	public void equalsCombinations() {
-		Tuple2<Integer, Integer> otherEmpty = new Tuple2<>(null, null);
-		Tuple2<Integer, Integer> sparseLeft = new Tuple2<>(null, 2);
-		Tuple2<Integer, Integer> sparseRight = new Tuple2<>(1, null);
+	public void equals() {
 		Tuple2<Integer, Integer> otherFull = new Tuple2<>(1, 2);
 
-		assertThat(empty)
-				.isEqualTo(otherEmpty)
-				.isNotEqualTo(sparseLeft)
-				.isNotEqualTo(sparseRight)
-	            .isNotEqualTo(otherFull);
+		assertThat(full)
+		        .isEqualTo(otherFull);
+	}
 
-		assertThat(sparseLeft)
-				.isNotEqualTo(otherEmpty)
-				.isNotEqualTo(sparseRight)
-		        .isNotEqualTo(otherFull);
-
-		assertThat(sparseRight)
-				.isNotEqualTo(otherEmpty)
-				.isNotEqualTo(sparseLeft)
-		        .isNotEqualTo(otherFull);
+	@Test
+	public void invertedContentNotEquals() {
+		Tuple2<Integer, Integer> otherFull = new Tuple2<>(2, 1);
 
 		assertThat(full)
-				.isNotEqualTo(otherEmpty)
-				.isNotEqualTo(sparseLeft)
-				.isNotEqualTo(sparseRight)
-		        .isEqualTo(otherFull);
+		        .isNotEqualTo(otherFull);
+	}
+
+	@Test
+	public void sanityTestHashcode() {
+		Tuple2<Integer, Integer> same = new Tuple2<>(1, 2);
+		Tuple2<Integer, Integer> different = new Tuple2<>(2, 1);
+
+		assertThat(full.hashCode())
+				.isEqualTo(same.hashCode())
+				.isNotEqualTo(different.hashCode());
 	}
 
 }

@@ -16,6 +16,8 @@
 
 package reactor.util.function;
 
+import java.util.Objects;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
@@ -35,14 +37,13 @@ import javax.annotation.Nullable;
 public class Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> extends
                                                     Tuple7<T1, T2, T3, T4, T5, T6, T7> {
 
-	private static final long serialVersionUID = 3070436338779769189L;
+	private static final long serialVersionUID = -8746796646535446242L;
 
-	final T8 t8;
+	@Nonnull final T8 t8;
 
-	Tuple8(@Nullable T1 t1, @Nullable T2 t2, @Nullable T3 t3, @Nullable T4 t4,
-			@Nullable T5 t5, @Nullable T6 t6, @Nullable T7 t7, @Nullable T8 t8) {
+	Tuple8(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8) {
 		super(t1, t2, t3, t4, t5, t6, t7);
-		this.t8 = t8;
+		this.t8 = Objects.requireNonNull(t8, "t8");
 	}
 
 	/**
@@ -50,7 +51,6 @@ public class Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> extends
 	 *
 	 * @return The eighth object
 	 */
-	@Nullable
 	public T8 getT8() {
 		return t8;
 	}
@@ -94,26 +94,19 @@ public class Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> extends
 		@SuppressWarnings("rawtypes")
         Tuple8 tuple8 = (Tuple8) o;
 
-		return t8 != null ? t8.equals(tuple8.t8) : tuple8.t8 == null;
+		return t8.equals(tuple8.t8);
 
 	}
 
 	@Override
 	public int hashCode() {
 		int result = super.hashCode();
-		result = 31 * result + (t8 != null ? t8.hashCode() : 0);
+		result = 31 * result + t8.hashCode();
 		return result;
 	}
 
 	@Override
 	public int size() {
 		return 8;
-	}
-
-	@Override
-	public StringBuilder innerToString() {
-		StringBuilder sb = super.innerToString().append(',');
-		if (t8 != null) sb.append(t8);
-		return sb;
 	}
 }
