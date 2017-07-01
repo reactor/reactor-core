@@ -91,4 +91,9 @@ final class MonoCallableOnAssembly<T> extends MonoOperator<T, T>
 	public T call() throws Exception {
 		return ((Callable<T>) source).call();
 	}
+
+	@Override
+	public String toString() {
+		return stacktrace.stackFirst();
+	}
 }

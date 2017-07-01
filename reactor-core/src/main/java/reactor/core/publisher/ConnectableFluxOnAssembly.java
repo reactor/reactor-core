@@ -17,7 +17,6 @@ package reactor.core.publisher;
 
 import java.util.function.Consumer;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
@@ -74,5 +73,10 @@ final class ConnectableFluxOnAssembly<T> extends ConnectableFlux<T> implements
 		if (key == ScannableAttr.PARENT) return source;
 
 		return null;
+	}
+
+	@Override
+	public String toString() {
+		return stacktrace.stackFirst();
 	}
 }

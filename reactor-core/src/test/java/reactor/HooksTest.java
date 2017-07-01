@@ -107,6 +107,11 @@ public class HooksTest {
 	}
 
 	@Test
+	public void stupid(){
+		System.out.println(Flux.just(1).checkpoint().toString());
+	}
+
+	@Test
 	public void parallelModeFused() {
 		Hooks.onOperator(h -> h.log("", Level.INFO, true, SignalType.ON_COMPLETE).operatorStacktrace());
 		Flux<Integer> source = Mono.just(1)

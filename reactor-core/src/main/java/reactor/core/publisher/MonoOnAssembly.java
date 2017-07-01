@@ -81,20 +81,6 @@ final class MonoOnAssembly<T> extends MonoOperator<T, T> implements Fuseable, As
 
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder();
-		return sb.append('{')
-		       .append(" \"operator\" : ")
-		       .append('"')
-		       .append(getClass().getSimpleName()
-								 .replaceAll("Mono", ""))
-		       .append('"')
-		       .append(", ")
-		       .append(" \"description\" : ")
-		       .append('"')
-		       .append(stacktrace.getMessage())
-		       .append('"')
-		       .append(' ')
-		       .append('}')
-		       .toString();
+		return stacktrace.stackFirst();
 	}
 }

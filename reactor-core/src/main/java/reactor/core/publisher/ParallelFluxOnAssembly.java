@@ -125,20 +125,6 @@ final class ParallelFluxOnAssembly<T> extends ParallelFlux<T>
 
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder();
-		sb = sb.append('{')
-			   .append(" \"operator\" : ")
-			   .append('"')
-			   .append(getClass().getSimpleName()
-								 .replaceAll("Flux", ""))
-			   .append('"')
-			   .append(", ")
-		       .append(" \"description\" : ")
-		       .append('"')
-		       .append(stacktrace.getMessage())
-		       .append('"')
-		       .append(' ')
-		       .append('}');
-		return sb.toString();
+		return stacktrace.stackFirst();
 	}
 }

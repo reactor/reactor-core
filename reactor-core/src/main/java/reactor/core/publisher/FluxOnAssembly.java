@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import java.util.LinkedList;
 import java.util.List;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -27,7 +28,6 @@ import reactor.core.Scannable;
 import reactor.util.context.Context;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuples;
-import javax.annotation.Nullable;
 
 /**
  * Captures the current stacktrace when this publisher is created and
@@ -84,35 +84,12 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable, As
 
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder();
-		sb = sb.append('{')
-			   .append(" \"operator\" : ")
-			   .append('"')
-			   .append(getClass().getSimpleName()
-								 .replaceAll("Flux", ""))
-			   .append('"');
-		if (snapshotStack != null) {
-			sb = sb.append(", ")
-				   .append(" \"description\" : ")
-				   .append('"')
-				   .append(snapshotStack.getMessage())
-				   .append('"');
-		}
-		return sb.append(' ')
-				 .append('}')
-				 .toString();
+		return snapshotStack.stackFirst();
 	}
 
-	static String getStacktrace(
-			@Nullable Publisher<?> source,
-			AssemblySnapshotException snapshotStack) {
+	static String getStacktrace(AssemblySnapshotException snapshotStack) {
 		StackTraceElement[] stes = snapshotStack.getStackTrace();
-
 		StringBuilder sb = new StringBuilder();
-		if (null != source) {
-			fillStacktraceHeader(sb, source.getClass(), snapshotStack);
-		}
-
 		for (StackTraceElement e : stes) {
 			String row = e.toString();
 			if (!fullStackTrace) {
@@ -277,6 +254,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable, As
 	static class AssemblySnapshotException extends RuntimeException {
 
 		final boolean checkpointed;
+		String cached;
 
 		AssemblySnapshotException() {
 			super();
@@ -295,12 +273,25 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable, As
 		public boolean isLight() {
 			return false;
 		}
+
+		@Override
+		public String toString() {
+			if(cached == null){
+				cached = getStacktrace(this);
+			}
+			return cached;
+		}
+
+		String stackFirst(){
+			return extract(toString(), true);
+		}
 	}
 
 	static final class AssemblyLightSnapshotException extends AssemblySnapshotException {
 
-		public AssemblyLightSnapshotException(@Nullable String description) {
+		AssemblyLightSnapshotException(@Nullable String description) {
 			super(description);
+			cached = "\"description\" : \""+description+"\"";
 		}
 
 		@Override
@@ -311,6 +302,11 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable, As
 		@Override
 		public boolean isLight() {
 			return true;
+		}
+
+		@Override
+		String stackFirst() {
+			return toString();
 		}
 	}
 
@@ -470,12 +466,14 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable, As
 		}
 
 		final void fail(Throwable t) {
+			StringBuilder sb = new StringBuilder();
+			fillStacktraceHeader(sb, parent.getClass(), snapshotStack);
 			OnAssemblyException set = null;
 			if (t.getSuppressed().length > 0) {
 				for (Throwable e : t.getSuppressed()) {
 					if (e instanceof OnAssemblyException) {
 						OnAssemblyException oae = ((OnAssemblyException) e);
-						oae.add(parent, getStacktrace(parent, snapshotStack));
+						oae.add(parent, sb.append(snapshotStack.toString()).toString());
 						set = oae;
 						break;
 					}
@@ -483,7 +481,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable, As
 			}
 			if (set == null) {
 				t.addSuppressed(new OnAssemblyException(parent, snapshotStack,
-						getStacktrace(parent, snapshotStack)));
+						sb.append(snapshotStack.toString()).toString()));
 			}
 			else if(snapshotStack.checkpointed && t != snapshotStack){
 				t.addSuppressed(snapshotStack);
