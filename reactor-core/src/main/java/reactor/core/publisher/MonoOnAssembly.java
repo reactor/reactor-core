@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import java.util.Map;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
@@ -36,7 +38,8 @@ import reactor.util.context.Context;
  * @param <T> the value type passing through
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
-final class MonoOnAssembly<T> extends MonoOperator<T, T> implements Fuseable, AssemblyOp {
+final class MonoOnAssembly<T> extends MonoOperator<T, T> implements Fuseable,
+                                                                    AssemblyOp, Context {
 
 	final AssemblySnapshotException stacktrace;
 
@@ -82,5 +85,23 @@ final class MonoOnAssembly<T> extends MonoOperator<T, T> implements Fuseable, As
 	@Override
 	public String toString() {
 		return stacktrace.stackFirst();
+	}
+
+
+
+	@Override
+	public Context put(Object key, @Nullable Object value) {
+		return this;
+	}
+
+	@Nullable
+	@Override
+	public <T> T get(Object key) {
+		return (T)stacktrace.cached;
+	}
+
+	@Override
+	public Stream<Map.Entry<Object, Object>> stream() {
+		return Stream.empty();
 	}
 }

@@ -107,11 +107,6 @@ public class HooksTest {
 	}
 
 	@Test
-	public void stupid(){
-		System.out.println(Flux.just(1).checkpoint().toString());
-	}
-
-	@Test
 	public void parallelModeFused() {
 		Hooks.onOperator(h -> h.log("", Level.INFO, true, SignalType.ON_COMPLETE).operatorStacktrace());
 		Flux<Integer> source = Mono.just(1)
@@ -282,16 +277,14 @@ public class HooksTest {
 	}
 
 	@Test
-	public void testTraceComposed() throws Exception {
+	public void testTraceDefer() throws Exception {
 		Hooks.onOperator(hooks -> hooks.operatorStacktrace());
 		try {
-			Mono.just(1)
-			    .flatMap(d ->
-				    Mono.error(new RuntimeException())
-			    )
-			    .filter(d -> true)
-			    .doOnNext(d -> System.currentTimeMillis())
-			    .map(d -> d)
+			Mono.defer(() -> Mono.just(1)
+			                     .flatMap(d -> Mono.error(new RuntimeException()))
+			                     .filter(d -> true)
+			                     .doOnNext(d -> System.currentTimeMillis())
+			                     .map(d -> d))
 			    .block();
 		}
 		catch(Exception e){
@@ -301,6 +294,31 @@ public class HooksTest {
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tMono" +
 					".flatMap" +
 					"(HooksTest.java:"));
+			return;
+		}
+		finally {
+			Hooks.resetOnOperator();
+		}
+		throw new IllegalStateException();
+	}
+
+	@Test
+	public void testTraceComposed() throws Exception {
+		Hooks.onOperator(hooks -> hooks.operatorStacktrace());
+		try {
+			Mono.just(1)
+			    .flatMap(d -> Mono.error(new RuntimeException()))
+			    .filter(d -> true)
+			    .doOnNext(d -> System.currentTimeMillis())
+			    .map(d -> d)
+			    .block();
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+			Assert.assertTrue(e.getSuppressed()[0].getMessage()
+			                                      .contains("HooksTest.java:"));
+			Assert.assertTrue(e.getSuppressed()[0].getMessage()
+			                                      .contains("|_\tMono" + ".flatMap" + "(HooksTest.java:"));
 			return;
 		}
 		finally {

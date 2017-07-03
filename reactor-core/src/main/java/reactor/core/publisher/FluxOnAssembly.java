@@ -17,6 +17,8 @@ package reactor.core.publisher;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
@@ -47,7 +49,9 @@ import reactor.util.function.Tuples;
  * @param <T> the value type passing through
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
-final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable, AssemblyOp {
+final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
+                                                                    Context,
+                                                                    AssemblyOp {
 
 	final AssemblySnapshotException snapshotStack;
 
@@ -80,6 +84,22 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable, As
 		else {
 			this.snapshotStack = new AssemblySnapshotException(description);
 		}
+	}
+
+	@Override
+	public Context put(Object key, @Nullable Object value) {
+		return this;
+	}
+
+	@Nullable
+	@Override
+	public <T> T get(Object key) {
+		return (T)snapshotStack.cached;
+	}
+
+	@Override
+	public Stream<Map.Entry<Object, Object>> stream() {
+		return Stream.empty();
 	}
 
 	@Override
@@ -237,7 +257,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable, As
 			}
 		}
 
-		return (skipFirst && last != null ? last : "") + usercode;
+		return (last != null ? last : "") + usercode;
 	}
 
 	@Override
@@ -283,7 +303,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable, As
 		}
 
 		String stackFirst(){
-			return extract(toString(), true);
+			return extract(toString(), false);
 		}
 	}
 
