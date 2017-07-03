@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.logging.Level;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -30,8 +31,6 @@ import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-import javax.annotation.Nullable;
-import reactor.util.context.Context;
 
 
 /**
@@ -46,10 +45,21 @@ public abstract class Hooks {
 	 * @param c the {@link Consumer} to apply to dropped errors
 	 */
 	public static void onErrorDropped(Consumer<? super Throwable> c) {
+		Objects.requireNonNull(c, "onErrorDroppedHook");
 		if(log.isDebugEnabled()) {
 			log.debug("Hooking new default : onErrorDropped");
 		}
-		onErrorDroppedHook = Objects.requireNonNull(c, "onErrorDroppedHook");
+
+		synchronized(log) {
+			if (onErrorDroppedHook != null) {
+				@SuppressWarnings("unchecked")
+				Consumer<Throwable> _c = ((Consumer<Throwable>)onErrorDroppedHook).andThen(c);
+				onErrorDroppedHook = _c;
+			}
+			else {
+				onErrorDroppedHook = c;
+			}
+		}
 	}
 
 	/**
@@ -59,10 +69,19 @@ public abstract class Hooks {
 	 * @param c the {@link Consumer} to apply to data (onNext) that is dropped
 	 */
 	public static void onNextDropped(Consumer<Object> c) {
+		Objects.requireNonNull(c, "onNextDroppedHook");
 		if(log.isDebugEnabled()) {
 			log.debug("Hooking new default : onNextDropped");
 		}
-		onNextDroppedHook = Objects.requireNonNull(c, "onNextDroppedHook");
+
+		synchronized(log) {
+			if (onNextDroppedHook != null) {
+				onNextDroppedHook = onNextDroppedHook.andThen(c);
+			}
+			else {
+				onNextDroppedHook = c;
+			}
+		}
 	}
 
 	/**
@@ -78,11 +97,22 @@ public abstract class Hooks {
 	 * @param <T> the arbitrary assembled sequence type
 	 */
 	public static <T> void onOperator(Function<? super OperatorHook<T>, ? extends OperatorHook<T>> onOperator) {
+		Objects.requireNonNull(onOperator, "onOperator");
 		if(log.isDebugEnabled()) {
 			log.debug("Hooking new default : onOperator");
 		}
-		onOperatorHook =
-				new OnOperatorHook<>(Objects.requireNonNull(onOperator, "onOperator"));
+
+		synchronized(log) {
+			if (onOperatorHook != null) {
+				@SuppressWarnings("unchecked")
+				OnOperatorHook<T> hook = (OnOperatorHook<T>)onOperatorHook;
+
+				onOperatorHook = new OnOperatorHook<>(hook.hook.andThen(onOperator));
+			}
+			else {
+				onOperatorHook = new OnOperatorHook<>(onOperator);
+			}
+		}
 	}
 
 	/**
@@ -92,30 +122,51 @@ public abstract class Hooks {
 	 * @param f an operator error {@link BiFunction} mapper, returning an arbitrary exception
 	 * given the failure and optionally some original context (data or error).
 	 */
-	public static void onOperatorError(BiFunction<? super Throwable, Object, ?
-			extends Throwable> f) {
+	public static void onOperatorError(BiFunction<? super Throwable, Object, ? extends Throwable> f) {
+		Objects.requireNonNull(f, "onOperatorErrorHook");
 		if(log.isDebugEnabled()) {
 			log.debug("Hooking new default : onOperatorError");
 		}
-		onOperatorErrorHook = Objects.requireNonNull(f, "onOperatorErrorHook");
+		synchronized(log) {
+			if (onOperatorErrorHook != null) {
+				BiFunction<? super Throwable,Object,? extends Throwable> ff = onOperatorErrorHook;
+				onOperatorErrorHook = (e, data) -> f.apply(ff.apply(e, data), data);
+			}
+			else {
+				onOperatorErrorHook = f;
+			}
+		}
 	}
 
 	/**
 	 * Set a global "subscription" hook to intercept signals produced by the passed
 	 * terminal {@link Subscriber}. The passed function must result in a value different from null.
 	 * <p>
-	 * Can be reset via {@link #resetOnSubscriber()} ()}
+	 * Can be reset via {@link #resetOnNewSubscriber()} ()}
 	 *
 	 * @param onSubscriber a callback for each terminal {@link Publisher#subscribe(Subscriber)}
 	 * @param <T> the arbitrary subscribed sequence type
 	 */
 	public static <T> void onNewSubscriber(BiFunction<? super Publisher<T>, ? super Subscriber<T>, ? extends Subscriber<T>> onSubscriber) {
+		Objects.requireNonNull(onSubscriber, "onNewSubscriber");
 		if (log.isDebugEnabled()) {
 			log.debug("Hooking new default : onNewSubscriber");
 		}
+
+
 		@SuppressWarnings("unchecked") BiFunction<? super Publisher<?>, ? super Subscriber<?>, ? extends Subscriber<?>> _onSubscriberHook =
 				(BiFunction<? super Publisher<?>, ? super Subscriber<?>, ? extends Subscriber<?>>) onSubscriber;
-		onSubscriberHook = _onSubscriberHook;
+		synchronized(log) {
+			if (onSubscriberHook != null) {
+				@SuppressWarnings("unchecked")
+				BiFunction<? super Publisher<?>, ? super Subscriber<?>, ? extends Subscriber<?>> ff = onSubscriberHook;
+
+				onSubscriberHook = (p, s) -> _onSubscriberHook.apply(p, ff.apply(p, s));
+			}
+			else {
+				onSubscriberHook = _onSubscriberHook;
+			}
+		}
 	}
 
 	/**
@@ -125,7 +176,9 @@ public abstract class Hooks {
 		if(log.isDebugEnabled()) {
 			log.debug("Reset to factory defaults : onErrorDropped");
 		}
-		onErrorDroppedHook = null;
+		synchronized (log) {
+			onErrorDroppedHook = null;
+		}
 	}
 
 	/**
@@ -136,7 +189,9 @@ public abstract class Hooks {
 		if(log.isDebugEnabled()) {
 			log.debug("Reset to factory defaults : onNextDropped");
 		}
-		onNextDroppedHook = null;
+		synchronized (log) {
+			onNextDroppedHook = null;
+		}
 	}
 
 	/**
@@ -146,17 +201,21 @@ public abstract class Hooks {
 		if(log.isDebugEnabled()) {
 			log.debug("Reset to factory defaults : onOperator");
 		}
-		onOperatorHook = null;
+		synchronized (log) {
+			onOperatorHook = null;
+		}
 	}
 
 	/**
 	 * Reset global "subscriber" hook tracking
 	 */
-	public static void resetOnSubscriber() {
+	public static void resetOnNewSubscriber() {
 		if (log.isDebugEnabled()) {
 			log.debug("Reset to factory defaults : onNewSubscriber");
 		}
-		onSubscriberHook = null;
+		synchronized (log) {
+			onSubscriberHook = null;
+		}
 	}
 
 	/**
@@ -166,7 +225,9 @@ public abstract class Hooks {
 		if(log.isDebugEnabled()) {
 			log.debug("Reset to factory defaults : onOperatorError");
 		}
-		onOperatorErrorHook = null;
+		synchronized (log) {
+			onOperatorErrorHook = null;
+		}
 	}
 
 	/**
@@ -223,7 +284,8 @@ public abstract class Hooks {
 		}
 
 		final OperatorHook<T> doOnSignal(SignalPeek<T> log){
-			if(this == IGNORE || publisher instanceof ConnectableFlux){
+			if(publisher == null || this == IGNORE || publisher instanceof
+					ConnectableFlux){
 				return this;
 			}
 			if (publisher instanceof Mono) {
@@ -412,6 +474,9 @@ public abstract class Hooks {
 		 */
 		public OperatorHook<T> log(@Nullable String category, Level level, SignalType... options){
 			Objects.requireNonNull(level, "level");
+			if(publisher == null){
+				return this;
+			}
 			return doOnSignal(new SignalLogger<>(publisher, category, level, false,
 					options));
 		}
@@ -508,12 +573,10 @@ public abstract class Hooks {
 	}
 
 	static volatile OnOperatorHook<?>           onOperatorHook;
-	static volatile BiFunction<? super Publisher<?>, ? super Subscriber<?>, ? extends Subscriber<?>>
-	                                            onSubscriberHook;
 	static volatile Consumer<? super Throwable> onErrorDroppedHook;
 	static volatile Consumer<Object>            onNextDroppedHook;
-	static volatile BiFunction<? super Throwable, Object, ? extends Throwable>
-	                                            onOperatorErrorHook;
+	static volatile BiFunction<? super Throwable, Object, ? extends Throwable> onOperatorErrorHook;
+	static volatile BiFunction<? super Publisher<?>, ? super Subscriber<?>, ? extends Subscriber<?>> onSubscriberHook;
 
 	static {
 		boolean globalTrace =
@@ -533,14 +596,14 @@ public abstract class Hooks {
 
 		final Function<? super OperatorHook<T>, ? extends OperatorHook<T>> hook;
 
-		OnOperatorHook(@Nullable Function<? super OperatorHook<T>, ? extends OperatorHook<T>> hook) {
+		OnOperatorHook(Function<? super OperatorHook<T>, ? extends OperatorHook<T>> hook) {
 			this.hook = hook;
 		}
 
 		@Override
 		@SuppressWarnings("unchecked")
 		public Publisher<T> apply(Publisher<T> publisher) {
-			if (hook != null && !(publisher instanceof ConnectableFlux)) {
+			if (!(publisher instanceof ConnectableFlux)) {
 				OperatorHook<T> hooks =
 						Objects.requireNonNull(hook.apply(new OperatorHook<>(publisher)), "hook");
 
