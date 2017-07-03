@@ -386,6 +386,14 @@ public abstract class Mono<T> implements Publisher<T> {
 			Mono<I> m = (Mono<I>)source;
 			return m;
 		}
+		if(source instanceof Flux){
+			@SuppressWarnings("unchecked")
+			Flux<I> f = (Flux<I>)source;
+			if(source instanceof Fuseable){
+				return new MonoSourceFluxFuseable<>(f);
+			}
+			return new MonoSourceFlux<>(f);
+		}
 		if(source instanceof Fuseable){
 			return new MonoSourceFuseable<>(source);
 		}
