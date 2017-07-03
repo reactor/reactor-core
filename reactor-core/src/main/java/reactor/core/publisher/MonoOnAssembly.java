@@ -16,8 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.util.Map;
-import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
