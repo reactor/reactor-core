@@ -22,12 +22,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import reactor.core.Scannable;
+import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.ConnectableFlux;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
@@ -39,6 +41,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -105,6 +108,87 @@ public class HooksTest {
 		Hooks.resetOnNextDropped();
 		Hooks.resetOnErrorDropped();
 	}
+
+	@Test
+	public void accumulatingHooks() throws Exception {
+		AtomicReference<String> ref = new AtomicReference<>();
+		Hooks.onNextDropped(d -> {
+			ref.set(d.toString());
+		});
+		Hooks.onNextDropped(d -> {
+			ref.set(ref.get()+"bar");
+		});
+
+		Operators.onNextDropped("foo");
+
+		assertThat(ref.get()).isEqualTo("foobar");
+
+		Hooks.onErrorDropped(d -> {
+			ref.set(d.getMessage());
+		});
+		Hooks.onErrorDropped(d -> {
+			ref.set(ref.get()+"bar");
+		});
+
+		Operators.onErrorDropped(new Exception("foo"));
+
+		assertThat(ref.get()).isEqualTo("foobar");
+
+		Hooks.resetOnErrorDropped();
+
+
+		Hooks.onOperatorError((error, d) -> {
+			ref.set(d.toString());
+			return new Exception("bar");
+		});
+		Hooks.onOperatorError((error, d) -> {
+			ref.set(ref.get()+error.getMessage());
+			return error;
+		});
+
+		Operators.onOperatorError(null, null, "foo");
+
+		assertThat(ref.get()).isEqualTo("foobar");
+
+		Hooks.resetOnOperatorError();
+
+
+		AtomicReference<Hooks.OperatorHook> hook = new AtomicReference<>();
+		AtomicReference<Hooks.OperatorHook> hook2 = new AtomicReference<>();
+		Hooks.onOperator(h -> {
+			Hooks.OperatorHook hh = h.ifFlux();
+			hook.set(hh);
+			return hh;
+		});
+		Hooks.onOperator(h -> {
+			hook2.set(h);
+			return h.log("");
+		});
+
+		Flux.just("test").filter(d -> true).subscribe();
+
+		assertThat(hook.get()).isNotNull().isEqualTo(hook2.get());
+
+		Hooks.resetOnOperator();
+
+		final Subscriber<Object> b = new BaseSubscriber<Object>() {};
+
+		Hooks.onNewSubscriber((p, s) -> b);
+		Hooks.onNewSubscriber((p, s) -> new BaseSubscriber<Object>() {
+			@Override
+			public Context currentContext() {
+				return Context.empty().put(BaseSubscriber.class, s);
+			}
+		});
+
+		Flux.from(s ->
+			assertThat(Context.from(s).get(BaseSubscriber.class)).isEqualTo(b)
+		).subscribe();
+
+
+		Hooks.resetOnNewSubscriber();
+	}
+
 
 	@Test
 	public void parallelModeFused() {
@@ -371,7 +455,7 @@ public class HooksTest {
 		            .expectNext(1, 2, 3)
 		            .verifyComplete();
 
-		Hooks.resetOnSubscriber();
+		Hooks.resetOnNewSubscriber();
 
 		assertThat(l).hasSize(5);
 	}
