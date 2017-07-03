@@ -1379,8 +1379,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Build a {@link Flux} that will only emit a sequence of incrementing integer from {@code start} to {@code
-	 * start + count} then complete.
+	 * Build a {@link Flux} that will only emit a sequence of {@code count} incrementing integers,
+	 * starting from {@code start}. That is, emit integers between {@code start} (included)
+	 * and {@code start + count} (excluded) then complete.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/range.png" alt="">
