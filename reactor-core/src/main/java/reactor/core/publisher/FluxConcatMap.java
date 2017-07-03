@@ -31,6 +31,8 @@ import reactor.core.Fuseable;
 import reactor.util.context.Context;
 import javax.annotation.Nullable;
 
+import static reactor.core.Exceptions.TERMINATED;
+
 /**
  * Maps each upstream value into a Publisher and concatenates them into one
  * sequence of items.
@@ -182,7 +184,7 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
-			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == BooleanAttr.TERMINATED) return done || error == TERMINATED;
 			if (key == BooleanAttr.CANCELLED) return cancelled;
 			if (key == IntAttr.PREFETCH) return prefetch;
 			if (key == IntAttr.BUFFERED) return queue != null ? queue.size() : 0;
@@ -248,7 +250,7 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 
 				if (GUARD.getAndIncrement(this) == 0) {
 					t = Exceptions.terminate(ERROR, this);
-					if (t != Exceptions.TERMINATED) {
+					if (t != TERMINATED) {
 						actual.onError(t);
 					}
 				}
@@ -272,7 +274,7 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 					return;
 				}
 				Throwable e = Exceptions.terminate(ERROR, this);
-				if (e != Exceptions.TERMINATED) {
+				if (e != TERMINATED) {
 					actual.onError(e);
 				}
 			}
@@ -291,7 +293,7 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 
 				if (GUARD.getAndIncrement(this) == 0) {
 					e = Exceptions.terminate(ERROR, this);
-					if (e != Exceptions.TERMINATED) {
+					if (e != TERMINATED) {
 						actual.onError(e);
 					}
 				}
@@ -395,7 +397,7 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 										if (!GUARD.compareAndSet(this, 1, 0)) {
 											Throwable e =
 													Exceptions.terminate(ERROR, this);
-											if (e != Exceptions.TERMINATED) {
+											if (e != TERMINATED) {
 												actual.onError(e);
 											}
 											return;
@@ -651,7 +653,7 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 							Throwable ex = error;
 							if (ex != null) {
 								ex = Exceptions.terminate(ERROR, this);
-								if (ex != Exceptions.TERMINATED) {
+								if (ex != TERMINATED) {
 									actual.onError(ex);
 								}
 								return;
@@ -672,7 +674,7 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 
 						if (d && empty) {
 							Throwable ex = Exceptions.terminate(ERROR, this);
-							if (ex != null && ex != Exceptions.TERMINATED) {
+							if (ex != null && ex != TERMINATED) {
 								actual.onError(ex);
 							}
 							else {

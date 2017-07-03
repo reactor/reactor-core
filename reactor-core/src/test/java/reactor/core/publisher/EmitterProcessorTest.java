@@ -43,7 +43,11 @@ import reactor.util.concurrent.QueueSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
+import static reactor.core.Scannable.*;
+import static reactor.core.Scannable.BooleanAttr.*;
+import static reactor.core.Scannable.IntAttr.*;
 import static reactor.core.Scannable.IntAttr.BUFFERED;
+import static reactor.core.Scannable.IntAttr.PREFETCH;
 
 /**
  * @author Stephane Maldini
@@ -530,7 +534,7 @@ public class EmitterProcessorTest {
 		first.awaitAndAssertNextValues("1", "2", "3");
 		first.cancel();
 
-		assertThat(processor.scanOrDefault(Scannable.BooleanAttr.CANCELLED, false)).isTrue();
+		assertThat(processor.scanOrDefault(CANCELLED, false)).isTrue();
 	}
 
 	@Test
@@ -747,9 +751,12 @@ public class EmitterProcessorTest {
 
 	@Test
 	public void scanMain() {
-		EmitterProcessor<Integer> test = EmitterProcessor.create();
+		EmitterProcessor<Integer> test = EmitterProcessor.<Integer>builder().bufferSize(123).build();
 		assertThat(test.scan(BUFFERED)).isEqualTo(0);
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		assertThat(test.scan(CANCELLED)).isFalse();
+		assertThat(test.scan(PREFETCH)).isEqualTo(123);
+		assertThat(test.scan(CAPACITY)).isEqualTo(123);
+
 
 		Disposable d1 = test.subscribe();
 
@@ -787,19 +794,18 @@ public class EmitterProcessorTest {
 		sink.next(7);
 
 		assertThat(test.scan(BUFFERED)).isEqualTo(3);
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(test.scan(TERMINATED)).isFalse();
 
 		sink.complete();
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(test.scan(TERMINATED)).isFalse();
 
 		d1.dispose();
 		d2.get().cancel();
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		assertThat(test.scan(TERMINATED)).isTrue();
 
 		//other values
-		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isNotNull();
-		assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(QueueSupplier.SMALL_BUFFER_SIZE);
-		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+		assertThat(test.scan(ScannableAttr.PARENT)).isNotNull();
+		assertThat(test.scan(ThrowableAttr.ERROR)).isNull();
 	}
 
 	@Test
@@ -807,7 +813,7 @@ public class EmitterProcessorTest {
 		EmitterProcessor test = EmitterProcessor.create();
 		test.onSubscribe(Operators.cancelledSubscription());
 
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		assertThat(test.scan(CANCELLED)).isTrue();
 		assertThat(test.isCancelled()).isTrue();
 	}
 
@@ -816,6 +822,6 @@ public class EmitterProcessorTest {
 		EmitterProcessor test = EmitterProcessor.create();
 		test.sink().error(new IllegalStateException("boom"));
 
-		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+		assertThat(test.scan(ThrowableAttr.ERROR)).hasMessage("boom");
 	}
 }

@@ -318,7 +318,8 @@ public class MonoFilterWhenTest {
 	@Test
 	public void scanSubscriber() {
 		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MonoFilterWhen.MonoFilterWhenSubscriber<String> test = new MonoFilterWhen.MonoFilterWhenSubscriber<>(
+		MonoFilterWhen.MonoFilterWhenMain<String>
+				test = new MonoFilterWhen.MonoFilterWhenMain<>(
 				actual, s -> Mono.just(false), Context.empty());
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
@@ -338,15 +339,16 @@ public class MonoFilterWhenTest {
 	@Test
 	public void scanFilterWhenInner() {
 		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
-		MonoFilterWhen.MonoFilterWhenSubscriber<String> main = new MonoFilterWhen.MonoFilterWhenSubscriber<>(
+		MonoFilterWhen.MonoFilterWhenMain<String>
+				main = new MonoFilterWhen.MonoFilterWhenMain<>(
 				actual, s -> Mono.just(false), Context.empty());
 		MonoFilterWhen.FilterWhenInner test = new MonoFilterWhen.FilterWhenInner(main, true);
 
 		Subscription innerSubscription = Operators.emptySubscription();
 		test.onSubscribe(innerSubscription);
 
-		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(main);
-		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(innerSubscription);
+		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(main);
+		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(innerSubscription);
 
 		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
 		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(1L);

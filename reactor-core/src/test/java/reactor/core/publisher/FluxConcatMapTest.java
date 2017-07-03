@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
@@ -811,24 +812,42 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
-		test.error = new IllegalStateException("boom");
 		test.queue.offer("foo");
 
 		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
 		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(123);
 		assertThat(test.scan(Scannable.BooleanAttr.DELAY_ERROR)).isFalse();
-		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
 		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
 
 		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
-//		test.onError(new IllegalStateException("boom")); //TODO should the operator push done = true in onError?
 		test.onComplete();
 		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
 
 		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
 		test.cancelled = true;
 		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	public void scanConcatMapImmediateError() {
+		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		FluxConcatMap.ConcatMapImmediate<String, Integer> test = new FluxConcatMap.ConcatMapImmediate<>(
+				actual, s -> Mono.just(s.length()), QueueSupplier.one(), 123, Context.empty());
+
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+
+		assertThat(test.scan(Scannable.BooleanAttr.DELAY_ERROR)).isFalse();
+
+		//note that most of the time, the error will be hidden by TERMINATED as soon as it has been propagated downstream :(
+		test.error = new IllegalStateException("boom");
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		test.onError(new IllegalStateException("boom2"));
+		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isSameAs(Exceptions.TERMINATED);
+		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
 	}
 
 }
