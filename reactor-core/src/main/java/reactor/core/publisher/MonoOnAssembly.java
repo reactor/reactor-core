@@ -39,7 +39,7 @@ import reactor.util.context.Context;
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
 final class MonoOnAssembly<T> extends MonoOperator<T, T> implements Fuseable,
-                                                                    AssemblyOp, Context {
+                                                                    AssemblyOp {
 
 	final AssemblySnapshotException stacktrace;
 
@@ -87,21 +87,4 @@ final class MonoOnAssembly<T> extends MonoOperator<T, T> implements Fuseable,
 		return stacktrace.stackFirst();
 	}
 
-
-
-	@Override
-	public Context put(Object key, @Nullable Object value) {
-		return this;
-	}
-
-	@Nullable
-	@Override
-	public <T> T get(Object key) {
-		return (T)stacktrace.cached;
-	}
-
-	@Override
-	public Stream<Map.Entry<Object, Object>> stream() {
-		return Stream.empty();
-	}
 }
