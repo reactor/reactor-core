@@ -232,7 +232,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 				usercode = s.substring(s.indexOf('('));
 				break;
 			}
-			else if(last == null){
+			else {
 				last = s.replace("reactor.core.publisher.", "");
 				last = last.substring(0, last.indexOf("("));
 			}
