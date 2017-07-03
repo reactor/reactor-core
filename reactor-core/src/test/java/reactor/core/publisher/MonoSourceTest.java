@@ -16,6 +16,9 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
@@ -74,6 +77,53 @@ public class MonoSourceTest {
 		StepVerifier.create(Flux.just(1).hide().as(Mono::fromDirect))
 	                .expectNext(1)
 	                .verifyComplete();
+	}
+
+	@Test
+	public void monoDirectIdentity() {
+		StepVerifier.create(Mono.just(1).as(Mono::fromDirect))
+	                .expectNext(1)
+	                .verifyComplete();
+	}
+
+	@Test
+	public void monoDirectPlainFuseable() {
+		StepVerifier.create(Mono.just(1).as(TestPubFuseable::new))
+	                .expectNext(1)
+	                .verifyComplete();
+	}
+
+	@Test
+	public void monoDirectPlain() {
+		StepVerifier.create(Mono.just(1).as(TestPub::new))
+	                .expectNext(1)
+	                .verifyComplete();
+	}
+
+	final static class TestPubFuseable implements Publisher<Integer>, Fuseable {
+		final Mono<Integer> m;
+
+		TestPubFuseable(Mono<Integer> mono) {
+			this.m = mono;
+		}
+
+		@Override
+		public void subscribe(Subscriber<? super Integer> s) {
+			m.subscribe(s);
+		}
+	}
+
+	final static class TestPub implements Publisher<Integer>, Fuseable {
+		final Mono<Integer> m;
+
+		TestPub(Mono<Integer> mono) {
+			this.m = mono;
+		}
+
+		@Override
+		public void subscribe(Subscriber<? super Integer> s) {
+			m.subscribe(s);
+		}
 	}
 
 	@Test
