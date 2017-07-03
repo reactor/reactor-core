@@ -242,13 +242,14 @@ public class HooksTest {
 
 		simpleFlux();
 
-		Assert.assertArrayEquals(q.toArray(),
-				new String[]{"FluxJust: 1", "{ \"operator\" : \"MapFuseable\" }: 2",
-						"{ \"operator\" : \"PeekFuseable\" }! false",
-						"{ \"operator\" : \"CollectList\" }! true", "MonoJust: [2]",
-						"{ \"operator\" : \"OnErrorResume\" }: [2]"});
+		assertThat(q.toArray()).containsExactly(
+				"FluxJust: 1", "{ \"operator\" : \"MapFuseable\" }: 2",
+				"{ \"operator\" : \"PeekFuseable\" }! false",
+				"{ \"operator\" : \"CollectList\" }! true", "MonoJust: [2]",
+				"{ \"operator\" : \"OnErrorResume\" }: [2]");
 
 		q.clear();
+		Hooks.resetOnOperator();
 
 		Hooks.onOperator(hooks -> hooks.log("reactor", true)
 		                               .doOnEach(d -> q.offer(hooks.publisher() + ": " + d),
@@ -259,19 +260,20 @@ public class HooksTest {
 
 		simpleFlux();
 
-		Assert.assertArrayEquals(q.toArray(),
-				new String[]{"FluxJust: 1", "{ \"operator\" : \"MapFuseable\" }: 2",
-						"{ \"operator\" : \"PeekFuseable\" }! false",
-						"{ \"operator\" : \"CollectList\" }! false", "MonoJust: [2]",
-						"{ \"operator\" : \"OnErrorResume\" }: [2]"});
+		assertThat(q.toArray()).containsExactly(
+				"FluxJust: 1", "{ \"operator\" : \"MapFuseable\" }: 2",
+				"{ \"operator\" : \"PeekFuseable\" }! false",
+				"{ \"operator\" : \"CollectList\" }! false", "MonoJust: [2]",
+				"{ \"operator\" : \"OnErrorResume\" }: [2]");
 
 		q.clear();
+		Hooks.resetOnOperator();
 
 		Hooks.onOperator(hooks -> hooks.log("reactor"));
 
 		simpleFlux();
 
-		Assert.assertArrayEquals(q.toArray(), new String[0]);
+		assertThat(q.toArray()).isEmpty();
 
 		q.clear();
 
