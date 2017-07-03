@@ -36,7 +36,8 @@ import reactor.util.context.Context;
  * @param <T> the value type passing through
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
-final class MonoOnAssembly<T> extends MonoOperator<T, T> implements Fuseable, AssemblyOp {
+final class MonoOnAssembly<T> extends MonoOperator<T, T> implements Fuseable,
+                                                                    AssemblyOp {
 
 	final AssemblySnapshotException stacktrace;
 
@@ -83,4 +84,5 @@ final class MonoOnAssembly<T> extends MonoOperator<T, T> implements Fuseable, As
 	public String toString() {
 		return stacktrace.stackFirst();
 	}
+
 }
