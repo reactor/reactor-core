@@ -53,11 +53,11 @@ class MonoFilterWhen<T> extends MonoOperator<T, T> {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s, Context context) {
-		source.subscribe(new MonoFilterWhenSubscriber<>(s, asyncPredicate, context),
+		source.subscribe(new MonoFilterWhenMain<>(s, asyncPredicate, context),
 				context);
 	}
 
-	static final class MonoFilterWhenSubscriber<T> extends Operators.MonoSubscriber<T, T> {
+	static final class MonoFilterWhenMain<T> extends Operators.MonoSubscriber<T, T> {
 
 		/* Implementation notes on state transitions:
 		 * This subscriber runs through a few possible state transitions, that are
@@ -84,13 +84,13 @@ class MonoFilterWhen<T> extends MonoOperator<T, T> {
 
 		volatile FilterWhenInner asyncFilter;
 
-		static final AtomicReferenceFieldUpdater<MonoFilterWhenSubscriber, FilterWhenInner> ASYNC_FILTER =
-				AtomicReferenceFieldUpdater.newUpdater(MonoFilterWhenSubscriber.class, FilterWhenInner.class, "asyncFilter");
+		static final AtomicReferenceFieldUpdater<MonoFilterWhenMain, FilterWhenInner> ASYNC_FILTER =
+				AtomicReferenceFieldUpdater.newUpdater(MonoFilterWhenMain.class, FilterWhenInner.class, "asyncFilter");
 
 		@SuppressWarnings("ConstantConditions")
 		static final FilterWhenInner INNER_CANCELLED = new FilterWhenInner(null, false);
 
-		MonoFilterWhenSubscriber(Subscriber<? super T> actual, Function<? super T, ?
+		MonoFilterWhenMain(Subscriber<? super T> actual, Function<? super T, ?
 				extends Publisher<Boolean>> asyncPredicate, Context context) {
 			super(actual);
 			this.asyncPredicate = asyncPredicate;
@@ -223,9 +223,9 @@ class MonoFilterWhen<T> extends MonoOperator<T, T> {
 
 	static final class FilterWhenInner implements InnerConsumer<Boolean> {
 
-		final MonoFilterWhenSubscriber<?> parent;
+		final MonoFilterWhenMain<?> main;
 		/** should the filter publisher be cancelled once we received the first value? */
-		final boolean                     cancelOnNext;
+		final boolean               cancelOnNext;
 
 		boolean done;
 
@@ -234,8 +234,8 @@ class MonoFilterWhen<T> extends MonoOperator<T, T> {
 		static final AtomicReferenceFieldUpdater<FilterWhenInner, Subscription> SUB =
 				AtomicReferenceFieldUpdater.newUpdater(FilterWhenInner.class, Subscription.class, "sub");
 
-		FilterWhenInner(MonoFilterWhenSubscriber<?> parent, boolean cancelOnNext) {
-			this.parent = parent;
+		FilterWhenInner(MonoFilterWhenMain<?> main, boolean cancelOnNext) {
+			this.main = main;
 			this.cancelOnNext = cancelOnNext;
 		}
 
@@ -253,7 +253,7 @@ class MonoFilterWhen<T> extends MonoOperator<T, T> {
 					sub.cancel();
 				}
 				done = true;
-				parent.innerResult(t);
+				main.innerResult(t);
 			}
 		}
 
@@ -261,7 +261,7 @@ class MonoFilterWhen<T> extends MonoOperator<T, T> {
 		public void onError(Throwable t) {
 			if (!done) {
 				done = true;
-				parent.innerError(t);
+				main.innerError(t);
 			} else {
 				Operators.onErrorDropped(t);
 			}
@@ -269,7 +269,7 @@ class MonoFilterWhen<T> extends MonoOperator<T, T> {
 
 		@Override
 		public Context currentContext() {
-			return parent.currentContext();
+			return main.currentContext();
 		}
 
 		@Override
@@ -277,7 +277,7 @@ class MonoFilterWhen<T> extends MonoOperator<T, T> {
 			if (!done) {
 				//the filter publisher was empty
 				done = true;
-				parent.innerResult(null); //will trigger actual.onComplete()
+				main.innerResult(null); //will trigger actual.onComplete()
 			}
 		}
 
@@ -288,8 +288,8 @@ class MonoFilterWhen<T> extends MonoOperator<T, T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return parent;
-			if (key == ScannableAttr.ACTUAL) return sub;
+			if (key == ScannableAttr.PARENT) return sub;
+			if (key == ScannableAttr.ACTUAL) return main;
 			if (key == BooleanAttr.CANCELLED) return sub == Operators.cancelledSubscription();
 			if (key == BooleanAttr.TERMINATED) return done;
 			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;

@@ -191,10 +191,11 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return done;
-			if (key == IntAttr.CAPACITY) {
+			if (key == IntAttr.BUFFERED) {
 				C b = buffer;
 				return b != null ? b.size() : 0;
 			}
+			if (key == IntAttr.CAPACITY) return size;
 			if (key == IntAttr.PREFETCH) return size;
 
 			return InnerOperator.super.scanUnsafe(key);
@@ -344,7 +345,8 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;
 			if (key == BooleanAttr.TERMINATED) return done;
-			if (key == IntAttr.CAPACITY) {
+			if (key == IntAttr.CAPACITY) return size;
+			if (key == IntAttr.BUFFERED) {
 				C b = buffer;
 				return b != null ? b.size() : 0;
 			}
@@ -528,6 +530,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 			if (key == BooleanAttr.TERMINATED) return done;
 			if (key == BooleanAttr.CANCELLED) return cancelled;
 			if (key == IntAttr.CAPACITY) return size() * size;
+			if (key == IntAttr.BUFFERED) return stream().mapToInt(Collection::size).sum();
 			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
 			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
 

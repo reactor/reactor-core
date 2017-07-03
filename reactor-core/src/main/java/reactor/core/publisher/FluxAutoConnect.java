@@ -73,6 +73,7 @@ final class FluxAutoConnect<T> extends Flux<T>
 	public Object scanUnsafe(Attr key) {
 		if (key == IntAttr.PREFETCH) return getPrefetch();
 		if (key == ScannableAttr.PARENT) return source;
+		if (key == IntAttr.CAPACITY) return remaining;
 
 		return null;
 	}

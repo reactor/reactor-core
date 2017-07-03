@@ -445,7 +445,8 @@ public class FluxBufferTest extends FluxOperatorTest<String, List<String>> {
 		test.onSubscribe(parent);
 		test.onNext("foo");
 
-		assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(1);
+		assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(23);
+		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
 		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(23);
 
 		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
@@ -462,12 +463,17 @@ public class FluxBufferTest extends FluxOperatorTest<String, List<String>> {
 		Subscriber<? super List> actual = new LambdaSubscriber<>(null, e -> {
 		}, null, null);
 		FluxBuffer.BufferOverlappingSubscriber<String, List<String>> test =
-				new FluxBuffer.BufferOverlappingSubscriber<>(actual, 23, 5, ArrayList::new);
+				new FluxBuffer.BufferOverlappingSubscriber<>(actual, 23, 2, ArrayList::new);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 		test.onNext("foo");
-
+		test.onNext("bar");
 		assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(23);
+		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(2);
+		test.onNext("baz");
+		assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(46); //2 buffers
+		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(4); // buffered foo bar baz then baz
+
 		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
 
 		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(Long.MAX_VALUE);
@@ -499,17 +505,20 @@ public class FluxBufferTest extends FluxOperatorTest<String, List<String>> {
 	public void scanSkipSubscriber() {
 		Subscriber<? super List> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 
-		FluxBuffer.BufferSkipSubscriber<String, List<String>> test = new FluxBuffer.BufferSkipSubscriber<>(actual, 23, 5, ArrayList::new);
+		FluxBuffer.BufferSkipSubscriber<String, List<String>> test = new FluxBuffer.BufferSkipSubscriber<>(actual, 2, 3, ArrayList::new);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
-		assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(0);
+		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(0);
 		test.onNext("foo");
-		assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(1);
+		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
 		test.onNext("bar");
-		assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(2);
+		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(0); //buffer emitted
+		test.onNext("drop");
+		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(0); //buffer not replenished
 
-		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(23);
+		assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(2);
+		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(2);
 
 		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);

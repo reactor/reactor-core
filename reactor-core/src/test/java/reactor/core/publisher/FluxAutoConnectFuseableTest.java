@@ -33,7 +33,7 @@ public class FluxAutoConnectFuseableTest {
 
 		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(source);
 		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(888);
-//		assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(123);
+		assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(123);
 	}
 
 }

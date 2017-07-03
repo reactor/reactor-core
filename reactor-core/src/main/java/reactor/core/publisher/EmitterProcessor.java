@@ -328,6 +328,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 		if (key == ScannableAttr.PARENT) return s;
 		if (key == IntAttr.BUFFERED) return getPending();
 		if (key == BooleanAttr.CANCELLED) return isCancelled();
+		if (key == IntAttr.PREFETCH) return getPrefetch();
 
 		return super.scanUnsafe(key);
 	}
