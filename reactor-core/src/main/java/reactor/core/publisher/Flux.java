@@ -5970,7 +5970,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * to subscribe once, late subscribers might therefore miss items.
 	 */
 	public final Flux<T> share() {
-		return publish().refCount();
+		return onAssembly(new FluxRefCount<>(
+				new FluxPublish<>(this, QueueSupplier.SMALL_BUFFER_SIZE, QueueSupplier.small()), 1)
+		);
 	}
 
 	/**

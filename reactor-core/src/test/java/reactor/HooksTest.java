@@ -352,7 +352,7 @@ public class HooksTest {
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
 					("HooksTest.java:"));
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tFlux" +
-					".publish" +
+					".share" +
 					"(HooksTest.java:"));
 			return;
 		}
