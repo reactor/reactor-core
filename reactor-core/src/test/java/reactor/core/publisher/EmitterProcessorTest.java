@@ -652,7 +652,6 @@ public class EmitterProcessorTest {
 	}
 
 	@Test
-	@Deprecated
 	public void createOverrideBufferSize() {
 		int bufferSize = 1024;
 		EmitterProcessor<Integer> processor = EmitterProcessor.create(bufferSize);
@@ -660,7 +659,6 @@ public class EmitterProcessorTest {
 	}
 
 	@Test
-	@Deprecated
 	public void createOverrideAutoCancel() {
 		boolean autoCancel = false;
 		EmitterProcessor<Integer> processor = EmitterProcessor.create(autoCancel);
@@ -668,7 +666,6 @@ public class EmitterProcessorTest {
 	}
 
 	@Test
-	@Deprecated
 	public void createOverrideAll() {
 		int bufferSize = 1024;
 		boolean autoCancel = false;
