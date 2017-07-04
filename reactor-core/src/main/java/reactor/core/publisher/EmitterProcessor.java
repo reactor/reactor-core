@@ -54,95 +54,32 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
 public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 
 	/**
-	 * {@link EmitterProcessor} builder that can be used to create new
-	 * processors. Instantiate it through the {@link EmitterProcessor#builder()} static
-	 * method:
-	 * <p>
-	 * {@code EmitterProcessor<String> processor = EmitterProcessor.<String>builder().build()}
-	 *
-	 * @param <T> Type of dispatched signal
-	 */
-	public final static class Builder<T> {
-		boolean autoCancel;
-		int bufferSize;
-
-		Builder() {
-			this.autoCancel = true;
-			this.bufferSize = QueueSupplier.SMALL_BUFFER_SIZE;
-		}
-
-		/**
-		 * Configures buffer size for this builder. Default value is {@link QueueSupplier#SMALL_BUFFER_SIZE}.
-		 * @param bufferSize the internal buffer size to hold signals
-		 * @return builder with provided buffer size
-		 */
-		public Builder<T> bufferSize(int bufferSize) {
-			if (bufferSize < 1){
-				throw new IllegalArgumentException("bufferSize must be strictly positive, " +
-						"was: "+bufferSize);
-			}
-			this.bufferSize = bufferSize;
-			return this;
-		}
-
-		/**
-		 * Configures auto-cancel for this builder. Default value is true.
-		 * @param autoCancel automatically cancel
-		 * @return builder with provided auto-cancel
-		 */
-		public Builder<T> autoCancel(boolean autoCancel) {
-			this.autoCancel = autoCancel;
-			return this;
-		}
-
-		/**
-		 * Creates a new {@link EmitterProcessor} using the properties
-		 * of this builder.
-		 * @return a fresh processor
-		 */
-		public EmitterProcessor<T> build() {
-			return new EmitterProcessor<>(autoCancel, bufferSize);
-		}
-	}
-
-	/**
-	 * Create a new {@link EmitterProcessor} {@link Builder} with default properties.
-	 * @return new EmitterProcessor builder
-	 */
-	public static <E> Builder<E> builder()  {
-		return new Builder<>();
-	}
-
-	/**
 	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE}
-	 * backlog size, blockingWait Strategy and auto-cancel.
+	 * backlog size and auto-cancel.
 	 *
 	 * @param <E> Type of processed signals
 	 *
 	 * @return a fresh processor
 	 */
 	public static <E> EmitterProcessor<E> create() {
-		return EmitterProcessor.<E>builder().build();
+		return create(QueueSupplier.SMALL_BUFFER_SIZE, true);
 	}
 
 	/**
 	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE}
-	 * backlog size, blockingWait Strategy and the provided auto-cancel.
+	 * backlog size and the provided auto-cancel.
 	 *
 	 * @param <E> Type of processed signals
 	 * @param autoCancel automatically cancel
 	 *
 	 * @return a fresh processor
-	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
-	@Deprecated
 	public static <E> EmitterProcessor<E> create(boolean autoCancel) {
-		return EmitterProcessor.<E>builder().autoCancel(autoCancel).build();
+		return create(QueueSupplier.SMALL_BUFFER_SIZE, autoCancel);
 	}
 
 	/**
-	 * Create a new {@link EmitterProcessor} using the provided backlog size, a
-	 * blockingWait Strategy and auto-cancel.
+	 * Create a new {@link EmitterProcessor} using the provided backlog size, with auto-cancel.
 	 *
 	 * @param <E> Type of processed signals
 	 * @param bufferSize the internal buffer size to hold signals
@@ -150,23 +87,20 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	 * @return a fresh processor
 	 */
 	public static <E> EmitterProcessor<E> create(int bufferSize) {
-		return new EmitterProcessor(true, bufferSize);
+		return create(bufferSize, true);
 	}
 
 	/**
-	 * Create a new {@link EmitterProcessor} using the provided backlog size and auto-cancellation,
-	 * and a blockingWait Strategy.
+	 * Create a new {@link EmitterProcessor} using the provided backlog size and auto-cancellation.
 	 *
 	 * @param <E> Type of processed signals
 	 * @param bufferSize the internal buffer size to hold signals
 	 * @param autoCancel automatically cancel
 	 *
 	 * @return a fresh processor
-	 * @deprecated use the Builder ({@link #builder()} and its {@link Builder#build()} method)
 	 */
-	@Deprecated
 	public static <E> EmitterProcessor<E> create(int bufferSize, boolean autoCancel) {
-		return EmitterProcessor.<E>builder().bufferSize(bufferSize).autoCancel(autoCancel).build();
+		return new EmitterProcessor<>(autoCancel, bufferSize);
 	}
 
 	final int prefetch;

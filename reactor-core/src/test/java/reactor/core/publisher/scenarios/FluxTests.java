@@ -1363,7 +1363,7 @@ public class FluxTests extends AbstractReactorTest {
 
 		final EmitterProcessor<Integer> forkEmitterProcessor = EmitterProcessor.create();
 
-		final EmitterProcessor<Integer> computationEmitterProcessor = EmitterProcessor.<Integer>builder().autoCancel(false).build();
+		final EmitterProcessor<Integer> computationEmitterProcessor = EmitterProcessor.create(false);
 
 		Scheduler computation = Schedulers.newSingle("computation");
 		Scheduler persistence = Schedulers.newSingle("persistence");
@@ -1381,7 +1381,7 @@ public class FluxTests extends AbstractReactorTest {
 				                      .doOnNext(ls -> println("Computed: ", ls))
 				                      .log("computation");
 
-		final EmitterProcessor<Integer> persistenceEmitterProcessor = EmitterProcessor.<Integer>builder().autoCancel(false).build();
+		final EmitterProcessor<Integer> persistenceEmitterProcessor = EmitterProcessor.create(false);
 
 		final Flux<List<String>> persistenceStream =
 				persistenceEmitterProcessor.publishOn(persistence)

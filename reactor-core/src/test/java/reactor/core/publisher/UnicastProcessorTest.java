@@ -37,7 +37,7 @@ public class UnicastProcessorTest {
     @Test
     public void secondSubscriberRejectedProperly() {
 
-        UnicastProcessor<Integer> up = UnicastProcessor.<Integer>builder().queue(new ConcurrentLinkedQueue<>()).build();
+        UnicastProcessor<Integer> up = UnicastProcessor.create(new ConcurrentLinkedQueue<>());
 
         up.subscribe();
 
@@ -111,7 +111,7 @@ public class UnicastProcessorTest {
 			@Nullable Consumer<? super Integer> onOverflow,
 			@Nullable Disposable onTerminate) {
 		Queue<Integer> expectedQueue = queue != null ? queue : QueueSupplier.<Integer>unbounded().get();
-		Disposable expectedOnTerminate = onTerminate != null ? onTerminate : UnicastProcessor.Builder.NOOP_DISPOSABLE;
+		Disposable expectedOnTerminate = onTerminate != null ? onTerminate : null;
 		assertEquals(expectedQueue.getClass(), processor.queue.getClass());
 		assertEquals(expectedOnTerminate, processor.onTerminate);
 		if (onOverflow != null)

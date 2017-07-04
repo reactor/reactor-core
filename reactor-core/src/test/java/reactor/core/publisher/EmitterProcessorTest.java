@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
-
 import javax.annotation.Nullable;
 
 import org.junit.Assert;
@@ -56,7 +55,7 @@ public class EmitterProcessorTest {
 		final int elements = 10;
 		CountDownLatch latch = new CountDownLatch(elements + 1);
 
-		Processor<Integer, Integer> processor = EmitterProcessor.<Integer>builder().bufferSize(16).build();
+		Processor<Integer, Integer> processor = EmitterProcessor.create(16);
 
 		List<Integer> list = new ArrayList<>();
 
@@ -118,7 +117,7 @@ public class EmitterProcessorTest {
 		final int elements = 10000;
 		CountDownLatch latch = new CountDownLatch(elements);
 
-		Processor<Integer, Integer> processor = EmitterProcessor.<Integer>builder().bufferSize(1024).build();
+		Processor<Integer, Integer> processor = EmitterProcessor.create(1024);
 
 		EmitterProcessor<Integer> stream = EmitterProcessor.create();
 		FluxSink<Integer> session = stream.sink();
@@ -235,7 +234,7 @@ public class EmitterProcessorTest {
 
 	@Test
 	public void normalAtomicRingBufferBackpressured() {
-		EmitterProcessor<Integer> tp = EmitterProcessor.<Integer>builder().bufferSize(100).build();
+		EmitterProcessor<Integer> tp = EmitterProcessor.create(100);
 		StepVerifier.create(tp, 0L)
 		            .then(() -> {
 			            Assert.assertTrue("No subscribers?", tp.hasDownstreams());
@@ -320,7 +319,7 @@ public class EmitterProcessorTest {
 
 	@Test(expected = IllegalArgumentException.class)
 	public void failNullBufferSize() {
-		EmitterProcessor.<Integer>builder().bufferSize(0);
+		EmitterProcessor.create(0);
 	}
 
 	@Test(expected = NullPointerException.class)
@@ -371,7 +370,7 @@ public class EmitterProcessorTest {
 
 	@Test(expected = IllegalArgumentException.class)
 	public void failNegativeBufferSize() {
-		EmitterProcessor.<Integer>builder().bufferSize(-1);
+		EmitterProcessor.create(-1);
 	}
 
 	static final List<String> DATA     = new ArrayList<>();
@@ -508,7 +507,7 @@ public class EmitterProcessorTest {
 
 	@Test
 	public void testHanging() {
-		FluxProcessor<String, String> processor = EmitterProcessor.<String>builder().bufferSize(2).build();
+		FluxProcessor<String, String> processor = EmitterProcessor.create(2);
 
 		AssertSubscriber<String> first = AssertSubscriber.create(0);
 		processor.log("after-1").subscribe(first);
@@ -536,7 +535,7 @@ public class EmitterProcessorTest {
 
 	@Test
 	public void testNPE() {
-		FluxProcessor<String, String> processor = EmitterProcessor.<String>builder().bufferSize(8).build();
+		FluxProcessor<String, String> processor = EmitterProcessor.create(8);
 		AssertSubscriber<String> first = AssertSubscriber.create(1);
 		processor.log().take(1).subscribe(first);
 
@@ -617,7 +616,7 @@ public class EmitterProcessorTest {
 		int N_THREADS = 3;
 		int N_ITEMS = 8;
 
-		FluxProcessor<String, String> processor = EmitterProcessor.<String>builder().bufferSize(4).build();
+		FluxProcessor<String, String> processor = EmitterProcessor.create(4);
 		List<String> data = new ArrayList<>();
 		for (int i = 1; i <= N_ITEMS; i++) {
 			data.add(String.valueOf(i));

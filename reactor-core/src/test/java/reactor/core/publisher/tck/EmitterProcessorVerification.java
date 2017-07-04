@@ -29,7 +29,7 @@ public class EmitterProcessorVerification extends AbstractProcessorVerification 
 
 	@Override
 	public Processor<Long, Long> createProcessor(int bufferSize) {
-		return EmitterProcessor.<Long>builder().bufferSize(bufferSize).build();
+		return EmitterProcessor.create(bufferSize);
 	}
 
 	@Override
