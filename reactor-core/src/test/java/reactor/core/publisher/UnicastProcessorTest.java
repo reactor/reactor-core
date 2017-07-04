@@ -80,7 +80,6 @@ public class UnicastProcessorTest {
 	}
 
 	@Test
-	@Deprecated
 	public void createOverrideQueue() {
 		Queue<Integer> queue = QueueSupplier.<Integer>get(10).get();
 		UnicastProcessor<Integer> processor = UnicastProcessor.create(queue);
@@ -88,7 +87,6 @@ public class UnicastProcessorTest {
 	}
 
 	@Test
-	@Deprecated
 	public void createOverrideQueueOnTerminate() {
 		Disposable onTerminate = () -> {};
 		Queue<Integer> queue = QueueSupplier.<Integer>get(10).get();
@@ -97,7 +95,6 @@ public class UnicastProcessorTest {
 	}
 
 	@Test
-	@Deprecated
 	public void createOverrideAll() {
 		Disposable onTerminate = () -> {};
 		Consumer<? super Integer> onOverflow = t -> {};
