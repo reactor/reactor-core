@@ -440,234 +440,302 @@ public class TopicProcessorTest {
 	}
 
 	@Test
-	@Deprecated
 	public void createOverrideAutoCancel() {
 		boolean autoCancel = false;
-		TopicProcessor<Integer> processor = TopicProcessor.create(autoCancel);
+		TopicProcessor<Integer> processor = TopicProcessor.<Integer>builder().autoCancel(autoCancel).build();
 		assertProcessor(processor, false, null, null, null, autoCancel, null, null);
 	}
 
 	@Test
-	@Deprecated
 	public void createOverrideName() {
 		String name = "nameOverride";
-		TopicProcessor<Integer> processor = TopicProcessor.create(name);
+		TopicProcessor<Integer> processor = TopicProcessor.<Integer>builder().name(name).build();
 		assertProcessor(processor, false, name, null, null, null, null, null);
 	}
 
 	@Test
-	@Deprecated
 	public void createOverrideNameBufferSize() {
 		String name = "nameOverride";
 		int bufferSize = 1024;
-		TopicProcessor<Integer> processor = TopicProcessor.create(name, bufferSize);
+		TopicProcessor<Integer> processor = TopicProcessor.<Integer>builder().name(name).bufferSize(bufferSize).build();
 		assertProcessor(processor, false, name, bufferSize, null, null, null, null);
 	}
 
 	@Test
-	@Deprecated
 	public void createOverrideNameBufferSizeAutoCancel() {
 		String name = "nameOverride";
 		int bufferSize = 1024;
 		boolean autoCancel = false;
-		TopicProcessor<Integer> processor = TopicProcessor.create(name, bufferSize, autoCancel);
+		TopicProcessor<Integer> processor = TopicProcessor.<Integer>builder()
+				.name(name)
+				.bufferSize(bufferSize)
+				.autoCancel(autoCancel)
+				.build();
 		assertProcessor(processor, false, name, bufferSize, null, autoCancel, null, null);
 	}
 
 	@Test
-	@Deprecated
 	public void createOverrideNameBufferSizeWaitStrategy() {
 		String name = "nameOverride";
 		int bufferSize = 1024;
 		WaitStrategy waitStrategy = WaitStrategy.busySpin();
-		TopicProcessor<Integer> processor = TopicProcessor.create(name, bufferSize, waitStrategy);
+		TopicProcessor<Integer> processor = TopicProcessor.<Integer>builder()
+				.name(name)
+				.bufferSize(bufferSize)
+				.waitStrategy(waitStrategy)
+				.build();
 		assertProcessor(processor, false, name, bufferSize, waitStrategy, null, null, null);
 	}
 
 	@Test
-	@Deprecated
 	public void createDefaultExecutorOverrideAll() {
 		String name = "nameOverride";
 		int bufferSize = 1024;
 		WaitStrategy waitStrategy = WaitStrategy.busySpin();
 		boolean autoCancel = false;
-		TopicProcessor<Integer> processor = TopicProcessor.create(name, bufferSize, waitStrategy, autoCancel);
+		TopicProcessor<Integer> processor = TopicProcessor.<Integer>builder()
+				.name(name)
+				.bufferSize(bufferSize)
+				.waitStrategy(waitStrategy)
+				.autoCancel(autoCancel)
+				.build();
 		assertProcessor(processor, false, name, bufferSize, waitStrategy, autoCancel, null, null);
 	}
 
 	@Test
-	@Deprecated
 	public void createOverrideExecutor() {
 		ExecutorService executor = Executors.newSingleThreadExecutor();
-		TopicProcessor<Integer> processor = TopicProcessor.create(executor);
+		TopicProcessor<Integer> processor = TopicProcessor.<Integer>builder()
+				.executor(executor)
+				.build();
 		assertProcessor(processor, false, null, null, null, null, executor, null);
 	}
 
 	@Test
-	@Deprecated
 	public void createOverrideExecutorAutoCancel() {
 		ExecutorService executor = Executors.newSingleThreadExecutor();
 		boolean autoCancel = false;
-		TopicProcessor<Integer> processor = TopicProcessor.create(executor, autoCancel);
+		TopicProcessor<Integer> processor = TopicProcessor.<Integer>builder()
+				.executor(executor)
+				.autoCancel(autoCancel)
+				.build();
 		assertProcessor(processor, false, null, null, null, autoCancel, executor, null);
 	}
 
 	@Test
-	@Deprecated
 	public void createOverrideExecutorBufferSize() {
 		ExecutorService executor = Executors.newSingleThreadExecutor();
 		int bufferSize = 1024;
-		TopicProcessor<Integer> processor = TopicProcessor.create(executor, bufferSize);
+		TopicProcessor<Integer> processor = TopicProcessor.<Integer>builder()
+				.executor(executor)
+				.bufferSize(bufferSize)
+				.build();
 		assertProcessor(processor, false, null, bufferSize, null, null, executor, null);
 	}
 
 	@Test
-	@Deprecated
 	public void createOverrideExecutorBufferSizeAutoCancel() {
 		ExecutorService executor = Executors.newSingleThreadExecutor();
 		int bufferSize = 1024;
 		boolean autoCancel = false;
-		TopicProcessor<Integer> processor = TopicProcessor.create(executor, bufferSize, autoCancel);
+		TopicProcessor<Integer> processor = TopicProcessor.<Integer>builder()
+				.executor(executor)
+				.bufferSize(bufferSize)
+				.autoCancel(autoCancel)
+				.build();
 		assertProcessor(processor, false, null, bufferSize, null, autoCancel, executor, null);
 	}
 
 	@Test
-	@Deprecated
 	public void createOverrideExecutorBufferSizeWaitStrategy() {
 		ExecutorService executor = Executors.newSingleThreadExecutor();
 		int bufferSize = 1024;
 		WaitStrategy waitStrategy = WaitStrategy.busySpin();
-		TopicProcessor<Integer> processor = TopicProcessor.create(executor, bufferSize, waitStrategy);
+		TopicProcessor<Integer> processor = TopicProcessor.<Integer>builder()
+				.executor(executor)
+				.bufferSize(bufferSize)
+				.waitStrategy(waitStrategy)
+				.build();
 		assertProcessor(processor, false, null, bufferSize, waitStrategy, null, executor, null);
 	}
 
 	@Test
-	@Deprecated
 	public void createOverrideExecutorBufferSizeWaitStrategyAutoCancel() {
 		ExecutorService executor = Executors.newSingleThreadExecutor();
 		int bufferSize = 1024;
 		WaitStrategy waitStrategy = WaitStrategy.busySpin();
 		boolean autoCancel = false;
-		TopicProcessor<Integer> processor = TopicProcessor.create(executor, bufferSize, waitStrategy, autoCancel);
+		TopicProcessor<Integer> processor = TopicProcessor.<Integer>builder()
+				.executor(executor)
+				.bufferSize(bufferSize)
+				.waitStrategy(waitStrategy)
+				.autoCancel(autoCancel)
+				.build();
 		assertProcessor(processor, false, null, bufferSize, waitStrategy, autoCancel, executor, null);
 	}
 
 	@Test
-	@Deprecated
 	public void createOverrideAll() {
 		ExecutorService executor = Executors.newSingleThreadExecutor();
 		ExecutorService requestTaskExecutor = Executors.newSingleThreadExecutor();
 		int bufferSize = 1024;
 		WaitStrategy waitStrategy = WaitStrategy.busySpin();
 		boolean autoCancel = false;
-		TopicProcessor<Integer> processor = TopicProcessor.create(executor, requestTaskExecutor, bufferSize, waitStrategy, autoCancel);
+		TopicProcessor<Integer> processor = TopicProcessor.<Integer>builder()
+				.executor(executor)
+				.requestTaskExecutor(requestTaskExecutor)
+				.bufferSize(bufferSize)
+				.waitStrategy(waitStrategy)
+				.autoCancel(autoCancel)
+				.build();
 		assertProcessor(processor, false, null, bufferSize, waitStrategy, autoCancel, executor, requestTaskExecutor);
 	}
 
 	@Test
-	@Deprecated
 	public void shareOverrideAutoCancel() {
 		boolean autoCancel = false;
-		TopicProcessor<Integer> processor = TopicProcessor.share(autoCancel);
+		TopicProcessor<Integer> processor = TopicProcessor.<Integer>builder()
+				.share(true)
+				.autoCancel(autoCancel)
+				.build();
 		assertProcessor(processor, true, null, null, null, autoCancel, null, null);
 	}
 
 	@Test
-	@Deprecated
 	public void shareOverrideNameBufferSize() {
 		String name = "nameOverride";
 		int bufferSize = 1024;
-		TopicProcessor<Integer> processor = TopicProcessor.share(name, bufferSize);
+		TopicProcessor<Integer> processor = TopicProcessor.<Integer>builder()
+				.share(true)
+				.name(name)
+				.bufferSize(bufferSize)
+				.build();
 		assertProcessor(processor, true, name, bufferSize, null, null, null, null);
 	}
 
 	@Test
-	@Deprecated
 	public void shareOverrideNameBufferSizeWaitStrategy() {
 		String name = "nameOverride";
 		int bufferSize = 1024;
 		WaitStrategy waitStrategy = WaitStrategy.busySpin();
-		TopicProcessor<Integer> processor = TopicProcessor.share(name, bufferSize, waitStrategy);
+		TopicProcessor<Integer> processor = TopicProcessor.<Integer>builder()
+				.share(true)
+				.name(name)
+				.bufferSize(bufferSize)
+				.waitStrategy(waitStrategy)
+				.build();
 		assertProcessor(processor, true, name, bufferSize, waitStrategy, null, null, null);
 	}
 
 	@Test
-	@Deprecated
 	public void shareDefaultExecutorOverrideAll() {
 		String name = "nameOverride";
 		int bufferSize = 1024;
 		WaitStrategy waitStrategy = WaitStrategy.busySpin();
 		boolean autoCancel = false;
-		TopicProcessor<Integer> processor = TopicProcessor.share(name, bufferSize, waitStrategy, autoCancel);
+		TopicProcessor<Integer> processor = TopicProcessor.<Integer>builder()
+				.share(true)
+				.name(name)
+				.bufferSize(bufferSize)
+				.waitStrategy(waitStrategy)
+				.autoCancel(autoCancel)
+				.build();
 		assertProcessor(processor, true, name, bufferSize, waitStrategy, autoCancel, null, null);
 	}
 
 	@Test
-	@Deprecated
 	public void shareOverrideExecutor() {
 		ExecutorService executor = Executors.newSingleThreadExecutor();
-		TopicProcessor<Integer> processor = TopicProcessor.share(executor);
+		TopicProcessor<Integer> processor = TopicProcessor.<Integer>builder()
+				.share(true)
+				.executor(executor)
+				.build();
 		assertProcessor(processor, true, null, null, null, null, executor, null);
 	}
 
 	@Test
-	@Deprecated
 	public void shareOverrideExecutorAutoCancel() {
 		ExecutorService executor = Executors.newSingleThreadExecutor();
 		boolean autoCancel = false;
-		TopicProcessor<Integer> processor = TopicProcessor.share(executor, autoCancel);
+		TopicProcessor<Integer> processor = TopicProcessor.<Integer>builder()
+				.share(true)
+				.executor(executor)
+				.autoCancel(autoCancel)
+				.build();
 		assertProcessor(processor, true, null, null, null, autoCancel, executor, null);
 	}
 
 	@Test
-	@Deprecated
 	public void shareOverrideExecutorBufferSize() {
 		ExecutorService executor = Executors.newSingleThreadExecutor();
 		int bufferSize = 1024;
-		TopicProcessor<Integer> processor = TopicProcessor.share(executor, bufferSize);
+		TopicProcessor<Integer> processor = TopicProcessor.<Integer>builder()
+				.share(true)
+				.executor(executor)
+				.bufferSize(bufferSize)
+				.build();
 		assertProcessor(processor, true, null, bufferSize, null, null, executor, null);
 	}
 
 	@Test
-	@Deprecated
 	public void shareOverrideExecutorBufferSizeAutoCancel() {
 		ExecutorService executor = Executors.newSingleThreadExecutor();
 		int bufferSize = 1024;
 		boolean autoCancel = false;
-		TopicProcessor<Integer> processor = TopicProcessor.share(executor, bufferSize, autoCancel);
+		TopicProcessor<Integer> processor = TopicProcessor.<Integer>builder()
+				.share(true)
+				.executor(executor)
+				.bufferSize(bufferSize)
+				.autoCancel(autoCancel)
+				.build();
 		assertProcessor(processor, true, null, bufferSize, null, autoCancel, executor, null);
 	}
 
 	@Test
-	@Deprecated
 	public void shareOverrideExecutorBufferSizeWaitStrategy() {
 		ExecutorService executor = Executors.newSingleThreadExecutor();
 		int bufferSize = 1024;
 		WaitStrategy waitStrategy = WaitStrategy.busySpin();
-		TopicProcessor<Integer> processor = TopicProcessor.share(executor, bufferSize, waitStrategy);
+		TopicProcessor<Integer> processor = TopicProcessor.<Integer>builder()
+				.share(true)
+				.executor(executor)
+				.bufferSize(bufferSize)
+				.waitStrategy(waitStrategy)
+				.build();
 		assertProcessor(processor, true, null, bufferSize, waitStrategy, null, executor, null);
 	}
 
 	@Test
-	@Deprecated
 	public void shareOverrideExecutorBufferSizeWaitStrategyAutoCancel() {
 		ExecutorService executor = Executors.newSingleThreadExecutor();
 		int bufferSize = 1024;
 		WaitStrategy waitStrategy = WaitStrategy.busySpin();
 		boolean autoCancel = false;
-		TopicProcessor<Integer> processor = TopicProcessor.share(executor, bufferSize, waitStrategy, autoCancel);
+		TopicProcessor<Integer> processor = TopicProcessor.<Integer>builder()
+				.share(true)
+				.executor(executor)
+				.bufferSize(bufferSize)
+				.waitStrategy(waitStrategy)
+				.autoCancel(autoCancel)
+				.build();
 		assertProcessor(processor, true, null, bufferSize, waitStrategy, autoCancel, executor, null);
 	}
 
 	@Test
-	@Deprecated
 	public void shareOverrideAll() {
 		ExecutorService executor = Executors.newSingleThreadExecutor();
 		ExecutorService requestTaskExecutor = Executors.newSingleThreadExecutor();
 		int bufferSize = 1024;
 		WaitStrategy waitStrategy = WaitStrategy.busySpin();
 		boolean autoCancel = false;
-		TopicProcessor<Integer> processor = TopicProcessor.share(executor, requestTaskExecutor, bufferSize, waitStrategy, autoCancel);
+		TopicProcessor<Integer> processor = TopicProcessor.<Integer>builder()
+				.share(true)
+				.executor(executor)
+				.requestTaskExecutor(requestTaskExecutor)
+				.bufferSize(bufferSize)
+				.waitStrategy(waitStrategy)
+				.autoCancel(autoCancel)
+				.build();
 		assertProcessor(processor, true, null, bufferSize, waitStrategy, autoCancel, executor, requestTaskExecutor);
 	}
 
