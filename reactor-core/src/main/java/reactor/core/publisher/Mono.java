@@ -1633,7 +1633,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return this Mono, but delayed until the given publisher terminates.
 	 */
 	//TODO update the marble URL to a tag pre-release
-	public Mono<T> delayUntilOther(Publisher<?> anyPublisher) {
+	public final Mono<T> delayUntilOther(Publisher<?> anyPublisher) {
 		return delayUntil(a -> anyPublisher);
 	}
 
@@ -1657,7 +1657,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return this Mono, but delayed until the given publisher terminates.
 	 */
 	//TODO update the marble URL to a tag pre-release
-	public Mono<T> delayUntilOtherDelayError(Publisher<?> anyPublisher) {
+	public final Mono<T> delayUntilOtherDelayError(Publisher<?> anyPublisher) {
 		return delayUntilDelayError(a -> anyPublisher);
 	}
 
@@ -1688,7 +1688,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return this Mono, but delayed until the derived publisher terminates.
 	 */
 	//TODO update the marble URL to a tag pre-release
-	public Mono<T> delayUntil(Function<? super T, ? extends Publisher<?>> triggerProvider) {
+	public final Mono<T> delayUntil(Function<? super T, ? extends Publisher<?>> triggerProvider) {
 		Objects.requireNonNull(triggerProvider, "triggerProvider required");
 		if (this instanceof MonoDelayUntil) {
 			return ((MonoDelayUntil<T>) this).copyWithNewTriggerGenerator(false,triggerProvider);
@@ -1720,7 +1720,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return this Mono, but delayed until the derived publisher first emits or terminates.
 	 */
 	//TODO update the marble URL to a tag pre-release
-	public Mono<T> delayUntilDelayError(Function<? super T, ? extends Publisher<?>> triggerProvider) {
+	public final Mono<T> delayUntilDelayError(Function<? super T, ? extends Publisher<?>> triggerProvider) {
 		Objects.requireNonNull(triggerProvider, "triggerProvider required");
 		if (this instanceof MonoDelayUntil) {
 			return ((MonoDelayUntil<T>) this).copyWithNewTriggerGenerator(true, triggerProvider);

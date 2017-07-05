@@ -6965,7 +6965,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Stream} of unknown size with onClose attached to {@link Subscription#cancel()}
 	 */
-	public Stream<T> toStream() {
+	public final Stream<T> toStream() {
 		return toStream(QueueSupplier.SMALL_BUFFER_SIZE);
 	}
 
@@ -6980,7 +6980,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Stream} of unknown size with onClose attached to {@link Subscription#cancel()}
 	 */
-	public Stream<T> toStream(int batchSize) {
+	public final Stream<T> toStream(int batchSize) {
 		final Supplier<Queue<T>> provider;
 		provider = QueueSupplier.get(batchSize);
 		return new BlockingIterable<>(this, batchSize, provider).stream();
