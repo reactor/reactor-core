@@ -1461,43 +1461,20 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Enrich a potentially empty upstream {@link Context}, producing a new {@link Context}
-	 * that is propagated downstream. If the returned {@link Context} is empty, the
-	 * propagation will be halted.
-	 * <p>
-	 * Lifecycle for {@link Context} propagation is as such :
-	 * <ol>
-	 *     <li>
-	 *         During right-to-left {@code subscribe(Subscriber)} phase, contextMap will
-	 *         read the target {@link Subscriber} context if any and cache it.
-	 *     </li>
-	 *     <li>
-	 *         Before left-to-right {@code onSubscribe(Subscription)}, {@link Context}
-	 *         might be propagated from parent. If this happens, the given
-	 *         {@link Function} will be invoked with this new {@link Context}.
-	 *     </li>
-	 *     <li>
-	 *         If no context was propagated before left-to-right {@code onSubscribe(Subscription)}
-	 *         phase, contextMap will call the given {@link Function} during {@code onSubscribe(Subscription)}
-	 *         with the cached {@link Context} or default to an empty one.
-	 *     </li>
-	 *     <li>
-	 *         contextMap will then propagate the resulting {@link Context} if non empty
-	 *         and different from the cached context, before the downstream actual
-	 *         {@code Subscriber#onSubscribe(Subscription)} is invoked.
-	 *     </li>
-	 * </ol>
-	 * <p>
-	 * Note this all happens once per-subscription, not on each onNext.
+	 * When receiving the element, inspect the current {@link Context} information and
+	 * allow to map to a new value depending on source value and context. Note that the
+	 * {@link Context} is immutable, so any attempt at modifying it as a side effect will
+	 * be ignored by this operator.
 	 *
-	 * @param doOnContext the function taking a previous {@link Context} state
-	 *  and returning a new one, propagated if not empty and different from the original.
+	 * @param doOnContext a {@link BiFunction} receiving the current {@link Context} and
+	 * the emitted element, allowing to perform a map operation
 	 *
-	 * @return a contextualized {@link Mono}
+	 * @return a {@link Mono} potentially transformed using information from the {@link Context}
 	 * @see Context
+	 * @see #contextStart
 	 */
-	public final Mono<T> contextMap(Function<Context, Context> doOnContext) {
-		return new MonoContextMap<>(this, doOnContext);
+	public final <V> Mono<V> contextGet(BiFunction<? super T, Context, ? extends V> doOnContext) {
+		return new MonoContextGet<>(this, doOnContext);
 	}
 
 	/**
@@ -1529,23 +1506,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final Mono<T> contextStart(Function<Context, Context> doOnContext) {
 		return new MonoContextStart<>(this, doOnContext);
-	}
-
-	/**
-	 * When receiving the element, inspect the current {@link Context} information and
-	 * allow to map to a new value depending on source value and context. Note that the
-	 * {@link Context} is immutable, so any attempt at modifying it as a side effect will
-	 * be ignored by this operator.
-	 *
-	 * @param doOnContext a {@link BiFunction} receiving the current {@link Context} and
-	 * the emitted element, allowing to perform a map operation
-	 *
-	 * @return a {@link Mono} potentially transformed using information from the {@link Context}
-	 * @see Context
-	 * @see #contextMap
-	 */
-	public final <V> Mono<V> contextGet(BiFunction<? super T, Context, ? extends V> doOnContext) {
-		return new MonoContextGet<>(this, doOnContext);
 	}
 
 	/**

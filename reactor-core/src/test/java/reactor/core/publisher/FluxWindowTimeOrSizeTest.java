@@ -210,7 +210,7 @@ public class FluxWindowTimeOrSizeTest {
     public void scanMainSubscriber() {
         Subscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWindowTimeOrSize.WindowTimeoutSubscriber<Integer> test = new FluxWindowTimeOrSize.WindowTimeoutSubscriber<>(actual,
-        		123, 1000, Schedulers.single(), Context.empty());
+        		123, 1000, Schedulers.single());
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 

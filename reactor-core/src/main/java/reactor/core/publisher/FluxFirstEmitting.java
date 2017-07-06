@@ -293,11 +293,6 @@ final class FluxFirstEmitting<T> extends Flux<T> {
 		}
 
 		@Override
-		public void onContextUpdate(Context context) {
-			//IGNORE ambiguous context
-		}
-
-		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return s;

@@ -26,16 +26,6 @@ package reactor.util.context;
 public interface Contextualized {
 
 	/**
-	 * Synchronously push a {@link Context} to dependent components which can include
-	 * downstream operators after subscribing or terminal
-	 * {@link org.reactivestreams.Subscriber}.
-	 *
-	 * @param context a new {@link Context} to propagate
-	 */
-	default void onContextUpdate(Context context) {
-	}
-
-	/**
 	 * Request a {@link Context} from dependent components which can include downstream
 	 * operators during subscribing or a terminal {@link org.reactivestreams.Subscriber}.
 	 *

@@ -42,11 +42,6 @@ interface InnerProducer<O>
 	}
 
 	@Override
-	default void onContextUpdate(Context context) {
-		Context.push(actual(), context);
-	}
-
-	@Override
 	@Nullable
 	default Object scanUnsafe(Attr key){
 		if (key == ScannableAttr.ACTUAL) {

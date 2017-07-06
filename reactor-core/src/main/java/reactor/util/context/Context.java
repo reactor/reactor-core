@@ -63,20 +63,6 @@ public interface Context {
 	}
 
 	/**
-	 * Try pushing the passed {@link Context} to the given reference if of
-	 * {@link Contextualized} type.
-	 *
-	 * @param o the reference to push to if instance of {@link Contextualized}
-	 * @param c the {@link Context} to push
-	 */
-	static void push(Object o, Context c) {
-		if (o != empty() && o instanceof Contextualized) {
-			@SuppressWarnings("unchecked") Contextualized cr = (Contextualized) o;
-			cr.onContextUpdate(c);
-		}
-	}
-
-	/**
 	 * Inject a key/value pair in a new {@link Context} inheriting current state.
 	 * The returned {@link Context} will resolve the new key/value pair and any
 	 * existing key/value pair.

@@ -79,14 +79,6 @@ final class FluxContextGet<T, V> extends FluxOperator<T, V> implements Fuseable 
 		}
 
 		@Override
-		public void onContextUpdate(Context context) {
-			if(context != this.context) {
-				this.context = context;
-				InnerOperator.super.onContextUpdate(context);
-			}
-		}
-
-		@Override
 		public Context currentContext() {
 			return this.context;
 		}

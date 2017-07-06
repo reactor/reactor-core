@@ -19,7 +19,10 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.function.Function;
 
+import javax.annotation.Nullable;
+
 import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.util.context.Context;
 
@@ -35,9 +38,8 @@ final class FluxContextStart<T> extends FluxOperator<T, T> implements Fuseable {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		FluxContextMap.ContextMapSubscriber<T> ctxSub =
-				new FluxContextMap.ContextMapSubscriber<>(s, doOnContext, ctx);
-		ctxSub.once = true;
+		ContextStartSubscriber<T> ctxSub =
+				new ContextStartSubscriber<>(s, doOnContext, ctx);
 		Context c;
 		try {
 			c = doOnContext.apply(ctx);
@@ -51,4 +53,131 @@ final class FluxContextStart<T> extends FluxOperator<T, T> implements Fuseable {
 		source.subscribe(ctxSub, c);
 	}
 
+	static final class ContextStartSubscriber<T>
+			implements ConditionalSubscriber<T>, InnerOperator<T, T>,
+			           QueueSubscription<T> {
+
+		final Subscriber<? super T>            actual;
+		final ConditionalSubscriber<? super T> actualConditional;
+		final Function<Context, Context>       doOnContext;
+
+		volatile Context context;
+
+		QueueSubscription<T> qs;
+		Subscription         s;
+
+		@SuppressWarnings("unchecked")
+		ContextStartSubscriber(Subscriber<? super T> actual,
+				Function<Context, Context> doOnContext,
+				Context context) {
+			this.actual = actual;
+			this.context = context;
+			this.doOnContext = doOnContext;
+			if (actual instanceof ConditionalSubscriber) {
+				this.actualConditional = (ConditionalSubscriber<? super T>) actual;
+			}
+			else {
+				this.actualConditional = null;
+			}
+		}
+
+		@Override
+		@Nullable
+		public Object scanUnsafe(Attr key) {
+			if (key == ScannableAttr.PARENT) {
+				return s;
+			}
+			return InnerOperator.super.scanUnsafe(key);
+		}
+
+		@Override
+		public Context currentContext() {
+			return this.context;
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public void onSubscribe(Subscription s) {
+			if (Operators.validate(this.s, s)) {
+				this.s = s;
+				if (s instanceof QueueSubscription) {
+					this.qs = (QueueSubscription<T>) s;
+				}
+				actual.onSubscribe(this);
+			}
+		}
+
+		@Override
+		public void onNext(T t) {
+			actual.onNext(t);
+		}
+
+		@Override
+		public boolean tryOnNext(T t) {
+			if (actualConditional != null) {
+				return actualConditional.tryOnNext(t);
+			}
+			actual.onNext(t);
+			return true;
+		}
+
+		@Override
+		public void onError(Throwable t) {
+			actual.onError(t);
+		}
+
+		@Override
+		public void onComplete() {
+			actual.onComplete();
+		}
+
+		@Override
+		public Subscriber<? super T> actual() {
+			return actual;
+		}
+
+		@Override
+		public void request(long n) {
+			s.request(n);
+		}
+
+		@Override
+		public void cancel() {
+			s.cancel();
+		}
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			if (qs == null) {
+				return Fuseable.NONE;
+			}
+			return qs.requestFusion(requestedMode);
+		}
+
+		@Override
+		@Nullable
+		public T poll() {
+			if (qs != null) {
+				return qs.poll();
+			}
+			return null;
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return qs == null || qs.isEmpty();
+		}
+
+		@Override
+		public void clear() {
+			if (qs != null) {
+				qs.clear();
+			}
+		}
+
+		@Override
+		public int size() {
+			return qs != null ? qs.size() : 0;
+		}
+	}
 }

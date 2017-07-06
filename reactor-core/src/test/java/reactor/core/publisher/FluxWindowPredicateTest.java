@@ -831,7 +831,7 @@ public class FluxWindowPredicateTest extends
     public void scanMainSubscriber() {
         Subscriber<GroupedFlux<Integer, Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWindowPredicate.WindowPredicateMain<Integer> test = new FluxWindowPredicate.WindowPredicateMain<>(actual,
-        		QueueSupplier.<GroupedFlux<Integer, Integer>>unbounded().get(), QueueSupplier.unbounded(), 123, i -> true, Mode.WHILE, Context.empty());
+        		QueueSupplier.<GroupedFlux<Integer, Integer>>unbounded().get(), QueueSupplier.unbounded(), 123, i -> true, Mode.WHILE);
 
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
@@ -863,9 +863,9 @@ public class FluxWindowPredicateTest extends
     public void scanOtherSubscriber() {
         Subscriber<GroupedFlux<Integer, Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWindowPredicate.WindowPredicateMain<Integer> main = new FluxWindowPredicate.WindowPredicateMain<>(actual,
-        		QueueSupplier.<GroupedFlux<Integer, Integer>>unbounded().get(), QueueSupplier.unbounded(), 123, i -> true, Mode.WHILE, Context.empty());
-        FluxWindowPredicate.WindowGroupedFlux<Integer> test = new FluxWindowPredicate.WindowGroupedFlux<Integer>(1,
-        		QueueSupplier.<Integer>unbounded().get(), main, Context.empty());
+        		QueueSupplier.<GroupedFlux<Integer, Integer>>unbounded().get(), QueueSupplier.unbounded(), 123, i -> true, Mode.WHILE);
+        FluxWindowPredicate.WindowGroupedFlux<Integer> test = new FluxWindowPredicate.WindowGroupedFlux<>(1,
+        		QueueSupplier.<Integer>unbounded().get(), main);
 
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);

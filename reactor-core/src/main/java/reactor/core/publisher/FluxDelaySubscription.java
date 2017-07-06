@@ -94,11 +94,6 @@ final class FluxDelaySubscription<T, U> extends FluxOperator<T, T>
 		}
 
 		@Override
-		public void onContextUpdate(Context context) {
-			//IGNORE
-		}
-
-		@Override
 		public Subscriber<? super T> actual() {
 			return actual;
 		}
@@ -163,11 +158,6 @@ final class FluxDelaySubscription<T, U> extends FluxOperator<T, T>
 				DelaySubscriptionOtherSubscriber<?, ?> arbiter) {
 			this.actual = actual;
 			this.arbiter = arbiter;
-		}
-
-		@Override
-		public void onContextUpdate(Context context) {
-			Context.push(actual, context);
 		}
 
 		@Override

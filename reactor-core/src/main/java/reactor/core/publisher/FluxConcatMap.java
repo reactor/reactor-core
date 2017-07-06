@@ -777,10 +777,6 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 			return parent.currentContext();
 		}
 
-		@Override
-		public void onContextUpdate(Context context) {
-		}
-
 		@Nullable
 		@Override
 		public Object scanUnsafe(Attr key) {
