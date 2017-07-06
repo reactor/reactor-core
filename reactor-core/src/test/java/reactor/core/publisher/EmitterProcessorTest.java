@@ -751,7 +751,7 @@ public class EmitterProcessorTest {
 
 	@Test
 	public void scanMain() {
-		EmitterProcessor<Integer> test = EmitterProcessor.<Integer>builder().bufferSize(123).build();
+		EmitterProcessor<Integer> test = EmitterProcessor.create(123);
 		assertThat(test.scan(BUFFERED)).isEqualTo(0);
 		assertThat(test.scan(CANCELLED)).isFalse();
 		assertThat(test.scan(PREFETCH)).isEqualTo(123);
