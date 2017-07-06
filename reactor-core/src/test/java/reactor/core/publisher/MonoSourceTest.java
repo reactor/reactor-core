@@ -45,6 +45,22 @@ public class MonoSourceTest {
 	}
 
 	@Test
+	public void error() {
+		Mono<Integer> m = Mono.from(Flux.error(new Exception("test")));
+		assertTrue(m instanceof MonoError);
+		StepVerifier.create(m)
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void errorPropagate() {
+		Mono<Integer> m = Mono.from(Flux.error(new Error("test")));
+		assertTrue(m instanceof MonoError);
+		StepVerifier.create(m)
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
 	public void justNext() {
 		StepVerifier.create(Mono.from(Flux.just(1, 2, 3)))
 	                .expectNext(1)

@@ -97,7 +97,7 @@ public class FluxPeekStatefulTest {
 		LongAdder seedCount = new LongAdder();
 		LongAdder state = new LongAdder();
 
-		new FluxPeekStateful<>(new FluxError<Integer>(new RuntimeException("forced " + "failure"),	false),
+		new FluxPeekStateful<>(new FluxError<Integer>(new RuntimeException("forced " + "failure")),
 				() -> {
 					seedCount.increment();
 					return state;

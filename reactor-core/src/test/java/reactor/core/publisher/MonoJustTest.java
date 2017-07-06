@@ -34,7 +34,12 @@ public class MonoJustTest {
 
     @Test
     public void valueSame() {
-        Assert.assertSame(1, new MonoJust<>(1).call());
+	    try {
+		    Assert.assertSame(1, new MonoJust<>(1).call());
+	    }
+	    catch (Exception e) {
+		    e.printStackTrace();
+	    }
     }
 
     @Test

@@ -747,7 +747,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new failed {@link Flux}
 	 */
 	public static <O> Flux<O> error(Throwable throwable, boolean whenRequested) {
-		return onAssembly(new FluxError<>(throwable, whenRequested));
+		if (whenRequested) {
+			return onAssembly(new FluxErrorOnRequest<>(throwable));
+		}
+		else {
+			return onAssembly(new FluxError<>(throwable));
+		}
 	}
 
 	/**
@@ -805,12 +810,17 @@ public abstract class Flux<T> implements Publisher<T> {
 		}
 
 		if (source instanceof Fuseable.ScalarCallable) {
-			@SuppressWarnings("unchecked")
-            T t = ((Fuseable.ScalarCallable<T>) source).call();
-            if (t != null) {
-                return just(t);
-            }
-			return empty();
+			try {
+				@SuppressWarnings("unchecked") T t =
+						((Fuseable.ScalarCallable<T>) source).call();
+				if (t != null) {
+					return just(t);
+				}
+				return empty();
+			}
+			catch (Exception e) {
+				return error(e);
+			}
 		}
 		return wrap(source);
 	}
@@ -2639,7 +2649,13 @@ public abstract class Flux<T> implements Publisher<T> {
 				@SuppressWarnings("unchecked")
 				Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
 
-				T v = scalarCallable.call();
+				T v;
+				try {
+					v = scalarCallable.call();
+				}
+				catch (Exception e) {
+					return Mono.error(e);
+				}
 				if (v == null) {
 					return Mono.onAssembly(new MonoSupplier<>(listSupplier()));
 				}
@@ -4580,13 +4596,19 @@ public abstract class Flux<T> implements Publisher<T> {
 		    if(thiz instanceof Fuseable.ScalarCallable){
 		    	@SuppressWarnings("unchecked")
 			    Fuseable.ScalarCallable<T> c = (Fuseable.ScalarCallable<T>)thiz;
-			    T v = c.call();
+			    T v;
+			    try {
+				    v = c.call();
+			    }
+			    catch (Exception e) {
+				    return Mono.error(e);
+			    }
 			    if(v == null){
 			    	return Mono.just(defaultValue);
 			    }
 			    return Mono.just(v);
 		    }
-	        return convertToMono(thiz);
+		    Mono.onAssembly(new MonoCallable<>(thiz));
 	    }
 		return Mono.onAssembly(new MonoTakeLastOne<>(this, defaultValue));
 	}
@@ -5379,9 +5401,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	public final Flux<T> publishOn(Scheduler scheduler, boolean delayError, int prefetch) {
 		if (this instanceof Callable) {
 			if (this instanceof Fuseable.ScalarCallable) {
-				@SuppressWarnings("unchecked") T value =
-						((Fuseable.ScalarCallable<T>) this).call();
-				return onAssembly(new FluxSubscribeOnValue<>(value, scheduler));
+				@SuppressWarnings("unchecked")
+				Fuseable.ScalarCallable<T> s = (Fuseable.ScalarCallable<T>) this;
+				try {
+					return onAssembly(new FluxSubscribeOnValue<>(s.call(), scheduler));
+				}
+				catch (Exception e) {
+					//leave FluxSubscribeOnCallable defer exception call
+				}
 			}
 			@SuppressWarnings("unchecked")
 			Callable<T> c = (Callable<T>)this;
@@ -5952,8 +5979,14 @@ public abstract class Flux<T> implements Publisher<T> {
 		        @SuppressWarnings("unchecked")
                 Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
 
-                T v = scalarCallable.call();
-                if (v == null) {
+		        T v;
+		        try {
+			        v = scalarCallable.call();
+		        }
+		        catch (Exception e) {
+			        return Mono.error(e);
+		        }
+		        if (v == null) {
                     return Mono.error(new NoSuchElementException("Source was a (constant) empty"));
                 }
                 return Mono.just(v);
@@ -5983,8 +6016,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	            @SuppressWarnings("unchecked")
                 Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
 
-                T v = scalarCallable.call();
-                if (v == null) {
+	            T v;
+	            try {
+		            v = scalarCallable.call();
+	            }
+	            catch (Exception e) {
+		            return Mono.error(e);
+	            }
+	            if (v == null) {
 	                return Mono.just(defaultValue);
                 }
                 return Mono.just(v);
@@ -6389,9 +6428,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	public final Flux<T> subscribeOn(Scheduler scheduler) {
 		if (this instanceof Callable) {
 			if (this instanceof Fuseable.ScalarCallable) {
-				@SuppressWarnings("unchecked") T value =
-						((Fuseable.ScalarCallable<T>) this).call();
-				return onAssembly(new FluxSubscribeOnValue<>(value, scheduler));
+				try {
+					@SuppressWarnings("unchecked") T value = ((Fuseable.ScalarCallable<T>) this).call();
+					return onAssembly(new FluxSubscribeOnValue<>(value, scheduler));
+				}
+				catch (Exception e) {
+					//leave FluxSubscribeOnCallable defer error
+				}
 			}
 			@SuppressWarnings("unchecked")
 			Callable<T> c = (Callable<T>)this;
@@ -7620,7 +7663,13 @@ public abstract class Flux<T> implements Publisher<T> {
 		if (supplier instanceof Fuseable.ScalarCallable) {
 			Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) supplier;
 
-			T v = scalarCallable.call();
+			T v;
+			try {
+				v = scalarCallable.call();
+			}
+			catch (Exception e) {
+				return Mono.error(e);
+			}
 			if (v == null) {
 				return Mono.empty();
 			}

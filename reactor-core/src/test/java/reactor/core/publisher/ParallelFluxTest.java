@@ -692,7 +692,7 @@ public class ParallelFluxTest {
 		ParallelFlux<Integer> pf = ParallelFlux.from(Flux.range(1, 4), 2)
 		                                       .concatMapDelayError(i -> {
 		                                       	if (i == 1)
-		                                       		return Mono.error(new IllegalStateException("boom"));
+		                                       		return Mono.<Integer>error(new IllegalStateException("boom")).hide();
 		                                       	return Flux.just(i, 100 * i);
 		                                       });
 
@@ -706,7 +706,7 @@ public class ParallelFluxTest {
 		ParallelFlux<Integer> pf = ParallelFlux.from(Flux.range(1, 4), 2)
 		                                       .concatMapDelayError(i -> {
 			                                       if (i == 1)
-				                                       return Mono.error(new IllegalStateException("boom"));
+				                                       return Mono.<Integer>error(new IllegalStateException("boom")).hide();
 			                                       return Flux.just(i, 100 * i);
 		                                       }, 4);
 
@@ -735,7 +735,7 @@ public class ParallelFluxTest {
 		ParallelFlux<Integer> pf = ParallelFlux.from(Flux.range(1, 4), 2)
 		                                       .flatMap(i -> {
 			                                       if (i == 1)
-				                                       return Mono.error(new IllegalStateException("boom"));
+				                                       return Mono.<Integer>error(new IllegalStateException("boom")).hide();
 			                                       return Flux.just(i, 100 * i);
 		                                       }, true);
 
@@ -749,7 +749,7 @@ public class ParallelFluxTest {
 		ParallelFlux<Integer> pf = ParallelFlux.from(Flux.range(1, 4), 2)
 		                                       .flatMap(i -> {
 			                                       if (i == 1)
-				                                       return Mono.error(new IllegalStateException("boom"));
+				                                       return Mono.<Integer>error(new IllegalStateException("boom")).hide();
 			                                       return Flux.just(i, 100 * i);
 		                                       }, true, 2);
 

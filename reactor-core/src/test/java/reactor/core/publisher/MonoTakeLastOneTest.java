@@ -48,6 +48,29 @@ public class MonoTakeLastOneTest {
 	}
 
 	@Test
+	public void errorHide() {
+		StepVerifier.create(Flux.error(new Exception("test"))
+		                        .hide()
+		                        .last())
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void errorDefault() {
+		StepVerifier.create(Flux.error(new Exception("test"))
+		                        .last("blah"))
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void errorHideDefault() {
+		StepVerifier.create(Flux.error(new Exception("test"))
+		                        .hide()
+		                        .last("blah"))
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
 	public void normal() {
 		StepVerifier.create(Flux.range(1, 100)
 		                        .last())

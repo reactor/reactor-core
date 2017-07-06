@@ -26,6 +26,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -185,5 +186,20 @@ public class MonoSubscribeOnTest {
 		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
 		test.cancel();
 		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	public void error() {
+		StepVerifier.create(Mono.error(new RuntimeException("forced failure"))
+		                        .subscribeOn(Schedulers.single()))
+		            .verifyErrorMessage("forced failure");
+	}
+
+	@Test
+	public void errorHide() {
+		StepVerifier.create(Mono.error(new RuntimeException("forced failure"))
+		                        .hide()
+		                        .subscribeOn(Schedulers.single()))
+		            .verifyErrorMessage("forced failure");
 	}
 }

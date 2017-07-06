@@ -59,7 +59,7 @@ final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, F
 	}
 
 	@Override
-	public T call() {
+	public T call() throws Exception {
 		return value;
 	}
 

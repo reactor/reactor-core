@@ -306,7 +306,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 		AtomicBoolean onAfterComplete = new AtomicBoolean();
 		AtomicBoolean onCancel = new AtomicBoolean();
 
-		new FluxPeek<>(new FluxError<>(new RuntimeException("forced failure"), false),
+		new FluxPeek<>(new FluxError<>(new RuntimeException("forced failure")),
 				onSubscribe::set,
 				onNext::set,
 				onError::set,

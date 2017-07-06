@@ -196,14 +196,11 @@ public interface Fuseable {
 	}
 
 	/**
-	 * Marker interface indicating that the target can return a value or null
-	 * immediately and thus a viable target for assembly-time optimizations.
+	 * Marker interface indicating that the target can return a value or null,
+	 * otherwise fail immediately and thus a viable target for assembly-time
+	 * optimizations.
 	 *
 	 * @param <T> the value type returned
 	 */
-	interface ScalarCallable<T> extends Callable<T> {
-        @Override
-        @Nullable
-        T call();
-	}
+	interface ScalarCallable<T> extends Callable<T> { }
 }

@@ -22,6 +22,7 @@ import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -78,6 +79,36 @@ public class MonoSingleTest {
 		ts.assertNoValues()
 		  .assertError(NoSuchElementException.class)
 		  .assertNotComplete();
+	}
+
+	@Test
+	public void error() {
+		StepVerifier.create(Flux.error(new RuntimeException("forced failure"))
+		                        .single())
+		            .verifyErrorMessage("forced failure");
+	}
+
+	@Test
+	public void errorHide() {
+		StepVerifier.create(Flux.error(new RuntimeException("forced failure"))
+		                        .hide()
+		                        .single())
+		            .verifyErrorMessage("forced failure");
+	}
+
+	@Test
+	public void errorDefault() {
+		StepVerifier.create(Flux.error(new RuntimeException("forced failure"))
+		                        .single("bla"))
+		            .verifyErrorMessage("forced failure");
+	}
+
+	@Test
+	public void errorHideDefault() {
+		StepVerifier.create(Flux.error(new RuntimeException("forced failure"))
+		                        .hide()
+		                        .single("bla"))
+		            .verifyErrorMessage("forced failure");
 	}
 
 	@Test

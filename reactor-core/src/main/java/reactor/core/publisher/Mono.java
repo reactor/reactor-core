@@ -391,14 +391,14 @@ public abstract class Mono<T> implements Publisher<T> {
 			@SuppressWarnings("unchecked")
 			Flux<I> f = (Flux<I>)source;
 			if(source instanceof Fuseable){
-				return new MonoSourceFluxFuseable<>(f);
+				return onAssembly(new MonoSourceFluxFuseable<>(f));
 			}
-			return new MonoSourceFlux<>(f);
+			return onAssembly(new MonoSourceFlux<>(f));
 		}
 		if(source instanceof Fuseable){
-			return new MonoSourceFuseable<>(source);
+			return onAssembly(new MonoSourceFuseable<>(source));
 		}
-		return new MonoSource<>(source);
+		return onAssembly(new MonoSource<>(source));
 	}
 
 	/**
@@ -1523,11 +1523,16 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final Mono<T> defaultIfEmpty(T defaultV) {
 	    if (this instanceof Fuseable.ScalarCallable) {
-            T v = block();
-	        if (v == null) {
-	            return Mono.just(defaultV);
-	        }
-	        return this;
+		    try {
+			    T v = block();
+			    if (v == null) {
+				    return Mono.just(defaultV);
+			    }
+		    }
+		    catch (Throwable e) {
+			    //leave MonoError returns as this
+		    }
+		    return this;
 	    }
 		return onAssembly(new MonoDefaultIfEmpty<>(this, defaultV));
 	}
@@ -2137,7 +2142,13 @@ public abstract class Mono<T> implements Publisher<T> {
     public final Flux<T> flux() {
 	    if (this instanceof Callable) {
 	        if (this instanceof Fuseable.ScalarCallable) {
-	            T v = block();
+		        T v;
+		        try {
+			        v = block();
+		        }
+		        catch (Throwable t) {
+			        return Flux.error(t);
+		        }
 	            if (v == null) {
 	                return Flux.empty();
 	            }
@@ -2489,13 +2500,17 @@ public abstract class Mono<T> implements Publisher<T> {
 	public final Mono<T> publishOn(Scheduler scheduler) {
 		if(this instanceof Callable) {
 			if (this instanceof Fuseable.ScalarCallable) {
-				T value = block();
-				return onAssembly(new MonoSubscribeOnValue<>(value, scheduler));
+				try {
+					T value = block();
+					return onAssembly(new MonoSubscribeOnValue<>(value, scheduler));
+				}
+				catch (Throwable t) {
+					//leave MonoSubscribeOnCallable defer error
+				}
 			}
 			@SuppressWarnings("unchecked")
 			Callable<T> c = (Callable<T>)this;
-			return onAssembly(new MonoSubscribeOnCallable<>(c,
-					scheduler));
+			return onAssembly(new MonoSubscribeOnCallable<>(c, scheduler));
 		}
 		return onAssembly(new MonoPublishOn<>(this, scheduler));
 	}
@@ -2628,7 +2643,8 @@ public abstract class Mono<T> implements Publisher<T> {
 
 			if(maxRepeat == Integer.MAX_VALUE) {
 				iterations = Flux.fromStream(LongStream.range(0, Long.MAX_VALUE).boxed());
-			} else {
+			}
+			else {
 				iterations = Flux
 					.range(0, maxRepeat)
 					.map(Integer::longValue)
@@ -2891,8 +2907,13 @@ public abstract class Mono<T> implements Publisher<T> {
 	public final Mono<T> subscribeOn(Scheduler scheduler) {
 		if(this instanceof Callable) {
 			if (this instanceof Fuseable.ScalarCallable) {
-				T value = block();
-				return onAssembly(new MonoSubscribeOnValue<>(value, scheduler));
+				try {
+					T value = block();
+					return onAssembly(new MonoSubscribeOnValue<>(value, scheduler));
+				}
+				catch (Throwable t) {
+					//leave MonoSubscribeOnCallable defer error
+				}
 			}
 			@SuppressWarnings("unchecked")
 			Callable<T> c = (Callable<T>)this;

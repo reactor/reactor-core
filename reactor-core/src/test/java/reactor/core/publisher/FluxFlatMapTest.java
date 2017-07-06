@@ -486,7 +486,7 @@ public class FluxFlatMapTest {
 	@Test
 	public void failPublisherDelay() {
 		StepVerifier.create(Flux.just(1, 2, 3)
-		                        .flatMapDelayError(d -> Flux.error(new Exception("test")),
+		                        .flatMapDelayError(d -> Flux.error(new Exception("test")).hide(),
 				                        1,
 				                        1))
 		            .verifyErrorMessage("Multiple exceptions");

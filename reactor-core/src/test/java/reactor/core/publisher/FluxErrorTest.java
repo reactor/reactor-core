@@ -31,11 +31,17 @@ public class FluxErrorTest {
 		            .verifyErrorMessage("test");
 	}
 
+	@Test
+	public void normalOnRequest() {
+		StepVerifier.create(Flux.error(new Exception("test"), true))
+		            .verifyErrorMessage("test");
+	}
+
     @Test
     public void scanSubscription() {
 	    @SuppressWarnings("unchecked") CoreSubscriber<String> subscriber = Mockito.mock(CoreSubscriber.class);
-        FluxError.ErrorSubscription test =
-                new FluxError.ErrorSubscription(subscriber, new IllegalStateException("boom"));
+        FluxErrorOnRequest.ErrorSubscription test =
+                new FluxErrorOnRequest.ErrorSubscription(subscriber, new IllegalStateException("boom"));
 
         assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
         assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
@@ -49,8 +55,8 @@ public class FluxErrorTest {
     public void scanSubscriptionCancelled() {
 	    @SuppressWarnings("unchecked")
 	    CoreSubscriber<String> subscriber = Mockito.mock(CoreSubscriber.class);
-        FluxError.ErrorSubscription test =
-                new FluxError.ErrorSubscription(subscriber, new IllegalStateException("boom"));
+	    FluxErrorOnRequest.ErrorSubscription test =
+                new FluxErrorOnRequest.ErrorSubscription(subscriber, new IllegalStateException("boom"));
 
         assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
         test.cancel();

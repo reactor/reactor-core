@@ -92,6 +92,21 @@ public class MonoCollectListTest {
 	}
 
 	@Test
+	public void collectListError() {
+		StepVerifier.create(Flux.error(new Exception("test"))
+		                        .collectList())
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void collectListErrorHide() {
+		StepVerifier.create(Flux.error(new Exception("test"))
+		                        .hide()
+		                        .collectList())
+		            .verifyErrorMessage("test");
+	}
+
+	@Test
 	public void scanBufferAllSubscriber() {
 		CoreSubscriber<List<String>> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoCollectList.MonoBufferAllSubscriber<String, List<String>> test = new MonoCollectList.MonoBufferAllSubscriber<String, List<String>>(
