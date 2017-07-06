@@ -32,29 +32,27 @@ public class ContextTests {
 
 	@Test
 	public void contextPassing() throws InterruptedException {
-		AtomicReference<Context> c = new AtomicReference<>();
 		AtomicReference<Context> innerC = new AtomicReference<>();
 
 		Flux.range(1, 1000)
-		    //ctx: test=baseSubscriber
-		    //return: test=baseSubscriber_range
-		    .contextMap(ctx -> ctx.put("test", ctx.get("test") + "_range"))
 		    .log()
 		    .flatMapSequential(d -> Mono.just(d)
-		                                //ctx: test=baseSubscriber_range_take
+		                                //ctx: test=baseSubscriber_take_range
 		                                //return: old (discarded since inner)
-		                                .contextMap(ctx -> {
+		                                .contextStart(ctx -> {
 			                                if (innerC.get() == null) {
 				                                innerC.set(ctx.put("test", ctx.get("test") + "_innerFlatmap"));
 			                                }
 			                                return ctx;
 		                                })
 		                                .log())
-		    .map(d -> d)
 		    .take(10)
 		    //ctx: test=baseSubscriber_range
-		    //return: test=baseSubscriber_range_take
-		    .contextMap(ctx -> ctx.put("test", ctx.get("test") + "_take"))
+		    //return: test=baseSubscriber_take_range
+		    .contextStart(ctx -> ctx.put("test", ctx.get("test") + "_range"))
+		    //ctx: test=baseSubscriber
+		    //return: test=baseSubscriber_take
+		    .contextStart(ctx -> ctx.put("test", ctx.get("test") + "_take"))
 		    .log()
 		    .subscribe(new BaseSubscriber<Integer>() {
 			    @Override
@@ -62,21 +60,10 @@ public class ContextTests {
 				    return Context.empty()
 				                  .put("test", "baseSubscriber");
 			    }
-
-			    @Override
-			    public void onContextUpdate(Context context) {
-				    c.set(context);
-			    }
 		    });
 
-		assertThat(c.get()
-		            .get("test"), is("baseSubscriber_range_take"));
-
-		assertThat(c.get()
-		            .get("test2"), Matchers.nullValue());
-
 		assertThat(innerC.get()
-		                 .get("test"), is("baseSubscriber_range_take_innerFlatmap"));
+		                 .get("test"), is("baseSubscriber_take_range_innerFlatmap"));
 	}
 
 	@Test
@@ -84,11 +71,10 @@ public class ContextTests {
 		AtomicReference<String> innerC = new AtomicReference<>();
 
 		Flux.range(1, 1000)
-		    .contextMap(ctx -> ctx.put("test", "foo"))
 		    .log()
 		    .flatMapSequential(d ->
 				    Mono.just(d)
-				        .contextMap(ctx -> {
+				        .contextStart(ctx -> {
 					        if (innerC.get() == null) {
 						        innerC.set(""+ ctx.get("test") + ctx.get("test2"));
 					        }
@@ -97,7 +83,8 @@ public class ContextTests {
 				        .log())
 		    .map(d -> d)
 		    .take(10)
-		    .contextMap(ctx -> ctx.put("test2", "bar"))
+		    .contextStart(ctx -> ctx.put("test", "foo"))
+		    .contextStart(ctx -> ctx.put("test2", "bar"))
 		    .log()
 		    .subscribe();
 
@@ -108,16 +95,13 @@ public class ContextTests {
 	public void contextGet() throws InterruptedException {
 
 		StepVerifier.create(Flux.range(1, 1000)
-		                        .contextMap(ctx -> ctx.put("test", "foo"))
 		                        .log()
-		                        .map(d -> d)
 		                        .contextGet((d, c) -> c.get("test") + "" + d)
 		                        .skip(3)
 		                        .take(3)
-		                        .contextMap(ctx -> ctx.put("test2", "bar"))
-		                        .map(d -> d)
-		                        .map(d -> d)
 		                        .contextGet((d, c) -> c.get("test2") + "" + d)
+		                        .contextStart(ctx -> ctx.put("test", "foo"))
+		                        .contextStart(ctx -> ctx.put("test2", "bar"))
 		                        .log())
 		            .expectNext("barfoo4")
 		            .expectNext("barfoo5")
@@ -155,16 +139,14 @@ public class ContextTests {
 
 		StepVerifier.create(Flux.range(1, 1000)
 		                        .hide()
-		                        .contextMap(ctx -> ctx.put("test", "foo"))
 		                        .log()
 		                        .map(d -> d)
 		                        .contextGet((d, c) -> c.get("test") + "" + d)
 		                        .skip(3)
 		                        .take(3)
-		                        .contextMap(ctx -> ctx.put("test2", "bar"))
-		                        .map(d -> d)
-		                        .map(d -> d)
 		                        .contextGet((d, c) -> c.get("test2") + "" + d)
+		                        .contextStart(ctx -> ctx.put("test", "foo"))
+		                        .contextStart(ctx -> ctx.put("test2", "bar"))
 		                        .log())
 		            .expectNext("barfoo4")
 		            .expectNext("barfoo5")
@@ -176,16 +158,11 @@ public class ContextTests {
 	public void contextGetMono() throws InterruptedException {
 
 		StepVerifier.create(Mono.just(1)
-		                        .contextMap(ctx -> ctx.put("test", "foo"))
 		                        .log()
-		                        .map(d -> d)
 		                        .contextGet((d, c) -> c.get("test") + "" + d)
-		                        .map(d -> d)
-		                        .map(d -> d)
-		                        .contextMap(ctx -> ctx.put("test2", "bar"))
-		                        .map(d -> d)
-		                        .map(d -> d)
 		                        .contextGet((d, c) -> c.get("test2") + "" + d)
+		                        .contextStart(ctx -> ctx.put("test2", "bar"))
+		                        .contextStart(ctx -> ctx.put("test", "foo"))
 		                        .log())
 		            .expectNext("barfoo1")
 		            .verifyComplete();
@@ -196,14 +173,11 @@ public class ContextTests {
 
 		StepVerifier.create(Mono.just(1)
 		                        .hide()
-		                        .contextMap(ctx -> ctx.put("test", "foo"))
 		                        .log()
-		                        .map(d -> d)
 		                        .contextGet((d, c) -> c.get("test") + "" + d)
-		                        .contextMap(ctx -> ctx.put("test2", "bar"))
-		                        .map(d -> d)
-		                        .map(d -> d)
 		                        .contextGet((d, c) -> c.get("test2") + "" + d)
+		                        .contextStart(ctx -> ctx.put("test", "foo"))
+		                        .contextStart(ctx -> ctx.put("test2", "bar"))
 		                        .log())
 		            .expectNext("barfoo1")
 		            .verifyComplete();

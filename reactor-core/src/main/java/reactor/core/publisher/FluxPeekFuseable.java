@@ -116,14 +116,6 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 		}
 
 		@Override
-		public void onContextUpdate(Context context) {
-			if(parent.onContextPropagateCall() != null) {
-				parent.onContextPropagateCall().accept(context);
-			}
-			InnerOperator.super.onContextUpdate(context);
-		}
-
-		@Override
 		public Context currentContext() {
 			Context c = Context.from(actual);
 			if(!c.isEmpty() && parent.onCurrentContextCall() != null) {
@@ -383,14 +375,6 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 				SignalPeek<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
-		}
-
-		@Override
-		public void onContextUpdate(Context context) {
-			if(parent.onContextPropagateCall() != null) {
-				parent.onContextPropagateCall().accept(context);
-			}
-			InnerOperator.super.onContextUpdate(context);
 		}
 
 		@Override
@@ -721,14 +705,6 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 				SignalPeek<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
-		}
-
-		@Override
-		public void onContextUpdate(Context context) {
-			if(parent.onContextPropagateCall() != null) {
-				parent.onContextPropagateCall().accept(context);
-			}
-			InnerOperator.super.onContextUpdate(context);
 		}
 
 		@Override

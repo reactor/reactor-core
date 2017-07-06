@@ -555,13 +555,6 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		}
 
 		@Override
-		public void onContextUpdate(Context context) {
-			if(isLeft){
-				parent.onContextUpdate(context);
-			}
-		}
-
-		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == ScannableAttr.PARENT) return subscription;

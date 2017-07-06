@@ -59,8 +59,7 @@ final class FluxWindowTimeOrSize<T> extends FluxOperator<T, Flux<T>> {
 	@Override
 	public void subscribe(Subscriber<? super Flux<T>> subscriber, Context ctx) {
 		source.subscribe(new WindowTimeoutSubscriber<>(prepareSub(subscriber),
-						batchSize, timespan, timer, ctx),
-				ctx);
+						batchSize, timespan, timer), ctx);
 	}
 
 	final static class Window<T> extends Flux<T> implements InnerOperator<T, T> {
@@ -68,13 +67,11 @@ final class FluxWindowTimeOrSize<T> extends FluxOperator<T, Flux<T>> {
 		final UnicastProcessor<T> processor;
 		final Scheduler           timer;
 
-		final Context context;
 		int count = 0;
 
-		Window(Scheduler timer, Context ctx) {
+		Window(Scheduler timer) {
 			this.processor = UnicastProcessor.create();
 			this.timer = timer;
-			this.context = ctx;
 		}
 
 		@Override
@@ -99,7 +96,6 @@ final class FluxWindowTimeOrSize<T> extends FluxOperator<T, Flux<T>> {
 
 		@Override
 		public void subscribe(Subscriber<? super T> s, Context ctx) {
-			Context.push(s, context);
 			processor.subscribe(s, ctx);
 		}
 
@@ -132,8 +128,6 @@ final class FluxWindowTimeOrSize<T> extends FluxOperator<T, Flux<T>> {
 		final Scheduler.Worker            timer;
 		final Scheduler                   timerScheduler;
 		final long                        timespan;
-
-		Context ctx;
 
 		Window<T>    currentWindow;
 		Subscription subscription;
@@ -168,11 +162,9 @@ final class FluxWindowTimeOrSize<T> extends FluxOperator<T, Flux<T>> {
 		WindowTimeoutSubscriber(Subscriber<? super Flux<T>> actual,
 				int maxSize,
 				long timespan,
-				Scheduler timer,
-				Context ctx) {
+				Scheduler timer) {
 			this.actual = actual;
 			this.timespan = timespan;
-			this.ctx = ctx;
 			this.timerScheduler = timer;
 			this.timer = timer.createWorker();
 			this.flushTask = () -> {
@@ -192,12 +184,6 @@ final class FluxWindowTimeOrSize<T> extends FluxOperator<T, Flux<T>> {
 			WINDOW_COUNT.lazySet(this, 1);
 		}
 
-		@Override
-		public void onContextUpdate(Context context) {
-			ctx = context;
-			InnerOperator.super.onContextUpdate(context);
-		}
-
 		//this is necessary so that the case where timer is rejected from the beginning is handled correctly
 		void subscribeAndCreateWindow() {
 			timespanRegistration = timer.schedule(flushTask, timespan, TimeUnit.MILLISECONDS);
@@ -209,7 +195,7 @@ final class FluxWindowTimeOrSize<T> extends FluxOperator<T, Flux<T>> {
 			}
 			else {
 				WINDOW_COUNT.getAndIncrement(this);
-				Window<T> _currentWindow = new Window<>(timerScheduler, ctx);
+				Window<T> _currentWindow = new Window<>(timerScheduler);
 				currentWindow = _currentWindow;
 				actual.onSubscribe(this);
 				//hold on emitting the window until either the first close by timeout
@@ -220,7 +206,7 @@ final class FluxWindowTimeOrSize<T> extends FluxOperator<T, Flux<T>> {
 		void windowCreateAndEmit() {
 			if (timerStart()) {
 				WINDOW_COUNT.getAndIncrement(this);
-				Window<T> _currentWindow = new Window<>(timerScheduler, ctx);
+				Window<T> _currentWindow = new Window<>(timerScheduler);
 				currentWindow = _currentWindow;
 				actual.onNext(_currentWindow);
 			}

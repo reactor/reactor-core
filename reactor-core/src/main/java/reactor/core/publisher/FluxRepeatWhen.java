@@ -224,7 +224,6 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 
 		@Override
 		public void subscribe(Subscriber<? super Long> s, Context ctx) {
-			Context.push(s, main.currentContext());
 			completionSignal.subscribe(s);
 		}
 

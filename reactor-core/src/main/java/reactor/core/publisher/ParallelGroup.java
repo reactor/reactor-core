@@ -52,7 +52,7 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements
 		ParallelInnerGroup<T>[] groups = new ParallelInnerGroup[n];
 
 		for (int i = 0; i < n; i++) {
-			groups[i] = new ParallelInnerGroup<>(i, ctx);
+			groups[i] = new ParallelInnerGroup<>(i);
 		}
 
 		FluxArray.subscribe(s, groups);
@@ -73,8 +73,6 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements
 	implements InnerOperator<T, T> {
 		final int key;
 
-		final Context ctx;
-
 		volatile int once;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<ParallelInnerGroup> ONCE =
@@ -92,8 +90,7 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements
 
 		Subscriber<? super T> actual;
 
-		ParallelInnerGroup(int key, Context ctx) {
-			this.ctx = ctx;
+		ParallelInnerGroup(int key) {
 			this.key = key;
 		}
 
@@ -106,7 +103,6 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements
 		public void subscribe(Subscriber<? super T> s, Context context) {
 			if (ONCE.compareAndSet(this, 0, 1)) {
 				this.actual = s;
-				Context.push(s, ctx);
 				s.onSubscribe(this);
 			} else {
 				Operators.error(s, new IllegalStateException("This ParallelGroup can be subscribed to at most once."));

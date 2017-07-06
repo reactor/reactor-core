@@ -696,7 +696,6 @@ final class FluxGroupBy<T, K, V> extends FluxOperator<T, GroupedFlux<K, V>>
 		@Override
 		public void subscribe(Subscriber<? super V> s, Context context) {
 			if (once == 0 && ONCE.compareAndSet(this, 0, 1)) {
-				Context.push(s, context);
 				s.onSubscribe(this);
 				ACTUAL.lazySet(this, s);
 				drain();

@@ -35,9 +35,8 @@ final class MonoContextStart<T> extends MonoOperator<T, T> implements Fuseable {
 
 	@Override
 	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		FluxContextMap.ContextMapSubscriber<T> ctxSub =
-				new FluxContextMap.ContextMapSubscriber<>(s, doOnContext, ctx);
-		ctxSub.once = true;
+		FluxContextStart.ContextStartSubscriber<T> ctxSub =
+				new FluxContextStart.ContextStartSubscriber<>(s, doOnContext, ctx);
 		Context c;
 		try {
 			c = doOnContext.apply(ctx);

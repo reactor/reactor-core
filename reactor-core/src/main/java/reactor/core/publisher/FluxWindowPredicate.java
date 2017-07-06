@@ -90,7 +90,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 				groupQueueSupplier,
 				prefetch,
 				predicate,
-				mode, ctx), ctx);
+				mode), ctx);
 	}
 
 	@Override
@@ -115,8 +115,6 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 		final Queue<GroupedFlux<T, T>> queue;
 
 		WindowGroupedFlux<T> window;
-
-		Context context;
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
@@ -156,8 +154,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 				Supplier<? extends Queue<T>> groupQueueSupplier,
 				int prefetch,
 				Predicate<? super T> predicate,
-				Mode mode,
-				Context ctx) {
+				Mode mode) {
 			this.actual = actual;
 			this.queue = queue;
 			this.groupQueueSupplier = groupQueueSupplier;
@@ -165,7 +162,6 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 			this.predicate = predicate;
 			this.mode = mode;
 			WINDOW_COUNT.lazySet(this, 2);
-			this.context = ctx;
 			initializeWindow();
 		}
 
@@ -188,8 +184,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 		void initializeWindow() {
 			WindowGroupedFlux<T> g = new WindowGroupedFlux<>(null,
 					groupQueueSupplier.get(),
-					this,
-					context);
+					this);
 			window = g;
 			queue.offer(g);
 		}
@@ -200,7 +195,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 				WINDOW_COUNT.getAndIncrement(this);
 
 				WindowGroupedFlux<T> g = new WindowGroupedFlux<>(key,
-						groupQueueSupplier.get(), this, context);
+						groupQueueSupplier.get(), this);
 				if (emitInNewWindow != null) {
 					g.onNext(emitInNewWindow);
 				}
@@ -524,8 +519,6 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 
 		final Queue<T> queue;
 
-		final Context context;
-
 		volatile WindowPredicateMain<T> parent;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<WindowGroupedFlux, WindowPredicateMain>
@@ -567,10 +560,8 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 		WindowGroupedFlux(
 				@Nullable T key,
 				Queue<T> queue,
-				WindowPredicateMain<T> parent,
-				Context ctx) {
+				WindowPredicateMain<T> parent) {
 			this.key = key;
-			this.context = ctx;
 			this.queue = queue;
 			this.parent = parent;
 		}
@@ -763,7 +754,6 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 		@Override
 		public void subscribe(Subscriber<? super T> s, Context ctx) {
 			if (once == 0 && ONCE.compareAndSet(this, 0, 1)) {
-				Context.push(s, context);
 				s.onSubscribe(this);
 				ACTUAL.lazySet(this, s);
 				drain();

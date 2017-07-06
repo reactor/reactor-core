@@ -225,7 +225,6 @@ final class FluxRetryWhen<T> extends FluxOperator<T, T> {
 
 		@Override
 		public void subscribe(Subscriber<? super Throwable> s, Context ctx) {
-			Context.push(s, main.currentContext());
 			completionSignal.subscribe(s);
 		}
 	}
