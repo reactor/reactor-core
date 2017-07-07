@@ -64,27 +64,8 @@ public class FluxBlackboxProcessorVerification extends AbstractFluxVerification 
 				 )
 				 .publishOn(sharedGroup)
 				 .doAfterTerminate(asyncGroup::dispose)
-				 .doOnError(Throwable::printStackTrace)
-				 .log());
+				 .doOnError(Throwable::printStackTrace));
 	}
-
-	@Override
-	public void required_spec309_requestZeroMustSignalIllegalArgumentException() throws Throwable {
-		throw new SkipException("optional");
-	}
-
-
-	@Override
-	public void required_mustRequestFromUpstreamForElementsThatHaveBeenRequestedLongAgo() throws Throwable {
-		throw new SkipException("optional");
-	}
-
-	@Override
-	public void required_spec309_requestNegativeNumberMustSignalIllegalArgumentException() throws Throwable {
-		throw new SkipException("optional");
-	}
-
-
 
 	/*
 
@@ -138,26 +119,5 @@ public class FluxBlackboxProcessorVerification extends AbstractFluxVerification 
 		sharedGroup.dispose();
 	}
 
-	@Override
-	public void required_spec104_mustCallOnErrorOnAllItsSubscribersIfItEncountersANonRecoverableError()
-			throws Throwable {
-		super.required_spec104_mustCallOnErrorOnAllItsSubscribersIfItEncountersANonRecoverableError();
-	}
-
-	@Override
-	public void required_spec313_cancelMustMakeThePublisherEventuallyDropAllReferencesToTheSubscriber()
-			throws Throwable {
-		try {
-			super.required_spec313_cancelMustMakeThePublisherEventuallyDropAllReferencesToTheSubscriber();
-		}
-		catch (Throwable t){
-			if(t.getMessage() != null && t.getMessage().contains("did not drop reference to test subscriber")) {
-				throw new SkipException("todo", t);
-			}
-			else{
-				throw t;
-			}
-		}
-	}
 
 }

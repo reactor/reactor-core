@@ -71,22 +71,4 @@ public class FluxWithProcessorVerification extends AbstractFluxVerification {
 	public boolean skipStochasticTests() {
 		return false;
 	}
-
-	@Override
-	public void stochastic_spec103_mustSignalOnMethodsSequentially() throws Throwable {
-		//for(int i = 0 ; i < 1000 ; i++)
-		super.stochastic_spec103_mustSignalOnMethodsSequentially();
-	}
-
-	@Override
-	public void required_spec309_requestZeroMustSignalIllegalArgumentException()
-			throws Throwable {
-		throw new SkipException("TODO");
-	}
-
-	@Override
-	public void required_spec309_requestNegativeNumberMustSignalIllegalArgumentException()
-			throws Throwable {
-		throw new SkipException("TODO");
-	}
 }

@@ -80,12 +80,6 @@ public abstract class AbstractFluxVerification extends org.reactivestreams.tck.I
 	}
 
 	@Override
-	public void required_spec104_mustCallOnErrorOnAllItsSubscribersIfItEncountersANonRecoverableError()
-			throws Throwable {
-		throw new SkipException("Skipped due to asynchronous buffer drained before exception");
-	}
-
-	@Override
 	public Publisher<Integer> createFailedPublisher() {
 		return Flux.error(new Exception("oops")).cast(Integer.class);
 	}
@@ -103,15 +97,10 @@ public abstract class AbstractFluxVerification extends org.reactivestreams.tck.I
 
 	@Override
 	public Publisher<Integer> createHelperPublisher(long elements) {
-		if (elements < 100 && elements > 0) {
-			List<Integer> list = new ArrayList<>();
-			for (int i = 1; i <= elements; i++) {
-				list.add(i);
-			}
+		if (elements <= Integer.MAX_VALUE) {
 
 			return Flux
-			  .fromIterable(list)
-			  .log("iterable-publisher")
+			  .range(1, (int)elements)
 			  .filter(integer -> true)
 			  .map(integer -> integer);
 
