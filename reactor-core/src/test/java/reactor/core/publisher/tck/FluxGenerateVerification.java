@@ -30,7 +30,7 @@ import reactor.core.publisher.Flux;
 public class FluxGenerateVerification extends PublisherVerification<Long> {
 
 	public FluxGenerateVerification() {
-		super(new TestEnvironment(500, true), 1000);
+		super(new TestEnvironment(500), 1000);
 	}
 
 	@Override

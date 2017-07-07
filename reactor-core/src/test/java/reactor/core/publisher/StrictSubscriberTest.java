@@ -74,9 +74,8 @@ public class StrictSubscriberTest {
 
 		DirectProcessor<Integer> sp = DirectProcessor.create();
 
-		sp.awaitOnSubscribe()
-		  .doOnCancel(() -> state2.set(state1.get()))
-		  .subscribe(new CoreSubscriber<Integer>() {
+		sp.doOnCancel(() -> state2.set(state1.get()))
+		  .subscribe(new Subscriber<Integer>() {
 			  @Override
 			  public void onSubscribe(Subscription s) {
 				  s.cancel();
@@ -100,7 +99,7 @@ public class StrictSubscriberTest {
 
 		Assert.assertNull("Error: " + e.get(), e.get());
 
-		Assert.assertFalse("Cancel executed before onSubscribe finished", state2.get());
+		Assert.assertTrue("Cancel executed before onSubscribe finished", state2.get());
 		Assert.assertFalse("Has subscribers?!", sp.hasDownstreams());
 	}
 

@@ -427,6 +427,10 @@ public abstract class Operators {
 	@SuppressWarnings("unchecked")
 	public static <T> CoreSubscriber<? super T> onNewSubscriber(Publisher<? extends T> source, Subscriber<? super T> actual) {
 
+		if(actual == null){
+			throw Exceptions.argumentIsNullException();
+		}
+
 		BiFunction<? super Publisher<?>, ? super CoreSubscriber<?>, ? extends CoreSubscriber<?>> hook =
 				Hooks.onSubscriberHook;
 

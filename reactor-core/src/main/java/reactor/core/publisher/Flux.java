@@ -1890,24 +1890,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Intercepts the onSubscribe call and makes sure calls to Subscription methods
-	 * only happen after the child Subscriber has returned from its onSubscribe method.
-	 *
-	 * <p>
-	 * This helps with child Subscribers that don't expect a recursive call from
-	 * onSubscribe into their onNext (ie. because they request immediately from
-	 * their onSubscribe but don't finish their preparation before, thus onNext
-	 * runs into a half-prepared state).
-	 * This can happen with external Subscribers that don't follow implementation
-	 * patterns similar to Reactor.
-	 *
-	 * @return non reentrant onSubscribe {@link Flux}
-	 */
-	public final Flux<T> awaitOnSubscribe() {
-		return onAssembly(new FluxAwaitOnSubscribe<>(this));
-	}
-
-	/**
 	 * Subscribe to this {@link Flux} and <strong>block indefinitely</strong>
 	 * until the upstream signals its first value or completes. Returns that value,
 	 * or null if the Flux completes empty. In case the Flux errors, the original
@@ -6459,7 +6441,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return the passed {@link Subscriber}
 	 */
 	public final <E extends Subscriber<? super T>> E subscribeWith(E subscriber) {
-		subscribe(Operators.onNewSubscriber(this, subscriber));
+		subscribe(subscriber);
 		return subscriber;
 	}
 

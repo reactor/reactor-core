@@ -1260,22 +1260,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Intercepts the onSubscribe call and makes sure calls to Subscription methods
-	 * only happen after the child Subscriber has returned from its onSubscribe method.
-	 *
-	 * <p>This helps with child Subscribers that don't expect a recursive call from
-	 * onSubscribe into their onNext because, for example, they request immediately from
-	 * their onSubscribe but don't finish their preparation before that and onNext
-	 * runs into a half-prepared state. This can happen with non Reactor based
-	 * Subscribers.
-	 *
-	 * @return non reentrant onSubscribe {@link Mono}
-	 */
-	public final Mono<T> awaitOnSubscribe() {
-		return onAssembly(new MonoAwaitOnSubscribe<>(this));
-	}
-
-	/**
 	 * Subscribe to this {@link Mono} and <strong>block indefinitely</strong> until a next signal is
 	 * received. Returns that value, or null if the Mono completes empty. In case the Mono
 	 * errors, the original exception is thrown (wrapped in a {@link RuntimeException} if
@@ -2933,7 +2917,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return the passed {@link Subscriber} after subscribing it to this {@link Mono}
 	 */
 	public final <E extends Subscriber<? super T>> E subscribeWith(E subscriber) {
-		subscribe(Operators.onNewSubscriber(this, subscriber));
+		subscribe(subscriber);
 		return subscriber;
 	}
 
