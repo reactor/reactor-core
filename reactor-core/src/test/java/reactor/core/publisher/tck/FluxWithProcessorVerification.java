@@ -64,8 +64,7 @@ public class FluxWithProcessorVerification extends AbstractFluxVerification {
 				                          .doOnNext(this::monitorThreadUse))
 				 .doOnNext(array -> cumulatedJoin.getAndIncrement())
 				 .subscribeWith(TopicProcessor.<Integer>builder().name("fluxion-raw-join").bufferSize(bufferSize).build())
-				 .doOnError(Throwable::printStackTrace)
-				 .awaitOnSubscribe());
+				 .doOnError(Throwable::printStackTrace));
 	}
 
 	@Override

@@ -192,8 +192,8 @@ project('reactor-core') {
 
   dependencies {
 	// Reactive Streams
-	compile "org.reactivestreams:reactive-streams:1.0.0"
-	testCompile "org.reactivestreams:reactive-streams-tck:1.0.0"
+	compile "org.reactivestreams:reactive-streams:1.0.1-RC1"
+	testCompile "org.reactivestreams:reactive-streams-tck:1.0.1-RC1"
 
 	// JSR-305 annotations
 	optional "com.google.code.findbugs:jsr305:3.0.0"

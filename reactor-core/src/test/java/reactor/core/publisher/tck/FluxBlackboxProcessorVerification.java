@@ -65,7 +65,7 @@ public class FluxBlackboxProcessorVerification extends AbstractFluxVerification 
 				 .publishOn(sharedGroup)
 				 .doAfterTerminate(asyncGroup::dispose)
 				 .doOnError(Throwable::printStackTrace)
-				.awaitOnSubscribe());
+				 .log());
 	}
 
 	@Override

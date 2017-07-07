@@ -46,7 +46,7 @@ public abstract class AbstractFluxVerification extends org.reactivestreams.tck.I
 	protected final int batch = 1024;
 
 	public AbstractFluxVerification() {
-		super(new TestEnvironment(1000, true));
+		super(new TestEnvironment(true));
 	}
 
 	final ExecutorService executorService = Executors.newCachedThreadPool();
