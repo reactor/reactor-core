@@ -20,11 +20,12 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 
 /**
  * @author Stephane Maldini
  */
-final class MonoToCompletableFuture<T> extends CompletableFuture<T> implements Subscriber<T> {
+final class MonoToCompletableFuture<T> extends CompletableFuture<T> implements CoreSubscriber<T> {
 
 	final AtomicReference<Subscription> ref = new AtomicReference<>();
 

@@ -267,7 +267,7 @@ final class FluxTimeout<T, U, V> extends FluxOperator<T, T> {
 		}
 	}
 
-	static final class TimeoutOtherSubscriber<T> implements Subscriber<T> {
+	static final class TimeoutOtherSubscriber<T> implements CoreSubscriber<T> {
 
 		final CoreSubscriber<? super T> actual;
 

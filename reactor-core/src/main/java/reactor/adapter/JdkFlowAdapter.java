@@ -81,7 +81,7 @@ public abstract class JdkFlowAdapter {
         }
     }
 
-    private static class FlowSubscriber<T> implements Subscriber<T>, Flow.Subscription {
+    private static class FlowSubscriber<T> implements CoreSubscriber<T>, Flow.Subscription {
 
 		private final Flow.Subscriber<? super T> subscriber;
 
