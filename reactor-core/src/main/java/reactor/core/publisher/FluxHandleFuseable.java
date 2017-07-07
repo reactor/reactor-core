@@ -18,13 +18,12 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.function.BiConsumer;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Maps the values of the source publisher one-on-one via a handler function.
@@ -56,14 +55,14 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super R> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super R> s) {
 		if (s instanceof ConditionalSubscriber) {
 
 			ConditionalSubscriber<? super R> cs = (ConditionalSubscriber<? super R>) s;
-			source.subscribe(new HandleFuseableConditionalSubscriber<>(cs, handler), ctx);
+			source.subscribe(new HandleFuseableConditionalSubscriber<>(cs, handler));
 			return;
 		}
-		source.subscribe(new HandleFuseableSubscriber<>(s, handler), ctx);
+		source.subscribe(new HandleFuseableSubscriber<>(s, handler));
 	}
 
 	static final class HandleFuseableSubscriber<T, R>
@@ -71,7 +70,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 			           ConditionalSubscriber<T>, QueueSubscription<R>,
 			           SynchronousSink<R> {
 
-		final Subscriber<? super R>                     actual;
+		final CoreSubscriber<? super R>                 actual;
 		final BiConsumer<? super T, SynchronousSink<R>> handler;
 
 		boolean   done;
@@ -82,7 +81,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 
 		int sourceMode;
 
-		HandleFuseableSubscriber(Subscriber<? super R> actual,
+		HandleFuseableSubscriber(CoreSubscriber<? super R> actual,
 				BiConsumer<? super T, SynchronousSink<R>> handler) {
 			this.actual = actual;
 			this.handler = handler;
@@ -198,7 +197,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 		}
 
 		@Override
-		public Subscriber<? super R> actual() {
+		public CoreSubscriber<? super R> actual() {
 			return actual;
 		}
 
@@ -477,7 +476,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 		}
 
 		@Override
-		public Subscriber<? super R> actual() {
+		public CoreSubscriber<? super R> actual() {
 			return actual;
 		}
 

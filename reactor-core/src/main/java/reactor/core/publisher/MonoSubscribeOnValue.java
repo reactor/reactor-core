@@ -17,14 +17,13 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.publisher.FluxSubscribeOnValue.ScheduledEmpty;
 import reactor.core.publisher.FluxSubscribeOnValue.ScheduledScalar;
 import reactor.core.scheduler.Scheduler;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Mono indicating a scalar/empty source that subscribes on the specified scheduler.
@@ -43,7 +42,7 @@ final class MonoSubscribeOnValue<T> extends Mono<T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context context) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		T v = value;
 		if (v == null) {
 			ScheduledEmpty parent = new ScheduledEmpty(s);

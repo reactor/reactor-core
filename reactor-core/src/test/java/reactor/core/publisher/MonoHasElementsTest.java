@@ -21,8 +21,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -194,7 +194,7 @@ public class MonoHasElementsTest {
 
 	@Test
 	public void scanHasElements() {
-		Subscriber<? super Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<? super Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoHasElements.HasElementsSubscriber<String> test = new MonoHasElements.HasElementsSubscriber<>(actual);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
@@ -213,7 +213,7 @@ public class MonoHasElementsTest {
 
 	@Test
 	public void scanHasElementsNoTerminatedOnError() {
-		Subscriber<? super Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<? super Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoHasElements.HasElementsSubscriber<String> test = new MonoHasElements.HasElementsSubscriber<>(actual);
 
 		test.onError(new IllegalStateException("boom"));
@@ -223,7 +223,7 @@ public class MonoHasElementsTest {
 
 	@Test
 	public void scanHasElementsCancelled() {
-		Subscriber<? super Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<? super Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoHasElements.HasElementsSubscriber<String> test = new MonoHasElements.HasElementsSubscriber<>(actual);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
@@ -239,7 +239,7 @@ public class MonoHasElementsTest {
 
 	@Test
 	public void scanHasElement() {
-		Subscriber<? super Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<? super Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoHasElement.HasElementSubscriber<String> test = new MonoHasElement.HasElementSubscriber<>(actual);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
@@ -258,7 +258,7 @@ public class MonoHasElementsTest {
 
 	@Test
 	public void scanHasElementNoTerminatedOnError() {
-		Subscriber<? super Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<? super Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoHasElement.HasElementSubscriber<String> test = new MonoHasElement.HasElementSubscriber<>(actual);
 
 		test.onError(new IllegalStateException("boom"));
@@ -268,7 +268,7 @@ public class MonoHasElementsTest {
 
 	@Test
 	public void scanHasElementCancelled() {
-		Subscriber<? super Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<? super Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoHasElement.HasElementSubscriber<String> test = new MonoHasElement.HasElementSubscriber<>(actual);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);

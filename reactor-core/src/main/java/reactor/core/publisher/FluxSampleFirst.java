@@ -22,14 +22,14 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Takes a value from upstream then uses the duration provided by a
@@ -52,12 +52,12 @@ final class FluxSampleFirst<T, U> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		SampleFirstMain<T, U> main = new SampleFirstMain<>(s, throttler);
 
 		s.onSubscribe(main);
 
-		source.subscribe(main, ctx);
+		source.subscribe(main);
 	}
 
 	@Override
@@ -68,7 +68,7 @@ final class FluxSampleFirst<T, U> extends FluxOperator<T, T> {
 	static final class SampleFirstMain<T, U> implements InnerOperator<T, T> {
 
 		final Function<? super T, ? extends Publisher<U>> throttler;
-		final Subscriber<? super T>                       actual;
+		final CoreSubscriber<? super T>                       actual;
 
 		volatile boolean gate;
 
@@ -104,14 +104,14 @@ final class FluxSampleFirst<T, U> extends FluxOperator<T, T> {
 						Throwable.class,
 						"error");
 
-		SampleFirstMain(Subscriber<? super T> actual,
+		SampleFirstMain(CoreSubscriber<? super T> actual,
 				Function<? super T, ? extends Publisher<U>> throttler) {
 			this.actual = actual;
 			this.throttler = throttler;
 		}
 
 		@Override
-		public final Subscriber<? super T> actual() {
+		public final CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

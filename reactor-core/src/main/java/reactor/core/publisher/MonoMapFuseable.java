@@ -18,9 +18,8 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.function.Function;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.context.Context;
 
 /**
  * Maps the values of the source publisher one-on-one via a mapper function.
@@ -50,15 +49,14 @@ final class MonoMapFuseable<T, R> extends MonoOperator<T, R>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super R> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super R> s) {
 		if (s instanceof ConditionalSubscriber) {
 			
 			ConditionalSubscriber<? super R> cs = (ConditionalSubscriber<? super R>) s;
-			source.subscribe(new FluxMapFuseable.MapFuseableConditionalSubscriber<>(cs, mapper),
-					ctx);
+			source.subscribe(new FluxMapFuseable.MapFuseableConditionalSubscriber<>(cs, mapper));
 			return;
 		}
-		source.subscribe(new FluxMapFuseable.MapFuseableSubscriber<>(s, mapper), ctx);
+		source.subscribe(new FluxMapFuseable.MapFuseableSubscriber<>(s, mapper));
 	}
 
 }

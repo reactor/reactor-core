@@ -15,10 +15,10 @@
  */
 package reactor.core.publisher;
 
-import org.reactivestreams.Subscriber;
-import reactor.core.Scannable;
-import reactor.util.context.Context;
 import javax.annotation.Nullable;
+
+import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
 
 /**
  * Execute a Consumer in each 'rail' for the current element passing through.
@@ -39,20 +39,20 @@ final class ParallelLog<T> extends ParallelFlux<T> implements Scannable {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T>[] subscribers, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T>[] subscribers) {
 		if (!validate(subscribers)) {
 			return;
 		}
 		
 		int n = subscribers.length;
 		@SuppressWarnings("unchecked")
-		Subscriber<? super T>[] parents = new Subscriber[n];
+		CoreSubscriber<? super T>[] parents = new CoreSubscriber[n];
 		
 		for (int i = 0; i < n; i++) {
 			parents[i] = new FluxPeek.PeekSubscriber<>(subscribers[i], log);
 		}
 		
-		source.subscribe(parents, ctx);
+		source.subscribe(parents);
 	}
 
 	@Override

@@ -28,17 +28,17 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.concurrent.OpenHashSet;
 import reactor.util.context.Context;
-import reactor.util.context.Contextualized;
-import javax.annotation.Nullable;
 
 /**
  * A Publisher that correlates two Publishers when they overlap in time and groups the
@@ -90,7 +90,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super R> s) {
 
 		GroupJoinSubscription<TLeft, TRight, TLeftEnd, TRightEnd, R> parent =
 				new GroupJoinSubscription<>(s,
@@ -107,11 +107,11 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		LeftRightSubscriber right = new LeftRightSubscriber(parent, false);
 		parent.cancellations.add(right);
 
-		source.subscribe(left, ctx);
+		source.subscribe(left);
 		other.subscribe(right);
 	}
 
-	interface JoinSupport extends Contextualized {
+	interface JoinSupport<T> extends InnerProducer<T> {
 
 		void innerError(Throwable ex);
 
@@ -125,7 +125,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 	}
 
 	static final class GroupJoinSubscription<TLeft, TRight, TLeftEnd, TRightEnd, R>
-			implements JoinSupport, InnerProducer<R> {
+			implements JoinSupport<R> {
 
 		final Queue<Object>               queue;
 		final BiPredicate<Object, Object> queueBiOffer;
@@ -144,7 +144,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 		final Supplier<? extends Queue<TRight>> processorQueueSupplier;
 
-		final Subscriber<? super R>             actual;
+		final CoreSubscriber<? super R>             actual;
 
 		int leftIndex;
 
@@ -185,7 +185,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		static final Integer RIGHT_CLOSE = 4;
 
 		@SuppressWarnings("unchecked")
-		GroupJoinSubscription(Subscriber<? super R> actual,
+		GroupJoinSubscription(CoreSubscriber<? super R> actual,
 				Function<? super TLeft, ? extends Publisher<TLeftEnd>> leftEnd,
 				Function<? super TRight, ? extends Publisher<TRightEnd>> rightEnd,
 				BiFunction<? super TLeft, ? super Flux<TRight>, ? extends R> resultSelector,
@@ -209,7 +209,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		}
 
 		@Override
-		public final Subscriber<? super R> actual() {
+		public final CoreSubscriber<? super R> actual() {
 			return actual;
 		}
 
@@ -230,7 +230,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 			if (key == BooleanAttr.TERMINATED) return active == 0;
 			if (key == ThrowableAttr.ERROR) return error;
 
-			return InnerProducer.super.scanUnsafe(key);
+			return JoinSupport.super.scanUnsafe(key);
 		}
 
 		@Override
@@ -519,7 +519,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 	static final class LeftRightSubscriber
 			implements InnerConsumer<Object>, Disposable {
 
-		final JoinSupport parent;
+		final JoinSupport<?> parent;
 
 		final boolean isLeft;
 
@@ -531,7 +531,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 						Subscription.class,
 						"subscription");
 
-		LeftRightSubscriber(JoinSupport parent, boolean isLeft) {
+		LeftRightSubscriber(JoinSupport<?> parent, boolean isLeft) {
 			this.parent = parent;
 			this.isLeft = isLeft;
 		}
@@ -551,7 +551,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 		@Override
 		public Context currentContext() {
-			return parent.currentContext();
+			return parent.actual().currentContext();
 		}
 
 		@Override
@@ -596,7 +596,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 	static final class LeftRightEndSubscriber
 			implements InnerConsumer<Object>, Disposable {
 
-		final JoinSupport parent;
+		final JoinSupport<?> parent;
 
 		final boolean isLeft;
 
@@ -610,7 +610,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 				Subscription.class,
 				"subscription");
 
-		LeftRightEndSubscriber(JoinSupport parent, boolean isLeft, int index) {
+		LeftRightEndSubscriber(JoinSupport<?> parent, boolean isLeft, int index) {
 			this.parent = parent;
 			this.isLeft = isLeft;
 			this.index = index;
@@ -676,7 +676,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 		@Override
 		public Context currentContext() {
-			return parent.currentContext();
+			return parent.actual().currentContext();
 		}
 
 	}

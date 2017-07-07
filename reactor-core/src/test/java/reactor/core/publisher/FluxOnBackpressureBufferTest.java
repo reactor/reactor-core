@@ -20,9 +20,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -149,7 +148,7 @@ public class FluxOnBackpressureBufferTest
 
 	@Test
     public void scanSubscriber() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxOnBackpressureBuffer.BackpressureBufferSubscriber<Integer> test =
         		new FluxOnBackpressureBuffer.BackpressureBufferSubscriber<>(actual,
         				123, false, true, t -> {});

@@ -21,12 +21,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
-import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 
@@ -292,7 +290,7 @@ public class FluxSwitchMapTest {
 
 	@Test
     public void scanMain() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxSwitchMap.SwitchMapMain<Integer, Integer> test =
         		new FluxSwitchMap.SwitchMapMain<>(actual, i -> Mono.just(i), QueueSupplier.unbounded().get(), 234);
         Subscription parent = Operators.emptySubscription();
@@ -319,7 +317,7 @@ public class FluxSwitchMapTest {
 
 	@Test
     public void scanInner() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxSwitchMap.SwitchMapMain<Integer, Integer> main =
         		new FluxSwitchMap.SwitchMapMain<>(actual, i -> Mono.just(i), QueueSupplier.unbounded().get(), 234);
         FluxSwitchMap.SwitchMapInner<Integer> test = new FluxSwitchMap.SwitchMapInner<Integer>(main, 1, 0);

@@ -22,12 +22,12 @@ import java.util.Collections;
 
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.reactivestreams.Subscriber;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxIterableTest {
@@ -131,7 +131,7 @@ public class FluxIterableTest {
 
 	@Test
 	public void scanSubscription() {
-		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, sub -> sub.request(100));
+		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, sub -> sub.request(100));
 		FluxIterable.IterableSubscription<String> test =
 				new FluxIterable.IterableSubscription<>(actual, Collections.singleton("test").iterator());
 

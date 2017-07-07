@@ -20,8 +20,8 @@ import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
@@ -286,7 +286,7 @@ public class FluxDematerializeTest extends FluxOperatorTest<Signal<String>, Stri
 
 	@Test
 	public void scanSubscriber() {
-		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null,
+		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null,
 				sub -> sub.request(100));
 		FluxDematerialize.DematerializeSubscriber<String> test =
 				new FluxDematerialize.DematerializeSubscriber<>(actual);

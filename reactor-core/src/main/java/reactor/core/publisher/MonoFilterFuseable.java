@@ -18,9 +18,8 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.context.Context;
 
 /**
  * Filters out values that make a filter function return false.
@@ -40,13 +39,11 @@ final class MonoFilterFuseable<T> extends MonoOperator<T, T>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		if (s instanceof ConditionalSubscriber) {
-			source.subscribe(new FluxFilterFuseable.FilterFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>)s, predicate),
-					ctx);
+			source.subscribe(new FluxFilterFuseable.FilterFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>)s, predicate));
 			return;
 		}
-		source.subscribe(new FluxFilterFuseable.FilterFuseableSubscriber<>(s, predicate),
-				ctx);
+		source.subscribe(new FluxFilterFuseable.FilterFuseableSubscriber<>(s, predicate));
 	}
 }

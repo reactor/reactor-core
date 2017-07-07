@@ -18,10 +18,9 @@ package reactor.core.publisher;
 
 import java.util.concurrent.Callable;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
-import reactor.util.context.Context;
 
 /**
  * Captures the current stacktrace when this publisher is created and makes it
@@ -48,8 +47,8 @@ final class FluxCallableOnAssembly<T> extends FluxOperator<T, T>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		FluxOnAssembly.subscribe(s, source, stacktrace, ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		FluxOnAssembly.subscribe(s, source, stacktrace);
 	}
 
 	@SuppressWarnings("unchecked")

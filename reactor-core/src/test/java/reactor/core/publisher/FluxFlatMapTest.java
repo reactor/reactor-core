@@ -26,8 +26,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
@@ -612,7 +612,7 @@ public class FluxFlatMapTest {
 		StepVerifier.create(up.flatMap(Flux::just))
 		            .then(() -> {
 			            up.onNext(1);
-			            Subscriber<? super Integer> a = up.actual;
+			            CoreSubscriber<? super Integer> a = up.actual;
 			            up.onComplete();
 			            a.onNext(2);
 		            })
@@ -1208,7 +1208,7 @@ public class FluxFlatMapTest {
 
     @Test
     public void scanMain() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxFlatMap.FlatMapMain<Integer, Integer> test = new FluxFlatMap.FlatMapMain<>(actual,
                 i -> Mono.just(i), true, 5, QueueSupplier.<Integer>unbounded(), 789,  QueueSupplier.<Integer>get(789));
         Subscription parent = Operators.emptySubscription();
@@ -1240,7 +1240,7 @@ public class FluxFlatMapTest {
 
     @Test
    public void scanMainLargeBuffered() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxFlatMap.FlatMapMain<Integer, Integer> test = new FluxFlatMap.FlatMapMain<>(actual,
                 i -> Mono.just(i), true, 5, QueueSupplier.<Integer>unbounded(), 789,  QueueSupplier.<Integer>get(789));
 
@@ -1257,7 +1257,7 @@ public class FluxFlatMapTest {
 
     @Test
     public void scanInner() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxFlatMap.FlatMapMain<Integer, Integer> main = new FluxFlatMap.FlatMapMain<>(actual,
                 i -> Mono.just(i), true, 5, QueueSupplier.<Integer>unbounded(), 789,  QueueSupplier.<Integer>get(789));
         FluxFlatMap.FlatMapInner<Integer> inner = new FluxFlatMap.FlatMapInner<>(main, 123);

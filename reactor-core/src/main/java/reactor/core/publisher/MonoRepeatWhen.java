@@ -21,7 +21,7 @@ import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import reactor.util.context.Context;
+import reactor.core.CoreSubscriber;
 
 /**
  * Repeats a source when a companion sequence signals an item in response to the main's
@@ -47,14 +47,14 @@ final class MonoRepeatWhen<T> extends FluxFromMonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		FluxRepeatWhen.RepeatWhenOtherSubscriber other =
 				new FluxRepeatWhen.RepeatWhenOtherSubscriber();
 		Subscriber<Long> signaller = Operators.serialize(other.completionSignal);
 
 		signaller.onSubscribe(Operators.emptySubscription());
 
-		Subscriber<T> serial = Operators.serialize(s);
+		CoreSubscriber<T> serial = Operators.serialize(s);
 
 		FluxRepeatWhen.RepeatWhenMainSubscriber<T> main =
 				new FluxRepeatWhen.RepeatWhenMainSubscriber<>(serial, signaller, source);
@@ -76,7 +76,7 @@ final class MonoRepeatWhen<T> extends FluxFromMonoOperator<T, T> {
 		p.subscribe(other);
 
 		if (!main.cancelled) {
-			source.subscribe(main, ctx);
+			source.subscribe(main);
 		}
 	}
 }

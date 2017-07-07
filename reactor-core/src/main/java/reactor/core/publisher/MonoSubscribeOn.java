@@ -18,14 +18,13 @@ package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Subscribes to the upstream Mono on the specified Scheduler and makes sure
@@ -44,7 +43,7 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		Scheduler.Worker worker = scheduler.createWorker();
 
 		SubscribeOnSubscriber<T> parent = new SubscribeOnSubscriber<>(source, s, worker);
@@ -58,7 +57,7 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 	static final class SubscribeOnSubscriber<T>
 			implements InnerOperator<T, T>, Runnable {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final Publisher<? extends T> parent;
 
@@ -78,7 +77,7 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 						"requested");
 
 		SubscribeOnSubscriber(Publisher<? extends T> parent,
-				Subscriber<? super T> actual,
+				CoreSubscriber<? super T> actual,
 				Worker worker) {
 			this.actual = actual;
 			this.parent = parent;
@@ -116,7 +115,7 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

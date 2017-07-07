@@ -22,9 +22,8 @@ import java.util.List;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
@@ -254,7 +253,7 @@ public class FluxSkipUntilOtherTest extends FluxOperatorTest<String, String> {
 
 	@Test
     public void scanMainSubscriber() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxSkipUntilOther.SkipUntilMainSubscriber<Integer> test =
         		new FluxSkipUntilOther.SkipUntilMainSubscriber<>(actual);
         Subscription parent = Operators.emptySubscription();
@@ -272,7 +271,7 @@ public class FluxSkipUntilOtherTest extends FluxOperatorTest<String, String> {
 
 	@Test
     public void scanOtherSubscriber() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxSkipUntilOther.SkipUntilMainSubscriber<Integer> main =
         		new FluxSkipUntilOther.SkipUntilMainSubscriber<>(actual);
         FluxSkipUntilOther.SkipUntilOtherSubscriber<Integer> test =

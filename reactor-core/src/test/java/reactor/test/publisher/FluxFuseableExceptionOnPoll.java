@@ -19,11 +19,11 @@ import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxOperator;
 import reactor.core.publisher.Operators;
-import reactor.util.context.Context;
 
 /**
  * @author Stephane Maldini
@@ -56,19 +56,19 @@ final class FluxFuseableExceptionOnPoll<T> extends FluxOperator<T, T>
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		source.subscribe(new FuseableExceptionOnPollSubscriber<>(s, exception));
 	}
 
 	static final class FuseableExceptionOnPollSubscriber<T>
 			implements QueueSubscription<T>, ConditionalSubscriber<T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final RuntimeException exception;
 		QueueSubscription<T> qs;
 
-		FuseableExceptionOnPollSubscriber(Subscriber<? super T> actual,
+		FuseableExceptionOnPollSubscriber(CoreSubscriber<? super T> actual,
 				RuntimeException exception) {
 			this.actual = actual;
 			this.exception = exception;

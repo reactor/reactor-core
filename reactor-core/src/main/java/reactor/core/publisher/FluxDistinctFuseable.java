@@ -21,10 +21,9 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.publisher.FluxDistinct.DistinctFuseableSubscriber;
-import reactor.util.context.Context;
 
 /**
  * For each subscriber, tracks the source values that have been seen and
@@ -53,7 +52,7 @@ final class FluxDistinctFuseable<T, K, C extends Collection<? super K>>
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		C collection;
 
 		try {
@@ -65,7 +64,6 @@ final class FluxDistinctFuseable<T, K, C extends Collection<? super K>>
 			return;
 		}
 
-		source.subscribe(new DistinctFuseableSubscriber<>(s, collection, keyExtractor),
-				ctx);
+		source.subscribe(new DistinctFuseableSubscriber<>(s, collection, keyExtractor));
 	}
 }

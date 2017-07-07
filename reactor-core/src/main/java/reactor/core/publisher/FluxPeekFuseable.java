@@ -18,14 +18,13 @@ package reactor.core.publisher;
 
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.util.context.Context;
-
-import javax.annotation.Nullable;
 
 /**
  * Peek into the lifecycle events and signals of a sequence.
@@ -78,19 +77,19 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		if (s instanceof ConditionalSubscriber) {
 			source.subscribe(new PeekFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
-					this), ctx);
+					this));
 			return;
 		}
-		source.subscribe(new PeekFuseableSubscriber<>(s, this), ctx);
+		source.subscribe(new PeekFuseableSubscriber<>(s, this));
 	}
 
 	static final class PeekFuseableSubscriber<T>
 			implements InnerOperator<T, T>, QueueSubscription<T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final SignalPeek<T> parent;
 
@@ -109,7 +108,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 			return InnerOperator.super.scanUnsafe(key);
 		}
 
-		PeekFuseableSubscriber(Subscriber<? super T> actual,
+		PeekFuseableSubscriber(CoreSubscriber<? super T> actual,
 				SignalPeek<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
@@ -117,7 +116,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 
 		@Override
 		public Context currentContext() {
-			Context c = Context.from(actual);
+			Context c = actual.currentContext();
 			if(!c.isEmpty() && parent.onCurrentContextCall() != null) {
 				parent.onCurrentContextCall().accept(c);
 			}
@@ -281,7 +280,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 
@@ -379,7 +378,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 
 		@Override
 		public Context currentContext() {
-			Context c = Context.from(actual);
+			Context c = actual.currentContext();
 			if(!c.isEmpty() && parent.onCurrentContextCall() != null) {
 				parent.onCurrentContextCall().accept(c);
 			}
@@ -572,7 +571,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 
@@ -709,7 +708,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 
 		@Override
 		public Context currentContext() {
-			Context c = Context.from(actual);
+			Context c = actual.currentContext();
 			if(!c.isEmpty() && parent.onCurrentContextCall() != null) {
 				parent.onCurrentContextCall().accept(c);
 			}
@@ -891,7 +890,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

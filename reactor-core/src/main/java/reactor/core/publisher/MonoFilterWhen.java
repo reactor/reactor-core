@@ -21,13 +21,13 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import javax.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -52,9 +52,8 @@ class MonoFilterWhen<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context context) {
-		source.subscribe(new MonoFilterWhenMain<>(s, asyncPredicate, context),
-				context);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		source.subscribe(new MonoFilterWhenMain<>(s, asyncPredicate));
 	}
 
 	static final class MonoFilterWhenMain<T> extends Operators.MonoSubscriber<T, T> {
@@ -90,8 +89,8 @@ class MonoFilterWhen<T> extends MonoOperator<T, T> {
 		@SuppressWarnings("ConstantConditions")
 		static final FilterWhenInner INNER_CANCELLED = new FilterWhenInner(null, false);
 
-		MonoFilterWhenMain(Subscriber<? super T> actual, Function<? super T, ?
-				extends Publisher<Boolean>> asyncPredicate, Context context) {
+		MonoFilterWhenMain(CoreSubscriber<? super T> actual, Function<? super T, ?
+				extends Publisher<Boolean>> asyncPredicate) {
 			super(actual);
 			this.asyncPredicate = asyncPredicate;
 		}

@@ -20,9 +20,8 @@ import java.util.Objects;
 import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.util.context.Context;
+import reactor.core.CoreSubscriber;
 
 /**
  * Resumes the failed main sequence with another sequence returned by
@@ -43,8 +42,8 @@ final class FluxOnErrorResume<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		source.subscribe(new ResumeSubscriber<>(s, nextFactory), ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		source.subscribe(new ResumeSubscriber<>(s, nextFactory));
 	}
 
 	static final class ResumeSubscriber<T>
@@ -54,7 +53,7 @@ final class FluxOnErrorResume<T> extends FluxOperator<T, T> {
 
 		boolean second;
 
-		ResumeSubscriber(Subscriber<? super T> actual,
+		ResumeSubscriber(CoreSubscriber<? super T> actual,
 				Function<? super Throwable, ? extends Publisher<? extends T>> nextFactory) {
 			super(actual);
 			this.nextFactory = nextFactory;

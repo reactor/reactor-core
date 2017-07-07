@@ -22,9 +22,8 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.util.context.Context;
+import reactor.core.CoreSubscriber;
 
 /**
  * Aggregates the source values with the help of an accumulator function
@@ -59,9 +58,9 @@ final class FluxScanSeed<T, R> extends FluxOperator<T, R> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super R> s) {
 		ScanSeedCoordinator<T, R> coordinator =
-				new ScanSeedCoordinator<>(s, from(source), accumulator, initialSupplier);
+				new ScanSeedCoordinator<>(s, source, accumulator, initialSupplier);
 
 		s.onSubscribe(coordinator);
 
@@ -80,7 +79,7 @@ final class FluxScanSeed<T, R> extends FluxOperator<T, R> {
 		long produced;
 		private ScanSeedSubscriber<T, R> seedSubscriber;
 
-		ScanSeedCoordinator(Subscriber<? super R> actual, Flux<? extends T> source,
+		ScanSeedCoordinator(CoreSubscriber<? super R> actual, Flux<? extends T> source,
 				BiFunction<R, ? super T, R> accumulator,
 				Supplier<R> initialSupplier) {
 			super(actual);
@@ -125,7 +124,7 @@ final class FluxScanSeed<T, R> extends FluxOperator<T, R> {
 								new ScanSeedSubscriber<>(this, accumulator, initialValue);
 					}
 					else {
-						source.subscribe(seedSubscriber, seedSubscriber.currentContext());
+						source.subscribe(seedSubscriber);
 					}
 
 					if (isCancelled()) {
@@ -150,7 +149,7 @@ final class FluxScanSeed<T, R> extends FluxOperator<T, R> {
 
 	static final class ScanSeedSubscriber<T, R> implements InnerOperator<T, R> {
 
-		final Subscriber<? super R> actual;
+		final CoreSubscriber<? super R> actual;
 
 		final BiFunction<R, ? super T, R> accumulator;
 
@@ -160,7 +159,7 @@ final class FluxScanSeed<T, R> extends FluxOperator<T, R> {
 
 		boolean done;
 
-		ScanSeedSubscriber(Subscriber<? super R> actual,
+		ScanSeedSubscriber(CoreSubscriber<? super R> actual,
 				BiFunction<R, ? super T, R> accumulator,
 				R initialValue) {
 			this.actual = actual;
@@ -169,7 +168,7 @@ final class FluxScanSeed<T, R> extends FluxOperator<T, R> {
 		}
 
 		@Override
-		public Subscriber<? super R> actual() {
+		public CoreSubscriber<? super R> actual() {
 			return actual;
 		}
 

@@ -17,14 +17,14 @@ package reactor.core.publisher;
 
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.publisher.FluxPeekFuseable.PeekConditionalSubscriber;
 import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Peek into the lifecycle events and signals of a sequence.
@@ -73,19 +73,19 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		if (s instanceof ConditionalSubscriber) {
 			@SuppressWarnings("unchecked") // javac, give reason to suppress because inference anomalies
 					ConditionalSubscriber<T> s2 = (ConditionalSubscriber<T>) s;
-			source.subscribe(new PeekConditionalSubscriber<>(s2, this), ctx);
+			source.subscribe(new PeekConditionalSubscriber<>(s2, this));
 			return;
 		}
-		source.subscribe(new PeekSubscriber<>(s, this), ctx);
+		source.subscribe(new PeekSubscriber<>(s, this));
 	}
 
 	static final class PeekSubscriber<T> implements InnerOperator<T, T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final SignalPeek<T> parent;
 
@@ -93,7 +93,7 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 
 		boolean done;
 
-		PeekSubscriber(Subscriber<? super T> actual, SignalPeek<T> parent) {
+		PeekSubscriber(CoreSubscriber<? super T> actual, SignalPeek<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
 		}
@@ -109,7 +109,7 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 
 		@Override
 		public Context currentContext() {
-			Context c = Context.from(actual);
+			Context c = actual.currentContext();
 			if(!c.isEmpty() && parent.onCurrentContextCall() != null) {
 				parent.onCurrentContextCall().accept(c);
 			}
@@ -256,7 +256,7 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

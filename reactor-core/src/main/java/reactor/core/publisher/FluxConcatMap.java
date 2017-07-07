@@ -22,14 +22,15 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 import static reactor.core.Exceptions.TERMINATED;
 
@@ -68,27 +69,25 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 		END
 	}
 
-	static <T, R> Subscriber<T> subscriber(Subscriber<? super R> s,
+	static <T, R> CoreSubscriber<T> subscriber(CoreSubscriber<? super R> s,
 			Function<? super T, ? extends Publisher<? extends R>> mapper,
 			Supplier<? extends Queue<T>> queueSupplier,
-			int prefetch, ErrorMode errorMode, Context ctx) {
+			int prefetch, ErrorMode errorMode) {
 		switch (errorMode) {
 			case BOUNDARY:
 				return new ConcatMapDelayed<>(s,
 						mapper,
 						queueSupplier,
 						prefetch,
-						false,
-						ctx);
+						false);
 			case END:
 				return new ConcatMapDelayed<>(s,
 						mapper,
 						queueSupplier,
 						prefetch,
-						true,
-						ctx);
+						true);
 			default:
-				return new ConcatMapImmediate<>(s, mapper, queueSupplier, prefetch, ctx);
+				return new ConcatMapImmediate<>(s, mapper, queueSupplier, prefetch);
 		}
 	}
 
@@ -113,20 +112,19 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super R> s) {
 
 		if (FluxFlatMap.trySubscribeScalarMap(source, s, mapper, false)) {
 			return;
 		}
 
-		source.subscribe(subscriber(s, mapper, queueSupplier, prefetch, errorMode, ctx),
-				ctx);
+		source.subscribe(subscriber(s, mapper, queueSupplier, prefetch, errorMode));
 	}
 
 	static final class ConcatMapImmediate<T, R>
 			implements FluxConcatMapSupport<T, R> {
 
-		final Subscriber<? super R> actual;
+		final CoreSubscriber<? super R> actual;
 
 		final ConcatMapInner<R> inner;
 
@@ -169,9 +167,9 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 
 		int sourceMode;
 
-		ConcatMapImmediate(Subscriber<? super R> actual,
+		ConcatMapImmediate(CoreSubscriber<? super R> actual,
 				Function<? super T, ? extends Publisher<? extends R>> mapper,
-				Supplier<? extends Queue<T>> queueSupplier, int prefetch, Context ctx) {
+				Supplier<? extends Queue<T>> queueSupplier, int prefetch) {
 			this.actual = actual;
 			this.mapper = mapper;
 			this.queueSupplier = queueSupplier;
@@ -304,7 +302,7 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 		}
 
 		@Override
-		public Subscriber<? super R> actual() {
+		public CoreSubscriber<? super R> actual() {
 			return actual;
 		}
 
@@ -427,11 +425,11 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 
 	static final class WeakScalarSubscription<T> implements Subscription {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 		final T                     value;
 		boolean once;
 
-		WeakScalarSubscription(T value, Subscriber<? super T> actual) {
+		WeakScalarSubscription(T value, CoreSubscriber<? super T> actual) {
 			this.value = value;
 			this.actual = actual;
 		}
@@ -455,7 +453,7 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 	static final class ConcatMapDelayed<T, R>
 			implements FluxConcatMapSupport<T, R> {
 
-		final Subscriber<? super R> actual;
+		final CoreSubscriber<? super R> actual;
 
 		final ConcatMapInner<R> inner;
 
@@ -495,10 +493,10 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 
 		int sourceMode;
 
-		ConcatMapDelayed(Subscriber<? super R> actual,
+		ConcatMapDelayed(CoreSubscriber<? super R> actual,
 				Function<? super T, ? extends Publisher<? extends R>> mapper,
 				Supplier<? extends Queue<T>> queueSupplier,
-				int prefetch, boolean veryEnd, Context ctx) {
+				int prefetch, boolean veryEnd) {
 			this.actual = actual;
 			this.mapper = mapper;
 			this.queueSupplier = queueSupplier;
@@ -509,7 +507,7 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 		}
 
 		@Override
-		public Subscriber<? super R> actual() {
+		public CoreSubscriber<? super R> actual() {
 			return actual;
 		}
 

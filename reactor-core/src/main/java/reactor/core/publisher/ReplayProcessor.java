@@ -22,18 +22,17 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.core.scheduler.Schedulers;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.concurrent.QueueSupplier;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 import static reactor.core.publisher.FluxReplay.ReplaySubscriber.EMPTY;
 import static reactor.core.publisher.FluxReplay.ReplaySubscriber.TERMINATED;
@@ -306,7 +305,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		//noinspection ConstantConditions
 		if (s == null) {
 			throw Exceptions.argumentIsNullException();
@@ -474,7 +473,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	static final class ReplayInner<T>
 			implements FluxReplay.ReplaySubscription<T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final ReplayProcessor<T> parent;
 
@@ -502,7 +501,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 		int fusionMode;
 
-		ReplayInner(Subscriber<? super T> actual,
+		ReplayInner(CoreSubscriber<? super T> actual,
 				ReplayProcessor<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
@@ -520,7 +519,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

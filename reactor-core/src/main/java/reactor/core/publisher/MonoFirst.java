@@ -18,11 +18,10 @@ package reactor.core.publisher;
 
 import java.util.Iterator;
 import java.util.Objects;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import javax.annotation.Nullable;
-import reactor.util.context.Context;
+import reactor.core.CoreSubscriber;
 
 /**
  * Given a push of source Publishers the values of that Publisher is forwarded to the
@@ -65,7 +64,7 @@ final class MonoFirst<T> extends Mono<T> {
 	@SuppressWarnings("unchecked")
 	@Override
 	//TODO mutualize with FluxFirstEmitting
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		Publisher<? extends T>[] a = array;
 		int n;
 		if (a == null) {

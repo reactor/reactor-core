@@ -20,14 +20,13 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.Fuseable.QueueSubscription;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * For each subscriber, tracks the source values that have been seen and
@@ -57,7 +56,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		C collection;
 
 		try {
@@ -72,17 +71,17 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 		if (s instanceof ConditionalSubscriber) {
 			source.subscribe(new DistinctConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
 					collection,
-					keyExtractor), ctx);
+					keyExtractor));
 		}
 		else {
-			source.subscribe(new DistinctSubscriber<>(s, collection, keyExtractor), ctx);
+			source.subscribe(new DistinctSubscriber<>(s, collection, keyExtractor));
 		}
 	}
 
 	static final class DistinctSubscriber<T, K, C extends Collection<? super K>>
 			implements ConditionalSubscriber<T>, InnerOperator<T, T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final C collection;
 
@@ -92,7 +91,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 
 		boolean done;
 
-		DistinctSubscriber(Subscriber<? super T> actual,
+		DistinctSubscriber(CoreSubscriber<? super T> actual,
 				C collection,
 				Function<? super T, ? extends K> keyExtractor) {
 			this.actual = actual;
@@ -175,7 +174,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 
@@ -319,7 +318,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 
@@ -347,7 +346,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 			implements ConditionalSubscriber<T>, InnerOperator<T, T>,
 			           QueueSubscription<T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final C collection;
 
@@ -359,7 +358,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 
 		int sourceMode;
 
-		DistinctFuseableSubscriber(Subscriber<? super T> actual,
+		DistinctFuseableSubscriber(CoreSubscriber<? super T> actual,
 				C collection,
 				Function<? super T, ? extends K> keyExtractor) {
 			this.actual = actual;
@@ -448,7 +447,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

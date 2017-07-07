@@ -17,12 +17,11 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.function.Predicate;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.Fuseable;
-import reactor.util.context.Context;
 import javax.annotation.Nullable;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 
 /**
  * Emits a single boolean true if all values of the source sequence match
@@ -45,8 +44,8 @@ final class MonoAll<T> extends MonoFromFluxOperator<T, Boolean>
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super Boolean> s, Context ctx) {
-		source.subscribe(new AllSubscriber<T>(s, predicate), ctx);
+	public void subscribe(CoreSubscriber<? super Boolean> s) {
+		source.subscribe(new AllSubscriber<T>(s, predicate));
 	}
 
 	static final class AllSubscriber<T> extends Operators.MonoSubscriber<T, Boolean> {
@@ -56,7 +55,7 @@ final class MonoAll<T> extends MonoFromFluxOperator<T, Boolean>
 
 		boolean done;
 
-		AllSubscriber(Subscriber<? super Boolean> actual, Predicate<? super T> predicate) {
+		AllSubscriber(CoreSubscriber<? super Boolean> actual, Predicate<? super T> predicate) {
 			super(actual);
 			this.predicate = predicate;
 		}

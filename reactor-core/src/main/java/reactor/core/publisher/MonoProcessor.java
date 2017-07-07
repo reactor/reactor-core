@@ -28,11 +28,11 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.concurrent.WaitStrategy;
-import reactor.util.context.Context;
 
 /**
  * A {@code MonoProcessor} is a {@link Mono} extension that implements stateful semantics. Multi-subscribe is allowed.
@@ -379,7 +379,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	}
 
 	@Override
-	public void subscribe(final Subscriber<? super O> subscriber, Context ctx) {
+	public void subscribe(final CoreSubscriber<? super O> subscriber) {
 		for (; ; ) {
 			int endState = this.state;
 			if (endState == STATE_COMPLETE_NO_VALUE) {

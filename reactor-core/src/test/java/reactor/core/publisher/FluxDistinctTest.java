@@ -23,13 +23,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-
 import javax.annotation.Nullable;
 
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
@@ -426,7 +425,7 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void scanSubscriber() {
-		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxDistinct.DistinctSubscriber<String, Integer, Set<Integer>> test =
 				new FluxDistinct.DistinctSubscriber<>(actual, new HashSet<>(), String::hashCode);
 		Subscription parent = Operators.emptySubscription();
@@ -459,7 +458,7 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void scanFuseableSubscriber() {
-		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxDistinct.DistinctFuseableSubscriber<String, Integer, Set<Integer>> test =
 				new FluxDistinct.DistinctFuseableSubscriber<>(actual, new HashSet<>(), String::hashCode);
 		Subscription parent = Operators.emptySubscription();

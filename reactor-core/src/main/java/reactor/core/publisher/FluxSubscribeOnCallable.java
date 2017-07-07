@@ -20,13 +20,12 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
-import javax.annotation.Nullable;
-import reactor.util.context.Context;
 
 /**
  * Executes a Callable and emits its value on the given Scheduler.
@@ -46,7 +45,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context context) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		CallableSubscribeOnSubscription<T> parent =
 				new CallableSubscribeOnSubscription<>(s, callable, scheduler);
 		s.onSubscribe(parent);
@@ -65,7 +64,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 	static final class CallableSubscribeOnSubscription<T>
 			implements QueueSubscription<T>, InnerProducer<T>, Runnable {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final Callable<? extends T> callable;
 
@@ -105,7 +104,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 				Disposable.class,
 				"requestFuture");
 
-		CallableSubscribeOnSubscription(Subscriber<? super T> actual,
+		CallableSubscribeOnSubscription(CoreSubscriber<? super T> actual,
 				Callable<? extends T> callable,
 				Scheduler scheduler) {
 			this.actual = actual;
@@ -114,7 +113,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

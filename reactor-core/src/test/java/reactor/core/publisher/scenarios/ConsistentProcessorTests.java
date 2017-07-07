@@ -30,8 +30,8 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.reactivestreams.Processor;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.publisher.TopicProcessor;
 import reactor.core.publisher.WorkQueueProcessor;
 import reactor.core.scheduler.Schedulers;
@@ -211,7 +211,7 @@ public class ConsistentProcessorTests {
 
 	static int subCount = 0;
 
-	class Receiver implements Subscriber<String> {
+	class Receiver implements CoreSubscriber<String> {
 
 		final int            id    = ++subCount;
 		final List<String>   data  = new ArrayList<>();

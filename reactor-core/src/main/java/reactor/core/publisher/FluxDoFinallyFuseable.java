@@ -18,9 +18,8 @@ package reactor.core.publisher;
 
 import java.util.function.Consumer;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.context.Context;
 
 /**
  * Hook with fusion into the lifecycle events and signals of a {@link Flux}
@@ -45,7 +44,7 @@ final class FluxDoFinallyFuseable<T> extends FluxOperator<T, T> implements Fusea
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		source.subscribe(FluxDoFinally.createSubscriber(s, onFinally, true), ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		source.subscribe(FluxDoFinally.createSubscriber(s, onFinally, true));
 	}
 }

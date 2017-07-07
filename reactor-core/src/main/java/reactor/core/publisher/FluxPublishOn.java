@@ -21,16 +21,16 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Emits events on a different thread specified by a scheduler callback.
@@ -71,7 +71,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		Worker worker;
 
 		try {
@@ -90,7 +90,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 					worker,
 					delayError,
 					prefetch,
-					queueSupplier), ctx);
+					queueSupplier));
 			return;
 		}
 		source.subscribe(new PublishOnSubscriber<>(s,
@@ -98,13 +98,13 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 				worker,
 				delayError,
 				prefetch,
-				queueSupplier), ctx);
+				queueSupplier));
 	}
 
 	static final class PublishOnSubscriber<T>
 			implements QueueSubscription<T>, Runnable, InnerOperator<T, T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final Scheduler scheduler;
 
@@ -144,7 +144,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 
 		boolean outputFused;
 
-		PublishOnSubscriber(Subscriber<? super T> actual,
+		PublishOnSubscriber(CoreSubscriber<? super T> actual,
 				Scheduler scheduler,
 				Worker worker,
 				boolean delayError,
@@ -534,7 +534,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 
@@ -947,7 +947,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

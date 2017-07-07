@@ -16,7 +16,6 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
-import java.util.Comparator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -25,13 +24,12 @@ import java.util.concurrent.atomic.LongAdder;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.util.concurrent.QueueSupplier;
-import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -269,7 +267,7 @@ public class MonoSequenceEqualTest {
 
 	@Test
 	public void scanCoordinator() {
-		Subscriber<Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoSequenceEqual.EqualCoordinator<String> test = new MonoSequenceEqual.EqualCoordinator<>(actual,
 						123,
 						Mono.just("foo"),
@@ -285,7 +283,8 @@ public class MonoSequenceEqualTest {
 
 	@Test
 	public void scanSubscriber() {
-		Subscriber<Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<Boolean>
+				actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoSequenceEqual.EqualCoordinator<String> coordinator = new MonoSequenceEqual.EqualCoordinator<>(actual,
 						123,
 						Mono.just("foo"),

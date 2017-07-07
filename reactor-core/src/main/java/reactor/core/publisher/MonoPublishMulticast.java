@@ -19,10 +19,9 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.function.Function;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.concurrent.QueueSupplier;
-import reactor.util.context.Context;
 
 /**
  * Shares a sequence for the duration of a function that may transform it and
@@ -45,11 +44,11 @@ final class MonoPublishMulticast<T, R> extends MonoOperator<T, R> implements Fus
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super R> s) {
 
 		FluxPublishMulticast.FluxPublishMulticaster<T, R> multicast =
 				new FluxPublishMulticast.FluxPublishMulticaster<>(Integer.MAX_VALUE,
-						QueueSupplier.one(), ctx);
+						QueueSupplier.one(), s.currentContext());
 
 		Mono<? extends R> out;
 
@@ -69,7 +68,7 @@ final class MonoPublishMulticast<T, R> extends MonoOperator<T, R> implements Fus
 			out.subscribe(new FluxPublishMulticast.CancelMulticaster<>(s, multicast));
 		}
 
-		source.subscribe(multicast, ctx);
+		source.subscribe(multicast);
 	}
 
 }

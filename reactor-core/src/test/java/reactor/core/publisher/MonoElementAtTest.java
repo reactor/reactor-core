@@ -16,11 +16,9 @@
 
 package reactor.core.publisher;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
@@ -220,7 +218,7 @@ public class MonoElementAtTest {
 
 	@Test
 	public void scanSubscriber() {
-		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoElementAt.ElementAtSubscriber<String> test = new MonoElementAt.ElementAtSubscriber<>(actual, 1, "foo");
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);

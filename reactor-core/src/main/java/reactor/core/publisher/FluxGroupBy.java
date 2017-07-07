@@ -30,6 +30,7 @@ import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -77,13 +78,12 @@ final class FluxGroupBy<T, K, V> extends FluxOperator<T, GroupedFlux<K, V>>
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super GroupedFlux<K, V>> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super GroupedFlux<K, V>> s) {
 		source.subscribe(new GroupByMain<>(s,
 				mainQueueSupplier.get(),
 				groupQueueSupplier,
 				prefetch,
-				keySelector,
-				valueSelector), ctx);
+				keySelector, valueSelector));
 	}
 
 	@Override
@@ -95,13 +95,13 @@ final class FluxGroupBy<T, K, V> extends FluxOperator<T, GroupedFlux<K, V>>
 			implements QueueSubscription<GroupedFlux<K, V>>,
 			           InnerOperator<T, GroupedFlux<K, V>> {
 
-		final Function<? super T, ? extends K>      keySelector;
-		final Function<? super T, ? extends V>      valueSelector;
-		final Queue<GroupedFlux<K, V>>              queue;
-		final Supplier<? extends Queue<V>>          groupQueueSupplier;
-		final int                                   prefetch;
-		final Map<K, UnicastGroupedFlux<K, V>>      groupMap;
-		final Subscriber<? super GroupedFlux<K, V>> actual;
+		final Function<? super T, ? extends K>          keySelector;
+		final Function<? super T, ? extends V>          valueSelector;
+		final Queue<GroupedFlux<K, V>>                  queue;
+		final Supplier<? extends Queue<V>>              groupQueueSupplier;
+		final int                                       prefetch;
+		final Map<K, UnicastGroupedFlux<K, V>>          groupMap;
+		final CoreSubscriber<? super GroupedFlux<K, V>> actual;
 
 		volatile int wip;
 
@@ -136,7 +136,7 @@ final class FluxGroupBy<T, K, V> extends FluxOperator<T, GroupedFlux<K, V>>
 
 		volatile boolean enableAsyncFusion;
 
-		GroupByMain(Subscriber<? super GroupedFlux<K, V>> actual,
+		GroupByMain(CoreSubscriber<? super GroupedFlux<K, V>> actual,
 				Queue<GroupedFlux<K, V>> queue,
 				Supplier<? extends Queue<V>> groupQueueSupplier,
 				int prefetch,
@@ -153,7 +153,7 @@ final class FluxGroupBy<T, K, V> extends FluxOperator<T, GroupedFlux<K, V>>
 		}
 
 		@Override
-		public final Subscriber<? super GroupedFlux<K, V>> actual() {
+		public final CoreSubscriber<? super GroupedFlux<K, V>> actual() {
 			return actual;
 		}
 
@@ -487,11 +487,11 @@ final class FluxGroupBy<T, K, V> extends FluxOperator<T, GroupedFlux<K, V>>
 		volatile boolean done;
 		Throwable error;
 
-		volatile Subscriber<? super V> actual;
+		volatile CoreSubscriber<? super V> actual;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<UnicastGroupedFlux, Subscriber> ACTUAL =
+		static final AtomicReferenceFieldUpdater<UnicastGroupedFlux, CoreSubscriber> ACTUAL =
 				AtomicReferenceFieldUpdater.newUpdater(UnicastGroupedFlux.class,
-						Subscriber.class,
+						CoreSubscriber.class,
 						"actual");
 
 		volatile boolean cancelled;
@@ -694,7 +694,7 @@ final class FluxGroupBy<T, K, V> extends FluxOperator<T, GroupedFlux<K, V>>
 		}
 
 		@Override
-		public void subscribe(Subscriber<? super V> s, Context context) {
+		public void subscribe(CoreSubscriber<? super V> s) {
 			if (once == 0 && ONCE.compareAndSet(this, 0, 1)) {
 				s.onSubscribe(this);
 				ACTUAL.lazySet(this, s);
@@ -788,7 +788,7 @@ final class FluxGroupBy<T, K, V> extends FluxOperator<T, GroupedFlux<K, V>>
 		}
 
 		@Override
-		public Subscriber<? super V> actual() {
+		public CoreSubscriber<? super V> actual() {
 			return actual;
 		}
 

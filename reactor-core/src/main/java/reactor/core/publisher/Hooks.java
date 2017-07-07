@@ -28,6 +28,7 @@ import javax.annotation.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
@@ -140,26 +141,26 @@ public abstract class Hooks {
 
 	/**
 	 * Set a global "subscription" hook to intercept signals produced by the passed
-	 * terminal {@link Subscriber}. The passed function must result in a value different from null.
+	 * terminal {@link CoreSubscriber}. The passed function must result in a value different from null.
 	 * <p>
 	 * Can be reset via {@link #resetOnNewSubscriber()} ()}
 	 *
 	 * @param onSubscriber a callback for each terminal {@link Publisher#subscribe(Subscriber)}
 	 * @param <T> the arbitrary subscribed sequence type
 	 */
-	public static <T> void onNewSubscriber(BiFunction<? super Publisher<T>, ? super Subscriber<T>, ? extends Subscriber<T>> onSubscriber) {
+	public static <T> void onNewSubscriber(BiFunction<? super Publisher<T>, ? super CoreSubscriber<T>, ? extends CoreSubscriber<T>> onSubscriber) {
 		Objects.requireNonNull(onSubscriber, "onNewSubscriber");
 		if (log.isDebugEnabled()) {
 			log.debug("Hooking new default : onNewSubscriber");
 		}
 
 
-		@SuppressWarnings("unchecked") BiFunction<? super Publisher<?>, ? super Subscriber<?>, ? extends Subscriber<?>> _onSubscriberHook =
-				(BiFunction<? super Publisher<?>, ? super Subscriber<?>, ? extends Subscriber<?>>) onSubscriber;
+		@SuppressWarnings("unchecked") BiFunction<? super Publisher<?>, ? super CoreSubscriber<?>, ? extends CoreSubscriber<?>> _onSubscriberHook =
+				(BiFunction<? super Publisher<?>, ? super CoreSubscriber<?>, ? extends CoreSubscriber<?>>) onSubscriber;
 		synchronized(log) {
 			if (onSubscriberHook != null) {
 				@SuppressWarnings("unchecked")
-				BiFunction<? super Publisher<?>, ? super Subscriber<?>, ? extends Subscriber<?>> ff = onSubscriberHook;
+				BiFunction<? super Publisher<?>, ? super CoreSubscriber<?>, ? extends CoreSubscriber<?>> ff = onSubscriberHook;
 
 				onSubscriberHook = (p, s) -> _onSubscriberHook.apply(p, ff.apply(p, s));
 			}
@@ -572,11 +573,11 @@ public abstract class Hooks {
 		}
 	}
 
-	static volatile OnOperatorHook<?>           onOperatorHook;
-	static volatile Consumer<? super Throwable> onErrorDroppedHook;
-	static volatile Consumer<Object>            onNextDroppedHook;
-	static volatile BiFunction<? super Throwable, Object, ? extends Throwable> onOperatorErrorHook;
-	static volatile BiFunction<? super Publisher<?>, ? super Subscriber<?>, ? extends Subscriber<?>> onSubscriberHook;
+	static volatile OnOperatorHook<?>                                                                       onOperatorHook;
+	static volatile Consumer<? super Throwable>                                                             onErrorDroppedHook;
+	static volatile Consumer<Object>                                                                        onNextDroppedHook;
+	static volatile BiFunction<? super Throwable, Object, ? extends Throwable>                              onOperatorErrorHook;
+	static volatile BiFunction<? super Publisher<?>, ? super CoreSubscriber<?>, ? extends CoreSubscriber<?>>onSubscriberHook;
 
 	static {
 		boolean globalTrace =

@@ -21,16 +21,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
-import reactor.util.context.Context;
-
-import javax.annotation.Nullable;
 
 /**
  * @author Simon Baslé
@@ -69,7 +67,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		for (; ; ) {
 			RefConnection conn;
 
@@ -92,7 +90,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 				}
 			}
 
-			source.subscribe(new RefCountInner<>(s, this, conn), ctx);
+			source.subscribe(new RefCountInner<>(s, this, conn));
 
 			if (connect) {
 				source.connect(conn);
@@ -175,7 +173,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 
 	static final class RefCountInner<T> implements QueueSubscription<T>, InnerOperator<T, T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final FluxRefCountGrace<T> parent;
 
@@ -188,7 +186,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 		static final AtomicIntegerFieldUpdater<RefCountInner> PARENT_DONE =
 				AtomicIntegerFieldUpdater.newUpdater(RefCountInner.class, "parentDone");
 
-		RefCountInner(Subscriber<? super T> actual, FluxRefCountGrace<T> parent,
+		RefCountInner(CoreSubscriber<? super T> actual, FluxRefCountGrace<T> parent,
 				RefConnection connection) {
 			this.actual = actual;
 			this.parent = parent;
@@ -270,7 +268,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

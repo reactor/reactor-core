@@ -17,13 +17,12 @@ package reactor.core.publisher;
 
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.publisher.FluxPeekFuseable.PeekConditionalSubscriber;
-import javax.annotation.Nullable;
-import reactor.util.context.Context;
 
 /**
  * Peeks out values that make a filter function return false.
@@ -63,13 +62,13 @@ final class MonoPeek<T> extends MonoOperator<T, T> implements SignalPeek<T> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		if (s instanceof ConditionalSubscriber) {
 			source.subscribe(new PeekConditionalSubscriber<>(
-					(ConditionalSubscriber<? super T>)s, this), ctx);
+					(ConditionalSubscriber<? super T>)s, this));
 			return;
 		}
-		source.subscribe(new FluxPeek.PeekSubscriber<>(s, this), ctx);
+		source.subscribe(new FluxPeek.PeekSubscriber<>(s, this));
 	}
 
 	@Override

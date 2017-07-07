@@ -18,10 +18,11 @@ package reactor.core.publisher;
 
 import java.util.Arrays;
 import java.util.List;
+
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -229,7 +230,7 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void suppressedSubscriber() {
-		Subscriber<Integer> s = new Subscriber<Integer>() {
+		CoreSubscriber<Integer> s = new CoreSubscriber<Integer>() {
 			@Override
 			public void onSubscribe(
 					Subscription s) {
@@ -302,7 +303,7 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 
 	@Test
     public void scanMulticastInner() {
-		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxPublishMulticast.FluxPublishMulticaster<Integer, Integer> parent =
         		new FluxPublishMulticast.FluxPublishMulticaster<>(123, QueueSupplier.<Integer>unbounded(), Context.empty());
         FluxPublishMulticast.PublishMulticastInner<Integer> test =
@@ -320,7 +321,7 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 
 	@Test
     public void scanCancelMulticaster() {
-		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxPublishMulticast.FluxPublishMulticaster<Integer, Integer> parent =
         		new FluxPublishMulticast.FluxPublishMulticaster<>(123, QueueSupplier.<Integer>unbounded(), Context.empty());
         FluxPublishMulticast.CancelMulticaster<Integer> test =
@@ -334,7 +335,7 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 
 	@Test
     public void scanCancelFuseableMulticaster() {
-		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxPublishMulticast.FluxPublishMulticaster<Integer, Integer> parent =
         		new FluxPublishMulticast.FluxPublishMulticaster<>(123, QueueSupplier.<Integer>unbounded(), Context.empty());
         FluxPublishMulticast.CancelFuseableMulticaster<Integer> test =

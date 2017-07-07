@@ -23,14 +23,14 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
-import javax.annotation.Nullable;
-import reactor.util.context.Context;
 
 /**
  * Splits the source sequence into possibly overlapping publishers.
@@ -84,31 +84,27 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super Flux<T>> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super Flux<T>> s) {
 		if (skip == size) {
 			source.subscribe(new WindowExactSubscriber<>(s,
 					size,
-					processorQueueSupplier), ctx);
+					processorQueueSupplier));
 		}
 		else if (skip > size) {
 			source.subscribe(new WindowSkipSubscriber<>(s,
-					size,
-					skip,
-					processorQueueSupplier), ctx);
+					size, skip, processorQueueSupplier));
 		}
 		else {
 			source.subscribe(new WindowOverlapSubscriber<>(s,
 					size,
-					skip,
-					processorQueueSupplier,
-					overflowQueueSupplier.get()), ctx);
+					skip, processorQueueSupplier, overflowQueueSupplier.get()));
 		}
 	}
 
 	static final class WindowExactSubscriber<T>
 			implements Disposable, InnerOperator<T, Flux<T>> {
 
-		final Subscriber<? super Flux<T>> actual;
+		final CoreSubscriber<? super Flux<T>> actual;
 
 		final Supplier<? extends Queue<T>> processorQueueSupplier;
 
@@ -132,7 +128,7 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 
 		boolean done;
 
-		WindowExactSubscriber(Subscriber<? super Flux<T>> actual,
+		WindowExactSubscriber(CoreSubscriber<? super Flux<T>> actual,
 				int size,
 				Supplier<? extends Queue<T>> processorQueueSupplier) {
 			this.actual = actual;
@@ -236,7 +232,7 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 		}
 
 		@Override
-		public Subscriber<? super Flux<T>> actual() {
+		public CoreSubscriber<? super Flux<T>> actual() {
 			return actual;
 		}
 
@@ -265,7 +261,7 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 	static final class WindowSkipSubscriber<T>
 			implements Disposable, InnerOperator<T, Flux<T>> {
 
-		final Subscriber<? super Flux<T>> actual;
+		final CoreSubscriber<? super Flux<T>> actual;
 
 		final Supplier<? extends Queue<T>> processorQueueSupplier;
 
@@ -297,7 +293,7 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 
 		boolean done;
 
-		WindowSkipSubscriber(Subscriber<? super Flux<T>> actual,
+		WindowSkipSubscriber(CoreSubscriber<? super Flux<T>> actual,
 				int size,
 				int skip,
 				Supplier<? extends Queue<T>> processorQueueSupplier) {
@@ -425,7 +421,7 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 		}
 
 		@Override
-		public Subscriber<? super Flux<T>> actual() {
+		public CoreSubscriber<? super Flux<T>> actual() {
 			return actual;
 		}
 
@@ -449,7 +445,7 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 	static final class WindowOverlapSubscriber<T> extends ArrayDeque<UnicastProcessor<T>>
 			implements Disposable, InnerOperator<T, Flux<T>> {
 
-		final Subscriber<? super Flux<T>> actual;
+		final CoreSubscriber<? super Flux<T>> actual;
 
 		final Supplier<? extends Queue<T>> processorQueueSupplier;
 
@@ -497,7 +493,7 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 		volatile boolean done;
 		Throwable error;
 
-		WindowOverlapSubscriber(Subscriber<? super Flux<T>> actual,
+		WindowOverlapSubscriber(CoreSubscriber<? super Flux<T>> actual,
 				int size,
 				int skip,
 				Supplier<? extends Queue<T>> processorQueueSupplier,
@@ -708,7 +704,7 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 		}
 
 		@Override
-		public Subscriber<? super Flux<T>> actual() {
+		public CoreSubscriber<? super Flux<T>> actual() {
 			return actual;
 		}
 

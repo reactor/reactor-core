@@ -20,7 +20,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
 import javax.annotation.Nullable;
 
 import org.assertj.core.api.Assertions;
@@ -29,6 +28,7 @@ import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -203,8 +203,8 @@ public class TopicProcessorTest {
 		    .assertValues(1, 2, 3);
 	}
 
-	static Subscriber<String> sub(String name, CountDownLatch latch) {
-		return new Subscriber<String>() {
+	static CoreSubscriber<String> sub(String name, CountDownLatch latch) {
+		return new CoreSubscriber<String>() {
 			Subscription s;
 
 			@Override
@@ -759,7 +759,7 @@ public class TopicProcessorTest {
 	public void scanInner() {
 		TopicProcessor<String> main = TopicProcessor.create("name", 16);
 		RingBuffer.Sequence sequence = RingBuffer.newSequence(123);
-		Subscriber<String> activated = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<String> activated = new LambdaSubscriber<>(null, e -> {}, null, null);
 
 		TopicProcessor.TopicInner<String> test = new TopicProcessor.TopicInner<>(
 				main, sequence, activated);
@@ -785,7 +785,7 @@ public class TopicProcessorTest {
 	public void scanInnerBufferedSmallHasIntRealValue() {
 		TopicProcessor<String> main = TopicProcessor.create("name", 16);
 		RingBuffer.Sequence sequence = RingBuffer.newSequence(123);
-		Subscriber<String> sub = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<String> sub = new LambdaSubscriber<>(null, e -> {}, null, null);
 		TopicProcessor.TopicInner<String> test = new TopicProcessor.TopicInner<>(main, sequence, sub);
 
 		main.ringBuffer.getSequencer().cursor.set(Integer.MAX_VALUE + 5L);
@@ -799,7 +799,7 @@ public class TopicProcessorTest {
 	public void scanInnerBufferedLargeHasIntMinValue() {
 		TopicProcessor<String> main = TopicProcessor.create("name", 16);
 		RingBuffer.Sequence sequence = RingBuffer.newSequence(123);
-		Subscriber<String> sub = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<String> sub = new LambdaSubscriber<>(null, e -> {}, null, null);
 		TopicProcessor.TopicInner<String> test = new TopicProcessor.TopicInner<>(main, sequence, sub);
 
 		main.ringBuffer.getSequencer().cursor.set(Integer.MAX_VALUE + 5L);

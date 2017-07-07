@@ -19,8 +19,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-import org.reactivestreams.Subscriber;
-import reactor.util.context.Context;
+import reactor.core.CoreSubscriber;
 
 /**
  * Repeatedly subscribes to the source if the predicate returns true after completion of
@@ -40,7 +39,7 @@ final class MonoRetryPredicate<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 
 		FluxRetryPredicate.RetryPredicateSubscriber<T> parent =
 				new FluxRetryPredicate.RetryPredicateSubscriber<>(source, s, predicate);

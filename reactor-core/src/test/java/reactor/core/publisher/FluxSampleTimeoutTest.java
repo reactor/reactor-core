@@ -21,9 +21,8 @@ import java.time.Duration;
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxSampleTimeout.SampleTimeoutOther;
 import reactor.test.StepVerifier;
@@ -163,7 +162,7 @@ public class FluxSampleTimeoutTest {
 
 	@Test
     public void scanMain() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxSampleTimeout.SampleTimeoutMain<Integer, Integer> test =
         		new FluxSampleTimeout.SampleTimeoutMain<>(actual, i -> Flux.just(i),
         				QueueSupplier.<SampleTimeoutOther<Integer, Integer>>one().get());
@@ -188,7 +187,7 @@ public class FluxSampleTimeoutTest {
 
 	@Test
     public void scanOther() {
-		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxSampleTimeout.SampleTimeoutMain<Integer, Integer> main =
         		new FluxSampleTimeout.SampleTimeoutMain<>(actual, i -> Flux.just(i),
         				QueueSupplier.<SampleTimeoutOther<Integer, Integer>>one().get());
@@ -197,8 +196,8 @@ public class FluxSampleTimeoutTest {
 
         Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(main.other);
         Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(main);
-        test.request(35);;
-        Assertions.assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
+        test.request(35);
+		Assertions.assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
 
         Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
         test.onComplete();

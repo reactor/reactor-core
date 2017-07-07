@@ -15,10 +15,10 @@
  */
 package reactor.core.publisher;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import javax.annotation.Nullable;
-import reactor.util.context.Context;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 
 /**
  * Skips the first N elements from a reactive stream.
@@ -39,8 +39,8 @@ final class FluxSkip<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		source.subscribe(new SkipSubscriber<>(s, n), ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		source.subscribe(new SkipSubscriber<>(s, n));
 	}
 
 	//Fixme Does not implement ConditionalSubscriber until the full chain of operators
@@ -49,13 +49,13 @@ final class FluxSkip<T> extends FluxOperator<T, T> {
 	static final class SkipSubscriber<T>
 			implements InnerOperator<T, T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		long remaining;
 
 		Subscription s;
 
-		SkipSubscriber(Subscriber<? super T> actual, long n) {
+		SkipSubscriber(CoreSubscriber<? super T> actual, long n) {
 			this.actual = actual;
 			this.remaining = n;
 		}
@@ -100,7 +100,7 @@ final class FluxSkip<T> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

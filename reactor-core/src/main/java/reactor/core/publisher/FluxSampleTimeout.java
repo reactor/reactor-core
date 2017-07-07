@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.context.Context;
@@ -63,7 +64,7 @@ final class FluxSampleTimeout<T, U> extends FluxOperator<T, T> {
 
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 
 		Queue<SampleTimeoutOther<T, U>> q = (Queue) queueSupplier.get();
 
@@ -71,14 +72,14 @@ final class FluxSampleTimeout<T, U> extends FluxOperator<T, T> {
 
 		s.onSubscribe(main);
 
-		source.subscribe(main, ctx);
+		source.subscribe(main);
 	}
 
 	static final class SampleTimeoutMain<T, U>implements InnerOperator<T, T> {
 
 		final Function<? super T, ? extends Publisher<U>> throttler;
 		final Queue<SampleTimeoutOther<T, U>>             queue;
-		final Subscriber<? super T>                       actual;
+		final CoreSubscriber<? super T>                   actual;
 
 		volatile Subscription s;
 
@@ -121,7 +122,7 @@ final class FluxSampleTimeout<T, U> extends FluxOperator<T, T> {
 		static final AtomicLongFieldUpdater<SampleTimeoutMain> INDEX =
 				AtomicLongFieldUpdater.newUpdater(SampleTimeoutMain.class, "index");
 
-		SampleTimeoutMain(Subscriber<? super T> actual,
+		SampleTimeoutMain(CoreSubscriber<? super T> actual,
 				Function<? super T, ? extends Publisher<U>> throttler,
 				Queue<SampleTimeoutOther<T, U>> queue) {
 			this.actual = actual;
@@ -148,7 +149,7 @@ final class FluxSampleTimeout<T, U> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		public final Subscriber<? super T> actual() {
+		public final CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

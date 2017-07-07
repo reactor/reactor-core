@@ -16,19 +16,19 @@
 
 package reactor.core.publisher;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxGenerateTest {
 
@@ -358,7 +358,7 @@ public class FluxGenerateTest {
 
     @Test
     public void scanSubscription() {
-        Subscriber<Integer> subscriber = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> subscriber = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxGenerate.GenerateSubscription<Integer, Integer> test =
                 new FluxGenerate.GenerateSubscription<>(subscriber, 1, (s, o) -> null, s -> {});
 
@@ -372,7 +372,7 @@ public class FluxGenerateTest {
 
     @Test
     public void scanSubscriptionError() {
-        Subscriber<Integer> subscriber = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> subscriber = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxGenerate.GenerateSubscription<Integer, Integer> test =
                 new FluxGenerate.GenerateSubscription<>(subscriber, 1, (s, o) -> null, s -> {});
 
@@ -383,7 +383,7 @@ public class FluxGenerateTest {
 
     @Test
     public void scanSubscriptionCancelled() {
-        Subscriber<Integer> subscriber = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> subscriber = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxGenerate.GenerateSubscription<Integer, Integer> test =
                 new FluxGenerate.GenerateSubscription<>(subscriber, 1, (s, o) -> null, s -> {});
 

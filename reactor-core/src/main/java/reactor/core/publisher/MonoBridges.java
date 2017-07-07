@@ -29,7 +29,7 @@ import org.reactivestreams.Publisher;
  * @author DoHyung Kim
  * @since 3.1
  */
-class MonoBridges {
+final class MonoBridges {
 
     static Mono<Void> when(Publisher<Void>[] sources) {
         return Mono.when(sources);
@@ -37,9 +37,5 @@ class MonoBridges {
 
     static <R> Mono<R> when(Function<? super Object[], ? extends R> combinator, Mono<?>[] monos) {
         return Mono.when(combinator, monos);
-    }
-
-    private MonoBridges() {
-        // Not to be instantiated
     }
 }

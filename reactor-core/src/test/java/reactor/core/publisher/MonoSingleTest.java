@@ -19,8 +19,8 @@ package reactor.core.publisher;
 import java.util.NoSuchElementException;
 
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -216,7 +216,8 @@ public class MonoSingleTest {
 
 	@Test
 	public void scanSubscriber() {
-		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<String>
+				actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoSingle.SingleSubscriber<String> test = new MonoSingle.SingleSubscriber<>(
 				actual, "foo", false);
 		Subscription parent = Operators.emptySubscription();

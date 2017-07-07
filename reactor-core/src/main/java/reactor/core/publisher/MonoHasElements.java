@@ -15,12 +15,11 @@
  */
 package reactor.core.publisher;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.Fuseable;
-import reactor.util.context.Context;
-import reactor.core.Scannable;
 import javax.annotation.Nullable;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
@@ -33,14 +32,14 @@ final class MonoHasElements<T> extends MonoFromFluxOperator<T, Boolean>
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super Boolean> s, Context ctx) {
-		source.subscribe(new HasElementsSubscriber<>(s), ctx);
+	public void subscribe(CoreSubscriber<? super Boolean> s) {
+		source.subscribe(new HasElementsSubscriber<>(s));
 	}
 
 	static final class HasElementsSubscriber<T> extends Operators.MonoSubscriber<T, Boolean> {
 		Subscription s;
 
-		HasElementsSubscriber(Subscriber<? super Boolean> actual) {
+		HasElementsSubscriber(CoreSubscriber<? super Boolean> actual) {
 			super(actual);
 		}
 

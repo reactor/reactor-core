@@ -20,8 +20,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -71,7 +70,7 @@ public class FluxSubscribeOnValueTest {
 
 	@Test
     public void scanMainSubscriber() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxSubscribeOnValue.ScheduledScalar<Integer> test =
         		new FluxSubscribeOnValue.ScheduledScalar<Integer>(actual, 1, Schedulers.single());
 

@@ -21,8 +21,8 @@ import java.util.Arrays;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -235,7 +235,7 @@ public class FluxConcatArrayTest {
 
 	@Test
 	public void scanDelayErrorSubscriber() {
-		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		@SuppressWarnings("unchecked")
 		Publisher<String>[] emptyPub = (Publisher<String>[]) new Publisher[0];
 		FluxConcatArray.ConcatArrayDelayErrorSubscriber<String> test = new FluxConcatArray.ConcatArrayDelayErrorSubscriber<>(actual, emptyPub);

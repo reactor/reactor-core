@@ -25,8 +25,8 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -64,7 +64,8 @@ public class MonoStreamCollectorTest {
 
 	@Test
 	public void scanStreamCollectorSubscriber() {
-		Subscriber<List<String>> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<List<String>>
+				actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		Collector<String, ?, List<String>> collector = Collectors.toList();
 		@SuppressWarnings("unchecked")
 		BiConsumer<Integer, String> accumulator = (BiConsumer<Integer, String>) collector.accumulator();

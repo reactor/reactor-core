@@ -18,13 +18,12 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.concurrent.Callable;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
-import javax.annotation.Nullable;
-import reactor.util.context.Context;
 
 /**
  * Captures the current stacktrace when this publisher is created and makes it
@@ -71,17 +70,16 @@ final class MonoCallableOnAssembly<T> extends MonoOperator<T, T>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		if (s instanceof Fuseable.ConditionalSubscriber) {
 			Fuseable.ConditionalSubscriber<? super T>
 					cs = (Fuseable.ConditionalSubscriber<? super T>) s;
 			source.subscribe(new FluxOnAssembly.OnAssemblyConditionalSubscriber<>(cs,
 					stacktrace,
-					source), ctx);
+					source));
 		}
 		else {
-			source.subscribe(new FluxOnAssembly.OnAssemblySubscriber<>(s, stacktrace, source),
-					ctx);
+			source.subscribe(new FluxOnAssembly.OnAssemblySubscriber<>(s, stacktrace, source));
 		}
 	}
 

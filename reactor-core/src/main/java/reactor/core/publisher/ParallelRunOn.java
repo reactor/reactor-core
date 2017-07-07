@@ -17,14 +17,13 @@ package reactor.core.publisher;
 
 import java.util.Queue;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Ensures each 'rail' from upstream runs on a Worker from a Scheduler.
@@ -61,7 +60,7 @@ final class ParallelRunOn<T> extends ParallelFlux<T> implements Scannable, Fusea
 	}
 	
 	@Override
-	public void subscribe(Subscriber<? super T>[] subscribers, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T>[] subscribers) {
 		if (!validate(subscribers)) {
 			return;
 		}
@@ -69,20 +68,20 @@ final class ParallelRunOn<T> extends ParallelFlux<T> implements Scannable, Fusea
 		int n = subscribers.length;
 		
 		@SuppressWarnings("unchecked")
-		Subscriber<T>[] parents = new Subscriber[n];
+		CoreSubscriber<T>[] parents = new CoreSubscriber[n];
 		
 		for (int i = 0; i < n; i++) {
-			Subscriber<? super T> a = subscribers[i];
+			CoreSubscriber<? super T> a = subscribers[i];
 			
 			Worker w = scheduler.createWorker();
 
-			Subscriber<T> parent = new FluxPublishOn.PublishOnSubscriber<>(a,
+			CoreSubscriber<T> parent = new FluxPublishOn.PublishOnSubscriber<>(a,
 					scheduler, w, true,
 					prefetch, queueSupplier);
 			parents[i] = parent;
 		}
 		
-		source.subscribe(parents, ctx);
+		source.subscribe(parents);
 	}
 
 	@Override

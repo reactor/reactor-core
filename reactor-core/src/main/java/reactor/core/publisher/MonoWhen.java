@@ -22,14 +22,14 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Waits for all Mono sources to produce a value or terminate, and if
@@ -98,7 +98,7 @@ final class MonoWhen<T, R> extends Mono<R> {
 
     @SuppressWarnings("unchecked")
     @Override
-    public void subscribe(Subscriber<? super R> s, Context context) {
+    public void subscribe(CoreSubscriber<? super R> s) {
 	    Publisher<?>[] a;
 	    int n = 0;
         if (sources != null) {
@@ -142,7 +142,7 @@ final class MonoWhen<T, R> extends Mono<R> {
                 AtomicIntegerFieldUpdater.newUpdater(WhenCoordinator.class, "done");
 
         @SuppressWarnings("unchecked")
-        WhenCoordinator(Subscriber<? super R> subscriber,
+        WhenCoordinator(CoreSubscriber<? super R> subscriber,
 		        int n,
 		        boolean delayError,
 		        Function<? super Object[], ? extends R> zipper) {

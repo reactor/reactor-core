@@ -19,13 +19,12 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.*;
-
+import org.reactivestreams.Publisher;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Concatenates the generated Publishers on each rail.
@@ -77,7 +76,7 @@ final class ParallelConcatMap<T, R> extends ParallelFlux<R> implements Scannable
 	}
 	
 	@Override
-	public void subscribe(Subscriber<? super R>[] subscribers, Context ctx) {
+	public void subscribe(CoreSubscriber<? super R>[] subscribers) {
 		if (!validate(subscribers)) {
 			return;
 		}
@@ -85,13 +84,13 @@ final class ParallelConcatMap<T, R> extends ParallelFlux<R> implements Scannable
 		int n = subscribers.length;
 		
 		@SuppressWarnings("unchecked")
-		Subscriber<T>[] parents = new Subscriber[n];
+		CoreSubscriber<T>[] parents = new CoreSubscriber[n];
 		
 		for (int i = 0; i < n; i++) {
 			parents[i] = FluxConcatMap.subscriber(subscribers[i], mapper,
-					queueSupplier, prefetch, errorMode, ctx);
+					queueSupplier, prefetch, errorMode);
 		}
 		
-		source.subscribe(parents, ctx);
+		source.subscribe(parents);
 	}
 }

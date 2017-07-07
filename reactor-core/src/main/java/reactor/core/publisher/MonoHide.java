@@ -15,8 +15,7 @@
  */
 package reactor.core.publisher;
 
-import org.reactivestreams.Subscriber;
-import reactor.util.context.Context;
+import reactor.core.CoreSubscriber;
 
 /**
  * Wraps another Publisher/Mono and hides its identity, including its
@@ -35,7 +34,7 @@ final class MonoHide<T> extends MonoOperator<T, T> {
     }
     
     @Override
-    public void subscribe(Subscriber<? super T> s, Context ctx) {
-        source.subscribe(new FluxHide.HideSubscriber<>(s), ctx);
+    public void subscribe(CoreSubscriber<? super T> s) {
+        source.subscribe(new FluxHide.HideSubscriber<>(s));
     }
 }

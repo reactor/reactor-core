@@ -15,8 +15,7 @@
  */
 package reactor.core.publisher;
 
-import org.reactivestreams.Subscriber;
-import reactor.util.context.Context;
+import reactor.core.CoreSubscriber;
 
 /**
  * @author Stephane Maldini
@@ -28,7 +27,7 @@ final class MonoDematerialize<T> extends MonoOperator<Signal<T>, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> subscriber, Context ctx) {
-		source.subscribe(new FluxDematerialize.DematerializeSubscriber<>(subscriber), ctx);
+	public void subscribe(CoreSubscriber<? super T> subscriber) {
+		source.subscribe(new FluxDematerialize.DematerializeSubscriber<>(subscriber));
 	}
 }

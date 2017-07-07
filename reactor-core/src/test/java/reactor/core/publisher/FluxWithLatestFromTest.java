@@ -18,9 +18,8 @@ package reactor.core.publisher;
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -156,7 +155,7 @@ public class FluxWithLatestFromTest {
 
 	@Test
     public void scanMainSubscriber() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWithLatestFrom.WithLatestFromSubscriber<Integer, Integer, Integer> test =
         		new FluxWithLatestFrom.WithLatestFromSubscriber<>(actual, (i, j) -> i + j);
         Subscription parent = Operators.emptySubscription();
@@ -172,7 +171,7 @@ public class FluxWithLatestFromTest {
 
 	@Test
     public void scanOtherSubscriber() {
-		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWithLatestFrom.WithLatestFromSubscriber<Integer, Integer, Integer> main =
         		new FluxWithLatestFrom.WithLatestFromSubscriber<>(actual, (i, j) -> i + j);
         FluxWithLatestFrom.WithLatestFromOtherSubscriber<Integer> test =

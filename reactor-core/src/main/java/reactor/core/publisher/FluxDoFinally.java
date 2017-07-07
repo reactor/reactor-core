@@ -18,15 +18,14 @@ package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.Fuseable.QueueSubscription;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Hook into the lifecycle events and signals of a {@link Flux} and execute
@@ -46,8 +45,8 @@ final class FluxDoFinally<T> extends FluxOperator<T, T> {
 	final Consumer<SignalType> onFinally;
 
 	@SuppressWarnings("unchecked")
-	static <T> Subscriber<T> createSubscriber(
-			Subscriber<? super T> s, Consumer<SignalType> onFinally,
+	static <T> CoreSubscriber<T> createSubscriber(
+			CoreSubscriber<? super T> s, Consumer<SignalType> onFinally,
 			boolean fuseable) {
 
 		if (fuseable) {
@@ -70,13 +69,13 @@ final class FluxDoFinally<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		source.subscribe(createSubscriber(s, onFinally, false), ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		source.subscribe(createSubscriber(s, onFinally, false));
 	}
 
 	static class DoFinallySubscriber<T> implements InnerOperator<T, T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final Consumer<SignalType> onFinally;
 
@@ -91,7 +90,7 @@ final class FluxDoFinally<T> extends FluxOperator<T, T> {
 
 		boolean syncFused;
 
-		DoFinallySubscriber(Subscriber<? super T> actual, Consumer<SignalType> onFinally) {
+		DoFinallySubscriber(CoreSubscriber<? super T> actual, Consumer<SignalType> onFinally) {
 			this.actual = actual;
 			this.onFinally = onFinally;
 		}
@@ -159,7 +158,7 @@ final class FluxDoFinally<T> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 
@@ -168,7 +167,7 @@ final class FluxDoFinally<T> extends FluxOperator<T, T> {
 	static class DoFinallyFuseableSubscriber<T> extends DoFinallySubscriber<T>
 		implements Fuseable, QueueSubscription<T> {
 
-		DoFinallyFuseableSubscriber(Subscriber<? super T> actual, Consumer<SignalType> onFinally) {
+		DoFinallyFuseableSubscriber(CoreSubscriber<? super T> actual, Consumer<SignalType> onFinally) {
 			super(actual, onFinally);
 		}
 

@@ -15,12 +15,12 @@
  */
 package reactor.core.publisher;
 
+import javax.annotation.Nullable;
+
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.util.context.Contextualized;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import javax.annotation.Nullable;
-import reactor.util.context.Context;
 
 /**
  *
@@ -32,14 +32,9 @@ import reactor.util.context.Context;
  * @author Stephane Maldini
  */
 interface InnerProducer<O>
-		extends Contextualized, Scannable, Subscription {
+		extends Scannable, Subscription {
 
-	Subscriber<? super O> actual();
-
-	@Override
-	default Context currentContext() {
-		return Context.from(actual());
-	}
+	CoreSubscriber<? super O> actual();
 
 	@Override
 	@Nullable

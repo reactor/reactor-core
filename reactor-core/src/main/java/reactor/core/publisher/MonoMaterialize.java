@@ -15,8 +15,7 @@
  */
 package reactor.core.publisher;
 
-import org.reactivestreams.Subscriber;
-import reactor.util.context.Context;
+import reactor.core.CoreSubscriber;
 
 /**
  * @author Stephane Maldini
@@ -28,8 +27,7 @@ final class MonoMaterialize<T> extends MonoOperator<T, Signal<T>> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super Signal<T>> subscriber, Context ctx) {
-		source.subscribe(new FluxMaterialize.MaterializeSubscriber<>(new MonoNext.NextSubscriber<Signal<T>>(subscriber)),
-				ctx);
+	public void subscribe(CoreSubscriber<? super Signal<T>> subscriber) {
+		source.subscribe(new FluxMaterialize.MaterializeSubscriber<>(new MonoNext.NextSubscriber<Signal<T>>(subscriber)));
 	}
 }

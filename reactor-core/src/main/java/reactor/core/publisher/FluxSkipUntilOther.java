@@ -19,13 +19,13 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Skips values from the main publisher until the other publisher signals
@@ -46,14 +46,14 @@ final class FluxSkipUntilOther<T, U> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		SkipUntilMainSubscriber<T> mainSubscriber = new SkipUntilMainSubscriber<>(s);
 
 		SkipUntilOtherSubscriber<U> otherSubscriber = new SkipUntilOtherSubscriber<>(mainSubscriber);
 
 		other.subscribe(otherSubscriber);
 
-		source.subscribe(mainSubscriber, ctx);
+		source.subscribe(mainSubscriber);
 	}
 
 	static final class SkipUntilOtherSubscriber<U> implements InnerConsumer<U> {
@@ -123,7 +123,7 @@ final class FluxSkipUntilOther<T, U> extends FluxOperator<T, T> {
 	static final class SkipUntilMainSubscriber<T>
 			implements InnerOperator<T, T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		volatile Subscription       main;
 
@@ -144,12 +144,12 @@ final class FluxSkipUntilOther<T, U> extends FluxOperator<T, T> {
 
 		volatile boolean gate;
 
-		SkipUntilMainSubscriber(Subscriber<? super T> actual) {
+		SkipUntilMainSubscriber(CoreSubscriber<? super T> actual) {
 			this.actual = Operators.serialize(actual);
 		}
 
 		@Override
-		public final Subscriber<? super T> actual() {
+		public final CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

@@ -23,8 +23,8 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.context.Context;
@@ -48,7 +48,7 @@ final class MonoFlatMap<T, R> extends MonoOperator<T, R> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super R> s) {
 
 		if (FluxFlatMap.trySubscribeScalarMap(source, s, mapper, true)) {
 			return;
@@ -57,7 +57,7 @@ final class MonoFlatMap<T, R> extends MonoOperator<T, R> implements Fuseable {
 		FlatMapMain<T, R> manager = new FlatMapMain<>(s, mapper);
 		s.onSubscribe(manager);
 
-		source.subscribe(manager, ctx);
+		source.subscribe(manager);
 	}
 
 	static final class FlatMapMain<T, R> extends Operators.MonoSubscriber<T, R> {
@@ -75,7 +75,7 @@ final class MonoFlatMap<T, R> extends MonoOperator<T, R> implements Fuseable {
 						Subscription.class,
 						"s");
 
-		FlatMapMain(Subscriber<? super R> subscriber,
+		FlatMapMain(CoreSubscriber<? super R> subscriber,
 				Function<? super T, ? extends Mono<? extends R>> mapper) {
 			super(subscriber);
 			this.mapper = mapper;

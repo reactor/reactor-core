@@ -18,13 +18,12 @@ package reactor.core.publisher;
 
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Peeks the value of a {@link Mono} and execute terminal callbacks accordingly, allowing
@@ -53,13 +52,13 @@ final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		if (s instanceof ConditionalSubscriber) {
 			source.subscribe(new MonoTerminalPeekSubscriber<>((ConditionalSubscriber<? super T>) s,
-					this), ctx);
+					this));
 			return;
 		}
-		source.subscribe(new MonoTerminalPeekSubscriber<>(s, this), ctx);
+		source.subscribe(new MonoTerminalPeekSubscriber<>(s, this));
 	}
 
 	/*
@@ -81,7 +80,7 @@ final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable {
 			implements ConditionalSubscriber<T>, InnerOperator<T, T>,
 			           Fuseable.QueueSubscription<T> {
 
-		final Subscriber<? super T>            actual;
+		final CoreSubscriber<? super T>        actual;
 		final ConditionalSubscriber<? super T> actualConditional;
 
 		final MonoPeekTerminal<T> parent;
@@ -111,7 +110,7 @@ final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable {
 			this.parent = parent;
 		}
 
-		MonoTerminalPeekSubscriber(Subscriber<? super T> actual,
+		MonoTerminalPeekSubscriber(CoreSubscriber<? super T> actual,
 				MonoPeekTerminal<T> parent) {
 			this.actual = actual;
 			this.actualConditional = null;
@@ -322,7 +321,7 @@ final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

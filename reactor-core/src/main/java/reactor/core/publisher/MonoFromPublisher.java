@@ -20,9 +20,8 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import reactor.util.context.Context;
 
 /**
  * Emits a single item at most from the source.
@@ -40,7 +39,7 @@ final class MonoFromPublisher<T> extends Mono<T> implements Scannable {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		source.subscribe(new MonoNext.NextSubscriber<>(s));
 	}
 

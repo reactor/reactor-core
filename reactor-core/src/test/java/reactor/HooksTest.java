@@ -28,6 +28,7 @@ import java.util.logging.Level;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.ConnectableFlux;
@@ -171,7 +172,7 @@ public class HooksTest {
 
 		Hooks.resetOnOperator();
 
-		final Subscriber<Object> b = new BaseSubscriber<Object>() {};
+		final CoreSubscriber<Object> b = new BaseSubscriber<Object>() {};
 
 		Hooks.onNewSubscriber((p, s) -> b);
 		Hooks.onNewSubscriber((p, s) -> new BaseSubscriber<Object>() {
@@ -182,7 +183,7 @@ public class HooksTest {
 		});
 
 		Flux.from(s ->
-			assertThat(Context.from(s).get(BaseSubscriber.class)).isEqualTo(b)
+			assertThat(((BaseSubscriber)s).currentContext().get(BaseSubscriber.class)).isEqualTo(b)
 		).subscribe();
 
 

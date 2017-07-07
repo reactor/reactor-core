@@ -16,13 +16,11 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import reactor.core.Fuseable;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import javax.annotation.Nullable;
-import reactor.util.context.Context;
 
 /**
  * A decorating {@link Mono} {@link Publisher} that exposes {@link Mono} API over an arbitrary {@link Publisher}
@@ -45,10 +43,11 @@ final class MonoSource<I> extends Mono<I> implements Scannable {
 	/**
 	 * Default is simply delegating and decorating with {@link Mono} API. Note this
 	 * assumes an identity between input and output types.
+	 * @param s
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super I> s, Context context) {
+	public void subscribe(CoreSubscriber<? super I> s) {
 		source.subscribe(s);
 	}
 

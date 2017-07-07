@@ -17,7 +17,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -26,10 +26,10 @@ public class InnerProducerTest {
 
 	@Test
 	public void scanDefaultMethod() {
-		Subscriber<String> actual = new LambdaSubscriber<>(null, null, null, null);
+		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, null, null, null);
 		InnerProducer<String> test = new InnerProducer<String>() {
 			@Override
-			public Subscriber<? super String> actual() {
+			public CoreSubscriber<? super String> actual() {
 				return actual;
 			}
 

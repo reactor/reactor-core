@@ -19,14 +19,14 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Samples the main source and emits its latest value whenever the other Publisher
@@ -59,9 +59,9 @@ final class FluxSample<T, U> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 
-		Subscriber<T> serial = Operators.serialize(s);
+		CoreSubscriber<T> serial = Operators.serialize(s);
 
 		SampleMainSubscriber<T> main = new SampleMainSubscriber<>(serial);
 
@@ -69,12 +69,12 @@ final class FluxSample<T, U> extends FluxOperator<T, T> {
 
 		other.subscribe(new SampleOther<>(main));
 
-		source.subscribe(main, ctx);
+		source.subscribe(main);
 	}
 
 	static final class SampleMainSubscriber<T> implements InnerOperator<T, T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		volatile T                  value;
 
@@ -99,12 +99,12 @@ final class FluxSample<T, U> extends FluxOperator<T, T> {
 		static final AtomicLongFieldUpdater<SampleMainSubscriber> REQUESTED =
 		  AtomicLongFieldUpdater.newUpdater(SampleMainSubscriber.class, "requested");
 
-		SampleMainSubscriber(Subscriber<? super T> actual) {
+		SampleMainSubscriber(CoreSubscriber<? super T> actual) {
 			this.actual = actual;
 		}
 
 		@Override
-		public final Subscriber<? super T> actual() {
+		public final CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

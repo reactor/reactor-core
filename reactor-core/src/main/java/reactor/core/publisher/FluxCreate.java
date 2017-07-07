@@ -28,12 +28,12 @@ import java.util.function.LongConsumer;
 import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
 import reactor.util.concurrent.QueueSupplier;
-import reactor.util.context.Context;
 
 /**
  * Provides a multi-valued sink API for a callback that is called for
@@ -62,7 +62,7 @@ final class FluxCreate<T> extends Flux<T> {
 		this.createMode = createMode;
 	}
 
-	static <T> BaseSink<T> createSink(Subscriber<? super T> t, OverflowStrategy backpressure){
+	static <T> BaseSink<T> createSink(CoreSubscriber<? super T> t, OverflowStrategy backpressure){
 		switch (backpressure) {
 			case IGNORE: {
 				return new IgnoreSink<>(t);
@@ -82,7 +82,7 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 	}
 	@Override
-	public void subscribe(Subscriber<? super T> t, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> t) {
 		BaseSink<T> sink = createSink(t, backpressure);
 
 		t.onSubscribe(sink);
@@ -281,7 +281,7 @@ final class FluxCreate<T> extends Flux<T> {
 			extends AtomicBoolean
 			implements FluxSink<T>, InnerProducer<T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		volatile Disposable disposable;
 		@SuppressWarnings("rawtypes")
@@ -300,7 +300,7 @@ final class FluxCreate<T> extends Flux<T> {
 		static final AtomicReferenceFieldUpdater<BaseSink, LongConsumer> REQUEST_CONSUMER =
 				AtomicReferenceFieldUpdater.newUpdater(BaseSink.class, LongConsumer.class, "requestConsumer");
 
-		BaseSink(Subscriber<? super T> actual) {
+		BaseSink(CoreSubscriber<? super T> actual) {
 			this.actual = actual;
 		}
 
@@ -381,7 +381,7 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 
@@ -451,7 +451,7 @@ final class FluxCreate<T> extends Flux<T> {
 
 	static final class IgnoreSink<T> extends BaseSink<T> {
 
-		IgnoreSink(Subscriber<? super T> actual) {
+		IgnoreSink(CoreSubscriber<? super T> actual) {
 			super(actual);
 		}
 
@@ -475,7 +475,7 @@ final class FluxCreate<T> extends Flux<T> {
 
 	static abstract class NoOverflowBaseAsyncSink<T> extends BaseSink<T> {
 
-		NoOverflowBaseAsyncSink(Subscriber<? super T> actual) {
+		NoOverflowBaseAsyncSink(CoreSubscriber<? super T> actual) {
 			super(actual);
 		}
 
@@ -500,7 +500,7 @@ final class FluxCreate<T> extends Flux<T> {
 
 	static final class DropAsyncSink<T> extends NoOverflowBaseAsyncSink<T> {
 
-		DropAsyncSink(Subscriber<? super T> actual) {
+		DropAsyncSink(CoreSubscriber<? super T> actual) {
 			super(actual);
 		}
 
@@ -513,7 +513,7 @@ final class FluxCreate<T> extends Flux<T> {
 
 	static final class ErrorAsyncSink<T> extends NoOverflowBaseAsyncSink<T> {
 
-		ErrorAsyncSink(Subscriber<? super T> actual) {
+		ErrorAsyncSink(CoreSubscriber<? super T> actual) {
 			super(actual);
 		}
 
@@ -536,7 +536,7 @@ final class FluxCreate<T> extends Flux<T> {
 		static final AtomicIntegerFieldUpdater<BufferAsyncSink> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(BufferAsyncSink.class, "wip");
 
-		 BufferAsyncSink(Subscriber<? super T> actual, int capacityHint) {
+		 BufferAsyncSink(CoreSubscriber<? super T> actual, int capacityHint) {
 			super(actual);
 			this.queue = QueueSupplier.<T>unbounded(capacityHint).get();
 		}
@@ -674,7 +674,7 @@ final class FluxCreate<T> extends Flux<T> {
 		static final AtomicIntegerFieldUpdater<LatestAsyncSink> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(LatestAsyncSink.class, "wip");
 
-		LatestAsyncSink(Subscriber<? super T> actual) {
+		LatestAsyncSink(CoreSubscriber<? super T> actual) {
 			super(actual);
 			this.queue = new AtomicReference<>();
 		}

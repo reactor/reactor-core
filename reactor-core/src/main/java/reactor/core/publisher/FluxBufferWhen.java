@@ -33,6 +33,7 @@ import javax.annotation.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.util.context.Context;
 
@@ -76,7 +77,7 @@ final class FluxBufferWhen<T, U, V, C extends Collection<? super T>>
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super C> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super C> s) {
 
 		Queue<C> q = queueSupplier.get();
 
@@ -87,7 +88,7 @@ final class FluxBufferWhen<T, U, V, C extends Collection<? super T>>
 
 		start.subscribe(parent.starter);
 
-		source.subscribe(parent, ctx);
+		source.subscribe(parent);
 	}
 
 	static final class BufferStartEndMainSubscriber<T, U, V, C extends Collection<? super T>>
@@ -97,7 +98,7 @@ final class FluxBufferWhen<T, U, V, C extends Collection<? super T>>
 		final Queue<C> queue;
 
 		final Function<? super U, ? extends Publisher<V>> end;
-		final Subscriber<? super C>                       actual;
+		final CoreSubscriber<? super C>                   actual;
 
 		Set<Subscription> endSubscriptions;
 
@@ -146,7 +147,7 @@ final class FluxBufferWhen<T, U, V, C extends Collection<? super T>>
 				AtomicIntegerFieldUpdater.newUpdater(BufferStartEndMainSubscriber.class,
 						"open");
 
-		BufferStartEndMainSubscriber(Subscriber<? super C> actual,
+		BufferStartEndMainSubscriber(CoreSubscriber<? super C> actual,
 				Supplier<C> bufferSupplier,
 				Queue<C> queue,
 				Function<? super U, ? extends Publisher<V>> end) {
@@ -168,7 +169,7 @@ final class FluxBufferWhen<T, U, V, C extends Collection<? super T>>
 		}
 
 		@Override
-		public final Subscriber<? super C> actual() {
+		public final CoreSubscriber<? super C> actual() {
 			return actual;
 		}
 

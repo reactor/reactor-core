@@ -20,12 +20,12 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import javax.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -59,8 +59,8 @@ final class FluxWithLatestFrom<T, U, R> extends FluxOperator<T, R> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R> s, Context ctx) {
-		Subscriber<R> serial = Operators.serialize(s);
+	public void subscribe(CoreSubscriber<? super R> s) {
+		CoreSubscriber<R> serial = Operators.serialize(s);
 
 		WithLatestFromSubscriber<T, U, R> main =
 				new WithLatestFromSubscriber<>(serial, combiner);
@@ -70,12 +70,12 @@ final class FluxWithLatestFrom<T, U, R> extends FluxOperator<T, R> {
 
 		other.subscribe(secondary);
 
-		source.subscribe(main, ctx);
+		source.subscribe(main);
 	}
 
 	static final class WithLatestFromSubscriber<T, U, R> implements InnerOperator<T, R> {
 
-		final Subscriber<? super R> actual;
+		final CoreSubscriber<? super R> actual;
 		final BiFunction<? super T, ? super U, ? extends R> combiner;
 
 		volatile Subscription main;
@@ -97,7 +97,7 @@ final class FluxWithLatestFrom<T, U, R> extends FluxOperator<T, R> {
 
 		volatile U otherValue;
 
-		WithLatestFromSubscriber(Subscriber<? super R> actual,
+		WithLatestFromSubscriber(CoreSubscriber<? super R> actual,
 				BiFunction<? super T, ? super U, ? extends R> combiner) {
 			this.actual = actual;
 			this.combiner = combiner;
@@ -113,7 +113,7 @@ final class FluxWithLatestFrom<T, U, R> extends FluxOperator<T, R> {
 		}
 
 		@Override
-		public Subscriber<? super R> actual() {
+		public CoreSubscriber<? super R> actual() {
 			return actual;
 		}
 

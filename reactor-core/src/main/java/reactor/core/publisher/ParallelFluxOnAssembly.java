@@ -16,13 +16,13 @@
 
 package reactor.core.publisher;
 
-import org.reactivestreams.Subscriber;
+import javax.annotation.Nullable;
+
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxOnAssembly.AssemblyLightSnapshotException;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Captures the current stacktrace when this connectable publisher is created and makes it
@@ -87,15 +87,15 @@ final class ParallelFluxOnAssembly<T> extends ParallelFlux<T>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super T>[] subscribers, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T>[] subscribers) {
 		if (!validate(subscribers)) {
 			return;
 		}
 
 		int n = subscribers.length;
-		@SuppressWarnings("unchecked") Subscriber<? super T>[] parents =
-				new Subscriber[n];
-		Subscriber<? super T> s;
+		@SuppressWarnings("unchecked") CoreSubscriber<? super T>[] parents =
+				new CoreSubscriber[n];
+		CoreSubscriber<? super T> s;
 		for (int i = 0; i < n; i++) {
 			s = subscribers[i];
 			if (s instanceof ConditionalSubscriber) {
@@ -111,7 +111,7 @@ final class ParallelFluxOnAssembly<T> extends ParallelFlux<T>
 			parents[i] = s;
 		}
 
-		source.subscribe(parents, ctx);
+		source.subscribe(parents);
 	}
 
 	@Override

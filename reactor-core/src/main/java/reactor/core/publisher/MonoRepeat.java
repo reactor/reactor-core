@@ -15,8 +15,7 @@
  */
 package reactor.core.publisher;
 
-import org.reactivestreams.Subscriber;
-import reactor.util.context.Context;
+import reactor.core.CoreSubscriber;
 
 /**
  * Repeatedly subscribes to the source and relays its values either
@@ -40,7 +39,7 @@ final class MonoRepeat<T> extends FluxFromMonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		FluxRepeat.RepeatSubscriber<T> parent =
 				new FluxRepeat.RepeatSubscriber<>(source, s, times);
 

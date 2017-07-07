@@ -25,12 +25,11 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-import reactor.util.context.Context;
 
 /**
  * Buffers values if the subscriber doesn't request fast enough, bounding the
@@ -63,11 +62,10 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super O> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super O> s) {
 		source.subscribe(new BackpressureBufferTimeoutSubscriber<>(s,
 				ttl, ttlScheduler,
-				bufferSize,
-				onBufferEviction), ctx);
+				bufferSize, onBufferEviction));
 	}
 
 	@Override
@@ -78,12 +76,12 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 	static final class BackpressureBufferTimeoutSubscriber<T> extends ArrayDeque<Object>
 			implements InnerOperator<T, T>, Runnable {
 
-		final Subscriber<? super T>  actual;
-		final Duration               ttl;
-		final Scheduler              ttlScheduler;
-		final Scheduler.Worker       worker;
-		final int                    bufferSizeDouble;
-		final Consumer<? super T>    onBufferEviction;
+		final CoreSubscriber<? super T> actual;
+		final Duration                  ttl;
+		final Scheduler                 ttlScheduler;
+		final Scheduler.Worker          worker;
+		final int                       bufferSizeDouble;
+		final Consumer<? super T>       onBufferEviction;
 
 		Subscription s;
 
@@ -103,7 +101,7 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 				BackpressureBufferTimeoutSubscriber.class,
 				"requested");
 
-		BackpressureBufferTimeoutSubscriber(Subscriber<? super T> actual,
+		BackpressureBufferTimeoutSubscriber(CoreSubscriber<? super T> actual,
 				Duration ttl, Scheduler ttlScheduler,
 				int bufferSize,
 				Consumer<? super T> onBufferEviction) {
@@ -147,7 +145,7 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

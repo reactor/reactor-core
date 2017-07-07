@@ -22,8 +22,8 @@ import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -119,7 +119,7 @@ public class MonoCollectTest {
 
 	@Test
 	public void scanSubscriber() {
-		Subscriber<List<String>> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<List<String>> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoCollect.CollectSubscriber<String, List<String>> test = new MonoCollect.CollectSubscriber<>(
 				actual, (l, v) -> l.add(v), new ArrayList<>());
 		Subscription parent = Operators.emptySubscription();

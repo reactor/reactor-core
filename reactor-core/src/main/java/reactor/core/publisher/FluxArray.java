@@ -18,11 +18,11 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Emits the contents of a wrapped (shared) array.
@@ -41,7 +41,7 @@ final class FluxArray<T> extends Flux<T> implements Fuseable {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <T> void subscribe(Subscriber<? super T> s, T[] array) {
+	public static <T> void subscribe(CoreSubscriber<? super T> s, T[] array) {
 		if (array.length == 0) {
 			Operators.complete(s);
 			return;
@@ -55,14 +55,14 @@ final class FluxArray<T> extends Flux<T> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context context) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		subscribe(s, array);
 	}
 
 	static final class ArraySubscription<T>
 			implements InnerProducer<T>, SynchronousSubscription<T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final T[] array;
 
@@ -75,7 +75,7 @@ final class FluxArray<T> extends Flux<T> implements Fuseable {
 		static final AtomicLongFieldUpdater<ArraySubscription> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(ArraySubscription.class, "requested");
 
-		ArraySubscription(Subscriber<? super T> actual, T[] array) {
+		ArraySubscription(CoreSubscriber<? super T> actual, T[] array) {
 			this.actual = actual;
 			this.array = array;
 		}
@@ -195,7 +195,7 @@ final class FluxArray<T> extends Flux<T> implements Fuseable {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 
@@ -244,7 +244,7 @@ final class FluxArray<T> extends Flux<T> implements Fuseable {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

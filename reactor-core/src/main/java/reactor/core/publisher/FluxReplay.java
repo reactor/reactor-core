@@ -25,17 +25,17 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.concurrent.QueueSupplier;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * @param <T>
@@ -52,7 +52,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 	interface ReplaySubscription<T> extends QueueSubscription<T>, InnerProducer<T> {
 
-		Subscriber<? super T> actual();
+		CoreSubscriber<? super T> actual();
 
 		boolean enter();
 
@@ -1032,7 +1032,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		ReplayInner<T> inner = new ReplayInner<>(s);
 		for (; ; ) {
 			ReplaySubscriber<T> c = connection;
@@ -1291,7 +1291,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 	static final class ReplayInner<T>
 			implements ReplaySubscription<T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		ReplaySubscriber<T> parent;
 
@@ -1320,7 +1320,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 				AtomicIntegerFieldUpdater.newUpdater(ReplayInner.class,
 						"cancelled");
 
-		ReplayInner(Subscriber<? super T> actual) {
+		ReplayInner(CoreSubscriber<? super T> actual) {
 			this.actual = actual;
 		}
 
@@ -1373,7 +1373,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

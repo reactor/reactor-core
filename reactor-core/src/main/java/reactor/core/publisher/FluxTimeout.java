@@ -24,7 +24,7 @@ import java.util.function.Function;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.util.context.Context;
+import reactor.core.CoreSubscriber;
 
 /**
  * Signals a timeout (or switches to another sequence) in case a per-item
@@ -65,8 +65,8 @@ final class FluxTimeout<T, U, V> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		Subscriber<T> serial = Operators.serialize(s);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		CoreSubscriber<T> serial = Operators.serialize(s);
 
 		TimeoutMainSubscriber<T, V> main =
 				new TimeoutMainSubscriber<>(serial, itemTimeout, other);
@@ -79,7 +79,7 @@ final class FluxTimeout<T, U, V> extends FluxOperator<T, T> {
 
 		firstTimeout.subscribe(ts);
 
-		source.subscribe(main, ctx);
+		source.subscribe(main);
 	}
 
 	static final class TimeoutMainSubscriber<T, V>
@@ -104,7 +104,7 @@ final class FluxTimeout<T, U, V> extends FluxOperator<T, T> {
 		static final AtomicLongFieldUpdater<TimeoutMainSubscriber> INDEX =
 				AtomicLongFieldUpdater.newUpdater(TimeoutMainSubscriber.class, "index");
 
-		TimeoutMainSubscriber(Subscriber<? super T> actual,
+		TimeoutMainSubscriber(CoreSubscriber<? super T> actual,
 				Function<? super T, ? extends Publisher<V>> itemTimeout,
 				Publisher<? extends T> other) {
 			super(actual);
@@ -269,11 +269,11 @@ final class FluxTimeout<T, U, V> extends FluxOperator<T, T> {
 
 	static final class TimeoutOtherSubscriber<T> implements Subscriber<T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final Operators.MultiSubscriptionSubscriber<T, T> arbiter;
 
-		TimeoutOtherSubscriber(Subscriber<? super T> actual,
+		TimeoutOtherSubscriber(CoreSubscriber<? super T> actual,
 				Operators.MultiSubscriptionSubscriber<T, T> arbiter) {
 			this.actual = actual;
 			this.arbiter = arbiter;

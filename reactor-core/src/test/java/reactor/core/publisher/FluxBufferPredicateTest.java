@@ -26,15 +26,13 @@ import java.util.function.Supplier;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -677,7 +675,7 @@ public class FluxBufferPredicateTest {
 
 	@Test
 	public void scanMain() {
-		Subscriber<? super List> actual = new LambdaSubscriber<>(null, e -> {}, null,
+		CoreSubscriber<? super List> actual = new LambdaSubscriber<>(null, e -> {}, null,
 				sub -> sub.request(100));
 		List<String> initialBuffer = Arrays.asList("foo", "bar");
 		FluxBufferPredicate.BufferPredicateSubscriber<String, List<String>> test = new FluxBufferPredicate.BufferPredicateSubscriber<>(
@@ -701,7 +699,7 @@ public class FluxBufferPredicateTest {
 
 	@Test
 	public void scanMainCancelled() {
-		Subscriber<? super List> actual = new LambdaSubscriber<>(null, e -> {}, null,
+		CoreSubscriber<? super List> actual = new LambdaSubscriber<>(null, e -> {}, null,
 				sub -> sub.request(100));
 		List<String> initialBuffer = Arrays.asList("foo", "bar");
 		FluxBufferPredicate.BufferPredicateSubscriber<String, List<String>> test = new FluxBufferPredicate.BufferPredicateSubscriber<>(

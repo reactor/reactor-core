@@ -18,11 +18,10 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.context.Context;
 
@@ -36,16 +35,16 @@ final class FluxContextGet<T, V> extends FluxOperator<T, V> implements Fuseable 
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super V> s, Context ctx) {
-		source.subscribe(new ContextGetSubscriber<>(s, doOnContext, ctx), ctx);
+	public void subscribe(CoreSubscriber<? super V> s) {
+		source.subscribe(new ContextGetSubscriber<>(s, doOnContext));
 	}
 
 	static final class ContextGetSubscriber<T, V>
 			implements ConditionalSubscriber<T>, InnerOperator<T, V>,
 			           QueueSubscription<V> {
 
-		final Subscriber<? super V>            actual;
-		final ConditionalSubscriber<? super V> actualConditional;
+		final CoreSubscriber<? super V>                   actual;
+		final ConditionalSubscriber<? super V>            actualConditional;
 		final BiFunction<? super T, Context, ? extends V> doOnContext;
 
 		volatile Context context;
@@ -55,11 +54,10 @@ final class FluxContextGet<T, V> extends FluxOperator<T, V> implements Fuseable 
 		int mode;
 
 		@SuppressWarnings("unchecked")
-		ContextGetSubscriber(Subscriber<? super V> actual,
-				BiFunction<? super T, Context, ? extends V> doOnContext,
-				Context context) {
+		ContextGetSubscriber(CoreSubscriber<? super V> actual,
+				BiFunction<? super T, Context, ? extends V> doOnContext) {
 			this.actual = actual;
-			this.context = context;
+			this.context = actual.currentContext();
 			this.doOnContext = doOnContext;
 			if (actual instanceof ConditionalSubscriber) {
 				this.actualConditional = (ConditionalSubscriber<? super V>) actual;
@@ -146,7 +144,7 @@ final class FluxContextGet<T, V> extends FluxOperator<T, V> implements Fuseable 
 		}
 
 		@Override
-		public Subscriber<? super V> actual() {
+		public CoreSubscriber<? super V> actual() {
 			return actual;
 		}
 

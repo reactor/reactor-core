@@ -15,8 +15,7 @@
  */
 package reactor.core.publisher;
 
-import org.reactivestreams.Subscriber;
-import reactor.util.context.Context;
+import reactor.core.CoreSubscriber;
 
 /**
  * Represents an never publisher which only calls onSubscribe.
@@ -36,7 +35,7 @@ extends Mono<Object> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super Object> s, Context context) {
+	public void subscribe(CoreSubscriber<? super Object> s) {
 		s.onSubscribe(Operators.emptySubscription());
 	}
 

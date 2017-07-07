@@ -30,17 +30,16 @@ import java.util.function.LongConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.Logger;
 import reactor.util.concurrent.QueueSupplier;
-import reactor.util.context.Context;
-
-import javax.annotation.Nullable;
 
 /**
  * A ParallelFlux publishes to an array of Subscribers, in parallel 'rails' (or
@@ -399,7 +398,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * or completes successfully. All these events are represented as a {@link Signal}
 	 * that is passed to the side-effect callback. Note that with {@link ParallelFlux} and
 	 * the {@link #subscribe(Consumer) lambda-based subscribes} or the
-	 * {@link #subscribe(Subscriber[], Context) array-based one}, onError and onComplete will be
+	 * {@link #subscribe(CoreSubscriber[]) array-based one}, onError and onComplete will be
 	 * invoked as many times as there are rails, resulting in as many corresponding
 	 * {@link Signal} being seen in the callback.
 	 * <p>
@@ -414,7 +413,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @see #doOnNext(Consumer)
 	 * @see #doOnError(Consumer)
 	 * @see #doOnComplete(Runnable)
-	 * @see #subscribe(Subscriber[], Context)
+	 * @see #subscribe(CoreSubscriber[])
 	 * @see Signal
 	 */
 	public final ParallelFlux<T> doOnEach(Consumer<? super Signal<T>> signalConsumer) {
@@ -913,19 +912,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @param subscribers the subscribers array to run in parallel, the number of items
 	 * must be equal to the parallelism level of this ParallelFlux
 	 */
-	public final void subscribe(Subscriber<? super T>[] subscribers){
-		subscribe(subscribers, Context.empty());
-	}
-
-	/**
-	 * Subscribes an array of Subscribers to this {@link ParallelFlux} and triggers the
-	 * execution chain for all 'rails'.
-	 *
-	 * @param subscribers the subscribers array to run in parallel, the number of items
-	 * must be equal to the parallelism level of this ParallelFlux
-	 * @param ctx a subscribe-time optional {@link Context}
-	 */
-	protected abstract void subscribe(Subscriber<? super T>[] subscribers, Context ctx);
+	protected abstract void subscribe(CoreSubscriber<? super T>[] subscribers);
 
 	/**
 	 * Subscribes to this {@link ParallelFlux} and triggers the execution chain for all
@@ -989,7 +976,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 			@Nullable Consumer<? super Subscription> onSubscribe){
 
 		@SuppressWarnings("unchecked")
-		Subscriber<? super T>[] subscribers = new Subscriber[parallelism()];
+		CoreSubscriber<? super T>[] subscribers = new CoreSubscriber[parallelism()];
 
 		int i = 0;
 		while(i < subscribers.length){
@@ -998,7 +985,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 							onError, onComplete, onSubscribe));
 		}
 
-		subscribe(subscribers, Context.empty());
+		subscribe(subscribers);
 	}
 
 	/**
@@ -1010,10 +997,9 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	@Override
 	@SuppressWarnings("unchecked")
 	public final void subscribe(Subscriber<? super T> s) {
-		s = Operators.onNewSubscriber(this, s);
-		sequential().subscribe(
-				new FluxHide.SuppressFuseableSubscriber<>(s),
-				Context.from(s));
+		sequential().subscribe(new FluxHide.SuppressFuseableSubscriber<>(
+				Operators.onNewSubscriber(this, s))
+		);
 	}
 
 	/**

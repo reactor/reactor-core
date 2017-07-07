@@ -18,13 +18,12 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler;
-import javax.annotation.Nullable;
-import reactor.util.context.Context;
 
 /**
  * Emits the first value emitted by a given source publisher, delayed by some time amount
@@ -51,9 +50,8 @@ final class MonoDelayElement<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		source.subscribe(new DelayElementSubscriber<>(s, timedScheduler, delay, unit),
-				ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		source.subscribe(new DelayElementSubscriber<>(s, timedScheduler, delay, unit));
 	}
 
 	static final class DelayElementSubscriber<T> extends Operators.MonoSubscriber<T,T> {
@@ -67,7 +65,7 @@ final class MonoDelayElement<T> extends MonoOperator<T, T> {
 		volatile Disposable task;
 		volatile boolean done;
 
-		DelayElementSubscriber(Subscriber<? super T> actual, Scheduler scheduler,
+		DelayElementSubscriber(CoreSubscriber<? super T> actual, Scheduler scheduler,
 				long delay, TimeUnit unit) {
 			super(actual);
 			this.scheduler = scheduler;

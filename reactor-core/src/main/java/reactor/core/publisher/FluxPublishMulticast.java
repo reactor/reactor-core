@@ -24,16 +24,15 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.context.Context;
-
-import javax.annotation.Nullable;
 
 /**
  * Shares a sequence for the duration of a function that may transform it and
@@ -72,10 +71,10 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super R> s) {
 
 		FluxPublishMulticaster<T, R> multicast =
-				new FluxPublishMulticaster<>(prefetch, queueSupplier, ctx);
+				new FluxPublishMulticaster<>(prefetch, queueSupplier, s.currentContext());
 
 		Publisher<? extends R> out;
 
@@ -95,7 +94,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 			out.subscribe(new CancelMulticaster<>(s, multicast));
 		}
 
-		source.subscribe(multicast, ctx);
+		source.subscribe(multicast);
 	}
 
 	static final class FluxPublishMulticaster<T, R> extends Flux<T>
@@ -184,7 +183,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 		}
 
 		@Override
-		public void subscribe(Subscriber<? super T> s, Context ctx) {
+		public void subscribe(CoreSubscriber<? super T> s) {
 			PublishMulticastInner<T> pcs = new PublishMulticastInner<>(this, s);
 			s.onSubscribe(pcs);
 
@@ -615,7 +614,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 
 		final FluxPublishMulticaster<T, ?> parent;
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
@@ -630,7 +629,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 						"once");
 
 		PublishMulticastInner(FluxPublishMulticaster<T, ?> parent,
-				Subscriber<? super T> actual) {
+				CoreSubscriber<? super T> actual) {
 			this.parent = parent;
 			this.actual = actual;
 		}
@@ -646,7 +645,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 
@@ -675,20 +674,20 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 	static final class CancelMulticaster<T>
 			implements InnerOperator<T, T>, QueueSubscription<T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final FluxPublishMulticaster<?, ?> parent;
 
 		Subscription s;
 
-		CancelMulticaster(Subscriber<? super T> actual,
+		CancelMulticaster(CoreSubscriber<? super T> actual,
 				FluxPublishMulticaster<?, ?> parent) {
 			this.actual = actual;
 			this.parent = parent;
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 
@@ -773,20 +772,20 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 	static final class CancelFuseableMulticaster<T>
 			implements InnerOperator<T, T>, QueueSubscription<T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final FluxPublishMulticaster<?, ?> parent;
 
 		QueueSubscription<T> s;
 
-		CancelFuseableMulticaster(Subscriber<? super T> actual,
+		CancelFuseableMulticaster(CoreSubscriber<? super T> actual,
 				FluxPublishMulticaster<?, ?> parent) {
 			this.actual = actual;
 			this.parent = parent;
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

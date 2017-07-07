@@ -16,11 +16,10 @@
 package reactor.core.publisher;
 
 import java.util.ArrayDeque;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.util.context.Context;
 import javax.annotation.Nullable;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 
 /**
  * Skips the last N elements from the source stream.
@@ -41,8 +40,8 @@ final class FluxSkipLast<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		source.subscribe(new SkipLastSubscriber<>(s, n), ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		source.subscribe(new SkipLastSubscriber<>(s, n));
 	}
 
 	//Fixme Does not implement ConditionalSubscriber until the full chain of operators
@@ -51,13 +50,13 @@ final class FluxSkipLast<T> extends FluxOperator<T, T> {
 	static final class SkipLastSubscriber<T>
 			extends ArrayDeque<T>
 			implements InnerOperator<T, T> {
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final int n;
 
 		Subscription s;
 
-		SkipLastSubscriber(Subscriber<? super T> actual, int n) {
+		SkipLastSubscriber(CoreSubscriber<? super T> actual, int n) {
 			this.actual = actual;
 			this.n = n;
 		}
@@ -104,7 +103,7 @@ final class FluxSkipLast<T> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

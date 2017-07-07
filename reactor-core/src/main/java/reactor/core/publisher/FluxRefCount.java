@@ -19,14 +19,13 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Connects to the underlying Flux once the given number of Subscribers subscribed
@@ -60,7 +59,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 	}
 	
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context context) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		RefCountMonitor<T> state;
 		
 		for (;;) {
@@ -75,7 +74,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 				state = u;
 			}
 			
-			state.subscribe(s, context);
+			state.subscribe(s);
 			break;
 		}
 	}
@@ -110,11 +109,11 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 			this.parent = parent;
 		}
 		
-		void subscribe(Subscriber<? super T> s, Context context) {
+		void subscribe(CoreSubscriber<? super T> s) {
 			// FIXME think about what happens when subscribers come and go below the connection threshold concurrently
 
 			RefCountInner<T> inner = new RefCountInner<>(s, this);
-			parent.source.subscribe(inner, context);
+			parent.source.subscribe(inner);
 			
 			if (SUBSCRIBERS.incrementAndGet(this) == n) {
 				parent.source.connect(this);
@@ -145,14 +144,14 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 	static final class RefCountInner<T>
 			implements QueueSubscription<T>, InnerOperator<T, T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final RefCountMonitor<T> parent;
 
 		Subscription s;
 		QueueSubscription<T> qs;
 
-		RefCountInner(Subscriber<? super T> actual, RefCountMonitor<T> parent) {
+		RefCountInner(CoreSubscriber<? super T> actual, RefCountMonitor<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
 		}
@@ -202,7 +201,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

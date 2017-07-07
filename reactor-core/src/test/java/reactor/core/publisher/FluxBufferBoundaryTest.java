@@ -24,9 +24,8 @@ import java.util.function.Supplier;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.mockito.Mockito;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
@@ -370,7 +369,7 @@ public class FluxBufferBoundaryTest
 
 	@Test
 	public void scanMain() {
-		Subscriber<? super List> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<? super List> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		List<String> initialBuffer = Arrays.asList("foo", "bar");
 		FluxBufferBoundary.BufferBoundaryMain<String, Integer, List<String>> test = new FluxBufferBoundary.BufferBoundaryMain<>(
 				actual, initialBuffer, ArrayList::new);

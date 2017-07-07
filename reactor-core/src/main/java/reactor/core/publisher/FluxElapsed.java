@@ -19,11 +19,10 @@ package reactor.core.publisher;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
-import reactor.util.context.Context;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
@@ -40,23 +39,24 @@ final class FluxElapsed<T> extends FluxOperator<T, Tuple2<Long, T>> implements F
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super Tuple2<Long, T>> s, Context ctx) {
-		source.subscribe(new ElapsedSubscriber<>(s, scheduler), ctx);
+	public void subscribe(CoreSubscriber<? super Tuple2<Long, T>> s) {
+		source.subscribe(new ElapsedSubscriber<>(s, scheduler));
 	}
 
 	static final class ElapsedSubscriber<T>
 			implements InnerOperator<T, Tuple2<Long, T>>,
 			           QueueSubscription<Tuple2<Long, T>> {
 
-		final Subscriber<? super Tuple2<Long, T>> actual;
-		final Scheduler                           scheduler;
+		final CoreSubscriber<? super Tuple2<Long, T>> actual;
+		final Scheduler                               scheduler;
 
 		Subscription      s;
 		QueueSubscription<T> qs;
 
 		long lastTime;
 
-		ElapsedSubscriber(Subscriber<? super Tuple2<Long, T>> actual, Scheduler scheduler) {
+		ElapsedSubscriber(CoreSubscriber<? super Tuple2<Long, T>> actual,
+				Scheduler scheduler) {
 			this.actual = actual;
 			this.scheduler = scheduler;
 		}
@@ -79,7 +79,7 @@ final class FluxElapsed<T> extends FluxOperator<T, Tuple2<Long, T>> implements F
 		}
 
 		@Override
-		public Subscriber<? super Tuple2<Long, T>> actual() {
+		public CoreSubscriber<? super Tuple2<Long, T>> actual() {
 			return actual;
 		}
 

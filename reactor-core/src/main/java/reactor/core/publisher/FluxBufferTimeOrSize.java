@@ -22,13 +22,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * @author Stephane Maldini
@@ -59,17 +59,13 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 		this.bufferSupplier = Objects.requireNonNull(bufferSupplier, "bufferSupplier");
 	}
 
-	final Subscriber<? super C> prepareSub(Subscriber<? super C> actual) {
-		return Operators.serialize(actual);
-	}
-
 	@Override
-	public void subscribe(Subscriber<? super C> subscriber, Context ctx) {
-		source.subscribe(new BufferTimeoutSubscriber<>(prepareSub(subscriber),
+	public void subscribe(CoreSubscriber<? super C> subscriber) {
+		source.subscribe(new BufferTimeoutSubscriber<>(Operators.serialize(subscriber),
 				batchSize,
 				timespan,
 				timer.createWorker(),
-				bufferSupplier), ctx);
+				bufferSupplier));
 	}
 
 
@@ -77,7 +73,7 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 	final static class BufferTimeoutSubscriber<T, C extends Collection<? super T>>
 			implements InnerOperator<T, C> {
 
-		final Subscriber<? super C> actual;
+		final CoreSubscriber<? super C> actual;
 
 		final static int NOT_TERMINATED          = 0;
 		final static int TERMINATED_WITH_SUCCESS = 1;
@@ -115,7 +111,7 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 
 		volatile C values;
 
-		BufferTimeoutSubscriber(Subscriber<? super C> actual,
+		BufferTimeoutSubscriber(CoreSubscriber<? super C> actual,
 				int maxSize,
 				long timespan,
 				Scheduler.Worker timer,
@@ -274,7 +270,7 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 		}
 
 		@Override
-		public Subscriber<? super C> actual() {
+		public CoreSubscriber<? super C> actual() {
 			return actual;
 		}
 

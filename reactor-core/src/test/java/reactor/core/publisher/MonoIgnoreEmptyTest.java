@@ -17,8 +17,8 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
@@ -42,7 +42,7 @@ public class MonoIgnoreEmptyTest {
 
 	@Test
 	public void scanSubscriber() {
-		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoIgnoreElements.IgnoreElementsSubscriber<String> test = new
 				MonoIgnoreElements.IgnoreElementsSubscriber<>(actual);
 		Subscription sub = Operators.emptySubscription();

@@ -16,11 +16,10 @@
 package reactor.core.publisher;
 
 import java.util.function.Predicate;
-
-import org.reactivestreams.*;
-import reactor.core.Scannable;
-import reactor.util.context.Context;
 import javax.annotation.Nullable;
+
+import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
 
 /**
  * Filters each 'rail' of the source ParallelFlux with a predicate function.
@@ -48,20 +47,20 @@ final class ParallelFilter<T> extends ParallelFlux<T> implements Scannable{
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T>[] subscribers, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T>[] subscribers) {
 		if (!validate(subscribers)) {
 			return;
 		}
 		
 		int n = subscribers.length;
 		@SuppressWarnings("unchecked")
-		Subscriber<? super T>[] parents = new Subscriber[n];
+		CoreSubscriber<? super T>[] parents = new CoreSubscriber[n];
 		
 		for (int i = 0; i < n; i++) {
 			parents[i] = new FluxFilter.FilterSubscriber<>(subscribers[i], predicate);
 		}
 		
-		source.subscribe(parents, ctx);
+		source.subscribe(parents);
 	}
 
 	@Override

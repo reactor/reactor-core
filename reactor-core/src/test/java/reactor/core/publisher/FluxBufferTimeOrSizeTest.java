@@ -20,8 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
@@ -64,7 +64,7 @@ public class FluxBufferTimeOrSizeTest {
 
 	@Test
 	public void scanSubscriber() {
-		Subscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 
 		FluxBufferTimeOrSize.BufferTimeoutSubscriber<String, List<String>> test = new FluxBufferTimeOrSize.BufferTimeoutSubscriber<String, List<String>>(
 						actual, 123, 1000, Schedulers.elastic().createWorker(), ArrayList::new);
@@ -92,7 +92,8 @@ public class FluxBufferTimeOrSizeTest {
 
 	@Test
 	public void scanSubscriberCancelled() {
-		Subscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<List<String>>
+				actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 
 		FluxBufferTimeOrSize.BufferTimeoutSubscriber<String, List<String>> test = new FluxBufferTimeOrSize.BufferTimeoutSubscriber<String, List<String>>(
 						actual, 123, 1000, Schedulers.elastic().createWorker(), ArrayList::new);

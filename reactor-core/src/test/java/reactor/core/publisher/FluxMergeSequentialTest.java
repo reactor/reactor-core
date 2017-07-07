@@ -32,9 +32,8 @@ import java.util.function.Supplier;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
 import reactor.core.publisher.FluxMergeSequential.MergeSequentialInner;
@@ -715,10 +714,10 @@ public class FluxMergeSequentialTest {
 
     @Test
     public void scanMain() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxMergeSequential.MergeSequentialMain<Integer, Integer> test =
         		new FluxMergeSequential.MergeSequentialMain<Integer, Integer>(actual, i -> Mono.just(i),
-        				5, 123, ErrorMode.BOUNDARY, QueueSupplier.<MergeSequentialInner<Integer>>unbounded());
+        				5, 123, ErrorMode.BOUNDARY, QueueSupplier.unbounded());
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -740,10 +739,10 @@ public class FluxMergeSequentialTest {
 
     @Test
     public void scanInner() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxMergeSequential.MergeSequentialMain<Integer, Integer> main =
         		new FluxMergeSequential.MergeSequentialMain<Integer, Integer>(actual, i -> Mono.just(i),
-        				5, 123, ErrorMode.IMMEDIATE, QueueSupplier.<MergeSequentialInner<Integer>>unbounded());
+        				5, 123, ErrorMode.IMMEDIATE, QueueSupplier.unbounded());
         FluxMergeSequential.MergeSequentialInner<Integer> inner =
         		new FluxMergeSequential.MergeSequentialInner<>(main, 123);
         Subscription parent = Operators.emptySubscription();

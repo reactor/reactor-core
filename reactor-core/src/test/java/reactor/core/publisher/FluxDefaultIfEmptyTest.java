@@ -17,8 +17,8 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -170,7 +170,7 @@ public class FluxDefaultIfEmptyTest {
 
 	@Test
 	public void scanSubscriber() {
-		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> { }, null, null);
+		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> { }, null, null);
 		FluxDefaultIfEmpty.DefaultIfEmptySubscriber<String> test =
 				new FluxDefaultIfEmpty.DefaultIfEmptySubscriber<>(actual, "bar");
 		Subscription parent = Operators.emptySubscription();
@@ -188,7 +188,7 @@ public class FluxDefaultIfEmptyTest {
 
 	@Test
 	public void scanSubscriberCancelled() {
-		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxDefaultIfEmpty.DefaultIfEmptySubscriber<String> test =
 				new FluxDefaultIfEmpty.DefaultIfEmptySubscriber<>(actual, "bar");
 		Subscription parent = Operators.emptySubscription();

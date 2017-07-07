@@ -18,8 +18,8 @@ package reactor.core.publisher;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
@@ -173,7 +173,7 @@ public class MonoAnyTest {
 
 	@Test
 	public void scanSubscriber() {
-		Subscriber<Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<Boolean> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoAny.AnySubscriber<String> test = new MonoAny.AnySubscriber<>(actual, String::isEmpty);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);

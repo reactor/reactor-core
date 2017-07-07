@@ -24,9 +24,8 @@ import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -262,7 +261,7 @@ public class FluxWindowWhenTest {
 
 	@Test
     public void scanMainSubscriber() {
-        Subscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWindowWhen.WindowStartEndMainSubscriber<Integer, Integer, Integer> test =
         		new FluxWindowWhen.WindowStartEndMainSubscriber<>(actual, QueueSupplier.one().get(),
         		s -> Flux.just(s), QueueSupplier.unbounded());

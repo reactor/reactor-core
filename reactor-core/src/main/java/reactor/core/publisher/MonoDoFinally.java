@@ -18,8 +18,7 @@ package reactor.core.publisher;
 
 import java.util.function.Consumer;
 
-import org.reactivestreams.Subscriber;
-import reactor.util.context.Context;
+import reactor.core.CoreSubscriber;
 
 /**
  * Hook into the lifecycle events and signals of a {@link Mono} and execute
@@ -44,8 +43,8 @@ final class MonoDoFinally<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		source.subscribe(FluxDoFinally.createSubscriber(s, onFinally, false), ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		source.subscribe(FluxDoFinally.createSubscriber(s, onFinally, false));
 	}
 
 }

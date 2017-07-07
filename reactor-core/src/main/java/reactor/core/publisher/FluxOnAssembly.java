@@ -20,12 +20,11 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.util.context.Context;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuples;
 
@@ -197,21 +196,19 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 	}
 
 	@SuppressWarnings("unchecked")
-	static <T> void subscribe(Subscriber<? super T> s,
+	static <T> void subscribe(CoreSubscriber<? super T> s,
 			Flux<? extends T> source,
-			@Nullable AssemblySnapshotException snapshotStack,
-			Context ctx) {
+			@Nullable AssemblySnapshotException snapshotStack) {
 
 		if(snapshotStack != null) {
 			if (s instanceof ConditionalSubscriber) {
 				ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) s;
 				source.subscribe(new OnAssemblyConditionalSubscriber<>(cs,
 						snapshotStack,
-						source), ctx);
+						source));
 			}
 			else {
-				source.subscribe(new OnAssemblySubscriber<>(s, snapshotStack, source),
-						ctx);
+				source.subscribe(new OnAssemblySubscriber<>(s, snapshotStack, source));
 			}
 		}
 	}
@@ -242,8 +239,8 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		subscribe(s, source, snapshotStack, ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		subscribe(s, source, snapshotStack);
 	}
 
 	/**
@@ -411,13 +408,13 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 
 		final AssemblySnapshotException snapshotStack;
 		final Publisher<?>    parent;
-		final Subscriber<? super T>     actual;
+		final CoreSubscriber<? super T>     actual;
 
 		QueueSubscription<T> qs;
 		Subscription         s;
 		int                  fusionMode;
 
-		OnAssemblySubscriber(Subscriber<? super T> actual,
+		OnAssemblySubscriber(CoreSubscriber<? super T> actual,
 				AssemblySnapshotException snapshotStack, Publisher<?> parent) {
 			this.actual = actual;
 			this.snapshotStack = snapshotStack;
@@ -425,7 +422,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 		}
 
 		@Override
-		public final Subscriber<? super T> actual() {
+		public final CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

@@ -18,9 +18,10 @@ package reactor.core.publisher;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BooleanSupplier;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
-import javax.annotation.Nullable;
+import reactor.core.CoreSubscriber;
 
 abstract class DrainUtils {
 
@@ -171,7 +172,7 @@ abstract class DrainUtils {
 	 * @param instance the parent instance of the requested field
 	 * @param isCancelled callback to detect cancellation
 	 */
-	public static <T, F> void postComplete(Subscriber<? super T> actual,
+	public static <T, F> void postComplete(CoreSubscriber<? super T> actual,
 			Queue<T> queue,
 			AtomicLongFieldUpdater<F> field,
 			F instance,
@@ -337,7 +338,7 @@ abstract class DrainUtils {
      * @param isCancelled callback to detect cancellation
      * @param error if not null, the error to signal after the queue has been drained
      */
-    public static <T, F> void postCompleteDelayError(Subscriber<? super T> actual,
+    public static <T, F> void postCompleteDelayError(CoreSubscriber<? super T> actual,
             Queue<T> queue,
             AtomicLongFieldUpdater<F> field,
             F instance,

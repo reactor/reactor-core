@@ -23,11 +23,10 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import javax.annotation.Nullable;
-import reactor.util.context.Context;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 
 /**
  * Buffers a certain number of subsequent elements and emits the buffers.
@@ -68,26 +67,25 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super C> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super C> s) {
 		if (size == skip) {
-			source.subscribe(new BufferExactSubscriber<>(s, size, bufferSupplier), ctx);
+			source.subscribe(new BufferExactSubscriber<>(s, size, bufferSupplier));
 		}
 		else if (skip > size) {
-			source.subscribe(new BufferSkipSubscriber<>(s, size, skip, bufferSupplier),
-					ctx);
+			source.subscribe(new BufferSkipSubscriber<>(s, size, skip, bufferSupplier));
 		}
 		else {
 			source.subscribe(new BufferOverlappingSubscriber<>(s,
 					size,
 					skip,
-					bufferSupplier), ctx);
+					bufferSupplier));
 		}
 	}
 
 	static final class BufferExactSubscriber<T, C extends Collection<? super T>>
 			implements InnerOperator<T, C> {
 
-		final Subscriber<? super C> actual;
+		final CoreSubscriber<? super C> actual;
 
 		final Supplier<C> bufferSupplier;
 
@@ -99,7 +97,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 
 		boolean done;
 
-		BufferExactSubscriber(Subscriber<? super C> actual,
+		BufferExactSubscriber(CoreSubscriber<? super C> actual,
 				int size,
 				Supplier<C> bufferSupplier) {
 			this.actual = actual;
@@ -182,7 +180,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 		}
 
 		@Override
-		public Subscriber<? super C> actual() {
+		public CoreSubscriber<? super C> actual() {
 			return actual;
 		}
 
@@ -205,7 +203,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 	static final class BufferSkipSubscriber<T, C extends Collection<? super T>>
 			implements InnerOperator<T, C> {
 
-		final Subscriber<? super C> actual;
+		final CoreSubscriber<? super C> actual;
 
 		final Supplier<C> bufferSupplier;
 
@@ -226,7 +224,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 		static final AtomicIntegerFieldUpdater<BufferSkipSubscriber> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(BufferSkipSubscriber.class, "wip");
 
-		BufferSkipSubscriber(Subscriber<? super C> actual,
+		BufferSkipSubscriber(CoreSubscriber<? super C> actual,
 				int size,
 				int skip,
 				Supplier<C> bufferSupplier) {
@@ -336,7 +334,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 		}
 
 		@Override
-		public Subscriber<? super C> actual() {
+		public CoreSubscriber<? super C> actual() {
 			return actual;
 		}
 
@@ -360,7 +358,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 			extends ArrayDeque<C>
 			implements BooleanSupplier, InnerOperator<T, C> {
 
-		final Subscriber<? super C> actual;
+		final CoreSubscriber<? super C> actual;
 
 		final Supplier<C> bufferSupplier;
 
@@ -388,7 +386,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 				AtomicLongFieldUpdater.newUpdater(BufferOverlappingSubscriber.class,
 						"requested");
 
-		BufferOverlappingSubscriber(Subscriber<? super C> actual,
+		BufferOverlappingSubscriber(CoreSubscriber<? super C> actual,
 				int size,
 				int skip,
 				Supplier<C> bufferSupplier) {
@@ -519,7 +517,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 		}
 
 		@Override
-		public Subscriber<? super C> actual() {
+		public CoreSubscriber<? super C> actual() {
 			return actual;
 		}
 

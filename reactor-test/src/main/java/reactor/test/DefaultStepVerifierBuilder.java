@@ -45,6 +45,7 @@ import javax.annotation.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.publisher.Hooks;
@@ -739,7 +740,7 @@ final class DefaultStepVerifierBuilder<T>
 
 	final static class DefaultVerifySubscriber<T>
 			extends AtomicReference<Subscription>
-			implements StepVerifier, Subscriber<T> {
+			implements StepVerifier, CoreSubscriber<T> {
 
 		final CountDownLatch                completeLatch;
 		final Queue<Event<T>>               script;

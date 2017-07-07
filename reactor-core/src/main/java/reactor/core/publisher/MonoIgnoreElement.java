@@ -15,10 +15,7 @@
  */
 package reactor.core.publisher;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import javax.annotation.Nullable;
-import reactor.util.context.Context;
+import reactor.core.CoreSubscriber;
 
 /**
  * Ignores normal values and passes only the terminal signals along.
@@ -33,7 +30,7 @@ final class MonoIgnoreElement<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		source.subscribe(new MonoIgnoreElements.IgnoreElementsSubscriber<>(s), ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		source.subscribe(new MonoIgnoreElements.IgnoreElementsSubscriber<>(s));
 	}
 }

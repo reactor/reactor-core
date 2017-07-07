@@ -15,9 +15,8 @@
  */
 package reactor.core.publisher;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.context.Context;
 
 /**
  * @author Stephane Maldini
@@ -31,10 +30,11 @@ final class FluxSourceMonoFuseable<I> extends FluxFromMonoOperator<I, I> impleme
 	/**
 	 * Default is simply delegating and decorating with {@link Flux} API. Note this
 	 * assumes an identity between input and output types.
+	 * @param s
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super I> s, Context context) {
-		source.subscribe(s, context);
+	public void subscribe(CoreSubscriber<? super I> s) {
+		source.subscribe(s);
 	}
 }

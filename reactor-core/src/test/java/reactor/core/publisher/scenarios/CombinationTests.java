@@ -21,14 +21,13 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-
 import javax.annotation.Nullable;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.publisher.EmitterProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxProcessor;
@@ -221,7 +220,7 @@ public class CombinationTests {
 	private void generateData(int elements) {
 		Random random = new Random();
 		SensorData data;
-		Subscriber<SensorData> upstream;
+		CoreSubscriber<SensorData> upstream;
 
 		for (long i = 0; i < elements; i++) {
 			data = new SensorData(i, random.nextFloat() * 100);

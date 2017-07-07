@@ -18,9 +18,8 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.context.Context;
 
 /**
  * Maps the values of the source publisher one-on-one via a mapper function.
@@ -43,9 +42,8 @@ final class MonoHandleFuseable<T, R> extends MonoOperator<T, R>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super R> s, Context ctx) {
-		source.subscribe(new FluxHandleFuseable.HandleFuseableSubscriber<>(s, handler),
-				ctx);
+	public void subscribe(CoreSubscriber<? super R> s) {
+		source.subscribe(new FluxHandleFuseable.HandleFuseableSubscriber<>(s, handler));
 	}
 
 }

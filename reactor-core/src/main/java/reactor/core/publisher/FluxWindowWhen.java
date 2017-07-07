@@ -25,14 +25,14 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Splits the source sequence into potentially overlapping windowEnds controlled by items
@@ -74,7 +74,7 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super Flux<T>> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super Flux<T>> s) {
 
 		Queue<Object> q = drainQueueSupplier.get();
 
@@ -85,13 +85,13 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 
 		start.subscribe(main.starter);
 
-		source.subscribe(main, ctx);
+		source.subscribe(main);
 	}
 
 	static final class WindowStartEndMainSubscriber<T, U, V>
 			implements Subscriber<T>, InnerOperator<T, Flux<T>>, Disposable {
 
-		final Subscriber<? super Flux<T>> actual;
+		final CoreSubscriber<? super Flux<T>> actual;
 
 		final Queue<Object> queue;
 
@@ -147,7 +147,7 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 				Throwable.class,
 				"error");
 
-		WindowStartEndMainSubscriber(Subscriber<? super Flux<T>> actual,
+		WindowStartEndMainSubscriber(CoreSubscriber<? super Flux<T>> actual,
 				Queue<Object> queue,
 				Function<? super U, ? extends Publisher<V>> end,
 				Supplier<? extends Queue<T>> processorQueueSupplier) {
@@ -170,7 +170,7 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 		}
 
 		@Override
-		public Subscriber<? super Flux<T>> actual() {
+		public CoreSubscriber<? super Flux<T>> actual() {
 			return actual;
 		}
 

@@ -19,12 +19,11 @@ package reactor.core.publisher;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.function.Supplier;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.Fuseable;
 import javax.annotation.Nullable;
-import reactor.util.context.Context;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 
 /**
  * Buffers all values from the source Publisher and emits it as a single Collection.
@@ -45,7 +44,7 @@ final class MonoCollectList<T, C extends Collection<? super T>>
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super C> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super C> s) {
 		C collection;
 
 		try {
@@ -57,7 +56,7 @@ final class MonoCollectList<T, C extends Collection<? super T>>
 			return;
 		}
 
-		source.subscribe(new MonoBufferAllSubscriber<>(s, collection), ctx);
+		source.subscribe(new MonoBufferAllSubscriber<>(s, collection));
 	}
 
 	static final class MonoBufferAllSubscriber<T, C extends Collection<? super T>>
@@ -67,7 +66,7 @@ final class MonoCollectList<T, C extends Collection<? super T>>
 
 		Subscription s;
 
-		MonoBufferAllSubscriber(Subscriber<? super C> actual, C collection) {
+		MonoBufferAllSubscriber(CoreSubscriber<? super C> actual, C collection) {
 			super(actual);
 			this.collection = collection;
 		}

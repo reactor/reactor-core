@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.concurrent.QueueSupplier;
@@ -63,8 +64,8 @@ class FluxFilterWhen<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		source.subscribe(new FluxFilterWhenSubscriber<>(s, asyncPredicate, bufferSize), ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		source.subscribe(new FluxFilterWhenSubscriber<>(s, asyncPredicate, bufferSize));
 	}
 
 	static final class FluxFilterWhenSubscriber<T> implements InnerOperator<T, T> {
@@ -72,7 +73,7 @@ class FluxFilterWhen<T> extends FluxOperator<T, T> {
 		final Function<? super T, ? extends Publisher<Boolean>> asyncPredicate;
 		final int                                               bufferSize;
 		final AtomicReferenceArray<T>                           toFilter;
-		final Subscriber<? super T>                             actual;
+		final CoreSubscriber<? super T>                         actual;
 
 		int          consumed;
 		long         consumerIndex;
@@ -105,7 +106,7 @@ class FluxFilterWhen<T> extends FluxOperator<T, T> {
 		static final int STATE_RUNNING = 1;
 		static final int STATE_RESULT  = 2;
 
-		FluxFilterWhenSubscriber(Subscriber<? super T> actual,
+		FluxFilterWhenSubscriber(CoreSubscriber<? super T> actual,
 				Function<? super T, ? extends Publisher<Boolean>> asyncPredicate,
 				int bufferSize) {
 			this.actual = actual;
@@ -115,7 +116,7 @@ class FluxFilterWhen<T> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		public final Subscriber<? super T> actual() {
+		public final CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

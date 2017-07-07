@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Function;
-
 import javax.annotation.Nullable;
 
 import org.assertj.core.api.Assertions;
@@ -38,8 +37,8 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
@@ -163,7 +162,7 @@ public class WorkQueueProcessorTest {
 				.build();
 		Scheduler timer = Schedulers.newSingle("Timer");
 		queueProcessor.bufferTimeout(32, Duration.ofMillis(2), timer)
-		              .subscribe(new Subscriber<List<String>>() {
+		              .subscribe(new CoreSubscriber<List<String>>() {
 			              int counter;
 
 			              @Override
@@ -1379,7 +1378,7 @@ public class WorkQueueProcessorTest {
 	@Test
 	public void scanInner() {
 		WorkQueueProcessor<String> main = WorkQueueProcessor.create("name", 16);
-		Subscriber<String> subscriber = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<String> subscriber = new LambdaSubscriber<>(null, e -> {}, null, null);
 
 		WorkQueueProcessor.WorkQueueInner<String> test = new WorkQueueProcessor.WorkQueueInner<>(
 				subscriber, main);

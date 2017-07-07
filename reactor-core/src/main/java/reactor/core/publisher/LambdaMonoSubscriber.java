@@ -21,6 +21,7 @@ import java.util.function.Consumer;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
@@ -32,7 +33,7 @@ import javax.annotation.Nullable;
  * @param <T> the value type
  */
 final class LambdaMonoSubscriber<T>
-		implements Subscriber<T>, Scannable, Disposable {
+		implements InnerConsumer<T>, Disposable {
 
 	final Consumer<? super T>            consumer;
 	final Consumer<? super Throwable>    errorConsumer;

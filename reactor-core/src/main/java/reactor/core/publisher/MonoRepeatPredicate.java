@@ -18,8 +18,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 
-import org.reactivestreams.Subscriber;
-import reactor.util.context.Context;
+import reactor.core.CoreSubscriber;
 
 /**
  * Repeatedly subscribes to the source if the predicate returns true after
@@ -38,7 +37,7 @@ final class MonoRepeatPredicate<T> extends FluxFromMonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		FluxRepeatPredicate.RepeatPredicateSubscriber<T> parent = new FluxRepeatPredicate.RepeatPredicateSubscriber<>(source,
 				s, predicate);
 

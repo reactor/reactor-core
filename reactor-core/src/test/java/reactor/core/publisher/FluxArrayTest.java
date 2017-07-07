@@ -18,9 +18,7 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
@@ -157,8 +155,7 @@ public class FluxArrayTest {
 
 	@Test
 	public void scanSubscription() {
-		@SuppressWarnings("unchecked")
-		Subscriber<String> subscriber = Mockito.mock(Subscriber.class);
+		@SuppressWarnings("unchecked") CoreSubscriber<String> subscriber = Mockito.mock(CoreSubscriber.class);
 		FluxArray.ArraySubscription<String> test =
 				new FluxArray.ArraySubscription<>(subscriber, new String[] {"foo", "bar", "baz"});
 
@@ -182,7 +179,7 @@ public class FluxArrayTest {
 	@Test
 	public void scanSubscriptionCancelled() {
 		@SuppressWarnings("unchecked")
-		Subscriber<String> subscriber = Mockito.mock(Subscriber.class);
+		CoreSubscriber<String> subscriber = Mockito.mock(CoreSubscriber.class);
 		FluxArray.ArraySubscription<String> test =
 				new FluxArray.ArraySubscription<>(subscriber, new String[] {"foo", "bar", "baz"});
 

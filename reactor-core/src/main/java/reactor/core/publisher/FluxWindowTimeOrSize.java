@@ -24,9 +24,9 @@ import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler;
-import reactor.util.context.Context;
 
 /**
  * WindowTimeoutSubscriber is forwarding events on a steam until {@code maxSize} is reached,
@@ -52,14 +52,12 @@ final class FluxWindowTimeOrSize<T> extends FluxOperator<T, Flux<T>> {
 		this.batchSize = maxSize;
 	}
 
-	final Subscriber<? super Flux<T>> prepareSub(Subscriber<? super Flux<T>> actual) {
-		return Operators.serialize(actual);
-	}
-
 	@Override
-	public void subscribe(Subscriber<? super Flux<T>> subscriber, Context ctx) {
-		source.subscribe(new WindowTimeoutSubscriber<>(prepareSub(subscriber),
-						batchSize, timespan, timer), ctx);
+	public void subscribe(CoreSubscriber<? super Flux<T>> subscriber) {
+		source.subscribe(new WindowTimeoutSubscriber<>(Operators.serialize(subscriber),
+				batchSize,
+				timespan,
+				timer));
 	}
 
 	final static class Window<T> extends Flux<T> implements InnerOperator<T, T> {
@@ -95,8 +93,8 @@ final class FluxWindowTimeOrSize<T> extends FluxOperator<T, Flux<T>> {
 		}
 
 		@Override
-		public void subscribe(Subscriber<? super T> s, Context ctx) {
-			processor.subscribe(s, ctx);
+		public void subscribe(CoreSubscriber<? super T> s) {
+			processor.subscribe(s);
 		}
 
 		@Override
@@ -110,7 +108,7 @@ final class FluxWindowTimeOrSize<T> extends FluxOperator<T, Flux<T>> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return processor;
 		}
 	}
@@ -122,12 +120,12 @@ final class FluxWindowTimeOrSize<T> extends FluxOperator<T, Flux<T>> {
 		final static int TERMINATED_WITH_ERROR   = 2;
 		final static int TERMINATED_WITH_CANCEL  = 3;
 
-		final Subscriber<? super Flux<T>> actual;
-		final int                         batchSize;
-		final Runnable                    flushTask;
-		final Scheduler.Worker            timer;
-		final Scheduler                   timerScheduler;
-		final long                        timespan;
+		final CoreSubscriber<? super Flux<T>> actual;
+		final int                             batchSize;
+		final Runnable                        flushTask;
+		final Scheduler.Worker                timer;
+		final Scheduler                       timerScheduler;
+		final long                            timespan;
 
 		Window<T>    currentWindow;
 		Subscription subscription;
@@ -159,7 +157,7 @@ final class FluxWindowTimeOrSize<T> extends FluxOperator<T, Flux<T>> {
 		static final AtomicIntegerFieldUpdater<WindowTimeoutSubscriber>
 				WINDOW_COUNT = AtomicIntegerFieldUpdater.newUpdater(WindowTimeoutSubscriber.class, "windowCount");
 
-		WindowTimeoutSubscriber(Subscriber<? super Flux<T>> actual,
+		WindowTimeoutSubscriber(CoreSubscriber<? super Flux<T>> actual,
 				int maxSize,
 				long timespan,
 				Scheduler timer) {
@@ -362,7 +360,7 @@ final class FluxWindowTimeOrSize<T> extends FluxOperator<T, Flux<T>> {
 		}
 
 		@Override
-		public Subscriber<? super Flux<T>> actual() {
+		public CoreSubscriber<? super Flux<T>> actual() {
 			return actual;
 		}
 

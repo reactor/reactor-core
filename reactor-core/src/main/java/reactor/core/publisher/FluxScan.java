@@ -17,11 +17,10 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.function.BiFunction;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import javax.annotation.Nullable;
-import reactor.util.context.Context;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 
 /**
  * Accumulates the source values with an accumulator function and
@@ -51,14 +50,14 @@ final class FluxScan<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		source.subscribe(new ScanSubscriber<>(s, accumulator), ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		source.subscribe(new ScanSubscriber<>(s, accumulator));
 	}
 
 	static final class ScanSubscriber<T>
 			implements InnerOperator<T, T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final BiFunction<T, ? super T, T> accumulator;
 
@@ -68,7 +67,7 @@ final class FluxScan<T> extends FluxOperator<T, T> {
 
 		boolean done;
 
-		ScanSubscriber(Subscriber<? super T> actual, BiFunction<T, ? super T, T> accumulator) {
+		ScanSubscriber(CoreSubscriber<? super T> actual, BiFunction<T, ? super T, T> accumulator) {
 			this.actual = actual;
 			this.accumulator = accumulator;
 		}
@@ -135,7 +134,7 @@ final class FluxScan<T> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

@@ -20,14 +20,14 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.util.context.Context;
-
-import javax.annotation.Nullable;
 
 /**
  * Repeats a source when a companion sequence signals an item in response to the main's
@@ -53,13 +53,13 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		RepeatWhenOtherSubscriber other = new RepeatWhenOtherSubscriber();
 		Subscriber<Long> signaller = Operators.serialize(other.completionSignal);
 
 		signaller.onSubscribe(Operators.emptySubscription());
 
-		Subscriber<T> serial = Operators.serialize(s);
+		CoreSubscriber<T> serial = Operators.serialize(s);
 
 		RepeatWhenMainSubscriber<T> main =
 				new RepeatWhenMainSubscriber<>(serial, signaller, source);
@@ -81,7 +81,7 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 		p.subscribe(other);
 
 		if (!main.cancelled) {
-			source.subscribe(main, ctx);
+			source.subscribe(main);
 		}
 	}
 
@@ -102,7 +102,7 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 
 		long produced;
 
-		RepeatWhenMainSubscriber(Subscriber<? super T> actual,
+		RepeatWhenMainSubscriber(CoreSubscriber<? super T> actual,
 				Subscriber<Long> signaller,
 				Publisher<? extends T> source) {
 			super(actual);
@@ -223,7 +223,7 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		public void subscribe(Subscriber<? super Long> s, Context ctx) {
+		public void subscribe(CoreSubscriber<? super Long> s) {
 			completionSignal.subscribe(s);
 		}
 
