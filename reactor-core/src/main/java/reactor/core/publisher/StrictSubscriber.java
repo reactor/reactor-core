@@ -81,12 +81,17 @@ final class StrictSubscriber<T> implements Scannable, CoreSubscriber<T>, Subscri
 
 	@Override
 	public void request(long n) {
+		if (n <= 0) {
+			cancel();
+			onError(new IllegalArgumentException(
+					"§3.9 violated: positive request amount required but it was " + n));
+			return;
+		}
 		Subscription a = s;
 		if (a != null) {
 			a.request(n);
 		}
 		else {
-			if (Operators.validate(n)) {
 				Operators.getAndAddCap(REQUESTED, this, n);
 				a = s;
 				if (a != null) {
@@ -94,7 +99,6 @@ final class StrictSubscriber<T> implements Scannable, CoreSubscriber<T>, Subscri
 					if (r != 0L) {
 						a.request(n);
 					}
-				}
 			}
 		}
 	}
