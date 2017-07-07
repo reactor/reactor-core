@@ -162,6 +162,22 @@ public abstract class Operators {
 	}
 
 	/**
+	 * Cast a reference to {@link CoreSubscriber} and read its {@link
+	 * CoreSubscriber#currentContext()} or fallback to {@link Context#empty()}
+	 *
+	 * @param s reference to cast
+	 *
+	 * @return current subscriber context or empty
+	 */
+	@SuppressWarnings("unchecked")
+	public static Context context(Object s){
+		if(s instanceof CoreSubscriber){
+			return ((CoreSubscriber)s).currentContext();
+		}
+		return Context.empty();
+	}
+
+	/**
 	 * Return a singleton {@link Subscriber} that does not check for double onSubscribe
 	 * and purely request Long.MAX. If an error is received it will raise a
 	 * {@link Exceptions#errorCallbackNotImplemented(Throwable)} in the receiving thread.
@@ -169,8 +185,8 @@ public abstract class Operators {
 	 * @return a new {@link Subscriber} whose sole purpose is to request Long.MAX
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> Subscriber<T> drainSubscriber() {
-		return (Subscriber<T>)DrainSubscriber.INSTANCE;
+	public static <T> CoreSubscriber<T> drainSubscriber() {
+		return (CoreSubscriber<T>)DrainSubscriber.INSTANCE;
 	}
 
 	/**
@@ -724,14 +740,6 @@ public abstract class Operators {
 	}
 
 	Operators() {
-	}
-
-	@SuppressWarnings("unchecked")
-	static Context context(Subscriber<?> s){
-		if(s instanceof CoreSubscriber){
-			return ((CoreSubscriber)s).currentContext();
-		}
-		return Context.empty();
 	}
 
 	static final CoreSubscriber<?> EMPTY_SUBSCRIBER = new CoreSubscriber<Object>() {

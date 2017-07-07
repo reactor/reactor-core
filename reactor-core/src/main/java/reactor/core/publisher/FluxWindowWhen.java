@@ -89,7 +89,7 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 	}
 
 	static final class WindowStartEndMainSubscriber<T, U, V>
-			implements Subscriber<T>, InnerOperator<T, Flux<T>>, Disposable {
+			implements InnerOperator<T, Flux<T>>, Disposable {
 
 		final CoreSubscriber<? super Flux<T>> actual;
 
@@ -460,11 +460,11 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 	}
 
 	static final class WindowStartEndStarter<T, U, V>
-			extends Operators.DeferredSubscription implements Subscriber<U> {
+			extends Operators.DeferredSubscription implements CoreSubscriber<U> {
 
 		final WindowStartEndMainSubscriber<T, U, V> main;
 
-		public WindowStartEndStarter(WindowStartEndMainSubscriber<T, U, V> main) {
+		WindowStartEndStarter(WindowStartEndMainSubscriber<T, U, V> main) {
 			this.main = main;
 		}
 
@@ -493,13 +493,13 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 	}
 
 	static final class WindowStartEndEnder<T, V> extends Operators.DeferredSubscription
-			implements Subscriber<V> {
+			implements CoreSubscriber<V> {
 
 		final WindowStartEndMainSubscriber<T, ?, V> main;
 
 		final UnicastProcessor<T> window;
 
-		public WindowStartEndEnder(WindowStartEndMainSubscriber<T, ?, V> main,
+		WindowStartEndEnder(WindowStartEndMainSubscriber<T, ?, V> main,
 				UnicastProcessor<T> window) {
 			this.main = main;
 			this.window = window;

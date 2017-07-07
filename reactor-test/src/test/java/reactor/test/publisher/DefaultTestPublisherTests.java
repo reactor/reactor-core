@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher.Violation;
@@ -84,7 +85,7 @@ public class DefaultTestPublisherTests {
 		TestPublisher<String> publisher = TestPublisher.create();
 		AtomicLong count = new AtomicLong();
 
-		Subscriber<String> subscriber = new Subscriber<String>() {
+		Subscriber<String> subscriber = new CoreSubscriber<String>() {
 			@Override
 			public void onSubscribe(Subscription s) { }
 
@@ -115,7 +116,7 @@ public class DefaultTestPublisherTests {
 		TestPublisher<String> publisher = TestPublisher.createNoncompliant(Violation.CLEANUP_ON_TERMINATE);
 		AtomicLong count = new AtomicLong();
 
-		Subscriber<String> subscriber = new Subscriber<String>() {
+		Subscriber<String> subscriber = new CoreSubscriber<String>() {
 			@Override
 			public void onSubscribe(Subscription s) {
 				s.request(Long.MAX_VALUE);
