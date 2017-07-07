@@ -17,11 +17,11 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * A Stream that emits only one value and then complete.
@@ -64,7 +64,7 @@ final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, F
 	}
 
 	@Override
-	public void subscribe(final Subscriber<? super T> subscriber, Context context) {
+	public void subscribe(final CoreSubscriber<? super T> subscriber) {
 		subscriber.onSubscribe(new WeakScalarSubscription<>(value, subscriber));
 	}
 
@@ -73,9 +73,9 @@ final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, F
 
 		boolean terminado;
 		final T                     value;
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
-		WeakScalarSubscription(@Nullable T value, Subscriber<? super T> actual) {
+		WeakScalarSubscription(@Nullable T value, CoreSubscriber<? super T> actual) {
 			this.value = value;
 			this.actual = actual;
 		}
@@ -132,7 +132,7 @@ final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, F
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

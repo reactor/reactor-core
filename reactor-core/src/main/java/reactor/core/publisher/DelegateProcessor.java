@@ -22,16 +22,15 @@ import javax.annotation.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.context.Context;
-import reactor.util.context.Contextualized;
 
 /**
  * @author Stephane Maldini
  */
-final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
-		implements Contextualized {
+final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT> {
 
 	final Publisher<OUT> downstream;
 	final Subscriber<IN> upstream;
@@ -44,7 +43,7 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 
 	@Override
 	public Context currentContext() {
-		return Context.from(upstream);
+		return Operators.context(upstream);
 	}
 
 	@Override
@@ -68,7 +67,7 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT>
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super OUT> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super OUT> s) {
 		//noinspection ConstantConditions
 		if (s == null) {
 			throw Exceptions.argumentIsNullException();

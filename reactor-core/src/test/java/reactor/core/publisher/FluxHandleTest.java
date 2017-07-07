@@ -25,9 +25,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
@@ -384,7 +383,7 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
 
     @Test
     public void scanSubscriber() {
-        Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxHandle.HandleSubscriber<String, String> test = new FluxHandle.HandleSubscriber<>(actual, (a, b) -> {});
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
@@ -420,7 +419,7 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
 
     @Test
     public void scanFuseableSubscriber() {
-        Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxHandleFuseable.HandleFuseableSubscriber<String, String> test =
         		new FluxHandleFuseable.HandleFuseableSubscriber<>(actual, (a, b) -> {});
         Subscription parent = Operators.emptySubscription();

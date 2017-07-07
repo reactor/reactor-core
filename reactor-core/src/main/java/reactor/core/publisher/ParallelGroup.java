@@ -18,14 +18,12 @@ package reactor.core.publisher;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.util.context.Context;
-
-import javax.annotation.Nullable;
 
 /**
  * Exposes the 'rails' as individual GroupedFlux instances, keyed by the rail index (zero based).
@@ -45,7 +43,7 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super GroupedFlux<Integer, T>> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super GroupedFlux<Integer, T>> s) {
 		int n = source.parallelism();
 
 		@SuppressWarnings("unchecked")
@@ -57,7 +55,7 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements
 
 		FluxArray.subscribe(s, groups);
 
-		source.subscribe(groups, ctx);
+		source.subscribe(groups);
 	}
 
 	@Override
@@ -88,7 +86,7 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements
 		static final AtomicLongFieldUpdater<ParallelInnerGroup> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(ParallelInnerGroup.class, "requested");
 
-		Subscriber<? super T> actual;
+		CoreSubscriber<? super T> actual;
 
 		ParallelInnerGroup(int key) {
 			this.key = key;
@@ -100,7 +98,7 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements
 		}
 
 		@Override
-		public void subscribe(Subscriber<? super T> s, Context context) {
+		public void subscribe(CoreSubscriber<? super T> s) {
 			if (ONCE.compareAndSet(this, 0, 1)) {
 				this.actual = s;
 				s.onSubscribe(this);
@@ -110,7 +108,7 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

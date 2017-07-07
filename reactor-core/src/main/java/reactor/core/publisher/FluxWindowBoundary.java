@@ -27,6 +27,7 @@ import javax.annotation.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
@@ -63,7 +64,7 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super Flux<T>> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super Flux<T>> s) {
 		WindowBoundaryMain<T, U> main = new WindowBoundaryMain<>(s,
 				processorQueueSupplier, processorQueueSupplier.get(), drainQueueSupplier.get());
 
@@ -72,7 +73,7 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 		if (main.emit(main.window)) {
 			other.subscribe(main.boundary);
 
-			source.subscribe(main, ctx);
+			source.subscribe(main);
 		}
 	}
 
@@ -83,8 +84,8 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 
 		final WindowBoundaryOther<U> boundary;
 
-		final Queue<Object>               queue;
-		final Subscriber<? super Flux<T>> actual;
+		final Queue<Object>                   queue;
+		final CoreSubscriber<? super Flux<T>> actual;
 
 		UnicastProcessor<T> window;
 
@@ -125,7 +126,7 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 
 		static final Object DONE = new Object();
 
-		WindowBoundaryMain(Subscriber<? super Flux<T>> actual,
+		WindowBoundaryMain(CoreSubscriber<? super Flux<T>> actual,
 				Supplier<? extends Queue<T>> processorQueueSupplier,
 				Queue<T> processorQueue,
 				Queue<Object> queue) {
@@ -138,7 +139,7 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 		}
 
 		@Override
-		public final Subscriber<? super Flux<T>> actual() {
+		public final CoreSubscriber<? super Flux<T>> actual() {
 			return actual;
 		}
 

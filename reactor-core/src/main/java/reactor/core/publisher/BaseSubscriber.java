@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.util.context.Contextualized;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 
@@ -43,8 +43,8 @@ import reactor.core.Exceptions;
  *
  * @author Simon Baslé
  */
-public abstract class BaseSubscriber<T> implements Subscriber<T>, Subscription,
-                                                   Disposable, Contextualized {
+public abstract class BaseSubscriber<T> implements CoreSubscriber<T>, Subscription,
+                                                   Disposable {
 
 	volatile Subscription subscription;
 

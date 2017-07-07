@@ -28,9 +28,11 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
@@ -38,8 +40,6 @@ import reactor.core.publisher.FluxGroupJoin.JoinSupport;
 import reactor.core.publisher.FluxGroupJoin.LeftRightEndSubscriber;
 import reactor.core.publisher.FluxGroupJoin.LeftRightSubscriber;
 import reactor.util.concurrent.OpenHashSet;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
@@ -73,7 +73,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super R> s) {
 
 		JoinSubscription<TLeft, TRight, TLeftEnd, TRightEnd, R> parent =
 				new JoinSubscription<>(s,
@@ -89,12 +89,12 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 		LeftRightSubscriber right = new LeftRightSubscriber(parent, false);
 		parent.cancellations.add(right);
 
-		source.subscribe(left, ctx);
+		source.subscribe(left);
 		other.subscribe(right);
 	}
 
 	static final class JoinSubscription<TLeft, TRight, TLeftEnd, TRightEnd, R>
-			implements JoinSupport, InnerProducer<R> {
+			implements JoinSupport<R> {
 
 		final Queue<Object>               queue;
 		final BiPredicate<Object, Object> queueBiOffer;
@@ -110,7 +110,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 		final Function<? super TRight, ? extends Publisher<TRightEnd>> rightEnd;
 
 		final BiFunction<? super TLeft, ? super TRight, ? extends R> resultSelector;
-		final Subscriber<? super R>                                  actual;
+		final CoreSubscriber<? super R>                                  actual;
 
 		volatile int wip;
 
@@ -151,7 +151,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 		static final Integer RIGHT_CLOSE = 4;
 
 		@SuppressWarnings("unchecked")
-		JoinSubscription(Subscriber<? super R> actual,
+		JoinSubscription(CoreSubscriber<? super R> actual,
 				Function<? super TLeft, ? extends Publisher<TLeftEnd>> leftEnd,
 				Function<? super TRight, ? extends Publisher<TRightEnd>> rightEnd,
 				BiFunction<? super TLeft, ? super TRight, ? extends R> resultSelector,
@@ -172,7 +172,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 		}
 
 		@Override
-		public final Subscriber<? super R> actual() {
+		public final CoreSubscriber<? super R> actual() {
 			return actual;
 		}
 
@@ -190,7 +190,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 			if (key == BooleanAttr.TERMINATED) return active == 0;
 			if (key == ThrowableAttr.ERROR) return error;
 
-			return InnerProducer.super.scanUnsafe(key);
+			return JoinSupport.super.scanUnsafe(key);
 		}
 
 		@Override

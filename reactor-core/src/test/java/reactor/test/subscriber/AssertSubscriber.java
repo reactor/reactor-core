@@ -35,6 +35,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.publisher.Operators;
 
@@ -77,7 +78,7 @@ import reactor.core.publisher.Operators;
  * @author Brian Clozel
  */
 public class AssertSubscriber<T>
-		implements Subscriber<T>, Subscription {
+		implements CoreSubscriber<T>, Subscription {
 
 	/**
 	 * Default timeout for waiting next values to be received

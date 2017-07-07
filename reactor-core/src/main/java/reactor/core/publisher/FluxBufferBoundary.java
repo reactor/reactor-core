@@ -21,13 +21,13 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Buffers elements into custom collections where the buffer boundary is signalled
@@ -60,7 +60,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super C> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super C> s) {
 		C buffer;
 
 		try {
@@ -81,14 +81,14 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 
 		other.subscribe(parent.other);
 
-		source.subscribe(parent, ctx);
+		source.subscribe(parent);
 	}
 
 	static final class BufferBoundaryMain<T, U, C extends Collection<? super T>>
 			implements InnerOperator<T, C> {
 
 		final Supplier<C>           bufferSupplier;
-		final Subscriber<? super C> actual;
+		final CoreSubscriber<? super C> actual;
 
 		final BufferBoundaryOther<U> other;
 
@@ -107,7 +107,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 		static final AtomicLongFieldUpdater<BufferBoundaryMain> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(BufferBoundaryMain.class, "requested");
 
-		BufferBoundaryMain(Subscriber<? super C> actual,
+		BufferBoundaryMain(CoreSubscriber<? super C> actual,
 				C buffer,
 				Supplier<C> bufferSupplier) {
 			this.actual = actual;
@@ -117,7 +117,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 		}
 
 		@Override
-		public Subscriber<? super C> actual() {
+		public CoreSubscriber<? super C> actual() {
 			return actual;
 		}
 

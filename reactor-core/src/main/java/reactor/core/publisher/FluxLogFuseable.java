@@ -16,9 +16,8 @@
 
 package reactor.core.publisher;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.context.Context;
 
 /**
  * Peek into the lifecycle events and signals of a sequence.
@@ -45,12 +44,12 @@ final class FluxLogFuseable<T> extends FluxOperator<T, T>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		if (s instanceof ConditionalSubscriber) {
 			source.subscribe(new FluxPeekFuseable.PeekFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
-					log), ctx);
+					log));
 			return;
 		}
-		source.subscribe(new FluxPeekFuseable.PeekFuseableSubscriber<>(s, log), ctx);
+		source.subscribe(new FluxPeekFuseable.PeekFuseableSubscriber<>(s, log));
 	}
 }

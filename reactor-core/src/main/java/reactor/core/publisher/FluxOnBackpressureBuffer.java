@@ -20,14 +20,14 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.util.concurrent.QueueSupplier;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * @author Stephane Maldini
@@ -54,12 +54,12 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super O> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super O> s) {
 		source.subscribe(new BackpressureBufferSubscriber<>(s,
 				bufferSize,
 				unbounded,
 				delayError,
-				onOverflow), ctx);
+				onOverflow));
 	}
 
 	@Override
@@ -70,7 +70,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 	static final class BackpressureBufferSubscriber<T>
 			implements QueueSubscription<T>, InnerOperator<T, T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 		final Queue<T>              queue;
 		final Consumer<? super T>   onOverflow;
 		final boolean             delayError;
@@ -94,7 +94,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 				AtomicLongFieldUpdater.newUpdater(BackpressureBufferSubscriber.class,
 						"requested");
 
-		BackpressureBufferSubscriber(Subscriber<? super T> actual,
+		BackpressureBufferSubscriber(CoreSubscriber<? super T> actual,
 				int bufferSize,
 				boolean unbounded,
 				boolean delayError,
@@ -345,7 +345,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

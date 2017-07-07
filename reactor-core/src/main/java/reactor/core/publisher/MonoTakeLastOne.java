@@ -17,12 +17,11 @@ package reactor.core.publisher;
 
 import java.util.NoSuchElementException;
 import java.util.Objects;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.Fuseable;
-import reactor.util.context.Context;
 import javax.annotation.Nullable;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 
 /**
  * Take the very last value from a Publisher source and and emit that one.
@@ -45,8 +44,8 @@ final class MonoTakeLastOne<T> extends MonoFromFluxOperator<T, T>
 	}
 
     @Override
-    public void subscribe(Subscriber<? super T> s, Context ctx) {
-        source.subscribe(new TakeLastOneSubscriber<>(s, defaultValue, true), ctx);
+    public void subscribe(CoreSubscriber<? super T> s) {
+        source.subscribe(new TakeLastOneSubscriber<>(s, defaultValue, true));
     }
 
 	static final class TakeLastOneSubscriber<T>
@@ -56,7 +55,7 @@ final class MonoTakeLastOne<T> extends MonoFromFluxOperator<T, T>
 		final T       defaultValue;
 		Subscription s;
 
-		TakeLastOneSubscriber(Subscriber<? super T> actual,
+		TakeLastOneSubscriber(CoreSubscriber<? super T> actual,
 				@Nullable T defaultValue,
 				boolean mustEmit) {
 			super(actual);

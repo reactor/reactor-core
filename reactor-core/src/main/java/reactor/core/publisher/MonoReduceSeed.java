@@ -19,12 +19,11 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.Fuseable;
 import javax.annotation.Nullable;
-import reactor.util.context.Context;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 
 /**
  * Aggregates the source values with the help of an accumulator
@@ -51,7 +50,7 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super R> s) {
 		R initialValue;
 
 		try {
@@ -63,7 +62,7 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 			return;
 		}
 
-		source.subscribe(new ReduceSeedSubscriber<>(s, accumulator, initialValue), ctx);
+		source.subscribe(new ReduceSeedSubscriber<>(s, accumulator, initialValue));
 	}
 
 	static final class ReduceSeedSubscriber<T, R> extends Operators.MonoSubscriber<T, R>  {
@@ -74,7 +73,7 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 
 		boolean done;
 
-		ReduceSeedSubscriber(Subscriber<? super R> actual,
+		ReduceSeedSubscriber(CoreSubscriber<? super R> actual,
 				BiFunction<R, ? super T, R> accumulator,
 				R value) {
 			super(actual);

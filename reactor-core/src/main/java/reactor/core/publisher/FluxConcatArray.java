@@ -18,12 +18,11 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Concatenates a fixed array of Publishers' values.
@@ -44,7 +43,7 @@ final class FluxConcatArray<T> extends Flux<T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		Publisher<? extends T>[] a = array;
 
 		if (a.length == 0) {
@@ -157,7 +156,7 @@ final class FluxConcatArray<T> extends Flux<T> {
 
 		long produced;
 
-		ConcatArraySubscriber(Subscriber<? super T> actual, Publisher<? extends T>[]
+		ConcatArraySubscriber(CoreSubscriber<? super T> actual, Publisher<? extends T>[]
 				sources) {
 			super(actual);
 			this.sources = sources;
@@ -230,7 +229,7 @@ final class FluxConcatArray<T> extends Flux<T> {
 		
 		long produced;
 
-		ConcatArrayDelayErrorSubscriber(Subscriber<? super T> actual, Publisher<?
+		ConcatArrayDelayErrorSubscriber(CoreSubscriber<? super T> actual, Publisher<?
 				extends T>[] sources) {
 			super(actual);
 			this.sources = sources;

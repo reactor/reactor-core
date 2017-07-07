@@ -16,10 +16,10 @@
 
 package reactor.core.publisher;
 
-import org.reactivestreams.Subscriber;
-import reactor.core.Scannable;
-import reactor.util.context.Context;
 import javax.annotation.Nullable;
+
+import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
 
 /**
  * Hides the identities of the upstream Publisher object and its Subscription as well.
@@ -55,18 +55,18 @@ final class ParallelFluxHide<T> extends ParallelFlux<T> implements Scannable{
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T>[] subscribers, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T>[] subscribers) {
 		if (!validate(subscribers)) {
 			return;
 		}
 
 		int n = subscribers.length;
-		@SuppressWarnings("unchecked") Subscriber<? super T>[] parents =
-				new Subscriber[n];
+		@SuppressWarnings("unchecked") CoreSubscriber<? super T>[] parents =
+				new CoreSubscriber[n];
 		for (int i = 0; i < n; i++) {
 			parents[i] = new FluxHide.HideSubscriber<>(subscribers[i]);
 		}
 
-		source.subscribe(parents, ctx);
+		source.subscribe(parents);
 	}
 }

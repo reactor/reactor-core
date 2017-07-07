@@ -21,8 +21,7 @@ import java.util.function.IntFunction;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import reactor.util.context.Context;
+import reactor.core.CoreSubscriber;
 
 /**
  * Merges a fixed array of Publishers.
@@ -62,7 +61,7 @@ final class FluxMerge<T> extends Flux<T> {
 	}
 	
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context context) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		FluxFlatMap.FlatMapMain<Publisher<? extends T>, T> merger = new FluxFlatMap.FlatMapMain<>(
 				s, identityFunction(), delayError, maxConcurrency, mainQueueSupplier, prefetch,
 				innerQueueSupplier);

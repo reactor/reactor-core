@@ -27,8 +27,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -39,9 +39,7 @@ import reactor.util.concurrent.QueueSupplier;
 
 import static java.lang.Thread.sleep;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static reactor.core.scheduler.Schedulers.parallel;
 
@@ -831,7 +829,7 @@ public class FluxPeekFuseableTest {
 
 	@Test
     public void scanFuseableSubscriber() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxPeek<Integer> peek = new FluxPeek<>(Flux.just(1), s -> {}, s -> {},
         		e -> {}, () -> {}, () -> {}, r -> {}, () -> {});
         FluxPeekFuseable.PeekFuseableSubscriber<Integer> test = new FluxPeekFuseable.PeekFuseableSubscriber<>(actual, peek);

@@ -21,15 +21,15 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.util.concurrent.QueueSupplier;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * A Processor implementation that takes a custom queue and allows
@@ -109,7 +109,7 @@ public final class UnicastProcessor<T>
 	volatile boolean done;
 	Throwable error;
 
-	volatile Subscriber<? super T> actual;
+	volatile CoreSubscriber<? super T> actual;
 
 	volatile boolean cancelled;
 
@@ -353,7 +353,7 @@ public final class UnicastProcessor<T>
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		//noinspection ConstantConditions
 		if (s == null) {
 			throw Exceptions.argumentIsNullException();
@@ -444,7 +444,7 @@ public final class UnicastProcessor<T>
 	}
 
 	@Override
-	public Subscriber<? super T> actual() {
+	public CoreSubscriber<? super T> actual() {
 		return actual;
 	}
 

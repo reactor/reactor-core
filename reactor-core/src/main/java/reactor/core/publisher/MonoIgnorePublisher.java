@@ -19,9 +19,8 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import reactor.util.context.Context;
 
 /**
  * Ignores normal values and passes only the terminal signals along.
@@ -38,7 +37,7 @@ final class MonoIgnorePublisher<T> extends Mono<T> implements Scannable {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		source.subscribe(new MonoIgnoreElements.IgnoreElementsSubscriber<>(s));
 	}
 

@@ -16,12 +16,9 @@
 
 package reactor.core.publisher;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -62,7 +59,7 @@ public class MonoCountTest {
 
 	@Test
 	public void scanCountSubscriber() {
-		Subscriber<Long> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<Long> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoCount.CountSubscriber<String> test = new MonoCount.CountSubscriber<>(actual);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);

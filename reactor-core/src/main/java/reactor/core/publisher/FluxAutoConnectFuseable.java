@@ -18,13 +18,12 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Connects to the underlying Flux once the given amount of Subscribers
@@ -57,8 +56,8 @@ final class FluxAutoConnectFuseable<T> extends Flux<T>
 	}
 	
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context context) {
-		source.subscribe(s, context);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		source.subscribe(s);
 		if (remaining > 0 && REMAINING.decrementAndGet(this) == 0) {
 			source.connect(cancelSupport);
 		}

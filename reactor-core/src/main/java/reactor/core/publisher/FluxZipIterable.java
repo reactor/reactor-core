@@ -19,11 +19,10 @@ package reactor.core.publisher;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.function.BiFunction;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import javax.annotation.Nullable;
-import reactor.util.context.Context;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 
 /**
  * Pairwise combines elements of a publisher and an iterable sequence through a function.
@@ -49,7 +48,7 @@ final class FluxZipIterable<T, U, R> extends FluxOperator<T, R> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super R> s) {
 		Iterator<? extends U> it;
 
 		try {
@@ -76,13 +75,13 @@ final class FluxZipIterable<T, U, R> extends FluxOperator<T, R> {
 			return;
 		}
 
-		source.subscribe(new ZipSubscriber<>(s, it, zipper), ctx);
+		source.subscribe(new ZipSubscriber<>(s, it, zipper));
 	}
 
 	static final class ZipSubscriber<T, U, R>
 			implements InnerOperator<T, R> {
 
-		final Subscriber<? super R> actual;
+		final CoreSubscriber<? super R> actual;
 
 		final Iterator<? extends U> it;
 
@@ -92,7 +91,7 @@ final class FluxZipIterable<T, U, R> extends FluxOperator<T, R> {
 
 		boolean done;
 
-		ZipSubscriber(Subscriber<? super R> actual,
+		ZipSubscriber(CoreSubscriber<? super R> actual,
 				Iterator<? extends U> it,
 				BiFunction<? super T, ? super U, ? extends R> zipper) {
 			this.actual = actual;
@@ -187,7 +186,7 @@ final class FluxZipIterable<T, U, R> extends FluxOperator<T, R> {
 		}
 
 		@Override
-		public Subscriber<? super R> actual() {
+		public CoreSubscriber<? super R> actual() {
 			return actual;
 		}
 

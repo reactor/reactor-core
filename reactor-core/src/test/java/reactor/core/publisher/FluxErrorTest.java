@@ -15,14 +15,13 @@
  */
 package reactor.core.publisher;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.reactivestreams.Subscriber;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxErrorTest {
 
@@ -34,8 +33,7 @@ public class FluxErrorTest {
 
     @Test
     public void scanSubscription() {
-	    @SuppressWarnings("unchecked")
-	    Subscriber<String> subscriber = Mockito.mock(Subscriber.class);
+	    @SuppressWarnings("unchecked") CoreSubscriber<String> subscriber = Mockito.mock(CoreSubscriber.class);
         FluxError.ErrorSubscription test =
                 new FluxError.ErrorSubscription(subscriber, new IllegalStateException("boom"));
 
@@ -50,7 +48,7 @@ public class FluxErrorTest {
     @Test
     public void scanSubscriptionCancelled() {
 	    @SuppressWarnings("unchecked")
-	    Subscriber<String> subscriber = Mockito.mock(Subscriber.class);
+	    CoreSubscriber<String> subscriber = Mockito.mock(CoreSubscriber.class);
         FluxError.ErrorSubscription test =
                 new FluxError.ErrorSubscription(subscriber, new IllegalStateException("boom"));
 

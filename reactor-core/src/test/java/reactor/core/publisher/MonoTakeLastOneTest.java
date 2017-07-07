@@ -16,8 +16,8 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
@@ -92,7 +92,8 @@ public class MonoTakeLastOneTest {
 
 	@Test
 	public void scanTakeLastOneSubscriber() {
-		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<String>
+				actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoTakeLastOne.TakeLastOneSubscriber<String> test = new MonoTakeLastOne.TakeLastOneSubscriber<>(
 				actual, "foo", true);
 		Subscription parent = Operators.emptySubscription();

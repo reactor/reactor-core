@@ -21,9 +21,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
@@ -231,7 +230,7 @@ public class FluxRefCountTest {
 
 	@Test
 	public void scanInner() {
-		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, sub -> sub.request(100));
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, sub -> sub.request(100));
 		FluxRefCount<Integer> main = new FluxRefCount<Integer>(Flux.just(10).publish(), 17);
 		FluxRefCount.RefCountInner<Integer> test = new FluxRefCount.RefCountInner<Integer>(actual, new FluxRefCount.RefCountMonitor<>(1, main));
 		Subscription sub = Operators.emptySubscription();

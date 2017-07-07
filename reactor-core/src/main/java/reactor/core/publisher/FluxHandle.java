@@ -17,12 +17,11 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.function.BiConsumer;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.Fuseable;
-import reactor.util.context.Context;
 import javax.annotation.Nullable;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 
 /**
  * Maps the values of the source publisher one-on-one via a handler function as long as the handler function result is
@@ -42,20 +41,21 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super R> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super R> s) {
 		if (s instanceof Fuseable.ConditionalSubscriber) {
 			Fuseable.ConditionalSubscriber<? super R> cs = (Fuseable.ConditionalSubscriber<? super R>) s;
-			source.subscribe(new HandleConditionalSubscriber<>(cs, handler), ctx);
+			source.subscribe(new HandleConditionalSubscriber<>(cs, handler));
 			return;
 		}
-		source.subscribe(new HandleSubscriber<>(s, handler), ctx);
+		source.subscribe(new HandleSubscriber<>(s, handler));
 	}
 
 	static final class HandleSubscriber<T, R>
 			implements InnerOperator<T, R>,
 			           Fuseable.ConditionalSubscriber<T>,
 			           SynchronousSink<R> {
-		final Subscriber<? super R>			actual;
+
+		final CoreSubscriber<? super R>                 actual;
 		final BiConsumer<? super T, SynchronousSink<R>> handler;
 
 		boolean done;
@@ -65,7 +65,8 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 
 		Subscription s;
 
-		HandleSubscriber(Subscriber<? super R> actual, BiConsumer<? super T, SynchronousSink<R>> handler) {
+		HandleSubscriber(CoreSubscriber<? super R> actual,
+				BiConsumer<? super T, SynchronousSink<R>> handler) {
 			this.actual = actual;
 			this.handler = handler;
 		}
@@ -195,7 +196,7 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 		}
 
 		@Override
-		public Subscriber<? super R> actual() {
+		public CoreSubscriber<? super R> actual() {
 			return actual;
 		}
 
@@ -324,7 +325,7 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 		}
 
 		@Override
-		public Subscriber<? super R> actual() {
+		public CoreSubscriber<? super R> actual() {
 			return actual;
 		}
 

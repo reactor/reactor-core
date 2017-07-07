@@ -16,13 +16,11 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import reactor.core.Fuseable;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * A connecting {@link Flux} Publisher (right-to-left from a composition chain perspective)
@@ -46,10 +44,11 @@ final class FluxSource<I> extends Flux<I> implements Scannable {
 	/**
 	 * Default is simply delegating and decorating with {@link Flux} API. Note this
 	 * assumes an identity between input and output types.
+	 * @param s
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super I> s, Context context) {
+	public void subscribe(CoreSubscriber<? super I> s) {
 		source.subscribe(s);
 	}
 

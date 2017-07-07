@@ -26,9 +26,8 @@ import org.assertj.core.api.Condition;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
@@ -313,7 +312,7 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 
 	@Test
     public void scanSubscriber() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxUsing.UsingSubscriber<Integer, String> test = new FluxUsing.UsingSubscriber<>(actual,
         		s -> {}, "", true);
         Subscription parent = Operators.emptySubscription();
@@ -350,7 +349,7 @@ public class FluxUsingTest extends FluxOperatorTest<String, String> {
 
     @Test
     public void scanFuseableSubscriber() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxUsing.UsingFuseableSubscriber<Integer, String> test =
 				new FluxUsing.UsingFuseableSubscriber<>(actual, s -> {}, "", true);
         Subscription parent = Operators.emptySubscription();

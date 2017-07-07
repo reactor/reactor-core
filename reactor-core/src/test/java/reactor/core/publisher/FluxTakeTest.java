@@ -21,14 +21,15 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxTakeTest {
@@ -597,7 +598,7 @@ public class FluxTakeTest {
 
 	@Test
     public void scanSubscriber() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxTake.TakeSubscriber<Integer> test = new FluxTake.TakeSubscriber<>(actual, 5);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
@@ -628,7 +629,7 @@ public class FluxTakeTest {
 
     @Test
     public void scanFuseableSubscriber() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxTake.TakeFuseableSubscriber<Integer> test = new FluxTake.TakeFuseableSubscriber<>(actual, 10);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);

@@ -18,12 +18,11 @@ package reactor.core.publisher;
 
 import java.util.NoSuchElementException;
 import java.util.Objects;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.Fuseable;
 import javax.annotation.Nullable;
-import reactor.util.context.Context;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 
 /**
  * Expects and emits a single item from the source or signals
@@ -55,8 +54,8 @@ final class MonoSingle<T> extends MonoFromFluxOperator<T, T>
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		source.subscribe(new SingleSubscriber<>(s, defaultValue, completeOnEmpty), ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		source.subscribe(new SingleSubscriber<>(s, defaultValue, completeOnEmpty));
 	}
 
 	static final class SingleSubscriber<T> extends Operators.MonoSubscriber<T, T>  {
@@ -79,7 +78,7 @@ final class MonoSingle<T> extends MonoFromFluxOperator<T, T>
 			return super.scanUnsafe(key);
 		}
 
-		SingleSubscriber(Subscriber<? super T> actual,
+		SingleSubscriber(CoreSubscriber<? super T> actual,
 				T defaultValue,
 				boolean completeOnEmpty) {
 			super(actual);

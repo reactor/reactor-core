@@ -18,8 +18,7 @@ package reactor.core.publisher;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import reactor.util.context.Context;
+import reactor.core.CoreSubscriber;
 
 /**
  * Repeatedly subscribes to the source and relays its values either
@@ -43,7 +42,7 @@ final class FluxRepeat<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		RepeatSubscriber<T> parent = new RepeatSubscriber<>(source, s, times);
 
 		s.onSubscribe(parent);
@@ -67,7 +66,7 @@ final class FluxRepeat<T> extends FluxOperator<T, T> {
 
 		long produced;
 
-		RepeatSubscriber(Publisher<? extends T> source, Subscriber<? super T> actual, long remaining) {
+		RepeatSubscriber(Publisher<? extends T> source, CoreSubscriber<? super T> actual, long remaining) {
 			super(actual);
 			this.source = source;
 			this.remaining = remaining;

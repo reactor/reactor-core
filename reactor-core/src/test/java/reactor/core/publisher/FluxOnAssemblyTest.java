@@ -21,9 +21,8 @@ import java.io.StringWriter;
 import java.util.Objects;
 
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
 import reactor.test.StepVerifier;
@@ -265,7 +264,7 @@ public class FluxOnAssemblyTest {
 
 	@Test
     public void scanSubscriber() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxOnAssembly.OnAssemblySubscriber<Integer> test =
         		new FluxOnAssembly.OnAssemblySubscriber<>(actual, new AssemblySnapshotException(), Flux.just(1));
         Subscription parent = Operators.emptySubscription();

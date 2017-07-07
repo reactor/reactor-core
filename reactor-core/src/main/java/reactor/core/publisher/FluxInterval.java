@@ -18,15 +18,13 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
-import reactor.util.context.Context;
-
-import javax.annotation.Nullable;
 
 /**
  * Periodically emits an ever increasing long value either via a ScheduledExecutorService
@@ -58,7 +56,7 @@ final class FluxInterval extends Flux<Long> {
 	}
 	
 	@Override
-	public void subscribe(Subscriber<? super Long> s, Context context) {
+	public void subscribe(CoreSubscriber<? super Long> s) {
 		Worker w = timedScheduler.createWorker();
 
 		IntervalRunnable r = new IntervalRunnable(s, w);
@@ -70,7 +68,7 @@ final class FluxInterval extends Flux<Long> {
 
 	static final class IntervalRunnable implements Runnable, Subscription,
 	                                               InnerProducer<Long> {
-		final Subscriber<? super Long> actual;
+		final CoreSubscriber<? super Long> actual;
 		
 		final Worker worker;
 		
@@ -82,13 +80,13 @@ final class FluxInterval extends Flux<Long> {
 		
 		volatile boolean cancelled;
 
-		IntervalRunnable(Subscriber<? super Long> actual, Worker worker) {
+		IntervalRunnable(CoreSubscriber<? super Long> actual, Worker worker) {
 			this.actual = actual;
 			this.worker = worker;
 		}
 
 		@Override
-		public Subscriber<? super Long> actual() {
+		public CoreSubscriber<? super Long> actual() {
 			return actual;
 		}
 

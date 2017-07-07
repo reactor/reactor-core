@@ -21,9 +21,8 @@ import java.time.Duration;
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -179,7 +178,7 @@ public class FluxSampleFirstTest {
 
 	@Test
     public void scanMainSubscriber() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxSampleFirst.SampleFirstMain<Integer, Integer> test =
         		new FluxSampleFirst.SampleFirstMain<>(actual, i -> Flux.just(i));
         Subscription parent = Operators.emptySubscription();
@@ -200,15 +199,15 @@ public class FluxSampleFirstTest {
 
 	@Test
     public void scanOtherSubscriber() {
-		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxSampleFirst.SampleFirstMain<Integer, Integer> main =
         		new FluxSampleFirst.SampleFirstMain<>(actual, i -> Flux.just(i));
         FluxSampleFirst.SampleFirstOther<Integer> test = new  FluxSampleFirst.SampleFirstOther<>(main);
 
         Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(main.other);
         Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(main);
-        test.request(35);;
-        Assertions.assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
+        test.request(35);
+		Assertions.assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
 
         Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
         test.cancel();

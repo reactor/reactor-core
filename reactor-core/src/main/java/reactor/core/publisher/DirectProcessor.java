@@ -22,11 +22,10 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import reactor.util.context.Context;
 
 /**
  * Dispatches onNext, onError and onComplete signals to zero-to-many Subscribers.
@@ -119,7 +118,7 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		//noinspection ConstantConditions
 		if (s == null) {
 			throw Exceptions.argumentIsNullException();
@@ -255,7 +254,7 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 
 	static final class DirectInner<T> implements InnerProducer<T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final DirectProcessor<T> parent;
 
@@ -266,7 +265,7 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 		static final AtomicLongFieldUpdater<DirectInner> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(DirectInner.class, "requested");
 
-		DirectInner(Subscriber<? super T> actual, DirectProcessor<T> parent) {
+		DirectInner(CoreSubscriber<? super T> actual, DirectProcessor<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
 		}
@@ -296,7 +295,7 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

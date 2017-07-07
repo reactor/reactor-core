@@ -19,11 +19,11 @@ package reactor.core.publisher;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Emits the contents of an Iterable source.
@@ -41,7 +41,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context context) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		Iterator<? extends T> it;
 
 		try {
@@ -62,7 +62,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 	 * @param it the iterator to use as a source of values
 	 */
 	@SuppressWarnings("unchecked")
-	static <T> void subscribe(Subscriber<? super T> s, Iterator<? extends T> it) {
+	static <T> void subscribe(CoreSubscriber<? super T> s, Iterator<? extends T> it) {
 		//noinspection ConstantConditions
 		if (it == null) {
 			Operators.error(s, new NullPointerException("The iterator is null"));
@@ -95,7 +95,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 	static final class IterableSubscription<T>
 			implements InnerProducer<T>, SynchronousSubscription<T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final Iterator<? extends T> iterator;
 
@@ -129,7 +129,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 
 		T current;
 
-		IterableSubscription(Subscriber<? super T> actual,
+		IterableSubscription(CoreSubscriber<? super T> actual,
 				Iterator<? extends T> iterator) {
 			this.actual = actual;
 			this.iterator = iterator;
@@ -271,7 +271,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 
@@ -518,7 +518,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

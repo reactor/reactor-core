@@ -18,8 +18,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import reactor.util.context.Context;
+import reactor.core.CoreSubscriber;
 
 /**
  * Switches to another source if the first source turns out to be empty.
@@ -38,12 +37,12 @@ final class FluxSwitchIfEmpty<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		SwitchIfEmptySubscriber<T> parent = new SwitchIfEmptySubscriber<>(s, other);
 
 		s.onSubscribe(parent);
 
-		source.subscribe(parent, ctx);
+		source.subscribe(parent);
 	}
 
 	static final class SwitchIfEmptySubscriber<T>
@@ -53,7 +52,7 @@ final class FluxSwitchIfEmpty<T> extends FluxOperator<T, T> {
 
 		boolean once;
 
-		SwitchIfEmptySubscriber(Subscriber<? super T> actual,
+		SwitchIfEmptySubscriber(CoreSubscriber<? super T> actual,
 				Publisher<? extends T> other) {
 			super(actual);
 			this.other = other;

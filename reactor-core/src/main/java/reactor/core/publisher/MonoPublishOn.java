@@ -17,13 +17,12 @@
 package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Schedules the emission of the value or completion of the wrapped Mono via
@@ -41,14 +40,14 @@ final class MonoPublishOn<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		source.subscribe(new PublishOnSubscriber<T>(s, scheduler), ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		source.subscribe(new PublishOnSubscriber<T>(s, scheduler));
 	}
 
 	static final class PublishOnSubscriber<T>
 			implements InnerOperator<T, T>, Runnable {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final Scheduler scheduler;
 
@@ -65,7 +64,7 @@ final class MonoPublishOn<T> extends MonoOperator<T, T> {
 		T         value;
 		Throwable error;
 
-		PublishOnSubscriber(Subscriber<? super T> actual,
+		PublishOnSubscriber(CoreSubscriber<? super T> actual,
 				Scheduler scheduler) {
 			this.actual = actual;
 			this.scheduler = scheduler;
@@ -82,7 +81,7 @@ final class MonoPublishOn<T> extends MonoOperator<T, T> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

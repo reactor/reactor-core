@@ -18,9 +18,8 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.context.Context;
 
 /**
  * Emits the value or error produced by the wrapped CompletionStage.
@@ -41,7 +40,7 @@ extends Mono<T>
     }
 
     @Override
-    public void subscribe(Subscriber<? super T> s, Context context) {
+    public void subscribe(CoreSubscriber<? super T> s) {
         Operators.MonoSubscriber<T, T>
                 sds = new Operators.MonoSubscriber<>(s);
 

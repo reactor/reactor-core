@@ -24,8 +24,8 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.context.Context;
@@ -83,10 +83,10 @@ final class MonoDelayUntil<T> extends Mono<T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		DelayUntilCoordinator<T> parent = new DelayUntilCoordinator<>(s, delayError, otherGenerators);
 		s.onSubscribe(parent);
-		source.subscribe(parent, ctx);
+		source.subscribe(parent);
 	}
 
 	static final class DelayUntilCoordinator<T>
@@ -109,7 +109,7 @@ final class MonoDelayUntil<T> extends Mono<T> {
 
 		DelayUntilTrigger[] triggerSubscribers;
 
-		DelayUntilCoordinator(Subscriber<? super T> subscriber,
+		DelayUntilCoordinator(CoreSubscriber<? super T> subscriber,
 				boolean delayError,
 				Function<? super T, ? extends Publisher<?>>[] otherGenerators) {
 			super(subscriber);

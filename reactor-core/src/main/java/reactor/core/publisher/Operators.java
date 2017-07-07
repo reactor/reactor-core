@@ -27,11 +27,13 @@ import javax.annotation.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
+import reactor.util.context.Context;
 
 /**
  * An helper to support "Operator" writing, handle noop subscriptions, validate request
@@ -395,6 +397,10 @@ public abstract class Operators {
 	/**
 	 * Apply {@link Hooks#onNewSubscriber(BiFunction)} hook to the passed
 	 * {@link Subscriber} and return eventually transformed subscriber.
+	 * <p>
+	 *     If the actual {@link Subscriber} is not a {@link CoreSubscriber}, it will apply
+	 *     safe strict wrapping to apply all reactive streams rules including the ones
+	 *     relaxed by internal operators based on {@link CoreSubscriber}.
 	 *
 	 * @param source the {@link Publisher} subscribed to
 	 * @param actual the {@link Subscriber} to apply hook on
@@ -403,17 +409,25 @@ public abstract class Operators {
 	 * @return an eventually transformed {@link Subscriber}
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> Subscriber<? super T> onNewSubscriber(Publisher<? extends T> source,
-			Subscriber<? super	T> actual) {
+	public static <T> CoreSubscriber<? super T> onNewSubscriber(Publisher<? extends T> source, Subscriber<? super T> actual) {
 
-		BiFunction<? super Publisher<?>, ? super Subscriber<?>, ? extends Subscriber<?>> hook =
+		BiFunction<? super Publisher<?>, ? super CoreSubscriber<?>, ? extends CoreSubscriber<?>> hook =
 				Hooks.onSubscriberHook;
 
+		CoreSubscriber<? super T> _actual;
+
+		if (actual instanceof CoreSubscriber){
+			_actual = (CoreSubscriber<? super T>) actual;
+		}
+		else {
+			_actual = new StrictSubscriber<>(actual);
+		}
+
 		if (hook != null) {
-			return Objects.requireNonNull((Subscriber<? super T>) hook.apply(source, actual),
+			return Objects.requireNonNull((CoreSubscriber<? super T>) hook.apply(source, _actual),
 					"Hooks returned null subscriber");
 		}
-		return actual;
+		return _actual;
 	}
 
 	/**
@@ -506,7 +520,7 @@ public abstract class Operators {
 	 * @param <T> the value type
 	 * @return a new scalar {@link Subscription}
 	 */
-	public static <T> Subscription scalarSubscription(Subscriber<? super T> subscriber,
+	public static <T> Subscription scalarSubscription(CoreSubscriber<? super T> subscriber,
 			T value){
 		return new ScalarSubscription<>(subscriber, value);
 	}
@@ -524,7 +538,7 @@ public abstract class Operators {
 	 * @param subscriber the subscriber to serialize
 	 * @return a serializing {@link Subscriber}
 	 */
-	public static <T> Subscriber<T> serialize(Subscriber<? super T> subscriber) {
+	public static <T> CoreSubscriber<T> serialize(CoreSubscriber<? super T> subscriber) {
 		return new SerializedSubscriber<>(subscriber);
 	}
 
@@ -705,15 +719,22 @@ public abstract class Operators {
 	 * @return a placeholder subscriber
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> Subscriber<T> emptySubscriber() {
-		return (Subscriber<T>) EMPTY_SUBSCRIBER;
+	public static <T> CoreSubscriber<T> emptySubscriber() {
+		return (CoreSubscriber<T>) EMPTY_SUBSCRIBER;
 	}
 
 	Operators() {
 	}
 
+	@SuppressWarnings("unchecked")
+	static Context context(Subscriber<?> s){
+		if(s instanceof CoreSubscriber){
+			return ((CoreSubscriber)s).currentContext();
+		}
+		return Context.empty();
+	}
 
-	static final Subscriber<?> EMPTY_SUBSCRIBER = new Subscriber<Object>() {
+	static final CoreSubscriber<?> EMPTY_SUBSCRIBER = new CoreSubscriber<Object>() {
 		@Override
 		public void onSubscribe(Subscription s) {
 			Throwable e = new IllegalStateException("onSubscribe should not be used");
@@ -930,11 +951,11 @@ public abstract class Operators {
 			           Fuseable, //for constants only
 			           Fuseable.QueueSubscription<O> {
 
-		protected final Subscriber<? super O> actual;
+		protected final CoreSubscriber<? super O> actual;
 
 		protected O value;
 		volatile int state;
-		public MonoSubscriber(Subscriber<? super O> actual) {
+		public MonoSubscriber(CoreSubscriber<? super O> actual) {
 			this.actual = actual;
 		}
 
@@ -1009,7 +1030,7 @@ public abstract class Operators {
 		}
 
 		@Override
-		public final Subscriber<? super O> actual() {
+		public final CoreSubscriber<? super O> actual() {
 			return actual;
 		}
 
@@ -1168,7 +1189,7 @@ public abstract class Operators {
 	abstract static class MultiSubscriptionSubscriber<I, O>
 			implements InnerOperator<I, O> {
 
-		final Subscriber<? super O> actual;
+		final CoreSubscriber<? super O> actual;
 
 		protected boolean unbounded;
 		/**
@@ -1185,12 +1206,12 @@ public abstract class Operators {
 		volatile int wip;
 		volatile boolean cancelled;
 
-		public MultiSubscriptionSubscriber(Subscriber<? super O> actual) {
+		public MultiSubscriptionSubscriber(CoreSubscriber<? super O> actual) {
 			this.actual = actual;
 		}
 
 		@Override
-		public Subscriber<? super O> actual() {
+		public CoreSubscriber<? super O> actual() {
 			return actual;
 		}
 
@@ -1493,12 +1514,12 @@ public abstract class Operators {
 	static final class ScalarSubscription<T>
 			implements Fuseable.SynchronousSubscription<T>, InnerProducer<T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final T value;
 
 		volatile int once;
-		ScalarSubscription(Subscriber<? super T> actual, T value) {
+		ScalarSubscription(CoreSubscriber<? super T> actual, T value) {
 			this.value = Objects.requireNonNull(value, "value");
 			this.actual = Objects.requireNonNull(actual, "actual");
 		}
@@ -1519,7 +1540,7 @@ public abstract class Operators {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 
@@ -1573,7 +1594,7 @@ public abstract class Operators {
 				AtomicIntegerFieldUpdater.newUpdater(ScalarSubscription.class, "once");
 	}
 
-	final static class DrainSubscriber<T> implements Subscriber<T> {
+	final static class DrainSubscriber<T> implements CoreSubscriber<T> {
 
 		static final DrainSubscriber INSTANCE = new DrainSubscriber();
 

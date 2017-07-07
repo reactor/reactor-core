@@ -19,15 +19,14 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
-import reactor.util.context.Context;
-
-import javax.annotation.Nullable;
 
 /**
  * A base processor that exposes {@link Flux} API for {@link Processor}.
@@ -41,7 +40,7 @@ import javax.annotation.Nullable;
  * @param <OUT> the output value type
  */
 public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
-		implements Processor<IN, OUT>, Scannable, Disposable {
+		implements Processor<IN, OUT>, CoreSubscriber<IN>, Scannable, Disposable {
 
 	/**
 	 * Build a {@link FluxProcessor} whose data are emitted by the most recent emitted {@link Publisher}.

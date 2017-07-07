@@ -17,16 +17,14 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
-import java.util.function.Consumer;
 
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -214,10 +212,10 @@ public class FluxDelaySubscriptionTest {
 
 	@Test
 	public void scanMainSubscriber() {
-		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null,
+		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null,
 				sub -> sub.request(100));
 		FluxDelaySubscription.DelaySubscriptionOtherSubscriber<String, Integer> arbiter = new FluxDelaySubscription.DelaySubscriptionOtherSubscriber<String, Integer>(
-				actual, s -> {}, Context.empty());
+				actual, s -> {});
 		FluxDelaySubscription.DelaySubscriptionMainSubscriber<String> test = new FluxDelaySubscription.DelaySubscriptionMainSubscriber<String>(
 				actual, arbiter);
 
@@ -226,10 +224,10 @@ public class FluxDelaySubscriptionTest {
 
 	@Test
 	public void scanOtherSubscriber() {
-		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null,
+		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null,
 				sub -> sub.request(100));
 		FluxDelaySubscription.DelaySubscriptionOtherSubscriber<String, Integer> test = new FluxDelaySubscription.DelaySubscriptionOtherSubscriber<String, Integer>(
-				actual, s -> {}, Context.empty());
+				actual, s -> {});
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 

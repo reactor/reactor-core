@@ -16,7 +16,7 @@
 
 package reactor.core.publisher;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.util.context.Context;
 
 /**
@@ -27,7 +27,8 @@ final class MonoCurrentContext extends Mono<Context> {
 	static final MonoCurrentContext INSTANCE = new MonoCurrentContext();
 
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super Context> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super Context> s) {
+		Context ctx = s.currentContext();
 		if (ctx != Context.empty()) {
 			s.onSubscribe(Operators.scalarSubscription(s, ctx));
 		}

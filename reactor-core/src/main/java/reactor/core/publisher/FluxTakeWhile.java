@@ -17,11 +17,10 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.function.Predicate;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import javax.annotation.Nullable;
-import reactor.util.context.Context;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 
 /**
  * Relays values while a predicate returns
@@ -40,13 +39,13 @@ final class FluxTakeWhile<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		source.subscribe(new TakeWhileSubscriber<>(s, predicate), ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		source.subscribe(new TakeWhileSubscriber<>(s, predicate));
 	}
 
 	static final class TakeWhileSubscriber<T>
 			implements InnerOperator<T, T> {
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final Predicate<? super T> predicate;
 
@@ -54,7 +53,7 @@ final class FluxTakeWhile<T> extends FluxOperator<T, T> {
 
 		boolean done;
 
-		TakeWhileSubscriber(Subscriber<? super T> actual, Predicate<? super T> predicate) {
+		TakeWhileSubscriber(CoreSubscriber<? super T> actual, Predicate<? super T> predicate) {
 			this.actual = actual;
 			this.predicate = predicate;
 		}
@@ -126,7 +125,7 @@ final class FluxTakeWhile<T> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

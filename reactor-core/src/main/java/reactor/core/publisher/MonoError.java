@@ -18,10 +18,8 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Objects;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
-import reactor.util.context.Context;
-
 
 /**
  * Emits a constant or generated Throwable instance to Subscribers.
@@ -48,7 +46,7 @@ final class MonoError<T> extends Mono<T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context context) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		Operators.error(s, Operators.onOperatorError(error));
 	}
 }

@@ -15,18 +15,17 @@
  */
 package reactor.core.publisher;
 
-import org.reactivestreams.Subscriber;
-import reactor.util.context.Contextualized;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 
 /**
  *
- * A {@link InnerConsumer} is a {@link Scannable} {@link Subscriber}.
+ * A {@link InnerConsumer} is a {@link Scannable} {@link CoreSubscriber}.
  *
  * @param <I> input operator produced type
  *
  * @author Stephane Maldini
  */
 interface InnerConsumer<I>
-		extends Contextualized, Subscriber<I>, Scannable {
+		extends CoreSubscriber<I>, Scannable {
 }

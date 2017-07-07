@@ -20,13 +20,13 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Reduces all 'rails' into a single value which then gets reduced into a single
@@ -55,12 +55,12 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		MergeReduceMain<T> parent =
 				new MergeReduceMain<>(s, source.parallelism(), reducer);
 		s.onSubscribe(parent);
 
-		source.subscribe(parent.subscribers, ctx);
+		source.subscribe(parent.subscribers);
 	}
 
 	static final class MergeReduceMain<T>
@@ -93,7 +93,7 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 				Throwable.class,
 				"error");
 
-		MergeReduceMain(Subscriber<? super T> subscriber,
+		MergeReduceMain(CoreSubscriber<? super T> subscriber,
 				int n,
 				BiFunction<T, T, T> reducer) {
 			super(subscriber);

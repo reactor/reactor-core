@@ -25,15 +25,14 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * A connectable publisher which shares an underlying source and dispatches source values
@@ -102,7 +101,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		PublishInner<T> inner = new PublishInner<>(s);
 		s.onSubscribe(inner);
 		for (; ; ) {
@@ -535,14 +534,14 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 
 	static abstract class PubSubInner<T> implements InnerProducer<T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<PubSubInner> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(PubSubInner.class, "requested");
 
-		PubSubInner(Subscriber<? super T> actual) {
+		PubSubInner(CoreSubscriber<? super T> actual) {
 			this.actual = actual;
 		}
 
@@ -572,7 +571,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 		}
 
 		@Override
-		public final Subscriber<? super T> actual() {
+		public final CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 
@@ -626,7 +625,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 	static final class PublishInner<T> extends PubSubInner<T> {
 		PublishSubscriber<T> parent;
 
-		PublishInner(Subscriber<? super T> actual) {
+		PublishInner(CoreSubscriber<? super T> actual) {
 			super(actual);
 		}
 

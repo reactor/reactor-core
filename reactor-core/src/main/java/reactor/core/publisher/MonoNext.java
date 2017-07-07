@@ -17,11 +17,10 @@
 package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import javax.annotation.Nullable;
-import reactor.util.context.Context;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 
 /**
  * Emits a single item at most from the source.
@@ -37,13 +36,13 @@ final class MonoNext<T> extends MonoFromFluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		source.subscribe(new NextSubscriber<>(s), ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		source.subscribe(new NextSubscriber<>(s));
 	}
 
 	static final class NextSubscriber<T> implements InnerOperator<T, T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		Subscription s;
 
@@ -54,7 +53,7 @@ final class MonoNext<T> extends MonoFromFluxOperator<T, T> {
 		static final AtomicIntegerFieldUpdater<NextSubscriber> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(NextSubscriber.class, "wip");
 
-		NextSubscriber(Subscriber<? super T> actual) {
+		NextSubscriber(CoreSubscriber<? super T> actual) {
 			this.actual = actual;
 		}
 
@@ -119,7 +118,7 @@ final class MonoNext<T> extends MonoFromFluxOperator<T, T> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

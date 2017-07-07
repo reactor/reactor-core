@@ -18,8 +18,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 
-import org.reactivestreams.Subscriber;
-import reactor.util.context.Context;
+import reactor.core.CoreSubscriber;
 
 /**
  * Maps the values of the source publisher one-on-one via a mapper function. If the result is not {code null} then the
@@ -40,7 +39,7 @@ final class MonoHandle<T, R> extends MonoOperator<T, R> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R> s, Context ctx) {
-		source.subscribe(new FluxHandle.HandleSubscriber<>(s, handler), ctx);
+	public void subscribe(CoreSubscriber<? super R> s) {
+		source.subscribe(new FluxHandle.HandleSubscriber<>(s, handler));
 	}
 }

@@ -17,12 +17,11 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.function.Predicate;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.Fuseable.ConditionalSubscriber;
-import reactor.util.context.Context;
 import javax.annotation.Nullable;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable.ConditionalSubscriber;
 
 /**
  * Skips source values while a predicate returns
@@ -41,13 +40,13 @@ final class FluxSkipUntil<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		source.subscribe(new SkipUntilSubscriber<>(s, predicate), ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		source.subscribe(new SkipUntilSubscriber<>(s, predicate));
 	}
 
 	static final class SkipUntilSubscriber<T>
 			implements ConditionalSubscriber<T>, InnerOperator<T, T> {
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final Predicate<? super T> predicate;
 
@@ -57,7 +56,7 @@ final class FluxSkipUntil<T> extends FluxOperator<T, T> {
 
 		boolean skipped;
 
-		SkipUntilSubscriber(Subscriber<? super T> actual, Predicate<? super T> predicate) {
+		SkipUntilSubscriber(CoreSubscriber<? super T> actual, Predicate<? super T> predicate) {
 			this.actual = actual;
 			this.predicate = predicate;
 		}
@@ -161,7 +160,7 @@ final class FluxSkipUntil<T> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

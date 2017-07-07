@@ -29,12 +29,12 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import javax.annotation.Nullable;
 
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
-import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import javax.annotation.Nullable;
 
 /**
  * An iterable that consumes a Publisher in a blocking fashion.
@@ -46,13 +46,13 @@ import javax.annotation.Nullable;
  */
 final class BlockingIterable<T> implements Iterable<T>, Scannable {
 
-	final Flux<? extends T> source;
+	final Publisher<? extends T> source;
 
 	final long batchSize;
 
 	final Supplier<Queue<T>> queueSupplier;
 
-	BlockingIterable(Flux<? extends T> source,
+	BlockingIterable(Publisher<? extends T> source,
 			long batchSize,
 			Supplier<Queue<T>> queueSupplier) {
 		if (batchSize <= 0) {

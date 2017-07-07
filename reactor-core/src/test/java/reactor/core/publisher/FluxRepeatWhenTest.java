@@ -22,15 +22,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import org.assertj.core.api.Assertions;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -371,7 +368,7 @@ public class FluxRepeatWhenTest {
 
 	@Test
     public void scanMainSubscriber() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxRepeatWhen.RepeatWhenMainSubscriber<Integer> test =
         		new FluxRepeatWhen.RepeatWhenMainSubscriber<>(actual, null, Flux.empty());
         Subscription parent = Operators.emptySubscription();
@@ -389,7 +386,7 @@ public class FluxRepeatWhenTest {
 
 	@Test
     public void scanOtherSubscriber() {
-		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxRepeatWhen.RepeatWhenMainSubscriber<Integer> main =
         		new FluxRepeatWhen.RepeatWhenMainSubscriber<>(actual, null, Flux.empty());
         FluxRepeatWhen.RepeatWhenOtherSubscriber test = new FluxRepeatWhen.RepeatWhenOtherSubscriber();
@@ -401,8 +398,8 @@ public class FluxRepeatWhenTest {
 
 	@Test
 	public void inners() {
-		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		Subscriber<Long> signaller = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<Long> signaller = new LambdaSubscriber<>(null, e -> {}, null, null);
 		Flux<Integer> when = Flux.empty();
 		FluxRepeatWhen.RepeatWhenMainSubscriber<Integer> main = new FluxRepeatWhen.RepeatWhenMainSubscriber<>(actual, signaller, when);
 

@@ -20,10 +20,9 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable.ConditionalSubscriber;
-import reactor.util.context.Context;
 
 /**
  * Filters out subsequent and repeated elements.
@@ -47,19 +46,19 @@ final class FluxDistinctUntilChanged<T, K> extends FluxOperator<T, T> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		if (s instanceof ConditionalSubscriber) {
 			source.subscribe(new DistinctUntilChangedConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
-					keyExtractor, keyComparator), ctx);
+					keyExtractor, keyComparator));
 		}
 		else {
-			source.subscribe(new DistinctUntilChangedSubscriber<>(s, keyExtractor, keyComparator), ctx);
+			source.subscribe(new DistinctUntilChangedSubscriber<>(s, keyExtractor, keyComparator));
 		}
 	}
 
 	static final class DistinctUntilChangedSubscriber<T, K>
 			implements ConditionalSubscriber<T>, InnerOperator<T, T> {
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final Function<? super T, K> keyExtractor;
 		final BiPredicate<? super K, ? super K> keyComparator;
@@ -70,7 +69,7 @@ final class FluxDistinctUntilChanged<T, K> extends FluxOperator<T, T> {
 
 		K lastKey;
 
-		DistinctUntilChangedSubscriber(Subscriber<? super T> actual,
+		DistinctUntilChangedSubscriber(CoreSubscriber<? super T> actual,
 				Function<? super T, K> keyExtractor,
 				BiPredicate<? super K, ? super K> keyComparator) {
 			this.actual = actual;
@@ -168,7 +167,7 @@ final class FluxDistinctUntilChanged<T, K> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 
@@ -292,7 +291,7 @@ final class FluxDistinctUntilChanged<T, K> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

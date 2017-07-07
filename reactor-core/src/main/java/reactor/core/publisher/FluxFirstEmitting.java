@@ -20,13 +20,12 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Given a push of source Publishers the values of that Publisher is forwarded to the
@@ -55,7 +54,7 @@ final class FluxFirstEmitting<T> extends Flux<T> {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		Publisher<? extends T>[] a = array;
 		int n;
 		if (a == null) {
@@ -192,7 +191,7 @@ final class FluxFirstEmitting<T> extends Flux<T> {
 
 		void subscribe(Publisher<? extends T>[] sources,
 				int n,
-				Subscriber<? super T> actual) {
+				CoreSubscriber<? super T> actual) {
 			FirstEmittingSubscriber<T>[] a = subscribers;
 
 			for (int i = 0; i < n; i++) {
@@ -278,13 +277,13 @@ final class FluxFirstEmitting<T> extends Flux<T> {
 
 		final RaceCoordinator<T> parent;
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final int index;
 
 		boolean won;
 
-		FirstEmittingSubscriber(Subscriber<? super T> actual,
+		FirstEmittingSubscriber(CoreSubscriber<? super T> actual,
 				RaceCoordinator<T> parent,
 				int index) {
 			this.actual = actual;
@@ -307,7 +306,7 @@ final class FluxFirstEmitting<T> extends Flux<T> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

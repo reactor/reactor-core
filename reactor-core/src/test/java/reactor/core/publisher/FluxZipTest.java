@@ -26,16 +26,14 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
-import reactor.util.context.Context;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuple7;
@@ -715,7 +713,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		});
 		try {
 			StepVerifier.create(Flux.zip(obj -> 0, Flux.just(1), d1, s -> {
-				Subscriber<?> a =
+				CoreSubscriber<?> a =
 						((DirectProcessor.DirectInner) d1.inners().findFirst().get())
 								.actual;
 
@@ -1008,7 +1006,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 	public void prematureCompleteSourceEmptyDouble() {
 		DirectProcessor<Integer> d = DirectProcessor.create();
 		StepVerifier.create(Flux.zip(obj -> 0, d, s -> {
-			Subscriber<?> a =
+			CoreSubscriber<?> a =
 					((DirectProcessor.DirectInner) d.inners().findFirst().get())
 							.actual;
 
@@ -1277,7 +1275,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 
 	@Test
     public void scanCoordinator() {
-		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxZip.ZipCoordinator<Integer, Integer> test = new FluxZip.ZipCoordinator<Integer, Integer>(actual,
 				i -> 5, 123, QueueSupplier.unbounded(), 345);
 
@@ -1296,7 +1294,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 
 	@Test
     public void scanInner() {
-		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxZip.ZipCoordinator<Integer, Integer> main = new FluxZip.ZipCoordinator<Integer, Integer>(actual,
 				i -> 5, 123, QueueSupplier.unbounded(), 345);
 		FluxZip.ZipInner<Integer> test = new FluxZip.ZipInner<>(main, 234, 1, QueueSupplier.unbounded());
@@ -1320,7 +1318,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 
 	@Test
     public void scanSingleCoordinator() {
-		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxZip.ZipSingleCoordinator<Integer, Integer> test =
 				new FluxZip.ZipSingleCoordinator<Integer, Integer>(actual, new Object[1], 1, i -> 5);
 
@@ -1340,7 +1338,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 
 	@Test
     public void scanSingleSubscriber() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxZip.ZipSingleCoordinator<Integer, Integer> main =
 				new FluxZip.ZipSingleCoordinator<Integer, Integer>(actual, new Object[1], 1, i -> 5);
         FluxZip.ZipSingleSubscriber<Integer> test = new FluxZip.ZipSingleSubscriber<>(main, 0);

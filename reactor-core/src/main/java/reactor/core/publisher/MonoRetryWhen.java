@@ -20,8 +20,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import reactor.util.context.Context;
+import reactor.core.CoreSubscriber;
 
 /**
  * retries a source when a companion sequence signals an item in response to the main's
@@ -47,7 +46,7 @@ final class MonoRetryWhen<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		FluxRetryWhen.subscribe(s, whenSourceFactory, source, ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		FluxRetryWhen.subscribe(s, whenSourceFactory, source);
 	}
 }

@@ -20,8 +20,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Predicate;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import reactor.util.context.Context;
+import reactor.core.CoreSubscriber;
 
 /**
  * Repeatedly subscribes to the source if the predicate returns true after
@@ -40,7 +39,7 @@ final class FluxRetryPredicate<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 
 		RetryPredicateSubscriber<T> parent = new RetryPredicateSubscriber<>(source, s,
 				predicate);
@@ -67,7 +66,7 @@ final class FluxRetryPredicate<T> extends FluxOperator<T, T> {
 		long produced;
 
 		RetryPredicateSubscriber(Publisher<? extends T> source,
-				Subscriber<? super T> actual, Predicate<? super Throwable> predicate) {
+				CoreSubscriber<? super T> actual, Predicate<? super Throwable> predicate) {
 			super(actual);
 			this.source = source;
 			this.predicate = predicate;

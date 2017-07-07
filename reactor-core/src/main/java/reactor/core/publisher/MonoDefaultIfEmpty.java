@@ -18,8 +18,7 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 
-import org.reactivestreams.Subscriber;
-import reactor.util.context.Context;
+import reactor.core.CoreSubscriber;
 
 /**
  * Emits a default value if the wrapped Mono is empty.
@@ -34,8 +33,7 @@ final class MonoDefaultIfEmpty<T> extends MonoOperator<T, T> {
     }
     
     @Override
-    public void subscribe(Subscriber<? super T> s, Context ctx) {
-        source.subscribe(new FluxDefaultIfEmpty.DefaultIfEmptySubscriber<>(s, defaultValue),
-                ctx);
+    public void subscribe(CoreSubscriber<? super T> s) {
+        source.subscribe(new FluxDefaultIfEmpty.DefaultIfEmptySubscriber<>(s, defaultValue));
     }
 }

@@ -33,8 +33,8 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
-import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
@@ -43,11 +43,11 @@ import reactor.util.concurrent.QueueSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static reactor.core.Scannable.*;
-import static reactor.core.Scannable.BooleanAttr.*;
+import static reactor.core.Scannable.BooleanAttr.CANCELLED;
+import static reactor.core.Scannable.BooleanAttr.TERMINATED;
 import static reactor.core.Scannable.IntAttr.*;
-import static reactor.core.Scannable.IntAttr.BUFFERED;
-import static reactor.core.Scannable.IntAttr.PREFETCH;
+import static reactor.core.Scannable.ScannableAttr;
+import static reactor.core.Scannable.ThrowableAttr;
 
 /**
  * @author Stephane Maldini
@@ -63,7 +63,7 @@ public class EmitterProcessorTest {
 
 		List<Integer> list = new ArrayList<>();
 
-		processor.subscribe(new Subscriber<Integer>() {
+		processor.subscribe(new CoreSubscriber<Integer>() {
 			Subscription s;
 
 			@Override
@@ -127,7 +127,7 @@ public class EmitterProcessorTest {
 		FluxSink<Integer> session = stream.sink();
 		stream.subscribe(processor);
 
-		processor.subscribe(new Subscriber<Integer>() {
+		processor.subscribe(new CoreSubscriber<Integer>() {
 			@Override
 			public void onSubscribe(Subscription s) {
 				s.request(elements);
@@ -278,7 +278,7 @@ public class EmitterProcessorTest {
 		s.next(4);
 		assertThat(tp.getPending()).isEqualTo(0);
 		AtomicReference<Subscription> d2 = new AtomicReference<>();
-		tp.subscribe(new Subscriber<Integer>() {
+		tp.subscribe(new CoreSubscriber<Integer>() {
 			@Override
 			public void onSubscribe(Subscription s) {
 				d2.set(s);
@@ -768,7 +768,7 @@ public class EmitterProcessorTest {
 		assertThat(test.scan(BUFFERED)).isEqualTo(0);
 
 		AtomicReference<Subscription> d2 = new AtomicReference<>();
-		test.subscribe(new Subscriber<Integer>() {
+		test.subscribe(new CoreSubscriber<Integer>() {
 			@Override
 			public void onSubscribe(Subscription s) {
 				d2.set(s);

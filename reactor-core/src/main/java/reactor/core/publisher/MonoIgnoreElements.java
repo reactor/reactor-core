@@ -17,9 +17,8 @@ package reactor.core.publisher;
 
 import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.util.context.Context;
+import reactor.core.CoreSubscriber;
 
 /**
  * Ignores normal values and passes only the terminal signals along.
@@ -34,16 +33,16 @@ final class MonoIgnoreElements<T> extends MonoFromFluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		source.subscribe(new IgnoreElementsSubscriber<>(s), ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		source.subscribe(new IgnoreElementsSubscriber<>(s));
 	}
 
 	static final class IgnoreElementsSubscriber<T> implements InnerOperator<T, T> {
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		Subscription s;
 
-		IgnoreElementsSubscriber(Subscriber<? super T> actual) {
+		IgnoreElementsSubscriber(CoreSubscriber<? super T> actual) {
 			this.actual = actual;
 		}
 
@@ -82,7 +81,7 @@ final class MonoIgnoreElements<T> extends MonoFromFluxOperator<T, T> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

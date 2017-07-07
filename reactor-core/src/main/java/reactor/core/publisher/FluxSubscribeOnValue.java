@@ -18,14 +18,14 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
-import javax.annotation.Nullable;
-import reactor.util.context.Context;
 
 /**
  * Publisher indicating a scalar/empty source that subscribes on the specified scheduler.
@@ -46,7 +46,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context context) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		T v = value;
 		if (v == null) {
 			ScheduledEmpty parent = new ScheduledEmpty(s);
@@ -68,7 +68,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 	static final class ScheduledScalar<T>
 			implements QueueSubscription<T>, InnerProducer<T>, Runnable {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final T value;
 
@@ -95,7 +95,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 		static final int HAS_VALUE = 2;
 		static final int COMPLETE  = 3;
 
-		ScheduledScalar(Subscriber<? super T> actual,
+		ScheduledScalar(CoreSubscriber<? super T> actual,
 				T value,
 				Scheduler scheduler) {
 			this.actual = actual;
@@ -104,7 +104,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

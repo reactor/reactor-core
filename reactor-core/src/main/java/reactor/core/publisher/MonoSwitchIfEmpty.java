@@ -17,8 +17,7 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 
-import org.reactivestreams.Subscriber;
-import reactor.util.context.Context;
+import reactor.core.CoreSubscriber;
 
 /**
  * Switches to another source if the first source turns out to be empty.
@@ -36,12 +35,12 @@ final class MonoSwitchIfEmpty<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		FluxSwitchIfEmpty.SwitchIfEmptySubscriber<T> parent = new
 				FluxSwitchIfEmpty.SwitchIfEmptySubscriber<>(s, other);
 
 		s.onSubscribe(parent);
 
-		source.subscribe(parent, ctx);
+		source.subscribe(parent);
 	}
 }

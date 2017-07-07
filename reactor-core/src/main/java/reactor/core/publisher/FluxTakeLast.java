@@ -19,11 +19,10 @@ package reactor.core.publisher;
 import java.util.ArrayDeque;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BooleanSupplier;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import javax.annotation.Nullable;
-import reactor.util.context.Context;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 
 /**
  * Emits the last N values the source emitted before its completion.
@@ -45,12 +44,12 @@ final class FluxTakeLast<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		if (n == 0) {
-			source.subscribe(new TakeLastZeroSubscriber<>(s), ctx);
+			source.subscribe(new TakeLastZeroSubscriber<>(s));
 		}
 		else {
-			source.subscribe(new TakeLastManySubscriber<>(s, n), ctx);
+			source.subscribe(new TakeLastManySubscriber<>(s, n));
 		}
 	}
 
@@ -61,11 +60,11 @@ final class FluxTakeLast<T> extends FluxOperator<T, T> {
 
 	static final class TakeLastZeroSubscriber<T> implements InnerOperator<T, T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		Subscription s;
 
-		TakeLastZeroSubscriber(Subscriber<? super T> actual) {
+		TakeLastZeroSubscriber(CoreSubscriber<? super T> actual) {
 			this.actual = actual;
 		}
 
@@ -104,7 +103,7 @@ final class FluxTakeLast<T> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 
@@ -122,7 +121,7 @@ final class FluxTakeLast<T> extends FluxOperator<T, T> {
 	static final class TakeLastManySubscriber<T> extends ArrayDeque<T>
 			implements BooleanSupplier, InnerOperator<T, T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final int n;
 
@@ -136,7 +135,7 @@ final class FluxTakeLast<T> extends FluxOperator<T, T> {
 				AtomicLongFieldUpdater.newUpdater(TakeLastManySubscriber.class,
 						"requested");
 
-		TakeLastManySubscriber(Subscriber<? super T> actual, int n) {
+		TakeLastManySubscriber(CoreSubscriber<? super T> actual, int n) {
 			this.actual = actual;
 			this.n = n;
 		}
@@ -200,7 +199,7 @@ final class FluxTakeLast<T> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 	}

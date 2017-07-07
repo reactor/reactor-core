@@ -19,14 +19,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.LongConsumer;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.publisher.FluxCreate.SinkDisposable;
-import javax.annotation.Nullable;
-import reactor.util.context.Context;
 
 /**
  * Wraps a the downstream Subscriber into a single emission object
@@ -43,7 +41,7 @@ final class MonoCreate<T> extends Mono<T> {
 
 
     @Override
-    public void subscribe(Subscriber<? super T> s, Context ctx) {
+    public void subscribe(CoreSubscriber<? super T> s) {
 	    DefaultMonoSink<T> emitter = new DefaultMonoSink<>(s);
 
         s.onSubscribe(emitter);
@@ -59,7 +57,7 @@ final class MonoCreate<T> extends Mono<T> {
 	static final class DefaultMonoSink<T> extends AtomicBoolean
 			implements MonoSink<T>, InnerProducer<T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		volatile Disposable disposable;
 		@SuppressWarnings("rawtypes")
@@ -83,7 +81,7 @@ final class MonoCreate<T> extends Mono<T> {
         static final int HAS_REQUEST_NO_VALUE = 2;
         static final int HAS_REQUEST_HAS_VALUE = 3;
 
-		DefaultMonoSink(Subscriber<? super T> actual) {
+		DefaultMonoSink(CoreSubscriber<? super T> actual) {
 			this.actual = actual;
 		}
 
@@ -161,7 +159,7 @@ final class MonoCreate<T> extends Mono<T> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

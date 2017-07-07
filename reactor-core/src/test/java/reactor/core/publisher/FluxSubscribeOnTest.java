@@ -22,9 +22,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
@@ -161,7 +160,7 @@ public class FluxSubscribeOnTest {
 
 	@Test
     public void scanMainSubscriber() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxSubscribeOn.SubscribeOnSubscriber<Integer> test =
         		new FluxSubscribeOn.SubscribeOnSubscriber<>(Flux.just(1), actual, Schedulers.single().createWorker());
         Subscription parent = Operators.emptySubscription();

@@ -21,14 +21,14 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiPredicate;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.concurrent.QueueSupplier;
-import javax.annotation.Nullable;
 import reactor.util.context.Context;
 
 import static reactor.core.publisher.Operators.cancelledSubscription;
@@ -52,14 +52,14 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super Boolean> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super Boolean> s) {
 		EqualCoordinator<T> ec = new EqualCoordinator<>(s, bufferSize, first, second, comparer);
 		s.onSubscribe(ec);
 		ec.subscribe();
 	}
 
 	static final class EqualCoordinator<T> implements InnerProducer<Boolean> {
-		final Subscriber<? super Boolean> actual;
+		final CoreSubscriber<? super Boolean> actual;
 		final BiPredicate<? super T, ? super T> comparer;
 		final Publisher<? extends T> first;
 		final Publisher<? extends T> second;
@@ -82,7 +82,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 		static final AtomicIntegerFieldUpdater<EqualCoordinator> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(EqualCoordinator.class, "wip");
 
-		EqualCoordinator(Subscriber<? super Boolean> actual, int bufferSize,
+		EqualCoordinator(CoreSubscriber<? super Boolean> actual, int bufferSize,
 				Publisher<? extends T> first, Publisher<? extends T> second,
 				BiPredicate<? super T, ? super T> comparer) {
 			this.actual = actual;
@@ -94,7 +94,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 		}
 
 		@Override
-		public Subscriber<? super Boolean> actual() {
+		public CoreSubscriber<? super Boolean> actual() {
 			return actual;
 		}
 
@@ -299,7 +299,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 
 		@Override
 		public Context currentContext() {
-			return parent.currentContext();
+			return parent.actual.currentContext();
 		}
 
 		@Override

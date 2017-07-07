@@ -18,13 +18,12 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
-import javax.annotation.Nullable;
-import reactor.util.context.Context;
 
 /**
  * Emits a single 0L value delayed by some time amount with a help of
@@ -47,7 +46,7 @@ final class MonoDelay extends Mono<Long> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super Long> s, Context context) {
+	public void subscribe(CoreSubscriber<? super Long> s) {
 		MonoDelayRunnable r = new MonoDelayRunnable(s);
 
 		s.onSubscribe(r);
@@ -65,7 +64,7 @@ final class MonoDelay extends Mono<Long> {
 	}
 
 	static final class MonoDelayRunnable implements Runnable, InnerProducer<Long> {
-		final Subscriber<? super Long> actual;
+		final CoreSubscriber<? super Long> actual;
 
 		volatile Disposable cancel;
 		static final AtomicReferenceFieldUpdater<MonoDelayRunnable, Disposable> CANCEL =
@@ -77,7 +76,7 @@ final class MonoDelay extends Mono<Long> {
 
 		static final Disposable FINISHED = () -> { };
 
-		MonoDelayRunnable(Subscriber<? super Long> actual) {
+		MonoDelayRunnable(CoreSubscriber<? super Long> actual) {
 			this.actual = actual;
 		}
 
@@ -88,7 +87,7 @@ final class MonoDelay extends Mono<Long> {
 		}
 
 		@Override
-		public Subscriber<? super Long> actual() {
+		public CoreSubscriber<? super Long> actual() {
 			return actual;
 		}
 

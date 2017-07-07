@@ -17,10 +17,9 @@ package reactor.core.publisher;
 
 import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.context.Context;
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
@@ -32,15 +31,15 @@ final class MonoHasElement<T> extends MonoOperator<T, Boolean> implements Fuseab
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super Boolean> s, Context ctx) {
-		source.subscribe(new HasElementSubscriber<>(s), ctx);
+	public void subscribe(CoreSubscriber<? super Boolean> s) {
+		source.subscribe(new HasElementSubscriber<>(s));
 	}
 
 	static final class HasElementSubscriber<T>
 			extends Operators.MonoSubscriber<T, Boolean> {
 		Subscription s;
 
-		HasElementSubscriber(Subscriber<? super Boolean> actual) {
+		HasElementSubscriber(CoreSubscriber<? super Boolean> actual) {
 			super(actual);
 		}
 

@@ -16,22 +16,21 @@
 
 package reactor.core.publisher;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.test.publisher.FluxOperatorTest;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
 
     @Test
     public void scanSubscriber() {
-        Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxFilterFuseable.FilterFuseableSubscriber<String> test = new FluxFilterFuseable.FilterFuseableSubscriber<>(actual, t -> true);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);

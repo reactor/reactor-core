@@ -18,14 +18,13 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Subscribes to the source Publisher asynchronously through a scheduler function or
@@ -47,7 +46,7 @@ final class FluxSubscribeOn<T> extends FluxOperator<T, T> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		Worker worker;
 		
 		try {
@@ -69,7 +68,7 @@ final class FluxSubscribeOn<T> extends FluxOperator<T, T> {
 	static final class SubscribeOnSubscriber<T>
 			implements InnerOperator<T, T>, Runnable {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final Publisher<? extends T> source;
 
@@ -97,8 +96,7 @@ final class FluxSubscribeOn<T> extends FluxOperator<T, T> {
 						Thread.class,
 						"thread");
 
-		SubscribeOnSubscriber(Publisher<? extends T> source, Subscriber<? super
-				T> actual, Worker worker) {
+		SubscribeOnSubscriber(Publisher<? extends T> source, CoreSubscriber<? super T> actual, Worker worker) {
 			this.actual = actual;
 			this.worker = worker;
 			this.source = source;
@@ -199,7 +197,7 @@ final class FluxSubscribeOn<T> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

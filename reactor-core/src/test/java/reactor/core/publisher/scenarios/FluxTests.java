@@ -52,8 +52,8 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.publisher.EmitterProcessor;
@@ -76,7 +76,6 @@ import reactor.util.function.Tuples;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.number.OrderingComparison.lessThan;
 import static org.junit.Assert.*;
 
@@ -1254,7 +1253,7 @@ public class FluxTests extends AbstractReactorTest {
 		return list;
 	}
 
-	class FooSubscriber implements Subscriber<String> {
+	class FooSubscriber implements CoreSubscriber<String> {
 
 		private final Logger log = Loggers.getLogger(getClass());
 

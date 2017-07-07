@@ -30,6 +30,7 @@ import javax.annotation.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.context.Context;
@@ -74,15 +75,14 @@ final class FluxSwitchMap<T, R> extends FluxOperator<T, R> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super R> s) {
 		if (FluxFlatMap.trySubscribeScalarMap(source, s, mapper, false)) {
 			return;
 		}
 
 		source.subscribe(new SwitchMapMain<T, R>(s,
 				mapper,
-				queueSupplier.get(),
-				bufferSize), ctx);
+				queueSupplier.get(), bufferSize));
 	}
 
 	static final class SwitchMapMain<T, R> implements InnerOperator<T, R> {
@@ -92,7 +92,7 @@ final class FluxSwitchMap<T, R> extends FluxOperator<T, R> {
 		final Queue<Object>               queue;
 		final BiPredicate<Object, Object> queueBiAtomic;
 		final int                         bufferSize;
-		final Subscriber<? super R>       actual;
+		final CoreSubscriber<? super R>   actual;
 
 		Subscription s;
 
@@ -141,7 +141,7 @@ final class FluxSwitchMap<T, R> extends FluxOperator<T, R> {
 				AtomicIntegerFieldUpdater.newUpdater(SwitchMapMain.class, "active");
 
 		@SuppressWarnings("unchecked")
-		SwitchMapMain(Subscriber<? super R> actual,
+		SwitchMapMain(CoreSubscriber<? super R> actual,
 				Function<? super T, ? extends Publisher<? extends R>> mapper,
 				Queue<Object> queue,
 				int bufferSize) {
@@ -159,7 +159,7 @@ final class FluxSwitchMap<T, R> extends FluxOperator<T, R> {
 		}
 
 		@Override
-		public final Subscriber<? super R> actual() {
+		public final CoreSubscriber<? super R> actual() {
 			return actual;
 		}
 

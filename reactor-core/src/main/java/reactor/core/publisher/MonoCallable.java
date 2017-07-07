@@ -19,11 +19,9 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Executes a Callable function and emits a single value to each individual Subscriber.
@@ -44,7 +42,7 @@ extends Mono<T>
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context context) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 
 		Operators.MonoSubscriber<T, T>
 				sds = new Operators.MonoSubscriber<>(s);

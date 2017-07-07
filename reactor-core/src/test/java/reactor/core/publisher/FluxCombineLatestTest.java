@@ -23,8 +23,8 @@ import java.util.List;
 
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
@@ -258,7 +258,7 @@ public class FluxCombineLatestTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void scanMain() {
-		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 
 		FluxCombineLatest.CombineLatestCoordinator<String, Integer> test = new FluxCombineLatest.CombineLatestCoordinator<>(
 				actual, arr -> { throw new IllegalStateException("boomArray");}, 123, QueueSupplier.<FluxCombineLatest.SourceAndArray>one().get(), 456);
@@ -279,7 +279,7 @@ public class FluxCombineLatestTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void scanInner() {
-		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxCombineLatest.CombineLatestCoordinator<String, Integer> main = new FluxCombineLatest.CombineLatestCoordinator<>(
 				actual, arr -> arr.length, 123, QueueSupplier.<FluxCombineLatest.SourceAndArray>one().get(), 456);
 

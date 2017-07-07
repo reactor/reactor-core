@@ -18,12 +18,11 @@ package reactor.core.publisher;
 
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.Fuseable;
-import reactor.util.context.Context;
 import javax.annotation.Nullable;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 
 /**
  * Peeks out values that make a filter function return false.
@@ -66,13 +65,13 @@ final class MonoPeekFuseable<T> extends MonoOperator<T, T>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		if (s instanceof ConditionalSubscriber) {
 			source.subscribe(new FluxPeekFuseable.PeekFuseableConditionalSubscriber<>((ConditionalSubscriber<?
-					super T>) s, this), ctx);
+					super T>) s, this));
 			return;
 		}
-		source.subscribe(new FluxPeekFuseable.PeekFuseableSubscriber<>(s, this), ctx);
+		source.subscribe(new FluxPeekFuseable.PeekFuseableSubscriber<>(s, this));
 	}
 
 	@Override

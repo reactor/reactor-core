@@ -18,10 +18,9 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-
-import org.reactivestreams.Subscriber;
-import reactor.util.context.Context;
 import javax.annotation.Nullable;
+
+import reactor.core.CoreSubscriber;
 
 /**
  * Emits a constant or generated Throwable instance to Subscribers.
@@ -42,7 +41,7 @@ final class FluxError<T> extends Flux<T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context context) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		if (whenRequested) {
 			s.onSubscribe(new ErrorSubscription(s, error));
 		}
@@ -53,7 +52,7 @@ final class FluxError<T> extends Flux<T> {
 
 	static final class ErrorSubscription implements InnerProducer {
 
-		final Subscriber<?> actual;
+		final CoreSubscriber<?> actual;
 
 		final Throwable error;
 
@@ -61,7 +60,7 @@ final class FluxError<T> extends Flux<T> {
 		static final AtomicIntegerFieldUpdater<ErrorSubscription> ONCE =
 				AtomicIntegerFieldUpdater.newUpdater(ErrorSubscription.class, "once");
 
-		ErrorSubscription(Subscriber<?> actual, Throwable error) {
+		ErrorSubscription(CoreSubscriber<?> actual, Throwable error) {
 			this.actual = actual;
 			this.error = error;
 		}
@@ -81,7 +80,7 @@ final class FluxError<T> extends Flux<T> {
 		}
 
 		@Override
-		public Subscriber<?> actual() {
+		public CoreSubscriber actual() {
 			return actual;
 		}
 

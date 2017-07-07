@@ -21,9 +21,8 @@ import java.util.List;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
@@ -164,7 +163,7 @@ public class FluxScanSeedTest extends FluxOperatorTest<String, String> {
 
 	@Test
     public void scanSubscriber() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxScanSeed.ScanSeedSubscriber<Integer, Integer> test = new FluxScanSeed.ScanSeedSubscriber<>(actual,
         		(i, j) -> i + j, 0);
         Subscription parent = Operators.emptySubscription();

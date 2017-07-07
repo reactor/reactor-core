@@ -50,6 +50,7 @@ import javax.annotation.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
@@ -84,7 +85,7 @@ import reactor.util.function.Tuples;
  * <p>Note that using state in the {@code java.util.function} / lambdas used within Flux operators
  * should be avoided, as these may be shared between several {@link Subscriber Subscribers}.
  *
- * <p> {@link #subscribe(Subscriber, Context)} is an internal extension to
+ * <p> {@link #subscribe(CoreSubscriber)} is an internal extension to
  * {@link #subscribe(Subscriber)} used internally for {@link Context} passing. User
  * provided {@link Subscriber} may
  * be passed to this "subscribe" extension but will loose the available
@@ -1911,7 +1912,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	@Nullable
 	public final T blockFirst() {
 		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>();
-		subscribe(subscriber);
+		subscribe(Operators.onNewSubscriber(this, subscriber));
 		return subscriber.blockingGet();
 	}
 
@@ -1931,7 +1932,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	@Nullable
 	public final T blockFirst(Duration timeout) {
 		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>();
-		subscribe(subscriber);
+		subscribe(Operators.onNewSubscriber(this, subscriber));
 		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
 	}
 
@@ -1950,7 +1951,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	@Nullable
 	public final T blockLast() {
 		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>();
-		subscribe(subscriber);
+		subscribe(Operators.onNewSubscriber(this, subscriber));
 		return subscriber.blockingGet();
 	}
 
@@ -1971,7 +1972,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	@Nullable
 	public final T blockLast(Duration timeout) {
 		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>();
-		subscribe(subscriber);
+		subscribe(Operators.onNewSubscriber(this, subscriber));
 		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
 	}
 
@@ -6344,17 +6345,14 @@ public abstract class Flux<T> implements Publisher<T> {
 			@Nullable Consumer<? super Throwable> errorConsumer,
 			@Nullable Runnable completeConsumer,
 			@Nullable Consumer<? super Subscription> subscriptionConsumer) {
-		LambdaSubscriber<T> consumerAction = new LambdaSubscriber<>(consumer,
-				errorConsumer, completeConsumer, subscriptionConsumer);
-
-		subscribe(consumerAction);
-		return consumerAction;
+		return subscribeWith(new LambdaSubscriber<>(consumer, errorConsumer,
+				completeConsumer,
+				subscriptionConsumer));
 	}
 
 	@Override
 	public final void subscribe(Subscriber<? super T> actual) {
-		actual = Operators.onNewSubscriber(this, actual);
-		subscribe(actual, Context.from(actual));
+		subscribe(Operators.onNewSubscriber(this, actual));
 	}
 
 	/**
@@ -6365,11 +6363,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * in a controlled manner, it supports direct subscribe-time {@link Context} passing.
 	 *
 	 * @param actual the {@link Subscriber} interested into the published sequence
-	 * @param context a {@link Context} to provide to the operational chain.
-	 *
 	 * @see Flux#subscribe(Subscriber)
 	 */
-	public abstract void subscribe(Subscriber<? super T> actual, Context context);
+	public abstract void subscribe(CoreSubscriber<? super T> actual);
 
 	/**
 	 * Run subscribe, onSubscribe and request on a specified {@link Scheduler}'s {@link Worker}.
@@ -6420,7 +6416,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return the passed {@link Subscriber}
 	 */
 	public final <E extends Subscriber<? super T>> E subscribeWith(E subscriber) {
-		subscribe(subscriber);
+		subscribe(Operators.onNewSubscriber(this, subscriber));
 		return subscriber;
 	}
 

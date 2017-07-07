@@ -17,9 +17,8 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -128,7 +127,7 @@ public class FluxOnBackpressureLatestTest {
 
 	@Test
     public void scanSubscriber() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxOnBackpressureLatest.LatestSubscriber<Integer> test =
         		new FluxOnBackpressureLatest.LatestSubscriber<>(actual);
         Subscription parent = Operators.emptySubscription();

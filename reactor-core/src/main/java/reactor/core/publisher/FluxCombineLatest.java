@@ -30,6 +30,7 @@ import javax.annotation.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -92,7 +93,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public void subscribe(Subscriber<? super R> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super R> s) {
 		Publisher<? extends T>[] a = array;
 		int n;
 		if (a == null) {
@@ -156,10 +157,10 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 		if (n == 1) {
 			Function<T, R> f = t -> combiner.apply(new Object[]{t});
 			if (a[0] instanceof Fuseable) {
-				new FluxMapFuseable<>(from(a[0]), f).subscribe(s, ctx);
+				new FluxMapFuseable<>(from(a[0]), f).subscribe(s);
 			}
 			else {
-				new FluxMap<>(from(a[0]), f).subscribe(s, ctx);
+				new FluxMap<>(from(a[0]), f).subscribe(s);
 			}
 			return;
 		}
@@ -177,11 +178,11 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 	static final class CombineLatestCoordinator<T, R>
 			implements QueueSubscription<R>, InnerProducer<R> {
 
-		final Function<Object[], R>   combiner;
-		final CombineLatestInner<T>[] subscribers;
-		final Queue<SourceAndArray>   queue;
-		final Object[]                latest;
-		final Subscriber<? super R>   actual;
+		final Function<Object[], R>     combiner;
+		final CombineLatestInner<T>[]   subscribers;
+		final Queue<SourceAndArray>     queue;
+		final Object[]                  latest;
+		final CoreSubscriber<? super R> actual;
 
 		boolean outputFused;
 
@@ -215,7 +216,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 						Throwable.class,
 						"error");
 
-		 CombineLatestCoordinator(Subscriber<? super R> actual,
+		CombineLatestCoordinator(CoreSubscriber<? super R> actual,
 				Function<Object[], R> combiner,
 				int n,
 				Queue<SourceAndArray> queue,
@@ -233,7 +234,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 		}
 
 		@Override
-		public final Subscriber<? super R> actual() {
+		public final CoreSubscriber<? super R> actual() {
 			return actual;
 		}
 
@@ -577,7 +578,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 
 		@Override
 		public Context currentContext() {
-			return parent.currentContext();
+			return parent.actual.currentContext();
 		}
 
 		@Override

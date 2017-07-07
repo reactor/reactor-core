@@ -20,12 +20,12 @@ import java.util.ArrayDeque;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Buffers values if the subscriber doesn't request fast enough, bounding the
@@ -54,10 +54,10 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxOperator<O, O> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super O> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super O> s) {
 		source.subscribe(new BackpressureBufferDropOldestSubscriber<>(s,
 				bufferSize,
-				delayError, onBufferOverflow, bufferOverflowStrategy), ctx);
+				delayError, onBufferOverflow, bufferOverflowStrategy));
 	}
 
 	@Override
@@ -69,7 +69,7 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxOperator<O, O> {
 			extends ArrayDeque<T>
 			implements InnerOperator<T, T> {
 
-		final Subscriber<? super T>  actual;
+		final CoreSubscriber<? super T>  actual;
 		final int                    bufferSize;
 		final Consumer<? super T>    onOverflow;
 		final boolean                delayError;
@@ -93,7 +93,7 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxOperator<O, O> {
 						"requested");
 
 		BackpressureBufferDropOldestSubscriber(
-				Subscriber<? super T> actual,
+				CoreSubscriber<? super T> actual,
 				int bufferSize,
 				boolean delayError,
 				@Nullable Consumer<? super T> onOverflow,
@@ -299,7 +299,7 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxOperator<O, O> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

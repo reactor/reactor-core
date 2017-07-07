@@ -20,9 +20,8 @@ import java.time.Duration;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -192,7 +191,7 @@ public class FluxTakeUntilOtherTest {
 
 	@Test
     public void scanMainSubscriber() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxTakeUntilOther.TakeUntilMainSubscriber<Integer> test =
         		new FluxTakeUntilOther.TakeUntilMainSubscriber<>(actual);
         Subscription parent = Operators.emptySubscription();
@@ -211,7 +210,7 @@ public class FluxTakeUntilOtherTest {
 
 	@Test
     public void scanOtherSubscriber() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxTakeUntilOther.TakeUntilMainSubscriber<Integer> main =
         		new FluxTakeUntilOther.TakeUntilMainSubscriber<>(actual);
         FluxTakeUntilOther.TakeUntilOtherSubscriber<Integer> test =

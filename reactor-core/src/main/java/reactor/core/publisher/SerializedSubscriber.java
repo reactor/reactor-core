@@ -16,9 +16,10 @@
 
 package reactor.core.publisher;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import javax.annotation.Nullable;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 
 /**
  * Subscriber that makes sure signals are delivered sequentially in case the onNext, onError or onComplete methods are
@@ -34,7 +35,7 @@ import javax.annotation.Nullable;
  */
 final class SerializedSubscriber<T> implements InnerOperator<T, T> {
 
-	final Subscriber<? super T> actual;
+	final CoreSubscriber<? super T> actual;
 
 	boolean emitting;
 
@@ -52,7 +53,7 @@ final class SerializedSubscriber<T> implements InnerOperator<T, T> {
 
 	Subscription s;
 
-	SerializedSubscriber(Subscriber<? super T> actual) {
+	SerializedSubscriber(CoreSubscriber<? super T> actual) {
 		this.actual = actual;
 	}
 
@@ -168,7 +169,7 @@ final class SerializedSubscriber<T> implements InnerOperator<T, T> {
 		}
 	}
 
-	void serDrainLoop(Subscriber<? super T> actual) {
+	void serDrainLoop(CoreSubscriber<? super T> actual) {
 		for (; ; ) {
 
 			if (cancelled) {
@@ -232,7 +233,7 @@ final class SerializedSubscriber<T> implements InnerOperator<T, T> {
 	}
 
 	@Override
-	public Subscriber<? super T> actual() {
+	public CoreSubscriber<? super T> actual() {
 		return actual;
 	}
 

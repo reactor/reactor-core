@@ -20,11 +20,10 @@ import java.util.AbstractQueue;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BooleanSupplier;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import javax.annotation.Nullable;
-import reactor.util.context.Context;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 
 /**
  * @author Stephane Maldini
@@ -36,15 +35,15 @@ final class FluxDematerialize<T> extends FluxOperator<Signal<T>, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> subscriber, Context ctx) {
-		source.subscribe(new DematerializeSubscriber<>(subscriber), ctx);
+	public void subscribe(CoreSubscriber<? super T> subscriber) {
+		source.subscribe(new DematerializeSubscriber<>(subscriber));
 	}
 
 	static final class DematerializeSubscriber<T> extends AbstractQueue<T>
 			implements InnerOperator<Signal<T>, T>,
 			           BooleanSupplier {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		Subscription s;
 
@@ -64,7 +63,7 @@ final class FluxDematerialize<T> extends FluxOperator<Signal<T>, T> {
 
 		Throwable error;
 
-		DematerializeSubscriber(Subscriber<? super T> subscriber) {
+		DematerializeSubscriber(CoreSubscriber<? super T> subscriber) {
 			this.actual = subscriber;
 		}
 
@@ -167,7 +166,7 @@ final class FluxDematerialize<T> extends FluxOperator<Signal<T>, T> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

@@ -32,7 +32,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.annotation.Nullable;
 
 import org.assertj.core.api.Assertions;
@@ -43,9 +42,8 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
@@ -1254,7 +1252,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 	@Test
     public void scanSubscriber() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxPublishOn.PublishOnSubscriber<Integer> test = new FluxPublishOn.PublishOnSubscriber<>(actual,
         		Schedulers.single(), Schedulers.single().createWorker(), true, 123, QueueSupplier.unbounded());
         Subscription parent = Operators.emptySubscription();

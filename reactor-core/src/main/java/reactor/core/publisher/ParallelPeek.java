@@ -17,11 +17,10 @@ package reactor.core.publisher;
 
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.util.context.Context;
 import javax.annotation.Nullable;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 
 /**
  * Execute a Consumer in each 'rail' for the current element passing through.
@@ -64,20 +63,20 @@ final class ParallelPeek<T> extends ParallelFlux<T> implements SignalPeek<T>{
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T>[] subscribers, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T>[] subscribers) {
 		if (!validate(subscribers)) {
 			return;
 		}
 		
 		int n = subscribers.length;
 		@SuppressWarnings("unchecked")
-		Subscriber<? super T>[] parents = new Subscriber[n];
+		CoreSubscriber<? super T>[] parents = new CoreSubscriber[n];
 		
 		for (int i = 0; i < n; i++) {
 			parents[i] = new FluxPeek.PeekSubscriber<>(subscribers[i], this);
 		}
 		
-		source.subscribe(parents, ctx);
+		source.subscribe(parents);
 	}
 
 	@Override

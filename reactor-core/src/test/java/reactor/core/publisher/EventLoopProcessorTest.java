@@ -19,10 +19,9 @@ package reactor.core.publisher;
 import java.util.concurrent.Executors;
 
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.util.concurrent.WaitStrategy;
-import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.Scannable.BooleanAttr.TERMINATED;
@@ -51,7 +50,7 @@ public class EventLoopProcessorTest {
 			}
 
 			@Override
-			public void subscribe(Subscriber<? super String> actual, Context context) {
+			public void subscribe(CoreSubscriber<? super String> actual) {
 
 			}
 

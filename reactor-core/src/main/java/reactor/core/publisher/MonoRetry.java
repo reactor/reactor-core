@@ -15,8 +15,7 @@
  */
 package reactor.core.publisher;
 
-import org.reactivestreams.Subscriber;
-import reactor.util.context.Context;
+import reactor.core.CoreSubscriber;
 
 /**
  * Repeatedly subscribes to the source sequence if it signals any error
@@ -40,7 +39,7 @@ final class MonoRetry<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		FluxRetry.RetrySubscriber<T> parent = new FluxRetry.RetrySubscriber<>(source,
 				s, times);
 

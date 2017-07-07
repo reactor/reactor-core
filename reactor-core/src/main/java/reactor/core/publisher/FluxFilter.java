@@ -18,13 +18,12 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Filters out values that make a filter function return false.
@@ -44,20 +43,20 @@ final class FluxFilter<T> extends FluxOperator<T, T> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		if (s instanceof ConditionalSubscriber) {
 			source.subscribe(new FilterConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
-					predicate), ctx);
+					predicate));
 			return;
 		}
-		source.subscribe(new FilterSubscriber<>(s, predicate), ctx);
+		source.subscribe(new FilterSubscriber<>(s, predicate));
 	}
 
 	static final class FilterSubscriber<T>
 			implements InnerOperator<T, T>,
 			           Fuseable.ConditionalSubscriber<T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final Predicate<? super T> predicate;
 
@@ -65,7 +64,7 @@ final class FluxFilter<T> extends FluxOperator<T, T> {
 
 		boolean done;
 
-		FilterSubscriber(Subscriber<? super T> actual, Predicate<? super T> predicate) {
+		FilterSubscriber(CoreSubscriber<? super T> actual, Predicate<? super T> predicate) {
 			this.actual = actual;
 			this.predicate = predicate;
 		}
@@ -153,7 +152,7 @@ final class FluxFilter<T> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 
@@ -267,7 +266,7 @@ final class FluxFilter<T> extends FluxOperator<T, T> {
 
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

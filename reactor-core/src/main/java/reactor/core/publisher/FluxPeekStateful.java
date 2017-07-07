@@ -18,12 +18,11 @@ package reactor.core.publisher;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.Exceptions;
 import javax.annotation.Nullable;
-import reactor.util.context.Context;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.Exceptions;
 
 /**
  * Peek into the lifecycle events and signals of a sequence, passing around
@@ -79,15 +78,15 @@ final class FluxPeekStateful<T, S> extends FluxOperator<T, T>
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		//TODO fuseable version?
 		//TODO conditional version?
-		source.subscribe(new PeekStatefulSubscriber<>(s, this, stateSeeder.get()), ctx);
+		source.subscribe(new PeekStatefulSubscriber<>(s, this, stateSeeder.get()));
 	}
 
 	static final class PeekStatefulSubscriber<T, S> implements InnerOperator<T, T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final SignalPeekStateful<T, S> parent;
 
@@ -97,7 +96,7 @@ final class FluxPeekStateful<T, S> extends FluxOperator<T, T>
 
 		boolean done;
 
-		PeekStatefulSubscriber(Subscriber<? super T> actual,
+		PeekStatefulSubscriber(CoreSubscriber<? super T> actual,
 				SignalPeekStateful<T, S> parent, S state) {
 			this.actual = actual;
 			this.parent = parent;
@@ -256,7 +255,7 @@ final class FluxPeekStateful<T, S> extends FluxOperator<T, T>
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

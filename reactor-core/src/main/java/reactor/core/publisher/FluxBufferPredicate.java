@@ -25,13 +25,12 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable.ConditionalSubscriber;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Buffers elements into custom collections where the buffer boundary is determined by
@@ -77,7 +76,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super C> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super C> s) {
 		C initialBuffer;
 
 		try {
@@ -92,14 +91,14 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 		BufferPredicateSubscriber<T, C> parent = new BufferPredicateSubscriber<>(s,
 				initialBuffer, bufferSupplier, predicate, mode);
 
-		source.subscribe(parent, ctx);
+		source.subscribe(parent);
 	}
 
 	static final class BufferPredicateSubscriber<T, C extends Collection<? super T>>
 			extends AbstractQueue<C>
 			implements ConditionalSubscriber<T>, InnerOperator<T, C>, BooleanSupplier {
 
-		final Subscriber<? super C> actual;
+		final CoreSubscriber<? super C> actual;
 
 		final Supplier<C> bufferSupplier;
 
@@ -126,7 +125,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 				Subscription> S = AtomicReferenceFieldUpdater.newUpdater
 				(BufferPredicateSubscriber.class, Subscription.class, "s");
 
-		BufferPredicateSubscriber(Subscriber<? super C> actual, C initialBuffer,
+		BufferPredicateSubscriber(CoreSubscriber<? super C> actual, C initialBuffer,
 				Supplier<C> bufferSupplier, Predicate<? super T> predicate, Mode mode) {
 			this.actual = actual;
 			this.buffer = initialBuffer;
@@ -255,7 +254,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 		}
 
 		@Override
-		public Subscriber<? super C> actual() {
+		public CoreSubscriber<? super C> actual() {
 			return actual;
 		}
 

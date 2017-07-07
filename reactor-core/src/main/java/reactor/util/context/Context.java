@@ -48,21 +48,6 @@ public interface Context {
 	}
 
 	/**
-	 * Try pulling a {@link Context} from the given reference if of
-	 * {@link Contextualized} type.
-	 *
-	 * @param o the reference to push to if instance of {@link Contextualized}
-	 * @return the pulled {@link Context} or {@link Context#empty()}
-	 */
-	@SuppressWarnings("unchecked")
-	static Context from(Object o) {
-		if(o instanceof Contextualized){
-			return ((Contextualized)o).currentContext();
-		}
-		return empty();
-	}
-
-	/**
 	 * Inject a key/value pair in a new {@link Context} inheriting current state.
 	 * The returned {@link Context} will resolve the new key/value pair and any
 	 * existing key/value pair.

@@ -26,8 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
 import org.junit.Test;
-
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxCreate.BufferAsyncSink;
@@ -38,7 +37,6 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.StepVerifier.Step;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.context.Context;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -1087,7 +1085,7 @@ public class FluxCreateTest {
 
 	@Test
 	public void scanBaseSink() {
-		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxCreate.BaseSink<String> test = new FluxCreate.BaseSink<String>(actual) {
 			@Override
 			public FluxSink<String> next(String s) {
@@ -1110,7 +1108,7 @@ public class FluxCreateTest {
 
 	@Test
 	public void scanBufferAsyncSink() {
-		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		BufferAsyncSink<String> test = new BufferAsyncSink<>(actual, 123);
 		test.queue.offer("foo");
 
@@ -1126,7 +1124,7 @@ public class FluxCreateTest {
 
 	@Test
 	public void scanLatestAsyncSink() {
-		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxCreate.LatestAsyncSink<String> test = new FluxCreate.LatestAsyncSink<>(actual);
 
 		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(0);
@@ -1143,7 +1141,7 @@ public class FluxCreateTest {
 
 	@Test
 	public void scanSerializedSink() {
-		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxCreate.BaseSink<String> decorated = new FluxCreate.LatestAsyncSink<>(actual);
 		SerializedSink<String> test = new SerializedSink<>(decorated);
 

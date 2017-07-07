@@ -24,8 +24,8 @@ import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -234,7 +234,7 @@ public class FluxBufferWhenTest {
 
 	@Test
 	public void scanStartEndMain() {
-		Subscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 
 		FluxBufferWhen.BufferStartEndMainSubscriber<String, Integer, Long, List<String>> test = new FluxBufferWhen.BufferStartEndMainSubscriber<>(
 				actual, ArrayList::new, QueueSupplier.<List<String>>one().get(), u -> Mono.just(1L));
@@ -256,7 +256,7 @@ public class FluxBufferWhenTest {
 
 	@Test
 	public void scanStartEndMainCancelled() {
-		Subscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 
 		FluxBufferWhen.BufferStartEndMainSubscriber<String, Integer, Long, List<String>> test = new FluxBufferWhen.BufferStartEndMainSubscriber<>(
 				actual, ArrayList::new, QueueSupplier.<List<String>>one().get(), u -> Mono.just(1L));

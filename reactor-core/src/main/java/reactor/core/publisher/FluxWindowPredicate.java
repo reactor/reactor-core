@@ -24,15 +24,15 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxBufferPredicate.Mode;
-import javax.annotation.Nullable;
-import reactor.util.context.Context;
 
 /**
  * Cut a sequence into non-overlapping windows where each window boundary is determined by
@@ -84,13 +84,13 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super GroupedFlux<T, T>> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super GroupedFlux<T, T>> s) {
 		source.subscribe(new WindowPredicateMain<>(s,
 				mainQueueSupplier.get(),
 				groupQueueSupplier,
 				prefetch,
 				predicate,
-				mode), ctx);
+				mode));
 	}
 
 	@Override
@@ -102,7 +102,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 			implements Fuseable.QueueSubscription<GroupedFlux<T, T>>,
 			           InnerOperator<T, GroupedFlux<T, T>> {
 
-		final Subscriber<? super GroupedFlux<T, T>> actual;
+		final CoreSubscriber<? super GroupedFlux<T, T>> actual;
 
 		final Supplier<? extends Queue<T>> groupQueueSupplier;
 
@@ -149,7 +149,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 
 		volatile boolean outputFused;
 
-		WindowPredicateMain(Subscriber<? super GroupedFlux<T, T>> actual,
+		WindowPredicateMain(CoreSubscriber<? super GroupedFlux<T, T>> actual,
 				Queue<GroupedFlux<T, T>> queue,
 				Supplier<? extends Queue<T>> groupQueueSupplier,
 				int prefetch,
@@ -293,7 +293,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 		}
 
 		@Override
-		public Subscriber<? super GroupedFlux<T, T>> actual() {
+		public CoreSubscriber<? super GroupedFlux<T, T>> actual() {
 			return actual;
 		}
 
@@ -529,11 +529,11 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 		volatile boolean done;
 		Throwable error;
 
-		volatile Subscriber<? super T> actual;
+		volatile CoreSubscriber<? super T> actual;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<WindowGroupedFlux, Subscriber> ACTUAL =
+		static final AtomicReferenceFieldUpdater<WindowGroupedFlux, CoreSubscriber> ACTUAL =
 				AtomicReferenceFieldUpdater.newUpdater(WindowGroupedFlux.class,
-						Subscriber.class,
+						CoreSubscriber.class,
 						"actual");
 
 		volatile boolean cancelled;
@@ -567,7 +567,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 
@@ -752,7 +752,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 		}
 
 		@Override
-		public void subscribe(Subscriber<? super T> s, Context ctx) {
+		public void subscribe(CoreSubscriber<? super T> s) {
 			if (once == 0 && ONCE.compareAndSet(this, 0, 1)) {
 				s.onSubscribe(this);
 				ACTUAL.lazySet(this, s);

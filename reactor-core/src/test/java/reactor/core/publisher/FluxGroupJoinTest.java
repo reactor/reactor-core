@@ -19,10 +19,10 @@ package reactor.core.publisher;
 import java.util.Arrays;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import org.junit.Test;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
+import org.junit.Test;
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
@@ -276,14 +276,14 @@ public class FluxGroupJoinTest {
 
 	@Test
 	public void scanGroupJoinSubscription() {
-		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, sub -> sub.request(100));
+		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, sub -> sub.request(100));
 		FluxGroupJoin.GroupJoinSubscription<String, String, String, String, String> test =
 				new FluxGroupJoin.GroupJoinSubscription<String, String, String, String, String>(actual,
 						s -> Mono.just(s),
 						s -> Mono.just(s),
 						(l, r) -> l,
 						QueueSupplier.unbounded().get(),
-						QueueSupplier.<String>one());
+						QueueSupplier.one());
 
 		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
 		test.request(123);
@@ -306,7 +306,7 @@ public class FluxGroupJoinTest {
 
 	@Test
 	public void scanLeftRightSubscriber() {
-		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null,
+		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null,
 				sub -> sub.request(100));
 		FluxGroupJoin.GroupJoinSubscription<String, String, String, String, String> parent =
 				new FluxGroupJoin.GroupJoinSubscription<String, String, String, String, String>(actual,
@@ -314,7 +314,7 @@ public class FluxGroupJoinTest {
 						s -> Mono.just(s),
 						(l, r) -> l,
 						QueueSupplier.unbounded().get(),
-						QueueSupplier.<String>one());
+						QueueSupplier.one());
 		FluxGroupJoin.LeftRightSubscriber test = new FluxGroupJoin.LeftRightSubscriber(parent, true);
 		Subscription sub = Operators.emptySubscription();
 		test.onSubscribe(sub);
@@ -328,7 +328,7 @@ public class FluxGroupJoinTest {
 
 	@Test
 	public void scanLeftRightEndSubscriber() {
-		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null,
+		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null,
 				sub -> sub.request(100));
 		FluxGroupJoin.GroupJoinSubscription<String, String, String, String, String> parent =
 				new FluxGroupJoin.GroupJoinSubscription<String, String, String, String, String>(actual,
@@ -336,7 +336,7 @@ public class FluxGroupJoinTest {
 						s -> Mono.just(s),
 						(l, r) -> l,
 						QueueSupplier.unbounded().get(),
-						QueueSupplier.<String>one());
+						QueueSupplier.one());
 		FluxGroupJoin.LeftRightEndSubscriber test = new FluxGroupJoin.LeftRightEndSubscriber(parent, false, 1);
 		Subscription sub = Operators.emptySubscription();
 		test.onSubscribe(sub);

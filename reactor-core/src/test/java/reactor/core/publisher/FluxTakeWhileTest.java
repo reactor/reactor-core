@@ -18,9 +18,8 @@ package reactor.core.publisher;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -174,7 +173,7 @@ public class FluxTakeWhileTest {
 
 	@Test
     public void scanSubscriber() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxTakeWhile.TakeWhileSubscriber<Integer> test =
         		new FluxTakeWhile.TakeWhileSubscriber<>(actual, i -> true);
         Subscription parent = Operators.emptySubscription();

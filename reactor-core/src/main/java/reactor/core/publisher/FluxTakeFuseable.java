@@ -15,10 +15,9 @@
  */
 package reactor.core.publisher;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.publisher.FluxTake.TakeFuseableSubscriber;
-import reactor.util.context.Context;
 
 /**
  * Takes only the first N values from the source Publisher.
@@ -42,7 +41,7 @@ final class FluxTakeFuseable<T> extends FluxOperator<T, T> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		source.subscribe(new TakeFuseableSubscriber<>(s, n), ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		source.subscribe(new TakeFuseableSubscriber<>(s, n));
 	}
 }

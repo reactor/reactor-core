@@ -15,11 +15,11 @@
  */
 package reactor.core.publisher;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.Fuseable;
 import javax.annotation.Nullable;
-import reactor.util.context.Context;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 
 /**
  * Counts the number of values in the source sequence.
@@ -35,8 +35,8 @@ final class MonoCount<T> extends MonoFromFluxOperator<T, Long> implements Fuseab
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super Long> s, Context ctx) {
-		source.subscribe(new CountSubscriber<>(s), ctx);
+	public void subscribe(CoreSubscriber<? super Long> s) {
+		source.subscribe(new CountSubscriber<>(s));
 	}
 
 	static final class CountSubscriber<T> extends Operators.MonoSubscriber<T, Long>  {
@@ -45,7 +45,7 @@ final class MonoCount<T> extends MonoFromFluxOperator<T, Long> implements Fuseab
 
 		Subscription s;
 
-		CountSubscriber(Subscriber<? super Long> actual) {
+		CountSubscriber(CoreSubscriber<? super Long> actual) {
 			super(actual);
 		}
 

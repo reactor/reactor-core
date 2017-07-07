@@ -22,8 +22,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
@@ -169,7 +169,8 @@ public class MonoSubscribeOnTest {
 	@Test
 	public void scanSubscribeOnSubscriber() {
 		final Flux<String> source = Flux.just("foo");
-		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<String>
+				actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoSubscribeOn.SubscribeOnSubscriber<String> test = new MonoSubscribeOn.SubscribeOnSubscriber<>(
 				source, actual, Schedulers.single().createWorker());
 		Subscription parent = Operators.emptySubscription();

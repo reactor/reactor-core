@@ -24,14 +24,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.WaitStrategy;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  ** An implementation of a RingBuffer backed message-passing Processor implementing publish-subscribe with async event
@@ -327,7 +327,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	}
 
 	@Override
-	public void subscribe(final Subscriber<? super E> subscriber, Context ctx) {
+	public void subscribe(final CoreSubscriber<? super E> subscriber) {
 		//noinspection ConstantConditions
 		if (subscriber == null) {
 			throw Exceptions.argumentIsNullException();
@@ -448,7 +448,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 
 		final RingBuffer.Sequence pendingRequest;
 
-		final Subscriber<? super T> subscriber;
+		final CoreSubscriber<? super T> subscriber;
 
 		final Runnable waiter = new Runnable() {
 			@Override
@@ -469,7 +469,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 		 */
 		TopicInner(TopicProcessor<T> processor,
 		                            RingBuffer.Sequence pendingRequest,
-		                            Subscriber<? super T> subscriber) {
+				CoreSubscriber<? super T> subscriber) {
 			this.processor = processor;
 			this.pendingRequest = pendingRequest;
 			this.subscriber = subscriber;
@@ -605,7 +605,7 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return subscriber;
 		}
 

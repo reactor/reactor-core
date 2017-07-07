@@ -57,7 +57,7 @@ public interface Fuseable {
 	 *
 	 * @param <T> the value type
 	 */
-	interface ConditionalSubscriber<T> extends Subscriber<T> {
+	interface ConditionalSubscriber<T> extends CoreSubscriber<T> {
 		/**
 		 * Try consuming the value and return true if successful.
 		 * @param t the value to consume, not null

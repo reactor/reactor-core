@@ -19,8 +19,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import reactor.util.context.Context;
+import reactor.core.CoreSubscriber;
 
 /**
  * Resumes the failed main sequence with another sequence returned by
@@ -41,7 +40,7 @@ final class MonoOnErrorResume<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		source.subscribe(new FluxOnErrorResume.ResumeSubscriber<>(s, nextFactory), ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		source.subscribe(new FluxOnErrorResume.ResumeSubscriber<>(s, nextFactory));
 	}
 }

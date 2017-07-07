@@ -20,8 +20,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 
 public class MonoAwaitOnSubscribeTest {
 
@@ -32,7 +32,7 @@ public class MonoAwaitOnSubscribeTest {
 
 		Mono.just(1)
 		    .awaitOnSubscribe()
-		    .subscribe(new Subscriber<Integer>() {
+		    .subscribe(new CoreSubscriber<Integer>() {
 			    boolean open;
 
 			    @Override
@@ -72,7 +72,7 @@ public class MonoAwaitOnSubscribeTest {
 
 		sp.awaitOnSubscribe()
 		  .doOnCancel(() -> state2.set(state1.get()))
-		  .subscribe(new Subscriber<Integer>() {
+		  .subscribe(new CoreSubscriber<Integer>() {
 			  @Override
 			  public void onSubscribe(Subscription s) {
 				  s.cancel();
@@ -106,7 +106,7 @@ public class MonoAwaitOnSubscribeTest {
 		AtomicReference<Throwable> e = new AtomicReference<>();
 
 		Mono.just(1)
-		    .subscribe(new Subscriber<Integer>() {
+		    .subscribe(new CoreSubscriber<Integer>() {
 			    boolean open;
 
 			    @Override
@@ -144,7 +144,7 @@ public class MonoAwaitOnSubscribeTest {
 
 		Mono.just(1)
 		    .doOnCancel(() -> state2.set(state1.get()))
-		    .subscribe(new Subscriber<Integer>() {
+		    .subscribe(new CoreSubscriber<Integer>() {
 			    @Override
 			    public void onSubscribe(Subscription s) {
 				    s.cancel();

@@ -19,10 +19,9 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.util.context.Context;
 
 /**
  * @author Stephane Maldini
@@ -38,10 +37,11 @@ final class MonoSourceFuseable<I> extends Mono<I> implements Fuseable, Scannable
 	/**
 	 * Default is simply delegating and decorating with {@link Mono} API. Note this
 	 * assumes an identity between input and output types.
+	 * @param s
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super I> s, Context context) {
+	public void subscribe(CoreSubscriber<? super I> s) {
 		source.subscribe(s);
 	}
 

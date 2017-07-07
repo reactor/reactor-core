@@ -24,12 +24,11 @@ import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -319,7 +318,7 @@ public class FluxRetryWhenTest {
 
 	@Test
     public void scanMainSubscriber() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxRetryWhen.RetryWhenMainSubscriber<Integer> test =
         		new FluxRetryWhen.RetryWhenMainSubscriber<>(actual, null, Flux.empty());
         Subscription parent = Operators.emptySubscription();
@@ -337,7 +336,7 @@ public class FluxRetryWhenTest {
 
 	@Test
     public void scanOtherSubscriber() {
-		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxRetryWhen.RetryWhenMainSubscriber<Integer> main =
         		new FluxRetryWhen.RetryWhenMainSubscriber<>(actual, null, Flux.empty());
         FluxRetryWhen.RetryWhenOtherSubscriber test = new FluxRetryWhen.RetryWhenOtherSubscriber();
@@ -350,8 +349,8 @@ public class FluxRetryWhenTest {
 
 	@Test
 	public void inners() {
-		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-		Subscriber<Throwable> signaller = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<Throwable> signaller = new LambdaSubscriber<>(null, e -> {}, null, null);
 		Flux<Integer> when = Flux.empty();
 		FluxRetryWhen.RetryWhenMainSubscriber<Integer> main = new FluxRetryWhen
 				.RetryWhenMainSubscriber<>(actual, signaller, when);

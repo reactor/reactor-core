@@ -18,11 +18,11 @@ package reactor.core.publisher;
 import java.util.Queue;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
-import org.reactivestreams.*;
-import reactor.core.Scannable;
-import reactor.util.context.Context;
 import javax.annotation.Nullable;
+
+import org.reactivestreams.Publisher;
+import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
 
 /**
  * Flattens the generated Publishers on each rail.
@@ -81,7 +81,7 @@ final class ParallelFlatMap<T, R> extends ParallelFlux<R> implements Scannable{
 	}
 	
 	@Override
-	public void subscribe(Subscriber<? super R>[] subscribers, Context ctx) {
+	public void subscribe(CoreSubscriber<? super R>[] subscribers) {
 		if (!validate(subscribers)) {
 			return;
 		}
@@ -89,29 +89,18 @@ final class ParallelFlatMap<T, R> extends ParallelFlux<R> implements Scannable{
 		int n = subscribers.length;
 		
 		@SuppressWarnings("unchecked")
-		Subscriber<T>[] parents = new Subscriber[n];
+		CoreSubscriber<T>[] parents = new CoreSubscriber[n];
 		
 		for (int i = 0; i < n; i++) {
-			parents[i] = subscriber(subscribers[i], mapper, delayError,
-					maxConcurrency, mainQueueSupplier, prefetch, innerQueueSupplier);
+			parents[i] = new FluxFlatMap.FlatMapMain<>(subscribers[i],
+					mapper,
+					delayError,
+					maxConcurrency,
+					mainQueueSupplier,
+					prefetch,
+					innerQueueSupplier);
 		}
 		
-		source.subscribe(parents, ctx);
-	}
-
-	static <T, R> Subscriber<T> subscriber(Subscriber<? super R> s,
-			Function<? super T, ? extends Publisher<? extends R>> mapper,
-			boolean delayError,
-			int maxConcurrency,
-			Supplier<? extends Queue<R>> mainQueueSupplier,
-			int prefetch,
-			Supplier<? extends Queue<R>> innerQueueSupplier) {
-		return new FluxFlatMap.FlatMapMain<>(s,
-				mapper,
-				delayError,
-				maxConcurrency,
-				mainQueueSupplier,
-				prefetch,
-				innerQueueSupplier);
+		source.subscribe(parents);
 	}
 }

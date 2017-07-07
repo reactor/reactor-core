@@ -15,6 +15,7 @@
  */
 package reactor.core.publisher;
 
+import reactor.util.context.Context;
 
 /**
  *
@@ -25,4 +26,9 @@ package reactor.core.publisher;
  */
 interface InnerOperator<I, O>
 		extends InnerConsumer<I>, InnerProducer<O> {
+
+	@Override
+	default Context currentContext() {
+		return actual().currentContext();
+	}
 }

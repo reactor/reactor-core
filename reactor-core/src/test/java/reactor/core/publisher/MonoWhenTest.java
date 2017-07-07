@@ -22,12 +22,11 @@ import java.util.Arrays;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.context.Context;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuple4;
@@ -468,7 +467,7 @@ public class MonoWhenTest {
 
 	@Test
 	public void scanCoordinator() {
-		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoWhen.WhenCoordinator<String> test = new MonoWhen.WhenCoordinator<>(
 				actual, 2, true, a -> String.valueOf(a[0]));
 
@@ -491,7 +490,7 @@ public class MonoWhenTest {
 
 	@Test
 	public void scanCoordinatorNotDoneUntilN() {
-		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoWhen.WhenCoordinator<String> test = new MonoWhen.WhenCoordinator<>(
 				actual, 10, true, a -> String.valueOf(a[0]));
 
@@ -504,7 +503,7 @@ public class MonoWhenTest {
 
 	@Test
 	public void scanWhenInner() {
-		Subscriber<? super String> actual = new LambdaMonoSubscriber<>(null, null, null, null);
+		CoreSubscriber<? super String> actual = new LambdaMonoSubscriber<>(null, null, null, null);
 		MonoWhen.WhenCoordinator<String> coordinator = new MonoWhen.WhenCoordinator<>(actual, 2, false, a -> null);
 		MonoWhen.WhenInner<String> test = new MonoWhen.WhenInner<>(coordinator);
 		Subscription innerSub = Operators.cancelledSubscription();

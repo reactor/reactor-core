@@ -22,9 +22,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.test.publisher.FluxOperatorTest;
@@ -297,7 +296,7 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 
     @Test
     public void scanSubscriber() {
-        Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxMap.MapSubscriber<Integer, String> test = new FluxMap.MapSubscriber<>(actual, i -> String.valueOf(i));
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
@@ -328,7 +327,7 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 
     @Test
     public void scanFuseableSubscriber() {
-        Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxMapFuseable.MapFuseableSubscriber<Integer, String> test =
         		new FluxMapFuseable.MapFuseableSubscriber<>(actual, i -> String.valueOf(i));
         Subscription parent = Operators.emptySubscription();

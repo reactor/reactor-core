@@ -18,9 +18,8 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Objects;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.context.Context;
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
@@ -51,7 +50,7 @@ extends Mono<T>
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		s.onSubscribe(Operators.scalarSubscription(s, value));
 	}
 }

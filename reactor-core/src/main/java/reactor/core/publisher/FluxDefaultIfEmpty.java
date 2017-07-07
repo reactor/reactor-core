@@ -16,12 +16,11 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.Fuseable;
-import reactor.util.context.Context;
 import javax.annotation.Nullable;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 
 /**
  * Emits a scalar value if the source sequence turns out to be empty.
@@ -39,8 +38,8 @@ final class FluxDefaultIfEmpty<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		source.subscribe(new DefaultIfEmptySubscriber<>(s, value), ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		source.subscribe(new DefaultIfEmptySubscriber<>(s, value));
 	}
 
 	static final class DefaultIfEmptySubscriber<T>
@@ -50,7 +49,7 @@ final class FluxDefaultIfEmpty<T> extends FluxOperator<T, T> {
 
 		boolean hasValue;
 
-		DefaultIfEmptySubscriber(Subscriber<? super T> actual, T value) {
+		DefaultIfEmptySubscriber(CoreSubscriber<? super T> actual, T value) {
 			super(actual);
 			this.value = value;
 		}

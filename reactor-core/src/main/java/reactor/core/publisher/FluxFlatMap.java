@@ -30,6 +30,7 @@ import javax.annotation.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -87,7 +88,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super R> s) {
 
 		if (trySubscribeScalarMap(source, s, mapper, false)) {
 			return;
@@ -98,8 +99,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 				delayError,
 				maxConcurrency,
 				mainQueueSupplier,
-				prefetch,
-				innerQueueSupplier), ctx);
+				prefetch, innerQueueSupplier));
 	}
 
 	/**
@@ -116,7 +116,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 	 */
 	@SuppressWarnings("unchecked")
 	static <T, R> boolean trySubscribeScalarMap(Publisher<? extends T> source,
-			Subscriber<? super R> s,
+			CoreSubscriber<? super R> s,
 			Function<? super T, ? extends Publisher<? extends R>> mapper,
 			boolean fuseableExpected) {
 		if (source instanceof Callable) {
@@ -189,7 +189,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 		final Function<? super T, ? extends Publisher<? extends R>> mapper;
 		final Supplier<? extends Queue<R>>                          mainQueueSupplier;
 		final Supplier<? extends Queue<R>>                          innerQueueSupplier;
-		final Subscriber<? super R>                                 actual;
+		final CoreSubscriber<? super R>                             actual;
 
 		volatile Queue<R> scalarQueue;
 
@@ -227,7 +227,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 
 		int produced;
 
-		FlatMapMain(Subscriber<? super R> actual,
+		FlatMapMain(CoreSubscriber<? super R> actual,
 				Function<? super T, ? extends Publisher<? extends R>> mapper,
 				boolean delayError,
 				int maxConcurrency,
@@ -245,7 +245,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 		}
 
 		@Override
-		public final Subscriber<? super R> actual() {
+		public final CoreSubscriber<? super R> actual() {
 			return actual;
 		}
 

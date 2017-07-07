@@ -18,9 +18,8 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.context.Context;
 
@@ -35,8 +34,8 @@ final class MonoContextGet<T, V> extends MonoOperator<T, V> implements Fuseable 
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super V> s, Context ctx) {
-		source.subscribe(new FluxContextGet.ContextGetSubscriber<>(s, doOnContext, ctx), ctx);
+	public void subscribe(CoreSubscriber<? super V> s) {
+		source.subscribe(new FluxContextGet.ContextGetSubscriber<>(s, doOnContext));
 	}
 
 }

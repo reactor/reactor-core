@@ -24,12 +24,11 @@ import java.util.function.Function;
 
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
-import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -314,7 +313,7 @@ public class MonoDelayUntilTest {
 
 	@Test
 	public void scanCoordinator() {
-		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		@SuppressWarnings("unchecked")
 		Function<? super String, ? extends Publisher<?>>[] otherGenerators = new Function[3];
 		MonoDelayUntil.DelayUntilCoordinator<String> test = new MonoDelayUntil.DelayUntilCoordinator<>(actual, true, otherGenerators);
@@ -340,7 +339,7 @@ public class MonoDelayUntilTest {
 
 	@Test
 	public void scanTrigger() {
-		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		@SuppressWarnings("unchecked")
 		Function<? super String, ? extends Publisher<?>>[] otherGenerators = new Function[3];
 		MonoDelayUntil.DelayUntilCoordinator<String> main = new MonoDelayUntil.DelayUntilCoordinator<>(

@@ -18,11 +18,10 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.function.Function;
-
 import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.context.Context;
 
@@ -37,42 +36,34 @@ final class FluxContextStart<T> extends FluxOperator<T, T> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		ContextStartSubscriber<T> ctxSub =
-				new ContextStartSubscriber<>(s, doOnContext, ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
 		Context c;
 		try {
-			c = doOnContext.apply(ctx);
+			c = doOnContext.apply(s.currentContext());
 		}
 		catch (Throwable t) {
 			Operators.error(s, Operators.onOperatorError(t));
 			return;
 		}
-		ctxSub.context = c;
 
-		source.subscribe(ctxSub, c);
+		source.subscribe(new ContextStartSubscriber<>(s, c));
 	}
 
 	static final class ContextStartSubscriber<T>
 			implements ConditionalSubscriber<T>, InnerOperator<T, T>,
 			           QueueSubscription<T> {
 
-		final Subscriber<? super T>            actual;
+		final CoreSubscriber<? super T>        actual;
 		final ConditionalSubscriber<? super T> actualConditional;
-		final Function<Context, Context>       doOnContext;
-
-		volatile Context context;
+		final Context                          context;
 
 		QueueSubscription<T> qs;
 		Subscription         s;
 
 		@SuppressWarnings("unchecked")
-		ContextStartSubscriber(Subscriber<? super T> actual,
-				Function<Context, Context> doOnContext,
-				Context context) {
+		ContextStartSubscriber(CoreSubscriber<? super T> actual, Context context) {
 			this.actual = actual;
 			this.context = context;
-			this.doOnContext = doOnContext;
 			if (actual instanceof ConditionalSubscriber) {
 				this.actualConditional = (ConditionalSubscriber<? super T>) actual;
 			}
@@ -132,7 +123,7 @@ final class FluxContextStart<T> extends FluxOperator<T, T> implements Fuseable {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

@@ -16,8 +16,8 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.test.publisher.TestPublisher;
@@ -37,7 +37,7 @@ public class FluxHideTest {
 
 	@Test
 	public void suppressedSubscriber() {
-		Subscriber<Integer> s = new Subscriber<Integer>() {
+		CoreSubscriber<Integer> s = new CoreSubscriber<Integer>() {
 			@Override
 			public void onSubscribe(
 					Subscription s) {
@@ -80,7 +80,7 @@ public class FluxHideTest {
 
 	@Test
 	public void suppressedSubscriberError() {
-		Subscriber<Integer> s = new Subscriber<Integer>() {
+		CoreSubscriber<Integer> s = new CoreSubscriber<Integer>() {
 			@Override
 			public void onSubscribe(
 					Subscription s) {
@@ -119,7 +119,7 @@ public class FluxHideTest {
 
 	@Test
     public void scanSubscriber() {
-        Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxHide.HideSubscriber<String> test = new FluxHide.HideSubscriber<>(actual);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
@@ -130,7 +130,7 @@ public class FluxHideTest {
 
 	@Test
     public void scanSuppressFuseableSubscriber() {
-        Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxHide.SuppressFuseableSubscriber<String> test = new FluxHide.SuppressFuseableSubscriber<>(actual);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);

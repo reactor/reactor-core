@@ -19,7 +19,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.function.Function;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.context.Context;
 
@@ -34,20 +34,17 @@ final class MonoContextStart<T> extends MonoOperator<T, T> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		FluxContextStart.ContextStartSubscriber<T> ctxSub =
-				new FluxContextStart.ContextStartSubscriber<>(s, doOnContext, ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
 		Context c;
 		try {
-			c = doOnContext.apply(ctx);
+			c = doOnContext.apply(s.currentContext());
 		}
 		catch (Throwable t) {
 			Operators.error(s, Operators.onOperatorError(t));
 			return;
 		}
-		ctxSub.context = c;
 
-		source.subscribe(ctxSub, c);
+		source.subscribe(new FluxContextStart.ContextStartSubscriber<>(s, c));
 	}
 
 }

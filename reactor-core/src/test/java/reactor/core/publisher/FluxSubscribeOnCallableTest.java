@@ -17,9 +17,10 @@ package reactor.core.publisher;
 
 import java.io.IOException;
 import java.time.Duration;
+
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
@@ -127,7 +128,7 @@ public class FluxSubscribeOnCallableTest {
 
 	@Test
     public void scanMainSubscriber() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxSubscribeOnCallable.CallableSubscribeOnSubscription<Integer> test =
         		new FluxSubscribeOnCallable.CallableSubscribeOnSubscription<Integer>(actual, () -> 1, Schedulers.single());
 

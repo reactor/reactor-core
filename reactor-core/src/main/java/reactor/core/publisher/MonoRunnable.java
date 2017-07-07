@@ -19,10 +19,9 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.Callable;
-
-import org.reactivestreams.Subscriber;
-import reactor.util.context.Context;
 import javax.annotation.Nullable;
+
+import reactor.core.CoreSubscriber;
 
 /**
  * Executes the runnable whenever a Subscriber subscribes to this Mono.
@@ -36,7 +35,7 @@ final class MonoRunnable<T> extends Mono<T> implements Callable<Void> {
     }
 
     @Override
-    public void subscribe(Subscriber<? super T> s, Context context) {
+    public void subscribe(CoreSubscriber<? super T> s) {
         try {
             run.run();
         } catch (Throwable ex) {

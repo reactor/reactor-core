@@ -24,10 +24,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
-import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -295,7 +295,7 @@ public class MonoFilterWhenTest {
 		TestPublisher<Boolean> filter = TestPublisher.create();
 		new MonoFilterWhen<>(new Mono<Integer>() {
 			@Override
-			public void subscribe(Subscriber<? super Integer> s, Context ctx) {
+			public void subscribe(CoreSubscriber<? super Integer> s) {
 				subscriber.set(s);
 				//NON-EMPTY SOURCE WILL TRIGGER FILTER SUBSCRIPTION
 				s.onNext(2);
@@ -317,10 +317,10 @@ public class MonoFilterWhenTest {
 
 	@Test
 	public void scanSubscriber() {
-		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoFilterWhen.MonoFilterWhenMain<String>
 				test = new MonoFilterWhen.MonoFilterWhenMain<>(
-				actual, s -> Mono.just(false), Context.empty());
+				actual, s -> Mono.just(false));
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
@@ -338,10 +338,10 @@ public class MonoFilterWhenTest {
 
 	@Test
 	public void scanFilterWhenInner() {
-		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoFilterWhen.MonoFilterWhenMain<String>
 				main = new MonoFilterWhen.MonoFilterWhenMain<>(
-				actual, s -> Mono.just(false), Context.empty());
+				actual, s -> Mono.just(false));
 		MonoFilterWhen.FilterWhenInner test = new MonoFilterWhen.FilterWhenInner(main, true);
 
 		Subscription innerSubscription = Operators.emptySubscription();

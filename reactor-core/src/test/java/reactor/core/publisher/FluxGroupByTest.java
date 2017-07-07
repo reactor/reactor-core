@@ -24,8 +24,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
@@ -379,7 +379,7 @@ public class FluxGroupByTest extends
 
 		Flux.range(0, 1_000_000)
 		    .groupBy(v -> v & 1)
-		    .subscribe(new Subscriber<GroupedFlux<Integer, Integer>>() {
+		    .subscribe(new CoreSubscriber<GroupedFlux<Integer, Integer>>() {
 			    @Override
 			    public void onSubscribe(Subscription s) {
 				    s.request(Long.MAX_VALUE);
@@ -436,7 +436,7 @@ public class FluxGroupByTest extends
 
 		Flux.range(0, 1_000_000)
 		    .groupBy(v -> v & 1)
-		    .subscribe(new Subscriber<GroupedFlux<Integer, Integer>>() {
+		    .subscribe(new CoreSubscriber<GroupedFlux<Integer, Integer>>() {
 			    @Override
 			    public void onSubscribe(Subscription s) {
 				    s.request(Long.MAX_VALUE);
@@ -504,7 +504,7 @@ public class FluxGroupByTest extends
 
 		Flux.range(0, 1_000_000)
 		    .groupBy(v -> v & 1)
-		    .subscribe(new Subscriber<GroupedFlux<Integer, Integer>>() {
+		    .subscribe(new CoreSubscriber<GroupedFlux<Integer, Integer>>() {
 			    @Override
 			    public void onSubscribe(Subscription s) {
 				    s.request(Long.MAX_VALUE);
@@ -572,7 +572,7 @@ public class FluxGroupByTest extends
 
 		Flux.range(0, 1_000_000)
 		    .groupBy(v -> v & 1)
-		    .subscribe(new Subscriber<GroupedFlux<Integer, Integer>>() {
+		    .subscribe(new CoreSubscriber<GroupedFlux<Integer, Integer>>() {
 			    @Override
 			    public void onSubscribe(Subscription s) {
 				    s.request(Long.MAX_VALUE);
@@ -633,7 +633,7 @@ public class FluxGroupByTest extends
 		    .hide()
 		    .publishOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool()))
 		    .groupBy(v -> v & 1)
-		    .subscribe(new Subscriber<GroupedFlux<Integer, Integer>>() {
+		    .subscribe(new CoreSubscriber<GroupedFlux<Integer, Integer>>() {
 			    @Override
 			    public void onSubscribe(Subscription s) {
 				    s.request(Long.MAX_VALUE);
@@ -693,7 +693,7 @@ public class FluxGroupByTest extends
 		Flux.range(0, 1_000_000)
 		    .publishOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool()), 512)
 		    .groupBy(v -> v & 1)
-		    .subscribe(new Subscriber<GroupedFlux<Integer, Integer>>() {
+		    .subscribe(new CoreSubscriber<GroupedFlux<Integer, Integer>>() {
 			    @Override
 			    public void onSubscribe(Subscription s) {
 				    s.request(Long.MAX_VALUE);
@@ -837,9 +837,9 @@ public class FluxGroupByTest extends
 
 	@Test
 	public void scanMain() {
-		Subscriber<GroupedFlux<Integer, String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<GroupedFlux<Integer, String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxGroupBy.GroupByMain<Integer, Integer, String> test = new FluxGroupBy.GroupByMain<>(actual,
-				QueueSupplier.<GroupedFlux<Integer, String>>one().get(), QueueSupplier.<String>one(), 123, i -> i % 5, i -> String.valueOf(i));
+				QueueSupplier.<GroupedFlux<Integer, String>>one().get(), QueueSupplier.one(), 123, i -> i % 5, i -> String.valueOf(i));
 		Subscription sub = Operators.emptySubscription();
         test.onSubscribe(sub);
 
@@ -857,12 +857,12 @@ public class FluxGroupByTest extends
 
 	@Test
 	public void scanUnicastGroupedFlux() {
-		Subscriber<GroupedFlux<Integer, String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<GroupedFlux<Integer, String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxGroupBy.GroupByMain<Integer, Integer, String> main = new FluxGroupBy.GroupByMain<>(actual,
-				QueueSupplier.<GroupedFlux<Integer, String>>one().get(), QueueSupplier.<String>one(), 123, i -> i % 5, i -> String.valueOf(i));
+				QueueSupplier.<GroupedFlux<Integer, String>>one().get(), QueueSupplier.one(), 123, i -> i % 5, i -> String.valueOf(i));
 		FluxGroupBy.UnicastGroupedFlux<Integer, String> test = new FluxGroupBy.UnicastGroupedFlux<Integer, String>(1,
 				QueueSupplier.<String>one().get(), main, 123);
-		Subscriber<String> sub = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<String> sub = new LambdaSubscriber<>(null, e -> {}, null, null);
         test.subscribe(sub);
 
 		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(sub);

@@ -16,13 +16,7 @@
 
 package reactor.core.publisher;
 
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
+import reactor.core.CoreSubscriber;
 
 /**
  * Intercepts the onSubscribe call and makes sure calls to Subscription methods only
@@ -45,100 +39,8 @@ final class FluxAwaitOnSubscribe<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		source.subscribe(new PostOnSubscribeSubscriber<>(s), ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		source.subscribe(new StrictSubscriber<>(s));
 	}
 
-	static final class PostOnSubscribeSubscriber<T> implements InnerOperator<T, T> {
-
-		final Subscriber<? super T> actual;
-
-		volatile Subscription s;
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<PostOnSubscribeSubscriber, Subscription>
-				S =
-				AtomicReferenceFieldUpdater.newUpdater(PostOnSubscribeSubscriber.class,
-						Subscription.class,
-						"s");
-
-		volatile long requested;
-		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<PostOnSubscribeSubscriber> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(PostOnSubscribeSubscriber.class,
-						"requested");
-
-		PostOnSubscribeSubscriber(Subscriber<? super T> actual) {
-			this.actual = actual;
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (Operators.validate(this.s, s)) {
-
-				actual.onSubscribe(this);
-
-				if (Operators.setOnce(S, this, s)) {
-					long r = REQUESTED.getAndSet(this, 0L);
-					if (r != 0L) {
-						s.request(r);
-					}
-				}
-			}
-		}
-
-		@Override
-		public void onNext(T t) {
-			actual.onNext(t);
-		}
-
-		@Override
-		public void onError(Throwable t) {
-			actual.onError(t);
-		}
-
-		@Override
-		public void onComplete() {
-			actual.onComplete();
-		}
-
-		@Override
-		public void request(long n) {
-			Subscription a = s;
-			if (a != null) {
-				a.request(n);
-			}
-			else {
-				if (Operators.validate(n)) {
-					Operators.getAndAddCap(REQUESTED, this, n);
-					a = s;
-					if (a != null) {
-						long r = REQUESTED.getAndSet(this, 0L);
-						if (r != 0L) {
-							a.request(n);
-						}
-					}
-				}
-			}
-		}
-
-		@Override
-		public void cancel() {
-			Operators.terminate(S, this);
-		}
-
-		@Override
-		public Subscriber<? super T> actual() {
-			return actual;
-		}
-
-		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
-
-			return InnerOperator.super.scanUnsafe(key);
-		}
-	}
 }

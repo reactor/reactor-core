@@ -23,11 +23,12 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FluxAwaitOnSubscribeTest {
+public class StrictSubscriberTest {
 
 	@Test
 	public void requestDelayed() {
@@ -35,7 +36,6 @@ public class FluxAwaitOnSubscribeTest {
 		AtomicReference<Throwable> e = new AtomicReference<>();
 
 		Flux.just(1)
-		    .awaitOnSubscribe()
 		    .subscribe(new Subscriber<Integer>() {
 			    boolean open;
 
@@ -76,7 +76,7 @@ public class FluxAwaitOnSubscribeTest {
 
 		sp.awaitOnSubscribe()
 		  .doOnCancel(() -> state2.set(state1.get()))
-		  .subscribe(new Subscriber<Integer>() {
+		  .subscribe(new CoreSubscriber<Integer>() {
 			  @Override
 			  public void onSubscribe(Subscription s) {
 				  s.cancel();
@@ -110,7 +110,7 @@ public class FluxAwaitOnSubscribeTest {
 		AtomicReference<Throwable> e = new AtomicReference<>();
 
 		Flux.just(1)
-		    .subscribe(new Subscriber<Integer>() {
+		    .subscribe(new CoreSubscriber<Integer>() {
 			    boolean open;
 
 			    @Override
@@ -148,7 +148,7 @@ public class FluxAwaitOnSubscribeTest {
 
 		Flux.just(1)
 		    .doOnCancel(() -> state2.set(state1.get()))
-		    .subscribe(new Subscriber<Integer>() {
+		    .subscribe(new CoreSubscriber<Integer>() {
 			    @Override
 			    public void onSubscribe(Subscription s) {
 				    s.cancel();
@@ -177,8 +177,8 @@ public class FluxAwaitOnSubscribeTest {
 
 	@Test
 	public void scanPostOnSubscribeSubscriber() {
-		Subscriber<String> s = new LambdaSubscriber<>(null, null, null, null);
-		FluxAwaitOnSubscribe.PostOnSubscribeSubscriber<String> test = new FluxAwaitOnSubscribe.PostOnSubscribeSubscriber<>(s);
+		CoreSubscriber<String> s = new LambdaSubscriber<>(null, null, null, null);
+		StrictSubscriber<String> test = new StrictSubscriber<>(s);
 
 		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(s);
 		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isNull();

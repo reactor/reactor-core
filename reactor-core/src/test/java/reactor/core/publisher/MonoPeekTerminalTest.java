@@ -17,8 +17,8 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,7 +27,7 @@ public class MonoPeekTerminalTest {
 
 	@Test
 	public void scanSubscriber() {
-		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoPeekTerminal<String> main = new MonoPeekTerminal<>(Mono.just("foo"), null, null, null);
 		MonoPeekTerminal.MonoTerminalPeekSubscriber<String> test = new MonoPeekTerminal.MonoTerminalPeekSubscriber<>(
 				actual, main);

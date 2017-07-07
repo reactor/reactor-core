@@ -19,10 +19,8 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.context.Context;
-
 
 /**
  * For each subscriber, a Supplier is invoked and the returned value emitted.
@@ -38,7 +36,7 @@ final class FluxCallable<T> extends Flux<T> implements Callable<T>, Fuseable {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context context) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		Operators.MonoSubscriber<T, T> wrapper = new Operators.MonoSubscriber<>(s);
 		s.onSubscribe(wrapper);
 

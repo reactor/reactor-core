@@ -24,9 +24,8 @@ import org.assertj.core.api.Assertions;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
@@ -39,7 +38,6 @@ import reactor.util.function.Tuple2;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.junit.Assert.fail;
 
 public class FluxReplayTest extends FluxOperatorTest<String, String> {
 
@@ -297,7 +295,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 
 	@Test
     public void scanInner() {
-		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxReplay<Integer> main = new FluxReplay<>(Flux.just(1), 2, 1000, Schedulers.single());
         FluxReplay.ReplayInner<Integer> test = new FluxReplay.ReplayInner<>(actual);
         FluxReplay.ReplaySubscriber<Integer> parent = new FluxReplay.ReplaySubscriber<>(new FluxReplay.UnboundedReplayBuffer<>(10), main);

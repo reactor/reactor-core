@@ -19,13 +19,13 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Reduce the sequence of values in each 'rail' to a single value.
@@ -65,13 +65,13 @@ final class ParallelReduceSeed<T, R> extends ParallelFlux<R> implements
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R>[] subscribers, Context ctx) {
+	public void subscribe(CoreSubscriber<? super R>[] subscribers) {
 		if (!validate(subscribers)) {
 			return;
 		}
 
 		int n = subscribers.length;
-		@SuppressWarnings("unchecked") Subscriber<T>[] parents = new Subscriber[n];
+		@SuppressWarnings("unchecked") CoreSubscriber<T>[] parents = new CoreSubscriber[n];
 
 		for (int i = 0; i < n; i++) {
 
@@ -89,7 +89,7 @@ final class ParallelReduceSeed<T, R> extends ParallelFlux<R> implements
 					new ParallelReduceSeedSubscriber<>(subscribers[i], initialValue, reducer);
 		}
 
-		source.subscribe(parents, ctx);
+		source.subscribe(parents);
 	}
 
 	void reportError(Subscriber<?>[] subscribers, Throwable ex) {
@@ -115,7 +115,7 @@ final class ParallelReduceSeed<T, R> extends ParallelFlux<R> implements
 
 		boolean done;
 
-		ParallelReduceSeedSubscriber(Subscriber<? super R> subscriber,
+		ParallelReduceSeedSubscriber(CoreSubscriber<? super R> subscriber,
 				R initialValue,
 				BiFunction<R, ? super T, R> reducer) {
 			super(subscriber);

@@ -18,12 +18,11 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.scheduler.Scheduler;
 import javax.annotation.Nullable;
-import reactor.util.context.Context;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.scheduler.Scheduler;
 
 import static reactor.core.scheduler.Scheduler.REJECTED;
 
@@ -37,14 +36,14 @@ final class FluxCancelOn<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		source.subscribe(new CancelSubscriber<T>(s, scheduler), ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		source.subscribe(new CancelSubscriber<T>(s, scheduler));
 	}
 
 	static final class CancelSubscriber<T>
 			implements InnerOperator<T, T>, Runnable {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 		final Scheduler             scheduler;
 
 		Subscription s;
@@ -53,7 +52,7 @@ final class FluxCancelOn<T> extends FluxOperator<T, T> {
 		static final AtomicIntegerFieldUpdater<CancelSubscriber> CANCELLED =
 				AtomicIntegerFieldUpdater.newUpdater(CancelSubscriber.class, "cancelled");
 
-		CancelSubscriber(Subscriber<? super T> actual, Scheduler scheduler) {
+		CancelSubscriber(CoreSubscriber<? super T> actual, Scheduler scheduler) {
 			this.actual = actual;
 			this.scheduler = scheduler;
 		}
@@ -76,7 +75,7 @@ final class FluxCancelOn<T> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

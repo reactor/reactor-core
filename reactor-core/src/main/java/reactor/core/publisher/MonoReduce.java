@@ -18,12 +18,11 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.function.BiFunction;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.Fuseable;
-import reactor.util.context.Context;
 import javax.annotation.Nullable;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 
 /**
  * Aggregates the source items with an aggregator function and returns the last result.
@@ -43,8 +42,8 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		source.subscribe(new ReduceSubscriber<>(s, aggregator), ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		source.subscribe(new ReduceSubscriber<>(s, aggregator));
 	}
 
 	static final class ReduceSubscriber<T> extends Operators.MonoSubscriber<T, T> {
@@ -57,7 +56,7 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 
 		boolean done;
 
-		ReduceSubscriber(Subscriber<? super T> actual,
+		ReduceSubscriber(CoreSubscriber<? super T> actual,
 				BiFunction<T, T, T> aggregator) {
 			super(actual);
 			this.aggregator = aggregator;

@@ -19,9 +19,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
@@ -134,7 +133,7 @@ public class FluxMapSignalTest extends FluxOperatorTest<String, String> {
 
     @Test
     public void scanSubscriber() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxMapSignal<Object, Integer> main = new FluxMapSignal<>(Flux.empty(), null, null, () -> 1);
         FluxMapSignal.FluxMapSignalSubscriber<Object, Integer> test =
         		new FluxMapSignal.FluxMapSignalSubscriber<>(actual, main.mapperNext,

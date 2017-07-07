@@ -35,10 +35,12 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.stream.LongStream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
@@ -53,7 +55,6 @@ import reactor.util.function.Tuple4;
 import reactor.util.function.Tuple5;
 import reactor.util.function.Tuple6;
 import reactor.util.function.Tuples;
-import javax.annotation.Nullable;
 
 /**
  * A Reactive Streams {@link Publisher} with basic rx operators that completes successfully by emitting an element, or
@@ -177,7 +178,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 *
 	 * @return a new {@link Mono} emitting current context
-	 * @see #subscribe(Subscriber, Context)
+	 * @see #subscribe(CoreSubscriber)
 	 */
 	public static  Mono<Context> currentContext() {
 		return onAssembly(MonoCurrentContext.INSTANCE);
@@ -1291,7 +1292,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	@Nullable
 	public T block() {
 		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>();
-		subscribe(subscriber);
+		subscribe(Operators.onNewSubscriber(this, subscriber));
 		return subscriber.blockingGet();
 	}
 
@@ -1315,7 +1316,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	@Nullable
 	public T block(Duration timeout) {
 		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>();
-		subscribe(subscriber);
+		subscribe(Operators.onNewSubscriber(this, subscriber));
 		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
 	}
 
@@ -2855,8 +2856,7 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	@Override
 	public final void subscribe(Subscriber<? super T> actual) {
-		actual = Operators.onNewSubscriber(this, actual);
-		subscribe(actual, Context.from(actual));
+		subscribe(Operators.onNewSubscriber(this, actual));
 	}
 
 	/**
@@ -2867,11 +2867,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * in a controlled manner, it supports direct subscribe-time {@link Context} passing.
 	 *
 	 * @param actual the {@link Subscriber} interested into the published sequence
-	 * @param context a {@link Context} to provide to the operational chain.
-	 *
 	 * @see Publisher#subscribe(Subscriber)
 	 */
-	public abstract void subscribe(Subscriber<? super T> actual, Context context);
+	public abstract void subscribe(CoreSubscriber<? super T> actual);
 
 	/**
 	 * Run subscribe, onSubscribe and request on a specified {@link Scheduler}'s {@link Worker}.
@@ -2914,7 +2912,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return the passed {@link Subscriber} after subscribing it to this {@link Mono}
 	 */
 	public final <E extends Subscriber<? super T>> E subscribeWith(E subscriber) {
-		subscribe(subscriber);
+		subscribe(Operators.onNewSubscriber(this, subscriber));
 		return subscriber;
 	}
 

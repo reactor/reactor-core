@@ -19,12 +19,10 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
-import reactor.util.context.Context;
-
 
 /**
  * Executes a Callable and emits its value on the given Scheduler.
@@ -44,7 +42,7 @@ final class MonoSubscribeOnCallable<T> extends Mono<T> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context context) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		FluxSubscribeOnCallable.CallableSubscribeOnSubscription<T> parent =
 				new FluxSubscribeOnCallable.CallableSubscribeOnSubscription<>(s, callable, scheduler);
 		s.onSubscribe(parent);

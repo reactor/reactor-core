@@ -23,9 +23,8 @@ import java.util.concurrent.Callable;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.context.Context;
 
 /**
  * Concatenates values from Iterable sequences generated via a mapper function.
@@ -64,7 +63,7 @@ final class MonoFlattenIterable<T, R> extends FluxFromMonoOperator<T, R>
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public void subscribe(Subscriber<? super R> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super R> s) {
 		if (source instanceof Callable) {
 			T v;
 
@@ -100,7 +99,7 @@ final class MonoFlattenIterable<T, R> extends FluxFromMonoOperator<T, R>
 		source.subscribe(new FluxFlattenIterable.FlattenIterableSubscriber<>(s,
 				mapper,
 				prefetch,
-				queueSupplier), ctx);
+				queueSupplier));
 	}
 
 }

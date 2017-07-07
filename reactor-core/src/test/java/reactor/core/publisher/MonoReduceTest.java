@@ -22,10 +22,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.publisher.ReduceOperatorTest;
@@ -202,7 +202,7 @@ public class MonoReduceTest extends ReduceOperatorTest<String, String>{
 
 	@Test
 	public void scanSubscriber() {
-		Subscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoReduce.ReduceSubscriber<String> test = new MonoReduce.ReduceSubscriber<>(actual, (s1, s2) -> s1 + s2);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);

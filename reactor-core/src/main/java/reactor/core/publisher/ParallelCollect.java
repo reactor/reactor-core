@@ -19,13 +19,13 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Reduce the sequence of values in each 'rail' to a single value.
@@ -64,13 +64,13 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Scannable, 
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super C>[] subscribers, Context ctx) {
+	public void subscribe(CoreSubscriber<? super C>[] subscribers) {
 		if (!validate(subscribers)) {
 			return;
 		}
 
 		int n = subscribers.length;
-		@SuppressWarnings("unchecked") Subscriber<T>[] parents = new Subscriber[n];
+		@SuppressWarnings("unchecked") CoreSubscriber<T>[] parents = new CoreSubscriber[n];
 
 		for (int i = 0; i < n; i++) {
 
@@ -90,7 +90,7 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Scannable, 
 					collector);
 		}
 
-		source.subscribe(parents, ctx);
+		source.subscribe(parents);
 	}
 
 	void reportError(Subscriber<?>[] subscribers, Throwable ex) {
@@ -115,7 +115,7 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Scannable, 
 
 		boolean done;
 
-		ParallelCollectSubscriber(Subscriber<? super C> subscriber,
+		ParallelCollectSubscriber(CoreSubscriber<? super C> subscriber,
 				C initialValue,
 				BiConsumer<? super C, ? super T> collector) {
 			super(subscriber);

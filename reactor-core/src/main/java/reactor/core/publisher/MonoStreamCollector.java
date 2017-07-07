@@ -20,12 +20,11 @@ import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.Fuseable;
 import javax.annotation.Nullable;
-import reactor.util.context.Context;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 
 /**
  * Collects the values from the source sequence into a {@link java.util.stream.Collector}
@@ -49,7 +48,7 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super R> s) {
 		A container;
 		BiConsumer<? super A, ? super T> accumulator;
 		Function<? super A, ? extends R> finisher;
@@ -70,7 +69,7 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 		source.subscribe(new StreamCollectorSubscriber<>(s,
 				container,
 				accumulator,
-				finisher), ctx);
+				finisher));
 	}
 
 	static final class StreamCollectorSubscriber<T, A, R>
@@ -86,7 +85,7 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 
 		boolean done;
 
-		StreamCollectorSubscriber(Subscriber<? super R> actual,
+		StreamCollectorSubscriber(CoreSubscriber<? super R> actual,
 				A container,
 				BiConsumer<? super A, ? super T> accumulator,
 				Function<? super A, ? extends R> finisher) {

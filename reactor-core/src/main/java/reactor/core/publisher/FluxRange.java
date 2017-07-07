@@ -16,11 +16,11 @@
 package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import javax.annotation.Nullable;
-import reactor.util.context.Context;
 
 /**
  * Emits a range of integer values.
@@ -49,7 +49,7 @@ final class FluxRange extends Flux<Integer>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super Integer> s, Context context) {
+	public void subscribe(CoreSubscriber<? super Integer> s) {
 		long st = start;
 		long en = end;
 		if (st == en) {
@@ -71,7 +71,7 @@ final class FluxRange extends Flux<Integer>
 	static final class RangeSubscription implements InnerProducer<Integer>,
 	                                                SynchronousSubscription<Integer> {
 
-		final Subscriber<? super Integer> actual;
+		final CoreSubscriber<? super Integer> actual;
 
 		final long end;
 
@@ -83,14 +83,14 @@ final class FluxRange extends Flux<Integer>
 		static final AtomicLongFieldUpdater<RangeSubscription> REQUESTED =
 		  AtomicLongFieldUpdater.newUpdater(RangeSubscription.class, "requested");
 
-		RangeSubscription(Subscriber<? super Integer> actual, long start, long end) {
+		RangeSubscription(CoreSubscriber<? super Integer> actual, long start, long end) {
 			this.actual = actual;
 			this.index = start;
 			this.end = end;
 		}
 
 		@Override
-		public Subscriber<? super Integer> actual() {
+		public CoreSubscriber<? super Integer> actual() {
 			return actual;
 		}
 
@@ -239,7 +239,7 @@ final class FluxRange extends Flux<Integer>
 		}
 
 		@Override
-		public Subscriber<? super Integer> actual() {
+		public CoreSubscriber<? super Integer> actual() {
 			return actual;
 		}
 

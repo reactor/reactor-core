@@ -24,10 +24,12 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.QueueSubscription;
@@ -35,7 +37,6 @@ import reactor.core.Scannable;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Maps each upstream value into a Publisher and concatenates them into one
@@ -84,7 +85,7 @@ final class FluxMergeSequential<T, R> extends FluxOperator<T, R> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super R> s) {
 		if (FluxFlatMap.trySubscribeScalarMap(source, s, mapper, false)) {
 			return;
 		}
@@ -95,7 +96,7 @@ final class FluxMergeSequential<T, R> extends FluxOperator<T, R> {
 				prefetch,
 				errorMode,
 				queueSupplier);
-		source.subscribe(parent, ctx);
+		source.subscribe(parent);
 	}
 
 	static final class MergeSequentialMain<T, R> implements InnerOperator<T, R> {
@@ -116,7 +117,7 @@ final class FluxMergeSequential<T, R> extends FluxOperator<T, R> {
 		 */
 		final ErrorMode             errorMode;
 
-		final Subscriber<? super R> actual;
+		final CoreSubscriber<? super R> actual;
 
 		Subscription s;
 
@@ -144,7 +145,7 @@ final class FluxMergeSequential<T, R> extends FluxOperator<T, R> {
 		static final AtomicLongFieldUpdater<MergeSequentialMain> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(MergeSequentialMain.class, "requested");
 
-		MergeSequentialMain(Subscriber<? super R> actual,
+		MergeSequentialMain(CoreSubscriber<? super R> actual,
 				Function<? super T, ? extends Publisher<? extends R>> mapper,
 				int maxConcurrency, int prefetch, ErrorMode errorMode,
 				Supplier<Queue<MergeSequentialInner<R>>> queueSupplier) {
@@ -157,7 +158,7 @@ final class FluxMergeSequential<T, R> extends FluxOperator<T, R> {
 		}
 
 		@Override
-		public final Subscriber<? super R> actual() {
+		public final CoreSubscriber<? super R> actual() {
 			return actual;
 		}
 

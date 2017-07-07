@@ -21,15 +21,15 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
 
-import org.assertj.core.api.Assertions;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 
@@ -527,7 +527,7 @@ public class FluxPeekStatefulTest {
 
 	@Test
     public void scanSubscriber() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxPeekStateful<Integer, String> peek = new FluxPeekStateful<>(Flux.just(1),
         		() -> "", (t, s) -> {}, (t, s) -> {},
         		(t, s) -> {}, s -> {}, s -> {}, (r, s) -> {}, s -> {});

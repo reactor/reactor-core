@@ -21,9 +21,8 @@ import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
@@ -165,7 +164,7 @@ public class FluxMaterializeTest
 
     @Test
     public void scanSubscriber() {
-        Subscriber<Signal<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Signal<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxMaterialize.MaterializeSubscriber<String> test = new FluxMaterialize.MaterializeSubscriber<String>(actual);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);

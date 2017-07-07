@@ -20,8 +20,8 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
@@ -93,7 +93,7 @@ public class MonoCollectListTest {
 
 	@Test
 	public void scanBufferAllSubscriber() {
-		Subscriber<List<String>> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<List<String>> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoCollectList.MonoBufferAllSubscriber<String, List<String>> test = new MonoCollectList.MonoBufferAllSubscriber<String, List<String>>(
 				actual, new ArrayList<>());
 		Subscription parent = Operators.emptySubscription();

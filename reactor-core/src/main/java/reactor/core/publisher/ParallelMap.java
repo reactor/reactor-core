@@ -16,11 +16,10 @@
 package reactor.core.publisher;
 
 import java.util.function.Function;
-
-import org.reactivestreams.*;
-import reactor.core.Scannable;
-import reactor.util.context.Context;
 import javax.annotation.Nullable;
+
+import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
 
 /**
  * Maps each 'rail' of the source ParallelFlux with a mapper function.
@@ -49,20 +48,20 @@ final class ParallelMap<T, R> extends ParallelFlux<R> implements Scannable {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R>[] subscribers, Context ctx) {
+	public void subscribe(CoreSubscriber<? super R>[] subscribers) {
 		if (!validate(subscribers)) {
 			return;
 		}
 		
 		int n = subscribers.length;
 		@SuppressWarnings("unchecked")
-		Subscriber<? super T>[] parents = new Subscriber[n];
+		CoreSubscriber<? super T>[] parents = new CoreSubscriber[n];
 		
 		for (int i = 0; i < n; i++) {
 			parents[i] = new FluxMap.MapSubscriber<>(subscribers[i], mapper);
 		}
 		
-		source.subscribe(parents, ctx);
+		source.subscribe(parents);
 	}
 
 	@Override

@@ -19,11 +19,10 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Consumer;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.util.context.Context;
 import javax.annotation.Nullable;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 
 /**
  * Drops values if the subscriber doesn't request fast enough.
@@ -56,14 +55,14 @@ final class FluxOnBackpressureDrop<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		source.subscribe(new DropSubscriber<>(s, onDrop), ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		source.subscribe(new DropSubscriber<>(s, onDrop));
 	}
 
 	static final class DropSubscriber<T>
 			implements InnerOperator<T, T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 		final Consumer<? super T>   onDrop;
 
 		Subscription s;
@@ -75,7 +74,7 @@ final class FluxOnBackpressureDrop<T> extends FluxOperator<T, T> {
 
 		boolean done;
 
-		DropSubscriber(Subscriber<? super T> actual, Consumer<? super T> onDrop) {
+		DropSubscriber(CoreSubscriber<? super T> actual, Consumer<? super T> onDrop) {
 			this.actual = actual;
 			this.onDrop = onDrop;
 		}
@@ -156,7 +155,7 @@ final class FluxOnBackpressureDrop<T> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

@@ -28,16 +28,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.WaitStrategy;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  ** An implementation of a RingBuffer backed message-passing Processor implementing work-queue distribution with
@@ -318,7 +318,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	}
 
 	@Override
-	public void subscribe(final Subscriber<? super E> subscriber, Context ctx) {
+	public void subscribe(final CoreSubscriber<? super E> subscriber) {
 		//noinspection ConstantConditions
 		if (subscriber == null) {
 			throw Exceptions.argumentIsNullException();
@@ -450,7 +450,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 		final WorkQueueProcessor<T> processor;
 
-		final Subscriber<? super T> subscriber;
+		final CoreSubscriber<? super T> subscriber;
 
 		final Runnable waiter = new Runnable() {
 			@Override
@@ -468,7 +468,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		 * @param subscriber the output Subscriber instance
 		 * @param processor the source processor
 		 */
-		WorkQueueInner(Subscriber<? super T> subscriber,
+		WorkQueueInner(CoreSubscriber<? super T> subscriber,
 				WorkQueueProcessor<T> processor) {
 			this.processor = processor;
 			this.subscriber = subscriber;
@@ -729,7 +729,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return subscriber;
 		}
 

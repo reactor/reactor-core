@@ -19,8 +19,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import reactor.util.context.Context;
+import reactor.core.CoreSubscriber;
 
 /**
  * Delays the subscription to the main source until another Publisher
@@ -41,13 +40,12 @@ final class MonoDelaySubscription<T, U> extends MonoOperator<T, T>
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		other.subscribe(new FluxDelaySubscription.DelaySubscriptionOtherSubscriber<>(s,
-				this, ctx));
+	public void subscribe(CoreSubscriber<? super T> s) {
+		other.subscribe(new FluxDelaySubscription.DelaySubscriptionOtherSubscriber<>(s, this));
 	}
 	@Override
 	public void accept(FluxDelaySubscription.DelaySubscriptionOtherSubscriber<T, U> s) {
-		source.subscribe(new FluxDelaySubscription.DelaySubscriptionMainSubscriber<>(s.actual, s), s.ctx);
+		source.subscribe(new FluxDelaySubscription.DelaySubscriptionMainSubscriber<>(s.actual, s));
 	}
 
 }

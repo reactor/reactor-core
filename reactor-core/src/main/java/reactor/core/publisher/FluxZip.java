@@ -27,15 +27,15 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import javax.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
@@ -127,20 +127,19 @@ final class FluxZip<T, R> extends Flux<R> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super R> s) {
 		Publisher<? extends T>[] srcs = sources;
 		if (srcs != null) {
-			handleArrayMode(s, srcs, ctx);
+			handleArrayMode(s, srcs);
 		}
 		else {
-			handleIterableMode(s, sourcesIterable, ctx);
+			handleIterableMode(s, sourcesIterable);
 		}
 	}
 
 	@SuppressWarnings("unchecked")
-	void handleIterableMode(Subscriber<? super R> s,
-			Iterable<? extends Publisher<? extends T>> sourcesIterable,
-			Context ctx) {
+	void handleIterableMode(CoreSubscriber<? super R> s,
+			Iterable<? extends Publisher<? extends T>> sourcesIterable) {
 		Object[] scalars = new Object[8];
 		Publisher<? extends T>[] srcs = new Publisher[8];
 
@@ -214,12 +213,11 @@ final class FluxZip<T, R> extends Flux<R> {
 			scalars = Arrays.copyOfRange(scalars, 0, n, scalars.getClass());
 		}
 
-		handleBoth(s, srcs, scalars, n, sc, ctx);
+		handleBoth(s, srcs, scalars, n, sc);
 	}
 
 	@SuppressWarnings("unchecked")
-	void handleArrayMode(Subscriber<? super R> s, Publisher<? extends T>[] srcs,
-			Context ctx) {
+	void handleArrayMode(CoreSubscriber<? super R> s, Publisher<? extends T>[] srcs) {
 
 		Object[] scalars = null; //optimisation: if no scalar source, no array creation
 		int n = srcs.length;
@@ -260,7 +258,7 @@ final class FluxZip<T, R> extends Flux<R> {
 			}
 		}
 
-		handleBoth(s, srcs, scalars, n, sc, ctx);
+		handleBoth(s, srcs, scalars, n, sc);
 	}
 
 	/**
@@ -279,12 +277,11 @@ final class FluxZip<T, R> extends Flux<R> {
 	 * @param n the number of sources
 	 * @param sc the number of already resolved sources in the scalars array
 	 */
-	void handleBoth(Subscriber<? super R> s,
+	void handleBoth(CoreSubscriber<? super R> s,
 			Publisher<? extends T>[] srcs,
 			@Nullable Object[] scalars,
 			int n,
-			int sc,
-			Context ctx) {
+			int sc) {
 		if (sc != 0 && scalars != null) {
 			if (n != sc) {
 				ZipSingleCoordinator<T, R> coordinator =
@@ -338,7 +335,7 @@ final class FluxZip<T, R> extends Flux<R> {
 				AtomicIntegerFieldUpdater.newUpdater(ZipSingleCoordinator.class, "wip");
 
 		@SuppressWarnings("unchecked")
-		ZipSingleCoordinator(Subscriber<? super R> subscriber,
+		ZipSingleCoordinator(CoreSubscriber<? super R> subscriber,
 				Object[] scalars,
 				int n,
 				Function<? super Object[], ? extends R> zipper) {
@@ -518,7 +515,7 @@ final class FluxZip<T, R> extends Flux<R> {
 	static final class ZipCoordinator<T, R>
 			implements InnerProducer<R> {
 
-		final Subscriber<? super R> actual;
+		final CoreSubscriber<? super R> actual;
 
 		final ZipInner<T>[] subscribers;
 
@@ -545,7 +542,7 @@ final class FluxZip<T, R> extends Flux<R> {
 
 		final Object[] current;
 
-		ZipCoordinator(Subscriber<? super R> actual,
+		ZipCoordinator(CoreSubscriber<? super R> actual,
 				Function<? super Object[], ? extends R> zipper,
 				int n,
 				Supplier<? extends Queue<T>> queueSupplier,
@@ -588,7 +585,7 @@ final class FluxZip<T, R> extends Flux<R> {
 		}
 
 		@Override
-		public Subscriber<? super R> actual() {
+		public CoreSubscriber<? super R> actual() {
 			return actual;
 		}
 
@@ -628,7 +625,7 @@ final class FluxZip<T, R> extends Flux<R> {
 				return;
 			}
 
-			final Subscriber<? super R> a = actual;
+			final CoreSubscriber<? super R> a = actual;
 			final ZipInner<T>[] qs = subscribers;
 			final int n = qs.length;
 			Object[] values = current;
@@ -891,7 +888,7 @@ final class FluxZip<T, R> extends Flux<R> {
 
 		@Override
 		public Context currentContext() {
-			return parent.currentContext();
+			return parent.actual.currentContext();
 		}
 
 		@Override

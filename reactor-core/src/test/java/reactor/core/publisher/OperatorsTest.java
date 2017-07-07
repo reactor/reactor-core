@@ -22,8 +22,8 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
@@ -34,7 +34,6 @@ import reactor.core.publisher.Operators.MonoSubscriber;
 import reactor.core.publisher.Operators.MultiSubscriptionSubscriber;
 import reactor.core.publisher.Operators.ScalarSubscription;
 import reactor.test.RaceTestUtils;
-import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -245,7 +244,7 @@ public class OperatorsTest {
 
 	@Test
 	public void scanMonoSubscriber() {
-		Subscriber<Integer> actual = new LambdaSubscriber<>(null, null, null, null);
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, null, null, null);
 		MonoSubscriber<Integer, Integer> test = new MonoSubscriber<>(actual);
 
 		Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
@@ -263,7 +262,7 @@ public class OperatorsTest {
 
 	@Test
 	public void scanMultiSubscriptionSubscriber() {
-		Subscriber<Integer> actual = new LambdaSubscriber<>(null, null, null, null);
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, null, null, null);
 		MultiSubscriptionSubscriber<Integer, Integer> test = new MultiSubscriptionSubscriber<Integer, Integer>(actual) {
 			@Override
 			public void onNext(Integer t) {
@@ -283,7 +282,7 @@ public class OperatorsTest {
 
 	@Test
 	public void scanScalarSubscription() {
-		Subscriber<Integer> actual = new LambdaSubscriber<>(null, null, null, null);
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, null, null, null);
 		ScalarSubscription<Integer> test = new ScalarSubscription<>(actual, 5);
 
 		Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);

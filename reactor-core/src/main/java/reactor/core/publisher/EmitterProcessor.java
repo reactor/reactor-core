@@ -21,15 +21,15 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.concurrent.QueueSupplier;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 import static reactor.core.publisher.FluxPublish.PublishSubscriber.EMPTY;
 import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
@@ -158,7 +158,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		//noinspection ConstantConditions
 		if (s == null) {
 			throw Exceptions.argumentIsNullException();
@@ -552,7 +552,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 
 		final EmitterProcessor<T> parent;
 
-		EmitterInner(Subscriber<? super T> actual, EmitterProcessor<T> parent) {
+		EmitterInner(CoreSubscriber<? super T> actual, EmitterProcessor<T> parent) {
 			super(actual);
 			this.parent = parent;
 		}

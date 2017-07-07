@@ -19,8 +19,7 @@ import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
@@ -72,7 +71,7 @@ public class MonoDelayTest {
 
 	@Test
 	public void scanDelayRunnable() {
-		Subscriber<Long> actual = new LambdaMonoSubscriber<>(null, e -> {
+		CoreSubscriber<Long> actual = new LambdaMonoSubscriber<>(null, e -> {
 		}, null, null);
 		MonoDelay.MonoDelayRunnable test = new MonoDelay.MonoDelayRunnable(actual);
 
@@ -90,7 +89,7 @@ public class MonoDelayTest {
 
 	@Test
 	public void scanDelayRunnableCancelled() {
-		Subscriber<Long> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<Long> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoDelay.MonoDelayRunnable test = new MonoDelay.MonoDelayRunnable(actual);
 
 		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();

@@ -15,11 +15,11 @@
  */
 package reactor.core.publisher;
 
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.Fuseable;
-import reactor.util.context.Context;
 import javax.annotation.Nullable;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 
 /**
  * Hides the identities of the upstream Publisher object and its Subscription
@@ -35,21 +35,21 @@ final class FluxHide<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		source.subscribe(new HideSubscriber<>(s), ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		source.subscribe(new HideSubscriber<>(s));
 	}
 
 	static final class HideSubscriber<T> implements InnerOperator<T, T> {
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		Subscription s;
 		
-		HideSubscriber(Subscriber<? super T> actual) {
+		HideSubscriber(CoreSubscriber<? super T> actual) {
 			this.actual = actual;
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 
@@ -96,11 +96,11 @@ final class FluxHide<T> extends FluxOperator<T, T> {
 	static final class SuppressFuseableSubscriber<T>
 			implements InnerOperator<T, T>, Fuseable.QueueSubscription<T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		Subscription s;
 
-		SuppressFuseableSubscriber(Subscriber<? super T> actual) {
+		SuppressFuseableSubscriber(CoreSubscriber<? super T> actual) {
 			this.actual = actual;
 
 		}
@@ -174,7 +174,7 @@ final class FluxHide<T> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

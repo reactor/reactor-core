@@ -20,8 +20,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
@@ -56,7 +56,7 @@ public class FluxCancelOnTest {
 
 	@Test
 	public void scanSubscriber() {
-		Subscriber<String> actual = new LambdaSubscriber<>(null, null, null, null);
+		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, null, null, null);
 		FluxCancelOn.CancelSubscriber<String> test = new FluxCancelOn.CancelSubscriber<>(actual, Schedulers.single());
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);

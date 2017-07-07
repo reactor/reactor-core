@@ -18,11 +18,11 @@ package reactor.core.publisher;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
+import reactor.core.CoreSubscriber;
 
 /**
  * Runs the source in unbounded mode and emits only the latest value
@@ -38,8 +38,8 @@ final class FluxOnBackpressureLatest<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		source.subscribe(new LatestSubscriber<>(s), ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		source.subscribe(new LatestSubscriber<>(s));
 	}
 
 	@Override
@@ -50,7 +50,7 @@ final class FluxOnBackpressureLatest<T> extends FluxOperator<T, T> {
 	static final class LatestSubscriber<T>
 			implements InnerOperator<T, T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		volatile long requested;
 		@SuppressWarnings("rawtypes")
@@ -74,7 +74,7 @@ final class FluxOnBackpressureLatest<T> extends FluxOperator<T, T> {
 		static final AtomicReferenceFieldUpdater<LatestSubscriber, Object> VALUE =
 		  AtomicReferenceFieldUpdater.newUpdater(LatestSubscriber.class, Object.class, "value");
 
-		LatestSubscriber(Subscriber<? super T> actual) {
+		LatestSubscriber(CoreSubscriber<? super T> actual) {
 			this.actual = actual;
 		}
 
@@ -207,7 +207,7 @@ final class FluxOnBackpressureLatest<T> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

@@ -21,8 +21,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
@@ -438,7 +438,7 @@ public class FluxBufferTest extends FluxOperatorTest<String, List<String>> {
 
 	@Test
 	public void scanExactSubscriber() {
-		Subscriber<? super List> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<? super List> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxBuffer.BufferExactSubscriber<String, List<String>> test = new FluxBuffer.BufferExactSubscriber<>(
 					actual, 23, ArrayList::new	);
 		Subscription parent = Operators.emptySubscription();
@@ -460,7 +460,7 @@ public class FluxBufferTest extends FluxOperatorTest<String, List<String>> {
 
 	@Test
 	public void scanOverlappingSubscriber() {
-		Subscriber<? super List> actual = new LambdaSubscriber<>(null, e -> {
+		CoreSubscriber<? super List> actual = new LambdaSubscriber<>(null, e -> {
 		}, null, null);
 		FluxBuffer.BufferOverlappingSubscriber<String, List<String>> test =
 				new FluxBuffer.BufferOverlappingSubscriber<>(actual, 23, 2, ArrayList::new);
@@ -490,7 +490,8 @@ public class FluxBufferTest extends FluxOperatorTest<String, List<String>> {
 
 	@Test
 	public void scanOverlappingSubscriberCancelled() {
-		Subscriber<? super List> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<? super List>
+				actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxBuffer.BufferOverlappingSubscriber<String, List<String>> test = new FluxBuffer.BufferOverlappingSubscriber<>(
 				actual, 23, 5, ArrayList::new);
 		Subscription parent = Operators.emptySubscription();
@@ -503,7 +504,7 @@ public class FluxBufferTest extends FluxOperatorTest<String, List<String>> {
 
 	@Test
 	public void scanSkipSubscriber() {
-		Subscriber<? super List> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<? super List> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 
 		FluxBuffer.BufferSkipSubscriber<String, List<String>> test = new FluxBuffer.BufferSkipSubscriber<>(actual, 2, 3, ArrayList::new);
 		Subscription parent = Operators.emptySubscription();

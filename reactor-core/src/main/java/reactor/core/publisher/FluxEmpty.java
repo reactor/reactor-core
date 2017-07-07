@@ -15,10 +15,10 @@
  */
 package reactor.core.publisher;
 
-import org.reactivestreams.Subscriber;
-import reactor.core.Fuseable;
-import reactor.util.context.Context;
 import javax.annotation.Nullable;
+
+import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 
 /**
  * Represents an empty publisher which only calls onSubscribe and onComplete.
@@ -38,7 +38,7 @@ extends Flux<Object>
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super Object> s, Context context) {
+	public void subscribe(CoreSubscriber<? super Object> s) {
 		Operators.complete(s);
 	}
 

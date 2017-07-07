@@ -24,9 +24,8 @@ import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
@@ -280,7 +279,7 @@ public class FluxZipIterableTest extends FluxOperatorTest<String, String> {
 
 	@Test
     public void scanSingleSubscriber() {
-        Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxZipIterable.ZipSubscriber<Integer, Integer, Integer> test = new FluxZipIterable.ZipSubscriber<>(actual,
         		new ArrayList<Integer>().iterator(), (i, j) -> i + j);
         Subscription parent = Operators.emptySubscription();

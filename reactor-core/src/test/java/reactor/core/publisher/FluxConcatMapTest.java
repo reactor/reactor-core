@@ -24,15 +24,14 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
-import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -777,9 +776,9 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void scanConcatMapDelayed() {
-		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxConcatMap.ConcatMapDelayed<String, Integer> test = new FluxConcatMap.ConcatMapDelayed<>(
-				actual, s -> Mono.just(s.length()), QueueSupplier.one(), 123, true, Context.empty());
+				actual, s -> Mono.just(s.length()), QueueSupplier.one(), 123, true);
 
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
@@ -805,9 +804,9 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void scanConcatMapImmediate() {
-		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxConcatMap.ConcatMapImmediate<String, Integer> test = new FluxConcatMap.ConcatMapImmediate<>(
-				actual, s -> Mono.just(s.length()), QueueSupplier.one(), 123, Context.empty());
+				actual, s -> Mono.just(s.length()), QueueSupplier.one(), 123);
 
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
@@ -831,9 +830,9 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void scanConcatMapImmediateError() {
-		Subscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxConcatMap.ConcatMapImmediate<String, Integer> test = new FluxConcatMap.ConcatMapImmediate<>(
-				actual, s -> Mono.just(s.length()), QueueSupplier.one(), 123, Context.empty());
+				actual, s -> Mono.just(s.length()), QueueSupplier.one(), 123);
 
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);

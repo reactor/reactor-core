@@ -20,12 +20,11 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Generate signals one-by-one via a function callback.
@@ -71,7 +70,7 @@ extends Flux<T> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context context) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		S state;
 
 		try {
@@ -86,7 +85,7 @@ extends Flux<T> implements Fuseable {
 	static final class GenerateSubscription<T, S>
 	  implements QueueSubscription<T>, InnerProducer<T>, SynchronousSink<T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final BiFunction<S, SynchronousSink<T>, S> generator;
 
@@ -112,7 +111,7 @@ extends Flux<T> implements Fuseable {
 		static final AtomicLongFieldUpdater<GenerateSubscription> REQUESTED =
 			AtomicLongFieldUpdater.newUpdater(GenerateSubscription.class, "requested");
 
-		GenerateSubscription(Subscriber<? super T> actual, S state,
+		GenerateSubscription(CoreSubscriber<? super T> actual, S state,
 											 BiFunction<S, SynchronousSink<T>, S> generator, Consumer<? super
 		  S> stateConsumer) {
 			this.actual = actual;
@@ -133,7 +132,7 @@ extends Flux<T> implements Fuseable {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

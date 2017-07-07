@@ -22,12 +22,12 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import javax.annotation.Nullable;
 import reactor.util.context.Context;
 
 final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
@@ -42,16 +42,16 @@ final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super R> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super R> s) {
 		if (FluxFlatMap.trySubscribeScalarMap(source, s, mapper, false)) {
 			return;
 		}
-		source.subscribe(new FlatMapManyMain<T, R>(s, mapper), ctx);
+		source.subscribe(new FlatMapManyMain<T, R>(s, mapper));
 	}
 
 	static final class FlatMapManyMain<T, R> implements InnerOperator<T, R> {
 
-		final Subscriber<? super R> actual;
+		final CoreSubscriber<? super R> actual;
 
 		final Function<? super T, ? extends Publisher<? extends R>> mapper;
 
@@ -71,7 +71,7 @@ final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
 
 		boolean hasValue;
 
-		FlatMapManyMain(Subscriber<? super R> actual,
+		FlatMapManyMain(CoreSubscriber<? super R> actual,
 				Function<? super T, ? extends Publisher<? extends R>> mapper) {
 			this.actual = actual;
 			this.mapper = mapper;
@@ -91,7 +91,7 @@ final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
 		}
 
 		@Override
-		public Subscriber<? super R> actual() {
+		public CoreSubscriber<? super R> actual() {
 			return actual;
 		}
 
@@ -203,10 +203,10 @@ final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
 
 		final FlatMapManyMain<?, R> parent;
 
-		final Subscriber<? super R> actual;
+		final CoreSubscriber<? super R> actual;
 
 		FlatMapManyInner(FlatMapManyMain<?, R> parent,
-				Subscriber<? super R> actual) {
+				CoreSubscriber<? super R> actual) {
 			this.parent = parent;
 			this.actual = actual;
 		}

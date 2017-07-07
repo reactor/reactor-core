@@ -25,13 +25,13 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Concatenates values from Iterable sequences generated via a mapper function.
@@ -69,7 +69,7 @@ final class FluxFlattenIterable<T, R> extends FluxOperator<T, R> implements Fuse
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public void subscribe(Subscriber<? super R> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super R> s) {
 		if (source instanceof Callable) {
 			T v;
 
@@ -105,13 +105,13 @@ final class FluxFlattenIterable<T, R> extends FluxOperator<T, R> implements Fuse
 		source.subscribe(new FlattenIterableSubscriber<>(s,
 				mapper,
 				prefetch,
-				queueSupplier), ctx);
+				queueSupplier));
 	}
 
 	static final class FlattenIterableSubscriber<T, R>
 			implements InnerOperator<T, R>, QueueSubscription<R> {
 
-		final Subscriber<? super R> actual;
+		final CoreSubscriber<? super R> actual;
 
 		final Function<? super T, ? extends Iterable<? extends R>> mapper;
 
@@ -155,7 +155,7 @@ final class FluxFlattenIterable<T, R> extends FluxOperator<T, R> implements Fuse
 
 		int fusionMode;
 
-		FlattenIterableSubscriber(Subscriber<? super R> actual,
+		FlattenIterableSubscriber(CoreSubscriber<? super R> actual,
 				Function<? super T, ? extends Iterable<? extends R>> mapper,
 				int prefetch,
 				Supplier<Queue<T>> queueSupplier) {
@@ -181,7 +181,7 @@ final class FluxFlattenIterable<T, R> extends FluxOperator<T, R> implements Fuse
 		}
 
 		@Override
-		public Subscriber<? super R> actual() {
+		public CoreSubscriber<? super R> actual() {
 			return actual;
 		}
 

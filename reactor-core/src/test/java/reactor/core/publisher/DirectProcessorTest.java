@@ -17,8 +17,8 @@ package reactor.core.publisher;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.mockito.Mockito;
 import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -254,7 +254,7 @@ public class DirectProcessorTest {
     @Test
     @SuppressWarnings("unchecked")
     public void scanInner() {
-        Subscriber<? super String> actual = mock(Subscriber.class);
+	    CoreSubscriber<? super String> actual = mock(CoreSubscriber.class);
         DirectProcessor<String> parent = new DirectProcessor<>();
 
         DirectProcessor.DirectInner<String> test =

@@ -16,12 +16,11 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.Fuseable;
 import javax.annotation.Nullable;
-import reactor.util.context.Context;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 
 /**
  * Emits only the element at the given index position or signals a
@@ -56,8 +55,8 @@ final class MonoElementAt<T> extends MonoFromFluxOperator<T, T>
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
-		source.subscribe(new ElementAtSubscriber<>(s, index, defaultValue), ctx);
+	public void subscribe(CoreSubscriber<? super T> s) {
+		source.subscribe(new ElementAtSubscriber<>(s, index, defaultValue));
 	}
 
 	static final class ElementAtSubscriber<T>
@@ -70,7 +69,7 @@ final class MonoElementAt<T> extends MonoFromFluxOperator<T, T>
 
 		boolean done;
 
-		ElementAtSubscriber(Subscriber<? super T> actual, long index,
+		ElementAtSubscriber(CoreSubscriber<? super T> actual, long index,
 											T defaultValue) {
 			super(actual);
 			this.index = index;

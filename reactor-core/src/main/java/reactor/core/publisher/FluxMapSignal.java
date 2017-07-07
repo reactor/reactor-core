@@ -22,11 +22,10 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.util.context.Context;
 import javax.annotation.Nullable;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 
 /**
  * Maps the values of the source publisher one-on-one via a mapper function.
@@ -66,8 +65,11 @@ final class FluxMapSignal<T, R> extends FluxOperator<T, R> {
     }
 
     @Override
-    public void subscribe(Subscriber<? super R> s, Context ctx) {
-        source.subscribe(new FluxMapSignalSubscriber<>(s, mapperNext, mapperError, mapperComplete), ctx);
+    public void subscribe(CoreSubscriber<? super R> s) {
+	    source.subscribe(new FluxMapSignalSubscriber<>(s,
+			    mapperNext,
+			    mapperError,
+			    mapperComplete));
     }
 
     static final class FluxMapSignalSubscriber<T, R> 
@@ -75,10 +77,10 @@ final class FluxMapSignal<T, R> extends FluxOperator<T, R> {
 		    implements InnerOperator<T, R>,
 		               BooleanSupplier {
 
-        final Subscriber<? super R>            actual;
-	    final Function<? super T, ? extends R> mapperNext;
+	    final CoreSubscriber<? super R>                actual;
+	    final Function<? super T, ? extends R>         mapperNext;
 	    final Function<? super Throwable, ? extends R> mapperError;
-	    final Supplier<? extends R>            mapperComplete;
+	    final Supplier<? extends R>                    mapperComplete;
 
         boolean done;
 
@@ -94,8 +96,8 @@ final class FluxMapSignal<T, R> extends FluxOperator<T, R> {
         volatile boolean cancelled;
         
         long produced;
-        
-        FluxMapSignalSubscriber(Subscriber<? super R> actual,
+
+	    FluxMapSignalSubscriber(CoreSubscriber<? super R> actual,
 		        @Nullable Function<? super T, ? extends R> mapperNext,
 		        @Nullable Function<? super Throwable, ? extends R> mapperError,
 		        @Nullable Supplier<? extends R>            mapperComplete) {
@@ -212,7 +214,7 @@ final class FluxMapSignal<T, R> extends FluxOperator<T, R> {
         }
 
         @Override
-        public Subscriber<? super R> actual() {
+        public CoreSubscriber<? super R> actual() {
             return actual;
         }
 

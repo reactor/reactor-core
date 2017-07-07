@@ -14,16 +14,24 @@
  * limitations under the License.
  */
 
-package reactor.util.context;
+package reactor.core;
+
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.util.context.Context;
 
 /**
- * A {@link Context} aware component able to fetch or propagate an arbitrary context
- * into dependent components such as a chain of operators.
+ * A {@link Context} aware subscriber which has relaxed rules for §1.3 and §3.9
+ * compared to the original {@link org.reactivestreams.Subscriber} from Reactive Streams.
  *
- * @author Stephane Maldini
+ * <p>
+ * The rule relaxation has been initially established under reactive-streams-commons.
+ *
+ * @param <T> the {@link Subscriber} data type
+ *
  * @since 3.1.0
  */
-public interface Contextualized {
+public interface CoreSubscriber<T> extends Subscriber<T> {
 
 	/**
 	 * Request a {@link Context} from dependent components which can include downstream
@@ -34,4 +42,14 @@ public interface Contextualized {
 	default Context currentContext(){
 		return Context.empty();
 	}
+
+	/**
+	 * Implementors should initialize any state used by {@link #onNext(Object)} before
+	 * calling {@link Subscription#request(long)}. Should further {@code onNext} related
+	 * state modification occur, thread-safety will be required.
+	 *
+	 * {@inheritDoc}
+	 */
+	@Override
+	void onSubscribe(Subscription s);
 }

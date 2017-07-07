@@ -16,14 +16,13 @@
 package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.Fuseable.QueueSubscription;
-import javax.annotation.Nullable;
-import reactor.util.context.Context;
 
 /**
  * Takes only the first N values from the source Publisher.
@@ -48,13 +47,13 @@ final class FluxTake<T> extends FluxOperator<T, T> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 			if (s instanceof ConditionalSubscriber) {
 				source.subscribe(new TakeConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
-						n), ctx);
+						n));
 			}
 			else {
-				source.subscribe(new TakeSubscriber<>(s, n), ctx);
+				source.subscribe(new TakeSubscriber<>(s, n));
 			}
 	}
 
@@ -66,7 +65,7 @@ final class FluxTake<T> extends FluxOperator<T, T> {
 	static final class TakeSubscriber<T>
 			implements InnerOperator<T, T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final long n;
 
@@ -81,7 +80,7 @@ final class FluxTake<T> extends FluxOperator<T, T> {
 		static final AtomicIntegerFieldUpdater<TakeSubscriber> WIP =
 		  AtomicIntegerFieldUpdater.newUpdater(TakeSubscriber.class, "wip");
 
-		public TakeSubscriber(Subscriber<? super T> actual, long n) {
+		public TakeSubscriber(CoreSubscriber<? super T> actual, long n) {
 			this.actual = actual;
 			this.n = n;
 			this.remaining = n;
@@ -173,7 +172,7 @@ final class FluxTake<T> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 	}
@@ -319,7 +318,7 @@ final class FluxTake<T> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 	}
@@ -327,7 +326,7 @@ final class FluxTake<T> extends FluxOperator<T, T> {
 	static final class TakeFuseableSubscriber<T>
 			implements QueueSubscription<T>, InnerOperator<T, T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 
 		final long n;
 
@@ -344,7 +343,7 @@ final class FluxTake<T> extends FluxOperator<T, T> {
 
 		int inputMode;
 
-		TakeFuseableSubscriber(Subscriber<? super T> actual, long n) {
+		TakeFuseableSubscriber(CoreSubscriber<? super T> actual, long n) {
 			this.actual = actual;
 			this.n = n;
 			this.remaining = n;
@@ -446,7 +445,7 @@ final class FluxTake<T> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		public Subscriber<? super T> actual() {
+		public CoreSubscriber<? super T> actual() {
 			return actual;
 		}
 

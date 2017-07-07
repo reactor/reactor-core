@@ -18,12 +18,11 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.function.Function;
-
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.Fuseable;
-import reactor.util.context.Context;
 import javax.annotation.Nullable;
+
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 
 /**
  * Maps the values of the source publisher one-on-one via a mapper function.
@@ -55,20 +54,20 @@ final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super R> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super R> s) {
 		if (s instanceof ConditionalSubscriber) {
 			ConditionalSubscriber<? super R> cs = (ConditionalSubscriber<? super R>) s;
-			source.subscribe(new MapFuseableConditionalSubscriber<>(cs, mapper), ctx);
+			source.subscribe(new MapFuseableConditionalSubscriber<>(cs, mapper));
 			return;
 		}
-		source.subscribe(new MapFuseableSubscriber<>(s, mapper), ctx);
+		source.subscribe(new MapFuseableSubscriber<>(s, mapper));
 	}
 
 	static final class MapFuseableSubscriber<T, R>
 			implements InnerOperator<T, R>,
 			           QueueSubscription<R> {
 
-		final Subscriber<? super R>            actual;
+		final CoreSubscriber<? super R>        actual;
 		final Function<? super T, ? extends R> mapper;
 
 		boolean done;
@@ -77,7 +76,7 @@ final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable
 
 		int sourceMode;
 
-		MapFuseableSubscriber(Subscriber<? super R> actual,
+		MapFuseableSubscriber(CoreSubscriber<? super R> actual,
 				Function<? super T, ? extends R> mapper) {
 			this.actual = actual;
 			this.mapper = mapper;
@@ -148,7 +147,7 @@ final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable
 		}
 
 		@Override
-		public Subscriber<? super R> actual() {
+		public CoreSubscriber<? super R> actual() {
 			return actual;
 		}
 
@@ -312,7 +311,7 @@ final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable
 		}
 
 		@Override
-		public Subscriber<? super R> actual() {
+		public CoreSubscriber<? super R> actual() {
 			return actual;
 		}
 

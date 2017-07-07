@@ -16,10 +16,9 @@
 
 package reactor.core.publisher;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
-import reactor.util.context.Context;
 import reactor.util.function.Tuple2;
 
 /**
@@ -35,7 +34,7 @@ final class MonoElapsed<T> extends MonoOperator<T, Tuple2<Long, T>> implements F
 	}
 
 	@Override
-	public void subscribe(Subscriber<? super Tuple2<Long, T>> s, Context ctx) {
-		source.subscribe(new FluxElapsed.ElapsedSubscriber<T>(s, scheduler), ctx);
+	public void subscribe(CoreSubscriber<? super Tuple2<Long, T>> s) {
+		source.subscribe(new FluxElapsed.ElapsedSubscriber<T>(s, scheduler));
 	}
 }

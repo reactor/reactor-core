@@ -19,9 +19,7 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import reactor.util.context.Context;
+import reactor.core.CoreSubscriber;
 
 /**
  * Defers the creation of the actual Publisher the Subscriber will be subscribed to.
@@ -39,7 +37,7 @@ final class MonoDefer<T> extends Mono<T> {
 	}
 
 	@SuppressWarnings("unchecked")
-	public void subscribe(Subscriber<? super T> s, Context ctx) {
+	public void subscribe(CoreSubscriber<? super T> s) {
 		Mono<? extends T> p;
 
 		try {
@@ -51,6 +49,6 @@ final class MonoDefer<T> extends Mono<T> {
 			return;
 		}
 
-		p.subscribe(s, ctx);
+		p.subscribe(s);
 	}
 }

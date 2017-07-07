@@ -23,8 +23,8 @@ import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
@@ -376,7 +376,7 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 
 	@Test
 	public void scanSubscriber() {
-		Subscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxDoFinally.DoFinallySubscriber<String> test = new FluxDoFinally.DoFinallySubscriber<>(actual, st -> {});
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
