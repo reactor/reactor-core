@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoDefaultIfEmptyTest {
@@ -29,6 +30,21 @@ public class MonoDefaultIfEmptyTest {
 	@Test(expected = NullPointerException.class)
 	public void valueNull() {
 		Mono.never().defaultIfEmpty(null);
+	}
+
+	@Test
+	public void error() {
+		StepVerifier.create(Mono.error(new RuntimeException("forced failure"))
+		                        .defaultIfEmpty("blah"))
+		            .verifyErrorMessage("forced failure");
+	}
+
+	@Test
+	public void errorHide() {
+		StepVerifier.create(Mono.error(new RuntimeException("forced failure"))
+		                        .hide()
+		                        .defaultIfEmpty("blah"))
+		            .verifyErrorMessage("forced failure");
 	}
 
 	@Test

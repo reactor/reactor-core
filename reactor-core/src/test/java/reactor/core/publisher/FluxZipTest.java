@@ -57,6 +57,9 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 					.prefetch(3),
 
 				scenario(f -> f.zipWith(Flux.<String>error(exception()),
+						(a, b) -> a)).shouldHitDropErrorHookAfterTerminate(false),
+
+				scenario(f -> f.zipWith(Flux.<String>error(exception()).hide(),
 						(a, b) -> a)));
 	}
 

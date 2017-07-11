@@ -20,6 +20,8 @@ import java.util.Objects;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
+import reactor.core.Fuseable;
+
 
 /**
  * Emits a constant or generated Throwable instance to Subscribers.
@@ -27,7 +29,7 @@ import reactor.core.Exceptions;
  * @param <T> the value type
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class MonoError<T> extends Mono<T> {
+final class MonoError<T> extends Mono<T> implements Fuseable.ScalarCallable{
 
 	final Throwable error;
 
@@ -48,5 +50,13 @@ final class MonoError<T> extends Mono<T> {
 	@Override
 	public void subscribe(CoreSubscriber<? super T> s) {
 		Operators.error(s, Operators.onOperatorError(error));
+	}
+
+	@Override
+	public Object call() throws Exception {
+		if(error instanceof Exception){
+			throw ((Exception)error);
+		}
+		throw Exceptions.propagate(error);
 	}
 }

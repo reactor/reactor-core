@@ -17,14 +17,10 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-
-import org.reactivestreams.Subscriber;
-import reactor.core.Exceptions;
-import reactor.core.Fuseable;
-import reactor.util.context.Context;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
+import org.reactivestreams.Subscriber;
 import reactor.core.CoreSubscriber;
 
 /**
@@ -34,24 +30,62 @@ import reactor.core.CoreSubscriber;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxError<T> extends Flux<T> implements Fuseable.ScalarCallable {
+final class FluxErrorOnRequest<T> extends Flux<T> {
 
 	final Throwable error;
 
-	FluxError(Throwable error) {
+	FluxErrorOnRequest(Throwable error) {
 		this.error = Objects.requireNonNull(error);
 	}
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> s) {
-		Operators.error(s, Operators.onOperatorError(error));
+		s.onSubscribe(new ErrorSubscription(s, error));
 	}
 
-	@Override
-	public Object call() throws Exception {
-		if(error instanceof Exception){
-			throw ((Exception)error);
+	static final class ErrorSubscription implements InnerProducer {
+
+		final CoreSubscriber<?> actual;
+
+		final Throwable error;
+
+		volatile int once;
+		static final AtomicIntegerFieldUpdater<ErrorSubscription> ONCE =
+				AtomicIntegerFieldUpdater.newUpdater(ErrorSubscription.class, "once");
+
+		ErrorSubscription(CoreSubscriber<?> actual, Throwable error) {
+			this.actual = actual;
+			this.error = error;
 		}
-		throw Exceptions.propagate(error);
+
+		@Override
+		public void request(long n) {
+			if (Operators.validate(n)) {
+				if (ONCE.compareAndSet(this, 0, 1)) {
+					actual.onError(error);
+				}
+			}
+		}
+
+		@Override
+		public void cancel() {
+			once = 1;
+		}
+
+		@Override
+		public CoreSubscriber actual() {
+			return actual;
+		}
+
+		@Override
+		@Nullable
+		public Object scanUnsafe(Attr key) {
+			if (key == ThrowableAttr.ERROR) return error;
+			if (key == BooleanAttr.CANCELLED || key == BooleanAttr.TERMINATED)
+				return once == 1;
+
+			return InnerProducer.super.scanUnsafe(key);
+		}
 	}
+
 }

@@ -43,6 +43,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
@@ -277,18 +278,17 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void error() {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+		StepVerifier.create(Flux.error(new RuntimeException("forced failure"))
+		                        .publishOn(Schedulers.fromExecutorService(exec)))
+		            .verifyErrorMessage("forced failure");
+	}
 
-		Flux.<Integer>error(new RuntimeException("forced failure")).publishOn(Schedulers.fromExecutorService(
-				exec))
-		                                                           .subscribe(ts);
-
-		ts.await(Duration.ofSeconds(5));
-
-		ts.assertNoValues()
-		  .assertError(RuntimeException.class)
-		  .assertErrorMessage("forced failure")
-		  .assertNotComplete();
+	@Test
+	public void errorHide() {
+		StepVerifier.create(Flux.error(new RuntimeException("forced failure"))
+		                        .hide()
+		                        .publishOn(Schedulers.fromExecutorService(exec)))
+		            .verifyErrorMessage("forced failure");
 	}
 
 	@Test

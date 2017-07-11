@@ -112,7 +112,7 @@ public class FluxMergeTest {
 		IllegalStateException boom = new IllegalStateException("boom");
 
 		StepVerifier.create(Flux.mergeDelayError(32,
-				Flux.error(boom),
+				Flux.error(boom).hide(),
 				Flux.range(1, 4)
 		))
 		            .expectNext(1, 2, 3, 4)

@@ -33,6 +33,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
@@ -371,4 +372,20 @@ public class MonoPublishOnTest {
 		Assertions.assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
 	}
 
+
+
+	@Test
+	public void error() {
+		StepVerifier.create(Mono.error(new RuntimeException("forced failure"))
+		                        .publishOn(Schedulers.single()))
+		            .verifyErrorMessage("forced failure");
+	}
+
+	@Test
+	public void errorHide() {
+		StepVerifier.create(Mono.error(new RuntimeException("forced failure"))
+		                        .hide()
+		                        .publishOn(Schedulers.single()))
+		            .verifyErrorMessage("forced failure");
+	}
 }

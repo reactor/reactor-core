@@ -31,6 +31,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class FluxSubscribeOnCallableTest {
 
 	@Test
+	public void error() {
+		StepVerifier.create(Flux.error(new RuntimeException("forced failure"))
+		                        .subscribeOn(Schedulers.single()))
+		            .verifyErrorMessage("forced failure");
+	}
+
+	@Test
+	public void errorHide() {
+		StepVerifier.create(Flux.error(new RuntimeException("forced failure"))
+		                        .hide()
+		                        .subscribeOn(Schedulers.single()))
+		            .verifyErrorMessage("forced failure");
+	}
+
+	@Test
 	public void callableReturnsNull() {
 		StepVerifier.create(Mono.empty()
 		                        .flux()
