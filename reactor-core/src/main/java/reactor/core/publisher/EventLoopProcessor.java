@@ -463,6 +463,11 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		}
 	}
 
+	@Override
+	protected boolean serializeAlways() {
+		return !contextClassLoader.multiproducer;
+	}
+
 	/**
 	 * Shutdown this active {@code Processor} such that it can no longer be used. If the resource carries any work, it
 	 * will wait (but NOT blocking the caller) for all the remaining tasks to perform before closing the resource.

@@ -42,6 +42,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.core.publisher.FluxCreate.SerializedSink;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
@@ -1426,5 +1427,112 @@ public class WorkQueueProcessorTest {
 			assertEquals(executor, processor.executor);
 		if (requestTaskExecutor != null)
 			assertEquals(requestTaskExecutor, processor.requestTaskExecutor);
+	}
+
+	@Test
+	public void serializedSinkSingleProducer() throws Exception {
+		WorkQueueProcessor<Integer> queueProcessor = WorkQueueProcessor.<Integer>builder()
+				.share(false).build();
+
+		FluxSink<Integer> sink = queueProcessor.sink();
+		assertTrue("Should not be serialized", sink instanceof SerializedSink);
+		sink = sink.next(1);
+		assertTrue("Should not be serialized", sink instanceof SerializedSink);
+		sink = sink.onRequest(n -> {
+		});
+		assertTrue("Should not be serialized", sink instanceof SerializedSink);
+	}
+
+	@Test
+	public void nonSerializedSinkMultiProducer() throws Exception {
+		int count = 1000;
+		WorkQueueProcessor<Integer> queueProcessor = WorkQueueProcessor.<Integer>builder()
+				.share(true)
+				.build();
+		TestSubscriber subscriber = new TestSubscriber(count);
+		queueProcessor.subscribe(subscriber);
+		FluxSink<Integer> sink = queueProcessor.sink();
+		assertFalse("Should not be serialized", sink instanceof SerializedSink);
+
+		for (int i = 0; i < count; i++) {
+			sink = sink.next(i);
+			assertFalse("Should not be serialized", sink instanceof SerializedSink);
+		}
+		subscriber.await(Duration.ofSeconds(5));
+		assertNull("Unexpected exception in subscriber", subscriber.failure);
+	}
+
+	@Test
+	public void serializedSinkMultiProducerWithOnRequest() throws Exception {
+		int count = 1000;
+		WorkQueueProcessor<Integer> queueProcessor = WorkQueueProcessor.<Integer>builder()
+				.share(true)
+				.build();
+		TestSubscriber subscriber = new TestSubscriber(count);
+		queueProcessor.subscribe(subscriber);
+		FluxSink<Integer> sink = queueProcessor.sink();
+		AtomicInteger next = new AtomicInteger();
+		FluxSink<Integer> serializedSink = sink.onRequest(n -> {
+			for (int i = 0; i < n; i++) {
+				synchronized (s) { // to ensure that elements are in order for testing
+					FluxSink<Integer> retSink = sink.next(next.getAndIncrement());
+					assertTrue("Should be serialized", retSink instanceof SerializedSink);
+				}
+			}
+		});
+		assertTrue("Should be serialized", serializedSink instanceof SerializedSink);
+
+		subscriber.await(Duration.ofSeconds(5));
+		sink.complete();
+		assertNull("Unexpected exception in subscriber", subscriber.failure);
+	}
+
+	static class TestSubscriber implements CoreSubscriber<Integer> {
+
+		final CountDownLatch latch;
+
+		final AtomicInteger next;
+
+		Throwable failure;
+
+		TestSubscriber(int count) {
+			latch = new CountDownLatch(count);
+			next = new AtomicInteger();
+		}
+
+		public void await(Duration duration) throws InterruptedException {
+			assertTrue("Did not receive all, remaining=" + latch.getCount(), latch.await(duration.toMillis(), TimeUnit.MILLISECONDS));
+		}
+
+		@Override
+		public void onComplete() {
+			try {
+				assertEquals(0, latch.getCount());
+			}
+			catch (Throwable t) {
+				failure = t;
+			}
+		}
+
+		@Override
+		public void onError(Throwable t) {
+			failure = t;
+		}
+
+		@Override
+		public void onNext(Integer n) {
+			latch.countDown();
+			try {
+				assertEquals(next.getAndIncrement(), n.intValue());
+			}
+			catch (Throwable t) {
+				failure = t;
+			}
+		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			s.request(Long.MAX_VALUE);
+		}
 	}
 }
