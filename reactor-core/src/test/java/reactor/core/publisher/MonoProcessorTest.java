@@ -574,4 +574,18 @@ public class MonoProcessorTest {
 		assertThat(subscriptionCount.get()).isEqualTo(1);
 	}
 
+	@Test
+	public void monoProcessorBlock() {
+		long start = System.nanoTime();
+
+		String result = Mono.just("foo")
+		                    .delayElement(Duration.ofMillis(500))
+		                    .toProcessor()
+		                    .block();
+
+		assertThat(result).isEqualTo("foo");
+		assertThat(Duration.ofNanos(System.nanoTime() - start))
+				.isGreaterThanOrEqualTo(Duration.ofMillis(500));
+	}
+
 }

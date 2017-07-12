@@ -27,8 +27,13 @@ import java.util.function.LongSupplier;
 /**
  * Strategy employed to wait for specific {@link LongSupplier} values with various spinning strategies.
  */
-public abstract class WaitStrategy
-{
+public abstract class WaitStrategy {
+
+    /**
+     * A no-op {@link Runnable} that can be used as a placeholder spin observer  with
+     * {@link #waitFor(long, LongSupplier, Runnable)}
+     */
+    public static final Runnable NOOP_SPIN_OBSERVER = () -> { };
 
     /**
      * Blocking strategy that uses a lock and condition variable for consumer waiting on a barrier.
