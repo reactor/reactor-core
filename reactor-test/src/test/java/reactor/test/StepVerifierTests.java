@@ -34,6 +34,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.scheduler.VirtualTimeScheduler;
 
+import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.*;
 import static reactor.test.publisher.TestPublisher.Violation.REQUEST_OVERFLOW;
 
@@ -222,6 +223,15 @@ public class StepVerifierTests {
 		            .expectNextCount(400_000)
 		            .expectComplete()
 		            .verify();
+	}
+
+	@Test
+	public void expectNextCountZeroBeforeExpectNext() {
+		StepVerifier.create(Flux.just("foo", "bar"))
+				.expectNextCount(0)
+				.expectNext("foo", "bar")
+				.expectComplete()
+				.verify();
 	}
 
 	@Test
@@ -1470,6 +1480,15 @@ public class StepVerifierTests {
 	                .expectNextSequence(Arrays.asList(1, 2, 3))
 	                .verifyComplete())
 	            .withMessage("expectation \"expectComplete\" failed (expected: onComplete(); actual: onNext(4))");
+	}
+
+	@Test
+	public void expectNextSequenceEmptyListBeforeExpectNext() {
+		StepVerifier.create(Flux.just("foo", "bar"))
+				.expectNextSequence(emptyList())
+				.expectNext("foo", "bar")
+				.expectComplete()
+				.verify();
 	}
 
 	@Test

@@ -395,24 +395,26 @@ final class DefaultStepVerifierBuilder<T>
 	public DefaultStepVerifierBuilder<T> expectNextSequence(
 			Iterable<? extends T> iterable) {
 		Objects.requireNonNull(iterable, "iterable");
-		if (iterable instanceof Collection) {
-			checkPotentialHang(((Collection) iterable).size(), "expectNextSequence");
+		if (iterable.iterator().hasNext()) {
+			if (iterable instanceof Collection) {
+				checkPotentialHang(((Collection) iterable).size(), "expectNextSequence");
+			} else {
+				//best effort
+				checkPotentialHang(-1, "expectNextSequence");
+			}
+			this.script.add(new SignalSequenceEvent<>(iterable, "expectNextSequence"));
 		}
-		else {
-			//best effort
-			checkPotentialHang(-1, "expectNextSequence");
-		}
-		this.script.add(new SignalSequenceEvent<>(iterable, "expectNextSequence"));
-
 		return this;
 	}
 
 	@Override
 	public DefaultStepVerifierBuilder<T> expectNextCount(long count) {
 		checkPositive(count);
-		String desc = "expectNextCount(" + count + ")";
-		checkPotentialHang(count, desc);
-		this.script.add(new SignalCountEvent<>(count, desc));
+		if (count != 0) {
+			String desc = "expectNextCount(" + count + ")";
+			checkPotentialHang(count, desc);
+			this.script.add(new SignalCountEvent<>(count, desc));
+		}
 		return this;
 	}
 
