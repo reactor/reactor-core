@@ -30,8 +30,10 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.core.publisher.FluxCreate.SerializedSink;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.WaitStrategy;
@@ -833,5 +835,47 @@ public class TopicProcessorTest {
 			assertEquals(executor, processor.executor);
 		if (requestTaskExecutor != null)
 			assertEquals(requestTaskExecutor, processor.requestTaskExecutor);
+	}
+
+	@Test
+	public void serializedSinkSingleProducer() throws Exception {
+		TopicProcessor<Integer> processor = TopicProcessor.<Integer>builder()
+				.share(false)
+				.build();
+		FluxSink<Integer> sink = processor.sink();
+		assertThat(sink).isInstanceOf(SerializedSink.class);
+		sink = sink.next(1);
+		assertThat(sink).isInstanceOf(SerializedSink.class);
+		sink = sink.onRequest(n -> {});
+		assertThat(sink).isInstanceOf(SerializedSink.class);
+	}
+
+	@Test
+	public void nonSerializedSinkMultiProducer() throws Exception {
+		TopicProcessor<Integer> processor = TopicProcessor.<Integer>builder()
+				.share(true)
+				.build();
+		FluxSink<Integer> sink = processor.sink();
+		assertThat(sink).isNotInstanceOf(SerializedSink.class);
+		assertThat(sink.next(1)).isNotInstanceOf(SerializedSink.class);
+	}
+
+	@Test
+	public void serializedSinkMultiProducerWithOnRequest() throws Exception {
+		TopicProcessor<Integer> processor = TopicProcessor.<Integer>builder()
+				.share(true)
+				.build();
+		FluxSink<Integer> sink = processor.sink();
+		FluxSink<Integer> serializedSink = sink.onRequest(n -> {
+			FluxSink<Integer> s = sink.next(1);
+			assertThat(s).isInstanceOf(SerializedSink.class);
+			s.next(2);
+		});
+		assertThat(serializedSink).isInstanceOf(SerializedSink.class);
+		StepVerifier.create(processor)
+					.thenRequest(5)
+					.expectNext(1, 2)
+					.thenCancel()
+					.verify();
 	}
 }

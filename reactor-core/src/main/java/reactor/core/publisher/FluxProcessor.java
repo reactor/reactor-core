@@ -211,6 +211,19 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 				(isSerialized() && getBufferSize() == Integer.MAX_VALUE)){
 			return s;
 		}
-		return new FluxCreate.SerializedSink<>(s);
+		if (serializeAlways())
+			return new FluxCreate.SerializedSink<>(s);
+		else
+			return new FluxCreate.SerializeOnRequestSink<>(s);
+	}
+
+	/**
+	 * Returns serialization strategy. If true, {@link FluxProcessor#sink()} will always
+	 * be serialized. Otherwise sink is serialized only if {@link FluxSink#onRequest(java.util.function.LongConsumer)}
+	 * is invoked.
+	 * @return true to serialize any sink, false to delay serialization till onRequest
+	 */
+	protected boolean serializeAlways() {
+		return true;
 	}
 }

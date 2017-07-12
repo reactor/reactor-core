@@ -277,6 +277,76 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 	}
 
+	/**
+	 * Serializes calls to onNext, onError and onComplete if onRequest is invoked. Otherwise,
+	 * non-serialized base sink is used.
+	 *
+	 * @param <T> the value type
+	 */
+	static class SerializeOnRequestSink<T> implements FluxSink<T>, Scannable {
+
+		final BaseSink<T> baseSink;
+		SerializedSink<T> serializedSink;
+		FluxSink<T> sink;
+
+		SerializeOnRequestSink(BaseSink<T> sink) {
+			this.baseSink = sink;
+			this.sink = sink;
+		}
+
+		@Override
+		public Object scanUnsafe(Attr key) {
+			return serializedSink != null ? serializedSink.scanUnsafe(key) : baseSink.scanUnsafe(key);
+		}
+
+		@Override
+		public void complete() {
+			sink.complete();
+		}
+
+		@Override
+		public void error(Throwable e) {
+			sink.error(e);
+		}
+
+		@Override
+		public FluxSink<T> next(T t) {
+			sink.next(t);
+			return serializedSink == null ? this : serializedSink;
+		}
+
+		@Override
+		public long requestedFromDownstream() {
+			return sink.requestedFromDownstream();
+		}
+
+		@Override
+		public boolean isCancelled() {
+			return sink.isCancelled();
+		}
+
+		@Override
+		public FluxSink<T> onRequest(LongConsumer consumer) {
+			if (serializedSink == null) {
+				serializedSink = new SerializedSink<>(baseSink);
+				sink = serializedSink;
+			}
+			return sink.onRequest(consumer);
+		}
+
+		@Override
+		public FluxSink<T> onCancel(Disposable d) {
+			sink.onCancel(d);
+			return sink;
+		}
+
+		@Override
+		public FluxSink<T> onDispose(Disposable d) {
+			sink.onDispose(d);
+			return this;
+		}
+	}
+
 	static abstract class BaseSink<T>
 			extends AtomicBoolean
 			implements FluxSink<T>, InnerProducer<T> {
