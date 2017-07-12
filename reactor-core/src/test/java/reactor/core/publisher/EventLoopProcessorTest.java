@@ -35,6 +35,7 @@ public class EventLoopProcessorTest {
 		EventLoopProcessor<String> test = new EventLoopProcessor<String>(128,
 				r -> new Thread(r),
 				Executors.newSingleThreadExecutor(),
+				Executors.newSingleThreadExecutor(),
 				true,
 				false,
 				() -> null,

@@ -15,17 +15,14 @@
  */
 package reactor.core.publisher.tck;
 
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.TestEnvironment;
-import org.testng.SkipException;
-import org.testng.annotations.AfterClass;
 import reactor.core.publisher.Flux;
+
+import static org.reactivestreams.tck.TestEnvironment.envDefaultNoSignalsTimeoutMillis;
 
 /**
  * @author Stephane Maldini
@@ -34,88 +31,19 @@ public abstract class AbstractProcessorVerification extends org.reactivestreams.
 
 	final ExecutorService executorService = Executors.newCachedThreadPool();
 
-	final Queue<Processor<Long, Long>> processorReferences = new ConcurrentLinkedQueue<>();
-
-	@Override
-	public void required_spec208_mustBePreparedToReceiveOnNextSignalsAfterHavingCalledSubscriptionCancel()
-			throws Throwable {
-		throw new SkipException("Delivery guarantee with Exception#failWithCancel");
-	}
-
 	@Override
 	public ExecutorService publisherExecutorService() {
 		return executorService;
 	}
 
-	public AbstractProcessorVerification() {
-		super(new TestEnvironment(500));
-	}
-
-	@Override
-	public void required_spec309_requestNegativeNumberMustSignalIllegalArgumentException() throws Throwable {
-		throw new SkipException("Need RS review");
-	}
-
-	@Override
-	public void required_spec313_cancelMustMakeThePublisherEventuallyDropAllReferencesToTheSubscriber()
-			throws Throwable {
-		throw new SkipException("Need RS review");
-	}
-
-	@Override
-	public void required_spec309_requestZeroMustSignalIllegalArgumentException() throws Throwable {
-		throw new SkipException("Need RS review");
-	}
-
-	@AfterClass
-	public void tearDown() throws InterruptedException {
-		executorService.submit(() -> {
-			  Processor<Long, Long> p;
-			  while ((p = processorReferences.poll()) != null) {
-				  System.out.println("aborting");
-				  p.onComplete();
-			  }
-		  }
-		);
-
-		executorService.shutdown();
+	AbstractProcessorVerification() {
+		super(new TestEnvironment(500, envDefaultNoSignalsTimeoutMillis(), true));
 	}
 
 	@Override
 	public Long createElement(int element) {
 		return (long) element;
 	}
-
-
-
-	@Override
-	public Processor<Long, Long> createIdentityProcessor(int bufferSize) {
-		Processor<Long, Long> p = createProcessor(bufferSize);
-		processorReferences.add(p);
-		return p;
-	}
-
-	protected abstract Processor<Long, Long> createProcessor(int bufferSize);
-
-	/*@Override
-	public Publisher<Long> createHelperPublisher(long elements) {
-		return Flux.log(super.createHelperPublisher(elements), "publisher");
-	}*/
-
-	/*@Override
-	public Publisher<Long> createHelperPublisher(long elements) {
-		return Flux.<Long, AtomicLong>create(
-		  (s) -> {
-			  long cursor = s.context().getAndIncrement();
-			  if (cursor < elements) {
-				  s.onNext(cursor);
-			  } else {
-				  s.onComplete();
-			  }
-		  },
-		  s -> new AtomicLong(0L)
-		);
-	}*/
 
 	@Override
 	public Publisher<Long> createFailedPublisher() {

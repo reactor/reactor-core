@@ -17,6 +17,7 @@
 package reactor.core.publisher.tck;
 
 import org.reactivestreams.Processor;
+import org.testng.SkipException;
 import reactor.core.publisher.WorkQueueProcessor;
 
 /**
@@ -26,26 +27,14 @@ import reactor.core.publisher.WorkQueueProcessor;
 public class WorkQueueProcessorVerification extends AbstractProcessorVerification {
 
 	@Override
-	public Processor<Long, Long> createProcessor(int bufferSize) {
-		System.out.println("new processor");
+	public Processor<Long, Long> createIdentityProcessor(int bufferSize) {
 		return  WorkQueueProcessor.<Long>builder().name("rb-work").bufferSize(bufferSize).build();
 	}
 
 	@Override
 	public void required_mustRequestFromUpstreamForElementsThatHaveBeenRequestedLongAgo()
 			throws Throwable {
-		//IGNORE since subscribers see distinct data
+		throw new SkipException("WorkQueueProcessor cannot do that given its " +
+				"distributing nature");
 	}
-
-	@Override
-	public void required_spec104_mustCallOnErrorOnAllItsSubscribersIfItEncountersANonRecoverableError()
-			throws Throwable {
-		super.required_spec104_mustCallOnErrorOnAllItsSubscribersIfItEncountersANonRecoverableError();
-	}
-
-	@Override
-	public void mustImmediatelyPassOnOnErrorEventsReceivedFromItsUpstreamToItsDownstream() throws Exception {
-		super.mustImmediatelyPassOnOnErrorEventsReceivedFromItsUpstreamToItsDownstream();
-	}
-
 }

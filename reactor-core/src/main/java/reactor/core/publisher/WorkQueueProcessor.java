@@ -16,7 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
@@ -262,8 +261,6 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 	final Queue<Object> claimedDisposed = new ConcurrentLinkedQueue<>();
 
-	final ExecutorService requestTaskExecutor;
-
 	final WaitStrategy writeWait;
 
 	volatile int replaying;
@@ -273,28 +270,6 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 			AtomicIntegerFieldUpdater
 					.newUpdater(WorkQueueProcessor.class, "replaying");
 
-	WorkQueueProcessor(String name,
-			int bufferSize,
-			WaitStrategy waitStrategy,
-			boolean share,
-			boolean autoCancel) {
-		this(new EventLoopFactory(name, autoCancel),
-				null,
-				bufferSize,
-				waitStrategy,
-				share,
-				autoCancel);
-	}
-
-	WorkQueueProcessor(
-			@Nullable ThreadFactory threadFactory,
-			@Nullable ExecutorService executor,
-			int bufferSize, WaitStrategy waitStrategy, boolean share,
-	                                boolean autoCancel) {
-		this(threadFactory, executor, defaultRequestTaskExecutor(defaultName(threadFactory, WorkQueueProcessor.class)),
-				bufferSize, waitStrategy, share, autoCancel);
-	}
-
 	@SuppressWarnings("unchecked")
 	WorkQueueProcessor(
 			@Nullable ThreadFactory threadFactory,
@@ -303,18 +278,15 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 			int bufferSize, WaitStrategy waitStrategy, boolean share,
 	                                boolean autoCancel) {
 		super(bufferSize, threadFactory,
-				executor,
+				executor, requestTaskExecutor,
 				autoCancel,
 				share,
 				FACTORY,
 				waitStrategy);
 
-		Objects.requireNonNull(requestTaskExecutor, "requestTaskExecutor");
-
 		this.writeWait = waitStrategy;
 
 		ringBuffer.addGatingSequence(workSequence);
-		this.requestTaskExecutor = requestTaskExecutor;
 	}
 
 	@Override
@@ -402,14 +374,8 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 	@Override
 	protected void requestTask(Subscription s) {
-		requestTaskExecutor.execute(EventLoopProcessor.createRequestTask(s,
-				() -> {
-					if (!alive()) {
-						WaitStrategy.alert();
-					}
-				}, null,
-				ringBuffer::getMinimumGatingSequence,
-				readWait, this, ringBuffer.bufferSize()));
+		requestTaskExecutor.execute(createRequestTask(s, this,
+				null, ringBuffer::getMinimumGatingSequence));
 	}
 
 	@Override
@@ -422,11 +388,6 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		if (!alive()) {
 			WaitStrategy.alert();
 		}
-	}
-
-	@Override
-	protected void specificShutdown() {
-		requestTaskExecutor.shutdown();
 	}
 
 	/**

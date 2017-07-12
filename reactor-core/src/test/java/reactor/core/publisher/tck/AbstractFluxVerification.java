@@ -15,76 +15,56 @@
  */
 package reactor.core.publisher.tck;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.junit.After;
-import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.TestEnvironment;
-import org.testng.SkipException;
-import org.testng.annotations.AfterClass;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
  * @author Stephane Maldini
  */
-public abstract class AbstractFluxVerification extends org.reactivestreams.tck.IdentityProcessorVerification<Integer> {
+public abstract class AbstractFluxVerification
+		extends org.reactivestreams.tck.PublisherVerification<Integer> {
 
 
 	private final Map<Thread, AtomicLong> counters = new ConcurrentHashMap<>();
 
-	protected final int batch = 1024;
+	final int batch = 1024;
 
-	public AbstractFluxVerification() {
+	AbstractFluxVerification() {
 		super(new TestEnvironment(true));
 	}
 
-	final ExecutorService executorService = Executors.newCachedThreadPool();
-
-	final Queue<Processor<Integer, Integer>> processorReferences = new ConcurrentLinkedQueue<>();
+	abstract Flux<Integer> transformFlux(Flux<Integer> f);
 
 	@Override
-	public ExecutorService publisherExecutorService() {
-		return executorService;
-	}
+	public Publisher<Integer> createPublisher(long elements) {
+		if (elements <= Integer.MAX_VALUE) {
+			return Flux.range(1, (int) elements)
+			           .filter(integer -> true)
+			           .map(integer -> integer)
+			           .transform(this::transformFlux);
+		}
+		else {
+			final Random random = new Random();
 
-	@AfterClass
-	@After
-	public void tearDown() {
-		executorService.shutdown();
-	}
-
-	@Override
-	public Integer createElement(int element) {
-		return  element;
-	}
-
-	@Override
-	public Processor<Integer, Integer> createIdentityProcessor(int bufferSize) {
-		counters.clear();
-		final Processor<Integer, Integer> p = createProcessor(bufferSize);
-
-
-		processorReferences.add(p);
-		return p;
+			return Mono.fromCallable(random::nextInt)
+			           .repeat()
+			           .map(Math::abs)
+			           .transform(this::transformFlux);
+		}
 	}
 
 	@Override
 	public Publisher<Integer> createFailedPublisher() {
-		return Flux.error(new Exception("oops")).cast(Integer.class);
+		return Flux.<Integer>error(new Exception("oops"))
+				.transform(this::transformFlux);
 	}
-
-	public abstract Processor<Integer, Integer> createProcessor(int bufferSize);
 
 	protected void monitorThreadUse(Object val) {
 		AtomicLong counter = counters.get(Thread.currentThread());
@@ -95,32 +75,4 @@ public abstract class AbstractFluxVerification extends org.reactivestreams.tck.I
 		counter.incrementAndGet();
 	}
 
-	@Override
-	public Publisher<Integer> createHelperPublisher(long elements) {
-		if (elements <= Integer.MAX_VALUE) {
-
-			return Flux
-			  .range(1, (int)elements)
-			  .filter(integer -> true)
-			  .map(integer -> integer);
-
-		} else {
-			final Random random = new Random();
-
-			return Mono.fromCallable(random::nextInt)
-			           .repeat()
-			           .map(Math::abs);
-		}
-	}
-
-
-	/*@Test
-	public void testAlotOfHotStreams() throws InterruptedException{
-		for(int i = 0; i<10000; i++)
-			testHotIdentityProcessor();
-	}*/
-
-	static {
-		System.setProperty("reactor.trace.cancel", "true");
-	}
 }
