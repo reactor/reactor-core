@@ -843,11 +843,11 @@ public class TopicProcessorTest {
 				.share(false)
 				.build();
 		FluxSink<Integer> sink = processor.sink();
-		assertTrue("Should not be serialized", sink instanceof SerializedSink);
+		assertThat(sink).isInstanceOf(SerializedSink.class);
 		sink = sink.next(1);
-		assertTrue("Should not be serialized", sink instanceof SerializedSink);
+		assertThat(sink).isInstanceOf(SerializedSink.class);
 		sink = sink.onRequest(n -> {});
-		assertTrue("Should not be serialized", sink instanceof SerializedSink);
+		assertThat(sink).isInstanceOf(SerializedSink.class);
 	}
 
 	@Test
@@ -856,8 +856,8 @@ public class TopicProcessorTest {
 				.share(true)
 				.build();
 		FluxSink<Integer> sink = processor.sink();
-		assertFalse("Should not be serialized", sink instanceof SerializedSink);
-		assertFalse("Should not be serialized", sink.next(1) instanceof SerializedSink);
+		assertThat(sink).isNotInstanceOf(SerializedSink.class);
+		assertThat(sink.next(1)).isNotInstanceOf(SerializedSink.class);
 	}
 
 	@Test
@@ -868,10 +868,10 @@ public class TopicProcessorTest {
 		FluxSink<Integer> sink = processor.sink();
 		FluxSink<Integer> serializedSink = sink.onRequest(n -> {
 			FluxSink<Integer> s = sink.next(1);
-			assertTrue("Should be serialized", s instanceof SerializedSink);
+			assertThat(s).isInstanceOf(SerializedSink.class);
 			s.next(2);
 		});
-		assertTrue("Should be serialized", serializedSink instanceof SerializedSink);
+		assertThat(serializedSink).isInstanceOf(SerializedSink.class);
 		StepVerifier.create(processor)
 					.thenRequest(5)
 					.expectNext(1, 2)

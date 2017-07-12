@@ -1435,12 +1435,11 @@ public class WorkQueueProcessorTest {
 				.share(false).build();
 
 		FluxSink<Integer> sink = queueProcessor.sink();
-		assertTrue("Should not be serialized", sink instanceof SerializedSink);
+		Assertions.assertThat(sink).isInstanceOf(SerializedSink.class);
 		sink = sink.next(1);
-		assertTrue("Should not be serialized", sink instanceof SerializedSink);
-		sink = sink.onRequest(n -> {
-		});
-		assertTrue("Should not be serialized", sink instanceof SerializedSink);
+		Assertions.assertThat(sink).isInstanceOf(SerializedSink.class);
+		sink = sink.onRequest(n -> {});
+		Assertions.assertThat(sink).isInstanceOf(SerializedSink.class);
 	}
 
 	@Test
@@ -1452,11 +1451,11 @@ public class WorkQueueProcessorTest {
 		TestSubscriber subscriber = new TestSubscriber(count);
 		queueProcessor.subscribe(subscriber);
 		FluxSink<Integer> sink = queueProcessor.sink();
-		assertFalse("Should not be serialized", sink instanceof SerializedSink);
+		Assertions.assertThat(sink).isNotInstanceOf(SerializedSink.class);
 
 		for (int i = 0; i < count; i++) {
 			sink = sink.next(i);
-			assertFalse("Should not be serialized", sink instanceof SerializedSink);
+			Assertions.assertThat(sink).isNotInstanceOf(SerializedSink.class);
 		}
 		subscriber.await(Duration.ofSeconds(5));
 		assertNull("Unexpected exception in subscriber", subscriber.failure);
@@ -1476,11 +1475,11 @@ public class WorkQueueProcessorTest {
 			for (int i = 0; i < n; i++) {
 				synchronized (s) { // to ensure that elements are in order for testing
 					FluxSink<Integer> retSink = sink.next(next.getAndIncrement());
-					assertTrue("Should be serialized", retSink instanceof SerializedSink);
+					Assertions.assertThat(retSink).isInstanceOf(SerializedSink.class);
 				}
 			}
 		});
-		assertTrue("Should be serialized", serializedSink instanceof SerializedSink);
+		Assertions.assertThat(serializedSink).isInstanceOf(SerializedSink.class);
 
 		subscriber.await(Duration.ofSeconds(5));
 		sink.complete();
