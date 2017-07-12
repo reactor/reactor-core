@@ -19,7 +19,6 @@ package reactor.core.publisher.tck;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.PublisherVerification;
 import org.reactivestreams.tck.TestEnvironment;
-import org.testng.SkipException;
 import org.testng.annotations.Test;
 import reactor.core.publisher.Flux;
 
@@ -54,17 +53,5 @@ public class FluxGenerateVerification extends PublisherVerification<Long> {
 	@Override
 	public Publisher<Long> createFailedPublisher() {
 		return Flux.error(new Exception("test"));
-	}
-
-	@Override
-	public void required_spec309_requestZeroMustSignalIllegalArgumentException()
-			throws Throwable {
-		throw new SkipException("Reactor doesn't onError on <= 0 request, it throws");
-	}
-
-	@Override
-	public void required_spec309_requestNegativeNumberMustSignalIllegalArgumentException()
-			throws Throwable {
-		throw new SkipException("Reactor doesn't onError on <= 0 request, it throws");
 	}
 }

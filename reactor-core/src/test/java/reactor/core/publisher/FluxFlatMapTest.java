@@ -349,7 +349,7 @@ public class FluxFlatMapTest {
 		source2.onNext(2);
 		source2.onComplete();
 
-		ts.assertValues(1, 2)
+		ts.assertValues(1, 10, 2)
 		.assertNoError()
 		.assertComplete();
 	}

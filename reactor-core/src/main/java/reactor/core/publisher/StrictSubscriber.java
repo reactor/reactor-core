@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
@@ -22,10 +24,11 @@ import javax.annotation.Nullable;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Exceptions;
 import reactor.core.Scannable;
 
 /**
- * @author Stephane Maldini
+ * Reactive Streams Commons safe exit
  */
 final class StrictSubscriber<T> implements Scannable, CoreSubscriber<T>, Subscription {
 
@@ -33,8 +36,7 @@ final class StrictSubscriber<T> implements Scannable, CoreSubscriber<T>, Subscri
 
 	volatile Subscription s;
 	@SuppressWarnings("rawtypes")
-	static final AtomicReferenceFieldUpdater<StrictSubscriber, Subscription>
-			S =
+	static final AtomicReferenceFieldUpdater<StrictSubscriber, Subscription> S =
 			AtomicReferenceFieldUpdater.newUpdater(StrictSubscriber.class,
 					Subscription.class,
 					"s");
@@ -42,8 +44,21 @@ final class StrictSubscriber<T> implements Scannable, CoreSubscriber<T>, Subscri
 	volatile long requested;
 	@SuppressWarnings("rawtypes")
 	static final AtomicLongFieldUpdater<StrictSubscriber> REQUESTED =
-			AtomicLongFieldUpdater.newUpdater(StrictSubscriber.class,
-					"requested");
+			AtomicLongFieldUpdater.newUpdater(StrictSubscriber.class, "requested");
+
+	volatile int wip;
+	@SuppressWarnings("rawtypes")
+	static final AtomicIntegerFieldUpdater<StrictSubscriber> WIP =
+			AtomicIntegerFieldUpdater.newUpdater(StrictSubscriber.class, "wip");
+
+	volatile Throwable error;
+	@SuppressWarnings("rawtypes")
+	static final AtomicReferenceFieldUpdater<StrictSubscriber, Throwable> ERROR =
+			AtomicReferenceFieldUpdater.newUpdater(StrictSubscriber.class,
+					Throwable.class,
+					"error");
+
+	volatile boolean done;
 
 	StrictSubscriber(Subscriber<? super T> actual) {
 		this.actual = actual;
@@ -62,21 +77,51 @@ final class StrictSubscriber<T> implements Scannable, CoreSubscriber<T>, Subscri
 				}
 			}
 		}
+		else {
+			onError(new IllegalStateException("§2.12 violated: onSubscribe must be called at most once"));
+		}
 	}
 
 	@Override
 	public void onNext(T t) {
-		actual.onNext(t);
+		if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
+			actual.onNext(t);
+			if (WIP.decrementAndGet(this) != 0) {
+				Throwable ex = Exceptions.terminate(ERROR, this);
+				if (ex != null) {
+					actual.onError(ex);
+				} else {
+					actual.onComplete();
+				}
+			}
+		}
 	}
 
 	@Override
 	public void onError(Throwable t) {
-		actual.onError(t);
+		done = true;
+		if (Exceptions.addThrowable(ERROR, this, t)) {
+			if (WIP.getAndIncrement(this) == 0) {
+				actual.onError(Exceptions.terminate(ERROR, this));
+			}
+		}
+		else {
+			Operators.onErrorDropped(t);
+		}
 	}
 
 	@Override
 	public void onComplete() {
-		actual.onComplete();
+		done = true;
+		if (WIP.getAndIncrement(this) == 0) {
+			Throwable ex = Exceptions.terminate(ERROR, this);
+			if (ex != null) {
+				actual.onError(ex);
+			}
+			else {
+				actual.onComplete();
+			}
+		}
 	}
 
 	@Override
@@ -92,20 +137,22 @@ final class StrictSubscriber<T> implements Scannable, CoreSubscriber<T>, Subscri
 			a.request(n);
 		}
 		else {
-				Operators.getAndAddCap(REQUESTED, this, n);
-				a = s;
-				if (a != null) {
-					long r = REQUESTED.getAndSet(this, 0L);
-					if (r != 0L) {
-						a.request(n);
-					}
+			Operators.getAndAddCap(REQUESTED, this, n);
+			a = s;
+			if (a != null) {
+				long r = REQUESTED.getAndSet(this, 0L);
+				if (r != 0L) {
+					a.request(n);
+				}
 			}
 		}
 	}
 
 	@Override
 	public void cancel() {
-		Operators.terminate(S, this);
+		if(!done) {
+			Operators.terminate(S, this);
+		}
 	}
 
 	@Override
@@ -120,7 +167,7 @@ final class StrictSubscriber<T> implements Scannable, CoreSubscriber<T>, Subscri
 		if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) {
 			return requested;
 		}
-		if (key == ScannableAttr.ACTUAL){
+		if (key == ScannableAttr.ACTUAL) {
 			return actual;
 		}
 

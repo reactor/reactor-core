@@ -122,7 +122,7 @@ public class FluxProcessorTest {
 		processor.publishOn(scheduler)
 		         .delaySubscription(Duration.ofMillis(1000))
 		         .limitRate(1)
-		                                    .subscribe(d -> {
+		         .subscribe(d -> {
 			         count.incrementAndGet();
 			         latch.countDown();
 		         });
@@ -133,7 +133,7 @@ public class FluxProcessorTest {
 		session.complete();
 
 		latch.await(5, TimeUnit.SECONDS);
-		Assert.assertTrue("latch : " + count, count.get() == 0);
+		Assert.assertTrue("latch : " + count, count.get() == 1);
 		scheduler.dispose();
 	}
 

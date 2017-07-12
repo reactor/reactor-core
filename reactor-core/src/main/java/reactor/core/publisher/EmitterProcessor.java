@@ -352,8 +352,9 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 				return;
 			}
 
-			if (!empty) {
-				FluxPublish.PubSubInner<T>[] a = subscribers;
+			FluxPublish.PubSubInner<T>[] a = subscribers;
+
+			if (a != EMPTY && !empty) {
 				long maxRequested = Long.MAX_VALUE;
 
 				int len = a.length;

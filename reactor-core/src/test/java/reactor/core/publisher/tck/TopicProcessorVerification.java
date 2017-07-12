@@ -16,7 +16,7 @@
 package reactor.core.publisher.tck;
 
 import org.reactivestreams.Processor;
-import org.testng.SkipException;
+import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.TopicProcessor;
 
 /**
@@ -26,41 +26,9 @@ import reactor.core.publisher.TopicProcessor;
 public class TopicProcessorVerification extends AbstractProcessorVerification {
 
 	@Override
-	public Processor<Long, Long> createProcessor(int bufferSize) {
-		return TopicProcessor.<Long>builder().name("rb-async").bufferSize(bufferSize).build();
+	public Processor<Long, Long> createIdentityProcessor(int bufferSize) {
+		return TopicProcessor.<Long>builder().name("rb-async")
+		                                     .bufferSize(bufferSize)
+		                                     .build();
 	}
-
-	@Override
-	public void required_exerciseWhiteboxHappyPath() throws Throwable {
-		super.required_exerciseWhiteboxHappyPath();
-	}
-
-	@Override
-	public void required_spec104_mustCallOnErrorOnAllItsSubscribersIfItEncountersANonRecoverableError()
-			throws Throwable {
-		new SkipException("ci");
-	}
-
-	@Override
-	public void required_spec317_mustSupportAPendingElementCountUpToLongMaxValue() throws Throwable {
-		super.required_spec317_mustSupportAPendingElementCountUpToLongMaxValue();
-	}
-
-	/*@Test
-	@Ignore
-	public void extra_spec209_mustBePreparedToReceiveAnOnCompleteSignalWithoutPrecedingRequestCall()
-			throws InterruptedException {
-		TopicProcessor<String> processor = TopicProcessor.create();
-		Publisher<String> publisher = Subscriber::onComplete;
-		publisher.subscribe(processor);
-
-		// Waiting till publisher sends Complete into the processor
-		Thread.sleep(1000);
-
-		AssertSubscriber<String> subscriber = AssertSubscriber.generateTimeoutSecs(1);
-		processor.subscribe(subscriber);
-
-		subscriber.assertComplete();
-	}*/
-
 }

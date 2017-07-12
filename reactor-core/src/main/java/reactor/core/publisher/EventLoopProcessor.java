@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -79,45 +80,17 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	 * LongSupplier} and compare it to a {@link RingBuffer}
 	 *
 	 * @param upstream the {@link Subscription} to request/cancel on
-	 * @param stopCondition {@link Runnable} evaluated in the spin loop that may throw
+	 * @param p parent {@link EventLoopProcessor}
 	 * @param postWaitCallback a {@link Consumer} notified with the latest sequence read
 	 * @param readCount a {@link LongSupplier} a sequence cursor to wait on
-	 * @param waitStrategy a {@link WaitStrategy} to trade off cpu cycle for latency
-	 * @param errorSubscriber an error subscriber if request/cancel fails
-	 * @param prefetch the target prefetch size
 	 *
 	 * @return a {@link Runnable} loop to execute to start the requesting loop
 	 */
-	static Runnable createRequestTask(Subscription upstream,
-			Runnable stopCondition,
-			@Nullable Consumer<Long> postWaitCallback,
-			LongSupplier readCount,
-			WaitStrategy waitStrategy,
-			Subscriber<?> errorSubscriber,
-			int prefetch) {
-		return new RequestTask(upstream,
-				stopCondition,
-				postWaitCallback,
-				readCount,
-				waitStrategy,
-				errorSubscriber,
-				prefetch);
-	}
-
-	/**
-	 * Create a new single producer RingBuffer using the default wait strategy  {@link
-	 * WaitStrategy#busySpin()}. <p>See {@code MultiProducerRingBuffer}.
-	 *
-	 * @param <E> the element type
-	 * @param bufferSize number of elements to create within the ring buffer.
-	 *
-	 * @return the new RingBuffer instance
-	 */
-	@SuppressWarnings("unchecked")
-	static <E> RingBuffer<Slot<E>> createSingleProducer(int bufferSize) {
-		return RingBuffer.createSingleProducer(EMITTED,
-				bufferSize,
-				WaitStrategy.busySpin());
+	static Runnable createRequestTask(
+			Subscription upstream,
+			EventLoopProcessor<?> p,
+			@Nullable Consumer<Long> postWaitCallback, LongSupplier readCount) {
+		return new RequestTask(upstream, p, postWaitCallback, readCount);
 	}
 
 	/**
@@ -170,9 +143,6 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		return true;
 	}
 
-	@SuppressWarnings("rawtypes")
-	static final Supplier EMITTED = Slot::new;
-
 	/**
 	 * Concurrent addition bound to Long.MAX_VALUE. Any concurrent write will "happen"
 	 * before this operation.
@@ -216,6 +186,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	}
 
 	final ExecutorService  executor;
+	final ExecutorService requestTaskExecutor;
 	final EventLoopContext contextClassLoader;
 	final String           name;
 	final boolean          autoCancel;
@@ -234,6 +205,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 			int bufferSize,
 			@Nullable ThreadFactory threadFactory,
 			@Nullable ExecutorService executor,
+			ExecutorService requestExecutor,
 			boolean autoCancel,
 			boolean multiproducers,
 			Supplier<Slot<IN>> factory,
@@ -253,6 +225,8 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		contextClassLoader = new EventLoopContext(multiproducers);
 
 		this.name = defaultName(threadFactory, getClass());
+
+		this.requestTaskExecutor = Objects.requireNonNull(requestExecutor, "requestTaskExecutor");
 
 		if (executor == null) {
 			this.executor = Executors.newCachedThreadPool(threadFactory);
@@ -476,19 +450,11 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		try {
 			onComplete();
 			executor.shutdown();
-			specificShutdown();
+			requestTaskExecutor.shutdown();
 		}
 		catch (Throwable t) {
 			onError(Operators.onOperatorError(t));
 		}
-	}
-
-	/**
-	 * A method to be overridden by implementors that need additional steps on {@link #shutdown()}
-	 * after the main executor's shutdown and onComplete signal.
-	 */
-	protected void specificShutdown() {
-		//NO-OP
 	}
 
 	@Override
@@ -516,50 +482,38 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	 */
 	static final class RequestTask implements Runnable {
 
-		final WaitStrategy waitStrategy;
-
 		final LongSupplier readCount;
 
 		final Subscription upstream;
 
-		final Runnable spinObserver;
+		final EventLoopProcessor<?> parent;
 
 		final Consumer<Long> postWaitCallback;
 
-		final Subscriber<?> errorSubscriber;
-
-		final int prefetch;
-
 		 RequestTask(Subscription upstream,
-				Runnable stopCondition,
+				 EventLoopProcessor<?> p,
 				 @Nullable Consumer<Long> postWaitCallback,
-				LongSupplier readCount,
-				WaitStrategy waitStrategy,
-				Subscriber<?> errorSubscriber,
-				int prefetch) {
-			this.waitStrategy = waitStrategy;
+				LongSupplier readCount) {
+			this.parent = p;
 			this.readCount = readCount;
 			this.postWaitCallback = postWaitCallback;
-			this.errorSubscriber = errorSubscriber;
 			this.upstream = upstream;
-			this.spinObserver = stopCondition;
-			this.prefetch = prefetch;
 		}
 
 		@Override
 		public void run() {
-			final long bufferSize = prefetch;
+			final long bufferSize = parent.ringBuffer.bufferSize();
 			final long limit = bufferSize == 1 ? bufferSize : bufferSize - Math.max(bufferSize >> 2, 1);
 			long cursor = -1;
 			try {
-				spinObserver.run();
+				parent.run();
 				upstream.request(bufferSize);
 
 				long c;
 				//noinspection InfiniteLoopStatement
 				for (; ; ) {
 					c = cursor + limit;
-					cursor = waitStrategy.waitFor(c, readCount, spinObserver);
+					cursor = parent.readWait.waitFor(c, readCount, parent);
 					if (postWaitCallback != null) {
 						postWaitCallback.accept(cursor);
 					}
@@ -572,14 +526,13 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 				      .interrupt();
 			}
 			catch (Throwable t) {
-				if(Exceptions.isCancel(t)){
-					upstream.cancel();
-					return;
-				}
 				if(WaitStrategy.isAlert(t)){
+					if(parent.cancelled){
+						upstream.cancel();
+					}
 					return;
 				}
-				errorSubscriber.onError(Operators.onOperatorError(t));
+				parent.onError(Operators.onOperatorError(t));
 			}
 		}
 	}

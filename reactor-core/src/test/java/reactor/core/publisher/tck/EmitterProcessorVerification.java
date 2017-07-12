@@ -15,11 +15,10 @@
  */
 package reactor.core.publisher.tck;
 
-import java.util.concurrent.TimeUnit;
-
 import org.reactivestreams.Processor;
-import org.testng.annotations.AfterClass;
+import org.testng.SkipException;
 import reactor.core.publisher.EmitterProcessor;
+import reactor.core.publisher.FluxProcessor;
 
 /**
  * @author Stephane Maldini
@@ -28,25 +27,22 @@ import reactor.core.publisher.EmitterProcessor;
 public class EmitterProcessorVerification extends AbstractProcessorVerification {
 
 	@Override
-	public Processor<Long, Long> createProcessor(int bufferSize) {
-		return EmitterProcessor.create(bufferSize);
+	public Processor<Long, Long> createIdentityProcessor(int bufferSize) {
+		FluxProcessor<Long, Long> p = EmitterProcessor.create(bufferSize);
+		return FluxProcessor.wrap(p, p.log());
 	}
 
 	@Override
-	public void required_spec109_subscribeThrowNPEOnNullSubscriber() throws Throwable {
-		super.required_spec109_subscribeThrowNPEOnNullSubscriber();
+	public void required_mustRequestFromUpstreamForElementsThatHaveBeenRequestedLongAgo()
+			throws Throwable {
+		throw new SkipException("WARNING: EmitterProcessor does not emit until all " +
+				"subscribers request at least 1");
 	}
 
 	@Override
-	public boolean skipStochasticTests() {
-		return true;
+	public void required_spec104_mustCallOnErrorOnAllItsSubscribersIfItEncountersANonRecoverableError()
+			throws Throwable {
+		throw new SkipException("WARNING: EmitterProcessor does not emit until all " +
+				"subscribers request at least 1");
 	}
-
-	@AfterClass
-	@Override
-	public void tearDown() throws InterruptedException{
-		executorService.shutdown();
-		executorService.awaitTermination(1, TimeUnit.SECONDS);
-	}
-
 }

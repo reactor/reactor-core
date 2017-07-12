@@ -16,7 +16,6 @@
 
 package reactor.core.publisher;
 
-import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
@@ -272,36 +271,6 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 
 	final RingBuffer.Sequence minimum;
 
-	final ExecutorService requestTaskExecutor;
-
-	TopicProcessor(String name,
-			int bufferSize,
-			WaitStrategy waitStrategy,
-			boolean shared,
-			boolean autoCancel,
-			@Nullable final Supplier<E> signalSupplier) {
-		this(new EventLoopFactory(name, autoCancel),
-				null,
-				bufferSize,
-				waitStrategy,
-				shared,
-				autoCancel,
-				signalSupplier);
-	}
-
-	TopicProcessor(
-			@Nullable ThreadFactory threadFactory,
-			@Nullable ExecutorService executor,
-			int bufferSize,
-			WaitStrategy waitStrategy,
-			boolean shared,
-			boolean autoCancel,
-			@Nullable final Supplier<E> signalSupplier) {
-		this(threadFactory, executor,
-				defaultRequestTaskExecutor(defaultName(threadFactory, TopicProcessor.class)),
-				bufferSize, waitStrategy, shared, autoCancel, signalSupplier);
-	}
-
 	TopicProcessor(
 			@Nullable ThreadFactory threadFactory,
 			@Nullable ExecutorService executor,
@@ -311,7 +280,8 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 			boolean shared,
 			boolean autoCancel,
 			@Nullable final Supplier<E> signalSupplier) {
-		super(bufferSize, threadFactory, executor, autoCancel, shared, () -> {
+		super(bufferSize, threadFactory, executor, requestTaskExecutor, autoCancel,
+				shared, () -> {
 			Slot<E> signal = new Slot<>();
 			if (signalSupplier != null) {
 				signal.value = signalSupplier.get();
@@ -319,11 +289,8 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 			return signal;
 		}, waitStrategy);
 
-		Objects.requireNonNull(requestTaskExecutor, "requestTaskExecutor");
-
 		this.minimum = RingBuffer.newSequence(-1);
 		this.barrier = ringBuffer.newReader();
-		this.requestTaskExecutor = requestTaskExecutor;
 	}
 
 	@Override
@@ -406,16 +373,10 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 		minimum.set(ringBuffer.getCursor());
 		ringBuffer.addGatingSequence(minimum);
 		requestTaskExecutor.execute(
-				EventLoopProcessor.createRequestTask(s, () -> {
-					             if (!alive()) {
-						             WaitStrategy.alert();
-					             }
-				             }, minimum::set, () -> SUBSCRIBER_COUNT.get(TopicProcessor.this) == 0 ?
+				createRequestTask(s, this, minimum::set, () ->
+								SUBSCRIBER_COUNT.get(TopicProcessor.this) == 0 ?
 								minimum.getAsLong() :
-						ringBuffer.getMinimumGatingSequence(minimum),
-				readWait,
-				this,
-				ringBuffer.bufferSize()));
+						ringBuffer.getMinimumGatingSequence(minimum)));
 	}
 
 	@Override
@@ -423,11 +384,6 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 		if (!alive() && SUBSCRIBER_COUNT.get(TopicProcessor.this) == 0) {
 			WaitStrategy.alert();
 		}
-	}
-
-	@Override
-	protected void specificShutdown() {
-		requestTaskExecutor.shutdown();
 	}
 
 	/**
