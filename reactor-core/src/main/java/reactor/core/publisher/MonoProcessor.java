@@ -21,7 +21,6 @@ import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.Function;
 import java.util.function.LongSupplier;
 import javax.annotation.Nullable;
 
@@ -34,8 +33,6 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.concurrent.WaitStrategy;
-
-import static reactor.util.concurrent.WaitStrategy.NOOP_SPIN_OBSERVER;
 
 /**
  * A {@code MonoProcessor} is a {@link Mono} extension that implements stateful semantics. Multi-subscribe is allowed.
@@ -121,10 +118,16 @@ public final class MonoProcessor<O> extends Mono<O>
 		cancel();
 	}
 
+	/**
+	 * Block the calling thread indefinitely, waiting for the completion of this {@code MonoProcessor}. If the
+	 * {@link MonoProcessor} is completed with an error a RuntimeException that wraps the error is thrown.
+	 *
+	 * @return the value of this {@code MonoProcessor}
+	 */
 	@Override
 	@Nullable
 	public O block() {
-		return block(Duration.ZERO);
+		return block(WaitStrategy.NOOP_SPIN_OBSERVER);
 	}
 
 	/**
@@ -139,25 +142,23 @@ public final class MonoProcessor<O> extends Mono<O>
 	@Override
 	@Nullable
 	public O block(Duration timeout) {
+		long delay = System.nanoTime() + timeout.toNanos();
+		Runnable spinObserver = () -> {
+			if (delay < System.nanoTime()) {
+				WaitStrategy.alert();
+			}
+		};
+		return block(spinObserver);
+	}
+
+	@Nullable
+	O block(Runnable spinObserver) {
 		try {
 			if (!isPending()) {
 				return peek();
 			}
 			else if(subscription == null) {
 				getOrStart();
-			}
-
-			Runnable spinObserver;
-			if (timeout.isZero()) {
-				spinObserver = NOOP_SPIN_OBSERVER;
-			}
-			else {
-				long delay = System.nanoTime() + timeout.toNanos();
-				spinObserver = () -> {
-					if (!timeout.isZero() && delay < System.nanoTime()) {
-						WaitStrategy.alert();
-					}
-				};
 			}
 
 			try {
