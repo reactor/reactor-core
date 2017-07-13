@@ -152,7 +152,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	}
 
 	@Nullable
-	private O block(Runnable spinObserver) {
+	O block(Runnable spinObserver) {
 		try {
 			if (!isPending()) {
 				return peek();
