@@ -39,7 +39,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.Logger;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 /**
  * A ParallelFlux publishes to an array of Subscribers, in parallel 'rails' (or
@@ -73,8 +73,8 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	public static <T> ParallelFlux<T> from(Publisher<? extends T> source) {
 		return from(source,
 				Runtime.getRuntime()
-				       .availableProcessors(), QueueSupplier.SMALL_BUFFER_SIZE,
-				QueueSupplier.small());
+				       .availableProcessors(), Queues.SMALL_BUFFER_SIZE,
+				Queues.small());
 	}
 
 	/**
@@ -90,8 +90,8 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	public static <T> ParallelFlux<T> from(Publisher<? extends T> source,
 			int parallelism) {
 		return from(source,
-				parallelism, QueueSupplier.SMALL_BUFFER_SIZE,
-				QueueSupplier.small());
+				parallelism, Queues.SMALL_BUFFER_SIZE,
+				Queues.small());
 	}
 
 	/**
@@ -524,7 +524,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	public final <R> ParallelFlux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper) {
 		return flatMap(mapper,
 				false,
-				Integer.MAX_VALUE, QueueSupplier.SMALL_BUFFER_SIZE);
+				Integer.MAX_VALUE, Queues.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -543,7 +543,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 			boolean delayError) {
 		return flatMap(mapper,
 				delayError,
-				Integer.MAX_VALUE, QueueSupplier.SMALL_BUFFER_SIZE);
+				Integer.MAX_VALUE, Queues.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -566,7 +566,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 			int maxConcurrency) {
 		return flatMap(mapper,
 				delayError,
-				maxConcurrency, QueueSupplier.SMALL_BUFFER_SIZE);
+				maxConcurrency, Queues.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -592,8 +592,8 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 				mapper,
 				delayError,
 				maxConcurrency,
-				QueueSupplier.get(maxConcurrency),
-				prefetch, QueueSupplier.get(prefetch)));
+				Queues.get(maxConcurrency),
+				prefetch, Queues.get(prefetch)));
 	}
 
 	/**
@@ -785,7 +785,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * and default prefetch amount.
 	 * <p>
 	 * This operator uses the default prefetch size returned by {@code
-	 * QueueSupplier.SMALL_BUFFER_SIZE}.
+	 * Queues.SMALL_BUFFER_SIZE}.
 	 * <p>
 	 * The operator will call {@code Scheduler.createWorker()} as many times as this
 	 * ParallelFlux's parallelism level is.
@@ -802,7 +802,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @return the new {@link ParallelFlux} instance
 	 */
 	public final ParallelFlux<T> runOn(Scheduler scheduler) {
-		return runOn(scheduler, QueueSupplier.SMALL_BUFFER_SIZE);
+		return runOn(scheduler, Queues.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -810,7 +810,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * work-stealing and a given prefetch amount.
 	 * <p>
 	 * This operator uses the default prefetch size returned by {@code
-	 * QueueSupplier.SMALL_BUFFER_SIZE}.
+	 * Queues.SMALL_BUFFER_SIZE}.
 	 * <p>
 	 * The operator will call {@code Scheduler.createWorker()} as many times as this
 	 * ParallelFlux's parallelism level is.
@@ -832,7 +832,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 		return onAssembly(new ParallelRunOn<>(this,
 				scheduler,
 				prefetch,
-				QueueSupplier.get(prefetch)));
+				Queues.get(prefetch)));
 	}
 
 	/**
@@ -841,14 +841,14 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * for the rails.
 	 * <p>
 	 * This operator uses the default prefetch size returned by {@code
-	 * QueueSupplier.SMALL_BUFFER_SIZE}.
+	 * Queues.SMALL_BUFFER_SIZE}.
 	 *
 	 * @return the new Flux instance
 	 *
 	 * @see ParallelFlux#sequential(int)
 	 */
 	public final Flux<T> sequential() {
-		return sequential(QueueSupplier.SMALL_BUFFER_SIZE);
+		return sequential(Queues.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -863,7 +863,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	public final Flux<T> sequential(int prefetch) {
 		return Flux.onAssembly(new ParallelMergeSequential<>(this,
 				prefetch,
-				QueueSupplier.get(prefetch)));
+				Queues.get(prefetch)));
 	}
 
 	/**
@@ -1071,7 +1071,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 			ErrorMode errorMode) {
 		return onAssembly(new ParallelConcatMap<>(this,
 				mapper,
-				QueueSupplier.get(prefetch),
+				Queues.get(prefetch),
 				prefetch,
 				errorMode));
 	}

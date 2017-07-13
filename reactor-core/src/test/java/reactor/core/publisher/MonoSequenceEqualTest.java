@@ -29,7 +29,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -135,7 +135,7 @@ public class MonoSequenceEqualTest {
 
 	@Test
 	public void largeSequence() {
-		Flux<Integer> source = Flux.range(1, QueueSupplier.SMALL_BUFFER_SIZE * 4).subscribeOn(Schedulers.elastic());
+		Flux<Integer> source = Flux.range(1, Queues.SMALL_BUFFER_SIZE * 4).subscribeOn(Schedulers.elastic());
 
 		StepVerifier.create(Mono.sequenceEqual(source, source))
 		            .expectNext(Boolean.TRUE)

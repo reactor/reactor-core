@@ -35,7 +35,7 @@ import reactor.core.Scannable.ScannableAttr;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Java6Assertions.assertThat;
 
@@ -45,7 +45,7 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
 		return defaultOptions.fusionMode(Fuseable.SYNC)
 		                     .fusionModeThreadBarrier(Fuseable.ANY)
-		                     .prefetch(QueueSupplier.SMALL_BUFFER_SIZE)
+		                     .prefetch(Queues.SMALL_BUFFER_SIZE)
 		                     .shouldHitDropNextHookAfterTerminate(false);
 	}
 
@@ -338,7 +338,7 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
     @Test
     public void scanOperator() {
         Flux<Integer> source = Flux.range(1, 10);
-        FluxFlattenIterable<Integer, Integer> test = new FluxFlattenIterable<>(source, i -> new ArrayList<>(i), 35, QueueSupplier.one());
+        FluxFlattenIterable<Integer, Integer> test = new FluxFlattenIterable<>(source, i -> new ArrayList<>(i), 35, Queues.one());
 
         assertThat(test.scan(ScannableAttr.PARENT)).isSameAs(source);
         assertThat(test.scan(IntAttr.PREFETCH)).isEqualTo(35);
@@ -348,7 +348,7 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
     public void scanSubscriber() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxFlattenIterable.FlattenIterableSubscriber<Integer, Integer> test =
-                new FluxFlattenIterable.FlattenIterableSubscriber<>(actual, i -> new ArrayList<>(i), 123, QueueSupplier.<Integer>one());
+                new FluxFlattenIterable.FlattenIterableSubscriber<>(actual, i -> new ArrayList<>(i), 123, Queues.<Integer>one());
         Subscription s = Operators.emptySubscription();
         test.onSubscribe(s);
 

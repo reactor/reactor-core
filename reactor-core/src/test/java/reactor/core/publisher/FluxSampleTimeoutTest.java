@@ -27,7 +27,7 @@ import reactor.core.Scannable;
 import reactor.core.publisher.FluxSampleTimeout.SampleTimeoutOther;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 public class FluxSampleTimeoutTest {
 
@@ -165,7 +165,7 @@ public class FluxSampleTimeoutTest {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxSampleTimeout.SampleTimeoutMain<Integer, Integer> test =
         		new FluxSampleTimeout.SampleTimeoutMain<>(actual, i -> Flux.just(i),
-        				QueueSupplier.<SampleTimeoutOther<Integer, Integer>>one().get());
+        				Queues.<SampleTimeoutOther<Integer, Integer>>one().get());
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -190,7 +190,7 @@ public class FluxSampleTimeoutTest {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxSampleTimeout.SampleTimeoutMain<Integer, Integer> main =
         		new FluxSampleTimeout.SampleTimeoutMain<>(actual, i -> Flux.just(i),
-        				QueueSupplier.<SampleTimeoutOther<Integer, Integer>>one().get());
+        				Queues.<SampleTimeoutOther<Integer, Integer>>one().get());
         FluxSampleTimeout.SampleTimeoutOther<Integer, Integer> test =
         		new FluxSampleTimeout.SampleTimeoutOther<Integer, Integer>(main, 1, 0);
 

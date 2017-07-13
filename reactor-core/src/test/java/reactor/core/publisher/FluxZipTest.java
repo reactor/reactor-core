@@ -33,7 +33,7 @@ import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuple7;
@@ -1280,7 +1280,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
     public void scanCoordinator() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxZip.ZipCoordinator<Integer, Integer> test = new FluxZip.ZipCoordinator<Integer, Integer>(actual,
-				i -> 5, 123, QueueSupplier.unbounded(), 345);
+				i -> 5, 123, Queues.unbounded(), 345);
 
         Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
         test.requested = 35;
@@ -1299,8 +1299,8 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
     public void scanInner() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxZip.ZipCoordinator<Integer, Integer> main = new FluxZip.ZipCoordinator<Integer, Integer>(actual,
-				i -> 5, 123, QueueSupplier.unbounded(), 345);
-		FluxZip.ZipInner<Integer> test = new FluxZip.ZipInner<>(main, 234, 1, QueueSupplier.unbounded());
+				i -> 5, 123, Queues.unbounded(), 345);
+		FluxZip.ZipInner<Integer> test = new FluxZip.ZipInner<>(main, 234, 1, Queues.unbounded());
 
         Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(main);
         Assertions.assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(234);

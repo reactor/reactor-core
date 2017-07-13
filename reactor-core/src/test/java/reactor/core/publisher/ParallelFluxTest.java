@@ -41,7 +41,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -399,14 +399,14 @@ public class ParallelFluxTest {
 	@Test
 	public void fromZeroPrefetchRejected() {
 		Assertions.assertThatExceptionOfType(IllegalArgumentException.class)
-		          .isThrownBy(() -> ParallelFlux.from(Mono.just(1), 1, 0, QueueSupplier.small()))
+		          .isThrownBy(() -> ParallelFlux.from(Mono.just(1), 1, 0, Queues.small()))
 		          .withMessage("prefetch > 0 required but it was 0");
 	}
 
 	@Test
 	public void fromNegativePrefetchRejected() {
 		Assertions.assertThatExceptionOfType(IllegalArgumentException.class)
-		          .isThrownBy(() -> ParallelFlux.from(Mono.just(1), 1, -1, QueueSupplier.small()))
+		          .isThrownBy(() -> ParallelFlux.from(Mono.just(1), 1, -1, Queues.small()))
 		          .withMessage("prefetch > 0 required but it was -1");
 	}
 
@@ -536,7 +536,7 @@ public class ParallelFluxTest {
 	@Test
 	public void fromPublisherDefaultPrefetchIsSmallBufferSize() {
 		assertThat(ParallelFlux.from(Flux.range(1, 5))
-				.getPrefetch()).isEqualTo(QueueSupplier.SMALL_BUFFER_SIZE);
+				.getPrefetch()).isEqualTo(Queues.SMALL_BUFFER_SIZE);
 	}
 
 	@Test
@@ -564,7 +564,7 @@ public class ParallelFluxTest {
 
 	@Test
 	public void transformChangesPrefetch() {
-		assertThat(ParallelFlux.from(Flux.range(1, 10), 3, 12, QueueSupplier.small())
+		assertThat(ParallelFlux.from(Flux.range(1, 10), 3, 12, Queues.small())
 		                       .transform(pf -> pf.runOn(Schedulers.parallel(), 3)
 		                                          .log()
 		                                          .hide())

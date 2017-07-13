@@ -29,7 +29,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -237,7 +237,7 @@ public class FluxBufferWhenTest {
 		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 
 		FluxBufferWhen.BufferStartEndMainSubscriber<String, Integer, Long, List<String>> test = new FluxBufferWhen.BufferStartEndMainSubscriber<>(
-				actual, ArrayList::new, QueueSupplier.<List<String>>one().get(), u -> Mono.just(1L));
+				actual, ArrayList::new, Queues.<List<String>>one().get(), u -> Mono.just(1L));
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 		test.request(100L);
@@ -259,7 +259,7 @@ public class FluxBufferWhenTest {
 		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 
 		FluxBufferWhen.BufferStartEndMainSubscriber<String, Integer, Long, List<String>> test = new FluxBufferWhen.BufferStartEndMainSubscriber<>(
-				actual, ArrayList::new, QueueSupplier.<List<String>>one().get(), u -> Mono.just(1L));
+				actual, ArrayList::new, Queues.<List<String>>one().get(), u -> Mono.just(1L));
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 		test.cancel();
@@ -271,7 +271,7 @@ public class FluxBufferWhenTest {
 	public void scanStartEndEnder() {
 		//noinspection ConstantConditions
 		FluxBufferWhen.BufferStartEndMainSubscriber<String, Integer, Long, List<String>> main = new FluxBufferWhen.BufferStartEndMainSubscriber<>(
-				null, ArrayList::new, QueueSupplier.<List<String>>one().get(), u -> Mono.just(1L));
+				null, ArrayList::new, Queues.<List<String>>one().get(), u -> Mono.just(1L));
 
 		FluxBufferWhen.BufferStartEndEnder test = new FluxBufferWhen.BufferStartEndEnder<>(main, Arrays.asList("foo", "bar"), 1);
 
@@ -297,7 +297,7 @@ public class FluxBufferWhenTest {
 	public void scanStartEndStarter() {
 		//noinspection ConstantConditions
 		FluxBufferWhen.BufferStartEndMainSubscriber<String, Integer, Long, List<String>> main = new FluxBufferWhen.BufferStartEndMainSubscriber<>(
-				null, ArrayList::new, QueueSupplier.<List<String>>one().get(), u -> Mono.just(1L));
+				null, ArrayList::new, Queues.<List<String>>one().get(), u -> Mono.just(1L));
 
 		FluxBufferWhen.BufferStartEndStarter test = new FluxBufferWhen.BufferStartEndStarter<>(main);
 

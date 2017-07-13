@@ -30,7 +30,8 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
+
 import javax.annotation.Nullable;
 
 /**
@@ -177,7 +178,7 @@ public class VirtualTimeScheduler implements Scheduler {
 	}
 
 	final Queue<TimedRunnable> queue =
-			new PriorityBlockingQueue<>(QueueSupplier.XS_BUFFER_SIZE);
+			new PriorityBlockingQueue<>(Queues.XS_BUFFER_SIZE);
 
 	@SuppressWarnings("unused")
 	volatile long counter;

@@ -27,7 +27,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 /**
  * @author Stephane Maldini
@@ -106,10 +106,10 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 			Queue<T> q;
 
 			if (unbounded) {
-				q = QueueSupplier.<T>unbounded(bufferSize).get();
+				q = Queues.<T>unbounded(bufferSize).get();
 			}
 			else {
-				q = QueueSupplier.<T>get(bufferSize).get();
+				q = Queues.<T>get(bufferSize).get();
 			}
 
 			this.queue = q;

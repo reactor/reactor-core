@@ -29,7 +29,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -263,8 +263,8 @@ public class FluxWindowWhenTest {
     public void scanMainSubscriber() {
         CoreSubscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWindowWhen.WindowStartEndMainSubscriber<Integer, Integer, Integer> test =
-        		new FluxWindowWhen.WindowStartEndMainSubscriber<>(actual, QueueSupplier.one().get(),
-        		s -> Flux.just(s), QueueSupplier.unbounded());
+        		new FluxWindowWhen.WindowStartEndMainSubscriber<>(actual, Queues.one().get(),
+        		s -> Flux.just(s), Queues.unbounded());
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
