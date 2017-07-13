@@ -35,7 +35,7 @@ import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 import static java.lang.Thread.sleep;
 import static org.hamcrest.CoreMatchers.*;
@@ -736,7 +736,7 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 	public void asyncFusionAvailable() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		UnicastProcessor.create(QueueSupplier.<Integer>get(2).get())
+		UnicastProcessor.create(Queues.<Integer>get(2).get())
 		                .doOnNext(v -> {
 		                })
 		                .subscribe(ts);

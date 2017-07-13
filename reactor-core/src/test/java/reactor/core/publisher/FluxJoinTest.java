@@ -23,7 +23,7 @@ import org.junit.Test;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -262,7 +262,7 @@ public class FluxJoinTest {
 						s -> Mono.just(s),
 						s -> Mono.just(s),
 						(l, r) -> l,
-						QueueSupplier.unbounded().get());
+						Queues.unbounded().get());
 
 		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
 		test.request(123);

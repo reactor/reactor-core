@@ -25,13 +25,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.util.concurrent.QueueSupplier;
-import javax.annotation.Nullable;
+import reactor.util.concurrent.Queues;
 
 /**
  * A {@link Scheduler} that uses a virtual clock, allowing to manipulate time
@@ -177,7 +177,7 @@ public class VirtualTimeScheduler implements Scheduler {
 	}
 
 	final Queue<TimedRunnable> queue =
-			new PriorityBlockingQueue<>(QueueSupplier.XS_BUFFER_SIZE);
+			new PriorityBlockingQueue<>(Queues.XS_BUFFER_SIZE);
 
 	@SuppressWarnings("unused")
 	volatile long counter;

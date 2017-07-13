@@ -22,7 +22,6 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.BiPredicate;
-
 import javax.annotation.Nullable;
 
 /**
@@ -61,7 +60,7 @@ final class SpscLinkedArrayQueue<T> extends AbstractQueue<T>
 	static final Object NEXT = new Object();
 
 	SpscLinkedArrayQueue(int linkSize) {
-		int c = QueueSupplier.ceilingNextPowerOfTwo(Math.max(8, linkSize));
+		int c = Queues.ceilingNextPowerOfTwo(Math.max(8, linkSize));
 		this.producerArray = this.consumerArray = new AtomicReferenceArray<>(c + 1);
 		this.mask = c - 1;
 	}

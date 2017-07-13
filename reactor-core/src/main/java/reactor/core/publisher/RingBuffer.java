@@ -19,17 +19,15 @@ package reactor.core.publisher;
 import java.lang.reflect.Field;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
-
-import reactor.util.concurrent.QueueSupplier;
-import reactor.util.concurrent.WaitStrategy;
 import javax.annotation.Nullable;
+
+import reactor.util.concurrent.Queues;
+import reactor.util.concurrent.WaitStrategy;
 import sun.misc.Unsafe;
 
 import static java.util.Arrays.copyOf;
@@ -162,7 +160,7 @@ abstract class RingBuffer<E> implements LongSupplier {
 			@Nullable Runnable spinObserver) {
 		SingleProducerSequencer sequencer = new SingleProducerSequencer(bufferSize, waitStrategy, spinObserver);
 
-		if (hasUnsafe() && QueueSupplier.isPowerOfTwo(bufferSize)) {
+		if (hasUnsafe() && Queues.isPowerOfTwo(bufferSize)) {
 			return new UnsafeRingBuffer<>(factory, sequencer);
 		}
 		else {

@@ -19,8 +19,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Queue;
-import java.util.concurrent.atomic.*;
-
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import javax.annotation.Nullable;
 
 /**
@@ -40,7 +40,7 @@ final class SpscArrayQueue<T> extends SpscArrayQueueP3<T> implements Queue<T> {
 	private static final long serialVersionUID = 494623116936946976L;
 
 	SpscArrayQueue(int capacity) {
-		super(QueueSupplier.ceilingNextPowerOfTwo(capacity));
+		super(Queues.ceilingNextPowerOfTwo(capacity));
 	}
 	
 	@Override

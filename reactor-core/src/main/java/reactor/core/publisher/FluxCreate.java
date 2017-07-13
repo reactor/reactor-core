@@ -33,7 +33,7 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 /**
  * Provides a multi-valued sink API for a callback that is called for
@@ -77,7 +77,7 @@ final class FluxCreate<T> extends Flux<T> {
 				return new LatestAsyncSink<>(t);
 			}
 			default: {
-				return new BufferAsyncSink<>(t, QueueSupplier.SMALL_BUFFER_SIZE);
+				return new BufferAsyncSink<>(t, Queues.SMALL_BUFFER_SIZE);
 			}
 		}
 	}
@@ -121,7 +121,7 @@ final class FluxCreate<T> extends Flux<T> {
 
 		SerializedSink(BaseSink<T> sink) {
 			this.sink = sink;
-			this.queue = QueueSupplier.<T>unbounded(16).get();
+			this.queue = Queues.<T>unbounded(16).get();
 		}
 
 		@Override
@@ -608,7 +608,7 @@ final class FluxCreate<T> extends Flux<T> {
 
 		 BufferAsyncSink(CoreSubscriber<? super T> actual, int capacityHint) {
 			super(actual);
-			this.queue = QueueSupplier.<T>unbounded(capacityHint).get();
+			this.queue = Queues.<T>unbounded(capacityHint).get();
 		}
 
 		@Override

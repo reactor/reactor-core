@@ -45,7 +45,7 @@ public final class OpenHashSet<T> {
     @SuppressWarnings("unchecked")
     public OpenHashSet(int capacity, float loadFactor) {
         this.loadFactor = loadFactor;
-        int c = QueueSupplier.ceilingNextPowerOfTwo(capacity);
+        int c = Queues.ceilingNextPowerOfTwo(capacity);
         this.mask = c - 1;
         this.maxSize = (int)(loadFactor * c);
         this.keys = (T[])new Object[c];

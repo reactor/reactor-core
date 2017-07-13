@@ -29,7 +29,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 import static reactor.core.publisher.FluxPublish.PublishSubscriber.EMPTY;
 import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
@@ -54,7 +54,7 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
 public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE}
+	 * Create a new {@link EmitterProcessor} using {@link Queues#SMALL_BUFFER_SIZE}
 	 * backlog size and auto-cancel.
 	 *
 	 * @param <E> Type of processed signals
@@ -62,11 +62,11 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	 * @return a fresh processor
 	 */
 	public static <E> EmitterProcessor<E> create() {
-		return create(QueueSupplier.SMALL_BUFFER_SIZE, true);
+		return create(Queues.SMALL_BUFFER_SIZE, true);
 	}
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE}
+	 * Create a new {@link EmitterProcessor} using {@link Queues#SMALL_BUFFER_SIZE}
 	 * backlog size and the provided auto-cancel.
 	 *
 	 * @param <E> Type of processed signals
@@ -75,7 +75,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	 * @return a fresh processor
 	 */
 	public static <E> EmitterProcessor<E> create(boolean autoCancel) {
-		return create(QueueSupplier.SMALL_BUFFER_SIZE, autoCancel);
+		return create(Queues.SMALL_BUFFER_SIZE, autoCancel);
 	}
 
 	/**
@@ -220,7 +220,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 				}
 			}
 
-			queue = QueueSupplier.<T>get(prefetch).get();
+			queue = Queues.<T>get(prefetch).get();
 
 			s.request(prefetch);
 		}
@@ -245,7 +245,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 
 		if (q == null) {
 			if (Operators.setOnce(S, this, Operators.emptySubscription())) {
-				q = QueueSupplier.<T>get(prefetch).get();
+				q = Queues.<T>get(prefetch).get();
 				queue = q;
 			}
 			else {

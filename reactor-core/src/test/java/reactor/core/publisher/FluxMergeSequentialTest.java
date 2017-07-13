@@ -41,7 +41,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -194,10 +194,10 @@ public class FluxMergeSequentialTest {
 	@Test
 	public void longEager() {
 
-		Flux.range(1, 2 * QueueSupplier.SMALL_BUFFER_SIZE)
+		Flux.range(1, 2 * Queues.SMALL_BUFFER_SIZE)
 		        .flatMapSequential(v -> Flux.just(1))
 		        .subscribeWith(AssertSubscriber.create())
-		        .assertValueCount(2 * QueueSupplier.SMALL_BUFFER_SIZE)
+		        .assertValueCount(2 * Queues.SMALL_BUFFER_SIZE)
 		        .assertNoError()
 		        .assertComplete();
 	}
@@ -420,12 +420,12 @@ public class FluxMergeSequentialTest {
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testInvalidCapacityHint() {
-		Flux.just(1).flatMapSequential(toJust, 0, QueueSupplier.SMALL_BUFFER_SIZE);
+		Flux.just(1).flatMapSequential(toJust, 0, Queues.SMALL_BUFFER_SIZE);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testInvalidMaxConcurrent() {
-		Flux.just(1).flatMapSequential(toJust, QueueSupplier.SMALL_BUFFER_SIZE, 0);
+		Flux.just(1).flatMapSequential(toJust, Queues.SMALL_BUFFER_SIZE, 0);
 	}
 
 	@Test
@@ -487,7 +487,7 @@ public class FluxMergeSequentialTest {
 		AssertSubscriber<Object> ts = AssertSubscriber.create(0);
 
 		Flux.just(1).hide()
-		    .flatMapSequential(t -> Flux.range(1, QueueSupplier.SMALL_BUFFER_SIZE * 2)
+		    .flatMapSequential(t -> Flux.range(1, Queues.SMALL_BUFFER_SIZE * 2)
 		                                .doOnNext(t1 -> count.getAndIncrement())
 		                                .hide())
 		    .subscribe(ts);
@@ -495,14 +495,14 @@ public class FluxMergeSequentialTest {
 		ts.assertNoError();
 		ts.assertNoValues();
 		ts.assertNotComplete();
-		Assert.assertEquals(QueueSupplier.XS_BUFFER_SIZE, count.get());
+		Assert.assertEquals(Queues.XS_BUFFER_SIZE, count.get());
 	}
 
 	@Test
 	public void testMaxConcurrent5() {
 		final List<Long> requests = new ArrayList<>();
 		Flux.range(1, 100).doOnRequest(requests::add)
-		    .flatMapSequential(toJust, 5, QueueSupplier.SMALL_BUFFER_SIZE)
+		    .flatMapSequential(toJust, 5, Queues.SMALL_BUFFER_SIZE)
 		    .subscribe(ts);
 
 		ts.assertNoError();
@@ -684,7 +684,7 @@ public class FluxMergeSequentialTest {
 		int prefetch = 32;
 		int maxConcurrency = 256;
 		Supplier<Queue<FluxMergeSequential.MergeSequentialInner<Integer>>> badQueueSupplier =
-				QueueSupplier.get(Math.min(prefetch, maxConcurrency));
+				Queues.get(Math.min(prefetch, maxConcurrency));
 
 		FluxMergeSequential<Integer, Integer> fluxMergeSequential =
 				new FluxMergeSequential<>(Flux.range(0, 500),
@@ -717,7 +717,7 @@ public class FluxMergeSequentialTest {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxMergeSequential.MergeSequentialMain<Integer, Integer> test =
         		new FluxMergeSequential.MergeSequentialMain<Integer, Integer>(actual, i -> Mono.just(i),
-        				5, 123, ErrorMode.BOUNDARY, QueueSupplier.unbounded());
+        				5, 123, ErrorMode.BOUNDARY, Queues.unbounded());
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -742,7 +742,7 @@ public class FluxMergeSequentialTest {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxMergeSequential.MergeSequentialMain<Integer, Integer> main =
         		new FluxMergeSequential.MergeSequentialMain<Integer, Integer>(actual, i -> Mono.just(i),
-        				5, 123, ErrorMode.IMMEDIATE, QueueSupplier.unbounded());
+        				5, 123, ErrorMode.IMMEDIATE, Queues.unbounded());
         FluxMergeSequential.MergeSequentialInner<Integer> inner =
         		new FluxMergeSequential.MergeSequentialInner<>(main, 123);
         Subscription parent = Operators.emptySubscription();

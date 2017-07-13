@@ -31,7 +31,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -582,7 +582,7 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
     public void scanExactSubscriber() {
         CoreSubscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWindow.WindowExactSubscriber<Integer> test = new FluxWindow.WindowExactSubscriber<Integer>(actual,
-        		123, QueueSupplier.unbounded());
+        		123, Queues.unbounded());
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -603,7 +603,7 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
     public void scanOverlapSubscriber() {
         CoreSubscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWindow.WindowOverlapSubscriber<Integer> test = new FluxWindow.WindowOverlapSubscriber<Integer>(actual,
-        		123, 3, QueueSupplier.unbounded(), QueueSupplier.<UnicastProcessor<Integer>>unbounded().get());
+        		123, 3, Queues.unbounded(), Queues.<UnicastProcessor<Integer>>unbounded().get());
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -633,7 +633,7 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 
         CoreSubscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWindow.WindowOverlapSubscriber<Integer> test = new FluxWindow.WindowOverlapSubscriber<Integer>(actual,
-                3,3, QueueSupplier.unbounded(), mockQueue);
+                3,3, Queues.unbounded(), mockQueue);
 
         when(mockQueue.size()).thenReturn(Integer.MAX_VALUE - 2);
         //size() is 1
@@ -650,7 +650,7 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
 
         CoreSubscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWindow.WindowOverlapSubscriber<Integer> test = new FluxWindow.WindowOverlapSubscriber<Integer>(actual,
-                3, 3, QueueSupplier.unbounded(), mockQueue);
+                3, 3, Queues.unbounded(), mockQueue);
 
         when(mockQueue.size()).thenReturn(Integer.MAX_VALUE);
         //size() is 5
@@ -668,7 +668,7 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
     public void scanSkipSubscriber() {
         CoreSubscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWindow.WindowSkipSubscriber<Integer> test = new FluxWindow.WindowSkipSubscriber<Integer>(actual,
-        		123, 3, QueueSupplier.unbounded());
+        		123, 3, Queues.unbounded());
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 

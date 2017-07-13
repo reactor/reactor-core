@@ -47,7 +47,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.Logger;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
@@ -541,7 +541,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a Mono that emits a Boolean value that indicates whether the two sequences are the same
 	 */
 	public static <T> Mono<Boolean> sequenceEqual(Publisher<? extends T> source1, Publisher<? extends T> source2) {
-		return sequenceEqual(source1, source2, equalsBiPredicate(), QueueSupplier.SMALL_BUFFER_SIZE);
+		return sequenceEqual(source1, source2, equalsBiPredicate(), Queues.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -562,7 +562,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public static <T> Mono<Boolean> sequenceEqual(Publisher<? extends T> source1, Publisher<? extends T> source2,
 			BiPredicate<? super T, ? super T> isEqual) {
-		return sequenceEqual(source1, source2, isEqual, QueueSupplier.SMALL_BUFFER_SIZE);
+		return sequenceEqual(source1, source2, isEqual, Queues.SMALL_BUFFER_SIZE);
 	}
 
 	/**
@@ -1128,7 +1128,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	@SafeVarargs
 	public static <T, V> Mono<V> zip(Function<? super Object[], ? extends V> combinator, Mono<? extends T>... monos) {
-		return fromDirect(new FluxZip<>(monos, combinator, QueueSupplier.one(), 1));
+		return fromDirect(new FluxZip<>(monos, combinator, Queues.one(), 1));
 	}
 
 	/**
@@ -1150,7 +1150,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public static <T, V> Mono<V> zip(final Iterable<?extends Mono<? extends T>> monos,
 			final Function<? super Object[], ? extends V> combinator) {
-		return fromDirect(new FluxZip<>(monos, combinator, QueueSupplier.<T>one(), 1));
+		return fromDirect(new FluxZip<>(monos, combinator, Queues.<T>one(), 1));
 	}
 
 //	 ==============================================================================================================
@@ -2115,7 +2115,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final <R> Flux<R> flatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
 		return Flux.onAssembly(new MonoFlattenIterable<>(this, mapper, Integer
-				.MAX_VALUE, QueueSupplier.one()));
+				.MAX_VALUE, Queues.one()));
 	}
 
 	/**

@@ -21,7 +21,7 @@ import java.util.function.Function;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 /**
  * Shares a sequence for the duration of a function that may transform it and
@@ -48,7 +48,7 @@ final class MonoPublishMulticast<T, R> extends MonoOperator<T, R> implements Fus
 
 		FluxPublishMulticast.FluxPublishMulticaster<T, R> multicast =
 				new FluxPublishMulticast.FluxPublishMulticaster<>(Integer.MAX_VALUE,
-						QueueSupplier.one(), s.currentContext());
+						Queues.one(), s.currentContext());
 
 		Mono<? extends R> out;
 

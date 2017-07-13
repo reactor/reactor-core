@@ -29,7 +29,6 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.util.concurrent.QueueSupplier;
 import reactor.util.concurrent.Queues;
 
 /**
@@ -53,7 +52,7 @@ public final class UnicastProcessor<T>
 	 * @return a unicast {@link FluxProcessor}
 	 */
 	public static <E> UnicastProcessor<E> create() {
-		return new UnicastProcessor<>(QueueSupplier.<E>unbounded().get());
+		return new UnicastProcessor<>(Queues.<E>unbounded().get());
 	}
 
 	/**

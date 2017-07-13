@@ -29,14 +29,13 @@ import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 import reactor.util.concurrent.WaitStrategy;
-import javax.annotation.Nullable;
 
 /**
  * A base processor used by executor backed processors to take care of their ExecutorService
@@ -211,7 +210,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 			Supplier<Slot<IN>> factory,
 			WaitStrategy strategy) {
 
-		if (!QueueSupplier.isPowerOfTwo(bufferSize)) {
+		if (!Queues.isPowerOfTwo(bufferSize)) {
 			throw new IllegalArgumentException("bufferSize must be a power of 2 : " + bufferSize);
 		}
 

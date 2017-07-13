@@ -39,7 +39,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -264,7 +264,7 @@ public class EmitterProcessorTest {
 	public void state(){
 		EmitterProcessor<Integer> tp = EmitterProcessor.create();
 		assertThat(tp.getPending()).isEqualTo(0);
-		assertThat(tp.getBufferSize()).isEqualTo(QueueSupplier.SMALL_BUFFER_SIZE);
+		assertThat(tp.getBufferSize()).isEqualTo(Queues.SMALL_BUFFER_SIZE);
 		assertThat(tp.isCancelled()).isFalse();
 		assertThat(tp.inners()).isEmpty();
 
@@ -721,7 +721,7 @@ public class EmitterProcessorTest {
 	public void assertProcessor(EmitterProcessor<Integer> processor,
 			@Nullable Integer bufferSize,
 			@Nullable Boolean autoCancel) {
-		int expectedBufferSize = bufferSize != null ? bufferSize : QueueSupplier.SMALL_BUFFER_SIZE;
+		int expectedBufferSize = bufferSize != null ? bufferSize : Queues.SMALL_BUFFER_SIZE;
 		boolean expectedAutoCancel = autoCancel != null ? autoCancel : true;
 
 		assertEquals(expectedBufferSize, processor.prefetch);

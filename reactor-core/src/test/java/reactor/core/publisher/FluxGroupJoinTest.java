@@ -25,7 +25,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -282,8 +282,8 @@ public class FluxGroupJoinTest {
 						s -> Mono.just(s),
 						s -> Mono.just(s),
 						(l, r) -> l,
-						QueueSupplier.unbounded().get(),
-						QueueSupplier.one());
+						Queues.unbounded().get(),
+						Queues.one());
 
 		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
 		test.request(123);
@@ -313,8 +313,8 @@ public class FluxGroupJoinTest {
 						s -> Mono.just(s),
 						s -> Mono.just(s),
 						(l, r) -> l,
-						QueueSupplier.unbounded().get(),
-						QueueSupplier.one());
+						Queues.unbounded().get(),
+						Queues.one());
 		FluxGroupJoin.LeftRightSubscriber test = new FluxGroupJoin.LeftRightSubscriber(parent, true);
 		Subscription sub = Operators.emptySubscription();
 		test.onSubscribe(sub);
@@ -335,8 +335,8 @@ public class FluxGroupJoinTest {
 						s -> Mono.just(s),
 						s -> Mono.just(s),
 						(l, r) -> l,
-						QueueSupplier.unbounded().get(),
-						QueueSupplier.one());
+						Queues.unbounded().get(),
+						Queues.one());
 		FluxGroupJoin.LeftRightEndSubscriber test = new FluxGroupJoin.LeftRightEndSubscriber(parent, false, 1);
 		Subscription sub = Operators.emptySubscription();
 		test.onSubscribe(sub);

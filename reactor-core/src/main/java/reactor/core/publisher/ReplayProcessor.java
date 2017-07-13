@@ -32,7 +32,7 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 import static reactor.core.publisher.FluxReplay.ReplaySubscriber.EMPTY;
 import static reactor.core.publisher.FluxReplay.ReplaySubscriber.TERMINATED;
@@ -91,7 +91,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	/**
-	 * Create a new {@link ReplayProcessor} using {@link QueueSupplier#SMALL_BUFFER_SIZE}
+	 * Create a new {@link ReplayProcessor} using {@link Queues#SMALL_BUFFER_SIZE}
 	 * backlog size, blockingWait Strategy and auto-cancel.
 	 *
 	 * @param <E> Type of processed signals
@@ -99,7 +99,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * @return a fresh processor
 	 */
 	public static <E> ReplayProcessor<E> create() {
-		return create(QueueSupplier.SMALL_BUFFER_SIZE, true);
+		return create(Queues.SMALL_BUFFER_SIZE, true);
 	}
 
 	/**

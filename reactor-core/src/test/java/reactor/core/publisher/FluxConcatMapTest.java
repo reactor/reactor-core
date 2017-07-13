@@ -31,7 +31,7 @@ import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -41,7 +41,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
 		return defaultOptions.shouldHitDropNextHookAfterTerminate(false)
 		                     .shouldHitDropErrorHookAfterTerminate(false)
-		                     .prefetch(QueueSupplier.XS_BUFFER_SIZE);
+		                     .prefetch(Queues.XS_BUFFER_SIZE);
 	}
 
 	@Override
@@ -568,7 +568,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 	public void asyncFusionMapToNull() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		UnicastProcessor<Integer> up = UnicastProcessor.create(QueueSupplier.<Integer>get(2).get());
+		UnicastProcessor<Integer> up = UnicastProcessor.create(Queues.<Integer>get(2).get());
 		up.onNext(1);
 		up.onNext(2);
 		up.onComplete();
@@ -587,7 +587,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
 		UnicastProcessor<Integer> up =
-				UnicastProcessor.create(QueueSupplier.<Integer>get(2).get());
+				UnicastProcessor.create(Queues.<Integer>get(2).get());
 		up.onNext(1);
 		up.onNext(2);
 		up.onComplete();
@@ -778,7 +778,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 	public void scanConcatMapDelayed() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxConcatMap.ConcatMapDelayed<String, Integer> test = new FluxConcatMap.ConcatMapDelayed<>(
-				actual, s -> Mono.just(s.length()), QueueSupplier.one(), 123, true);
+				actual, s -> Mono.just(s.length()), Queues.one(), 123, true);
 
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
@@ -806,7 +806,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 	public void scanConcatMapImmediate() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxConcatMap.ConcatMapImmediate<String, Integer> test = new FluxConcatMap.ConcatMapImmediate<>(
-				actual, s -> Mono.just(s.length()), QueueSupplier.one(), 123);
+				actual, s -> Mono.just(s.length()), Queues.one(), 123);
 
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
@@ -832,7 +832,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 	public void scanConcatMapImmediateError() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxConcatMap.ConcatMapImmediate<String, Integer> test = new FluxConcatMap.ConcatMapImmediate<>(
-				actual, s -> Mono.just(s.length()), QueueSupplier.one(), 123);
+				actual, s -> Mono.just(s.length()), Queues.one(), 123);
 
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
