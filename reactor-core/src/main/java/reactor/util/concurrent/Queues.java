@@ -108,7 +108,13 @@ public final class Queues {
 			return ONE_SUPPLIER;
 		}
 
-		return createSupplier(Math.max(8, batchSize));
+		final int adjustedBatchSize = Math.max(8, batchSize);
+		if (adjustedBatchSize > 10_000_000) {
+			return SMALL_UNBOUNDED;
+		}
+		else{
+			return () -> new SpscArrayQueue<>(adjustedBatchSize);
+		}
 	}
 
 	/**
@@ -180,18 +186,6 @@ public final class Queues {
 
 	private Queues() {
 		//prevent construction
-	}
-
-	static final <T> Supplier<Queue<T>> createSupplier(final int batchSize) {
-		if(batchSize > 10_000_000){
-			return () -> new SpscLinkedArrayQueue<>(SMALL_BUFFER_SIZE);
-		}
-		else if (batchSize == 1) {
-			return OneQueue::new;
-		}
-		else{
-			return () -> new SpscArrayQueue<>(batchSize);
-		}
 	}
 
 	static final class OneQueue<T> extends AtomicReference<T> implements Queue<T> {
