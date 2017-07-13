@@ -34,7 +34,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -443,7 +443,7 @@ public class FluxFlatMapTest {
 	public void defaultPrefetch() {
 		assertThat(Flux.just(1, 2, 3)
 		               .flatMap(Flux::just)
-		               .getPrefetch()).isEqualTo(QueueSupplier.XS_BUFFER_SIZE);
+		               .getPrefetch()).isEqualTo(Queues.XS_BUFFER_SIZE);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
@@ -1210,7 +1210,7 @@ public class FluxFlatMapTest {
     public void scanMain() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxFlatMap.FlatMapMain<Integer, Integer> test = new FluxFlatMap.FlatMapMain<>(actual,
-                i -> Mono.just(i), true, 5, QueueSupplier.<Integer>unbounded(), 789,  QueueSupplier.<Integer>get(789));
+                i -> Mono.just(i), true, 5, Queues.<Integer>unbounded(), 789,  Queues.<Integer>get(789));
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -1242,7 +1242,7 @@ public class FluxFlatMapTest {
    public void scanMainLargeBuffered() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxFlatMap.FlatMapMain<Integer, Integer> test = new FluxFlatMap.FlatMapMain<>(actual,
-                i -> Mono.just(i), true, 5, QueueSupplier.<Integer>unbounded(), 789,  QueueSupplier.<Integer>get(789));
+                i -> Mono.just(i), true, 5, Queues.<Integer>unbounded(), 789,  Queues.<Integer>get(789));
 
 
         test.scalarQueue = new ConcurrentLinkedQueue<>();
@@ -1259,7 +1259,7 @@ public class FluxFlatMapTest {
     public void scanInner() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxFlatMap.FlatMapMain<Integer, Integer> main = new FluxFlatMap.FlatMapMain<>(actual,
-                i -> Mono.just(i), true, 5, QueueSupplier.<Integer>unbounded(), 789,  QueueSupplier.<Integer>get(789));
+                i -> Mono.just(i), true, 5, Queues.<Integer>unbounded(), 789,  Queues.<Integer>get(789));
         FluxFlatMap.FlatMapInner<Integer> inner = new FluxFlatMap.FlatMapInner<>(main, 123);
         Subscription parent = Operators.emptySubscription();
         inner.onSubscribe(parent);

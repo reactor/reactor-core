@@ -48,7 +48,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 import reactor.util.concurrent.WaitStrategy;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -750,8 +750,8 @@ public class WorkQueueProcessorTest {
 		                                                                              .transform(
 				                                                                              function),
 				                                                               true,
-				                                                               QueueSupplier.SMALL_BUFFER_SIZE,
-				                                                               QueueSupplier.XS_BUFFER_SIZE)))
+				                                                               Queues.SMALL_BUFFER_SIZE,
+				                                                               Queues.XS_BUFFER_SIZE)))
 		                      .sequential()
 		                      .retry())
 		            .then(() -> {
@@ -828,8 +828,8 @@ public class WorkQueueProcessorTest {
 							                      }
 						                      }).subscribeOn(Schedulers.parallel()),
 				                      true,
-				                      QueueSupplier.XS_BUFFER_SIZE,
-				                      QueueSupplier.SMALL_BUFFER_SIZE)
+				                      Queues.XS_BUFFER_SIZE,
+				                      Queues.SMALL_BUFFER_SIZE)
 		                      .retry())
 		            .then(() -> {
 			            wq.onNext(1);
@@ -867,7 +867,7 @@ public class WorkQueueProcessorTest {
 								sink.next(s1);
 							}
 						}).subscribeOn(Schedulers.parallel()),
-				QueueSupplier.XS_BUFFER_SIZE,
+				Queues.XS_BUFFER_SIZE,
 				1)
 		                      .retry())
 		            .then(() -> {
@@ -1413,7 +1413,7 @@ public class WorkQueueProcessorTest {
 			@Nullable ExecutorService requestTaskExecutor) {
 
 		String expectedName = name != null ? name : WorkQueueProcessor.class.getSimpleName();
-		int expectedBufferSize = bufferSize != null ? bufferSize : QueueSupplier.SMALL_BUFFER_SIZE;
+		int expectedBufferSize = bufferSize != null ? bufferSize : Queues.SMALL_BUFFER_SIZE;
 		boolean expectedAutoCancel = autoCancel != null ? autoCancel : true;
 		WaitStrategy expectedWaitStrategy = waitStrategy != null ? waitStrategy : WaitStrategy.liteBlocking();
 		Class<?> sequencerClass = shared ? MultiProducerRingBuffer.class : SingleProducerSequencer.class;

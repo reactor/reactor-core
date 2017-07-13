@@ -30,7 +30,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
 import reactor.core.Scannable.IntAttr;
 import reactor.core.Scannable.ScannableAttr;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Java6Assertions.assertThat;
 
@@ -132,7 +132,7 @@ public class BlockingIterableTest {
 	@Test
 	public void scanOperator() {
 		Flux<Integer> source = Flux.range(1, 10);
-		BlockingIterable<Integer> test = new BlockingIterable<>(source, 35, QueueSupplier.one());
+		BlockingIterable<Integer> test = new BlockingIterable<>(source, 35, Queues.one());
 
 		assertThat(test.scanUnsafe(ScannableAttr.PARENT)).describedAs("PARENT").isSameAs(source);
 
@@ -146,7 +146,7 @@ public class BlockingIterableTest {
 		Flux<Integer> source = Flux.range(1, 10);
 		BlockingIterable<Integer> test = new BlockingIterable<>(source,
 				Integer.MAX_VALUE + 30L,
-				QueueSupplier.one());
+				Queues.one());
 
 		assertThat(test.scan(IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE); //FIXME
 	}
@@ -154,7 +154,7 @@ public class BlockingIterableTest {
 	@Test
 	public void scanSubscriber() {
 		BlockingIterable.SubscriberIterator<String> subscriberIterator =
-				new BlockingIterable.SubscriberIterator<>(QueueSupplier.<String>one().get(), 123);
+				new BlockingIterable.SubscriberIterator<>(Queues.<String>one().get(), 123);
 		Subscription s = Operators.emptySubscription();
 		subscriberIterator.onSubscribe(s);
 
@@ -169,7 +169,7 @@ public class BlockingIterableTest {
 	@Test
 	public void scanSubscriberLargePrefetchIsLimitedToIntMax() {
 		BlockingIterable.SubscriberIterator<String> subscriberIterator =
-				new BlockingIterable.SubscriberIterator<>(QueueSupplier.<String>one().get(),
+				new BlockingIterable.SubscriberIterator<>(Queues.<String>one().get(),
 						Integer.MAX_VALUE + 30L);
 
 		assertThat(subscriberIterator.scan(IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE); //FIXME
@@ -178,7 +178,7 @@ public class BlockingIterableTest {
 	@Test
 	public void scanSubscriberTerminated() {
 		BlockingIterable.SubscriberIterator<String> test =
-				new BlockingIterable.SubscriberIterator<>(QueueSupplier.<String>one().get(), 123);
+				new BlockingIterable.SubscriberIterator<>(Queues.<String>one().get(), 123);
 
 		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).describedAs("before TERMINATED").isFalse();
 
@@ -189,7 +189,8 @@ public class BlockingIterableTest {
 
 	@Test
 	public void scanSubscriberError() {
-		BlockingIterable.SubscriberIterator<String> test = new BlockingIterable.SubscriberIterator<>(QueueSupplier.<String>one().get(),
+		BlockingIterable.SubscriberIterator<String> test = new BlockingIterable.SubscriberIterator<>(
+				Queues.<String>one().get(),
 				123);
 		IllegalStateException error = new IllegalStateException("boom");
 
@@ -205,7 +206,8 @@ public class BlockingIterableTest {
 
 	@Test
 	public void scanSubscriberCancelled() {
-		BlockingIterable.SubscriberIterator<String> test = new BlockingIterable.SubscriberIterator<>(QueueSupplier.<String>one().get(),
+		BlockingIterable.SubscriberIterator<String> test = new BlockingIterable.SubscriberIterator<>(
+				Queues.<String>one().get(),
 				123);
 
 		//simulate cancellation by offering two elements

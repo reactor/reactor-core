@@ -40,7 +40,7 @@ import reactor.core.publisher.ParallelFlux;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.UnicastProcessor;
 import reactor.test.StepVerifier;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static reactor.core.Fuseable.*;
@@ -329,7 +329,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 
 	final int defaultLimit(OperatorScenario<I, PI, O, PO> scenario) {
 		if (scenario.prefetch() == -1) {
-			return QueueSupplier.SMALL_BUFFER_SIZE - (QueueSupplier.SMALL_BUFFER_SIZE >> 2);
+			return Queues.SMALL_BUFFER_SIZE - (Queues.SMALL_BUFFER_SIZE >> 2);
 		}
 		if (scenario.prefetch() == Integer.MAX_VALUE) {
 			return Integer.MAX_VALUE;

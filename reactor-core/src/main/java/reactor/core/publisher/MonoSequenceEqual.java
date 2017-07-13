@@ -28,7 +28,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 
 import static reactor.core.publisher.Operators.cancelledSubscription;
@@ -294,7 +294,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 		EqualSubscriber(EqualCoordinator<T> parent, int bufferSize) {
 			this.parent = parent;
 			this.bufferSize = bufferSize;
-			this.queue = QueueSupplier.<T>get(bufferSize).get();
+			this.queue = Queues.<T>get(bufferSize).get();
 		}
 
 		@Override

@@ -35,7 +35,7 @@ import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 /**
  * @param <T>
@@ -1002,7 +1002,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 			return new ReplaySubscriber<>(new SizeBoundReplayBuffer<>(history),
 					this);
 		}
-		return new ReplaySubscriber<>(new UnboundedReplayBuffer<>(QueueSupplier.SMALL_BUFFER_SIZE),
+		return new ReplaySubscriber<>(new UnboundedReplayBuffer<>(Queues.SMALL_BUFFER_SIZE),
 					this);
 	}
 
