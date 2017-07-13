@@ -16,7 +16,10 @@
 
 package reactor.core;
 
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Objects;
+import java.util.Set;
 import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -161,6 +164,9 @@ public interface Scannable {
 			return defaultValue;
 		}
 
+		public static final GenericAttr<String> NAME = new GenericAttr<>(null);
+		public static final GenericAttr<Set<String>> TAGS = new GenericAttr<>(null);
+
 		final T defaultValue;
 
 		protected Attr(@Nullable T defaultValue){
@@ -261,6 +267,44 @@ public interface Scannable {
 	 */
 	default Stream<? extends Scannable> inners() {
 		return Stream.empty();
+	}
+
+	/**
+	 * Visit this {@link Scannable} and its {@link #parents()} and aggregate a {@link Set}
+	 * of tags..
+	 *
+	 * @return the tags for this Scannable and its parents
+	 */
+	default Set<String> tags() {
+		final Set<String> allTags = new HashSet<>();
+		Set<String> thisTags = this.scan(GenericAttr.TAGS);
+		if (thisTags != null) {
+			allTags.addAll(thisTags);
+		}
+
+		return parents()
+				.map(s -> s.scan(GenericAttr.TAGS))
+				.filter(Objects::nonNull)
+				.collect(() -> allTags, Set::addAll, Set::addAll);
+	}
+
+	/**
+	 * Check this {@link Scannable}e and its {@link #parents()} for a name an return the
+	 * first one that is reachable.
+	 *
+	 * @return the name of the first parent that has one defined (including this scannable)
+	 */
+	default String name() {
+		String thisName = this.scan(GenericAttr.NAME);
+		if (thisName != null) {
+			return thisName;
+		}
+
+		return parents()
+				.map(s -> s.scan(GenericAttr.NAME))
+				.filter(Objects::nonNull)
+				.findFirst()
+				.orElse(null);
 	}
 
 	/**
