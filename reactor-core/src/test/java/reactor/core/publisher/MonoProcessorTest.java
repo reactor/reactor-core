@@ -589,17 +589,18 @@ public class MonoProcessorTest {
 	}
 
 	@Test
-	public void monoProcessorBlockNegativeIsUnbounded() {
+	public void monoProcessorBlockNegativeIsImmediateTimeout() {
 		long start = System.nanoTime();
 
-		String result = Mono.just("foo")
-		                    .delayElement(Duration.ofMillis(500))
-		                    .toProcessor()
-		                    .block(Duration.ofSeconds(-1));
+		assertThatExceptionOfType(IllegalStateException.class)
+				.isThrownBy(() -> Mono.just("foo")
+				                      .delayElement(Duration.ofMillis(500))
+				                      .toProcessor()
+				                      .block(Duration.ofSeconds(-1)))
+				.withMessage("Timeout on Mono blocking read");
 
-		assertThat(result).isEqualTo("foo");
 		assertThat(Duration.ofNanos(System.nanoTime() - start))
-				.isGreaterThanOrEqualTo(Duration.ofMillis(500));
+				.isLessThan(Duration.ofMillis(500));
 	}
 
 	@Test
