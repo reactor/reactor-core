@@ -29,7 +29,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -37,7 +37,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
 	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
-		return defaultOptions.prefetch(QueueSupplier.SMALL_BUFFER_SIZE);
+		return defaultOptions.prefetch(Queues.SMALL_BUFFER_SIZE);
 	}
 
 	@Override
@@ -157,7 +157,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts1 = AssertSubscriber.create();
 		AssertSubscriber<Integer> ts2 = AssertSubscriber.create();
 
-		UnicastProcessor<Integer> up = UnicastProcessor.create(QueueSupplier.<Integer>get(8).get());
+		UnicastProcessor<Integer> up = UnicastProcessor.create(Queues.<Integer>get(8).get());
 		up.onNext(1);
 		up.onNext(2);
 		up.onNext(3);
@@ -196,7 +196,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 		AssertSubscriber<Integer> ts1 = AssertSubscriber.create(0);
 		AssertSubscriber<Integer> ts2 = AssertSubscriber.create(0);
 
-		UnicastProcessor<Integer> up = UnicastProcessor.create(QueueSupplier.<Integer>get(8).get());
+		UnicastProcessor<Integer> up = UnicastProcessor.create(Queues.<Integer>get(8).get());
 		up.onNext(1);
 		up.onNext(2);
 		up.onNext(3);
@@ -478,7 +478,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 	@Test
     public void scanMain() {
         Flux<Integer> parent = Flux.just(1);
-        FluxPublish<Integer> test = new FluxPublish<>(parent, 123, QueueSupplier.<Integer>unbounded());
+        FluxPublish<Integer> test = new FluxPublish<>(parent, 123, Queues.<Integer>unbounded());
 
         assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
         assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(123);
@@ -486,7 +486,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
 	@Test
     public void scanSubscriber() {
-        FluxPublish<Integer> main = new FluxPublish<>(Flux.just(1), 123, QueueSupplier.<Integer>unbounded());
+        FluxPublish<Integer> main = new FluxPublish<>(Flux.just(1), 123, Queues.<Integer>unbounded());
         FluxPublish.PublishSubscriber<Integer> test = new FluxPublish.PublishSubscriber<>(789, main);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
@@ -511,7 +511,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
 	@Test
     public void scanInner() {
-		FluxPublish<Integer> main = new FluxPublish<>(Flux.just(1), 123, QueueSupplier.<Integer>unbounded());
+		FluxPublish<Integer> main = new FluxPublish<>(Flux.just(1), 123, Queues.<Integer>unbounded());
         FluxPublish.PublishSubscriber<Integer> parent = new FluxPublish.PublishSubscriber<>(789, main);
         Subscription sub = Operators.emptySubscription();
         parent.onSubscribe(sub);
@@ -534,7 +534,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
 	@Test
     public void scanPubSubInner() {
-		FluxPublish<Integer> main = new FluxPublish<>(Flux.just(1), 123, QueueSupplier.<Integer>unbounded());
+		FluxPublish<Integer> main = new FluxPublish<>(Flux.just(1), 123, Queues.<Integer>unbounded());
         FluxPublish.PublishSubscriber<Integer> parent = new FluxPublish.PublishSubscriber<>(789, main);
         Subscription sub = Operators.emptySubscription();
         parent.onSubscribe(sub);

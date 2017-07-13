@@ -35,7 +35,7 @@ import reactor.test.StepVerifier;
 import reactor.test.StepVerifierOptions;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.publisher.TestPublisher;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -47,7 +47,7 @@ public class FluxWindowPredicateTest extends
 		return defaultOptions.shouldAssertPostTerminateState(false)
 		                     .fusionMode(Fuseable.ASYNC)
 		                     .fusionModeThreadBarrier(Fuseable.ANY)
-		                     .prefetch(QueueSupplier.SMALL_BUFFER_SIZE);
+		                     .prefetch(Queues.SMALL_BUFFER_SIZE);
 	}
 
 	@Override
@@ -170,9 +170,9 @@ public class FluxWindowPredicateTest extends
 	public void normalUntil() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(sp1,
-				QueueSupplier.small(),
-				QueueSupplier.unbounded(),
-				QueueSupplier.SMALL_BUFFER_SIZE,
+				Queues.small(),
+				Queues.unbounded(),
+				Queues.SMALL_BUFFER_SIZE,
 				i -> i % 3 == 0,
 				Mode.UNTIL);
 
@@ -207,15 +207,15 @@ public class FluxWindowPredicateTest extends
 		Flux<Integer> source = Flux.just(1, 2);
 
 		FluxWindowPredicate<Integer> windowUntil =
-				new FluxWindowPredicate<>(source, QueueSupplier.small(), QueueSupplier.unbounded(), QueueSupplier.SMALL_BUFFER_SIZE,
+				new FluxWindowPredicate<>(source, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 						i -> i >= 3, Mode.UNTIL);
 
 		FluxWindowPredicate<Integer> windowUntilCutBefore =
-				new FluxWindowPredicate<>(source, QueueSupplier.small(), QueueSupplier.unbounded(), QueueSupplier.SMALL_BUFFER_SIZE,
+				new FluxWindowPredicate<>(source, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 						i -> i >= 3, Mode.UNTIL_CUT_BEFORE);
 
 		FluxWindowPredicate<Integer> windowWhile =
-				new FluxWindowPredicate<>(source, QueueSupplier.small(), QueueSupplier.unbounded(), QueueSupplier.SMALL_BUFFER_SIZE,
+				new FluxWindowPredicate<>(source, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 						i -> i < 3, Mode.WHILE);
 
 		StepVerifier.create(windowUntil.flatMap(Flux::collectList))
@@ -239,7 +239,7 @@ public class FluxWindowPredicateTest extends
 	public void mainErrorUntilIsPropagatedToBothWindowAndMain() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(
-				sp1, QueueSupplier.small(), QueueSupplier.unbounded(), QueueSupplier.SMALL_BUFFER_SIZE,
+				sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> i % 3 == 0, Mode.UNTIL);
 
 		StepVerifier.create(windowUntil.flatMap(Flux::materialize))
@@ -266,7 +266,7 @@ public class FluxWindowPredicateTest extends
 	public void predicateErrorUntil() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(
-				sp1, QueueSupplier.small(), QueueSupplier.unbounded(), QueueSupplier.SMALL_BUFFER_SIZE,
+				sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> {
 					if (i == 5) throw new IllegalStateException("predicate failure");
 					return i % 3 == 0;
@@ -295,7 +295,7 @@ public class FluxWindowPredicateTest extends
 	public void normalUntilCutBefore() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowUntilCutBefore = new FluxWindowPredicate<>(sp1,
-				QueueSupplier.small(), QueueSupplier.unbounded(), QueueSupplier.SMALL_BUFFER_SIZE,
+				Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> i % 3 == 0, Mode.UNTIL_CUT_BEFORE);
 
 		StepVerifier.create(windowUntilCutBefore.flatMap(Flux::materialize))
@@ -327,7 +327,7 @@ public class FluxWindowPredicateTest extends
 	public void mainErrorUntilCutBeforeIsPropagatedToBothWindowAndMain() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowUntilCutBefore =
-				new FluxWindowPredicate<>(sp1, QueueSupplier.small(), QueueSupplier.unbounded(), QueueSupplier.SMALL_BUFFER_SIZE,
+				new FluxWindowPredicate<>(sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 						i -> i % 3 == 0, Mode.UNTIL_CUT_BEFORE);
 
 		StepVerifier.create(windowUntilCutBefore.flatMap(Flux::materialize))
@@ -355,7 +355,7 @@ public class FluxWindowPredicateTest extends
 	public void predicateErrorUntilCutBefore() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowUntilCutBefore =
-				new FluxWindowPredicate<>(sp1, QueueSupplier.small(), QueueSupplier.unbounded(), QueueSupplier.SMALL_BUFFER_SIZE,
+				new FluxWindowPredicate<>(sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> {
 					if (i == 5) throw new IllegalStateException("predicate failure");
 					return i % 3 == 0;
@@ -390,7 +390,7 @@ public class FluxWindowPredicateTest extends
 	public void normalWhile() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
-				sp1, QueueSupplier.small(), QueueSupplier.unbounded(), QueueSupplier.SMALL_BUFFER_SIZE,
+				sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> i % 3 != 0, Mode.WHILE);
 
 		StepVerifier.create(windowWhile.flatMap(Flux::materialize))
@@ -422,7 +422,7 @@ public class FluxWindowPredicateTest extends
 	public void normalWhileDoesntInitiallyMatch() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
-				sp1, QueueSupplier.small(), QueueSupplier.unbounded(), QueueSupplier.SMALL_BUFFER_SIZE,
+				sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> i % 3 == 0, Mode.WHILE);
 
 		StepVerifier.create(windowWhile.flatMap(Flux::materialize))
@@ -461,7 +461,7 @@ public class FluxWindowPredicateTest extends
 	public void normalWhileDoesntMatch() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
-				sp1, QueueSupplier.small(), QueueSupplier.unbounded(), QueueSupplier.SMALL_BUFFER_SIZE,
+				sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> i > 4, Mode.WHILE);
 
 		StepVerifier.create(windowWhile.flatMap(Flux::materialize))
@@ -497,7 +497,7 @@ public class FluxWindowPredicateTest extends
 	public void mainErrorWhileIsPropagatedToBothWindowAndMain() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
-				sp1, QueueSupplier.small(), QueueSupplier.unbounded(), QueueSupplier.SMALL_BUFFER_SIZE,
+				sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> i % 3 == 0, Mode.WHILE);
 
 		StepVerifier.create(windowWhile.flatMap(Flux::materialize))
@@ -547,7 +547,7 @@ public class FluxWindowPredicateTest extends
 	public void predicateErrorWhile() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
-				sp1, QueueSupplier.small(), QueueSupplier.unbounded(), QueueSupplier.SMALL_BUFFER_SIZE,
+				sp1, Queues.small(), Queues.unbounded(), Queues.SMALL_BUFFER_SIZE,
 				i -> {
 					if (i == 3) return true;
 					if (i == 5) throw new IllegalStateException("predicate failure");
@@ -829,7 +829,7 @@ public class FluxWindowPredicateTest extends
     public void scanMainSubscriber() {
         CoreSubscriber<GroupedFlux<Integer, Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWindowPredicate.WindowPredicateMain<Integer> test = new FluxWindowPredicate.WindowPredicateMain<>(actual,
-        		QueueSupplier.<GroupedFlux<Integer, Integer>>unbounded().get(), QueueSupplier.unbounded(), 123, i -> true, Mode.WHILE);
+        		Queues.<GroupedFlux<Integer, Integer>>unbounded().get(), Queues.unbounded(), 123, i -> true, Mode.WHILE);
 
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
@@ -861,9 +861,9 @@ public class FluxWindowPredicateTest extends
     public void scanOtherSubscriber() {
         CoreSubscriber<GroupedFlux<Integer, Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWindowPredicate.WindowPredicateMain<Integer> main = new FluxWindowPredicate.WindowPredicateMain<>(actual,
-        		QueueSupplier.<GroupedFlux<Integer, Integer>>unbounded().get(), QueueSupplier.unbounded(), 123, i -> true, Mode.WHILE);
+        		Queues.<GroupedFlux<Integer, Integer>>unbounded().get(), Queues.unbounded(), 123, i -> true, Mode.WHILE);
         FluxWindowPredicate.WindowGroupedFlux<Integer> test = new FluxWindowPredicate.WindowGroupedFlux<>(1,
-        		QueueSupplier.<Integer>unbounded().get(), main);
+        		Queues.<Integer>unbounded().get(), main);
 
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);

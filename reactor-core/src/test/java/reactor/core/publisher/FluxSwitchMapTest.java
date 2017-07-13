@@ -26,7 +26,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 public class FluxSwitchMapTest {
 
@@ -292,7 +292,7 @@ public class FluxSwitchMapTest {
     public void scanMain() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxSwitchMap.SwitchMapMain<Integer, Integer> test =
-        		new FluxSwitchMap.SwitchMapMain<>(actual, i -> Mono.just(i), QueueSupplier.unbounded().get(), 234);
+        		new FluxSwitchMap.SwitchMapMain<>(actual, i -> Mono.just(i), Queues.unbounded().get(), 234);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -319,7 +319,7 @@ public class FluxSwitchMapTest {
     public void scanInner() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxSwitchMap.SwitchMapMain<Integer, Integer> main =
-        		new FluxSwitchMap.SwitchMapMain<>(actual, i -> Mono.just(i), QueueSupplier.unbounded().get(), 234);
+        		new FluxSwitchMap.SwitchMapMain<>(actual, i -> Mono.just(i), Queues.unbounded().get(), 234);
         FluxSwitchMap.SwitchMapInner<Integer> test = new FluxSwitchMap.SwitchMapInner<Integer>(main, 1, 0);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);

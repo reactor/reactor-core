@@ -35,7 +35,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 import reactor.util.concurrent.WaitStrategy;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -821,7 +821,7 @@ public class TopicProcessorTest {
 			@Nullable ExecutorService requestTaskExecutor) {
 
 		String expectedName = name != null ? name : TopicProcessor.class.getSimpleName();
-		int expectedBufferSize = bufferSize != null ? bufferSize : QueueSupplier.SMALL_BUFFER_SIZE;
+		int expectedBufferSize = bufferSize != null ? bufferSize : Queues.SMALL_BUFFER_SIZE;
 		boolean expectedAutoCancel = autoCancel != null ? autoCancel : true;
 		WaitStrategy expectedWaitStrategy = waitStrategy != null ? waitStrategy : WaitStrategy.phasedOffLiteLock(200, 100, TimeUnit.MILLISECONDS);
 		Class<?> sequencerClass = shared ? MultiProducerRingBuffer.class : SingleProducerSequencer.class;

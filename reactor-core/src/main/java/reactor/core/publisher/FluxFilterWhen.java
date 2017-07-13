@@ -32,7 +32,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 
 /**
@@ -110,7 +110,7 @@ class FluxFilterWhen<T> extends FluxOperator<T, T> {
 				Function<? super T, ? extends Publisher<Boolean>> asyncPredicate,
 				int bufferSize) {
 			this.actual = actual;
-			this.toFilter = new AtomicReferenceArray<>(QueueSupplier.ceilingNextPowerOfTwo(bufferSize));
+			this.toFilter = new AtomicReferenceArray<>(Queues.ceilingNextPowerOfTwo(bufferSize));
 			this.asyncPredicate = asyncPredicate;
 			this.bufferSize = bufferSize;
 		}

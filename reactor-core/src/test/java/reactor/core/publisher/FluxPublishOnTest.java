@@ -54,7 +54,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static org.hamcrest.CoreMatchers.*;
@@ -68,7 +68,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
-		return defaultOptions.prefetch(QueueSupplier.SMALL_BUFFER_SIZE)
+		return defaultOptions.prefetch(Queues.SMALL_BUFFER_SIZE)
 		                     .fusionModeThreadBarrier(Fuseable.ASYNC)
 		                     .fusionMode(Fuseable.ASYNC);
 	}
@@ -260,7 +260,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void normalAsyncFusedBackpressured() throws Exception {
 		UnicastProcessor<Integer> up =
-				UnicastProcessor.create(QueueSupplier.<Integer>unbounded(1024).get());
+				UnicastProcessor.create(Queues.<Integer>unbounded(1024).get());
 
 		for (int i = 0; i < 1_000_000; i++) {
 			up.onNext(0);
@@ -494,7 +494,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 		int s = clq.size();
 		Assert.assertTrue("More requests?" + clq, s == 1 || s == 2 || s == 3);
-		Assert.assertEquals((Long) (long) QueueSupplier.SMALL_BUFFER_SIZE, clq.poll());
+		Assert.assertEquals((Long) (long) Queues.SMALL_BUFFER_SIZE, clq.poll());
 	}
 
 	@Test
@@ -691,7 +691,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	public void mappedAsyncSourceWithNull() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		UnicastProcessor<Integer> up =
-				UnicastProcessor.create(QueueSupplier.<Integer>get(2).get());
+				UnicastProcessor.create(Queues.<Integer>get(2).get());
 		up.onNext(1);
 		up.onNext(2);
 		up.onComplete();
@@ -711,7 +711,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	public void mappedAsyncSourceWithNullPostFilter() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		UnicastProcessor<Integer> up =
-				UnicastProcessor.create(QueueSupplier.<Integer>get(2).get());
+				UnicastProcessor.create(Queues.<Integer>get(2).get());
 		up.onNext(1);
 		up.onNext(2);
 		up.onComplete();
@@ -793,7 +793,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void threadBoundaryPreventsInvalidFusionMap() {
 		UnicastProcessor<Integer> up =
-				UnicastProcessor.create(QueueSupplier.<Integer>get(2).get());
+				UnicastProcessor.create(Queues.<Integer>get(2).get());
 
 		AssertSubscriber<String> ts = AssertSubscriber.create();
 
@@ -816,7 +816,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	@Test
 	public void threadBoundaryPreventsInvalidFusionFilter() {
 		UnicastProcessor<Integer> up =
-				UnicastProcessor.create(QueueSupplier.<Integer>get(2).get());
+				UnicastProcessor.create(Queues.<Integer>get(2).get());
 
 		String s = Thread.currentThread()
 		                 .getName();
@@ -1254,7 +1254,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
     public void scanSubscriber() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxPublishOn.PublishOnSubscriber<Integer> test = new FluxPublishOn.PublishOnSubscriber<>(actual,
-        		Schedulers.single(), Schedulers.single().createWorker(), true, 123, QueueSupplier.unbounded());
+        		Schedulers.single(), Schedulers.single().createWorker(), true, 123, Queues.unbounded());
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -1283,7 +1283,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		Fuseable.ConditionalSubscriber<Integer> actual = Mockito.mock(Fuseable.ConditionalSubscriber.class);
         FluxPublishOn.PublishOnConditionalSubscriber<Integer> test =
         		new FluxPublishOn.PublishOnConditionalSubscriber<>(actual, Schedulers.single(),
-        				Schedulers.single().createWorker(), true, 123, QueueSupplier.unbounded());
+        				Schedulers.single().createWorker(), true, 123, Queues.unbounded());
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 

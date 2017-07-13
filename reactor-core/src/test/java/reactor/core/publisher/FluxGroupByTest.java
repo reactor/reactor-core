@@ -32,7 +32,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -43,7 +43,7 @@ public class FluxGroupByTest extends
 	protected Scenario<String, GroupedFlux<Integer, String>> defaultScenarioOptions(Scenario<String, GroupedFlux<Integer, String>> defaultOptions) {
 		return defaultOptions.fusionMode(Fuseable.ASYNC)
 		                     .fusionModeThreadBarrier(Fuseable.ANY)
-		                     .prefetch(QueueSupplier.SMALL_BUFFER_SIZE)
+		                     .prefetch(Queues.SMALL_BUFFER_SIZE)
 		                     .shouldAssertPostTerminateState(false);
 	}
 
@@ -839,7 +839,7 @@ public class FluxGroupByTest extends
 	public void scanMain() {
 		CoreSubscriber<GroupedFlux<Integer, String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxGroupBy.GroupByMain<Integer, Integer, String> test = new FluxGroupBy.GroupByMain<>(actual,
-				QueueSupplier.<GroupedFlux<Integer, String>>one().get(), QueueSupplier.one(), 123, i -> i % 5, i -> String.valueOf(i));
+				Queues.<GroupedFlux<Integer, String>>one().get(), Queues.one(), 123, i -> i % 5, i -> String.valueOf(i));
 		Subscription sub = Operators.emptySubscription();
         test.onSubscribe(sub);
 
@@ -859,9 +859,9 @@ public class FluxGroupByTest extends
 	public void scanUnicastGroupedFlux() {
 		CoreSubscriber<GroupedFlux<Integer, String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxGroupBy.GroupByMain<Integer, Integer, String> main = new FluxGroupBy.GroupByMain<>(actual,
-				QueueSupplier.<GroupedFlux<Integer, String>>one().get(), QueueSupplier.one(), 123, i -> i % 5, i -> String.valueOf(i));
+				Queues.<GroupedFlux<Integer, String>>one().get(), Queues.one(), 123, i -> i % 5, i -> String.valueOf(i));
 		FluxGroupBy.UnicastGroupedFlux<Integer, String> test = new FluxGroupBy.UnicastGroupedFlux<Integer, String>(1,
-				QueueSupplier.<String>one().get(), main, 123);
+				Queues.<String>one().get(), main, 123);
 		CoreSubscriber<String> sub = new LambdaSubscriber<>(null, e -> {}, null, null);
         test.subscribe(sub);
 

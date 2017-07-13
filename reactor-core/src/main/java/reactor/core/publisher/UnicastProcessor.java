@@ -29,7 +29,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 /**
  * A Processor implementation that takes a custom queue and allows
@@ -52,7 +52,7 @@ public final class UnicastProcessor<T>
 	 * @return a unicast {@link FluxProcessor}
 	 */
 	public static <E> UnicastProcessor<E> create() {
-		return new UnicastProcessor<>(QueueSupplier.<E>unbounded().get());
+		return new UnicastProcessor<>(Queues.<E>unbounded().get());
 	}
 
 	/**
@@ -148,6 +148,11 @@ public final class UnicastProcessor<T>
 		this.queue = Objects.requireNonNull(queue, "queue");
 		this.onOverflow = Objects.requireNonNull(onOverflow, "onOverflow");
 		this.onTerminate = Objects.requireNonNull(onTerminate, "onTerminate");
+	}
+
+	@Override
+	public int getBufferSize() {
+		return Queues.capacity(this.queue);
 	}
 
 	void doTerminate() {

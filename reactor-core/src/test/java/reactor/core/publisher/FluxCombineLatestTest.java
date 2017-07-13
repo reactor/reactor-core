@@ -30,7 +30,7 @@ import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,7 +39,7 @@ public class FluxCombineLatestTest extends FluxOperatorTest<String, String> {
 	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
 		return defaultOptions.fusionMode(Fuseable.ASYNC)
-		                     .prefetch(QueueSupplier.XS_BUFFER_SIZE);
+		                     .prefetch(Queues.XS_BUFFER_SIZE);
 	}
 
 	@Override
@@ -261,7 +261,7 @@ public class FluxCombineLatestTest extends FluxOperatorTest<String, String> {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 
 		FluxCombineLatest.CombineLatestCoordinator<String, Integer> test = new FluxCombineLatest.CombineLatestCoordinator<>(
-				actual, arr -> { throw new IllegalStateException("boomArray");}, 123, QueueSupplier.<FluxCombineLatest.SourceAndArray>one().get(), 456);
+				actual, arr -> { throw new IllegalStateException("boomArray");}, 123, Queues.<FluxCombineLatest.SourceAndArray>one().get(), 456);
 		test.request(2L);
 		test.error = new IllegalStateException("boom"); //most straightforward way to push it as otherwise it is drained
 
@@ -281,7 +281,7 @@ public class FluxCombineLatestTest extends FluxOperatorTest<String, String> {
 	public void scanInner() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxCombineLatest.CombineLatestCoordinator<String, Integer> main = new FluxCombineLatest.CombineLatestCoordinator<>(
-				actual, arr -> arr.length, 123, QueueSupplier.<FluxCombineLatest.SourceAndArray>one().get(), 456);
+				actual, arr -> arr.length, 123, Queues.<FluxCombineLatest.SourceAndArray>one().get(), 456);
 
 		FluxCombineLatest.CombineLatestInner<String> test = new FluxCombineLatest.CombineLatestInner<>(main, 1, 789);
 		Subscription parent = Operators.emptySubscription();

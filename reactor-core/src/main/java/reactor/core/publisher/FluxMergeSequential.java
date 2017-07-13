@@ -35,7 +35,7 @@ import reactor.core.Fuseable;
 import reactor.core.Fuseable.QueueSubscription;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
-import reactor.util.concurrent.QueueSupplier;
+import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 
 /**
@@ -62,7 +62,7 @@ final class FluxMergeSequential<T, R> extends FluxOperator<T, R> {
 			Function<? super T, ? extends Publisher<? extends R>> mapper,
 			int maxConcurrency, int prefetch, ErrorMode errorMode) {
 		this(source, mapper, maxConcurrency, prefetch, errorMode,
-				QueueSupplier.get(Math.max(prefetch, maxConcurrency)));
+				Queues.get(Math.max(prefetch, maxConcurrency)));
 	}
 
 	//for testing purpose
@@ -547,7 +547,7 @@ final class FluxMergeSequential<T, R> extends FluxOperator<T, R> {
 					}
 				}
 
-				queue = QueueSupplier.<R>get(prefetch).get();
+				queue = Queues.<R>get(prefetch).get();
 				s.request(prefetch == Integer.MAX_VALUE ? Long.MAX_VALUE : prefetch);
 			}
 		}
