@@ -54,6 +54,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
@@ -1374,6 +1375,17 @@ public abstract class Flux<T> implements Publisher<T> {
 	public static <I> Flux<I> mergeSequentialDelayError(Iterable<? extends Publisher<? extends I>> sources,
 			int maxConcurrency, int prefetch) {
 		return mergeSequential(sources, true, maxConcurrency, prefetch);
+	}
+
+	/**
+	 * Give a name to this sequence, which can be retrieved using {@link Scannable#name()}
+	 * as long as this is the first reachable {@link Scannable#parents()}.
+	 *
+	 * @param name a name for the sequence
+	 * @return the same sequence, but bearing a name
+	 */
+	public final Flux<T> namedAs(String name) {
+		return onAssembly(new FluxNamed<>(this, name));
 	}
 
 	/**
@@ -6453,6 +6465,21 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final <V> Flux<V> switchMap(Function<? super T, Publisher<? extends V>> fn, int prefetch) {
 		return onAssembly(new FluxSwitchMap<>(this, fn, Queues.unbounded(prefetch), prefetch));
+	}
+
+	/**
+	 * Put one or more tags on a sequence. These can be retrieved as a {@link Set} of all
+	 * tags throughout the reactive chain by using {@link Scannable#tags()} (as traversed
+	 * by {@link Scannable#parents()}).
+	 *
+	 * @param tags one or more tags for the sequence (case-sensitive)
+	 * @return the same sequence, but bearing tags
+	 */
+	public final Flux<T> taggedAs(String... tags) {
+		if (tags == null || tags.length == 0) {
+			return this;
+		}
+		return onAssembly(new FluxTagged<>(this, tags));
 	}
 
 	/**
