@@ -34,13 +34,18 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	/**
 	 * An allocation friendly default of available slots in a given container, e.g. slow publishers and or fast/few
 	 * subscribers
+	 *
+	 * @deprecated use the same constant in {@link Queues}
 	 */
+	@Deprecated
 	public static final int XS_BUFFER_SIZE    = Math.max(8,
 			Integer.parseInt(System.getProperty("reactor.bufferSize.x", "32")));
 	/**
 	 * A small default of available slots in a given container, compromise between intensive pipelines, small
 	 * subscribers numbers and memory use.
+	 * @deprecated use the same constant in {@link Queues}
 	 */
+	@Deprecated
 	public static final int SMALL_BUFFER_SIZE = Math.max(16,
 			Integer.parseInt(System.getProperty("reactor.bufferSize.small", "256")));
 
@@ -51,7 +56,9 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 * @param x Value to round up
 	 *
 	 * @return The next power of 2 from x inclusive
+	 * @deprecated use the same method in {@link Queues}
 	 */
+	@Deprecated
 	public static int ceilingNextPowerOfTwo(final int x) {
 		return 1 << (32 - Integer.numberOfLeadingZeros(x - 1));
 	}
@@ -61,8 +68,9 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 * @param batchSize the bounded or unbounded (int.max) queue size
 	 * @param <T> the reified {@link Queue} generic type
 	 * @return an unbounded or bounded {@link Queue} {@link Supplier}
+	 * @deprecated use the same method in {@link Queues}
 	 */
-	@SuppressWarnings("unchecked")
+	@Deprecated
 	public static <T> Supplier<Queue<T>> get(int batchSize) {
 		if (batchSize == Integer.MAX_VALUE) {
 			return SMALL_UNBOUNDED;
@@ -83,7 +91,9 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 * @param x the int to test
 	 *
 	 * @return true if x is a power of 2
+	 * @deprecated use the same method in {@link Queues}
 	 */
+	@Deprecated
 	public static boolean isPowerOfTwo(final int x) {
 		return Integer.bitCount(x) == 1;
 	}
@@ -92,8 +102,9 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 *
 	 * @param <T> the reified {@link Queue} generic type
 	 * @return a bounded {@link Queue} {@link Supplier}
+	 * @deprecated use the same method in {@link Queues}
 	 */
-	@SuppressWarnings("unchecked")
+	@Deprecated
 	public static <T> Supplier<Queue<T>> one() {
 		return ONE_SUPPLIER;
 	}
@@ -102,8 +113,9 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 * @param <T> the reified {@link Queue} generic type
 	 *
 	 * @return a bounded {@link Queue} {@link Supplier}
+	 * @deprecated use the same method in {@link Queues}
 	 */
-	@SuppressWarnings("unchecked")
+	@Deprecated
 	public static <T> Supplier<Queue<T>> small() {
 		return SMALL_SUPPLIER;
 	}
@@ -112,8 +124,9 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 *
 	 * @param <T> the reified {@link Queue} generic type
 	 * @return an unbounded {@link Queue} {@link Supplier}
+	 * @deprecated use the same method in {@link Queues}
 	 */
-	@SuppressWarnings("unchecked")
+	@Deprecated
 	public static <T> Supplier<Queue<T>> unbounded() {
 		return SMALL_UNBOUNDED;
 	}
@@ -124,8 +137,9 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 * @param linkSize the link size
 	 * @param <T> the reified {@link Queue} generic type
 	 * @return an unbounded {@link Queue} {@link Supplier}
+	 * @deprecated use the same method in {@link Queues}
 	 */
-	@SuppressWarnings("unchecked")
+	@Deprecated
 	public static <T> Supplier<Queue<T>> unbounded(int linkSize) {
 		if (linkSize == XS_BUFFER_SIZE) {
 			return XS_UNBOUNDED;
@@ -140,11 +154,15 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 *
 	 * @param <T> the reified {@link Queue} generic type
 	 * @return a bounded {@link Queue} {@link Supplier}
+	 * @deprecated use the same method in {@link Queues}
 	 */
-	@SuppressWarnings("unchecked")
+	@Deprecated
 	public static <T> Supplier<Queue<T>> xs() {
 		return XS_SUPPLIER;
 	}
+
+
+
 	final long    batchSize;
 
 	QueueSupplier(long batchSize) {
@@ -155,7 +173,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	public Queue<T> get() {
 
 		if(batchSize > 10_000_000){
-			return new SpscLinkedArrayQueue<>(SMALL_BUFFER_SIZE);
+			return new SpscLinkedArrayQueue<>(Queues.SMALL_BUFFER_SIZE);
 		}
 		else if (batchSize == 1) {
 			return new OneQueue<>();
@@ -307,15 +325,17 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 			queue.remove();
 		}
 	}
+
+
     @SuppressWarnings("rawtypes")
     static final Supplier ONE_SUPPLIER   = OneQueue::new;
 	@SuppressWarnings("rawtypes")
-    static final Supplier XS_SUPPLIER    = () -> new SpscArrayQueue<>(XS_BUFFER_SIZE);
+    static final Supplier XS_SUPPLIER    = () -> new SpscArrayQueue<>(Queues.XS_BUFFER_SIZE);
 	@SuppressWarnings("rawtypes")
-    static final Supplier SMALL_SUPPLIER = () -> new SpscArrayQueue<>(SMALL_BUFFER_SIZE);
+    static final Supplier SMALL_SUPPLIER = () -> new SpscArrayQueue<>(Queues.SMALL_BUFFER_SIZE);
 	@SuppressWarnings("rawtypes")
 	static final Supplier SMALL_UNBOUNDED =
-			() -> new SpscLinkedArrayQueue<>(SMALL_BUFFER_SIZE);
+			() -> new SpscLinkedArrayQueue<>(Queues.SMALL_BUFFER_SIZE);
 	@SuppressWarnings("rawtypes")
-	static final Supplier XS_UNBOUNDED = () -> new SpscLinkedArrayQueue<>(XS_BUFFER_SIZE);
+	static final Supplier XS_UNBOUNDED = () -> new SpscLinkedArrayQueue<>(Queues.XS_BUFFER_SIZE);
 }

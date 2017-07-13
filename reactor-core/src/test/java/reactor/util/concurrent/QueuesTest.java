@@ -28,7 +28,7 @@ public class QueuesTest {
 
 	@Test
 	public void capacityReactorUnboundedQueue() {
-		Queue q = QueueSupplier.unbounded(2).get();
+		Queue q = Queues.unbounded(2).get();
 
 		assertThat(Queues.capacity(q)).isEqualTo(Integer.MAX_VALUE);
 	}
@@ -37,13 +37,13 @@ public class QueuesTest {
 	public void capacityReactorBoundedQueue() {
 		//the bounded queue floors at 8 and rounds to the next power of 2
 
-		assertThat(Queues.capacity(QueueSupplier.get(2).get()))
+		assertThat(Queues.capacity(Queues.get(2).get()))
 				.isEqualTo(8);
 
-		assertThat(Queues.capacity(QueueSupplier.get(8).get()))
+		assertThat(Queues.capacity(Queues.get(8).get()))
 				.isEqualTo(8);
 
-		assertThat(Queues.capacity(QueueSupplier.get(9).get()))
+		assertThat(Queues.capacity(Queues.get(9).get()))
 				.isEqualTo(16);
 	}
 
