@@ -5853,9 +5853,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <br>
 	 * The accumulation works as follows:
 	 * <pre><code>
-	 * result[0] = accumulator(source[0], source[1])
-	 * result[1] = accumulator(result[0], source[2])
-	 * result[2] = accumulator(result[1], source[3])
+	 * result[0] = source[0]
+	 * result[1] = accumulator(result[0], source[1])
+	 * result[2] = accumulator(result[1], source[2])
+	 * result[3] = accumulator(result[2], source[3])
 	 * ...
 	 * </code></pre>
 	 *
