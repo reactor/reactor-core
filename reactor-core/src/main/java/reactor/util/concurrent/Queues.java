@@ -18,6 +18,7 @@ package reactor.util.concurrent;
 
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Utility methods around {@link Queue Queues} and pre-defined {@link QueueSupplier suppliers}.
@@ -37,14 +38,17 @@ public class Queues {
 	 * @return the capacity of the queue, if discoverable with confidence, or {@link #CAPACITY_UNSURE} negative constant.
 	 */
 	public static final int capacity(Queue q) {
-		if (q instanceof BlockingQueue) {
-			return ((BlockingQueue) q).remainingCapacity();
-		}
-		else if (q instanceof SpscLinkedArrayQueue) {
+		if (q instanceof SpscLinkedArrayQueue) {
 			return Integer.MAX_VALUE;
 		}
 		else if (q instanceof SpscArrayQueue) {
 			return ((SpscArrayQueue) q).length();
+		}
+		else if (q instanceof BlockingQueue) {
+			return ((BlockingQueue) q).remainingCapacity();
+		}
+		else if (q instanceof ConcurrentLinkedQueue) {
+			return Integer.MAX_VALUE;
 		}
 		else {
 			return CAPACITY_UNSURE;

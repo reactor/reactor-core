@@ -18,6 +18,7 @@ package reactor.util.concurrent;
 
 import java.util.PriorityQueue;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.junit.Test;
@@ -59,7 +60,13 @@ public class QueuesTest {
 		Queue q = new LinkedBlockingQueue<>();
 
 		assertThat(Queues.capacity(q)).isEqualTo(Integer.MAX_VALUE);
+	}
 
+	@Test
+	public void capacityUnboundedConcurrentLinkedQueue() {
+		Queue q = new ConcurrentLinkedQueue<>();
+
+		assertThat(Queues.capacity(q)).isEqualTo(Integer.MAX_VALUE);
 	}
 
 	@Test
