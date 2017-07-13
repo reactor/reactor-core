@@ -124,7 +124,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	@Override
 	@Nullable
 	public O block() {
-		return block(Duration.ZERO);
+		return block(Duration.ofSeconds(-1));
 	}
 
 	/**
@@ -148,13 +148,13 @@ public final class MonoProcessor<O> extends Mono<O>
 			}
 
 			Runnable spinObserver;
-			if (timeout.isZero()) {
+			if (timeout.isNegative()) {
 				spinObserver = NOOP_SPIN_OBSERVER;
 			}
 			else {
 				long delay = System.nanoTime() + timeout.toNanos();
 				spinObserver = () -> {
-					if (!timeout.isZero() && delay < System.nanoTime()) {
+					if (delay < System.nanoTime()) {
 						WaitStrategy.alert();
 					}
 				};
