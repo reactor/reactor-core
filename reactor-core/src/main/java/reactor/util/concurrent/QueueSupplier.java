@@ -38,16 +38,14 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 * @deprecated use the same constant in {@link Queues}
 	 */
 	@Deprecated
-	public static final int XS_BUFFER_SIZE    = Math.max(8,
-			Integer.parseInt(System.getProperty("reactor.bufferSize.x", "32")));
+	public static final int XS_BUFFER_SIZE    = Queues.XS_BUFFER_SIZE;
 	/**
 	 * A small default of available slots in a given container, compromise between intensive pipelines, small
 	 * subscribers numbers and memory use.
 	 * @deprecated use the same constant in {@link Queues}
 	 */
 	@Deprecated
-	public static final int SMALL_BUFFER_SIZE = Math.max(16,
-			Integer.parseInt(System.getProperty("reactor.bufferSize.small", "256")));
+	public static final int SMALL_BUFFER_SIZE =  Queues.SMALL_BUFFER_SIZE;
 
 	/**
 	 * Calculate the next power of 2, greater than or equal to x.<p> From Hacker's Delight, Chapter 3, Harry S. Warren
@@ -60,7 +58,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 */
 	@Deprecated
 	public static int ceilingNextPowerOfTwo(final int x) {
-		return 1 << (32 - Integer.numberOfLeadingZeros(x - 1));
+		return Queues.ceilingNextPowerOfTwo(x);
 	}
 
 	/**
@@ -72,19 +70,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 */
 	@Deprecated
 	public static <T> Supplier<Queue<T>> get(int batchSize) {
-		if (batchSize == Integer.MAX_VALUE) {
-			return SMALL_UNBOUNDED;
-		}
-		if (batchSize == XS_BUFFER_SIZE) {
-			return XS_SUPPLIER;
-		}
-		if (batchSize == SMALL_BUFFER_SIZE) {
-			return SMALL_SUPPLIER;
-		}
-		if (batchSize == 1) {
-			return ONE_SUPPLIER;
-		}
-		return new QueueSupplier<>(Math.max(8, batchSize));
+		return Queues.get(batchSize);
 	}
 
 	/**
@@ -95,7 +81,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 */
 	@Deprecated
 	public static boolean isPowerOfTwo(final int x) {
-		return Integer.bitCount(x) == 1;
+		return Queues.isPowerOfTwo(x);
 	}
 
 	/**
@@ -106,7 +92,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 */
 	@Deprecated
 	public static <T> Supplier<Queue<T>> one() {
-		return ONE_SUPPLIER;
+		return Queues.one();
 	}
 
 	/**
@@ -117,7 +103,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 */
 	@Deprecated
 	public static <T> Supplier<Queue<T>> small() {
-		return SMALL_SUPPLIER;
+		return Queues.small();
 	}
 
 	/**
@@ -128,7 +114,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 */
 	@Deprecated
 	public static <T> Supplier<Queue<T>> unbounded() {
-		return SMALL_UNBOUNDED;
+		return Queues.unbounded();
 	}
 
 	/**
@@ -141,13 +127,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 */
 	@Deprecated
 	public static <T> Supplier<Queue<T>> unbounded(int linkSize) {
-		if (linkSize == XS_BUFFER_SIZE) {
-			return XS_UNBOUNDED;
-		}
-		else if (linkSize == Integer.MAX_VALUE || linkSize == SMALL_BUFFER_SIZE) {
-			return unbounded();
-		}
-		return  () -> new SpscLinkedArrayQueue<>(linkSize);
+		return Queues.unbounded(linkSize);
 	}
 
 	/**
@@ -158,7 +138,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	 */
 	@Deprecated
 	public static <T> Supplier<Queue<T>> xs() {
-		return XS_SUPPLIER;
+		return Queues.xs();
 	}
 
 
