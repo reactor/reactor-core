@@ -27,11 +27,10 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 /**
- * Provide a 1-producer/1-consumer ready queue adapted for a given capacity.
- *
- * @param <T> the queue element type
+ * Queue utilities and suppliers for 1-producer/1-consumer ready queues adapted for
+ * various given capacities.
  */
-public final class Queues<T> implements Supplier<Queue<T>> {
+public final class Queues {
 
 	public static final int CAPACITY_UNSURE = Integer.MIN_VALUE;
 
@@ -108,7 +107,8 @@ public final class Queues<T> implements Supplier<Queue<T>> {
 		if (batchSize == 1) {
 			return ONE_SUPPLIER;
 		}
-		return new Queues<>(Math.max(8, batchSize));
+
+		return createSupplier(Math.max(8, batchSize));
 	}
 
 	/**
@@ -177,23 +177,20 @@ public final class Queues<T> implements Supplier<Queue<T>> {
 	public static <T> Supplier<Queue<T>> xs() {
 		return XS_SUPPLIER;
 	}
-	final long    batchSize;
 
-	Queues(long batchSize) {
-		this.batchSize = batchSize;
+	private Queues() {
+		//prevent construction
 	}
 
-	@Override
-	public Queue<T> get() {
-
+	static final <T> Supplier<Queue<T>> createSupplier(final int batchSize) {
 		if(batchSize > 10_000_000){
-			return new SpscLinkedArrayQueue<>(SMALL_BUFFER_SIZE);
+			return () -> new SpscLinkedArrayQueue<>(SMALL_BUFFER_SIZE);
 		}
 		else if (batchSize == 1) {
-			return new OneQueue<>();
+			return OneQueue::new;
 		}
 		else{
-			return new SpscArrayQueue<>((int)batchSize);
+			return () -> new SpscArrayQueue<>(batchSize);
 		}
 	}
 
