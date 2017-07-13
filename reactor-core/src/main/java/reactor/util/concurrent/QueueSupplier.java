@@ -28,7 +28,10 @@ import javax.annotation.Nullable;
  * Provide a 1-producer/1-consumer ready queue adapted for a given capacity.
  *
  * @param <T> the queue element type
+ * @deprecated will be removed in 3.1.0.RELEASE, static methods replaced by {@link Queues}
+ * and instances to be replaced by plain {@link Supplier}.
  */
+@Deprecated
 public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 
 	/**
@@ -142,7 +145,7 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 	}
 
 
-
+    //TODO move instance code below to Queues#get
 	final long    batchSize;
 
 	QueueSupplier(long batchSize) {
@@ -162,6 +165,8 @@ public final class QueueSupplier<T> implements Supplier<Queue<T>> {
 			return new SpscArrayQueue<>((int)batchSize);
 		}
 	}
+
+	//TODO move all code below to Queues before removing class
 
 	static final class OneQueue<T> extends AtomicReference<T> implements Queue<T> {
         @Override

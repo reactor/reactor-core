@@ -21,7 +21,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.function.Supplier;
 
 /**
- * Utility methods around {@link Queue Queues} and pre-defined {@link QueueSupplier suppliers}.
+ * Utility methods around {@link Queue Queues} and pre-defined {@link Queue}
+ * {@link Supplier suppliers}.
  */
 public class Queues {
 
