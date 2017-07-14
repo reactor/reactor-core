@@ -22,6 +22,7 @@ import javax.annotation.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
+import reactor.util.context.Context;
 
 /**
  * Maps the values of the source publisher one-on-one via a handler function as long as the handler function result is
@@ -78,6 +79,11 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 
 				actual.onSubscribe(this);
 			}
+		}
+
+		@Override
+		public Context currentContext() {
+			return actual.currentContext();
 		}
 
 		@Override
@@ -226,6 +232,11 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 		HandleConditionalSubscriber(Fuseable.ConditionalSubscriber<? super R> actual, BiConsumer<? super T, SynchronousSink<R>> handler) {
 			this.actual = actual;
 			this.handler = handler;
+		}
+
+		@Override
+		public Context currentContext() {
+			return actual.currentContext();
 		}
 
 		@Override

@@ -43,7 +43,10 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT> {
 
 	@Override
 	public Context currentContext() {
-		return Operators.context(upstream);
+		if(upstream instanceof CoreSubscriber){
+			return ((CoreSubscriber)upstream).currentContext();
+		}
+		return Context.empty();
 	}
 
 	@Override

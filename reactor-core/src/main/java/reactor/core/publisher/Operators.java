@@ -162,22 +162,6 @@ public abstract class Operators {
 	}
 
 	/**
-	 * Cast a reference to {@link CoreSubscriber} and read its {@link
-	 * CoreSubscriber#currentContext()} or fallback to {@link Context#empty()}
-	 *
-	 * @param s reference to cast
-	 *
-	 * @return current subscriber context or empty
-	 */
-	@SuppressWarnings("unchecked")
-	public static Context context(Object s){
-		if(s instanceof CoreSubscriber){
-			return ((CoreSubscriber)s).currentContext();
-		}
-		return Context.empty();
-	}
-
-	/**
 	 * Return a singleton {@link Subscriber} that does not check for double onSubscribe
 	 * and purely request Long.MAX. If an error is received it will raise a
 	 * {@link Exceptions#errorCallbackNotImplemented(Throwable)} in the receiving thread.

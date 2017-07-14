@@ -16,22 +16,42 @@
 
 package reactor.core.publisher;
 
+import java.util.function.Function;
+
 import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
+import reactor.util.context.Context;
 
 /**
- * Interface to generate signals to a bridged {@link Subscriber}.
+ * Interface to produce synchronously "one signal" to an underlying {@link Subscriber}.
  * <p>
- * At most one {@link #next} call and/or one {@link #complete()} or {@link
- * #error(Throwable)} should be called per invocation of the generator function
+ *     At most one {@link #next} call and/or one {@link #complete()} or
+ *     {@link #error(Throwable)} should be called per invocation of the generator function.
+ *
+ * <p>
+ *     Calling a {@link SynchronousSink} outside of a generator consumer or function, e.g.
+ *     using an async callback, is forbidden. You can {@link FluxSink} or
+ *     {@link MonoSink} based generators for these situations.
  *
  * @param <T> the output value type
  */
 public interface SynchronousSink<T> {
-
 	/**
 	 * @see Subscriber#onComplete()
 	 */
 	void complete();
+
+	/**
+	 * Return the current subscriber {@link Context}.
+	 * <p>
+	 *   {@link Context} can be enriched via {@link Mono#contextStart(Function)}
+	 *   or {@link Flux#contextStart(Function)}
+	 *   operator or directly by a child subscriber overriding
+	 *   {@link CoreSubscriber#currentContext()}
+	 *
+	 * @return the current subscriber {@link Context}.
+	 */
+	Context currentContext();
 
 	/**
 	 * @param e the exception to signal, not null

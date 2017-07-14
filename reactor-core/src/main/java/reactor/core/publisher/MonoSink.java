@@ -19,11 +19,11 @@ package reactor.core.publisher;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
+import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * Wrapper API around an actual downstream Subscriber
@@ -34,9 +34,19 @@ import javax.annotation.Nullable;
 public interface MonoSink<T> {
 
 	/**
-	 * Complete without any value.
-	 * <p>Calling this method multiple times or after the other
-	 * terminating methods has no effect.
+	 * Return the current subscriber {@link Context}.
+	 * <p>
+	 *   {@link Context} can be enriched via {@link Mono#contextStart(Function)}
+	 *   operator or directly by a child subscriber overriding
+	 *   {@link CoreSubscriber#currentContext()}
+	 *
+	 * @return the current subscriber {@link Context}.
+	 */
+	Context currentContext();
+
+	/**
+	 * Complete without any value. <p>Calling this method multiple times or after the
+	 * other terminating methods has no effect.
 	 */
 	void success();
 

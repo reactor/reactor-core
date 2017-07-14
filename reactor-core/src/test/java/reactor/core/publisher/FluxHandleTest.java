@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
@@ -453,4 +454,59 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
         test.onComplete();
         assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
     }
+
+
+	@Test
+	public void contextTest() {
+		StepVerifier.create(Flux.just("foo")
+		                        .handle((d, s) -> s.next(s.currentContext()
+		                                               .get(AtomicInteger.class)
+		                                               .incrementAndGet()))
+		                        .repeat(10)
+		                        .contextStart(ctx -> ctx.put(AtomicInteger.class,
+				                        new AtomicInteger())))
+		            .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void contextTestHide() {
+		StepVerifier.create(Flux.just("foo")
+		                        .hide()
+		                        .handle((d, s) -> s.next(s.currentContext()
+		                                               .get(AtomicInteger.class)
+		                                               .incrementAndGet()))
+		                        .repeat(10)
+		                        .contextStart(ctx -> ctx.put(AtomicInteger.class,
+				                        new AtomicInteger())))
+		            .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void contextTestFilter() {
+		StepVerifier.create(Flux.just("foo")
+		                        .handle((d, s) -> s.next(s.currentContext()
+		                                               .get(AtomicInteger.class)
+		                                               .incrementAndGet()))
+		                        .filter(d -> true)
+		                        .repeat(10)
+		                        .contextStart(ctx -> ctx.put(AtomicInteger.class,
+				                        new AtomicInteger())))
+		            .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+		            .verifyComplete();
+	}
+	@Test
+	public void contextTestFilterHide() {
+		StepVerifier.create(Flux.just("foo")
+		                        .handle((d, s) -> s.next(s.currentContext()
+		                                               .get(AtomicInteger.class)
+		                                               .incrementAndGet()))
+		                        .filter(d -> true)
+		                        .repeat(10)
+		                        .contextStart(ctx -> ctx.put(AtomicInteger.class,
+				                        new AtomicInteger())))
+		            .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+		            .verifyComplete();
+	}
 }
