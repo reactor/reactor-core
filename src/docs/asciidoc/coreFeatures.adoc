@@ -550,7 +550,7 @@ The sequence was indeed terminated by the error.
 
 ==== Retrying
 There is another operator of interest with regards to error handling, and you
-might be tempted to use it in the case above. `retry`, as its mame indicates,
+might be tempted to use it in the case above. `retry`, as its name indicates,
 allows to retry an erroring sequence.
 
 But the caveat is that it works by *re-subscribing* to the upstream `Flux`. So
