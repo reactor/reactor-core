@@ -25,6 +25,7 @@ import javax.annotation.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.publisher.FluxCreate.SinkDisposable;
+import reactor.util.context.Context;
 
 /**
  * Wraps a the downstream Subscriber into a single emission object
@@ -83,6 +84,11 @@ final class MonoCreate<T> extends Mono<T> {
 
 		DefaultMonoSink(CoreSubscriber<? super T> actual) {
 			this.actual = actual;
+		}
+
+		@Override
+		public Context currentContext() {
+			return actual.currentContext();
 		}
 
 		@Override

@@ -34,6 +34,7 @@ import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxSink.OverflowStrategy;
 import reactor.util.concurrent.Queues;
+import reactor.util.context.Context;
 
 /**
  * Provides a multi-valued sink API for a callback that is called for
@@ -122,6 +123,11 @@ final class FluxCreate<T> extends Flux<T> {
 		SerializedSink(BaseSink<T> sink) {
 			this.sink = sink;
 			this.queue = Queues.<T>unbounded(16).get();
+		}
+
+		@Override
+		public Context currentContext() {
+			return sink.currentContext();
 		}
 
 		@Override
@@ -295,6 +301,11 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 
 		@Override
+		public Context currentContext() {
+			return sink.currentContext();
+		}
+
+		@Override
 		public Object scanUnsafe(Attr key) {
 			return serializedSink != null ? serializedSink.scanUnsafe(key) : baseSink.scanUnsafe(key);
 		}
@@ -372,6 +383,11 @@ final class FluxCreate<T> extends Flux<T> {
 
 		BaseSink(CoreSubscriber<? super T> actual) {
 			this.actual = actual;
+		}
+
+		@Override
+		public Context currentContext() {
+			return actual.currentContext();
 		}
 
 		@Override

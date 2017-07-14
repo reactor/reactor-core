@@ -24,6 +24,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.util.context.Context;
 
 /**
  * Maps the values of the source publisher one-on-one via a handler function.
@@ -85,6 +86,11 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 				BiConsumer<? super T, SynchronousSink<R>> handler) {
 			this.actual = actual;
 			this.handler = handler;
+		}
+
+		@Override
+		public Context currentContext() {
+			return actual.currentContext();
 		}
 
 		@Override
@@ -343,6 +349,11 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 				BiConsumer<? super T, SynchronousSink<R>> handler) {
 			this.actual = actual;
 			this.handler = handler;
+		}
+
+		@Override
+		public Context currentContext() {
+			return actual.currentContext();
 		}
 
 		@SuppressWarnings("unchecked")

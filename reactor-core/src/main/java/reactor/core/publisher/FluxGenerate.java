@@ -25,6 +25,7 @@ import javax.annotation.Nullable;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.util.context.Context;
 
 /**
  * Generate signals one-by-one via a function callback.
@@ -118,6 +119,11 @@ extends Flux<T> implements Fuseable {
 			this.state = state;
 			this.generator = generator;
 			this.stateConsumer = stateConsumer;
+		}
+
+		@Override
+		public Context currentContext() {
+			return actual.currentContext();
 		}
 
 		@Override

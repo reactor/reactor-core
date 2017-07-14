@@ -26,6 +26,7 @@ import org.junit.Test;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -391,5 +392,17 @@ public class FluxGenerateTest {
         test.cancel();
         assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
     }
+
+	@Test
+	public void contextTest() {
+		StepVerifier.create(Flux.generate(s -> s.next(s.currentContext()
+		                                               .get(AtomicInteger.class)
+		                                               .incrementAndGet()))
+		                        .take(10)
+		                        .contextStart(ctx -> ctx.put(AtomicInteger.class,
+				                        new AtomicInteger())))
+		            .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+		            .verifyComplete();
+	}
 
 }

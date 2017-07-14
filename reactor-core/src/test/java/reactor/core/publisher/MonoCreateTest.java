@@ -312,5 +312,16 @@ public class MonoCreateTest {
 		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
 		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
 	}
+
+	@Test
+	public void contextTest() {
+		StepVerifier.create(Mono.create(s -> s.success(s.currentContext()
+		                                                .get(AtomicInteger.class)
+		                                                .incrementAndGet()))
+		                        .contextStart(ctx -> ctx.put(AtomicInteger.class,
+				                        new AtomicInteger())))
+		            .expectNext(1)
+		            .verifyComplete();
+	}
 }
 

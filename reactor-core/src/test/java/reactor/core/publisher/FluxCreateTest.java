@@ -23,6 +23,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -1161,5 +1162,32 @@ public class FluxCreateTest {
 		test.error = new IllegalStateException("boom");
 		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
 
+	}
+
+
+	@Test
+	public void contextTest() {
+		StepVerifier.create(Flux.create(s -> IntStream.range(0, 10).forEach(i -> s.next(s
+				.currentContext()
+		                                                       .get(AtomicInteger.class)
+		                                                       .incrementAndGet())))
+		                        .take(10)
+		                        .contextStart(ctx -> ctx.put(AtomicInteger.class,
+				                        new AtomicInteger())))
+		            .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void contextTestPush() {
+		StepVerifier.create(Flux.push(s -> IntStream.range(0, 10).forEach(i -> s.next(s
+				.currentContext()
+		                                                       .get(AtomicInteger.class)
+		                                                       .incrementAndGet())))
+		                        .take(10)
+		                        .contextStart(ctx -> ctx.put(AtomicInteger.class,
+				                        new AtomicInteger())))
+		            .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+		            .verifyComplete();
 	}
 }
