@@ -53,8 +53,8 @@ final class ParallelRunOn<T> extends ParallelFlux<T> implements Scannable, Fusea
 	@Override
 	@Nullable
 	public Object scanUnsafe(Attr key) {
-		if (key == ScannableAttr.PARENT) return source;
-		if (key == IntAttr.PREFETCH) return getPrefetch();
+		if (key == Attr.PARENT) return source;
+		if (key == Attr.PREFETCH) return getPrefetch();
 
 		return null;
 	}

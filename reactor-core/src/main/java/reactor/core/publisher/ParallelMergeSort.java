@@ -68,8 +68,8 @@ final class ParallelMergeSort<T> extends Flux<T> implements Scannable {
 	@Override
 	@Nullable
 	public Object scanUnsafe(Attr key) {
-		if (key == ScannableAttr.PARENT) return source;
-		if (key == IntAttr.PREFETCH) return getPrefetch();
+		if (key == Attr.PARENT) return source;
+		if (key == Attr.PREFETCH) return getPrefetch();
 
 		return null;
 	}
@@ -138,10 +138,10 @@ final class ParallelMergeSort<T> extends Flux<T> implements Scannable {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ThrowableAttr.ERROR) return error;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == BooleanAttr.CANCELLED) return cancelled;
-			if (key == IntAttr.BUFFERED) return subscribers.length - remaining;
+			if (key == Attr.ERROR) return error;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.BUFFERED) return subscribers.length - remaining;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}
@@ -335,10 +335,10 @@ final class ParallelMergeSort<T> extends Flux<T> implements Scannable {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == ScannableAttr.ACTUAL) return parent;
-			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.ACTUAL) return parent;
+			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
 
 			return null;
 		}

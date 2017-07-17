@@ -331,10 +331,10 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	@Override
 	@Nullable
 	public Object scanUnsafe(Attr key) {
-		if (key == ScannableAttr.PARENT){
+		if (key == Attr.PARENT){
 			return subscription;
 		}
-		if (key == IntAttr.CAPACITY) return buffer.capacity();
+		if (key == Attr.CAPACITY) return buffer.capacity();
 
 		return super.scanUnsafe(key);
 	}

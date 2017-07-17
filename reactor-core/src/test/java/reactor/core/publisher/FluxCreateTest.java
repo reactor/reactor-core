@@ -1093,18 +1093,18 @@ public class FluxCreateTest {
 				return this;
 			}
 		};
-		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
 		test.request(100);
-		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(100L);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(100L);
 
-		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 
 		test.cancel();
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 	}
 
 	@Test
@@ -1113,14 +1113,14 @@ public class FluxCreateTest {
 		BufferAsyncSink<String> test = new BufferAsyncSink<>(actual, 123);
 		test.queue.offer("foo");
 
-		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
-		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
 
 		test.error(new IllegalStateException("boom"));
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
-		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
 	}
 
 	@Test
@@ -1128,16 +1128,16 @@ public class FluxCreateTest {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxCreate.LatestAsyncSink<String> test = new FluxCreate.LatestAsyncSink<>(actual);
 
-		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(0);
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
 		test.queue.set("foo");
-		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
-		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
 
 		test.error(new IllegalStateException("boom"));
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
-		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
 	}
 
 	@Test
@@ -1147,20 +1147,20 @@ public class FluxCreateTest {
 		SerializedSink<String> test = new SerializedSink<>(decorated);
 
 		test.queue.offer("foo");
-		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
-		assertThat(decorated.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(0);
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
+		assertThat(decorated.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
 
 		decorated.request(100);
-		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(100L);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(100L);
 		decorated.cancel();
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
-		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
-		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
 
 		test.error = new IllegalStateException("boom");
-		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+		assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
 
 	}
 

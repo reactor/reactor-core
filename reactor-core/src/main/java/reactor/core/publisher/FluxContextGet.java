@@ -70,7 +70,7 @@ final class FluxContextGet<T, V> extends FluxOperator<T, V> implements Fuseable 
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) {
+			if (key == Attr.PARENT) {
 				return s;
 			}
 			return InnerOperator.super.scanUnsafe(key);

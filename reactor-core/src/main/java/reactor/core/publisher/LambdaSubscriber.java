@@ -144,9 +144,9 @@ final class LambdaSubscriber<T>
 	@Override
 	@Nullable
 	public Object scanUnsafe(Attr key) {
-		if (key == ScannableAttr.PARENT) return subscription;
-		if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
-		if (key == BooleanAttr.TERMINATED || key == BooleanAttr.CANCELLED) return isDisposed();
+		if (key == Attr.PARENT) return subscription;
+		if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
+		if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
 
 		return null;
 	}

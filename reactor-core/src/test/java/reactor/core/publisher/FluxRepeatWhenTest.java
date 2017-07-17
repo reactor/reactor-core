@@ -114,7 +114,7 @@ public class FluxRepeatWhenTest {
 
 
 		Flux<Integer> repeat = source.repeatWhen(other -> other.flatMap(l ->
-				count.getAndIncrement() == 0 ? Mono.just(l) : Mono.<Long>error(new IllegalStateException("boom"))));
+				count.getAndIncrement() == 0 ? Mono.just(l) : Mono.error(new IllegalStateException("boom"))));
 
 		StepVerifier.create(repeat)
 		            .expectSubscription()
@@ -374,14 +374,14 @@ public class FluxRepeatWhenTest {
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
-        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
         test.requested = 35;
-        assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
+        assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
 
-        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();
-        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 
 	@Test
@@ -392,8 +392,8 @@ public class FluxRepeatWhenTest {
         FluxRepeatWhen.RepeatWhenOtherSubscriber test = new FluxRepeatWhen.RepeatWhenOtherSubscriber();
         test.main = main;
 
-        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(main.otherArbiter);
-        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(main);
+        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(main.otherArbiter);
+        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
     }
 
 	@Test

@@ -65,12 +65,12 @@ final class FluxMaterialize<T> extends FluxOperator<T, Signal<T>> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == BooleanAttr.TERMINATED) return terminalSignal != null;
-			if (key == ThrowableAttr.ERROR) return terminalSignal != null ? terminalSignal.getThrowable() : null;
-			if (key == BooleanAttr.CANCELLED) return getAsBoolean();
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == IntAttr.BUFFERED) return size();
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.TERMINATED) return terminalSignal != null;
+			if (key == Attr.ERROR) return terminalSignal != null ? terminalSignal.getThrowable() : null;
+			if (key == Attr.CANCELLED) return getAsBoolean();
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.BUFFERED) return size();
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

@@ -71,7 +71,7 @@ final class FluxTakeLast<T> extends FluxOperator<T, T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
+			if (key == Attr.PARENT) return s;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -190,10 +190,10 @@ final class FluxTakeLast<T> extends FluxOperator<T, T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.CANCELLED) return cancelled;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == IntAttr.BUFFERED) return size();
+			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.BUFFERED) return size();
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

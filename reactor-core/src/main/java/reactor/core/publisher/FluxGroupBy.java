@@ -239,13 +239,13 @@ final class FluxGroupBy<T, K, V> extends FluxOperator<T, GroupedFlux<K, V>>
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == BooleanAttr.TERMINATED) return done;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == IntAttr.PREFETCH) return prefetch;
-			if (key == IntAttr.BUFFERED) return queue.size();
-			if (key == BooleanAttr.CANCELLED) return cancelled == 1;
-			if (key == ThrowableAttr.ERROR) return error;
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.PREFETCH) return prefetch;
+			if (key == Attr.BUFFERED) return queue.size();
+			if (key == Attr.CANCELLED) return cancelled == 1;
+			if (key == Attr.ERROR) return error;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -777,12 +777,12 @@ final class FluxGroupBy<T, K, V> extends FluxOperator<T, GroupedFlux<K, V>>
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return parent;
-			if (key == BooleanAttr.TERMINATED) return done;
-			if (key == BooleanAttr.CANCELLED) return cancelled;
-			if (key == ThrowableAttr.ERROR) return error;
-			if (key == IntAttr.BUFFERED) return queue != null ? queue.size() : 0;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.PARENT) return parent;
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.ERROR) return error;
+			if (key == Attr.BUFFERED) return queue != null ? queue.size() : 0;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}

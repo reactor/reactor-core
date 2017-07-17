@@ -181,12 +181,12 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == BooleanAttr.TERMINATED) return done || error == TERMINATED;
-			if (key == BooleanAttr.CANCELLED) return cancelled;
-			if (key == IntAttr.PREFETCH) return prefetch;
-			if (key == IntAttr.BUFFERED) return queue != null ? queue.size() : 0;
-			if (key == ThrowableAttr.ERROR) return error;
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.TERMINATED) return done || error == TERMINATED;
+			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.PREFETCH) return prefetch;
+			if (key == Attr.BUFFERED) return queue != null ? queue.size() : 0;
+			if (key == Attr.ERROR) return error;
 
 			return FluxConcatMapSupport.super.scanUnsafe(key);
 		}
@@ -514,13 +514,13 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == BooleanAttr.TERMINATED) return done;
-			if (key == BooleanAttr.CANCELLED) return cancelled;
-			if (key == IntAttr.PREFETCH) return prefetch;
-			if (key == IntAttr.BUFFERED) return queue != null ? queue.size() : 0;
-			if (key == ThrowableAttr.ERROR) return error;
-			if (key == BooleanAttr.DELAY_ERROR) return true;
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.PREFETCH) return prefetch;
+			if (key == Attr.BUFFERED) return queue != null ? queue.size() : 0;
+			if (key == Attr.ERROR) return error;
+			if (key == Attr.DELAY_ERROR) return true;
 
 			return FluxConcatMapSupport.super.scanUnsafe(key);
 		}
@@ -778,7 +778,7 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 		@Nullable
 		@Override
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.ACTUAL) return parent;
+			if (key == Attr.ACTUAL) return parent;
 
 			return super.scanUnsafe(key);
 		}

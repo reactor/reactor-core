@@ -843,16 +843,16 @@ public class FluxGroupByTest extends
 		Subscription sub = Operators.emptySubscription();
         test.onSubscribe(sub);
 
-		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
-		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(sub);
-		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(Long.MAX_VALUE);
-		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isSameAs(123);
-		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isSameAs(0);
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
-		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(sub);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(Long.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isSameAs(123);
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isSameAs(0);
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
 		test.error = new IllegalStateException("boom");
-		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isSameAs(test.error);
+		assertThat(test.scan(Scannable.Attr.ERROR)).isSameAs(test.error);
 	}
 
 	@Test
@@ -865,15 +865,15 @@ public class FluxGroupByTest extends
 		CoreSubscriber<String> sub = new LambdaSubscriber<>(null, e -> {}, null, null);
         test.subscribe(sub);
 
-		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(sub);
-		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(main);
-		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(Long.MAX_VALUE);
-		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isSameAs(0);
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
-		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(sub);
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(main);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(Long.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isSameAs(0);
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
 		test.error = new IllegalStateException("boom");
-		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isSameAs(test.error);
+		assertThat(test.scan(Scannable.Attr.ERROR)).isSameAs(test.error);
 	}
 
 }

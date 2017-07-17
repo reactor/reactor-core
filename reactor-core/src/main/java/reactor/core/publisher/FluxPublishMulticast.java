@@ -162,12 +162,12 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == ThrowableAttr.ERROR) return error;
-			if (key == BooleanAttr.CANCELLED) return cancelled;
-			if (key == BooleanAttr.TERMINATED) return done;
-			if (key == IntAttr.PREFETCH) return prefetch;
-			if (key == IntAttr.BUFFERED) return queue != null ? queue.size() : 0;
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.ERROR) return error;
+			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.PREFETCH) return prefetch;
+			if (key == Attr.BUFFERED) return queue != null ? queue.size() : 0;
 
 			return null;
 		}
@@ -637,9 +637,9 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == ScannableAttr.PARENT) return parent;
-			if (key == BooleanAttr.CANCELLED) return once == 1;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.PARENT) return parent;
+			if (key == Attr.CANCELLED) return once == 1;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}
@@ -694,7 +694,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
+			if (key == Attr.PARENT) return s;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -792,7 +792,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
+			if (key == Attr.PARENT) return s;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

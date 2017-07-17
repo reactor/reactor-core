@@ -919,34 +919,34 @@ public class FluxFlatMapTest {
 	}
 
 	void assertBeforeOnSubscribeState(InnerOperator s) {
-		assertThat(s.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
-		assertThat(s.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(1);
-		assertThat(s.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
-		assertThat(s.scanOrDefault(Scannable.BooleanAttr.CANCELLED, false)).isFalse();
+		assertThat(s.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
+		assertThat(s.scan(Scannable.Attr.PREFETCH)).isEqualTo(1);
+		assertThat(s.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(s.scanOrDefault(Scannable.Attr.CANCELLED, false)).isFalse();
 	}
 
 	void assertAfterOnSubscribeState(InnerOperator s) {
-		assertThat(s.scan(Scannable.ThrowableAttr.ERROR)).isNull();
-		assertThat(s.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(1L);
-		assertThat(s.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
-		assertThat(s.scanOrDefault(Scannable.BooleanAttr.CANCELLED, false)).isFalse();
+		assertThat(s.scan(Scannable.Attr.ERROR)).isNull();
+		assertThat(s.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(1L);
+		assertThat(s.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(s.scanOrDefault(Scannable.Attr.CANCELLED, false)).isFalse();
 	}
 
 	void assertAfterOnNextInnerState(InnerConsumer s) {
-		assertThat(s.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+		assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 	}
 
 	void assertAfterOnNextInnerState2(InnerConsumer s) {
-		assertThat(s.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(0);
+		assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
 	}
 
 	void assertAfterOnCompleteInnerState(InnerConsumer s) {
-		assertThat(s.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(s.scan(Scannable.Attr.TERMINATED)).isFalse();
 	}
 
 	void assertAfterOnCompleteInnerState2(InnerConsumer s) {
-		assertThat(s.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
-		assertThat(s.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(0);
+		assertThat(s.scan(Scannable.Attr.TERMINATED)).isTrue();
+		assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -955,9 +955,9 @@ public class FluxFlatMapTest {
 	}
 
 	void assertBeforeOnSubscribeInnerState(InnerConsumer s) {
-		assertThat(s.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
-		assertThat(s.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(32);
-		assertThat(s.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(0);
+		assertThat(s.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(s.scan(Scannable.Attr.PREFETCH)).isEqualTo(32);
+		assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
 	}
 
 	@Test
@@ -968,7 +968,7 @@ public class FluxFlatMapTest {
 			assertAfterOnSubscribeState((FluxFlatMap.FlatMapMain) s);
 			s.onNext(1);
 			assertThat(((FluxFlatMap.FlatMapMain) s).actual()).isNotNull();
-			assertThat(((FluxFlatMap.FlatMapMain) s).scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+			assertThat(((FluxFlatMap.FlatMapMain) s).scan(Scannable.Attr.CANCELLED)).isTrue();
 			s.onComplete();
 		})
 		                        .flatMap(f -> Flux.from(s -> {
@@ -980,7 +980,7 @@ public class FluxFlatMapTest {
 			                        s.onNext(f);
 			                        assertAfterOnNextInnerState(((FluxFlatMap.FlatMapInner) s));
 			                        assertAfterOnCompleteInnerState(((FluxFlatMap.FlatMapInner) s));
-			                        assertThat(((FluxFlatMap.FlatMapInner)s).scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+			                        assertThat(((FluxFlatMap.FlatMapInner)s).scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 			                        s.onComplete();
 			                        assertAfterOnCompleteInnerState(((FluxFlatMap.FlatMapInner) s));
 		                        }), 1), 1)
@@ -997,9 +997,9 @@ public class FluxFlatMapTest {
 			assertAfterOnSubscribeState((FluxFlatMap.FlatMapMain) s);
 			s.onNext(1);
 			assertThat(((FluxFlatMap.FlatMapMain) s).actual()).isNotNull();
-			assertThat(((FluxFlatMap.FlatMapMain) s).scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+			assertThat(((FluxFlatMap.FlatMapMain) s).scan(Scannable.Attr.CANCELLED)).isFalse();
 			s.onComplete();
-			assertThat(((FluxFlatMap.FlatMapMain) s).scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+			assertThat(((FluxFlatMap.FlatMapMain) s).scan(Scannable.Attr.TERMINATED)).isTrue();
 		})
 		                        .flatMap(f -> Flux.from(s -> {
 			                        assertBeforeOnSubscribeInnerState((FluxFlatMap.FlatMapInner) s);
@@ -1044,21 +1044,21 @@ public class FluxFlatMapTest {
 		            .expectNext(1)
 		            .then(() -> {
 						FluxFlatMap.FlatMapMain s = ref.get();
-			            assertThat(s.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(0);
+			            assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
 			            s.onNext(2);
 			            assertThat(s.actual()).isNotNull();
-			            assertThat(s.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
-			            assertThat(s.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
-			            assertThat(s.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+			            assertThat(s.scan(Scannable.Attr.CANCELLED)).isFalse();
+			            assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
+			            assertThat(s.scan(Scannable.Attr.TERMINATED)).isFalse();
 			            s.onComplete();
-			            assertThat(s.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
-			            assertThat(s.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+			            assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
+			            assertThat(s.scan(Scannable.Attr.TERMINATED)).isFalse();
 		            })
 		            .thenRequest(1)
 		            .then(() -> {
 			            FluxFlatMap.FlatMapMain s = ref.get();
-			            assertThat(s.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
-			            assertThat(s.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(0);
+			            assertThat(s.scan(Scannable.Attr.TERMINATED)).isTrue();
+			            assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
 		            })
 		            .expectNext(2)
 		            .verifyComplete();
@@ -1214,28 +1214,28 @@ public class FluxFlatMapTest {
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
-        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
-        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-        assertThat(test.scan(Scannable.BooleanAttr.DELAY_ERROR)).isTrue();
+        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.Attr.DELAY_ERROR)).isTrue();
         test.requested = 35;
-        assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
-        assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(5);
+        assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
+        assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(5);
 
         test.scalarQueue = new ConcurrentLinkedQueue<>();
         test.scalarQueue.add(1);
-        assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
-        assertThat(test.scan(Scannable.LongAttr.LARGE_BUFFERED)).isEqualTo(1L);
-        assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+        assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
+        assertThat(test.scan(Scannable.Attr.LARGE_BUFFERED)).isEqualTo(1L);
+        assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
 
-        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         test.onError(new IllegalStateException("boom"));
-        assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isSameAs(test.error);
+        assertThat(test.scan(Scannable.Attr.ERROR)).isSameAs(test.error);
         test.scalarQueue.clear();
-        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+        assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 
-        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();
-        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 
     @Test
@@ -1251,8 +1251,8 @@ public class FluxFlatMapTest {
         test.scalarQueue.add(3);
         test.size = Integer.MAX_VALUE;
 
-        assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(Integer.MIN_VALUE);
-        assertThat(test.scan(Scannable.LongAttr.LARGE_BUFFERED)).isEqualTo(Integer.MAX_VALUE + 3L);
+        assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(Integer.MIN_VALUE);
+        assertThat(test.scan(Scannable.Attr.LARGE_BUFFERED)).isEqualTo(Integer.MAX_VALUE + 3L);
     }
 
     @Test
@@ -1264,21 +1264,21 @@ public class FluxFlatMapTest {
         Subscription parent = Operators.emptySubscription();
         inner.onSubscribe(parent);
 
-        assertThat(inner.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(main);
-        assertThat(inner.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-        assertThat(inner.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(123);
+        assertThat(inner.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
+        assertThat(inner.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+        assertThat(inner.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
         inner.queue = new ConcurrentLinkedQueue<>();
         inner.queue.add(5);
-        assertThat(inner.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+        assertThat(inner.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 
-        assertThat(inner.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        assertThat(inner.scan(Scannable.Attr.TERMINATED)).isFalse();
         inner.onError(new IllegalStateException("boom"));
-        assertThat(main.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+        assertThat(main.scan(Scannable.Attr.ERROR)).hasMessage("boom");
         inner.queue.clear();
-        assertThat(inner.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+        assertThat(inner.scan(Scannable.Attr.TERMINATED)).isTrue();
 
-        assertThat(inner.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        assertThat(inner.scan(Scannable.Attr.CANCELLED)).isFalse();
         inner.cancel();
-        assertThat(inner.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+        assertThat(inner.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 }

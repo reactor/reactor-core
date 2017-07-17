@@ -73,9 +73,9 @@ final class MonoPublishOn<T> extends MonoOperator<T, T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.CANCELLED) return future == Disposables.DISPOSED;
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == ThrowableAttr.ERROR) return error;
+			if (key == Attr.CANCELLED) return future == Disposables.DISPOSED;
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.ERROR) return error;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

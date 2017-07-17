@@ -54,9 +54,9 @@ final class FluxDetach<T> extends FluxOperator<T, T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == BooleanAttr.TERMINATED) return actual == null;
-			if (key == BooleanAttr.CANCELLED) return actual == null && s == null;
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.TERMINATED) return actual == null;
+			if (key == Attr.CANCELLED) return actual == null && s == null;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

@@ -94,8 +94,8 @@ final class MonoCreate<T> extends Mono<T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.TERMINATED) return state == HAS_REQUEST_HAS_VALUE || state == NO_REQUEST_HAS_VALUE;
-			if (key == BooleanAttr.CANCELLED) return Disposables.isDisposed(disposable);
+			if (key == Attr.TERMINATED) return state == HAS_REQUEST_HAS_VALUE || state == NO_REQUEST_HAS_VALUE;
+			if (key == Attr.CANCELLED) return Disposables.isDisposed(disposable);
 
 			return InnerProducer.super.scanUnsafe(key);
 		}

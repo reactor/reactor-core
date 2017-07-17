@@ -285,23 +285,23 @@ public class FluxGroupJoinTest {
 						Queues.unbounded().get(),
 						Queues.one());
 
-		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 		test.request(123);
-		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(123);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(123);
 		test.queue.add(5);
 		test.queue.add(10);
-		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 
 		test.error = new IllegalArgumentException("boom");
-		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isSameAs(test.error);
+		assertThat(test.scan(Scannable.Attr.ERROR)).isSameAs(test.error);
 
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.active = 0;
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 	@Test
@@ -319,11 +319,11 @@ public class FluxGroupJoinTest {
 		Subscription sub = Operators.emptySubscription();
 		test.onSubscribe(sub);
 
-		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(parent);
-		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(sub);
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(sub);
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.dispose();
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 	@Test
@@ -341,9 +341,9 @@ public class FluxGroupJoinTest {
 		Subscription sub = Operators.emptySubscription();
 		test.onSubscribe(sub);
 
-		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(sub);
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(sub);
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.dispose();
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 }

@@ -154,8 +154,8 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.TERMINATED) return done;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -331,8 +331,8 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.TERMINATED) return done;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

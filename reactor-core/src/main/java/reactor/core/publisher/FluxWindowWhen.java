@@ -164,7 +164,7 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == Attr.TERMINATED) return done;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

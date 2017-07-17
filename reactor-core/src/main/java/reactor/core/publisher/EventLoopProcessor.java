@@ -258,7 +258,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	@Override
 	@Nullable
 	public Object scanUnsafe(Attr key) {
-		if (key == ScannableAttr.PARENT) return upstreamSubscription;
+		if (key == Attr.PARENT) return upstreamSubscription;
 
 		return super.scanUnsafe(key);
 	}

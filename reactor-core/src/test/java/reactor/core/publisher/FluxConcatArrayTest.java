@@ -242,19 +242,19 @@ public class FluxConcatArrayTest {
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
-		assertThat(test.scan(Scannable.BooleanAttr.DELAY_ERROR)).isTrue();
+		assertThat(test.scan(Scannable.Attr.DELAY_ERROR)).isTrue();
 
 		test.missedRequested = 2;
 		test.requested = 3;
 		test.error = new IllegalStateException("boom");
 
-		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
-		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
-		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(5L);
+		assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(5L);
 
 		test.cancel();
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 }

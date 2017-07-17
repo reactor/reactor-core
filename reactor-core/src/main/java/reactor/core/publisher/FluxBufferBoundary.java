@@ -124,14 +124,14 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
-			if (key == IntAttr.CAPACITY) {
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == Attr.CAPACITY) {
 				C buffer = this.buffer;
 				return buffer != null ? buffer.size() : 0;
 			}
-			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -311,7 +311,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.ACTUAL) {
+			if (key == Attr.ACTUAL) {
 				return main;
 			}
 			return super.scanUnsafe(key);

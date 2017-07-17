@@ -158,9 +158,9 @@ final class MonoWhen<T, R> extends Mono<R> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.TERMINATED) return done == subscribers.length;
-			if (key == IntAttr.BUFFERED) return subscribers.length;
-			if (key == BooleanAttr.DELAY_ERROR) return delayError;
+			if (key == Attr.TERMINATED) return done == subscribers.length;
+			if (key == Attr.BUFFERED) return subscribers.length;
+			if (key == Attr.DELAY_ERROR) return delayError;
 
 			return super.scanUnsafe(key);
 		}
@@ -277,10 +277,10 @@ final class MonoWhen<T, R> extends Mono<R> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == ScannableAttr.ACTUAL) return parent;
-			if (key == ThrowableAttr.ERROR) return error;
+			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.ACTUAL) return parent;
+			if (key == Attr.ERROR) return error;
 
 			return null;
 		}

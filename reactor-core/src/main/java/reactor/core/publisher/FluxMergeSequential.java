@@ -170,13 +170,13 @@ final class FluxMergeSequential<T, R> extends FluxOperator<T, R> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == ThrowableAttr.ERROR) return error;
-			if (key == BooleanAttr.TERMINATED) return done && subscribers.isEmpty();
-			if (key == BooleanAttr.DELAY_ERROR) return errorMode != ErrorMode.IMMEDIATE;
-			if (key == IntAttr.PREFETCH) return maxConcurrency;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == IntAttr.BUFFERED) return subscribers.size();
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.ERROR) return error;
+			if (key == Attr.TERMINATED) return done && subscribers.isEmpty();
+			if (key == Attr.DELAY_ERROR) return errorMode != ErrorMode.IMMEDIATE;
+			if (key == Attr.PREFETCH) return maxConcurrency;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.BUFFERED) return subscribers.size();
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -513,12 +513,12 @@ final class FluxMergeSequential<T, R> extends FluxOperator<T, R> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return subscription;
-			if (key == ScannableAttr.ACTUAL) return parent;
-			if (key == BooleanAttr.TERMINATED) return done && (queue == null || queue.isEmpty());
-			if (key == BooleanAttr.CANCELLED) return subscription == Operators.cancelledSubscription();
-			if (key == IntAttr.BUFFERED) return queue == null ? 0 : queue.size();
-			if (key == IntAttr.PREFETCH) return prefetch;
+			if (key == Attr.PARENT) return subscription;
+			if (key == Attr.ACTUAL) return parent;
+			if (key == Attr.TERMINATED) return done && (queue == null || queue.isEmpty());
+			if (key == Attr.CANCELLED) return subscription == Operators.cancelledSubscription();
+			if (key == Attr.BUFFERED) return queue == null ? 0 : queue.size();
+			if (key == Attr.PREFETCH) return prefetch;
 
 			return null;
 		}

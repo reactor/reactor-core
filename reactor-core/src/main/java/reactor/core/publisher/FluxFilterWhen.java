@@ -368,20 +368,20 @@ class FluxFilterWhen<T> extends FluxOperator<T, T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return upstream;
-			if (key == BooleanAttr.TERMINATED) return done;
-			if (key == BooleanAttr.CANCELLED) return cancelled;
-			if (key == ThrowableAttr.ERROR) //FIXME ERROR is often reset by Exceptions.terminate :(
+			if (key == Attr.PARENT) return upstream;
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.ERROR) //FIXME ERROR is often reset by Exceptions.terminate :(
 				return error;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == IntAttr.CAPACITY) return toFilter.length();
-			if (key == LongAttr.LARGE_BUFFERED) return producerIndex - consumerIndex;
-			if (key == IntAttr.BUFFERED) {
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.CAPACITY) return toFilter.length();
+			if (key == Attr.LARGE_BUFFERED) return producerIndex - consumerIndex;
+			if (key == Attr.BUFFERED) {
 				long realBuffered = producerIndex - consumerIndex;
 				if (realBuffered <= Integer.MAX_VALUE) return (int) realBuffered;
 				return Integer.MIN_VALUE;
 			}
-			if (key == IntAttr.PREFETCH) return bufferSize;
+			if (key == Attr.PREFETCH) return bufferSize;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -458,12 +458,12 @@ class FluxFilterWhen<T> extends FluxOperator<T, T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return parent;
-			if (key == ScannableAttr.ACTUAL) return sub;
-			if (key == BooleanAttr.CANCELLED) return sub == Operators.cancelledSubscription();
-			if (key == BooleanAttr.TERMINATED) return done;
-			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return done ? 0L : 1L;
+			if (key == Attr.PARENT) return parent;
+			if (key == Attr.ACTUAL) return sub;
+			if (key == Attr.CANCELLED) return sub == Operators.cancelledSubscription();
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return done ? 0L : 1L;
 
 			return null;
 		}

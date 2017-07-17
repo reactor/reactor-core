@@ -147,8 +147,8 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.TERMINATED || key == BooleanAttr.CANCELLED) return wip == 1;
-			if (key == ScannableAttr.PARENT) return s;
+			if (key == Attr.TERMINATED || key == Attr.CANCELLED) return wip == 1;
+			if (key == Attr.PARENT) return s;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -298,9 +298,9 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.TERMINATED || key == BooleanAttr.CANCELLED)
+			if (key == Attr.TERMINATED || key == Attr.CANCELLED)
 				return wip == 1;
-			if (key == ScannableAttr.PARENT) return s;
+			if (key == Attr.PARENT) return s;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -458,9 +458,9 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.TERMINATED || key == BooleanAttr.CANCELLED)
+			if (key == Attr.TERMINATED || key == Attr.CANCELLED)
 				return wip == 1;
-			if (key == ScannableAttr.PARENT) return s;
+			if (key == Attr.PARENT) return s;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

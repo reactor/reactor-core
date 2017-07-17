@@ -680,11 +680,11 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT ) return processor;
-			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
-			if (key == BooleanAttr.TERMINATED ) return processor.isTerminated();
-			if (key == BooleanAttr.CANCELLED) return !running.get();
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return pendingRequest.getAsLong();
+			if (key == Attr.PARENT ) return processor;
+			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == Attr.TERMINATED ) return processor.isTerminated();
+			if (key == Attr.CANCELLED) return !running.get();
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return pendingRequest.getAsLong();
 
 			return InnerProducer.super.scanUnsafe(key);
 		}

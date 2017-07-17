@@ -283,22 +283,22 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
-        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-        assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(123);
-        assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(0);
+        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
+        assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
         test.queue.add(1);
-        assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+        assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 
-        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
-        assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+        assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
         test.error = new IllegalArgumentException("boom");
-        assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isSameAs(test.error);
+        assertThat(test.scan(Scannable.Attr.ERROR)).isSameAs(test.error);
         test.onComplete();
-        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+        assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 
-        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();
-        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 
 	@Test
@@ -309,14 +309,14 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
         FluxPublishMulticast.PublishMulticastInner<Integer> test =
         		new FluxPublishMulticast.PublishMulticastInner<>(parent, actual);
 
-        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
         test.request(789);
-        assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(789);
+        assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(789);
 
-        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();
-        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 
 	@Test
@@ -329,8 +329,8 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
         Subscription sub = Operators.emptySubscription();
         test.onSubscribe(sub);
 
-        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(sub);
-        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(sub);
+        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
     }
 
 	@Test
@@ -343,7 +343,7 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
         Subscription sub = Operators.emptySubscription();
         test.onSubscribe(sub);
 
-        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(sub);
-        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(sub);
+        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
     }
 }

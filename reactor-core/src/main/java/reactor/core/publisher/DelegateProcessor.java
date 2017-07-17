@@ -97,7 +97,7 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT> {
 	public int getBufferSize() {
 		//noinspection ConstantConditions
 		return Scannable.from(upstream)
-		                .scanOrDefault(IntAttr.CAPACITY, super.getBufferSize());
+		                .scanOrDefault(Attr.CAPACITY, super.getBufferSize());
 	}
 
 	@Override
@@ -105,20 +105,20 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT> {
 	public Throwable getError() {
 		//noinspection ConstantConditions
 		return Scannable.from(upstream)
-		                .scanOrDefault(ThrowableAttr.ERROR, super.getError());
+		                .scanOrDefault(Attr.ERROR, super.getError());
 	}
 
 	@Override
 	public boolean isTerminated() {
 		//noinspection ConstantConditions
 		return Scannable.from(upstream)
-		                .scanOrDefault(BooleanAttr.TERMINATED, super.isTerminated());
+		                .scanOrDefault(Attr.TERMINATED, super.isTerminated());
 	}
 
 	@Override
 	@Nullable
 	public Object scanUnsafe(Attr key) {
-		if (key == ScannableAttr.PARENT) {
+		if (key == Attr.PARENT) {
 			return downstream;
 		}
 		//noinspection ConstantConditions

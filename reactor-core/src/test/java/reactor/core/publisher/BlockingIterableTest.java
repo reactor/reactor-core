@@ -28,8 +28,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
-import reactor.core.Scannable.IntAttr;
-import reactor.core.Scannable.ScannableAttr;
+import reactor.core.Scannable.Attr;
 import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Java6Assertions.assertThat;
@@ -134,11 +133,11 @@ public class BlockingIterableTest {
 		Flux<Integer> source = Flux.range(1, 10);
 		BlockingIterable<Integer> test = new BlockingIterable<>(source, 35, Queues.one());
 
-		assertThat(test.scanUnsafe(ScannableAttr.PARENT)).describedAs("PARENT").isSameAs(source);
+		assertThat(test.scanUnsafe(Scannable.Attr.PARENT)).describedAs("PARENT").isSameAs(source);
 
 		//type safe attributes
-		assertThat(test.scanUnsafe(IntAttr.PREFETCH)).describedAs("PREFETCH unsafe").isEqualTo(35);
-		assertThat(test.scan(IntAttr.PREFETCH)).describedAs("PREFETCH").isEqualTo(35); //FIXME
+		assertThat(test.scanUnsafe(Attr.PREFETCH)).describedAs("PREFETCH unsafe").isEqualTo(35);
+		assertThat(test.scan(Attr.PREFETCH)).describedAs("PREFETCH").isEqualTo(35); //FIXME
 	}
 
 	@Test
@@ -148,7 +147,7 @@ public class BlockingIterableTest {
 				Integer.MAX_VALUE + 30L,
 				Queues.one());
 
-		assertThat(test.scan(IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE); //FIXME
+		assertThat(test.scan(Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE); //FIXME
 	}
 
 	@Test
@@ -158,12 +157,13 @@ public class BlockingIterableTest {
 		Subscription s = Operators.emptySubscription();
 		subscriberIterator.onSubscribe(s);
 
-		assertThat(subscriberIterator.scan(ScannableAttr.PARENT)).describedAs("PARENT").isSameAs(s);
-		assertThat(subscriberIterator.scan(Scannable.BooleanAttr.TERMINATED)).describedAs("TERMINATED").isFalse();
-		assertThat(subscriberIterator.scan(Scannable.BooleanAttr.CANCELLED)).describedAs("CANCELLED").isFalse();
-		assertThat(subscriberIterator.scan(Scannable.ThrowableAttr.ERROR)).describedAs("ERROR").isNull();
+		assertThat(subscriberIterator.scan(Scannable.Attr.PARENT)).describedAs("PARENT")
+		                                                 .isSameAs(s);
+		assertThat(subscriberIterator.scan(Scannable.Attr.TERMINATED)).describedAs("TERMINATED").isFalse();
+		assertThat(subscriberIterator.scan(Scannable.Attr.CANCELLED)).describedAs("CANCELLED").isFalse();
+		assertThat(subscriberIterator.scan(Scannable.Attr.ERROR)).describedAs("ERROR").isNull();
 
-		assertThat(subscriberIterator.scan(IntAttr.PREFETCH)).describedAs("PREFETCH").isEqualTo(123); //FIXME
+		assertThat(subscriberIterator.scan(Attr.PREFETCH)).describedAs("PREFETCH").isEqualTo(123); //FIXME
 	}
 
 	@Test
@@ -172,7 +172,7 @@ public class BlockingIterableTest {
 				new BlockingIterable.SubscriberIterator<>(Queues.<String>one().get(),
 						Integer.MAX_VALUE + 30L);
 
-		assertThat(subscriberIterator.scan(IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE); //FIXME
+		assertThat(subscriberIterator.scan(Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE); //FIXME
 	}
 
 	@Test
@@ -180,11 +180,11 @@ public class BlockingIterableTest {
 		BlockingIterable.SubscriberIterator<String> test =
 				new BlockingIterable.SubscriberIterator<>(Queues.<String>one().get(), 123);
 
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).describedAs("before TERMINATED").isFalse();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).describedAs("before TERMINATED").isFalse();
 
 		test.onComplete();
 
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).describedAs("after TERMINATED").isTrue();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).describedAs("after TERMINATED").isTrue();
 	}
 
 	@Test
@@ -194,14 +194,14 @@ public class BlockingIterableTest {
 				123);
 		IllegalStateException error = new IllegalStateException("boom");
 
-		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).describedAs("before ERROR")
+		assertThat(test.scan(Scannable.Attr.ERROR)).describedAs("before ERROR")
 		                                                    .isNull();
 
 		test.onError(error);
 
-		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).describedAs("after ERROR")
+		assertThat(test.scan(Scannable.Attr.ERROR)).describedAs("after ERROR")
 		                                                       .isSameAs(error);
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 	}
 
 	@Test
@@ -212,9 +212,9 @@ public class BlockingIterableTest {
 
 		//simulate cancellation by offering two elements
 		test.onNext("a");
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).describedAs("before CANCELLED").isFalse();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).describedAs("before CANCELLED").isFalse();
 
 		test.onNext("b");
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).describedAs("after CANCELLED").isTrue();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).describedAs("after CANCELLED").isTrue();
 	}
 }

@@ -254,8 +254,8 @@ final class FluxConcatArray<T> extends Flux<T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.DELAY_ERROR) return true;
-			if (key == ThrowableAttr.ERROR) return error;
+			if (key == Attr.DELAY_ERROR) return true;
+			if (key == Attr.ERROR) return error;
 
 			return super.scanUnsafe(key);
 		}

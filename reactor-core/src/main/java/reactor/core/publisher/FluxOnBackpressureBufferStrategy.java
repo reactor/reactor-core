@@ -108,14 +108,14 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxOperator<O, O> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == BooleanAttr.TERMINATED) return done && isEmpty();
-			if (key == BooleanAttr.CANCELLED) return cancelled;
-			if (key == IntAttr.BUFFERED) return size();
-			if (key == ThrowableAttr.ERROR) return error;
-			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
-			if (key == BooleanAttr.DELAY_ERROR) return delayError;
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.TERMINATED) return done && isEmpty();
+			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.BUFFERED) return size();
+			if (key == Attr.ERROR) return error;
+			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == Attr.DELAY_ERROR) return delayError;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

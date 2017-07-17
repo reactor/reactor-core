@@ -180,9 +180,9 @@ final class FluxRange extends Flux<Integer>
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.CANCELLED) return cancelled;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == BooleanAttr.TERMINATED) return isEmpty();
+			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.TERMINATED) return isEmpty();
 
 			return InnerProducer.super.scanUnsafe(key);
 		}
@@ -330,9 +330,9 @@ final class FluxRange extends Flux<Integer>
 
 		@Override
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.CANCELLED) return cancelled;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == BooleanAttr.TERMINATED) return isEmpty();
+			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.TERMINATED) return isEmpty();
 
 			return InnerProducer.super.scanUnsafe(key);
 		}

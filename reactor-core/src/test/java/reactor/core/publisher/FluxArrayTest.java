@@ -104,23 +104,23 @@ public class FluxArrayTest {
 				new FluxArray.ArrayConditionalSubscription<>(subscriber,
 						new Object[]{"foo", "bar", "baz"});
 
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 
-		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(3);
-		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isZero();
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(3);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isZero();
 
-		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(subscriber);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(subscriber);
 
 		test.poll();
-		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(2);
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(2);
 		test.poll();
 
 		test.request(2);
-		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(2L);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(2L);
 
 		test.poll();
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 	}
 
 	@Test
@@ -136,8 +136,8 @@ public class FluxArrayTest {
 						new Object[]{"foo", "bar", "baz"});
 
 		test.request(2);
-		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(2L);
-		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(3);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(2L);
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(3);
 	}
 
 	@Test
@@ -149,8 +149,8 @@ public class FluxArrayTest {
 				new FluxArray.ArrayConditionalSubscription<>(subscriber, new Object[] {"foo", "bar", "baz"});
 
 		test.cancel();
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 	@Test
@@ -159,21 +159,21 @@ public class FluxArrayTest {
 		FluxArray.ArraySubscription<String> test =
 				new FluxArray.ArraySubscription<>(subscriber, new String[] {"foo", "bar", "baz"});
 
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
-		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(3);
-		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
-		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(subscriber);
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(3);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(subscriber);
 
 		test.poll();
-		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(2);
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(2);
 
 		test.request(2);
-		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(2L);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(2L);
 
 		test.poll();
 		test.poll();
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 	}
 
 	@Test
@@ -183,9 +183,9 @@ public class FluxArrayTest {
 		FluxArray.ArraySubscription<String> test =
 				new FluxArray.ArraySubscription<>(subscriber, new String[] {"foo", "bar", "baz"});
 
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 
 		test.cancel();
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 }

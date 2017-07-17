@@ -29,9 +29,8 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.core.Scannable.IntAttr;
-import reactor.core.Scannable.LongAttr;
-import reactor.core.Scannable.ScannableAttr;
+import reactor.core.Scannable.Attr;
+import reactor.core.Scannable.Attr;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
@@ -340,8 +339,8 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
         Flux<Integer> source = Flux.range(1, 10);
         FluxFlattenIterable<Integer, Integer> test = new FluxFlattenIterable<>(source, i -> new ArrayList<>(i), 35, Queues.one());
 
-        assertThat(test.scan(ScannableAttr.PARENT)).isSameAs(source);
-        assertThat(test.scan(IntAttr.PREFETCH)).isEqualTo(35);
+        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
+        assertThat(test.scan(Attr.PREFETCH)).isEqualTo(35);
     }
 
     @Test
@@ -352,24 +351,24 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
         Subscription s = Operators.emptySubscription();
         test.onSubscribe(s);
 
-        assertThat(test.scan(ScannableAttr.PARENT)).isSameAs(s);
-        assertThat(test.scan(ScannableAttr.ACTUAL)).isSameAs(actual);
-        assertThat(test.scan(IntAttr.PREFETCH)).isEqualTo(123);
+        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(s);
+        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Attr.PREFETCH)).isEqualTo(123);
         test.requested = 35;
-        assertThat(test.scan(LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
+        assertThat(test.scan(Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
         test.queue.add(5);
-        assertThat(test.scan(IntAttr.BUFFERED)).isEqualTo(1);
+        assertThat(test.scan(Attr.BUFFERED)).isEqualTo(1);
 
-        assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
-        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
+        assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         test.error = new IllegalStateException("boom");
-        assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+        assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
         test.onComplete();
-        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+        assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 
-        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();
-        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 
     }
 }

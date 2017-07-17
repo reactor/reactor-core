@@ -152,8 +152,8 @@ final class MonoDelayUntil<T> extends Mono<T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.TERMINATED) return done == n;
-			if (key == BooleanAttr.DELAY_ERROR) return delayError;
+			if (key == Attr.TERMINATED) return done == n;
+			if (key == Attr.DELAY_ERROR) return delayError;
 
 			return super.scanUnsafe(key);
 		}
@@ -267,11 +267,11 @@ final class MonoDelayUntil<T> extends Mono<T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == ScannableAttr.ACTUAL) return parent;
-			if (key == ThrowableAttr.ERROR) return error;
-			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.ACTUAL) return parent;
+			if (key == Attr.ERROR) return error;
+			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
 
 			return null;
 		}

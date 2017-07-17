@@ -80,7 +80,7 @@ final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return main;
+			if (key == Attr.PARENT) return main;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -219,9 +219,9 @@ final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return parent.inner;
-			if (key == ScannableAttr.ACTUAL) return parent;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return parent.requested;
+			if (key == Attr.PARENT) return parent.inner;
+			if (key == Attr.ACTUAL) return parent;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return parent.requested;
 
 			return null;
 		}

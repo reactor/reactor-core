@@ -313,12 +313,12 @@ final class FluxWindowTimeOrSize<T> extends FluxOperator<T, Flux<T>> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.CANCELLED) return cancelled == 1;
-			if (key == ScannableAttr.PARENT) return subscription;
-			if (key == BooleanAttr.TERMINATED) return terminated == TERMINATED_WITH_ERROR || terminated == TERMINATED_WITH_SUCCESS;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == IntAttr.CAPACITY) return batchSize;
-			if (key == IntAttr.BUFFERED) return batchSize - index;
+			if (key == Attr.CANCELLED) return cancelled == 1;
+			if (key == Attr.PARENT) return subscription;
+			if (key == Attr.TERMINATED) return terminated == TERMINATED_WITH_ERROR || terminated == TERMINATED_WITH_SUCCESS;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.CAPACITY) return batchSize;
+			if (key == Attr.BUFFERED) return batchSize - index;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

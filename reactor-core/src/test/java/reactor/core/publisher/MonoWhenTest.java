@@ -471,21 +471,21 @@ public class MonoWhenTest {
 		MonoWhen.WhenCoordinator<String> test = new MonoWhen.WhenCoordinator<>(
 				actual, 2, true, a -> String.valueOf(a[0]));
 
-		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
-		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(2);
-		assertThat(test.scan(Scannable.BooleanAttr.DELAY_ERROR)).isTrue();
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(2);
+		assertThat(test.scan(Scannable.Attr.DELAY_ERROR)).isTrue();
 
-		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.signalError(new IllegalStateException("boom"));
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse(); //done == 1
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse(); //done == 1
 		test.signalError(new IllegalStateException("boom2")); // done == 2
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 	@Test
@@ -495,10 +495,10 @@ public class MonoWhenTest {
 				actual, 10, true, a -> String.valueOf(a[0]));
 
 		test.done = 9;
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 
 		test.done = 10;
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 	}
 
 	@Test
@@ -509,12 +509,12 @@ public class MonoWhenTest {
 		Subscription innerSub = Operators.cancelledSubscription();
 		test.onSubscribe(innerSub);
 
-		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(innerSub);
-		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(coordinator);
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(innerSub);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(coordinator);
 
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 
 		test.error = new IllegalStateException("boom");
-		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+		assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
 	}
 }

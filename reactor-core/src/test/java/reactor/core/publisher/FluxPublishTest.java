@@ -478,74 +478,74 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 	@Test
     public void scanMain() {
         Flux<Integer> parent = Flux.just(1);
-        FluxPublish<Integer> test = new FluxPublish<>(parent, 123, Queues.<Integer>unbounded());
+        FluxPublish<Integer> test = new FluxPublish<>(parent, 123, Queues.unbounded());
 
-        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-        assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(123);
+        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
     }
 
 	@Test
     public void scanSubscriber() {
-        FluxPublish<Integer> main = new FluxPublish<>(Flux.just(1), 123, Queues.<Integer>unbounded());
+        FluxPublish<Integer> main = new FluxPublish<>(Flux.just(1), 123, Queues.unbounded());
         FluxPublish.PublishSubscriber<Integer> test = new FluxPublish.PublishSubscriber<>(789, main);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
-        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-        assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(789);
+        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(789);
         test.queue.add(5);
-        assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+        assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 
-        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
-        assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+        assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
         test.error = new IllegalArgumentException("boom");
-        assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isSameAs(test.error);
+        assertThat(test.scan(Scannable.Attr.ERROR)).isSameAs(test.error);
         test.onComplete();
-        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+        assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 
         test = new FluxPublish.PublishSubscriber<>(789, main);
-        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.onSubscribe(Operators.cancelledSubscription());
-        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 
 	@Test
     public void scanInner() {
-		FluxPublish<Integer> main = new FluxPublish<>(Flux.just(1), 123, Queues.<Integer>unbounded());
+		FluxPublish<Integer> main = new FluxPublish<>(Flux.just(1), 123, Queues.unbounded());
         FluxPublish.PublishSubscriber<Integer> parent = new FluxPublish.PublishSubscriber<>(789, main);
         Subscription sub = Operators.emptySubscription();
         parent.onSubscribe(sub);
         FluxPublish.PublishInner<Integer> test = new FluxPublish.PublishInner<>(parent);
 
-        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(parent);
+        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(parent);
         test.parent = parent;
-        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         test.request(35);
-        assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
+        assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
 
-        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         parent.terminate();
-        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+        assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 
-        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();
-        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 
 	@Test
     public void scanPubSubInner() {
-		FluxPublish<Integer> main = new FluxPublish<>(Flux.just(1), 123, Queues.<Integer>unbounded());
+		FluxPublish<Integer> main = new FluxPublish<>(Flux.just(1), 123, Queues.unbounded());
         FluxPublish.PublishSubscriber<Integer> parent = new FluxPublish.PublishSubscriber<>(789, main);
         Subscription sub = Operators.emptySubscription();
         parent.onSubscribe(sub);
         FluxPublish.PubSubInner<Integer> test = new FluxPublish.PublishInner<>(parent);
 
-        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(parent);
+        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(parent);
         test.request(35);
-        assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
+        assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
 
-        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();
-        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 }

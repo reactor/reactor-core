@@ -158,16 +158,16 @@ final class StrictSubscriber<T> implements Scannable, CoreSubscriber<T>, Subscri
 	@Override
 	@Nullable
 	public Object scanUnsafe(Attr key) {
-		if (key == ScannableAttr.PARENT) {
+		if (key == Attr.PARENT) {
 			return s;
 		}
-		if (key == BooleanAttr.CANCELLED) {
+		if (key == Attr.CANCELLED) {
 			return s == Operators.cancelledSubscription();
 		}
-		if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) {
+		if (key == Attr.REQUESTED_FROM_DOWNSTREAM) {
 			return requested;
 		}
-		if (key == ScannableAttr.ACTUAL) {
+		if (key == Attr.ACTUAL) {
 			return actual;
 		}
 

@@ -204,10 +204,10 @@ class MonoFilterWhen<T> extends MonoOperator<T, T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return upstream;
-			if (key == BooleanAttr.TERMINATED) return asyncFilter != null
-					? asyncFilter.scanUnsafe(BooleanAttr.TERMINATED)
-					: super.scanUnsafe(BooleanAttr.TERMINATED);
+			if (key == Attr.PARENT) return upstream;
+			if (key == Attr.TERMINATED) return asyncFilter != null
+					? asyncFilter.scanUnsafe(Attr.TERMINATED)
+					: super.scanUnsafe(Attr.TERMINATED);
 
 			//CANCELLED, PREFETCH
 			return super.scanUnsafe(key);
@@ -287,12 +287,12 @@ class MonoFilterWhen<T> extends MonoOperator<T, T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return sub;
-			if (key == ScannableAttr.ACTUAL) return main;
-			if (key == BooleanAttr.CANCELLED) return sub == Operators.cancelledSubscription();
-			if (key == BooleanAttr.TERMINATED) return done;
-			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return done ? 0L : 1L;
+			if (key == Attr.PARENT) return sub;
+			if (key == Attr.ACTUAL) return main;
+			if (key == Attr.CANCELLED) return sub == Operators.cancelledSubscription();
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return done ? 0L : 1L;
 
 			return null;
 		}

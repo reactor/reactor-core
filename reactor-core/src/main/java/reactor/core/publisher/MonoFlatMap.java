@@ -90,9 +90,9 @@ final class MonoFlatMap<T, R> extends MonoOperator<T, R> implements Fuseable {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
-			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == Attr.TERMINATED) return done;
 
 			return super.scanUnsafe(key);
 		}
@@ -213,10 +213,10 @@ final class MonoFlatMap<T, R> extends MonoOperator<T, R> implements Fuseable {
 		@Nullable
 		@Override
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == ScannableAttr.ACTUAL) return parent;
-			if (key == BooleanAttr.TERMINATED) return done;
-			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.ACTUAL) return parent;
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
 
 			return null;
 		}

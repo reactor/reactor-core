@@ -28,8 +28,8 @@ public class ConnectableFluxOnAssemblyTest {
 		ConnectableFlux<String> source = Flux.just("foo").publish();
 		ConnectableFluxOnAssembly<String> test = new ConnectableFluxOnAssembly<>(source);
 
-		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(-1);
-		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(source);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(-1);
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
 	}
 
 }

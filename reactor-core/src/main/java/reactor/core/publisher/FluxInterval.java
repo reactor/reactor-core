@@ -93,7 +93,7 @@ final class FluxInterval extends Flux<Long> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.CANCELLED) return cancelled;
+			if (key == Attr.CANCELLED) return cancelled;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}

@@ -43,12 +43,12 @@ public class FluxErrorTest {
         FluxErrorOnRequest.ErrorSubscription test =
                 new FluxErrorOnRequest.ErrorSubscription(subscriber, new IllegalStateException("boom"));
 
-        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
-        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
-        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(subscriber);
-        assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+        assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(subscriber);
+        assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
         test.request(1);
-        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+        assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
     }
 
     @Test
@@ -58,8 +58,8 @@ public class FluxErrorTest {
 	    FluxErrorOnRequest.ErrorSubscription test =
                 new FluxErrorOnRequest.ErrorSubscription(subscriber, new IllegalStateException("boom"));
 
-        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();
-        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 }

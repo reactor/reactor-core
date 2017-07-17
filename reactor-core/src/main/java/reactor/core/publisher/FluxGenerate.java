@@ -129,10 +129,10 @@ extends Flux<T> implements Fuseable {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.TERMINATED) return terminate;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == BooleanAttr.CANCELLED) return cancelled;
-			if (key == ThrowableAttr.ERROR) return generatedError;
+			if (key == Attr.TERMINATED) return terminate;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.ERROR) return generatedError;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}

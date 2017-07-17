@@ -162,10 +162,10 @@ final class FluxOnBackpressureDrop<T> extends FluxOperator<T, T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == BooleanAttr.TERMINATED) return done;
-			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

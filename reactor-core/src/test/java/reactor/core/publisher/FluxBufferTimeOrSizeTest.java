@@ -75,19 +75,19 @@ public class FluxBufferTimeOrSizeTest {
 		test.requested = 3L;
 		test.index = 100;
 
-		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(subscription);
-		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(subscription);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 
-		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(3L);
-		assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(123);
-		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(23);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(3L);
+		assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(123);
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(23);
 
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 
 		test.onError(new IllegalStateException("boom"));
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 	}
 
 	@Test
@@ -98,11 +98,11 @@ public class FluxBufferTimeOrSizeTest {
 		FluxBufferTimeOrSize.BufferTimeoutSubscriber<String, List<String>> test = new FluxBufferTimeOrSize.BufferTimeoutSubscriber<String, List<String>>(
 						actual, 123, 1000, Schedulers.elastic().createWorker(), ArrayList::new);
 
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 
 		test.cancel();
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 	}
 }

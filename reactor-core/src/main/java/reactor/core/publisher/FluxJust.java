@@ -139,7 +139,7 @@ final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, F
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.TERMINATED || key == BooleanAttr.CANCELLED) return terminado;
+			if (key == Attr.TERMINATED || key == Attr.CANCELLED) return terminado;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}

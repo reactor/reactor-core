@@ -1063,8 +1063,8 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 	@Override
 	@Nullable
 	public Object scanUnsafe(Scannable.Attr key) {
-		if (key == IntAttr.PREFETCH) return getPrefetch();
-		if (key == ScannableAttr.PARENT) return source;
+		if (key == Attr.PREFETCH) return getPrefetch();
+		if (key == Attr.PARENT) return source;
 
 		return null;
 	}
@@ -1265,13 +1265,13 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
-			if (key == IntAttr.CAPACITY) return buffer.capacity();
-			if (key == ThrowableAttr.ERROR) return buffer.getError();
-			if (key == IntAttr.BUFFERED) return buffer.size();
-			if (key == BooleanAttr.TERMINATED) return isTerminated();
-			if (key == BooleanAttr.CANCELLED) return cancelled;
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == Attr.CAPACITY) return buffer.capacity();
+			if (key == Attr.ERROR) return buffer.getError();
+			if (key == Attr.BUFFERED) return buffer.size();
+			if (key == Attr.TERMINATED) return isTerminated();
+			if (key == Attr.CANCELLED) return cancelled;
 
 			return null;
 		}
@@ -1340,11 +1340,11 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return parent;
-			if (key == BooleanAttr.TERMINATED) return parent != null && parent.isTerminated();
-			if (key == IntAttr.BUFFERED) return size();
-			if (key == BooleanAttr.CANCELLED) return isCancelled();
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return isCancelled() ? 0L : requested;
+			if (key == Attr.PARENT) return parent;
+			if (key == Attr.TERMINATED) return parent != null && parent.isTerminated();
+			if (key == Attr.BUFFERED) return size();
+			if (key == Attr.CANCELLED) return isCancelled();
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return isCancelled() ? 0L : requested;
 
 			return ReplaySubscription.super.scanUnsafe(key);
 		}
