@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import javax.annotation.Nullable;
@@ -63,7 +64,14 @@ final class FluxInterval extends Flux<Long> {
 
 		s.onSubscribe(r);
 
-		w.schedulePeriodically(r, initialDelay, period, unit);
+		try {
+			w.schedulePeriodically(r, initialDelay, period, unit);
+		}
+		catch (RejectedExecutionException ree) {
+			if (!r.cancelled) {
+				s.onError(Operators.onRejectedExecution(ree, r, null, null));
+			}
+		}
 	}
 
 	static final class IntervalRunnable implements Runnable, Subscription,

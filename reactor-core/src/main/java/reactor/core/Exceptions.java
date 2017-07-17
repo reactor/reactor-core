@@ -17,6 +17,7 @@
 package reactor.core;
 
 import java.util.Objects;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
@@ -174,6 +175,21 @@ public abstract class Exceptions {
 	}
 
 	/**
+	 * @return a singleton {@link RejectedExecutionException}
+	 */
+	public static RejectedExecutionException failWithRejected() {
+		return REJECTED_EXECUTION;
+	}
+
+	/**
+	 * @param cause
+	 * @return return a new {@link RejectedExecutionException} with standard message and cause
+	 */
+	public static RejectedExecutionException failWithRejected(Throwable cause) {
+		return new RejectedExecutionException("Scheduler unavailable", cause);
+	}
+
+	/**
 	 * Check if the given exception represents an {@link #failWithOverflow() overflow}.
 	 * @param t the {@link Throwable} error to check
 	 * @return true if the given {@link Throwable} represents an overflow.
@@ -317,6 +333,8 @@ public abstract class Exceptions {
 
 	Exceptions() {
 	}
+
+	static final RejectedExecutionException REJECTED_EXECUTION = new RejectedExecutionException("Scheduler unavailable");
 
 	static class BubblingException extends ReactiveException {
 

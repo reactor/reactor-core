@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
+import org.assertj.core.api.Assertions;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -104,8 +105,8 @@ public class SchedulersTest {
 
 
 		Assert.assertNotSame(cachedTimerOld, standaloneTimer);
-		Assert.assertNotSame(cachedTimerOld.schedule(() -> {}), Scheduler.REJECTED);
-		Assert.assertNotSame(standaloneTimer.schedule(() -> {}), Scheduler.REJECTED);
+		Assert.assertNotNull(cachedTimerOld.schedule(() -> {}));
+		Assert.assertNotNull(standaloneTimer.schedule(() -> {}));
 
 		Schedulers.setFactory(ts2);
 		Scheduler cachedTimerNew = Schedulers.newSingle("unused");
@@ -113,13 +114,12 @@ public class SchedulersTest {
 		Assert.assertEquals(cachedTimerNew, Schedulers.newSingle("unused"));
 		Assert.assertNotSame(cachedTimerNew, cachedTimerOld);
 		//assert that the old factory"s cached scheduler was shut down
-		Disposable disposable = cachedTimerOld.schedule(() -> {});
-		System.out.println(disposable);
-		Assert.assertEquals(disposable, Scheduler.REJECTED);
+		Assertions.assertThatExceptionOfType(RejectedExecutionException.class)
+		          .isThrownBy(() -> cachedTimerOld.schedule(() -> {}));
 		//independently created schedulers are still the programmer"s responsibility
-		Assert.assertNotSame(standaloneTimer.schedule(() -> {}), Scheduler.REJECTED);
+		Assert.assertNotNull(standaloneTimer.schedule(() -> {}));
 		//new factory = new alive cached scheduler
-		Assert.assertNotSame(cachedTimerNew.schedule(() -> {}), Scheduler.REJECTED);
+		Assert.assertNotNull(cachedTimerNew.schedule(() -> {}));
 	}
 
 	@Test
@@ -233,27 +233,6 @@ public class SchedulersTest {
 		});
 
 		service.dispose();
-	}
-
-	Scheduler.Worker runTest(final Scheduler.Worker dispatcher)
-			throws InterruptedException {
-		CountDownLatch tasksCountDown = new CountDownLatch(N);
-
-		dispatcher.schedule(() -> {
-			for (int i = 0; i < N; i++) {
-				dispatcher.schedule(tasksCountDown::countDown);
-			}
-		});
-
-		boolean check = tasksCountDown.await(10, TimeUnit.SECONDS);
-		if (exceptionThrown.get() != null) {
-			exceptionThrown.get()
-			               .printStackTrace();
-		}
-		Assert.assertTrue(exceptionThrown.get() == null);
-		Assert.assertTrue(check);
-
-		return dispatcher;
 	}
 
 	@Test

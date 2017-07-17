@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
@@ -184,20 +185,18 @@ final class FluxWindowTimeOrSize<T> extends FluxOperator<T, Flux<T>> {
 
 		//this is necessary so that the case where timer is rejected from the beginning is handled correctly
 		void subscribeAndCreateWindow() {
-			timespanRegistration = timer.schedule(flushTask, timespan, TimeUnit.MILLISECONDS);
-			if (timespanRegistration == Scheduler.REJECTED) {
-				RuntimeException error = Operators.onRejectedExecution(null, null, null);
-				subscription.cancel();
-				actual.onSubscribe(this);
-				actual.onError(error);
-			}
-			else {
+			try {
+				timespanRegistration = timer.schedule(flushTask, timespan, TimeUnit.MILLISECONDS);
 				WINDOW_COUNT.getAndIncrement(this);
 				Window<T> _currentWindow = new Window<>(timerScheduler);
 				currentWindow = _currentWindow;
 				actual.onSubscribe(this);
 				//hold on emitting the window until either the first close by timeout
 				//or the first emission, which will follow the subscribe
+			}
+			catch (RejectedExecutionException ree) {
+				RuntimeException error = Operators.onRejectedExecution(ree, subscription, null, null);
+				Operators.error(actual, error);
 			}
 		}
 
@@ -232,13 +231,15 @@ final class FluxWindowTimeOrSize<T> extends FluxOperator<T, Flux<T>> {
 		}
 
 		boolean timerStart() {
-			timespanRegistration = timer.schedule(flushTask, timespan, TimeUnit.MILLISECONDS);
-			if (timespanRegistration == Scheduler.REJECTED) {
-				RuntimeException error = Operators.onRejectedExecution(null, null, null);
+			try {
+				timespanRegistration = timer.schedule(flushTask, timespan, TimeUnit.MILLISECONDS);
+				return true;
+			}
+			catch (RejectedExecutionException ree) {
+				RuntimeException error = Operators.onRejectedExecution(ree, null, null, null);
 				onError(error);
 				return false;
 			}
-			return true;
 		}
 
 		void timerCancel() {

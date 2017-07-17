@@ -17,14 +17,13 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.scheduler.Scheduler;
-
-import static reactor.core.scheduler.Scheduler.REJECTED;
 
 final class FluxCancelOn<T> extends FluxOperator<T, T> {
 
@@ -107,9 +106,11 @@ final class FluxCancelOn<T> extends FluxOperator<T, T> {
 		@Override
 		public void cancel() {
 			if (CANCELLED.compareAndSet(this, 0, 1)) {
-				if (scheduler.schedule(this) == REJECTED) {
-					//TODO should this really throw onRejectedExecution?
-					throw Operators.onRejectedExecution();
+				try {
+					scheduler.schedule(this);
+				}
+				catch (RejectedExecutionException ree) {
+					throw Operators.onRejectedExecution(ree);
 				}
 			}
 		}

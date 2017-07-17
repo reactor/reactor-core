@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
@@ -59,9 +60,14 @@ final class FluxSubscribeOn<T> extends FluxOperator<T, T> {
 
 		SubscribeOnSubscriber<T> parent = new SubscribeOnSubscriber<>(source, s, worker);
 		s.onSubscribe(parent);
-		
-		if (worker.schedule(parent) == Scheduler.REJECTED && !worker.isDisposed()) {
-			s.onError(Operators.onRejectedExecution(parent, null, null));
+
+		try {
+			worker.schedule(parent);
+		}
+		catch (RejectedExecutionException ree) {
+			if (!worker.isDisposed()) {
+				s.onError(Operators.onRejectedExecution(ree, parent, null, null));
+			}
 		}
 	}
 
@@ -117,9 +123,13 @@ final class FluxSubscribeOn<T> extends FluxOperator<T, T> {
 				s.request(n);
 			}
 			else {
-				if(worker.schedule(() -> s.request(n)) == Scheduler.REJECTED &&
-						!worker.isDisposed()){
-					throw Operators.onRejectedExecution(this, null, null);
+				try {
+					worker.schedule(() -> s.request(n));
+				}
+				catch (RejectedExecutionException ree) {
+					if(!worker.isDisposed()) {
+						throw Operators.onRejectedExecution(ree, this, null, null);
+					}
 				}
 			}
 		}

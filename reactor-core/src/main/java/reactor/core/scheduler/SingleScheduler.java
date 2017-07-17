@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
 
 import reactor.core.Disposable;
+import reactor.core.Exceptions;
 import reactor.util.concurrent.OpenHashSet;
 
 /**
@@ -118,26 +119,18 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 
 	@Override
 	public Disposable schedule(Runnable task) {
-		try {
-			return new ExecutorServiceScheduler.DisposableFuture(
-					executor.submit(task),
-					false);
-		}
-		catch (RejectedExecutionException ex) {
-			return REJECTED;
-		}
+		//RejectedExecutionException are propagated up
+		return new ExecutorServiceScheduler.DisposableFuture(
+				executor.submit(task),
+				false);
 	}
 
 	@Override
 	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
-		try {
-			return new ExecutorServiceScheduler.DisposableFuture(
-					executor.schedule(task, delay, unit),
-					false);
-		}
-		catch (RejectedExecutionException ex) {
-			return REJECTED;
-		}
+		//RejectedExecutionException are propagated up
+		return new ExecutorServiceScheduler.DisposableFuture(
+				executor.schedule(task, delay, unit),
+				false);
 	}
 
 	@Override
@@ -145,14 +138,10 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 			long initialDelay,
 			long period,
 			TimeUnit unit) {
-		try {
-			return new ExecutorServiceScheduler.DisposableFuture(
-					executor.scheduleAtFixedRate(task, initialDelay, period, unit),
-					false);
-		}
-		catch (RejectedExecutionException ex) {
-			return REJECTED;
-		}
+		//RejectedExecutionException are propagated up
+		return new ExecutorServiceScheduler.DisposableFuture(
+				executor.scheduleAtFixedRate(task, initialDelay, period, unit),
+				false);
 	}
 
 	@Override
@@ -181,7 +170,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		@Override
 		public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 			if (shutdown) {
-				return REJECTED;
+				throw Exceptions.failWithRejected();
 			}
 
 			ScheduledRunnable sr = new ScheduledRunnable(task, this);
@@ -199,7 +188,8 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 			}
 			catch (RejectedExecutionException ex) {
 				sr.dispose();
-				return REJECTED;
+				//RejectedExecutionException are propagated up
+				throw ex;
 			}
 
 			return sr;
@@ -211,7 +201,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 				long period,
 				TimeUnit unit) {
 			if (shutdown) {
-				return REJECTED;
+				throw Exceptions.failWithRejected();
 			}
 
 			ScheduledRunnable sr = new ScheduledRunnable(task, this);
@@ -223,7 +213,8 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 			}
 			catch (RejectedExecutionException ex) {
 				sr.dispose();
-				return REJECTED;
+				//RejectedExecutionException are propagated up
+				throw ex;
 			}
 
 			return sr;

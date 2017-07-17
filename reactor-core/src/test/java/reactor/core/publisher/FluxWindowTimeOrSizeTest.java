@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -134,7 +135,7 @@ public class FluxWindowTimeOrSizeTest {
 		Scheduler testScheduler = new Scheduler() {
 			@Override
 			public Disposable schedule(Runnable task) {
-				return Scheduler.REJECTED;
+				throw Exceptions.failWithRejected();
 			}
 
 			@Override
@@ -142,7 +143,7 @@ public class FluxWindowTimeOrSizeTest {
 				return new Worker() {
 					@Override
 					public Disposable schedule(Runnable task) {
-						return Scheduler.REJECTED;
+						throw Exceptions.failWithRejected();
 					}
 
 					@Override
@@ -164,7 +165,7 @@ public class FluxWindowTimeOrSizeTest {
 		Scheduler testScheduler = new Scheduler() {
 			@Override
 			public Disposable schedule(Runnable task) {
-				return Scheduler.REJECTED;
+				throw Exceptions.failWithRejected();
 			}
 
 			@Override
@@ -175,13 +176,13 @@ public class FluxWindowTimeOrSizeTest {
 
 					@Override
 					public Disposable schedule(Runnable task) {
-						return REJECTED;
+						throw Exceptions.failWithRejected();
 					}
 
 					@Override
 					public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 						if (reject.get())
-							return Scheduler.REJECTED;
+							throw Exceptions.failWithRejected();
 						return delegate.schedule(task, delay, unit);
 					}
 

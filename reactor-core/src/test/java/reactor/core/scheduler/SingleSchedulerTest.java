@@ -35,7 +35,7 @@ public class SingleSchedulerTest extends AbstractSchedulerTest {
 
 	@Override
 	protected Scheduler scheduler() {
-		return Schedulers.single();
+		return Schedulers.newSingle("SingleSchedulerTest");
 	}
 
 	@Override

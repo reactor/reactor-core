@@ -18,7 +18,6 @@ package reactor.core.scheduler;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -28,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
 
 import reactor.core.Disposable;
+import reactor.core.Exceptions;
 import reactor.util.concurrent.OpenHashSet;
 
 /**
@@ -150,38 +150,28 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 	@Override
     public Disposable schedule(Runnable task) {
         ScheduledExecutorService exec = pick();
-	    try {
-		    return new ExecutorServiceScheduler.DisposableFuture(
-				    exec.submit(task),
-				    false);
-	    }
-	    catch (RejectedExecutionException ex) {
-		    return REJECTED;
-	    }
+        //RejectedExecutionException are propagated up
+        return new ExecutorServiceScheduler.DisposableFuture(
+                exec.submit(task),
+                false);
     }
+
     @Override
     public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
         ScheduledExecutorService exec = pick();
-	    try {
-		    return new ExecutorServiceScheduler.DisposableFuture(
-				    exec.schedule(task, delay, unit),
-				    false);
-	    }
-	    catch (RejectedExecutionException ex) {
-		    return REJECTED;
-	    }
+        //RejectedExecutionException are propagated up
+        return new ExecutorServiceScheduler.DisposableFuture(
+                exec.schedule(task, delay, unit),
+                false);
     }
+
     @Override
     public Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
         ScheduledExecutorService exec = pick();
-	    try {
-		    return new ExecutorServiceScheduler.DisposableFuture(
-				    exec.scheduleAtFixedRate(task, initialDelay, period, unit),
-				    false);
-	    }
-	    catch (RejectedExecutionException ex) {
-		    return REJECTED;
-	    }
+        //RejectedExecutionException are propagated up
+        return new ExecutorServiceScheduler.DisposableFuture(
+                exec.scheduleAtFixedRate(task, initialDelay, period, unit),
+                false);
     }
 
     @Override
@@ -204,24 +194,20 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 	    @Override
         public Disposable schedule(Runnable task) {
             if (shutdown) {
-                return REJECTED;
+                throw Exceptions.failWithRejected();
             }
             
             ParallelWorkerTask pw = new ParallelWorkerTask(task, this);
             
             synchronized (this) {
                 if (shutdown) {
-                    return REJECTED;
+                    throw Exceptions.failWithRejected();
                 }
                 tasks.add(pw);
             }
-            
-            Future<?> f;
-            try {
-                f = exec.submit(pw);
-            } catch (RejectedExecutionException ex) {
-                return REJECTED;
-            }
+
+            //RejectedExecutionException are propagated up
+            Future<?> f = exec.submit(pw);
 
             if (shutdown){
             	f.cancel(true);
@@ -236,24 +222,20 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
         @Override
         public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
             if (shutdown) {
-                return REJECTED;
+                throw Exceptions.failWithRejected();
             }
 
             ParallelWorkerTask pw = new ParallelWorkerTask(task, this);
 
             synchronized (this) {
                 if (shutdown) {
-                    return REJECTED;
+                    throw Exceptions.failWithRejected();
                 }
                 tasks.add(pw);
             }
 
-            Future<?> f;
-            try {
-                f = exec.schedule(pw, delay, unit);
-            } catch (RejectedExecutionException ex) {
-                return REJECTED;
-            }
+            //RejectedExecutionException are propagated up
+            Future<?> f = exec.schedule(pw, delay, unit);
 
             if (shutdown){
                 f.cancel(true);
@@ -269,24 +251,20 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
         public Disposable schedulePeriodically(Runnable task, long initialDelay,
                 long period, TimeUnit unit) {
             if (shutdown) {
-                return REJECTED;
+                throw Exceptions.failWithRejected();
             }
 
             ParallelWorkerTask pw = new ParallelWorkerTask(task, this);
 
             synchronized (this) {
                 if (shutdown) {
-                    return REJECTED;
+                    throw Exceptions.failWithRejected();
                 }
                 tasks.add(pw);
             }
 
-            Future<?> f;
-            try {
-                f = exec.scheduleAtFixedRate(pw, initialDelay, period, unit);
-            } catch (RejectedExecutionException ex) {
-                return REJECTED;
-            }
+            //RejectedExecutionException are propagated up
+            Future<?> f = exec.scheduleAtFixedRate(pw, initialDelay, period, unit);
 
             if (shutdown){
                 f.cancel(true);

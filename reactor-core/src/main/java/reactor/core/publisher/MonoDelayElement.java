@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
@@ -110,12 +111,12 @@ final class MonoDelayElement<T> extends MonoOperator<T, T> {
 				return;
 			}
 			this.done = true;
-			Disposable task = scheduler.schedule(() -> complete(t), delay, unit);
-			if (task == Scheduler.REJECTED) {
-					throw Operators.onRejectedExecution(this, null, t);
-			}
-			else {
+			try {
+				Disposable task = scheduler.schedule(() -> complete(t), delay, unit);
 				this.task = task;
+			}
+			catch (RejectedExecutionException ree) {
+				throw Operators.onRejectedExecution(ree, this, null, t);
 			}
 		}
 

@@ -15,11 +15,14 @@
  */
 package reactor.core.scheduler;
 
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
+import reactor.core.Exceptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * @author Stephane Maldini
@@ -51,15 +54,19 @@ public class ExecutorSchedulerTest extends AbstractSchedulerTest {
 		Scheduler scheduler = scheduler();
 		Scheduler.Worker worker = scheduler.createWorker();
 		try {
-			assertThat(scheduler.schedule(() -> { }, 100, TimeUnit.MILLISECONDS))
-					.isSameAs(Scheduler.REJECTED);
-			assertThat(scheduler.schedulePeriodically(() -> { }, 100, 100, TimeUnit.MILLISECONDS))
-					.isSameAs(Scheduler.REJECTED);
+			assertThatExceptionOfType(RejectedExecutionException.class)
+					.isThrownBy(() -> scheduler.schedule(() -> { }, 100, TimeUnit.MILLISECONDS))
+					.isSameAs(Exceptions.failWithRejected());
+			assertThatExceptionOfType(RejectedExecutionException.class)
+					.isThrownBy(() -> scheduler.schedulePeriodically(() -> { }, 100, 100, TimeUnit.MILLISECONDS))
+					.isSameAs(Exceptions.failWithRejected());
 
-			assertThat(worker.schedule(() -> { }, 100, TimeUnit.MILLISECONDS))
-					.isSameAs(Scheduler.REJECTED);
-			assertThat(worker.schedulePeriodically(() -> { }, 100, 100, TimeUnit.MILLISECONDS))
-					.isSameAs(Scheduler.REJECTED);
+			assertThatExceptionOfType(RejectedExecutionException.class)
+					.isThrownBy(() -> worker.schedule(() -> { }, 100, TimeUnit.MILLISECONDS))
+					.isSameAs(Exceptions.failWithRejected());
+			assertThatExceptionOfType(RejectedExecutionException.class)
+					.isThrownBy(() -> worker.schedulePeriodically(() -> { }, 100, 100, TimeUnit.MILLISECONDS))
+					.isSameAs(Exceptions.failWithRejected());
 		}
 		finally {
 			worker.dispose();

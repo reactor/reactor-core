@@ -20,11 +20,11 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import reactor.core.Disposable;
+import reactor.core.Exceptions;
 import reactor.util.concurrent.OpenHashSet;
 
 /**
@@ -51,16 +51,12 @@ final class ExecutorScheduler implements Scheduler {
 	@Override
 	public Disposable schedule(Runnable task) {
 		if(terminated){
-			return REJECTED;
+			throw Exceptions.failWithRejected();
 		}
 		Objects.requireNonNull(task, "task");
 		ExecutorPlainRunnable r = new ExecutorPlainRunnable(task);
-		try {
-			executor.execute(r);
-		}
-		catch (RejectedExecutionException ex) {
-			return REJECTED;
-		}
+		//RejectedExecutionException are propagated up
+		executor.execute(r);
 		return r;
 	}
 
@@ -208,13 +204,13 @@ final class ExecutorScheduler implements Scheduler {
 		public Disposable schedule(Runnable task) {
 			Objects.requireNonNull(task, "task");
 			if (terminated) {
-				return REJECTED;
+				throw Exceptions.failWithRejected();
 			}
 
 			ExecutorTrackedRunnable r = new ExecutorTrackedRunnable(task, this, true);
 			synchronized (this) {
 				if (terminated) {
-					return REJECTED;
+					throw Exceptions.failWithRejected();
 				}
 				tasks.add(r);
 			}
@@ -229,7 +225,7 @@ final class ExecutorScheduler implements Scheduler {
 					}
 				}
 				Schedulers.handleError(ex);
-				return REJECTED;
+				throw Exceptions.failWithRejected();
 			}
 
 			return r;
@@ -302,13 +298,13 @@ final class ExecutorScheduler implements Scheduler {
 		public Disposable schedule(Runnable task) {
 			Objects.requireNonNull(task, "task");
 			if (terminated) {
-				return REJECTED;
+				throw Exceptions.failWithRejected();
 			}
 
 			ExecutorTrackedRunnable r = new ExecutorTrackedRunnable(task, this, false);
 			synchronized (this) {
 				if (terminated) {
-					return REJECTED;
+					throw Exceptions.failWithRejected();
 				}
 				queue.offer(r);
 			}
@@ -320,7 +316,7 @@ final class ExecutorScheduler implements Scheduler {
 				catch (Throwable ex) {
 					r.dispose();
 					Schedulers.handleError(ex);
-					return REJECTED;
+					throw Exceptions.failWithRejected();
 				}
 			}
 

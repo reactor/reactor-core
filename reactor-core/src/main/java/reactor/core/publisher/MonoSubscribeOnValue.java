@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.concurrent.RejectedExecutionException;
 import javax.annotation.Nullable;
 
 import reactor.core.CoreSubscriber;
@@ -47,14 +48,14 @@ final class MonoSubscribeOnValue<T> extends Mono<T> {
 		if (v == null) {
 			ScheduledEmpty parent = new ScheduledEmpty(s);
 			s.onSubscribe(parent);
-			Disposable f = scheduler.schedule(parent);
-			if (f == Scheduler.REJECTED) {
-				if (parent.future != Disposables.DISPOSED) {
-					s.onError(Operators.onRejectedExecution());
-				}
-			}
-			else {
+			try {
+				Disposable f = scheduler.schedule(parent);
 				parent.setFuture(f);
+			}
+			catch (RejectedExecutionException ree) {
+				if (parent.future != Disposables.DISPOSED) {
+					s.onError(Operators.onRejectedExecution(ree));
+				}
 			}
 		}
 		else {

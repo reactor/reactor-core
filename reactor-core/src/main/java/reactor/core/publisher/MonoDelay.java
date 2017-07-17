@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
@@ -51,15 +52,14 @@ final class MonoDelay extends Mono<Long> {
 
 		s.onSubscribe(r);
 
-		Disposable f = timedScheduler.schedule(r, delay, unit);
-		if (f == Scheduler.REJECTED) {
-			if(r.cancel != Disposables.DISPOSED &&
-					r.cancel != MonoDelayRunnable.FINISHED) {
-				s.onError(Operators.onRejectedExecution(r, null, null));
-			}
-		}
-		else {
+		try {
+			Disposable f = timedScheduler.schedule(r, delay, unit);
 			r.setCancel(f);
+		}
+		catch (RejectedExecutionException ree) {
+			if(r.cancel != Disposables.DISPOSED) {
+				s.onError(Operators.onRejectedExecution(ree, r, null, null));
+			}
 		}
 	}
 

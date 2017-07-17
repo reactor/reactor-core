@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
@@ -97,38 +98,48 @@ final class MonoPublishOn<T> extends MonoOperator<T, T> {
 		@Override
 		public void onNext(T t) {
 			value = t;
-			if(schedule() == Scheduler.REJECTED){
-				throw Operators.onRejectedExecution(this, null, t);
-			}
+			schedule(this, null, t);
 		}
 
 		@Override
 		public void onError(Throwable t) {
 			error = t;
-			if (schedule() == Scheduler.REJECTED) {
-				throw Operators.onRejectedExecution(null, t, null);
-			}
+			schedule(null, t, null);
 		}
 
 		@Override
 		public void onComplete() {
 			if (value == null) {
-				if (schedule() == Scheduler.REJECTED && future != Disposables.DISPOSED) {
-					throw Operators.onRejectedExecution();
-				}
+				schedule(null, null, null,
+						future != Disposables.DISPOSED);
 			}
 		}
 
-		@Nullable
-		Disposable schedule() {
+		void schedule(
+				@Nullable Subscription subscription,
+				@Nullable Throwable suppressed,
+				@Nullable Object dataSignal) {
+			schedule(subscription, suppressed, dataSignal, true);
+		}
+
+		void schedule(
+				@Nullable Subscription subscription,
+				@Nullable Throwable suppressed,
+				@Nullable Object dataSignal,
+				boolean additionalCondition) {
 			if (future == null) {
-				Disposable c = scheduler.schedule(this);
-				if (!FUTURE.compareAndSet(this, null, c)) {
-					c.dispose();
+				try {
+					Disposable c = scheduler.schedule(this);
+					if (!FUTURE.compareAndSet(this, null, c)) {
+						c.dispose();
+					}
 				}
-				return c;
+				catch (RejectedExecutionException ree) {
+					if (additionalCondition) {
+						throw Operators.onRejectedExecution(ree, subscription, suppressed, dataSignal);
+					}
+				}
 			}
-			return null;
 		}
 
 		@Override

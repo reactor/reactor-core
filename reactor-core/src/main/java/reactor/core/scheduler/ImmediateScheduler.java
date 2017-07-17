@@ -16,6 +16,7 @@
 package reactor.core.scheduler;
 
 import reactor.core.Disposable;
+import reactor.core.Exceptions;
 
 /**
  * Executes tasks on the caller's thread immediately.
@@ -62,7 +63,7 @@ final class ImmediateScheduler implements Scheduler {
         @Override
         public Disposable schedule(Runnable task) {
             if (shutdown) {
-                return REJECTED;
+                throw Exceptions.failWithRejected();
             }
             task.run();
             return EMPTY;

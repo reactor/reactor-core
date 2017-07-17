@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import reactor.core.Disposable;
+import reactor.core.Exceptions;
 import reactor.util.concurrent.OpenHashSet;
 
 import static reactor.core.scheduler.ExecutorServiceScheduler.CANCELLED;
@@ -170,12 +171,8 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 		};
 		Future<?> f;
 
-		try {
-			f = exec.submit(wrapper);
-		}
-		catch (RejectedExecutionException ex) {
-			return REJECTED;
-		}
+		//RejectedExecutionException are propagated up
+		f = exec.submit(wrapper);
 		return new ExecutorServiceScheduler.DisposableFuture(f, true);
 	}
 
@@ -196,12 +193,8 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 		};
 		Future<?> f;
 
-		try {
-			f = exec.schedule(wrapper, delay, unit);
-		}
-		catch (RejectedExecutionException ex) {
-			return REJECTED;
-		}
+		//RejectedExecutionException are propagated up
+		f = exec.schedule(wrapper, delay, unit);
 		return new ExecutorServiceScheduler.DisposableFuture(f, true);
 	}
 
@@ -222,12 +215,8 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 		};
 		Future<?> f;
 
-		try {
-			f = exec.scheduleAtFixedRate(wrapper, initialDelay, period, unit);
-		}
-		catch (RejectedExecutionException ex) {
-			return REJECTED;
-		}
+		//RejectedExecutionException are propagated up
+		f = exec.scheduleAtFixedRate(wrapper, initialDelay, period, unit);
 		return new ExecutorServiceScheduler.DisposableFuture(f, true);
 	}
 
@@ -293,25 +282,20 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 		@Override
 		public Disposable schedule(Runnable task) {
 			if (shutdown) {
-				return REJECTED;
+				throw Exceptions.failWithRejected();
 			}
 
 			CachedTask ct = new CachedTask(task, this);
 
 			synchronized (this) {
 				if (shutdown) {
-					return REJECTED;
+					throw Exceptions.failWithRejected();
 				}
 				tasks.add(ct);
 			}
 
-			Future<?> f;
-			try {
-				f = executor.submit(ct);
-			}
-			catch (RejectedExecutionException ex) {
-				return REJECTED;
-			}
+			//RejectedExecutionException are propagated up
+			Future<?> f = executor.submit(ct);
 
 			ct.setFuture(f);
 
@@ -321,25 +305,20 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 		@Override
 		public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 			if (shutdown) {
-				return REJECTED;
+				throw Exceptions.failWithRejected();
 			}
 
 			CachedTask ct = new CachedTask(task, this);
 
 			synchronized (this) {
 				if (shutdown) {
-					return REJECTED;
+					throw Exceptions.failWithRejected();
 				}
 				tasks.add(ct);
 			}
 
-			Future<?> f;
-			try {
-				f = executor.schedule(ct, delay, unit);
-			}
-			catch (RejectedExecutionException ex) {
-				return REJECTED;
-			}
+			//RejectedExecutionException are propagated up
+			Future<?> f = executor.schedule(ct, delay, unit);
 
 			ct.setFuture(f);
 
@@ -349,25 +328,20 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 		@Override
 		public Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
 			if (shutdown) {
-				return REJECTED;
+				throw Exceptions.failWithRejected();
 			}
 
 			CachedTask ct = new CachedTask(task, this);
 
 			synchronized (this) {
 				if (shutdown) {
-					return REJECTED;
+					throw Exceptions.failWithRejected();
 				}
 				tasks.add(ct);
 			}
 
-			Future<?> f;
-			try {
-				f = executor.scheduleAtFixedRate(ct, initialDelay, period, unit);
-			}
-			catch (RejectedExecutionException ex) {
-				return REJECTED;
-			}
+			//RejectedExecutionException are propagated up
+			Future<?> f = executor.scheduleAtFixedRate(ct, initialDelay, period, unit);
 
 			ct.setFuture(f);
 

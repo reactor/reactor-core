@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.Queue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Supplier;
@@ -26,7 +27,6 @@ import javax.annotation.Nullable;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
-import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
@@ -215,9 +215,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 		@Override
 		public void onNext(T t) {
 			if (sourceMode == ASYNC) {
-				if (trySchedule() == Scheduler.REJECTED) {
-					throw Operators.onRejectedExecution(this, null, t);
-				}
+				trySchedule(this, null, null /* t always null */);
 				return;
 			}
 
@@ -231,9 +229,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 						t);
 				done = true;
 			}
-			if (trySchedule() == Scheduler.REJECTED) {
-				throw Operators.onRejectedExecution(this, null, t);
-			}
+			trySchedule(this, null, t);
 		}
 
 		@Override
@@ -244,9 +240,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 			}
 			error = t;
 			done = true;
-			if (trySchedule() == Scheduler.REJECTED) {
-				throw Operators.onRejectedExecution(null, t, null);
-			}
+			trySchedule(null, t, null);
 		}
 
 		@Override
@@ -255,18 +249,16 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 				return;
 			}
 			done = true;
-			if (trySchedule() == Scheduler.REJECTED && !worker.isDisposed()) {
-				throw Operators.onRejectedExecution();
-			}
+			//WIP also guards, no competing onNext
+			trySchedule(null, null, null);
 		}
 
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
 				Operators.getAndAddCap(REQUESTED, this, n);
-				if (trySchedule() == Scheduler.REJECTED && (!worker.isDisposed() || scheduler.isDisposed())) {
-					throw Operators.onRejectedExecution(this, null, null);
-				}
+				//WIP also guards during request and onError is possible
+				trySchedule(this, null, null);
 			}
 		}
 
@@ -285,13 +277,20 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 			}
 		}
 
-		@Nullable
-		Disposable trySchedule() {
+		void trySchedule(
+				@Nullable Subscription subscription,
+				@Nullable Throwable suppressed,
+				@Nullable Object dataSignal) {
 			if (WIP.getAndIncrement(this) != 0) {
-				return null;
+				return;
 			}
 
-			return worker.schedule(this);
+			try {
+				worker.schedule(this);
+			}
+			catch (RejectedExecutionException ree) {
+				actual.onError(Operators.onRejectedExecution(ree, subscription, suppressed, dataSignal));
+			}
 		}
 
 		void runSync() {
@@ -698,9 +697,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 		@Override
 		public void onNext(T t) {
 			if (sourceMode == ASYNC) {
-				if (trySchedule() == Scheduler.REJECTED) {
-					throw Operators.onRejectedExecution(this, null, null);
-				}
+				trySchedule(this, null, null);
 				return;
 			}
 
@@ -712,9 +709,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 				error = Operators.onOperatorError(s, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), t);
 				done = true;
 			}
-			if (trySchedule() == Scheduler.REJECTED) {
-				throw Operators.onRejectedExecution(this, null, t);
-			}
+			trySchedule(this, null, t);
 		}
 
 		@Override
@@ -725,9 +720,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 			}
 			error = t;
 			done = true;
-			if (trySchedule() == Scheduler.REJECTED) {
-				throw Operators.onRejectedExecution(null, t, null);
-			}
+			trySchedule(null, t, null);
 		}
 
 		@Override
@@ -736,18 +729,14 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 				return;
 			}
 			done = true;
-			if (trySchedule() == Scheduler.REJECTED && !worker.isDisposed()) {
-				throw Operators.onRejectedExecution();
-			}
+			trySchedule(null, null, null);
 		}
 
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
 				Operators.getAndAddCap(REQUESTED, this, n);
-				if (trySchedule() == Scheduler.REJECTED && (!worker.isDisposed() || scheduler.isDisposed())) {
-					throw Operators.onRejectedExecution(this, null, null);
-				}
+				trySchedule(this, null, null);
 			}
 		}
 
@@ -766,13 +755,20 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 			}
 		}
 
-		@Nullable
-		Disposable trySchedule() {
+		void trySchedule(
+				@Nullable Subscription subscription,
+				@Nullable Throwable suppressed,
+				@Nullable Object dataSignal) {
 			if (WIP.getAndIncrement(this) != 0) {
-				return null;
+				return;
 			}
 
-			return worker.schedule(this);
+			try {
+				worker.schedule(this);
+			}
+			catch (RejectedExecutionException ree) {
+				throw Operators.onRejectedExecution(ree, subscription, suppressed, dataSignal);
+			}
 		}
 
 		void runSync() {

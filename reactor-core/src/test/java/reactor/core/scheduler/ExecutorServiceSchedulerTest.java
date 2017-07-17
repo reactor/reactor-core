@@ -16,18 +16,20 @@
 package reactor.core.scheduler;
 
 import java.time.Duration;
-import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
+import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler.Worker;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * @author Stephane Maldini
@@ -52,20 +54,24 @@ public class ExecutorServiceSchedulerTest extends AbstractSchedulerTest {
 	@Test
 	public void notScheduledRejects() {
 		Scheduler s = Schedulers.fromExecutorService(Executors.newSingleThreadExecutor());
-		assertThat(s.schedule(() -> {}, 100, TimeUnit.MILLISECONDS))
+		assertThatExceptionOfType(RejectedExecutionException.class)
+				.isThrownBy(() -> s.schedule(() -> {}, 100, TimeUnit.MILLISECONDS))
 				.describedAs("direct delayed scheduling")
-				.isSameAs(Scheduler.REJECTED);
-		assertThat(s.schedulePeriodically(() -> {}, 100, 100, TimeUnit.MILLISECONDS))
+				.isSameAs(Exceptions.failWithRejected());
+		assertThatExceptionOfType(RejectedExecutionException.class)
+				.isThrownBy(() -> s.schedulePeriodically(() -> {}, 100, 100, TimeUnit.MILLISECONDS))
 				.describedAs("direct periodic scheduling")
-				.isSameAs(Scheduler.REJECTED);
+				.isSameAs(Exceptions.failWithRejected());
 
 		Worker w = s.createWorker();
-		assertThat(w.schedule(() -> {}, 100, TimeUnit.MILLISECONDS))
+		assertThatExceptionOfType(RejectedExecutionException.class)
+				.isThrownBy(() -> w.schedule(() -> {}, 100, TimeUnit.MILLISECONDS))
 				.describedAs("worker delayed scheduling")
-				.isSameAs(Scheduler.REJECTED);
-		assertThat(w.schedulePeriodically(() -> {}, 100, 100, TimeUnit.MILLISECONDS))
+				.isSameAs(Exceptions.failWithRejected());
+		assertThatExceptionOfType(RejectedExecutionException.class)
+				.isThrownBy(() -> w.schedulePeriodically(() -> {}, 100, 100, TimeUnit.MILLISECONDS))
 				.describedAs("worder periodic scheduling")
-				.isSameAs(Scheduler.REJECTED);
+				.isSameAs(Exceptions.failWithRejected());
 	}
 
 	@Test
@@ -73,18 +79,18 @@ public class ExecutorServiceSchedulerTest extends AbstractSchedulerTest {
 		Scheduler s = Schedulers.fromExecutorService(Executors.newSingleThreadScheduledExecutor());
 		assertThat(s.schedule(() -> {}, 100, TimeUnit.MILLISECONDS))
 				.describedAs("direct delayed scheduling")
-				.isNotInstanceOf(RejectedDisposable.class);
+				.isNotNull();
 		assertThat(s.schedulePeriodically(() -> {}, 100, 100, TimeUnit.MILLISECONDS))
 				.describedAs("direct periodic scheduling")
-				.isNotInstanceOf(RejectedDisposable.class);
+				.isNotNull();
 
 		Worker w = s.createWorker();
 		assertThat(w.schedule(() -> {}, 100, TimeUnit.MILLISECONDS))
 				.describedAs("worker delayed scheduling")
-				.isNotInstanceOf(RejectedDisposable.class);
+				.isNotNull();
 		assertThat(w.schedulePeriodically(() -> {}, 100, 100, TimeUnit.MILLISECONDS))
 				.describedAs("worker periodic scheduling")
-				.isNotInstanceOf(RejectedDisposable.class);
+				.isNotNull();
 	}
 
 	@Test
