@@ -16,11 +16,13 @@
 package reactor.core.scheduler;
 
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import reactor.core.Disposable;
+import reactor.core.Exceptions;
 
 /**
  * Provides an abstract asynchronous boundary to operators.
@@ -46,7 +48,7 @@ public interface Scheduler extends Disposable {
 	 * @param task the task to execute
 	 *
 	 * @return the {@link Disposable} instance that let's one cancel this particular task.
-	 * If the {@link Scheduler} has been shut down, the {@link #REJECTED} {@link Disposable} instance is returned.
+	 * If the {@link Scheduler} has been shut down, throw a {@link RejectedExecutionException}.
 	 */
 	Disposable schedule(Runnable task);
 
@@ -61,10 +63,10 @@ public interface Scheduler extends Disposable {
 	 * @param delay the delay amount, non-positive values indicate non-delayed scheduling
 	 * @param unit the unit of measure of the delay amount
 	 * @return the {@link Disposable} that let's one cancel this particular delayed task,
-	 * or {@link #REJECTED} if the Scheduler is not capable of scheduling periodically.
+	 * or throw a {@link RejectedExecutionException} if the Scheduler is not capable of scheduling periodically.
 	 */
 	default Disposable schedule(Runnable task, long delay, TimeUnit unit) {
-		return REJECTED;
+		throw Exceptions.failWithRejected();
 	}
 
 	/**
@@ -83,10 +85,10 @@ public interface Scheduler extends Disposable {
 	 * @param period the period at which the task should be re-executed
 	 * @param unit the unit of measure of the delay amount
 	 * @return the {@link Disposable} that let's one cancel this particular delayed task,
-	 * or {@link #REJECTED} if the Scheduler is not capable of scheduling periodically.
+	 * or throw a {@link RejectedExecutionException} if the Scheduler is not capable of scheduling periodically.
 	 */
 	default Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
-		return REJECTED;
+		throw Exceptions.failWithRejected();
 	}
 
 	/**
@@ -151,7 +153,7 @@ public interface Scheduler extends Disposable {
 		 * Schedules the task for immediate execution on this worker.
 		 * @param task the task to schedule
 		 * @return the {@link Disposable} instance that let's one cancel this particular task.
-		 * If the Scheduler has been shut down, the {@link #REJECTED} {@link Disposable} instance is returned.
+		 * If the Scheduler has been shut down, a {@link RejectedExecutionException} is thrown.
 		 */
 		Disposable schedule(Runnable task);
 
@@ -168,10 +170,10 @@ public interface Scheduler extends Disposable {
 		 * @param delay the delay amount, non-positive values indicate non-delayed scheduling
 		 * @param unit the unit of measure of the delay amount
 		 * @return the {@link Disposable} that let's one cancel this particular delayed task,
-		 * or {@link #REJECTED} if the Worker is not capable of scheduling with delay.
+		 * or throw a {@link RejectedExecutionException} if the Worker is not capable of scheduling with delay.
 		 */
 		default Disposable schedule(Runnable task, long delay, TimeUnit unit) {
-			return REJECTED;
+			throw Exceptions.failWithRejected();
 		}
 
 		/**
@@ -189,10 +191,10 @@ public interface Scheduler extends Disposable {
 		 * @param period the period at which the task should be re-executed
 		 * @param unit the unit of measure of the delay amount
 		 * @return the {@link Disposable} that let's one cancel this particular delayed task,
-		 * or {@link #REJECTED} if the Worker is not capable of scheduling periodically.
+		 * or throw a {@link RejectedExecutionException} if the Worker is not capable of scheduling periodically.
 		 */
 		default Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
-			return REJECTED;
+			throw Exceptions.failWithRejected();
 		}
 	}
 	
@@ -200,5 +202,5 @@ public interface Scheduler extends Disposable {
 	 * Returned by the schedule() methods if the Scheduler or the Worker has ben shut down,
 	 * or is incapable of scheduling tasks with a delay/periodically (not "time capable").
 	 */
-	Disposable REJECTED = new RejectedDisposable();
+//	Disposable REJECTED = new RejectedDisposable();
 }

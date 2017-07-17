@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
@@ -50,14 +51,14 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 				new CallableSubscribeOnSubscription<>(s, callable, scheduler);
 		s.onSubscribe(parent);
 
-		Disposable f = scheduler.schedule(parent);
-		if (f == Scheduler.REJECTED) {
-			if(parent.state != CallableSubscribeOnSubscription.HAS_CANCELLED) {
-				s.onError(Operators.onRejectedExecution());
-			}
-		}
-		else {
+		try {
+			Disposable f = scheduler.schedule(parent);
 			parent.setMainFuture(f);
+		}
+		catch (RejectedExecutionException ree) {
+			if(parent.state != CallableSubscribeOnSubscription.HAS_CANCELLED) {
+				s.onError(Operators.onRejectedExecution(ree));
+			}
 		}
 	}
 
@@ -256,12 +257,12 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 					}
 					if (s == NO_REQUEST_HAS_VALUE) {
 						if (STATE.compareAndSet(this, s, HAS_REQUEST_HAS_VALUE)) {
-							Disposable f = scheduler.schedule(this::emitValue);
-							if(f == Scheduler.REJECTED){
-								actual.onError(Operators.onRejectedExecution());
-							}
-							else {
+							try {
+								Disposable f = scheduler.schedule(this::emitValue);
 								setRequestFuture(f);
+							}
+							catch (RejectedExecutionException ree) {
+								actual.onError(Operators.onRejectedExecution(ree));
 							}
 						}
 						return;

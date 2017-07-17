@@ -30,7 +30,7 @@ public class TimedSchedulerTest extends AbstractSchedulerTest {
 
 	@Override
 	protected Scheduler scheduler() {
-		return Schedulers.newSingle("test-timer");
+		return Schedulers.newSingle("TimedSchedulerTest");
 	}
 
 	@Test

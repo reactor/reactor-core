@@ -335,7 +335,9 @@ public abstract class Schedulers {
 	 * @param c the new hook to push.
 	 */
 	public static void onHandleError(BiConsumer<Thread, ? super Throwable> c) {
-		log.info("Hooking new default: onHandleError");
+		if (log.isDebugEnabled()) {
+			log.debug("Hooking new default: onHandleError");
+		}
 		onHandleErrorHook = Objects.requireNonNull(c, "onHandleError");
 	}
 
@@ -361,7 +363,9 @@ public abstract class Schedulers {
 	 * Reset the {@link #onHandleError(BiConsumer)} hook to the default no-op behavior.
 	 */
 	public static void resetOnHandleError() {
-		log.info("Reset to factory defaults: onHandleError");
+		if (log.isDebugEnabled()) {
+			log.debug("Reset to factory defaults: onHandleError");
+		}
 		onHandleErrorHook = null;
 	}
 

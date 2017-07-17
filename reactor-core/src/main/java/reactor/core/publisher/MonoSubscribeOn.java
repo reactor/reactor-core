@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
@@ -49,8 +50,13 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 		SubscribeOnSubscriber<T> parent = new SubscribeOnSubscriber<>(source, s, worker);
 		s.onSubscribe(parent);
 
-		if (worker.schedule(parent) == Scheduler.REJECTED && !worker.isDisposed()) {
-			s.onError(Operators.onRejectedExecution(parent, null, null));
+		try {
+			worker.schedule(parent);
+		}
+		catch (RejectedExecutionException ree) {
+			if (!worker.isDisposed()) {
+				s.onError(Operators.onRejectedExecution(ree, parent, null, null));
+			}
 		}
 	}
 
@@ -107,8 +113,13 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 			else {
 				long r = REQUESTED.getAndSet(this, 0L);
 				if (r != 0L) {
-					if (worker.schedule(() -> requestMore(r)) == Scheduler.REJECTED && !worker.isDisposed()) {
-						actual.onError(Operators.onRejectedExecution(this, null, null));
+					try {
+						worker.schedule(() -> requestMore(r));
+					}
+					catch (RejectedExecutionException ree) {
+						if (!worker.isDisposed()) {
+							actual.onError(Operators.onRejectedExecution(ree, this, null, null));
+						}
 					}
 				}
 			}
@@ -147,8 +158,13 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				if (worker.schedule(() -> requestMore(n)) == Scheduler.REJECTED && !worker.isDisposed()) {
-					actual.onError(Operators.onRejectedExecution(this, null, null));
+				try {
+					worker.schedule(() -> requestMore(n));
+				}
+				catch (RejectedExecutionException ree) {
+					if (!worker.isDisposed()) {
+						actual.onError(Operators.onRejectedExecution(ree, this, null, null));
+					}
 				}
 			}
 		}

@@ -1355,7 +1355,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 		@Override
 		public Disposable schedule(Runnable task) {
-			return Scheduler.REJECTED;
+			throw Exceptions.failWithRejected();
 		}
 
 		@Override
@@ -1378,7 +1378,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 		@Override
 		public Disposable schedule(Runnable task) {
-			return Scheduler.REJECTED;
+			throw Exceptions.failWithRejected();
 		}
 
 		@Override
@@ -1392,7 +1392,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 				@Override
 				public Disposable schedule(Runnable task) {
-					return Scheduler.REJECTED;
+					throw Exceptions.failWithRejected();
 				}
 
 				@Override
@@ -1412,7 +1412,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 		@Override
 		public Disposable schedule(Runnable task) {
-			return Scheduler.REJECTED;
+			throw Exceptions.failWithRejected();
 		}
 
 		@Override

@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.util.Collection;
 import java.util.Objects;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
@@ -205,10 +206,11 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 			}
 
 			if (index == 1) {
-				timespanRegistration =
-						timer.schedule(flushTask, timespan, TimeUnit.MILLISECONDS);
-				if (timespanRegistration == Scheduler.REJECTED) {
-					throw Operators.onRejectedExecution(this, null, value);
+				try {
+				timespanRegistration = timer.schedule(flushTask, timespan, TimeUnit.MILLISECONDS);
+				}
+				catch (RejectedExecutionException ree) {
+					throw Operators.onRejectedExecution(ree, this, null, value);
 				}
 			}
 

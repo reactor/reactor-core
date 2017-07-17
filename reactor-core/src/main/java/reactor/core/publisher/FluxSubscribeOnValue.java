@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
@@ -51,14 +52,14 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 		if (v == null) {
 			ScheduledEmpty parent = new ScheduledEmpty(s);
 			s.onSubscribe(parent);
-			Disposable f = scheduler.schedule(parent);
-			if (f == Scheduler.REJECTED) {
-				if (parent.future != Disposables.DISPOSED) {
-					s.onError(Operators.onRejectedExecution());
-				}
-			}
-			else {
+			try {
+				Disposable f = scheduler.schedule(parent);
 				parent.setFuture(f);
+			}
+			catch (RejectedExecutionException ree) {
+				if (parent.future != Disposables.DISPOSED) {
+					s.onError(Operators.onRejectedExecution(ree));
+				}
 			}
 		} else {
 			s.onSubscribe(new ScheduledScalar<>(s, v, scheduler));
@@ -122,14 +123,16 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 		public void request(long n) {
 			if (Operators.validate(n)) {
 				if (ONCE.compareAndSet(this, 0, 1)) {
-					Disposable f = scheduler.schedule(this);
-					if(f == Scheduler.REJECTED && future != FINISHED && future !=
-							Disposables.DISPOSED) {
-						actual.onError(Operators.onRejectedExecution(this, null, null));
-					}
-					else if (!FUTURE.compareAndSet(this, null, f)) {
-						if (future != FINISHED && future != Disposables.DISPOSED) {
+					try {
+						Disposable f = scheduler.schedule(this);
+						if (!FUTURE.compareAndSet(this, null, f)
+								&& future != FINISHED && future != Disposables.DISPOSED) {
 							f.dispose();
+						}
+					}
+					catch (RejectedExecutionException ree) {
+						if(future != FINISHED && future != Disposables.DISPOSED) {
+							actual.onError(Operators.onRejectedExecution(ree, this, null, null));
 						}
 					}
 				}

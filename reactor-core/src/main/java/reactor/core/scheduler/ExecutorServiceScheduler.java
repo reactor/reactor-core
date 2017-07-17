@@ -16,9 +16,7 @@
 
 package reactor.core.scheduler;
 
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RejectedExecutionException;
@@ -27,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import reactor.core.Disposable;
+import reactor.core.Exceptions;
 import reactor.util.concurrent.OpenHashSet;
 
 /**
@@ -70,44 +69,32 @@ final class ExecutorServiceScheduler implements Scheduler {
 
 	@Override
 	public Disposable schedule(Runnable task) {
-		try {
-			return new DisposableFuture(executor.submit(task), interruptOnCancel);
-		}
-		catch (RejectedExecutionException ree) {
-			return REJECTED;
-		}
+		//RejectedExecutionException are propagated up
+		return new DisposableFuture(executor.submit(task), interruptOnCancel);
 	}
 
 	@Override
 	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 		if (!isTimeCapable()) {
-			return REJECTED;
+			throw Exceptions.failWithRejected();
 		}
 
 		ScheduledExecutorService scheduledExecutor = (ScheduledExecutorService) executor;
 
-		try {
-			return new DisposableFuture(scheduledExecutor.schedule(task, delay, unit), interruptOnCancel);
-		}
-		catch (RejectedExecutionException ree) {
-			return REJECTED;
-		}
+		//RejectedExecutionException are propagated up
+		return new DisposableFuture(scheduledExecutor.schedule(task, delay, unit), interruptOnCancel);
 	}
 
 	@Override
 	public Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
 		if (!isTimeCapable()) {
-			return REJECTED;
+			throw Exceptions.failWithRejected();
 		}
 
 		ScheduledExecutorService scheduledExecutor = (ScheduledExecutorService) executor;
 
-		try {
-			return new DisposableFuture(scheduledExecutor.scheduleAtFixedRate(task, initialDelay, period, unit), interruptOnCancel);
-		}
-		catch (RejectedExecutionException ree) {
-			return REJECTED;
-		}
+		//RejectedExecutionException are propagated up
+		return new DisposableFuture(scheduledExecutor.scheduleAtFixedRate(task, initialDelay, period, unit), interruptOnCancel);
 	}
 
 	@Override
@@ -172,14 +159,16 @@ final class ExecutorServiceScheduler implements Scheduler {
 			}
 			catch (RejectedExecutionException ree) {
 				removeAndDispose(sr);
+				//RejectedExecutionException are propagated up
+				throw ree;
 			}
-			return REJECTED;
+			throw Exceptions.failWithRejected();
 		}
 
 		@Override
 		public Disposable schedule(Runnable t, long delay, TimeUnit unit) {
 			if (!isTimeCapable()) {
-				return REJECTED;
+				throw Exceptions.failWithRejected();
 			}
 
 			ScheduledExecutorService scheduledExecutor = (ScheduledExecutorService) executor;
@@ -194,14 +183,16 @@ final class ExecutorServiceScheduler implements Scheduler {
 			}
 			catch (RejectedExecutionException ree) {
 				removeAndDispose(sr);
+				//RejectedExecutionException are propagated up
+				throw ree;
 			}
-			return REJECTED;
+			throw Exceptions.failWithRejected();
 		}
 
 		@Override
 		public Disposable schedulePeriodically(Runnable t, long initialDelay, long period, TimeUnit unit) {
 			if (!isTimeCapable()) {
-				return REJECTED;
+				throw Exceptions.failWithRejected();
 			}
 
 			ScheduledExecutorService scheduledExecutor = (ScheduledExecutorService) executor;
@@ -216,8 +207,11 @@ final class ExecutorServiceScheduler implements Scheduler {
 			}
 			catch (RejectedExecutionException ree) {
 				removeAndDispose(sr);
+				//RejectedExecutionException are propagated up
+				throw ree;
 			}
-			return REJECTED;
+			//TODO for case where not added but not rejected, simplify these patterns?
+			throw Exceptions.failWithRejected();
 		}
 
 

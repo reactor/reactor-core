@@ -328,8 +328,8 @@ public abstract class Operators {
 	 * {@link #onOperatorError(Subscription, Throwable, Object)}.
 	 *
 	 */
-	public static RuntimeException onRejectedExecution() {
-		return onRejectedExecution(null, null, null);
+	public static RuntimeException onRejectedExecution(Throwable original) {
+		return onRejectedExecution(original, null, null, null);
 	}
 
 	/**
@@ -345,11 +345,12 @@ public abstract class Operators {
 	 * @param suppressed a Throwable to be suppressed by the {@link RejectedExecutionException} (or null if not relevant)
 	 * @param dataSignal a value to be passed to {@link #onOperatorError(Subscription, Throwable, Object)} (or null if not relevant)
 	 */
-	public static RuntimeException onRejectedExecution(
+	public static RuntimeException onRejectedExecution(Throwable original,
 			@Nullable Subscription subscription,
 			@Nullable Throwable suppressed,
 			@Nullable Object dataSignal) {
-		RejectedExecutionException ree = new RejectedExecutionException("Scheduler unavailable");
+		//FIXME only create REE if original is REE singleton OR there's suppressed OR there's Throwable dataSignal
+		RejectedExecutionException ree = Exceptions.failWithRejected(original);
 		if (suppressed != null) {
 			ree.addSuppressed(suppressed);
 		}

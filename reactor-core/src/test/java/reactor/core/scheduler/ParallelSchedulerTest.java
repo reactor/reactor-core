@@ -36,7 +36,7 @@ public class ParallelSchedulerTest extends AbstractSchedulerTest {
 
 	@Override
 	protected Scheduler scheduler() {
-		return Schedulers.parallel();
+		return Schedulers.newParallel("ParallelSchedulerTest");
 	}
 
 	@Test(expected = IllegalArgumentException.class)
@@ -55,18 +55,18 @@ public class ParallelSchedulerTest extends AbstractSchedulerTest {
 
 		assertThat(s.schedule(() -> {}, 100, TimeUnit.MILLISECONDS))
 				.describedAs("direct delayed scheduling")
-				.isNotInstanceOf(RejectedDisposable.class);
+				.isNotNull();
 		assertThat(s.schedulePeriodically(() -> {}, 100, 100, TimeUnit.MILLISECONDS))
 				.describedAs("direct periodic scheduling")
-				.isNotInstanceOf(RejectedDisposable.class);
+				.isNotNull();
 
 		Scheduler.Worker w = s.createWorker();
 		assertThat(w.schedule(() -> {}, 100, TimeUnit.MILLISECONDS))
 				.describedAs("worker delayed scheduling")
-				.isNotInstanceOf(RejectedDisposable.class);
+				.isNotNull();
 		assertThat(w.schedulePeriodically(() -> {}, 100, 100, TimeUnit.MILLISECONDS))
 				.describedAs("worker periodic scheduling")
-				.isNotInstanceOf(RejectedDisposable.class);
+				.isNotNull();
 	}
 
 	@Test
@@ -79,7 +79,6 @@ public class ParallelSchedulerTest extends AbstractSchedulerTest {
 			try {
 				StepVerifier.create(Mono
 						.delay(Duration.ofMillis(100), s)
-						.log()
 						.doOnSubscribe(sub -> start.set(System.nanoTime()))
 						.doOnTerminate((v, e) -> end.set(System.nanoTime()))
 				)

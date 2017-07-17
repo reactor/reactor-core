@@ -25,14 +25,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.concurrent.Queues;
-
-import javax.annotation.Nullable;
 
 /**
  * A {@link Scheduler} that uses a virtual clock, allowing to manipulate time
@@ -235,7 +234,7 @@ public class VirtualTimeScheduler implements Scheduler {
 	@Override
 	public Disposable schedule(Runnable task) {
 		if (shutdown) {
-			return REJECTED;
+			throw Exceptions.failWithRejected();
 		}
 		return createWorker().schedule(task);
 	}
@@ -243,7 +242,7 @@ public class VirtualTimeScheduler implements Scheduler {
 	@Override
 	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
 		if (shutdown) {
-			return REJECTED;
+			throw Exceptions.failWithRejected();
 		}
 		return createWorker().schedule(task, delay, unit);
 	}
@@ -272,7 +271,7 @@ public class VirtualTimeScheduler implements Scheduler {
 			long initialDelay,
 			long period, TimeUnit unit) {
 		if (shutdown) {
-			return REJECTED;
+			throw Exceptions.failWithRejected();
 		}
 
 		final Worker w = createWorker();
@@ -360,7 +359,7 @@ public class VirtualTimeScheduler implements Scheduler {
 		@Override
 		public Disposable schedule(Runnable run) {
 			if (shutdown) {
-				return REJECTED;
+				throw Exceptions.failWithRejected();
 			}
 			final TimedRunnable timedTask = new TimedRunnable(this,
 					0,
@@ -373,7 +372,7 @@ public class VirtualTimeScheduler implements Scheduler {
 		@Override
 		public Disposable schedule(Runnable run, long delayTime, TimeUnit unit) {
 			if (shutdown) {
-				return REJECTED;
+				throw Exceptions.failWithRejected();
 			}
 			final TimedRunnable timedTask = new TimedRunnable(this,
 					nanoTime + unit.toNanos(delayTime),
