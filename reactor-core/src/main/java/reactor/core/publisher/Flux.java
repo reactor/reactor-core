@@ -3242,14 +3242,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Note that unlike with the {@link Mono#delayUntil(Function) Mono variant} there is
 	 * no fusion of subsequent calls.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/delayUntil.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/delayUntil.png" alt="">
 	 *
 	 * @param triggerProvider a {@link Function} that maps each element into a
 	 * {@link Publisher} whose termination will trigger relaying the value.
 	 *
 	 * @return this Flux, but with elements delayed until their derived publisher terminates.
 	 */
-	//TODO update the marble URL to a tag pre-release
 	public final Flux<T> delayUntil(Function<? super T, ? extends Publisher<?>> triggerProvider) {
 		return concatMap(v -> Mono.just(v)
 		                          .delayUntil(triggerProvider));
@@ -3268,14 +3267,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Note that unlike with the {@link Mono#delayUntil(Function) Mono variant} there is
 	 * no fusion of subsequent calls.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/delayUntil.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/delayUntil.png" alt="">
 	 *
 	 * @param triggerProvider a {@link Function} that maps each element into a
 	 * {@link Publisher} whose termination will trigger relaying the value.
 	 *
 	 * @return this Flux, but with elements delayed until their derived publisher terminates.
 	 */
-	//TODO update the marble URL to a tag pre-release
 	public final Flux<T> delayUntilDelayError(Function<? super T, ? extends Publisher<?>> triggerProvider) {
 		return concatMapDelayError(v -> Mono.just(v)
 		                                    //no need for delayError variant since no macro fusion of triggers
@@ -3297,13 +3295,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Note that unlike with the {@link Mono#delayUntilOther(Publisher) Mono variant} there is
 	 * no fusion of subsequent calls.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/delayUntilOther.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/delayUntilOther.png" alt="">
 	 *
 	 * @param triggerPublisher a {@link Publisher} whose termination will trigger relaying the value.
 	 *
 	 * @return this Flux, but with elements delayed until the trigger publisher terminates.
 	 */
-	//TODO update the marble URL to a tag pre-release
 	public final Flux<T> delayUntilOther(Publisher<?> triggerPublisher) {
 		return concatMap(v -> Mono.just(v)
 		                          .delayUntilOther(triggerPublisher));
@@ -3324,13 +3321,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Note that unlike with the {@link Mono#delayUntilOtherDelayError(Publisher) Mono variant} there is
 	 * no fusion of subsequent calls.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/delayUntilOther.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/delayUntilOther.png" alt="">
 	 *
 	 * @param triggerPublisher a {@link Publisher} whose termination will trigger relaying the value.
 	 *
 	 * @return this Flux, but with elements delayed until the trigger publisher terminates.
 	 */
-	//TODO update the marble URL to a tag pre-release
 	public final Flux<T> delayUntilOtherDelayError(Publisher<?> triggerPublisher) {
 		return concatMapDelayError(v -> Mono.just(v)
 		                                    //no need for delayError variant since no macro fusion of triggers
@@ -3774,13 +3770,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * if the sequence is shorter.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/elementat.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/elementat.png" alt="">
 	 *
 	 * @param index zero-based index of the only item to emit
 	 *
 	 * @return a {@link Mono} of the item at the specified zero-based index
 	 */
-	//TODO bump marble URL to upcoming release tag
 	public final Mono<T> elementAt(int index) {
 		return Mono.onAssembly(new MonoElementAt<>(this, index));
 	}
@@ -3790,14 +3785,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * default value if the sequence is shorter.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/elementatd.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/elementatd.png" alt="">
 	 *
 	 * @param index zero-based index of the only item to emit
 	 * @param defaultValue a default value to emit if the sequence is shorter
 	 *
 	 * @return a {@link Mono} of the item at the specified zero-based index or a default value
 	 */
-	//TODO bump marble URL to upcoming release tag
 	public final Mono<T> elementAt(int index, T defaultValue) {
 		return Mono.onAssembly(new MonoElementAt<>(this, index, defaultValue));
 	}
@@ -7196,13 +7190,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * point the previous window will receive the triggering element then onComplete.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/windowuntil.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/windowuntil.png" alt="">
 	 *
 	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
 	 * @return a {@link Flux} of {@link GroupedFlux} windows, bounded depending
 	 * on the predicate and keyed with the value that triggered the new window.
 	 */
-	//TODO bump marbles URL to upcoming release tag
 	public final Flux<GroupedFlux<T, T>> windowUntil(Predicate<T> boundaryTrigger) {
 		return windowUntil(boundaryTrigger, false);
 	}
@@ -7216,19 +7209,18 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * sometimes emitted, eg. if the first element in the sequence immediately matches the
 	 * predicate.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/windowuntilcutbefore.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/windowuntilcutbefore.png" alt="">
 	 * <p>
 	 * Otherwise, the triggering element will be emitted in the old window before it does
 	 * onComplete, similar to {@link #windowUntil(Predicate)}.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/windowuntilcutafter.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/windowuntilcutafter.png" alt="">
 	 *
 	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
 	 * @param cutBefore push to true to include the triggering element in the new window rather than the old.
 	 * @return a {@link Flux} of {@link GroupedFlux} windows, bounded depending
 	 * on the predicate and keyed with the value that triggered the new window.
 	 */
-	//TODO bump marbles URL to upcoming release tag
 	public final Flux<GroupedFlux<T, T>> windowUntil(Predicate<T> boundaryTrigger, boolean cutBefore) {
 		return windowUntil(boundaryTrigger, cutBefore, Queues.SMALL_BUFFER_SIZE);
 	}
@@ -7243,12 +7235,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * sometimes emitted, eg. if the first element in the sequence immediately matches the
 	 * predicate.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/windowuntilcutbefore.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/windowuntilcutbefore.png" alt="">
 	 * <p>
 	 * Otherwise, the triggering element will be emitted in the old window before it does
 	 * onComplete, similar to {@link #windowUntil(Predicate)}.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/windowuntilcutafter.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/windowuntilcutafter.png" alt="">
 	 *
 	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
 	 * @param cutBefore push to true to include the triggering element in the new window rather than the old.
@@ -7256,7 +7248,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} of {@link GroupedFlux} windows, bounded depending
 	 * on the predicate and keyed with the value that triggered the new window.
 	 */
-	//TODO bump marbles URL to upcoming release tag
 	public final Flux<GroupedFlux<T, T>> windowUntil(Predicate<T> boundaryTrigger, boolean cutBefore, int prefetch) {
 		return onAssembly(new FluxWindowPredicate<>(this,
 				Queues.unbounded(prefetch),
@@ -7275,13 +7266,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * separators anywhere in the sequence, each occurrence will lead to an empty window.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/windowwhile.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/windowwhile.png" alt="">
 	 *
 	 * @param inclusionPredicate a predicate that triggers the next window when it becomes false.
 	 * @return a {@link Flux} of {@link GroupedFlux} windows, each containing
 	 * subsequent elements that all passed a predicate, and keyed with a separator element.
 	 */
-	//TODO bump marbles URL to upcoming release tag
 	public final Flux<GroupedFlux<T, T>> windowWhile(Predicate<T> inclusionPredicate) {
 		return windowWhile(inclusionPredicate, Queues.SMALL_BUFFER_SIZE);
 	}
@@ -7295,14 +7285,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * separators anywhere in the sequence, each occurrence will lead to an empty window.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/windowwhile.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/windowwhile.png" alt="">
 	 *
 	 * @param inclusionPredicate a predicate that triggers the next window when it becomes false.
 	 * @param prefetch the request size to use for this {@link Flux}.
 	 * @return a {@link Flux} of {@link GroupedFlux} windows, each containing
 	 * subsequent elements that all passed a predicate, and keyed with a separator element.
 	 */
-	//TODO bump marbles URL to upcoming release tag
 	public final Flux<GroupedFlux<T, T>> windowWhile(Predicate<T> inclusionPredicate, int prefetch) {
 		return onAssembly(new FluxWindowPredicate<>(this,
 				Queues.unbounded(prefetch),

@@ -1576,13 +1576,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * errors are thus combined into one. Otherwise, that error is propagated immediately
 	 * downstream. In both cases, an error in the source is immediately propagated.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/delayUntilOther.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/delayUntilOther.png" alt="">
 	 *
 	 * @param anyPublisher the publisher which first emission or termination will trigger
 	 * the emission of this Mono's value.
 	 * @return this Mono, but delayed until the given publisher terminates.
 	 */
-	//TODO update the marble URL to a tag pre-release
 	public final Mono<T> delayUntilOther(Publisher<?> anyPublisher) {
 		return delayUntil(a -> anyPublisher);
 	}
@@ -1600,13 +1599,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * publishers have triggered, and multiple errors are thus combined into one. An error
 	 * in the source is immediately propagated.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/delayUntilOther.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/delayUntilOther.png" alt="">
 	 *
 	 * @param anyPublisher the publisher which termination will trigger the emission of
 	 * this Mono's value.
 	 * @return this Mono, but delayed until the given publisher terminates.
 	 */
-	//TODO update the marble URL to a tag pre-release
 	public final Mono<T> delayUntilOtherDelayError(Publisher<?> anyPublisher) {
 		return delayUntilDelayError(a -> anyPublisher);
 	}
@@ -1630,14 +1628,13 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * errors are thus combined into one. Otherwise, that error is propagated immediately
 	 * downstream. In both cases, an error in the source is immediately propagated.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/delayUntil.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/delayUntil.png" alt="">
 	 *
 	 * @param triggerProvider a {@link Function} that maps this Mono's value into a
 	 * {@link Publisher} whose termination will trigger relaying the value.
 	 *
 	 * @return this Mono, but delayed until the derived publisher terminates.
 	 */
-	//TODO update the marble URL to a tag pre-release
 	public final Mono<T> delayUntil(Function<? super T, ? extends Publisher<?>> triggerProvider) {
 		Objects.requireNonNull(triggerProvider, "triggerProvider required");
 		if (this instanceof MonoDelayUntil) {
@@ -1662,14 +1659,13 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * publishers have triggered, and multiple errors are thus combined into one. An error
 	 * in the source is immediately propagated.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/master/src/docs/marble/delayUntil.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/delayUntil.png" alt="">
 	 *
 	 * @param triggerProvider a {@link Function} that maps this Mono's value into a
 	 * {@link Publisher} whose first emission or termination will trigger the relaying the value.
 	 *
 	 * @return this Mono, but delayed until the derived publisher first emits or terminates.
 	 */
-	//TODO update the marble URL to a tag pre-release
 	public final Mono<T> delayUntilDelayError(Function<? super T, ? extends Publisher<?>> triggerProvider) {
 		Objects.requireNonNull(triggerProvider, "triggerProvider required");
 		if (this instanceof MonoDelayUntil) {
