@@ -685,16 +685,16 @@ public class FluxBufferPredicateTest {
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
-		Assertions.assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(2);
-		Assertions.assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(100L);
-		Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-		Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+		Assertions.assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(2);
+		Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(100L);
+		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.onError(new IllegalStateException("boom"));
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 	}
 
 	@Test
@@ -707,8 +707,8 @@ public class FluxBufferPredicateTest {
 				FluxBufferPredicate.Mode.WHILE
 		);
 
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 }

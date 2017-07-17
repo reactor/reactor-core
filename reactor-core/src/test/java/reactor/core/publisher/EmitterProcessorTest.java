@@ -35,6 +35,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
@@ -43,11 +44,10 @@ import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static reactor.core.Scannable.BooleanAttr.CANCELLED;
-import static reactor.core.Scannable.BooleanAttr.TERMINATED;
-import static reactor.core.Scannable.IntAttr.*;
-import static reactor.core.Scannable.ScannableAttr;
-import static reactor.core.Scannable.ThrowableAttr;
+import static reactor.core.Scannable.Attr.CANCELLED;
+import static reactor.core.Scannable.Attr.TERMINATED;
+import static reactor.core.Scannable.Attr.*;
+import static reactor.core.Scannable.Attr;
 
 /**
  * @author Stephane Maldini
@@ -804,8 +804,8 @@ public class EmitterProcessorTest {
 		assertThat(test.scan(TERMINATED)).isTrue();
 
 		//other values
-		assertThat(test.scan(ScannableAttr.PARENT)).isNotNull();
-		assertThat(test.scan(ThrowableAttr.ERROR)).isNull();
+		assertThat(test.scan(Scannable.Attr.PARENT)).isNotNull();
+		assertThat(test.scan(Attr.ERROR)).isNull();
 	}
 
 	@Test
@@ -822,6 +822,6 @@ public class EmitterProcessorTest {
 		EmitterProcessor test = EmitterProcessor.create();
 		test.sink().error(new IllegalStateException("boom"));
 
-		assertThat(test.scan(ThrowableAttr.ERROR)).hasMessage("boom");
+		assertThat(test.scan(Attr.ERROR)).hasMessage("boom");
 	}
 }

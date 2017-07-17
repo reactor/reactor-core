@@ -255,11 +255,11 @@ public class FluxProcessorTest {
 	public void scanProcessor() {
 		FluxProcessor<String, String> test = DirectProcessor.<String>create().serialize();
 
-		assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(16);
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
-		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+		assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(16);
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
 		test.onError(new IllegalStateException("boom"));
-		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 	}
 }

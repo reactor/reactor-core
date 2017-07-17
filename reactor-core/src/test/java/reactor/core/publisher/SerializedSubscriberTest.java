@@ -31,23 +31,23 @@ public class SerializedSubscriberTest {
 		Subscription subscription = Operators.emptySubscription();
 		test.onSubscribe(subscription);
 
-		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(subscription);
-		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(subscription);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 
-		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isZero();
-		assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(SerializedSubscriber.LinkedArrayNode.DEFAULT_CAPACITY);
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isZero();
+		assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(SerializedSubscriber.LinkedArrayNode.DEFAULT_CAPACITY);
 
-		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 
 		test.onError(new IllegalStateException("boom"));
-		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 
 		test.cancel();
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 	@Test
@@ -58,8 +58,8 @@ public class SerializedSubscriberTest {
 		test.tail = new SerializedSubscriber.LinkedArrayNode<>("");
 		test.tail.count = Integer.MAX_VALUE;
 
-		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(Integer.MAX_VALUE);
-		assertThat(test.scan(Scannable.LongAttr.LARGE_BUFFERED)).isNull();
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.LARGE_BUFFERED)).isNull();
 	}
 
 }

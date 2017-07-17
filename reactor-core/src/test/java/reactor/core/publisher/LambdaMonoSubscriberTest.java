@@ -189,12 +189,12 @@ public class LambdaMonoSubscriberTest {
 		assertTrue(Mono.fromDirect(s -> {
 			assertTrue(s instanceof LambdaMonoSubscriber);
 			LambdaMonoSubscriber<?> bfs = (LambdaMonoSubscriber<?>)s;
-			assertTrue(bfs.scan(Scannable.IntAttr.PREFETCH) == Integer.MAX_VALUE);
-			assertFalse(bfs.scan(Scannable.BooleanAttr.TERMINATED));
+			assertTrue(bfs.scan(Scannable.Attr.PREFETCH) == Integer.MAX_VALUE);
+			assertFalse(bfs.scan(Scannable.Attr.TERMINATED));
 			bfs.onSubscribe(Operators.emptySubscription());
 			bfs.onSubscribe(Operators.emptySubscription()); // noop
 			s.onComplete();
-			assertTrue(bfs.scan(Scannable.BooleanAttr.TERMINATED));
+			assertTrue(bfs.scan(Scannable.Attr.TERMINATED));
 			bfs.dispose();
 			bfs.dispose();
 		}).subscribe(s -> {}, null, () -> {}).isDisposed());
@@ -214,7 +214,7 @@ public class LambdaMonoSubscriberTest {
 				s.onComplete();
 				s.onError(new Exception("test2"));
 				s.onNext("test2");
-				assertTrue(bfs.scan(Scannable.BooleanAttr.TERMINATED));
+				assertTrue(bfs.scan(Scannable.Attr.TERMINATED));
 				bfs.dispose();
 			})
 			          .subscribe(s -> {
@@ -267,16 +267,16 @@ public class LambdaMonoSubscriberTest {
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
-		Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-		Assertions.assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		Assertions.assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
 
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 
 		test.dispose();
 
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 	private static class TestSubscription implements Subscription {

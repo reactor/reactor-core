@@ -240,12 +240,12 @@ final class SerializedSubscriber<T> implements InnerOperator<T, T> {
 	@Override
 	@Nullable
 	public Object scanUnsafe(Attr key) {
-		if (key == ScannableAttr.PARENT) return s;
-		if (key == ThrowableAttr.ERROR) return error;
-		if (key == IntAttr.BUFFERED) return producerCapacity();
-		if (key == IntAttr.CAPACITY) return LinkedArrayNode.DEFAULT_CAPACITY;
-		if (key == BooleanAttr.CANCELLED) return cancelled;
-		if (key == BooleanAttr.TERMINATED) return done;
+		if (key == Attr.PARENT) return s;
+		if (key == Attr.ERROR) return error;
+		if (key == Attr.BUFFERED) return producerCapacity();
+		if (key == Attr.CAPACITY) return LinkedArrayNode.DEFAULT_CAPACITY;
+		if (key == Attr.CANCELLED) return cancelled;
+		if (key == Attr.TERMINATED) return done;
 
 		return InnerOperator.super.scanUnsafe(key);
 	}

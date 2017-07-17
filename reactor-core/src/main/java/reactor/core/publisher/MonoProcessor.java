@@ -425,12 +425,12 @@ public final class MonoProcessor<O> extends Mono<O>
 	@Override
 	@Nullable
 	public Object scanUnsafe(Attr key) {
-		if (key == ScannableAttr.ACTUAL) return processor;
-		if (key == ScannableAttr.PARENT) return subscription;
-		if (key == ThrowableAttr.ERROR) return error;
-		if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
-		if (key == BooleanAttr.CANCELLED) return isCancelled();
-		if (key == BooleanAttr.TERMINATED) return isTerminated();
+		if (key == Attr.ACTUAL) return processor;
+		if (key == Attr.PARENT) return subscription;
+		if (key == Attr.ERROR) return error;
+		if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
+		if (key == Attr.CANCELLED) return isCancelled();
+		if (key == Attr.TERMINATED) return isTerminated();
 		return null;
 	}
 

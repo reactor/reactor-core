@@ -75,9 +75,9 @@ final class FluxTakeUntilOther<T, U> extends FluxOperator<T, T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.CANCELLED) return main.other == Operators.cancelledSubscription();
-			if (key == ScannableAttr.PARENT) return main.other;
-			if (key == ScannableAttr.ACTUAL) return main;
+			if (key == Attr.CANCELLED) return main.other == Operators.cancelledSubscription();
+			if (key == Attr.PARENT) return main.other;
+			if (key == Attr.ACTUAL) return main;
 
 			return null;
 		}
@@ -135,8 +135,8 @@ final class FluxTakeUntilOther<T, U> extends FluxOperator<T, T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return main;
-			if (key == BooleanAttr.CANCELLED) return main == Operators.cancelledSubscription();
+			if (key == Attr.PARENT) return main;
+			if (key == Attr.CANCELLED) return main == Operators.cancelledSubscription();
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

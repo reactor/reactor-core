@@ -140,8 +140,8 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 	@Override
 	@Nullable
 	public Object scanUnsafe(Attr key) {
-		if (key == IntAttr.PREFETCH) return getPrefetch();
-		if (key == ScannableAttr.PARENT) return source;
+		if (key == Attr.PREFETCH) return getPrefetch();
+		if (key == Attr.PARENT) return source;
 
 		return null;
 	}
@@ -515,12 +515,12 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == IntAttr.PREFETCH) return prefetch;
-			if (key == ThrowableAttr.ERROR) return error;
-			if (key == IntAttr.BUFFERED) return queue != null ? queue.size() : 0;
-			if (key == BooleanAttr.TERMINATED) return isTerminated();
-			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.PREFETCH) return prefetch;
+			if (key == Attr.ERROR) return error;
+			if (key == Attr.BUFFERED) return queue != null ? queue.size() : 0;
+			if (key == Attr.TERMINATED) return isTerminated();
+			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
 
 			return null;
 		}
@@ -578,8 +578,8 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.CANCELLED) return isCancelled();
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return isCancelled() ? 0L : requested;
+			if (key == Attr.CANCELLED) return isCancelled();
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return isCancelled() ? 0L : requested;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}
@@ -649,8 +649,8 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return parent;
-			if (key == BooleanAttr.TERMINATED) return parent != null && parent.isTerminated();
+			if (key == Attr.PARENT) return parent;
+			if (key == Attr.TERMINATED) return parent != null && parent.isTerminated();
 
 			return super.scanUnsafe(key);
 		}

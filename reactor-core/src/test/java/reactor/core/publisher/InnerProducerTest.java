@@ -40,6 +40,6 @@ public class InnerProducerTest {
 			public void cancel() { }
 		};
 
-		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 	}
 }

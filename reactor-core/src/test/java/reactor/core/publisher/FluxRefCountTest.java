@@ -224,8 +224,8 @@ public class FluxRefCountTest {
 		ConnectableFlux<Integer> parent = Flux.just(10).publish();
 		FluxRefCount<Integer> test = new FluxRefCount<Integer>(parent, 17);
 
-		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(256);
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(256);
 	}
 
 	@Test
@@ -236,7 +236,7 @@ public class FluxRefCountTest {
 		Subscription sub = Operators.emptySubscription();
 		test.onSubscribe(sub);
 
-		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(sub);
-		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(sub);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 	}
 }

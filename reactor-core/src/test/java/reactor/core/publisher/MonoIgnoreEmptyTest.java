@@ -48,8 +48,8 @@ public class MonoIgnoreEmptyTest {
 		Subscription sub = Operators.emptySubscription();
 		test.onSubscribe(sub);
 
-		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(sub);
-		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(sub);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 	}
 
 }

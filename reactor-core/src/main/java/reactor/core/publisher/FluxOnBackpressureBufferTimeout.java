@@ -116,28 +116,28 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) {
+			if (key == Attr.PARENT) {
 				return s;
 			}
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) {
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) {
 				return requested;
 			}
-			if (key == BooleanAttr.TERMINATED) {
+			if (key == Attr.TERMINATED) {
 				return done && isEmpty();
 			}
-			if (key == BooleanAttr.CANCELLED) {
+			if (key == Attr.CANCELLED) {
 				return cancelled;
 			}
-			if (key == IntAttr.BUFFERED) {
+			if (key == Attr.BUFFERED) {
 				return size();
 			}
-			if (key == ThrowableAttr.ERROR) {
+			if (key == Attr.ERROR) {
 				return error;
 			}
-			if (key == IntAttr.PREFETCH) {
+			if (key == Attr.PREFETCH) {
 				return Integer.MAX_VALUE;
 			}
-			if (key == BooleanAttr.DELAY_ERROR) {
+			if (key == Attr.DELAY_ERROR) {
 				return false;
 			}
 

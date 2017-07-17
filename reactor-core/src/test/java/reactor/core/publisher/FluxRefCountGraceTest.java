@@ -234,8 +234,8 @@ public class FluxRefCountGraceTest {
 		ConnectableFlux<Integer> parent = Flux.just(10).publish();
 		FluxRefCountGrace<Integer> test = new FluxRefCountGrace<Integer>(parent, 17, Duration.ofSeconds(1), Schedulers.single());
 
-		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(256);
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(256);
 	}
 
 }

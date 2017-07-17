@@ -147,9 +147,9 @@ public class FluxIntervalTest {
         CoreSubscriber<Long> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxInterval.IntervalRunnable test = new FluxInterval.IntervalRunnable(actual, Schedulers.single().createWorker());
 
-        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
-        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();
-        assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 }

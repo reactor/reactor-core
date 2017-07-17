@@ -541,15 +541,15 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return processor;
-			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
-			if (key == BooleanAttr.TERMINATED) return processor.isTerminated();
-			if (key == BooleanAttr.CANCELLED) return !running.get();
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return pendingRequest.getAsLong();
-			if (key == LongAttr.LARGE_BUFFERED) {
+			if (key == Attr.PARENT) return processor;
+			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == Attr.TERMINATED) return processor.isTerminated();
+			if (key == Attr.CANCELLED) return !running.get();
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return pendingRequest.getAsLong();
+			if (key == Attr.LARGE_BUFFERED) {
 				return processor.ringBuffer.getCursor() - sequence.getAsLong();
 			}
-			if (key == IntAttr.BUFFERED) {
+			if (key == Attr.BUFFERED) {
 				long realBuffered = processor.ringBuffer.getCursor() - sequence.getAsLong();
 				if (realBuffered <= Integer.MAX_VALUE) {
 					return (int) realBuffered;

@@ -834,25 +834,25 @@ public class FluxWindowPredicateTest extends
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
-		Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-		Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
-		Assertions.assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(123);
+		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		Assertions.assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
 		test.requested = 35;
-		Assertions.assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
+		Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
 		test.queue.offer(Flux.just(1).groupBy(i -> i).blockFirst());
-		Assertions.assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+		Assertions.assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 
-		Assertions.assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+		Assertions.assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
 		test.error = new IllegalStateException("boom");
-		Assertions.assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+		Assertions.assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
 
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.onComplete();
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 
 
@@ -868,23 +868,23 @@ public class FluxWindowPredicateTest extends
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
-		Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(main);
-		Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isNull(); // RS: TODO Need to make actual non-null
+		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(main);
+		Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isNull(); // RS: TODO Need to make actual non-null
 		test.requested = 35;
-		Assertions.assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
+		Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
 		test.queue.offer(27);
-		Assertions.assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+		Assertions.assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 
-		Assertions.assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+		Assertions.assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
 		test.error = new IllegalStateException("boom");
-		Assertions.assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+		Assertions.assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
 
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.onComplete();
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 }

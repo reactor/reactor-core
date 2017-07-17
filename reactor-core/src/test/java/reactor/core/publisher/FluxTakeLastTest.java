@@ -173,16 +173,16 @@ public class FluxTakeLastTest {
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
-        Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+        Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+        Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
         test.requested = 35;
-        Assertions.assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
+        Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
         test.offer(1);
-        Assertions.assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+        Assertions.assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 
 	@Test
@@ -192,7 +192,7 @@ public class FluxTakeLastTest {
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
-        Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+        Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+        Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
     }
 }

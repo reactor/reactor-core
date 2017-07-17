@@ -189,9 +189,9 @@ final class FluxSubscribeOn<T> extends FluxOperator<T, T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

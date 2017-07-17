@@ -78,7 +78,7 @@ final class MonoTakeLastOne<T> extends MonoFromFluxOperator<T, T>
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
+			if (key == Attr.PARENT) return s;
 
 			return super.scanUnsafe(key);
 		}

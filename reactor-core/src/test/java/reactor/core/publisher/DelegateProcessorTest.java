@@ -33,17 +33,17 @@ public class DelegateProcessorTest {
 
 		IllegalStateException boom = new IllegalStateException("boom");
 		InnerConsumer<?> upstream = Mockito.mock(InnerConsumer.class);
-		when(upstream.scanUnsafe(Scannable.ThrowableAttr.ERROR))
+		when(upstream.scanUnsafe(Scannable.Attr.ERROR))
 				.thenReturn(boom);
-		when(upstream.scanUnsafe(Scannable.BooleanAttr.DELAY_ERROR))
+		when(upstream.scanUnsafe(Scannable.Attr.DELAY_ERROR))
 				.thenReturn(true);
 
 		DelegateProcessor<?, ?> processor = new DelegateProcessor<>(
 				downstream, upstream);
 
-		assertThat(processor.scan(Scannable.ScannableAttr.PARENT)).isSameAs(downstream);
+		assertThat(processor.scan(Scannable.Attr.PARENT)).isSameAs(downstream);
 
-		assertThat(processor.scan(Scannable.ThrowableAttr.ERROR)).isSameAs(boom);
-		assertThat(processor.scan(Scannable.BooleanAttr.DELAY_ERROR)).isTrue();
+		assertThat(processor.scan(Scannable.Attr.ERROR)).isSameAs(boom);
+		assertThat(processor.scan(Scannable.Attr.DELAY_ERROR)).isTrue();
 	}
 }

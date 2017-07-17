@@ -41,33 +41,33 @@ public class BlockingSingleSubscriberTest {
 		Subscription s = Operators.emptySubscription();
 		test.onSubscribe(s);
 
-		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).describedAs("PARENT").isSameAs(s);
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).describedAs("TERMINATED").isFalse();
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).describedAs("CANCELLED").isFalse();
-		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).describedAs("ERROR").isNull();
-		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).describedAs("PREFETCH").isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.PARENT)).describedAs("PARENT").isSameAs(s);
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).describedAs("TERMINATED").isFalse();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).describedAs("CANCELLED").isFalse();
+		assertThat(test.scan(Scannable.Attr.ERROR)).describedAs("ERROR").isNull();
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).describedAs("PREFETCH").isEqualTo(Integer.MAX_VALUE);
 	}
 
 	@Test
 	public void scanMainTerminated() {
 		test.onComplete();
 
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 	}
 
 	@Test
 	public void scanMainError() {
 		test.onError(new IllegalStateException("boom"));
 
-		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 	}
 
 	@Test
 	public void scanMainCancelled() {
 		test.dispose();
 
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 	}
 }

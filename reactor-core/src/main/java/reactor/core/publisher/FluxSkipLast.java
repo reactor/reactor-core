@@ -95,9 +95,9 @@ final class FluxSkipLast<T> extends FluxOperator<T, T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == IntAttr.PREFETCH) return n;
-			if (key == IntAttr.BUFFERED) return size();
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.PREFETCH) return n;
+			if (key == Attr.BUFFERED) return size();
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

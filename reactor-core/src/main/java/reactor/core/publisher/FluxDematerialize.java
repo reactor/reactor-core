@@ -70,12 +70,12 @@ final class FluxDematerialize<T> extends FluxOperator<Signal<T>, T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == BooleanAttr.TERMINATED) return done;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == ThrowableAttr.ERROR) return error;
-			if (key == BooleanAttr.CANCELLED) return cancelled;
-			if (key == IntAttr.BUFFERED) return size();
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.ERROR) return error;
+			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.BUFFERED) return size();
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

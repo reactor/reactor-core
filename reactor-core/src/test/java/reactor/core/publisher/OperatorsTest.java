@@ -219,7 +219,7 @@ public class OperatorsTest {
 	@Test
 	public void scanCancelledSubscription() {
 		CancelledSubscription test = CancelledSubscription.INSTANCE;
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 	@Test
@@ -227,19 +227,19 @@ public class OperatorsTest {
 		DeferredSubscription test = new DeferredSubscription();
 		test.s = Operators.emptySubscription();
 
-		Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(test.s);
+		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(test.s);
 		test.requested = 123;
-		Assertions.assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(123);
+		Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(123);
 
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 	@Test
 	public void scanEmptySubscription() {
 		EmptySubscription test = EmptySubscription.INSTANCE;
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 	}
 
 	@Test
@@ -247,16 +247,16 @@ public class OperatorsTest {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, null, null, null);
 		MonoSubscriber<Integer, Integer> test = new MonoSubscriber<>(actual);
 
-		Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
-		Assertions.assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		Assertions.assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
 
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.complete(4);
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 
 	}
 
@@ -270,14 +270,14 @@ public class OperatorsTest {
 		};
 		Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
-		Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
-		Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
+		Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		test.request(34);
-		Assertions.assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(34);
+		Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(34);
 
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 	@Test
@@ -285,12 +285,12 @@ public class OperatorsTest {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, null, null, null);
 		ScalarSubscription<Integer> test = new ScalarSubscription<>(actual, 5);
 
-		Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+		Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.poll();
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 }

@@ -278,9 +278,9 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.CANCELLED) return cancelled;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == BooleanAttr.TERMINATED) return state == STATE_NO_NEXT;
+			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.TERMINATED) return state == STATE_NO_NEXT;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}
@@ -525,9 +525,9 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.CANCELLED) return cancelled;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == BooleanAttr.TERMINATED) return state == STATE_NO_NEXT;
+			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.TERMINATED) return state == STATE_NO_NEXT;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}

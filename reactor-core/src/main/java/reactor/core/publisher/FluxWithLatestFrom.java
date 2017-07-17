@@ -120,8 +120,8 @@ final class FluxWithLatestFrom<T, U, R> extends FluxOperator<T, R> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.CANCELLED) return main == Operators.cancelledSubscription();
-			if (key == ScannableAttr.PARENT) return main;
+			if (key == Attr.CANCELLED) return main == Operators.cancelledSubscription();
+			if (key == Attr.PARENT) return main;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -274,7 +274,7 @@ final class FluxWithLatestFrom<T, U, R> extends FluxOperator<T, R> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.ACTUAL) {
+			if (key == Attr.ACTUAL) {
 				return main;
 			}
 			return null;

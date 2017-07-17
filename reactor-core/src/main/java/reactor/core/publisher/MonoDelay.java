@@ -94,8 +94,8 @@ final class MonoDelay extends Mono<Long> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.TERMINATED) return cancel == FINISHED;
-			if (key == BooleanAttr.CANCELLED) return cancel == Disposables.DISPOSED;
+			if (key == Attr.TERMINATED) return cancel == FINISHED;
+			if (key == Attr.CANCELLED) return cancel == Disposables.DISPOSED;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}

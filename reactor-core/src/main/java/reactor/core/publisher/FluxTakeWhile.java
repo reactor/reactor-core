@@ -118,8 +118,8 @@ final class FluxTakeWhile<T> extends FluxOperator<T, T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.TERMINATED) return done;
-			if (key == ScannableAttr.PARENT) return s;
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.PARENT) return s;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

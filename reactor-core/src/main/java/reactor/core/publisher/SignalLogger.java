@@ -160,7 +160,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	@Override
 	@Nullable
 	public Object scanUnsafe(Attr key) {
-		if (key == ScannableAttr.PARENT) return source;
+		if (key == Attr.PARENT) return source;
 
 		return null;
 	}

@@ -72,8 +72,8 @@ final class MonoSingle<T> extends MonoFromFluxOperator<T, T>
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.TERMINATED) return done;
-			if (key == ScannableAttr.PARENT) return s;
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.PARENT) return s;
 
 			return super.scanUnsafe(key);
 		}

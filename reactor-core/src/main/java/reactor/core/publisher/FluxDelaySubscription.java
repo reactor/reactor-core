@@ -82,9 +82,9 @@ final class FluxDelaySubscription<T, U> extends FluxOperator<T, T>
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == ScannableAttr.ACTUAL) return actual;
-			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.ACTUAL) return actual;
+			if (key == Attr.TERMINATED) return done;
 
 			return super.scanUnsafe(key);
 		}
@@ -164,7 +164,7 @@ final class FluxDelaySubscription<T, U> extends FluxOperator<T, T>
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.ACTUAL) return actual;
+			if (key == Attr.ACTUAL) return actual;
 
 			return null;
 		}

@@ -747,14 +747,14 @@ public class TopicProcessorTest {
 		Subscription subscription = Operators.emptySubscription();
 		test.onSubscribe(subscription);
 
-		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isEqualTo(subscription);
+		assertThat(test.scan(Scannable.Attr.PARENT)).isEqualTo(subscription);
 
-		assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(16);
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
-		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+		assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(16);
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
 		test.onError(new IllegalStateException("boom"));
-		assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 	}
 
 	@Test
@@ -766,20 +766,20 @@ public class TopicProcessorTest {
 		TopicProcessor.TopicInner<String> test = new TopicProcessor.TopicInner<>(
 				main, sequence, activated);
 
-		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(main);
-		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(activated);
-		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
-		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(123L);
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(main);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(activated);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(123L);
 
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 
 		main.terminated = 1;
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 
 		test.cancel();
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 
@@ -793,8 +793,8 @@ public class TopicProcessorTest {
 		main.ringBuffer.getSequencer().cursor.set(Integer.MAX_VALUE + 5L);
 		test.sequence.set(6L);
 
-		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(Integer.MAX_VALUE - 1);
-		assertThat(test.scan(Scannable.LongAttr.LARGE_BUFFERED)).isEqualTo(Integer.MAX_VALUE - 1L);
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(Integer.MAX_VALUE - 1);
+		assertThat(test.scan(Scannable.Attr.LARGE_BUFFERED)).isEqualTo(Integer.MAX_VALUE - 1L);
 	}
 
 	@Test
@@ -807,8 +807,8 @@ public class TopicProcessorTest {
 		main.ringBuffer.getSequencer().cursor.set(Integer.MAX_VALUE + 5L);
 		test.sequence.set(2L);
 
-		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(Integer.MIN_VALUE);
-		assertThat(test.scan(Scannable.LongAttr.LARGE_BUFFERED)).isEqualTo(Integer.MAX_VALUE + 3L);
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(Integer.MIN_VALUE);
+		assertThat(test.scan(Scannable.Attr.LARGE_BUFFERED)).isEqualTo(Integer.MAX_VALUE + 3L);
 	}
 
 	private void assertProcessor(TopicProcessor<Integer> processor,

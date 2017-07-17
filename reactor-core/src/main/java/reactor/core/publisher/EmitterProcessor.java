@@ -325,10 +325,10 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	@Override
 	@Nullable
 	public Object scanUnsafe(Attr key) {
-		if (key == ScannableAttr.PARENT) return s;
-		if (key == IntAttr.BUFFERED) return getPending();
-		if (key == BooleanAttr.CANCELLED) return isCancelled();
-		if (key == IntAttr.PREFETCH) return getPrefetch();
+		if (key == Attr.PARENT) return s;
+		if (key == Attr.BUFFERED) return getPending();
+		if (key == Attr.CANCELLED) return isCancelled();
+		if (key == Attr.PREFETCH) return getPrefetch();
 
 		return super.scanUnsafe(key);
 	}

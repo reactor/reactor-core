@@ -48,8 +48,8 @@ final class FluxSourceFuseable<I> extends Flux<I> implements Fuseable, Scannable
 	@Override
 	@Nullable
 	public Object scanUnsafe(Scannable.Attr key) {
-		if (key == Scannable.IntAttr.PREFETCH) return getPrefetch();
-		if (key == Scannable.ScannableAttr.PARENT) return source;
+		if (key == Scannable.Attr.PREFETCH) return getPrefetch();
+		if (key == Scannable.Attr.PARENT) return source;
 		return null;
 	}
 }

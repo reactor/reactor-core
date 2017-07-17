@@ -295,14 +295,14 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 
 		@Override
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == BooleanAttr.TERMINATED) return done;
-			if (key == BooleanAttr.CANCELLED) return getAsBoolean();
-			if (key == IntAttr.CAPACITY) {
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.CANCELLED) return getAsBoolean();
+			if (key == Attr.CAPACITY) {
 				C b = buffer;
 				return b != null ? b.size() : 0;
 			}
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

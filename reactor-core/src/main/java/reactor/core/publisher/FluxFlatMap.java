@@ -257,15 +257,15 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == BooleanAttr.CANCELLED) return cancelled;
-			if (key == ThrowableAttr.ERROR) return error;
-			if (key == BooleanAttr.TERMINATED) return done && (scalarQueue == null || scalarQueue.isEmpty());
-			if (key == BooleanAttr.DELAY_ERROR) return delayError;
-			if (key == IntAttr.PREFETCH) return maxConcurrency;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == LongAttr.LARGE_BUFFERED) return (scalarQueue != null ? (long) scalarQueue.size() : 0L) + size;
-			if (key == IntAttr.BUFFERED) {
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.ERROR) return error;
+			if (key == Attr.TERMINATED) return done && (scalarQueue == null || scalarQueue.isEmpty());
+			if (key == Attr.DELAY_ERROR) return delayError;
+			if (key == Attr.PREFETCH) return maxConcurrency;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.LARGE_BUFFERED) return (scalarQueue != null ? (long) scalarQueue.size() : 0L) + size;
+			if (key == Attr.BUFFERED) {
 				long realBuffered = (scalarQueue != null ? (long) scalarQueue.size() : 0L) + size;
 				if (realBuffered <= Integer.MAX_VALUE) return (int) realBuffered;
 				return Integer.MIN_VALUE;
@@ -950,12 +950,12 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == ScannableAttr.ACTUAL) return parent;
-			if (key == BooleanAttr.TERMINATED) return done && (queue == null || queue.isEmpty());
-			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
-			if (key == IntAttr.BUFFERED) return queue == null ? 0 : queue.size();
-			if (key == IntAttr.PREFETCH) return prefetch;
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.ACTUAL) return parent;
+			if (key == Attr.TERMINATED) return done && (queue == null || queue.isEmpty());
+			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == Attr.BUFFERED) return queue == null ? 0 : queue.size();
+			if (key == Attr.PREFETCH) return prefetch;
 
 			return null;
 		}

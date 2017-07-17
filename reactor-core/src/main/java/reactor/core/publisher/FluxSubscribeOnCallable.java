@@ -120,8 +120,8 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.CANCELLED) return state == HAS_CANCELLED;
-			if (key == IntAttr.BUFFERED) return value != null ? 1 : 0;
+			if (key == Attr.CANCELLED) return state == HAS_CANCELLED;
+			if (key == Attr.BUFFERED) return value != null ? 1 : 0;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}

@@ -763,7 +763,7 @@ public abstract class Operators {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.CANCELLED) {
+			if (key == Attr.CANCELLED) {
 				return true;
 			}
 			return null;
@@ -820,7 +820,7 @@ public abstract class Operators {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.TERMINATED) return true;
+			if (key == Attr.TERMINATED) return true;
 			return null;
 		}
 
@@ -859,9 +859,9 @@ public abstract class Operators {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == BooleanAttr.CANCELLED) return isCancelled();
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.CANCELLED) return isCancelled();
 
 			return null;
 		}
@@ -964,9 +964,9 @@ public abstract class Operators {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.CANCELLED) return isCancelled();
-			if (key == BooleanAttr.TERMINATED) return state == HAS_REQUEST_HAS_VALUE || state == NO_REQUEST_HAS_VALUE;
-			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == Attr.CANCELLED) return isCancelled();
+			if (key == Attr.TERMINATED) return state == HAS_REQUEST_HAS_VALUE || state == NO_REQUEST_HAS_VALUE;
+			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -1223,10 +1223,10 @@ public abstract class Operators {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT)
+			if (key == Attr.PARENT)
 				return missedSubscription != null ? missedSubscription : subscription;
-			if (key == BooleanAttr.CANCELLED) return isCancelled();
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM)
+			if (key == Attr.CANCELLED) return isCancelled();
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM)
 				return Operators.addCap(requested, missedRequested);
 
 			return InnerOperator.super.scanUnsafe(key);
@@ -1553,7 +1553,7 @@ public abstract class Operators {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.TERMINATED || key == BooleanAttr.CANCELLED)
+			if (key == Attr.TERMINATED || key == Attr.CANCELLED)
 				return once == 1;
 
 			return InnerProducer.super.scanUnsafe(key);

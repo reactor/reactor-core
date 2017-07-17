@@ -48,7 +48,7 @@ final class MonoSourceFuseable<I> extends Mono<I> implements Fuseable, Scannable
 	@Override
 	@Nullable
 	public Object scanUnsafe(Attr key) {
-		if (key == ScannableAttr.PARENT) {
+		if (key == Attr.PARENT) {
 			return source;
 		}
 		return null;

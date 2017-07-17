@@ -71,9 +71,9 @@ final class FluxAutoConnectFuseable<T> extends Flux<T>
 	@Override
 	@Nullable
 	public Object scanUnsafe(Attr key) {
-		if (key == IntAttr.PREFETCH) return getPrefetch();
-		if (key == ScannableAttr.PARENT) return source;
-		if (key == IntAttr.CAPACITY) return remaining;
+		if (key == Attr.PREFETCH) return getPrefetch();
+		if (key == Attr.PARENT) return source;
+		if (key == Attr.CAPACITY) return remaining;
 
 		return null;
 	}

@@ -603,9 +603,9 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 					            catch (Exception e) {
 					            }
 					            if (Scannable.from(qs)
-					                         .scan(Scannable.ThrowableAttr.ERROR) != null) {
+					                         .scan(Scannable.Attr.ERROR) != null) {
 						            if (scenario.producerError != null) {
-							            assertThat(Scannable.from(qs).scan(Scannable.ThrowableAttr.ERROR))
+							            assertThat(Scannable.from(qs).scan(Scannable.Attr.ERROR))
 									            .hasMessage(scenario.producerError.getMessage());
 						            }
 						            if (up.actual() != qs || scenario.prefetch() == -1) {
@@ -655,9 +655,9 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 						                            assertThat(qs.size()).isEqualTo(up.size());
 					                            }
 					                            if (Scannable.from(qs)
-					                                         .scan(Scannable.ThrowableAttr.ERROR) != null) {
+					                                         .scan(Scannable.Attr.ERROR) != null) {
 						                            if (scenario.producerError != null) {
-							                            assertThat(Scannable.from(qs).scan(Scannable.ThrowableAttr.ERROR))
+							                            assertThat(Scannable.from(qs).scan(Scannable.Attr.ERROR))
 									                            .hasMessage(scenario.producerError.getMessage());
 						                            }
 						                            if (up.actual() != qs || scenario.prefetch() == -1) {
@@ -936,16 +936,16 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 	final void touchInner(@Nullable Object t){
 		if(t == null) return;
 		Scannable o = Scannable.from(t);
-		o.scan(Scannable.ScannableAttr.ACTUAL);
-		o.scan(Scannable.IntAttr.BUFFERED);
-		o.scan(Scannable.BooleanAttr.CANCELLED);
-		o.scan(Scannable.IntAttr.CAPACITY);
-		o.scan(Scannable.BooleanAttr.DELAY_ERROR);
-		o.scan(Scannable.ThrowableAttr.ERROR);
-		o.scan(Scannable.IntAttr.PREFETCH);
-		o.scan(Scannable.ScannableAttr.PARENT);
-		o.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM);
-		o.scan(Scannable.BooleanAttr.TERMINATED);
+		o.scan(Scannable.Attr.ACTUAL);
+		o.scan(Scannable.Attr.BUFFERED);
+		o.scan(Scannable.Attr.CANCELLED);
+		o.scan(Scannable.Attr.CAPACITY);
+		o.scan(Scannable.Attr.DELAY_ERROR);
+		o.scan(Scannable.Attr.ERROR);
+		o.scan(Scannable.Attr.PREFETCH);
+		o.scan(Scannable.Attr.PARENT);
+		o.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM);
+		o.scan(Scannable.Attr.TERMINATED);
 		o.inners();
 	}
 
@@ -995,7 +995,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 		                                                  .ifPresent(t -> {
 			                                                  ref.set(t);
 			                                                 if (scenario.prefetch() != -1) {
-				                                                  assertThat(t.scan(Scannable.IntAttr.PREFETCH))
+				                                                  assertThat(t.scan(Scannable.Attr.PREFETCH))
 						                                                  .isEqualTo(scenario.prefetch());
 			                                                  }
 		                                                  }));
@@ -1012,8 +1012,8 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 		return Flux.from(f)
 		           .doOnSubscribe(parent -> {
 			           Scannable t = Scannable.from(parent);
-			           assertThat(t.scan(Scannable.ThrowableAttr.ERROR)).isNull();
-			           assertThat(t.scanOrDefault(Scannable.BooleanAttr.TERMINATED, false)).isFalse();
+			           assertThat(t.scan(Scannable.Attr.ERROR)).isNull();
+			           assertThat(t.scanOrDefault(Scannable.Attr.TERMINATED, false)).isFalse();
 
 			           //noop path
 			           if (parent instanceof Subscriber) {
@@ -1027,7 +1027,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 			           if (ref.get() != null) {
 				           Scannable t = ref.get();
 				           if (scenario.shouldAssertPostTerminateState()) {
-					           assertThat(t.scanOrDefault(Scannable.BooleanAttr.TERMINATED, true)).isTrue();
+					           assertThat(t.scanOrDefault(Scannable.Attr.TERMINATED, true)).isTrue();
 				           }
 				           touchTreeState(ref.get());
 			           }
@@ -1038,11 +1038,11 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 	final PO fluxState(OperatorScenario<I, PI, O, PO> scenario, boolean conditional) {
 		Flux<I> source = Flux.from(s -> {
 			Scannable t = Scannable.from(s);
-			assertThat(t.scan(Scannable.ThrowableAttr.ERROR)).isNull();
-			assertThat(t.scanOrDefault(Scannable.BooleanAttr.TERMINATED, false)).isFalse();
+			assertThat(t.scan(Scannable.Attr.ERROR)).isNull();
+			assertThat(t.scanOrDefault(Scannable.Attr.TERMINATED, false)).isFalse();
 
 				if (scenario.prefetch() != -1) {
-					assertThat(t.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(scenario.prefetch());
+					assertThat(t.scan(Scannable.Attr.PREFETCH)).isEqualTo(scenario.prefetch());
 				}
 
 			touchTreeState(s);
@@ -1053,7 +1053,7 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 			s.onComplete();
 			touchTreeState(s);
 			if (scenario.shouldAssertPostTerminateState()) {
-				assertThat(t.scanOrDefault(Scannable.BooleanAttr.TERMINATED, true)).isTrue();
+				assertThat(t.scanOrDefault(Scannable.Attr.TERMINATED, true)).isTrue();
 			}
 		});
 

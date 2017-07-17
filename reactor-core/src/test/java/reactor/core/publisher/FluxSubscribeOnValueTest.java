@@ -74,15 +74,15 @@ public class FluxSubscribeOnValueTest {
         FluxSubscribeOnValue.ScheduledScalar<Integer> test =
         		new FluxSubscribeOnValue.ScheduledScalar<Integer>(actual, 1, Schedulers.single());
 
-        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
-        Assertions.assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+        Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        Assertions.assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         test.future = FluxSubscribeOnValue.ScheduledScalar.FINISHED;
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+        Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.future = Disposables.DISPOSED;
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 }

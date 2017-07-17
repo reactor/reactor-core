@@ -184,7 +184,7 @@ final class FluxFirstEmitting<T> extends Flux<T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.CANCELLED) return cancelled;
+			if (key == Attr.CANCELLED) return cancelled;
 
 			return null;
 		}
@@ -294,8 +294,8 @@ final class FluxFirstEmitting<T> extends Flux<T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == BooleanAttr.CANCELLED) return parent.cancelled;
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.CANCELLED) return parent.cancelled;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

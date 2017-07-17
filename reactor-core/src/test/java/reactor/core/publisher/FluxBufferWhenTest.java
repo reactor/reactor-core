@@ -242,16 +242,16 @@ public class FluxBufferWhenTest {
 		test.onSubscribe(parent);
 		test.request(100L);
 
-		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
-		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
-		assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(0); //TODO
-		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(100L);
-		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(0); //TODO
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(100L);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 
 		test.onError(new IllegalStateException("boom"));
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 	}
 
 	@Test
@@ -263,7 +263,7 @@ public class FluxBufferWhenTest {
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 		test.cancel();
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 
@@ -276,21 +276,21 @@ public class FluxBufferWhenTest {
 		FluxBufferWhen.BufferStartEndEnder test = new FluxBufferWhen.BufferStartEndEnder<>(main, Arrays.asList("foo", "bar"), 1);
 
 		test.request(4); //request is forwarded directly to parent, no parent = we track it
-		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(4L);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(4L);
 
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
-		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(main);
-		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
-		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
 
 		test.request(2); //request is forwarded directly to parent
-		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
 
 		test.cancel();
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 	@Test
@@ -302,20 +302,20 @@ public class FluxBufferWhenTest {
 		FluxBufferWhen.BufferStartEndStarter test = new FluxBufferWhen.BufferStartEndStarter<>(main);
 
 		test.request(4); //request is forwarded directly to parent, no parent = we track it
-		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(4L);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(4L);
 
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
-		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(main);
-		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
-		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
 
 		test.request(2); //request is forwarded directly to parent
-		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
 
 		test.cancel();
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 }

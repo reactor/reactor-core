@@ -1100,9 +1100,9 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 			                        assertInnerSubscriberBefore(ref.get());
 		                        }), 0)
 		            .then(() -> assertThat(ref.get()
-		                                      .scan(Scannable.IntAttr.BUFFERED)).isEqualTo(3))
+		                                      .scan(Scannable.Attr.BUFFERED)).isEqualTo(3))
 		            .then(() -> assertThat(ref.get()
-		                                      .scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE))
+		                                      .scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE))
 		            .then(() -> assertThat(ref.get()
 		                                      .inners()).hasSize(3))
 		            .thenCancel()
@@ -1117,9 +1117,9 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		                                                               .findFirst()
 		                                                               .get();
 
-		assertThat(s.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
-		assertThat(s.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(0);
-		assertThat(s.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		assertThat(s.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
+		assertThat(s.scan(Scannable.Attr.CANCELLED)).isFalse();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -1128,9 +1128,9 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		                                                               .findFirst()
 		                                                               .get();
 
-		assertThat(s.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
-		assertThat(s.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
-		assertThat(s.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		assertThat(s.scan(Scannable.Attr.TERMINATED)).isTrue();
+		assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
+		assertThat(s.scan(Scannable.Attr.CANCELLED)).isTrue();
 
 		Hooks.onNextDropped(v -> {
 		});
@@ -1162,9 +1162,9 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		            .then(() -> assertThat(ref.get()
 		                                      .inners().count()).isEqualTo(3))
 		            .then(() -> assertThat(ref.get()
-		                                      .scan(Scannable.ThrowableAttr.ERROR)).isNull())
+		                                      .scan(Scannable.Attr.ERROR)).isNull())
 		            .then(() -> assertThat(ref.get()
-		                                      .scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L))
+		                                      .scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L))
 		            .thenCancel()
 		            .verify();
 
@@ -1184,9 +1184,9 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 					ref.get()
 					   .cancel();
 					assertThat(ref.get()
-					              .scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+					              .scan(Scannable.Attr.CANCELLED)).isTrue();
 					assertThat(ref.get()
-					              .scanOrDefault(Scannable.BooleanAttr.TERMINATED, false));
+					              .scanOrDefault(Scannable.Attr.TERMINATED, false));
 					return Flux.just(3);
 				}),
 				Flux.just(3)
@@ -1199,9 +1199,9 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		            .then(() -> assertThat(ref.get()
 		                                      .inners()).hasSize(3))
 		            .then(() -> assertThat(ref.get()
-		                                      .scan(Scannable.ThrowableAttr.ERROR)).isNull())
+		                                      .scan(Scannable.Attr.ERROR)).isNull())
 		            .then(() -> assertThat(ref.get()
-		                                      .scan(Scannable.LongAttr
+		                                      .scan(Scannable.Attr
 				                                      .REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L))
 		            .thenCancel()
 		            .verify();
@@ -1215,10 +1215,10 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		                                         .iterator()
 		                                         .next();
 
-		assertThat(s.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
-		assertThat(s.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(123);
-		assertThat(s.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(0);
-		assertThat(s.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		assertThat(s.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(s.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
+		assertThat(s.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
+		assertThat(s.scan(Scannable.Attr.CANCELLED)).isFalse();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -1227,10 +1227,10 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		                                         .iterator()
 		                                         .next();
 
-		assertThat(s.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
-		assertThat(s.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(123);
+		assertThat(s.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(s.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
 		assertThat(c.inners()).hasSize(3);
-		assertThat(s.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		assertThat(s.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 	@Test
@@ -1282,17 +1282,17 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		FluxZip.ZipCoordinator<Integer, Integer> test = new FluxZip.ZipCoordinator<Integer, Integer>(actual,
 				i -> 5, 123, Queues.unbounded(), 345);
 
-        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+        Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
         test.requested = 35;
-        Assertions.assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
+        Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
 
-        Assertions.assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+        Assertions.assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
         test.error = new IllegalStateException("boom");
-        Assertions.assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
+        Assertions.assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
 
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 
 	@Test
@@ -1302,20 +1302,20 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 				i -> 5, 123, Queues.unbounded(), 345);
 		FluxZip.ZipInner<Integer> test = new FluxZip.ZipInner<>(main, 234, 1, Queues.unbounded());
 
-        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(main);
-        Assertions.assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(234);
+        Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
+        Assertions.assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(234);
         test.queue = new ConcurrentLinkedQueue<>();
         test.queue.offer(67);
-        Assertions.assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+        Assertions.assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         test.queue.clear();
         test.onComplete();
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+        Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 
 
@@ -1325,18 +1325,18 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		FluxZip.ZipSingleCoordinator<Integer, Integer> test =
 				new FluxZip.ZipSingleCoordinator<Integer, Integer>(actual, new Object[1], 1, i -> 5);
 
-        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
-        Assertions.assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+        Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        Assertions.assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
         test.wip = 1;
-        Assertions.assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+        Assertions.assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         test.wip = 0;
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+        Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 
 	@Test
@@ -1348,11 +1348,11 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
-        Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(main);
+        Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+        Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
         test.onNext(7);
-        Assertions.assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+        Assertions.assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
+        Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 }

@@ -586,17 +586,17 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
-        Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
-        Assertions.assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(123);
+        Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+        Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        Assertions.assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(123);
 
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         test.onComplete();
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+        Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 
 	@Test
@@ -607,23 +607,23 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
-        Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
-        Assertions.assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(123);
+        Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+        Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        Assertions.assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(123);
         test.requested = 35;
-        Assertions.assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
+        Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
         test.onNext(2);
-        Assertions.assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(1);
+        Assertions.assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
-        Assertions.assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+        Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+        Assertions.assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
         test.onError(new IllegalStateException("boom"));
-        Assertions.assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+        Assertions.assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
+        Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 
     @Test
@@ -639,8 +639,8 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
         //size() is 1
         test.offer(UnicastProcessor.create());
 
-        assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(Integer.MAX_VALUE - 1);
-        assertThat(test.scan(Scannable.LongAttr.LARGE_BUFFERED)).isEqualTo(Integer.MAX_VALUE - 1L);
+        assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(Integer.MAX_VALUE - 1);
+        assertThat(test.scan(Scannable.Attr.LARGE_BUFFERED)).isEqualTo(Integer.MAX_VALUE - 1L);
     }
 
     @Test
@@ -660,8 +660,8 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
         test.offer(UnicastProcessor.create());
         test.offer(UnicastProcessor.create());
 
-        assertThat(test.scan(Scannable.IntAttr.BUFFERED)).isEqualTo(Integer.MIN_VALUE);
-        assertThat(test.scan(Scannable.LongAttr.LARGE_BUFFERED)).isEqualTo(Integer.MAX_VALUE + 5L);
+        assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(Integer.MIN_VALUE);
+        assertThat(test.scan(Scannable.Attr.LARGE_BUFFERED)).isEqualTo(Integer.MAX_VALUE + 5L);
     }
 
     @Test
@@ -672,16 +672,16 @@ public class FluxWindowTest extends FluxOperatorTest<String, Flux<String>> {
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
-        Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
-        Assertions.assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(123);
+        Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+        Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        Assertions.assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(123);
 
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         test.onComplete();
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+        Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 }

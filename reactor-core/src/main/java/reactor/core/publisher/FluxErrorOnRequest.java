@@ -80,8 +80,8 @@ final class FluxErrorOnRequest<T> extends Flux<T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ThrowableAttr.ERROR) return error;
-			if (key == BooleanAttr.CANCELLED || key == BooleanAttr.TERMINATED)
+			if (key == Attr.ERROR) return error;
+			if (key == Attr.CANCELLED || key == Attr.TERMINATED)
 				return once == 1;
 
 			return InnerProducer.super.scanUnsafe(key);

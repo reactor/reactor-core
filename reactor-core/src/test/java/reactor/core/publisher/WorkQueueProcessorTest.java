@@ -1365,15 +1365,15 @@ public class WorkQueueProcessorTest {
 		Subscription subscription = Operators.emptySubscription();
 		test.onSubscribe(subscription);
 
-		Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isEqualTo(subscription);
+		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isEqualTo(subscription);
 
-		Assertions.assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(16);
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
-		Assertions.assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).isNull();
+		Assertions.assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(16);
+		Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		Assertions.assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
 
 		test.onError(new IllegalStateException("boom"));
-		Assertions.assertThat(test.scan(Scannable.ThrowableAttr.ERROR)).hasMessage("boom");
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		Assertions.assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
+		Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 	}
 
 	@Test
@@ -1384,23 +1384,23 @@ public class WorkQueueProcessorTest {
 		WorkQueueProcessor.WorkQueueInner<String> test = new WorkQueueProcessor.WorkQueueInner<>(
 				subscriber, main);
 
-		Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(main);
-		Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(subscriber);
-		Assertions.assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
-		Assertions.assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
+		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(main);
+		Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(subscriber);
+		Assertions.assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
 
 		test.pendingRequest.set(123);
-		Assertions.assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(123L);
+		Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(123L);
 
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 
 		main.terminated = 1;
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 
 		test.cancel();
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 	private void assertProcessor(WorkQueueProcessor<Integer> processor,

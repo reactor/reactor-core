@@ -275,9 +275,9 @@ final class FluxCreate<T> extends Flux<T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == IntAttr.BUFFERED) return queue.size();
-			if (key == ThrowableAttr.ERROR) return error;
-			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == Attr.BUFFERED) return queue.size();
+			if (key == Attr.ERROR) return error;
+			if (key == Attr.TERMINATED) return done;
 
 			return sink.scanUnsafe(key);
 		}
@@ -526,10 +526,10 @@ final class FluxCreate<T> extends Flux<T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.TERMINATED || key == BooleanAttr.CANCELLED) {
+			if (key == Attr.TERMINATED || key == Attr.CANCELLED) {
 				return Disposables.isDisposed(disposable);
 			}
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}
@@ -740,9 +740,9 @@ final class FluxCreate<T> extends Flux<T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == IntAttr.BUFFERED) return queue.size();
-			if (key == BooleanAttr.TERMINATED) return done;
-			if (key == ThrowableAttr.ERROR) return error;
+			if (key == Attr.BUFFERED) return queue.size();
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.ERROR) return error;
 
 			return super.scanUnsafe(key);
 		}
@@ -878,9 +878,9 @@ final class FluxCreate<T> extends Flux<T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == IntAttr.BUFFERED) return queue.get() == null ? 0 : 1;
-			if (key == BooleanAttr.TERMINATED) return done;
-			if (key == ThrowableAttr.ERROR) return error;
+			if (key == Attr.BUFFERED) return queue.get() == null ? 0 : 1;
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.ERROR) return error;
 
 			return super.scanUnsafe(key);
 		}

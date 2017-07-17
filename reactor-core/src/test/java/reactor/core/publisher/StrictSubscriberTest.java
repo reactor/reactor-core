@@ -179,18 +179,18 @@ public class StrictSubscriberTest {
 		CoreSubscriber<String> s = new LambdaSubscriber<>(null, null, null, null);
 		StrictSubscriber<String> test = new StrictSubscriber<>(s);
 
-		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(s);
-		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isNull();
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
-		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(s);
+		assertThat(test.scan(Scannable.Attr.PARENT)).isNull();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
 
 		test.request(2);
-		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(2L);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(2L);
 
 		Subscription parent = Operators.cancelledSubscription();
 		test.onSubscribe(parent);
-		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 }

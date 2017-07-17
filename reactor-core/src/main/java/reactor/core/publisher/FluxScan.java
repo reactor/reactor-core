@@ -126,9 +126,9 @@ final class FluxScan<T> extends FluxOperator<T, T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == BooleanAttr.TERMINATED) return done;
-			if (key == IntAttr.BUFFERED) return value != null ? 1 : 0;
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.BUFFERED) return value != null ? 1 : 0;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

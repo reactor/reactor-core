@@ -268,10 +268,10 @@ public class FluxWindowWhenTest {
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
-		Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+		Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.onComplete();
-		Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
     }
 }

@@ -77,14 +77,14 @@ public class MonoDelayTest {
 
 		actual.onSubscribe(test);
 
-		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isNull();
-		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.PARENT)).isNull();
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.request(1);
 		test.run();
-		assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 	}
 
 	@Test
@@ -92,8 +92,8 @@ public class MonoDelayTest {
 		CoreSubscriber<Long> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoDelay.MonoDelayRunnable test = new MonoDelay.MonoDelayRunnable(actual);
 
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();
-		assertThat(test.scan(Scannable.BooleanAttr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 }

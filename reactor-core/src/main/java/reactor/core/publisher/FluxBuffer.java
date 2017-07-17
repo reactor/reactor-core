@@ -187,14 +187,14 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == BooleanAttr.TERMINATED) return done;
-			if (key == IntAttr.BUFFERED) {
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.BUFFERED) {
 				C b = buffer;
 				return b != null ? b.size() : 0;
 			}
-			if (key == IntAttr.CAPACITY) return size;
-			if (key == IntAttr.PREFETCH) return size;
+			if (key == Attr.CAPACITY) return size;
+			if (key == Attr.PREFETCH) return size;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -341,14 +341,14 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == BooleanAttr.TERMINATED) return done;
-			if (key == IntAttr.CAPACITY) return size;
-			if (key == IntAttr.BUFFERED) {
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.CAPACITY) return size;
+			if (key == Attr.BUFFERED) {
 				C b = buffer;
 				return b != null ? b.size() : 0;
 			}
-			if (key == IntAttr.PREFETCH) return size;
+			if (key == Attr.PREFETCH) return size;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -524,13 +524,13 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == BooleanAttr.TERMINATED) return done;
-			if (key == BooleanAttr.CANCELLED) return cancelled;
-			if (key == IntAttr.CAPACITY) return size() * size;
-			if (key == IntAttr.BUFFERED) return stream().mapToInt(Collection::size).sum();
-			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.CAPACITY) return size() * size;
+			if (key == Attr.BUFFERED) return stream().mapToInt(Collection::size).sum();
+			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

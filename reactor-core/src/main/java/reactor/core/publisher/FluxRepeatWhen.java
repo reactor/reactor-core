@@ -196,8 +196,8 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return main.otherArbiter;
-			if (key == ScannableAttr.ACTUAL) return main;
+			if (key == Attr.PARENT) return main.otherArbiter;
+			if (key == Attr.ACTUAL) return main;
 
 			return null;
 		}

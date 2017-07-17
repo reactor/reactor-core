@@ -52,7 +52,7 @@ final class MonoCount<T> extends MonoFromFluxOperator<T, Long> implements Fuseab
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
+			if (key == Attr.PARENT) return s;
 
 			return super.scanUnsafe(key);
 		}

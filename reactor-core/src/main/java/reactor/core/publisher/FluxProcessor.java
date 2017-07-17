@@ -143,9 +143,9 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 	@Override
 	@Nullable
 	public Object scanUnsafe(Attr key) {
-		if (key == BooleanAttr.TERMINATED) return isTerminated();
-		if (key == ThrowableAttr.ERROR) return getError();
-		if (key == IntAttr.CAPACITY) return getBufferSize();
+		if (key == Attr.TERMINATED) return isTerminated();
+		if (key == Attr.ERROR) return getError();
+		if (key == Attr.CAPACITY) return getBufferSize();
 
 		return null;
 	}

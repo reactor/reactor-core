@@ -423,15 +423,15 @@ public class FluxTakeTest {
 
 	@SuppressWarnings("unchecked")
 	void assertTrackableBeforeOnSubscribe(InnerOperator t){
-		assertThat(t.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(t.scan(Scannable.Attr.TERMINATED)).isFalse();
 	}
 
 	void assertTrackableAfterOnSubscribe(InnerOperator t){
-		assertThat(t.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+		assertThat(t.scan(Scannable.Attr.TERMINATED)).isFalse();
 	}
 
 	void assertTrackableAfterOnComplete(InnerOperator t){
-		assertThat(t.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+		assertThat(t.scan(Scannable.Attr.TERMINATED)).isTrue();
 	}
 
 	@Test
@@ -603,12 +603,12 @@ public class FluxTakeTest {
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
-        Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+        Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+        Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         test.onComplete();
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+        Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
     }
 
 	@Test
@@ -619,12 +619,12 @@ public class FluxTakeTest {
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
-        Assertions.assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-        Assertions.assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+        Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+        Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         test.onComplete();
-        Assertions.assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+        Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
     }
 
     @Test
@@ -634,11 +634,11 @@ public class FluxTakeTest {
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
-        assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-        assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 
-        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         test.onError(new IllegalStateException("boom"));
-        assertThat(test.scan(Scannable.BooleanAttr.TERMINATED)).isTrue();
+        assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
     }
 }

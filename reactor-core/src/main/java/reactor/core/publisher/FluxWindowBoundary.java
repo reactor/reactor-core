@@ -146,13 +146,13 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == ThrowableAttr.ERROR) return error;
-			if (key == BooleanAttr.CANCELLED) return cancelled == 1;
-			if (key == BooleanAttr.TERMINATED) return done;
-			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == IntAttr.BUFFERED) return queue.size();
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.ERROR) return error;
+			if (key == Attr.CANCELLED) return cancelled == 1;
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.BUFFERED) return queue.size();
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -391,7 +391,7 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.ACTUAL) {
+			if (key == Attr.ACTUAL) {
 				return main;
 			}
 			return super.scanUnsafe(key);

@@ -478,15 +478,15 @@ final class FluxBufferWhen<T, U, V, C extends Collection<? super T>>
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == BooleanAttr.TERMINATED) return done;
-			if (key == BooleanAttr.CANCELLED) return cancelled;
-			if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
-			if (key == IntAttr.BUFFERED) return buffers.values()
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
+			if (key == Attr.BUFFERED) return buffers.values()
 			                                           .stream()
 			                                           .mapToInt(Collection::size)
 			                                           .sum();
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -531,7 +531,7 @@ final class FluxBufferWhen<T, U, V, C extends Collection<? super T>>
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.ACTUAL) {
+			if (key == Attr.ACTUAL) {
 				return main;
 			}
 			return super.scanUnsafe(key);
@@ -563,7 +563,7 @@ final class FluxBufferWhen<T, U, V, C extends Collection<? super T>>
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.ACTUAL) {
+			if (key == Attr.ACTUAL) {
 				return main;
 			}
 			return super.scanUnsafe(key);

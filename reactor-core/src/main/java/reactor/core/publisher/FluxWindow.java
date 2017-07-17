@@ -244,10 +244,10 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == BooleanAttr.CANCELLED) return cancelled == 1;
-			if (key == IntAttr.CAPACITY) return size;
-			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.CANCELLED) return cancelled == 1;
+			if (key == Attr.CAPACITY) return size;
+			if (key == Attr.TERMINATED) return done;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -428,10 +428,10 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == BooleanAttr.CANCELLED) return cancelled == 1;
-			if (key == IntAttr.CAPACITY) return size;
-			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.CANCELLED) return cancelled == 1;
+			if (key == Attr.CAPACITY) return size;
+			if (key == Attr.TERMINATED) return done;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -716,18 +716,18 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == BooleanAttr.CANCELLED) return cancelled == 1;
-			if (key == IntAttr.CAPACITY) return size;
-			if (key == BooleanAttr.TERMINATED) return done;
-			if (key == LongAttr.LARGE_BUFFERED) return (long) queue.size() + size();
-			if (key == IntAttr.BUFFERED) {
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.CANCELLED) return cancelled == 1;
+			if (key == Attr.CAPACITY) return size;
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.LARGE_BUFFERED) return (long) queue.size() + size();
+			if (key == Attr.BUFFERED) {
 				long realBuffered = (long) queue.size() + size();
 				if (realBuffered < Integer.MAX_VALUE) return (int) realBuffered;
 				return Integer.MIN_VALUE;
 			}
-			if (key == ThrowableAttr.ERROR) return error;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.ERROR) return error;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

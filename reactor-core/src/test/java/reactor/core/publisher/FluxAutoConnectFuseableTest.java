@@ -31,9 +31,9 @@ public class FluxAutoConnectFuseableTest {
 		Mockito.when(source.getPrefetch()).thenReturn(888);
 		FluxAutoConnectFuseable<String> test = new FluxAutoConnectFuseable<>(source, 123, d -> { });
 
-		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(source);
-		assertThat(test.scan(Scannable.IntAttr.PREFETCH)).isEqualTo(888);
-		assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(123);
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(888);
+		assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(123);
 	}
 
 }

@@ -267,10 +267,10 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.TERMINATED) return done;
-			if (key == BooleanAttr.CANCELLED) return cancelled;
-			if (key == ThrowableAttr.ERROR) return error;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.ERROR) return error;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}
@@ -623,10 +623,10 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return  s;
-			if (key == ScannableAttr.ACTUAL) return parent;
-			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
-			if (key == IntAttr.PREFETCH) return prefetch;
+			if (key == Attr.PARENT) return  s;
+			if (key == Attr.ACTUAL) return parent;
+			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == Attr.PREFETCH) return prefetch;
 
 			return null;
 		}

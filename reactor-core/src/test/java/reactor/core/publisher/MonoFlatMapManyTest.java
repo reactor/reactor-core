@@ -69,8 +69,8 @@ public class MonoFlatMapManyTest {
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
-		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(parent);
-		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 	}
 
 	@Test
@@ -84,11 +84,11 @@ public class MonoFlatMapManyTest {
 		Subscription innerSubscription = Operators.emptySubscription();
 		test.onSubscribe(innerSubscription);
 
-		assertThat(test.scan(Scannable.ScannableAttr.PARENT)).isSameAs(innerSubscription);
-		assertThat(test.scan(Scannable.ScannableAttr.ACTUAL)).isSameAs(main);
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(innerSubscription);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
 
 		main.requested = 3L;
-		assertThat(test.scan(Scannable.LongAttr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(3L);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(3L);
 	}
 
 }

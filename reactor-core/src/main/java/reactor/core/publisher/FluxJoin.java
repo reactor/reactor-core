@@ -184,11 +184,11 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == BooleanAttr.CANCELLED) return cancelled;
-			if (key == IntAttr.BUFFERED) return queue.size() / 2;
-			if (key == BooleanAttr.TERMINATED) return active == 0;
-			if (key == ThrowableAttr.ERROR) return error;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.BUFFERED) return queue.size() / 2;
+			if (key == Attr.TERMINATED) return active == 0;
+			if (key == Attr.ERROR) return error;
 
 			return JoinSupport.super.scanUnsafe(key);
 		}

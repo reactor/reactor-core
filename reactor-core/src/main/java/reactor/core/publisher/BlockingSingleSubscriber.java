@@ -131,11 +131,11 @@ abstract class BlockingSingleSubscriber<T> extends CountDownLatch
 	@Override
 	@Nullable
 	public Object scanUnsafe(Attr key) {
-		if (key == BooleanAttr.TERMINATED) return getCount() == 0;
-		if (key == ScannableAttr.PARENT) return  s;
-		if (key == BooleanAttr.CANCELLED) return cancelled;
-		if (key == ThrowableAttr.ERROR) return error;
-		if (key == IntAttr.PREFETCH) return Integer.MAX_VALUE;
+		if (key == Attr.TERMINATED) return getCount() == 0;
+		if (key == Attr.PARENT) return  s;
+		if (key == Attr.CANCELLED) return cancelled;
+		if (key == Attr.ERROR) return error;
+		if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
 
 		return null;
 	}

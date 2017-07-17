@@ -190,8 +190,8 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 
 		@Override
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.TERMINATED) return done;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -335,8 +335,8 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.TERMINATED) return done;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -470,8 +470,8 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 
 		@Override
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) return qs;
-			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == Attr.PARENT) return qs;
+			if (key == Attr.TERMINATED) return done;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}

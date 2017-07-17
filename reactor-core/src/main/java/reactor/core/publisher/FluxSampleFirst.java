@@ -123,10 +123,10 @@ final class FluxSampleFirst<T, U> extends FluxOperator<T, T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == ThrowableAttr.ERROR) return error;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.ERROR) return error;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -252,7 +252,7 @@ final class FluxSampleFirst<T, U> extends FluxOperator<T, T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.ACTUAL) return main;
+			if (key == Attr.ACTUAL) return main;
 
 			return super.scanUnsafe(key);
 		}

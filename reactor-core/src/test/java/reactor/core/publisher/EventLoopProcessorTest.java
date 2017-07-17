@@ -24,9 +24,9 @@ import reactor.core.Scannable;
 import reactor.util.concurrent.WaitStrategy;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static reactor.core.Scannable.BooleanAttr.TERMINATED;
-import static reactor.core.Scannable.ScannableAttr.PARENT;
-import static reactor.core.Scannable.ThrowableAttr.ERROR;
+import static reactor.core.Scannable.Attr.TERMINATED;
+import static reactor.core.Scannable.Attr.PARENT;
+import static reactor.core.Scannable.Attr.ERROR;
 
 public class EventLoopProcessorTest {
 
@@ -68,7 +68,7 @@ public class EventLoopProcessorTest {
 		assertThat(test.scan(TERMINATED)).isTrue();
 		assertThat(test.scan(ERROR)).hasMessage("boom");
 
-		assertThat(test.scan(Scannable.IntAttr.CAPACITY)).isEqualTo(128);
+		assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(128);
 	}
 
 }

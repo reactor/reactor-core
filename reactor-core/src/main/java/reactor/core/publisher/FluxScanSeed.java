@@ -234,10 +234,10 @@ final class FluxScanSeed<T, R> extends FluxOperator<T, R> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == ScannableAttr.PARENT) {
+			if (key == Attr.PARENT) {
 				return s;
 			}
-			if (key == BooleanAttr.TERMINATED) {
+			if (key == Attr.TERMINATED) {
 				return done;
 			}
 			return InnerOperator.super.scanUnsafe(key);

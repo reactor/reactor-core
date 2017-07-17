@@ -53,8 +53,8 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 	@Override
 	@Nullable
 	public Object scanUnsafe(Attr key) {
-		if (key == ScannableAttr.PARENT) return source;
-		if (key == IntAttr.PREFETCH) return getPrefetch();
+		if (key == Attr.PARENT) return source;
+		if (key == Attr.PREFETCH) return getPrefetch();
 
 		return null;
 	}
@@ -121,10 +121,10 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.CANCELLED) return cancelled;
-			if (key == LongAttr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == BooleanAttr.TERMINATED) return done == 0;
-			if (key == ThrowableAttr.ERROR) return error;
+			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.TERMINATED) return done == 0;
+			if (key == Attr.ERROR) return error;
 
 			return InnerProducer.super.scanUnsafe(key);
 		}
@@ -363,12 +363,12 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == BooleanAttr.CANCELLED) return s == Operators.cancelledSubscription();
-			if (key == ScannableAttr.PARENT) return s;
-			if (key == ScannableAttr.ACTUAL) return parent;
-			if (key == IntAttr.PREFETCH) return prefetch;
-			if (key == IntAttr.BUFFERED) return queue != null ? queue.size() : 0;
-			if (key == BooleanAttr.TERMINATED) return done;
+			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.ACTUAL) return parent;
+			if (key == Attr.PREFETCH) return prefetch;
+			if (key == Attr.BUFFERED) return queue != null ? queue.size() : 0;
+			if (key == Attr.TERMINATED) return done;
 
 			return null;
 		}
