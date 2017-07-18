@@ -38,7 +38,7 @@ public abstract class ConnectableFlux<T> extends Flux<T> {
 	 * subscribes.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/autoconnect.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/autoconnect.png" alt="">
 	 *
 	 * @return a {@link Flux} that connects to the upstream source when the first {@link org.reactivestreams.Subscriber} subscribes
 	 */
@@ -54,7 +54,7 @@ public abstract class ConnectableFlux<T> extends Flux<T> {
 	 * triggers the connection.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/autoconnect.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/autoconnect.png" alt="">
 	 *
 	 * @param minSubscribers the minimum number of subscribers
 	 *
@@ -71,7 +71,7 @@ public abstract class ConnectableFlux<T> extends Flux<T> {
 	 * @param cancelSupport the consumer that will receive the {@link Disposable} that allows disconnecting
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/autoconnect.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/autoconnect.png" alt="">
 	 *
 	 * @return a {@link Flux} that connects to the upstream source when the given amount of subscribers subscribed
 	 */
@@ -118,7 +118,7 @@ public abstract class ConnectableFlux<T> extends Flux<T> {
 	 * when all Subscribers cancelled or the upstream source completed.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/refCount.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/refCount.png" alt="">
 	 *
 	 * @return a reference counting {@link Flux}
 	 */
@@ -131,7 +131,7 @@ public abstract class ConnectableFlux<T> extends Flux<T> {
 	 * when all Subscribers cancelled or the upstream source completed.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/refCount.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/refCount.png" alt="">
 	 *
 	 * @param minSubscribers the number of subscribers expected to subscribe before connection
 	 *
@@ -149,7 +149,7 @@ public abstract class ConnectableFlux<T> extends Flux<T> {
 	 * in during the {@code gracePeriod} that follows, the disconnection is cancelled.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/refCount.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/refCount.png" alt="">
 	 *
 	 * @param minSubscribers the number of subscribers expected to subscribe before connection
 	 * @param gracePeriod the {@link Duration} for which to wait for new subscribers before actually
@@ -169,7 +169,7 @@ public abstract class ConnectableFlux<T> extends Flux<T> {
 	 * in during the {@code gracePeriod} that follows, the disconnection is cancelled.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/refCount.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/refCount.png" alt="">
 	 *
 	 * @param minSubscribers the number of subscribers expected to subscribe before connection
 	 * @param gracePeriod the {@link Duration} for which to wait for new subscribers before actually
