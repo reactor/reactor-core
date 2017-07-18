@@ -119,29 +119,6 @@ public class MonoDelayUntilTest {
 	}
 
 	@Test
-	public void sourceAndTriggerHaveErrorsDelayedShortCircuits() {
-		IllegalStateException boom1 = new IllegalStateException("boom1");
-		IllegalStateException boom2 = new IllegalStateException("boom2");
-		StepVerifier.create(new MonoDelayUntil<>(true,
-				Mono.<String>error(boom1),
-				a -> Mono.<Integer>error(boom2)))
-		            .verifyErrorMessage("boom1");
-	}
-
-	@Test
-	public void multipleTriggersWithErrorDelayed() {
-		IllegalStateException boom1 = new IllegalStateException("boom1");
-		IllegalStateException boom2 = new IllegalStateException("boom2");
-		StepVerifier.create(new MonoDelayUntil<>(true,
-				Mono.just("ok"), a -> Mono.<Integer>error(boom1))
-				.delayUntilDelayError(a -> Mono.error(boom2))
-		)
-		            .verifyErrorMatches(e -> e.getMessage().equals("Multiple exceptions") &&
-				            e.getSuppressed()[0] == boom1 &&
-				            e.getSuppressed()[1] == boom2);
-	}
-
-	@Test
 	public void testAPIDelayUntil() {
 		StepVerifier.withVirtualTime(() -> Mono.just("foo")
 		                                       .delayUntil(a -> Mono.delay(Duration.ofSeconds(2))))
@@ -160,28 +137,6 @@ public class MonoDelayUntilTest {
 		            .verify(Duration.ofMillis(200)); //at least, less than 2s
 	}
 
-	@Test
-	public void testAPIDelayUntilDelayErrorNoError() {
-		StepVerifier.withVirtualTime(() -> Mono.just("foo")
-		                                       .delayUntilDelayError(a -> Mono.delay(Duration.ofSeconds(2))))
-		            .expectSubscription()
-		            .expectNoEvent(Duration.ofSeconds(2))
-		            .expectNext("foo")
-		            .verifyComplete();
-	}
-
-	@Test
-	public void testAPIDelayUntilDelayErrorWaitsOtherTriggers() {
-		IllegalArgumentException boom = new IllegalArgumentException("boom");
-
-		StepVerifier.withVirtualTime(() -> Mono.just("ok")
-		                                       .delayUntilDelayError(a -> Mono.error(boom))
-		                                       .delayUntilDelayError(a -> Mono.delay(Duration.ofSeconds(2))))
-		            .expectSubscription()
-		            .expectNoEvent(Duration.ofSeconds(2))
-		            .verifyErrorMessage("boom");
-	}
-
 	@SuppressWarnings("unchecked")
 	@Test
 	public void testAPIchainingCombines() {
@@ -191,26 +146,16 @@ public class MonoDelayUntilTest {
 		Function<Object, Mono<Long>> generator2 = a -> Mono.delay(Duration.ofMillis(800));
 
 		MonoDelayUntil<String> until1 = (MonoDelayUntil<String>) source.delayUntil(generator1);
-		MonoDelayUntil<String> until2 = (MonoDelayUntil<String>) until1.delayUntilDelayError(generator2);
-		MonoDelayUntil<String> until3 = (MonoDelayUntil<String>) until2.delayUntilOther(Mono.empty());
-		MonoDelayUntil<String> until4 = (MonoDelayUntil<String>) until3.delayUntilOtherDelayError(Mono.empty());
+		MonoDelayUntil<String> until2 = (MonoDelayUntil<String>) until1.delayUntil(generator2);
 
 		assertThat(until1)
 				.isNotSameAs(until2)
-				.isNotSameAs(until3)
-				.isNotSameAs(until4);
+				;
 		assertThat(until1.source)
 				.isSameAs(until2.source)
-				.isSameAs(until3.source)
-				.isSameAs(until4.source);
+				;
 		assertThat(until1.otherGenerators).containsExactly(generator1);
 		assertThat(until2.otherGenerators).containsExactly(generator1, generator2);
-		assertThat(until3.otherGenerators)
-				.startsWith(generator1, generator2)
-				.hasSize(3);
-		assertThat(until4.otherGenerators)
-				.startsWith(generator1, generator2)
-				.hasSize(4);
 
 		StepVerifier.create(until2)
 		            .expectSubscription()
@@ -218,40 +163,6 @@ public class MonoDelayUntilTest {
 		            .thenAwait(Duration.ofMillis(100))
 		            .expectNext("foo")
 		            .verifyComplete();
-	}
-
-	@SuppressWarnings("unchecked")
-	@Test
-	public void testAPIchainingCombinesUseAnyDelayError() {
-		Mono<String> source = Mono.just("foo");
-
-		Function<String, Mono<String>> generator1 = a -> Mono.error(new IllegalArgumentException("boom"));
-		Function<Object, Mono<Long>> generator2 = a -> Mono.delay(Duration.ofMillis(800));
-
-		MonoDelayUntil<String> until1 = (MonoDelayUntil<String>) source.delayUntil(generator1);
-		MonoDelayUntil<String> until2 = (MonoDelayUntil<String>) until1.delayUntilDelayError(generator2);
-		MonoDelayUntil<String> until3 = (MonoDelayUntil<String>) until2.delayUntilOther(Mono.empty());
-
-		assertThat(until1)
-				.isNotSameAs(until2)
-				.isNotSameAs(until3);
-		assertThat(until1.source)
-				.isSameAs(until2.source)
-				.isSameAs(until3.source);
-		assertThat(until1.otherGenerators).containsExactly(generator1);
-		assertThat(until2.otherGenerators).containsExactly(generator1, generator2);
-		assertThat(until3.otherGenerators).startsWith(generator1, generator2)
-		                                  .hasSize(3);
-
-		assertThat(until1.delayError).isFalse();
-		assertThat(until2.delayError).isTrue();
-		assertThat(until3.delayError).isTrue();
-
-		StepVerifier.create(until2)
-		            .expectSubscription()
-		            .expectNoEvent(Duration.ofMillis(700))
-		            .thenAwait(Duration.ofMillis(100))
-		            .verifyErrorMessage("boom");
 	}
 
 	@Test
@@ -287,43 +198,16 @@ public class MonoDelayUntilTest {
 	}
 
 	@Test
-	public void testChainingDelayUntilOtherWithLastTriggerError() {
-		StepVerifier.withVirtualTime(() -> Mono.just("foo")
-		                                       .delayElement(Duration.ofSeconds(3))
-		                                       .delayUntilOtherDelayError(Mono.delay(Duration.ofMillis(800)))
-		                                       .delayUntilOther(Mono.delay(Duration.ofMillis(200)))
-		                                       .delayUntilOtherDelayError(Mono.error(new IllegalStateException("boom")))
-		)
-	                .thenAwait(Duration.ofSeconds(4))
-	                .verifyErrorMessage("boom");
-	}
-
-	@Test
-	public void immediateCancel() {
-		AtomicReference<String> value = new AtomicReference<>();
-		AtomicReference<Throwable> error = new AtomicReference<>();
-
-		Disposable s = Mono.just("foo")
-		                   .delayUntilOther(Mono.just(1))
-		                   .subscribe(value::set, error::set, () -> {}, Subscription::cancel);
-
-		assertThat(value.get()).isNull();
-		assertThat(error.get()).isNull(); //would be a NPE if trigger array wasn't pre-initialized
-	}
-
-	@Test
 	public void scanCoordinator() {
 		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		@SuppressWarnings("unchecked")
 		Function<? super String, ? extends Publisher<?>>[] otherGenerators = new Function[3];
-		MonoDelayUntil.DelayUntilCoordinator<String> test = new MonoDelayUntil.DelayUntilCoordinator<>(actual, true, otherGenerators);
+		MonoDelayUntil.DelayUntilCoordinator<String> test = new MonoDelayUntil.DelayUntilCoordinator<>(actual, otherGenerators);
 		Subscription subscription = Operators.emptySubscription();
 		test.onSubscribe(subscription);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isNull();
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
-
-		assertThat(test.scan(Scannable.Attr.DELAY_ERROR)).isTrue();
 		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
 
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
@@ -343,14 +227,12 @@ public class MonoDelayUntilTest {
 		@SuppressWarnings("unchecked")
 		Function<? super String, ? extends Publisher<?>>[] otherGenerators = new Function[3];
 		MonoDelayUntil.DelayUntilCoordinator<String> main = new MonoDelayUntil.DelayUntilCoordinator<>(
-				actual, false, otherGenerators);
+				actual, otherGenerators);
 
 		MonoDelayUntil.DelayUntilTrigger<String> test = new MonoDelayUntil.DelayUntilTrigger<>(main);
 
 		Subscription subscription = Operators.emptySubscription();
 		test.onSubscribe(subscription);
-
-		assertThat(main.scan(Scannable.Attr.DELAY_ERROR)).isFalse();
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(subscription);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);

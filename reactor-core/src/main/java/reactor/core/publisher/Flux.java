@@ -3227,7 +3227,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a delayed {@link Flux}
 	 */
 	public final Flux<T> delayElements(Duration delay, Scheduler timer) {
-		return delayUntilOther(Mono.delay(delay, timer));
+		return delayUntil(d -> Mono.delay(delay, timer));
 	}
 
 	/**
@@ -3254,85 +3254,6 @@ public abstract class Flux<T> implements Publisher<T> {
 		                          .delayUntil(triggerProvider));
 	}
 
-	/**
-	 * Subscribe to this {@link Flux} and generate a {@link Publisher} from each of this
-	 * Flux elements, each acting as a trigger for relaying said element.
-	 * <p>
-	 * That is to say, the resulting {@link Flux} delays each of its emission until the
-	 * associated trigger Publisher terminates.
-	 * <p>
-	 * In case of an error in a trigger, the element associated with the failed
-	 * trigger is dropped but subsequent elements are still propagated and delayed. Any
-	 * error in the source is propagated immediately downstream.
-	 * Note that unlike with the {@link Mono#delayUntil(Function) Mono variant} there is
-	 * no fusion of subsequent calls.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/delayUntil.png" alt="">
-	 *
-	 * @param triggerProvider a {@link Function} that maps each element into a
-	 * {@link Publisher} whose termination will trigger relaying the value.
-	 *
-	 * @return this Flux, but with elements delayed until their derived publisher terminates.
-	 */
-	public final Flux<T> delayUntilDelayError(Function<? super T, ? extends Publisher<?>> triggerProvider) {
-		return concatMapDelayError(v -> Mono.just(v)
-		                                    //no need for delayError variant since no macro fusion of triggers
-		                                    .delayUntil(triggerProvider),
-				true, Queues.XS_BUFFER_SIZE);
-	}
-
-	/**
-	 * Subscribe to this {@link Flux} and subscribe to a common {@link Publisher} whenever
-	 * an element is emitted, which acts as a trigger for relaying said element.
-	 * <p>
-	 * That is to say, the resulting {@link Flux} delays each of its emission until the
-	 * associated trigger Publisher terminates. Be careful with hot publishers as their
-	 * state will be shared between subscriptions, probably only delaying the first
-	 * emission as a result.
-	 * <p>
-	 * In case of an error either in the source or in a trigger, that error is propagated
-	 * immediately downstream.
-	 * Note that unlike with the {@link Mono#delayUntilOther(Publisher) Mono variant} there is
-	 * no fusion of subsequent calls.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/delayUntilOther.png" alt="">
-	 *
-	 * @param triggerPublisher a {@link Publisher} whose termination will trigger relaying the value.
-	 *
-	 * @return this Flux, but with elements delayed until the trigger publisher terminates.
-	 */
-	public final Flux<T> delayUntilOther(Publisher<?> triggerPublisher) {
-		return concatMap(v -> Mono.just(v)
-		                          .delayUntilOther(triggerPublisher));
-	}
-
-	/**
-	 * Subscribe to this {@link Flux} and subscribe to a common {@link Publisher} whenever
-	 * an element is emitted, which acts as a trigger for relaying said element.
-	 * <p>
-	 * That is to say, the resulting {@link Flux} delays each of its emission until the
-	 * associated trigger Publisher terminates. Be careful with hot publishers as their
-	 * state will be shared between subscriptions, probably only delaying the first
-	 * emission as a result.
-	 * <p>
-	 * In case of an error in a trigger, the element associated with the failed
-	 * trigger is dropped but subsequent elements are still propagated and delayed. Any
-	 * error in the source is propagated immediately downstream.
-	 * Note that unlike with the {@link Mono#delayUntilOtherDelayError(Publisher) Mono variant} there is
-	 * no fusion of subsequent calls.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/delayUntilOther.png" alt="">
-	 *
-	 * @param triggerPublisher a {@link Publisher} whose termination will trigger relaying the value.
-	 *
-	 * @return this Flux, but with elements delayed until the trigger publisher terminates.
-	 */
-	public final Flux<T> delayUntilOtherDelayError(Publisher<?> triggerPublisher) {
-		return concatMapDelayError(v -> Mono.just(v)
-		                                    //no need for delayError variant since no macro fusion of triggers
-		                                    .delayUntilOther(triggerPublisher),
-				true, Queues.XS_BUFFER_SIZE);
-	}
 
 	/**
 	 * Delay the {@link Flux#subscribe(Subscriber) subscription} to this {@link Flux} source until the given

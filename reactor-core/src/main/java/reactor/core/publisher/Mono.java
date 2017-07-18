@@ -1561,55 +1561,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Subscribe to this Mono and another Publisher, which will be used as a trigger for
-	 * the emission of this Mono's element. That is to say, this Mono's element is delayed
-	 * until the trigger Publisher terminates.
-	 * <p>
-	 * Note that contiguous calls to all delayUntil variants ({@link #delayUntil(Function)},
-	 * {@link #delayUntilDelayError(Function)}, {@link #delayUntilOther(Publisher)} and
-	 * {@link #delayUntilOtherDelayError(Publisher)}) are fused together.
-	 * The triggers are subscribed to in sequence, once the previous trigger
-	 * completes. Errors are handled differently if the chain
-	 * contains at least one subsequent call to {@link #delayUntilDelayError(Function)} or
-	 * {@link #delayUntilOtherDelayError(Publisher)}, in case one of the triggers
-	 * errors, that error is delayed until all publishers have triggered, and multiple
-	 * errors are thus combined into one. Otherwise, that error is propagated immediately
-	 * downstream. In both cases, an error in the source is immediately propagated.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/delayUntilOther.png" alt="">
-	 *
-	 * @param anyPublisher the publisher which first emission or termination will trigger
-	 * the emission of this Mono's value.
-	 * @return this Mono, but delayed until the given publisher terminates.
-	 */
-	public final Mono<T> delayUntilOther(Publisher<?> anyPublisher) {
-		return delayUntil(a -> anyPublisher);
-	}
-
-	/**
-	 * Subscribe to this Mono and another Publisher, which will be used as a trigger for
-	 * the emission of this Mono's element. That is to say, this Mono's element is delayed
-	 * until the trigger Publisher terminates.
-	 * <p>
-	 * Note that contiguous calls to all delayUntil variants ({@link #delayUntil(Function)},
-	 * {@link #delayUntilDelayError(Function)}, {@link #delayUntilOther(Publisher)} and
-	 * {@link #delayUntilOtherDelayError(Publisher)}) are fused together.
-	 * The triggers are subscribed to in sequence, once the previous trigger
-	 * completes. In case one of the triggers errors, that error is delayed until all
-	 * publishers have triggered, and multiple errors are thus combined into one. An error
-	 * in the source is immediately propagated.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/delayUntilOther.png" alt="">
-	 *
-	 * @param anyPublisher the publisher which termination will trigger the emission of
-	 * this Mono's value.
-	 * @return this Mono, but delayed until the given publisher terminates.
-	 */
-	public final Mono<T> delayUntilOtherDelayError(Publisher<?> anyPublisher) {
-		return delayUntilDelayError(a -> anyPublisher);
-	}
-
-	/**
 	 * Subscribe to this {@link Mono} and another {@link Publisher} that is generated from
 	 * this Mono's element and which will be used as a trigger for relaying said element.
 	 * <p>
@@ -1617,15 +1568,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * emitted, generates a trigger Publisher and then delays again until the trigger
 	 * Publisher terminates.
 	 * <p>
-	 * Note that contiguous calls to all delayUntil variants ({@link #delayUntil(Function)},
-	 * {@link #delayUntilDelayError(Function)}, {@link #delayUntilOther(Publisher)} and
-	 * {@link #delayUntilOtherDelayError(Publisher)}) are fused together.
+	 * Note that contiguous calls to all delayUntil are fused together.
 	 * The triggers are generated and subscribed to in sequence, once the previous trigger
-	 * completes. Errors are handled differently if the chain
-	 * contains at least one subsequent call to {@link #delayUntilDelayError(Function)} or
-	 * {@link #delayUntilOtherDelayError(Publisher)}, then in case one of the triggers
-	 * errors, that error is delayed until all publishers have triggered, and multiple
-	 * errors are thus combined into one. Otherwise, that error is propagated immediately
+	 * completes. Error is propagated immediately
 	 * downstream. In both cases, an error in the source is immediately propagated.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/delayUntil.png" alt="">
@@ -1640,38 +1585,7 @@ public abstract class Mono<T> implements Publisher<T> {
 		if (this instanceof MonoDelayUntil) {
 			return ((MonoDelayUntil<T>) this).copyWithNewTriggerGenerator(false,triggerProvider);
 		}
-		return onAssembly(new MonoDelayUntil<>(false, this, triggerProvider));
-	}
-
-	/**
-	 * Subscribe to this {@link Mono} and another {@link Publisher} that is generated from
-	 * this Mono's element and which will be used as a trigger for relaying said element.
-	 * <p>
-	 * That is to say, the resulting {@link Mono} delays until this Mono's element is
-	 * emitted, generates a trigger {@link Publisher} and then delays again until
-	 * the trigger Publisher terminates.
-	 * <p>
-	 * Note that contiguous calls to all delayUntil variants ({@link #delayUntil(Function)},
-	 * {@link #delayUntilDelayError(Function)}, {@link #delayUntilOther(Publisher)} and
-	 * {@link #delayUntilOtherDelayError(Publisher)}) are fused together.
-	 * The triggers are generated and subscribed to in sequence, once the previous trigger
-	 * completes. In case one of the triggers errors, that error is delayed until all
-	 * publishers have triggered, and multiple errors are thus combined into one. An error
-	 * in the source is immediately propagated.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M2/src/docs/marble/delayUntil.png" alt="">
-	 *
-	 * @param triggerProvider a {@link Function} that maps this Mono's value into a
-	 * {@link Publisher} whose first emission or termination will trigger the relaying the value.
-	 *
-	 * @return this Mono, but delayed until the derived publisher first emits or terminates.
-	 */
-	public final Mono<T> delayUntilDelayError(Function<? super T, ? extends Publisher<?>> triggerProvider) {
-		Objects.requireNonNull(triggerProvider, "triggerProvider required");
-		if (this instanceof MonoDelayUntil) {
-			return ((MonoDelayUntil<T>) this).copyWithNewTriggerGenerator(true, triggerProvider);
-		}
-		return onAssembly(new MonoDelayUntil<>(true, this, triggerProvider));
+		return onAssembly(new MonoDelayUntil<>(this, triggerProvider));
 	}
 
 	/**

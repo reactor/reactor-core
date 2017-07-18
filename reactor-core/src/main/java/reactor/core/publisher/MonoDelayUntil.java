@@ -42,25 +42,19 @@ import reactor.util.context.Context;
  */
 final class MonoDelayUntil<T> extends Mono<T> {
 
-	final boolean delayError;
-
 	final Mono<T> source;
 
 	Function<? super T, ? extends Publisher<?>>[] otherGenerators;
 
 	@SuppressWarnings("unchecked")
-	MonoDelayUntil(boolean delayError,
-			Mono<T> monoSource,
+	MonoDelayUntil(Mono<T> monoSource,
 			Function<? super T, ? extends Publisher<?>> triggerGenerator) {
-		this.delayError = delayError;
 		this.source = Objects.requireNonNull(monoSource, "monoSource");
 		this.otherGenerators = new Function[] { Objects.requireNonNull(triggerGenerator, "triggerGenerator")};
 	}
 
-	MonoDelayUntil(boolean delayError,
-			Mono<T> monoSource,
+	MonoDelayUntil(Mono<T> monoSource,
 			Function<? super T, ? extends Publisher<?>>[] triggerGenerators) {
-		this.delayError = delayError;
 		this.source = Objects.requireNonNull(monoSource, "monoSource");
 		this.otherGenerators = triggerGenerators;
 	}
@@ -79,12 +73,12 @@ final class MonoDelayUntil<T> extends Mono<T> {
 		Function<? super T, ? extends Publisher<?>>[] newTriggers = new Function[oldTriggers.length + 1];
 		System.arraycopy(oldTriggers, 0, newTriggers, 0, oldTriggers.length);
 		newTriggers[oldTriggers.length] = triggerGenerator;
-		return new MonoDelayUntil<>(this.delayError || delayError, this.source, newTriggers);
+		return new MonoDelayUntil<>(this.source, newTriggers);
 	}
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> s) {
-		DelayUntilCoordinator<T> parent = new DelayUntilCoordinator<>(s, delayError, otherGenerators);
+		DelayUntilCoordinator<T> parent = new DelayUntilCoordinator<>(s, otherGenerators);
 		s.onSubscribe(parent);
 		source.subscribe(parent);
 	}
@@ -95,7 +89,6 @@ final class MonoDelayUntil<T> extends Mono<T> {
 		static final DelayUntilTrigger[] NO_TRIGGER = new DelayUntilTrigger[0];
 
 		final int                                                n;
-		final boolean                                            delayError;
 		final Function<? super T, ? extends Publisher<?>>[] otherGenerators;
 
 		volatile int done;
@@ -110,13 +103,11 @@ final class MonoDelayUntil<T> extends Mono<T> {
 		DelayUntilTrigger[] triggerSubscribers;
 
 		DelayUntilCoordinator(CoreSubscriber<? super T> subscriber,
-				boolean delayError,
 				Function<? super T, ? extends Publisher<?>>[] otherGenerators) {
 			super(subscriber);
 			this.otherGenerators = otherGenerators;
 			//don't consider the source as this is only used from when there is a value
 			this.n = otherGenerators.length;
-			this.delayError = delayError;
 			triggerSubscribers = NO_TRIGGER;
 		}
 
@@ -153,7 +144,6 @@ final class MonoDelayUntil<T> extends Mono<T> {
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED) return done == n;
-			if (key == Attr.DELAY_ERROR) return delayError;
 
 			return super.scanUnsafe(key);
 		}
@@ -176,18 +166,6 @@ final class MonoDelayUntil<T> extends Mono<T> {
 
 			this.triggerSubscribers[triggerIndex] = triggerSubscriber;
 			p.subscribe(triggerSubscriber);
-		}
-
-		void signalError(Throwable t) {
-			if (delayError) {
-				signal();
-			}
-			else {
-				if (DONE.getAndSet(this, n) != n) {
-					cancel();
-					actual.onError(t);
-				}
-			}
 		}
 
 		void signal() {
@@ -293,7 +271,10 @@ final class MonoDelayUntil<T> extends Mono<T> {
 		@Override
 		public void onError(Throwable t) {
 			error = t;
-			parent.signalError(t);
+			if (DelayUntilCoordinator.DONE.getAndSet(parent, parent.n) != parent.n) {
+				parent.cancel();
+				parent.actual.onError(t);
+			}
 		}
 
 		@Override
