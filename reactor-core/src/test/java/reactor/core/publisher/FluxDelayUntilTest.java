@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -144,31 +144,6 @@ public class FluxDelayUntilTest {
 
 
 	@Test
-	public void sourceAndTriggerHaveErrorsDelayedShortCircuits() {
-		IllegalStateException boom1 = new IllegalStateException("boom1");
-		IllegalStateException boom2 = new IllegalStateException("boom2");
-		StepVerifier.create(Flux.error(boom1)
-		                        .delayUntilDelayError(a -> Mono.<Integer>error(boom2)))
-		            .verifyErrorMessage("boom1");
-	}
-
-	@Test
-	public void triggersWithErrorsDelayed() {
-		IllegalStateException boom1 = new IllegalStateException("boom1");
-		IllegalStateException boom2 = new IllegalStateException("boom2");
-		StepVerifier.create(
-				Flux.just(1, 2, 3)
-				    .delayUntilDelayError(i -> i == 1 ? Mono.error(boom1) : i == 2 ? Mono.error(boom2) : Mono.empty())
-		)
-		            .expectNext(3)
-		            .consumeErrorWith(e -> assertThat(e)
-						            .hasMessage("Multiple exceptions")
-				                    .hasSuppressedException(boom1)
-				                    .hasSuppressedException(boom2))
-		            .verify();
-	}
-
-	@Test
 	public void testAPIDelayUntil() {
 		StepVerifier.withVirtualTime(() -> Flux.just("foo")
 		                                       .delayUntil(a -> Mono.delay(Duration.ofSeconds(2))))
@@ -185,30 +160,6 @@ public class FluxDelayUntilTest {
 		                        .delayUntil(a -> Mono.delay(Duration.ofSeconds(2))))
 		            .expectErrorMessage("boom")
 		            .verify(Duration.ofMillis(200)); //at least, less than 2s
-	}
-
-	@Test
-	public void testAPIDelayUntilDelayErrorNoError() {
-		StepVerifier.withVirtualTime(() -> Flux.just("foo", "bar")
-		                                       .delayUntilDelayError(a -> Mono.delay(Duration.ofSeconds(2))))
-		            .expectSubscription()
-		            .expectNoEvent(Duration.ofSeconds(2))
-		            .expectNext("foo")
-		            .expectNoEvent(Duration.ofSeconds(2))
-		            .expectNext("bar")
-		            .verifyComplete();
-	}
-
-	@Test
-	public void testAPIDelayUntilDelayErrorWaitsOtherTriggers() {
-		IllegalArgumentException boom = new IllegalArgumentException("boom");
-
-		StepVerifier.withVirtualTime(() -> Mono.just("ok")
-		                                       .delayUntilDelayError(a -> Mono.error(boom))
-		                                       .delayUntilDelayError(a -> Mono.delay(Duration.ofSeconds(2))))
-		            .expectSubscription()
-		            .expectNoEvent(Duration.ofSeconds(2))
-		            .verifyErrorMessage("boom");
 	}
 
 	@Test
@@ -259,9 +210,6 @@ public class FluxDelayUntilTest {
 	@Test
 	public void isAlias() {
 		assertThat(Flux.range(1, 10).delayUntil(a -> Mono.empty()))
-				.isInstanceOf(FluxConcatMap.class);
-
-		assertThat(Flux.range(1, 10).delayUntilDelayError(a -> Mono.empty()))
 				.isInstanceOf(FluxConcatMap.class);
 	}
 
