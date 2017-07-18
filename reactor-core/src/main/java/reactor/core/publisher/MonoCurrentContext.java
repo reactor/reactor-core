@@ -17,12 +17,13 @@
 package reactor.core.publisher;
 
 import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 import reactor.util.context.Context;
 
 /**
  * Materialize current {@link Context} from the subscribing flow
  */
-final class MonoCurrentContext extends Mono<Context> {
+final class MonoCurrentContext extends Mono<Context> implements Fuseable {
 
 	static final MonoCurrentContext INSTANCE = new MonoCurrentContext();
 
