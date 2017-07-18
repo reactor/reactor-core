@@ -55,10 +55,12 @@ public class FluxBufferBoundaryTest
 	@Override
 	protected List<Scenario<String, List<String>>> scenarios_operatorSuccess() {
 		return Arrays.asList(scenario(f -> f.buffer(Mono.never()))
-						.receive(i -> assertThat(i).containsExactly(item(0), item(1), item(2))),
+						.receive(i -> assertThat(i).containsExactly(item(0), item(1), item(2)))
+				.shouldAssertPostTerminateState(false),
 
 				scenario(f -> f.buffer(Mono.just(1)))
 						.receiverEmpty()
+						.shouldAssertPostTerminateState(false)
 		);
 	}
 

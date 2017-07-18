@@ -51,10 +51,12 @@ public class FluxSkipUntilOtherTest extends FluxOperatorTest<String, String> {
 	@Override
 	protected List<Scenario<String, String>> scenarios_operatorSuccess() {
 		return Arrays.asList(
-				scenario(f -> f.skipUntilOther(Flux.empty())),
+				scenario(f -> f.skipUntilOther(Flux.empty()))
+						.shouldAssertPostTerminateState(false),
 
 				scenario(f -> Flux.<String>empty().skipUntilOther(f))
 					.receiverEmpty()
+					.shouldAssertPostTerminateState(false)
 		);
 	}
 

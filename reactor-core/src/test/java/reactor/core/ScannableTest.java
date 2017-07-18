@@ -42,7 +42,7 @@ public class ScannableTest {
 		assertThat(Scannable.from("nothing").inners().count()).isEqualTo(0);
 		assertThat(Scannable.from("nothing").parents().count()).isEqualTo(0);
 		assertThat(Scannable.from("nothing").actuals().count()).isEqualTo(0);
-		assertThat(Scannable.from("nothing").scan(Scannable.Attr.TERMINATED)).isNull();
+		assertThat(Scannable.from("nothing").scan(Scannable.Attr.TERMINATED)).isFalse();
 		assertThat(Scannable.from("nothing").scanOrDefault(Scannable.Attr.BUFFERED, 0)).isEqualTo(0);
 		assertThat(Scannable.from("nothing").scan(Scannable.Attr.ACTUAL)).isNull();
 	}
@@ -52,14 +52,15 @@ public class ScannableTest {
 		Scannable emptyScannable = key -> null;
 
 		assertThat(emptyScannable.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
+		assertThat(emptyScannable.scan(Scannable.Attr.LARGE_BUFFERED)).isEqualTo(0L);
 		assertThat(emptyScannable.scan(Scannable.Attr.CAPACITY)).isEqualTo(0);
 		assertThat(emptyScannable.scan(Scannable.Attr.PREFETCH)).isEqualTo(0);
 
 		assertThat(emptyScannable.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
 
-		assertThat(emptyScannable.scan(Scannable.Attr.CANCELLED)).isNull();
+		assertThat(emptyScannable.scan(Scannable.Attr.CANCELLED)).isFalse();
 		assertThat(emptyScannable.scan(Scannable.Attr.DELAY_ERROR)).isFalse();
-		assertThat(emptyScannable.scan(Scannable.Attr.TERMINATED)).isNull();
+		assertThat(emptyScannable.scan(Scannable.Attr.TERMINATED)).isFalse();
 
 		assertThat(emptyScannable.scan(Scannable.Attr.ERROR)).isNull();
 

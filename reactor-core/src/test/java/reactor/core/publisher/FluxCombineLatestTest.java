@@ -115,7 +115,8 @@ public class FluxCombineLatestTest extends FluxOperatorTest<String, String> {
 						f,
 						Flux.just(item(0), item(1), item(2)),
 						Flux.just(item(0), item(1), item(2))))
-						.receiveValues(item(2), item(2), item(2)),
+						.receiveValues(item(2), item(2), item(2))
+						.shouldAssertPostTerminateState(false),
 
 				scenario(f -> Flux.combineLatest(o -> (String) o[2],
 						1,
@@ -124,6 +125,7 @@ public class FluxCombineLatestTest extends FluxOperatorTest<String, String> {
 						Flux.just(item(0), item(0), item(0))))
 						.prefetch(1)
 						.receiveValues(item(0), item(0), item(0))
+						.shouldAssertPostTerminateState(false)
 		);
 	}
 
