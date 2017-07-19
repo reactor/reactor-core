@@ -99,7 +99,7 @@ public class FluxWindowConsistencyTest {
 			   .doOnTerminate(() -> mainTerminated.incrementAndGet()).subscribe(mainSubscriber);
 	}
 
-	private void subscribeGroups(Flux<GroupedFlux<Integer, Integer>> groups) {
+	private void subscribeGroups(Flux<GroupedFlux<String, Integer>> groups) {
 		subscribe(groups.map(m -> m));
 	}
 
@@ -233,7 +233,7 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowUntilComplete() throws Exception {
-		Flux<GroupedFlux<Integer, Integer>> windows = source.windowUntil(i -> i % 3 == 0);
+		Flux<GroupedFlux<String, Integer>> windows = source.windowUntil(i -> i % 3 == 0);
 		subscribeGroups(windows);
 		generateAndComplete(1, 5);
 		verifyMainComplete(Arrays.asList(1, 2, 3), Arrays.asList(4, 5));
@@ -241,7 +241,7 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowWhileComplete() throws Exception {
-		Flux<GroupedFlux<Integer, Integer>> windows = source.windowWhile(i -> i % 3 != 0);
+		Flux<GroupedFlux<String, Integer>> windows = source.windowWhile(i -> i % 3 != 0);
 		subscribeGroups(windows);
 		generateAndComplete(1, 5);
 		verifyMainComplete(Arrays.asList(1, 2), Arrays.asList(4, 5));
@@ -249,7 +249,7 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void groupByComplete() throws Exception {
-		Flux<GroupedFlux<Integer, Integer>> windows = source.groupBy(i -> i % 2);
+		Flux<GroupedFlux<String, Integer>> windows = source.groupBy(i -> String.valueOf(i % 2));
 		subscribeGroups(windows);
 		generateAndComplete(0, 6);
 		verifyMainComplete(Arrays.asList(0, 2, 4), Arrays.asList(1, 3, 5));
@@ -341,7 +341,7 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowUntilMainCancel() throws Exception {
-		Flux<GroupedFlux<Integer, Integer>> windows = source.windowUntil(i -> i % 3 == 0);
+		Flux<GroupedFlux<String, Integer>> windows = source.windowUntil(i -> i % 3 == 0);
 		subscribeGroups(windows);
 		generateWithCancel(1, 4, 10);
 		verifyMainCancel(true, Arrays.asList(1, 2, 3), Arrays.asList(4, 5, 6));
@@ -349,7 +349,7 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowWhileMainCancel() throws Exception {
-		Flux<GroupedFlux<Integer, Integer>> windows = source.windowWhile(i -> i % 3 != 0);
+		Flux<GroupedFlux<String, Integer>> windows = source.windowWhile(i -> i % 3 != 0);
 		subscribeGroups(windows);
 		generateWithCancel(1, 4, 10);
 		verifyMainCancel(true, Arrays.asList(1, 2), Arrays.asList(4, 5));
@@ -357,7 +357,7 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void groupByMainCancel() throws Exception {
-		Flux<GroupedFlux<Integer, Integer>> windows = source.groupBy(i -> i % 2);
+		Flux<GroupedFlux<String, Integer>> windows = source.groupBy(i -> String.valueOf(i % 2));
 		subscribeGroups(windows);
 		generateWithCancel(0, 5, 1);
 		verifyMainCancel(false, Arrays.asList(0, 2, 4), Arrays.asList(1, 3, 5));
@@ -442,7 +442,7 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowUntilMainCancelNoNewWindow() throws Exception {
-		Flux<GroupedFlux<Integer, Integer>> windows = source.windowUntil(i -> i % 3 == 0);
+		Flux<GroupedFlux<String, Integer>> windows = source.windowUntil(i -> i % 3 == 0);
 		subscribeGroups(windows);
 		generateWithCancel(0, 4, 1);
 		verifyMainCancelNoNewWindow(2, Arrays.asList(0), Arrays.asList(1, 2, 3));
@@ -450,7 +450,7 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowWhileMainCancelNoNewWindow() throws Exception {
-		Flux<GroupedFlux<Integer, Integer>> windows = source.windowWhile(i -> i % 3 != 1);
+		Flux<GroupedFlux<String, Integer>> windows = source.windowWhile(i -> i % 3 != 1);
 		subscribeGroups(windows);
 		generateWithCancel(0, 4, 1);
 		verifyMainCancelNoNewWindow(2, Arrays.asList(0), Arrays.asList(2, 3));
@@ -458,7 +458,7 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void groupByMainCancelNoNewWindow() throws Exception {
-		Flux<GroupedFlux<Integer, Integer>> windows = source.groupBy(i -> i % 2);
+		Flux<GroupedFlux<String, Integer>> windows = source.groupBy(i -> String.valueOf(i % 2));
 		subscribeGroups(windows);
 		generateWithCancel(0, 1, 1);
 		verifyMainCancelNoNewWindow(0, Arrays.asList(0));
@@ -527,7 +527,7 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowUntilInnerCancel() throws Exception {
-		Flux<GroupedFlux<Integer, Integer>> windows = source.windowUntil(i -> i % 3 == 0);
+		Flux<GroupedFlux<String, Integer>> windows = source.windowUntil(i -> i % 3 == 0);
 		subscribeGroups(windows);
 		generateWithCancel(0, 6, 1);
 		verifyInnerCancel(1, i -> i != 3, Arrays.asList(0), Arrays.asList(1, 2));
@@ -535,7 +535,7 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void windowWhileInnerCancel() throws Exception {
-		Flux<GroupedFlux<Integer, Integer>> windows = source.windowWhile(i -> i % 3 != 1);
+		Flux<GroupedFlux<String, Integer>> windows = source.windowWhile(i -> i % 3 != 1);
 		subscribeGroups(windows);
 		generateWithCancel(0, 6, 1);
 		verifyInnerCancel(1, i -> i != 3, Arrays.asList(0), Arrays.asList(2));
@@ -543,7 +543,7 @@ public class FluxWindowConsistencyTest {
 
 	@Test
 	public void groupByInnerCancel() throws Exception {
-		Flux<GroupedFlux<Integer, Integer>> windows = source.groupBy(i -> i % 2);
+		Flux<GroupedFlux<String, Integer>> windows = source.groupBy(i -> String.valueOf(i % 2));
 		subscribeGroups(windows);
 		generateWithCancel(0, 9, 1);
 		verifyInnerCancel(0, i -> i < 6, Arrays.asList(0, 2, 4), Arrays.asList(1, 3, 5));

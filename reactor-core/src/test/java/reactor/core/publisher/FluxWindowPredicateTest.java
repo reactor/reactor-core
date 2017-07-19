@@ -598,42 +598,48 @@ public class FluxWindowPredicateTest extends
 	public void groupsHaveCorrectKeysWhile() {
 		List<String> keys = new ArrayList<>(10);
 
+		Predicate<String> windowPredicate = color -> !color.startsWith("#");
 		StepVerifier.create(Flux.just("red", "green", "#1", "orange", "blue", "#2", "black", "white")
-				.windowWhile(color -> !color.startsWith("#"))
+				.windowWhile(windowPredicate)
 				.doOnNext(w -> keys.add(w.key()))
 				.flatMap(w -> w))
 		            .expectNext("red", "green", "orange", "blue", "black", "white")
 				    .verifyComplete();
 
-		assertThat(keys).containsExactly(null, "#1", "#2");
+		String w = windowPredicate.toString();
+		assertThat(keys).containsExactly(w, w, w);
 	}
 
 	@Test
 	public void groupsHaveCorrectKeysUntil() {
 		List<String> keys = new ArrayList<>(10);
 
+		Predicate<String> windowPredicate = color -> color.startsWith("#");
 		StepVerifier.create(Flux.just("red", "green", "#1", "orange", "blue", "#2", "black", "white")
-				.windowUntil(color -> color.startsWith("#"))
+				.windowUntil(windowPredicate)
 				.doOnNext(w -> keys.add(w.key()))
 				.flatMap(w -> w))
 		            .expectNext("red", "green", "#1", "orange", "blue", "#2", "black", "white")
 				    .verifyComplete();
 
-		assertThat(keys).containsExactly(null, "#1", "#2");
+		String w = windowPredicate.toString();
+		assertThat(keys).containsExactly(w, w, w);
 	}
 
 	@Test
 	public void groupsHaveCorrectKeysUntilCutBefore() {
 		List<String> keys = new ArrayList<>(10);
 
+		Predicate<String> windowPredicate = color -> color.startsWith("#");
 		StepVerifier.create(Flux.just("red", "green", "#1", "orange", "blue", "#2", "black", "white")
-				.windowUntil(color -> color.startsWith("#"), true)
+				.windowUntil(windowPredicate, true)
 				.doOnNext(w -> keys.add(w.key()))
 				.flatMap(w -> w))
 		            .expectNext("red", "green", "#1", "orange", "blue", "#2", "black", "white")
 				    .verifyComplete();
 
-		assertThat(keys).containsExactly(null, "#1", "#2");
+		String w = windowPredicate.toString();
+		assertThat(keys).containsExactly(w, w, w);
 	}
 
 	@Test
@@ -827,9 +833,9 @@ public class FluxWindowPredicateTest extends
 
 	@Test
     public void scanMainSubscriber() {
-        CoreSubscriber<GroupedFlux<Integer, Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<GroupedFlux<String, Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWindowPredicate.WindowPredicateMain<Integer> test = new FluxWindowPredicate.WindowPredicateMain<>(actual,
-        		Queues.<GroupedFlux<Integer, Integer>>unbounded().get(), Queues.unbounded(), 123, i -> true, Mode.WHILE);
+        		Queues.<GroupedFlux<String, Integer>>unbounded().get(), Queues.unbounded(), 123, i -> true, Mode.WHILE);
 
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
@@ -839,7 +845,7 @@ public class FluxWindowPredicateTest extends
 		Assertions.assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(123);
 		test.requested = 35;
 		Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
-		test.queue.offer(Flux.just(1).groupBy(i -> i).blockFirst());
+		test.queue.offer(Flux.just(1).groupBy(i -> String.valueOf(i)).blockFirst());
 		Assertions.assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 
 		Assertions.assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
@@ -859,10 +865,10 @@ public class FluxWindowPredicateTest extends
 
 	@Test
     public void scanOtherSubscriber() {
-        CoreSubscriber<GroupedFlux<Integer, Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<GroupedFlux<String, Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWindowPredicate.WindowPredicateMain<Integer> main = new FluxWindowPredicate.WindowPredicateMain<>(actual,
-        		Queues.<GroupedFlux<Integer, Integer>>unbounded().get(), Queues.unbounded(), 123, i -> true, Mode.WHILE);
-        FluxWindowPredicate.WindowGroupedFlux<Integer> test = new FluxWindowPredicate.WindowGroupedFlux<>(1,
+        		Queues.<GroupedFlux<String, Integer>>unbounded().get(), Queues.unbounded(), 123, i -> true, Mode.WHILE);
+        FluxWindowPredicate.WindowGroupedFlux<Integer> test = new FluxWindowPredicate.WindowGroupedFlux<>("1",
         		Queues.<Integer>unbounded().get(), main);
 
         Subscription parent = Operators.emptySubscription();
