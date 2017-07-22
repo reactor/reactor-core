@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 import reactor.test.StepVerifier;
@@ -112,4 +113,34 @@ public class FluxCacheTest {
 			VirtualTimeScheduler.reset();
 		}
 	}
+
+	@Test
+	public void cacheFluxTTL2() {
+		try {
+			//delayElements now uses parallel() so VTS must be enabled everywhere
+			VirtualTimeScheduler vts = VirtualTimeScheduler.getOrSet();
+
+			AtomicInteger i = new AtomicInteger(0);
+			Flux<Integer> source = Flux.defer(() -> Flux.just(i.incrementAndGet()))
+			                           .cache(Duration.ofMillis(2000));
+
+			StepVerifier.create(source)
+			            .expectNext(1)
+			            .verifyComplete();
+
+			StepVerifier.create(source)
+			            .expectNext(1)
+			            .verifyComplete();
+
+			vts.advanceTimeBy(Duration.ofSeconds(3));
+
+			StepVerifier.create(source)
+			            .expectNext(2)
+			            .verifyComplete();
+		}
+		finally {
+			VirtualTimeScheduler.reset();
+		}
+	}
+
 }
