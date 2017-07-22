@@ -107,6 +107,8 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		int size();
 
 		int capacity();
+
+		boolean isExpired();
 	}
 
 	static final class SizeAndTimeBoundReplayBuffer<T> implements ReplayBuffer<T> {
@@ -132,7 +134,9 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		TimedNode<T> tail;
 
 		Throwable error;
-		volatile boolean done;
+		static final long NOT_DONE = Long.MIN_VALUE;
+
+		volatile long done = NOT_DONE;
 
 		SizeAndTimeBoundReplayBuffer(int limit,
 				long maxAge,
@@ -145,6 +149,12 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 			this.head = h;
 		}
 
+		@Override
+		public boolean isExpired() {
+			long done = this.done;
+			return done != NOT_DONE && scheduler.now(TimeUnit.MILLISECONDS) - maxAge > done;
+		}
+
 		@SuppressWarnings("unchecked")
 		void replayNormal(ReplaySubscription<T> rs) {
 			int missed = 1;
@@ -155,7 +165,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 						(TimedNode<T>) rs.node();
 				if (node == null) {
 					node = head;
-					if (!done) {
+					if (done == NOT_DONE) {
 						// skip old entries
 						long limit = scheduler.now(TimeUnit.MILLISECONDS) - maxAge;
 						TimedNode<T> next = node;
@@ -179,7 +189,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 						return;
 					}
 
-					boolean d = done;
+					boolean d = done != NOT_DONE;
 					TimedNode<T> next = node.get();
 					boolean empty = next == null;
 
@@ -211,7 +221,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 						return;
 					}
 
-					boolean d = done;
+					boolean d = done != NOT_DONE;
 					boolean empty = node.get() == null;
 
 					if (d && empty) {
@@ -254,7 +264,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 					return;
 				}
 
-				boolean d = done;
+				boolean d = done != NOT_DONE;
 
 				a.onNext(null);
 
@@ -278,7 +288,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 		@Override
 		public void onError(Throwable ex) {
-			done = true;
+			done = scheduler.now(TimeUnit.MILLISECONDS);
 			error = ex;
 		}
 
@@ -290,12 +300,12 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 		@Override
 		public void onComplete() {
-			done = true;
+			done = scheduler.now(TimeUnit.MILLISECONDS);
 		}
 
 		@Override
 		public boolean isDone() {
-			return done;
+			return done != NOT_DONE;
 		}
 
 		@SuppressWarnings("unchecked")
@@ -454,6 +464,11 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 			Object[] n = new Object[batchSize + 1];
 			this.tail = n;
 			this.head = n;
+		}
+
+		@Override
+		public boolean isExpired() {
+			return false;
 		}
 
 		@Override
@@ -712,6 +727,11 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 			Node<T> n = new Node<>(null);
 			this.tail = n;
 			this.head = n;
+		}
+
+		@Override
+		public boolean isExpired() {
+			return false;
 		}
 
 		@Override
@@ -977,7 +997,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		this.source = Objects.requireNonNull(source, "source");
 		this.history = history;
 		if(history < 0){
-			throw new IllegalArgumentException("History cannot be negativ : "+history);
+			throw new IllegalArgumentException("History cannot be negative : " + history);
 		}
 		if (scheduler != null && ttl < 0) {
 			throw new IllegalArgumentException("TTL cannot be negative : " + ttl);
@@ -1036,7 +1056,15 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		ReplayInner<T> inner = new ReplayInner<>(s);
 		for (; ; ) {
 			ReplaySubscriber<T> c = connection;
-			if (c == null) {
+			if (scheduler != null && c != null && c.buffer.isExpired()) {
+				ReplaySubscriber<T> u = newState();
+				if (!CONNECTION.compareAndSet(this, c, u)) {
+					continue;
+				}
+				c = u;
+				source.subscribe(u);
+			}
+			else if (c == null) {
 				ReplaySubscriber<T> u = newState();
 				if (!CONNECTION.compareAndSet(this, null, u)) {
 					continue;
