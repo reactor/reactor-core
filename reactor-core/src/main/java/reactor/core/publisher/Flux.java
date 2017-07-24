@@ -2439,7 +2439,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Turn this {@link Flux} into a hot source and cache last emitted signals for further {@link Subscriber}.
 	 * Will retain up to the given history size onNext signals. Completion and Error will also be
 	 * replayed.
-	 *
+	 * <p>
+	 *     Note that {@code cache(0)} will only cache the terminal signal without
+	 *     expiration.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/cache.png" alt="">
 	 *
@@ -2455,12 +2457,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Turn this {@link Flux} into a hot source and cache last emitted signals for further
 	 * {@link Subscriber}. Will retain an unbounded history but apply a per-item expiry timeout
-	 * Completion and Error will also be replayed.
+	 * <p>
+	 *   Completion and Error will also be replayed until {@code ttl} triggers in which case
+	 *   the next {@link Subscriber} will start over a new subscription.
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/cache.png"
 	 * alt="">
 	 *
-	 * @param ttl Time-to-live for each cached item.
+	 * @param ttl Time-to-live for each cached item and post termination.
 	 *
 	 * @return a replaying {@link Flux}
 	 */
@@ -2473,11 +2477,14 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * {@link Subscriber}. Will retain up to the given history size and apply a per-item expiry
 	 * timeout.
 	 * <p>
+	 *   Completion and Error will also be replayed until {@code ttl} triggers in which case
+	 *   the next {@link Subscriber} will start over a new subscription.
+	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/cache.png"
 	 * alt="">
 	 *
 	 * @param history number of elements retained in cache
-	 * @param ttl Time-to-live for each cached item.
+	 * @param ttl Time-to-live for each cached item and post termination.
 	 *
 	 * @return a replaying {@link Flux}
 	 */
@@ -5480,6 +5487,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * signals for further {@link Subscriber}.
 	 * Will retain up to the given history size onNext signals. Completion and Error will also be
 	 * replayed.
+	 * <p>
+	 *     Note that {@code cache(0)} will only cache the terminal signal without
+	 *     expiration.
 	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/replay.png" alt="">
@@ -5497,13 +5507,16 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Turn this {@link Flux} into a connectable hot source and cache last emitted signals
 	 * for further {@link Subscriber}. Will retain each onNext up to the given per-item
-	 * expiry timeout. Completion and Error will also be replayed.
+	 * expiry timeout.
+	 * <p>
+	 *   Completion and Error will also be replayed until {@code ttl} triggers in which case
+	 *   the next {@link Subscriber} will start over a new subscription
 	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/replay.png"
 	 * alt="">
 	 *
-	 * @param ttl Per-item timeout duration
+	 * @param ttl Per-item and post termination timeout duration
 	 *
 	 * @return a replaying {@link ConnectableFlux}
 	 */
@@ -5514,14 +5527,17 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Turn this {@link Flux} into a connectable hot source and cache last emitted signals
 	 * for further {@link Subscriber}. Will retain up to the given history size onNext
-	 * signals with a per-item ttl. Completion and Error will also be replayed.
+	 * signals with a per-item ttl.
+	 * <p>
+	 *   Completion and Error will also be replayed until {@code ttl} triggers in which case
+	 *   the next {@link Subscriber} will start over a new subscription
 	 *
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/replay.png"
 	 * alt="">
 	 *
 	 * @param history number of events retained in history excluding complete and error
-	 * @param ttl Per-item timeout {@link Duration}
+	 * @param ttl Per-item and post termination timeout duration
 	 *
 	 * @return a replaying {@link ConnectableFlux}
 	 */
@@ -5532,12 +5548,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Turn this {@link Flux} into a connectable hot source and cache last emitted signals
 	 * for further {@link Subscriber}. Will retain onNext signal for up to the given
-	 * {@link Duration} with a per-item ttl. Completion and Error will also be replayed.
+	 * {@link Duration} with a per-item ttl.
+	 * <p>
+	 *   Completion and Error will also be replayed until {@code ttl} triggers in which case
+	 *   the next {@link Subscriber} will start over a new subscription
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/replay.png"
 	 * alt="">
 	 *
-	 * @param ttl Per-item timeout {@link Duration}
+	 * @param ttl Per-item and post termination timeout duration
 	 * @param timer a time-capable {@link Scheduler} instance to read current time from
 	 *
 	 * @return a replaying {@link ConnectableFlux}
@@ -5549,13 +5568,16 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Turn this {@link Flux} into a connectable hot source and cache last emitted signals
 	 * for further {@link Subscriber}. Will retain up to the given history size onNext
-	 * signals with a per-item ttl. Completion and Error will also be replayed.
+	 * signals with a per-item ttl.
+	 * <p>
+	 *   Completion and Error will also be replayed until {@code ttl} triggers in which case
+	 *   the next {@link Subscriber} will start over a new subscription
 	 * <p>
 	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/replay.png"
 	 * alt="">
 	 *
 	 * @param history number of events retained in history excluding complete and error
-	 * @param ttl Per-item timeout {@link Duration}
+	 * @param ttl Per-item and post termination timeout duration
 	 * @param timer a {@link Scheduler} instance to read current time from
 	 *
 	 * @return a replaying {@link ConnectableFlux}
