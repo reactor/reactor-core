@@ -6,7 +6,7 @@ operator, automated testing is always a good idea.
 
 Reactor comes with a few elements dedicated to testing, gathered into their own
 artifact: `reactor-test`. You can find that project https://github.com/reactor/reactor-core/tree/master/reactor-test/src[on Github]
-inside of the _reactor-core repository.
+inside of the _reactor-core_ repository.
 
 To use it in your tests, add it as a test dependency:
 
@@ -190,6 +190,14 @@ have.
 
 Note also that `verify()` returns a `Duration` value. This is the *real time*
 duration of the entire test.
+
+WARNING: Virtual time is not a silver bullet. Keep in mind that _all_ `Schedulers` are
+replaced with the same `VirtualTimeScheduler`. In some cases, one can lock the verification
+process because the virtual clock is not moved forward before an expectation is expressed,
+resulting on the expectation waiting on data that can only be produced by advancing time.
+So in most cases you need to advance the virtual clock for sequences to emit. Virtual time
+also gets very limited with infinite sequences, which might hog the thread on which both
+the sequence and its verification run.
 
 == Performing post-execution assertions with `StepVerifier`
 After having described the final expectation of your scenario, you can switch to
