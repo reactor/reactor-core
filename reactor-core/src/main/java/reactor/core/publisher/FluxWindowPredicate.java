@@ -51,12 +51,12 @@ import reactor.core.publisher.FluxBufferPredicate.Mode;
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
+final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<String, T>>
 		implements Fuseable{
 
 	final Supplier<? extends Queue<T>> groupQueueSupplier;
 
-	final Supplier<? extends Queue<GroupedFlux<T, T>>> mainQueueSupplier;
+	final Supplier<? extends Queue<GroupedFlux<String, T>>> mainQueueSupplier;
 
 	final Mode mode;
 
@@ -65,7 +65,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 	final int prefetch;
 
 	FluxWindowPredicate(Flux<? extends T> source,
-			Supplier<? extends Queue<GroupedFlux<T, T>>> mainQueueSupplier,
+			Supplier<? extends Queue<GroupedFlux<String, T>>> mainQueueSupplier,
 			Supplier<? extends Queue<T>> groupQueueSupplier,
 			int prefetch,
 			Predicate<? super T> predicate,
@@ -84,7 +84,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super GroupedFlux<T, T>> s) {
+	public void subscribe(CoreSubscriber<? super GroupedFlux<String, T>> s) {
 		source.subscribe(new WindowPredicateMain<>(s,
 				mainQueueSupplier.get(),
 				groupQueueSupplier,
@@ -99,10 +99,10 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 	}
 
 	static final class WindowPredicateMain<T>
-			implements Fuseable.QueueSubscription<GroupedFlux<T, T>>,
-			           InnerOperator<T, GroupedFlux<T, T>> {
+			implements Fuseable.QueueSubscription<GroupedFlux<String, T>>,
+			           InnerOperator<T, GroupedFlux<String, T>> {
 
-		final CoreSubscriber<? super GroupedFlux<T, T>> actual;
+		final CoreSubscriber<? super GroupedFlux<String, T>> actual;
 
 		final Supplier<? extends Queue<T>> groupQueueSupplier;
 
@@ -110,9 +110,11 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 
 		final Predicate<? super T> predicate;
 
+		final String key;
+
 		final int prefetch;
 
-		final Queue<GroupedFlux<T, T>> queue;
+		final Queue<GroupedFlux<String, T>> queue;
 
 		WindowGroupedFlux<T> window;
 
@@ -149,8 +151,8 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 
 		volatile boolean outputFused;
 
-		WindowPredicateMain(CoreSubscriber<? super GroupedFlux<T, T>> actual,
-				Queue<GroupedFlux<T, T>> queue,
+		WindowPredicateMain(CoreSubscriber<? super GroupedFlux<String, T>> actual,
+				Queue<GroupedFlux<String, T>> queue,
 				Supplier<? extends Queue<T>> groupQueueSupplier,
 				int prefetch,
 				Predicate<? super T> predicate,
@@ -160,6 +162,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 			this.groupQueueSupplier = groupQueueSupplier;
 			this.prefetch = prefetch;
 			this.predicate = predicate;
+			this.key = String.valueOf(predicate);
 			this.mode = mode;
 			WINDOW_COUNT.lazySet(this, 2);
 			initializeWindow();
@@ -182,14 +185,14 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 		}
 
 		void initializeWindow() {
-			WindowGroupedFlux<T> g = new WindowGroupedFlux<>(null,
+			WindowGroupedFlux<T> g = new WindowGroupedFlux<>(key,
 					groupQueueSupplier.get(),
 					this);
 			window = g;
 			queue.offer(g);
 		}
 
-		void offerNewWindow(T key, @Nullable T emitInNewWindow) {
+		void offerNewWindow(String key, @Nullable T emitInNewWindow) {
 			// if the main is cancelled, don't create new groups
 			if (cancelled == 0) {
 				WINDOW_COUNT.getAndIncrement(this);
@@ -229,15 +232,15 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 			if (mode == Mode.UNTIL && match) {
 				g.onNext(t);
 				g.onComplete();
-				offerNewWindow(t, null);
+				offerNewWindow(key, null);
 			}
 			else if (mode == Mode.UNTIL_CUT_BEFORE && match) {
 				g.onComplete();
-				offerNewWindow(t, t);
+				offerNewWindow(key, t);
 			}
 			else if (mode == Mode.WHILE && !match) {
 				g.onComplete();
-				offerNewWindow(t, null);
+				offerNewWindow(key, null);
 				//compensate for the dropped delimiter
 				s.request(1);
 			}
@@ -293,7 +296,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 		}
 
 		@Override
-		public CoreSubscriber<? super GroupedFlux<T, T>> actual() {
+		public CoreSubscriber<? super GroupedFlux<String, T>> actual() {
 			return actual;
 		}
 
@@ -325,7 +328,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 				else if (!outputFused) {
 					if (WIP.getAndIncrement(this) == 0) {
 						// remove queued up but unobservable groups from the mapping
-						GroupedFlux<T, T> g;
+						GroupedFlux<String, T> g;
 						while ((g = queue.poll()) != null) {
 							((WindowGroupedFlux<T>) g).cancel();
 						}
@@ -366,8 +369,8 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 		void drainFused() {
 			int missed = 1;
 
-			final Subscriber<? super GroupedFlux<T, T>> a = actual;
-			final Queue<GroupedFlux<T, T>> q = queue;
+			final Subscriber<? super GroupedFlux<String, T>> a = actual;
+			final Queue<GroupedFlux<String, T>> q = queue;
 
 			for (; ; ) {
 
@@ -402,8 +405,8 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 
 			int missed = 1;
 
-			Subscriber<? super GroupedFlux<T, T>> a = actual;
-			Queue<GroupedFlux<T, T>> q = queue;
+			Subscriber<? super GroupedFlux<String, T>> a = actual;
+			Queue<GroupedFlux<String, T>> q = queue;
 
 			for (; ; ) {
 
@@ -412,7 +415,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 
 				while (e != r) {
 					boolean d = done;
-					GroupedFlux<T, T> v = q.poll();
+					GroupedFlux<String, T> v = q.poll();
 					boolean empty = v == null;
 
 					if (checkTerminated(d, empty, a, q)) {
@@ -453,7 +456,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 		boolean checkTerminated(boolean d,
 				boolean empty,
 				Subscriber<?> a,
-				Queue<GroupedFlux<T, T>> q) {
+				Queue<GroupedFlux<String, T>> q) {
 
 			if (cancelled != 0) {
 				q.clear();
@@ -477,7 +480,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 
 		@Override
 		@Nullable
-		public GroupedFlux<T, T> poll() {
+		public GroupedFlux<String, T> poll() {
 			return queue.poll();
 		}
 
@@ -506,14 +509,13 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 		}
 	}
 
-	static final class WindowGroupedFlux<T> extends GroupedFlux<T, T>
+	static final class WindowGroupedFlux<T> extends GroupedFlux<String, T>
 			implements Fuseable, Fuseable.QueueSubscription<T>, InnerOperator<T, T> {
 
-		final T key;
+		final String key;
 
 		@Override
-		@Nullable
-		public T key() {
+		public String key() {
 			return key;
 		}
 
@@ -558,10 +560,10 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, GroupedFlux<T, T>>
 		int produced;
 
 		WindowGroupedFlux(
-				@Nullable T key,
+				String key,
 				Queue<T> queue,
 				WindowPredicateMain<T> parent) {
-			this.key = key;
+			this.key = Objects.requireNonNull(key, "key");
 			this.queue = queue;
 			this.parent = parent;
 		}
