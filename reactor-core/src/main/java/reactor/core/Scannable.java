@@ -111,7 +111,7 @@ public interface Scannable {
 		 * {@code Flux.flatMap}, {@code Flux.filterWhen}, {@link reactor.core.publisher.TopicProcessor},
 		 * and {@code Flux.window} (with overlap) are known to use this attribute.
 		 */
-		public static final Attr<Long> LARGE_BUFFERED = new Attr<>(0L);
+		public static final Attr<Long> LARGE_BUFFERED = new Attr<>(null);
 
 		/**
 		 * Parent key exposes the direct upstream relationship of the scanned component.
