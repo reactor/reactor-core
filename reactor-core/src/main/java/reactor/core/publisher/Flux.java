@@ -2022,17 +2022,17 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Flux completes. Buffers can be created with gaps, as a new buffer will be created
 	 * every time {@code skip} values have been emitted by the source.
 	 * <p>
-	 * When Skip > Max Size : dropping buffers
+	 * When maxSize < skip : dropping buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/buffersizeskip.png"
 	 * alt="">
 	 * <p>
-	 * When Skip < Max Size : overlapping buffers
+	 * When maxSize > skip : overlapping buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/buffersizeskipover.png"
 	 * alt="">
 	 * <p>
-	 * When Skip == Max Size : exact buffers
+	 * When maxSize == skip : exact buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/buffersize.png"
 	 * alt="">
@@ -2052,17 +2052,17 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * or once this Flux completes. Buffers can be created with gaps, as a new buffer will
 	 * be created every time {@code skip} values have been emitted by the source
 	 * <p>
-	 * When Skip > Max Size : dropping buffers
+	 * When maxSize < skip : dropping buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/buffersizeskip.png"
 	 * alt="">
 	 * <p>
-	 * When Skip < Max Size : overlapping buffers
+	 * When maxSize > skip : overlapping buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/buffersizeskipover.png"
 	 * alt="">
 	 * <p>
-	 * When Skip == Max Size : exact buffers
+	 * When maxSize == skip : exact buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/buffersize.png"
 	 * alt="">
@@ -2133,17 +2133,17 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * {@code timeshift} period. Each buffer will last until the {@code timespan} has elapsed,
 	 * thus emitting the bucket in the resulting {@link Flux}.
 	 * <p>
-	 * When timeshift > timespan : dropping buffers
+	 * When timespan < timeshift : dropping buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/buffertimeshift.png"
 	 * alt="">
 	 * <p>
-	 * When timeshift < timespan : overlapping buffers
+	 * When timespan > timeshift : overlapping buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/buffertimeshiftover.png"
 	 * alt="">
 	 * <p>
-	 * When timeshift == timespan : exact buffers
+	 * When timespan == timeshift : exact buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/buffertimespan.png"
 	 * alt="">
@@ -2179,17 +2179,17 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * buffer will last until the {@code timespan} has elapsed (also measured on the scheduler),
 	 * thus emitting the bucket in the resulting {@link Flux}.
 	 * <p>
-	 * When timeshift > timespan : dropping buffers
+	 * When timespan < timeshift : dropping buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/buffertimeshift.png"
 	 * alt="">
 	 * <p>
-	 * When timeshift < timespan : overlapping buffers
+	 * When timespan > timeshift : overlapping buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/buffertimeshiftover.png"
 	 * alt="">
 	 * <p>
-	 * When timeshift == timespan : exact buffers
+	 * When timespan == timeshift : exact buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/buffertimespan.png"
 	 * alt="">
@@ -6934,15 +6934,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * {@code maxSize}, that each open every {@code skip} elements in the source.
 	 *
 	 * <p>
-	 * When skip > maxSize : dropping windows
+	 * When maxSize < skip : dropping windows
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/windowsizeskip.png" alt="">
 	 * <p>
-	 * When skip < maxSize : overlapping windows
+	 * When maxSize > skip : overlapping windows
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/windowsizeskipover.png" alt="">
 	 * <p>
-	 * When skip == maxSize : exact windows
+	 * When maxSize == skip : exact windows
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/windowsize.png" alt="">
 	 *
@@ -7001,15 +7001,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Both durations are measured on the {@link Schedulers#parallel() parallel} Scheduler.
 	 *
 	 * <p>
-	 * When timeshift > timespan : dropping windows
+	 * When timespan < timeshift : dropping windows
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/windowsizeskip.png" alt="">
 	 * <p>
-	 * When timeshift < timespan : overlapping windows
+	 * When timespan > timeshift : overlapping windows
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/windowsizeskipover.png" alt="">
 	 * <p>
-	 * When timeshift == timespan : exact windows
+	 * When timespan == timeshift : exact windows
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/windowsize.png" alt="">
 	 *
@@ -7048,15 +7048,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Both durations are measured on the provided {@link Scheduler}.
 	 *
 	 * <p>
-	 * When timeshift > timespan : dropping windows
+	 * When timespan < timeshift : dropping windows
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/windowsizeskip.png" alt="">
 	 * <p>
-	 * When timeshift < timespan : overlapping windows
+	 * When timespan > timeshift : overlapping windows
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/windowsizeskipover.png" alt="">
 	 * <p>
-	 * When timeshift == timespan : exact windows
+	 * When timeshift == timeshift : exact windows
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/windowsize.png" alt="">
 	 *
