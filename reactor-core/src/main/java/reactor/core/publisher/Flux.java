@@ -4197,7 +4197,9 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Divide this sequence into dynamically created {@link Flux} (or groups) for each
-	 * unique key, as produced by the provided keyMapper {@link Function}.
+	 * unique key, as produced by the provided keyMapper {@link Function}. Note that
+	 * groupBy works best with a low cardinality of groups, so chose your keyMapper
+	 * function accordingly.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/groupby.png" alt="">
@@ -4206,7 +4208,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * The groups need to be drained and consumed downstream for groupBy to work correctly.
 	 * Notably when the criteria produces a large amount of groups, it can lead to hanging
 	 * if the groups are not suitably consumed downstream (eg. due to a {@code flatMap}
-	 * with a {@code maxConcurrency} parameter that is push too low.
+	 * with a {@code maxConcurrency} parameter that is set too low).
 	 *
 	 * @param keyMapper the key mapping {@link Function} that evaluates an incoming data and returns a key.
 	 * @param <K> the key type extracted from each value of this sequence
@@ -4219,7 +4221,9 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Divide this sequence into dynamically created {@link Flux} (or groups) for each
-	 * unique key, as produced by the provided keyMapper {@link Function}.
+	 * unique key, as produced by the provided keyMapper {@link Function}. Note that
+	 * groupBy works best with a low cardinality of groups, so chose your keyMapper
+	 * function accordingly.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/groupby.png" alt="">
@@ -4228,7 +4232,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * The groups need to be drained and consumed downstream for groupBy to work correctly.
 	 * Notably when the criteria produces a large amount of groups, it can lead to hanging
 	 * if the groups are not suitably consumed downstream (eg. due to a {@code flatMap}
-	 * with a {@code maxConcurrency} parameter that is push too low.
+	 * with a {@code maxConcurrency} parameter that is set too low).
 	 *
 	 * @param keyMapper the key mapping {@link Function} that evaluates an incoming data and returns a key.
 	 * @param prefetch the number of values to prefetch from the source
@@ -4243,7 +4247,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Divide this sequence into dynamically created {@link Flux} (or groups) for each
 	 * unique key, as produced by the provided keyMapper {@link Function}. Source elements
-	 * are also mapped to a different value using the {@code valueMapper}.
+	 * are also mapped to a different value using the {@code valueMapper}. Note that
+	 * groupBy works best with a low cardinality of groups, so chose your keyMapper
+	 * function accordingly.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/groupby.png" alt="">
@@ -4252,7 +4258,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * The groups need to be drained and consumed downstream for groupBy to work correctly.
 	 * Notably when the criteria produces a large amount of groups, it can lead to hanging
 	 * if the groups are not suitably consumed downstream (eg. due to a {@code flatMap}
-	 * with a {@code maxConcurrency} parameter that is push too low.
+	 * with a {@code maxConcurrency} parameter that is set too low).
 	 *
 	 * @param keyMapper the key mapping function that evaluates an incoming data and returns a key.
 	 * @param valueMapper the value mapping function that evaluates which data to extract for re-routing.
@@ -4270,7 +4276,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Divide this sequence into dynamically created {@link Flux} (or groups) for each
 	 * unique key, as produced by the provided keyMapper {@link Function}. Source elements
-	 * are also mapped to a different value using the {@code valueMapper}.
+	 * are also mapped to a different value using the {@code valueMapper}. Note that
+	 * groupBy works best with a low cardinality of groups, so chose your keyMapper
+	 * function accordingly.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/groupby.png" alt="">
@@ -4279,7 +4287,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * The groups need to be drained and consumed downstream for groupBy to work correctly.
 	 * Notably when the criteria produces a large amount of groups, it can lead to hanging
 	 * if the groups are not suitably consumed downstream (eg. due to a {@code flatMap}
-	 * with a {@code maxConcurrency} parameter that is push too low.
+	 * with a {@code maxConcurrency} parameter that is set too low).
 	 *
 	 * @param keyMapper the key mapping function that evaluates an incoming data and returns a key.
 	 * @param valueMapper the value mapping function that evaluates which data to extract for re-routing.
@@ -6930,7 +6938,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/windowsizeskip.png" alt="">
 	 * <p>
-	 * When maxSize < skip : overlapping windows
+	 * When skip < maxSize : overlapping windows
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/windowsizeskipover.png" alt="">
 	 * <p>

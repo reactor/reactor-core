@@ -252,6 +252,72 @@ public class GuideTests {
 	}
 
 	@Test
+	public void advancedBatchingGrouping() {
+		StepVerifier.create(
+				Flux.just(1, 3, 5, 2, 4, 6, 11, 12, 13)
+				    .groupBy(i -> i % 2 == 0 ? "even" : "odd")
+				    .concatMap(g -> g.defaultIfEmpty(-1) //if empty groups, show them
+				                     .map(String::valueOf) //map to string
+				                     .startWith(g.key())) //start with the group's key
+		)
+		            .expectNext("odd", "1", "3", "5", "11", "13")
+		            .expectNext("even", "2", "4", "6", "12")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void advancedBatchingWindowingSizeOverlap() {
+		StepVerifier.create(
+				Flux.range(1, 10)
+				    .window(5, 3) //overlapping windows
+				    .concatMap(g -> g.defaultIfEmpty(-1)) //show empty windows as -1
+		)
+		            .expectNext(1, 2, 3, 4, 5)
+		            .expectNext(4, 5, 6, 7, 8)
+		            .expectNext(7, 8, 9, 10)
+		            .expectNext(10)
+	                .verifyComplete();
+	}
+
+	@Test
+	public void advancedBatchingWindowing() {
+		StepVerifier.create(
+				Flux.just(1, 3, 5, 2, 4, 6, 11, 12, 13)
+				    .windowWhile(i -> i % 2 == 0)
+				    .concatMap(g -> g.defaultIfEmpty(-1))
+		)
+		            .expectNext(-1, -1, -1) //respectively triggered by odd 1 3 5
+	                .expectNext(2, 4, 6) // triggered by 11
+	                .expectNext(12) // triggered by 13
+	                .expectNext(-1) // empty completion window, would have been omitted if all matched before onComplete
+	                .verifyComplete();
+	}
+
+	@Test
+	public void advancedBatchingBufferingSizeOverlap() {
+		StepVerifier.create(
+				Flux.range(1, 10)
+				    .buffer(5, 3) //overlapping buffers
+		)
+		            .expectNext(Arrays.asList(1, 2, 3, 4, 5))
+		            .expectNext(Arrays.asList(4, 5, 6, 7, 8))
+		            .expectNext(Arrays.asList(7, 8, 9, 10))
+		            .expectNext(Collections.singletonList(10))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void advancedBatchingBuffering() {
+		StepVerifier.create(
+				Flux.just(1, 3, 5, 2, 4, 6, 11, 12, 13)
+				    .bufferWhile(i -> i % 2 == 0)
+		)
+	                .expectNext(Arrays.asList(2, 4, 6)) // triggered by 11
+	                .expectNext(Collections.singletonList(12)) // triggered by 13
+	                .verifyComplete();
+	}
+
+	@Test
 	public void advancedParallelJustDivided() {
 		Flux.range(1, 10)
 	        .parallel(2) //<1>
@@ -867,7 +933,7 @@ public class GuideTests {
 				assertThat(withSuppressed.getSuppressed()).hasSize(1);
 				assertThat(withSuppressed.getSuppressed()[0])
 						.hasMessageStartingWith("\nAssembly trace from producer [reactor.core.publisher.MonoSingle] :")
-						.hasMessageEndingWith("Flux.single(GuideTests.java:825)\n");
+						.hasMessageEndingWith("Flux.single(GuideTests.java:891)\n");
 			});
 		}
 	}
