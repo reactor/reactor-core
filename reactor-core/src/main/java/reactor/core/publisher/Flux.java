@@ -2022,17 +2022,17 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Flux completes. Buffers can be created with gaps, as a new buffer will be created
 	 * every time {@code skip} values have been emitted by the source.
 	 * <p>
-	 * When Skip > Max Size : dropping buffers
+	 * When maxSize < skip : dropping buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/buffersizeskip.png"
 	 * alt="">
 	 * <p>
-	 * When Skip < Max Size : overlapping buffers
+	 * When maxSize > skip : overlapping buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/buffersizeskipover.png"
 	 * alt="">
 	 * <p>
-	 * When Skip == Max Size : exact buffers
+	 * When maxSize == skip : exact buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/buffersize.png"
 	 * alt="">
@@ -2052,17 +2052,17 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * or once this Flux completes. Buffers can be created with gaps, as a new buffer will
 	 * be created every time {@code skip} values have been emitted by the source
 	 * <p>
-	 * When Skip > Max Size : dropping buffers
+	 * When maxSize < skip : dropping buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/buffersizeskip.png"
 	 * alt="">
 	 * <p>
-	 * When Skip < Max Size : overlapping buffers
+	 * When maxSize > skip : overlapping buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/buffersizeskipover.png"
 	 * alt="">
 	 * <p>
-	 * When Skip == Max Size : exact buffers
+	 * When maxSize == skip : exact buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/buffersize.png"
 	 * alt="">
@@ -2133,17 +2133,17 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * {@code timeshift} period. Each buffer will last until the {@code timespan} has elapsed,
 	 * thus emitting the bucket in the resulting {@link Flux}.
 	 * <p>
-	 * When timeshift > timespan : dropping buffers
+	 * When timespan < timeshift : dropping buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/buffertimeshift.png"
 	 * alt="">
 	 * <p>
-	 * When timeshift < timespan : overlapping buffers
+	 * When timespan > timeshift : overlapping buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/buffertimeshiftover.png"
 	 * alt="">
 	 * <p>
-	 * When timeshift == timespan : exact buffers
+	 * When timespan == timeshift : exact buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/buffertimespan.png"
 	 * alt="">
@@ -2179,17 +2179,17 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * buffer will last until the {@code timespan} has elapsed (also measured on the scheduler),
 	 * thus emitting the bucket in the resulting {@link Flux}.
 	 * <p>
-	 * When timeshift > timespan : dropping buffers
+	 * When timespan < timeshift : dropping buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/buffertimeshift.png"
 	 * alt="">
 	 * <p>
-	 * When timeshift < timespan : overlapping buffers
+	 * When timespan > timeshift : overlapping buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/buffertimeshiftover.png"
 	 * alt="">
 	 * <p>
-	 * When timeshift == timespan : exact buffers
+	 * When timespan == timeshift : exact buffers
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/buffertimespan.png"
 	 * alt="">
@@ -4204,7 +4204,9 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Divide this sequence into dynamically created {@link Flux} (or groups) for each
-	 * unique key, as produced by the provided keyMapper {@link Function}.
+	 * unique key, as produced by the provided keyMapper {@link Function}. Note that
+	 * groupBy works best with a low cardinality of groups, so chose your keyMapper
+	 * function accordingly.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/groupby.png" alt="">
@@ -4213,7 +4215,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * The groups need to be drained and consumed downstream for groupBy to work correctly.
 	 * Notably when the criteria produces a large amount of groups, it can lead to hanging
 	 * if the groups are not suitably consumed downstream (eg. due to a {@code flatMap}
-	 * with a {@code maxConcurrency} parameter that is push too low.
+	 * with a {@code maxConcurrency} parameter that is set too low).
 	 *
 	 * @param keyMapper the key mapping {@link Function} that evaluates an incoming data and returns a key.
 	 * @param <K> the key type extracted from each value of this sequence
@@ -4226,7 +4228,9 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Divide this sequence into dynamically created {@link Flux} (or groups) for each
-	 * unique key, as produced by the provided keyMapper {@link Function}.
+	 * unique key, as produced by the provided keyMapper {@link Function}. Note that
+	 * groupBy works best with a low cardinality of groups, so chose your keyMapper
+	 * function accordingly.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/groupby.png" alt="">
@@ -4235,7 +4239,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * The groups need to be drained and consumed downstream for groupBy to work correctly.
 	 * Notably when the criteria produces a large amount of groups, it can lead to hanging
 	 * if the groups are not suitably consumed downstream (eg. due to a {@code flatMap}
-	 * with a {@code maxConcurrency} parameter that is push too low.
+	 * with a {@code maxConcurrency} parameter that is set too low).
 	 *
 	 * @param keyMapper the key mapping {@link Function} that evaluates an incoming data and returns a key.
 	 * @param prefetch the number of values to prefetch from the source
@@ -4250,7 +4254,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Divide this sequence into dynamically created {@link Flux} (or groups) for each
 	 * unique key, as produced by the provided keyMapper {@link Function}. Source elements
-	 * are also mapped to a different value using the {@code valueMapper}.
+	 * are also mapped to a different value using the {@code valueMapper}. Note that
+	 * groupBy works best with a low cardinality of groups, so chose your keyMapper
+	 * function accordingly.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/groupby.png" alt="">
@@ -4259,7 +4265,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * The groups need to be drained and consumed downstream for groupBy to work correctly.
 	 * Notably when the criteria produces a large amount of groups, it can lead to hanging
 	 * if the groups are not suitably consumed downstream (eg. due to a {@code flatMap}
-	 * with a {@code maxConcurrency} parameter that is push too low.
+	 * with a {@code maxConcurrency} parameter that is set too low).
 	 *
 	 * @param keyMapper the key mapping function that evaluates an incoming data and returns a key.
 	 * @param valueMapper the value mapping function that evaluates which data to extract for re-routing.
@@ -4277,7 +4283,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Divide this sequence into dynamically created {@link Flux} (or groups) for each
 	 * unique key, as produced by the provided keyMapper {@link Function}. Source elements
-	 * are also mapped to a different value using the {@code valueMapper}.
+	 * are also mapped to a different value using the {@code valueMapper}. Note that
+	 * groupBy works best with a low cardinality of groups, so chose your keyMapper
+	 * function accordingly.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/groupby.png" alt="">
@@ -4286,7 +4294,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * The groups need to be drained and consumed downstream for groupBy to work correctly.
 	 * Notably when the criteria produces a large amount of groups, it can lead to hanging
 	 * if the groups are not suitably consumed downstream (eg. due to a {@code flatMap}
-	 * with a {@code maxConcurrency} parameter that is push too low.
+	 * with a {@code maxConcurrency} parameter that is set too low).
 	 *
 	 * @param keyMapper the key mapping function that evaluates an incoming data and returns a key.
 	 * @param valueMapper the value mapping function that evaluates which data to extract for re-routing.
@@ -6948,15 +6956,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * {@code maxSize}, that each open every {@code skip} elements in the source.
 	 *
 	 * <p>
-	 * When skip > maxSize : dropping windows
+	 * When maxSize < skip : dropping windows
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/windowsizeskip.png" alt="">
 	 * <p>
-	 * When maxSize < skip : overlapping windows
+	 * When maxSize > skip : overlapping windows
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/windowsizeskipover.png" alt="">
 	 * <p>
-	 * When skip == maxSize : exact windows
+	 * When maxSize == skip : exact windows
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/windowsize.png" alt="">
 	 *
@@ -7015,15 +7023,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Both durations are measured on the {@link Schedulers#parallel() parallel} Scheduler.
 	 *
 	 * <p>
-	 * When timeshift > timespan : dropping windows
+	 * When timespan < timeshift : dropping windows
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/windowsizeskip.png" alt="">
 	 * <p>
-	 * When timeshift < timespan : overlapping windows
+	 * When timespan > timeshift : overlapping windows
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/windowsizeskipover.png" alt="">
 	 * <p>
-	 * When timeshift == timespan : exact windows
+	 * When timespan == timeshift : exact windows
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/windowsize.png" alt="">
 	 *
@@ -7062,15 +7070,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Both durations are measured on the provided {@link Scheduler}.
 	 *
 	 * <p>
-	 * When timeshift > timespan : dropping windows
+	 * When timespan < timeshift : dropping windows
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/windowsizeskip.png" alt="">
 	 * <p>
-	 * When timeshift < timespan : overlapping windows
+	 * When timespan > timeshift : overlapping windows
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/windowsizeskipover.png" alt="">
 	 * <p>
-	 * When timeshift == timespan : exact windows
+	 * When timeshift == timeshift : exact windows
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/windowsize.png" alt="">
 	 *
