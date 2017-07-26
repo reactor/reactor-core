@@ -834,11 +834,6 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
-
-		@Override
-		public String toString() {
-			return "WindowFlux";
-		}
 	}
 
 }
