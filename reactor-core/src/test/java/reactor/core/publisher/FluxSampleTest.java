@@ -16,14 +16,18 @@
 
 package reactor.core.publisher;
 
-import org.assertj.core.api.Assertions;
+import java.time.Duration;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxSampleTest {
 
@@ -180,22 +184,62 @@ public class FluxSampleTest {
 	}
 
 	@Test
+	public void sampleIncludesLastItem() {
+		Flux<Integer> source = Flux.concat(
+				Flux.range(1, 5),
+				Mono.delay(Duration.ofMillis(260)).ignoreElement().map(Long::intValue),
+				Flux.just(80, 90, 100)
+		).hide();
+
+		Duration duration = StepVerifier.create(source.sample(Duration.ofMillis(250)))
+		                                .expectNext(5)
+		                                .expectNext(100)
+		                                .verifyComplete();
+
+		//sanity check on the sequence duration
+		assertThat(duration.toMillis()).isLessThan(500);
+	}
+
+	@Test
+	public void sourceTerminatesBeforeSamplingEmits() {
+		Flux<Integer> source = Flux.just(1, 2).hide();
+
+		Duration duration = StepVerifier.create(source.sample(Duration.ofMillis(250)))
+		                                .expectNext(2)
+		                                .verifyComplete();
+
+		//sanity check on the sequence duration
+		assertThat(duration.toMillis()).isLessThan(250);
+	}
+
+	@Test
+	public void sourceErrorsBeforeSamplingNoEmission() {
+		Flux<Integer> source = Flux.just(1, 2).concatWith(Mono.error(new IllegalStateException("boom")));
+
+		Duration duration = StepVerifier.create(source.sample(Duration.ofMillis(250)))
+		                                .verifyErrorMessage("boom");
+
+		//sanity check on the sequence duration
+		assertThat(duration.toMillis()).isLessThan(250);
+	}
+
+	@Test
     public void scanMainSubscriber() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxSample.SampleMainSubscriber<Integer> test = new FluxSample.SampleMainSubscriber<>(actual);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
-        Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
-        Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
         test.requested = 35;
-        Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
+        assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
         test.value = 5;
-        Assertions.assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
+        assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 
-        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();
-        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 
 	@Test
@@ -204,12 +248,12 @@ public class FluxSampleTest {
         FluxSample.SampleMainSubscriber<Integer> main = new FluxSample.SampleMainSubscriber<>(actual);
         FluxSample.SampleOther<Integer, Integer> test = new FluxSample.SampleOther<>(main);
 
-        Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(main.other);
-        Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
-        Assertions.assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(main.other);
+        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
+        assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
 
-        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         main.cancelOther();
-        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 }
