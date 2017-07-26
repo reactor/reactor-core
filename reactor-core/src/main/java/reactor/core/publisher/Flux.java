@@ -7144,10 +7144,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/windowuntil.png" alt="">
 	 *
 	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
-	 * @return a {@link Flux} of {@link GroupedFlux} windows, bounded depending
-	 * on the predicate and keyed with the value that triggered the new window.
+	 * @return a {@link Flux} of {@link Flux} windows, bounded depending
+	 * on the predicate.
 	 */
-	public final Flux<GroupedFlux<T, T>> windowUntil(Predicate<T> boundaryTrigger) {
+	public final Flux<Flux<T>> windowUntil(Predicate<T> boundaryTrigger) {
 		return windowUntil(boundaryTrigger, false);
 	}
 
@@ -7169,10 +7169,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
 	 * @param cutBefore push to true to include the triggering element in the new window rather than the old.
-	 * @return a {@link Flux} of {@link GroupedFlux} windows, bounded depending
-	 * on the predicate and keyed with the value that triggered the new window.
+	 * @return a {@link Flux} of {@link Flux} windows, bounded depending
+	 * on the predicate.
 	 */
-	public final Flux<GroupedFlux<T, T>> windowUntil(Predicate<T> boundaryTrigger, boolean cutBefore) {
+	public final Flux<Flux<T>> windowUntil(Predicate<T> boundaryTrigger, boolean cutBefore) {
 		return windowUntil(boundaryTrigger, cutBefore, Queues.SMALL_BUFFER_SIZE);
 	}
 
@@ -7196,10 +7196,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param boundaryTrigger a predicate that triggers the next window when it becomes true.
 	 * @param cutBefore push to true to include the triggering element in the new window rather than the old.
 	 * @param prefetch the request size to use for this {@link Flux}.
-	 * @return a {@link Flux} of {@link GroupedFlux} windows, bounded depending
-	 * on the predicate and keyed with the value that triggered the new window.
+	 * @return a {@link Flux} of {@link Flux} windows, bounded depending
+	 * on the predicate.
 	 */
-	public final Flux<GroupedFlux<T, T>> windowUntil(Predicate<T> boundaryTrigger, boolean cutBefore, int prefetch) {
+	public final Flux<Flux<T>> windowUntil(Predicate<T> boundaryTrigger, boolean cutBefore, int prefetch) {
 		return onAssembly(new FluxWindowPredicate<>(this,
 				Queues.unbounded(prefetch),
 				Queues.unbounded(prefetch),
@@ -7220,10 +7220,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/windowwhile.png" alt="">
 	 *
 	 * @param inclusionPredicate a predicate that triggers the next window when it becomes false.
-	 * @return a {@link Flux} of {@link GroupedFlux} windows, each containing
-	 * subsequent elements that all passed a predicate, and keyed with a separator element.
+	 * @return a {@link Flux} of {@link Flux} windows, each containing
+	 * subsequent elements that all passed a predicate.
 	 */
-	public final Flux<GroupedFlux<T, T>> windowWhile(Predicate<T> inclusionPredicate) {
+	public final Flux<Flux<T>> windowWhile(Predicate<T> inclusionPredicate) {
 		return windowWhile(inclusionPredicate, Queues.SMALL_BUFFER_SIZE);
 	}
 
@@ -7240,10 +7240,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param inclusionPredicate a predicate that triggers the next window when it becomes false.
 	 * @param prefetch the request size to use for this {@link Flux}.
-	 * @return a {@link Flux} of {@link GroupedFlux} windows, each containing
-	 * subsequent elements that all passed a predicate, and keyed with a separator element.
+	 * @return a {@link Flux} of {@link Flux} windows, each containing
+	 * subsequent elements that all passed a predicate.
 	 */
-	public final Flux<GroupedFlux<T, T>> windowWhile(Predicate<T> inclusionPredicate, int prefetch) {
+	public final Flux<Flux<T>> windowWhile(Predicate<T> inclusionPredicate, int prefetch) {
 		return onAssembly(new FluxWindowPredicate<>(this,
 				Queues.unbounded(prefetch),
 				Queues.unbounded(prefetch),

@@ -17,7 +17,6 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -40,10 +39,10 @@ import reactor.util.concurrent.Queues;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxWindowPredicateTest extends
-                                     FluxOperatorTest<String, GroupedFlux<String, String>> {
+                                     FluxOperatorTest<String, Flux<String>> {
 
 	@Override
-	protected Scenario<String, GroupedFlux<String, String>> defaultScenarioOptions(Scenario<String, GroupedFlux<String, String>> defaultOptions) {
+	protected Scenario<String, Flux<String>> defaultScenarioOptions(Scenario<String, Flux<String>> defaultOptions) {
 		return defaultOptions.shouldAssertPostTerminateState(false)
 		                     .fusionMode(Fuseable.ASYNC)
 		                     .fusionModeThreadBarrier(Fuseable.ANY)
@@ -51,7 +50,7 @@ public class FluxWindowPredicateTest extends
 	}
 
 	@Override
-	protected List<Scenario<String, GroupedFlux<String, String>>> scenarios_operatorSuccess() {
+	protected List<Scenario<String, Flux<String>>> scenarios_operatorSuccess() {
 		return Arrays.asList(
 				scenario(f -> f.windowUntil(t -> true, true, 1))
 						.prefetch(1)
@@ -84,7 +83,7 @@ public class FluxWindowPredicateTest extends
 	}
 
 	@Override
-	protected List<Scenario<String, GroupedFlux<String, String>>> scenarios_operatorError() {
+	protected List<Scenario<String, Flux<String>>> scenarios_operatorError() {
 		return Arrays.asList(
 				scenario(f -> f.windowWhile(t -> {
 					throw exception();
@@ -104,7 +103,7 @@ public class FluxWindowPredicateTest extends
 	}
 
 	@Override
-	protected List<Scenario<String, GroupedFlux<String, String>>> scenarios_errorFromUpstreamFailure() {
+	protected List<Scenario<String, Flux<String>>> scenarios_errorFromUpstreamFailure() {
 		return Arrays.asList(
 				scenario(f -> f.windowWhile(t -> true))
 						.receive(s -> s.buffer().subscribe(null, e -> assertThat(e).hasMessage("test"))),
@@ -166,7 +165,6 @@ public class FluxWindowPredicateTest extends
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	public void normalUntil() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(sp1,
@@ -202,7 +200,6 @@ public class FluxWindowPredicateTest extends
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	public void onCompletionBeforeLastBoundaryWindowEmitted() {
 		Flux<Integer> source = Flux.just(1, 2);
 
@@ -235,7 +232,6 @@ public class FluxWindowPredicateTest extends
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	public void mainErrorUntilIsPropagatedToBothWindowAndMain() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(
@@ -262,7 +258,6 @@ public class FluxWindowPredicateTest extends
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	public void predicateErrorUntil() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowUntil = new FluxWindowPredicate<>(
@@ -291,7 +286,6 @@ public class FluxWindowPredicateTest extends
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	public void normalUntilCutBefore() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowUntilCutBefore = new FluxWindowPredicate<>(sp1,
@@ -323,7 +317,6 @@ public class FluxWindowPredicateTest extends
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	public void mainErrorUntilCutBeforeIsPropagatedToBothWindowAndMain() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowUntilCutBefore =
@@ -351,7 +344,6 @@ public class FluxWindowPredicateTest extends
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	public void predicateErrorUntilCutBefore() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowUntilCutBefore =
@@ -386,7 +378,6 @@ public class FluxWindowPredicateTest extends
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	public void normalWhile() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
@@ -418,7 +409,6 @@ public class FluxWindowPredicateTest extends
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	public void normalWhileDoesntInitiallyMatch() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
@@ -457,7 +447,6 @@ public class FluxWindowPredicateTest extends
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	public void normalWhileDoesntMatch() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
@@ -493,7 +482,6 @@ public class FluxWindowPredicateTest extends
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	public void mainErrorWhileIsPropagatedToBothWindowAndMain() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
@@ -543,7 +531,6 @@ public class FluxWindowPredicateTest extends
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	public void predicateErrorWhile() {
 		DirectProcessor<Integer> sp1 = DirectProcessor.create();
 		FluxWindowPredicate<Integer> windowWhile = new FluxWindowPredicate<>(
@@ -592,48 +579,6 @@ public class FluxWindowPredicateTest extends
 	                .expectNext("white")
 	                .thenRequest(1)
 	                .verifyComplete();
-	}
-
-	@Test
-	public void groupsHaveCorrectKeysWhile() {
-		List<String> keys = new ArrayList<>(10);
-
-		StepVerifier.create(Flux.just("red", "green", "#1", "orange", "blue", "#2", "black", "white")
-				.windowWhile(color -> !color.startsWith("#"))
-				.doOnNext(w -> keys.add(w.key()))
-				.flatMap(w -> w))
-		            .expectNext("red", "green", "orange", "blue", "black", "white")
-				    .verifyComplete();
-
-		assertThat(keys).containsExactly(null, "#1", "#2");
-	}
-
-	@Test
-	public void groupsHaveCorrectKeysUntil() {
-		List<String> keys = new ArrayList<>(10);
-
-		StepVerifier.create(Flux.just("red", "green", "#1", "orange", "blue", "#2", "black", "white")
-				.windowUntil(color -> color.startsWith("#"))
-				.doOnNext(w -> keys.add(w.key()))
-				.flatMap(w -> w))
-		            .expectNext("red", "green", "#1", "orange", "blue", "#2", "black", "white")
-				    .verifyComplete();
-
-		assertThat(keys).containsExactly(null, "#1", "#2");
-	}
-
-	@Test
-	public void groupsHaveCorrectKeysUntilCutBefore() {
-		List<String> keys = new ArrayList<>(10);
-
-		StepVerifier.create(Flux.just("red", "green", "#1", "orange", "blue", "#2", "black", "white")
-				.windowUntil(color -> color.startsWith("#"), true)
-				.doOnNext(w -> keys.add(w.key()))
-				.flatMap(w -> w))
-		            .expectNext("red", "green", "#1", "orange", "blue", "#2", "black", "white")
-				    .verifyComplete();
-
-		assertThat(keys).containsExactly(null, "#1", "#2");
 	}
 
 	@Test
@@ -827,9 +772,9 @@ public class FluxWindowPredicateTest extends
 
 	@Test
     public void scanMainSubscriber() {
-        CoreSubscriber<GroupedFlux<Integer, Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWindowPredicate.WindowPredicateMain<Integer> test = new FluxWindowPredicate.WindowPredicateMain<>(actual,
-        		Queues.<GroupedFlux<Integer, Integer>>unbounded().get(), Queues.unbounded(), 123, i -> true, Mode.WHILE);
+        		Queues.<Flux<Integer>>unbounded().get(), Queues.unbounded(), 123, i -> true, Mode.WHILE);
 
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
@@ -859,10 +804,10 @@ public class FluxWindowPredicateTest extends
 
 	@Test
     public void scanOtherSubscriber() {
-        CoreSubscriber<GroupedFlux<Integer, Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+        CoreSubscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxWindowPredicate.WindowPredicateMain<Integer> main = new FluxWindowPredicate.WindowPredicateMain<>(actual,
-        		Queues.<GroupedFlux<Integer, Integer>>unbounded().get(), Queues.unbounded(), 123, i -> true, Mode.WHILE);
-        FluxWindowPredicate.WindowGroupedFlux<Integer> test = new FluxWindowPredicate.WindowGroupedFlux<>(1,
+        		Queues.<Flux<Integer>>unbounded().get(), Queues.unbounded(), 123, i -> true, Mode.WHILE);
+        FluxWindowPredicate.WindowFlux<Integer> test = new FluxWindowPredicate.WindowFlux<>(
         		Queues.<Integer>unbounded().get(), main);
 
         Subscription parent = Operators.emptySubscription();
