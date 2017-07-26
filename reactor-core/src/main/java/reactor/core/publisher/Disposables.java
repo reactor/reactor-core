@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,17 +18,15 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.Supplier;
-
-import reactor.core.Disposable;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
+import reactor.core.Disposable;
+import reactor.core.Disposable.CompositeDisposable;
+import reactor.core.Disposable.SequentialDisposable;
+
 /**
- * A {@link Disposable} container that allows updating/replacing its inner Disposable
- * atomically and with respect of disposing the container itself.
- *
- * Utility methods to work with {@link Disposable} atomically as well as disposable
- * wrappers for multiple disposables.
+ * Utility methods to work with {@link Disposable} atomically.
  *
  * @author Simon Baslé
  * @author David Karnok
@@ -39,6 +37,7 @@ final class Disposables {
 	 * A singleton {@link Disposable} that represents a disposed instance. Should not be
 	 * leaked to clients.
 	 */
+	//NOTE: There is a private similar DISPOSED singleton in DefaultDisposable as well
 	static final Disposable DISPOSED = new Disposable() {
 		@Override
 		public void dispose() {
@@ -82,27 +81,24 @@ final class Disposables {
 	 * or return false if the field is non-null.
 	 * If the target field contains the common {@link #DISPOSED} instance, the supplied disposable
 	 * is disposed. If the field contains other non-null {@link Disposable}, an {@link IllegalStateException}
-	 * is signalled to the {@link Operators#onErrorDropped(Throwable)} hook.
+	 * is signalled to the {@code errorCallback}.
 	 *
 	 * @param updater the target field updater
 	 * @param holder the target instance holding the field
 	 * @param newValue the new Disposable to push, not null
 	 * @return true if the operation succeeded, false
 	 */
-	public static <T> boolean setOnce(AtomicReferenceFieldUpdater<T, Disposable> updater, T holder, Disposable newValue) {
+	public static <T> boolean setOnce(AtomicReferenceFieldUpdater<T, Disposable> updater, T holder, Disposable newValue,
+			Consumer<RuntimeException> errorCallback) {
 		Objects.requireNonNull(newValue, "newValue is null");
 		if (!updater.compareAndSet(holder, null, newValue)) {
 			newValue.dispose();
 			if (updater.get(holder) != DISPOSED) {
-				reportDisposableSet();
+				errorCallback.accept(new IllegalStateException("Disposable already pushed"));
 			}
 			return false;
 		}
 		return true;
-	}
-
-	private static void reportDisposableSet() {
-		Operators.onErrorDropped(new IllegalStateException("Disposable already push"));
 	}
 
 	/**
@@ -154,22 +150,22 @@ final class Disposables {
 
 	/**
 	 * Verify that current is null and next is not null, otherwise signal a
-	 * {@link NullPointerException} to the {@link Operators#onErrorDropped(Throwable)}
-	 * hook and return false.
+	 * {@link NullPointerException} to the {@code errorCallback} and return false.
 	 *
 	 * @param current the current {@link Disposable}, expected to be null
 	 * @param next the next {@link Disposable}, expected to be non-null
 	 * @return true if the validation succeeded
 	 */
-	public static boolean validate(@Nullable Disposable current, Disposable next) {
+	public static boolean validate(@Nullable Disposable current, Disposable next,
+			Consumer<RuntimeException> errorCallback) {
 		//noinspection ConstantConditions
 		if (next == null) {
-			Operators.onErrorDropped(new NullPointerException("next is null"));
+			errorCallback.accept(new NullPointerException("next is null"));
 			return false;
 		}
 		if (current != null) {
 			next.dispose();
-			reportDisposableSet();
+			errorCallback.accept(new IllegalStateException("Disposable already pushed"));
 			return false;
 		}
 		return true;
@@ -204,61 +200,4 @@ final class Disposables {
 		return d == DISPOSED;
 	}
 
-
-	/**
-	 * A {@link Disposable} container that allows updating/replacing its inner Disposable
-	 * atomically and with respect of disposing the container itself.
-	 *
-	 * Includes static utility methods to work with Disposable atomically.
-	 *
-	 * @author Simon Baslé
-	 * @author David Karnok
-	 */
-	static final class SequentialDisposable implements Disposable,
-	                                                   Supplier<Disposable> {
-
-		volatile Disposable inner;
-		static final AtomicReferenceFieldUpdater<SequentialDisposable, Disposable> INNER =
-				AtomicReferenceFieldUpdater.newUpdater(SequentialDisposable.class, Disposable.class, "inner");
-
-		/**
-		 * Atomically push the next {@link Disposable} on this container and dispose the previous
-		 * one (if any). If the container has been disposed, fall back to disposing {@code next}.
-		 *
-		 * @param next the {@link Disposable} to push, may be null
-		 * @return true if the operation succeeded, false if the container has been disposed
-		 * @see #replace(Disposable)
-		 */
-		public boolean update(Disposable next) {
-			return set(INNER, this, next);
-		}
-
-		/**
-		 * Atomically push the next {@link Disposable} on this container but don't dispose the previous
-		 * one (if any). If the container has been disposed, fall back to disposing {@code next}.
-		 *
-		 * @param next the {@link Disposable} to push, may be null
-		 * @return true if the operation succeeded, false if the container has been disposed
-		 * @see #update(Disposable)
-		 */
-		public boolean replace(@Nullable Disposable next) {
-			return Disposables.replace(INNER, this, next);
-		}
-
-		@Override
-		@Nullable
-		public Disposable get() {
-			return inner;
-		}
-
-		@Override
-		public void dispose() {
-			Disposables.dispose(INNER, this);
-		}
-
-		@Override
-		public boolean isDisposed() {
-			return Disposables.isDisposed(INNER.get(this));
-		}
-	}
 }

@@ -112,6 +112,17 @@ public abstract class Exceptions {
 		return multiple;
 	}
 
+	public static RuntimeException multiple(Iterable<Throwable> throwables) {
+		RuntimeException multiple = new RuntimeException("Multiple exceptions");
+		//noinspection ConstantConditions
+		if (throwables != null) {
+			for (Throwable t : throwables) {
+				multiple.addSuppressed(t);
+			}
+		}
+		return multiple;
+	}
+
 	/**
 	 * @return a new {@link NullPointerException} with a cause message abiding to reactive
 	 * stream specification rule 2.13.
