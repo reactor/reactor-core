@@ -5678,6 +5678,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Sample this {@link Flux} by periodically emitting an item corresponding to that
 	 * {@link Flux} latest emitted value within the periodical time window.
+	 * Note that if some elements are emitted quicker than the timespan just before source
+	 * completion, the last of these elements will be emitted along with the onComplete
+	 * signal.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/sampletimespan.png" alt="">
@@ -5696,6 +5699,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * Termination of either {@link Publisher} will result in termination for the {@link Subscriber}
 	 * as well.
+	 * Note that if some elements are emitted just before source completion and before a
+	 * last sampler can trigger, the last of these elements will be emitted along with the
+	 * onComplete signal.
 	 * <p>
 	 * Both {@link Publisher} will run in unbounded mode because the backpressure
 	 * would interfere with the sampling precision.
@@ -5748,6 +5754,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Emit the latest value from this {@link Flux} only if there were no new values emitted
 	 * during the window defined by a companion {@link Publisher} derived from that particular
 	 * value.
+	 * <p>
+	 * Note that this means that the last value in the sequence is always emitted.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/sampletimeout.png" alt="">
@@ -5770,6 +5778,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * value.
 	 * <p>The provided {@literal maxConcurrency} will keep a bounded maximum of concurrent timeouts and drop any new
 	 * items until at least one timeout terminates.
+	 * <p>
+	 * Note that this means that the last value in the sequence is always emitted.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/sampletimeoutm.png" alt="">

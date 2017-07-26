@@ -195,6 +195,14 @@ final class FluxSample<T, U> extends FluxOperator<T, T> {
 		@Override
 		public void onComplete() {
 			cancelOther();
+			//implementation note: if the sampler triggers at the exact same time as the
+			// last source value being emitted, it could be that the sampler "wins" and
+			// suppresses the value by cancelling the main. In any other case, the block
+			// below ensures last source value is always part of the sample.
+			T v = value;
+			if (v != null) {
+				actual.onNext(value);
+			}
 
 			actual.onComplete();
 		}

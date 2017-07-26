@@ -29,6 +29,8 @@ import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class FluxSampleTimeoutTest {
 
 	@Test
@@ -131,6 +133,49 @@ public class FluxSampleTimeoutTest {
 		  .assertNotComplete();
 
 		Assert.assertFalse("sp1 has subscribers?", sp1.hasDownstreams());
+	}
+
+	@Test
+	public void sampleIncludesLastItem() {
+		Flux<Integer> source = Flux.concat(
+				Flux.range(1, 5),
+				Mono.delay(Duration.ofMillis(260)).ignoreElement().map(Long::intValue),
+				Flux.just(80, 90, 100)
+		).hide();
+
+		Duration duration = StepVerifier.create(source
+				.sampleTimeout(i -> Mono.delay(Duration.ofMillis(250))))
+		                                .expectNext(5)
+		                                .expectNext(100)
+		                                .verifyComplete();
+
+		//sanity check on the sequence duration
+		assertThat(duration.toMillis()).isLessThan(500);
+	}
+
+	@Test
+	public void sourceTerminatesBeforeSamplingEmitsLast() {
+		Flux<Integer> source = Flux.just(1, 2).hide();
+
+		Duration duration = StepVerifier.create(source
+				.sampleTimeout(i -> Mono.delay(Duration.ofMillis(250))))
+		                                .expectNext(2)
+		                                .verifyComplete();
+
+		//sanity check on the sequence duration
+		assertThat(duration.toMillis()).isLessThan(250);
+	}
+
+	@Test
+	public void sourceErrorsBeforeSamplingNoEmission() {
+		Flux<Integer> source = Flux.just(1, 2).concatWith(Mono.error(new IllegalStateException("boom")));
+
+		Duration duration = StepVerifier.create(source
+				.sampleTimeout(i -> Mono.delay(Duration.ofMillis(250))))
+		                                .verifyErrorMessage("boom");
+
+		//sanity check on the sequence duration
+		assertThat(duration.toMillis()).isLessThan(250);
 	}
 
 	Flux<Integer> scenario_sampleTimeoutTime(){
