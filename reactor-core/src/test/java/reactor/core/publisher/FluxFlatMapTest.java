@@ -1111,6 +1111,37 @@ public class FluxFlatMapTest {
 	}
 
 	@Test
+	public void onOperatorError() {
+		AtomicReference<Object> errorValue = new AtomicReference<Object>();
+		Hooks.onOperatorError((error, d) -> {
+			errorValue.set(d);
+			return error;
+		});
+
+		Flux<Integer> f1 = Mono.just(1).flatMapMany(i -> Flux.error(new Exception("test")));
+		StepVerifier.create(f1).verifyErrorMessage("test");
+		assertThat(errorValue.get()).isEqualTo(1);
+
+		Flux<Integer> f2 = Mono.just(2).flatMapMany(i -> {
+			throw new RuntimeException("test");
+		});
+		StepVerifier.create(f2).verifyErrorMessage("test");
+		assertThat(errorValue.get()).isEqualTo(2);
+
+		Flux<Integer> f3 = Flux.just(3, 6, 9).flatMap(i -> Flux.error(new Exception("test")));
+		StepVerifier.create(f3).verifyErrorMessage("test");
+		assertThat(errorValue.get()).isEqualTo(3);
+
+		Flux<Integer> f4 = Flux.just(4, 8, 12).flatMap(i -> {
+			throw new RuntimeException("test");
+		});
+		StepVerifier.create(f4).verifyErrorMessage("test");
+		assertThat(errorValue.get()).isEqualTo(4);
+
+		Hooks.resetOnOperatorError();
+	}
+
+	@Test
 	public void prematureInnerCancel() {
 		StepVerifier.create(Flux.just(1, 2, 3, 4, 5)
 		                        .hide()
