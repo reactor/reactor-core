@@ -22,6 +22,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
@@ -56,7 +57,7 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
         TERMINATED = Executors.newSingleThreadScheduledExecutor();
         TERMINATED.shutdownNow();
     }
-    
+
     int roundRobin;
 
     ParallelScheduler(int n, ThreadFactory factory) {
@@ -137,7 +138,7 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
             int idx = roundRobin;
             if (idx == n) {
                 idx = 0;
-                roundRobin = 0;
+                roundRobin = 1;
             } else {
                 roundRobin = idx + 1;
             }

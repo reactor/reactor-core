@@ -16,6 +16,9 @@
 package reactor.core.scheduler;
 
 import java.time.Duration;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -117,5 +120,26 @@ public class ParallelSchedulerTest extends AbstractSchedulerTest {
 		finally {
 			s.dispose();
 		}
+	}
+
+	@Test
+	public void shouldPickEvenly() throws Exception {
+		int n = 4;
+		int m = 25;
+
+		Scheduler scheduler = Schedulers.newParallel("test", n);
+		CountDownLatch latch = new CountDownLatch(m*n);
+		ConcurrentHashMap<String, Integer> map = new ConcurrentHashMap<>();
+
+		for (int i = 0; i < m * n; i++) {
+			scheduler.schedule(() -> {
+				String threadName = Thread.currentThread().getName();
+				map.compute(threadName, (name, val) -> Optional.ofNullable(val).map(x -> x+1).orElse(1));
+				latch.countDown();
+			});
+		}
+
+		latch.await();
+		assertThat(map.values()).containsOnly(m);
 	}
 }
