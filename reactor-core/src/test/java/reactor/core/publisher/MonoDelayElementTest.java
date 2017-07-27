@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -339,6 +340,37 @@ public class MonoDelayElementTest {
 		            .verifyComplete();
 
 		assertThat(upstream.get()).isInstanceOf(FluxRange.RangeSubscription.class);
+	}
+
+	@Test
+	public void completeOnNextWithoutCancel() {
+		AtomicInteger onCancel = new AtomicInteger();
+		AtomicInteger sourceOnCancel = new AtomicInteger();
+		AtomicInteger onTerminate = new AtomicInteger();
+		AtomicInteger sourceOnTerminate = new AtomicInteger();
+		Mono<String> source = Mono.<String>fromDirect(s -> {
+			s.onSubscribe(Operators.emptySubscription());
+			s.onNext("foo");
+		})
+		.doOnCancel(() -> sourceOnCancel.incrementAndGet())
+		.doOnTerminate((v, e) -> sourceOnTerminate.incrementAndGet());
+
+
+		StepVerifier.withVirtualTime(() -> new MonoDelayElement<>(source,
+				2,
+				TimeUnit.SECONDS,
+				defaultSchedulerForDelay())
+				.doOnCancel(() -> onCancel.incrementAndGet())
+				.doOnTerminate((v, e) -> onTerminate.incrementAndGet()))
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofSeconds(2))
+		            .expectNext("foo")
+		            .verifyComplete();
+
+		assertThat(onTerminate.get()).isEqualTo(1);
+		assertThat(sourceOnTerminate.get()).isEqualTo(1);
+		assertThat(onCancel.get()).isEqualTo(0);
+		assertThat(sourceOnCancel.get()).isEqualTo(0);
 	}
 
 	@Test

@@ -116,9 +116,6 @@ final class MonoDelayElement<T> extends MonoOperator<T, T> {
 			}
 			else {
 				this.task = task;
-				Subscription actualS = s;
-				s = Operators.cancelledSubscription();
-				actualS.cancel();
 			}
 		}
 

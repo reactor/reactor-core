@@ -16,6 +16,10 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -217,6 +221,32 @@ public class FluxRefCountTest {
 			sub1.dispose();
 			sub2.dispose();
 		}
+	}
+
+	@Test
+	public void delayElementShouldNotCancelTwice() throws Exception {
+		DirectProcessor<Long> p = DirectProcessor.create();
+		AtomicInteger cancellations = new AtomicInteger();
+
+		Flux<Long> publishedFlux = p
+			.publish()
+			.refCount(2)
+			.doOnCancel(() -> cancellations.incrementAndGet());
+
+		publishedFlux.any(x -> x > 5)
+			.delayElement(Duration.ofMillis(2))
+			.subscribe();
+
+		CompletableFuture<List<Long>> result = publishedFlux.collectList().toFuture();
+
+		for (long i = 0; i < 10; i++) {
+			p.onNext(i);
+			Thread.sleep(1);
+		}
+		p.onComplete();
+
+		assertThat(result.get(10, TimeUnit.MILLISECONDS).size()).isEqualTo(10);
+		assertThat(cancellations.get()).isEqualTo(2);
 	}
 
 	@Test
