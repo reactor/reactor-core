@@ -142,7 +142,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 						"The mapper returned a null Publisher");
 			}
 			catch (Throwable e) {
-				Operators.error(s, Operators.onOperatorError(e));
+				Operators.error(s, Operators.onOperatorError(null, e, t));
 				return true;
 			}
 
@@ -153,7 +153,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 					v = ((Callable<R>) p).call();
 				}
 				catch (Throwable e) {
-					Operators.error(s, Operators.onOperatorError(e));
+					Operators.error(s, Operators.onOperatorError(null, e, t));
 					return true;
 				}
 
