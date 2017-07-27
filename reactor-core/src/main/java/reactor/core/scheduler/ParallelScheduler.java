@@ -22,6 +22,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
@@ -56,8 +57,10 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
         TERMINATED = Executors.newSingleThreadScheduledExecutor();
         TERMINATED.shutdownNow();
     }
-    
-    int roundRobin;
+
+    volatile int roundRobin;
+    static final AtomicIntegerFieldUpdater<ParallelScheduler> ROUND_ROBIN =
+            AtomicIntegerFieldUpdater.newUpdater(ParallelScheduler.class, "roundRobin");
 
     ParallelScheduler(int n, ThreadFactory factory) {
         if (n <= 0) {
@@ -134,13 +137,7 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
         ScheduledExecutorService[] a = executors;
         if (a != SHUTDOWN) {
             // ignoring the race condition here, its already random who gets which executor
-            int idx = roundRobin;
-            if (idx == n) {
-                idx = 0;
-                roundRobin = 0;
-            } else {
-                roundRobin = idx + 1;
-            }
+            int idx = ROUND_ROBIN.getAndUpdate(this, i -> (i < (n-1)) ? i + 1 : 0);
             return a[idx];
         }
         return TERMINATED;
