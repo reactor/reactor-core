@@ -58,9 +58,7 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
         TERMINATED.shutdownNow();
     }
 
-    volatile int roundRobin;
-    static final AtomicIntegerFieldUpdater<ParallelScheduler> ROUND_ROBIN =
-            AtomicIntegerFieldUpdater.newUpdater(ParallelScheduler.class, "roundRobin");
+    int roundRobin;
 
     ParallelScheduler(int n, ThreadFactory factory) {
         if (n <= 0) {
@@ -137,7 +135,13 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
         ScheduledExecutorService[] a = executors;
         if (a != SHUTDOWN) {
             // ignoring the race condition here, its already random who gets which executor
-            int idx = ROUND_ROBIN.getAndUpdate(this, i -> (i < (n-1)) ? i + 1 : 0);
+            int idx = roundRobin;
+            if (idx == n) {
+                idx = 0;
+                roundRobin = 1;
+            } else {
+                roundRobin = idx + 1;
+            }
             return a[idx];
         }
         return TERMINATED;
