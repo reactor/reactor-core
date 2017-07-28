@@ -132,8 +132,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					      .accept(n);
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e));
-					return;
+					Operators.onOperatorError(e);
 				}
 			}
 			s.request(n);
@@ -403,8 +402,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					      .accept(n);
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e));
-					return;
+					Operators.onOperatorError(e);
 				}
 			}
 			s.request(n);
@@ -724,8 +722,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					      .accept(n);
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e));
-					return;
+					Operators.onOperatorError(e);
 				}
 			}
 			s.request(n);

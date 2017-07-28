@@ -124,8 +124,7 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 					parent.onRequestCall().accept(n);
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e));
-					return;
+					Operators.onOperatorError(e);
 				}
 			}
 			s.request(n);

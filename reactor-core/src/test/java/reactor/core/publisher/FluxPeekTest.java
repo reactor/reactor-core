@@ -72,6 +72,10 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 				scenario(f -> f.doOnRequest(d -> {
 				})),
 
+				scenario(f -> f.doOnRequest(s -> {
+					throw new RuntimeException(); //ignored
+				})),
+
 				scenario(f -> f.doOnNext(s -> {
 				})),
 
@@ -90,10 +94,6 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 		return Arrays.asList(
 
 				scenario(f -> f.doOnSubscribe(s -> {
-					throw exception();
-				})).producerNever(),
-
-				scenario(f -> f.doOnRequest(s -> {
 					throw exception();
 				})).producerNever(),
 
