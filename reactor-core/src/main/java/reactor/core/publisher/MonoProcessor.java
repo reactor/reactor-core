@@ -397,14 +397,8 @@ public final class MonoProcessor<O> extends Mono<O>
 
 	@Override
 	public final void request(long n) {
-		try {
-			Operators.checkRequest(n);
-		}
-		catch (Throwable e) {
-			Exceptions.throwIfFatal(e);
-			onError(e);
-		}
-		if (WIP.getAndIncrement(this) == 0) {
+		if (Operators.validate(n) &&
+				WIP.getAndIncrement(this) == 0) {
 			drainLoop();
 		}
 	}

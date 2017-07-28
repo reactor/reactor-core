@@ -18,22 +18,19 @@ package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
-import reactor.core.Scannable;
-import javax.annotation.Nullable;
 
 /**
  * An unbounded Java Lambda adapter to {@link Subscriber}, targetted at {@link Mono}.
  *
  * @param <T> the value type
  */
-final class LambdaMonoSubscriber<T>
-		implements InnerConsumer<T>, Disposable {
+final class LambdaMonoSubscriber<T> implements InnerConsumer<T>, Disposable {
 
 	final Consumer<? super T>            consumer;
 	final Consumer<? super Throwable>    errorConsumer;
@@ -57,11 +54,10 @@ final class LambdaMonoSubscriber<T>
 	 * @param errorConsumer A {@link Consumer} called onError
 	 * @param completeConsumer A {@link Runnable} called onComplete with the actual
 	 * context if any
-	 * @param subscriptionConsumer A {@link Consumer} called with the
-	 * {@link Subscription} to perform initial request, or null to request max
+	 * @param subscriptionConsumer A {@link Consumer} called with the {@link Subscription}
+	 * to perform initial request, or null to request max
 	 */
-	LambdaMonoSubscriber(
-			@Nullable Consumer<? super T> consumer,
+	LambdaMonoSubscriber(@Nullable Consumer<? super T> consumer,
 			@Nullable Consumer<? super Throwable> errorConsumer,
 			@Nullable Runnable completeConsumer,
 			@Nullable Consumer<? super Subscription> subscriptionConsumer) {
@@ -75,19 +71,21 @@ final class LambdaMonoSubscriber<T>
 	public final void onSubscribe(Subscription s) {
 		if (Operators.validate(subscription, s)) {
 			this.subscription = s;
-			try {
-				if (subscriptionConsumer != null) {
+
+			if (subscriptionConsumer != null) {
+				try {
 					subscriptionConsumer.accept(s);
 				}
-				else {
-					s.request(Long.MAX_VALUE);
+				catch (Throwable t) {
+					Exceptions.throwIfFatal(t);
+					s.cancel();
+					onError(t);
 				}
 			}
-			catch (Throwable t) {
-				Exceptions.throwIfFatal(t);
-				s.cancel();
-				onError(t);
+			else {
+				s.request(Long.MAX_VALUE);
 			}
+
 		}
 	}
 
@@ -120,7 +118,7 @@ final class LambdaMonoSubscriber<T>
 		doError(t);
 	}
 
-	void doError(Throwable t){
+	void doError(Throwable t) {
 		if (errorConsumer != null) {
 			errorConsumer.accept(t);
 		}
@@ -161,13 +159,18 @@ final class LambdaMonoSubscriber<T>
 	@Override
 	@Nullable
 	public Object scanUnsafe(Attr key) {
-		if (key == Attr.PARENT) return subscription;
-		if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
-		if (key == Attr.TERMINATED || key == Attr.CANCELLED) return isDisposed();
+		if (key == Attr.PARENT) {
+			return subscription;
+		}
+		if (key == Attr.PREFETCH) {
+			return Integer.MAX_VALUE;
+		}
+		if (key == Attr.TERMINATED || key == Attr.CANCELLED) {
+			return isDisposed();
+		}
 
 		return null;
 	}
-
 
 	@Override
 	public boolean isDisposed() {

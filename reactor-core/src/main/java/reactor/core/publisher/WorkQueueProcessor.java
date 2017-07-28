@@ -696,13 +696,11 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 		@Override
 		public void request(long n) {
-			if (Operators.checkRequest(n, subscriber)) {
-				if (!running.get()) {
-					return;
-				}
-
-				addCap(pendingRequest, n);
+			if (!Operators.validate(n) || !running.get()) {
+				return;
 			}
+
+			addCap(pendingRequest, n);
 		}
 
 		@Override

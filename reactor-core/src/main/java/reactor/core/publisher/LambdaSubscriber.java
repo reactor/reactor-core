@@ -73,18 +73,18 @@ final class LambdaSubscriber<T>
 	public final void onSubscribe(Subscription s) {
 		if (Operators.validate(subscription, s)) {
 			this.subscription = s;
-			try {
-				if (subscriptionConsumer != null) {
+			if (subscriptionConsumer != null) {
+				try {
 					subscriptionConsumer.accept(s);
 				}
-				else {
-					s.request(Long.MAX_VALUE);
+				catch (Throwable t) {
+					Exceptions.throwIfFatal(t);
+					s.cancel();
+					onError(t);
 				}
 			}
-			catch (Throwable t) {
-				Exceptions.throwIfFatal(t);
-				s.cancel();
-				onError(t);
+			else {
+				s.request(Long.MAX_VALUE);
 			}
 		}
 	}

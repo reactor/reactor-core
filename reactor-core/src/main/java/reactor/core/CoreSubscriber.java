@@ -23,6 +23,8 @@ import reactor.util.context.Context;
 /**
  * A {@link Context} aware subscriber which has relaxed rules for §1.3 and §3.9
  * compared to the original {@link org.reactivestreams.Subscriber} from Reactive Streams.
+ * If an invalid request {@code <= 0} is done on the received subscription, the request
+ * will not produce an onError and will simply be ignored.
  *
  * <p>
  * The rule relaxation has been initially established under reactive-streams-commons.
@@ -47,6 +49,10 @@ public interface CoreSubscriber<T> extends Subscriber<T> {
 	 * Implementors should initialize any state used by {@link #onNext(Object)} before
 	 * calling {@link Subscription#request(long)}. Should further {@code onNext} related
 	 * state modification occur, thread-safety will be required.
+	 * <p>
+	 *    Note that an invalid request {@code <= 0} will not produce an onError and
+	 *    will simply be ignored or reported through a debug-enabled
+	 *    {@link reactor.util.Logger}.
 	 *
 	 * {@inheritDoc}
 	 */
