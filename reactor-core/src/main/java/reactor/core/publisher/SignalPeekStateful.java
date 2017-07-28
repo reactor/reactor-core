@@ -37,14 +37,6 @@ import javax.annotation.Nullable;
 interface SignalPeekStateful<T, S> extends Scannable {
 
 	/**
-	 * A consumer that will observe {@link Subscriber#onSubscribe(Subscription)}
-	 *
-	 * @return A consumer that will observe {@link Subscriber#onSubscribe(Subscription)}
-	 */
-	@Nullable
-	BiConsumer<? super Subscription, S> onSubscribeCall();
-
-	/**
 	 * A consumer that will observe {@link Subscriber#onNext(Object)}
 	 *
 	 * @return A consumer that will observe {@link Subscriber#onNext(Object)}
@@ -67,29 +59,5 @@ interface SignalPeekStateful<T, S> extends Scannable {
 	 */
 	@Nullable
 	Consumer<S> onCompleteCall();
-
-	/**
-	 * A task will run after termination via {@link Subscriber#onComplete()} or {@link Subscriber#onError(Throwable)}
-	 *
-	 * @return A task will run after termination via {@link Subscriber#onComplete()} or {@link Subscriber#onError(Throwable)}
-	 */
-	@Nullable
-	Consumer<S> onAfterTerminateCall();
-
-	/**
-	 * A consumer of long that will observe {@link Subscription#request(long)}}
-	 *
-	 * @return A consumer of long that will observe {@link Subscription#request(long)}}
-	 */
-	@Nullable
-	BiConsumer<Long, S> onRequestCall();
-
-	/**
-	 * A task that will run on {@link Subscription#cancel()}
-	 *
-	 * @return A task that will run on {@link Subscription#cancel()}
-	 */
-	@Nullable
-	Consumer<S> onCancelCall();
 
 }

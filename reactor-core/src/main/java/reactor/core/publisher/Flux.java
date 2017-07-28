@@ -3506,13 +3506,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Flux<T> doOnEach(Consumer<? super Signal<T>> signalConsumer) {
 		Objects.requireNonNull(signalConsumer, "signalConsumer");
-		return doOnSignalStateful(this,
-				MutableNextSignal::<T>undefined,
-				null,
+
+		return onAssembly(new FluxPeekStateful<>(this,
+				MutableNextSignal.<T>supplier(),
 				(v, s) -> signalConsumer.accept(s.mutate(v)),
 				(e, s) -> signalConsumer.accept(Signal.error(e)),
-				s -> signalConsumer.accept(Signal.complete()),
-				null, null, null);
+				s -> signalConsumer.accept(Signal.complete())));
 	}
 
 	/**
@@ -3587,6 +3586,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Add behavior (side-effect) triggering a {@link LongConsumer} when this {@link Flux}
 	 * receives any request.
+	 * <p>
+	 *     Note that non fatal error raised in the callback will not be propagated and
+	 *     will simply trigger {@link Operators#onOperatorError(Throwable)}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/doonrequest.png" alt="">
@@ -7548,32 +7550,6 @@ public abstract class Flux<T> implements Publisher<T> {
 				onRequest,
 				onCancel));
 	}
-
-	/**
-	 * Peek into a sequence signals while passing around a per-subscriber
-	 * state object initialized by {@code stateSeeder} to the various callbacks
-	 */
-	static <T,S> Flux<T> doOnSignalStateful(Flux<T> source,
-			Supplier<S> stateSeeder,
-			@Nullable BiConsumer<? super Subscription, S> onSubscribe,
-			@Nullable BiConsumer<? super T, S> onNext,
-			@Nullable BiConsumer<? super Throwable, S> onError,
-			@Nullable Consumer<S> onComplete,
-			@Nullable Consumer<S> onAfterTerminate,
-			@Nullable BiConsumer<Long, S> onRequest,
-			@Nullable Consumer<S> onCancel) {
-		//TODO Fuseable version?
-		return onAssembly(new FluxPeekStateful<>(source,
-				stateSeeder,
-				onSubscribe,
-				onNext,
-				onError,
-				onComplete,
-				onAfterTerminate,
-				onRequest,
-				onCancel));
-	}
-
 
 	/**
 	 * Returns the appropriate Mono instance for a known Supplier Flux.

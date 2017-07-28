@@ -43,38 +43,22 @@ final class FluxPeekStateful<T, S> extends FluxOperator<T, T>
 
 	final Supplier<S> stateSeeder;
 
-	final BiConsumer<? super Subscription, S> onSubscribeCall;
-
 	final BiConsumer<? super T, S> onNextCall;
 
 	final BiConsumer<? super Throwable, S> onErrorCall;
 
 	final Consumer<S> onCompleteCall;
 
-	final Consumer<S> onAfterTerminateCall;
-
-	final BiConsumer<Long, S> onRequestCall;
-
-	final Consumer<S> onCancelCall;
-
 	FluxPeekStateful(Flux<? extends T> source,
 			Supplier<S> stateSeeder,
-			@Nullable BiConsumer<? super Subscription, S> onSubscribeCall,
-			@Nullable BiConsumer<? super T, S> onNextCall,
-			@Nullable BiConsumer<? super Throwable, S> onErrorCall,
-			@Nullable Consumer<S> onCompleteCall,
-			@Nullable Consumer<S> onAfterTerminateCall,
-			@Nullable BiConsumer<Long, S> onRequestCall,
-			@Nullable Consumer<S> onCancelCall) {
+			BiConsumer<? super T, S> onNextCall,
+			BiConsumer<? super Throwable, S> onErrorCall,
+			Consumer<S> onCompleteCall) {
 		super(source);
 		this.stateSeeder = stateSeeder;
-		this.onSubscribeCall = onSubscribeCall;
 		this.onNextCall = onNextCall;
 		this.onErrorCall = onErrorCall;
 		this.onCompleteCall = onCompleteCall;
-		this.onAfterTerminateCall = onAfterTerminateCall;
-		this.onRequestCall = onRequestCall;
-		this.onCancelCall = onCancelCall;
 	}
 
 	@Override
@@ -104,57 +88,28 @@ final class FluxPeekStateful<T, S> extends FluxOperator<T, T>
 		}
 
 		@Override
+		public void request(long n) {
+			s.request(n);
+		}
+
+		@Override
+		public void cancel() {
+			s.cancel();
+		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			this.s = s;
+			actual.onSubscribe(s);
+		}
+
+		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 
 			return InnerOperator.super.scanUnsafe(key);
-		}
-
-		@Override
-		public void request(long n) {
-			if(parent.onRequestCall() != null) {
-				try {
-					//noinspection ConstantConditions
-					parent.onRequestCall().accept(n, state);
-				}
-				catch (Throwable e) {
-					Operators.onOperatorError(e);
-				}
-			}
-			s.request(n);
-		}
-
-		@Override
-		public void cancel() {
-			if(parent.onCancelCall() != null) {
-				try {
-					//noinspection ConstantConditions
-					parent.onCancelCall().accept(state);
-				}
-				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e));
-					return;
-				}
-			}
-			s.cancel();
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if(parent.onSubscribeCall() != null) {
-				try {
-					//noinspection ConstantConditions
-					parent.onSubscribeCall().accept(s, state);
-				}
-				catch (Throwable e) {
-					Operators.error(actual, Operators.onOperatorError(s, e));
-					return;
-				}
-			}
-			this.s = s;
-			actual.onSubscribe(this);
 		}
 
 		@Override
@@ -205,19 +160,6 @@ final class FluxPeekStateful<T, S> extends FluxOperator<T, T>
 				}
 				//ignore if missing callback
 			}
-
-			if(parent.onAfterTerminateCall() != null) {
-				try {
-					//noinspection ConstantConditions
-					parent.onAfterTerminateCall().accept(state);
-				}
-				catch (Throwable e) {
-					//don't invoke error callback, see https://github.com/reactor/reactor-core/issues/270
-					Exceptions.throwIfFatal(e);
-					Throwable _e = Operators.onOperatorError(null, e, t);
-					Operators.onErrorDropped(_e);
-				}
-			}
 		}
 
 		@Override
@@ -238,19 +180,6 @@ final class FluxPeekStateful<T, S> extends FluxOperator<T, T>
 			done = true;
 
 			actual.onComplete();
-
-			if(parent.onAfterTerminateCall() != null) {
-				try {
-					//noinspection ConstantConditions
-					parent.onAfterTerminateCall().accept(state);
-				}
-				catch (Throwable e) {
-					//don't invoke error callback, see https://github.com/reactor/reactor-core/issues/270
-					Exceptions.throwIfFatal(e);
-					Throwable _e = Operators.onOperatorError(e);
-					Operators.onErrorDropped(_e);
-				}
-			}
 		}
 
 		@Override
@@ -258,12 +187,6 @@ final class FluxPeekStateful<T, S> extends FluxOperator<T, T>
 			return actual;
 		}
 
-	}
-
-	@Override
-	@Nullable
-	public BiConsumer<? super Subscription, S> onSubscribeCall() {
-		return onSubscribeCall;
 	}
 
 	@Override
@@ -282,23 +205,5 @@ final class FluxPeekStateful<T, S> extends FluxOperator<T, T>
 	@Nullable
 	public Consumer<S> onCompleteCall() {
 		return onCompleteCall;
-	}
-
-	@Override
-	@Nullable
-	public Consumer<S> onAfterTerminateCall() {
-		return onAfterTerminateCall;
-	}
-
-	@Override
-	@Nullable
-	public BiConsumer<Long, S> onRequestCall() {
-		return onRequestCall;
-	}
-
-	@Override
-	@Nullable
-	public Consumer<S> onCancelCall() {
-		return onCancelCall;
 	}
 }

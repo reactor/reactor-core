@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import java.util.function.Supplier;
+
 import org.reactivestreams.Subscription;
 import javax.annotation.Nullable;
 
@@ -52,7 +54,7 @@ public class MutableNextSignal<T> extends Signal<T> {
 		return new MutableNextSignal<>(value);
 	}
 
-	private T t;
+	T t;
 
 	MutableNextSignal(@Nullable T t) {
 		this.t = t;
@@ -93,4 +95,11 @@ public class MutableNextSignal<T> extends Signal<T> {
 		this.t = newT;
 		return this;
 	}
+
+	@SuppressWarnings("unchecked")
+	static <S> Supplier<MutableNextSignal<S>> supplier() {
+		return (Supplier<MutableNextSignal<S>>)SUPPLIER;
+	}
+
+	static final Supplier SUPPLIER = MutableNextSignal::undefined;
 }
