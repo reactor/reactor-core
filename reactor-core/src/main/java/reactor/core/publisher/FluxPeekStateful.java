@@ -120,8 +120,7 @@ final class FluxPeekStateful<T, S> extends FluxOperator<T, T>
 					parent.onRequestCall().accept(n, state);
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e));
-					return;
+					Operators.onOperatorError(e);
 				}
 			}
 			s.request(n);
