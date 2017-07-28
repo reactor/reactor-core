@@ -210,15 +210,11 @@ public abstract class BaseSubscriber<T> implements CoreSubscriber<T>, Subscripti
 
 	@Override
 	public final void request(long n) {
-		try {
-			Operators.checkRequest(n);
+		if (Operators.validate(n)) {
 			Subscription s = this.subscription;
 			if (s != null) {
 				s.request(n);
 			}
-		}
-		catch (Throwable throwable) {
-			onError(Operators.onOperatorError(throwable));
 		}
 	}
 

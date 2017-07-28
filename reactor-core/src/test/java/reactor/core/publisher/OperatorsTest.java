@@ -131,48 +131,6 @@ public class OperatorsTest {
 		es.request(-1);
 	}
 
-	@Test //TODO review use of checkRequest
-	public void checkRequestThrow(){
-		Operators.checkRequest(1);
-
-		try{
-			Operators.checkRequest(0);
-			Assert.fail();
-		}
-		catch (IllegalArgumentException iae){
-			assertThat(iae).hasMessage(Exceptions.nullOrNegativeRequestException(0)
-			                                     .getMessage());
-		}
-
-		try{
-			Operators.checkRequest(-1);
-			Assert.fail();
-		}
-		catch (IllegalArgumentException iae){
-			assertThat(iae).hasMessage(Exceptions.nullOrNegativeRequestException(-1)
-			                                     .getMessage());
-		}
-	}
-
-	@Test //TODO review use of checkRequest
-	public void checkRequestErrorSubscriber(){
-		DirectProcessor<Void> p = DirectProcessor.create();
-
-		assertThat(Operators.checkRequest(1, null)).isTrue();
-
-		assertThat(Operators.checkRequest(1, p)).isTrue();
-		assertThat(p.getError()).isNull();
-
-		assertThat(Operators.checkRequest(0, p)).isFalse();
-		assertThat(p.getError()).hasMessage(Exceptions.nullOrNegativeRequestException(0)
-		                                               .getMessage());
-
-		p = DirectProcessor.create();
-		assertThat(Operators.checkRequest(-1, p)).isFalse();
-		assertThat(p.getError()).hasMessage(Exceptions.nullOrNegativeRequestException(-1)
-		                                              .getMessage());
-	}
-
 	@Test
 	public void noopFluxCancelled(){
 		Disposables.DISPOSED.dispose(); //noop

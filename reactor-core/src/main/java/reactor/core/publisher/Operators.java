@@ -117,41 +117,6 @@ public abstract class Operators {
 	}
 
 	/**
-	 * Throws an exception if request is 0 or negative as specified in rule 3.09 of Reactive Streams
-	 *
-	 * @param n demand to check
-	 * @throws IllegalArgumentException the nullOrNegativeRequestException instance
-	 */
-	public static void checkRequest(long n) throws IllegalArgumentException {
-		if (n <= 0L) {
-			throw Exceptions.nullOrNegativeRequestException(n);
-		}
-	}
-
-	/**
-	 * Propagate an exception to a subscriber if request is 0 or negative,
-	 * as specified in rule 3.09 of Reactive Streams
-	 *
-	 * @param n          demand to check
-	 * @param subscriber Subscriber to onError if non strict positive n
-	 *
-	 * @return true if valid or false if specification exception occurred
-	 *
-	 * @throws IllegalArgumentException if subscriber is null and demand is negative or 0.
-	 */
-	public static boolean checkRequest(long n, @Nullable Subscriber<?> subscriber) {
-		if(subscriber == null){
-			checkRequest(n);
-			return true;
-		}
-		if (n <= 0L) {
-			subscriber.onError(Exceptions.nullOrNegativeRequestException(n));
-			return false;
-		}
-		return true;
-	}
-
-	/**
 	 * Calls onSubscribe on the target Subscriber with the empty instance followed by a call to onComplete.
 	 *
 	 * @param s the target subscriber
@@ -411,9 +376,7 @@ public abstract class Operators {
 	@SuppressWarnings("unchecked")
 	public static <T> CoreSubscriber<? super T> onNewSubscriber(Publisher<? extends T> source, Subscriber<? super T> actual) {
 
-		if(actual == null){
-			throw Exceptions.argumentIsNullException();
-		}
+		Objects.requireNonNull(actual, "actual");
 
 		BiFunction<? super Publisher<?>, ? super CoreSubscriber<?>, ? extends CoreSubscriber<?>> hook =
 				Hooks.onSubscriberHook;
@@ -486,27 +449,36 @@ public abstract class Operators {
 	}
 
 	/**
-	 * Throw an {@link IllegalArgumentException} if the request is null or negative.
+	 * Log an {@link IllegalArgumentException} if the request is null or negative.
 	 *
-	 * @param n the demand to evaluate
+	 * @param n the failing demand
+	 *
 	 * @see Exceptions#nullOrNegativeRequestException(long)
 	 */
 	public static void reportBadRequest(long n) {
-		throw Exceptions.nullOrNegativeRequestException(n);
+		if (log.isDebugEnabled()) {
+			log.debug("Negative request",
+					Exceptions.nullOrNegativeRequestException(n));
+		}
 	}
 
 	/**
-	 * Throw an {@link IllegalStateException} that indicates more than the requested
+	 * Log an {@link IllegalStateException} that indicates more than the requested
 	 * amount was produced.
 	 *
 	 * @see Exceptions#failWithOverflow()
 	 */
 	public static void reportMoreProduced() {
-		throw Exceptions.failWithOverflow();
+		if (log.isDebugEnabled()) {
+			log.debug("More data produced than requested",
+					Exceptions.failWithOverflow());
+		}
 	}
 
 	/**
 	 * Log a {@link Exceptions#duplicateOnSubscribeException() duplicate subscription} error.
+	 *
+	 * @see Exceptions#duplicateOnSubscribeException()
 	 */
 	public static void reportSubscriptionSet() {
 		if (log.isDebugEnabled()) {
@@ -683,11 +655,9 @@ public abstract class Operators {
 	 * @return true if valid
 	 */
 	public static boolean validate(long n) {
-		if (n == 0) {
+		if (n <= 0) {
+			reportBadRequest(n);
 			return false;
-		}
-		if (n < 0) {
-			reportBadRequest(n); //log instead of failure?
 		}
 		return true;
 	}
