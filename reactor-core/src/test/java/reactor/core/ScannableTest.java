@@ -93,9 +93,23 @@ public class ScannableTest {
 	public void namedFluxTest() {
 		Flux<Integer> named1 =
 				Flux.range(1, 10)
-				    .flatMap(i -> Flux.range(100, i))
-				    .name("100s")
-				    .hide();
+				    .name("100s");
+
+		Flux<Integer> named2 = named1.filter(i -> i % 3 == 0)
+		                             .name("multiple of 3 100s")
+		                             .hide();
+
+		assertThat(Scannable.from(named1).name()).isEqualTo("100s");
+		assertThat(Scannable.from(named2).name()).isEqualTo("multiple of 3 100s");
+	}
+
+
+	@Test
+	public void namedHideFluxTest() {
+		Flux<Integer> named1 =
+				Flux.range(1, 10)
+				    .hide()
+				    .name("100s");
 
 		Flux<Integer> named2 = named1.filter(i -> i % 3 == 0)
 		                             .name("multiple of 3 100s")
@@ -109,10 +123,24 @@ public class ScannableTest {
 	public void namedOverridenFluxTest() {
 		Flux<Integer> named1 =
 				Flux.range(1, 10)
-				    .flatMap(i -> Flux.range(100, i))
 				    .name("1s")
-				    .name("100s")
-				    .hide();
+				    .name("100s");
+
+		Flux<Integer> named2 = named1.filter(i -> i % 3 == 0)
+		                             .name("multiple of 3 100s")
+		                             .hide();
+
+		assertThat(Scannable.from(named1).name()).isEqualTo("100s");
+		assertThat(Scannable.from(named2).name()).isEqualTo("multiple of 3 100s");
+	}
+
+	@Test
+	public void namedOverridenHideFluxTest() {
+		Flux<Integer> named1 =
+				Flux.range(1, 10)
+				    .hide()
+				    .name("1s")
+				    .name("100s");
 
 		Flux<Integer> named2 = named1.filter(i -> i % 3 == 0)
 		                             .name("multiple of 3 100s")
@@ -126,9 +154,26 @@ public class ScannableTest {
 	public void taggedFluxTest() {
 		Flux<Integer> tagged1 =
 				Flux.range(1, 10)
-				    .flatMap(i -> Flux.range(100, i))
-				    .tag("1", "One")
-				    .hide();
+				    .tag("1", "One");
+
+
+		Flux<Integer> tagged2 = tagged1.filter(i -> i % 3 == 0)
+		                               .tag("2", "Two")
+		                               .hide();
+
+		assertThat(Scannable.from(tagged1).tags())
+				.containsExactlyInAnyOrder(Tuples.of("1", "One"));
+
+		assertThat(Scannable.from(tagged2).tags())
+				.containsExactlyInAnyOrder(Tuples.of("1", "One"), Tuples.of( "2", "Two"));
+	}
+
+	@Test
+	public void taggedHideFluxTest() {
+		Flux<Integer> tagged1 =
+				Flux.range(1, 10)
+				    .hide()
+				    .tag("1", "One");
 
 
 		Flux<Integer> tagged2 = tagged1.filter(i -> i % 3 == 0)
@@ -146,10 +191,20 @@ public class ScannableTest {
 	public void taggedAppendedFluxTest() {
 		Flux<Integer> tagged1 =
 				Flux.range(1, 10)
-				    .flatMap(i -> Flux.range(100, i))
 				    .tag("1", "One")
-				    .tag("2", "Two")
-				    .hide();
+				    .tag("2", "Two");
+
+		assertThat(Scannable.from(tagged1).tags())
+				.containsExactlyInAnyOrder(Tuples.of("1", "One"), Tuples.of( "2", "Two"));
+	}
+
+	@Test
+	public void taggedAppendedHideFluxTest() {
+		Flux<Integer> tagged1 =
+				Flux.range(1, 10)
+				    .hide()
+				    .tag("1", "One")
+				    .tag("2", "Two");
 
 		assertThat(Scannable.from(tagged1).tags())
 				.containsExactlyInAnyOrder(Tuples.of("1", "One"), Tuples.of( "2", "Two"));
