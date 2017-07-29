@@ -23,6 +23,7 @@ import java.util.Set;
 import javax.annotation.Nullable;
 
 import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
@@ -48,6 +49,13 @@ public class FluxNamed<T> extends FluxOperator<T, T> {
 			FluxNamed<T> s = (FluxNamed<T>) source;
 			return new FluxNamed<>(s.source, name, s.tags);
 		}
+		if (source instanceof FluxNamedFuseable) {
+			FluxNamedFuseable<T> s = (FluxNamedFuseable<T>) source;
+			return new FluxNamedFuseable<>(s.source, name, s.tags);
+		}
+		if (source instanceof Fuseable) {
+			return new FluxNamedFuseable<>(source, name, null);
+		}
 		return new FluxNamed<>(source, name, null);
 	}
 
@@ -65,6 +73,17 @@ public class FluxNamed<T> extends FluxOperator<T, T> {
 				tags.addAll(s.tags);
 			}
 			return new FluxNamed<>(s.source, s.name, tags);
+		}
+		if (source instanceof FluxNamedFuseable) {
+			FluxNamedFuseable<T> s = (FluxNamedFuseable<T>) source;
+			if (s.tags != null) {
+				tags = new HashSet<>(tags);
+				tags.addAll(s.tags);
+			}
+			return new FluxNamedFuseable<>(s.source, s.name, tags);
+		}
+		if (source instanceof Fuseable) {
+			return new FluxNamedFuseable<>(source, null, tags);
 		}
 		return new FluxNamed<>(source, null, tags);
 	}
