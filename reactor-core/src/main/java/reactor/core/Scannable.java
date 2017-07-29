@@ -25,6 +25,8 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
 
+import reactor.util.function.Tuple2;
+
 /**
  * A Scannable component exposes state in a non strictly memory consistent way and
  * results should be understood as best-effort hint of the underlying state. This is
@@ -117,6 +119,11 @@ public interface Scannable {
 		public static final Attr<Long> LARGE_BUFFERED = new Attr<>(null);
 
 		/**
+		 * An arbitrary name given to the operator component. Defaults to {@literal null}.
+		 */
+		public static final Attr<String> NAME = new Attr<>(null);
+
+		/**
 		 * Parent key exposes the direct upstream relationship of the scanned component.
 		 * It can be a Publisher source to an operator, a Subscription to a Subscriber
 		 * (main flow if ambiguous with inner Subscriptions like flatMap), a Scheduler to
@@ -153,6 +160,12 @@ public interface Scannable {
 		public static final Attr<Boolean> TERMINATED = new Attr<>(false);
 
 		/**
+		 * A {@link Set} of {@link reactor.util.function.Tuple2} representing key/value
+		 * pairs for tagged components. Defaults to {@literal null}.
+		 */
+		public static final Attr<Set<Tuple2<String, String>>> TAGS = new Attr<>(null);
+
+		/**
 		 * Meaningful and always applicable default value for the attribute, returned
 		 * instead of {@literal null} when a specific value hasn't been defined for a
 		 * component. {@literal null} if no sensible generic default is available.
@@ -163,9 +176,6 @@ public interface Scannable {
 		public T defaultValue(){
 			return defaultValue;
 		}
-
-		public static final GenericAttr<String> NAME = new GenericAttr<>(null);
-		public static final GenericAttr<Set<String>> TAGS = new GenericAttr<>(null);
 
 		final T defaultValue;
 
@@ -270,41 +280,22 @@ public interface Scannable {
 	}
 
 	/**
-	 * Visit this {@link Scannable} and its {@link #parents()} and aggregate a {@link Set}
-	 * of tags..
-	 *
-	 * @return the tags for this Scannable and its parents
-	 */
-	default Set<String> tags() {
-		final Set<String> allTags = new HashSet<>();
-		Set<String> thisTags = this.scan(GenericAttr.TAGS);
-		if (thisTags != null) {
-			allTags.addAll(thisTags);
-		}
-
-		return parents()
-				.map(s -> s.scan(GenericAttr.TAGS))
-				.filter(Objects::nonNull)
-				.collect(() -> allTags, Set::addAll, Set::addAll);
-	}
-
-	/**
 	 * Check this {@link Scannable}e and its {@link #parents()} for a name an return the
 	 * first one that is reachable.
 	 *
 	 * @return the name of the first parent that has one defined (including this scannable)
 	 */
 	default String name() {
-		String thisName = this.scan(GenericAttr.NAME);
+		String thisName = this.scan(Attr.NAME);
 		if (thisName != null) {
 			return thisName;
 		}
 
 		return parents()
-				.map(s -> s.scan(GenericAttr.NAME))
+				.map(s -> s.scan(Attr.NAME))
 				.filter(Objects::nonNull)
 				.findFirst()
-				.orElse(null);
+				.orElse(toString());
 	}
 
 	/**
@@ -380,6 +371,25 @@ public interface Scannable {
 			return defaultValue;
 		}
 		return v;
+	}
+
+	/**
+	 * Visit this {@link Scannable} and its {@link #parents()} and aggregate a {@link Set}
+	 * of tags..
+	 *
+	 * @return the tags for this Scannable and its parents
+	 */
+	default Set<Tuple2<String, String>> tags() {
+		final Set<Tuple2<String, String>> allTags = new HashSet<>();
+		Set<Tuple2<String, String>> thisTags = this.scan(Attr.TAGS);
+		if (thisTags != null) {
+			allTags.addAll(thisTags);
+		}
+
+		return parents()
+				.map(s -> s.scan(Attr.TAGS))
+				.filter(Objects::nonNull)
+				.collect(() -> allTags, Set::addAll, Set::addAll);
 	}
 
 }
