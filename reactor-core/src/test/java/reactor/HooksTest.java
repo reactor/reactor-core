@@ -244,10 +244,10 @@ public class HooksTest {
 		simpleFlux();
 
 		assertThat(q.toArray()).containsExactly(
-				"FluxJust: 1", "{ \"operator\" : \"MapFuseable\" }: 2",
-				"{ \"operator\" : \"PeekFuseable\" }! false",
-				"{ \"operator\" : \"CollectList\" }! true", "MonoJust: [2]",
-				"{ \"operator\" : \"OnErrorResume\" }: [2]");
+				"FluxJust: 1", "FluxMapFuseable: 2",
+				"FluxPeekFuseable! false",
+				"MonoCollectList! true", "MonoJust: [2]",
+				"MonoOnErrorResume: [2]");
 
 		q.clear();
 		Hooks.resetOnOperator();
@@ -262,10 +262,10 @@ public class HooksTest {
 		simpleFlux();
 
 		assertThat(q.toArray()).containsExactly(
-				"FluxJust: 1", "{ \"operator\" : \"MapFuseable\" }: 2",
-				"{ \"operator\" : \"PeekFuseable\" }! false",
-				"{ \"operator\" : \"CollectList\" }! false", "MonoJust: [2]",
-				"{ \"operator\" : \"OnErrorResume\" }: [2]");
+				"FluxJust: 1", "FluxMapFuseable: 2",
+				"FluxPeekFuseable! false",
+				"MonoCollectList! false", "MonoJust: [2]",
+				"MonoOnErrorResume: [2]");
 
 		q.clear();
 		Hooks.resetOnOperator();

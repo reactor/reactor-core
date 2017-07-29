@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,96 +16,85 @@
 
 package reactor.core.publisher;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 import javax.annotation.Nullable;
 
-import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 /**
- * An operator that just bears a set of tags, which can be retrieved via the {@link reactor.core.Scannable.GenericAttr#TAGS TAGS}
+ * An operator that just bears a name or a set of tags, which can be retrieved via the
+ * {@link reactor.core.Scannable.Attr#TAGS TAGS}
  * attribute.
  *
  * @author Simon Baslé
+ * @author Stephane Maldini
  */
 public class FluxNamed<T> extends FluxOperator<T, T> {
 
 	final String name;
 
-	FluxNamed(Flux<? extends T> source, String name) {
+	final Set<Tuple2<String, String>> tags;
+
+	@SuppressWarnings("unchecked")
+	static <T> Flux<T> createOrAppend(Flux<T> source, String name) {
+		Objects.requireNonNull(name, "name");
+
+		if (source instanceof FluxNamed) {
+			FluxNamed<T> s = (FluxNamed<T>) source;
+			return new FluxNamed<>(s.source, name, s.tags);
+		}
+		return new FluxNamed<>(source, name, null);
+	}
+
+	@SuppressWarnings("unchecked")
+	static <T> Flux<T> createOrAppend(Flux<T> source, String tagName, String tagValue) {
+		Objects.requireNonNull(tagName, "tagName");
+		Objects.requireNonNull(tagValue, "tagValue");
+
+		Set<Tuple2<String, String>> tags = Collections.singleton(Tuples.of(tagName, tagValue));
+
+		if (source instanceof FluxNamed) {
+			FluxNamed<T> s = (FluxNamed<T>) source;
+			if(s.tags != null) {
+				tags = new HashSet<>(tags);
+				tags.addAll(s.tags);
+			}
+			return new FluxNamed<>(s.source, s.name, tags);
+		}
+		return new FluxNamed<>(source, null, tags);
+	}
+
+	FluxNamed(Flux<? extends T> source,
+			@Nullable String name,
+			@Nullable Set<Tuple2<String, String>> tags) {
 		super(source);
-		this.name = Objects.requireNonNull(name, "name");
+		this.name = name;
+		this.tags = tags;
 	}
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		source.subscribe(new NameSubscriber<>(actual, this.name));
+		source.subscribe(actual);
 	}
 
 	@Nullable
 	@Override
 	public Object scanUnsafe(Attr key) {
-		if (key == GenericAttr.NAME) return name;
+		if (key == Attr.NAME) {
+			return name;
+		}
+
+		if (key == Attr.TAGS) {
+			return tags;
+		}
 
 		return super.scanUnsafe(key);
 	}
 
-	static final class NameSubscriber<T> implements InnerOperator<T, T> {
 
-		final CoreSubscriber<? super T> actual;
-		final String name;
-
-		Subscription s;
-
-		NameSubscriber(CoreSubscriber<? super T> actual, String name) {
-			this.actual = actual;
-			this.name = name;
-		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if(Operators.validate(this.s, s)) {
-				this.s = s;
-				actual.onSubscribe(this);
-			}
-		}
-
-		@Nullable
-		@Override
-		public Object scanUnsafe(Attr key) {
-			if (key == GenericAttr.NAME) return name;
-
-			return InnerOperator.super.scanUnsafe(key);
-		}
-
-		@Override
-		public void onNext(T t) {
-			actual.onNext(t);
-		}
-
-		@Override
-		public void onError(Throwable t) {
-			actual.onError(t);
-		}
-
-		@Override
-		public void onComplete() {
-			actual.onComplete();
-		}
-
-		@Override
-		public CoreSubscriber<? super T> actual() {
-			return actual;
-		}
-
-		@Override
-		public void request(long n) {
-			s.request(n);
-		}
-
-		@Override
-		public void cancel() {
-			s.cancel();
-		}
-	}
 }

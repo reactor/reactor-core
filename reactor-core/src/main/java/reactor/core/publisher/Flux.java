@@ -1378,17 +1378,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Give a name to this sequence, which can be retrieved using {@link Scannable#name()}
-	 * as long as this is the first reachable {@link Scannable#parents()}.
-	 *
-	 * @param name a name for the sequence
-	 * @return the same sequence, but bearing a name
-	 */
-	public final Flux<T> namedAs(String name) {
-		return onAssembly(new FluxNamed<>(this, name));
-	}
-
-	/**
 	 * Create a {@link Flux} that will never signal any data, error or completion signal.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/never.png" alt="">
@@ -4712,6 +4701,17 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Give a name to this sequence, which can be retrieved using {@link Scannable#name()}
+	 * as long as this is the first reachable {@link Scannable#parents()}.
+	 *
+	 * @param name a name for the sequence
+	 * @return the same sequence, but bearing a name
+	 */
+	public final Flux<T> name(String name) {
+		return FluxNamed.createOrAppend(this, name);
+	}
+
+	/**
 	 * Emit only the first item emitted by this {@link Flux}, into a new {@link Mono}.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/next.png" alt="">
@@ -6458,18 +6458,17 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Put one or more tags on a sequence. These can be retrieved as a {@link Set} of all
-	 * tags throughout the reactive chain by using {@link Scannable#tags()} (as traversed
+	 * Tag this flux with a key/value pair. These can be retrieved as a {@link Set} of
+	 * all tags throughout the publisher chain by using {@link Scannable#tags()} (as
+	 * traversed
 	 * by {@link Scannable#parents()}).
 	 *
-	 * @param tags one or more tags for the sequence (case-sensitive)
+	 * @param key a tag key
+	 * @param value a tag value
 	 * @return the same sequence, but bearing tags
 	 */
-	public final Flux<T> taggedAs(String... tags) {
-		if (tags == null || tags.length == 0) {
-			return this;
-		}
-		return onAssembly(new FluxTagged<>(this, tags));
+	public final Flux<T> tag(String key, String value) {
+		return FluxNamed.createOrAppend(this, key, value);
 	}
 
 	/**

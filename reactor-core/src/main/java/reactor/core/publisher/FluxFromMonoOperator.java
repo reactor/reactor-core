@@ -43,20 +43,6 @@ abstract class FluxFromMonoOperator<I, O> extends Flux<O> implements Scannable {
 	}
 
 	@Override
-	public String toString() {
-		StringBuilder sb = new StringBuilder();
-		return sb.append('{')
-		         .append(" \"operator\" : ")
-		         .append('"')
-		         .append(getClass().getSimpleName()
-		                           .replaceAll("Flux", ""))
-		         .append('"')
-		         .append(' ')
-		         .append('}')
-		         .toString();
-	}
-
-	@Override
 	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return getPrefetch();
