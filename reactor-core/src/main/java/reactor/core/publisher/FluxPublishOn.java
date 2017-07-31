@@ -214,7 +214,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 
 		@Override
 		public void onNext(T t) {
-			if (t == null) {//async fusion
+			if (sourceMode == ASYNC) {
 				if (trySchedule() == Scheduler.REJECTED) {
 					throw Operators.onRejectedExecution(this, null, t);
 				}
@@ -697,7 +697,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 
 		@Override
 		public void onNext(T t) {
-			if (t == null) {//async fusion
+			if (sourceMode == ASYNC) {
 				if (trySchedule() == Scheduler.REJECTED) {
 					throw Operators.onRejectedExecution(this, null, null);
 				}
