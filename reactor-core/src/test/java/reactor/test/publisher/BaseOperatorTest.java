@@ -274,11 +274,12 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 			verifier.accept(this.inputHiddenErrorOutputConditional(scenario));
 			verifier.accept(this.inputConditionalError(scenario));
 			verifier.accept(this.inputConditionalErrorOutputConditional(scenario));
-			verifier.accept(this.inputFusedError(scenario));
-			verifier.accept(this.inputFusedErrorOutputFusedConditional(scenario));
 
 			scenario.shouldHitDropErrorHookAfterTerminate(false)
 			        .shouldHitDropNextHookAfterTerminate(false);
+
+			verifier.accept(this.inputFusedError(scenario));
+			verifier.accept(this.inputFusedErrorOutputFusedConditional(scenario));
 
 			if (scenario.prefetch() != -1 || (fusion & Fuseable.SYNC) != 0) {
 				verifier.accept(this.inputFusedSyncErrorOutputFusedSync(scenario));
