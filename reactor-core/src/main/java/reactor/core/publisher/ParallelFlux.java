@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -36,6 +37,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.Logger;
@@ -271,46 +273,23 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 		return merged;
 	}
 
-	static final <T> List<T> sortedMerger(List<T> a, List<T> b, Comparator<? super T> comparator) {
-		int n = a.size() + b.size();
-		if (n == 0) {
-			return new ArrayList<>();
-		}
-		List<T> both = new ArrayList<>(n);
 
-		Iterator<T> at = a.iterator();
-		Iterator<T> bt = b.iterator();
-
-		T s1 = at.hasNext() ? at.next() : null;
-		T s2 = bt.hasNext() ? bt.next() : null;
-
-		while (s1 != null && s2 != null) {
-			if (comparator.compare(s1, s2) < 0) { // s1 comes before s2
-				both.add(s1);
-				s1 = at.hasNext() ? at.next() : null;
-			}
-			else {
-				both.add(s2);
-				s2 = bt.hasNext() ? bt.next() : null;
-			}
-		}
-
-		if (s1 != null) {
-			both.add(s1);
-			while (at.hasNext()) {
-				both.add(at.next());
-			}
-		}
-		else if (s2 != null) {
-			both.add(s2);
-			while (bt.hasNext()) {
-				both.add(bt.next());
-			}
-		}
-
-		return both;
+	/**
+	 * Allows composing operators off the 'rails', as individual {@link GroupedFlux} instances keyed by
+	 * the zero based rail's index. The transformed groups are {@link Flux#parallel parallelized} back
+	 * once the transformation has been applied.
+	 * <p>
+	 * Note that like in {@link #groups()}, requests and cancellation compose through, and
+	 * cancelling only one rail may result in undefined behavior.
+	 *
+	 * @param composer the composition function to apply on each {@link GroupedFlux rail}
+	 * @param <U> the type of the resulting parallelized flux
+	 * @return a {@link ParallelFlux} of the composed groups
+	 */
+	public final <U> ParallelFlux<U> composeGroup(Function<? super GroupedFlux<Integer, T>,
+			? extends Publisher<? extends U>> composer) {
+		return from(groups().flatMap(composer::apply));
 	}
-
 
 	/**
 	 * Generates and concatenates Publishers on each 'rail', signalling errors immediately
@@ -717,7 +696,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 			SignalType... options) {
 		return onAssembly(new ParallelLog<>(this, new SignalLogger<>(this, category, level, showOperatorLine, options)));
 	}
-	
+
 	/**
 	 * Maps the source values on each 'rail' to another value.
 	 * <p>
@@ -732,6 +711,17 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	public final <U> ParallelFlux<U> map(Function<? super T, ? extends U> mapper) {
 		Objects.requireNonNull(mapper, "mapper");
 		return onAssembly(new ParallelMap<>(this, mapper));
+	}
+
+	/**
+	 * Give a name to this sequence, which can be retrieved using {@link Scannable#name()}
+	 * as long as this is the first reachable {@link Scannable#parents()}.
+	 *
+	 * @param name a name for the sequence
+	 * @return the same sequence, but bearing a name
+	 */
+	public final ParallelFlux<T> name(String name) {
+		return ParallelFluxName.createOrAppend(this, name);
 	}
 
 	/**
@@ -1003,6 +993,21 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Tag this ParallelFlux with a key/value pair. These can be retrieved as a
+	 * {@link Set} of
+	 * all tags throughout the publisher chain by using {@link Scannable#tags()} (as
+	 * traversed
+	 * by {@link Scannable#parents()}).
+	 *
+	 * @param key a tag key
+	 * @param value a tag value
+	 * @return the same sequence, but bearing tags
+	 */
+	public final ParallelFlux<T> tag(String key, String value) {
+		return ParallelFluxName.createOrAppend(this, key, value);
+	}
+
+	/**
 	 * Allows composing operators, in assembly time, on top of this {@link ParallelFlux}
 	 * and returns another {@link ParallelFlux} with composed features.
 	 *
@@ -1016,21 +1021,9 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 		return onAssembly(as(composer));
 	}
 
-	/**
-	 * Allows composing operators off the 'rails', as individual {@link GroupedFlux} instances keyed by
-	 * the zero based rail's index. The transformed groups are {@link Flux#parallel parallelized} back
-	 * once the transformation has been applied.
-	 * <p>
-	 * Note that like in {@link #groups()}, requests and cancellation compose through, and
-	 * cancelling only one rail may result in undefined behavior.
-	 *
-	 * @param composer the composition function to apply on each {@link GroupedFlux rail}
-	 * @param <U> the type of the resulting parallelized flux
-	 * @return a {@link ParallelFlux} of the composed groups
-	 */
-	public final <U> ParallelFlux<U> composeGroup(Function<? super GroupedFlux<Integer, T>,
-			? extends Publisher<? extends U>> composer) {
-		return from(groups().flatMap(composer::apply));
+	@Override
+	public String toString() {
+		return getClass().getSimpleName();
 	}
 
 	/**
@@ -1158,5 +1151,45 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 				onSubscribe,
 				onRequest,
 				onCancel));
+	}
+
+	static final <T> List<T> sortedMerger(List<T> a, List<T> b, Comparator<? super T> comparator) {
+		int n = a.size() + b.size();
+		if (n == 0) {
+			return new ArrayList<>();
+		}
+		List<T> both = new ArrayList<>(n);
+
+		Iterator<T> at = a.iterator();
+		Iterator<T> bt = b.iterator();
+
+		T s1 = at.hasNext() ? at.next() : null;
+		T s2 = bt.hasNext() ? bt.next() : null;
+
+		while (s1 != null && s2 != null) {
+			if (comparator.compare(s1, s2) < 0) { // s1 comes before s2
+				both.add(s1);
+				s1 = at.hasNext() ? at.next() : null;
+			}
+			else {
+				both.add(s2);
+				s2 = bt.hasNext() ? bt.next() : null;
+			}
+		}
+
+		if (s1 != null) {
+			both.add(s1);
+			while (at.hasNext()) {
+				both.add(at.next());
+			}
+		}
+		else if (s2 != null) {
+			both.add(s2);
+			while (bt.hasNext()) {
+				both.add(bt.next());
+			}
+		}
+
+		return both;
 	}
 }

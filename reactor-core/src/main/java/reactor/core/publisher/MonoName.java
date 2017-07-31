@@ -32,16 +32,62 @@ import reactor.util.function.Tuples;
  * {@link Attr#TAGS TAGS}
  * attribute.
  *
- * @author Simon Baslé
  * @author Stephane Maldini
  */
-public class FluxNamedFuseable<T> extends FluxOperator<T, T> implements Fuseable {
+public class MonoName<T> extends MonoOperator<T, T> {
 
 	final String name;
 
 	final Set<Tuple2<String, String>> tags;
 
-	FluxNamedFuseable(Flux<? extends T> source,
+	@SuppressWarnings("unchecked")
+	static <T> Mono<T> createOrAppend(Mono<T> source, String name) {
+		Objects.requireNonNull(name, "name");
+
+		if (source instanceof MonoName) {
+			MonoName<T> s = (MonoName<T>) source;
+			return new MonoName<>(s.source, name, s.tags);
+		}
+		if (source instanceof MonoNameFuseable) {
+			MonoNameFuseable<T> s = (MonoNameFuseable<T>) source;
+			return new MonoNameFuseable<>(s.source, name, s.tags);
+		}
+		if (source instanceof Fuseable) {
+			return new MonoNameFuseable<>(source, name, null);
+		}
+		return new MonoName<>(source, name, null);
+	}
+
+	@SuppressWarnings("unchecked")
+	static <T> Mono<T> createOrAppend(Mono<T> source, String tagName, String tagValue) {
+		Objects.requireNonNull(tagName, "tagName");
+		Objects.requireNonNull(tagValue, "tagValue");
+
+		Set<Tuple2<String, String>> tags = Collections.singleton(Tuples.of(tagName, tagValue));
+
+		if (source instanceof MonoName) {
+			MonoName<T> s = (MonoName<T>) source;
+			if(s.tags != null) {
+				tags = new HashSet<>(tags);
+				tags.addAll(s.tags);
+			}
+			return new MonoName<>(s.source, s.name, tags);
+		}
+		if (source instanceof MonoNameFuseable) {
+			MonoNameFuseable<T> s = (MonoNameFuseable<T>) source;
+			if (s.tags != null) {
+				tags = new HashSet<>(tags);
+				tags.addAll(s.tags);
+			}
+			return new MonoNameFuseable<>(s.source, s.name, tags);
+		}
+		if (source instanceof Fuseable) {
+			return new MonoNameFuseable<>(source, null, tags);
+		}
+		return new MonoName<>(source, null, tags);
+	}
+
+	MonoName(Mono<? extends T> source,
 			@Nullable String name,
 			@Nullable Set<Tuple2<String, String>> tags) {
 		super(source);

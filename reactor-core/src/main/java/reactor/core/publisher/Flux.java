@@ -4708,7 +4708,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return the same sequence, but bearing a name
 	 */
 	public final Flux<T> name(String name) {
-		return FluxNamed.createOrAppend(this, name);
+		return FluxName.createOrAppend(this, name);
 	}
 
 	/**
@@ -6478,7 +6478,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return the same sequence, but bearing tags
 	 */
 	public final Flux<T> tag(String key, String value) {
-		return FluxNamed.createOrAppend(this, key, value);
+		return FluxName.createOrAppend(this, key, value);
 	}
 
 	/**

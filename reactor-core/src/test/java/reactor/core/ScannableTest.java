@@ -18,6 +18,8 @@ package reactor.core;
 
 import org.junit.Test;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.publisher.ParallelFlux;
 import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -157,7 +159,7 @@ public class ScannableTest {
 
 		assertThat(Scannable.from(flux).name())
 				.isEqualTo(flux.toString())
-				.isEqualTo("FluxMapFuseable");
+				.isEqualTo("map");
 	}
 
 	@Test
@@ -219,4 +221,205 @@ public class ScannableTest {
 		assertThat(Scannable.from(tagged1).tags())
 				.containsExactlyInAnyOrder(Tuples.of("1", "One"), Tuples.of( "2", "Two"));
 	}
+
+	@Test
+	public void namedMonoTest() {
+		Mono<Integer> named1 =
+				Mono.just(1)
+				    .name("100s");
+
+		Mono<Integer> named2 = named1.filter(i -> i % 3 == 0)
+		                             .name("multiple of 3 100s")
+		                             .hide();
+
+		assertThat(Scannable.from(named1).name()).isEqualTo("100s");
+		assertThat(Scannable.from(named2).name()).isEqualTo("multiple of 3 100s");
+	}
+
+
+	@Test
+	public void namedHideMonoTest() {
+		Mono<Integer> named1 =
+				Mono.just(1)
+				    .hide()
+				    .name("100s");
+
+		Mono<Integer> named2 = named1.filter(i -> i % 3 == 0)
+		                             .name("multiple of 3 100s")
+		                             .hide();
+
+		assertThat(Scannable.from(named1).name()).isEqualTo("100s");
+		assertThat(Scannable.from(named2).name()).isEqualTo("multiple of 3 100s");
+	}
+
+	@Test
+	public void namedOverridenMonoTest() {
+		Mono<Integer> named1 =
+				Mono.just(1)
+				    .name("1s")
+				    .name("100s");
+
+		Mono<Integer> named2 = named1.filter(i -> i % 3 == 0)
+		                             .name("multiple of 3 100s")
+		                             .hide();
+
+		assertThat(Scannable.from(named1).name()).isEqualTo("100s");
+		assertThat(Scannable.from(named2).name()).isEqualTo("multiple of 3 100s");
+	}
+
+	@Test
+	public void namedOverridenHideMonoTest() {
+		Mono<Integer> named1 =
+				Mono.just(1)
+				    .hide()
+				    .name("1s")
+				    .name("100s");
+
+		Mono<Integer> named2 = named1.filter(i -> i % 3 == 0)
+		                             .name("multiple of 3 100s")
+		                             .hide();
+
+		assertThat(Scannable.from(named1).name()).isEqualTo("100s");
+		assertThat(Scannable.from(named2).name()).isEqualTo("multiple of 3 100s");
+	}
+
+	@Test
+	public void scannableNameMonoDefaultsToToString() {
+		final Mono<Integer> flux = Mono.just(1)
+		                               .map(i -> i + 10);
+
+		assertThat(Scannable.from(flux).name())
+				.isEqualTo(flux.toString())
+				.isEqualTo("map");
+	}
+
+	@Test
+	public void taggedMonoTest() {
+		Mono<Integer> tagged1 =
+				Mono.just(1)
+				    .tag("1", "One");
+
+
+		Mono<Integer> tagged2 = tagged1.filter(i -> i % 3 == 0)
+		                               .tag("2", "Two")
+		                               .hide();
+
+		assertThat(Scannable.from(tagged1).tags())
+				.containsExactlyInAnyOrder(Tuples.of("1", "One"));
+
+		assertThat(Scannable.from(tagged2).tags())
+				.containsExactlyInAnyOrder(Tuples.of("1", "One"), Tuples.of( "2", "Two"));
+	}
+
+	@Test
+	public void taggedHideMonoTest() {
+		Mono<Integer> tagged1 =
+				Mono.just(1)
+				    .hide()
+				    .tag("1", "One");
+
+
+		Mono<Integer> tagged2 = tagged1.filter(i -> i % 3 == 0)
+		                               .tag("2", "Two")
+		                               .hide();
+
+		assertThat(Scannable.from(tagged1).tags())
+				.containsExactlyInAnyOrder(Tuples.of("1", "One"));
+
+		assertThat(Scannable.from(tagged2).tags())
+				.containsExactlyInAnyOrder(Tuples.of("1", "One"), Tuples.of( "2", "Two"));
+	}
+
+	@Test
+	public void taggedAppendedMonoTest() {
+		Mono<Integer> tagged1 =
+				Mono.just(1)
+				    .tag("1", "One")
+				    .tag("2", "Two");
+
+		assertThat(Scannable.from(tagged1).tags())
+				.containsExactlyInAnyOrder(Tuples.of("1", "One"), Tuples.of( "2", "Two"));
+	}
+
+	@Test
+	public void taggedAppendedHideMonoTest() {
+		Mono<Integer> tagged1 = Mono
+					.just(1)
+				    .hide()
+				    .tag("1", "One")
+				    .tag("2", "Two");
+
+		assertThat(Scannable.from(tagged1).tags())
+				.containsExactlyInAnyOrder(Tuples.of("1", "One"), Tuples.of( "2", "Two"));
+	}
+
+	@Test
+	public void namedParallelFluxTest() {
+		ParallelFlux<Integer> named1 =
+				ParallelFlux.from(Mono.just(1))
+				    .name("100s");
+
+		ParallelFlux<Integer> named2 = named1.filter(i -> i % 3 == 0)
+		                             .name("multiple of 3 100s")
+		                             .hide();
+
+		assertThat(Scannable.from(named1).name()).isEqualTo("100s");
+		assertThat(Scannable.from(named2).name()).isEqualTo("multiple of 3 100s");
+	}
+
+	@Test
+	public void namedOverridenParallelFluxTest() {
+		ParallelFlux<Integer> named1 =
+				ParallelFlux.from(Mono.just(1))
+				    .name("1s")
+				    .name("100s");
+
+		ParallelFlux<Integer> named2 = named1.filter(i -> i % 3 == 0)
+		                             .name("multiple of 3 100s")
+		                             .hide();
+
+		assertThat(Scannable.from(named1).name()).isEqualTo("100s");
+		assertThat(Scannable.from(named2).name()).isEqualTo("multiple of 3 100s");
+	}
+
+	@Test
+	public void scannableNameParallelFluxDefaultsToToString() {
+		final ParallelFlux<Integer> flux = ParallelFlux.from(Mono.just(1))
+		                               .map(i -> i + 10);
+
+		assertThat(Scannable.from(flux).name())
+				.isEqualTo(flux.toString())
+				.isEqualTo("map");
+	}
+
+	@Test
+	public void taggedParallelFluxTest() {
+		ParallelFlux<Integer> tagged1 =
+				ParallelFlux.from(Mono.just(1))
+				    .tag("1", "One");
+
+
+		ParallelFlux<Integer> tagged2 = tagged1.filter(i -> i % 3 == 0)
+		                               .tag("2", "Two")
+		                               .hide();
+
+		assertThat(Scannable.from(tagged1).tags())
+				.containsExactlyInAnyOrder(Tuples.of("1", "One"));
+
+		assertThat(Scannable.from(tagged2).tags())
+				.containsExactlyInAnyOrder(Tuples.of("1", "One"), Tuples.of( "2", "Two"));
+	}
+
+	@Test
+	public void taggedAppendedParallelFluxTest() {
+		ParallelFlux<Integer> tagged1 =
+				ParallelFlux.from(Mono.just(1))
+				    .tag("1", "One")
+				    .tag("2", "Two");
+
+		assertThat(Scannable.from(tagged1).tags())
+				.containsExactlyInAnyOrder(Tuples.of("1", "One"), Tuples.of( "2", "Two"));
+	}
+
+
 }
