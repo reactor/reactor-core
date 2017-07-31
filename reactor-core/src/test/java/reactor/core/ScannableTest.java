@@ -151,6 +151,16 @@ public class ScannableTest {
 	}
 
 	@Test
+	public void scannableNameDefaultsToToString() {
+		final Flux<Integer> flux = Flux.range(1, 10)
+		                               .map(i -> i + 10);
+
+		assertThat(Scannable.from(flux).name())
+				.isEqualTo(flux.toString())
+				.isEqualTo("FluxMapFuseable");
+	}
+
+	@Test
 	public void taggedFluxTest() {
 		Flux<Integer> tagged1 =
 				Flux.range(1, 10)
