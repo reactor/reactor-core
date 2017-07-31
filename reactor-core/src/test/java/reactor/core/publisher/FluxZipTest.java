@@ -448,14 +448,14 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 		source2.onNext(3);
 		source2.onNext(4);
 
-//		then: "the values are all collected scenario source1 flux"
+//		then: "the values are all collected from source1 flux"
 		assertThat(tap.get()).isEqualTo(3);
 
 //		when: "the sources accept the missing value"
 		source2.onNext(5);
 		source1.onNext(6);
 
-//		then: "the values are all collected scenario source1 flux"
+//		then: "the values are all collected from source1 flux"
 		assertThat(tap.get()).isEqualTo(9);
 	}
 
@@ -471,7 +471,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 				Flux.zip(odds, even, (t1, t2) -> Arrays.asList(t1, t2));
 		Mono<List<List<Integer>>> tap = zippedFlux.collectList();
 
-//		then: "the values are all collected scenario source1 flux"
+//		then: "the values are all collected from source1 flux"
 		assertThat(tap.block()).containsExactly(Arrays.asList(1, 2),
 				Arrays.asList(3, 4),
 				Arrays.asList(5, 6));
@@ -482,7 +482,7 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 				(t1, t2) -> Arrays.asList(t1, t2)));
 		tap = zippedFlux.collectList();
 
-//		then: "the values are all collected scenario source1 flux"
+//		then: "the values are all collected from source1 flux"
 		assertThat(tap.block()).containsExactly(Arrays.asList(1, 2),
 				Arrays.asList(3, 2),
 				Arrays.asList(5, 2),

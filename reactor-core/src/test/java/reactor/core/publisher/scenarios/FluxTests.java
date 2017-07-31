@@ -669,7 +669,7 @@ public class FluxTests extends AbstractReactorTest {
 	}
 
 	/**
-	 * original scenario @oiavorskyl https://github.com/eventBus/eventBus/issues/358
+	 * original from @oiavorskyl https://github.com/eventBus/eventBus/issues/358
 	 * @throws Exception for convenience
 	 */
 	//@Test
@@ -680,7 +680,7 @@ public class FluxTests extends AbstractReactorTest {
 	}
 
 	/**
-	 * original scenario @oiavorskyl https://github.com/eventBus/eventBus/issues/358
+	 * original from @oiavorskyl https://github.com/eventBus/eventBus/issues/358
      * @throws Exception for convenience
 	 */
 	@Test

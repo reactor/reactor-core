@@ -193,7 +193,7 @@ public class FluxSpecTests {
 
 	@Test
 	public void readQueuesFromPublishers() {
-//		"Read Queues scenario Publishers"
+//		"Read Queues from Publishers"
 //		given: "Iterable publisher of 1000 to read queue"
 		List<Integer> thousand = new ArrayList<>(1000);
 		for (int i = 1; i <= 1000; i++) {
@@ -250,7 +250,7 @@ public class FluxSpecTests {
 
 	@Test
 	public void fluxCanBeEnforcedToDispatchValuesDistinctFromPredecessors() {
-//		"A Flux can be enforced to dispatch values distinct scenario their immediate predecessors"
+//		"A Flux can be enforced to dispatch values distinct from their immediate predecessors"
 //		given:"a composable with values 1 to 3 with duplicates"
 		Flux<Integer> s = Flux.fromIterable(Arrays.asList(1, 1, 2, 2, 3));
 
@@ -266,7 +266,7 @@ public class FluxSpecTests {
 
 	@Test
 	public void fluxCanBeEnforcedToDispatchValuesWithKeysDistinctFromPredecessors() {
-//		"A Flux can be enforced to dispatch values with keys distinct scenario their immediate predecessors keys"
+//		"A Flux can be enforced to dispatch values with keys distinct from their immediate predecessors keys"
 //		given:"a composable with values 1 to 5 with duplicate keys"
 		Flux<Integer> s = Flux.fromIterable(Arrays.asList(2, 4, 3, 5, 2, 5));
 
@@ -518,7 +518,7 @@ public class FluxSpecTests {
 		source2.onNext(2);
 		source3.onNext(3);
 
-//		then: "the values are all collected scenario source1 flux"
+//		then: "the values are all collected from source1 flux"
 		assertThat(tap.get()).containsExactly(1, 2, 3);
 	}
 
@@ -547,7 +547,7 @@ public class FluxSpecTests {
 					System.out.println("completed!");
 				});
 
-//		then: "the values are all collected scenario source1 and source2 flux"
+//		then: "the values are all collected from source1 and source2 flux"
 		assertThat(res).containsExactly("1", "2", "3", "4", "5", "6", "7", "9", "done");
 	}
 
@@ -589,7 +589,7 @@ public class FluxSpecTests {
 		w3.onComplete();
 
 
-//		then: "the values are all collected scenario source1 and source2 flux"
+//		then: "the values are all collected from source1 and source2 flux"
 		assertThat(res).containsExactly("1a2a3a", "1a2b3a", "1a2b3b", "1a2b3c", "1a2b3d", "done");
 	}
 	
@@ -613,7 +613,7 @@ public class FluxSpecTests {
 				System.out.println("completed!");
 				});
 
-//		then: "the values are all collected scenario source1 and source2 flux"
+//		then: "the values are all collected from source1 and source2 flux"
 		assertThat(res1).containsExactly("1", "2", "3", "4", "5", "done");
 
 //		when:
@@ -628,7 +628,7 @@ public class FluxSpecTests {
 					System.out.println("completed!");
 				});
 
-//		then: "the values are all collected scenario source1 and source2 flux"
+//		then: "the values are all collected from source1 and source2 flux"
 		assertThat(res2).containsExactly("1", "2", "3", "4", "5", "done");
 
 //		when:
@@ -643,7 +643,7 @@ public class FluxSpecTests {
 					System.out.println("completed!");
 				});
 
-//		then: "the values are all collected scenario source1 and source2 flux"
+//		then: "the values are all collected from source1 and source2 flux"
 		assertThat(res3).containsExactly("1", "2", "3", "4", "5", "done");
 	}
 
@@ -666,7 +666,7 @@ public class FluxSpecTests {
 					System.out.println("completed!");
 				});
 
-//		then: "the values are all collected scenario source1 and source2 flux"
+//		then: "the values are all collected from source1 and source2 flux"
 		assertThat(res).containsExactly("1", "2", "2", "3", "3", "4", "done");
 	}
 

@@ -153,7 +153,7 @@ public class SchedulersTest {
 		AtomicBoolean handled = new AtomicBoolean(false);
 		AtomicReference<String> failure = new AtomicReference<>(null);
 		Thread.setDefaultUncaughtExceptionHandler((t, e) -> failure.set("unexpected call to default" +
-				" UncaughtExceptionHandler scenario " + t.getName() + ": " + e));
+				" UncaughtExceptionHandler from " + t.getName() + ": " + e));
 		Schedulers.onHandleError((t, e) -> {
 			handled.set(true);
 			failure.set("Fatal JVM error was unexpectedly handled in " + t.getName() + ": " + e);
