@@ -42,8 +42,8 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
-
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
@@ -55,6 +55,7 @@ import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
+import reactor.util.function.Tuple2;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static org.hamcrest.CoreMatchers.*;
@@ -1305,6 +1306,49 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
         Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();
         Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+    }
+
+    //see https://github.com/reactor/reactor-core/issues/767
+    @Test
+    public void publishOnAsyncDetection() {
+	    Publisher<String> a = Flux.just("a");
+	    Publisher<String> b = Mono.just("b");
+
+	    Flux<Tuple2<String, String>> flux =
+			    Flux.from(a)
+			        .flatMap(value -> Mono.just(value)
+			                              .and(Mono.from(b)))
+			        .publishOn(Schedulers.single());
+
+	    StepVerifier.create(flux)
+	                .expectFusion(Fuseable.ASYNC)
+	                .assertNext(tuple -> {
+	                	Assertions.assertThat(tuple.getT1()).isEqualTo("a");
+		                Assertions.assertThat(tuple.getT2()).isEqualTo("b");
+	                })
+	                .verifyComplete();
+    }
+
+    //see https://github.com/reactor/reactor-core/issues/767
+    @Test
+    public void publishOnAsyncDetectionConditional() {
+	    Publisher<String> a = Flux.just("a");
+	    Publisher<String> b = Mono.just("b");
+
+	    Flux<Tuple2<String, String>> flux =
+			    Flux.from(a)
+			        .flatMap(value -> Mono.just(value)
+			                              .and(Mono.from(b)))
+			        .publishOn(Schedulers.single())
+			        .filter(t -> true);
+
+	    StepVerifier.create(flux)
+	                .expectFusion(Fuseable.ASYNC)
+	                .assertNext(tuple -> {
+	                	Assertions.assertThat(tuple.getT1()).isEqualTo("a");
+		                Assertions.assertThat(tuple.getT2()).isEqualTo("b");
+	                })
+	                .verifyComplete();
     }
 
 	private static class FailNullWorkerScheduler implements Scheduler {
