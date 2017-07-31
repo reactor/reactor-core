@@ -38,6 +38,9 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.context.Context;
 
+import static reactor.core.Fuseable.ASYNC;
+import static reactor.core.Fuseable.SYNC;
+
 /**
  * Repeatedly takes one item from all source Publishers and
  * runs it through a function to produce the output item.
@@ -824,15 +827,6 @@ final class FluxZip<T, R> extends Flux<R> {
 
 		int sourceMode;
 
-		/**
-		 * Running with a source that implements SynchronousSource.
-		 */
-		static final int SYNC  = 1;
-		/**
-		 * Running with a source that implements AsynchronousSource.
-		 */
-		static final int ASYNC = 2;
-
 		ZipInner(ZipCoordinator<T, ?> parent,
 				int prefetch,
 				int index,
@@ -853,14 +847,14 @@ final class FluxZip<T, R> extends Flux<R> {
 
 					int m = f.requestFusion(Fuseable.ANY | Fuseable.THREAD_BARRIER);
 
-					if (m == Fuseable.SYNC) {
+					if (m == SYNC) {
 						sourceMode = SYNC;
 						queue = f;
 						done = true;
 						parent.drain();
 						return;
 					}
-					else if (m == Fuseable.ASYNC) {
+					else if (m == ASYNC) {
 						sourceMode = ASYNC;
 						queue = f;
 					}
