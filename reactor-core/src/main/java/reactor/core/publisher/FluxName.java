@@ -35,7 +35,7 @@ import reactor.util.function.Tuples;
  * @author Simon Baslé
  * @author Stephane Maldini
  */
-public class FluxNamed<T> extends FluxOperator<T, T> {
+public class FluxName<T> extends FluxOperator<T, T> {
 
 	final String name;
 
@@ -45,18 +45,18 @@ public class FluxNamed<T> extends FluxOperator<T, T> {
 	static <T> Flux<T> createOrAppend(Flux<T> source, String name) {
 		Objects.requireNonNull(name, "name");
 
-		if (source instanceof FluxNamed) {
-			FluxNamed<T> s = (FluxNamed<T>) source;
-			return new FluxNamed<>(s.source, name, s.tags);
+		if (source instanceof FluxName) {
+			FluxName<T> s = (FluxName<T>) source;
+			return new FluxName<>(s.source, name, s.tags);
 		}
-		if (source instanceof FluxNamedFuseable) {
-			FluxNamedFuseable<T> s = (FluxNamedFuseable<T>) source;
-			return new FluxNamedFuseable<>(s.source, name, s.tags);
+		if (source instanceof FluxNameFuseable) {
+			FluxNameFuseable<T> s = (FluxNameFuseable<T>) source;
+			return new FluxNameFuseable<>(s.source, name, s.tags);
 		}
 		if (source instanceof Fuseable) {
-			return new FluxNamedFuseable<>(source, name, null);
+			return new FluxNameFuseable<>(source, name, null);
 		}
-		return new FluxNamed<>(source, name, null);
+		return new FluxName<>(source, name, null);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -66,29 +66,29 @@ public class FluxNamed<T> extends FluxOperator<T, T> {
 
 		Set<Tuple2<String, String>> tags = Collections.singleton(Tuples.of(tagName, tagValue));
 
-		if (source instanceof FluxNamed) {
-			FluxNamed<T> s = (FluxNamed<T>) source;
+		if (source instanceof FluxName) {
+			FluxName<T> s = (FluxName<T>) source;
 			if(s.tags != null) {
 				tags = new HashSet<>(tags);
 				tags.addAll(s.tags);
 			}
-			return new FluxNamed<>(s.source, s.name, tags);
+			return new FluxName<>(s.source, s.name, tags);
 		}
-		if (source instanceof FluxNamedFuseable) {
-			FluxNamedFuseable<T> s = (FluxNamedFuseable<T>) source;
+		if (source instanceof FluxNameFuseable) {
+			FluxNameFuseable<T> s = (FluxNameFuseable<T>) source;
 			if (s.tags != null) {
 				tags = new HashSet<>(tags);
 				tags.addAll(s.tags);
 			}
-			return new FluxNamedFuseable<>(s.source, s.name, tags);
+			return new FluxNameFuseable<>(s.source, s.name, tags);
 		}
 		if (source instanceof Fuseable) {
-			return new FluxNamedFuseable<>(source, null, tags);
+			return new FluxNameFuseable<>(source, null, tags);
 		}
-		return new FluxNamed<>(source, null, tags);
+		return new FluxName<>(source, null, tags);
 	}
 
-	FluxNamed(Flux<? extends T> source,
+	FluxName(Flux<? extends T> source,
 			@Nullable String name,
 			@Nullable Set<Tuple2<String, String>> tags) {
 		super(source);

@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -43,6 +44,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
 import reactor.core.scheduler.Schedulers;
@@ -2261,52 +2263,14 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Transform any error emitted by this {@link Mono} by synchronously applying a function to it.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/maperror.png" alt="">
-	 * <p>
-	 * @param mapper the error transforming {@link Function}
+	 * Give a name to this sequence, which can be retrieved using {@link Scannable#name()}
+	 * as long as this is the first reachable {@link Scannable#parents()}.
 	 *
-	 * @return a {@link Mono} that transforms source errors to other errors
+	 * @param name a name for the sequence
+	 * @return the same sequence, but bearing a name
 	 */
-	public final Mono<T> onErrorMap(Function<? super Throwable, ? extends Throwable> mapper) {
-		return onErrorResume(e -> Mono.error(mapper.apply(e)));
-	}
-
-	/**
-	 * Transform an error emitted by this {@link Mono} by synchronously applying a function
-	 * to it if the error matches the given type. Otherwise let the error pass through.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/maperror.png" alt="">
-	 * <p>
-	 * @param type the class of the exception type to react to
-	 * @param mapper the error transforming {@link Function}
-	 * @param <E> the error type
-	 *
-	 * @return a {@link Mono} that transforms some source errors to other errors
-	 */
-	public final <E extends Throwable> Mono<T> onErrorMap(Class<E> type,
-			Function<? super E, ? extends Throwable> mapper) {
-		@SuppressWarnings("unchecked")
-		Function<Throwable, Throwable> handler = (Function<Throwable, Throwable>)mapper;
-		return onErrorMap(type::isInstance, handler);
-	}
-
-	/**
-	 * Transform an error emitted by this {@link Mono} by synchronously applying a function
-	 * to it if the error matches the given predicate. Otherwise let the error pass through.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/maperror.png"
-	 * alt="">
-	 *
-	 * @param predicate the error predicate
-	 * @param mapper the error transforming {@link Function}
-	 *
-	 * @return a {@link Mono} that transforms some source errors to other errors
-	 */
-	public final Mono<T> onErrorMap(Predicate<? super Throwable> predicate,
-			Function<? super Throwable, ? extends Throwable> mapper) {
-		return onErrorResume(predicate, e -> Mono.error(mapper.apply(e)));
+	public final Mono<T> name(String name) {
+		return MonoName.createOrAppend(this, name);
 	}
 
 	/**
@@ -2346,6 +2310,158 @@ public abstract class Mono<T> implements Publisher<T> {
 	public final <U> Mono<U> ofType(final Class<U> clazz) {
 		Objects.requireNonNull(clazz, "clazz");
 		return filter(o -> clazz.isAssignableFrom(o.getClass())).cast(clazz);
+	}
+
+	/**
+	 * Transform an error emitted by this {@link Mono} by synchronously applying a function
+	 * to it if the error matches the given predicate. Otherwise let the error pass through.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/maperror.png"
+	 * alt="">
+	 *
+	 * @param predicate the error predicate
+	 * @param mapper the error transforming {@link Function}
+	 *
+	 * @return a {@link Mono} that transforms some source errors to other errors
+	 */
+	public final Mono<T> onErrorMap(Predicate<? super Throwable> predicate,
+			Function<? super Throwable, ? extends Throwable> mapper) {
+		return onErrorResume(predicate, e -> Mono.error(mapper.apply(e)));
+	}
+
+
+	/**
+	 * Transform any error emitted by this {@link Mono} by synchronously applying a function to it.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/maperror.png" alt="">
+	 * <p>
+	 * @param mapper the error transforming {@link Function}
+	 *
+	 * @return a {@link Mono} that transforms source errors to other errors
+	 */
+	public final Mono<T> onErrorMap(Function<? super Throwable, ? extends Throwable> mapper) {
+		return onErrorResume(e -> Mono.error(mapper.apply(e)));
+	}
+
+	/**
+	 * Transform an error emitted by this {@link Mono} by synchronously applying a function
+	 * to it if the error matches the given type. Otherwise let the error pass through.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/maperror.png" alt="">
+	 * <p>
+	 * @param type the class of the exception type to react to
+	 * @param mapper the error transforming {@link Function}
+	 * @param <E> the error type
+	 *
+	 * @return a {@link Mono} that transforms some source errors to other errors
+	 */
+	public final <E extends Throwable> Mono<T> onErrorMap(Class<E> type,
+			Function<? super E, ? extends Throwable> mapper) {
+		@SuppressWarnings("unchecked")
+		Function<Throwable, Throwable> handler = (Function<Throwable, Throwable>)mapper;
+		return onErrorMap(type::isInstance, handler);
+	}
+
+	/**
+	 * Subscribe to a fallback publisher when any error occurs, using a function to
+	 * choose the fallback depending on the error.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/otherwise.png" alt="">
+	 * <p>
+	 * @param fallback the function to choose the fallback to an alternative {@link Mono}
+	 *
+	 * @return a {@link Mono} falling back upon source onError
+	 *
+	 * @see Flux#onErrorResume
+	 */
+	public final Mono<T> onErrorResume(Function<? super Throwable, ? extends Mono<? extends
+			T>> fallback) {
+		return onAssembly(new MonoOnErrorResume<>(this, fallback));
+	}
+
+	/**
+	 * Subscribe to a fallback publisher when an error matching the given type
+	 * occurs, using a function to choose the fallback depending on the error.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/otherwise.png"
+	 * alt="">
+	 *
+	 * @param type the error type to match
+	 * @param fallback the function to choose the fallback to an alternative {@link Mono}
+	 * @param <E> the error type
+	 *
+	 * @return a {@link Mono} falling back upon source onError
+	 * @see Flux#onErrorResume
+	 */
+	public final <E extends Throwable> Mono<T> onErrorResume(Class<E> type,
+			Function<? super E, ? extends Mono<? extends T>> fallback) {
+		Objects.requireNonNull(type, "type");
+		@SuppressWarnings("unchecked")
+		Function<? super Throwable, Mono<? extends T>> handler = (Function<? super
+				Throwable, Mono<? extends T>>)fallback;
+		return onErrorResume(type::isInstance, handler);
+	}
+
+	/**
+	 * Subscribe to a fallback publisher when an error matching a given predicate
+	 * occurs.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/otherwise.png"
+	 * alt="">
+	 *
+	 * @param predicate the error predicate to match
+	 * @param fallback the function to choose the fallback to an alternative {@link Mono}
+	 * @return a {@link Mono} falling back upon source onError
+	 * @see Flux#onErrorResume
+	 */
+	public final Mono<T> onErrorResume(Predicate<? super Throwable> predicate,
+			Function<? super Throwable, ? extends Mono<? extends T>> fallback) {
+		Objects.requireNonNull(predicate, "predicate");
+		return onErrorResume(e -> predicate.test(e) ? fallback.apply(e) : error(e));
+	}
+
+	/**
+	 * Simply emit a captured fallback value when any error is observed on this {@link Mono}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/otherwisereturn.png" alt="">
+	 * <p>
+	 * @param fallback the value to emit if an error occurs
+	 *
+	 * @return a new falling back {@link Mono}
+	 */
+	public final Mono<T> onErrorReturn(final T fallback) {
+		return onErrorResume(throwable -> just(fallback));
+	}
+
+	/**
+	 * Simply emit a captured fallback value when an error of the specified type is
+	 * observed on this {@link Mono}.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/otherwisereturn.png" alt="">
+	 * @param type the error type to match
+	 * @param fallbackValue the value to emit if an error occurs that matches the type
+	 * @param <E> the error type
+	 *
+	 * @return a new falling back {@link Mono}
+	 */
+	public final <E extends Throwable> Mono<T> onErrorReturn(Class<E> type, T fallbackValue) {
+		return onErrorResume(type, throwable -> just(fallbackValue));
+	}
+
+	/**
+	 * Simply emit a captured fallback value when an error matching the given predicate is
+	 * observed on this {@link Mono}.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/otherwisereturn.png" alt="">
+	 * @param predicate the error predicate to match
+	 * @param fallbackValue the value to emit if an error occurs that matches the predicate
+	 *
+	 * @return a new {@link Mono}
+	 */
+	public final Mono<T> onErrorReturn(Predicate<? super Throwable> predicate, T fallbackValue) {
+		return onErrorResume(predicate,  throwable -> just(fallbackValue));
 	}
 
 	/**
@@ -2835,108 +2951,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Subscribe to a fallback publisher when any error occurs, using a function to
-	 * choose the fallback depending on the error.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/otherwise.png" alt="">
-	 * <p>
-	 * @param fallback the function to choose the fallback to an alternative {@link Mono}
-	 *
-	 * @return a {@link Mono} falling back upon source onError
-	 *
-	 * @see Flux#onErrorResume
-	 */
-	public final Mono<T> onErrorResume(Function<? super Throwable, ? extends Mono<? extends
-			T>> fallback) {
-		return onAssembly(new MonoOnErrorResume<>(this, fallback));
-	}
-
-	/**
-	 * Subscribe to a fallback publisher when an error matching the given type
-	 * occurs, using a function to choose the fallback depending on the error.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/otherwise.png"
-	 * alt="">
-	 *
-	 * @param type the error type to match
-	 * @param fallback the function to choose the fallback to an alternative {@link Mono}
-	 * @param <E> the error type
-	 *
-	 * @return a {@link Mono} falling back upon source onError
-	 * @see Flux#onErrorResume
-	 */
-	public final <E extends Throwable> Mono<T> onErrorResume(Class<E> type,
-			Function<? super E, ? extends Mono<? extends T>> fallback) {
-		Objects.requireNonNull(type, "type");
-		@SuppressWarnings("unchecked")
-		Function<? super Throwable, Mono<? extends T>> handler = (Function<? super
-				Throwable, Mono<? extends T>>)fallback;
-		return onErrorResume(type::isInstance, handler);
-	}
-
-	/**
-	 * Subscribe to a fallback publisher when an error matching a given predicate
-	 * occurs.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/otherwise.png"
-	 * alt="">
-	 *
-	 * @param predicate the error predicate to match
-	 * @param fallback the function to choose the fallback to an alternative {@link Mono}
-	 * @return a {@link Mono} falling back upon source onError
-	 * @see Flux#onErrorResume
-	 */
-	public final Mono<T> onErrorResume(Predicate<? super Throwable> predicate,
-			Function<? super Throwable, ? extends Mono<? extends T>> fallback) {
-		Objects.requireNonNull(predicate, "predicate");
-		return onErrorResume(e -> predicate.test(e) ? fallback.apply(e) : error(e));
-	}
-
-	/**
-	 * Simply emit a captured fallback value when any error is observed on this {@link Mono}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/otherwisereturn.png" alt="">
-	 * <p>
-	 * @param fallback the value to emit if an error occurs
-	 *
-	 * @return a new falling back {@link Mono}
-	 */
-	public final Mono<T> onErrorReturn(final T fallback) {
-		return onErrorResume(throwable -> just(fallback));
-	}
-
-	/**
-	 * Simply emit a captured fallback value when an error of the specified type is
-	 * observed on this {@link Mono}.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/otherwisereturn.png" alt="">
-	 * @param type the error type to match
-	 * @param fallbackValue the value to emit if an error occurs that matches the type
-	 * @param <E> the error type
-	 *
-	 * @return a new falling back {@link Mono}
-	 */
-	public final <E extends Throwable> Mono<T> onErrorReturn(Class<E> type, T fallbackValue) {
-		return onErrorResume(type, throwable -> just(fallbackValue));
-	}
-
-	/**
-	 * Simply emit a captured fallback value when an error matching the given predicate is
-	 * observed on this {@link Mono}.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/otherwisereturn.png" alt="">
-	 * @param predicate the error predicate to match
-	 * @param fallbackValue the value to emit if an error occurs that matches the predicate
-	 *
-	 * @return a new {@link Mono}
-	 */
-	public final Mono<T> onErrorReturn(Predicate<? super Throwable> predicate, T fallbackValue) {
-		return onErrorResume(predicate,  throwable -> just(fallbackValue));
-	}
-
-	/**
 	 * Fallback to an alternative {@link Mono} if this mono is completed without data
 	 *
 	 * <p>
@@ -2949,6 +2963,20 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final Mono<T> switchIfEmpty(Mono<? extends T> alternate) {
 		return onAssembly(new MonoSwitchIfEmpty<>(this, alternate));
+	}
+
+	/**
+	 * Tag this mono with a key/value pair. These can be retrieved as a {@link Set} of
+	 * all tags throughout the publisher chain by using {@link Scannable#tags()} (as
+	 * traversed
+	 * by {@link Scannable#parents()}).
+	 *
+	 * @param key a tag key
+	 * @param value a tag value
+	 * @return the same sequence, but bearing tags
+	 */
+	public final Mono<T> tag(String key, String value) {
+		return MonoName.createOrAppend(this, key, value);
 	}
 
 	/**

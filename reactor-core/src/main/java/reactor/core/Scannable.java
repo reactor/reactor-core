@@ -280,6 +280,15 @@ public interface Scannable {
 	}
 
 	/**
+	 * Return true whether the component is available for {@link #scan(Attr)} resolution.
+	 *
+	 * @return true whether the component is available for {@link #scan(Attr)} resolution.
+	 */
+	default boolean isScanAvailable(){
+		return true;
+	}
+
+	/**
 	 * Check this {@link Scannable}e and its {@link #parents()} for a name an return the
 	 * first one that is reachable.
 	 *
@@ -295,16 +304,24 @@ public interface Scannable {
 				.map(s -> s.scan(Attr.NAME))
 				.filter(Objects::nonNull)
 				.findFirst()
-				.orElse(toString());
+				.orElse(operatorName());
 	}
 
 	/**
-	 * Return true whether the component is available for {@link #scan(Attr)} resolution.
+	 * Check this {@link Scannable}e and its {@link #parents()} for a name an return the
+	 * first one that is reachable.
 	 *
-	 * @return true whether the component is available for {@link #scan(Attr)} resolution.
+	 * @return the name of the first parent that has one defined (including this scannable)
 	 */
-	default boolean isScanAvailable(){
-		return true;
+	default String operatorName() {
+		String stripped = toString()
+				.replaceAll("Parallel|Flux|Mono|Publisher", "")
+				.replaceAll("Fuseable|Operator", "");
+
+		if(stripped.length() > 0) {
+			return stripped.substring(0, 1).toLowerCase() + stripped.substring(1);
+		}
+		return stripped;
 	}
 
 	/**
@@ -357,18 +374,17 @@ public interface Scannable {
 	 * Introspect a component's specific state {@link Attr attribute}. If there's no
 	 * specific value in the component for that key, first attempt to return the key's
 	 * global default. If there is no applicable default, fall back to returning the
-	 * provided default.
+	 * provided non null default.
 	 *
 	 * @param key a {@link Attr} to resolve for the component.
 	 * @param defaultValue a fallback value if key and key's default both resolve to {@literal null}
 	 *
 	 * @return a value associated to the key or the provided default if unmatched or unresolved
 	 */
-	@Nullable
-	default <T> T scanOrDefault(Attr<T> key, @Nullable T defaultValue) {
+	default <T> T scanOrDefault(Attr<T> key, T defaultValue) {
 		T v = scan(key);
 		if (v == null) {
-			return defaultValue;
+			return Objects.requireNonNull(defaultValue, "defaultValue");
 		}
 		return v;
 	}

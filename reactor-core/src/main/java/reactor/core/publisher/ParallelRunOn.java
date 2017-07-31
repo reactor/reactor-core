@@ -30,7 +30,7 @@ import reactor.core.scheduler.Scheduler.Worker;
  *
  * @param <T> the value type
  */
-final class ParallelRunOn<T> extends ParallelFlux<T> implements Scannable, Fuseable {
+final class ParallelRunOn<T> extends ParallelFlux<T> implements Scannable{
 	final ParallelFlux<? extends T> source;
 	
 	final Scheduler scheduler;

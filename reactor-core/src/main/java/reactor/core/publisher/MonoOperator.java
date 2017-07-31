@@ -44,20 +44,6 @@ public abstract class MonoOperator<I, O> extends Mono<O> implements Scannable {
 	}
 
 	@Override
-	public String toString() {
-		StringBuilder sb = new StringBuilder();
-		return sb.append('{')
-		         .append(" \"operator\" : ")
-		         .append('"')
-		         .append(getClass().getSimpleName()
-		                           .replaceAll("Mono", ""))
-		         .append('"')
-		         .append(' ')
-		         .append('}')
-		         .toString();
-	}
-
-	@Override
 	@Nullable
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
