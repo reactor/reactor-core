@@ -16,7 +16,6 @@
 
 package reactor.core;
 
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
@@ -160,10 +159,10 @@ public interface Scannable {
 		public static final Attr<Boolean> TERMINATED = new Attr<>(false);
 
 		/**
-		 * A {@link Set} of {@link reactor.util.function.Tuple2} representing key/value
+		 * A {@link Stream} of {@link reactor.util.function.Tuple2} representing key/value
 		 * pairs for tagged components. Defaults to {@literal null}.
 		 */
-		public static final Attr<Set<Tuple2<String, String>>> TAGS = new Attr<>(null);
+		public static final Attr<Stream<Tuple2<String, String>>> TAGS = new Attr<>(null);
 
 		/**
 		 * Meaningful and always applicable default value for the attribute, returned
@@ -390,22 +389,25 @@ public interface Scannable {
 	}
 
 	/**
-	 * Visit this {@link Scannable} and its {@link #parents()} and aggregate a {@link Set}
-	 * of tags..
+	 * Visit this {@link Scannable} and its {@link #parents()} and stream all the
+	 * observed tags
 	 *
-	 * @return the tags for this Scannable and its parents
+	 * @return the stream of tags for this {@link Scannable} and its parents
 	 */
-	default Set<Tuple2<String, String>> tags() {
-		final Set<Tuple2<String, String>> allTags = new HashSet<>();
-		Set<Tuple2<String, String>> thisTags = this.scan(Attr.TAGS);
-		if (thisTags != null) {
-			allTags.addAll(thisTags);
+	default Stream<Tuple2<String, String>> tags() {
+		Stream<Tuple2<String, String>> parentTags =
+				parents().flatMap(s -> s.scan(Attr.TAGS));
+
+		Stream<Tuple2<String, String>> thisTags = scan(Attr.TAGS);
+
+		if (thisTags == null) {
+			return parentTags;
 		}
 
-		return parents()
-				.map(s -> s.scan(Attr.TAGS))
-				.filter(Objects::nonNull)
-				.collect(() -> allTags, Set::addAll, Set::addAll);
+		return Stream.concat(
+				thisTags,
+				parentTags
+		);
 	}
 
 }

@@ -56,8 +56,8 @@ public class MonoNameFuseable<T> extends MonoOperator<T, T> implements Fuseable 
 			return name;
 		}
 
-		if (key == Attr.TAGS) {
-			return tags;
+		if (key == Attr.TAGS && tags != null) {
+			return tags.stream();
 		}
 
 		return super.scanUnsafe(key);

@@ -16,16 +16,12 @@
 
 package reactor.core.publisher;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
 import javax.annotation.Nullable;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.function.Tuple2;
-import reactor.util.function.Tuples;
 
 /**
  * An operator that just bears a name or a set of tags, which can be retrieved via the
@@ -61,8 +57,8 @@ public class FluxNameFuseable<T> extends FluxOperator<T, T> implements Fuseable 
 			return name;
 		}
 
-		if (key == Attr.TAGS) {
-			return tags;
+		if (key == Attr.TAGS && tags != null) {
+			return tags.stream();
 		}
 
 		return super.scanUnsafe(key);

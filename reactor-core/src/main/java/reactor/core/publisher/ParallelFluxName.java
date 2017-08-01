@@ -23,7 +23,6 @@ import java.util.Set;
 import javax.annotation.Nullable;
 
 import reactor.core.CoreSubscriber;
-import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
@@ -96,8 +95,8 @@ final class ParallelFluxName<T> extends ParallelFlux<T> implements Scannable{
 			return name;
 		}
 
-		if (key == Attr.TAGS) {
-			return tags;
+		if (key == Attr.TAGS && tags != null) {
+			return tags.stream();
 		}
 
 		if (key == Attr.PARENT) return source;

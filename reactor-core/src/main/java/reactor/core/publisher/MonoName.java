@@ -107,8 +107,8 @@ public class MonoName<T> extends MonoOperator<T, T> {
 			return name;
 		}
 
-		if (key == Attr.TAGS) {
-			return tags;
+		if (key == Attr.TAGS && tags != null) {
+			return tags.stream();
 		}
 
 		return super.scanUnsafe(key);

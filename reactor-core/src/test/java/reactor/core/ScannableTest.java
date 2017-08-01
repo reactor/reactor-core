@@ -158,7 +158,7 @@ public class ScannableTest {
 		                               .map(i -> i + 10);
 
 		assertThat(Scannable.from(flux).name())
-				.isEqualTo(flux.toString())
+				.isEqualTo(Scannable.from(flux).operatorName())
 				.isEqualTo("map");
 	}
 
@@ -289,7 +289,7 @@ public class ScannableTest {
 		                               .map(i -> i + 10);
 
 		assertThat(Scannable.from(flux).name())
-				.isEqualTo(flux.toString())
+				.isEqualTo(Scannable.from(flux).operatorName())
 				.isEqualTo("map");
 	}
 
@@ -388,7 +388,7 @@ public class ScannableTest {
 		                               .map(i -> i + 10);
 
 		assertThat(Scannable.from(flux).name())
-				.isEqualTo(flux.toString())
+				.isEqualTo(Scannable.from(flux).operatorName())
 				.isEqualTo("map");
 	}
 
