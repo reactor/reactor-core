@@ -321,8 +321,17 @@ at every event of the Flux/Mono upstream of it (including `onNext`, `onError`
 and `onComplete` of course, but also _subscriptions_, _cancellation_ and
 _requests_).
 
-The operator picks up common logging frameworks like Log4J and Logback through
-*SLF4J*, and will default to the JDK Logger in case none can be found.
+.Side note on logging implementation
+****
+The operator uses the `Loggers` utility class, which picks up common logging frameworks
+like Log4J and Logback through *`SLF4J`*, and will default to logging to the console in
+case SLF4J isn't available.
+
+The Console fallback uses `System.err` for WARN and ERROR, `System.out` for the rest.
+
+If you prefer a JDK `java.util.logging` fallback like in 3.0.x, you can tune this by
+setting the `reactor.logging.fallback` System property to `JDK`.
+****
 
 For instance, supposing we have _logback_ activated and configured, and a chain
 like `range(1,10).take(3)`. By placing a `log()` just before the _take_, we can
