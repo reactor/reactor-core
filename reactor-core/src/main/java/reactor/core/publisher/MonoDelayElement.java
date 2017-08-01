@@ -64,7 +64,7 @@ final class MonoDelayElement<T> extends MonoOperator<T, T> {
 		Subscription s;
 
 		volatile Disposable task;
-		volatile boolean done;
+		boolean done;
 
 		DelayElementSubscriber(CoreSubscriber<? super T> actual, Scheduler scheduler,
 				long delay, TimeUnit unit) {
@@ -100,7 +100,7 @@ final class MonoDelayElement<T> extends MonoOperator<T, T> {
 				this.s = s;
 
 				actual.onSubscribe(this);
-				s.request(1);
+				s.request(Long.MAX_VALUE);
 			}
 		}
 
@@ -112,8 +112,7 @@ final class MonoDelayElement<T> extends MonoOperator<T, T> {
 			}
 			this.done = true;
 			try {
-				Disposable task = scheduler.schedule(() -> complete(t), delay, unit);
-				this.task = task;
+				this.task = scheduler.schedule(() -> complete(t), delay, unit);
 			}
 			catch (RejectedExecutionException ree) {
 				throw Operators.onRejectedExecution(ree, this, null, t);

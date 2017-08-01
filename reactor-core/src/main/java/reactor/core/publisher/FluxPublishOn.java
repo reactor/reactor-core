@@ -289,6 +289,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 				worker.schedule(this);
 			}
 			catch (RejectedExecutionException ree) {
+				queue.clear();
 				actual.onError(Operators.onRejectedExecution(ree, subscription, suppressed, dataSignal));
 			}
 		}
@@ -452,21 +453,13 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 		}
 
 		void doComplete(Subscriber<?> a) {
-			try {
-				a.onComplete();
-			}
-			finally {
-				worker.dispose();
-			}
+			worker.dispose();
+			a.onComplete();
 		}
 
 		void doError(Subscriber<?> a, Throwable e) {
-			try {
-				a.onError(e);
-			}
-			finally {
-				worker.dispose();
-			}
+			worker.dispose();
+			a.onError(e);
 		}
 
 		@Override
@@ -767,7 +760,8 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 				worker.schedule(this);
 			}
 			catch (RejectedExecutionException ree) {
-				throw Operators.onRejectedExecution(ree, subscription, suppressed, dataSignal);
+				queue.clear();
+				actual.onError(Operators.onRejectedExecution(ree, subscription, suppressed, dataSignal));
 			}
 		}
 
@@ -963,21 +957,13 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 		}
 
 		void doComplete(Subscriber<?> a) {
-			try {
-				a.onComplete();
-			}
-			finally {
-				worker.dispose();
-			}
+			worker.dispose();
+			a.onComplete();
 		}
 
 		void doError(Subscriber<?> a, Throwable e) {
-			try {
-				a.onError(e);
-			}
-			finally {
-				worker.dispose();
-			}
+			worker.dispose();
+			a.onError(e);
 		}
 
 		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a) {

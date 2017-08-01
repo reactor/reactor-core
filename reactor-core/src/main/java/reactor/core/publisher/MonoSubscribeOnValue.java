@@ -49,8 +49,7 @@ final class MonoSubscribeOnValue<T> extends Mono<T> {
 			ScheduledEmpty parent = new ScheduledEmpty(s);
 			s.onSubscribe(parent);
 			try {
-				Disposable f = scheduler.schedule(parent);
-				parent.setFuture(f);
+				parent.setFuture(scheduler.schedule(parent));
 			}
 			catch (RejectedExecutionException ree) {
 				if (parent.future != Disposables.DISPOSED) {

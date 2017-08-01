@@ -53,8 +53,7 @@ final class MonoDelay extends Mono<Long> {
 		s.onSubscribe(r);
 
 		try {
-			Disposable f = timedScheduler.schedule(r, delay, unit);
-			r.setCancel(f);
+			r.setCancel(timedScheduler.schedule(r, delay, unit));
 		}
 		catch (RejectedExecutionException ree) {
 			if(r.cancel != Disposables.DISPOSED) {

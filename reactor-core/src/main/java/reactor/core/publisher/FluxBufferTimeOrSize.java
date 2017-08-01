@@ -144,17 +144,6 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 			values = bufferSupplier.get();
 		}
 
-		void checkedError(Throwable ev) {
-			synchronized (this) {
-				C v = values;
-				if(v != null) {
-					v.clear();
-					values = null;
-				}
-			}
-			actual.onError(ev);
-		}
-
 		void nextCallback(T value) {
 			synchronized (this) {
 				C v = values;
@@ -207,10 +196,11 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 
 			if (index == 1) {
 				try {
-				timespanRegistration = timer.schedule(flushTask, timespan, TimeUnit.MILLISECONDS);
+					timespanRegistration = timer.schedule(flushTask, timespan, TimeUnit.MILLISECONDS);
 				}
 				catch (RejectedExecutionException ree) {
-					throw Operators.onRejectedExecution(ree, this, null, value);
+					onError(Operators.onRejectedExecution(ree, this, null, value));
+					return;
 				}
 			}
 
@@ -288,7 +278,14 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 		public void onError(Throwable throwable) {
 			if (TERMINATED.compareAndSet(this, NOT_TERMINATED, TERMINATED_WITH_ERROR)) {
 				timer.dispose();
-				checkedError(throwable);
+				synchronized (this) {
+					C v = values;
+					if(v != null) {
+						v.clear();
+						values = null;
+					}
+				}
+				actual.onError(throwable);
 			}
 		}
 
@@ -311,14 +308,6 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 					s.cancel();
 				}
 			}
-		}
-
-		@Override
-		public String toString() {
-			return super.toString() + "{" + (timer != null ?
-					"timed - " + timespan + " ms" : "") + " batchSize=" +
-					index + "/" +
-					batchSize + " [" + (int) ((((float) index) / ((float) batchSize)) * 100) + "%]";
 		}
 	}
 }
