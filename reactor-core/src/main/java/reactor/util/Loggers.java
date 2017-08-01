@@ -15,37 +15,127 @@
  */
 package reactor.util;
 
+import java.io.PrintStream;
+import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 
 import javax.annotation.Nullable;
 
 /**
- * Expose static methods to get a logger depending on the environment (SLF4J or
- * {@link java.util.logging.Logger java.util.logging.Logger}).
+ * Expose static methods to get a logger depending on the environment. If SL4J is on the
+ * classpath, it will be used. Otherwise, there are two possible fallbacks: Console or
+ * {@link java.util.logging.Logger java.util.logging.Logger}). By default, the Console
+ * fallback is used. To use the JDK loggers, set the {@value #FALLBACK_PROPERTY}
+ * {@link System#setProperty(String, String) System property} to "{@code JDK}".
+ * <p>
+ * One can also force the implementation by using the "useXXX" static methods:
+ * {@link #useConsoleLoggers()}, {@link #useJdkLoggers()} and {@link #useSl4jLoggers()}
+ * (which may throw an Exception if the library isn't on the classpath). Note that the
+ * system property method above is preferred, as no cleanup of the logger factory initialized
+ * at startup is attempted by the useXXX methods.
  */
 public abstract class Loggers {
 
-	private final static LoggerFactory LOGGER_FACTORY;
+	/**
+	 * The system property that determines which fallback implementation to use for loggers
+	 * when SLF4J isn't available. Use {@code JDK} for the JDK-backed logging and anything
+	 * else for Console-based (the default).
+	 */
+	public static final String FALLBACK_PROPERTY = "reactor.logging.fallback";
+
+	private static LoggerFactory LOGGER_FACTORY;
 
 	static {
-		LoggerFactory loggerFactory;
-		String name = LoggerFactory.class.getName();
+		resetLoggerFactory();
+	}
+
+	/**
+	 * Attempt to activate the best {@link Logger reactor Logger} factory, by first attempting
+	 * to use the SLF4J one, then falling back to either Console logging or
+	 * {@link java.util.logging.Logger java.util.logging.Logger}). By default, the Console
+	 * fallback is used. To fallback to the JDK loggers, set the {@value #FALLBACK_PROPERTY}
+	 * {@link System#setProperty(String, String) System property} to "{@code JDK}".
+	 *
+	 * @see #useJdkLoggers()
+	 * @see #useConsoleLoggers()
+	 */
+	public static final void resetLoggerFactory() {
 		try {
-			loggerFactory = new Slf4JLoggerFactory();
-			loggerFactory.getLogger(name).debug("Using Slf4j logging framework");
+			useSl4jLoggers();
 		}
 		catch (Throwable t) {
-			loggerFactory = new JdkLoggerFactory();
-			loggerFactory.getLogger(name).debug("Using JDK logging framework");
+			if (isFallbackToJdk()) {
+				useJdkLoggers();
+			}
+			else {
+				useConsoleLoggers();
+			}
 		}
+	}
+
+	/**
+	 * Return true if {@link #resetLoggerFactory()} would fallback to java.util.logging
+	 * rather than console-based logging, as defined by the {@link #FALLBACK_PROPERTY}
+	 * System property.
+	 *
+	 * @return true if falling back to JDK, false for Console.
+	 */
+	static final boolean isFallbackToJdk() {
+		return "JDK".equalsIgnoreCase(System.getProperty(FALLBACK_PROPERTY));
+	}
+
+	/**
+	 * Force the usage of Console-based {@link Logger Loggers}, even if SLF4J is available
+	 * on the classpath. Console loggers will output {@link Logger#error(String) ERROR} and
+	 * {@link Logger#warn(String) WARN} levels to {@link System#err} and levels below to
+	 * {@link System#out}. All levels are considered enabled.
+	 * <p>
+	 * The previously active logger factory is simply replaced without
+	 * any particular clean-up.
+	 */
+	public static final void useConsoleLoggers() {
+		String name = LoggerFactory.class.getName();
+		LoggerFactory loggerFactory = new ConsoleLoggerFactory();
+		loggerFactory.getLogger(name).debug("Using Console logging");
 		LOGGER_FACTORY = loggerFactory;
 	}
 
+	/**
+	 * Force the usage of JDK-based {@link Logger Loggers}, even if SLF4J is available
+	 * on the classpath.
+	 * <p>
+	 * The previously active logger factory is simply replaced without
+	 * any particular clean-up.
+	 */
+	public static final void useJdkLoggers() {
+		String name = LoggerFactory.class.getName();
+		LoggerFactory loggerFactory = new JdkLoggerFactory();
+		loggerFactory.getLogger(name).debug("Using JDK logging framework");
+		LOGGER_FACTORY = loggerFactory;
+	}
 
 	/**
-	 * Get a {@link Logger}, backed by SLF4J if present on the classpath or falling back
-	 * to {@link java.util.logging.Logger java.util.logging.Logger}.
+	 * Force the usage of SL4J-based {@link Logger Loggers}, throwing an exception if
+	 * SLF4J isn't available on the classpath. Prefer using {@link #resetLoggerFactory()}
+	 * as it will fallback in the later case.
+	 * <p>
+	 * The previously active logger factory is simply replaced without
+	 * any particular clean-up.
+	 */
+	public static final void useSl4jLoggers() {
+		String name = LoggerFactory.class.getName();
+		LoggerFactory loggerFactory = new Slf4JLoggerFactory();
+		loggerFactory.getLogger(name).debug("Using Slf4j logging framework");
+		LOGGER_FACTORY = loggerFactory;
+	}
+
+	/**
+	 * Get a {@link Logger}.
+	 * <p>
+	 * For a notion of how the backing implementation is chosen, see
+	 * {@link #resetLoggerFactory()} (or call one of the {@link #useConsoleLoggers() useXxxLoggers}
+	 * methods).
 	 *
 	 * @param name the category or logger name to use
 	 *
@@ -325,9 +415,164 @@ public abstract class Loggers {
 	}
 
 	private static class JdkLoggerFactory implements LoggerFactory {
+
 		@Override
 		public Logger getLogger(String name) {
 			return new JdkLogger(java.util.logging.Logger.getLogger(name));
+		}
+	}
+
+	/**
+	 * A {@link Logger} that has all levels enabled. error and warn log to System.err
+	 * while all other levels log to System.out (printstreams can be changed via constructor).
+	 */
+	static class ConsoleLogger implements Logger {
+
+		private final String name;
+		private final PrintStream err;
+		private final PrintStream log;
+
+		ConsoleLogger(String name, PrintStream log, PrintStream err) {
+			this.name = name;
+			this.log = log;
+			this.err = err;
+		}
+
+		ConsoleLogger(String name) {
+			this(name, System.out, System.err);
+		}
+
+		@Override
+		public String getName() {
+			return this.name;
+		}
+
+		@Nullable
+		private String format(@Nullable String from, @Nullable Object... arguments){
+			if(from != null) {
+				String computed = from;
+				if (arguments != null && arguments.length != 0) {
+					for (Object argument : arguments) {
+						computed = computed.replaceFirst("\\{\\}", Matcher.quoteReplacement(argument.toString()));
+					}
+				}
+				return computed;
+			}
+			return null;
+		}
+
+		@Override
+		public boolean isTraceEnabled() {
+			return true;
+		}
+
+		@Override
+		public void trace(String msg) {
+			this.log.format("[TRACE] %s\n", msg);
+		}
+
+		@Override
+		public void trace(String format, Object... arguments) {
+			this.log.format("[TRACE] %s\n", format(format, arguments));
+		}
+		@Override
+		public void trace(String msg, Throwable t) {
+			this.log.format("[TRACE] %s - %s\n", msg, t);
+			t.printStackTrace(this.log);
+		}
+
+		@Override
+		public boolean isDebugEnabled() {
+			return true;
+		}
+
+		@Override
+		public void debug(String msg) {
+			this.log.format("[DEBUG] %s\n", msg);
+		}
+
+		@Override
+		public void debug(String format, Object... arguments) {
+			this.log.format("[DEBUG] %s\n", format(format, arguments));
+		}
+
+		@Override
+		public void debug(String msg, Throwable t) {
+			this.log.format("[DEBUG] %s - %s\n", msg, t);
+			t.printStackTrace(this.log);
+		}
+
+		@Override
+		public boolean isInfoEnabled() {
+			return true;
+		}
+
+		@Override
+		public void info(String msg) {
+			this.log.format("[INFO] %s\n", msg);
+		}
+
+		@Override
+		public void info(String format, Object... arguments) {
+			this.log.format("[INFO] %s\n", format(format, arguments));
+		}
+
+		@Override
+		public void info(String msg, Throwable t) {
+			this.log.format("[INFO] %s - %s\n", msg, t);
+			t.printStackTrace(this.log);
+		}
+
+		@Override
+		public boolean isWarnEnabled() {
+			return true;
+		}
+
+		@Override
+		public void warn(String msg) {
+			this.err.format("[WARN] %s\n", msg);
+		}
+
+		@Override
+		public void warn(String format, Object... arguments) {
+			this.err.format("[WARN] %s\n", format(format, arguments));
+		}
+
+		@Override
+		public void warn(String msg, Throwable t) {
+			this.err.format("[WARN] %s - %s\n", msg, t);
+			t.printStackTrace(this.err);
+		}
+
+		@Override
+		public boolean isErrorEnabled() {
+			return true;
+		}
+
+		@Override
+		public void error(String msg) {
+			this.err.format("[ERROR] %s\n", msg);
+		}
+
+		@Override
+		public void error(String format, Object... arguments) {
+			this.err.format("[ERROR] %s\n", format(format, arguments));
+		}
+
+		@Override
+		public void error(String msg, Throwable t) {
+			this.err.format("[ERROR] %s - %s\n", msg, t);
+			t.printStackTrace(this.err);
+		}
+	}
+
+	private static final class ConsoleLoggerFactory implements LoggerFactory {
+
+		private static final HashMap<String, Logger> consoleLoggers = new HashMap<>();
+
+		@Override
+		public Logger getLogger(String name) {
+			return consoleLoggers.computeIfAbsent(name, ConsoleLogger::new);
 		}
 	}
 
