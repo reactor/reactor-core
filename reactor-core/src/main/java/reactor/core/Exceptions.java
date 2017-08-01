@@ -175,6 +175,8 @@ public abstract class Exceptions {
 	}
 
 	/**
+	 * Return a singleton {@link RejectedExecutionException}
+	 *
 	 * @return a singleton {@link RejectedExecutionException}
 	 */
 	public static RejectedExecutionException failWithRejected() {
@@ -182,8 +184,10 @@ public abstract class Exceptions {
 	}
 
 	/**
+	 * Return a new {@link RejectedExecutionException} with standard message and cause
+	 *
 	 * @param cause
-	 * @return return a new {@link RejectedExecutionException} with standard message and cause
+	 * @return a new {@link RejectedExecutionException} with standard message and cause
 	 */
 	public static RejectedExecutionException failWithRejected(Throwable cause) {
 		return new RejectedExecutionException("Scheduler unavailable", cause);

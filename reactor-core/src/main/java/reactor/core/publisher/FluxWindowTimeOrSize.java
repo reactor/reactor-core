@@ -188,8 +188,7 @@ final class FluxWindowTimeOrSize<T> extends FluxOperator<T, Flux<T>> {
 			try {
 				timespanRegistration = timer.schedule(flushTask, timespan, TimeUnit.MILLISECONDS);
 				WINDOW_COUNT.getAndIncrement(this);
-				Window<T> _currentWindow = new Window<>(timerScheduler);
-				currentWindow = _currentWindow;
+				currentWindow = new Window<>(timerScheduler);
 				actual.onSubscribe(this);
 				//hold on emitting the window until either the first close by timeout
 				//or the first emission, which will follow the subscribe
@@ -236,8 +235,7 @@ final class FluxWindowTimeOrSize<T> extends FluxOperator<T, Flux<T>> {
 				return true;
 			}
 			catch (RejectedExecutionException ree) {
-				RuntimeException error = Operators.onRejectedExecution(ree, null, null, null);
-				onError(error);
+				onError(Operators.onRejectedExecution(ree, this, null, null));
 				return false;
 			}
 		}

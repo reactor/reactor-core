@@ -31,19 +31,15 @@ import org.junit.rules.TestName;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
-import reactor.core.Exceptions;
 import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.Operators;
 import reactor.core.publisher.ParallelFlux;
 import reactor.core.publisher.SignalType;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.fail;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -124,54 +120,18 @@ public class RejectedExecutionTest {
 		                      .doOnNext(i -> onNext(i))
 		                      .doOnError(e -> onError(e));
 
-		//FIXME test with publishOn + filter
-
 		verifyRejectedExecutionConsistency(flux, 5);
 	}
 
-
-	/**
-	 * Test: onNext cannot be delivered due to RejectedExecutionException
-	 * Current behaviour:
-	 *   No onNext, onError, onNextDropped, onErrorDropped generated
-	 *   Sequence of exceptions for each flatMap element:
-	 *
-	 *   [parallel-1] ERROR reactor.core.scheduler.Schedulers - Scheduler worker in group main failed with an uncaught exception
-	 *		java.util.concurrent.RejectedExecutionException: null
-	 *			at reactor.core.scheduler.RejectedExecutionTest$BoundedScheduler.schedule(RejectedExecutionTest.java:208) ~[bin/:na]
-	 *			at reactor.core.publisher.FluxSubscribeOnValue$ScheduledScalar.request(FluxSubscribeOnValue.java:125) ~[bin/:na]
-	 *			at reactor.core.publisher.FluxPeek$PeekSubscriber.request(FluxPeek.java:131) ~[bin/:na]
-	 *			at reactor.core.publisher.FluxPeek$PeekSubscriber.request(FluxPeek.java:131) ~[bin/:na]
-	 *			at reactor.core.publisher.FluxFlatMap$FlatMapInner.onSubscribe(FluxFlatMap.java:901) ~[bin/:na]
-	 *			at reactor.core.publisher.FluxPeek$PeekSubscriber.onSubscribe(FluxPeek.java:164) ~[bin/:na]
-	 *			at reactor.core.publisher.FluxPeek$PeekSubscriber.onSubscribe(FluxPeek.java:164) ~[bin/:na]
-	 *			at reactor.core.publisher.MonoSubscribeOnValue.subscribe(MonoSubscribeOnValue.java:61) ~[bin/:na]
-	 *			at reactor.core.publisher.MonoPeek.subscribe(MonoPeek.java:71) ~[bin/:na]
-	 *			at reactor.core.publisher.MonoPeek.subscribe(MonoPeek.java:71) ~[bin/:na]
-	 *			at reactor.core.publisher.Mono.subscribe(Mono.java:2859) ~[bin/:na]
-	 *			at reactor.core.publisher.FluxFlatMap$FlatMapMain.onNext(FluxFlatMap.java:376) ~[bin/:na]
-	 *			at reactor.core.publisher.FluxTake$TakeSubscriber.onNext(FluxTake.java:118) ~[bin/:na]
-	 *			at reactor.core.publisher.FluxInterval$IntervalRunnable.run(FluxInterval.java:105) ~[bin/:na]
-	 *			at reactor.core.scheduler.ParallelScheduler$ParallelWorker$ParallelWorkerTask.run(ParallelScheduler.java:367) ~[bin/:na]
-	 *			at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511) [na:1.8.0_77]
-	 *			at java.util.concurrent.FutureTask.runAndReset(FutureTask.java:308) [na:1.8.0_77]
-	 *			at java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.access$301(ScheduledThreadPoolExecutor.java:180) [na:1.8.0_77]
-	 *			at java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:294) [na:1.8.0_77]
-	 *			at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142) [na:1.8.0_77]
-	 *			at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617) [na:1.8.0_77]
-	 *			at java.lang.Thread.run(Thread.java:745) [na:1.8.0_77]
-	 *
-	 */
 	@Test
-	public void publishOnFlatMap() throws Exception {
+	public void publishOnFilter() throws Exception {
 		Flux<Long> flux = Flux.interval(Duration.ofMillis(2)).take(255)
-				.flatMap(j -> Mono.just(j)
-								.publishOn(scheduler)
-								.doOnNext(i -> onNext(i))
-								.doOnError(e -> onError(e)));
+		                      .publishOn(scheduler)
+		                      .filter(t -> true)
+		                      .doOnNext(i -> onNext(i))
+		                      .doOnError(e -> onError(e));
 
 		verifyRejectedExecutionConsistency(flux, 5);
-		//FIXME this actually isn't very relevant, the publishOn is transformed to a subscribeOn when fused with just
 	}
 
 	/**
@@ -229,42 +189,103 @@ public class RejectedExecutionTest {
 	 */
 	@Test
 	public void subscribeOn() throws Exception {
-		//FIXME test with just, empty, callable, interval
-		scheduler.tasksRemaining.set(2); //1 subscribe, 1 request
-		Flux<Long> flux = Flux.interval(Duration.ofMillis(2)).take(255)
-				.doOnRequest(n -> System.out.println("onRequest on thread " + Thread.currentThread().getName() + " " + n))
-				.doOnSubscribe(s -> System.out.println("onSubscribe on thread " + Thread.currentThread().getName()))
-				.doOnNext(value -> System.out.println("onNext(" + value + ") on thread " + Thread.currentThread().getName()))
-				.subscribeOn(scheduler);
+		scheduler.tasksRemaining.set(1); //1 subscribe then request
+		Flux<Long> flux = Flux.interval(Duration.ofMillis(2))
+		                      .take(255)
+		                      .subscribeOn(scheduler);
 
 		CountDownLatch latch = new CountDownLatch(1);
-		flux.subscribe(new BaseSubscriber<Long>() {
-			@Override
-			protected void hookOnSubscribe(Subscription subscription) {
-				request(1);
-			}
-
-			@Override
-			protected void hookOnNext(Long value) {
-				onNexts.add(value);
-				request(1);
-			}
-
-			@Override
-			protected void hookOnError(Throwable throwable) {
-				onErrors.add(throwable);
-			}
-
-			@Override
-			protected void hookFinally(SignalType type) {
-				latch.countDown();
-			}
-		});
+		flux.subscribe(new TestSub(latch));
 
 		latch.await(500, TimeUnit.MILLISECONDS);
 
 		assertThat(onNexts).hasSize(1);
 		assertThat(onErrors).hasSize(1);
+		assertThat(onNextDropped).isEmpty();
+		assertThat(onErrorDropped).isEmpty();
+		assertThat(onSchedulerHandleError).isEmpty();
+		assertThat(onOperatorError)
+				.hasSize(2) //2 because base subscribe throws exception
+				.last().isInstanceOf(RejectedExecutionException.class);
+	}
+
+	@Test
+	public void subscribeOnMono() throws Exception {
+		//FIXME test with just, empty, callable, interval
+		scheduler.tasksRemaining.set(0); //1 subscribe then request
+		Mono<Long> flux = Mono.just(1L)
+		                      .hide()
+		                      .subscribeOn(scheduler);
+
+		CountDownLatch latch = new CountDownLatch(1);
+		flux.subscribe(new TestSub(latch));
+
+		latch.await(500, TimeUnit.MILLISECONDS);
+
+		assertThat(onNexts).hasSize(0);
+		assertThat(onErrors).hasSize(1);
+		assertThat(onNextDropped).isEmpty();
+		assertThat(onErrorDropped).isEmpty();
+		assertThat(onSchedulerHandleError).isEmpty();
+		assertThat(onOperatorError)
+				.hasSize(1)
+				.last().isInstanceOf(RejectedExecutionException.class);
+	}
+
+	@Test
+	public void subscribeOnCallable() throws Exception {
+		scheduler.tasksRemaining.set(0);
+		Flux<Long> flux = Mono.fromCallable(() -> 1L)
+		                      .flux()
+		                      .subscribeOn(scheduler);
+
+		CountDownLatch latch = new CountDownLatch(1);
+		flux.subscribe(new TestSub(latch));
+
+		latch.await(500, TimeUnit.MILLISECONDS);
+
+		assertThat(onNexts).hasSize(0);
+		assertThat(onErrors).hasSize(1);
+		assertThat(onNextDropped).isEmpty();
+		assertThat(onErrorDropped).isEmpty();
+		assertThat(onSchedulerHandleError).isEmpty();
+		assertThat(onOperatorError)
+				.hasSize(1)
+				.last().isInstanceOf(RejectedExecutionException.class);
+	}
+
+	@Test
+	public void subscribeOnEmpty() throws Exception {
+		scheduler.tasksRemaining.set(0); //1 subscribe
+		Flux<Long> flux = Flux.<Long>empty()
+		                      .subscribeOn(scheduler);
+
+		CountDownLatch latch = new CountDownLatch(1);
+		flux.subscribe(new TestSub(latch));
+
+		latch.await(500, TimeUnit.MILLISECONDS);
+
+		assertThat(onErrors).hasSize(1);
+		assertThat(onNextDropped).isEmpty();
+		assertThat(onErrorDropped).isEmpty();
+		assertThat(onSchedulerHandleError).isEmpty();
+		assertThat(onOperatorError)
+				.hasSize(1)
+				.last().isInstanceOf(RejectedExecutionException.class);
+	}
+
+	@Test
+	public void subscribeOnJust() throws Exception {
+		scheduler.tasksRemaining.set(0); //1 subscribe
+		Flux<Long> flux = Flux.just(1L)
+		                      .subscribeOn(scheduler)
+				              .doOnError(e -> onError(e));
+
+		CountDownLatch latch = new CountDownLatch(1);
+		flux.subscribe(new TestSub(latch));
+
+		latch.await(500, TimeUnit.MILLISECONDS);
+
 		assertThat(onNextDropped).isEmpty();
 		assertThat(onErrorDropped).isEmpty();
 		assertThat(onSchedulerHandleError).isEmpty();
@@ -278,40 +299,6 @@ public class RejectedExecutionTest {
 		if (!onOperatorErrorData.isEmpty()) {
 			System.out.println(testName.getMethodName() + " legitimately has data dropped from onOperatorError: " + onOperatorErrorData);
 		}
-	}
-
-	/**
-	 * Test: Subscription of the flatMap entries are rejected
-	 * Current behaviour: Error not propagated.
-	 * Exception:
-	 *	[parallel-1] ERROR reactor.core.scheduler.Schedulers - Scheduler worker in group main failed with an uncaught exception
-	 *	java.util.concurrent.RejectedExecutionException: null
-	 *			at reactor.core.scheduler.RejectedExecutionTest$BoundedScheduler$BoundedWorker.schedule(RejectedExecutionTest.java:312) ~[bin/:na]
-	 *			at reactor.core.publisher.MonoSubscribeOn$SubscribeOnSubscriber.request(MonoSubscribeOn.java:150) ~[bin/:na]
-	 *			at reactor.core.publisher.FluxFlatMap$FlatMapInner.onSubscribe(FluxFlatMap.java:901) ~[bin/:na]
-	 *			at reactor.core.publisher.MonoSubscribeOn.subscribe(MonoSubscribeOn.java:50) ~[bin/:na]
-	 *			at reactor.core.publisher.Mono.subscribe(Mono.java:2859) ~[bin/:na]
-	 *			at reactor.core.publisher.FluxFlatMap$FlatMapMain.onNext(FluxFlatMap.java:376) ~[bin/:na]
-	 *			at reactor.core.publisher.FluxTake$TakeSubscriber.onNext(FluxTake.java:118) ~[bin/:na]
-	 *			at reactor.core.publisher.FluxInterval$IntervalRunnable.run(FluxInterval.java:105) ~[bin/:na]
-	 *			at reactor.core.scheduler.ParallelScheduler$ParallelWorker$ParallelWorkerTask.run(ParallelScheduler.java:367) ~[bin/:na]
-	 *			at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511) [na:1.8.0_77]
-	 *			at java.util.concurrent.FutureTask.runAndReset(FutureTask.java:308) [na:1.8.0_77]
-	 *			at java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.access$301(ScheduledThreadPoolExecutor.java:180) [na:1.8.0_77]
-	 *			at java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:294) [na:1.8.0_77]
-	 *			at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142) [na:1.8.0_77]
-	 *			at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617) [na:1.8.0_77]
-	 *			at java.lang.Thread.run(Thread.java:745) [na:1.8.0_77]
-	 */
-	@Test
-	public void flatMapSubscribeOn() throws Exception {
-		Flux<Long> flux = Flux.interval(Duration.ofMillis(2)).take(255)
-				.flatMap(j -> Mono.just(j)
-				                  .subscribeOn(scheduler)
-				                  .doOnNext(i -> onNexts.add(i))
-				                  .doOnError(e -> onErrors.add(e)));
-
-		verifyRejectedExecutionConsistency(flux, 5);
 	}
 
 
@@ -428,6 +415,46 @@ public class RejectedExecutionTest {
 					throw new RejectedExecutionException("BoundedWorker schedule: no more tasks");
 				return actual.schedule(task);
 			}
+		}
+	}
+
+	private class TestSub extends BaseSubscriber<Long> {
+
+		private final CountDownLatch latch;
+		private final boolean unbounded;
+
+		public TestSub(CountDownLatch latch) {
+			this(latch, false);
+		}
+
+		public TestSub(CountDownLatch latch, boolean unbounded) {
+			this.latch = latch;
+			this.unbounded = unbounded;
+		}
+
+		@Override
+		protected void hookOnSubscribe(Subscription subscription) {
+			if(unbounded)
+				requestUnbounded();
+			else
+				request(1);
+		}
+
+		@Override
+		protected void hookOnNext(Long value) {
+			onNexts.add(value);
+			if(!unbounded)
+				request(1);
+		}
+
+		@Override
+		protected void hookOnError(Throwable throwable) {
+			onErrors.add(throwable);
+		}
+
+		@Override
+		protected void hookFinally(SignalType type) {
+			latch.countDown();
 		}
 	}
 }

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
 import java.util.Objects;
@@ -30,18 +31,18 @@ import reactor.core.scheduler.Scheduler;
 
 /**
  * Publisher indicating a scalar/empty source that subscribes on the specified scheduler.
- * 
+ *
  * @param <T>
+ *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
  */
 final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 
 	final T value;
-	
+
 	final Scheduler scheduler;
 
-	FluxSubscribeOnValue(@Nullable T value,
-			Scheduler scheduler) {
+	FluxSubscribeOnValue(@Nullable T value, Scheduler scheduler) {
 		this.value = value;
 		this.scheduler = Objects.requireNonNull(scheduler, "scheduler");
 	}
@@ -53,15 +54,15 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 			ScheduledEmpty parent = new ScheduledEmpty(s);
 			s.onSubscribe(parent);
 			try {
-				Disposable f = scheduler.schedule(parent);
-				parent.setFuture(f);
+				parent.setFuture(scheduler.schedule(parent));
 			}
 			catch (RejectedExecutionException ree) {
 				if (parent.future != Disposables.DISPOSED) {
 					s.onError(Operators.onRejectedExecution(ree));
 				}
 			}
-		} else {
+		}
+		else {
 			s.onSubscribe(new ScheduledScalar<>(s, v, scheduler));
 		}
 	}
@@ -96,9 +97,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 		static final int HAS_VALUE = 2;
 		static final int COMPLETE  = 3;
 
-		ScheduledScalar(CoreSubscriber<? super T> actual,
-				T value,
-				Scheduler scheduler) {
+		ScheduledScalar(CoreSubscriber<? super T> actual, T value, Scheduler scheduler) {
 			this.actual = actual;
 			this.value = value;
 			this.scheduler = scheduler;
@@ -112,9 +111,15 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Scannable.Attr key) {
-			if (key == Attr.CANCELLED) return future == Disposables.DISPOSED;
-			if (key == Attr.TERMINATED) return future == FINISHED;
-			if (key == Attr.BUFFERED) return 1;
+			if (key == Attr.CANCELLED) {
+				return future == Disposables.DISPOSED;
+			}
+			if (key == Attr.TERMINATED) {
+				return future == FINISHED;
+			}
+			if (key == Attr.BUFFERED) {
+				return 1;
+			}
 
 			return InnerProducer.super.scanUnsafe(key);
 		}
@@ -125,14 +130,18 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 				if (ONCE.compareAndSet(this, 0, 1)) {
 					try {
 						Disposable f = scheduler.schedule(this);
-						if (!FUTURE.compareAndSet(this, null, f)
-								&& future != FINISHED && future != Disposables.DISPOSED) {
+						if (!FUTURE.compareAndSet(this,
+								null,
+								f) && future != FINISHED && future != Disposables.DISPOSED) {
 							f.dispose();
 						}
 					}
 					catch (RejectedExecutionException ree) {
-						if(future != FINISHED && future != Disposables.DISPOSED) {
-							actual.onError(Operators.onRejectedExecution(ree, this, null, null));
+						if (future != FINISHED && future != Disposables.DISPOSED) {
+							actual.onError(Operators.onRejectedExecution(ree,
+									this,
+									null,
+									value));
 						}
 					}
 				}
@@ -200,8 +209,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 		}
 	}
 
-	static final class ScheduledEmpty
-			implements QueueSubscription<Void>, Runnable {
+	static final class ScheduledEmpty implements QueueSubscription<Void>, Runnable {
 
 		final Subscriber<?> actual;
 

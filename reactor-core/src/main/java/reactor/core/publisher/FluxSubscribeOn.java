@@ -65,7 +65,7 @@ final class FluxSubscribeOn<T> extends FluxOperator<T, T> {
 			worker.schedule(parent);
 		}
 		catch (RejectedExecutionException ree) {
-			if (!worker.isDisposed()) {
+			if (parent.s != Operators.cancelledSubscription()) {
 				s.onError(Operators.onRejectedExecution(ree, parent, null, null));
 			}
 		}
@@ -128,6 +128,9 @@ final class FluxSubscribeOn<T> extends FluxOperator<T, T> {
 				}
 				catch (RejectedExecutionException ree) {
 					if(!worker.isDisposed()) {
+						//FIXME should not throw but if we implement strict
+						// serialization like in StrictSubscriber, onNext will carry an
+						// extra cost
 						throw Operators.onRejectedExecution(ree, this, null, null);
 					}
 				}
@@ -141,20 +144,14 @@ final class FluxSubscribeOn<T> extends FluxOperator<T, T> {
 
 		@Override
 		public void onError(Throwable t) {
-			try {
-				actual.onError(t);
-			} finally {
-				worker.dispose();
-			}
+			worker.dispose();
+			actual.onError(t);
 		}
 
 		@Override
 		public void onComplete() {
-			try {
-				actual.onComplete();
-			} finally {
-				worker.dispose();
-			}
+			worker.dispose();
+			actual.onComplete();
 		}
 
 		@Override

@@ -321,10 +321,9 @@ public class MonoDelayElementTest {
 	@Test
 	public void upstreamIsDelayedSource() {
 		AtomicReference<Object> upstream = new AtomicReference<>();
-		Mono<Integer> source = Mono.fromDirect(Flux.range(1, 5));
 
-
-		StepVerifier.withVirtualTime(() -> new MonoDelayElement<>(source, 2, TimeUnit.SECONDS,
+		StepVerifier.withVirtualTime(() -> Mono.just(1).delayElement(Duration.ofSeconds
+						(2),
 				defaultSchedulerForDelay())
 				.doOnSubscribe(s -> {
 					assertThat(s).isInstanceOf(MonoDelayElement.DelayElementSubscriber.class);
@@ -338,8 +337,6 @@ public class MonoDelayElementTest {
 		            .expectNoEvent(Duration.ofSeconds(2))
 		            .expectNext(1)
 		            .verifyComplete();
-
-		assertThat(upstream.get()).isInstanceOf(FluxRange.RangeSubscription.class);
 	}
 
 	@Test

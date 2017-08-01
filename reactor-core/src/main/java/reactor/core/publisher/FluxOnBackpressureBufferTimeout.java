@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.Objects;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
@@ -32,9 +33,9 @@ import reactor.util.Logger;
 import reactor.util.Loggers;
 
 /**
- * Buffers values if the subscriber doesn't request fast enough, bounding the
- * buffer to a chosen size and applying a TTL (time-to-live) to the elements.
- * If the buffer overflows, drop the oldest element.
+ * Buffers values if the subscriber doesn't request fast enough, bounding the buffer to a
+ * chosen size and applying a TTL (time-to-live) to the elements. If the buffer overflows,
+ * drop the oldest element.
  *
  * @author Stephane Maldini
  * @author Simon Baslé
@@ -43,15 +44,17 @@ import reactor.util.Loggers;
 //see https://github.com/akarnokd/RxJava2Extensions/blob/master/src/main/java/hu/akarnokd/rxjava2/operators/FlowableOnBackpressureTimeout.java
 final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 
-	private static final Logger LOGGER = Loggers.getLogger(FluxOnBackpressureBufferTimeout.class);
+	private static final Logger LOGGER =
+			Loggers.getLogger(FluxOnBackpressureBufferTimeout.class);
 
-	final Duration               ttl;
-	final Scheduler              ttlScheduler;
-	final int                    bufferSize;
-	final Consumer<? super O>    onBufferEviction;
+	final Duration            ttl;
+	final Scheduler           ttlScheduler;
+	final int                 bufferSize;
+	final Consumer<? super O> onBufferEviction;
 
 	FluxOnBackpressureBufferTimeout(Flux<? extends O> source,
-			Duration ttl, Scheduler ttlScheduler,
+			Duration ttl,
+			Scheduler ttlScheduler,
 			int bufferSize,
 			Consumer<? super O> onBufferEviction) {
 		super(source);
@@ -64,8 +67,10 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 	@Override
 	public void subscribe(CoreSubscriber<? super O> s) {
 		source.subscribe(new BackpressureBufferTimeoutSubscriber<>(s,
-				ttl, ttlScheduler,
-				bufferSize, onBufferEviction));
+				ttl,
+				ttlScheduler,
+				bufferSize,
+				onBufferEviction));
 	}
 
 	@Override
@@ -91,9 +96,9 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 		Throwable error;
 
 		volatile int wip;
-		static final AtomicIntegerFieldUpdater<BackpressureBufferTimeoutSubscriber> WIP = AtomicIntegerFieldUpdater.newUpdater(
-				BackpressureBufferTimeoutSubscriber.class,
-				"wip");
+		static final AtomicIntegerFieldUpdater<BackpressureBufferTimeoutSubscriber> WIP =
+				AtomicIntegerFieldUpdater.newUpdater(BackpressureBufferTimeoutSubscriber.class,
+						"wip");
 
 		volatile long requested;
 		static final AtomicLongFieldUpdater<BackpressureBufferTimeoutSubscriber>
@@ -102,14 +107,17 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 				"requested");
 
 		BackpressureBufferTimeoutSubscriber(CoreSubscriber<? super T> actual,
-				Duration ttl, Scheduler ttlScheduler,
+				Duration ttl,
+				Scheduler ttlScheduler,
 				int bufferSize,
 				Consumer<? super T> onBufferEviction) {
 			this.actual = actual;
-			this.onBufferEviction = Objects.requireNonNull(onBufferEviction, "buffer eviction callback must not be null");
+			this.onBufferEviction = Objects.requireNonNull(onBufferEviction,
+					"buffer eviction callback must not be null");
 			this.bufferSizeDouble = bufferSize << 1;
 			this.ttl = ttl;
-			this.ttlScheduler = Objects.requireNonNull(ttlScheduler, "ttl Scheduler must not be null");
+			this.ttlScheduler = Objects.requireNonNull(ttlScheduler,
+					"ttl Scheduler must not be null");
 			this.worker = ttlScheduler.createWorker();
 		}
 
@@ -170,7 +178,7 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 
 		@SuppressWarnings("unchecked")
 		void clearQueue() {
-			for (;;) {
+			for (; ; ) {
 				T evicted;
 				synchronized (this) {
 					if (this.isEmpty()) {
@@ -209,7 +217,13 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 				this.offer(t);
 			}
 			evict(evicted);
-			worker.schedule(this, ttl.toMillis(), TimeUnit.MILLISECONDS);
+			try {
+				worker.schedule(this, ttl.toMillis(), TimeUnit.MILLISECONDS);
+			}
+			catch (RejectedExecutionException re) {
+				done = true;
+				error = Operators.onRejectedExecution(re, this, null, t);
+			}
 			drain();
 		}
 
@@ -229,7 +243,7 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 		@SuppressWarnings("unchecked")
 		@Override
 		public void run() {
-			for (;;) {
+			for (; ; ) {
 				if (cancelled) {
 					break;
 				}
@@ -245,7 +259,8 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 						if (ts <= ttlScheduler.now(TimeUnit.MILLISECONDS) - ttl.toMillis()) {
 							this.poll();
 							evicted = (T) this.poll();
-						} else {
+						}
+						else {
 							break;
 						}
 					}
@@ -266,9 +281,13 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 			if (evicted != null) {
 				try {
 					onBufferEviction.accept(evicted);
-				} catch (Throwable ex) {
+				}
+				catch (Throwable ex) {
 					if (LOGGER.isDebugEnabled()) {
-						LOGGER.debug("value [{}] couldn't be evicted due to a callback error. This error will be dropped: {}", evicted, ex);
+						LOGGER.debug(
+								"value [{}] couldn't be evicted due to a callback error. This error will be dropped: {}",
+								evicted,
+								ex);
 					}
 					Operators.onErrorDropped(ex);
 				}
@@ -283,7 +302,7 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 
 			int missed = 1;
 
-			for (;;) {
+			for (; ; ) {
 				long r = requested;
 				long e = 0;
 
@@ -299,7 +318,8 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 					synchronized (this) {
 						if (this.poll() != null) {
 							v = (T) this.poll();
-						} else {
+						}
+						else {
 							v = null;
 						}
 					}
@@ -310,7 +330,8 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 						Throwable ex = error;
 						if (ex != null) {
 							actual.onError(ex);
-						} else {
+						}
+						else {
 							actual.onComplete();
 						}
 
@@ -343,7 +364,8 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 						Throwable ex = error;
 						if (ex != null) {
 							actual.onError(ex);
-						} else {
+						}
+						else {
 							actual.onComplete();
 						}
 

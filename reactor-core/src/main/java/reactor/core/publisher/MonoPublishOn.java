@@ -62,8 +62,16 @@ final class MonoPublishOn<T> extends MonoOperator<T, T> {
 						Disposable.class,
 						"future");
 
-		T         value;
-		Throwable error;
+
+		volatile T         value;
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<PublishOnSubscriber, Object>
+				VALUE =
+				AtomicReferenceFieldUpdater.newUpdater(PublishOnSubscriber.class,
+						Object.class,
+						"value");
+
+		volatile Throwable error;
 
 		PublishOnSubscriber(CoreSubscriber<? super T> actual,
 				Scheduler scheduler) {
@@ -98,48 +106,38 @@ final class MonoPublishOn<T> extends MonoOperator<T, T> {
 		@Override
 		public void onNext(T t) {
 			value = t;
-			schedule(this, null, t);
+			trySchedule(this, null, t);
 		}
 
 		@Override
 		public void onError(Throwable t) {
 			error = t;
-			schedule(null, t, null);
+			trySchedule(null, t, null);
 		}
 
 		@Override
 		public void onComplete() {
 			if (value == null) {
-				schedule(null, null, null,
-						future != Disposables.DISPOSED);
+				trySchedule(null, null, null);
 			}
 		}
 
-		void schedule(
+		void trySchedule(
 				@Nullable Subscription subscription,
 				@Nullable Throwable suppressed,
 				@Nullable Object dataSignal) {
-			schedule(subscription, suppressed, dataSignal, true);
-		}
 
-		void schedule(
-				@Nullable Subscription subscription,
-				@Nullable Throwable suppressed,
-				@Nullable Object dataSignal,
-				boolean additionalCondition) {
-			if (future == null) {
+				if(future != null){
+					return;
+				}
+
 				try {
-					Disposable c = scheduler.schedule(this);
-					if (!FUTURE.compareAndSet(this, null, c)) {
-						c.dispose();
-					}
+					future = this.scheduler.schedule(this);
 				}
 				catch (RejectedExecutionException ree) {
-					if (additionalCondition) {
-						throw Operators.onRejectedExecution(ree, subscription, suppressed, dataSignal);
-					}
+					actual.onError(Operators.onRejectedExecution(ree, subscription,
+							suppressed,	dataSignal));
 				}
-			}
 		}
 
 		@Override
@@ -152,33 +150,34 @@ final class MonoPublishOn<T> extends MonoOperator<T, T> {
 			Disposable c = future;
 			if (c != Disposables.DISPOSED) {
 				c = FUTURE.getAndSet(this, Disposables.DISPOSED);
-				if (c != null && c != Disposables.DISPOSED) {
+				if (c != null && !Disposables.isDisposed(c)) {
 					c.dispose();
 				}
+				value = null;
 			}
 			s.cancel();
 		}
 
 		@Override
+		@SuppressWarnings("unchecked")
 		public void run() {
 			if (Disposables.isDisposed(future)) {
 				return;
 			}
-			T v = value;
-			value = null;
+			T v = (T)VALUE.getAndSet(this, null);
+
 			if (v != null) {
 				actual.onNext(v);
-			}
-
-			if (Disposables.isDisposed(future)) {
-				return;
-			}
-			Throwable e = error;
-			if (e != null) {
-				actual.onError(e);
+				actual.onComplete();
 			}
 			else {
-				actual.onComplete();
+				Throwable e = error;
+				if (e != null) {
+					actual.onError(e);
+				}
+				else {
+					actual.onComplete();
+				}
 			}
 		}
 	}

@@ -54,7 +54,7 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 			worker.schedule(parent);
 		}
 		catch (RejectedExecutionException ree) {
-			if (!worker.isDisposed()) {
+			if (parent.s != Operators.cancelledSubscription()) {
 				s.onError(Operators.onRejectedExecution(ree, parent, null, null));
 			}
 		}
@@ -107,20 +107,10 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (!Operators.setOnce(S, this, s)) {
-				s.cancel();
-			}
-			else {
+			if (Operators.setOnce(S, this, s)) {
 				long r = REQUESTED.getAndSet(this, 0L);
 				if (r != 0L) {
-					try {
-						worker.schedule(() -> requestMore(r));
-					}
-					catch (RejectedExecutionException ree) {
-						if (!worker.isDisposed()) {
-							actual.onError(Operators.onRejectedExecution(ree, this, null, null));
-						}
-					}
+					trySchedule(r, s);
 				}
 			}
 		}
@@ -137,34 +127,44 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 
 		@Override
 		public void onError(Throwable t) {
-			try {
-				actual.onError(t);
-			}
-			finally {
-				worker.dispose();
-			}
+			worker.dispose();
+			actual.onError(t);
 		}
 
 		@Override
 		public void onComplete() {
-			try {
-				actual.onComplete();
-			}
-			finally {
-				worker.dispose();
-			}
+			worker.dispose();
+			actual.onComplete();
+
 		}
 
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				try {
-					worker.schedule(() -> requestMore(n));
+				Subscription a = s;
+				if (a != null) {
+					trySchedule(n, a);
 				}
-				catch (RejectedExecutionException ree) {
-					if (!worker.isDisposed()) {
-						actual.onError(Operators.onRejectedExecution(ree, this, null, null));
+				else {
+					Operators.getAndAddCap(REQUESTED, this, n);
+					a = s;
+					if (a != null) {
+						long r = REQUESTED.getAndSet(this, 0L);
+						if (r != 0L) {
+							trySchedule(n, a);
+						}
 					}
+				}
+			}
+		}
+
+		void trySchedule(long n, Subscription s){
+			try {
+				worker.schedule(() -> s.request(n));
+			}
+			catch (RejectedExecutionException ree) {
+				if (!worker.isDisposed()) {
+					actual.onError(Operators.onRejectedExecution(ree, this, null, null));
 				}
 			}
 		}
@@ -173,23 +173,6 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 		public void cancel() {
 			if (Operators.terminate(S, this)) {
 				worker.dispose();
-			}
-		}
-
-		void requestMore(long n) {
-			Subscription a = s;
-			if (a != null) {
-				a.request(n);
-			}
-			else {
-				Operators.getAndAddCap(REQUESTED, this, n);
-				a = s;
-				if (a != null) {
-					long r = REQUESTED.getAndSet(this, 0L);
-					if (r != 0L) {
-						a.request(r);
-					}
-				}
 			}
 		}
 	}

@@ -6372,6 +6372,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * {@code flux.subscribeOn(Schedulers.single()).subscribe() }
 	 * </pre></blockquote>
 	 *
+	 * <p>
+	 *     Note that {@link Scheduler.Worker#schedule(Runnable)} raising
+	 *     {@link java.util.concurrent.RejectedExecutionException} on late
+	 *     {@link Subscription#request(long)} will be propagated to the request caller.
+	 *
 	 * @param scheduler a {@link Scheduler} providing the {@link Worker} where to subscribe
 	 *
 	 * @return a {@link Flux} requesting asynchronously
