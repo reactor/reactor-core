@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package reactor.util;
+package reactor.core;
 
 import java.io.IOException;
 
 import org.junit.Test;
-import reactor.core.Exceptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertFalse;
@@ -27,7 +26,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author Stephane Maldini
  */
-public class ExceptionTests {
+public class ExceptionsTest {
 
 	@Test
 	public void testWrapping() throws Exception {
@@ -84,6 +83,30 @@ public class ExceptionTests {
 				.hasMessage("Multiple exceptions")
 	            .hasSuppressedException(e1)
 	            .hasSuppressedException(e2);
+	}
+
+	@Test
+	public void isMultiple() {
+		Exception e1 = new IllegalStateException("1");
+		Exception e2 = new IllegalArgumentException("2");
+
+		Exception composite = Exceptions.multiple(e1, e2);
+
+		assertThat(Exceptions.isMultiple(composite)).isTrue();
+		assertThat(Exceptions.isMultiple(Exceptions.failWithCancel())).isFalse();
+		assertThat(Exceptions.isMultiple(null)).isFalse();
+	}
+
+	@Test
+	public void unwrapMultipleNull() {
+		assertThat(Exceptions.unwrapMultiple(null))
+				.isEmpty();
+	}
+
+	@Test
+	public void unwrapMultipleNotComposite() {
+		RuntimeException e1 = Exceptions.failWithCancel();
+		assertThat(Exceptions.unwrapMultiple(e1)).containsExactly(e1);
 	}
 
 }
