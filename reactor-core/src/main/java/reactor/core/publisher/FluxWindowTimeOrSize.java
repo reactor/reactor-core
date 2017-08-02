@@ -235,7 +235,7 @@ final class FluxWindowTimeOrSize<T> extends FluxOperator<T, Flux<T>> {
 				return true;
 			}
 			catch (RejectedExecutionException ree) {
-				onError(Operators.onRejectedExecution(ree, this, null, null));
+				onError(Operators.onRejectedExecution(ree));
 				return false;
 			}
 		}
