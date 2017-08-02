@@ -69,7 +69,14 @@ public abstract class Exceptions {
 			if (current == null) {
 				update = exception;
 			}
+			else if (current.getClass().equals(RuntimeException.class)
+					&& MULTIPLE_EXCEPTIONS == current.getMessage()) {
+				System.out.println("adding suppressed " + exception);
+				current.addSuppressed(exception);
+				return true;
+			}
 			else {
+				System.out.println("creating composite, adding suppressed " + exception);
 				update = multiple(current, exception);
 			}
 
@@ -80,7 +87,7 @@ public abstract class Exceptions {
 	}
 
 	public static RuntimeException multiple(Throwable... throwables) {
-		RuntimeException multiple = new RuntimeException("Multiple exceptions");
+		RuntimeException multiple = new RuntimeException(MULTIPLE_EXCEPTIONS);
 		//noinspection ConstantConditions
 		if (throwables != null) {
 			for (Throwable t : throwables) {
@@ -390,4 +397,5 @@ public abstract class Exceptions {
 		}
 	}
 
+	static final String MULTIPLE_EXCEPTIONS = "Multiple exceptions";
 }
