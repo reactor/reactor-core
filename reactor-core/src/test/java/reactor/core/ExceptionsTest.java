@@ -16,8 +16,11 @@
 package reactor.core;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import org.junit.Before;
 import org.junit.Test;
+import reactor.test.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertFalse;
@@ -109,4 +112,54 @@ public class ExceptionsTest {
 		assertThat(Exceptions.unwrapMultiple(e1)).containsExactly(e1);
 	}
 
+	volatile Throwable addThrowable;
+	static final AtomicReferenceFieldUpdater<ExceptionsTest, Throwable> ADD_THROWABLE =
+			AtomicReferenceFieldUpdater.newUpdater(ExceptionsTest.class, Throwable.class, "addThrowable");
+
+	@Before
+	public void resetAddThrowable() {
+		addThrowable = null;
+	}
+
+	@Test
+	public void addThrowable() {
+		Throwable e1 = new IllegalStateException("add1");
+		Throwable e2 = new IllegalArgumentException("add2");
+		Throwable e3 = new OutOfMemoryError("add3");
+
+		assertThat(addThrowable).isNull();
+
+		Exceptions.addThrowable(ADD_THROWABLE, this, e1);
+
+		assertThat(addThrowable).isSameAs(e1);
+
+		Exceptions.addThrowable(ADD_THROWABLE, this, e2);
+
+		assertThat(Exceptions.isMultiple(addThrowable)).isTrue();
+		assertThat(addThrowable)
+				.hasSuppressedException(e1)
+				.hasSuppressedException(e2);
+
+		Exceptions.addThrowable(ADD_THROWABLE, this, e3);
+
+		assertThat(Exceptions.isMultiple(addThrowable)).isTrue();
+		assertThat(addThrowable)
+				.hasSuppressedException(e1)
+				.hasSuppressedException(e2)
+				.hasSuppressedException(e3);
+	}
+
+	@Test
+	public void addThrowableRace() throws Exception {
+		for (int i = 0; i < 10; i++) {
+			final int idx = i;
+			RaceTestUtils.race(
+					() -> Exceptions.addThrowable(ADD_THROWABLE, ExceptionsTest.this, new IllegalStateException("boomState" + idx)),
+					() -> Exceptions.addThrowable(ADD_THROWABLE, ExceptionsTest.this, new IllegalArgumentException("boomArg" + idx))
+			);
+		}
+
+		assertThat(addThrowable.getSuppressed())
+				.hasSize(20);
+	}
 }
