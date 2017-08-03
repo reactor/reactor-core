@@ -32,7 +32,7 @@ public class GuideDebuggingExtraTests {
 
 	@Test
 	public void debuggingActivatedWithDeepTraceback() {
-		Hooks.onOperator(h -> h.operatorStacktrace());
+		Hooks.onOperatorDebug();
 
 		try {
 			StringWriter sw = new StringWriter();
@@ -55,7 +55,7 @@ public class GuideDebuggingExtraTests {
 							+ "\t|_\tFlux.transform(GuideDebuggingExtraTests.java:41)\n\n");
 		}
 		finally {
-			Hooks.resetOnOperator();
+			Hooks.resetOnOperatorDebug();
 		}
 	}
 }

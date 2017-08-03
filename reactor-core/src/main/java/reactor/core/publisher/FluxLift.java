@@ -13,45 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.function.BiFunction;
-import java.util.function.Function;
-
-import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 
 /**
- * A decorating {@link Mono} {@link Publisher} that exposes {@link Mono} API over an
- * arbitrary {@link Publisher} Useful to create operators which return a {@link Mono}.
- *
- * @param <I> delegate {@link Publisher} type
- * @param <O> produced type
+ * @author Stephane Maldini
  */
-public abstract class MonoOperator<I, O> extends Mono<O> implements Scannable {
+final class FluxLift<I, O> extends FluxOperator<I, O> {
 
-	protected final Mono<? extends I> source;
+	final BiFunction<Scannable, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>>
+			lifter;
 
-	/**
-	 * Build a {@link MonoOperator} wrapper around the passed parent {@link Publisher}
-	 *
-	 * @param source the {@link Publisher} to decorate
-	 */
-	protected MonoOperator(Mono<? extends I> source) {
-		this.source = Objects.requireNonNull(source);
+	FluxLift(Publisher<I> p,
+			BiFunction<Scannable, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>> lifter) {
+		super(Flux.from(p));
+		this.lifter = lifter;
 	}
 
 	@Override
-	@Nullable
-	public Object scanUnsafe(Attr key) {
-		if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
-		if (key == Attr.PARENT) return source;
-		return null;
-	}
+	public void subscribe(CoreSubscriber<? super O> actual) {
+		CoreSubscriber<? super I> input =
+				lifter.apply(Scannable.from(source), actual);
 
+		Objects.requireNonNull(input, "Lifted subscriber MUST NOT be null");
+
+		source.subscribe(input);
+	}
 }

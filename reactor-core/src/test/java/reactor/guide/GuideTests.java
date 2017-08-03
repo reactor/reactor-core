@@ -19,10 +19,8 @@ package reactor.guide;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
@@ -35,7 +33,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.junit.After;
@@ -887,7 +884,7 @@ public class GuideTests {
 	}
 
 	private Mono<String> scatterAndGather(Flux<String> urls) {
-		return urls.flatMap(url -> doRequest(url))
+		return urls.flatMap(this::doRequest)
 		           .single();
 	}
 
@@ -899,14 +896,8 @@ public class GuideTests {
 		if (testName.getMethodName().equals("debuggingCommonStacktrace")) {
 			toDebug = scatterAndGather(urls());
 		}
-		else if (testName.getMethodName().equals("debuggingActivatedForSpecific")) {
-			Hooks.onOperator(hook -> hook
-					.ifNameContains("single")
-					.operatorStacktrace());
-			toDebug = scatterAndGather(urls());
-		}
 		else if (testName.getMethodName().startsWith("debuggingActivated")) {
-			Hooks.onOperator(Hooks.OperatorHook::operatorStacktrace);
+			Hooks.onOperatorDebug();
 			toDebug = scatterAndGather(urls());
 		}
 	}
@@ -914,7 +905,7 @@ public class GuideTests {
 	@After
 	public void removeHooks() {
 		if (testName.getMethodName().startsWith("debuggingActivated")) {
-			Hooks.resetOnOperator();
+			Hooks.resetOnOperatorDebug();
 		}
 	}
 
@@ -933,7 +924,7 @@ public class GuideTests {
 				assertThat(withSuppressed.getSuppressed()).hasSize(1);
 				assertThat(withSuppressed.getSuppressed()[0])
 						.hasMessageStartingWith("\nAssembly trace from producer [reactor.core.publisher.MonoSingle] :")
-						.hasMessageEndingWith("Flux.single(GuideTests.java:891)\n");
+						.hasMessageEndingWith("Flux.single(GuideTests.java:888)\n");
 			});
 		}
 	}
@@ -945,11 +936,6 @@ public class GuideTests {
 
 	@Test
 	public void debuggingActivated() {
-		toDebug.subscribe(System.out::println, t -> printAndAssert(t, true));
-	}
-
-	@Test
-	public void debuggingActivatedForSpecific() {
 		toDebug.subscribe(System.out::println, t -> printAndAssert(t, true));
 	}
 

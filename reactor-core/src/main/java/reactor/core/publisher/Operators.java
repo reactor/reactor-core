@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
@@ -33,7 +34,6 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-import reactor.util.context.Context;
 
 /**
  * An helper to support "Operator" writing, handle noop subscriptions, validate request
@@ -139,6 +139,18 @@ public abstract class Operators {
 	}
 
 	/**
+	 * A {@link Subscriber} that is expected to be used as a placeholder and
+	 * never actually be called. All methods log an error.
+	 *
+	 * @param <T> the type of data (ignored)
+	 * @return a placeholder subscriber
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> CoreSubscriber<T> emptySubscriber() {
+		return (CoreSubscriber<T>) EMPTY_SUBSCRIBER;
+	}
+
+	/**
 	 * A singleton enumeration that represents a no-op Subscription instance that
 	 * can be freely given out to clients.
 	 * <p>
@@ -185,6 +197,28 @@ public abstract class Operators {
 		} while (!updater.compareAndSet(instance, r, u));
 
 		return r;
+	}
+
+
+
+	/**
+	 * Create a function that can be used to support a custom operator via
+	 * {@link CoreSubscriber} decoration. The function is compatible with
+	 * {@link Flux#transform(Function)}, {@link Mono#transform(Function)},
+	 * {@link Hooks#onEachOperator(Function)} and {@link Hooks#onLastOperator(Function)}
+	 *
+	 * @param lifter the bifunction taking {@link Scannable} from the enclosing
+	 * publisher and consuming {@link CoreSubscriber}. It must return a receiving
+	 * {@link CoreSubscriber} that will immediately subscribe to the applied
+	 * {@link Publisher}.
+	 *
+	 * @param <I> the input type
+	 * @param <O> the output type
+	 *
+	 * @return a new {@link Function}
+	 */
+	public static <I, O> Function<? super Publisher<I>, ? extends Publisher<O>> lift(BiFunction<Scannable, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>> lifter) {
+		return new LiftFunction<>(lifter);
 	}
 
 	/**
@@ -358,44 +392,6 @@ public abstract class Operators {
 			return Exceptions.propagate(Operators.onOperatorError(subscription, ree, dataSignal));
 		}
 		return Exceptions.propagate(Operators.onOperatorError(subscription, ree));
-	}
-
-	/**
-	 * Apply {@link Hooks#onNewSubscriber(BiFunction)} hook to the passed
-	 * {@link Subscriber} and return eventually transformed subscriber.
-	 * <p>
-	 *     If the actual {@link Subscriber} is not a {@link CoreSubscriber}, it will apply
-	 *     safe strict wrapping to apply all reactive streams rules including the ones
-	 *     relaxed by internal operators based on {@link CoreSubscriber}.
-	 *
-	 * @param source the {@link Publisher} subscribed to
-	 * @param actual the {@link Subscriber} to apply hook on
-	 * @param <T> passed subscriber type
-	 *
-	 * @return an eventually transformed {@link Subscriber}
-	 */
-	@SuppressWarnings("unchecked")
-	public static <T> CoreSubscriber<? super T> onNewSubscriber(Publisher<? extends T> source, Subscriber<? super T> actual) {
-
-		Objects.requireNonNull(actual, "actual");
-
-		BiFunction<? super Publisher<?>, ? super CoreSubscriber<?>, ? extends CoreSubscriber<?>> hook =
-				Hooks.onSubscriberHook;
-
-		CoreSubscriber<? super T> _actual;
-
-		if (actual instanceof CoreSubscriber){
-			_actual = (CoreSubscriber<? super T>) actual;
-		}
-		else {
-			_actual = new StrictSubscriber<>(actual);
-		}
-
-		if (hook != null) {
-			return Objects.requireNonNull((CoreSubscriber<? super T>) hook.apply(source, _actual),
-					"Hooks returned null subscriber");
-		}
-		return _actual;
 	}
 
 	/**
@@ -687,15 +683,30 @@ public abstract class Operators {
 	}
 
 	/**
-	 * A {@link Subscriber} that is expected to be used as a placeholder and
-	 * never actually be called. All methods log an error.
+	 * If the actual {@link Subscriber} is not a {@link CoreSubscriber}, it will apply
+	 * safe strict wrapping to apply all reactive streams rules including the ones
+	 * relaxed by internal operators based on {@link CoreSubscriber}.
 	 *
-	 * @param <T> the type of data (ignored)
-	 * @return a placeholder subscriber
+	 * @param <T> passed subscriber type
+	 *
+	 * @param actual the {@link Subscriber} to apply hook on
+	 * @return an eventually transformed {@link Subscriber}
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> CoreSubscriber<T> emptySubscriber() {
-		return (CoreSubscriber<T>) EMPTY_SUBSCRIBER;
+	public static <T> CoreSubscriber<? super T> toCoreSubscriber(Subscriber<? super T> actual) {
+
+		Objects.requireNonNull(actual, "actual");
+
+		CoreSubscriber<? super T> _actual;
+
+		if (actual instanceof CoreSubscriber){
+			_actual = (CoreSubscriber<? super T>) actual;
+		}
+		else {
+			_actual = new StrictSubscriber<>(actual);
+		}
+
+		return _actual;
 	}
 
 	Operators() {
@@ -1585,6 +1596,31 @@ public abstract class Operators {
 
 		}
 	}
+
+	final static class LiftFunction<I, O>
+			implements Function<Publisher<I>, Publisher<O>> {
+
+		final BiFunction<Scannable, ? super CoreSubscriber<? super O>,
+				? extends CoreSubscriber<? super I>> lifter;
+
+		LiftFunction(BiFunction<Scannable, ? super CoreSubscriber<? super O>,
+				? extends CoreSubscriber<? super I>> lifter) {
+			this.lifter = Objects.requireNonNull(lifter, "lifter");
+		}
+
+		@Override
+		public Publisher<O> apply(Publisher<I> publisher) {
+			if (publisher instanceof Mono) {
+				return new MonoLift<>(publisher, lifter);
+			}
+			if (publisher instanceof ParallelFlux) {
+				return new ParallelLift<>((ParallelFlux<I>)publisher, lifter);
+			}
+
+			return new FluxLift<>(publisher, lifter);
+		}
+	}
+
 
 	final static Logger log = Loggers.getLogger(Operators.class);
 }

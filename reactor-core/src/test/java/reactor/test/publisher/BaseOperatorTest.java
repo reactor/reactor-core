@@ -964,9 +964,9 @@ public abstract class BaseOperatorTest<I, PI extends Publisher<? extends I>, O, 
 	final void resetHooks() {
 		Hooks.resetOnErrorDropped();
 		Hooks.resetOnNextDropped();
-		Hooks.resetOnOperator();
+		Hooks.resetOnEachOperator();
 		Hooks.resetOnOperatorError();
-		Hooks.resetOnNewSubscriber();
+		Hooks.resetOnLastOperator();
 	}
 
 	final  void testPublisherSource(OperatorScenario<I, PI, O, PO> scenario, TestPublisher<I> ts) {
