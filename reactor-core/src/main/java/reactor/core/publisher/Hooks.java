@@ -236,10 +236,6 @@ public abstract class Hooks {
 			return (Function<Publisher, Publisher>)current;
 		}
 		if (current != null) {
-			if (op == OnOperatorDebug.INSTANCE){
-				//debugging is always first
-				return (Function<Publisher, Publisher>)current.compose(op);
-			}
 			return (Function<Publisher, Publisher>)current.andThen(op);
 		}
 		else {
