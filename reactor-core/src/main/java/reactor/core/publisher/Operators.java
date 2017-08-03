@@ -1635,7 +1635,7 @@ public abstract class Operators {
 		LiftFunction(@Nullable Predicate<Scannable> filter,
 				BiFunction<Scannable, ? super CoreSubscriber<? super O>,
 				? extends CoreSubscriber<? super I>> lifter) {
-			this.filter = Objects.requireNonNull(filter, "filter");
+			this.filter = filter;
 			this.lifter = Objects.requireNonNull(lifter, "lifter");
 		}
 
