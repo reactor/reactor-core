@@ -971,11 +971,10 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 		int i = 0;
 		while(i < subscribers.length){
 			subscribers[i++] =
-					Operators.onNewSubscriber(this, new LambdaSubscriber<>(onNext,
-							onError, onComplete, onSubscribe));
+					new LambdaSubscriber<>(onNext, onError, onComplete, onSubscribe);
 		}
 
-		subscribe(subscribers);
+		onLastAssembly(this).subscribe(subscribers);
 	}
 
 	/**
@@ -987,9 +986,9 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	@Override
 	@SuppressWarnings("unchecked")
 	public final void subscribe(Subscriber<? super T> s) {
-		sequential().subscribe(new FluxHide.SuppressFuseableSubscriber<>(
-				Operators.onNewSubscriber(this, s))
-		);
+		Flux.onLastAssembly(sequential())
+		    .subscribe(new FluxHide.SuppressFuseableSubscriber<>(Operators.toCoreSubscriber(
+				    s)));
 	}
 
 	/**
@@ -1125,11 +1124,30 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings("unchecked")
 	protected static <T> ParallelFlux<T> onAssembly(ParallelFlux<T> source) {
-		Hooks.OnOperatorHook hook = Hooks.onOperatorHook;
+		Function<Publisher, Publisher> hook = Hooks.onEachOperatorHook;
 		if (hook == null) {
 			return source;
 		}
 		return (ParallelFlux<T>) hook.apply(source);
+	}
+
+	/**
+	 * Invoke {@link Hooks} pointcut given a {@link ParallelFlux} and returning an
+	 * eventually new {@link ParallelFlux}
+	 *
+	 * @param <T> the value type
+	 * @param source the source to wrap
+	 *
+	 * @return the potentially wrapped source
+	 */
+	@SuppressWarnings("unchecked")
+	protected static <T> ParallelFlux<T> onLastAssembly(ParallelFlux<T> source) {
+		Function<Publisher, Publisher> hook = Hooks.onLastOperatorHook;
+		if (hook == null) {
+			return source;
+		}
+		return (ParallelFlux<T>) Objects.requireNonNull(hook.apply(source),
+				"LastOperator hook returned null");
 	}
 
 	@SuppressWarnings("unchecked")
@@ -1192,4 +1210,5 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 
 		return both;
 	}
+
 }

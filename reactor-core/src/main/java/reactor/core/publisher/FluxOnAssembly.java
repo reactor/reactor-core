@@ -96,10 +96,13 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 				if (e.getLineNumber() <= 1) {
 					continue;
 				}
-				if (row.contains("reactor.core.publisher.Flux.onAssembly")) {
+				if (row.contains("java.util.function")) {
 					continue;
 				}
 				if (row.contains("reactor.core.publisher.Mono.onAssembly")) {
+					continue;
+				}
+				if (row.contains("reactor.core.publisher.Flux.onAssembly")) {
 					continue;
 				}
 				if (row.contains("reactor.core.publisher.ParallelFlux.onAssembly")) {
@@ -120,10 +123,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 				if (row.contains("FluxCallableOnAssembly.")) {
 					continue;
 				}
-				if (row.contains("OnOperatorHook")) {
-					continue;
-				}
-				if (row.contains("operatorStacktrace")) {
+				if (row.contains("OnOperatorDebug")) {
 					continue;
 				}
 				if (row.contains("reactor.core.publisher.Hooks")) {
@@ -239,8 +239,19 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super T> s) {
-		subscribe(s, source, snapshotStack);
+		if(snapshotStack != null) {
+			if (s instanceof ConditionalSubscriber) {
+				ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) s;
+				source.subscribe(new OnAssemblyConditionalSubscriber<>(cs,
+						snapshotStack,
+						source));
+			}
+			else {
+				source.subscribe(new OnAssemblySubscriber<>(s, snapshotStack, source));
+			}
+		}
 	}
 
 	/**

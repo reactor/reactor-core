@@ -16,6 +16,8 @@
 package reactor.core.publisher;
 
 import org.junit.Test;
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 
@@ -103,7 +105,7 @@ public class FluxSourceTest {
 
 
 	@Test
-	public void fluxmpty() {
+	public void fluxEmpty() {
 		StepVerifier.create(Mono.empty().flux())
 		            .verifyComplete();
 	}

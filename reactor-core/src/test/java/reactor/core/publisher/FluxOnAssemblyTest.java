@@ -88,7 +88,7 @@ public class FluxOnAssemblyTest {
 	public void checkpointEmptyAndDebug() {
 		StringWriter sw = new StringWriter();
 
-		Hooks.onOperator(Hooks.OperatorHook::operatorStacktrace);
+		Hooks.onOperatorDebug();
 
 		try {
 			Flux<Integer> tested = Flux.range(1, 10)
@@ -107,7 +107,7 @@ public class FluxOnAssemblyTest {
 					"Assembly trace from producer [reactor.core.publisher.FluxMapFuseable] :");
 		}
 		finally {
-			Hooks.resetOnOperator();
+			Hooks.resetOnOperatorDebug();
 		}
 	}
 

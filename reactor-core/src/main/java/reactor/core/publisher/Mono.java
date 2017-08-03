@@ -1278,7 +1278,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	@Nullable
 	public T block() {
 		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>();
-		subscribe(Operators.onNewSubscriber(this, subscriber));
+		onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
 		return subscriber.blockingGet();
 	}
 
@@ -1302,7 +1302,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	@Nullable
 	public T block(Duration timeout) {
 		BlockingMonoSubscriber<T> subscriber = new BlockingMonoSubscriber<>();
-		subscribe(Operators.onNewSubscriber(this, subscriber));
+		onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
 		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
 	}
 
@@ -2885,12 +2885,12 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	@Override
 	public final void subscribe(Subscriber<? super T> actual) {
-		subscribe(Operators.onNewSubscriber(this, actual));
+		onLastAssembly(this).subscribe(Operators.toCoreSubscriber(actual));
 	}
 
 	/**
 	 * An internal {@link Publisher#subscribe(Subscriber)} that will bypass
-	 * {@link Hooks#onNewSubscriber(BiFunction)} extension.
+	 * {@link Hooks#onLastOperator(Function)} pointcut.
 	 * <p>
 	 * In addition to behave as expected by {@link Publisher#subscribe(Subscriber)}
 	 * in a controlled manner, it supports direct subscribe-time {@link Context} passing.
@@ -3268,11 +3268,31 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings("unchecked")
 	protected static <T> Mono<T> onAssembly(Mono<T> source) {
-		Hooks.OnOperatorHook hook = Hooks.onOperatorHook;
+		Function<Publisher, Publisher> hook = Hooks.onEachOperatorHook;
 		if(hook == null) {
 			return source;
 		}
 		return (Mono<T>)hook.apply(source);
+	}
+
+	/**
+	 * To be used by custom operators: invokes assembly {@link Hooks} pointcut given a
+	 * {@link Mono}, potentially returning a new {@link Mono}. This is for example useful
+	 * to activate cross-cutting concerns at assembly time, eg. a generalized
+	 * {@link #checkpoint()}.
+	 *
+	 * @param <T> the value type
+	 * @param source the source to apply assembly hooks onto
+	 *
+	 * @return the source, potentially wrapped with assembly time cross-cutting behavior
+	 */
+	@SuppressWarnings("unchecked")
+	protected static <T> Mono<T> onLastAssembly(Mono<T> source) {
+		Function<Publisher, Publisher> hook = Hooks.onLastOperatorHook;
+		if(hook == null) {
+			return source;
+		}
+		return (Mono<T>)Objects.requireNonNull(hook.apply(source), "LastOperator hook returned null");
 	}
 
 	@Override

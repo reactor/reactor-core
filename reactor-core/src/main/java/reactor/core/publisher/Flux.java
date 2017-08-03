@@ -90,7 +90,7 @@ import reactor.util.function.Tuples;
  * {@link #subscribe(Subscriber)} used internally for {@link Context} passing. User
  * provided {@link Subscriber} may
  * be passed to this "subscribe" extension but will loose the available
- * per-subscribe @link Hooks#onNewSubscriber}.
+ * per-subscribe @link Hooks#onLastOperator}.
  *
  * @param <T> the element type of this Reactive Streams {@link Publisher}
  *
@@ -1905,7 +1905,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	@Nullable
 	public final T blockFirst() {
 		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>();
-		subscribe(Operators.onNewSubscriber(this, subscriber));
+		onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
 		return subscriber.blockingGet();
 	}
 
@@ -1925,7 +1925,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	@Nullable
 	public final T blockFirst(Duration timeout) {
 		BlockingFirstSubscriber<T> subscriber = new BlockingFirstSubscriber<>();
-		subscribe(Operators.onNewSubscriber(this, subscriber));
+		onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
 		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
 	}
 
@@ -1944,7 +1944,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	@Nullable
 	public final T blockLast() {
 		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>();
-		subscribe(Operators.onNewSubscriber(this, subscriber));
+		onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
 		return subscriber.blockingGet();
 	}
 
@@ -1965,7 +1965,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	@Nullable
 	public final T blockLast(Duration timeout) {
 		BlockingLastSubscriber<T> subscriber = new BlockingLastSubscriber<>();
-		subscribe(Operators.onNewSubscriber(this, subscriber));
+		onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
 		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
 	}
 
@@ -6343,12 +6343,12 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	@Override
 	public final void subscribe(Subscriber<? super T> actual) {
-		subscribe(Operators.onNewSubscriber(this, actual));
+		onLastAssembly(this).subscribe(Operators.toCoreSubscriber(actual));
 	}
 
 	/**
 	 * An internal {@link Publisher#subscribe(Subscriber)} that will bypass
-	 * {@link Hooks#onNewSubscriber(BiFunction)} extension.
+	 * {@link Hooks#onLastOperator(Function)} pointcut.
 	 * <p>
 	 * In addition to behave as expected by {@link Publisher#subscribe(Subscriber)}
 	 * in a controlled manner, it supports direct subscribe-time {@link Context} passing.
@@ -7509,11 +7509,31 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings("unchecked")
 	protected static <T> Flux<T> onAssembly(Flux<T> source) {
-		Hooks.OnOperatorHook hook = Hooks.onOperatorHook;
+		Function<Publisher, Publisher> hook = Hooks.onEachOperatorHook;
 		if(hook == null) {
 			return source;
 		}
 		return (Flux<T>)hook.apply(source);
+	}
+
+	/**
+	 * To be used by custom operators: invokes assembly {@link Hooks} pointcut given a
+	 * {@link Flux}, potentially returning a new {@link Flux}. This is for example useful
+	 * to activate cross-cutting concerns at assembly time, eg. a generalized
+	 * {@link #checkpoint()}.
+	 *
+	 * @param <T> the value type
+	 * @param source the source to apply assembly hooks onto
+	 *
+	 * @return the source, potentially wrapped with assembly time cross-cutting behavior
+	 */
+	@SuppressWarnings("unchecked")
+	protected static <T> Flux<T> onLastAssembly(Flux<T> source) {
+		Function<Publisher, Publisher> hook = Hooks.onLastOperatorHook;
+		if(hook == null) {
+			return source;
+		}
+		return (Flux<T>)Objects.requireNonNull(hook.apply(source), "LastOperator hook returned null");
 	}
 
 	/**
@@ -7529,7 +7549,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	@SuppressWarnings("unchecked")
 	protected static <T> ConnectableFlux<T> onAssembly(ConnectableFlux<T> source) {
-		Hooks.OnOperatorHook hook = Hooks.onOperatorHook;
+		Function<Publisher, Publisher> hook = Hooks.onEachOperatorHook;
 		if(hook == null) {
 			return source;
 		}
