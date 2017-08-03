@@ -95,7 +95,7 @@ public class AtomicCompositeDisposableTest {
 		assertThat(cd.size()).isEqualTo(1);
 		assertThat(d.isDisposed()).isFalse();
 
-		boolean removed = cd.removeAndDispose(d);
+		boolean removed = cd.dispose(d);
 
 		assertThat(removed).isTrue();
 		assertThat(cd.size()).isZero();
@@ -113,7 +113,7 @@ public class AtomicCompositeDisposableTest {
 		assertThat(d1.isDisposed()).isFalse();
 		assertThat(d2.isDisposed()).isFalse();
 
-		cd.clear();
+		cd.disposeAll();
 
 		assertThat(cd.size()).isZero();
 		assertThat(d1.isDisposed()).isTrue();
@@ -162,7 +162,7 @@ public class AtomicCompositeDisposableTest {
 	public void removeAndDisposeInexistant() throws Exception {
 		FakeDisposable d = new FakeDisposable();
 		CompositeDisposable<Disposable> cd = new AtomicCompositeDisposable();
-		boolean deleted = cd.removeAndDispose(d);
+		boolean deleted = cd.dispose(d);
 
 		assertThat(deleted).isFalse();
 		assertThat(d.isDisposed()).isFalse();
@@ -211,7 +211,7 @@ public class AtomicCompositeDisposableTest {
 		FakeDisposable d = new FakeDisposable();
 		CompositeDisposable<Disposable> cd = new AtomicCompositeDisposable(d);
 		cd.dispose();
-		boolean removed = cd.removeAndDispose(d);
+		boolean removed = cd.dispose(d);
 
 		assertThat(removed).isFalse();
 		assertThat(cd.size()).isZero();
@@ -223,7 +223,7 @@ public class AtomicCompositeDisposableTest {
 		FakeDisposable d = new FakeDisposable();
 		CompositeDisposable<Disposable> cd = new AtomicCompositeDisposable(d);
 		cd.dispose();
-		cd.clear();
+		cd.disposeAll();
 
 		assertThat(d.disposed).isEqualTo(1);
 	}
@@ -278,7 +278,7 @@ public class AtomicCompositeDisposableTest {
 
 		assertThat(cd.size()).isEqualTo(2);
 
-		cd.clear();
+		cd.disposeAll();
 
 		assertThat(cd.size()).isZero();
 		assertThat(list).hasSize(2);
@@ -301,7 +301,7 @@ public class AtomicCompositeDisposableTest {
 			final Disposable d1 = new FakeDisposable();
 			final CompositeDisposable<Disposable> cd = new AtomicCompositeDisposable(d1);
 
-			RaceTestUtils.race(cd::clear,
+			RaceTestUtils.race(cd::disposeAll,
 					cd::dispose, Schedulers.elastic());
 		}
 	}

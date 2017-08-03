@@ -211,7 +211,7 @@ public final class DefaultDisposable {
 		}
 
 		@Override
-		public void clear() {
+		public void disposeAll() {
 			if (disposed) {
 				return;
 			}

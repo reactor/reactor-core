@@ -281,7 +281,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		}
 
 		@Override
-		public void clear() {
+		public void disposeAll() {
 			if (shutdown) {
 				return;
 			}

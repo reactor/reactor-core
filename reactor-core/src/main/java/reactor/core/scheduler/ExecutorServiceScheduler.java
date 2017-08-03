@@ -158,7 +158,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 				}
 			}
 			catch (RejectedExecutionException ree) {
-				removeAndDispose(sr);
+				dispose(sr);
 				//RejectedExecutionException are propagated up
 				throw ree;
 			}
@@ -182,7 +182,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 				}
 			}
 			catch (RejectedExecutionException ree) {
-				removeAndDispose(sr);
+				dispose(sr);
 				//RejectedExecutionException are propagated up
 				throw ree;
 			}
@@ -206,7 +206,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 				}
 			}
 			catch (RejectedExecutionException ree) {
-				removeAndDispose(sr);
+				dispose(sr);
 				//RejectedExecutionException are propagated up
 				throw ree;
 			}
@@ -243,7 +243,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 		}
 
 		@Override
-		public void clear() {
+		public void disposeAll() {
 			if (!terminated) {
 				OpenHashSet<ExecutorServiceSchedulerRunnable> coll;
 				synchronized (this) {

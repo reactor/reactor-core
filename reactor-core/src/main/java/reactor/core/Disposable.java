@@ -78,13 +78,13 @@ public interface Disposable {
 
 	/**
 	 * A container of {@link Disposable} that is itself {@link Disposable}. Add and remove
-	 * disposable, and dispose them all in one go by either using {@link #clear()}
+	 * disposable, and dispose them all in one go by either using {@link #disposeAll()}
 	 * (allowing further reuse of the container) or {@link #dispose()} (disallowing further
 	 * reuse of the container).
 	 * <p>
 	 * Two removal operations are offered: {@link #remove(Disposable)} will NOT call
 	 * {@link Disposable#dispose()} on the element removed from the container, while
-	 * {@link #removeAndDispose(Disposable)} will.
+	 * {@link #dispose(Disposable)} will.
 	 *
 	 * @author Simon Baslé
 	 */
@@ -132,7 +132,7 @@ public interface Disposable {
 		 *
 		 * @param d the {@link Disposable} to remove.
 		 * @return true if the disposable was successfully deleted, false otherwise.
-		 * @see #removeAndDispose(Disposable)
+		 * @see #dispose(Disposable)
 		 */
 		boolean remove(T d);
 
@@ -144,7 +144,7 @@ public interface Disposable {
 		 * @return true if the disposable was successfully removed and disposed, false otherwise.
 		 * @see #remove(Disposable)
 		 */
-		default boolean removeAndDispose(T disposable) {
+		default boolean dispose(T disposable) {
 			if (remove(disposable)) {
 				disposable.dispose();
 				return true;
@@ -153,10 +153,11 @@ public interface Disposable {
 		}
 
 		/**
-		 * Atomically clears the container, then disposes all the previously contained Disposables.
-		 * Unlike with {@link #dispose()}, the container can still be used after that.
+		 * Atomically clears the container, then disposes all the previously contained
+		 * Disposables BUT <i>not the container itself</i>. That is, unlike with
+		 * {@link #dispose()} the container can still be used after that.
 		 */
-		void clear();
+		void disposeAll();
 
 		/**
 		 * Returns the number of currently held Disposables.
@@ -168,10 +169,10 @@ public interface Disposable {
 		 * Atomically mark the container as {@link #isDisposed() disposed}, clear it and then
 		 * dispose all the previously contained Disposables. From there on the container cannot
 		 * be reused, as {@link #add(Disposable)} and {@link #addAll(Collection)} methods
-		 * will immediately return {@literal false}. Use {@link #clear()} instead if you want
+		 * will immediately return {@literal false}. Use {@link #disposeAll()} instead if you want
 		 * to reuse the container.
 		 *
-		 * @see #clear()
+		 * @see #disposeAll()
 		 */
 		@Override
 		void dispose();
