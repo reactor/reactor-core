@@ -16,6 +16,7 @@
 package reactor.util.context;
 
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -31,26 +32,29 @@ final class Context1 implements Context, Map.Entry<Object, Object> {
 	}
 
 	@Override
-	public Context put(Object key, @Nullable Object value) {
+	public Context put(Object key, Object value) {
 		Objects.requireNonNull(key, "key");
+		Objects.requireNonNull(value, "value");
 
 		if(this.key.equals(key)){
-			if (value == null) {
-				return Context.empty();
-			}
 			return new Context1(key, value);
-		}
-		if (value == null) {
-			return this;
 		}
 
 		return new ContextN(this.key, this.value, key, value);
 	}
 
 	@Override
+	public boolean hasKey(Object key) {
+		return this.key.equals(key);
+	}
+
+	@Override
 	@SuppressWarnings("unchecked")
 	public <T> T get(Object key) {
-		return this.key.equals(key) ? (T) this.value : null;
+		if (hasKey(key)) {
+			return (T)this.value;
+		}
+		throw new NoSuchElementException("Context does contain key: "+key);
 	}
 
 	@Override

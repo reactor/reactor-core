@@ -399,7 +399,7 @@ public class FluxGenerateTest {
 		                                               .get(AtomicInteger.class)
 		                                               .incrementAndGet()))
 		                        .take(10)
-		                        .contextStart(ctx -> ctx.put(AtomicInteger.class,
+		                        .subscriberContext(ctx -> ctx.put(AtomicInteger.class,
 				                        new AtomicInteger())))
 		            .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 		            .verifyComplete();

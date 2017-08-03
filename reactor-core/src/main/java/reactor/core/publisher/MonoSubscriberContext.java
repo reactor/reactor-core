@@ -23,11 +23,11 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.context.Context;
 
-final class MonoContextStart<T> extends MonoOperator<T, T> implements Fuseable {
+final class MonoSubscriberContext<T> extends MonoOperator<T, T> implements Fuseable {
 
 	final Function<Context, Context> doOnContext;
 
-	MonoContextStart(Mono<? extends T> source,
+	MonoSubscriberContext(Mono<? extends T> source,
 			Function<Context, Context> doOnContext) {
 		super(source);
 		this.doOnContext = Objects.requireNonNull(doOnContext, "doOnContext");

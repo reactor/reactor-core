@@ -16,6 +16,7 @@
 package reactor.util.context;
 
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -25,18 +26,20 @@ final class Context0 implements Context {
 	static final Context0 INSTANCE = new Context0();
 
 	@Override
-	public Context put(Object key, @Nullable Object value) {
+	public Context put(Object key, Object value) {
 		Objects.requireNonNull(key, "key");
-		if(value == null){
-			return this;
-		}
+		Objects.requireNonNull(value, "value");
 		return new Context1(key, value);
 	}
 
 	@Override
-	@Nullable
 	public <T> T get(Object key) {
-		return null;
+		throw new NoSuchElementException("Context is empty");
+	}
+
+	@Override
+	public boolean hasKey(Object key) {
+		return false;
 	}
 
 	@Override

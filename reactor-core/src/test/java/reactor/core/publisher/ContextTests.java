@@ -17,7 +17,6 @@ package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.hamcrest.Matchers;
 import org.junit.Test;
 import reactor.test.StepVerifier;
 import reactor.util.context.Context;
@@ -39,7 +38,7 @@ public class ContextTests {
 		    .flatMapSequential(d -> Mono.just(d)
 		                                //ctx: test=baseSubscriber_take_range
 		                                //return: old (discarded since inner)
-		                                .contextStart(ctx -> {
+		                                .subscriberContext(ctx -> {
 			                                if (innerC.get() == null) {
 				                                innerC.set(ctx.put("test", ctx.get("test") + "_innerFlatmap"));
 			                                }
@@ -49,10 +48,10 @@ public class ContextTests {
 		    .take(10)
 		    //ctx: test=baseSubscriber_range
 		    //return: test=baseSubscriber_take_range
-		    .contextStart(ctx -> ctx.put("test", ctx.get("test") + "_range"))
+		    .subscriberContext(ctx -> ctx.put("test", ctx.get("test") + "_range"))
 		    //ctx: test=baseSubscriber
 		    //return: test=baseSubscriber_take
-		    .contextStart(ctx -> ctx.put("test", ctx.get("test") + "_take"))
+		    .subscriberContext(ctx -> ctx.put("test", ctx.get("test") + "_take"))
 		    .log()
 		    .subscribe(new BaseSubscriber<Integer>() {
 			    @Override
@@ -74,7 +73,7 @@ public class ContextTests {
 		    .log()
 		    .flatMapSequential(d ->
 				    Mono.just(d)
-				        .contextStart(ctx -> {
+				        .subscriberContext(ctx -> {
 					        if (innerC.get() == null) {
 						        innerC.set(""+ ctx.get("test") + ctx.get("test2"));
 					        }
@@ -83,8 +82,8 @@ public class ContextTests {
 				        .log())
 		    .map(d -> d)
 		    .take(10)
-		    .contextStart(ctx -> ctx.put("test", "foo"))
-		    .contextStart(ctx -> ctx.put("test2", "bar"))
+		    .subscriberContext(ctx -> ctx.put("test", "foo"))
+		    .subscriberContext(ctx -> ctx.put("test2", "bar"))
 		    .log()
 		    .subscribe();
 
@@ -96,12 +95,12 @@ public class ContextTests {
 
 		StepVerifier.create(Flux.range(1, 1000)
 		                        .log()
-		                        .contextGet((d, c) -> c.get("test") + "" + d)
+		                        .handle((d, c) -> c.next(c.currentContext().get("test") + "" + d))
 		                        .skip(3)
 		                        .take(3)
-		                        .contextGet((d, c) -> c.get("test2") + "" + d)
-		                        .contextStart(ctx -> ctx.put("test", "foo"))
-		                        .contextStart(ctx -> ctx.put("test2", "bar"))
+		                        .handle((d, c) -> c.next(c.currentContext().get("test2") + "" + d))
+		                        .subscriberContext(ctx -> ctx.put("test", "foo"))
+		                        .subscriberContext(ctx -> ctx.put("test2", "bar"))
 		                        .log())
 		            .expectNext("barfoo4")
 		            .expectNext("barfoo5")
@@ -115,10 +114,10 @@ public class ContextTests {
 		StepVerifier.create(Mono.just("foo")
 		                        .flatMap(d -> Mono.currentContext()
 		                                          .map(c -> d + c.get(Integer.class)))
-		                        .contextStart(ctx ->
+		                        .subscriberContext(ctx ->
 				                        ctx.put(Integer.class, ctx.get(Integer.class) + 1))
 		                        .flatMapMany(Mono::just)
-		                        .contextStart(ctx -> ctx.put(Integer.class, 0))
+		                        .subscriberContext(ctx -> ctx.put(Integer.class, 0))
 		                        .log())
 		            .expectNext("foo1")
 		            .verifyComplete();
@@ -141,12 +140,12 @@ public class ContextTests {
 		                        .hide()
 		                        .log()
 		                        .map(d -> d)
-		                        .contextGet((d, c) -> c.get("test") + "" + d)
+		                        .handle((d, c) -> c.next(c.currentContext().get("test") + "" + d))
 		                        .skip(3)
 		                        .take(3)
-		                        .contextGet((d, c) -> c.get("test2") + "" + d)
-		                        .contextStart(ctx -> ctx.put("test", "foo"))
-		                        .contextStart(ctx -> ctx.put("test2", "bar"))
+		                        .handle((d, c) -> c.next(c.currentContext().get("test2") + "" + d))
+		                        .subscriberContext(ctx -> ctx.put("test", "foo"))
+		                        .subscriberContext(ctx -> ctx.put("test2", "bar"))
 		                        .log())
 		            .expectNext("barfoo4")
 		            .expectNext("barfoo5")
@@ -159,10 +158,10 @@ public class ContextTests {
 
 		StepVerifier.create(Mono.just(1)
 		                        .log()
-		                        .contextGet((d, c) -> c.get("test") + "" + d)
-		                        .contextGet((d, c) -> c.get("test2") + "" + d)
-		                        .contextStart(ctx -> ctx.put("test2", "bar"))
-		                        .contextStart(ctx -> ctx.put("test", "foo"))
+		                        .handle((d, c) -> c.next(c.currentContext().get("test") + "" + d))
+		                        .handle((d, c) -> c.next(c.currentContext().get("test2") + "" + d))
+		                        .subscriberContext(ctx -> ctx.put("test2", "bar"))
+		                        .subscriberContext(ctx -> ctx.put("test", "foo"))
 		                        .log())
 		            .expectNext("barfoo1")
 		            .verifyComplete();
@@ -174,10 +173,10 @@ public class ContextTests {
 		StepVerifier.create(Mono.just(1)
 		                        .hide()
 		                        .log()
-		                        .contextGet((d, c) -> c.get("test") + "" + d)
-		                        .contextGet((d, c) -> c.get("test2") + "" + d)
-		                        .contextStart(ctx -> ctx.put("test", "foo"))
-		                        .contextStart(ctx -> ctx.put("test2", "bar"))
+		                        .handle((d, c) -> c.next(c.currentContext().get("test") + "" + d))
+		                        .handle((d, c) -> c.next(c.currentContext().get("test2") + "" + d))
+		                        .subscriberContext(ctx -> ctx.put("test", "foo"))
+		                        .subscriberContext(ctx -> ctx.put("test2", "bar"))
 		                        .log())
 		            .expectNext("barfoo1")
 		            .verifyComplete();
