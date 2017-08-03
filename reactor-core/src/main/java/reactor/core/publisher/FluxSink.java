@@ -40,7 +40,7 @@ public interface FluxSink<T> {
 	/**
 	 * Return the current subscriber {@link Context}.
 	 * <p>
-	 *   {@link Context} can be enriched via {@link Flux#contextStart(Function)}
+	 *   {@link Context} can be enriched via {@link Flux#subscriberContext(Function)}
 	 *   operator or directly by a child subscriber overriding
 	 *   {@link CoreSubscriber#currentContext()}
 	 *

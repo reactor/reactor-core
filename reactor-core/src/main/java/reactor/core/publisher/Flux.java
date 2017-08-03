@@ -3132,54 +3132,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * When receiving an element, inspect the current {@link Context} information and
-	 * allow to map to a new value depending on source value and context. Note that the
-	 * {@link Context} is immutable, so any attempt at modifying it as a side effect will
-	 * be ignored by this operator.
-	 *
-	 * @param doOnContext a {@link BiFunction} receiving the current {@link Context} and
-	 * the currently emitted element, allowing to perform a map operation
-	 *
-	 * @return a {@link Flux} potentially transformed using information from the {@link Context}
-	 * @see Context
-	 * @see #contextStart
-	 */
-	public final <V> Flux<V> contextGet(BiFunction<? super T, Context, ? extends V> doOnContext) {
-		return new FluxContextGet<>(this, doOnContext);
-	}
-
-	/**
-	 * Enrich a potentially empty downstream {@link Context}, producing a new
-	 * {@link Context}
-	 * that is propagated upstream. If the returned {@link Context} is empty, the
-	 * propagation will be halted.
-	 * <p>
-	 * Lifecycle for {@link Context} propagation is as such :
-	 * <ol>
-	 *     <li>
-	 *         During right-to-left {@code subscribe(Subscriber)} phase, contextInit will
-	 *         read the target {@link Subscriber} context and call the given
-	 *         {@link Function}.
-	 *     </li>
-	 *     <li>
-	 *         contextInit will then propagate the resulting {@link Context} upstream
-	 *         using {@code Flux#subscribe(Subscriber,Context)} is invoked.
-	 *     </li>
-	 * </ol>
-	 * <p>
-	 * Note this all happens once per-subscription, not on each onNext.
-	 *
-	 * @param doOnContext the function taking a previous {@link Context} state
-	 *  and returning a new one, propagated if not empty and different from the original.
-	 *
-	 * @return a contextualized {@link Flux}
-	 * @see Context
-	 */
-	public final Flux<T> contextStart(Function<Context, Context> doOnContext) {
-		return new FluxContextStart<>(this, doOnContext);
-	}
-
-	/**
 	 * Counts the number of values in this {@link Flux}.
 	 * The count will be emitted when onComplete is observed.
 	 *
@@ -6351,6 +6303,37 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @see Flux#subscribe(Subscriber)
 	 */
 	public abstract void subscribe(CoreSubscriber<? super T> actual);
+
+	/**
+	 * Enrich a potentially empty downstream {@link Context}, producing a new
+	 * {@link Context}
+	 * that is propagated upstream. If the returned {@link Context} is empty, the
+	 * propagation will be halted.
+	 * <p>
+	 * Lifecycle for {@link Context} propagation is as such :
+	 * <ol>
+	 *     <li>
+	 *         During right-to-left {@code subscribe(Subscriber)} phase, contextInit will
+	 *         read the target {@link Subscriber} context and call the given
+	 *         {@link Function}.
+	 *     </li>
+	 *     <li>
+	 *         contextInit will then propagate the resulting {@link Context} upstream
+	 *         using {@code Flux#subscribe(Subscriber,Context)} is invoked.
+	 *     </li>
+	 * </ol>
+	 * <p>
+	 * Note this all happens once per-subscription, not on each onNext.
+	 *
+	 * @param doOnContext the function taking a previous {@link Context} state
+	 *  and returning a new one, propagated if not empty and different from the original.
+	 *
+	 * @return a contextualized {@link Flux}
+	 * @see Context
+	 */
+	public final Flux<T> subscriberContext(Function<Context, Context> doOnContext) {
+		return new FluxContextStart<>(this, doOnContext);
+	}
 
 	/**
 	 * Run subscribe, onSubscribe and request on a specified {@link Scheduler}'s {@link Worker}.

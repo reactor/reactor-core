@@ -17,6 +17,8 @@
 package reactor.util.context;
 
 import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
@@ -48,18 +50,6 @@ public interface Context {
 	}
 
 	/**
-	 * Inject a key/value pair in a new {@link Context} inheriting current state.
-	 * The returned {@link Context} will resolve the new key/value pair and any
-	 * existing key/value pair.
-	 *
-	 * @param key a lookup key to reuse later for value resolution
-	 * @param value the target object to store in the new {@link Context}
-	 *
-	 * @return a new {@link Context} including the user-provided key/value
-	 */
-	Context put(Object key, @Nullable Object value);
-
-	/**
 	 * Resolve a value given a key within the {@link Context}.
 	 *
 	 * @param key a lookup key to resolve the value within the context
@@ -68,7 +58,6 @@ public interface Context {
 	 *
 	 * @return the eventual value resolved by this key or null
 	 */
-	@Nullable
 	<T> T get(Object key);
 
 	/**
@@ -80,13 +69,13 @@ public interface Context {
 	 *
 	 * @return the eventual value resolved by this type key or null
 	 */
-	@Nullable
 	default <T> T get(Class<T> key){
 		T v = get((Object)key);
 		if(key.isInstance(v)){
 			return v;
 		}
-		return null;
+		throw new NoSuchElementException("Context does not contain a value of type "+key
+				.getName());
 	}
 
 	/**
@@ -98,14 +87,35 @@ public interface Context {
 	 *
 	 * @return an eventual value or the default passed
 	 */
-	@Nullable
-	default <T> T getOrDefault(Object key, @Nullable T defaultValue){
-		T v = get(key);
-		if(v == null){
+	default <T> T getOrDefault(Object key, T defaultValue){
+		if(!hasKey(key)){
 			return defaultValue;
 		}
-		return v;
+		return get(key);
 	}
+
+	/**
+	 * Resolve a value given a key within the {@link Context}.
+	 *
+	 * @param key a lookup key to resolve the value within the context
+	 *
+	 * @return an eventual value or the default passed
+	 */
+	default <T> Optional<T> getOrEmpty(Object key){
+		if(hasKey(key)) {
+			return Optional.of(get(key));
+		}
+		return Optional.empty();
+	}
+
+	/**
+	 * Return true if a value is resolvable given a key within the {@link Context}.
+	 *
+	 * @param key a lookup key to resolve the value within the context
+	 *
+	 * @return true if this context contains the passed key
+	 */
+	boolean hasKey(Object key);
 
 	/**
 	 * Return true if {@link Context} is empty.
@@ -115,6 +125,18 @@ public interface Context {
 	default boolean isEmpty() {
 		return this == empty();
 	}
+
+	/**
+	 * Inject a key/value pair in a new {@link Context} inheriting current state.
+	 * The returned {@link Context} will resolve the new key/value pair and any
+	 * existing key/value pair.
+	 *
+	 * @param key a lookup key to reuse later for value resolution
+	 * @param value the target object to store in the new {@link Context}
+	 *
+	 * @return a new {@link Context} including the user-provided key/value
+	 */
+	Context put(Object key, Object value);
 
 	/**
 	 * Stream key/value pairs from this {@link Context}

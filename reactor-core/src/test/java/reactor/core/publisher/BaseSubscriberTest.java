@@ -22,12 +22,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.hamcrest.Matchers;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
-import reactor.util.context.Context;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;

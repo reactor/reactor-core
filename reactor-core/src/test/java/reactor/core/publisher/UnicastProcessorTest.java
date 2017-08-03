@@ -21,9 +21,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.stream.IntStream;
 
 import javax.annotation.Nullable;
 
@@ -176,7 +174,7 @@ public class UnicastProcessorTest {
 	@Test
 	public void contextTest() {
     	UnicastProcessor<Integer> p = UnicastProcessor.create();
-    	p.contextStart(ctx -> ctx.put("foo", "bar")).subscribe();
+    	p.subscriberContext(ctx -> ctx.put("foo", "bar")).subscribe();
 
     	assertThat(p.sink().currentContext().get("foo").toString()).isEqualTo("bar");
 

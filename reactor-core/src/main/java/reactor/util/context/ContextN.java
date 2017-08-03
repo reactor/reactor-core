@@ -17,6 +17,7 @@ package reactor.util.context;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -39,25 +40,28 @@ final class ContextN extends HashMap<Object, Object>
 	}
 
 	@Override
-	public Context put(Object key, @Nullable Object value) {
+	public Context put(Object key, Object value) {
 		Objects.requireNonNull(key, "key");
+		Objects.requireNonNull(key, "value");
 		return new ContextN(this, key, value);
 	}
 
 	@Override
-	@Nullable
-	public Object get(Object key) {
-		return super.get(key);
+	public boolean hasKey(Object key) {
+		return containsKey(key);
 	}
 
 	@Override
-	@Nullable
-	public Object getOrDefault(Object key, @Nullable Object defaultValue) {
-		Object v = get(key);
-		if(v == null){
-			return defaultValue;
+	public Object get(Object key) {
+		if (hasKey(key)) {
+			return super.get(key);
 		}
-		return v;
+		throw new NoSuchElementException("Context does contain key: "+key);
+	}
+
+	@Override
+	public Object getOrDefault(Object key, Object defaultValue) {
+		return Context.super.getOrDefault(key, defaultValue);
 	}
 
 	@Override

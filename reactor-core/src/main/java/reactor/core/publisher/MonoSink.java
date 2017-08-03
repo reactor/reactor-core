@@ -36,7 +36,7 @@ public interface MonoSink<T> {
 	/**
 	 * Return the current subscriber {@link Context}.
 	 * <p>
-	 *   {@link Context} can be enriched via {@link Mono#contextStart(Function)}
+	 *   {@link Context} can be enriched via {@link Mono#subscriberContext(Function)}
 	 *   operator or directly by a child subscriber overriding
 	 *   {@link CoreSubscriber#currentContext()}
 	 *
