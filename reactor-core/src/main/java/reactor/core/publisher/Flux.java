@@ -3506,13 +3506,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @see Signal
 	 */
 	public final Flux<T> doOnEach(Consumer<? super Signal<T>> signalConsumer) {
-		Objects.requireNonNull(signalConsumer, "signalConsumer");
-
-		return onAssembly(new FluxPeekStateful<>(this,
-				MutableNextSignal.<T>supplier(),
-				(v, s) -> signalConsumer.accept(s.mutate(v)),
-				(e, s) -> signalConsumer.accept(Signal.error(e)),
-				s -> signalConsumer.accept(Signal.complete())));
+		return onAssembly(new FluxDoOnEach<>(this, signalConsumer));
 	}
 
 	/**
