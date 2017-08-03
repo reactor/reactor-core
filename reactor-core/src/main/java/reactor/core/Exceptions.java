@@ -88,6 +88,19 @@ public abstract class Exceptions {
 		}
 	}
 
+	/**
+	 * Create a composite exception that wraps the given {@link Throwable Throwable(s)},
+	 * as suppressed exceptions.Instances create by this method can be detected using the
+	 * {@link #isMultiple(Throwable)} check. The {@link #unwrapMultiple(Throwable)} method
+	 * will correctly unwrap these to a {@link List} of the suppressed exceptions. Note
+	 * that is will also be consistent in producing a List for other types of exceptions
+	 * by putting the input inside a single-element List.
+	 *
+	 * @param throwables the exceptions to wrap into a composite
+	 * @return a composite exception with a standard message, and the given throwables as
+	 * suppressed exceptions
+	 * @see #addThrowable(AtomicReferenceFieldUpdater, Object, Throwable)
+	 */
 	public static RuntimeException multiple(Throwable... throwables) {
 		CompositeException multiple = new CompositeException();
 		//noinspection ConstantConditions
