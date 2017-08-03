@@ -38,7 +38,12 @@ public abstract class Hooks {
 	/**
 	 * Configure a {@link Publisher} operator interceptor for each operator created
 	 * ({@link Flux} or {@link Mono}). The passed function applies to the original
-	 * operator {@link Publisher} and return an eventually intercepted {@link Publisher}
+	 * operator {@link Publisher} and return an eventually intercepted {@link Publisher}.
+	 * <p>
+	 *     This pointcut function cannot make use of {@link Flux}, {@link Mono} or
+	 *     {@link ParallelFlux} API as it would lead to a recursive pointcut use. In
+	 *     effect each operator call would invoke onEachOperator while being in
+	 *     onEachOperator
 	 * <p>
 	 * Can be reset via {@link #resetOnEachOperator()}
 	 *
@@ -256,6 +261,10 @@ public abstract class Hooks {
 			return (Function<Publisher, Publisher>)current;
 		}
 		if (current != null) {
+			if (op == OnOperatorDebug.INSTANCE){
+				//debugging is always first
+				return (Function<Publisher, Publisher>)current.compose(op);
+			}
 			return (Function<Publisher, Publisher>)current.andThen(op);
 		}
 		else {

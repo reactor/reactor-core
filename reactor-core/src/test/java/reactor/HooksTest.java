@@ -33,10 +33,8 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.publisher.ConnectableFlux;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxOperator;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.MonoOperator;
 import reactor.core.publisher.Operators;
 import reactor.core.publisher.ParallelFlux;
 import reactor.core.publisher.SignalType;
@@ -534,6 +532,75 @@ public class HooksTest {
 		                        .log()
 		                        .log())
 		            .expectNext(2, 2)
+		            .verifyComplete();
+
+		Hooks.resetOnLastOperator();
+	}
+
+	@Test
+	public void lastOperatorFilterTest() {
+		Hooks.onLastOperator(Operators.lift(sc -> sc.tags()
+		                                            .anyMatch(t -> t.getT1()
+		                                                            .contains("metric")),
+				(sc, sub) -> new CoreSubscriber<Object>() {
+					@Override
+					public void onSubscribe(Subscription s) {
+						sub.onSubscribe(s);
+					}
+
+					@Override
+					public void onNext(Object o) {
+						sub.onNext(((Integer) o) + 1);
+					}
+
+					@Override
+					public void onError(Throwable t) {
+						sub.onError(t);
+					}
+
+					@Override
+					public void onComplete() {
+						sub.onComplete();
+					}
+				}));
+
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .tag("metric", "test")
+		                        .log()
+		                        .log())
+		            .expectNext(2, 3, 4)
+		            .verifyComplete();
+
+		StepVerifier.create(Mono.just(1)
+		                        .tag("metric", "test")
+		                        .log()
+		                        .log())
+		            .expectNext(2)
+		            .verifyComplete();
+
+		StepVerifier.create(ParallelFlux.from(Mono.just(1), Mono.just(1))
+		                                .tag("metric", "test")
+		                                .log()
+		                                .log())
+		            .expectNext(2, 2)
+		            .verifyComplete();
+
+		StepVerifier.create(Flux.just(1, 2, 3)
+		                        .log()
+		                        .log())
+		            .expectNext(1, 2, 3)
+		            .verifyComplete();
+
+		StepVerifier.create(Mono.just(1)
+		                        .log()
+		                        .log())
+		            .expectNext(1)
+		            .verifyComplete();
+
+		StepVerifier.create(ParallelFlux.from(Mono.just(1), Mono.just(1))
+		                                .log()
+		                                .log())
+		            .expectNext(1, 1)
 		            .verifyComplete();
 
 		Hooks.resetOnLastOperator();
