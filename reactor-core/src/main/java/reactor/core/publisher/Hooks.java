@@ -21,7 +21,6 @@ import java.util.concurrent.Callable;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
 import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
@@ -54,9 +53,7 @@ public abstract class Hooks {
 	 */
 	public static void onEachOperator(Function<? super Publisher<Object>, ? extends Publisher<Object>> onOperator) {
 		Objects.requireNonNull(onOperator, "onEachOperator");
-		if (log.isDebugEnabled()) {
-			log.debug("Hooking new default : onEachOperator");
-		}
+		log.debug("Hooking new default : onEachOperator");
 
 		synchronized (log) {
 			onEachOperatorHook = createOrUpdateOpHook(onEachOperatorHook, onOperator);
@@ -70,9 +67,7 @@ public abstract class Hooks {
 	 */
 	public static void onErrorDropped(Consumer<? super Throwable> c) {
 		Objects.requireNonNull(c, "onErrorDroppedHook");
-		if(log.isDebugEnabled()) {
-			log.debug("Hooking new default : onErrorDropped");
-		}
+		log.debug("Hooking new default : onErrorDropped");
 
 		synchronized(log) {
 			if (onErrorDroppedHook != null) {
@@ -101,9 +96,7 @@ public abstract class Hooks {
 	 */
 	public static void onLastOperator(Function<? super Publisher<Object>, ? extends Publisher<Object>> onOperator) {
 		Objects.requireNonNull(onOperator, "onLastOperator");
-		if (log.isDebugEnabled()) {
-			log.debug("Hooking new default : onLastOperator");
-		}
+		log.debug("Hooking new default : onLastOperator");
 
 		synchronized (log) {
 			onLastOperatorHook = createOrUpdateOpHook(onLastOperatorHook, onOperator);
@@ -118,9 +111,7 @@ public abstract class Hooks {
 	 */
 	public static void onNextDropped(Consumer<Object> c) {
 		Objects.requireNonNull(c, "onNextDroppedHook");
-		if(log.isDebugEnabled()) {
-			log.debug("Hooking new default : onNextDropped");
-		}
+		log.debug("Hooking new default : onNextDropped");
 
 		synchronized(log) {
 			if (onNextDroppedHook != null) {
@@ -142,9 +133,7 @@ public abstract class Hooks {
 	 * @see #onEachOperator(Function)
 	 */
 	public static void onOperatorDebug() {
-		if (log.isDebugEnabled()) {
-			log.debug("Enabling stacktrace debugging via onOperatorDebug");
-		}
+		log.debug("Enabling stacktrace debugging via onOperatorDebug");
 		onEachOperator(OnOperatorDebug.instance());
 	}
 
@@ -157,9 +146,7 @@ public abstract class Hooks {
 	 */
 	public static void onOperatorError(BiFunction<? super Throwable, Object, ? extends Throwable> f) {
 		Objects.requireNonNull(f, "onOperatorErrorHook");
-		if (log.isDebugEnabled()) {
-			log.debug("Hooking new default : onOperatorError");
-		}
+		log.debug("Hooking new default : onOperatorError");
 		synchronized (log) {
 			if (onOperatorErrorHook != null) {
 				BiFunction<? super Throwable, Object, ? extends Throwable> ff =
@@ -176,9 +163,7 @@ public abstract class Hooks {
 	 * Reset global "assembly" hook tracking
 	 */
 	public static void resetOnEachOperator() {
-		if (log.isDebugEnabled()) {
-			log.debug("Reset to factory defaults : onEachOperator");
-		}
+		log.debug("Reset to factory defaults : onEachOperator");
 		synchronized (log) {
 			onEachOperatorHook = null;
 		}
@@ -188,9 +173,7 @@ public abstract class Hooks {
 	 * Reset global error dropped strategy to bubbling back the error.
 	 */
 	public static void resetOnErrorDropped() {
-		if(log.isDebugEnabled()) {
-			log.debug("Reset to factory defaults : onErrorDropped");
-		}
+		log.debug("Reset to factory defaults : onErrorDropped");
 		synchronized (log) {
 			onErrorDroppedHook = null;
 		}
@@ -201,9 +184,7 @@ public abstract class Hooks {
 	 * reactor.core.Exceptions#failWithCancel()}
 	 */
 	public static void resetOnNextDropped() {
-		if(log.isDebugEnabled()) {
-			log.debug("Reset to factory defaults : onNextDropped");
-		}
+		log.debug("Reset to factory defaults : onNextDropped");
 		synchronized (log) {
 			onNextDroppedHook = null;
 		}
@@ -213,9 +194,7 @@ public abstract class Hooks {
 	 * Reset global "subscriber" hook tracking
 	 */
 	public static void resetOnLastOperator() {
-		if (log.isDebugEnabled()) {
-			log.debug("Reset to factory defaults : onLastOperator");
-		}
+		log.debug("Reset to factory defaults : onLastOperator");
 		synchronized (log) {
 			onLastOperatorHook = null;
 		}
@@ -226,9 +205,7 @@ public abstract class Hooks {
 	 * {@link #onEachOperator(Function)} has been invoked, including {@link #onOperatorDebug()}
 	 */
 	public static void resetOnOperatorDebug() {
-		if(log.isDebugEnabled()) {
-			log.debug("Reset to factory defaults : onOperatorError");
-		}
+		log.debug("Reset to factory defaults : onOperatorError");
 		synchronized (log) {
 			if(onEachOperatorHook == OnOperatorDebug.INSTANCE) {
 				onEachOperatorHook = null;
@@ -240,9 +217,7 @@ public abstract class Hooks {
 	 * Reset global operator error mapping to adding as suppressed exception.
 	 */
 	public static void resetOnOperatorError() {
-		if(log.isDebugEnabled()) {
-			log.debug("Reset to factory defaults : onOperatorError");
-		}
+		log.debug("Reset to factory defaults : onOperatorError");
 		synchronized (log) {
 			onOperatorErrorHook = null;
 		}
