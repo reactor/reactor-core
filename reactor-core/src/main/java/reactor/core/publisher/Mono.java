@@ -161,7 +161,7 @@ public abstract class Mono<T> implements Publisher<T> {
      *         }
      *     });
      * }); 
-     * <code></pre>
+     * </code></pre>
 	 *
 	 * @param callback Consume the {@link MonoSink} provided per-subscriber by Reactor to generate signals.
 	 * @param <T> The type of the value emitted
