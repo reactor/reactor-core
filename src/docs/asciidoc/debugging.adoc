@@ -102,7 +102,7 @@ This is done by customizing the `Hook.onOperator` hook *at application start*
 (or at least before the incriminated flux or mono can be instantiated), like so:
 [source,java]
 ----
-Hooks.onOperator(providedHook -> providedHook.operatorStacktrace());
+Hooks.onOperatorDebug();
 ----
 
 The idea is that this will start instrumenting the calls to `Flux` (and
@@ -223,34 +223,9 @@ of the section of the chain that gets notified of the error:
  4. finally it is seen by an `elapsed` and a `transform`. Once again, elapsed is
     what is applied by the transformation function of that second transform.
 
-=== Cost of debug mode
 We are dealing with a form of instrumentation here, and creating a
 stacktrace is costly. That is why this debugging feature should only be
 activated in a controlled manner, as a last resort.
-There are ways of limiting the impact of that feature by restricting the hook to
-the type of operator that is causing an issue.
-
-The filter to use is best determined by looking at the class in the stack trace,
-after removing any `Parallel`, `Flux` and `Mono` prefixes and the `Fuseable`
-suffix. For instance in our case:
-
-----
-at reactor.core.publisher.MonoSingle$SingleSubscriber.onNext(MonoSingle.java:120)
-----
-
-We have `MonoSingle.java:120`, so `MonoSingle` operator implementation and
-`single` as the filtering keyword.
-
-So we could only instrument uses of the incriminating operator by doing:
-
-[source,java]
-----
-Hooks.onOperator(providedHook -> providedHook.ifName("single") <1>
-                                             .operatorStacktrace());
-----
-<1> Only activate for operator classes named "single", ignoring case and the
-"Parallel", "Flux" or "Mono" prefixes, as well as "Fuseable" suffix (as seen in
-stacktrace)
 
 === The `checkpoint()` alternative
 The debug mode is global and affects every single operator assembled into a
