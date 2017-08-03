@@ -562,7 +562,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *         button.removeListener(al);
 	 *     });
 	 * });
-	 * <code></pre>
+	 * </code></pre>
 	 *
 	 * @param <T> The type of values in the sequence
 	 * @param emitter Consume the {@link FluxSink} provided per-subscriber by Reactor to generate signals.
@@ -599,7 +599,7 @@ public abstract class Flux<T> implements Publisher<T> {
      *         button.removeListener(al);
      *     });
      * }, FluxSink.OverflowStrategy.LATEST);
-     * <code></pre>
+     * </code></pre>
      *
 	 * @param <T> The type of values in the sequence
 	 * @param backpressure the backpressure mode, see {@link OverflowStrategy} for the
@@ -638,7 +638,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *		 button.removeListener(al);
 	 *	 });
 	 * }, FluxSink.OverflowStrategy.LATEST);
-	 * <code></pre>
+	 * </code></pre>
 	 *
 	 * @param <T> The type of values in the sequence
 	 * @param emitter Consume the {@link FluxSink} provided per-subscriber by Reactor to generate signals.
@@ -675,7 +675,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *		 button.removeListener(al);
 	 *	 });
 	 * }, FluxSink.OverflowStrategy.LATEST);
-	 * <code></pre>
+	 * </code></pre>
 	 *
 	 * @param <T> The type of values in the sequence
 	 * @param backpressure the backpressure mode, see {@link OverflowStrategy} for the
