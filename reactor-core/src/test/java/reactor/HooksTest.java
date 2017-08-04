@@ -187,7 +187,7 @@ public class HooksTest {
 
 		assertThat(hook.get()).isNotNull().isEqualTo(hook2.get());
 
-		Hooks.resetOnEachOperator();
+		Hooks.resetOnLastOperator();
 	}
 
 
