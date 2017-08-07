@@ -16,13 +16,12 @@
 
 package reactor.core.publisher;
 
-import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import javax.annotation.Nullable;
 
 /**
  * A domain representation of a Reactive Stream signal.
@@ -33,11 +32,7 @@ import javax.annotation.Nullable;
  *
  * @author Stephane Maldini
  */
-public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? super T>> {
-
-	//FIXME avoid loading subclass in superinterface?
-	private static final Signal<Void> ON_COMPLETE =
-			new ImmutableSignal<>(SignalType.ON_COMPLETE, null, null, null);
+public interface Signal<T> extends Supplier<T>, Consumer<Subscriber<? super T>> {
 
 	/**
 	 * Creates and returns a {@code Signal} of variety {@code Type.COMPLETE}.
@@ -47,8 +42,8 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	 * @return an {@code OnCompleted} variety of {@code Signal}
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> Signal<T> complete() {
-		return (Signal<T>) ON_COMPLETE;
+	static <T> Signal<T> complete() {
+		return (Signal<T>) ImmutableSignal.ON_COMPLETE;
 	}
 
 	/**
@@ -60,7 +55,7 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	 *
 	 * @return an {@code OnError} variety of {@code Signal}
 	 */
-	public static <T> Signal<T> error(Throwable e) {
+	static <T> Signal<T> error(Throwable e) {
 		return new ImmutableSignal<>(SignalType.ON_ERROR, null, e, null);
 	}
 
@@ -73,7 +68,7 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	 *
 	 * @return an {@code OnNext} variety of {@code Signal}
 	 */
-	public static <T> Signal<T> next(T t) {
+	static <T> Signal<T> next(T t) {
 		return new ImmutableSignal<>(SignalType.ON_NEXT, t, null, null);
 	}
 
@@ -83,8 +78,8 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	 * @param o the object to check
 	 * @return true if object represents the completion signal
 	 */
-	public static boolean isComplete(Object o) {
-		return o == ON_COMPLETE;
+	static boolean isComplete(Object o) {
+		return o == ImmutableSignal.ON_COMPLETE;
 	}
 
 	/**
@@ -93,7 +88,7 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	 * @param o the object to check
 	 * @return true if object represents the error signal
 	 */
-	public static boolean isError(Object o) {
+	static boolean isError(Object o) {
 		return o instanceof Signal && ((Signal) o).getType() == SignalType.ON_ERROR;
 	}
 
@@ -105,7 +100,7 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	 *
 	 * @return an {@code OnSubscribe} variety of {@code Signal}
 	 */
-	public static <T> Signal<T> subscribe(Subscription subscription) {
+	static <T> Signal<T> subscribe(Subscription subscription) {
 		return new ImmutableSignal<>(SignalType.ON_SUBSCRIBE, null, null, subscription);
 	}
 
@@ -115,7 +110,7 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	 * @return the Throwable associated with this (onError) signal, or null if not relevant
 	 */
 	@Nullable
-	public abstract Throwable getThrowable();
+	Throwable getThrowable();
 
 	/**
 	 * Read the subscription associated with this (onSubscribe) signal.
@@ -124,7 +119,7 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	 * relevant
 	 */
 	@Nullable
-	public abstract Subscription getSubscription();
+	Subscription getSubscription();
 
 	/**
 	 * Retrieves the item associated with this (onNext) signal.
@@ -133,7 +128,7 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	 */
 	@Override
 	@Nullable
-	public abstract T get();
+	T get();
 
 	/**
 	 * Has this signal an item associated with it ? (which only happens if it is an
@@ -142,7 +137,7 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	 * @return a boolean indicating whether or not this signal has an item associated with
 	 * it
 	 */
-	public boolean hasValue() {
+	default boolean hasValue() {
 		return isOnNext() && get() != null;
 	}
 
@@ -151,7 +146,7 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	 *
 	 * @return a boolean indicating whether this signal has an error
 	 */
-	public boolean hasError() {
+	default boolean hasError() {
 		return isOnError() && getThrowable() != null;
 	}
 
@@ -162,7 +157,7 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	 *
 	 * @return the type of the signal
 	 */
-	public abstract SignalType getType();
+	SignalType getType();
 
 	/**
 	 * Indicates whether this signal represents an {@code onError} event.
@@ -170,7 +165,7 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	 * @return a boolean indicating whether this signal represents an {@code onError}
 	 * event
 	 */
-	public boolean isOnError() {
+	default boolean isOnError() {
 		return getType() == SignalType.ON_ERROR;
 	}
 
@@ -180,7 +175,7 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	 * @return a boolean indicating whether this signal represents an {@code onSubscribe}
 	 * event
 	 */
-	public boolean isOnComplete() {
+	default boolean isOnComplete() {
 		return getType() == SignalType.ON_COMPLETE;
 	}
 
@@ -190,7 +185,7 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	 * @return a boolean indicating whether this signal represents an {@code onSubscribe}
 	 * event
 	 */
-	public boolean isOnSubscribe() {
+	default boolean isOnSubscribe() {
 		return getType() == SignalType.ON_SUBSCRIBE;
 	}
 
@@ -199,7 +194,7 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	 *
 	 * @return a boolean indicating whether this signal represents an {@code onNext} event
 	 */
-	public boolean isOnNext() {
+	default boolean isOnNext() {
 		return getType() == SignalType.ON_NEXT;
 	}
 
@@ -210,7 +205,7 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 	 * @param observer the {@link Subscriber} to play the {@link Signal} on
 	 */
 	@Override
-	public void accept(Subscriber<? super T> observer) {
+	default void accept(Subscriber<? super T> observer) {
 		if (isOnNext()) {
 			observer.onNext(get());
 		}
@@ -222,72 +217,6 @@ public abstract class Signal<T> implements Supplier<T>, Consumer<Subscriber<? su
 		}
 		else if (isOnSubscribe()) {
 			observer.onSubscribe(getSubscription());
-		}
-	}
-
-	//the base class defines equals and hashcode as final in order to allow
-	//concrete implementations to be compared together, and discourage them
-	//to implement additional state.
-	@Override
-	public final boolean equals(@Nullable Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || !(o instanceof Signal)) {
-			return false;
-		}
-
-		Signal<?> signal = (Signal<?>) o;
-
-		if (getType() != signal.getType()) {
-			return false;
-		}
-		if (isOnComplete()) {
-			return true;
-		}
-		if (isOnSubscribe()) {
-			return Objects.equals(this.getSubscription(), signal.getSubscription());
-		}
-		if (isOnError()) {
-			return Objects.equals(this.getThrowable(), signal.getThrowable());
-		}
-		if (isOnNext()) {
-			return Objects.equals(this.get(), signal.get());
-		}
-		return false;
-	}
-
-	@Override
-	public final int hashCode() {
-		int result = getType().hashCode();
-		if (isOnError()) {
-			return  31 * result + (getThrowable() != null ? getThrowable().hashCode() :
-					0);
-		}
-		if (isOnNext()) {
-			//noinspection ConstantConditions
-			return  31 * result + (get() != null ? get().hashCode() : 0);
-		}
-		if (isOnSubscribe()) {
-			return  31 * result + (getSubscription() != null ?
-					getSubscription().hashCode() : 0);
-		}
-		return result;
-	}
-
-	@Override
-	public String toString() {
-		switch (this.getType()) {
-			case ON_SUBSCRIBE:
-				return String.format("onSubscribe(%s)", this.getSubscription());
-			case ON_NEXT:
-				return String.format("onNext(%s)", this.get());
-			case ON_ERROR:
-				return String.format("onError(%s)", this.getThrowable());
-			case ON_COMPLETE:
-				return "onComplete()";
-			default:
-				return String.format("Signal type=%s", this.getType());
 		}
 	}
 }

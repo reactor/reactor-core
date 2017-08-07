@@ -17,7 +17,6 @@
 package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
@@ -30,14 +29,13 @@ import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
 
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
+import static org.junit.Assert.fail;
 
-public class FluxPeekStatefulTest {
+public class FluxDoOnEachTest {
 
 	@Test(expected = NullPointerException.class)
 	public void nullSource() {
-		new FluxPeekStateful<>(null, null,null, null, null);
+		new FluxDoOnEach<>(null, null);
 	}
 
 	@Test
@@ -47,27 +45,28 @@ public class FluxPeekStatefulTest {
 		AtomicReference<Integer> onNext = new AtomicReference<>();
 		AtomicReference<Throwable> onError = new AtomicReference<>();
 		AtomicBoolean onComplete = new AtomicBoolean();
-		LongAdder seedCount = new LongAdder();
 		LongAdder state = new LongAdder();
 
-		new FluxPeekStateful<>(Flux.just(1, 2).hide(),
-				() -> {
-					seedCount.increment();
-					return state;
-				},
-				(v, st) -> {
-					onNext.set(v);
-					st.increment();
-				},
-				(e, st) -> onError.set(e),
-				(st) -> onComplete.set(true))
-				.subscribe(ts);
+		Flux.just(1, 2)
+		    .hide()
+		    .doOnEach(s -> {
+			    if (s.isOnNext()) {
+				    onNext.set(s.get());
+				    state.increment();
+			    }
+			    else if (s.isOnError()) {
+				    onError.set(s.getThrowable());
+			    }
+			    else if (s.isOnComplete()) {
+				    onComplete.set(true);
+			    }
+		    })
+		    .subscribe(ts);
 
 		Assert.assertEquals((Integer) 2, onNext.get());
 		Assert.assertNull(onError.get());
 		Assert.assertTrue(onComplete.get());
 
-		Assert.assertEquals(1, seedCount.intValue());
 		Assert.assertEquals(2, state.intValue());
 	}
 
@@ -78,21 +77,23 @@ public class FluxPeekStatefulTest {
 		AtomicReference<Integer> onNext = new AtomicReference<>();
 		AtomicReference<Throwable> onError = new AtomicReference<>();
 		AtomicBoolean onComplete = new AtomicBoolean();
-		LongAdder seedCount = new LongAdder();
 		LongAdder state = new LongAdder();
 
-		new FluxPeekStateful<>(new FluxError<Integer>(new RuntimeException("forced " + "failure")),
-				() -> {
-					seedCount.increment();
-					return state;
-				},
-				(v, st) -> {
-					onNext.set(v);
-					st.increment();
-				},
-				(e, st) -> onError.set(e),
-				(st) -> onComplete.set(true))
-				.subscribe(ts);
+		Flux.error(new RuntimeException("forced " + "failure"))
+		    .cast(Integer.class)
+		    .doOnEach(s -> {
+			    if (s.isOnNext()) {
+				    onNext.set(s.get());
+				    state.increment();
+			    }
+			    else if (s.isOnError()) {
+				    onError.set(s.getThrowable());
+			    }
+			    else if (s.isOnComplete()) {
+				    onComplete.set(true);
+			    }
+		    })
+		    .subscribe(ts);
 
 		Assert.assertNull(onNext.get());
 		Assert.assertTrue(onError.get() instanceof RuntimeException);
@@ -106,21 +107,23 @@ public class FluxPeekStatefulTest {
 		AtomicReference<Integer> onNext = new AtomicReference<>();
 		AtomicReference<Throwable> onError = new AtomicReference<>();
 		AtomicBoolean onComplete = new AtomicBoolean();
-		LongAdder seedCount = new LongAdder();
 		LongAdder state = new LongAdder();
 
-		new FluxPeekStateful<>(Flux.<Integer>empty(),
-				() -> {
-					seedCount.increment();
-					return state;
-				},
-				(v, st) -> {
-					onNext.set(v);
-					st.increment();
-				},
-				(e, st) -> onError.set(e),
-				(st) -> onComplete.set(true))
-				.subscribe(ts);
+		Flux.empty()
+		    .cast(Integer.class)
+		    .doOnEach(s -> {
+			    if (s.isOnNext()) {
+				    onNext.set(s.get());
+				    state.increment();
+			    }
+			    else if (s.isOnError()) {
+				    onError.set(s.getThrowable());
+			    }
+			    else if (s.isOnComplete()) {
+				    onComplete.set(true);
+			    }
+		    })
+		    .subscribe(ts);
 
 		Assert.assertNull(onNext.get());
 		Assert.assertNull(onError.get());
@@ -134,21 +137,23 @@ public class FluxPeekStatefulTest {
 		AtomicReference<Integer> onNext = new AtomicReference<>();
 		AtomicReference<Throwable> onError = new AtomicReference<>();
 		AtomicBoolean onComplete = new AtomicBoolean();
-		LongAdder seedCount = new LongAdder();
 		LongAdder state = new LongAdder();
 
-		new FluxPeekStateful<>(Flux.<Integer>never(),
-				() -> {
-					seedCount.increment();
-					return state;
-				},
-				(v, st) -> {
-					onNext.set(v);
-					st.increment();
-				},
-				(e, st) -> onError.set(e),
-				(st) -> onComplete.set(true))
-				.subscribe(ts);
+		Flux.never()
+		    .cast(Integer.class)
+		    .doOnEach(s -> {
+			    if (s.isOnNext()) {
+				    onNext.set(s.get());
+				    state.increment();
+			    }
+			    else if (s.isOnError()) {
+				    onError.set(s.getThrowable());
+			    }
+			    else if (s.isOnComplete()) {
+				    onComplete.set(true);
+			    }
+		    })
+		    .subscribe(ts);
 
 		Assert.assertNull(onNext.get());
 		Assert.assertNull(onError.get());
@@ -158,54 +163,45 @@ public class FluxPeekStatefulTest {
 	@Test
 	public void nextCallbackError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		LongAdder seedCount = new LongAdder();
 		LongAdder state = new LongAdder();
 
 		Throwable err = new Exception("test");
 
-		new FluxPeekStateful<>(Flux.just(1).hide(),
-				() -> {
-					seedCount.increment();
-					return state;
-				},
-				(v, s) -> {
-					s.increment();
-					throw Exceptions.propagate(err);
-				},
-				null, null)
-				.subscribe(ts);
+		Flux.just(1)
+		    .doOnEach(s -> {
+			    if (s.isOnNext()) {
+				    state.increment();
+				    throw Exceptions.propagate(err);
+			    }
+		    })
+		    .subscribe(ts);
 
 		//nominal error path (DownstreamException)
 		ts.assertErrorMessage("test");
-		Assert.assertEquals(1, seedCount.intValue());
 		Assert.assertEquals(1, state.intValue());
 	}
 
 	@Test
 	public void nextCallbackBubbleError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		LongAdder seedCount = new LongAdder();
 		LongAdder state = new LongAdder();
 
 		Throwable err = new Exception("test");
 
 		try {
-			new FluxPeekStateful<>(Flux.just(1).hide(),
-					() -> {
-						seedCount.increment();
-						return state;
-					},
-					(v, s) -> {
-						s.increment();
-						throw Exceptions.bubble(err);
-					}, null, null)
-					.subscribe(ts);
+			Flux.just(1)
+			    .doOnEach(s -> {
+				    if (s.isOnNext()) {
+					    state.increment();
+					    throw Exceptions.bubble(err);
+				    }
+			    })
+			    .subscribe(ts);
 
 			fail();
 		}
 		catch (Exception e) {
 			Assert.assertTrue(Exceptions.unwrap(e) == err);
-			Assert.assertEquals(1, seedCount.intValue());
 			Assert.assertEquals(1, state.intValue());
 		}
 	}
@@ -213,70 +209,56 @@ public class FluxPeekStatefulTest {
 	@Test
 	public void completeCallbackError() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-		LongAdder seedCount = new LongAdder();
 		LongAdder state = new LongAdder();
 
 		Throwable err = new Exception("test");
 
-		new FluxPeekStateful<>(Flux.just(1).hide(),
-				() -> {
-					seedCount.increment();
-					return state;
-				},
-				null,
-				null,
-				(s) -> {
-					s.increment();
-					throw Exceptions.propagate(err);
-				})
-				.subscribe(ts);
+		Flux.just(1)
+		    .doOnEach(s -> {
+			    if (s.isOnComplete()) {
+				    state.increment();
+				    throw Exceptions.propagate(err);
+			    }
+		    })
+		    .subscribe(ts);
 
 		ts.assertErrorMessage("test");
-		Assert.assertEquals(1, seedCount.intValue());
 		Assert.assertEquals(1, state.intValue());
 	}
 
 	@Test
 	public void errorCallbackError() {
 		AssertSubscriber<String> ts = AssertSubscriber.create();
-		LongAdder seedCount = new LongAdder();
 		LongAdder state = new LongAdder();
 
 		IllegalStateException err = new IllegalStateException("test");
 
-		FluxPeekStateful<String, LongAdder> flux = new FluxPeekStateful<>(
-				Flux.error(new IllegalArgumentException("bar")),
-				() -> {
-					seedCount.increment();
-					return state;
-				},
-				null,
-				(e, s) -> {
-					s.increment();
-					throw err;
-				},
-				null);
-
-		flux.subscribe(ts);
+		Flux.error(new IllegalStateException("bar"))
+		    .cast(String.class)
+		    .doOnEach(s -> {
+			    if (s.isOnError()) {
+				    state.increment();
+				    throw Exceptions.propagate(err);
+			    }
+		    })
+		    .subscribe(ts);
 
 		ts.assertNoValues();
 		ts.assertError(IllegalStateException.class);
 		ts.assertErrorWith(e -> e.getSuppressed()[0].getMessage().equals("bar"));
 
-		Assert.assertEquals(1, seedCount.intValue());
 		Assert.assertEquals(1, state.intValue());
 	}
 
 	@Test
     public void scanSubscriber() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-        FluxPeekStateful<Integer, String> peek = new FluxPeekStateful<>(Flux.just(1),
-        		() -> "", (t, s) -> {},
-        		(t, s) -> {}, s -> {});
-        FluxPeekStateful.PeekStatefulSubscriber<Integer, String> test =
-        		new FluxPeekStateful.PeekStatefulSubscriber<Integer, String>(actual, peek, "");
-        Subscription parent = Operators.emptySubscription();
-        test.onSubscribe(parent);
+		FluxDoOnEach<Integer> peek =
+				new FluxDoOnEach<>(Flux.just(1), s -> { });
+		FluxDoOnEach.DoOnEachSubscriber<Integer> test =
+				new FluxDoOnEach.DoOnEachSubscriber<>(actual, peek.onSignal);
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
 
         Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
         Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);

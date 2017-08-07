@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 import org.reactivestreams.Subscription;
 import javax.annotation.Nullable;
@@ -28,7 +29,7 @@ import javax.annotation.Nullable;
  * @author Stephane Maldini
  * @author Simon Baslé
  */
-final class ImmutableSignal<T> extends Signal<T> implements Serializable {
+final class ImmutableSignal<T> implements Signal<T>, Serializable {
 
 	private static final long serialVersionUID = -2004454746525418508L;
 
@@ -69,4 +70,69 @@ final class ImmutableSignal<T> extends Signal<T> implements Serializable {
 		return type;
 	}
 
+	@Override
+	public boolean equals(@Nullable Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || !(o instanceof Signal)) {
+			return false;
+		}
+
+		Signal<?> signal = (Signal<?>) o;
+
+		if (getType() != signal.getType()) {
+			return false;
+		}
+		if (isOnComplete()) {
+			return true;
+		}
+		if (isOnSubscribe()) {
+			return Objects.equals(this.getSubscription(), signal.getSubscription());
+		}
+		if (isOnError()) {
+			return Objects.equals(this.getThrowable(), signal.getThrowable());
+		}
+		if (isOnNext()) {
+			return Objects.equals(this.get(), signal.get());
+		}
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		int result = getType().hashCode();
+		if (isOnError()) {
+			return  31 * result + (getThrowable() != null ? getThrowable().hashCode() :
+					0);
+		}
+		if (isOnNext()) {
+			//noinspection ConstantConditions
+			return  31 * result + (get() != null ? get().hashCode() : 0);
+		}
+		if (isOnSubscribe()) {
+			return  31 * result + (getSubscription() != null ?
+					getSubscription().hashCode() : 0);
+		}
+		return result;
+	}
+
+	@Override
+	public String toString() {
+		switch (this.getType()) {
+			case ON_SUBSCRIBE:
+				return String.format("onSubscribe(%s)", this.getSubscription());
+			case ON_NEXT:
+				return String.format("onNext(%s)", this.get());
+			case ON_ERROR:
+				return String.format("onError(%s)", this.getThrowable());
+			case ON_COMPLETE:
+				return "onComplete()";
+			default:
+				return String.format("Signal type=%s", this.getType());
+		}
+	}
+
+	static final Signal<Void> ON_COMPLETE =
+			new ImmutableSignal<>(SignalType.ON_COMPLETE, null, null, null);
 }
