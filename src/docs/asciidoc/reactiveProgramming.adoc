@@ -392,7 +392,7 @@ mechanism to signal the source that it is ready to process at most `n` elements.
 Intermediate operators can also change the request in-flight. Imagine a `buffer`
 operator that groups elements in batches of 10. If the subscriber requests 1
 buffer, then it is acceptable for the source to produce 10 elements. Prefetching
-strategies can also be applied is producing the elements before they are
+strategies can also be applied, if producing the elements before they are
 requested is not too costly.
 
 This transforms the push model into a push-pull hybrid where the downstream can
