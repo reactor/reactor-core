@@ -31,7 +31,7 @@ import reactor.util.function.Tuple2;
  * @author Simon Baslé
  * @author Stephane Maldini
  */
-public class FluxNameFuseable<T> extends FluxOperator<T, T> implements Fuseable {
+final class FluxNameFuseable<T> extends FluxOperator<T, T> implements Fuseable {
 
 	final String name;
 

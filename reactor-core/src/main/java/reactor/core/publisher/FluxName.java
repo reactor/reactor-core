@@ -35,7 +35,7 @@ import reactor.util.function.Tuples;
  * @author Simon Baslé
  * @author Stephane Maldini
  */
-public class FluxName<T> extends FluxOperator<T, T> {
+final class FluxName<T> extends FluxOperator<T, T> {
 
 	final String name;
 

@@ -291,6 +291,8 @@ project('reactor-test') {
 
 	testCompile 'junit:junit:4.12'
 
+	testRuntime "ch.qos.logback:logback-classic:$logbackVersion"
+
 	testCompile "org.hamcrest:hamcrest-library:1.3",
 			"org.assertj:assertj-core:$assertJVersion",
 			"org.mockito:mockito-core:$mockitoVersion"
