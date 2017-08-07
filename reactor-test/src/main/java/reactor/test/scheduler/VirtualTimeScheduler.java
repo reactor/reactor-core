@@ -410,6 +410,60 @@ public class VirtualTimeScheduler implements Scheduler {
 		public boolean isDisposed() {
 			return shutdown;
 		}
+
+		final class PeriodicTask extends AtomicReference<Disposable> implements Runnable,
+		                                                                        Disposable {
+
+			final Runnable decoratedRun;
+			final long     periodInNanoseconds;
+			long count;
+			long lastNowNanoseconds;
+			long startInNanoseconds;
+
+			PeriodicTask(long firstStartInNanoseconds,
+					Runnable decoratedRun,
+					long firstNowNanoseconds,
+					long periodInNanoseconds) {
+				this.decoratedRun = decoratedRun;
+				this.periodInNanoseconds = periodInNanoseconds;
+				lastNowNanoseconds = firstNowNanoseconds;
+				startInNanoseconds = firstStartInNanoseconds;
+				lazySet(EMPTY);
+			}
+
+			@Override
+			public void run() {
+				decoratedRun.run();
+
+				if (get() != CANCELLED && !shutdown) {
+
+					long nextTick;
+
+					long nowNanoseconds = now(TimeUnit.NANOSECONDS);
+					// If the clock moved in a direction quite a bit, rebase the repetition period
+					if (nowNanoseconds + CLOCK_DRIFT_TOLERANCE_NANOSECONDS < lastNowNanoseconds || nowNanoseconds >= lastNowNanoseconds + periodInNanoseconds + CLOCK_DRIFT_TOLERANCE_NANOSECONDS) {
+						nextTick = nowNanoseconds + periodInNanoseconds;
+		                /*
+                         * Shift the start point back by the drift as if the whole thing
+                         * started count periods ago.
+                         */
+						startInNanoseconds = nextTick - (periodInNanoseconds * (++count));
+					}
+					else {
+						nextTick = startInNanoseconds + (++count * periodInNanoseconds);
+					}
+					lastNowNanoseconds = nowNanoseconds;
+
+					long delay = nextTick - nowNanoseconds;
+					replace(this, schedule(this, delay, TimeUnit.NANOSECONDS));
+				}
+			}
+
+			@Override
+			public void dispose() {
+				getAndSet(CANCELLED).dispose();
+			}
+		}
 	}
 
 	static final Disposable CANCELLED = () -> {
@@ -417,59 +471,6 @@ public class VirtualTimeScheduler implements Scheduler {
 	static final Disposable EMPTY = () -> {
 	};
 
-	final class PeriodicTask extends AtomicReference<Disposable> implements Runnable,
-	                                                                          Disposable {
-
-		final Runnable decoratedRun;
-		final long     periodInNanoseconds;
-		long count;
-		long lastNowNanoseconds;
-		long startInNanoseconds;
-
-		PeriodicTask(long firstStartInNanoseconds,
-				Runnable decoratedRun,
-				long firstNowNanoseconds,
-				long periodInNanoseconds) {
-			this.decoratedRun = decoratedRun;
-			this.periodInNanoseconds = periodInNanoseconds;
-			lastNowNanoseconds = firstNowNanoseconds;
-			startInNanoseconds = firstStartInNanoseconds;
-			lazySet(EMPTY);
-		}
-
-		@Override
-		public void run() {
-			decoratedRun.run();
-
-			if (get() != CANCELLED) {
-
-				long nextTick;
-
-				long nowNanoseconds = now(TimeUnit.NANOSECONDS);
-				// If the clock moved in a direction quite a bit, rebase the repetition period
-				if (nowNanoseconds + CLOCK_DRIFT_TOLERANCE_NANOSECONDS < lastNowNanoseconds || nowNanoseconds >= lastNowNanoseconds + periodInNanoseconds + CLOCK_DRIFT_TOLERANCE_NANOSECONDS) {
-					nextTick = nowNanoseconds + periodInNanoseconds;
-		                /*
-                         * Shift the start point back by the drift as if the whole thing
-                         * started count periods ago.
-                         */
-					startInNanoseconds = nextTick - (periodInNanoseconds * (++count));
-				}
-				else {
-					nextTick = startInNanoseconds + (++count * periodInNanoseconds);
-				}
-				lastNowNanoseconds = nowNanoseconds;
-
-				long delay = nextTick - nowNanoseconds;
-				replace(this, schedule(this, delay, TimeUnit.NANOSECONDS));
-			}
-		}
-
-		@Override
-		public void dispose() {
-			getAndSet(CANCELLED).dispose();
-		}
-	}
 
 	static boolean replace(AtomicReference<Disposable> ref, @Nullable Disposable c) {
 		for (; ; ) {

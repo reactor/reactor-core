@@ -19,11 +19,13 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.assertj.core.api.Assertions;
+import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Fuseable;
 import reactor.core.publisher.DirectProcessor;
@@ -1736,5 +1738,17 @@ public class StepVerifierTests {
 		assertThat(vts1.isDisposed()).isFalse();
 		assertThat(vts2.isDisposed()).isTrue();
 		assertThat(VirtualTimeScheduler.isFactoryEnabled()).isFalse();
+	}
+
+	@Test
+	public void virtualTimeSchedulerVeryLong() {
+		StepVerifier.withVirtualTime(() -> Flux.interval(Duration.ofMillis(1))
+		                                       .map(tick -> new Date())
+		                                       .take(100000)
+		                                       .collectList()
+		)
+		            .thenAwait(Duration.ofHours(1000))
+		            .consumeNextWith(list -> Assert.assertTrue(list.size() == 100000))
+		            .verifyComplete();
 	}
 }
