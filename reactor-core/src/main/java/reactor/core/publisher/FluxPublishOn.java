@@ -453,13 +453,17 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 		}
 
 		void doComplete(Subscriber<?> a) {
-			worker.dispose();
 			a.onComplete();
+			worker.dispose();
 		}
 
 		void doError(Subscriber<?> a, Throwable e) {
-			worker.dispose();
-			a.onError(e);
+			try {
+				a.onError(e);
+			}
+			finally {
+				worker.dispose();
+			}
 		}
 
 		@Override
@@ -957,13 +961,17 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 		}
 
 		void doComplete(Subscriber<?> a) {
-			worker.dispose();
 			a.onComplete();
+			worker.dispose();
 		}
 
 		void doError(Subscriber<?> a, Throwable e) {
-			worker.dispose();
-			a.onError(e);
+			try {
+				a.onError(e);
+			}
+			finally {
+				worker.dispose();
+			}
 		}
 
 		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a) {

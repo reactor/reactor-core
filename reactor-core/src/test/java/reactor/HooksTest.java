@@ -168,7 +168,6 @@ public class HooksTest {
 		Flux.just("test").filter(d -> true).subscribe();
 
 		assertThat(hook.get()).isNotNull().isEqualTo(hook2.get());
-
 		Hooks.resetOnEachOperator();
 
 		hook.set(null);

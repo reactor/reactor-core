@@ -127,15 +127,18 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 
 		@Override
 		public void onError(Throwable t) {
-			worker.dispose();
-			actual.onError(t);
+			try{
+				actual.onError(t);
+			}
+			finally {
+				worker.dispose();
+			}
 		}
 
 		@Override
 		public void onComplete() {
-			worker.dispose();
 			actual.onComplete();
-
+			worker.dispose();
 		}
 
 		@Override
