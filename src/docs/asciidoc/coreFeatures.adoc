@@ -205,8 +205,6 @@ is 60s), in which case the workers are disposed. This is a good choice for I/O
 blocking work for instance.
 - a fixed pool of workers that is tuned for parallel work
 (`Schedulers.parallel()`). It will create as many workers as you have CPU cores.
-- a time-aware scheduler capable of scheduling tasks in the future, including
-recurring tasks (`Schedulers.timer()`).
 
 Additionally, you can create a `Scheduler` out of any pre-existing
 `ExecutorService` footnote:[you can also create one from an `Executor`, although
@@ -219,7 +217,7 @@ tuned to facilitate the work-stealing that can happen in some Schedulers.
 Some operators use a specific Scheduler from `Schedulers` by default (and will
 usually give you the option of providing a different one). For instance, calling
 the factory method `Flux.interval(Duration.ofMillis(300))` will produces a `Flux<Long>`
-that ticks every 300ms. This is enabled by `Schedulers.timer()` by default.
+that ticks every 300ms. This is enabled by `Schedulers.parallel()` by default.
 
 Reactor offers two means of switching execution context (or `Scheduler`) in a
 reactive chain: `publishOn` and `subscribeOn`. Both take a `Scheduler` and allow

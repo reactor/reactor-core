@@ -140,7 +140,7 @@ StepVerifier.withVirtualTime(() -> Mono.delay(Duration.ofDays(1)))
 
 The way this *virtual time* feature works is that it plugs in a custom `Scheduler`
 in Reactor's `Schedulers` factory. Since these timed operators usually use the
-default `Schedulers.timer()` scheduler, replacing it with a `VirtualTimeScheduler`
+default `Schedulers.parallel()` scheduler, replacing it with a `VirtualTimeScheduler`
 does the trick. However, an important pre-requisite is that the operator be
 instantiated _after_ the virtual time scheduler has been activated.
 
