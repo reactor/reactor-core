@@ -70,9 +70,6 @@ final class ImmutableSignal<T> implements Signal<T>, Serializable {
 		return type;
 	}
 
-	//the base class defines equals and hashcode as final in order to allow
-
-	//concrete implementations to be compared together, and discourage them
 	@Override
 	public boolean equals(@Nullable Object o) {
 		if (this == o) {
@@ -101,7 +98,7 @@ final class ImmutableSignal<T> implements Signal<T>, Serializable {
 		}
 		return false;
 	}
-	//to implement additional state.
+
 	@Override
 	public int hashCode() {
 		int result = getType().hashCode();
