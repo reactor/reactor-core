@@ -32,6 +32,7 @@ import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.UnicastProcessor;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.scheduler.VirtualTimeScheduler;
@@ -1745,10 +1746,27 @@ public class StepVerifierTests {
 		StepVerifier.withVirtualTime(() -> Flux.interval(Duration.ofMillis(1))
 		                                       .map(tick -> new Date())
 		                                       .take(100000)
+		                                       .collectList())
+		            .thenAwait(Duration.ofHours(1000))
+		            .consumeNextWith(list -> Assert.assertTrue(list.size() == 100000))
+		            .verifyComplete();
+	}
+
+	/*@Test
+	public void virtualTimeSchedulerVeryLongDeferred() {
+		Scheduler s = Schedulers.newSingle("test");
+		StepVerifier.withVirtualTime(() -> Flux.just(1)
+		                                       .hide()
+		                                       .delayElements(Duration.ofSeconds(2), s)
+		                                       .flatMap(d -> Flux.interval(Duration.ofMillis(
+				                                       1)))
+		                                       .map(tick -> new Date())
+		                                       .take(100000)
 		                                       .collectList()
 		)
 		            .thenAwait(Duration.ofHours(1000))
 		            .consumeNextWith(list -> Assert.assertTrue(list.size() == 100000))
 		            .verifyComplete();
-	}
+		s.dispose();
+	}*/
 }
