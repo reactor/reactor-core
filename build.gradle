@@ -50,7 +50,8 @@ ext {
 
   javadocLinks = ["http://docs.oracle.com/javase/8/docs/api/",
 				  "http://docs.oracle.com/javaee/6/api/",
-				  "http://www.reactive-streams.org/reactive-streams-1.0.0-javadoc/"] as String[]
+				  "http://www.reactive-streams.org/reactive-streams-1.0.1-javadoc/"] as
+		  String[]
 
 
   bundleImportPackages = ['org.slf4j;resolution:=optional;version="[1.5.4,2)"',
@@ -192,8 +193,8 @@ project('reactor-core') {
 
   dependencies {
 	// Reactive Streams
-	compile "org.reactivestreams:reactive-streams:1.0.1-RC2"
-	testCompile "org.reactivestreams:reactive-streams-tck:1.0.1-RC2"
+	compile "org.reactivestreams:reactive-streams:1.0.1"
+	testCompile "org.reactivestreams:reactive-streams-tck:1.0.1"
 
 	// JSR-305 annotations
 	optional "com.google.code.findbugs:jsr305:3.0.0"
