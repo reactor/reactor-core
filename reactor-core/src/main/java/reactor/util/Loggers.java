@@ -467,16 +467,16 @@ public abstract class Loggers {
 		}
 
 		@Override
-		public void trace(String msg) {
+		public synchronized void trace(String msg) {
 			this.log.format("[TRACE] %s\n", msg);
 		}
 
 		@Override
-		public void trace(String format, Object... arguments) {
+		public synchronized void trace(String format, Object... arguments) {
 			this.log.format("[TRACE] %s\n", format(format, arguments));
 		}
 		@Override
-		public void trace(String msg, Throwable t) {
+		public synchronized void trace(String msg, Throwable t) {
 			this.log.format("[TRACE] %s - %s\n", msg, t);
 			t.printStackTrace(this.log);
 		}
@@ -487,17 +487,17 @@ public abstract class Loggers {
 		}
 
 		@Override
-		public void debug(String msg) {
+		public synchronized void debug(String msg) {
 			this.log.format("[DEBUG] %s\n", msg);
 		}
 
 		@Override
-		public void debug(String format, Object... arguments) {
+		public synchronized void debug(String format, Object... arguments) {
 			this.log.format("[DEBUG] %s\n", format(format, arguments));
 		}
 
 		@Override
-		public void debug(String msg, Throwable t) {
+		public synchronized void debug(String msg, Throwable t) {
 			this.log.format("[DEBUG] %s - %s\n", msg, t);
 			t.printStackTrace(this.log);
 		}
@@ -508,17 +508,17 @@ public abstract class Loggers {
 		}
 
 		@Override
-		public void info(String msg) {
+		public synchronized void info(String msg) {
 			this.log.format("[INFO] %s\n", msg);
 		}
 
 		@Override
-		public void info(String format, Object... arguments) {
+		public synchronized void info(String format, Object... arguments) {
 			this.log.format("[INFO] %s\n", format(format, arguments));
 		}
 
 		@Override
-		public void info(String msg, Throwable t) {
+		public synchronized void info(String msg, Throwable t) {
 			this.log.format("[INFO] %s - %s\n", msg, t);
 			t.printStackTrace(this.log);
 		}
@@ -529,17 +529,17 @@ public abstract class Loggers {
 		}
 
 		@Override
-		public void warn(String msg) {
+		public synchronized void warn(String msg) {
 			this.err.format("[WARN] %s\n", msg);
 		}
 
 		@Override
-		public void warn(String format, Object... arguments) {
+		public synchronized void warn(String format, Object... arguments) {
 			this.err.format("[WARN] %s\n", format(format, arguments));
 		}
 
 		@Override
-		public void warn(String msg, Throwable t) {
+		public synchronized void warn(String msg, Throwable t) {
 			this.err.format("[WARN] %s - %s\n", msg, t);
 			t.printStackTrace(this.err);
 		}
@@ -550,17 +550,17 @@ public abstract class Loggers {
 		}
 
 		@Override
-		public void error(String msg) {
+		public synchronized void error(String msg) {
 			this.err.format("[ERROR] %s\n", msg);
 		}
 
 		@Override
-		public void error(String format, Object... arguments) {
+		public synchronized void error(String format, Object... arguments) {
 			this.err.format("[ERROR] %s\n", format(format, arguments));
 		}
 
 		@Override
-		public void error(String msg, Throwable t) {
+		public synchronized void error(String msg, Throwable t) {
 			this.err.format("[ERROR] %s - %s\n", msg, t);
 			t.printStackTrace(this.err);
 		}
