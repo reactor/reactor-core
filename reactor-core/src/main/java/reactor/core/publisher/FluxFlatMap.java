@@ -432,7 +432,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 				long r = requested;
 
 				Queue<R> q = scalarQueue;
-				if (r != 0L && q == null || q.isEmpty()) {
+				if (r != 0L && (q == null || q.isEmpty())) {
 					actual.onNext(v);
 
 					if (r != Long.MAX_VALUE) {
