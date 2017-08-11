@@ -367,7 +367,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 					onError(Operators.onOperatorError(s, e, t));
 					return;
 				}
-				emitScalar(v);
+				tryEmitScalar(v);
 			}
 			else {
 				FlatMapInner<R> inner = new FlatMapInner<>(this, prefetch);
@@ -377,69 +377,6 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 				}
 			}
 
-		}
-
-		void emitScalar(@Nullable R v) {
-			if (v == null) {
-				if (maxConcurrency != Integer.MAX_VALUE) {
-					int p = produced + 1;
-					if (p == limit) {
-						produced = 0;
-						s.request(p);
-					}
-					else {
-						produced = p;
-					}
-				}
-				return;
-			}
-
-			if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
-				long r = requested;
-
-				if (r != 0L) {
-					actual.onNext(v);
-
-					if (r != Long.MAX_VALUE) {
-						REQUESTED.decrementAndGet(this);
-					}
-
-					if (maxConcurrency != Integer.MAX_VALUE) {
-						int p = produced + 1;
-						if (p == limit) {
-							produced = 0;
-							s.request(p);
-						}
-						else {
-							produced = p;
-						}
-					}
-				}
-				else {
-					Queue<R> q = getOrCreateScalarQueue();
-
-					if (!q.offer(v) && failOverflow(v, s)){
-						done = true;
-						drainLoop();
-						return;
-					}
-				}
-				if (WIP.decrementAndGet(this) == 0) {
-					return;
-				}
-
-				drainLoop();
-			}
-			else {
-				Queue<R> q;
-
-				q = getOrCreateScalarQueue();
-
-				if (!q.offer(v) && failOverflow(v, s)) {
-					done = true;
-				}
-				drain();
-			}
 		}
 
 		Queue<R> getOrCreateScalarQueue() {
@@ -474,6 +411,113 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 
 			done = true;
 			drain();
+		}
+
+		void tryEmitScalar(@Nullable R v) {
+			if (v == null) {
+				if (maxConcurrency != Integer.MAX_VALUE) {
+					int p = produced + 1;
+					if (p == limit) {
+						produced = 0;
+						s.request(p);
+					}
+					else {
+						produced = p;
+					}
+				}
+				return;
+			}
+
+			if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
+				long r = requested;
+
+				Queue<R> q = scalarQueue;
+				if (r != 0L) {
+					actual.onNext(v);
+
+					if (r != Long.MAX_VALUE) {
+						REQUESTED.decrementAndGet(this);
+					}
+
+					if (maxConcurrency != Integer.MAX_VALUE) {
+						int p = produced + 1;
+						if (p == limit) {
+							produced = 0;
+							s.request(p);
+						}
+						else {
+							produced = p;
+						}
+					}
+				}
+				else {
+					if (q == null) {
+						q = getOrCreateScalarQueue();
+					}
+
+					if (!q.offer(v) && failOverflow(v, s)){
+						done = true;
+						drainLoop();
+						return;
+					}
+				}
+				if (WIP.decrementAndGet(this) == 0) {
+					return;
+				}
+
+				drainLoop();
+			}
+			else {
+				Queue<R> q;
+
+				q = getOrCreateScalarQueue();
+
+				if (!q.offer(v) && failOverflow(v, s)) {
+					done = true;
+				}
+				drain();
+			}
+		}
+
+		void tryEmit(FlatMapInner<R> inner, R v) {
+			if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
+				long r = requested;
+
+				Queue<R> q = inner.queue;
+				if (r != 0 && (q == null || q.isEmpty())) {
+					actual.onNext(v);
+
+					if (r != Long.MAX_VALUE) {
+						REQUESTED.decrementAndGet(this);
+					}
+
+					inner.request(1);
+				}
+				else {
+					if (q == null) {
+						q = getOrCreateInnerQueue(inner);
+					}
+
+					if (!q.offer(v) && failOverflow(v, inner)){
+						inner.done = true;
+						drainLoop();
+						return;
+					}
+				}
+				if (WIP.decrementAndGet(this) == 0) {
+					return;
+				}
+
+				drainLoop();
+			}
+			else {
+				Queue<R> q = getOrCreateInnerQueue(inner);
+
+				if (!q.offer(v) && failOverflow(v, inner)) {
+					inner.done = true;
+				}
+				drain();
+			}
 		}
 
 		void drain() {
@@ -762,44 +806,6 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 			return true;
 		}
 
-		void innerNext(FlatMapInner<R> inner, R v) {
-			if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
-				long r = requested;
-
-				if (r != 0L) {
-					actual.onNext(v);
-
-					if (r != Long.MAX_VALUE) {
-						REQUESTED.decrementAndGet(this);
-					}
-
-					inner.request(1);
-				}
-				else {
-					Queue<R> q = getOrCreateInnerQueue(inner);
-
-					if (!q.offer(v) && failOverflow(v, inner)){
-						inner.done = true;
-						drainLoop();
-						return;
-					}
-				}
-				if (WIP.decrementAndGet(this) == 0) {
-					return;
-				}
-
-				drainLoop();
-			}
-			else {
-				Queue<R> q = getOrCreateInnerQueue(inner);
-
-				if (!q.offer(v) && failOverflow(v, inner)) {
-					inner.done = true;
-				}
-				drain();
-			}
-		}
-
 		void innerComplete(FlatMapInner<R> inner) {
 			//FIXME temp. reduce the case to empty regular inners
 //			if (wip == 0 && WIP.compareAndSet(this, 0, 1)) {
@@ -908,7 +914,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 				parent.drain();
 			}
 			else {
-				parent.innerNext(this, t);
+				parent.tryEmit(this, t);
 			}
 		}
 

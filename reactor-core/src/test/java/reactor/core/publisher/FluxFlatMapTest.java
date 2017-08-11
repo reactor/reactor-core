@@ -23,9 +23,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
@@ -987,6 +989,82 @@ public class FluxFlatMapTest {
 		            .expectNext(1)
 		            .thenCancel()
 		.verify();
+	}
+
+	@Test
+	public void testFairness() {
+		StepVerifier.create(Flux.merge(1,
+				Flux.range(1, 10)
+				    .delayElements(Duration.ofMillis(10), Schedulers.single())
+				    .log(),
+				Flux.range(1, 10)
+				    .delayElements(Duration.ofMillis(20), Schedulers.single())
+				    .log()), 0)
+		            .thenRequest(5)
+		            .expectNextCount(5)
+		            .thenRequest(5)
+		            .expectNextCount(5)
+		            .thenRequest(5)
+		            .expectNextCount(5)
+		            .thenRequest(5)
+		            .expectNextCount(5)
+//		            .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+//		            .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+                    .verifyComplete();
+	}
+
+	@Test
+	public void noInnerReordering() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
+		FluxFlatMap.FlatMapMain<Publisher<Integer>, Integer> fmm =
+				new FluxFlatMap.FlatMapMain<>(ts,
+						Function.identity(),
+						false,
+						128,
+						Queues.get(128),
+						128,
+						Queues.get(128));
+
+		fmm.onSubscribe(Operators.emptySubscription());
+
+		EmitterProcessor<Integer> ps = EmitterProcessor.create();
+
+		fmm.onNext(ps);
+
+		ps.onNext(1);
+
+		Operators.addAndGet(FluxFlatMap.FlatMapMain.REQUESTED, fmm, 2L);
+
+		ps.onNext(2);
+
+		fmm.drain();
+
+		ts.assertValues(1, 2);
+	}
+
+	@Test
+	public void noOuterScalarReordering() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
+		FluxFlatMap.FlatMapMain<Publisher<Integer>, Integer> fmm =
+				new FluxFlatMap.FlatMapMain<>(ts,
+						Function.identity(),
+						false,
+						128,
+						Queues.get(128),
+						128,
+						Queues.get(128));
+
+		fmm.onSubscribe(Operators.emptySubscription());
+
+		fmm.onNext(Flux.just(1));
+
+		Operators.addAndGet(FluxFlatMap.FlatMapMain.REQUESTED, fmm, 2L);
+
+		fmm.onNext(Flux.just(2));
+
+		fmm.drain();
+
+		ts.assertValues(1, 2);
 	}
 
 	@Test
