@@ -55,7 +55,7 @@ public class ConsoleLoggerTest {
 		logger.trace("message");
 
 		assertThat(errContent.size()).isZero();
-		assertThat(outContent.toString()).isEqualTo("[TRACE] message\n");
+		assertThat(outContent.toString()).isEqualTo("[TRACE] (" + Thread.currentThread().getName() + ") message\n");
 	}
 
 	@Test
@@ -63,7 +63,7 @@ public class ConsoleLoggerTest {
 		logger.trace("message {} {} format", "with", 1);
 
 		assertThat(errContent.size()).isZero();
-		assertThat(outContent.toString()).isEqualTo("[TRACE] message with 1 format\n");
+		assertThat(outContent.toString()).isEqualTo("[TRACE] (" + Thread.currentThread().getName() + ") message with 1 format\n");
 	}
 
 	@Test
@@ -72,7 +72,7 @@ public class ConsoleLoggerTest {
 
 		assertThat(errContent.size()).isZero();
 		assertThat(outContent.toString())
-				.startsWith("[TRACE] with cause - java.lang.IllegalStateException: cause" +
+				.startsWith("[TRACE] (" + Thread.currentThread().getName() + ") with cause - java.lang.IllegalStateException: cause" +
 				"\njava.lang.IllegalStateException: cause\n" +
 				"\tat reactor.util.ConsoleLoggerTest");
 	}
@@ -87,7 +87,7 @@ public class ConsoleLoggerTest {
 		logger.debug("message");
 
 		assertThat(errContent.size()).isZero();
-		assertThat(outContent.toString()).isEqualTo("[DEBUG] message\n");
+		assertThat(outContent.toString()).isEqualTo("[DEBUG] (" + Thread.currentThread().getName() + ") message\n");
 	}
 
 	@Test
@@ -95,7 +95,7 @@ public class ConsoleLoggerTest {
 		logger.debug("message {} {} format", "with", 1);
 
 		assertThat(errContent.size()).isZero();
-		assertThat(outContent.toString()).isEqualTo("[DEBUG] message with 1 format\n");
+		assertThat(outContent.toString()).isEqualTo("[DEBUG] (" + Thread.currentThread().getName() + ") message with 1 format\n");
 	}
 
 	@Test
@@ -104,7 +104,7 @@ public class ConsoleLoggerTest {
 
 		assertThat(errContent.size()).isZero();
 		assertThat(outContent.toString())
-				.startsWith("[DEBUG] with cause - java.lang.IllegalStateException: cause" +
+				.startsWith("[DEBUG] (" + Thread.currentThread().getName() + ") with cause - java.lang.IllegalStateException: cause" +
 						"\njava.lang.IllegalStateException: cause\n" +
 						"\tat reactor.util.ConsoleLoggerTest");
 	}
@@ -119,7 +119,7 @@ public class ConsoleLoggerTest {
 		logger.info("message");
 
 		assertThat(errContent.size()).isZero();
-		assertThat(outContent.toString()).isEqualTo("[INFO] message\n");
+		assertThat(outContent.toString()).isEqualTo("[ INFO] (" + Thread.currentThread().getName() + ") message\n");
 	}
 
 	@Test
@@ -127,7 +127,7 @@ public class ConsoleLoggerTest {
 		logger.info("message {} {} format", "with", 1);
 
 		assertThat(errContent.size()).isZero();
-		assertThat(outContent.toString()).isEqualTo("[INFO] message with 1 format\n");
+		assertThat(outContent.toString()).isEqualTo("[ INFO] (" + Thread.currentThread().getName() + ") message with 1 format\n");
 	}
 
 	@Test
@@ -136,7 +136,7 @@ public class ConsoleLoggerTest {
 
 		assertThat(errContent.size()).isZero();
 		assertThat(outContent.toString())
-				.startsWith("[INFO] with cause - java.lang.IllegalStateException: cause" +
+				.startsWith("[ INFO] (" + Thread.currentThread().getName() + ") with cause - java.lang.IllegalStateException: cause" +
 						"\njava.lang.IllegalStateException: cause\n" +
 						"\tat reactor.util.ConsoleLoggerTest");
 	}
@@ -151,7 +151,7 @@ public class ConsoleLoggerTest {
 		logger.warn("message");
 
 		assertThat(outContent.size()).isZero();
-		assertThat(errContent.toString()).isEqualTo("[WARN] message\n");
+		assertThat(errContent.toString()).isEqualTo("[ WARN] (" + Thread.currentThread().getName() + ") message\n");
 	}
 
 	@Test
@@ -159,7 +159,7 @@ public class ConsoleLoggerTest {
 		logger.warn("message {} {} format", "with", 1);
 
 		assertThat(outContent.size()).isZero();
-		assertThat(errContent.toString()).isEqualTo("[WARN] message with 1 format\n");
+		assertThat(errContent.toString()).isEqualTo("[ WARN] (" + Thread.currentThread().getName() + ") message with 1 format\n");
 	}
 
 	@Test
@@ -169,7 +169,7 @@ public class ConsoleLoggerTest {
 
 		assertThat(outContent.size()).isZero();
 		assertThat(errContent.toString())
-				.startsWith("[WARN] with cause - java.lang.IllegalStateException: cause" +
+				.startsWith("[ WARN] (" + Thread.currentThread().getName() + ") with cause - java.lang.IllegalStateException: cause" +
 						"\njava.lang.IllegalStateException: cause\n" +
 						"\tat reactor.util.ConsoleLoggerTest");
 	}
@@ -184,7 +184,7 @@ public class ConsoleLoggerTest {
 		logger.error("message");
 
 		assertThat(outContent.size()).isZero();
-		assertThat(errContent.toString()).isEqualTo("[ERROR] message\n");
+		assertThat(errContent.toString()).isEqualTo("[ERROR] (" + Thread.currentThread().getName() + ") message\n");
 	}
 
 	@Test
@@ -192,7 +192,7 @@ public class ConsoleLoggerTest {
 		logger.error("message {} {} format", "with", 1);
 
 		assertThat(outContent.size()).isZero();
-		assertThat(errContent.toString()).isEqualTo("[ERROR] message with 1 format\n");
+		assertThat(errContent.toString()).isEqualTo("[ERROR] (" + Thread.currentThread().getName() + ") message with 1 format\n");
 	}
 
 	@Test
@@ -201,7 +201,7 @@ public class ConsoleLoggerTest {
 
 		assertThat(outContent.size()).isZero();
 		assertThat(errContent.toString())
-				.startsWith("[ERROR] with cause - java.lang.IllegalStateException: cause" +
+				.startsWith("[ERROR] (" + Thread.currentThread().getName() + ") with cause - java.lang.IllegalStateException: cause" +
 						"\njava.lang.IllegalStateException: cause\n" +
 						"\tat reactor.util.ConsoleLoggerTest");
 	}
