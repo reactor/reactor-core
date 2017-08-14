@@ -371,17 +371,17 @@ public interface Scannable {
 
 	/**
 	 * Introspect a component's specific state {@link Attr attribute}. If there's no
-	 * specific value in the component for that key, first attempt to return the key's
-	 * global default. If there is no applicable default, fall back to returning the
+	 * specific value in the component for that key, fall back to returning the
 	 * provided non null default.
 	 *
 	 * @param key a {@link Attr} to resolve for the component.
-	 * @param defaultValue a fallback value if key and key's default both resolve to {@literal null}
+	 * @param defaultValue a fallback value if key resolve to {@literal null}
 	 *
 	 * @return a value associated to the key or the provided default if unmatched or unresolved
 	 */
 	default <T> T scanOrDefault(Attr<T> key, T defaultValue) {
-		T v = scan(key);
+		@SuppressWarnings("unchecked")
+		T v = (T) scanUnsafe(key);
 		if (v == null) {
 			return Objects.requireNonNull(defaultValue, "defaultValue");
 		}
