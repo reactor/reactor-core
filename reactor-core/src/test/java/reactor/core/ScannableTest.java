@@ -16,10 +16,14 @@
 
 package reactor.core;
 
+import java.util.Collections;
+import java.util.List;
+
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.ParallelFlux;
+import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -70,6 +74,34 @@ public class ScannableTest {
 
 		assertThat(emptyScannable.scan(Scannable.Attr.ACTUAL)).isNull();
 		assertThat(emptyScannable.scan(Scannable.Attr.PARENT)).isNull();
+
+		assertThat(emptyScannable.scan(Scannable.Attr.TAGS)).isNull();
+		assertThat(emptyScannable.scan(Scannable.Attr.NAME)).isNull();
+	}
+
+	@Test
+	public void scanOrDefaultOverridesGlobalDefault() {
+		Scannable emptyScannable = key -> null;
+
+		assertThat(emptyScannable.scanOrDefault(Scannable.Attr.BUFFERED, 123)).isEqualTo(123); //global 0
+		assertThat(emptyScannable.scanOrDefault(Scannable.Attr.CAPACITY, 123)).isEqualTo(123); //global 0
+		assertThat(emptyScannable.scanOrDefault(Scannable.Attr.PREFETCH, 123)).isEqualTo(123); //global 0
+
+		assertThat(emptyScannable.scanOrDefault(Scannable.Attr.LARGE_BUFFERED, 123L)).isEqualTo(123L); //global null
+		assertThat(emptyScannable.scanOrDefault(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM, 123L)).isEqualTo(123L); //global 0
+
+		assertThat(emptyScannable.scanOrDefault(Scannable.Attr.CANCELLED, true)).isTrue(); //global false
+		assertThat(emptyScannable.scanOrDefault(Scannable.Attr.DELAY_ERROR, true)).isTrue(); //global false
+		assertThat(emptyScannable.scanOrDefault(Scannable.Attr.TERMINATED, true)).isTrue(); //global false
+
+		assertThat(emptyScannable.scanOrDefault(Scannable.Attr.ERROR, new IllegalStateException())).isInstanceOf(IllegalStateException.class); //global null
+
+		assertThat(emptyScannable.scanOrDefault(Scannable.Attr.ACTUAL, Scannable.Attr.NULL_SCAN)).isSameAs(Scannable.Attr.NULL_SCAN); //global null
+		assertThat(emptyScannable.scanOrDefault(Scannable.Attr.PARENT, Scannable.Attr.NULL_SCAN)).isSameAs(Scannable.Attr.NULL_SCAN); // global null
+
+		List<Tuple2<String, String>> tags = Collections.singletonList(Tuples.of("some", "key"));
+		assertThat(emptyScannable.scanOrDefault(Scannable.Attr.TAGS, tags.stream())).containsExactlyElementsOf(tags); //global null
+		assertThat(emptyScannable.scanOrDefault(Scannable.Attr.NAME, "SomeName")).isEqualTo("SomeName"); // global null
 	}
 
 	@Test
