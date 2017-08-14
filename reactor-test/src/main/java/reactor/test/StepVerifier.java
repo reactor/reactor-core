@@ -793,6 +793,17 @@ public interface StepVerifier {
 		Step<T> thenAwait(Duration timeshift);
 
 		/**
+		 * Pause the expectation evaluation for a given {@link Duration} using real time
+		 * <strong>even if a {@link VirtualTimeScheduler} has been configured</strong>
+		 * {@link VirtualTimeScheduler#advanceTimeBy(Duration)}.
+		 *
+		 * @param duration a pause {@link Duration}
+		 *
+		 * @return this builder
+		 */
+		Step<T> thenForceAwait(Duration duration);
+
+		/**
 		 * Consume further onNext signals as long as they match a predicate.
 		 *
 		 * @param predicate the condition to continue consuming onNext

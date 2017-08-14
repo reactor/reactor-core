@@ -16,15 +16,18 @@
 
 package reactor.test.scheduler;
 
+import java.time.Duration;
 import java.util.function.Supplier;
 
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.util.Loggers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -118,6 +121,30 @@ public class VirtualTimeSchedulerTests {
 	@After
 	public void cleanup() {
 		VirtualTimeScheduler.reset();
+	}
+
+	@Test
+	(timeout = 2000)
+	public void gh783() {
+		Loggers.useConsoleLoggers();
+		int size = 2;
+		Scheduler parallel = Schedulers.newParallel("gh-783");
+		StepVerifier.withVirtualTime(() -> Flux.just("Oops")
+		                                       .take(size)
+		                                       .subscribeOn(parallel)
+		                                       .log()
+		                                       .flatMap(message -> {
+			                                       Flux<Long> interval = Flux.interval(Duration.ofMillis(100));
+			                                       return interval.log().map( tick -> message + tick);
+		                                       })
+		                                       .take(size)
+		                                       .collectList()
+		                                       .doOnNext(System.out::println)
+		)
+		            .thenForceAwait(Duration.ofMillis(100)) //needed to have all scheduling done
+		            .thenAwait(Duration.ofMinutes(1))
+		            .assertNext(list -> Assert.assertTrue(list.size() == size))
+		            .verifyComplete();
 	}
 
 }

@@ -559,6 +559,13 @@ final class DefaultStepVerifierBuilder<T>
 	}
 
 	@Override
+	public StepVerifier.Step<T> thenForceAwait(Duration duration) {
+		Objects.requireNonNull(duration, "duration");
+		this.script.add(new WaitEvent<>(duration, "thenForceAwait", true));
+		return this;
+	}
+
+	@Override
 	public DefaultStepVerifierBuilder<T> thenConsumeWhile(Predicate<T> predicate) {
 		return thenConsumeWhile(predicate, t -> {});
 	}
@@ -1996,13 +2003,21 @@ final class DefaultStepVerifierBuilder<T>
 		}
 	}
 
+	static void realWait(Duration duration, DefaultVerifySubscriber<?> s) throws Exception {
+		s.completeLatch.await(duration.toMillis(), TimeUnit.MILLISECONDS);
+	}
+
+	static void virtualWait(Duration duration, DefaultVerifySubscriber<?> s) {
+		s.virtualTimeScheduler.advanceTimeBy(duration);
+	}
+
 	static void virtualOrRealWait(Duration duration, DefaultVerifySubscriber<?> s)
 			throws Exception {
 		if (s.virtualTimeScheduler == null) {
-			s.completeLatch.await(duration.toMillis(), TimeUnit.MILLISECONDS);
+			realWait(duration, s);
 		}
 		else {
-			s.virtualTimeScheduler.advanceTimeBy(duration);
+			virtualWait(duration, s);
 		}
 	}
 
@@ -2040,15 +2055,26 @@ final class DefaultStepVerifierBuilder<T>
 	static final class WaitEvent<T> extends TaskEvent<T> {
 
 		final Duration duration;
+		final boolean forcedRealtime;
 
 		WaitEvent(Duration duration, String desc) {
+			this(duration, desc, false);
+		}
+
+		WaitEvent(Duration duration, String desc, boolean forcedRealtime) {
 			super(null, desc);
 			this.duration = duration;
+			this.forcedRealtime = forcedRealtime;
 		}
 
 		@Override
 		void run(DefaultVerifySubscriber<T> s) throws Exception {
-			virtualOrRealWait(duration, s);
+			if (forcedRealtime) {
+				realWait(duration, s);
+			}
+			else {
+				virtualOrRealWait(duration, s);
+			}
 		}
 
 	}
