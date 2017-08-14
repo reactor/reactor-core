@@ -40,7 +40,7 @@ import static reactor.core.publisher.FluxReplay.ReplaySubscriber.TERMINATED;
  *
  * @author Simon Baslé
  */
-class MonoCacheTime<T> extends MonoOperator<T, T> {
+class MonoCacheTime<T> extends MonoOperator<T, T> implements Fuseable {
 
 	final Duration ttl;
 	final Scheduler clock;
@@ -62,13 +62,13 @@ class MonoCacheTime<T> extends MonoOperator<T, T> {
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> s) {
-		if (buffer == null || buffer.isExpired()) {
-			buffer = new SizeAndTimeBoundReplayBuffer<>(1, ttl.toMillis(), clock);
-			source.subscribe(new SourceSubscriber<>(this));
-		}
 		//noinspection ConstantConditions
 		if (s == null) {
 			throw Exceptions.argumentIsNullException();
+		}
+		if (buffer == null || buffer.isExpired()) {
+			buffer = new SizeAndTimeBoundReplayBuffer<>(1, ttl.toMillis(), clock);
+			source.subscribe(new SourceSubscriber<>(this));
 		}
 		FluxReplay.ReplaySubscription<T> rs = new ReplayInner<>(s, this);
 		s.onSubscribe(rs);
