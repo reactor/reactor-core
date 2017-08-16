@@ -16,14 +16,8 @@
 
 package reactor;
 
-import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Level;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -37,253 +31,14 @@ import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
 import reactor.core.publisher.ParallelFlux;
-import reactor.core.publisher.SignalType;
-import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
-import reactor.test.publisher.TestPublisher;
-import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Stephane Maldini
  */
-public class HooksTest {
-
-	void simpleFlux(){
-		Flux.just(1)
-		    .map(d -> d + 1)
-		    .doOnNext(d -> {throw new RuntimeException("test");})
-		    .collectList()
-		    .onErrorReturn(Collections.singletonList(2))
-		    .block();
-	}
-
-	static final class TestException extends RuntimeException {
-
-		public TestException(String message) {
-			super(message);
-		}
-	}
-
-	@Test
-	public void errorHooks() throws Exception {
-
-		Hooks.onOperatorError((e, s) -> new TestException(s.toString()));
-		Hooks.onNextDropped(d -> {
-			throw new TestException(d.toString());
-		});
-		Hooks.onErrorDropped(e -> {
-			throw new TestException("errorDrop");
-		});
-
-		Throwable w = Operators.onOperatorError(null, new Exception(), "hello");
-
-		Assert.assertTrue(w instanceof TestException);
-		Assert.assertTrue(w.getMessage()
-		                   .equals("hello"));
-
-		try {
-			Operators.onNextDropped("hello");
-			Assert.fail();
-		}
-		catch (Throwable t) {
-			t.printStackTrace();
-			Assert.assertTrue(t instanceof TestException);
-			Assert.assertTrue(t.getMessage()
-			                   .equals("hello"));
-		}
-
-		try {
-			Operators.onErrorDropped(new Exception());
-			Assert.fail();
-		}
-		catch (Throwable t) {
-			Assert.assertTrue(t instanceof TestException);
-			Assert.assertTrue(t.getMessage()
-			                   .equals("errorDrop"));
-		}
-
-		Hooks.resetOnOperatorError();
-		Hooks.resetOnNextDropped();
-		Hooks.resetOnErrorDropped();
-	}
-
-	@Test
-	public void accumulatingHooks() throws Exception {
-		AtomicReference<String> ref = new AtomicReference<>();
-		Hooks.onNextDropped(d -> {
-			ref.set(d.toString());
-		});
-		Hooks.onNextDropped(d -> {
-			ref.set(ref.get()+"bar");
-		});
-
-		Operators.onNextDropped("foo");
-
-		assertThat(ref.get()).isEqualTo("foobar");
-
-		Hooks.onErrorDropped(d -> {
-			ref.set(d.getMessage());
-		});
-		Hooks.onErrorDropped(d -> {
-			ref.set(ref.get()+"bar");
-		});
-
-		Operators.onErrorDropped(new Exception("foo"));
-
-		assertThat(ref.get()).isEqualTo("foobar");
-
-		Hooks.resetOnErrorDropped();
-
-
-		Hooks.onOperatorError((error, d) -> {
-			ref.set(d.toString());
-			return new Exception("bar");
-		});
-		Hooks.onOperatorError((error, d) -> {
-			ref.set(ref.get()+error.getMessage());
-			return error;
-		});
-
-		Operators.onOperatorError(null, null, "foo");
-
-		assertThat(ref.get()).isEqualTo("foobar");
-
-		Hooks.resetOnOperatorError();
-
-
-		AtomicReference<Publisher> hook = new AtomicReference<>();
-		AtomicReference<Object> hook2 = new AtomicReference<>();
-		Hooks.onEachOperator(h -> {
-			hook.set(TestPublisher.create().flux());
-			return hook.get();
-		});
-		Hooks.onEachOperator(h -> {
-			hook2.set(h);
-			return h;
-		});
-
-		Flux.just("test").filter(d -> true).subscribe();
-
-		assertThat(hook.get()).isNotNull().isEqualTo(hook2.get());
-		Hooks.resetOnEachOperator();
-
-		hook.set(null);
-		hook2.set(null);
-
-		Hooks.onLastOperator(h -> {
-			hook.set(TestPublisher.create().flux());
-			return hook.get();
-		});
-		Hooks.onLastOperator(h -> {
-			hook2.set(h);
-			return h;
-		});
-
-		Flux.just("test").filter(d -> true).subscribe();
-
-		assertThat(hook.get()).isNotNull().isEqualTo(hook2.get());
-
-		Hooks.resetOnLastOperator();
-	}
-
-
-	@Test
-	public void parallelModeFused() {
-		Hooks.onOperatorDebug();
-
-		Hooks.onEachOperator(p -> {
-			System.out.println(Scannable.from(p).operatorName());
-			return p;
-		});
-
-		Flux<Integer> source = Mono.just(1)
-		                           .flux()
-		                           .repeat(1000)
-		                           .publish()
-		                           .autoConnect();
-		int ncpu = Math.max(8,
-				Runtime.getRuntime()
-				       .availableProcessors());
-
-			Scheduler scheduler = Schedulers.newParallel("test", ncpu);
-
-			try {
-				Flux<Integer> result = ParallelFlux.from(source, ncpu)
-				                                   .runOn(scheduler)
-				                                   .map(v -> v + 1)
-				                                   .log("test", Level.INFO, true, SignalType.ON_SUBSCRIBE)
-				                                   .sequential();
-
-				AssertSubscriber<Integer> ts = AssertSubscriber.create();
-
-				result.subscribe(ts);
-
-				ts.await(Duration.ofSeconds(10));
-
-				ts.assertSubscribed()
-				  .assertValueCount(1000)
-				  .assertComplete()
-				  .assertNoError();
-			}
-			finally {
-				Hooks.resetOnEachOperator();
-				scheduler.dispose();
-			}
-
-	}
-
-	@Test
-	public void verboseExtension() {
-		Queue<String> q = new LinkedTransferQueue<>();
-		Hooks.onEachOperator(p -> {
-			q.offer(p.toString());
-			return p;
-		});
-		Hooks.onOperatorDebug();
-
-		simpleFlux();
-
-		assertThat(q.toArray()).containsExactly(
-				"FluxJust",
-				"FluxMapFuseable",
-				"FluxPeekFuseable",
-				"MonoCollectList",
-				"MonoOnErrorResume",
-				"MonoJust"
-				);
-
-
-		q.clear();
-		Hooks.resetOnEachOperator();
-
-		Hooks.onEachOperator(p -> {
-			q.offer(p.toString());
-			return p;
-		});
-
-		simpleFlux();
-
-		assertThat(q.toArray()).containsExactly(
-				"FluxJust",
-				"FluxMapFuseable",
-				"FluxPeekFuseable",
-				"MonoCollectList",
-				"MonoOnErrorResume",
-				"MonoJust");
-
-		q.clear();
-		Hooks.resetOnEachOperator();
-
-		simpleFlux();
-
-		assertThat(q.toArray()).isEmpty();
-
-		Hooks.resetOnEachOperator();
-	}
-
+public class HooksTraceTest {
 
 	@Test
 	public void testTrace() throws Exception {
@@ -306,7 +61,6 @@ public class HooksTest {
 		throw new IllegalStateException();
 	}
 
-
 	@Test
 	public void testTrace2() throws Exception {
 		Hooks.onOperatorDebug();
@@ -324,9 +78,9 @@ public class HooksTest {
 		catch(Exception e){
 			e.printStackTrace();
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
-					("HooksTest.java:"));
+					("HooksTraceTest.java:"));
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tMono.map" +
-					"(HooksTest.java:"));
+					"(HooksTraceTest.java:"));
 			return;
 		}
 		finally {
@@ -352,10 +106,10 @@ public class HooksTest {
 		catch(Exception e){
 			e.printStackTrace();
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
-					("HooksTest.java:"));
+					("HooksTraceTest.java:"));
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tFlux" +
 					".share" +
-					"(HooksTest.java:"));
+					"(HooksTraceTest.java:"));
 			return;
 		}
 		finally {
@@ -378,10 +132,10 @@ public class HooksTest {
 		catch(Exception e){
 			e.printStackTrace();
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
-					("HooksTest.java:"));
+					("HooksTraceTest.java:"));
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tMono" +
 					".flatMap" +
-					"(HooksTest.java:"));
+					"(HooksTraceTest.java:"));
 			return;
 		}
 		finally {
@@ -404,9 +158,9 @@ public class HooksTest {
 		catch (Exception e) {
 			e.printStackTrace();
 			Assert.assertTrue(e.getSuppressed()[0].getMessage()
-			                                      .contains("HooksTest.java:"));
+			                                      .contains("HooksTraceTest.java:"));
 			Assert.assertTrue(e.getSuppressed()[0].getMessage()
-			                                      .contains("|_\tMono" + ".flatMap" + "(HooksTest.java:"));
+			                                      .contains("|_\tMono" + ".flatMap" + "(HooksTraceTest.java:"));
 			return;
 		}
 		finally {
@@ -431,10 +185,10 @@ public class HooksTest {
 		catch(Exception e){
 			e.printStackTrace();
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains
-					("HooksTest.java:"));
+					("HooksTraceTest.java:"));
 			Assert.assertTrue(e.getSuppressed()[0].getMessage().contains("|_\tFlux" +
 					".flatMap" +
-					"(HooksTest.java:"));
+					"(HooksTraceTest.java:"));
 			return;
 		}
 		finally {

@@ -16,17 +16,21 @@
 
 package reactor.core.publisher;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
 import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import reactor.util.Logger;
 import reactor.util.Loggers;
-
 
 /**
  * A push of overridable lifecycle hooks that can be used for cross-cutting
@@ -34,34 +38,104 @@ import reactor.util.Loggers;
  */
 public abstract class Hooks {
 
+	static final String ON_OPERATOR_DEBUG_KEY = "onOperatorDebug";
+
 	/**
-	 * Configure a {@link Publisher} operator interceptor for each operator created
-	 * ({@link Flux} or {@link Mono}). The passed function applies to the original
-	 * operator {@link Publisher} and return an eventually intercepted {@link Publisher}.
+	 * Add a {@link Publisher} operator interceptor for each operator created
+	 * ({@link Flux} or {@link Mono}). The passed function is applied to the original
+	 * operator {@link Publisher} and can return a different {@link Publisher}.
 	 * <p>
-	 *     This pointcut function cannot make use of {@link Flux}, {@link Mono} or
-	 *     {@link ParallelFlux} API as it would lead to a recursive pointcut use. In
-	 *     effect each operator call would invoke onEachOperator while being in
-	 *     onEachOperator
+	 * Note that sub-hooks are cumulative, but invoking this method twice with the same instance
+	 * (or any instance that has the same `toString`) will result in only a single instance
+	 * being applied. See {@link #onEachOperator(String, Function)} for a variant that
+	 * allows you to name the sub-hooks (and thus replace them or remove them individually
+	 * later on). Can be fully reset via {@link #resetOnEachOperator()}.
 	 * <p>
-	 * Can be reset via {@link #resetOnEachOperator()}
+	 * This pointcut function cannot make use of {@link Flux}, {@link Mono} or
+	 * {@link ParallelFlux} APIs as it would lead to a recursive call to the hook: the
+	 * operator calls would effectively invoke onEachOperator from onEachOperator.
 	 *
-	 * @param onOperator a function to intercept each operation call e.g. {@code map
-	 * (fn)} and {@code map(fn2)} in {@code flux.map(fn).map(fn2).subscribe()}
+	 * @param onEachOperator the sub-hook: a function to intercept each operation call
+	 * (e.g. {@code map (fn)} and {@code map(fn2)} in {@code flux.map(fn).map(fn2).subscribe()})
 	 *
+	 * @see #onEachOperator(String, Function)
+	 * @see #resetOnEachOperator(String)
+	 * @see #resetOnEachOperator()
 	 * @see #onLastOperator(Function)
 	 */
-	public static void onEachOperator(Function<? super Publisher<Object>, ? extends Publisher<Object>> onOperator) {
-		Objects.requireNonNull(onOperator, "onEachOperator");
-		log.debug("Hooking new default : onEachOperator");
+	public static void onEachOperator(Function<? super Publisher<Object>, ? extends Publisher<Object>> onEachOperator) {
+		onEachOperator(onEachOperator.toString(), onEachOperator);
+	}
+
+	/**
+	 * Add or replace a named {@link Publisher} operator interceptor for each operator created
+	 * ({@link Flux} or {@link Mono}). The passed function is applied to the original
+	 * operator {@link Publisher} and can return a different {@link Publisher}.
+	 * <p>
+	 * Note that sub-hooks are cumulative. Invoking this method twice with the same key will
+	 * replace the old sub-hook with that name, but keep the execution order (eg. A-h1, B-h2,
+	 * A-h3 will keep A-B execution order, leading to hooks h3 then h2 being executed).
+	 * Removing a particular key using {@link #resetOnEachOperator(String)} then adding it
+	 * back will result in the execution order changing (the later sub-hook being executed
+	 * last). Can be fully reset via {@link #resetOnEachOperator()}.
+	 * <p>
+	 * This pointcut function cannot make use of {@link Flux}, {@link Mono} or
+	 * {@link ParallelFlux} APIs as it would lead to a recursive call to the hook: the
+	 * operator calls would effectively invoke onEachOperator from onEachOperator.
+	 *
+	 * @param key the key for the sub-hook to add/replace
+	 * @param onEachOperator the sub-hook: a function to intercept each operation call
+	 * (e.g. {@code map (fn)} and {@code map(fn2)} in {@code flux.map(fn).map(fn2).subscribe()})
+	 *
+	 * @see #onEachOperator(Function)
+	 * @see #resetOnEachOperator(String)
+	 * @see #resetOnEachOperator()
+	 * @see #onLastOperator(String, Function)
+	 */
+	public static void onEachOperator(String key, Function<? super Publisher<Object>, ? extends Publisher<Object>> onEachOperator) {
+		Objects.requireNonNull(key, "key");
+		Objects.requireNonNull(onEachOperator, "onEachOperator");
+		log.debug("Hooking onEachOperator: {}", key);
 
 		synchronized (log) {
-			onEachOperatorHook = createOrUpdateOpHook(onEachOperatorHook, onOperator);
+			onEachOperatorHooks.put(key, onEachOperator);
+			onEachOperatorHook = createOrUpdateOpHook(onEachOperatorHooks.values());
+		}
+	}
+
+	/**
+	 * Remove the sub-hook with key {@code key} from the onEachOperator hook. No-op if
+	 * no such key has been registered, and equivalent to calling {@link #resetOnEachOperator()}
+	 * if it was the last sub-hook.
+	 *
+	 * @param key the key of the sub-hook to remove
+	 */
+	public static void resetOnEachOperator(String key) {
+		Objects.requireNonNull(key, "key");
+		log.debug("Reset onEachOperator: {}", key);
+
+		synchronized (log) {
+			onEachOperatorHooks.remove(key);
+			onEachOperatorHook = createOrUpdateOpHook(onEachOperatorHooks.values());
+		}
+	}
+
+	/**
+	 * Reset global "assembly" hook tracking
+	 */
+	public static void resetOnEachOperator() {
+		log.debug("Reset to factory defaults : onEachOperator");
+		synchronized (log) {
+			onEachOperatorHooks.clear();
+			onEachOperatorHook = null;
 		}
 	}
 
 	/**
 	 * Override global error dropped strategy which by default bubble back the error.
+	 * <p>
+	 * The hook is cumulative, so calling this method several times will set up the hook
+	 * for as many consumer invocations (even if called with the same consumer instance).
 	 *
 	 * @param c the {@link Consumer} to apply to dropped errors
 	 */
@@ -82,30 +156,94 @@ public abstract class Hooks {
 	}
 
 	/**
-	 * Configure a {@link Publisher} operator interceptor for the last operator created
-	 * in every flow ({@link Flux} or {@link Mono}). The passed function applies
-	 * to the original
-	 * operator {@link Publisher} and return an eventually intercepted {@link Publisher}
+	 * Add a {@link Publisher} operator interceptor for the last operator created
+	 * in every flow ({@link Flux} or {@link Mono}). The passed function is applied
+	 * to the original operator {@link Publisher} and can return a different {@link Publisher}.
 	 * <p>
-	 * Can be reset via {@link #resetOnLastOperator()}}
+	 * Note that sub-hooks are cumulative, but invoking this method twice with the same
+	 * instance (or any instance that has the same `toString`) will result in only a single
+	 * instance being applied. See {@link #onLastOperator(String, Function)} for a variant
+	 * that allows you to name the sub-hooks (and thus replace them or remove them individually
+	 * later on). Can be fully reset via {@link #resetOnLastOperator()}.
 	 *
-	 * @param onOperator a function to intercept last operation call e.g. {@code map(fn2)}
-	 * in {@code flux.map(fn).map(fn2).subscribe()}
+	 * @param onLastOperator the sub-hook: a function to intercept last operation call
+	 * (e.g. {@code map(fn2)} in {@code flux.map(fn).map(fn2).subscribe()})
 	 *
+	 * @see #onLastOperator(String, Function)
+	 * @see #resetOnLastOperator(String)
+	 * @see #resetOnLastOperator()
 	 * @see #onEachOperator(Function)
 	 */
-	public static void onLastOperator(Function<? super Publisher<Object>, ? extends Publisher<Object>> onOperator) {
-		Objects.requireNonNull(onOperator, "onLastOperator");
-		log.debug("Hooking new default : onLastOperator");
+	public static void onLastOperator(Function<? super Publisher<Object>, ? extends Publisher<Object>> onLastOperator) {
+		onLastOperator(onLastOperator.toString(), onLastOperator);
+	}
+
+	/**
+	 * Add or replace a named {@link Publisher} operator interceptor for the last operator created
+	 * in every flow ({@link Flux} or {@link Mono}). The passed function is applied
+	 * to the original operator {@link Publisher} and can return a different {@link Publisher}.
+	 * <p>
+	 * Note that sub-hooks are cumulative. Invoking this method twice with the same key will
+	 * replace the old sub-hook with that name, but keep the execution order (eg. A-h1, B-h2,
+	 * A-h3 will keep A-B execution order, leading to hooks h3 then h2 being executed).
+	 * Removing a particular key using {@link #resetOnLastOperator(String)} then adding it
+	 * back will result in the execution order changing (the later sub-hook being executed
+	 * last). Can be fully reset via {@link #resetOnLastOperator()}.
+	 *
+	 * @param key the key for the sub-hook to add/replace
+	 * @param onLastOperator the sub-hook: a function to intercept last operation call
+	 * (e.g. {@code map(fn2)} in {@code flux.map(fn).map(fn2).subscribe()})
+	 *
+	 * @see #onLastOperator(Function)
+	 * @see #resetOnLastOperator(String)
+	 * @see #resetOnLastOperator()
+	 * @see #onEachOperator(String, Function)
+	 */
+	public static void onLastOperator(String key, Function<? super Publisher<Object>, ? extends Publisher<Object>> onLastOperator) {
+		Objects.requireNonNull(key, "key");
+		Objects.requireNonNull(onLastOperator, "onLastOperator");
+		log.debug("Hooking onLastOperator: {}", key);
 
 		synchronized (log) {
-			onLastOperatorHook = createOrUpdateOpHook(onLastOperatorHook, onOperator);
+			onLastOperatorHooks.put(key, onLastOperator);
+			onLastOperatorHook = createOrUpdateOpHook(onLastOperatorHooks.values());
+		}
+	}
+
+	/**
+	 * Remove the sub-hook with key {@code key} from the onLastOperator hook. No-op if
+	 * no such key has been registered, and equivalent to calling {@link #resetOnLastOperator()}
+	 * if it was the last sub-hook.
+	 *
+	 * @param key the key of the sub-hook to remove
+	 */
+	public static void resetOnLastOperator(String key) {
+		Objects.requireNonNull(key, "key");
+		log.debug("Reset onLastOperator: {}", key);
+
+		synchronized (log) {
+			onLastOperatorHooks.remove(key);
+			onLastOperatorHook = createOrUpdateOpHook(onLastOperatorHooks.values());
+		}
+	}
+
+	/**
+	 * Reset global "subscriber" hook tracking
+	 */
+	public static void resetOnLastOperator() {
+		log.debug("Reset to factory defaults : onLastOperator");
+		synchronized (log) {
+			onLastOperatorHooks.clear();
+			onLastOperatorHook = null;
 		}
 	}
 
 	/**
 	 * Override global data dropped strategy which by default throw {@link
 	 * reactor.core.Exceptions#failWithCancel()}
+	 * <p>
+	 * The hook is cumulative, so calling this method several times will set up the hook
+	 * for as many consumer invocations (even if called with the same consumer instance).
 	 *
 	 * @param c the {@link Consumer} to apply to data (onNext) that is dropped
 	 */
@@ -129,43 +267,105 @@ public abstract class Hooks {
 	 * enriched with a Suppressed Exception detailing the original assembly line stack.
 	 * Must be called before producers (e.g. Flux.map, Mono.fromCallable) are actually
 	 * called to intercept the right stack information.
-	 *
-	 * @see #onEachOperator(Function)
+	 * <p>
+	 * This is added as a specifically-keyed sub-hook in {@link #onEachOperator(String, Function)}.
 	 */
 	public static void onOperatorDebug() {
 		log.debug("Enabling stacktrace debugging via onOperatorDebug");
-		onEachOperator(OnOperatorDebug.instance());
+		onEachOperator(ON_OPERATOR_DEBUG_KEY, OnOperatorDebug.instance());
 	}
 
 	/**
-	 * Override global operator error mapping which by default add as suppressed exception
-	 * either data driven exception or error driven exception.
-	 *
-	 * @param f an operator error {@link BiFunction} mapper, returning an arbitrary exception
-	 * given the failure and optionally some original context (data or error).
+	 * Reset global operator debug.
 	 */
-	public static void onOperatorError(BiFunction<? super Throwable, Object, ? extends Throwable> f) {
-		Objects.requireNonNull(f, "onOperatorErrorHook");
-		log.debug("Hooking new default : onOperatorError");
+	public static void resetOnOperatorDebug() {
+		resetOnEachOperator(ON_OPERATOR_DEBUG_KEY);
+	}
+
+	/**
+	 * Add a custom error mapping, overriding the default one. Custom mapping can be an
+	 * accumulation of several sub-hooks each subsequently added via this method.
+	 * <p>
+	 * Note that sub-hooks are cumulative, but invoking this method twice with the same
+	 * instance (or any instance that has the same `toString`) will result in only a single
+	 * instance being applied. See {@link #onOperatorError(String, BiFunction)} for a variant
+	 * that allows you to name the sub-hooks (and thus replace them or remove them individually
+	 * later on). Can be fully reset via {@link #resetOnOperatorError()}.
+	 * <p>
+	 * For reference, the default mapping is to unwrap the exception and, if the second
+	 * parameter is another exception, to add it to the first as suppressed.
+	 *
+	 * @param onOperatorError an operator error {@link BiFunction} mapper, returning an arbitrary exception
+	 * given the failure and optionally some original context (data or error).
+	 *
+	 * @see #onOperatorError(String, BiFunction)
+	 * @see #resetOnOperatorError(String)
+	 * @see #resetOnOperatorError()
+	 */
+	public static void onOperatorError(BiFunction<? super Throwable, Object, ? extends Throwable> onOperatorError) {
+		onOperatorError(onOperatorError.toString(), onOperatorError);
+	}
+
+	/**
+	 * Add or replace a named custom error mapping, overriding the default one. Custom
+	 * mapping can be an accumulation of several sub-hooks each subsequently added via this
+	 * method.
+	 * <p>
+	 * Note that invoking this method twice with the same key will replace the old sub-hook
+	 * with that name, but keep the execution order (eg. A-h1, B-h2, A-h3 will keep A-B
+	 * execution order, leading to hooks h3 then h2 being executed). Removing a particular
+	 * key using {@link #resetOnOperatorError(String)} then adding it back will result in
+	 * the execution order changing (the later sub-hook being executed last).
+	 * Can be fully reset via {@link #resetOnOperatorError()}.
+	 * <p>
+	 * For reference, the default mapping is to unwrap the exception and, if the second
+	 * parameter is another exception, to add it to the first as a suppressed.
+	 *
+	 * @param key the key for the sub-hook to add/replace
+	 * @param onOperatorError an operator error {@link BiFunction} mapper, returning an arbitrary exception
+	 * given the failure and optionally some original context (data or error).
+	 *
+	 * @see #onOperatorError(String, BiFunction)
+	 * @see #resetOnOperatorError(String)
+	 * @see #resetOnOperatorError()
+	 */
+	public static void onOperatorError(String key, BiFunction<? super Throwable, Object, ? extends Throwable> onOperatorError) {
+		Objects.requireNonNull(key, "key");
+		Objects.requireNonNull(onOperatorError, "onOperatorError");
+		log.debug("Hooking onOperatorError: {}", key);
 		synchronized (log) {
-			if (onOperatorErrorHook != null) {
-				BiFunction<? super Throwable, Object, ? extends Throwable> ff =
-						onOperatorErrorHook;
-				onOperatorErrorHook = (e, data) -> f.apply(ff.apply(e, data), data);
-			}
-			else {
-				onOperatorErrorHook = f;
-			}
+			onOperatorErrorHooks.put(key, onOperatorError);
+			onOperatorErrorHook = createOrUpdateOpErrorHook(onOperatorErrorHooks.values());
 		}
 	}
 
 	/**
-	 * Reset global "assembly" hook tracking
+	 * Remove the sub-hook with key {@code key} from the onOperatorError hook. No-op if
+	 * no such key has been registered, and equivalent to calling {@link #resetOnOperatorError()}
+	 * if it was the last sub-hook.
+	 *
+	 * @param key the key of the sub-hook to remove
 	 */
-	public static void resetOnEachOperator() {
-		log.debug("Reset to factory defaults : onEachOperator");
+	public static void resetOnOperatorError(String key) {
+		Objects.requireNonNull(key, "key");
+		log.debug("Reset onOperatorError: {}", key);
 		synchronized (log) {
-			onEachOperatorHook = null;
+			onOperatorErrorHooks.remove(key);
+			onOperatorErrorHook = createOrUpdateOpErrorHook(onOperatorErrorHooks.values());
+		}
+	}
+
+	/**
+	 * Reset global operator error mapping to the default behavior.
+	 * <p>
+	 * For reference, the default mapping is to unwrap the exception and, if the second
+	 * parameter is another exception, to add it to the first as a suppressed.
+	 */
+	public static void resetOnOperatorError() {
+		log.debug("Reset to factory defaults : onOperatorError");
+		synchronized (log) {
+			onOperatorErrorHooks.clear();
+			onOperatorErrorHook = null;
 		}
 	}
 
@@ -190,69 +390,68 @@ public abstract class Hooks {
 		}
 	}
 
-	/**
-	 * Reset global "subscriber" hook tracking
-	 */
-	public static void resetOnLastOperator() {
-		log.debug("Reset to factory defaults : onLastOperator");
-		synchronized (log) {
-			onLastOperatorHook = null;
-		}
-	}
-
-	/**
-	 * Reset global operator debug. Will have no effect if more than one
-	 * {@link #onEachOperator(Function)} has been invoked, including {@link #onOperatorDebug()}
-	 */
-	public static void resetOnOperatorDebug() {
-		log.debug("Reset to factory defaults : onOperatorError");
-		synchronized (log) {
-			if(onEachOperatorHook == OnOperatorDebug.INSTANCE) {
-				onEachOperatorHook = null;
+	@Nullable
+	@SuppressWarnings("unchecked")
+	static Function<Publisher, Publisher> createOrUpdateOpHook(Collection<Function<? super Publisher<Object>, ? extends Publisher<Object>>> hooks) {
+		Function<Publisher, Publisher> composite = null;
+		for (Function<? super Publisher<Object>, ? extends Publisher<Object>> function : hooks) {
+			Function<? super Publisher, ? extends Publisher> op = (Function<? super Publisher, ? extends Publisher>) function;
+			if (composite != null) {
+				composite = composite.andThen(op);
+			}
+			else {
+				composite = (Function<Publisher, Publisher>) op;
 			}
 		}
+		return composite;
 	}
 
-	/**
-	 * Reset global operator error mapping to adding as suppressed exception.
-	 */
-	public static void resetOnOperatorError() {
-		log.debug("Reset to factory defaults : onOperatorError");
-		synchronized (log) {
-			onOperatorErrorHook = null;
+	@Nullable
+	static BiFunction<? super Throwable, Object, ? extends Throwable> createOrUpdateOpErrorHook(Collection<BiFunction<? super Throwable, Object, ? extends Throwable>> hooks) {
+		BiFunction<? super Throwable, Object, ? extends Throwable> composite = null;
+		for (BiFunction<? super Throwable, Object, ? extends Throwable> function : hooks) {
+			if (composite != null) {
+				BiFunction<? super Throwable, Object, ? extends Throwable> ff = composite;
+				composite = (e, data) -> function.apply(ff.apply(e, data), data);
+			}
+			else {
+				composite = function;
+			}
 		}
+		return composite;
 	}
 
+	//Hooks that are transformative
+	static volatile Function<Publisher, Publisher>                             onEachOperatorHook;
+	static volatile Function<Publisher, Publisher>                             onLastOperatorHook;
+	static volatile BiFunction<? super Throwable, Object, ? extends Throwable> onOperatorErrorHook;
 
-	@SuppressWarnings("unchecked")
-	static <T> Function<Publisher, Publisher> createOrUpdateOpHook(
-		@Nullable Function<? super Publisher, ? extends Publisher> current,
-			Function<? super Publisher<T>, ? extends Publisher<T>> onOperator
-	) {
-		Function<? super Publisher, ? extends Publisher> op = (Function<? super Publisher,
-		? extends Publisher>)
-				onOperator;
-		if (current == op) {
-			return (Function<Publisher, Publisher>)current;
-		}
-		if (current != null) {
-			return (Function<Publisher, Publisher>)current.andThen(op);
-		}
-		else {
-			return (Function<Publisher, Publisher>)op;
-		}
+	//Hooks that are just callbacks
+	static volatile Consumer<? super Throwable> onErrorDroppedHook;
+	static volatile Consumer<Object>            onNextDroppedHook;
+
+	//For transformative hooks, allow to name them, keep track in an internal Map that retains insertion order
+	//internal use only as it relies on external synchronization
+	private static final LinkedHashMap<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> onEachOperatorHooks;
+	private static final LinkedHashMap<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> onLastOperatorHooks;
+	private static final LinkedHashMap<String, BiFunction<? super Throwable, Object, ? extends Throwable>> onOperatorErrorHooks;
+
+	//Immutable views on shook trackers, for testing purpose
+	static final Map<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> getOnEachOperatorHooks() {
+		return Collections.unmodifiableMap(onEachOperatorHooks);
 	}
-
-	static volatile Function<Publisher, Publisher> onEachOperatorHook;
-	static volatile Function<Publisher, Publisher> onLastOperatorHook;
-
-	static volatile Consumer<? super Throwable>                      onErrorDroppedHook;
-	static volatile Consumer<Object>                                 onNextDroppedHook;
-
-	static volatile BiFunction<? super Throwable, Object, ? extends Throwable>
-	                                                                 onOperatorErrorHook;
+	static final Map<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> getOnLastOperatorHooks() {
+		return Collections.unmodifiableMap(onLastOperatorHooks);
+	}
+	static final Map<String, BiFunction<? super Throwable, Object, ? extends Throwable>> getOnOperatorErrorHooks() {
+		return Collections.unmodifiableMap(onOperatorErrorHooks);
+	}
 
 	static {
+		onEachOperatorHooks = new LinkedHashMap<>(1);
+		onLastOperatorHooks = new LinkedHashMap<>(1);
+		onOperatorErrorHooks = new LinkedHashMap<>(1);
+
 		boolean globalTrace =
 				Boolean.parseBoolean(System.getProperty("reactor.trace.operatorStacktrace",
 						"false"));
@@ -296,7 +495,6 @@ public abstract class Hooks {
 			}
 			return new FluxOnAssembly<>((Flux<T>) publisher);
 		}
-
 	}
 
 	static final Logger log = Loggers.getLogger(Hooks.class);
