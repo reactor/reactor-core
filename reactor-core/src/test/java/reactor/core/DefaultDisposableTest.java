@@ -14,26 +14,66 @@
  * limitations under the License.
  */
 
-package reactor.core.publisher;
+package reactor.core;
 
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.junit.Test;
-import reactor.core.Disposable;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.FakeDisposable;
 import reactor.test.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class DisposablesTest {
+public class DefaultDisposableTest {
 
-	static final AtomicReferenceFieldUpdater<TestDisposable, Disposable> DISPOSABLE_UPDATER =
+	//==== PUBLIC API TESTS ====
+
+	@Test
+	public void sequentialEmpty() {
+		assertThat(DefaultDisposable.sequential().get()).isNull();
+	}
+
+	@Test
+	public void compositeEmpty() {
+		Disposable.Composite<Disposable> cd = DefaultDisposable.composite();
+		assertThat(cd.size()).isZero();
+		assertThat(cd.isDisposed()).isFalse();
+	}
+
+	@Test
+	public void compositeFromArray() {
+		Disposable d1 = new FakeDisposable();
+		Disposable d2 = new FakeDisposable();
+
+		Disposable.Composite<Disposable>
+				cd = DefaultDisposable.compositeOf(d1, d2);
+		assertThat(cd.size()).isEqualTo(2);
+		assertThat(cd.isDisposed()).isFalse();
+	}
+
+	@Test
+	public void compositeFromCollection() {
+		Disposable d1 = new FakeDisposable();
+		Disposable d2 = new FakeDisposable();
+
+		Disposable.Composite<Disposable>
+				cd = DefaultDisposable.compositeOf(Arrays.asList(d1, d2));
+		assertThat(cd.size()).isEqualTo(2);
+		assertThat(cd.isDisposed()).isFalse();
+	}
+
+	//==== PRIVATE API TESTS ====
+
+	static final AtomicReferenceFieldUpdater<TestDisposable, Disposable>
+			DISPOSABLE_UPDATER =
 			AtomicReferenceFieldUpdater.newUpdater(TestDisposable.class, Disposable.class, "disp");
-	
+
 	private static Disposable empty() {
 		return new Disposable() {
 			volatile boolean disposed = false;
-			
+
 			@Override
 			public void dispose() {
 				this.disposed = true;
@@ -61,24 +101,13 @@ public class DisposablesTest {
 			//NO-OP by default
 		}
 	}
-	
-	
-	@Test
-	public void singletonIsDisposed() {
-		assertThat(Disposables.DISPOSED.isDisposed()).isTrue();
-		Disposables.DISPOSED.dispose();
-		assertThat(Disposables.DISPOSED.isDisposed()).isTrue();
-	}
+
 
 	@Test
-	public void validationNull() {
-		Hooks.onErrorDropped(e -> assertThat(e).isInstanceOf(NullPointerException.class)
-		                                       .hasMessage("next is null"));
-		try {
-			assertThat(Disposables.validate(null, null, Operators::onErrorDropped)).isFalse();
-		} finally {
-			Hooks.resetOnErrorDropped();
-		}
+	public void singletonIsDisposed() {
+		assertThat(DefaultDisposable.DISPOSED.isDisposed()).isTrue();
+		DefaultDisposable.DISPOSED.dispose();
+		assertThat(DefaultDisposable.DISPOSED.isDisposed()).isTrue();
 	}
 
 	@Test
@@ -88,7 +117,7 @@ public class DisposablesTest {
 			TestDisposable r = new TestDisposable() {
 				@Override
 				public void run() {
-					Disposables.dispose(DISPOSABLE_UPDATER, this);
+					DefaultDisposable.dispose(DISPOSABLE_UPDATER, this);
 				}
 			};
 
@@ -103,7 +132,7 @@ public class DisposablesTest {
 			TestDisposable r = new TestDisposable() {
 				@Override
 				public void run() {
-					Disposables.replace(DISPOSABLE_UPDATER, this, empty());
+					DefaultDisposable.replace(DISPOSABLE_UPDATER, this, empty());
 				}
 			};
 
@@ -117,7 +146,7 @@ public class DisposablesTest {
 			TestDisposable r = new TestDisposable() {
 				@Override
 				public void run() {
-					Disposables.set(DISPOSABLE_UPDATER, this, empty());
+					DefaultDisposable.set(DISPOSABLE_UPDATER, this, empty());
 				}
 			};
 
@@ -129,10 +158,10 @@ public class DisposablesTest {
 	public void setReplaceNull() {
 		TestDisposable r = new TestDisposable();
 
-		Disposables.dispose(DISPOSABLE_UPDATER, r);
+		DefaultDisposable.dispose(DISPOSABLE_UPDATER, r);
 
-		assertThat(Disposables.set(DISPOSABLE_UPDATER, r, null)).isFalse();
-		assertThat(Disposables.replace(DISPOSABLE_UPDATER, r, null)).isFalse();
+		assertThat(DefaultDisposable.set(DISPOSABLE_UPDATER, r, null)).isFalse();
+		assertThat(DefaultDisposable.replace(DISPOSABLE_UPDATER, r, null)).isFalse();
 	}
 
 	@Test
@@ -140,33 +169,9 @@ public class DisposablesTest {
 		Disposable u = empty();
 		TestDisposable r = new TestDisposable(u);
 
-		Disposables.dispose(DISPOSABLE_UPDATER, r);
+		DefaultDisposable.dispose(DISPOSABLE_UPDATER, r);
 
 		assertThat(u.isDisposed()).isTrue();
 	}
 
-	@Test
-	public void trySet() {
-		TestDisposable r = new TestDisposable();
-
-		Disposable d1 = empty();
-
-		assertThat(Disposables.trySet(DISPOSABLE_UPDATER, r, d1)).isTrue();
-
-		Disposable d2 = empty();
-
-		assertThat(Disposables.trySet(DISPOSABLE_UPDATER, r, d2)).isFalse();
-
-		assertThat(d1.isDisposed()).isFalse();
-
-		assertThat(d2.isDisposed()).isFalse();
-
-		Disposables.dispose(DISPOSABLE_UPDATER, r);
-
-		Disposable d3 = empty();
-
-		assertThat(Disposables.trySet(DISPOSABLE_UPDATER, r, d3)).isFalse();
-
-		assertThat(d3.isDisposed()).isTrue();
-	}
 }

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,45 +14,24 @@
  * limitations under the License.
  */
 
-package reactor.core.scheduler;
-
-import java.util.Collection;
+package reactor.test;
 
 import reactor.core.Disposable;
-import reactor.core.Disposable.Composite;
 
 /**
- * A generic {@link Composite} that is empty and no-op.
- *
  * @author Simon Baslé
  */
-final class EmptyDisposableContainer<T extends Disposable> implements Composite<T> {
+public class FakeDisposable implements Disposable {
 
-	@Override
-	public boolean add(T d) {
-		return false;
-	}
-
-	@Override
-	public boolean addAll(Collection<? extends T> ds) {
-		return false;
-	}
-
-	@Override
-	public boolean remove(T d) {
-		return false;
-	}
-
-	@Override
-	public int size() {
-		return 0;
-	}
-
-	@Override
-	public void dispose() {	}
+	public volatile int disposed;
 
 	@Override
 	public boolean isDisposed() {
-		return false;
+		return disposed > 0;
+	}
+
+	@Override
+	public void dispose() {
+		disposed++;
 	}
 }

@@ -128,7 +128,8 @@ final class ExecutorServiceScheduler implements Scheduler {
 		}
 	}
 
-	static final class ExecutorServiceWorker implements Worker, DisposableContainer<ExecutorServiceSchedulerRunnable> {
+	static final class ExecutorServiceWorker implements Worker,
+	                                                    Composite<ExecutorServiceSchedulerRunnable> {
 
 		final ExecutorService executor;
 		final boolean         interruptOnCancel;
@@ -158,7 +159,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 				}
 			}
 			catch (RejectedExecutionException ree) {
-				removeAndDispose(sr);
+				dispose(sr);
 				//RejectedExecutionException are propagated up
 				throw ree;
 			}
@@ -182,7 +183,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 				}
 			}
 			catch (RejectedExecutionException ree) {
-				removeAndDispose(sr);
+				dispose(sr);
 				//RejectedExecutionException are propagated up
 				throw ree;
 			}
@@ -206,7 +207,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 				}
 			}
 			catch (RejectedExecutionException ree) {
-				removeAndDispose(sr);
+				dispose(sr);
 				//RejectedExecutionException are propagated up
 				throw ree;
 			}
@@ -240,6 +241,26 @@ final class ExecutorServiceScheduler implements Scheduler {
 				}
 			}
 			return false;
+		}
+
+		/**
+		 * Remove the {@link Disposable} from this container and dispose it via
+		 * {@link Disposable#dispose() dispose()} once deleted.
+		 *
+		 * @param sr the {@link Disposable} to remove and dispose.
+		 * @return true if the disposable was successfully removed and disposed, false otherwise.
+		 */
+		private boolean dispose(ExecutorServiceSchedulerRunnable sr) {
+			if (remove(sr)) {
+				sr.dispose();
+				return true;
+			}
+			return false;
+		}
+
+		@Override
+		public int size() {
+			return tasks.size();
 		}
 
 		@Override

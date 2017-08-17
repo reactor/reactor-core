@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package reactor.core.publisher;
+package reactor.core;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,8 +24,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
+import reactor.core.DefaultDisposable;
 import reactor.core.Disposable;
-import reactor.core.publisher.Disposables.SequentialDisposable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -35,13 +35,13 @@ import static org.mockito.Mockito.*;
  * @author David Karnok
  */
 @RunWith(MockitoJUnitRunner.class)
-public class SequentialDisposableTest {
+public class AtomicSequentialDisposableTest {
 
-	private SequentialDisposable sequentialDisposable;
+	private DefaultDisposable.AtomicSequentialDisposable sequentialDisposable;
 
 	@Before
 	public void setUp() {
-		sequentialDisposable = new SequentialDisposable();
+		sequentialDisposable = new DefaultDisposable.AtomicSequentialDisposable();
 	}
 
 	@Test
@@ -138,7 +138,7 @@ public class SequentialDisposableTest {
 		final int count = 10;
 		final CountDownLatch end = new CountDownLatch(count);
 
-		final List<Thread> threads = new ArrayList<Thread>();
+		final List<Thread> threads = new ArrayList<>();
 		for (int i = 0; i < count; i++) {
 			final Thread t = new Thread(() -> {
 				try {
@@ -170,12 +170,12 @@ public class SequentialDisposableTest {
 	public void concurrentSetDisposableShouldNotInterleave()
 			throws InterruptedException {
 		final int count = 10;
-		final List<Disposable> subscriptions = new ArrayList<Disposable>();
+		final List<Disposable> subscriptions = new ArrayList<>();
 
 		final CountDownLatch start = new CountDownLatch(1);
 		final CountDownLatch end = new CountDownLatch(count);
 
-		final List<Thread> threads = new ArrayList<Thread>();
+		final List<Thread> threads = new ArrayList<>();
 		for (int i = 0; i < count; i++) {
 			final Disposable subscription = mock(Disposable.class);
 			subscriptions.add(subscription);
