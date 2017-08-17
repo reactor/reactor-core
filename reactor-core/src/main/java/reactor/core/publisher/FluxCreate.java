@@ -37,16 +37,15 @@ import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
 
 /**
- * Provides a multi-valued sink API for a callback that is called for
- * each individual Subscriber.
+ * Provides a multi-valued sink API for a callback that is called for each individual
+ * Subscriber.
  *
  * @param <T> the value type
  */
 final class FluxCreate<T> extends Flux<T> {
 
 	enum CreateMode {
-		PUSH_ONLY,
-		PUSH_PULL
+		PUSH_ONLY, PUSH_PULL
 	}
 
 	final Consumer<? super FluxSink<T>> source;
@@ -63,7 +62,8 @@ final class FluxCreate<T> extends Flux<T> {
 		this.createMode = createMode;
 	}
 
-	static <T> BaseSink<T> createSink(CoreSubscriber<? super T> t, OverflowStrategy backpressure){
+	static <T> BaseSink<T> createSink(CoreSubscriber<? super T> t,
+			OverflowStrategy backpressure) {
 		switch (backpressure) {
 			case IGNORE: {
 				return new IgnoreSink<>(t);
@@ -82,13 +82,16 @@ final class FluxCreate<T> extends Flux<T> {
 			}
 		}
 	}
+
 	@Override
 	public void subscribe(CoreSubscriber<? super T> t) {
 		BaseSink<T> sink = createSink(t, backpressure);
 
 		t.onSubscribe(sink);
 		try {
-			source.accept(createMode == CreateMode.PUSH_PULL ? new SerializedSink<>(sink) : sink);
+			source.accept(
+					createMode == CreateMode.PUSH_PULL ? new SerializedSink<>(sink) :
+							sink);
 		}
 		catch (Throwable ex) {
 			Exceptions.throwIfFatal(ex);
@@ -101,15 +104,16 @@ final class FluxCreate<T> extends Flux<T> {
 	 *
 	 * @param <T> the value type
 	 */
-	static final class SerializedSink<T> implements FluxSink<T>, Scannable{
+	static final class SerializedSink<T> implements FluxSink<T>, Scannable {
 
 		final BaseSink<T> sink;
 
 		volatile Throwable error;
 		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<SerializedSink, Throwable> ERROR =
-				AtomicReferenceFieldUpdater.newUpdater(SerializedSink.class, Throwable.class, "error");
-
+				AtomicReferenceFieldUpdater.newUpdater(SerializedSink.class,
+						Throwable.class,
+						"error");
 
 		volatile int wip;
 		@SuppressWarnings("rawtypes")
@@ -275,17 +279,23 @@ final class FluxCreate<T> extends Flux<T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.BUFFERED) return queue.size();
-			if (key == Attr.ERROR) return error;
-			if (key == Attr.TERMINATED) return done;
+			if (key == Attr.BUFFERED) {
+				return queue.size();
+			}
+			if (key == Attr.ERROR) {
+				return error;
+			}
+			if (key == Attr.TERMINATED) {
+				return done;
+			}
 
 			return sink.scanUnsafe(key);
 		}
 	}
 
 	/**
-	 * Serializes calls to onNext, onError and onComplete if onRequest is invoked. Otherwise,
-	 * non-serialized base sink is used.
+	 * Serializes calls to onNext, onError and onComplete if onRequest is invoked.
+	 * Otherwise, non-serialized base sink is used.
 	 *
 	 * @param <T> the value type
 	 */
@@ -293,7 +303,7 @@ final class FluxCreate<T> extends Flux<T> {
 
 		final BaseSink<T> baseSink;
 		SerializedSink<T> serializedSink;
-		FluxSink<T> sink;
+		FluxSink<T>       sink;
 
 		SerializeOnRequestSink(BaseSink<T> sink) {
 			this.baseSink = sink;
@@ -307,7 +317,8 @@ final class FluxCreate<T> extends Flux<T> {
 
 		@Override
 		public Object scanUnsafe(Attr key) {
-			return serializedSink != null ? serializedSink.scanUnsafe(key) : baseSink.scanUnsafe(key);
+			return serializedSink != null ? serializedSink.scanUnsafe(key) :
+					baseSink.scanUnsafe(key);
 		}
 
 		@Override
@@ -358,8 +369,7 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 	}
 
-	static abstract class BaseSink<T>
-			extends AtomicBoolean
+	static abstract class BaseSink<T> extends AtomicBoolean
 			implements FluxSink<T>, InnerProducer<T> {
 
 		final CoreSubscriber<? super T> actual;
@@ -378,8 +388,10 @@ final class FluxCreate<T> extends Flux<T> {
 
 		volatile LongConsumer requestConsumer;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<BaseSink, LongConsumer> REQUEST_CONSUMER =
-				AtomicReferenceFieldUpdater.newUpdater(BaseSink.class, LongConsumer.class, "requestConsumer");
+		static final AtomicReferenceFieldUpdater<BaseSink, LongConsumer>
+				REQUEST_CONSUMER = AtomicReferenceFieldUpdater.newUpdater(BaseSink.class,
+				LongConsumer.class,
+				"requestConsumer");
 
 		BaseSink(CoreSubscriber<? super T> actual) {
 			this.actual = actual;
@@ -473,30 +485,37 @@ final class FluxCreate<T> extends Flux<T> {
 
 		@Override
 		public FluxSink<T> onRequest(LongConsumer consumer) {
-			onRequest(consumer, n -> {}, Long.MAX_VALUE);
+			Objects.requireNonNull(consumer, "onRequest");
+			onRequest(consumer, n -> {
+			}, Long.MAX_VALUE);
 			return this;
 		}
 
-		protected void onRequest(LongConsumer initialRequestConsumer, LongConsumer requestConsumer, long value) {
+		protected void onRequest(LongConsumer initialRequestConsumer,
+				LongConsumer requestConsumer,
+				long value) {
 			if (!REQUEST_CONSUMER.compareAndSet(this, null, requestConsumer)) {
-				throw new IllegalStateException("A consumer has already been assigned to consume requests");
-			} else if (value > 0) {
+				throw new IllegalStateException(
+						"A consumer has already been assigned to consume requests");
+			}
+			else if (value > 0) {
 				initialRequestConsumer.accept(value);
 			}
 		}
 
 		@Override
-		public final FluxSink<T> onCancel(@Nullable Disposable d) {
-			if (d != null) {
-				SinkDisposable sd = new SinkDisposable(null, d);
-				if (!DISPOSABLE.compareAndSet(this, null, sd)) {
-					Disposable c = disposable;
-					if (c instanceof SinkDisposable) {
-						SinkDisposable current = (SinkDisposable) c;
-						if (current.onCancel == null)
-							current.onCancel = d;
-						else
-							d.dispose();
+		public final FluxSink<T> onCancel(Disposable d) {
+			Objects.requireNonNull(d, "onCancel");
+			SinkDisposable sd = new SinkDisposable(null, d);
+			if (!DISPOSABLE.compareAndSet(this, null, sd)) {
+				Disposable c = disposable;
+				if (c instanceof SinkDisposable) {
+					SinkDisposable current = (SinkDisposable) c;
+					if (current.onCancel == null) {
+						current.onCancel = d;
+					}
+					else {
+						d.dispose();
 					}
 				}
 			}
@@ -504,19 +523,21 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 
 		@Override
-		public final FluxSink<T> onDispose(@Nullable Disposable d) {
-			if (d != null) {
-				SinkDisposable sd = new SinkDisposable(d, null);
-				if (!DISPOSABLE.compareAndSet(this, null, sd)) {
-					Disposable c = disposable;
-					if (c == Disposables.DISPOSED)
+		public final FluxSink<T> onDispose(Disposable d) {
+			Objects.requireNonNull(d, "onDispose");
+			SinkDisposable sd = new SinkDisposable(d, null);
+			if (!DISPOSABLE.compareAndSet(this, null, sd)) {
+				Disposable c = disposable;
+				if (c == Disposables.DISPOSED) {
+					d.dispose();
+				}
+				else if (c instanceof SinkDisposable) {
+					SinkDisposable current = (SinkDisposable) c;
+					if (current.disposable == null) {
+						current.disposable = d;
+					}
+					else {
 						d.dispose();
-					else if (c instanceof SinkDisposable) {
-						SinkDisposable current = (SinkDisposable) c;
-						if (current.disposable == null)
-							current.disposable = d;
-						else
-							d.dispose();
 					}
 				}
 			}
@@ -529,7 +550,9 @@ final class FluxCreate<T> extends Flux<T> {
 			if (key == Attr.TERMINATED || key == Attr.CANCELLED) {
 				return Disposables.isDisposed(disposable);
 			}
-			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) {
+				return requested;
+			}
 
 			return InnerProducer.super.scanUnsafe(key);
 		}
@@ -622,7 +645,7 @@ final class FluxCreate<T> extends Flux<T> {
 		static final AtomicIntegerFieldUpdater<BufferAsyncSink> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(BufferAsyncSink.class, "wip");
 
-		 BufferAsyncSink(CoreSubscriber<? super T> actual, int capacityHint) {
+		BufferAsyncSink(CoreSubscriber<? super T> actual, int capacityHint) {
 			super(actual);
 			this.queue = Queues.<T>unbounded(capacityHint).get();
 		}
@@ -740,9 +763,15 @@ final class FluxCreate<T> extends Flux<T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.BUFFERED) return queue.size();
-			if (key == Attr.TERMINATED) return done;
-			if (key == Attr.ERROR) return error;
+			if (key == Attr.BUFFERED) {
+				return queue.size();
+			}
+			if (key == Attr.TERMINATED) {
+				return done;
+			}
+			if (key == Attr.ERROR) {
+				return error;
+			}
 
 			return super.scanUnsafe(key);
 		}
@@ -878,9 +907,15 @@ final class FluxCreate<T> extends Flux<T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.BUFFERED) return queue.get() == null ? 0 : 1;
-			if (key == Attr.TERMINATED) return done;
-			if (key == Attr.ERROR) return error;
+			if (key == Attr.BUFFERED) {
+				return queue.get() == null ? 0 : 1;
+			}
+			if (key == Attr.TERMINATED) {
+				return done;
+			}
+			if (key == Attr.ERROR) {
+				return error;
+			}
 
 			return super.scanUnsafe(key);
 		}
@@ -899,13 +934,15 @@ final class FluxCreate<T> extends Flux<T> {
 
 		@Override
 		public void dispose() {
-			if (disposable != null)
+			if (disposable != null) {
 				disposable.dispose();
+			}
 		}
 
 		public void cancel() {
-			if (onCancel != null)
+			if (onCancel != null) {
 				onCancel.dispose();
+			}
 		}
 	}
 }

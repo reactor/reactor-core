@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package reactor.core.publisher;
 
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -28,32 +30,32 @@ import reactor.core.publisher.FluxCreate.SinkDisposable;
 import reactor.util.context.Context;
 
 /**
- * Wraps a the downstream Subscriber into a single emission object
- * and calls the given callback to produce a signal (a)synchronously.
+ * Wraps a the downstream Subscriber into a single emission object and calls the given
+ * callback to produce a signal (a)synchronously.
+ *
  * @param <T> the value type
  */
 final class MonoCreate<T> extends Mono<T> {
 
-    final Consumer<MonoSink<T>> callback;
+	final Consumer<MonoSink<T>> callback;
 
-    MonoCreate(Consumer<MonoSink<T>> callback) {
-        this.callback = callback;
-    }
+	MonoCreate(Consumer<MonoSink<T>> callback) {
+		this.callback = callback;
+	}
 
+	@Override
+	public void subscribe(CoreSubscriber<? super T> s) {
+		DefaultMonoSink<T> emitter = new DefaultMonoSink<>(s);
 
-    @Override
-    public void subscribe(CoreSubscriber<? super T> s) {
-	    DefaultMonoSink<T> emitter = new DefaultMonoSink<>(s);
+		s.onSubscribe(emitter);
 
-        s.onSubscribe(emitter);
-
-        try {
-            callback.accept(emitter);
-        }
-        catch (Throwable ex) {
-            emitter.error(Operators.onOperatorError(ex));
-        }
-    }
+		try {
+			callback.accept(emitter);
+		}
+		catch (Throwable ex) {
+			emitter.error(Operators.onOperatorError(ex));
+		}
+	}
 
 	static final class DefaultMonoSink<T> extends AtomicBoolean
 			implements MonoSink<T>, InnerProducer<T> {
@@ -62,25 +64,29 @@ final class MonoCreate<T> extends Mono<T> {
 
 		volatile Disposable disposable;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<DefaultMonoSink, Disposable>
-				DISPOSABLE =
-				AtomicReferenceFieldUpdater.newUpdater(DefaultMonoSink.class, Disposable.class, "disposable");
+		static final AtomicReferenceFieldUpdater<DefaultMonoSink, Disposable> DISPOSABLE =
+				AtomicReferenceFieldUpdater.newUpdater(DefaultMonoSink.class,
+						Disposable.class,
+						"disposable");
 
-        volatile int state;
-        @SuppressWarnings("rawtypes")
-        static final AtomicIntegerFieldUpdater<DefaultMonoSink> STATE =
-                AtomicIntegerFieldUpdater.newUpdater(DefaultMonoSink.class, "state");
+		volatile int state;
+		@SuppressWarnings("rawtypes")
+		static final AtomicIntegerFieldUpdater<DefaultMonoSink> STATE =
+				AtomicIntegerFieldUpdater.newUpdater(DefaultMonoSink.class, "state");
 
 		volatile LongConsumer requestConsumer;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<DefaultMonoSink, LongConsumer> REQUEST_CONSUMER =
-				AtomicReferenceFieldUpdater.newUpdater(DefaultMonoSink.class, LongConsumer.class, "requestConsumer");
+		static final AtomicReferenceFieldUpdater<DefaultMonoSink, LongConsumer>
+				REQUEST_CONSUMER =
+				AtomicReferenceFieldUpdater.newUpdater(DefaultMonoSink.class,
+						LongConsumer.class,
+						"requestConsumer");
 
-        T value;
+		T value;
 
-        static final int NO_REQUEST_HAS_VALUE = 1;
-        static final int HAS_REQUEST_NO_VALUE = 2;
-        static final int HAS_REQUEST_HAS_VALUE = 3;
+		static final int NO_REQUEST_HAS_VALUE  = 1;
+		static final int HAS_REQUEST_NO_VALUE  = 2;
+		static final int HAS_REQUEST_HAS_VALUE = 3;
 
 		DefaultMonoSink(CoreSubscriber<? super T> actual) {
 			this.actual = actual;
@@ -94,37 +100,41 @@ final class MonoCreate<T> extends Mono<T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.TERMINATED) return state == HAS_REQUEST_HAS_VALUE || state == NO_REQUEST_HAS_VALUE;
-			if (key == Attr.CANCELLED) return Disposables.isDisposed(disposable);
+			if (key == Attr.TERMINATED) {
+				return state == HAS_REQUEST_HAS_VALUE || state == NO_REQUEST_HAS_VALUE;
+			}
+			if (key == Attr.CANCELLED) {
+				return Disposables.isDisposed(disposable);
+			}
 
 			return InnerProducer.super.scanUnsafe(key);
 		}
 
-        @Override
-        public void success() {
-            if (STATE.getAndSet(this, HAS_REQUEST_HAS_VALUE) != HAS_REQUEST_HAS_VALUE) {
+		@Override
+		public void success() {
+			if (STATE.getAndSet(this, HAS_REQUEST_HAS_VALUE) != HAS_REQUEST_HAS_VALUE) {
 				try {
 					actual.onComplete();
 				}
 				finally {
 					disposeResource(false);
 				}
-            }
-        }
+			}
+		}
 
-        @Override
-        public void success(@Nullable T value) {
-            if (value == null) {
-                success();
-                return;
-            }
-            for (;;) {
-                int s = state;
-                if (s == HAS_REQUEST_HAS_VALUE || s == NO_REQUEST_HAS_VALUE) {
-                    return;
-                }
-                if (s == HAS_REQUEST_NO_VALUE) {
-                    if (STATE.compareAndSet(this, s, HAS_REQUEST_HAS_VALUE)) {
+		@Override
+		public void success(@Nullable T value) {
+			if (value == null) {
+				success();
+				return;
+			}
+			for (; ; ) {
+				int s = state;
+				if (s == HAS_REQUEST_HAS_VALUE || s == NO_REQUEST_HAS_VALUE) {
+					return;
+				}
+				if (s == HAS_REQUEST_NO_VALUE) {
+					if (STATE.compareAndSet(this, s, HAS_REQUEST_HAS_VALUE)) {
 						try {
 							actual.onNext(value);
 							actual.onComplete();
@@ -132,34 +142,37 @@ final class MonoCreate<T> extends Mono<T> {
 						finally {
 							disposeResource(false);
 						}
-                    }
-                    return;
-                }
-                this.value = value;
-                if (STATE.compareAndSet(this, s, NO_REQUEST_HAS_VALUE)) {
-                    return;
-                }
-            }
-        }
+					}
+					return;
+				}
+				this.value = value;
+				if (STATE.compareAndSet(this, s, NO_REQUEST_HAS_VALUE)) {
+					return;
+				}
+			}
+		}
 
-        @Override
-        public void error(Throwable e) {
-            if (STATE.getAndSet(this, HAS_REQUEST_HAS_VALUE) != HAS_REQUEST_HAS_VALUE) {
+		@Override
+		public void error(Throwable e) {
+			if (STATE.getAndSet(this, HAS_REQUEST_HAS_VALUE) != HAS_REQUEST_HAS_VALUE) {
 				try {
 					actual.onError(e);
 				}
 				finally {
 					disposeResource(false);
 				}
-            } else {
-                Operators.onErrorDropped(e);
-            }
+			}
+			else {
+				Operators.onErrorDropped(e);
+			}
 		}
 
 		@Override
 		public MonoSink<T> onRequest(LongConsumer consumer) {
+			Objects.requireNonNull(consumer, "onRequest");
 			if (!REQUEST_CONSUMER.compareAndSet(this, null, consumer)) {
-				throw new IllegalStateException("A consumer has already been assigned to consume requests");
+				throw new IllegalStateException(
+						"A consumer has already been assigned to consume requests");
 			}
 			return this;
 		}
@@ -171,15 +184,17 @@ final class MonoCreate<T> extends Mono<T> {
 
 		@Override
 		public MonoSink<T> onCancel(Disposable d) {
-			//noinspection ConstantConditions
-			if (d != null) {
-				SinkDisposable sd = new SinkDisposable(null, d);
-				if (!DISPOSABLE.compareAndSet(this, null, sd)) {
-					Disposable c = disposable;
-					if (c instanceof SinkDisposable) {
-						SinkDisposable current = (SinkDisposable) c;
-						if (current.onCancel == null) current.onCancel = d;
-						else d.dispose();
+			Objects.requireNonNull(d, "onCancel");
+			SinkDisposable sd = new SinkDisposable(null, d);
+			if (!DISPOSABLE.compareAndSet(this, null, sd)) {
+				Disposable c = disposable;
+				if (c instanceof SinkDisposable) {
+					SinkDisposable current = (SinkDisposable) c;
+					if (current.onCancel == null) {
+						current.onCancel = d;
+					}
+					else {
+						d.dispose();
 					}
 				}
 			}
@@ -188,37 +203,37 @@ final class MonoCreate<T> extends Mono<T> {
 
 		@Override
 		public MonoSink<T> onDispose(Disposable d) {
-			//noinspection ConstantConditions
-			if (d != null) {
-				SinkDisposable sd = new SinkDisposable(d, null);
-				if (!DISPOSABLE.compareAndSet(this, null, sd)) {
-					Disposable c = disposable;
-					if (c instanceof SinkDisposable) {
-						SinkDisposable current = (SinkDisposable) c;
-						if (current.disposable == null)
-							current.disposable = d;
-						else
-							d.dispose();
+			Objects.requireNonNull(d, "onDispose");
+			SinkDisposable sd = new SinkDisposable(d, null);
+			if (!DISPOSABLE.compareAndSet(this, null, sd)) {
+				Disposable c = disposable;
+				if (c instanceof SinkDisposable) {
+					SinkDisposable current = (SinkDisposable) c;
+					if (current.disposable == null) {
+						current.disposable = d;
+					}
+					else {
+						d.dispose();
 					}
 				}
 			}
 			return this;
 		}
 
-        @Override
-        public void request(long n) {
-            if (Operators.validate(n)) {
+		@Override
+		public void request(long n) {
+			if (Operators.validate(n)) {
 				LongConsumer consumer = requestConsumer;
 				if (consumer != null) {
 					consumer.accept(n);
 				}
-                for (;;) {
-                    int s = state;
-                    if (s == HAS_REQUEST_NO_VALUE || s == HAS_REQUEST_HAS_VALUE) {
-                        return;
-                    }
-                    if (s == NO_REQUEST_HAS_VALUE) {
-                        if (STATE.compareAndSet(this, s, HAS_REQUEST_HAS_VALUE)) {
+				for (; ; ) {
+					int s = state;
+					if (s == HAS_REQUEST_NO_VALUE || s == HAS_REQUEST_HAS_VALUE) {
+						return;
+					}
+					if (s == NO_REQUEST_HAS_VALUE) {
+						if (STATE.compareAndSet(this, s, HAS_REQUEST_HAS_VALUE)) {
 							try {
 								actual.onNext(value);
 								actual.onComplete();
@@ -226,23 +241,23 @@ final class MonoCreate<T> extends Mono<T> {
 							finally {
 								disposeResource(false);
 							}
-                        }
-                        return;
-                    }
-                    if (STATE.compareAndSet(this, s, HAS_REQUEST_NO_VALUE)) {
-                        return;
-                    }
-                }
-            }
-        }
+						}
+						return;
+					}
+					if (STATE.compareAndSet(this, s, HAS_REQUEST_NO_VALUE)) {
+						return;
+					}
+				}
+			}
+		}
 
-        @Override
-        public void cancel() {
-            if (STATE.getAndSet(this, HAS_REQUEST_HAS_VALUE) != HAS_REQUEST_HAS_VALUE) {
-                value = null;
-                disposeResource(true);
-            }
-        }
+		@Override
+		public void cancel() {
+			if (STATE.getAndSet(this, HAS_REQUEST_HAS_VALUE) != HAS_REQUEST_HAS_VALUE) {
+				value = null;
+				disposeResource(true);
+			}
+		}
 
 		void disposeResource(boolean isCancel) {
 			Disposable d = disposable;
@@ -257,5 +272,5 @@ final class MonoCreate<T> extends Mono<T> {
 			}
 		}
 
-    }
+	}
 }
