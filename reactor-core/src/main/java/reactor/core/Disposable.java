@@ -105,7 +105,7 @@ public interface Disposable {
 		 * @implNote The default implementation is not atomic, meaning that if the container is
 		 * disposed while the content of the collection is added, first elements might be
 		 * effectively added. Stronger consistency is enforced by composites created via
-		 * {@link DefaultDisposable#compositeDisposable()} variants.
+		 * {@link DefaultDisposable#composite()} variants.
 		 * @param ds the collection of Disposables
 		 * @return true if the operation was successful, false if the container has been disposed
 		 */

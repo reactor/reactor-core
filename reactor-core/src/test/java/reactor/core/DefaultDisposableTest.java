@@ -32,12 +32,12 @@ public class DefaultDisposableTest {
 
 	@Test
 	public void sequentialEmpty() {
-		assertThat(DefaultDisposable.sequentialDisposable().get()).isNull();
+		assertThat(DefaultDisposable.sequential().get()).isNull();
 	}
 
 	@Test
 	public void compositeEmpty() {
-		Disposable.Composite<Disposable> cd = DefaultDisposable.compositeDisposable();
+		Disposable.Composite<Disposable> cd = DefaultDisposable.composite();
 		assertThat(cd.size()).isZero();
 		assertThat(cd.isDisposed()).isFalse();
 	}
@@ -48,7 +48,7 @@ public class DefaultDisposableTest {
 		Disposable d2 = new FakeDisposable();
 
 		Disposable.Composite<Disposable>
-				cd = DefaultDisposable.compositeDisposable(d1, d2);
+				cd = DefaultDisposable.compositeOf(d1, d2);
 		assertThat(cd.size()).isEqualTo(2);
 		assertThat(cd.isDisposed()).isFalse();
 	}
@@ -59,7 +59,7 @@ public class DefaultDisposableTest {
 		Disposable d2 = new FakeDisposable();
 
 		Disposable.Composite<Disposable>
-				cd = DefaultDisposable.compositeDisposable(Arrays.asList(d1, d2));
+				cd = DefaultDisposable.compositeOf(Arrays.asList(d1, d2));
 		assertThat(cd.size()).isEqualTo(2);
 		assertThat(cd.isDisposed()).isFalse();
 	}

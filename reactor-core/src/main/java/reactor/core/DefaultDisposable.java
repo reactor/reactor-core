@@ -42,7 +42,7 @@ public final class DefaultDisposable {
 	 *
 	 * @return an empty atomic {@link Disposable.Sequential}
 	 */
-	public static Disposable.Sequential sequentialDisposable() {
+	public static Disposable.Sequential sequential() {
 		return new AtomicSequentialDisposable();
 	}
 
@@ -52,7 +52,7 @@ public final class DefaultDisposable {
 	 *
 	 * @return an empty atomic {@link Disposable.Composite}
 	 */
-	public static Disposable.Composite<Disposable> compositeDisposable() {
+	public static Disposable.Composite<Disposable> composite() {
 		return new AtomicCompositeDisposable();
 	}
 
@@ -62,7 +62,7 @@ public final class DefaultDisposable {
 	 *
 	 * @return a pre-filled atomic {@link Disposable.Composite}
 	 */
-	public static Disposable.Composite<Disposable> compositeDisposable(Disposable... disposables) {
+	public static Disposable.Composite<Disposable> compositeOf(Disposable... disposables) {
 		return new AtomicCompositeDisposable(disposables);
 	}
 
@@ -72,7 +72,7 @@ public final class DefaultDisposable {
 	 *
 	 * @return a pre-filled atomic {@link Disposable.Composite}
 	 */
-	public static Disposable.Composite<Disposable> compositeDisposable(Iterable<? extends Disposable> disposables) {
+	public static Disposable.Composite<Disposable> compositeOf(Iterable<? extends Disposable> disposables) {
 		return new AtomicCompositeDisposable(disposables);
 	}
 

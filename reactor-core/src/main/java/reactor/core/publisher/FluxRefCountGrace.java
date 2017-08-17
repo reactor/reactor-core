@@ -117,7 +117,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 				timeout(rc);
 				return;
 			}
-			sd = DefaultDisposable.sequentialDisposable();
+			sd = DefaultDisposable.sequential();
 			rc.timer = sd;
 		}
 
