@@ -32,7 +32,7 @@ public class DefaultDisposableTest {
 
 	@Test
 	public void sequentialEmpty() {
-		assertThat(Disposable.sequential()
+		assertThat(Disposable.swap()
 		                     .get()).isNull();
 	}
 

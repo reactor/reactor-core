@@ -33,13 +33,13 @@ import static org.mockito.Mockito.*;
  * @author David Karnok
  */
 @RunWith(MockitoJUnitRunner.class)
-public class SequentialDisposableTest {
+public class SwapDisposableTest {
 
-	private DefaultDisposable.SequentialDisposable sequentialDisposable;
+	private DefaultDisposable.SwapDisposable sequentialDisposable;
 
 	@Before
 	public void setUp() {
-		sequentialDisposable = new DefaultDisposable.SequentialDisposable();
+		sequentialDisposable = new DefaultDisposable.SwapDisposable();
 	}
 
 	@Test
