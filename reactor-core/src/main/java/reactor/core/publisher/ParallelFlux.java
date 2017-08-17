@@ -733,7 +733,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 
 	/**
 	 * Reduces all values within a 'rail' and across 'rails' with a reducer function into
-	 * a single sequential value.
+	 * a single swap value.
 	 * <p>
 	 * Note that the same reducer function may be called from multiple threads
 	 * concurrently.

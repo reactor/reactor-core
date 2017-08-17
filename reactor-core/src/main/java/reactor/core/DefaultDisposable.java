@@ -29,7 +29,7 @@ import reactor.util.concurrent.Queues;
 /**
  * A support class that offers implementations for the specialized {@link Disposable}
  * sub-interfaces ({@link Disposable.Composite Disposable.CompositeDisposable},
- * {@link Disposable.Sequential Disposable.SequentialDisposable}).
+ * {@link Disposable.Swap Disposable.SwapDisposable}).
  *
  * @author Simon Baslé
  * @author Stephane Maldini
@@ -348,17 +348,17 @@ abstract class DefaultDisposable {
 	}
 
 	/**
-	 * Not public API. Implementation of a {@link Disposable.Sequential}.
+	 * Not public API. Implementation of a {@link Swap}.
 	 *
 	 * @author Simon Baslé
 	 * @author David Karnok
 	 */
-	static final class SequentialDisposable implements Disposable.Sequential {
+	static final class SwapDisposable implements Disposable.Swap {
 
 		volatile Disposable inner;
-		static final AtomicReferenceFieldUpdater<SequentialDisposable, Disposable>
+		static final AtomicReferenceFieldUpdater<SwapDisposable, Disposable>
 				INNER =
-				AtomicReferenceFieldUpdater.newUpdater(SequentialDisposable.class, Disposable.class, "inner");
+				AtomicReferenceFieldUpdater.newUpdater(SwapDisposable.class, Disposable.class, "inner");
 
 		@Override
 		public boolean update(Disposable next) {

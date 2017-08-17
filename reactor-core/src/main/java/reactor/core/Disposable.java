@@ -58,13 +58,13 @@ public interface Disposable {
 	}
 
 	/**
-	 * Create a new empty {@link Sequential} with atomic guarantees on all mutative
+	 * Create a new empty {@link Swap} with atomic guarantees on all mutative
 	 * operations.
 	 *
-	 * @return an empty atomic {@link Sequential}
+	 * @return an empty atomic {@link Swap}
 	 */
-	static Sequential sequential() {
-		return new DefaultDisposable.SequentialDisposable();
+	static Swap swap() {
+		return new DefaultDisposable.SwapDisposable();
 	}
 
 	/**
@@ -93,7 +93,7 @@ public interface Disposable {
 	 *
 	 * @author Simon Baslé
 	 */
-	interface Sequential extends Disposable, Supplier<Disposable> {
+	interface Swap extends Disposable, Supplier<Disposable> {
 
 		/**
 		 * Atomically push the next {@link Disposable} on this container and dispose the previous
