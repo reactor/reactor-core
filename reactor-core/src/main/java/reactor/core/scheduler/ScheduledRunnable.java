@@ -35,9 +35,6 @@ import static reactor.core.scheduler.ExecutorServiceScheduler.FINISHED;
  */
 final class ScheduledRunnable implements Runnable, Disposable {
 
-	private static final Composite DISPOSED_PARENT = new EmptyDisposableContainer();
-	private static final Composite DONE_PARENT     = new EmptyDisposableContainer();
-
 	final Runnable task;
 
 	volatile Future<?> future;
@@ -65,7 +62,7 @@ final class ScheduledRunnable implements Runnable, Disposable {
 		}
 		finally {
 			Composite o = parent;
-			if (o != DISPOSED_PARENT && o != null && PARENT.compareAndSet(this, o, DONE_PARENT)) {
+			if (o != EmptyCompositeDisposable.DISPOSED_PARENT && o != null && PARENT.compareAndSet(this, o, EmptyCompositeDisposable.DONE_PARENT)) {
 				o.remove(this);
 			}
 
@@ -118,10 +115,10 @@ final class ScheduledRunnable implements Runnable, Disposable {
 
 		for (;;) {
 			Composite o = parent;
-			if (o == DONE_PARENT || o == DISPOSED_PARENT || o == null) {
+			if (o == EmptyCompositeDisposable.DONE_PARENT || o == EmptyCompositeDisposable.DISPOSED_PARENT || o == null) {
 				return;
 			}
-			if (PARENT.compareAndSet(this, o, DISPOSED_PARENT)) {
+			if (PARENT.compareAndSet(this, o, EmptyCompositeDisposable.DISPOSED_PARENT)) {
 				o.remove(this);
 				return;
 			}

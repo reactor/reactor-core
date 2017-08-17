@@ -23,16 +23,15 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
-import reactor.util.concurrent.OpenHashSet;
 
 import static reactor.core.scheduler.ExecutorServiceScheduler.CANCELLED;
 import static reactor.core.scheduler.ExecutorServiceScheduler.FINISHED;
@@ -263,35 +262,26 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 		}
 	}
 
-	static final class CachedWorker implements Worker {
+	static final class CachedWorker extends AtomicBoolean implements Worker {
 
 		final ScheduledExecutorService executor;
 
 		final ElasticScheduler parent;
 
-		volatile boolean shutdown;
-
-		OpenHashSet<CachedTask> tasks;
+		final Disposable.Composite tasks;
 
 		CachedWorker(ScheduledExecutorService executor, ElasticScheduler parent) {
 			this.executor = executor;
 			this.parent = parent;
-			this.tasks = new OpenHashSet<>();
+			this.tasks = Disposable.composite();
 		}
 
 		@Override
 		public Disposable schedule(Runnable task) {
-			if (shutdown) {
-				throw Exceptions.failWithRejected();
-			}
-
 			CachedTask ct = new CachedTask(task, this);
 
-			synchronized (this) {
-				if (shutdown) {
-					throw Exceptions.failWithRejected();
-				}
-				tasks.add(ct);
+			if (!tasks.add(ct)) {
+				throw Exceptions.failWithRejected();
 			}
 
 			//RejectedExecutionException are propagated up
@@ -304,17 +294,10 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 
 		@Override
 		public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
-			if (shutdown) {
-				throw Exceptions.failWithRejected();
-			}
-
 			CachedTask ct = new CachedTask(task, this);
 
-			synchronized (this) {
-				if (shutdown) {
-					throw Exceptions.failWithRejected();
-				}
-				tasks.add(ct);
+			if (!tasks.add(ct)) {
+				throw Exceptions.failWithRejected();
 			}
 
 			//RejectedExecutionException are propagated up
@@ -327,17 +310,10 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 
 		@Override
 		public Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
-			if (shutdown) {
-				throw Exceptions.failWithRejected();
-			}
-
 			CachedTask ct = new CachedTask(task, this);
 
-			synchronized (this) {
-				if (shutdown) {
-					throw Exceptions.failWithRejected();
-				}
-				tasks.add(ct);
+			if (!tasks.add(ct)) {
+				throw Exceptions.failWithRejected();
 			}
 
 			//RejectedExecutionException are propagated up
@@ -350,48 +326,15 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 
 		@Override
 		public void dispose() {
-			if (shutdown) {
-				return;
+			if(compareAndSet(false,true)) {
+				tasks.dispose();
+				parent.release(executor);
 			}
-
-			OpenHashSet<CachedTask> set;
-			synchronized (this) {
-				if (shutdown) {
-					return;
-				}
-				shutdown = true;
-				set = tasks;
-				tasks = null;
-			}
-
-			if (!set.isEmpty()) {
-				Object[] keys = set.keys();
-				for (Object o : keys) {
-					if (o != null) {
-						((CachedTask) o).cancelFuture();
-					}
-				}
-			}
-
-			parent.release(executor);
 		}
 
 		@Override
 		public boolean isDisposed() {
-			return shutdown;
-		}
-
-		void remove(CachedTask task) {
-			if (shutdown) {
-				return;
-			}
-
-			synchronized (this) {
-				if (shutdown) {
-					return;
-				}
-				tasks.remove(task);
-			}
+			return tasks.isDisposed();
 		}
 
 		static final class CachedTask extends AtomicReference<Future<?>>
@@ -414,7 +357,7 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 			@Override
 			public void run() {
 				try {
-					if (!parent.shutdown && !cancelled) {
+					if (!parent.isDisposed() && !cancelled) {
 						run.run();
 					}
 				}
@@ -423,7 +366,7 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 				}
 				finally {
 					lazySet(FINISHED);
-					parent.remove(this);
+					parent.tasks.remove(this);
 				}
 			}
 

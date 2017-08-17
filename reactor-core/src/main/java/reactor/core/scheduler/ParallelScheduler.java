@@ -21,14 +21,12 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
 
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
-import reactor.util.concurrent.OpenHashSet;
 
 /**
  * Scheduler that hosts a fixed pool of single-threaded ScheduledExecutorService-based workers
@@ -181,35 +179,26 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
     
     static final class ParallelWorker implements Worker {
         final ScheduledExecutorService exec;
+
+        final Disposable.Composite tasks;
         
-        OpenHashSet<ParallelWorkerTask> tasks;
-        
-        volatile boolean shutdown;
-        
-        public ParallelWorker(ScheduledExecutorService exec) {
+        ParallelWorker(ScheduledExecutorService exec) {
             this.exec = exec;
-            this.tasks = new OpenHashSet<>();
+            this.tasks = Disposable.composite();
         }
 
 	    @Override
         public Disposable schedule(Runnable task) {
-            if (shutdown) {
-                throw Exceptions.failWithRejected();
-            }
-            
             ParallelWorkerTask pw = new ParallelWorkerTask(task, this);
-            
-            synchronized (this) {
-                if (shutdown) {
-                    throw Exceptions.failWithRejected();
-                }
-                tasks.add(pw);
+
+            if (!tasks.add(pw)) {
+	            throw Exceptions.failWithRejected();
             }
 
             //RejectedExecutionException are propagated up
             Future<?> f = exec.submit(pw);
 
-            if (shutdown){
+            if (tasks.isDisposed()){
             	f.cancel(true);
             	return pw;
             }
@@ -221,23 +210,16 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 
         @Override
         public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
-            if (shutdown) {
-                throw Exceptions.failWithRejected();
-            }
+           ParallelWorkerTask pw = new ParallelWorkerTask(task, this);
 
-            ParallelWorkerTask pw = new ParallelWorkerTask(task, this);
-
-            synchronized (this) {
-                if (shutdown) {
-                    throw Exceptions.failWithRejected();
-                }
-                tasks.add(pw);
-            }
+	        if (!tasks.add(pw)) {
+		        throw Exceptions.failWithRejected();
+	        }
 
             //RejectedExecutionException are propagated up
             Future<?> f = exec.schedule(pw, delay, unit);
 
-            if (shutdown){
+            if (tasks.isDisposed()){
                 f.cancel(true);
                 return pw;
             }
@@ -250,23 +232,16 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
         @Override
         public Disposable schedulePeriodically(Runnable task, long initialDelay,
                 long period, TimeUnit unit) {
-            if (shutdown) {
-                throw Exceptions.failWithRejected();
-            }
+           ParallelWorkerTask pw = new ParallelWorkerTask(task, this);
 
-            ParallelWorkerTask pw = new ParallelWorkerTask(task, this);
+	        if (!tasks.add(pw)) {
+		        throw Exceptions.failWithRejected();
+	        }
 
-            synchronized (this) {
-                if (shutdown) {
-                    throw Exceptions.failWithRejected();
-                }
-                tasks.add(pw);
-            }
-
-            //RejectedExecutionException are propagated up
+	        //RejectedExecutionException are propagated up
             Future<?> f = exec.scheduleAtFixedRate(pw, initialDelay, period, unit);
 
-            if (shutdown){
+            if (tasks.isDisposed()){
                 f.cancel(true);
                 return pw;
             }
@@ -278,42 +253,12 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
 
         @Override
         public void dispose() {
-            if (shutdown) {
-                return;
-            }
-            shutdown = true;
-            OpenHashSet<ParallelWorkerTask> set;
-            synchronized (this) {
-                set = tasks;
-                tasks = null;
-            }
-            
-            if (set != null) {
-                Object[] a = set.keys();
-                for (Object o : a) {
-                    if (o != null) {
-                        ((ParallelWorkerTask)o).cancelFuture();
-                    }
-                }
-            }
+	        tasks.dispose();
         }
 
         @Override
         public boolean isDisposed() {
-            return shutdown;
-        }
-
-        void remove(ParallelWorkerTask task) {
-            if (shutdown) {
-                return;
-            }
-            
-            synchronized (this) {
-                if (shutdown) {
-                    return;
-                }
-                tasks.remove(task);
-            }
+            return tasks.isDisposed();
         }
         
         static final class ParallelWorkerTask implements Runnable, Disposable {
@@ -331,14 +276,14 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
             static final Future<Object> FINISHED = CompletableFuture.completedFuture(null);
             static final Future<Object> CANCELLED = CompletableFuture.completedFuture(null);
             
-            public ParallelWorkerTask(Runnable run, ParallelWorker parent) {
+            ParallelWorkerTask(Runnable run, ParallelWorker parent) {
                 this.run = run;
                 this.parent = parent;
             }
             
             @Override
             public void run() {
-                if (cancelled || parent.shutdown) {
+                if (cancelled || parent.isDisposed()) {
                     return;
                 }
                 try {
@@ -354,7 +299,7 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
                             break;
                         }
                         if (FUTURE.compareAndSet(this, f, FINISHED)) {
-                            parent.remove(this);
+                            parent.tasks.remove(this);
                             break;
                         }
                     }
@@ -377,10 +322,10 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
                         f = FUTURE.getAndSet(this, CANCELLED);
                         if (f != CANCELLED && f != FINISHED) {
                             if (f != null) {
-                                f.cancel(parent.shutdown);
+                                f.cancel(parent.isDisposed());
                             }
                             
-                            parent.remove(this);
+                            parent.tasks.remove(this);
                         }
                     }
                 }
@@ -389,17 +334,7 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
             void setFuture(Future<?> f) {
                 if (future != null || !FUTURE.compareAndSet(this, null, f)) {
                     if (future != FINISHED) {
-                        f.cancel(parent.shutdown);
-                    }
-                }
-            }
-            
-            void cancelFuture() {
-                Future<?> f = future;
-                if (f != CANCELLED && f != FINISHED) {
-                    f = FUTURE.getAndSet(this, CANCELLED);
-                    if (f != null && f != CANCELLED && f != FINISHED) {
-                        f.cancel(true);
+                        f.cancel(parent.isDisposed());
                     }
                 }
             }

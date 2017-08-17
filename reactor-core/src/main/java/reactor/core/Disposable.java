@@ -167,25 +167,6 @@ public interface Disposable {
 		}
 
 		/**
-		 * Delete the {@link Disposable} from this container, without disposing it.
-		 * <p>
-		 * It becomes the responsibility of the caller to dispose the value themselves,
-		 * which they can do by a simple call to {@link Disposable#dispose()} on said
-		 * value (probaby guarded by a check that this method returned true, meaning the
-		 * disposable was actually in the container).
-		 *
-		 * @param d the {@link Disposable} to remove.
-		 * @return true if the disposable was successfully deleted, false otherwise.
-		 */
-		boolean remove(Disposable d);
-
-		/**
-		 * Returns the number of currently held Disposables.
-		 * @return the number of currently held Disposables
-		 */
-		int size();
-
-		/**
 		 * Atomically mark the container as {@link #isDisposed() disposed}, clear it and then
 		 * dispose all the previously contained Disposables. From there on the container cannot
 		 * be reused, as {@link #add(Disposable)} and {@link #addAll(Collection)} methods
@@ -203,5 +184,24 @@ public interface Disposable {
 		 */
 		@Override
 		boolean isDisposed();
+
+		/**
+		 * Delete the {@link Disposable} from this container, without disposing it.
+		 * <p>
+		 * It becomes the responsibility of the caller to dispose the value themselves,
+		 * which they can do by a simple call to {@link Disposable#dispose()} on said
+		 * value (probaby guarded by a check that this method returned true, meaning the
+		 * disposable was actually in the container).
+		 *
+		 * @param d the {@link Disposable} to remove.
+		 * @return true if the disposable was successfully deleted, false otherwise.
+		 */
+		boolean remove(Disposable d);
+
+		/**
+		 * Returns the number of currently held Disposables.
+		 * @return the number of currently held Disposables
+		 */
+		int size();
 	}
 }
