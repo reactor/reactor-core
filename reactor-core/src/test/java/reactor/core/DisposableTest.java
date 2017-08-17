@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -30,7 +30,7 @@ public class DisposableTest {
 		FakeDisposable d1 = new FakeDisposable();
 		FakeDisposable d2 = new FakeDisposable();
 
-		Disposable.Composite<Disposable> cd = new Disposable.Composite<Disposable>() {
+		Disposable.Composite cd = new Disposable.Composite() {
 
 			volatile boolean disposed;
 			volatile int size;
@@ -77,7 +77,7 @@ public class DisposableTest {
 		final FakeDisposable d1 = new FakeDisposable();
 		final FakeDisposable d2 = new FakeDisposable();
 
-		Disposable.Composite<Disposable> cd = new Disposable.Composite<Disposable>() {
+		Disposable.Composite cd = new Disposable.Composite() {
 
 			volatile boolean disposed;
 			volatile int size;
@@ -124,7 +124,7 @@ public class DisposableTest {
 		final FakeDisposable d2 = new FakeDisposable();
 		final FakeDisposable d3 = new FakeDisposable();
 
-		Disposable.Composite<Disposable> cd = new Disposable.Composite<Disposable>() {
+		Disposable.Composite cd = new Disposable.Composite() {
 
 			volatile boolean disposed;
 			volatile int size;

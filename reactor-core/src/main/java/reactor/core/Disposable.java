@@ -28,6 +28,46 @@ import javax.annotation.Nullable;
 public interface Disposable {
 
 	/**
+	 * Create a new empty {@link Composite} with atomic guarantees on all mutative
+	 * operations.
+	 *
+	 * @return an empty atomic {@link Composite}
+	 */
+	static Composite composite() {
+		return new DefaultDisposable.CompositeDisposable();
+	}
+
+	/**
+	 * Create and initialize a new {@link Composite} with atomic guarantees on
+	 * all mutative operations.
+	 *
+	 * @return a pre-filled atomic {@link Composite}
+	 */
+	static Composite composite(Disposable... disposables) {
+		return new DefaultDisposable.CompositeDisposable(disposables);
+	}
+
+	/**
+	 * Create and initialize a new {@link Composite} with atomic guarantees on
+	 * all mutative operations.
+	 *
+	 * @return a pre-filled atomic {@link Composite}
+	 */
+	static Composite composite(Iterable<? extends Disposable> disposables) {
+		return new DefaultDisposable.CompositeDisposable(disposables);
+	}
+
+	/**
+	 * Create a new empty {@link Sequential} with atomic guarantees on all mutative
+	 * operations.
+	 *
+	 * @return an empty atomic {@link Sequential}
+	 */
+	static Sequential sequential() {
+		return new DefaultDisposable.SequentialDisposable();
+	}
+
+	/**
 	 * Cancel or dispose the underlying task or resource.
 	 * <p>
 	 * Implementations are required to make this method idempotent.
@@ -87,7 +127,7 @@ public interface Disposable {
 	 *
 	 * @author Simon Baslé
 	 */
-	interface Composite<T extends Disposable> extends Disposable {
+	interface Composite extends Disposable {
 
 		/**
 		 * Add a {@link Disposable} to this container, if it is not {@link #isDisposed() disposed}.
@@ -96,7 +136,7 @@ public interface Disposable {
 		 * @param d the {@link Disposable} to add.
 		 * @return true if the disposable could be added, false otherwise.
 		 */
-		boolean add(T d);
+		boolean add(Disposable d);
 
 		/**
 		 * Adds the given collection of Disposables to the container or disposes them
@@ -105,13 +145,13 @@ public interface Disposable {
 		 * @implNote The default implementation is not atomic, meaning that if the container is
 		 * disposed while the content of the collection is added, first elements might be
 		 * effectively added. Stronger consistency is enforced by composites created via
-		 * {@link DefaultDisposable#composite()} variants.
+		 * {@link Disposable#composite()} variants.
 		 * @param ds the collection of Disposables
 		 * @return true if the operation was successful, false if the container has been disposed
 		 */
-		default boolean addAll(Collection<? extends T> ds) {
+		default boolean addAll(Collection<? extends Disposable> ds) {
 			boolean abort = isDisposed();
-			for (T d : ds) {
+			for (Disposable d : ds) {
 				if (abort) {
 					//multi-add aborted,
 					d.dispose();
@@ -137,7 +177,7 @@ public interface Disposable {
 		 * @param d the {@link Disposable} to remove.
 		 * @return true if the disposable was successfully deleted, false otherwise.
 		 */
-		boolean remove(T d);
+		boolean remove(Disposable d);
 
 		/**
 		 * Returns the number of currently held Disposables.

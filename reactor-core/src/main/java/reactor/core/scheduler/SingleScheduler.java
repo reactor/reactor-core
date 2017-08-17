@@ -40,7 +40,6 @@ import reactor.util.concurrent.OpenHashSet;
 final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorService> {
 
 	static final AtomicLong COUNTER       = new AtomicLong();
-	static final AtomicLong TIMER_COUNTER = new AtomicLong();
 
 	final ThreadFactory factory;
 
@@ -149,11 +148,11 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		return new SingleWorker(executor);
 	}
 
-	static final class SingleWorker implements Worker, Composite<ScheduledRunnable> {
+	static final class SingleWorker implements Worker, Disposable.Composite {
 
 		final ScheduledExecutorService exec;
 
-		OpenHashSet<ScheduledRunnable> tasks;
+		OpenHashSet<Disposable> tasks;
 
 		volatile boolean shutdown;
 
@@ -225,7 +224,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 			if (shutdown) {
 				return;
 			}
-			OpenHashSet<ScheduledRunnable> set;
+			OpenHashSet<Disposable> set;
 			synchronized (this) {
 				if (shutdown) {
 					return;
@@ -251,7 +250,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		}
 
 		@Override
-		public boolean add(ScheduledRunnable disposable) {
+		public boolean add(Disposable disposable) {
 			Objects.requireNonNull(disposable, "disposable is null");
 			if (!shutdown) {
 				synchronized (this) {
@@ -266,7 +265,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		}
 
 		@Override
-		public boolean remove(ScheduledRunnable task) {
+		public boolean remove(Disposable task) {
 			if (shutdown) {
 				return false;
 			}
@@ -277,24 +276,6 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 				}
 				tasks.remove(task);
 				return true;
-			}
-		}
-
-		public void disposeAll() {
-			if (shutdown) {
-				return;
-			}
-			OpenHashSet<ScheduledRunnable> set;
-			synchronized (this) {
-				if (shutdown) {
-					return;
-				}
-				set = tasks;
-				tasks = new OpenHashSet<>();
-			}
-
-			if (set != null) {
-				set.clear(Disposable::dispose);
 			}
 		}
 

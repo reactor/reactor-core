@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -32,51 +32,9 @@ import reactor.util.concurrent.OpenHashSet;
  *
  * @author Simon Baslé
  */
-public final class DefaultDisposable {
+abstract class DefaultDisposable {
 
 	DefaultDisposable() { }
-
-	/**
-	 * Create a new empty {@link Disposable.Sequential} with atomic guarantees on all mutative
-	 * operations.
-	 *
-	 * @return an empty atomic {@link Disposable.Sequential}
-	 */
-	public static Disposable.Sequential sequential() {
-		return new AtomicSequentialDisposable();
-	}
-
-	/**
-	 * Create a new empty {@link Disposable.Composite} with atomic guarantees on all mutative
-	 * operations.
-	 *
-	 * @return an empty atomic {@link Disposable.Composite}
-	 */
-	public static Disposable.Composite<Disposable> composite() {
-		return new AtomicCompositeDisposable();
-	}
-
-	/**
-	 * Create and initialize a new {@link Disposable.Composite} with atomic guarantees on
-	 * all mutative operations.
-	 *
-	 * @return a pre-filled atomic {@link Disposable.Composite}
-	 */
-	public static Disposable.Composite<Disposable> compositeOf(Disposable... disposables) {
-		return new AtomicCompositeDisposable(disposables);
-	}
-
-	/**
-	 * Create and initialize a new {@link Disposable.Composite} with atomic guarantees on
-	 * all mutative operations.
-	 *
-	 * @return a pre-filled atomic {@link Disposable.Composite}
-	 */
-	public static Disposable.Composite<Disposable> compositeOf(Iterable<? extends Disposable> disposables) {
-		return new AtomicCompositeDisposable(disposables);
-	}
-
-	//==== PACKAGE-PRIVATE IMPLEMENTATIONS ====
 
 	/**
 	 * A {@link Disposable.Composite} that allows to atomically add, remove and mass dispose.
@@ -84,23 +42,22 @@ public final class DefaultDisposable {
 	 * @author Simon Baslé
 	 * @author David Karnok
 	 */
-	static final class AtomicCompositeDisposable implements
-	                                             Disposable.Composite<Disposable> {
+	static final class CompositeDisposable implements Disposable.Composite {
 
 		OpenHashSet<Disposable> disposables;
 		volatile boolean disposed;
 
 		/**
-		 * Creates an empty {@link AtomicCompositeDisposable}.
+		 * Creates an empty {@link CompositeDisposable}.
 		 */
-		public AtomicCompositeDisposable() {
+		CompositeDisposable() {
 		}
 
 		/**
-		 * Creates a {@link AtomicCompositeDisposable} with the given array of initial elements.
+		 * Creates a {@link CompositeDisposable} with the given array of initial elements.
 		 * @param disposables the array of {@link Disposable} to start with
 		 */
-		public AtomicCompositeDisposable(Disposable... disposables) {
+		CompositeDisposable(Disposable... disposables) {
 			Objects.requireNonNull(disposables, "disposables is null");
 			this.disposables = new OpenHashSet<>(disposables.length + 1, 0.75f);
 			for (Disposable d : disposables) {
@@ -110,11 +67,11 @@ public final class DefaultDisposable {
 		}
 
 		/**
-		 * Creates a {@link AtomicCompositeDisposable} with the given {@link Iterable} sequence of
+		 * Creates a {@link CompositeDisposable} with the given {@link Iterable} sequence of
 		 * initial elements.
 		 * @param disposables the Iterable sequence of {@link Disposable} to start with
 		 */
-		public AtomicCompositeDisposable(Iterable<? extends Disposable> disposables) {
+		CompositeDisposable(Iterable<? extends Disposable> disposables) {
 			Objects.requireNonNull(disposables, "disposables is null");
 			this.disposables = new OpenHashSet<>();
 			for (Disposable d : disposables) {
@@ -263,12 +220,12 @@ public final class DefaultDisposable {
 	 * @author Simon Baslé
 	 * @author David Karnok
 	 */
-	static final class AtomicSequentialDisposable implements Disposable.Sequential {
+	static final class SequentialDisposable implements Disposable.Sequential {
 
 		volatile Disposable inner;
-		static final AtomicReferenceFieldUpdater<AtomicSequentialDisposable, Disposable>
+		static final AtomicReferenceFieldUpdater<SequentialDisposable, Disposable>
 				INNER =
-				AtomicReferenceFieldUpdater.newUpdater(AtomicSequentialDisposable.class, Disposable.class, "inner");
+				AtomicReferenceFieldUpdater.newUpdater(SequentialDisposable.class, Disposable.class, "inner");
 
 		@Override
 		public boolean update(Disposable next) {

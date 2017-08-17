@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -32,12 +32,13 @@ public class DefaultDisposableTest {
 
 	@Test
 	public void sequentialEmpty() {
-		assertThat(DefaultDisposable.sequential().get()).isNull();
+		assertThat(Disposable.sequential()
+		                     .get()).isNull();
 	}
 
 	@Test
 	public void compositeEmpty() {
-		Disposable.Composite<Disposable> cd = DefaultDisposable.composite();
+		Disposable.Composite cd = Disposable.composite();
 		assertThat(cd.size()).isZero();
 		assertThat(cd.isDisposed()).isFalse();
 	}
@@ -47,8 +48,7 @@ public class DefaultDisposableTest {
 		Disposable d1 = new FakeDisposable();
 		Disposable d2 = new FakeDisposable();
 
-		Disposable.Composite<Disposable>
-				cd = DefaultDisposable.compositeOf(d1, d2);
+		Disposable.Composite cd = Disposable.composite(d1, d2);
 		assertThat(cd.size()).isEqualTo(2);
 		assertThat(cd.isDisposed()).isFalse();
 	}
@@ -58,8 +58,7 @@ public class DefaultDisposableTest {
 		Disposable d1 = new FakeDisposable();
 		Disposable d2 = new FakeDisposable();
 
-		Disposable.Composite<Disposable>
-				cd = DefaultDisposable.compositeOf(Arrays.asList(d1, d2));
+		Disposable.Composite cd = Disposable.composite(Arrays.asList(d1, d2));
 		assertThat(cd.size()).isEqualTo(2);
 		assertThat(cd.isDisposed()).isFalse();
 	}

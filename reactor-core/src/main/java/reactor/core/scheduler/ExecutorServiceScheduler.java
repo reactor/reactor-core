@@ -129,14 +129,14 @@ final class ExecutorServiceScheduler implements Scheduler {
 	}
 
 	static final class ExecutorServiceWorker implements Worker,
-	                                                    Composite<ExecutorServiceSchedulerRunnable> {
+	                                                    Composite {
 
 		final ExecutorService executor;
 		final boolean         interruptOnCancel;
 
 		volatile boolean terminated;
 
-		OpenHashSet<ExecutorServiceSchedulerRunnable> tasks;
+		OpenHashSet<Disposable> tasks;
 
 		ExecutorServiceWorker(ExecutorService executor, boolean interruptOnCancel) {
 			this.executor = executor;
@@ -218,7 +218,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 
 
 		@Override
-		public boolean add(ExecutorServiceSchedulerRunnable sr) {
+		public boolean add(Disposable sr) {
 			if (!terminated) {
 				synchronized (this) {
 					if (!terminated) {
@@ -231,7 +231,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 		}
 
 		@Override
-		public boolean remove(ExecutorServiceSchedulerRunnable sr) {
+		public boolean remove(Disposable sr) {
 			if (!terminated) {
 				synchronized (this) {
 					if (!terminated) {
@@ -266,7 +266,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 		@Override
 		public void dispose() {
 			if (!terminated) {
-				OpenHashSet<ExecutorServiceSchedulerRunnable> coll;
+				OpenHashSet<Disposable> coll;
 				synchronized (this) {
 					if (terminated) {
 						return;
