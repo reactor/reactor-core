@@ -53,7 +53,7 @@ public interface Disposable {
 	 *
 	 * @author Simon Baslé
 	 */
-	interface SequentialDisposable extends Disposable, Supplier<Disposable> {
+	interface Sequential extends Disposable, Supplier<Disposable> {
 
 		/**
 		 * Atomically push the next {@link Disposable} on this container and dispose the previous
@@ -77,18 +77,17 @@ public interface Disposable {
 	}
 
 	/**
-	 * A container of {@link Disposable} that is itself {@link Disposable}. Add and remove
-	 * disposable, and dispose them all in one go by either using {@link #disposeAll()}
-	 * (allowing further reuse of the container) or {@link #dispose()} (disallowing further
-	 * reuse of the container).
-	 * <p>
-	 * Two removal operations are offered: {@link #remove(Disposable)} will NOT call
-	 * {@link Disposable#dispose()} on the element removed from the container, while
-	 * {@link #dispose(Disposable)} will.
+	 * A container of {@link Disposable} that is itself {@link Disposable}. Accumulate
+	 * disposables and dispose them all in one go by using {@link #dispose()}. Using
+	 * the {@link #add(Disposable)} methods give ownership to the container, which is now
+	 * responsible for disposing them. You can however retake ownership of individual
+	 * elements by keeping a reference and using {@link #remove(Disposable)}, which puts
+	 * the responsibility of disposing said elements back in your hands. Note that once
+	 * disposed, the container cannot be reused and you will need a new {@link Composite}.
 	 *
 	 * @author Simon Baslé
 	 */
-	interface CompositeDisposable<T extends Disposable> extends Disposable {
+	interface Composite<T extends Disposable> extends Disposable {
 
 		/**
 		 * Add a {@link Disposable} to this container, if it is not {@link #isDisposed() disposed}.
@@ -110,7 +109,7 @@ public interface Disposable {
 		 * @param ds the collection of Disposables
 		 * @return true if the operation was successful, false if the container has been disposed
 		 */
-		default boolean addAll(Collection<T> ds) {
+		default boolean addAll(Collection<? extends T> ds) {
 			boolean abort = isDisposed();
 			for (T d : ds) {
 				if (abort) {
@@ -129,35 +128,16 @@ public interface Disposable {
 
 		/**
 		 * Delete the {@link Disposable} from this container, without disposing it.
+		 * <p>
+		 * It becomes the responsibility of the caller to dispose the value themselves,
+		 * which they can do by a simple call to {@link Disposable#dispose()} on said
+		 * value (probaby guarded by a check that this method returned true, meaning the
+		 * disposable was actually in the container).
 		 *
 		 * @param d the {@link Disposable} to remove.
 		 * @return true if the disposable was successfully deleted, false otherwise.
-		 * @see #dispose(Disposable)
 		 */
 		boolean remove(T d);
-
-		/**
-		 * Remove the {@link Disposable} from this container and dispose it via
-		 * {@link Disposable#dispose() dispose()} once deleted.
-		 *
-		 * @param disposable the {@link Disposable} to remove and dispose.
-		 * @return true if the disposable was successfully removed and disposed, false otherwise.
-		 * @see #remove(Disposable)
-		 */
-		default boolean dispose(T disposable) {
-			if (remove(disposable)) {
-				disposable.dispose();
-				return true;
-			}
-			return false;
-		}
-
-		/**
-		 * Atomically clears the container, then disposes all the previously contained
-		 * Disposables BUT <i>not the container itself</i>. That is, unlike with
-		 * {@link #dispose()} the container can still be used after that.
-		 */
-		void disposeAll();
 
 		/**
 		 * Returns the number of currently held Disposables.
@@ -169,10 +149,7 @@ public interface Disposable {
 		 * Atomically mark the container as {@link #isDisposed() disposed}, clear it and then
 		 * dispose all the previously contained Disposables. From there on the container cannot
 		 * be reused, as {@link #add(Disposable)} and {@link #addAll(Collection)} methods
-		 * will immediately return {@literal false}. Use {@link #disposeAll()} instead if you want
-		 * to reuse the container.
-		 *
-		 * @see #disposeAll()
+		 * will immediately return {@literal false}.
 		 */
 		@Override
 		void dispose();

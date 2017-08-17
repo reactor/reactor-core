@@ -27,8 +27,8 @@ import reactor.util.concurrent.OpenHashSet;
 
 /**
  * A support class that offers implementations for the specialized {@link Disposable}
- * sub-interfaces ({@link reactor.core.Disposable.CompositeDisposable Disposable.CompositeDisposable},
- * {@link reactor.core.Disposable.SequentialDisposable Disposable.SequentialDisposable}).
+ * sub-interfaces ({@link Disposable.Composite Disposable.CompositeDisposable},
+ * {@link Disposable.Sequential Disposable.SequentialDisposable}).
  *
  * @author Simon Baslé
  */
@@ -37,55 +37,55 @@ public final class DefaultDisposable {
 	DefaultDisposable() { }
 
 	/**
-	 * Create a new empty {@link Disposable.SequentialDisposable} with atomic guarantees on all mutative
+	 * Create a new empty {@link Disposable.Sequential} with atomic guarantees on all mutative
 	 * operations.
 	 *
-	 * @return an empty atomic {@link Disposable.SequentialDisposable}
+	 * @return an empty atomic {@link Disposable.Sequential}
 	 */
-	public static Disposable.SequentialDisposable sequentialDisposable() {
+	public static Disposable.Sequential sequentialDisposable() {
 		return new AtomicSequentialDisposable();
 	}
 
 	/**
-	 * Create a new empty {@link Disposable.CompositeDisposable} with atomic guarantees on all mutative
+	 * Create a new empty {@link Disposable.Composite} with atomic guarantees on all mutative
 	 * operations.
 	 *
-	 * @return an empty atomic {@link Disposable.CompositeDisposable}
+	 * @return an empty atomic {@link Disposable.Composite}
 	 */
-	public static Disposable.CompositeDisposable<Disposable> compositeDisposable() {
+	public static Disposable.Composite<Disposable> compositeDisposable() {
 		return new AtomicCompositeDisposable();
 	}
 
 	/**
-	 * Create and initialize a new {@link Disposable.CompositeDisposable} with atomic guarantees on
+	 * Create and initialize a new {@link Disposable.Composite} with atomic guarantees on
 	 * all mutative operations.
 	 *
-	 * @return a pre-filled atomic {@link Disposable.CompositeDisposable}
+	 * @return a pre-filled atomic {@link Disposable.Composite}
 	 */
-	public static Disposable.CompositeDisposable<Disposable> compositeDisposable(Disposable... disposables) {
+	public static Disposable.Composite<Disposable> compositeDisposable(Disposable... disposables) {
 		return new AtomicCompositeDisposable(disposables);
 	}
 
 	/**
-	 * Create and initialize a new {@link Disposable.CompositeDisposable} with atomic guarantees on
+	 * Create and initialize a new {@link Disposable.Composite} with atomic guarantees on
 	 * all mutative operations.
 	 *
-	 * @return a pre-filled atomic {@link Disposable.CompositeDisposable}
+	 * @return a pre-filled atomic {@link Disposable.Composite}
 	 */
-	public static Disposable.CompositeDisposable<Disposable> compositeDisposable(Iterable<? extends Disposable> disposables) {
+	public static Disposable.Composite<Disposable> compositeDisposable(Iterable<? extends Disposable> disposables) {
 		return new AtomicCompositeDisposable(disposables);
 	}
 
 	//==== PACKAGE-PRIVATE IMPLEMENTATIONS ====
 
 	/**
-	 * A {@link Disposable.CompositeDisposable} that allows to atomically add, remove and mass dispose.
+	 * A {@link Disposable.Composite} that allows to atomically add, remove and mass dispose.
 	 *
 	 * @author Simon Baslé
 	 * @author David Karnok
 	 */
 	static final class AtomicCompositeDisposable implements
-	                                             Disposable.CompositeDisposable<Disposable> {
+	                                             Disposable.Composite<Disposable> {
 
 		OpenHashSet<Disposable> disposables;
 		volatile boolean disposed;
@@ -167,7 +167,7 @@ public final class DefaultDisposable {
 		}
 
 		@Override
-		public boolean addAll(Collection<Disposable> ds) {
+		public boolean addAll(Collection<? extends Disposable> ds) {
 			Objects.requireNonNull(ds, "ds is null");
 			if (!disposed) {
 				synchronized (this) {
@@ -208,24 +208,6 @@ public final class DefaultDisposable {
 				}
 			}
 			return true;
-		}
-
-		@Override
-		public void disposeAll() {
-			if (disposed) {
-				return;
-			}
-			OpenHashSet<Disposable> set;
-			synchronized (this) {
-				if (disposed) {
-					return;
-				}
-
-				set = disposables;
-				disposables = null;
-			}
-
-			dispose(set);
 		}
 
 		@Override
@@ -276,13 +258,12 @@ public final class DefaultDisposable {
 	}
 
 	/**
-	 * Not public API. Implementation of a {@link Disposable.SequentialDisposable}.
+	 * Not public API. Implementation of a {@link Disposable.Sequential}.
 	 *
 	 * @author Simon Baslé
 	 * @author David Karnok
 	 */
-	static final class AtomicSequentialDisposable implements
-	                                              Disposable.SequentialDisposable {
+	static final class AtomicSequentialDisposable implements Disposable.Sequential {
 
 		volatile Disposable inner;
 		static final AtomicReferenceFieldUpdater<AtomicSequentialDisposable, Disposable>

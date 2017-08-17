@@ -149,7 +149,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		return new SingleWorker(executor);
 	}
 
-	static final class SingleWorker implements Worker, CompositeDisposable<ScheduledRunnable> {
+	static final class SingleWorker implements Worker, Composite<ScheduledRunnable> {
 
 		final ScheduledExecutorService exec;
 
@@ -280,7 +280,6 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 			}
 		}
 
-		@Override
 		public void disposeAll() {
 			if (shutdown) {
 				return;

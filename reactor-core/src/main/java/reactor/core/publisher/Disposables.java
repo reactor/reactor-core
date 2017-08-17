@@ -22,8 +22,6 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import reactor.core.Disposable;
-import reactor.core.Disposable.CompositeDisposable;
-import reactor.core.Disposable.SequentialDisposable;
 
 /**
  * Utility methods to work with {@link Disposable} atomically.

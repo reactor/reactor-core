@@ -19,14 +19,14 @@ package reactor.core.scheduler;
 import java.util.Collection;
 
 import reactor.core.Disposable;
-import reactor.core.Disposable.CompositeDisposable;
+import reactor.core.Disposable.Composite;
 
 /**
- * A generic {@link CompositeDisposable} that is empty and no-op.
+ * A generic {@link Composite} that is empty and no-op.
  *
  * @author Simon Baslé
  */
-final class EmptyDisposableContainer<T extends Disposable> implements CompositeDisposable<T> {
+final class EmptyDisposableContainer<T extends Disposable> implements Composite<T> {
 
 	@Override
 	public boolean add(T d) {
@@ -34,7 +34,7 @@ final class EmptyDisposableContainer<T extends Disposable> implements CompositeD
 	}
 
 	@Override
-	public boolean addAll(Collection<T> ds) {
+	public boolean addAll(Collection<? extends T> ds) {
 		return false;
 	}
 
@@ -44,24 +44,12 @@ final class EmptyDisposableContainer<T extends Disposable> implements CompositeD
 	}
 
 	@Override
-	public boolean dispose(T disposable) {
-		return false;
-	}
-
-	@Override
-	public void disposeAll() {
-
-	}
-
-	@Override
 	public int size() {
 		return 0;
 	}
 
 	@Override
-	public void dispose() {
-
-	}
+	public void dispose() {	}
 
 	@Override
 	public boolean isDisposed() {

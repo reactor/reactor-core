@@ -21,7 +21,7 @@ import java.util.List;
 
 import org.junit.Test;
 import reactor.core.DefaultDisposable.AtomicCompositeDisposable;
-import reactor.core.Disposable.CompositeDisposable;
+import reactor.core.Disposable.Composite;
 import reactor.test.FakeDisposable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.RaceTestUtils;
@@ -33,7 +33,7 @@ public class AtomicCompositeDisposableTest {
 
 	@Test
 	public void isDisposed() throws Exception {
-		CompositeDisposable<Disposable> cd = new AtomicCompositeDisposable();
+		Composite<Disposable> cd = new AtomicCompositeDisposable();
 
 		assertThat(cd.isDisposed()).isFalse();
 
@@ -44,7 +44,7 @@ public class AtomicCompositeDisposableTest {
 	@Test
 	public void add() throws Exception {
 		FakeDisposable d = new FakeDisposable();
-		CompositeDisposable<Disposable> cd = new AtomicCompositeDisposable();
+		Composite<Disposable> cd = new AtomicCompositeDisposable();
 
 		assertThat(cd.size()).isZero();
 
@@ -59,7 +59,7 @@ public class AtomicCompositeDisposableTest {
 	public void addAll() throws Exception {
 		FakeDisposable d1 = new FakeDisposable();
 		FakeDisposable d2 = new FakeDisposable();
-		CompositeDisposable<Disposable> cd = new AtomicCompositeDisposable();
+		Composite<Disposable> cd = new AtomicCompositeDisposable();
 
 		assertThat(cd.size()).isZero();
 
@@ -71,11 +71,10 @@ public class AtomicCompositeDisposableTest {
 		assertThat(d2.isDisposed()).isFalse();
 	}
 
-
 	@Test
 	public void removeDoesntDispose() throws Exception {
 		FakeDisposable d = new FakeDisposable();
-		CompositeDisposable<Disposable> cd = new AtomicCompositeDisposable(d);
+		Composite<Disposable> cd = new AtomicCompositeDisposable(d);
 
 		assertThat(cd.size()).isEqualTo(1);
 		assertThat(d.isDisposed()).isFalse();
@@ -88,47 +87,10 @@ public class AtomicCompositeDisposableTest {
 	}
 
 	@Test
-	public void removeAndDisposeDisposes() throws Exception {
-		FakeDisposable d = new FakeDisposable();
-		CompositeDisposable<Disposable> cd = new AtomicCompositeDisposable(d);
-
-		assertThat(cd.size()).isEqualTo(1);
-		assertThat(d.isDisposed()).isFalse();
-
-		boolean removed = cd.dispose(d);
-
-		assertThat(removed).isTrue();
-		assertThat(cd.size()).isZero();
-		assertThat(d.isDisposed()).isTrue();
-	}
-
-	@Test
-	public void clearDisposesAndAllowReuse() throws Exception {
-		FakeDisposable d1 = new FakeDisposable();
-		FakeDisposable d2 = new FakeDisposable();
-		CompositeDisposable<Disposable>
-				cd = new AtomicCompositeDisposable(d1, d2);
-
-		assertThat(cd.size()).isEqualTo(2);
-		assertThat(d1.isDisposed()).isFalse();
-		assertThat(d2.isDisposed()).isFalse();
-
-		cd.disposeAll();
-
-		assertThat(cd.size()).isZero();
-		assertThat(d1.isDisposed()).isTrue();
-		assertThat(d2.isDisposed()).isTrue();
-
-		cd.add(d1);
-
-		assertThat(cd.size()).isEqualTo(1);
-	}
-
-	@Test
 	public void disposeDisposesAndDisallowReuse() throws Exception {
 		FakeDisposable d1 = new FakeDisposable();
 		FakeDisposable d2 = new FakeDisposable();
-		CompositeDisposable<Disposable>
+		Composite<Disposable>
 				cd = new AtomicCompositeDisposable(d1, d2);
 
 		assertThat(cd.size()).isEqualTo(2);
@@ -138,6 +100,7 @@ public class AtomicCompositeDisposableTest {
 		cd.dispose();
 
 		assertThat(cd.size()).isZero();
+		assertThat(cd.isDisposed()).isTrue();
 		assertThat(d1.isDisposed()).isTrue();
 		assertThat(d1.disposed).isEqualTo(1);
 		assertThat(d2.isDisposed()).isTrue();
@@ -151,18 +114,8 @@ public class AtomicCompositeDisposableTest {
 	@Test
 	public void removeInexistant() throws Exception {
 		FakeDisposable d = new FakeDisposable();
-		CompositeDisposable<Disposable> cd = new AtomicCompositeDisposable();
+		Composite<Disposable> cd = new AtomicCompositeDisposable();
 		boolean deleted = cd.remove(d);
-
-		assertThat(deleted).isFalse();
-		assertThat(d.isDisposed()).isFalse();
-	}
-
-	@Test
-	public void removeAndDisposeInexistant() throws Exception {
-		FakeDisposable d = new FakeDisposable();
-		CompositeDisposable<Disposable> cd = new AtomicCompositeDisposable();
-		boolean deleted = cd.dispose(d);
 
 		assertThat(deleted).isFalse();
 		assertThat(d.isDisposed()).isFalse();
@@ -171,7 +124,7 @@ public class AtomicCompositeDisposableTest {
 	@Test
 	public void addAfterDispose() throws Exception {
 		FakeDisposable d = new FakeDisposable();
-		CompositeDisposable<Disposable> cd = new AtomicCompositeDisposable();
+		Composite<Disposable> cd = new AtomicCompositeDisposable();
 		cd.dispose();
 		boolean added = cd.add(d);
 
@@ -184,7 +137,7 @@ public class AtomicCompositeDisposableTest {
 	public void addAllAfterDispose() throws Exception {
 		FakeDisposable d1 = new FakeDisposable();
 		FakeDisposable d2 = new FakeDisposable();
-		CompositeDisposable<Disposable> cd = new AtomicCompositeDisposable();
+		Composite<Disposable> cd = new AtomicCompositeDisposable();
 		cd.dispose();
 		boolean added = cd.addAll(Arrays.asList(d1, d2));
 
@@ -197,7 +150,7 @@ public class AtomicCompositeDisposableTest {
 	@Test
 	public void removeAfterDispose() throws Exception {
 		FakeDisposable d = new FakeDisposable();
-		CompositeDisposable<Disposable> cd = new AtomicCompositeDisposable();
+		Composite<Disposable> cd = new AtomicCompositeDisposable();
 		cd.dispose();
 		boolean deleted = cd.remove(d);
 
@@ -207,31 +160,9 @@ public class AtomicCompositeDisposableTest {
 	}
 
 	@Test
-	public void removeAndDisposeAfterDispose() throws Exception {
-		FakeDisposable d = new FakeDisposable();
-		CompositeDisposable<Disposable> cd = new AtomicCompositeDisposable(d);
-		cd.dispose();
-		boolean removed = cd.dispose(d);
-
-		assertThat(removed).isFalse();
-		assertThat(cd.size()).isZero();
-		assertThat(d.disposed).isEqualTo(1); //only impacted by dispose()
-	}
-
-	@Test
-	public void clearAfterDispose() throws Exception {
-		FakeDisposable d = new FakeDisposable();
-		CompositeDisposable<Disposable> cd = new AtomicCompositeDisposable(d);
-		cd.dispose();
-		cd.disposeAll();
-
-		assertThat(d.disposed).isEqualTo(1);
-	}
-
-	@Test
 	public void disposeAfterDispose() throws Exception {
 		FakeDisposable d = new FakeDisposable();
-		CompositeDisposable<Disposable> cd = new AtomicCompositeDisposable(d);
+		Composite<Disposable> cd = new AtomicCompositeDisposable(d);
 		cd.dispose();
 		cd.dispose();
 
@@ -242,7 +173,7 @@ public class AtomicCompositeDisposableTest {
 	public void singleErrorDuringDisposal() {
 		Disposable bad = () -> { throw new IllegalStateException("boom"); };
 		FakeDisposable good = new FakeDisposable();
-		CompositeDisposable<Disposable>
+		Composite<Disposable>
 				cd = new AtomicCompositeDisposable(bad, good);
 
 		assertThatExceptionOfType(IllegalStateException.class)
@@ -257,7 +188,7 @@ public class AtomicCompositeDisposableTest {
 		Disposable bad1 = () -> { throw new IllegalStateException("boom1"); };
 		Disposable bad2 = () -> { throw new IllegalStateException("boom2"); };
 		FakeDisposable good = new FakeDisposable();
-		CompositeDisposable<Disposable>
+		Composite<Disposable>
 				cd = new AtomicCompositeDisposable(bad1, bad2, good);
 
 		assertThatExceptionOfType(RuntimeException.class)
@@ -274,11 +205,12 @@ public class AtomicCompositeDisposableTest {
 		FakeDisposable d1 = new FakeDisposable();
 		FakeDisposable d2 = new FakeDisposable();
 		List<FakeDisposable> list = Arrays.asList(d1, d2);
-		CompositeDisposable<Disposable> cd = new AtomicCompositeDisposable(list);
+		Composite<Disposable> cd = new AtomicCompositeDisposable(list);
 
 		assertThat(cd.size()).isEqualTo(2);
 
-		cd.disposeAll();
+		cd.remove(d1);
+		cd.remove(d2);
 
 		assertThat(cd.size()).isZero();
 		assertThat(list).hasSize(2);
@@ -288,20 +220,9 @@ public class AtomicCompositeDisposableTest {
 	public void disposeConcurrent() {
 		for (int i = 0; i < 500; i++) {
 			final Disposable d1 = new FakeDisposable();
-			final CompositeDisposable<Disposable> cd = new AtomicCompositeDisposable(d1);
+			final Composite<Disposable> cd = new AtomicCompositeDisposable(d1);
 
 			RaceTestUtils.race(cd::dispose,
-					cd::dispose, Schedulers.elastic());
-		}
-	}
-
-	@Test
-	public void clearConcurrent() {
-		for (int i = 0; i < 500; i++) {
-			final Disposable d1 = new FakeDisposable();
-			final CompositeDisposable<Disposable> cd = new AtomicCompositeDisposable(d1);
-
-			RaceTestUtils.race(cd::disposeAll,
 					cd::dispose, Schedulers.elastic());
 		}
 	}
@@ -310,7 +231,7 @@ public class AtomicCompositeDisposableTest {
 	public void removeConcurrent() {
 		for (int i = 0; i < 500; i++) {
 			final Disposable d1 = new FakeDisposable();
-			final CompositeDisposable<Disposable> cd = new AtomicCompositeDisposable(d1);
+			final Composite<Disposable> cd = new AtomicCompositeDisposable(d1);
 
 			RaceTestUtils.race(() -> cd.remove(d1),
 					cd::dispose, Schedulers.elastic());
@@ -321,7 +242,7 @@ public class AtomicCompositeDisposableTest {
 	public void sizeConcurrent() {
 		for (int i = 0; i < 500; i++) {
 			final Disposable d1 = new FakeDisposable();
-			final CompositeDisposable<Disposable> cd = new AtomicCompositeDisposable(d1);
+			final Composite<Disposable> cd = new AtomicCompositeDisposable(d1);
 
 			RaceTestUtils.race(cd::size,
 					cd::dispose, Schedulers.elastic());

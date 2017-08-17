@@ -27,7 +27,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.DefaultDisposable;
 import reactor.core.Disposable;
-import reactor.core.Disposable.SequentialDisposable;
+import reactor.core.Disposable.Sequential;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
@@ -103,7 +103,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 	}
 
 	void cancel(RefConnection rc) {
-		SequentialDisposable sd;
+		Sequential sd;
 		synchronized (this) {
 			if (rc.terminated) {
 				return;
