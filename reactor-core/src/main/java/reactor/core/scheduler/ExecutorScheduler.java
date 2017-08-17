@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
-import reactor.util.concurrent.OpenHashSet;
 
 /**
  * Wraps a java.util.concurrent.Executor and provides the Scheduler API over it.
@@ -191,39 +190,27 @@ final class ExecutorScheduler implements Scheduler {
 
 		final Executor executor;
 
-		volatile boolean terminated;
-
-		OpenHashSet<ExecutorTrackedRunnable> tasks;
+		final Disposable.Composite tasks;
 
 		ExecutorSchedulerWorker(Executor executor) {
 			this.executor = executor;
-			this.tasks = new OpenHashSet<>();
+			this.tasks = Disposable.composite();
 		}
 
 		@Override
 		public Disposable schedule(Runnable task) {
 			Objects.requireNonNull(task, "task");
-			if (terminated) {
-				throw Exceptions.failWithRejected();
-			}
 
 			ExecutorTrackedRunnable r = new ExecutorTrackedRunnable(task, this, true);
-			synchronized (this) {
-				if (terminated) {
-					throw Exceptions.failWithRejected();
-				}
-				tasks.add(r);
+			if (!tasks.add(r)) {
+				throw Exceptions.failWithRejected();
 			}
 
 			try {
 				executor.execute(r);
 			}
 			catch (Throwable ex) {
-				synchronized (this) {
-					if (!terminated) {
-						tasks.remove(r);
-					}
-				}
+				tasks.remove(r);
 				Schedulers.handleError(ex);
 				throw Exceptions.failWithRejected();
 			}
@@ -233,41 +220,17 @@ final class ExecutorScheduler implements Scheduler {
 
 		@Override
 		public void dispose() {
-			if (terminated) {
-				return;
-			}
-			OpenHashSet<ExecutorTrackedRunnable> list;
-			synchronized (this) {
-				if (terminated) {
-					return;
-				}
-				terminated = true;
-				list = tasks;
-				tasks = null;
-			}
-
-			if (!list.isEmpty()) {
-				Object[] a = list.keys();
-				for (Object o : a) {
-					if (o != null) {
-						((ExecutorTrackedRunnable) o).dispose();
-					}
-				}
-			}
+			tasks.dispose();
 		}
 
 		@Override
 		public boolean isDisposed() {
-			return terminated;
+			return tasks.isDisposed();
 		}
 
 		@Override
 		public void delete(ExecutorTrackedRunnable r) {
-			synchronized (this) {
-				if (!terminated) {
-					tasks.remove(r);
-				}
-			}
+			tasks.remove(r);
 		}
 
 	}

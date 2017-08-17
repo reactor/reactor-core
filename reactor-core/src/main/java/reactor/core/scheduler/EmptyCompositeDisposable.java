@@ -25,7 +25,7 @@ import reactor.core.Disposable;
  *
  * @author Simon Baslé
  */
-final class EmptyDisposableContainer implements Disposable.Composite {
+final class EmptyCompositeDisposable implements Disposable.Composite {
 
 	@Override
 	public boolean add(Disposable d) {
@@ -54,4 +54,7 @@ final class EmptyDisposableContainer implements Disposable.Composite {
 	public boolean isDisposed() {
 		return false;
 	}
+
+	static final Disposable.Composite DISPOSED_PARENT = new EmptyCompositeDisposable();
+	static final Disposable.Composite DONE_PARENT = new EmptyCompositeDisposable();
 }

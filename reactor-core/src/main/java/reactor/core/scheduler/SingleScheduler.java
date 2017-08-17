@@ -30,7 +30,6 @@ import java.util.function.Supplier;
 
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
-import reactor.util.concurrent.OpenHashSet;
 
 /**
  * Scheduler that works with a single-threaded ScheduledExecutorService and is suited for
@@ -148,17 +147,15 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		return new SingleWorker(executor);
 	}
 
-	static final class SingleWorker implements Worker, Disposable.Composite {
+	static final class SingleWorker implements Worker, Disposable {
 
 		final ScheduledExecutorService exec;
 
-		OpenHashSet<Disposable> tasks;
-
-		volatile boolean shutdown;
+		final Disposable.Composite tasks;
 
 		SingleWorker(ScheduledExecutorService exec) {
 			this.exec = exec;
-			this.tasks = new OpenHashSet<>();
+			this.tasks = Disposable.composite();
 		}
 
 		@Override
@@ -168,12 +165,10 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 
 		@Override
 		public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
-			if (shutdown) {
+			ScheduledRunnable sr = new ScheduledRunnable(task, tasks);
+			if(!tasks.add(sr)){
 				throw Exceptions.failWithRejected();
 			}
-
-			ScheduledRunnable sr = new ScheduledRunnable(task, this);
-			add(sr);
 
 			try {
 				Future<?> f;
@@ -199,12 +194,11 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 				long initialDelay,
 				long period,
 				TimeUnit unit) {
-			if (shutdown) {
+
+			ScheduledRunnable sr = new ScheduledRunnable(task, tasks);
+			if(!tasks.add(sr)) {
 				throw Exceptions.failWithRejected();
 			}
-
-			ScheduledRunnable sr = new ScheduledRunnable(task, this);
-			add(sr);
 
 			try {
 				Future<?> f = exec.scheduleAtFixedRate(sr, initialDelay, period, unit);
@@ -221,67 +215,12 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 
 		@Override
 		public void dispose() {
-			if (shutdown) {
-				return;
-			}
-			OpenHashSet<Disposable> set;
-			synchronized (this) {
-				if (shutdown) {
-					return;
-				}
-				shutdown = true;
-				set = tasks;
-				tasks = null;
-			}
-
-			if (set != null && !set.isEmpty()) {
-				Object[] a = set.keys();
-				for (Object o : a) {
-					if (o != null) {
-						((ScheduledRunnable) o).dispose();
-					}
-				}
-			}
+			tasks.dispose();
 		}
 
 		@Override
 		public boolean isDisposed() {
-			return shutdown;
-		}
-
-		@Override
-		public boolean add(Disposable disposable) {
-			Objects.requireNonNull(disposable, "disposable is null");
-			if (!shutdown) {
-				synchronized (this) {
-					if (!shutdown) {
-						tasks.add(disposable);
-						return true;
-					}
-				}
-			}
-			disposable.dispose();
-			return false;
-		}
-
-		@Override
-		public boolean remove(Disposable task) {
-			if (shutdown) {
-				return false;
-			}
-
-			synchronized (this) {
-				if (shutdown) {
-					return false;
-				}
-				tasks.remove(task);
-				return true;
-			}
-		}
-
-		@Override
-		public int size() {
-			return tasks.size();
+			return tasks.isDisposed();
 		}
 	}
 }

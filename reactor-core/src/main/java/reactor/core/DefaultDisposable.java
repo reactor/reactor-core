@@ -21,9 +21,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
-import reactor.util.concurrent.OpenHashSet;
+import reactor.util.concurrent.Queues;
 
 /**
  * A support class that offers implementations for the specialized {@link Disposable}
@@ -31,6 +32,7 @@ import reactor.util.concurrent.OpenHashSet;
  * {@link Disposable.Sequential Disposable.SequentialDisposable}).
  *
  * @author Simon Baslé
+ * @author Stephane Maldini
  */
 abstract class DefaultDisposable {
 
@@ -40,17 +42,31 @@ abstract class DefaultDisposable {
 	 * A {@link Disposable.Composite} that allows to atomically add, remove and mass dispose.
 	 *
 	 * @author Simon Baslé
+	 * @author Stephane Maldini
 	 * @author David Karnok
 	 */
-	static final class CompositeDisposable implements Disposable.Composite {
+	static final class CompositeDisposable implements Disposable.Composite, Scannable {
 
-		OpenHashSet<Disposable> disposables;
+		static final int   DEFAULT_CAPACITY    = 16;
+		static final float DEFAULT_LOAD_FACTOR = 0.75f;
+
+		final float loadFactor;
+		int          mask;
+		int          size;
+		int          maxSize;
+		Disposable[] disposables;
+
 		volatile boolean disposed;
 
 		/**
 		 * Creates an empty {@link CompositeDisposable}.
 		 */
 		CompositeDisposable() {
+			this.loadFactor = DEFAULT_LOAD_FACTOR;
+			int c = DEFAULT_CAPACITY;
+			this.mask = c - 1;
+			this.maxSize = (int) (loadFactor * c);
+			this.disposables = new Disposable[c];
 		}
 
 		/**
@@ -59,10 +75,17 @@ abstract class DefaultDisposable {
 		 */
 		CompositeDisposable(Disposable... disposables) {
 			Objects.requireNonNull(disposables, "disposables is null");
-			this.disposables = new OpenHashSet<>(disposables.length + 1, 0.75f);
+
+			int capacity = disposables.length + 1;
+			this.loadFactor = DEFAULT_LOAD_FACTOR;
+			int c = Queues.ceilingNextPowerOfTwo(capacity);
+			this.mask = c - 1;
+			this.maxSize = (int) (loadFactor * c);
+			this.disposables = new Disposable[c];
+
 			for (Disposable d : disposables) {
 				Objects.requireNonNull(d, "Disposable item is null");
-				this.disposables.add(d);
+				addEntry(d);
 			}
 		}
 
@@ -73,10 +96,14 @@ abstract class DefaultDisposable {
 		 */
 		CompositeDisposable(Iterable<? extends Disposable> disposables) {
 			Objects.requireNonNull(disposables, "disposables is null");
-			this.disposables = new OpenHashSet<>();
+			this.loadFactor = DEFAULT_LOAD_FACTOR;
+			int c = DEFAULT_CAPACITY;
+			this.mask = c - 1;
+			this.maxSize = (int) (loadFactor * c);
+			this.disposables = new Disposable[c];
 			for (Disposable d : disposables) {
 				Objects.requireNonNull(d, "Disposable item is null");
-				this.disposables.add(d);
+				addEntry(d);
 			}
 		}
 
@@ -85,7 +112,7 @@ abstract class DefaultDisposable {
 			if (disposed) {
 				return;
 			}
-			OpenHashSet<Disposable> set;
+			Disposable[] set;
 			synchronized (this) {
 				if (disposed) {
 					return;
@@ -93,9 +120,29 @@ abstract class DefaultDisposable {
 				disposed = true;
 				set = disposables;
 				disposables = null;
+				size = 0;
 			}
 
-			dispose(set);
+			List<Throwable> errors = null;
+			for (Object o : set) {
+				if (o instanceof Disposable) {
+					try {
+						((Disposable) o).dispose();
+					} catch (Throwable ex) {
+						Exceptions.throwIfFatal(ex);
+						if (errors == null) {
+							errors = new ArrayList<>();
+						}
+						errors.add(ex);
+					}
+				}
+			}
+			if (errors != null) {
+				if (errors.size() == 1) {
+					throw Exceptions.propagate(errors.get(0));
+				}
+				throw Exceptions.multiple(errors);
+			}
 		}
 
 		@Override
@@ -109,12 +156,7 @@ abstract class DefaultDisposable {
 			if (!disposed) {
 				synchronized (this) {
 					if (!disposed) {
-						OpenHashSet<Disposable> set = disposables;
-						if (set == null) {
-							set = new OpenHashSet<>();
-							disposables = set;
-						}
-						set.add(d);
+						addEntry(d);
 						return true;
 					}
 				}
@@ -129,14 +171,9 @@ abstract class DefaultDisposable {
 			if (!disposed) {
 				synchronized (this) {
 					if (!disposed) {
-						OpenHashSet<Disposable> set = disposables;
-						if (set == null) {
-							set = new OpenHashSet<>(ds.size() + 1, 0.75f);
-							disposables = set;
-						}
 						for (Disposable d : ds) {
 							Objects.requireNonNull(d, "d is null");
-							set.add(d);
+							addEntry(d);
 						}
 						return true;
 					}
@@ -159,8 +196,7 @@ abstract class DefaultDisposable {
 					return false;
 				}
 
-				OpenHashSet<Disposable> set = disposables;
-				if (set == null || !set.remove(d)) {
+				if (!removeEntry(d)) {
 					return false;
 				}
 			}
@@ -176,41 +212,138 @@ abstract class DefaultDisposable {
 				if (disposed) {
 					return 0;
 				}
-				OpenHashSet<Disposable> set = disposables;
-				return set != null ? set.size() : 0;
+				return size;
 			}
 		}
 
-		/**
-		 * Dispose the contents of the OpenHashSet by suppressing non-fatal
-		 * Throwables till the end.
-		 * @param set the OpenHashSet to dispose elements of
-		 */
-		void dispose(@Nullable OpenHashSet<Disposable> set) {
-			if (set == null) {
-				return;
+		@Override
+		public Stream<? extends Scannable> inners() {
+			return Stream.of(disposables)
+			             .filter(Objects::nonNull)
+			             .map(Scannable::from);
+		}
+
+		@Nullable
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.CANCELLED) {
+				return isDisposed();
 			}
-			List<Throwable> errors = null;
-			Object[] array = set.keys();
-			for (Object o : array) {
-				if (o instanceof Disposable) {
-					try {
-						((Disposable) o).dispose();
-					} catch (Throwable ex) {
-						Exceptions.throwIfFatal(ex);
-						if (errors == null) {
-							errors = new ArrayList<>();
-						}
-						errors.add(ex);
+			return null;
+		}
+
+		boolean addEntry(Disposable value) {
+			final Disposable[] a = disposables;
+			final int m = mask;
+
+			int pos = mix(value.hashCode()) & m;
+			Disposable curr = a[pos];
+			if (curr != null) {
+				if (curr.equals(value)) {
+					return false;
+				}
+				for (;;) {
+					pos = (pos + 1) & m;
+					curr = a[pos];
+					if (curr == null) {
+						break;
+					}
+					if (curr.equals(value)) {
+						return false;
 					}
 				}
 			}
-			if (errors != null) {
-				if (errors.size() == 1) {
-					throw Exceptions.propagate(errors.get(0));
-				}
-				throw Exceptions.multiple(errors);
+			a[pos] = value;
+			if (++size >= maxSize) {
+				rehash();
 			}
+			return true;
+		}
+
+
+		boolean removeEntry(Disposable value) {
+			Disposable[] a = disposables;
+			int m = mask;
+			int pos = mix(value.hashCode()) & m;
+			Disposable curr = a[pos];
+			if (curr == null) {
+				return false;
+			}
+			if (curr.equals(value)) {
+				return removeEntry(pos, a, m);
+			}
+			for (;;) {
+				pos = (pos + 1) & m;
+				curr = a[pos];
+				if (curr == null) {
+					return false;
+				}
+				if (curr.equals(value)) {
+					return removeEntry(pos, a, m);
+				}
+			}
+		}
+
+		boolean removeEntry(int pos, Disposable[] a, int m) {
+			size--;
+
+			int last;
+			int slot;
+			Disposable curr;
+			for (;;) {
+				last = pos;
+				pos = (pos + 1) & m;
+				for (;;) {
+					curr = a[pos];
+					if (curr == null) {
+						a[last] = null;
+						return true;
+					}
+					slot = mix(curr.hashCode()) & m;
+
+					if (last <= pos ? last >= slot || slot > pos : last >= slot && slot > pos) {
+						break;
+					}
+
+					pos = (pos + 1) & m;
+				}
+				a[last] = curr;
+			}
+		}
+
+		static final int INT_PHI = 0x9E3779B9;
+
+		void rehash() {
+			Disposable[] a = disposables;
+			int i = a.length;
+			int newCap = i << 1;
+			int m = newCap - 1;
+
+			Disposable[] b = new Disposable[newCap];
+
+
+			for (int j = size; j-- != 0; ) {
+				while (a[--i] == null);
+				int pos = mix(a[i].hashCode()) & m;
+				if (b[pos] != null) {
+					for (;;) {
+						pos = (pos + 1) & m;
+						if (b[pos] == null) {
+							break;
+						}
+					}
+				}
+				b[pos] = a[i];
+			}
+
+			this.mask = m;
+			this.maxSize = (int)(newCap * loadFactor);
+			this.disposables = b;
+		}
+
+		static int mix(int x) {
+			final int h = x * INT_PHI;
+			return h ^ (h >>> 16);
 		}
 	}
 

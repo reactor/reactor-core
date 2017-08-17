@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
-import reactor.util.concurrent.OpenHashSet;
 
 /**
  * A simple {@link Scheduler} which uses a backing {@link ExecutorService} to schedule
@@ -128,20 +127,17 @@ final class ExecutorServiceScheduler implements Scheduler {
 		}
 	}
 
-	static final class ExecutorServiceWorker implements Worker,
-	                                                    Composite {
+	static final class ExecutorServiceWorker implements Worker, Disposable {
 
 		final ExecutorService executor;
 		final boolean         interruptOnCancel;
 
-		volatile boolean terminated;
-
-		OpenHashSet<Disposable> tasks;
+		final Disposable.Composite tasks;
 
 		ExecutorServiceWorker(ExecutorService executor, boolean interruptOnCancel) {
 			this.executor = executor;
 			this.interruptOnCancel = interruptOnCancel;
-			this.tasks = new OpenHashSet<>();
+			this.tasks = Disposable.composite();
 		}
 
 		boolean isTimeCapable() {
@@ -152,7 +148,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 		public Disposable schedule(Runnable t) {
 			ExecutorServiceSchedulerRunnable sr = new ExecutorServiceSchedulerRunnable(t, this);
 			try {
-				if (add(sr)) {
+				if (tasks.add(sr)) {
 					Future<?> f = executor.submit(sr);
 					sr.setFuture(f);
 					return sr;
@@ -176,7 +172,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 
 			ExecutorServiceSchedulerRunnable sr = new ExecutorServiceSchedulerRunnable(t, this);
 			try {
-				if (add(sr)) {
+				if (tasks.add(sr)) {
 					Future<?> f = scheduledExecutor.schedule(sr, delay, unit);
 					sr.setFuture(f);
 					return sr;
@@ -200,7 +196,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 
 			ExecutorServiceSchedulerRunnable sr = new ExecutorServiceSchedulerRunnable(t, this);
 			try {
-				if (add(sr)) {
+				if (tasks.add(sr)) {
 					Future<?> f = scheduledExecutor.scheduleAtFixedRate(sr, initialDelay, period, unit);
 					sr.setFuture(f);
 					return sr;
@@ -215,34 +211,6 @@ final class ExecutorServiceScheduler implements Scheduler {
 			throw Exceptions.failWithRejected();
 		}
 
-
-
-		@Override
-		public boolean add(Disposable sr) {
-			if (!terminated) {
-				synchronized (this) {
-					if (!terminated) {
-						tasks.add(sr);
-						return true;
-					}
-				}
-			}
-			return false;
-		}
-
-		@Override
-		public boolean remove(Disposable sr) {
-			if (!terminated) {
-				synchronized (this) {
-					if (!terminated) {
-						tasks.remove(sr);
-						return true;
-					}
-				}
-			}
-			return false;
-		}
-
 		/**
 		 * Remove the {@link Disposable} from this container and dispose it via
 		 * {@link Disposable#dispose() dispose()} once deleted.
@@ -250,8 +218,8 @@ final class ExecutorServiceScheduler implements Scheduler {
 		 * @param sr the {@link Disposable} to remove and dispose.
 		 * @return true if the disposable was successfully removed and disposed, false otherwise.
 		 */
-		private boolean dispose(ExecutorServiceSchedulerRunnable sr) {
-			if (remove(sr)) {
+		boolean dispose(ExecutorServiceSchedulerRunnable sr) {
+			if (tasks.remove(sr)) {
 				sr.dispose();
 				return true;
 			}
@@ -259,37 +227,13 @@ final class ExecutorServiceScheduler implements Scheduler {
 		}
 
 		@Override
-		public int size() {
-			return tasks.size();
-		}
-
-		@Override
 		public void dispose() {
-			if (!terminated) {
-				OpenHashSet<Disposable> coll;
-				synchronized (this) {
-					if (terminated) {
-						return;
-					}
-					coll = tasks;
-					tasks = null;
-					terminated = true;
-				}
-
-				if (!coll.isEmpty()) {
-					Object[] a = coll.keys();
-					for (Object o : a) {
-						if (o != null) {
-							((ExecutorServiceSchedulerRunnable) o).dispose();
-						}
-					}
-				}
-			}
+			tasks.dispose();
 		}
 
 		@Override
 		public boolean isDisposed() {
-			return terminated;
+			return tasks.isDisposed();
 		}
 	}
 
@@ -340,7 +284,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 			finally {
 				ExecutorServiceWorker o = parent;
 				if (o != DISPOSED_PARENT && o != null && PARENT.compareAndSet(this, o, DONE_PARENT)) {
-					o.remove(this);
+					o.tasks.remove(this);
 				}
 
 				Future f;
@@ -396,7 +340,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 					return;
 				}
 				if (PARENT.compareAndSet(this, o, DISPOSED_PARENT)) {
-					o.remove(this);
+					o.tasks.remove(this);
 					return;
 				}
 			}

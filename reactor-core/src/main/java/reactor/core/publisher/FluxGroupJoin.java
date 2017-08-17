@@ -37,7 +37,6 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import reactor.util.concurrent.OpenHashSet;
 import reactor.util.context.Context;
 
 /**
@@ -130,7 +129,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		final Queue<Object>               queue;
 		final BiPredicate<Object, Object> queueBiOffer;
 
-		final OpenHashSet<Disposable> cancellations;
+		final Disposable.Composite cancellations;
 
 		final Map<Integer, UnicastProcessor<TRight>> lefts;
 
@@ -174,8 +173,6 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 						Throwable.class,
 						"error");
 
-		volatile boolean cancelled;
-
 		static final Integer LEFT_VALUE = 1;
 
 		static final Integer RIGHT_VALUE = 2;
@@ -193,7 +190,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 				Supplier<? extends
 						Queue<TRight>> processorQueueSupplier) {
 			this.actual = actual;
-			this.cancellations = new OpenHashSet<>();
+			this.cancellations = Disposable.composite();
 			this.queue = queue;
 			this.processorQueueSupplier = processorQueueSupplier;
 			if (!(queue instanceof BiPredicate)) {
@@ -217,7 +214,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		public Stream<? extends Scannable> inners() {
 			return Stream.concat(
 					lefts.values().stream(),
-					Stream.of(cancellations.keys()).map(Scannable::from)
+					Scannable.from(cancellations).inners()
 			);
 		}
 
@@ -225,7 +222,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.CANCELLED) return cancellations.isDisposed();
 			if (key == Attr.BUFFERED) return queue.size() / 2;
 			if (key == Attr.TERMINATED) return active == 0;
 			if (key == Attr.ERROR) return error;
@@ -242,22 +239,12 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 		@Override
 		public void cancel() {
-			if (cancelled) {
+			if (cancellations.isDisposed()) {
 				return;
 			}
-			cancelled = true;
-			cancelAll();
+			cancellations.dispose();
 			if (WIP.getAndIncrement(this) == 0) {
 				queue.clear();
-			}
-		}
-
-		void cancelAll() {
-			Object[] a = cancellations.keys();
-			for (Object o : a) {
-				if (o != null) {
-					((Disposable) o).dispose();
-				}
 			}
 		}
 
@@ -285,7 +272,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 			for (; ; ) {
 				for (; ; ) {
-					if (cancelled) {
+					if (cancellations.isDisposed()) {
 						q.clear();
 						return;
 					}
@@ -293,7 +280,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 					Throwable ex = error;
 					if (ex != null) {
 						q.clear();
-						cancelAll();
+						cancellations.dispose();
 						errorAll(a);
 						return;
 					}
@@ -311,7 +298,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 						lefts.clear();
 						rights.clear();
-						cancelAll();
+						cancellations.dispose();
 
 						a.onComplete();
 						return;
@@ -353,7 +340,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 						ex = error;
 						if (ex != null) {
-							cancelAll();
+							cancellations.dispose();
 							q.clear();
 							errorAll(a);
 							return;
@@ -438,7 +425,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 						ex = error;
 						if (ex != null) {
 							q.clear();
-							cancelAll();
+							cancellations.dispose();
 							errorAll(a);
 							return;
 						}

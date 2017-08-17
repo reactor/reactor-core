@@ -452,7 +452,7 @@ public class WorkQueueProcessorTest {
 	}
 
 	/* see https://github.com/reactor/reactor-core/issues/199 */
-	@Test(timeout = 400)
+	@Test(timeout = 4000)
 	public void singleThreadWorkQueueSucceedsWithOneSubscriber() {
 		ExecutorService executorService = Executors.newSingleThreadExecutor();
 		WorkQueueProcessor<String> bc = WorkQueueProcessor.<String>builder().executor(executorService).bufferSize(2).build();

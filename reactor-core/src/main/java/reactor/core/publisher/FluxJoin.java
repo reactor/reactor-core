@@ -39,7 +39,6 @@ import reactor.core.Scannable;
 import reactor.core.publisher.FluxGroupJoin.JoinSupport;
 import reactor.core.publisher.FluxGroupJoin.LeftRightEndSubscriber;
 import reactor.core.publisher.FluxGroupJoin.LeftRightSubscriber;
-import reactor.util.concurrent.OpenHashSet;
 
 /**
  * @see <a href="https://github.com/reactor/reactive-streams-commons">https://github.com/reactor/reactive-streams-commons</a>
@@ -99,7 +98,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 		final Queue<Object>               queue;
 		final BiPredicate<Object, Object> queueBiOffer;
 
-		final OpenHashSet<Disposable> cancellations;
+		final Disposable.Composite cancellations;
 
 		final Map<Integer, TLeft> lefts;
 
@@ -136,8 +135,6 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 						Throwable.class,
 						"error");
 
-		volatile boolean cancelled;
-
 		int leftIndex;
 
 		int rightIndex;
@@ -157,7 +154,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 				BiFunction<? super TLeft, ? super TRight, ? extends R> resultSelector,
 				Queue<Object> queue) {
 			this.actual = actual;
-			this.cancellations = new OpenHashSet<>();
+			this.cancellations = Disposable.composite();
 			this.queue = queue;
 			if (!(queue instanceof BiPredicate)) {
 				throw new IllegalArgumentException("The provided queue must implement " + "BiPredicate to expose atomic dual insert");
@@ -178,14 +175,14 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 
 		@Override
 		public Stream<? extends Scannable> inners() {
-			return Stream.of(cancellations.keys()).map(Scannable::from);
+			return Scannable.from(cancellations).inners();
 		}
 
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.CANCELLED) return cancellations.isDisposed();
 			if (key == Attr.BUFFERED) return queue.size() / 2;
 			if (key == Attr.TERMINATED) return active == 0;
 			if (key == Attr.ERROR) return error;
@@ -202,22 +199,12 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 
 		@Override
 		public void cancel() {
-			if (cancelled) {
+			if (cancellations.isDisposed()) {
 				return;
 			}
-			cancelled = true;
-			cancelAll();
+			cancellations.dispose();
 			if (WIP.getAndIncrement(this) == 0) {
 				queue.clear();
-			}
-		}
-
-		void cancelAll() {
-			Object[] a = cancellations.keys();
-			for (Object o : a) {
-				if (o != null) {
-					((Disposable) o).dispose();
-				}
 			}
 		}
 
@@ -241,7 +228,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 
 			for (; ; ) {
 				for (; ; ) {
-					if (cancelled) {
+					if (cancellations.isDisposed()) {
 						q.clear();
 						return;
 					}
@@ -249,7 +236,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 					Throwable ex = error;
 					if (ex != null) {
 						q.clear();
-						cancelAll();
+						cancellations.dispose();
 						errorAll(a);
 						return;
 					}
@@ -264,12 +251,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 
 						lefts.clear();
 						rights.clear();
-						Object[] c = cancellations.keys();
-						for (Object o : c) {
-							if (o != null) {
-								((Disposable) o).dispose();
-							}
-						}
+						cancellations.dispose();
 
 						a.onComplete();
 						return;
@@ -310,7 +292,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 						ex = error;
 						if (ex != null) {
 							q.clear();
-							cancelAll();
+							cancellations.dispose();
 							errorAll(a);
 							return;
 						}
@@ -346,7 +328,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 										this,
 										Exceptions.failWithOverflow("Could not " + "emit value due to lack of requests"));
 								q.clear();
-								cancelAll();
+								cancellations.dispose();
 								errorAll(a);
 								return;
 							}
@@ -404,7 +386,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 						ex = error;
 						if (ex != null) {
 							q.clear();
-							cancelAll();
+							cancellations.dispose();
 							errorAll(a);
 							return;
 						}
@@ -439,7 +421,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 										this,
 										Exceptions.failWithOverflow("Could not emit " + "value due to lack of requests"));
 								q.clear();
-								cancelAll();
+								cancellations.dispose();
 								errorAll(a);
 								return;
 							}
