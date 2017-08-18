@@ -817,26 +817,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Aggregate given void publishers into a new {@literal Mono} that will be
-	 * fulfilled when all of the given {@literal Publishers} have been fulfilled.
-	 * An error will cause pending results to be cancelled and immediate error emission
-	 * to the returned {@link Mono}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
-	 * <p>
-	 *
-	 * @param sources The sources to use.
-	 *
-	 * @return a {@link Mono}.
-	 * @deprecated will be removed by 3.1.0.RELEASE, use {@link #zip(Mono, Mono) zip variants} instead
-	 */
-	@Deprecated
-	public static Mono<Void> when(final Iterable<? extends Publisher<Void>> sources) {
-		return zip(sources);
-	}
-
-	/**
 	 * Aggregate given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal
 	 * Monos} have been fulfilled, aggregating their values according to the provided combinator function.
 	 * If any Mono terminates without value, the returned sequence will be terminated immediately and pending results cancelled.
@@ -856,24 +836,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	@Deprecated
 	public static <R> Mono<R> when(final Iterable<? extends Mono<?>> monos, Function<? super Object[], ? extends R> combinator) {
 		return zip(monos, combinator);
-	}
-
-	/**
-	 * Aggregate given void publishers into a new {@literal Mono} that will be fulfilled
-	 * when all of the given {@literal sources} have been fulfilled. An error will cause
-	 * pending results to be cancelled and immediate error emission to the returned {@link Mono}.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
-	 * <p>
-	 * @param sources The sources to use.
-	 *
-	 * @return a {@link Mono}.
-	 * @deprecated will be removed by 3.1.0.RELEASE, use {@link #zip(Mono, Mono) zip variants} instead
-	 */
-	@Deprecated
-	@SafeVarargs
-	public static Mono<Void> when(Publisher<Void>... sources) {
-		return zip(sources);
 	}
 
 	/**
@@ -1039,27 +1001,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Aggregate given void publishers into a new {@literal Mono} that will be
-	 * fulfilled when all of the given {@literal sources} have been fulfilled. If any Publisher
-	 * terminates without value, the returned sequence will be terminated immediately and
-	 * pending results cancelled. Errors from the sources are delayed.
-	 * If several Publishers error, the exceptions are combined (as suppressed exceptions on a root exception).
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
-	 * <p>
-	 *
-	 * @param sources The sources to use.
-	 *
-	 * @return a {@link Mono}.
-	 * @deprecated will be removed by 3.1.0.RELEASE, use {@link #zipDelayError(Mono, Mono) zipDelayError variants} instead
-	 */
-	@Deprecated
-	public static Mono<Void> whenDelayError(final Iterable<? extends Publisher<Void>> sources) {
-		return zipDelayError(sources);
-	}
-
-	/**
 	 * Aggregate given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal
 	 * Monos} have been fulfilled. If any Mono terminates without value, the returned sequence will be terminated
 	 * immediately and pending results cancelled. Errors from the sources are delayed.
@@ -1083,26 +1024,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Merge given void publishers into a new {@literal Mono} that will be fulfilled when
-	 * all of the given {@literal sources} have been fulfilled. Errors from the sources are delayed.
-	 * If several Publishers error, the exceptions are combined (as suppressed exceptions on a root exception).
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
-	 * <p>
-	 * @param sources The sources to use.
-	 *
-	 * @return a {@link Mono}.
-	 * @deprecated will be removed by 3.1.0.RELEASE, use {@link #zipDelayError(Mono, Mono) zipDelayError variants} instead
-	 */
-	@Deprecated
-	@SafeVarargs
-	public static  Mono<Void> whenDelayError(Publisher<Void>... sources) {
-		return zipDelayError(sources);
-	}
-
-
-	/**
 	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the
 	 * given {@literal Monos} have been fulfilled, aggregating their values according to
 	 * the provided combinator function and delaying errors.
@@ -1123,6 +1044,91 @@ public abstract class Mono<T> implements Publisher<T> {
 	public static <R>  Mono<R> whenDelayError(Function<? super Object[], ? extends R>
 			combinator, Mono<?>... monos) {
 		return zipDelayError(combinator, monos);
+	}
+
+
+
+	/**
+	 * Aggregate given void publishers into a new {@literal Mono} that will be fulfilled
+	 * when all of the given {@literal sources} have been fulfilled. An error will cause
+	 * pending results to be cancelled and immediate error emission to the returned {@link Mono}.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <p>
+	 * @param sources The sources to use.
+	 *
+	 * @return a {@link Mono}.
+	 */
+	@SafeVarargs
+	public static Mono<Void> when(Publisher<Void>... sources) {
+		if (sources.length == 0) {
+			return empty();
+		}
+		if (sources.length == 1) {
+			return empty(sources[0]);
+		}
+		return onAssembly(new MonoZip<>(false, VOID_FUNCTION, sources));
+	}
+
+
+	/**
+	 * Aggregate given void publishers into a new {@literal Mono} that will be
+	 * fulfilled when all of the given {@literal Publishers} have been fulfilled.
+	 * An error will cause pending results to be cancelled and immediate error emission
+	 * to the returned {@link Mono}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <p>
+	 *
+	 * @param sources The sources to use.
+	 *
+	 * @return a {@link Mono}.
+	 */
+	public static Mono<Void> when(final Iterable<? extends Publisher<Void>> sources) {
+		return onAssembly(new MonoZip<>(false, VOID_FUNCTION, sources));
+	}
+
+	/**
+	 * Aggregate given void publishers into a new {@literal Mono} that will be
+	 * fulfilled when all of the given {@literal sources} have been fulfilled. If any Publisher
+	 * terminates without value, the returned sequence will be terminated immediately and
+	 * pending results cancelled. Errors from the sources are delayed.
+	 * If several Publishers error, the exceptions are combined (as suppressed exceptions on a root exception).
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <p>
+	 *
+	 * @param sources The sources to use.
+	 *
+	 * @return a {@link Mono}.
+	 */
+	public static Mono<Void> whenDelayError(final Iterable<? extends Publisher<Void>> sources) {
+		return onAssembly(new MonoZip<>(true, VOID_FUNCTION, sources));
+	}
+
+	/**
+	 * Merge given void publishers into a new {@literal Mono} that will be fulfilled when
+	 * all of the given {@literal sources} have been fulfilled. Errors from the sources are delayed.
+	 * If several Publishers error, the exceptions are combined (as suppressed exceptions on a root exception).
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <p>
+	 * @param sources The sources to use.
+	 *
+	 * @return a {@link Mono}.
+	 */
+	@SafeVarargs
+	public static  Mono<Void> whenDelayError(Publisher<Void>... sources) {
+		if (sources.length == 0) {
+			return empty();
+		}
+		if (sources.length == 1) {
+			return empty(sources[0]);
+		}
+		return onAssembly(new MonoZip<>(true, VOID_FUNCTION, sources));
 	}
 
 	/**
@@ -1286,24 +1292,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Aggregate given void publishers into a new {@literal Mono} that will be
-	 * fulfilled when all of the given {@literal Publishers} have been fulfilled.
-	 * An error will cause pending results to be cancelled and immediate error emission
-	 * to the returned {@link Mono}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
-	 * <p>
-	 *
-	 * @param sources The sources to use.
-	 *
-	 * @return a {@link Mono}.
-	 */
-	public static Mono<Void> zip(final Iterable<? extends Publisher<Void>> sources) {
-		return onAssembly(new MonoZip<>(false, VOID_FUNCTION, sources));
-	}
-
-	/**
 	 * Aggregate given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal
 	 * Monos} have been fulfilled, aggregating their values according to the provided combinator function.
 	 * If any Mono terminates without value, the returned sequence will be terminated immediately and pending results cancelled.
@@ -1321,28 +1309,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public static <R> Mono<R> zip(final Iterable<? extends Mono<?>> monos, Function<? super Object[], ? extends R> combinator) {
 		return onAssembly(new MonoZip<>(false, combinator, monos));
-	}
-
-	/**
-	 * Aggregate given void publishers into a new {@literal Mono} that will be fulfilled
-	 * when all of the given {@literal sources} have been fulfilled. An error will cause
-	 * pending results to be cancelled and immediate error emission to the returned {@link Mono}.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
-	 * <p>
-	 * @param sources The sources to use.
-	 *
-	 * @return a {@link Mono}.
-	 */
-	@SafeVarargs
-	public static Mono<Void> zip(Publisher<Void>... sources) {
-		if (sources.length == 0) {
-			return empty();
-		}
-		if (sources.length == 1) {
-			return empty(sources[0]);
-		}
-		return onAssembly(new MonoZip<>(false, VOID_FUNCTION, sources));
 	}
 
 	/**
@@ -1502,25 +1468,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Aggregate given void publishers into a new {@literal Mono} that will be
-	 * fulfilled when all of the given {@literal sources} have been fulfilled. If any Publisher
-	 * terminates without value, the returned sequence will be terminated immediately and
-	 * pending results cancelled. Errors from the sources are delayed.
-	 * If several Publishers error, the exceptions are combined (as suppressed exceptions on a root exception).
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
-	 * <p>
-	 *
-	 * @param sources The sources to use.
-	 *
-	 * @return a {@link Mono}.
-	 */
-	public static Mono<Void> zipDelayError(final Iterable<? extends Publisher<Void>> sources) {
-		return onAssembly(new MonoZip<>(true, VOID_FUNCTION, sources));
-	}
-
-	/**
 	 * Aggregate given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal
 	 * Monos} have been fulfilled. If any Mono terminates without value, the returned sequence will be terminated
 	 * immediately and pending results cancelled. Errors from the sources are delayed.
@@ -1540,30 +1487,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	public static <R> Mono<R> zipDelayError(final Iterable<? extends Mono<?>> monos, Function<? super Object[], ? extends R> combinator) {
 		return onAssembly(new MonoZip<>(true, combinator, monos));
 	}
-
-	/**
-	 * Merge given void publishers into a new {@literal Mono} that will be fulfilled when
-	 * all of the given {@literal sources} have been fulfilled. Errors from the sources are delayed.
-	 * If several Publishers error, the exceptions are combined (as suppressed exceptions on a root exception).
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
-	 * <p>
-	 * @param sources The sources to use.
-	 *
-	 * @return a {@link Mono}.
-	 */
-	@SafeVarargs
-	public static  Mono<Void> zipDelayError(Publisher<Void>... sources) {
-		if (sources.length == 0) {
-			return empty();
-		}
-		if (sources.length == 1) {
-			return empty(sources[0]);
-		}
-		return onAssembly(new MonoZip<>(true, VOID_FUNCTION, sources));
-	}
-
 
 	/**
 	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the
@@ -3689,6 +3612,44 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final <V> Mono<V> transform(Function<? super Mono<T>, ? extends Publisher<V>> transformer) {
 		return onAssembly(from(transformer.apply(this)));
+	}
+
+	/**
+	 * Combine the result from this mono and another into a {@link Tuple2}. This is an
+	 * alias for {@link #and(Mono)}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/and.png" alt="">
+	 * <p>
+	 * @param other the {@link Mono} to combine with
+	 * @param <T2> the element type of the other Mono instance
+	 *
+	 * @return a new combined Mono
+	 * @see #and(Mono)
+	 */
+	public final <T2> Mono<Tuple2<T, T2>> zipWith(Mono<? extends T2> other) {
+		return and(other);
+	}
+
+	/**
+	 * Combine the result from this mono and another into an arbitrary {@code O} object,
+	 * as defined by the provided {@code combinator} function. This is an alias for {@link #and(Mono, BiFunction)}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/and.png" alt="">
+	 * <p>
+	 * @param other the {@link Mono} to combine with
+	 * @param combinator a {@link BiFunction} combinator function when both sources
+	 * complete
+	 * @param <T2> the element type of the other Mono instance
+	 * @param <O> the element type of the combination
+	 *
+	 * @return a new combined Mono
+	 * @see #and(Mono, BiFunction)
+	 */
+	public final <T2, O> Mono<O> zipWith(Mono<? extends T2> other,
+			BiFunction<? super T, ? super T2, ? extends O> combinator) {
+		return and(other, combinator);
 	}
 
 	/**

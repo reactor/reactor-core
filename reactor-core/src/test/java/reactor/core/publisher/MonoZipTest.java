@@ -21,7 +21,6 @@ import java.util.Arrays;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
@@ -45,18 +44,6 @@ public class MonoZipTest {
 	}
 
 	@Test
-	public void allEmptyPublisherIterable() {
-		Assert.assertNull(Mono.zip(Arrays.asList(Mono.empty(), Flux.empty()))
-		                      .block());
-	}
-
-	@Test
-	public void allEmptyPublisher() {
-		assertThat(Mono.zip(Mono.empty(), Flux.empty())
-		               .block()).isNull();
-	}
-
-	@Test
 	public void allNonEmptyIterable() {
 		assertThat(Mono.zip(Arrays.asList(Mono.just(1), Mono.just(2)),
 				args -> (int) args[0] + (int) args[1])
@@ -76,27 +63,9 @@ public class MonoZipTest {
 	}
 
 	@Test
-	public void noSourcePublisher() {
-		assertThat(Mono.zip()
-		               .block()).isNull();
-	}
-
-	@Test
-	public void oneSourcePublisher() {
-		assertThat(Mono.zip(Flux.empty())
-		               .block()).isNull();
-	}
-
-	@Test
 	public void allEmptyDelay() {
 		Assert.assertNull(Mono.zipDelayError(Mono.empty(), Mono.empty())
 		                      .block());
-	}
-
-	@Test
-	public void allEmptyPublisherDelay() {
-		assertThat(Mono.zipDelayError(Mono.empty(), Flux.empty())
-		               .block()).isNull();
 	}
 
 	@Test
@@ -117,18 +86,6 @@ public class MonoZipTest {
 				Mono.just(1),
 				Mono.just(2))
 		               .block()).isEqualTo(3);
-	}
-
-	@Test
-	public void noSourcePublisherDelay() {
-		assertThat(Mono.zipDelayError()
-		               .block()).isNull();
-	}
-
-	@Test
-	public void oneSourcePublisherDelay() {
-		assertThat(Mono.zipDelayError(Flux.empty())
-		               .block()).isNull();
 	}
 
 	@Test(timeout = 5000)
@@ -436,36 +393,6 @@ public class MonoZipTest {
 	}
 
 	@Test
-	public void whenIterableDelayErrorPublishersVoidCombinesErrors() {
-		Exception boom1 = new NullPointerException("boom1");
-		Exception boom2 = new IllegalArgumentException("boom2");
-
-		Iterable<Publisher<Void>> voidPublishers = Arrays.asList(
-				Mono.<Void>empty(),
-				Mono.<Void>error(boom1),
-				Mono.<Void>error(boom2));
-
-		StepVerifier.create(Mono.zipDelayError(voidPublishers))
-		            .verifyErrorMatches(e -> e.getMessage().equals("Multiple exceptions") &&
-				            e.getSuppressed()[0] == boom1 &&
-				            e.getSuppressed()[1] == boom2);
-	}
-
-	@Test
-	public void whenIterablePublishersVoidDoesntCombineErrors() {
-		Exception boom1 = new NullPointerException("boom1");
-		Exception boom2 = new IllegalArgumentException("boom2");
-
-		Iterable<Publisher<Void>> voidPublishers = Arrays.asList(
-				Mono.<Void>empty(),
-				Mono.<Void>error(boom1),
-				Mono.<Void>error(boom2));
-
-		StepVerifier.create(Mono.zip(voidPublishers))
-		            .verifyErrorMatches(e -> e == boom1);
-	}
-
-	@Test
 	public void scanCoordinator() {
 		CoreSubscriber<String> actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoZip.ZipCoordinator<String> test = new MonoZip.ZipCoordinator<>(
@@ -517,5 +444,28 @@ public class MonoZipTest {
 
 		test.error = new IllegalStateException("boom");
 		assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
+	}
+
+	@Test
+	public void andAliasZipWith() {
+		Mono<Tuple2<Integer, String>> and = Mono.just(1)
+		                                        .and(Mono.just("B"));
+
+		Mono<Tuple2<Tuple2<Integer, String>, Integer>> zipWith = and.zipWith(Mono.just(3));
+
+		StepVerifier.create(zipWith)
+		            .expectNext(Tuples.of(Tuples.of(1, "B"), 3))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void andCombinatorAliasZipWithCombinator() {
+		Mono<String> and = Mono.just(1).and(Mono.just("B"), (i, s) -> i + s);
+
+		Mono<String> zipWith = and.zipWith(Mono.just(3), (s, i) -> s + i);
+
+		StepVerifier.create(zipWith)
+		            .expectNext("1B3")
+		            .verifyComplete();
 	}
 }

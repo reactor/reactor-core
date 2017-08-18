@@ -96,22 +96,12 @@ fun <T1, T2, T3, T4, T5, T6> whenComplete(p1: Mono<out T1>, p2: Mono<out T2>,
 
 /**
  * Aggregates this [Iterable] of void [Publisher]s into a new [Mono].
- *
- * @author DoHyung Kim
- * @since 3.1
- */
-fun Iterable<Publisher<Void>>.zip(): Mono<Void> = Mono.zip(this)
-
-/**
- * Aggregates this [Iterable] of void [Publisher]s into a new [Mono].
  * An alias for a corresponding [Mono.when] to avoid use of `when`, which is a keyword in Kotlin.
  *
  * @author DoHyung Kim
  * @since 3.1
  */
-@Deprecated(message = "will be removed by 3.1.0.RELEASE, use zip instead",
-        replaceWith = ReplaceWith("zip()"))
-fun Iterable<Publisher<Void>>.whenComplete(): Mono<Void> = Mono.zip(this)
+fun Iterable<Publisher<Void>>.whenComplete(): Mono<Void> = Mono.`when`(this)
 
 /**
  * Merges this [Iterable] of [Mono]s into a new [Mono] by combining them
@@ -140,21 +130,11 @@ inline fun <T, R> Iterable<Mono<T>>.whenComplete(crossinline combinator: (List<T
 
 /**
  * Aggregates the given void [Publisher]s into a new void [Mono].
- *
- * @author DoHyung Kim
- * @since 3.1
- */
-fun zip(vararg sources: Publisher<Void>): Mono<Void> = MonoBridges.zip(sources)
-
-/**
- * Aggregates the given void [Publisher]s into a new void [Mono].
  * An alias for a corresponding [Mono.when] to avoid use of `when`, which is a keyword in Kotlin.
  *
  * @author DoHyung Kim
  * @since 3.1
  */
-@Deprecated(message = "will be removed by 3.1.0.RELEASE, use zip instead",
-        replaceWith = ReplaceWith("zip(sources)"))
 fun whenComplete(vararg sources: Publisher<Void>): Mono<Void> = MonoBridges.`when`(sources)
 
 /**

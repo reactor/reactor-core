@@ -91,14 +91,6 @@ class MonoWhenFunctionsTests {
     }
 
     @Test
-    fun `zip on an Iterable of void Publishers`() {
-        val publishers = Array(3, { TestPublisher.create<Void>() })
-        publishers.forEach { it.complete() }
-        StepVerifier.create(publishers.asIterable().zip())
-                .verifyComplete()
-    }
-
-    @Test
     fun `whenComplete on an Iterable of Monos with combinator`() {
         StepVerifier.create(listOf("foo1", "foo2", "foo3").map { it.toMono() }.whenComplete { it.joinToString() })
                 .expectNext("foo1, foo2, foo3")
@@ -117,14 +109,6 @@ class MonoWhenFunctionsTests {
         val publishers = Array(3, { TestPublisher.create<Void>() })
         publishers.forEach { it.complete() }
         StepVerifier.create(whenComplete(*publishers))
-                .verifyComplete()
-    }
-
-    @Test
-    fun `zip with void Publishers`() {
-        val publishers = Array(3, { TestPublisher.create<Void>() })
-        publishers.forEach { it.complete() }
-        StepVerifier.create(zip(*publishers))
                 .verifyComplete()
     }
 
