@@ -37,12 +37,15 @@ import reactor.core.scheduler.Scheduler.Worker;
 final class FluxSubscribeOn<T> extends FluxOperator<T, T> {
 
 	final Scheduler scheduler;
-	
+	final boolean requestOnSeparateThread;
+
 	FluxSubscribeOn(
 			Flux<? extends T> source,
-			Scheduler scheduler) {
+			Scheduler scheduler,
+			boolean requestOnSeparateThread) {
 		super(source);
 		this.scheduler = Objects.requireNonNull(scheduler, "scheduler");
+		this.requestOnSeparateThread = requestOnSeparateThread;
 	}
 
 	@Override
@@ -58,7 +61,7 @@ final class FluxSubscribeOn<T> extends FluxOperator<T, T> {
 			return;
 		}
 
-		SubscribeOnSubscriber<T> parent = new SubscribeOnSubscriber<>(source, s, worker);
+		SubscribeOnSubscriber<T> parent = new SubscribeOnSubscriber<>(source, s, worker, requestOnSeparateThread);
 		s.onSubscribe(parent);
 
 		try {
@@ -78,7 +81,8 @@ final class FluxSubscribeOn<T> extends FluxOperator<T, T> {
 
 		final Publisher<? extends T> source;
 
-		final Worker worker;
+		final Worker  worker;
+		final boolean requestOnSeparateThread;
 
 		volatile Subscription s;
 		static final AtomicReferenceFieldUpdater<SubscribeOnSubscriber, Subscription> S =
@@ -102,10 +106,12 @@ final class FluxSubscribeOn<T> extends FluxOperator<T, T> {
 						Thread.class,
 						"thread");
 
-		SubscribeOnSubscriber(Publisher<? extends T> source, CoreSubscriber<? super T> actual, Worker worker) {
+		SubscribeOnSubscriber(Publisher<? extends T> source, CoreSubscriber<? super T> actual,
+				Worker worker, boolean requestOnSeparateThread) {
 			this.actual = actual;
 			this.worker = worker;
 			this.source = source;
+			this.requestOnSeparateThread = requestOnSeparateThread;
 		}
 
 		@Override
@@ -119,7 +125,7 @@ final class FluxSubscribeOn<T> extends FluxOperator<T, T> {
 		}
 
 		void requestUpstream(final long n, final Subscription s) {
-			if (Thread.currentThread() == THREAD.get(this)) {
+			if (!requestOnSeparateThread || Thread.currentThread() == THREAD.get(this)) {
 				s.request(n);
 			}
 			else {

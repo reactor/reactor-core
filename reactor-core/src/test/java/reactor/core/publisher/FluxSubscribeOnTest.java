@@ -18,15 +18,20 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
-import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.concurrent.Queues;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.publisher.FluxSink.OverflowStrategy.DROP;
 
 public class FluxSubscribeOnTest {
 
@@ -162,17 +167,95 @@ public class FluxSubscribeOnTest {
     public void scanMainSubscriber() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxSubscribeOn.SubscribeOnSubscriber<Integer> test =
-        		new FluxSubscribeOn.SubscribeOnSubscriber<>(Flux.just(1), actual, Schedulers.single().createWorker());
+        		new FluxSubscribeOn.SubscribeOnSubscriber<>(Flux.just(1), actual, Schedulers.single().createWorker(), true);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
-        Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
-        Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
         test.requested = 35;
-        Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
+        assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35L);
 
-        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.cancel();
-        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
+
+	@Test
+	public void scheduleRequestsByDefault() {
+		Flux<Integer> test = Flux.<Integer>create(sink -> {
+			for (int i = 1; i < 1001; i++) {
+				sink.next(i);
+				try {
+					Thread.sleep(1);
+				}
+				catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+			sink.complete();
+		}, DROP)
+		        .map(Flux.identityFunction()) //note the create is away from subscribeOn
+				.subscribeOn(Schedulers.newSingle("test")) //note there's no explicit parameter
+				.publishOn(Schedulers.elastic());
+
+		StepVerifier.create(test)
+		            .expectNextCount(Queues.SMALL_BUFFER_SIZE)
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(5));
+	}
+
+	@Test
+	public void forceNoScheduledRequests() {
+		Flux<Integer> test = Flux.<Integer>create(sink -> {
+			for (int i = 1; i < 1001; i++) {
+				sink.next(i);
+				try {
+					Thread.sleep(1);
+				}
+				catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+			sink.complete();
+		}, DROP)
+				.map(Function.identity())
+				.subscribeOn(Schedulers.single(), false)
+				.publishOn(Schedulers.elastic());
+
+		AtomicInteger count = new AtomicInteger();
+		StepVerifier.create(test)
+		            .thenConsumeWhile(t -> count.incrementAndGet() != -1)
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(5));
+
+		assertThat(count.get()).isGreaterThan(Queues.SMALL_BUFFER_SIZE);
+	}
+
+	@Test
+	public void forceScheduledRequests() {
+		Flux<Integer> test = Flux.<Integer>create(sink -> {
+			for (int i = 1; i < 1001; i++) {
+				sink.next(i);
+				try {
+					Thread.sleep(1);
+				}
+				catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+			sink.complete();
+		}, DROP)
+				.map(Function.identity())
+				.subscribeOn(Schedulers.single(), true)
+				.publishOn(Schedulers.elastic());
+
+		AtomicInteger count = new AtomicInteger();
+		StepVerifier.create(test)
+		            .thenConsumeWhile(t -> count.incrementAndGet() != -1)
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(5));
+
+		assertThat(count.get()).isEqualTo(Queues.SMALL_BUFFER_SIZE);
+	}
 }

@@ -6358,6 +6358,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * context of onNext/onError/onComplete signals from the beginning of the chain up to
 	 * the next occurrence of a {@link #publishOn(Scheduler) publishOn}.
 	 * <p>
+	 * Note that if you are using an eager or blocking {@link #create(Consumer, OverflowStrategy)}
+	 * as the source, it can lead to deadlocks due to requests piling up behind the emitter.
+	 * In such case, you should call {@link #subscribeOn(Scheduler, boolean) subscribeOn(scheduler, false)}
+	 * instead.
+	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/subscribeon.png" alt="">
 	 * <p>
 	 * Typically used for slow publisher e.g., blocking IO, fast consumer(s) scenarios.
@@ -6375,8 +6380,47 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} requesting asynchronously
 	 * @see #publishOn(Scheduler)
+	 * @see #subscribeOn(Scheduler, boolean)
 	 */
 	public final Flux<T> subscribeOn(Scheduler scheduler) {
+		return subscribeOn(scheduler, true);
+	}
+
+	/**
+	 * Run subscribe and onSubscribe on a specified {@link Scheduler}'s {@link Worker}.
+	 * Request will be run on that worker too depending on the {@code requestOnSeparateThread}
+	 * parameter (which defaults to true in the {@link #subscribeOn(Scheduler)} version).
+	 * As such, placing this operator anywhere in the chain will also impact the execution
+	 * context of onNext/onError/onComplete signals from the beginning of the chain up to
+	 * the next occurrence of a {@link #publishOn(Scheduler) publishOn}.
+	 * <p>
+	 * Note that if you are using an eager or blocking {@link #create(Consumer, OverflowStrategy)}
+	 * as the source, it can lead to deadlocks due to requests piling up behind the emitter.
+	 * Thus this operator has a {@code requestOnSeparateThread} parameter, which should be
+	 * set to {@code false} in this case.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/subscribeon.png" alt="">
+	 * <p>
+	 * Typically used for slow publisher e.g., blocking IO, fast consumer(s) scenarios.
+	 *
+	 * <blockquote><pre>
+	 * {@code flux.subscribeOn(Schedulers.single()).subscribe() }
+	 * </pre></blockquote>
+	 *
+	 * <p>
+	 *     Note that {@link Scheduler.Worker#schedule(Runnable)} raising
+	 *     {@link java.util.concurrent.RejectedExecutionException} on late
+	 *     {@link Subscription#request(long)} will be propagated to the request caller.
+	 *
+	 * @param scheduler a {@link Scheduler} providing the {@link Worker} where to subscribe
+	 * @param requestOnSeparateThread whether or not to also perform requests on the worker.
+	 * {@code true} to behave like {@link #subscribeOn(Scheduler)}
+	 *
+	 * @return a {@link Flux} requesting asynchronously
+	 * @see #publishOn(Scheduler)
+	 * @see #subscribeOn(Scheduler)
+	 */
+	public final Flux<T> subscribeOn(Scheduler scheduler, boolean requestOnSeparateThread) {
 		if (this instanceof Callable) {
 			if (this instanceof Fuseable.ScalarCallable) {
 				try {
@@ -6391,7 +6435,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			Callable<T> c = (Callable<T>)this;
 			return onAssembly(new FluxSubscribeOnCallable<>(c, scheduler));
 		}
-		return onAssembly(new FluxSubscribeOn<>(this, scheduler));
+		return onAssembly(new FluxSubscribeOn<>(this, scheduler, requestOnSeparateThread));
 	}
 
 	/**
