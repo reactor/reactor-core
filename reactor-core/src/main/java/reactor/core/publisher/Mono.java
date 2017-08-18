@@ -659,9 +659,490 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param <T2> type of the value from source2
 	 *
 	 * @return a {@link Mono}.
+	 * @deprecated will be removed by 3.1.0.RELEASE, use {@link #zip(Mono, Mono) zip variants} instead
 	 */
+	@Deprecated
 	public static <T1, T2> Mono<Tuple2<T1, T2>> when(Mono<? extends T1> p1, Mono<? extends T2> p2) {
-		return when(p1, p2, Flux.tuple2Function());
+		return zip(p1, p2);
+	}
+
+	/**
+	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
+	 * have been fulfilled, aggregating their values as defined by the combinator function.
+	 * An error will cause pending results to be cancelled and immediate error emission to the
+	 * returned {@link Mono}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <p>
+	 * @param p1 The first upstream {@link Publisher} to subscribe to.
+	 * @param p2 The second upstream {@link Publisher} to subscribe to.
+	 * @param combinator a {@link BiFunction} combinator function when both sources
+	 * complete
+	 * @param <T1> type of the value from source1
+	 * @param <T2> type of the value from source2
+	 * @param <O> output value
+	 *
+	 * @return a {@link Mono}.
+	 * @deprecated will be removed by 3.1.0.RELEASE, use {@link #zip(Mono, Mono) zip variants} instead
+	 */
+	@Deprecated
+	public static <T1, T2, O> Mono<O> when(Mono<? extends T1> p1, Mono<? extends T2> p2,
+			BiFunction<? super T1, ? super T2, ? extends O> combinator) {
+		return zip(p1, p2, combinator);
+	}
+
+	/**
+	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
+	 * have been fulfilled, aggregating their values into a {@link Tuple3}.
+	 * An error will cause pending results to be cancelled and immediate error emission to the
+	 * returned {@link Mono}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <p>
+	 * @param p1 The first upstream {@link Publisher} to subscribe to.
+	 * @param p2 The second upstream {@link Publisher} to subscribe to.
+	 * @param p3 The third upstream {@link Publisher} to subscribe to.
+	 * @param <T1> type of the value from source1
+	 * @param <T2> type of the value from source2
+	 * @param <T3> type of the value from source3
+	 *
+	 * @return a {@link Mono}.
+	 * @deprecated will be removed by 3.1.0.RELEASE, use {@link #zip(Mono, Mono) zip variants} instead
+	 */
+	@Deprecated
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public static <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> when(Mono<? extends T1> p1, Mono<? extends T2> p2, Mono<? extends T3> p3) {
+		return zip(p1, p2, p3);
+	}
+
+	/**
+	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
+	 * have been fulfilled, aggregating their values into a {@link Tuple4}.
+	 * An error will cause pending results to be cancelled and immediate error emission to the
+	 * returned {@link Mono}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <p>
+	 * @param p1 The first upstream {@link Publisher} to subscribe to.
+	 * @param p2 The second upstream {@link Publisher} to subscribe to.
+	 * @param p3 The third upstream {@link Publisher} to subscribe to.
+	 * @param p4 The fourth upstream {@link Publisher} to subscribe to.
+	 * @param <T1> type of the value from source1
+	 * @param <T2> type of the value from source2
+	 * @param <T3> type of the value from source3
+	 * @param <T4> type of the value from source4
+	 *
+	 * @return a {@link Mono}.
+	 * @deprecated will be removed by 3.1.0.RELEASE, use {@link #zip(Mono, Mono) zip variants} instead
+	 */
+	@Deprecated
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public static <T1, T2, T3, T4> Mono<Tuple4<T1, T2, T3, T4>> when(Mono<? extends T1> p1,
+			Mono<? extends T2> p2,
+			Mono<? extends T3> p3,
+			Mono<? extends T4> p4) {
+		return zip(p1, p2, p3, p4);
+	}
+
+	/**
+	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
+	 * have been fulfilled, aggregating their values into a {@link Tuple5}.
+	 * An error will cause pending results to be cancelled and immediate error emission to the
+	 * returned {@link Mono}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <p>
+	 * @param p1 The first upstream {@link Publisher} to subscribe to.
+	 * @param p2 The second upstream {@link Publisher} to subscribe to.
+	 * @param p3 The third upstream {@link Publisher} to subscribe to.
+	 * @param p4 The fourth upstream {@link Publisher} to subscribe to.
+	 * @param p5 The fifth upstream {@link Publisher} to subscribe to.
+	 * @param <T1> type of the value from source1
+	 * @param <T2> type of the value from source2
+	 * @param <T3> type of the value from source3
+	 * @param <T4> type of the value from source4
+	 * @param <T5> type of the value from source5
+	 *
+	 * @return a {@link Mono}.
+	 * @deprecated will be removed by 3.1.0.RELEASE, use {@link #zip(Mono, Mono) zip variants} instead
+	 */
+	@Deprecated
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public static <T1, T2, T3, T4, T5> Mono<Tuple5<T1, T2, T3, T4, T5>> when(Mono<? extends T1> p1,
+			Mono<? extends T2> p2,
+			Mono<? extends T3> p3,
+			Mono<? extends T4> p4,
+			Mono<? extends T5> p5) {
+		return zip(p1, p2, p3, p4, p5);
+	}
+
+	/**
+	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
+	 * have been fulfilled, aggregating their values into a {@link Tuple6}.
+	 * An error will cause pending results to be cancelled and immediate error emission to the
+	 * returned {@link Mono}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <p>
+	 * @param p1 The first upstream {@link Publisher} to subscribe to.
+	 * @param p2 The second upstream {@link Publisher} to subscribe to.
+	 * @param p3 The third upstream {@link Publisher} to subscribe to.
+	 * @param p4 The fourth upstream {@link Publisher} to subscribe to.
+	 * @param p5 The fifth upstream {@link Publisher} to subscribe to.
+	 * @param p6 The sixth upstream {@link Publisher} to subscribe to.
+	 * @param <T1> type of the value from source1
+	 * @param <T2> type of the value from source2
+	 * @param <T3> type of the value from source3
+	 * @param <T4> type of the value from source4
+	 * @param <T5> type of the value from source5
+	 * @param <T6> type of the value from source6
+	 *
+	 * @return a {@link Mono}.
+	 * @deprecated will be removed by 3.1.0.RELEASE, use {@link #zip(Mono, Mono) zip variants} instead
+	 */
+	@Deprecated
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public static <T1, T2, T3, T4, T5, T6> Mono<Tuple6<T1, T2, T3, T4, T5, T6>> when(Mono<? extends T1> p1,
+			Mono<? extends T2> p2,
+			Mono<? extends T3> p3,
+			Mono<? extends T4> p4,
+			Mono<? extends T5> p5,
+			Mono<? extends T6> p6) {
+        return zip(p1, p2, p3, p4, p5, p6);
+	}
+
+	/**
+	 * Aggregate given void publishers into a new {@literal Mono} that will be
+	 * fulfilled when all of the given {@literal Publishers} have been fulfilled.
+	 * An error will cause pending results to be cancelled and immediate error emission
+	 * to the returned {@link Mono}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <p>
+	 *
+	 * @param sources The sources to use.
+	 *
+	 * @return a {@link Mono}.
+	 * @deprecated will be removed by 3.1.0.RELEASE, use {@link #zip(Mono, Mono) zip variants} instead
+	 */
+	@Deprecated
+	public static Mono<Void> when(final Iterable<? extends Publisher<Void>> sources) {
+		return zip(sources);
+	}
+
+	/**
+	 * Aggregate given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal
+	 * Monos} have been fulfilled, aggregating their values according to the provided combinator function.
+	 * If any Mono terminates without value, the returned sequence will be terminated immediately and pending results cancelled.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <p>
+	 *
+	 * @param monos The monos to use.
+	 * @param combinator the function to transform the combined array into an arbitrary
+	 * object.
+	 * @param <R> the combined result
+	 *
+	 * @return a {@link Mono}.
+	 * @deprecated will be removed by 3.1.0.RELEASE, use {@link #zip(Mono, Mono) zip variants} instead
+	 */
+	@Deprecated
+	public static <R> Mono<R> when(final Iterable<? extends Mono<?>> monos, Function<? super Object[], ? extends R> combinator) {
+		return zip(monos, combinator);
+	}
+
+	/**
+	 * Aggregate given void publishers into a new {@literal Mono} that will be fulfilled
+	 * when all of the given {@literal sources} have been fulfilled. An error will cause
+	 * pending results to be cancelled and immediate error emission to the returned {@link Mono}.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <p>
+	 * @param sources The sources to use.
+	 *
+	 * @return a {@link Mono}.
+	 * @deprecated will be removed by 3.1.0.RELEASE, use {@link #zip(Mono, Mono) zip variants} instead
+	 */
+	@Deprecated
+	@SafeVarargs
+	public static Mono<Void> when(Publisher<Void>... sources) {
+		return zip(sources);
+	}
+
+	/**
+	 * Aggregate given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal
+	 * Monos} have been fulfilled, aggregating their values according to the provided combinator function.
+	 * An error will cause pending results to be cancelled and immediate error emission to the
+	 * returned {@link Mono}.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <p>
+	 * @param monos The monos to use.
+	 * @param combinator the function to transform the combined array into an arbitrary
+	 * object.
+	 * @param <R> the combined result
+	 *
+	 * @return a {@link Mono}.
+	 * @deprecated will be removed by 3.1.0.RELEASE, use {@link #zip(Mono, Mono) zip variants} instead
+	 */
+	@Deprecated
+	public static <R> Mono<R> when(Function<? super Object[], ? extends R> combinator, Mono<?>... monos) {
+		return zip(combinator, monos);
+	}
+
+	/**
+	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
+	 * have been fulfilled, aggregating their values into a {@link Tuple2} and delaying errors.
+	 * If both Monos error, the two exceptions are combined (as suppressed exceptions on a root exception).
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <p>
+	 * @param p1 The first upstream {@link Publisher} to subscribe to.
+	 * @param p2 The second upstream {@link Publisher} to subscribe to.
+	 * @param <T1> type of the value from source1
+	 * @param <T2> type of the value from source2
+	 *
+	 * @return a {@link Mono}.
+	 * @deprecated will be removed by 3.1.0.RELEASE, use {@link #zipDelayError(Mono, Mono) zipDelayError variants} instead
+	 */
+	@Deprecated
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public static <T1, T2> Mono<Tuple2<T1, T2>> whenDelayError(Mono<? extends T1> p1, Mono<? extends T2> p2) {
+		return zipDelayError(p1, p2);
+	}
+
+	/**
+	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal Mono Monos}
+	 * have been fulfilled, aggregating their values into a {@link Tuple3} and delaying errors.
+	 * If several Monos error, the two exceptions are combined (as suppressed exceptions on a root exception).
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <p>
+	 * @param p1 The first upstream {@link Publisher} to subscribe to.
+	 * @param p2 The second upstream {@link Publisher} to subscribe to.
+	 * @param p3 The third upstream {@link Publisher} to subscribe to.
+	 * @param <T1> type of the value from source1
+	 * @param <T2> type of the value from source2
+	 * @param <T3> type of the value from source3
+	 *
+	 * @return a {@link Mono}.
+	 * @deprecated will be removed by 3.1.0.RELEASE, use {@link #zipDelayError(Mono, Mono) zipDelayError variants} instead
+	 */
+	@Deprecated
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public static <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> whenDelayError(Mono<? extends T1> p1, Mono<? extends T2> p2, Mono<? extends T3> p3) {
+		return zipDelayError(p1, p2, p3);
+	}
+
+	/**
+	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
+	 * have been fulfilled, aggregating their values into a {@link Tuple4} and delaying errors.
+	 * If several Monos error, the exceptions are combined (as suppressed exceptions on a root exception).
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <p>
+	 * @param p1 The first upstream {@link Publisher} to subscribe to.
+	 * @param p2 The second upstream {@link Publisher} to subscribe to.
+	 * @param p3 The third upstream {@link Publisher} to subscribe to.
+	 * @param p4 The fourth upstream {@link Publisher} to subscribe to.
+	 * @param <T1> type of the value from source1
+	 * @param <T2> type of the value from source2
+	 * @param <T3> type of the value from source3
+	 * @param <T4> type of the value from source4
+	 *
+	 * @return a {@link Mono}.
+	 * @deprecated will be removed by 3.1.0.RELEASE, use {@link #zipDelayError(Mono, Mono) zipDelayError variants} instead
+	 */
+	@Deprecated
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public static <T1, T2, T3, T4> Mono<Tuple4<T1, T2, T3, T4>> whenDelayError(Mono<? extends T1> p1,
+			Mono<? extends T2> p2,
+			Mono<? extends T3> p3,
+			Mono<? extends T4> p4) {
+		return zipDelayError(p1, p2, p3, p4);
+	}
+
+	/**
+	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
+	 * have been fulfilled, aggregating their values into a {@link Tuple5} and delaying errors.
+	 * If several Monos error, the exceptions are combined (as suppressed exceptions on a root exception).
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <p>
+	 * @param p1 The first upstream {@link Publisher} to subscribe to.
+	 * @param p2 The second upstream {@link Publisher} to subscribe to.
+	 * @param p3 The third upstream {@link Publisher} to subscribe to.
+	 * @param p4 The fourth upstream {@link Publisher} to subscribe to.
+	 * @param p5 The fifth upstream {@link Publisher} to subscribe to.
+	 * @param <T1> type of the value from source1
+	 * @param <T2> type of the value from source2
+	 * @param <T3> type of the value from source3
+	 * @param <T4> type of the value from source4
+	 * @param <T5> type of the value from source5
+	 *
+	 * @return a {@link Mono}.
+	 * @deprecated will be removed by 3.1.0.RELEASE, use {@link #zipDelayError(Mono, Mono) zipDelayError variants} instead
+	 */
+	@Deprecated
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public static <T1, T2, T3, T4, T5> Mono<Tuple5<T1, T2, T3, T4, T5>> whenDelayError(Mono<? extends T1> p1,
+			Mono<? extends T2> p2,
+			Mono<? extends T3> p3,
+			Mono<? extends T4> p4,
+			Mono<? extends T5> p5) {
+		return zipDelayError(p1, p2, p3, p4, p5);
+	}
+
+	/**
+	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
+	 * have been fulfilled, aggregating their values into a {@link Tuple6} and delaying errors.
+	 * If several Monos error, the exceptions are combined (as suppressed exceptions on a root exception).
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <p>
+	 * @param p1 The first upstream {@link Publisher} to subscribe to.
+	 * @param p2 The second upstream {@link Publisher} to subscribe to.
+	 * @param p3 The third upstream {@link Publisher} to subscribe to.
+	 * @param p4 The fourth upstream {@link Publisher} to subscribe to.
+	 * @param p5 The fifth upstream {@link Publisher} to subscribe to.
+	 * @param p6 The sixth upstream {@link Publisher} to subscribe to.
+	 * @param <T1> type of the value from source1
+	 * @param <T2> type of the value from source2
+	 * @param <T3> type of the value from source3
+	 * @param <T4> type of the value from source4
+	 * @param <T5> type of the value from source5
+	 * @param <T6> type of the value from source6
+	 *
+	 * @return a {@link Mono}.
+	 * @deprecated will be removed by 3.1.0.RELEASE, use {@link #zipDelayError(Mono, Mono) zipDelayError variants} instead
+	 */
+	@Deprecated
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public static <T1, T2, T3, T4, T5, T6> Mono<Tuple6<T1, T2, T3, T4, T5, T6>> whenDelayError(Mono<? extends T1> p1,
+			Mono<? extends T2> p2,
+			Mono<? extends T3> p3,
+			Mono<? extends T4> p4,
+			Mono<? extends T5> p5,
+			Mono<? extends T6> p6) {
+		return zipDelayError(p1, p2, p3, p4, p5, p6);
+	}
+
+	/**
+	 * Aggregate given void publishers into a new {@literal Mono} that will be
+	 * fulfilled when all of the given {@literal sources} have been fulfilled. If any Publisher
+	 * terminates without value, the returned sequence will be terminated immediately and
+	 * pending results cancelled. Errors from the sources are delayed.
+	 * If several Publishers error, the exceptions are combined (as suppressed exceptions on a root exception).
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <p>
+	 *
+	 * @param sources The sources to use.
+	 *
+	 * @return a {@link Mono}.
+	 * @deprecated will be removed by 3.1.0.RELEASE, use {@link #zipDelayError(Mono, Mono) zipDelayError variants} instead
+	 */
+	@Deprecated
+	public static Mono<Void> whenDelayError(final Iterable<? extends Publisher<Void>> sources) {
+		return zipDelayError(sources);
+	}
+
+	/**
+	 * Aggregate given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal
+	 * Monos} have been fulfilled. If any Mono terminates without value, the returned sequence will be terminated
+	 * immediately and pending results cancelled. Errors from the sources are delayed.
+	 * If several Monos error, the exceptions are combined (as suppressed exceptions on a root exception).
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <p>
+	 *
+	 * @param monos The monos to use.
+	 * @param combinator the function to transform the combined array into an arbitrary
+	 * object.
+	 * @param <R> the combined result
+	 *
+	 * @return a {@link Mono}.
+	 * @deprecated will be removed by 3.1.0.RELEASE, use {@link #zipDelayError(Mono, Mono) zipDelayError variants} instead
+	 */
+	@Deprecated
+	public static <R> Mono<R> whenDelayError(final Iterable<? extends Mono<?>> monos, Function<? super Object[], ? extends R> combinator) {
+		return zipDelayError(monos, combinator);
+	}
+
+	/**
+	 * Merge given void publishers into a new {@literal Mono} that will be fulfilled when
+	 * all of the given {@literal sources} have been fulfilled. Errors from the sources are delayed.
+	 * If several Publishers error, the exceptions are combined (as suppressed exceptions on a root exception).
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <p>
+	 * @param sources The sources to use.
+	 *
+	 * @return a {@link Mono}.
+	 * @deprecated will be removed by 3.1.0.RELEASE, use {@link #zipDelayError(Mono, Mono) zipDelayError variants} instead
+	 */
+	@Deprecated
+	@SafeVarargs
+	public static  Mono<Void> whenDelayError(Publisher<Void>... sources) {
+		return zipDelayError(sources);
+	}
+
+
+	/**
+	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the
+	 * given {@literal Monos} have been fulfilled, aggregating their values according to
+	 * the provided combinator function and delaying errors.
+	 * If several Monos error, the exceptions are combined (as suppressed exceptions on a root exception).
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <p>
+	 * @param monos The monos to use.
+	 * @param combinator the function to transform the combined array into an arbitrary
+	 * object.
+	 * @param <R> the combined result
+	 *
+	 * @return a combined {@link Mono}.
+	 * @deprecated will be removed by 3.1.0.RELEASE, use {@link #zipDelayError(Mono, Mono) zipDelayError variants} instead
+	 */
+	@Deprecated
+	public static <R>  Mono<R> whenDelayError(Function<? super Object[], ? extends R>
+			combinator, Mono<?>... monos) {
+		return zipDelayError(combinator, monos);
+	}
+
+	/**
+	 * Merge given monos into a new {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
+	 * have been fulfilled, aggregating their values into a {@link Tuple2}.
+	 * An error will cause pending results to be cancelled and immediate error emission to the
+	 * returned {@link Mono}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <p>
+	 * @param p1 The first upstream {@link Publisher} to subscribe to.
+	 * @param p2 The second upstream {@link Publisher} to subscribe to.
+	 * @param <T1> type of the value from source1
+	 * @param <T2> type of the value from source2
+	 *
+	 * @return a {@link Mono}.
+	 */
+	public static <T1, T2> Mono<Tuple2<T1, T2>> zip(Mono<? extends T1> p1, Mono<? extends T2> p2) {
+		return zip(p1, p2, Flux.tuple2Function());
 	}
 
 	/**
@@ -683,9 +1164,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static <T1, T2, O> Mono<O> when(Mono<? extends T1> p1, Mono<?
+	public static <T1, T2, O> Mono<O> zip(Mono<? extends T1> p1, Mono<?
 			extends T2> p2, BiFunction<? super T1, ? super T2, ? extends O> combinator) {
-		return onAssembly(new MonoWhen<T1, O>(false, p1, p2, combinator));
+		return onAssembly(new MonoZip<T1, O>(false, p1, p2, combinator));
 	}
 
 	/**
@@ -707,8 +1188,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono}.
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> when(Mono<? extends T1> p1, Mono<? extends T2> p2, Mono<? extends T3> p3) {
-		return onAssembly(new MonoWhen(false, a -> Tuples.fromArray((Object[])a), p1, p2, p3));
+	public static <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> zip(Mono<? extends T1> p1, Mono<? extends T2> p2, Mono<? extends T3> p3) {
+		return onAssembly(new MonoZip(false, a -> Tuples.fromArray((Object[])a), p1, p2, p3));
 	}
 
 	/**
@@ -732,11 +1213,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono}.
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static <T1, T2, T3, T4> Mono<Tuple4<T1, T2, T3, T4>> when(Mono<? extends T1> p1,
+	public static <T1, T2, T3, T4> Mono<Tuple4<T1, T2, T3, T4>> zip(Mono<? extends T1> p1,
 			Mono<? extends T2> p2,
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4) {
-		return onAssembly(new MonoWhen(false, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4));
+		return onAssembly(new MonoZip(false, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4));
 	}
 
 	/**
@@ -762,12 +1243,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono}.
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static <T1, T2, T3, T4, T5> Mono<Tuple5<T1, T2, T3, T4, T5>> when(Mono<? extends T1> p1,
+	public static <T1, T2, T3, T4, T5> Mono<Tuple5<T1, T2, T3, T4, T5>> zip(Mono<? extends T1> p1,
 			Mono<? extends T2> p2,
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5) {
-		return onAssembly(new MonoWhen(false, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4, p5));
+		return onAssembly(new MonoZip(false, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4, p5));
 	}
 
 	/**
@@ -795,13 +1276,13 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono}.
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static <T1, T2, T3, T4, T5, T6> Mono<Tuple6<T1, T2, T3, T4, T5, T6>> when(Mono<? extends T1> p1,
+	public static <T1, T2, T3, T4, T5, T6> Mono<Tuple6<T1, T2, T3, T4, T5, T6>> zip(Mono<? extends T1> p1,
 			Mono<? extends T2> p2,
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5,
 			Mono<? extends T6> p6) {
-        return onAssembly(new MonoWhen(false, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4, p5, p6));
+		return onAssembly(new MonoZip(false, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4, p5, p6));
 	}
 
 	/**
@@ -818,8 +1299,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static Mono<Void> when(final Iterable<? extends Publisher<Void>> sources) {
-		return onAssembly(new MonoWhen<>(false, VOID_FUNCTION, sources));
+	public static Mono<Void> zip(final Iterable<? extends Publisher<Void>> sources) {
+		return onAssembly(new MonoZip<>(false, VOID_FUNCTION, sources));
 	}
 
 	/**
@@ -838,8 +1319,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static <R> Mono<R> when(final Iterable<? extends Mono<?>> monos, Function<? super Object[], ? extends R> combinator) {
-		return onAssembly(new MonoWhen<>(false, combinator, monos));
+	public static <R> Mono<R> zip(final Iterable<? extends Mono<?>> monos, Function<? super Object[], ? extends R> combinator) {
+		return onAssembly(new MonoZip<>(false, combinator, monos));
 	}
 
 	/**
@@ -854,14 +1335,14 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono}.
 	 */
 	@SafeVarargs
-	public static Mono<Void> when(Publisher<Void>... sources) {
+	public static Mono<Void> zip(Publisher<Void>... sources) {
 		if (sources.length == 0) {
 			return empty();
 		}
 		if (sources.length == 1) {
 			return empty(sources[0]);
 		}
-		return onAssembly(new MonoWhen<>(false, VOID_FUNCTION, sources));
+		return onAssembly(new MonoZip<>(false, VOID_FUNCTION, sources));
 	}
 
 	/**
@@ -879,14 +1360,14 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static <R> Mono<R> when(Function<? super Object[], ? extends R> combinator, Mono<?>... monos) {
+	public static <R> Mono<R> zip(Function<? super Object[], ? extends R> combinator, Mono<?>... monos) {
 		if (monos.length == 0) {
 			return empty();
 		}
 		if (monos.length == 1) {
 			return monos[0].map(d -> combinator.apply(new Object[]{d}));
 		}
-		return onAssembly(new MonoWhen<>(false, combinator, monos));
+		return onAssembly(new MonoZip<>(false, combinator, monos));
 	}
 
 	/**
@@ -905,8 +1386,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono}.
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static <T1, T2> Mono<Tuple2<T1, T2>> whenDelayError(Mono<? extends T1> p1, Mono<? extends T2> p2) {
-		return onAssembly(new MonoWhen(true, a -> Tuples.fromArray((Object[])a), p1, p2));
+	public static <T1, T2> Mono<Tuple2<T1, T2>> zipDelayError(Mono<? extends T1> p1, Mono<? extends T2> p2) {
+		return onAssembly(new MonoZip(true, a -> Tuples.fromArray((Object[])a), p1, p2));
 	}
 
 	/**
@@ -927,8 +1408,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono}.
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> whenDelayError(Mono<? extends T1> p1, Mono<? extends T2> p2, Mono<? extends T3> p3) {
-		return onAssembly(new MonoWhen(true, a -> Tuples.fromArray((Object[])a), p1, p2, p3));
+	public static <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> zipDelayError(Mono<? extends T1> p1, Mono<? extends T2> p2, Mono<? extends T3> p3) {
+		return onAssembly(new MonoZip(true, a -> Tuples.fromArray((Object[])a), p1, p2, p3));
 	}
 
 	/**
@@ -951,11 +1432,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono}.
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static <T1, T2, T3, T4> Mono<Tuple4<T1, T2, T3, T4>> whenDelayError(Mono<? extends T1> p1,
+	public static <T1, T2, T3, T4> Mono<Tuple4<T1, T2, T3, T4>> zipDelayError(Mono<? extends T1> p1,
 			Mono<? extends T2> p2,
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4) {
-		return onAssembly(new MonoWhen(true, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4));
+		return onAssembly(new MonoZip(true, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4));
 	}
 
 	/**
@@ -979,12 +1460,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono}.
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static <T1, T2, T3, T4, T5> Mono<Tuple5<T1, T2, T3, T4, T5>> whenDelayError(Mono<? extends T1> p1,
+	public static <T1, T2, T3, T4, T5> Mono<Tuple5<T1, T2, T3, T4, T5>> zipDelayError(Mono<? extends T1> p1,
 			Mono<? extends T2> p2,
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5) {
-		return onAssembly(new MonoWhen(true, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4, p5));
+		return onAssembly(new MonoZip(true, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4, p5));
 	}
 
 	/**
@@ -1011,13 +1492,13 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono}.
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static <T1, T2, T3, T4, T5, T6> Mono<Tuple6<T1, T2, T3, T4, T5, T6>> whenDelayError(Mono<? extends T1> p1,
+	public static <T1, T2, T3, T4, T5, T6> Mono<Tuple6<T1, T2, T3, T4, T5, T6>> zipDelayError(Mono<? extends T1> p1,
 			Mono<? extends T2> p2,
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4,
 			Mono<? extends T5> p5,
 			Mono<? extends T6> p6) {
-		return onAssembly(new MonoWhen(true, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4, p5, p6));
+		return onAssembly(new MonoZip(true, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4, p5, p6));
 	}
 
 	/**
@@ -1035,8 +1516,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static Mono<Void> whenDelayError(final Iterable<? extends Publisher<Void>> sources) {
-		return onAssembly(new MonoWhen<>(true, VOID_FUNCTION, sources));
+	public static Mono<Void> zipDelayError(final Iterable<? extends Publisher<Void>> sources) {
+		return onAssembly(new MonoZip<>(true, VOID_FUNCTION, sources));
 	}
 
 	/**
@@ -1056,8 +1537,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static <R> Mono<R> whenDelayError(final Iterable<? extends Mono<?>> monos, Function<? super Object[], ? extends R> combinator) {
-		return onAssembly(new MonoWhen<>(true, combinator, monos));
+	public static <R> Mono<R> zipDelayError(final Iterable<? extends Mono<?>> monos, Function<? super Object[], ? extends R> combinator) {
+		return onAssembly(new MonoZip<>(true, combinator, monos));
 	}
 
 	/**
@@ -1073,14 +1554,14 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono}.
 	 */
 	@SafeVarargs
-	public static  Mono<Void> whenDelayError(Publisher<Void>... sources) {
+	public static  Mono<Void> zipDelayError(Publisher<Void>... sources) {
 		if (sources.length == 0) {
 			return empty();
 		}
 		if (sources.length == 1) {
 			return empty(sources[0]);
 		}
-		return onAssembly(new MonoWhen<>(true, VOID_FUNCTION, sources));
+		return onAssembly(new MonoZip<>(true, VOID_FUNCTION, sources));
 	}
 
 
@@ -1100,7 +1581,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a combined {@link Mono}.
 	 */
-	public static <R>  Mono<R> whenDelayError(Function<? super Object[], ? extends R>
+	public static <R>  Mono<R> zipDelayError(Function<? super Object[], ? extends R>
 			combinator, Mono<?>... monos) {
 		if (monos.length == 0) {
 			return empty();
@@ -1108,51 +1589,7 @@ public abstract class Mono<T> implements Publisher<T> {
 		if (monos.length == 1) {
 			return monos[0].map(d -> combinator.apply(new Object[]{d}));
 		}
-		return onAssembly(new MonoWhen<>(true, combinator, monos));
-	}
-
-	/**
-	 * Zip the values from given monos together using a combinator function, producing a
-	 * new {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
-	 * have been fulfilled.
-	 * If any Mono terminates without value, the returned sequence will be terminated
-	 * immediately and pending results cancelled.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/zip1.png" alt="">
-	 * <p>
-	 * @param combinator the combinator {@link Function}
-	 * @param monos The monos to use.
-	 * @param <T> The super incoming type
-	 * @param <V> The type of the function result.
-	 *
-	 * @return a {@link Mono}.
-	 */
-	@SafeVarargs
-	public static <T, V> Mono<V> zip(Function<? super Object[], ? extends V> combinator, Mono<? extends T>... monos) {
-		return fromDirect(new FluxZip<>(monos, combinator, Queues.one(), 1));
-	}
-
-	/**
-	 * Zip the values from given monos together using a combinator function, producing a
-	 * new {@literal Mono} that will be fulfilled when all of the given {@literal Monos}
-	 * have been fulfilled.
-	 * If any Mono terminates without value, the returned sequence will be terminated immediately and pending results cancelled.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/zip1.png" alt="">
-	 * <p>
-	 *
-	 * @param combinator the combinator {@link Function}
-	 * @param monos The monos to use.
-	 * @param <T> The type of the function result.
-	 * @param <V> The result type
-	 *
-	 * @return a {@link Mono}.
-	 */
-	public static <T, V> Mono<V> zip(final Iterable<?extends Mono<? extends T>> monos,
-			final Function<? super Object[], ? extends V> combinator) {
-		return fromDirect(new FluxZip<>(monos, combinator, Queues.<T>one(), 1));
+		return onAssembly(new MonoZip<>(true, combinator, monos));
 	}
 
 //	 ==============================================================================================================
@@ -1187,7 +1624,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param <T2> the element type of the other Mono instance
 	 * 
 	 * @return a new combined Mono
-	 * @see #when
+	 * @see #zip(Mono, Mono)
 	 */
 	public final <T2> Mono<Tuple2<T, T2>> and(Mono<? extends T2> other) {
 		return and(other, Flux.tuple2Function());
@@ -1207,20 +1644,19 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param <O> the element type of the combination
 	 *
 	 * @return a new combined Mono
-	 * @see #when
+	 * @see #zip(Mono, Mono)
 	 */
 	public final <T2, O> Mono<O> and(Mono<? extends T2> other, BiFunction<?
 			super T, ? super T2, ? extends O> combinator) {
-		if (this instanceof MonoWhen) {
-			@SuppressWarnings("unchecked")
-			MonoWhen<T, O> o = (MonoWhen<T, O>) this;
+		if (this instanceof MonoZip) {
+			@SuppressWarnings("unchecked") MonoZip<T, O> o = (MonoZip<T, O>) this;
 			Mono<O> result = o.whenAdditionalSource(other, combinator);
 			if (result != null) {
 				return result;
 			}
 		}
 
-		return when(this, other, combinator);
+		return zip(this, other, combinator);
 	}
 
 	/**

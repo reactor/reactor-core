@@ -325,12 +325,12 @@ public class MonoProcessorTest {
 	}
 
 	@Test
-	public void whenMonoProcessor() {
+	public void zipMonoProcessor() {
 		MonoProcessor<Integer> mp = MonoProcessor.create();
 		MonoProcessor<Integer> mp2 = MonoProcessor.create();
 		MonoProcessor<Tuple2<Integer, Integer>> mp3 = MonoProcessor.create();
 
-		StepVerifier.create(Mono.when(mp, mp2)
+		StepVerifier.create(Mono.zip(mp, mp2)
 		                        .subscribeWith(mp3))
 		            .then(() -> assertThat(mp3.isPending()).isTrue())
 		            .then(() -> mp.onNext(1))
@@ -350,11 +350,11 @@ public class MonoProcessorTest {
 	}
 
 	@Test
-	public void whenMonoProcessor2() {
+	public void zipMonoProcessor2() {
 		MonoProcessor<Integer> mp = MonoProcessor.create();
 		MonoProcessor<Integer> mp3 = MonoProcessor.create();
 
-		StepVerifier.create(Mono.when(d -> (Integer)d[0], mp)
+		StepVerifier.create(Mono.zip(d -> (Integer)d[0], mp)
 		                        .subscribeWith(mp3))
 		            .then(() -> assertThat(mp3.isPending()).isTrue())
 		            .then(() -> mp.onNext(1))
@@ -369,12 +369,12 @@ public class MonoProcessorTest {
 	}
 
 	@Test
-	public void whenMonoProcessorRejected() {
+	public void zipMonoProcessorRejected() {
 		MonoProcessor<Integer> mp = MonoProcessor.create();
 		MonoProcessor<Integer> mp2 = MonoProcessor.create();
 		MonoProcessor<Tuple2<Integer, Integer>> mp3 = MonoProcessor.create();
 
-		StepVerifier.create(Mono.when(mp, mp2)
+		StepVerifier.create(Mono.zip(mp, mp2)
 		                        .subscribeWith(mp3))
 		            .then(() -> assertThat(mp3.isPending()).isTrue())
 		            .then(() -> mp.onError(new Exception("test")))
