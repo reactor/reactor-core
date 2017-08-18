@@ -6360,9 +6360,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * Note that if you are using an eager or blocking {@link #create(Consumer, OverflowStrategy)}
 	 * as the source, it can lead to deadlocks due to requests piling up behind the emitter.
-	 * This operator attempts to avoid that situation for the trivial case where the
-	 * {@code create} is right before the {@code subscribeOn}, but if it is further up the
-	 * chain you should explicitly call {@link #subscribeOn(Scheduler, boolean) subscribeOn(scheduler, false)}
+	 * In such case, you should call {@link #subscribeOn(Scheduler, boolean) subscribeOn(scheduler, false)}
 	 * instead.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/subscribeon.png" alt="">
@@ -6385,7 +6383,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @see #subscribeOn(Scheduler, boolean)
 	 */
 	public final Flux<T> subscribeOn(Scheduler scheduler) {
-		return subscribeOn(scheduler, !(this instanceof FluxCreate));
+		return subscribeOn(scheduler, true);
 	}
 
 	/**
@@ -6415,7 +6413,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *     {@link Subscription#request(long)} will be propagated to the request caller.
 	 *
 	 * @param scheduler a {@link Scheduler} providing the {@link Worker} where to subscribe
-	 * @param requestOnSeparateThread whether or not to also perform requests on the worker
+	 * @param requestOnSeparateThread whether or not to also perform requests on the worker.
+	 * {@code true} to behave like {@link #subscribeOn(Scheduler)}
 	 *
 	 * @return a {@link Flux} requesting asynchronously
 	 * @see #publishOn(Scheduler)

@@ -182,7 +182,7 @@ public class FluxSubscribeOnTest {
     }
 
 	@Test
-	public void createJustBeforeSubscribeOnDoesntScheduleRequests() {
+	public void scheduleRequestsByDefault() {
 		Flux<Integer> test = Flux.<Integer>create(sink -> {
 			for (int i = 1; i < 1001; i++) {
 				sink.next(i);
@@ -195,34 +195,8 @@ public class FluxSubscribeOnTest {
 			}
 			sink.complete();
 		}, DROP)
-				.subscribeOn(Schedulers.newSingle("test"))
-				.publishOn(Schedulers.elastic());
-
-		AtomicInteger count = new AtomicInteger();
-		StepVerifier.create(test)
-		            .thenConsumeWhile(t -> count.incrementAndGet() != -1)
-		            .expectComplete()
-		            .verify(Duration.ofSeconds(5));
-
-		assertThat(count.get()).isGreaterThan(Queues.SMALL_BUFFER_SIZE);
-	}
-
-	@Test
-	public void createNotJustBeforeSubscribeOnDoesScheduleRequests() {
-		Flux<Integer> test = Flux.<Integer>create(sink -> {
-			for (int i = 1; i < 1001; i++) {
-				sink.next(i);
-				try {
-					Thread.sleep(1);
-				}
-				catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-			}
-			sink.complete();
-		}, DROP)
-		        .map(Flux.identityFunction())
-				.subscribeOn(Schedulers.newSingle("test"))
+		        .map(Flux.identityFunction()) //note the create is away from subscribeOn
+				.subscribeOn(Schedulers.newSingle("test")) //note there's no explicit parameter
 				.publishOn(Schedulers.elastic());
 
 		StepVerifier.create(test)
