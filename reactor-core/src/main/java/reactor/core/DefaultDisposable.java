@@ -28,8 +28,8 @@ import reactor.util.concurrent.Queues;
 
 /**
  * A support class that offers implementations for the specialized {@link Disposable}
- * sub-interfaces ({@link Disposable.Composite Disposable.CompositeDisposable},
- * {@link Disposable.Swap Disposable.SwapDisposable}).
+ * sub-interfaces ({@link Disposable.Composite Disposable.Composite},
+ * {@link Disposable.Swap Disposable.Swap}).
  *
  * @author Simon Baslé
  * @author Stephane Maldini
