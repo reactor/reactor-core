@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import java.util.function.Function;
 
+import kotlin.Deprecated;
 import org.reactivestreams.Publisher;
 
 /**
@@ -31,11 +32,16 @@ import org.reactivestreams.Publisher;
  */
 final class MonoBridges {
 
+    static <R> Mono<R> zip(Function<? super Object[], ? extends R> combinator, Mono<?>[] monos) {
+        return Mono.zip(combinator, monos);
+    }
+
     static Mono<Void> when(Publisher<Void>[] sources) {
         return Mono.when(sources);
     }
 
+    @Deprecated(message = "will be removed by 3.1.0.RELEASE, use zip instead")
     static <R> Mono<R> when(Function<? super Object[], ? extends R> combinator, Mono<?>[] monos) {
-        return Mono.when(combinator, monos);
+        return Mono.zip(combinator, monos);
     }
 }

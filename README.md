@@ -81,7 +81,7 @@ Mono.fromCallable(System::currentTimeMillis)
 Blocking Mono result :
 ```java    
 Tuple2<Long, Long> nowAndLater = 
-        Mono.when(
+        Mono.zip(
                 Mono.just(System.currentTimeMillis()),
                 Flux.just(1).delay(1).map(i -> System.currentTimeMillis()))
             .block();

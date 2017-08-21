@@ -38,7 +38,7 @@ import reactor.util.context.Context;
  *
  * @param <R> the source value types
  */
-final class MonoWhen<T, R> extends Mono<R> {
+final class MonoZip<T, R> extends Mono<R> {
 
     final boolean delayError;
 
@@ -49,7 +49,7 @@ final class MonoWhen<T, R> extends Mono<R> {
 	final Function<? super Object[], ? extends R> zipper;
 
 	@SuppressWarnings("unchecked")
-	<U> MonoWhen(boolean delayError,
+	<U> MonoZip(boolean delayError,
 			Publisher<? extends T> p1,
 			Publisher<? extends U> p2,
 			BiFunction<? super T, ? super U, ? extends R> zipper2) {
@@ -60,7 +60,7 @@ final class MonoWhen<T, R> extends Mono<R> {
 				Objects.requireNonNull(p2, "p2"));
 	}
 
-	MonoWhen(boolean delayError,
+	MonoZip(boolean delayError,
 		    Function<? super Object[], ? extends R> zipper,
 		    Publisher<?>... sources) {
 	    this.delayError = delayError;
@@ -69,7 +69,7 @@ final class MonoWhen<T, R> extends Mono<R> {
         this.sourcesIterable = null;
     }
 
-	MonoWhen(boolean delayError,
+	MonoZip(boolean delayError,
 			Function<? super Object[], ? extends R> zipper,
 			Iterable<? extends Publisher<?>> sourcesIterable) {
 		this.delayError = delayError;
@@ -91,7 +91,7 @@ final class MonoWhen<T, R> extends Mono<R> {
 			Function<Object[], R> z =
 					((FluxZip.PairwiseZipper<R>) this.zipper).then(zipper);
 
-			return new MonoWhen<>(delayError, z, newSources);
+			return new MonoZip<>(delayError, z, newSources);
 		}
 		return null;
 	}
@@ -121,16 +121,16 @@ final class MonoWhen<T, R> extends Mono<R> {
             return;
         }
 
-	    WhenCoordinator<R> parent =
-			    new WhenCoordinator<>(s, n, delayError, zipper);
+	    ZipCoordinator<R> parent =
+			    new ZipCoordinator<>(s, n, delayError, zipper);
 	    s.onSubscribe(parent);
         parent.subscribe(a);
     }
 
-	static final class WhenCoordinator<R>
+	static final class ZipCoordinator<R>
 			extends Operators.MonoSubscriber<Object, R> {
 
-		final WhenInner<R>[] subscribers;
+		final ZipInner<R>[] subscribers;
 
 		final boolean delayError;
 
@@ -138,20 +138,20 @@ final class MonoWhen<T, R> extends Mono<R> {
 
 		volatile int done;
         @SuppressWarnings("rawtypes")
-        static final AtomicIntegerFieldUpdater<WhenCoordinator> DONE =
-                AtomicIntegerFieldUpdater.newUpdater(WhenCoordinator.class, "done");
+        static final AtomicIntegerFieldUpdater<ZipCoordinator> DONE =
+                AtomicIntegerFieldUpdater.newUpdater(ZipCoordinator.class, "done");
 
         @SuppressWarnings("unchecked")
-        WhenCoordinator(CoreSubscriber<? super R> subscriber,
+        ZipCoordinator(CoreSubscriber<? super R> subscriber,
 		        int n,
 		        boolean delayError,
 		        Function<? super Object[], ? extends R> zipper) {
 	        super(subscriber);
             this.delayError = delayError;
 	        this.zipper = zipper;
-	        subscribers = new WhenInner[n];
+	        subscribers = new ZipInner[n];
             for (int i = 0; i < n; i++) {
-                subscribers[i] = new WhenInner<>(this);
+                subscribers[i] = new ZipInner<>(this);
             }
         }
 
@@ -172,7 +172,7 @@ final class MonoWhen<T, R> extends Mono<R> {
 
 
 		void subscribe(Publisher<?>[] sources) {
-			WhenInner<R>[] a = subscribers;
+			ZipInner<R>[] a = subscribers;
 			for (int i = 0; i < a.length; i++) {
                 sources[i].subscribe(a[i]);
             }
@@ -192,7 +192,7 @@ final class MonoWhen<T, R> extends Mono<R> {
         
         @SuppressWarnings("unchecked")
         void signal() {
-	        WhenInner<R>[] a = subscribers;
+	        ZipInner<R>[] a = subscribers;
 	        int n = a.length;
             if (DONE.incrementAndGet(this) != n) {
                 return;
@@ -204,7 +204,7 @@ final class MonoWhen<T, R> extends Mono<R> {
             boolean hasEmpty = false;
             
             for (int i = 0; i < a.length; i++) {
-	            WhenInner<R> m = a[i];
+	            ZipInner<R> m = a[i];
 	            Object v = m.value;
                 if (v != null) {
                     o[i] = v;
@@ -251,26 +251,26 @@ final class MonoWhen<T, R> extends Mono<R> {
         public void cancel() {
             if (!isCancelled()) {
                 super.cancel();
-	            for (WhenInner<R> ms : subscribers) {
+	            for (ZipInner<R> ms : subscribers) {
 		            ms.cancel();
                 }
             }
         }
     }
 
-	static final class WhenInner<R> implements InnerConsumer<Object> {
+	static final class ZipInner<R> implements InnerConsumer<Object> {
 
-		final WhenCoordinator<R> parent;
+		final ZipCoordinator<R> parent;
 
         volatile Subscription s;
         @SuppressWarnings("rawtypes")
-        static final AtomicReferenceFieldUpdater<WhenInner, Subscription> S =
-                AtomicReferenceFieldUpdater.newUpdater(WhenInner.class, Subscription.class, "s");
+        static final AtomicReferenceFieldUpdater<ZipInner, Subscription> S =
+                AtomicReferenceFieldUpdater.newUpdater(ZipInner.class, Subscription.class, "s");
         
         Object value;
         Throwable error;
 
-		WhenInner(WhenCoordinator<R> parent) {
+		ZipInner(ZipCoordinator<R> parent) {
 			this.parent = parent;
         }
 
