@@ -37,9 +37,11 @@ import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
 
@@ -861,6 +863,30 @@ public class ParallelFluxTest {
 
 		Assert.assertEquals("Multithreaded count", 3, count.get());
 		Assert.assertEquals("Multithreaded threads", 3, threadNames.size());
+	}
+
+	@Test
+	public void parallelSubscribeAndDispose() throws InterruptedException {
+		AtomicInteger nextCount = new AtomicInteger();
+		CountDownLatch cancelLatch = new CountDownLatch(1);
+		TestPublisher<Integer> source = TestPublisher.create();
+
+		Disposable d = source
+				.flux()
+				.parallel(3)
+				.doOnCancel(cancelLatch::countDown)
+				.subscribe(i -> nextCount.incrementAndGet());
+
+		source.next(1, 2, 3);
+		d.dispose();
+
+		source.emit(4, 5, 6);
+
+		boolean finished = cancelLatch.await(300, TimeUnit.MILLISECONDS);
+
+		assertThat(finished).as("cancelled latch").isTrue();
+		assertThat(d.isDisposed()).as("disposed").isTrue();
+		assertThat(nextCount.get()).as("received count").isEqualTo(3);
 	}
 
 	private void tryToSleep(long value)
