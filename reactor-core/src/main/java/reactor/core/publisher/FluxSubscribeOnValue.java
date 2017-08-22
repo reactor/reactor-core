@@ -88,8 +88,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 						Disposable.class,
 						"future");
 
-		static final Disposable FINISHED = () -> {
-		};
+		static final Disposable FINISHED = Disposable.disposed();
 
 		int fusionState;
 
@@ -219,8 +218,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 						Disposable.class,
 						"future");
 
-		static final Disposable FINISHED = () -> {
-		};
+		static final Disposable FINISHED = Disposable.disposed();
 
 		ScheduledEmpty(Subscriber<?> actual) {
 			this.actual = actual;

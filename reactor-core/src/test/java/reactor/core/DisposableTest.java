@@ -174,4 +174,54 @@ public class DisposableTest {
 		assertThat(d3.isDisposed()).isTrue();
 	}
 
+	@Test
+	public void emptyDisposableInitiallyNotDisposed() {
+		Disposable empty = Disposable.empty();
+
+		assertThat(empty.isDisposed()).isFalse();
+	}
+
+	@Test
+	public void emptyDisposableCanBeDisposed() {
+		Disposable empty = Disposable.empty();
+		assertThat(empty.isDisposed()).isFalse();
+
+		empty.dispose();
+		assertThat(empty.isDisposed()).isTrue();
+	}
+
+	@Test
+	public void emptyDisposableCreatesInstances() {
+		assertThat(Disposable.empty()).isNotSameAs(Disposable.empty());
+	}
+
+	@Test
+	public void disposedInitiallyDisposed() {
+		assertThat(Disposable.disposed().isDisposed()).isTrue();
+	}
+
+	@Test
+	public void disposedCreatesInstances() {
+		assertThat(Disposable.disposed()).isNotSameAs(Disposable.disposed());
+	}
+
+	@Test
+	public void neverInitiallyNotDisposed() {
+		assertThat(Disposable.never().isDisposed()).isFalse();
+	}
+
+	@Test
+	public void neverImmutable() {
+		Disposable never = Disposable.never();
+		assertThat(never.isDisposed()).isFalse();
+
+		never.dispose();
+		assertThat(never.isDisposed()).isFalse();
+	}
+
+	@Test
+	public void neverCreatesInstances() {
+		assertThat(Disposable.never()).isNotSameAs(Disposable.never());
+	}
+
 }

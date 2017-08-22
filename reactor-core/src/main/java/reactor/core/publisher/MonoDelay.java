@@ -73,7 +73,7 @@ final class MonoDelay extends Mono<Long> {
 
 		volatile boolean requested;
 
-		static final Disposable FINISHED = () -> { };
+		static final Disposable FINISHED = Disposable.disposed();
 
 		MonoDelayRunnable(CoreSubscriber<? super Long> actual) {
 			this.actual = actual;
