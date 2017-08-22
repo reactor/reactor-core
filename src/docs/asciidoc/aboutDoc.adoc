@@ -12,6 +12,14 @@ others, provided that you do not charge any fee for such copies and further
 provided that each copy contains this Copyright Notice, whether distributed in
 print or electronically.
 
+== Contributing to the Documentation
+The reference guide is written in http://asciidoctor.org/docs/asciidoc-writers-guide/[Asciidoc]
+format and sources can be found at https://github.com/reactor/reactor-core/tree/master/src/docs/asciidoc.
+
+If you come up with any improvement, we'll be happy to get a pull-request from you!
+For example, you can directly edit the <<core-features>> section in GitHub's UI
+https://github.com/reactor/reactor-core/edit/master/src/docs/asciidoc/coreFeatures.adoc[here]
+
 == Getting help
 There are several ways to reach out for help with Reactor.
 
