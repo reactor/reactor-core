@@ -17,6 +17,7 @@ Non-Blocking [Reactive Streams](http://reactive-streams.org) Foundation for the 
 **Reactor 3 requires Java 8 or + to run**.
 
 With Gradle from repo.spring.io or Maven Central repositories (stable releases only):
+
 ```groovy
     repositories {
       //maven { url 'http://repo.spring.io/snapshot' }
@@ -34,6 +35,12 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
 
 See the [reference documentation](http://projectreactor.io/docs/core/release/reference/docs/index.html#getting)
 for more information on getting it (eg. using Maven, or on how to get milestones and snapshots).
+
+> **Note about Android support**: Reactor 3 doesn't officially support nor target Android.
+However it should work fine with Android SDK 26 (Android O) and above. See the
+[complete note](http://projectreactor.io/docs/core/release/reference/docs/index.html#prerequisites)
+in the reference guide.
+
 
 ## Getting Started
 
