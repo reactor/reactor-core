@@ -13,6 +13,24 @@ Suited for Microservices Architecture, Reactor IPC offers backpressure-ready
 network engines for HTTP (including Websockets), TCP and UDP. Reactive Encoding/
 Decoding is fully supported.
 
+[[prerequisites]]
+== Pre-requisites
+Reactor Core runs on `Java 8` and above.
+
+It only brings a transitive dependency to `org.reactive-streams:reactive-streams:1.0.1`.
+
+[NOTE]
+====
+**Android support**:
+
+ - Reactor 3 doesn't officially support nor target Android (consider using RxJava 2 if such
+ support is a strong requirement).
+ - However it should work fine with Android SDK 26 (Android O) and above.
+ - We are open to evaluating changes that benefit Android O support in a best-effort fashion
+ (not guaranteed, each decision will be made on a case-by-case basis).
+====
+
+
 == The BOM
 Reactor 3 uses a BOMfootnote:['Bill Of Materials', a curated list of versioned compatible artifacts]
 model since `reactor-core 3.0.4`, with the `Aluminium` release train.
