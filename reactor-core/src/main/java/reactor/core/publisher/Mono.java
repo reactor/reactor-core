@@ -3339,6 +3339,54 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Give this Mono a chance to resolve within a specified time frame but complete if it
+	 * doesn't. This works a bit like {@link #timeout(Duration)} except that the resulting
+	 * {@link Mono} completes rather than errors when the timer expires.
+	 * <p>
+	 * The timeframe is evaluated using the {@link Schedulers#parallel() parallel Scheduler}.
+	 *
+	 * @param duration the maximum duration to wait for the source Mono to resolve.
+	 * @return a new {@link Mono} that will propagate the signals from the source unless
+	 * no signal is received for {@code duration}, in which case it completes.
+	 */
+	public final Mono<T> take(Duration duration) {
+		return take(duration, Schedulers.parallel());
+	}
+
+	/**
+	 * Give this Mono a chance to resolve within a specified time frame but complete if it
+	 * doesn't. This works a bit like {@link #timeout(Duration)} except that the resulting
+	 * {@link Mono} completes rather than errors when the timer expires.
+	 * <p>
+	 * The timeframe is evaluated using the provided {@link Scheduler}.
+	 *
+	 * @param duration the maximum duration to wait for the source Mono to resolve.
+	 * @parama timer the {@link Scheduler} on which to measure the duration.
+	 *
+	 * @return a new {@link Mono} that will propagate the signals from the source unless
+	 * no signal is received for {@code duration}, in which case it completes.
+	 */
+	public final Mono<T> take(Duration duration, Scheduler timer) {
+		return takeUntilOther(Mono.delay(duration, timer));
+	}
+
+	/**
+	 * Give this Mono a chance to resolve before a companion {@link Publisher} emits. If
+	 * the companion emits before any signal from the source, the resulting Mono will
+	 * complete. Otherwise, it will relay signals from the source.
+	 *
+	 * @param other a companion {@link Publisher} that shortcircuits the source with an
+	 * onComplete signal if it emits before the source emits.
+	 *
+	 * @return a new {@link Mono} that will propagate the signals from the source unless
+	 * a signal is first received from the companion {@link Publisher}, in which case it
+	 * completes.
+	 */
+	public final Mono<T> takeUntilOther(Publisher<?> other) {
+		return onAssembly(new MonoTakeUntilOther<>(this, other));
+	}
+
+	/**
 	 * Return a {@code Mono<Void>} which only replays complete and error signals
 	 * from this {@link Mono}.
 	 *
