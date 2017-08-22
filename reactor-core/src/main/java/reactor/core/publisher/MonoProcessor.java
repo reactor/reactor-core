@@ -80,7 +80,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	Publisher<? extends O>   source;
 	Subscription             subscription;
 
-	volatile Processor<O, O> processor;
+	volatile FluxProcessor<O, O> processor; //deliberately initially null, don't use NOOP_PROCESSOR
 	volatile O               value;
 	volatile Throwable       error;
 	volatile int             state;
@@ -116,6 +116,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	@Override
 	public void dispose() {
 		cancel();
+
 	}
 
 	/**
@@ -509,11 +510,16 @@ public final class MonoProcessor<O> extends Mono<O>
 			}
 			Subscription subscription = this.subscription;
 
-			if (subscription != null) {
-				if (state == STATE_CANCELLED && PROCESSOR.getAndSet(this, NOOP_PROCESSOR) != NOOP_PROCESSOR) {
+			if (subscription != null && state == STATE_CANCELLED) {
+				FluxProcessor<O,O> p = PROCESSOR.getAndSet(this, NOOP_PROCESSOR);
+				if (p != NOOP_PROCESSOR) {
 					this.subscription = null;
 					this.source = null;
 					subscription.cancel();
+					//we need p = null as a 3rd possible value to detect the case were we should null out the source/subscription
+					if (p != null) {
+						p.dispose();
+					}
 					return;
 				}
 			}
@@ -533,8 +539,8 @@ public final class MonoProcessor<O> extends Mono<O>
 	}
 
 	@SuppressWarnings("unchecked")
-	Processor<O, O> getOrStart(){
-		Processor<O, O> out = processor;
+	FluxProcessor<O, O> getOrStart(){
+		FluxProcessor<O, O> out = processor;
 		if (out == null) {
 			out = ReplayProcessor.cacheLastOrDefault(value);
 			if (PROCESSOR.compareAndSet(this, null, out)) {
@@ -548,7 +554,7 @@ public final class MonoProcessor<O> extends Mono<O>
 	}
 
 	@SuppressWarnings("rawtypes")
-    final static class NoopProcessor implements Processor {
+    final static class NoopProcessor extends FluxProcessor {
 
 		@Override
 		public void onComplete() {
@@ -571,10 +577,11 @@ public final class MonoProcessor<O> extends Mono<O>
 		}
 
 		@Override
-		public void subscribe(Subscriber s) {
+		public void subscribe(CoreSubscriber s) {
 
 		}
 	}
+
 	final static NoopProcessor NOOP_PROCESSOR = new NoopProcessor();
 	@SuppressWarnings("rawtypes")
     final static AtomicIntegerFieldUpdater<MonoProcessor>              STATE     =
@@ -586,8 +593,8 @@ public final class MonoProcessor<O> extends Mono<O>
 	final static AtomicIntegerFieldUpdater<MonoProcessor>              CONNECTED       =
 			AtomicIntegerFieldUpdater.newUpdater(MonoProcessor.class, "connected");
 	@SuppressWarnings("rawtypes")
-	final static AtomicReferenceFieldUpdater<MonoProcessor, Processor> PROCESSOR =
-		    AtomicReferenceFieldUpdater.newUpdater(MonoProcessor.class, Processor.class,
+	final static AtomicReferenceFieldUpdater<MonoProcessor, FluxProcessor> PROCESSOR =
+		    AtomicReferenceFieldUpdater.newUpdater(MonoProcessor.class, FluxProcessor.class,
 				    "processor");
 	final static int       STATE_CANCELLED         = -1;
 	final static int       STATE_READY             = 0;

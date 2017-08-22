@@ -18,11 +18,13 @@ package reactor.core.publisher;
 import java.lang.ref.WeakReference;
 import java.time.Duration;
 import java.util.Date;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -618,4 +620,25 @@ public class MonoProcessorTest {
 				.isLessThan(Duration.ofMillis(500));
 	}
 
+	@Test
+	public void disposeBeforeValueSendsCancellationException() {
+		MonoProcessor<String> processor = MonoProcessor.create();
+		AtomicReference<Throwable> e1 = new AtomicReference<>();
+		AtomicReference<Throwable> e2 = new AtomicReference<>();
+		AtomicReference<Throwable> e3 = new AtomicReference<>();
+		AtomicReference<Throwable> late = new AtomicReference<>();
+
+		processor.subscribe(v -> Assertions.fail("expected first subscriber to error"), e1::set);
+		processor.subscribe(v -> Assertions.fail("expected second subscriber to error"), e2::set);
+		processor.subscribe(v -> Assertions.fail("expected third subscriber to error"), e3::set);
+
+		processor.dispose();
+
+		assertThat(e1.get()).isInstanceOf(CancellationException.class);
+		assertThat(e2.get()).isInstanceOf(CancellationException.class);
+		assertThat(e3.get()).isInstanceOf(CancellationException.class);
+
+		processor.subscribe(v -> Assertions.fail("expected late subscriber to error"), late::set);
+		assertThat(late.get()).isInstanceOf(CancellationException.class);
+	}
 }
