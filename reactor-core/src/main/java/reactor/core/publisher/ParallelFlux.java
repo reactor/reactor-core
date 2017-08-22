@@ -910,7 +910,6 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * 'rails'.
 	 */
 	public final Disposable subscribe(){
-
 		return subscribe(null, null, null);
 	}
 
