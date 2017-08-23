@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,19 +15,24 @@
  */
 package reactor.util.context;
 
+import java.util.AbstractMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-final class Context1 implements Context, Map.Entry<Object, Object> {
+final class Context2 implements Context {
 
-	final Object key;
-	final Object value;
+	final Object key1;
+	final Object value1;
+	final Object key2;
+	final Object value2;
 
-	Context1(Object key, Object value) {
-		this.key = key;
-		this.value = value;
+	Context2(Object key1, Object value1, Object key2, Object value2) {
+		this.key1 = key1;
+		this.value1 = value1;
+		this.key2 = key2;
+		this.value2 = value2;
 	}
 
 	@Override
@@ -35,49 +40,43 @@ final class Context1 implements Context, Map.Entry<Object, Object> {
 		Objects.requireNonNull(key, "key");
 		Objects.requireNonNull(value, "value");
 
-		if(this.key.equals(key)){
-			return new Context1(key, value);
+		if(this.key1.equals(key)){
+			return new Context2(key, value, key2, value2);
 		}
 
-		return new Context2(this.key, this.value, key, value);
+		if (this.key2.equals(key)) {
+			return new Context2(key1, value1, key, value);
+		}
+
+		return new Context3(this.key1, this.value1, this.key2, this.value2, key, value);
 	}
 
 	@Override
 	public boolean hasKey(Object key) {
-		return this.key.equals(key);
+		return this.key1.equals(key) || this.key2.equals(key);
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public <T> T get(Object key) {
-		if (hasKey(key)) {
-			return (T)this.value;
+		if (this.key1.equals(key)) {
+			return (T)this.value1;
 		}
-		throw new NoSuchElementException("Context does not contain key: " + key);
+		if (this.key2.equals(key)) {
+			return (T)this.value2;
+		}
+		throw new NoSuchElementException("Context does not contain key: "+key);
 	}
 
 	@Override
 	public Stream<Map.Entry<Object, Object>> stream() {
-		return Stream.of(this);
-	}
-
-	@Override
-	public Object getKey() {
-		return key;
-	}
-
-	@Override
-	public Object getValue() {
-		return value;
-	}
-
-	@Override
-	public Object setValue(Object value) {
-		throw new UnsupportedOperationException("Does not support in-place update");
+		return Stream.of(
+				new AbstractMap.SimpleImmutableEntry<>(key1, value1),
+				new AbstractMap.SimpleImmutableEntry<>(key2, value2));
 	}
 
 	@Override
 	public String toString() {
-		return "Context1{" + key + '='+ value + '}';
+		return "Context2{" + key1 + '='+ value1 + ", " + key2 + '=' + value2 + '}';
 	}
 }

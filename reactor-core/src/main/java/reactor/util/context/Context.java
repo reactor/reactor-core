@@ -20,7 +20,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 /**
  * A key/value store that is propagated between components such as operators via the
@@ -50,13 +49,102 @@ public interface Context {
 	}
 
 	/**
-	 * Resolve a value given a key within the {@link Context}.
+	 * Create a {@link Context} pre-initialized with one key-value pair.
+	 *
+	 * @param key the key to initialize.
+	 * @param value the value for the key.
+	 * @return a {@link Context} with a single entry.
+	 */
+	static Context of(Object key, Object value) {
+		return new Context1(key, value);
+	}
+
+	/**
+	 * Create a {@link Context} pre-initialized with two key-value pairs.
+	 *
+	 * @param key1 the first key to initialize.
+	 * @param value1 the value for the first key.
+	 * @param key2 the second key to initialize.
+	 * @param value2 the value for the second key.
+	 * @return a {@link Context} with two entries.
+	 */
+	static Context of(Object key1, Object value1,
+			Object key2, Object value2) {
+		return new Context2(key1, value1, key2, value2);
+	}
+
+	/**
+	 * Create a {@link Context} pre-initialized with three key-value pairs.
+	 *
+	 * @param key1 the first key to initialize.
+	 * @param value1 the value for the first key.
+	 * @param key2 the second key to initialize.
+	 * @param value2 the value for the second key.
+	 * @param key3 the third key to initialize.
+	 * @param value3 the value for the third key.
+	 * @return a {@link Context} with three entries.
+	 */
+	static Context of(Object key1, Object value1,
+			Object key2, Object value2,
+			Object key3, Object value3) {
+		return new Context3(key1, value1, key2, value2, key3, value3);
+	}
+
+	/**
+	 * Create a {@link Context} pre-initialized with four key-value pairs.
+	 *
+	 * @param key1 the first key to initialize.
+	 * @param value1 the value for the first key.
+	 * @param key2 the second key to initialize.
+	 * @param value2 the value for the second key.
+	 * @param key3 the third key to initialize.
+	 * @param value3 the value for the third key.
+	 * @param key4 the fourth key to initialize.
+	 * @param value4 the value for the fourth key.
+	 * @return a {@link Context} with four entries.
+	 */
+	static Context of(Object key1, Object value1,
+			Object key2, Object value2,
+			Object key3, Object value3,
+			Object key4, Object value4) {
+		return new Context4(key1, value1, key2, value2, key3, value3, key4, value4);
+	}
+
+	/**
+	 * Create a {@link Context} pre-initialized with five key-value pairs.
+	 *
+	 * @param key1 the first key to initialize.
+	 * @param value1 the value for the first key.
+	 * @param key2 the second key to initialize.
+	 * @param value2 the value for the second key.
+	 * @param key3 the third key to initialize.
+	 * @param value3 the value for the third key.
+	 * @param key4 the fourth key to initialize.
+	 * @param value4 the value for the fourth key.
+	 * @param key4 the fifth key to initialize.
+	 * @param value4 the value for the fifth key.
+	 * @return a {@link Context} with five entries.
+	 */
+	static Context of(Object key1, Object value1,
+			Object key2, Object value2,
+			Object key3, Object value3,
+			Object key4, Object value4,
+			Object key5, Object value5) {
+		return new Context5(key1, value1, key2, value2, key3, value3, key4, value4, key5, value5);
+	}
+
+	/**
+	 * Resolve a value given a key that exists within the {@link Context}, or throw
+	 * a {@link NoSuchElementException} if the key is not present.
 	 *
 	 * @param key a lookup key to resolve the value within the context
 	 *
 	 * @param <T> an unchecked casted generic for fluent typing convenience
 	 *
-	 * @return the eventual value resolved by this key or null
+	 * @return the value resolved for this key (throws if key not found)
+	 * @throws NoSuchElementException when the given key is not present
+	 * @see #getOrDefault(Object, Object)
+	 * @see #hasKey(Object)
 	 */
 	<T> T get(Object key);
 
@@ -67,7 +155,8 @@ public interface Context {
 	 *
 	 * @param <T> an unchecked casted generic for fluent typing convenience
 	 *
-	 * @return the eventual value resolved by this type key or null
+	 * @return the value resolved for this type key (throws if key not found)
+	 * @throws NoSuchElementException when the given type key is not present
 	 */
 	default <T> T get(Class<T> key){
 		T v = get((Object)key);
@@ -123,7 +212,7 @@ public interface Context {
 	 * @return true if {@link Context} is empty.
 	 */
 	default boolean isEmpty() {
-		return this == empty();
+		return this == Context0.INSTANCE || this instanceof Context0;
 	}
 
 	/**
@@ -144,4 +233,22 @@ public interface Context {
 	 * @return a {@link Stream} of key/value pairs held by this context
 	 */
 	Stream<Map.Entry<Object,Object>> stream();
+
+	/**
+	 * Create a new {@link Context} by merging the content of this context and a given
+	 * {@link Context}. If the other context is empty, the same {@link Context} instance
+	 * is returned.
+	 *
+	 * @param other the other Context to get values from
+	 * @return a new Context with a merge of the entries from this context and the given context.
+	 */
+	default Context putAll(Context other) {
+		if (other.isEmpty()) return this;
+
+		return other.stream()
+		            .reduce(this,
+				            (c, e) -> c.put(e.getKey(), e.getValue()),
+				            (c1, c2) -> { throw new UnsupportedOperationException("Context.putAll should not use a parallelized stream");}
+		            );
+	}
 }

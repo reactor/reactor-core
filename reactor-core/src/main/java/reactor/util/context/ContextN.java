@@ -20,23 +20,35 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 @SuppressWarnings("unchecked")
 final class ContextN extends HashMap<Object, Object>
 		implements Context, Function<Map.Entry<Object, Object>, Map.Entry<Object, Object>> {
 
-	ContextN(Object key1, Object value1, Object key2, Object value2) {
-		super(2, 1f);
+	ContextN(Object key1, Object value1, Object key2, Object value2,
+			Object key3, Object value3, Object key4, Object value4,
+			Object key5, Object value5, Object key6, Object value6) {
+		super(6, 1f);
 		super.put(key1, value1);
 		super.put(key2, value2);
+		super.put(key3, value3);
+		super.put(key4, value4);
+		super.put(key5, value5);
+		super.put(key6, value6);
 	}
 
-	ContextN(Map<Object, Object> map, Object key, @Nullable Object value) {
+	ContextN(Map<Object, Object> map, Object key, Object value) {
 		super(map.size() + 1, 1f);
 		putAll(map);
 		super.put(key, value);
+	}
+
+	ContextN(Map<Object, Object> sourceMap, Map<?, ?> other) {
+		super(sourceMap.size() + other.size(), 1f);
+		putAll(sourceMap);
+		putAll(other);
 	}
 
 	@Override
@@ -56,7 +68,7 @@ final class ContextN extends HashMap<Object, Object>
 		if (hasKey(key)) {
 			return super.get(key);
 		}
-		throw new NoSuchElementException("Context does contain key: "+key);
+		throw new NoSuchElementException("Context does not contain key: "+key);
 	}
 
 	@Override
@@ -72,6 +84,16 @@ final class ContextN extends HashMap<Object, Object>
 	@Override
 	public Entry<Object, Object> apply(Entry<Object, Object> o) {
 		return new Context1(o.getKey(), o.getValue());
+	}
+
+	@Override
+	public Context putAll(Context other) {
+		if (other.isEmpty()) return this;
+		if (other instanceof ContextN) return new ContextN(this, (ContextN) other);
+
+		Map<?, ?> mapOther = other.stream()
+		                          .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+		return new ContextN(this, mapOther);
 	}
 
 	@Override
