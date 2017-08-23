@@ -4,20 +4,21 @@ Switching from an imperative and synchronous programming paradigm to a reactive
 and asynchronous one can sometimes be daunting. One of the steepest steps in the
 learning curve is how to analyze and debug when something goes wrong.
 
-In the imperative world, this is usually pretty straightforward nowadays: just
-read the stacktrace and you'll spot where the problem originated, and more: was
+In the imperative world, this is usually pretty straightforward: just
+read the stacktrace and you'll spot where the problem originated and more: Was
 it entirely a failure of your code? Did the failure occur in some library code?
 If so, what part of your code called the library, potentially passing in
-improper parameters that ultimately caused the failure? (I'm looking at you,
-`null`!)
+improper parameters that ultimately caused the failure?
 
-== The typical Reactor stack trace
+== The typical Reactor Stack Trace
 But as soon as you shift to asynchronous code, things can get much more
 complicated...
 
-Consider the following stacktrace:
+// The code that generated the following stack trace should be here
 
-.A typically scary Reactor stacktrace
+Consider the following stack trace:
+
+.A typically Reactor stack trace
 [source]
 ----
 java.lang.IndexOutOfBoundsException: Source emitted more than one item
@@ -41,7 +42,7 @@ java.lang.IndexOutOfBoundsException: Source emitted more than one item
 	at reactor.guide.GuideTests.debuggingCommonStacktrace(GuideTests.java:722)
 ----
 
-There is a lot going on there! We get an `IndexOutOfBoundsException` which tell
+There is a lot going on there! We get an `IndexOutOfBoundsException`, which tells
 us that a "*source emitted* _more than one item_".
 
 We can probably quickly come to assume that this source is a Flux/Mono, as
@@ -76,12 +77,12 @@ All of this happened at subscription time, but the `Flux` itself wasn't
 _declared_ there. Worse, when we go to where the variable is declared, we see:
 [source,java]
 ----
-public Mono<String> toDebug; //please overlook the public class attribute :p
+public Mono<String> toDebug; //please overlook the public class attribute
 ----
 
 The variable isn't even _instantiated_ where it is declared. Let's assume a
-worst case scenario where we find out there could be a few different codepath
-that set it in the application... So we're still unsure of which one caused the
+worst-case scenario where we find out that there could be a few different code paths
+that set it in the application. We're still unsure of which one caused the
 issue.
 
 NOTE: This is kind of the Reactor equivalent of a runtime error, as opposed to a
@@ -106,22 +107,22 @@ This is done by customizing the `Hook.onOperator` hook *at application start*
 Hooks.onOperatorDebug();
 ----
 
-The idea is that this will start instrumenting the calls to `Flux` (and
-`Mono`)'s operator methods (where they are assembled into the chain) by wrapping
+The idea is that this will start instrumenting the calls to the `Flux` (and
+`Mono`) operator methods (where they are assembled into the chain) by wrapping
 the construction of the operator and capturing a stacktrace there. Since this is
 done when the operator chain is declared, the hook should be activate *before*
 that, so the safest way is to activate it right at the start of your
 application.
 
 Later on, if an exception occurs, the failing operator will be able to refer
-to that capture and append it to the stacktrace.
+to that capture and append it to the stack trace.
 
-In the next section, we'll see how the stacktrace differs and how to interpret
+In the next section, we'll see how the stack trace differs and how to interpret
 that new information.
 
 == Reading a stack trace in debug mode
 Reusing our initial example but activating the `operatorStacktrace` debug
-feature, here is the stack we now get:
+feature, the stack trace is now this:
 
 [source]
 ----
@@ -148,25 +149,28 @@ Error has been observed by the following operator(s): <5>
 ----
 <1> This is new: what we see here is the wrapper operator that captures the
 stack.
-<2> Apart from that, the first section of the stacktrace is still the same for
-the most part,showing a bit of operators internals (so we removed a bit of the
-snippet here)
-<3> This is where the new stuff from debugging mode starts appearing.
-<4> First we get some details on where the operator was assembled, hurray!
+<2> Apart from that, the first section of the stack trace is still the same for
+the most part, showing a bit of the operator's internals (so we removed a bit
+of the snippet here)
+// I'd put it back in. Wading through the whole thing is part of the task
+// you're describing. You might instead highlight the most relevant lines, to
+// teach people what to look for.
+<3> This is where the new stuff from debugging mode starts to appear.
+<4> First, we get some details on where the operator was assembled - hurray!
 <5> We also get a traceback of the error as it propagated through the operator
 chain, from first to last (error site to subscribe site).
 <6> Each operator that saw the error is mentioned along with the class and line
 where it originated. If an operator is assembled from within Reactor code, the
-later would be omitted.
+latter would be omitted.
 
-As you can see, the captured stacktrace is appended to the original error as a
+As you can see, the captured stack trace is appended to the original error as a
 suppressed `OnAssemblyException`. There are two parts to it, but the first
 section is the most interesting. It shows the path of construction for the
 operator that triggered the exception. Here it shows that the `single` that
 caused our issue was created in the `scatterAndGather` method, itself called
 from a `populateDebug` method that got executed through JUnit.
 
-We are now armed with enough information to find the culprit, let's have a look
+Now that we are armed with enough information to find the culprit, let's have a look
 at that `scatterAndGather` method:
 [source,java]
 ----
@@ -182,15 +186,15 @@ several HTTP calls to a few urls is chained with `single`, which seem a bit too
 restrictive. After a short `git blame` and a quick discussion with the author of
 that line, we find out he meant to use the less restrictive `take(1)` instead...
 
-Congratulations, *we solved our problem*!
+*We solved our problem*!
 
 [quote]
 Error has been observed by the following operator(s):
 
-That second part of the debug stacktrace was not necessarily very interesting in
+That second part of the debug stack trace was not necessarily very interesting in
 this particular example, because the error was actually happening in the last
 operator in the chain (the one closest to `subscribe`). Taking another example
-might make it clearer:
+might make it more clear:
 [source,java]
 ----
 FakeRepository.findAllUserByName(Flux.just("pedro", "simon", "stephane"))
@@ -212,52 +216,54 @@ Error has been observed by the following operator(s):
 	|_	Flux.transform(GuideDebuggingExtraTests.java:42)
 ----
 
-This correspond to a flattened out version of the chain of operators, or rather
+This corresponds to a flattened version of the chain of operators, or rather
 of the section of the chain that gets notified of the error:
 
- 1. the exception originates in the first `map`
- 2. it is seen by a second `map` (both in fact correspond to the
-    `findAllUserByName` method)
- 3. then it is seen by a `filter` and a `transform`, which indicates us that part of
-    the chain is constructed via a reusable transformation function (here, the
-    `applyFilters` utility method).
- 4. finally it is seen by an `elapsed` and a `transform`. Once again, elapsed is
-    what is applied by the transformation function of that second transform.
+1. The exception originates in the first `map`.
+2. It is seen by a second `map` (both in fact correspond to the
+`findAllUserByName` method).
+3. Then it is seen by a `filter` and a `transform`, which indicate that part
+of the chain is constructed via a reusable transformation function (here, the
+`applyFilters` utility method).
+4. Finally, it is seen by an `elapsed` and a `transform`. Once again,
+`elapsed` is what is applied by the transformation function of that second
+transform.
 
 We are dealing with a form of instrumentation here, and creating a
-stacktrace is costly. That is why this debugging feature should only be
+stack trace is costly. That is why this debugging feature should only be
 activated in a controlled manner, as a last resort.
 
-=== The `checkpoint()` alternative
+=== The `checkpoint()` Alternative
 The debug mode is global and affects every single operator assembled into a
 `Flux` or `Mono` inside the application. This has the benefit of allowing
-*after the fact debugging*: whatever the error, we will obtain additional info
+*after-the-fact debugging*: whatever the error, we will obtain additional info
 to debug it.
 
-As we saw in the "Cost of debug mode" above, this is at the cost of an impact on
-performance (due to the number of populated stacktraces). That cost can be
-reduced if we have an idea of likely problematic operators. But usually this
-isn't known unless we observed an error in the wild, saw we were missing
-assembly information and then modified the code to activate assembly tracking,
-hoping we can observe the same error again...
+As we saw earlier, this global knowledge comes at the cost of an impact on
+performance (due to the number of populated stack traces). That cost can be
+reduced if we have an idea of likely problematic operators. However, we usually
+don't know which operators are likely to be problematic unless we observed an
+error in the wild, saw we were missing assembly information, and then modified
+the code to activate assembly tracking, hoping to observe the same error again.
 
-In that scenario, we have to switch into debugging gear and make preparations
+In that scenario, we have to switch into debugging mode and make preparations
 in order to better observe a second occurrence of the error, this time capturing
 all the additional information.
 
 If you can identify reactive chains that you assemble in your application for
-which serviceability is critical, *a mix of both world can be achieved with the
-`checkpoint()` operator.*
+which serviceability is critical, *a mix of both techniques can be achieved
+with the `checkpoint()` operator.*
 
-You can chain this operator towards their end. The `checkpoint` operator will
-work like the hook version, but only for its link of that particular chain.
+You can chain this operator into a method chain. The `checkpoint` operator
+works like the hook version, but only for its link of that particular chain.
 
-There is also a `checkpoint(String)` lighter variant that allows you to add a
+There is also a `checkpoint(String)` variant that allows you to add a
 unique String identifier to the assembly traceback. This way, the stack trace is
-omitted and you rely on the description to identify the assembly site.
+omitted and you rely on the description to identify the assembly site. A
+`checkpoint(String)` imposes less processing cost than a regular `checkpoint`.
 
-That information appears in the first line of the traceback, which changes to reflect the
-fact that it is "light":
+`checkpoint(String)` includes "light" in its output (which can be handy when
+searching), as shown here:
 
 ----
 ...
@@ -265,51 +271,54 @@ fact that it is "light":
 Assembly site of producer [reactor.core.publisher.FluxElapsed] is identified by light checkpoint [light checkpoint identifier].
 ----
 
-Last but not least, if you want to add a more generic description to the checkpoint but
-still rely on the stack trace mechanism to identify the assembly site, you can force that
-behavior using the `checkpoint("foo", true)` version. We're now back to the initial message
-for the traceback, augmented with the `description`:
+Last but not least, if you want to add a more generic description to the
+checkpoint but still rely on the stack trace mechanism to identify the assembly
+site, you can force that behavior using the `checkpoint("description", true)`
+version. We're now back to the initial message for the traceback, augmented
+with a `description`, as shown here:
 
 ----
 Suppressed: reactor.core.publisher.FluxOnAssembly$OnAssemblyException:
-Assembly trace from producer [reactor.core.publisher.ParallelSource], described as [fooCorrelation1234] : <1>
+Assembly trace from producer [reactor.core.publisher.ParallelSource], described as [descriptionCorrelation1234] : <1>
 	reactor.core.publisher.ParallelFlux.checkpoint(ParallelFlux.java:174)
 	reactor.core.publisher.FluxOnAssemblyTest.parallelFluxCheckpointDescription(FluxOnAssemblyTest.java:159)
 Error has been observed by the following operator(s):
 	|_	ParallelFlux.checkpointnull
 ----
-<1> `fooCorrelation1234` is the description provided in `checkpoint`
+<1> `descriptionCorrelation1234` is the description provided in the `checkpoint`.
 
-Said description could for example be a static identifier or user-readable description,
-or a wider *correlation ID* coming from a header in the case of an HTTP request for instance...
+The description could be a static identifier or user-readable description, or a
+wider *correlation ID* (for instance, coming from a header in the case of an
+HTTP request).
 
-Note that When both global debugging and local `checkpoint()` are enabled, checkpointed snapshot
-stacks will be appended as suppressed error after the observing operator graph and
+NOTE: When both global debugging and local `checkpoint()` are enabled, checkpointed snapshot
+stacks will be appended as suppressed error output after the observing operator graph and
 following the same declarative order.
 
 == Logging a stream
-Additionally to stacktrace debugging and analysis, another powerful tool to have
-in your toolbelt is the capability to trace and log events in an asynchronous
+In addition to stack trace debugging and analysis, another powerful tool to have
+in your toolkit is the ability to trace and log events in an asynchronous
 sequence.
 
 The `log()` operator can do just that. Chained inside a sequence, it will peek
 at every event of the Flux/Mono upstream of it (including `onNext`, `onError`
-and `onComplete` of course, but also _subscriptions_, _cancellation_ and
+and `onComplete` but also _subscriptions_, _cancellations_ and
 _requests_).
 
 .Side note on logging implementation
 ****
-The operator uses the `Loggers` utility class, which picks up common logging frameworks
-like Log4J and Logback through *`SLF4J`*, and will default to logging to the console in
-case SLF4J isn't available.
+The `log` operator uses the `Loggers` utility class, which picks up common
+logging frameworks like Log4J and Logback through *`SLF4J`* and defaults to
+logging to the console in case SLF4J isn't available.
 
-The Console fallback uses `System.err` for WARN and ERROR, `System.out` for the rest.
+The Console fallback uses `System.err` for WARN and ERROR and `System.out`
+for everything else.
 
-If you prefer a JDK `java.util.logging` fallback like in 3.0.x, you can tune this by
-setting the `reactor.logging.fallback` System property to `JDK`.
+If you prefer a JDK `java.util.logging` fallback, like in 3.0.x, you can tune
+this by setting the `reactor.logging.fallback` System property to `JDK`.
 ****
 
-For instance, supposing we have _logback_ activated and configured, and a chain
+For instance, suppose we have _logback_ activated and configured and a chain
 like `range(1,10).take(3)`. By placing a `log()` just before the _take_, we can
 get some insight as to how it works and what kind of events it propagates
 upstream to the _range_:
@@ -331,26 +340,25 @@ This prints out (through the logger's console appender):
 10:45:20.205 [main] INFO  reactor.Flux.Range.1 - | cancel() <4>
 ----
 
-Here, additionally to the logger's own formatter (time, thread, level, message),
-the `log()` operator outputs a few things in its own format:
+Here, in additional to the logger's own formatter (time, thread, level,
+message), the `log()` operator outputs a few things in its own format:
 
- * `reactor.Flux.Range.1` is an automatic _category_ for the log, in case you
- use the operator several times in a chain. It allows you to distinguish which
- operator's events are being logged (here, the `range`). This can be overwritten
- with your own custom category using the `log(String)` signature.
- * After the few separating characters, the actual event gets printed: here we
- get `onSubscribe`, `request`, 3 `onNext` and a `cancel`...
- * For the first line, `onSubscribe`, we get the implementation of the
- `Subscriber`, that usually correspond to the operator-specific implementation.
- Between square brackets, we get additional information if the operator can be
- automatically optimized via synchronous or asynchronous fusion (see the
- appendix on <<microfusion>>).
- * on the second line *(2)* we can see that an unbounded request was propagated
- up from downstream.
- * Then the range sends three values in a row (*(3)*)...
- * On the last line we see a cancel.
+<1> `reactor.Flux.Range.1` is an automatic _category_ for the log, in case you
+use the operator several times in a chain. It allows you to distinguish which
+operator's events are being logged (here, the `range`). This can be overwritten
+with your own custom category using the `log(String)` method signature. After a
+few separating characters, the actual event gets printed. Here we get
+`onSubscribe`, `request`, 3 `onNext`, and `cancel`. For the first line,
+`onSubscribe`, we get the implementation of the `Subscriber`, which usually
+corresponds to the operator-specific implementation. Between square brackets,
+we get additional information if the operator can be automatically optimized
+via synchronous or asynchronous fusion (see the appendix on <<microfusion>>).
+<2> On the second line, we can see that an unbounded request was propagated
+up from downstream.
+<3> Then the range sends three values in a row.
+<4> On the last line, we see a `cancel()`.
 
-The last line *(4)* is the most interesting: we can see the `take` in action
-there: it operates by cutting the sequence short after it has seen enough
-elements emitted. In a word, `take` simply `cancel()` the source once it has
-emitted the user-requested amount!
+The last line *(4)* is the most interesting. We can see the `take` in action
+there. It operates by cutting the sequence short after it has seen enough
+elements emitted. In short, `take()` causes the source to `cancel()` once it has
+emitted the user-requested amount.

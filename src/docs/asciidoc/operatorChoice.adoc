@@ -1,16 +1,29 @@
 [[which-operator]]
 = Which operator do I need?
 TIP: In this section, if an operator is specific to `Flux` or `Mono` it will be
-prefixed accordingly, common operators have no prefix. When a specific use case
+prefixed accordingly. Common operators have no prefix. When a specific use case
 is covered by a combination of operators, it is presented as a method call, with
-leading dot and parameters in parenthesis, like `.methodCall()`.
+leading dot and parameters in parenthesis, like `.methodCall(parameter)`.
 
 //TODO flux: cache, share, replay, publish, publishOn/subscribeOn/cancelOn
 //compose/transform, retryWhen, repeatWhen, sort, startWith
 //TODO Mono.sequenceEqual
 
-I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
-<<which.errors>>, <<which.time>>, <<which.window>> or <<which.blocking>>.
+I want to deal with:
+
+* <<which.create>>
+
+* <<which.values>>
+
+* <<which.peeking>>
+
+* <<which.errors>>
+
+* <<which.time>>
+
+* <<which.window>>
+
+* <<which.blocking>>
 
 [[which.create]]
 == Creating a new sequence...
@@ -20,11 +33,11 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 * that emits a `T` returned by a method: `just` as well
 ** ...but lazily captured: use `Mono#fromSupplier` or wrap `just` inside `defer`
 * that emits several `T` I can explicitly enumerate: `Flux#just(T...)`
-* that iterates over...
+* that iterates over:
 ** an array: `Flux#fromArray`
-** a collection / iterable: `Flux#fromIterable`
+** a collection or iterable: `Flux#fromIterable`
 ** a range of integers: `Flux#range`
-* that emits from various single-valued sources like...
+* that emits from various single-valued sources such as:
 ** a `Supplier<T>`: `Mono#fromSupplier`
 ** a task: `Mono#fromCallable`, `Mono#fromRunnable`
 ** a `CompletableFuture<T>`: `Mono#fromFuture`
@@ -33,14 +46,14 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 * that never does anything: `never`
 * that is decided at subscription: `defer`
 * that depends on a disposable resource: `using`
-* that generates events programmatically (can use state)...
+* that generates events programmatically (can use state):
 ** synchronously and one-by-one: `Flux#generate`
 ** asynchronously (can also be sync), multiple emissions possible in one pass: `Flux#create`
 (`Mono#create` as well, without the multiple emission aspect)
 
 [[which.values]]
 == An existing sequence
-* I want to transform existing data...
+* I want to transform existing data:
 ** on a 1-to-1 basis (eg. strings to their length): `map`
 *** ...by just casting it: `cast`
 ** on a 1-to-n basis (eg. strings to their characters): `flatMap` + use a factory method
@@ -50,14 +63,14 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 *** ...retaining the original sequence order: `Flux#flatMapSequential` (this triggers the async processes immediately but reorders the results)
 *** ...where the async task can return multiple values, from a `Mono` source: `Mono#flatMapMany`
 
-* I want to aggregate a `Flux`... (the `Flux#` prefix is assumed below)
+* I want to aggregate a `Flux`: (the `Flux#` prefix is assumed below)
 ** into a List: `collectList`, `collectSortedList`
 ** into a Map: `collectMap`, `collectMultiMap`
 ** into an arbitrary container: `collect`
 ** into the size of the sequence: `count`
 ** by applying a function between each element (eg. running sum): `reduce`
 *** ...but emitting each intermediary value: `scan`
-** into a boolean value from a predicate...
+** into a boolean value from a predicate:
 *** applied to all values (AND): `all`
 *** applied to at least one value (OR): `any`
 *** testing the presence of any value: `hasElements`
@@ -65,15 +78,15 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 
 
 * I want to combine publishers...
-** in sequential order: `Flux#concat` / `.concatWith(other)`
+** in sequential order: `Flux#concat` or `.concatWith(other)`
 *** ...but delaying any error until remaining publishers have been emitted: `Flux#concatDelayError`
 *** ...but eagerly subscribing to subsequent publishers: `Flux#mergeSequential`
 ** in emission order (combined items emitted as they come): `Flux#merge` / `.mergeWith(other)`
 *** ...with different types (transforming merge): `Flux#zip` / `Flux#zipWith`
-** by pairing values...
+** by pairing values:
 *** from 2 Monos into a `Tuple2`: `Mono#and`
-*** from n Monos when they all completed: `Mono#zip`
-*** into an arbitrary container type...
+*** from n Monos when they all completed: `Mono#when`
+*** into an arbitrary container type:
 **** each time all sides have emitted: `Flux#zip` (up to the smallest cardinality)
 **** each time a new value arrives at either side: `Flux#combineLatest`
 ** only considering the sequence that emits first: `Flux#firstEmitting`, `Mono#first`, `mono.or(otherMono).or(thirdMono)`
@@ -99,8 +112,8 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 
 [[which.peeking]]
 == Peeking into a sequence
-* Without modifying the final sequence, I want to...
-** get notified of / execute additional behavior footnote:[sometimes referred to as "side-effects"] on...
+* Without modifying the final sequence, I want to:
+** get notified of / execute additional behavior footnote:[sometimes referred to as "side-effects"] on:
 *** emissions: `doOnNext`
 *** completion: `Flux#doOnComplete`, `Mono#doOnSuccess` (includes the result if any)
 *** error termination: `doOnError`
@@ -113,8 +126,8 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 *** any terminating condition (complete, error, cancel): `doFinally`
 ** log what happens internally: `log`
 
-* I want to know of all events...
-** each represented as `Signal` object...
+* I want to know of all events:
+** each represented as `Signal` object:
 *** in a callback outside the sequence: `doOnEach`
 *** instead of the original onNext emissions: `materialize`
 **** ...and get back to the onNexts: `dematerialize`
@@ -122,35 +135,35 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 
 [[which.filtering]]
 == Filtering a sequence
-* I want to filter a sequence...
+* I want to filter a sequence:
 ** based on an arbitrary criteria: `filter`
 *** ...that is asynchronously computed: `filterWhen`
 ** restricting on the type of the emitted objects: `ofType`
 ** by ignoring the values altogether: `ignoreElements`
-** by ignoring duplicates...
+** by ignoring duplicates:
 *** in the whole sequence (logical set): `Flux#distinct`
 *** between subsequently emitted items (deduplication): `Flux#distinctUntilChanged`
 
-* I want to keep only a subset of the sequence...
-** by taking elements...
+* I want to keep only a subset of the sequence:
+** by taking elements:
 *** at the beginning of the sequence: `Flux#take(int)`
 **** ...based on a duration: `Flux#take(Duration)`
 **** ...only the first element, as a `Mono`: `Flux#next()`
 *** at the end of the sequence: `Flux#takeLast`
 *** until a criteria is met (inclusive): `Flux#takeUntil` (predicate-based), `Flux#takeUntilOther` (companion publisher-based)
 *** while a criteria is met (exclusive): `Flux#takeWhile`
-** by taking at most 1 element...
+** by taking at most 1 element:
 *** at a specific position: `Flux#elementAt`
 *** at the end: `.takeLast(1)`
 **** ...and emit an error if empty: `Flux#last()`
 **** ...and emit a default value if empty: `Flux#last(T)`
-** by skipping elements...
+** by skipping elements:
 *** at the beginning of the sequence: `Flux#skip(int)`
 **** ...based on a duration: `Flux#skip(Duration)`
 *** at the end of the sequence: `Flux#skipLast`
 *** until a criteria is met (inclusive): `Flux#skipUntil` (predicate-based), `Flux#skipUntilOther` (companion publisher-based)
 *** while a criteria is met (exclusive): `Flux#skipWhile`
-** by sampling items...
+** by sampling items:
 *** by duration: `Flux#sample(Duration)`
 **** but keeping the first element in the sampling window instead of the last: `sampleFirst`
 *** by a publisher-based window: `Flux#sample(Publisher)`
@@ -165,14 +178,14 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 
 [[which.errors]]
 == Errors
-* I want to create an erroring sequence: `error`
+* I want to create an erroring sequence: `error`...
 ** ...to replace the completion of a successful `Flux`: `.concat(Flux.error(e))`
 ** ...to replace the *emission* of a successful `Mono`: `.then(Mono.error(e))`
 ** ...if too much time elapses between onNexts: `timeout`
 
-* I want the try/catch equivalent of...
+* I want the try/catch equivalent of:
 ** throwing: `error`
-** catching an exception...
+** catching an exception:
 *** and falling back to a default value: `onErrorReturn`
 *** and falling back to another `Flux` or `Mono`: `onErrorResume`
 *** and wrapping and re-throwing: `.onErrorMap(t -> new RuntimeException(t))`
@@ -180,7 +193,7 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 ** the using pattern from Java 7: `using` factory method
 
 * I want to recover from errors...
-** by falling back...
+** by falling back:
 *** to a value: `onErrorReturn`
 *** to a `Publisher` or `Mono`, possibly different ones depending on the error: `Flux#onErrorResume` and `Mono#onErrorResume`
 ** by retrying: `retry`
@@ -205,13 +218,13 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 
 * I want to emit a single `0` after an initial delay: static `Mono.delay`.
 
-* I want to introduce a delay...
+* I want to introduce a delay:
 ** between each onNext signal: `Mono#delayElement`, `Flux#delayElements`
 ** before the subscription happens: `delaySubscription`
 
 [[which.window]]
 == Splitting a `Flux`
-* I want to split a `Flux<T>` into a `Flux<Flux<T>>`, by a boundary criteria...
+* I want to split a `Flux<T>` into a `Flux<Flux<T>>`, by a boundary criteria:
 ** of size: `window(int)`
 *** ...with overlapping or dropping windows: `window(int, int)`
 ** of time `window(Duration)`
@@ -223,7 +236,7 @@ I want to deal with: <<which.create>>, <<which.values>>, <<which.peeking>>,
 ** driven by an arbitrary boundary represented by onNexts in a control Publisher: `window(Publisher)`, `windowWhen`
 
 * I want to split a `Flux<T>` and buffer elements within boundaries together...
-** into `List`...
+** into `List`:
 *** by a size boundary: `buffer(int)`
 **** ...with overlapping or dropping buffers: `buffer(int, int)`
 *** by a duration boundary: `buffer(Duration)`
@@ -240,7 +253,7 @@ TIP: Note that this returns a `Flux<GroupedFlux<K, T>>`, each inner `GroupedFlux
 
 [[which.blocking]]
 == Going back to the Synchronous world
-* I have a `Flux<T>` and I want to...
+* I have a `Flux<T>` and I want to:
 ** block until I can get the first element: `Flux#blockFirst`
 *** ...with a timeout: `Flux#blockFirst(Duration)`
 ** block until I can get the last element (or null if empty): `Flux#blockLast`
@@ -248,7 +261,7 @@ TIP: Note that this returns a `Flux<GroupedFlux<K, T>>`, each inner `GroupedFlux
 ** synchronously switch to an `Iterable<T>`: `Flux#toIterable`
 ** synchronously switch to a Java 8 `Stream<T>`: `Flux#toStream`
 
-* I have a `Mono<T>` and I want...
+* I have a `Mono<T>` and I want:
 ** to block until I can get the value: `Mono#block`
 *** ...with a timeout: `Mono#block(Duration)`
 ** a `CompletableFuture<T>`: `Mono#toFuture`
