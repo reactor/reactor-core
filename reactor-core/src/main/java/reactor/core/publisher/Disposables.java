@@ -36,17 +36,7 @@ final class Disposables {
 	 * leaked to clients.
 	 */
 	//NOTE: There is a private similar DISPOSED singleton in DefaultDisposable as well
-	static final Disposable DISPOSED = new Disposable() {
-		@Override
-		public void dispose() {
-			//NO-OP
-		}
-
-		@Override
-		public boolean isDisposed() {
-			return true;
-		}
-	};
+	static final Disposable DISPOSED = Disposable.disposed();
 
 	/**
 	 * Atomically push the field to a {@link Disposable} and dispose the old content.

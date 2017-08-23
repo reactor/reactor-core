@@ -30,22 +30,6 @@ public class DisposablesTest {
 	static final AtomicReferenceFieldUpdater<TestDisposable, Disposable> DISPOSABLE_UPDATER =
 			AtomicReferenceFieldUpdater.newUpdater(TestDisposable.class, Disposable.class, "disp");
 	
-	private static Disposable empty() {
-		return new Disposable() {
-			volatile boolean disposed = false;
-			
-			@Override
-			public void dispose() {
-				this.disposed = true;
-			}
-
-			@Override
-			public boolean isDisposed() {
-				return disposed;
-			}
-		};
-	}
-
 	private static class TestDisposable implements Runnable {
 		volatile Disposable disp;
 
@@ -68,6 +52,7 @@ public class DisposablesTest {
 		assertThat(Disposables.DISPOSED.isDisposed()).isTrue();
 		Disposables.DISPOSED.dispose();
 		assertThat(Disposables.DISPOSED.isDisposed()).isTrue();
+		assertThat(Disposables.DISPOSED).isNotSameAs(Disposable.disposed());
 	}
 
 	@Test
@@ -103,7 +88,7 @@ public class DisposablesTest {
 			TestDisposable r = new TestDisposable() {
 				@Override
 				public void run() {
-					Disposables.replace(DISPOSABLE_UPDATER, this, empty());
+					Disposables.replace(DISPOSABLE_UPDATER, this, Disposable.single());
 				}
 			};
 
@@ -117,7 +102,7 @@ public class DisposablesTest {
 			TestDisposable r = new TestDisposable() {
 				@Override
 				public void run() {
-					Disposables.set(DISPOSABLE_UPDATER, this, empty());
+					Disposables.set(DISPOSABLE_UPDATER, this, Disposable.single());
 				}
 			};
 
@@ -137,7 +122,7 @@ public class DisposablesTest {
 
 	@Test
 	public void dispose() {
-		Disposable u = empty();
+		Disposable u = Disposable.single();
 		TestDisposable r = new TestDisposable(u);
 
 		Disposables.dispose(DISPOSABLE_UPDATER, r);
@@ -149,11 +134,11 @@ public class DisposablesTest {
 	public void trySet() {
 		TestDisposable r = new TestDisposable();
 
-		Disposable d1 = empty();
+		Disposable d1 = Disposable.single();
 
 		assertThat(Disposables.trySet(DISPOSABLE_UPDATER, r, d1)).isTrue();
 
-		Disposable d2 = empty();
+		Disposable d2 = Disposable.single();
 
 		assertThat(Disposables.trySet(DISPOSABLE_UPDATER, r, d2)).isFalse();
 
@@ -163,7 +148,7 @@ public class DisposablesTest {
 
 		Disposables.dispose(DISPOSABLE_UPDATER, r);
 
-		Disposable d3 = empty();
+		Disposable d3 = Disposable.single();
 
 		assertThat(Disposables.trySet(DISPOSABLE_UPDATER, r, d3)).isFalse();
 

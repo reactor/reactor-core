@@ -68,6 +68,35 @@ public interface Disposable {
 	}
 
 	/**
+	 * Return a new simple {@link Disposable} instance that is initially not disposed but
+	 * can be by calling {@link Disposable#dispose()}.
+	 *
+	 * @return a new {@link Disposable} initially not yet disposed.
+	 */
+	static Disposable single() {
+		return new DefaultDisposable.SimpleDisposable();
+	}
+
+	/**
+	 * Return a new {@link Disposable} that is already disposed.
+	 *
+	 * @return a new disposed {@link Disposable}.
+	 */
+	static Disposable disposed() {
+		return new DefaultDisposable.AlwaysDisposable();
+	}
+
+	/**
+	 * Return a new {@link Disposable} that can never be disposed. Calling {@link #dispose()}
+	 * is a NO-OP and {@link #isDisposed()} always return false.
+	 *
+	 * @return a new {@link Disposable} that can never be disposed.
+	 */
+	static Disposable never() {
+		return new DefaultDisposable.NeverDisposable();
+	}
+
+	/**
 	 * Cancel or dispose the underlying task or resource.
 	 * <p>
 	 * Implementations are required to make this method idempotent.

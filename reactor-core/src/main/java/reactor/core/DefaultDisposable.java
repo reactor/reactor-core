@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -387,10 +388,29 @@ abstract class DefaultDisposable {
 		}
 	}
 
+	/**
+	 * A very simple {@link Disposable} that only wraps a mutable boolean for
+	 * {@link #isDisposed()}.
+	 */
+	static final class SimpleDisposable extends AtomicBoolean implements Disposable {
 
-	//==== STATIC ATOMIC UTILS copied from Disposables ====
+		@Override
+		public void dispose() {
+			set(true);
+		}
 
-	static final Disposable DISPOSED = new Disposable() {
+		@Override
+		public boolean isDisposed() {
+			return get();
+		}
+	}
+
+	/**
+	 * Immutable disposable that is always {@link #isDisposed() disposed}. Calling
+	 * {@link #dispose()} does nothing, and {@link #isDisposed()} always return true.
+	 */
+	static final class AlwaysDisposable implements Disposable {
+
 		@Override
 		public void dispose() {
 			//NO-OP
@@ -400,7 +420,33 @@ abstract class DefaultDisposable {
 		public boolean isDisposed() {
 			return true;
 		}
-	};
+	}
+
+	/**
+	 * Immutable disposable that is never {@link #isDisposed() disposed}. Calling
+	 * {@link #dispose()} does nothing, and {@link #isDisposed()} always return false.
+	 */
+	static final class NeverDisposable implements Disposable {
+
+		@Override
+		public void dispose() {
+			//NO-OP
+		}
+
+		@Override
+		public boolean isDisposed() {
+			return false;
+		}
+	}
+
+	//==== STATIC ATOMIC UTILS copied from Disposables ====
+
+	/**
+	 * A singleton {@link Disposable} that represents a disposed instance. Should not be
+	 * leaked to clients.
+	 */
+	//NOTE: There is a private similar DISPOSED singleton in Disposables as well
+	static final Disposable DISPOSED = Disposable.disposed();
 
 	/**
 	 * Atomically push the field to a {@link Disposable} and dispose the old content.

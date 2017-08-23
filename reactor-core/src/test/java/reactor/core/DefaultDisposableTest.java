@@ -69,22 +69,6 @@ public class DefaultDisposableTest {
 			DISPOSABLE_UPDATER =
 			AtomicReferenceFieldUpdater.newUpdater(TestDisposable.class, Disposable.class, "disp");
 
-	private static Disposable empty() {
-		return new Disposable() {
-			volatile boolean disposed = false;
-
-			@Override
-			public void dispose() {
-				this.disposed = true;
-			}
-
-			@Override
-			public boolean isDisposed() {
-				return disposed;
-			}
-		};
-	}
-
 	private static class TestDisposable implements Runnable {
 		volatile Disposable disp;
 
@@ -107,6 +91,7 @@ public class DefaultDisposableTest {
 		assertThat(DefaultDisposable.DISPOSED.isDisposed()).isTrue();
 		DefaultDisposable.DISPOSED.dispose();
 		assertThat(DefaultDisposable.DISPOSED.isDisposed()).isTrue();
+		assertThat(DefaultDisposable.DISPOSED).isNotSameAs(Disposable.disposed());
 	}
 
 	@Test
@@ -131,7 +116,7 @@ public class DefaultDisposableTest {
 			TestDisposable r = new TestDisposable() {
 				@Override
 				public void run() {
-					DefaultDisposable.replace(DISPOSABLE_UPDATER, this, empty());
+					DefaultDisposable.replace(DISPOSABLE_UPDATER, this, Disposable.single());
 				}
 			};
 
@@ -145,7 +130,7 @@ public class DefaultDisposableTest {
 			TestDisposable r = new TestDisposable() {
 				@Override
 				public void run() {
-					DefaultDisposable.set(DISPOSABLE_UPDATER, this, empty());
+					DefaultDisposable.set(DISPOSABLE_UPDATER, this, Disposable.single());
 				}
 			};
 
@@ -165,7 +150,7 @@ public class DefaultDisposableTest {
 
 	@Test
 	public void dispose() {
-		Disposable u = empty();
+		Disposable u = Disposable.single();
 		TestDisposable r = new TestDisposable(u);
 
 		DefaultDisposable.dispose(DISPOSABLE_UPDATER, r);

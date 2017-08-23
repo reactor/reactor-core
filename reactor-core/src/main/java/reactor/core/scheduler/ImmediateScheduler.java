@@ -38,12 +38,12 @@ final class ImmediateScheduler implements Scheduler {
         
     }
     
-    static final Disposable EMPTY = () -> { };
+    static final Disposable FINISHED = Disposable.disposed();
     
     @Override
     public Disposable schedule(Runnable task) {
         task.run();
-        return EMPTY;
+        return FINISHED;
     }
 
     @Override
@@ -66,7 +66,7 @@ final class ImmediateScheduler implements Scheduler {
                 throw Exceptions.failWithRejected();
             }
             task.run();
-            return EMPTY;
+            return FINISHED;
         }
 
         @Override

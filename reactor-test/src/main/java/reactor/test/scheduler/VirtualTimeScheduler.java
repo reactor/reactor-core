@@ -466,11 +466,8 @@ public class VirtualTimeScheduler implements Scheduler {
 		}
 	}
 
-	static final Disposable CANCELLED = () -> {
-	};
-	static final Disposable EMPTY = () -> {
-	};
-
+	static final Disposable CANCELLED = Disposable.disposed();
+	static final Disposable EMPTY = Disposable.never();
 
 	static boolean replace(AtomicReference<Disposable> ref, @Nullable Disposable c) {
 		for (; ; ) {

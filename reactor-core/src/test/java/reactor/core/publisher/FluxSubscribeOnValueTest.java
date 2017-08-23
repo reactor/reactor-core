@@ -18,7 +18,6 @@ package reactor.core.publisher;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
@@ -27,11 +26,18 @@ import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class FluxSubscribeOnValueTest {
 
 	ConcurrentMap<Integer, Integer> execs = new ConcurrentHashMap<>();
+
+	@Test
+	public void finishedConstantsAreNotSame() {
+		assertThat(FluxSubscribeOnValue.ScheduledScalar.FINISHED)
+				.isNotSameAs(FluxSubscribeOnValue.ScheduledEmpty.FINISHED);
+	}
 
 	@Test
 	public void testSubscribeOnValueFusion() {
@@ -74,15 +80,15 @@ public class FluxSubscribeOnValueTest {
         FluxSubscribeOnValue.ScheduledScalar<Integer> test =
         		new FluxSubscribeOnValue.ScheduledScalar<Integer>(actual, 1, Schedulers.single());
 
-        Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
-        Assertions.assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
+        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
 
-        Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         test.future = FluxSubscribeOnValue.ScheduledScalar.FINISHED;
-        Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+        assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 
-        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
         test.future = Disposables.DISPOSED;
-        Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+        assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 }

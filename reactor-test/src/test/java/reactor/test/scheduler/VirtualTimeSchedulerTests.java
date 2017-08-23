@@ -34,6 +34,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class VirtualTimeSchedulerTests {
 
 	@Test
+	public void cancelledAndEmptyConstantsAreNotSame() {
+		assertThat(VirtualTimeScheduler.CANCELLED).isNotSameAs(VirtualTimeScheduler.EMPTY);
+
+		assertThat(VirtualTimeScheduler.CANCELLED.isDisposed()).isTrue();
+		assertThat(VirtualTimeScheduler.EMPTY.isDisposed()).isFalse();
+	}
+
+	@Test
 	public void allEnabled() {
 		Assert.assertFalse(Schedulers.newParallel("") instanceof VirtualTimeScheduler);
 		Assert.assertFalse(Schedulers.newElastic("") instanceof VirtualTimeScheduler);
