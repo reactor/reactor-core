@@ -8,26 +8,63 @@ ifndef::host-github[:ext-relative: {outfilesuffix}]
 :toc:
 :sectnums:
 :sectanchors:
+:linkattrs:
 
 include::aboutDoc.adoc[leveloffset=1]
+ifeval::["{backend}" == "html5"]
+https://github.com/reactor/reactor-core/edit/master/src/docs/asciidoc/aboutDoc.adoc[Suggest Edit^, title="Suggest an edit to the above section via github", role="fa fa-edit"]
+to "<<about-doc>>"
+endif::[]
 
 include::gettingStarted.adoc[leveloffset=1]
+ifeval::["{backend}" == "html5"]
+https://github.com/reactor/reactor-core/edit/master/src/docs/asciidoc/gettingStarted.adoc[Suggest Edit, title="Suggest an edit to the above section via github", role="fa fa-edit"]
+to "<<getting-started>>"
+endif::[]
 
 include::reactiveProgramming.adoc[leveloffset=1]
+ifeval::["{backend}" == "html5"]
+https://github.com/reactor/reactor-core/edit/master/src/docs/asciidoc/reactiveProgramming.adoc[Suggest Edit, title="Suggest an edit to the above section via github", role="fa fa-edit"]
+to "<<intro-reactive>>"
+endif::[]
 
 include::coreFeatures.adoc[leveloffset=1]
+ifeval::["{backend}" == "html5"]
+https://github.com/reactor/reactor-core/edit/master/src/docs/asciidoc/coreFeatures.adoc[Suggest Edit, title="Suggest an edit to the above section via github", role="fa fa-edit"]
+to "<<core-features>>"
+endif::[]
 
 //TODO see other sections from consuming.adoc
 
 include::operatorChoice.adoc[leveloffset=1]
+ifeval::["{backend}" == "html5"]
+https://github.com/reactor/reactor-core/edit/master/src/docs/asciidoc/operatorChoice.adoc[Suggest Edit, title="Suggest an edit to the above section via github", role="fa fa-edit"]
+to "<<which-operator>>"
+endif::[]
 
 include::testing.adoc[leveloffset=1]
+ifeval::["{backend}" == "html5"]
+https://github.com/reactor/reactor-core/edit/master/src/docs/asciidoc/testing.adoc[Suggest Edit, title="Suggest an edit to the above section via github", role="fa fa-edit"]
+to "<<testing>>"
+endif::[]
 
 include::debugging.adoc[leveloffset=1]
+ifeval::["{backend}" == "html5"]
+https://github.com/reactor/reactor-core/edit/master/src/docs/asciidoc/debugging.adoc[Suggest Edit, title="Suggest an edit to the above section via github", role="fa fa-edit"]
+to "<<debugging>>"
+endif::[]
 
 include::advancedFeatures.adoc[leveloffset=1]
+ifeval::["{backend}" == "html5"]
+https://github.com/reactor/reactor-core/edit/master/src/docs/asciidoc/advancedFeatures.adoc[Suggest Edit, title="Suggest an edit to the above section via github", role="fa fa-edit"]
+to "<<advanced>>"
+endif::[]
 
 include::faq.adoc[leveloffset=1]
+ifeval::["{backend}" == "html5"]
+https://github.com/reactor/reactor-core/edit/master/src/docs/asciidoc/faq.adoc[Suggest Edit, title="Suggest an edit to the above section via github", role="fa fa-edit"]
+to "<<faq>>"
+endif::[]
 
 [appendix]
 include::apdx-implem.adoc[]
