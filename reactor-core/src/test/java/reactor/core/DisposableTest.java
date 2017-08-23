@@ -175,24 +175,24 @@ public class DisposableTest {
 	}
 
 	@Test
-	public void emptyDisposableInitiallyNotDisposed() {
-		Disposable empty = Disposable.empty();
+	public void singleDisposableInitiallyNotDisposed() {
+		Disposable single = Disposable.single();
 
-		assertThat(empty.isDisposed()).isFalse();
+		assertThat(single.isDisposed()).isFalse();
 	}
 
 	@Test
-	public void emptyDisposableCanBeDisposed() {
-		Disposable empty = Disposable.empty();
-		assertThat(empty.isDisposed()).isFalse();
+	public void singleDisposableCanBeDisposed() {
+		Disposable single = Disposable.single();
+		assertThat(single.isDisposed()).isFalse();
 
-		empty.dispose();
-		assertThat(empty.isDisposed()).isTrue();
+		single.dispose();
+		assertThat(single.isDisposed()).isTrue();
 	}
 
 	@Test
-	public void emptyDisposableCreatesInstances() {
-		assertThat(Disposable.empty()).isNotSameAs(Disposable.empty());
+	public void singleDisposableCreatesInstances() {
+		assertThat(Disposable.single()).isNotSameAs(Disposable.single());
 	}
 
 	@Test

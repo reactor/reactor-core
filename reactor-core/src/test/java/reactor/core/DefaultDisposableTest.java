@@ -116,7 +116,7 @@ public class DefaultDisposableTest {
 			TestDisposable r = new TestDisposable() {
 				@Override
 				public void run() {
-					DefaultDisposable.replace(DISPOSABLE_UPDATER, this, Disposable.empty());
+					DefaultDisposable.replace(DISPOSABLE_UPDATER, this, Disposable.single());
 				}
 			};
 
@@ -130,7 +130,7 @@ public class DefaultDisposableTest {
 			TestDisposable r = new TestDisposable() {
 				@Override
 				public void run() {
-					DefaultDisposable.set(DISPOSABLE_UPDATER, this, Disposable.empty());
+					DefaultDisposable.set(DISPOSABLE_UPDATER, this, Disposable.single());
 				}
 			};
 
@@ -150,7 +150,7 @@ public class DefaultDisposableTest {
 
 	@Test
 	public void dispose() {
-		Disposable u = Disposable.empty();
+		Disposable u = Disposable.single();
 		TestDisposable r = new TestDisposable(u);
 
 		DefaultDisposable.dispose(DISPOSABLE_UPDATER, r);

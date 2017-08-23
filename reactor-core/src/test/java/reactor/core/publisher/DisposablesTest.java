@@ -88,7 +88,7 @@ public class DisposablesTest {
 			TestDisposable r = new TestDisposable() {
 				@Override
 				public void run() {
-					Disposables.replace(DISPOSABLE_UPDATER, this, Disposable.empty());
+					Disposables.replace(DISPOSABLE_UPDATER, this, Disposable.single());
 				}
 			};
 
@@ -102,7 +102,7 @@ public class DisposablesTest {
 			TestDisposable r = new TestDisposable() {
 				@Override
 				public void run() {
-					Disposables.set(DISPOSABLE_UPDATER, this, Disposable.empty());
+					Disposables.set(DISPOSABLE_UPDATER, this, Disposable.single());
 				}
 			};
 
@@ -122,7 +122,7 @@ public class DisposablesTest {
 
 	@Test
 	public void dispose() {
-		Disposable u = Disposable.empty();
+		Disposable u = Disposable.single();
 		TestDisposable r = new TestDisposable(u);
 
 		Disposables.dispose(DISPOSABLE_UPDATER, r);
@@ -134,11 +134,11 @@ public class DisposablesTest {
 	public void trySet() {
 		TestDisposable r = new TestDisposable();
 
-		Disposable d1 = Disposable.empty();
+		Disposable d1 = Disposable.single();
 
 		assertThat(Disposables.trySet(DISPOSABLE_UPDATER, r, d1)).isTrue();
 
-		Disposable d2 = Disposable.empty();
+		Disposable d2 = Disposable.single();
 
 		assertThat(Disposables.trySet(DISPOSABLE_UPDATER, r, d2)).isFalse();
 
@@ -148,7 +148,7 @@ public class DisposablesTest {
 
 		Disposables.dispose(DISPOSABLE_UPDATER, r);
 
-		Disposable d3 = Disposable.empty();
+		Disposable d3 = Disposable.single();
 
 		assertThat(Disposables.trySet(DISPOSABLE_UPDATER, r, d3)).isFalse();
 

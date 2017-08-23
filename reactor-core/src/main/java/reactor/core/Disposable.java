@@ -68,12 +68,12 @@ public interface Disposable {
 	}
 
 	/**
-	 * Return a new {@link Disposable} instance that is initially not disposed but can be
-	 * by calling {@link Disposable#dispose()}.
+	 * Return a new simple {@link Disposable} instance that is initially not disposed but
+	 * can be by calling {@link Disposable#dispose()}.
 	 *
 	 * @return a new {@link Disposable} initially not yet disposed.
 	 */
-	static Disposable empty() {
+	static Disposable single() {
 		return new DefaultDisposable.SimpleDisposable();
 	}
 
