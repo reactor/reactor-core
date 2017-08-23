@@ -5,7 +5,7 @@ You can read this reference guide in a linear fashion, or you can skip
 sections if something doesn’t interest you.
 
 == Latest version & Copyright Notice
-The Reactor reference guide is available as html documents. The latest copy is
+The Reactor reference guide is available as HTML documents. The latest copy is
 available at http://projectreactor.io/docs/core/release/reference/docs/index.html
 
 Copies of this document may be made for your own use and for distribution to
@@ -39,11 +39,11 @@ There are several ways to reach out for help with Reactor.
  * Get in touch with the community on
  https://gitter.im/reactor/reactor[Gitter].
  * Ask a question on stackoverflow.com, the tag is http://stackoverflow.com/tags/project-reactor[`project-reactor`].
- * Report bugs (or ask questions) in github issues, the most relevant repositories
+ * Report bugs (or ask questions) in Github issues. The most relevant repositories
  that are most monitored are
  http://github.com/reactor/reactor-core/issues[reactor-core] and
  http://github.com/reactor/reactor-addons/issues[reactor-addons]
- (which covers reactor-test and adapters issues)
+ (which covers reactor-test and adapters issues).
 
 NOTE: All of Reactor is open source,
 https://github.com/reactor/reactor-core/tree/master/src/docs/asciidoc[including this documentation]!
@@ -53,11 +53,11 @@ https://github.com/reactor/reactor-core/blob/master/CONTRIBUTING.md[get involved
 == Where to go from here
  * Head to <<getting-started>> if you feel like jumping straight into the code.
  * If you're new to _Reactive Programming_ though, you'd probably better start
- with the <<intro-reactive>>...
+ with the <<intro-reactive>>.
  * In order to dig deeper into the core features of Reactor, head to <<core-features>>:
  ** If you're looking for the right tool for the job but cannot think of a
- relevant operator, maybe the <<which-operator>> section in there could help?
- ** Learn more about Reactor's reactive types in the "<<flux>>" and "<<mono>>" sections
+ relevant operator, try <<which-operator>>.
+ ** Learn more about Reactor's reactive types in the "<<flux>>" and "<<mono>>" sections.
  ** Switch threading contexts using <<schedulers,a Scheduler>>.
  ** Learn how to handle errors in the <<error.handling>> section.
  * Unit testing? Yes it is possible with the `reactor-test` project! See <<testing>>.

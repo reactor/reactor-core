@@ -3,12 +3,12 @@
 == Introducing Reactor
 //TODO flesh out, reword. could also be updated on the website
 Reactor is a fully non-blocking reactive programming foundation for the JVM,
-with efficient demand management (backpressure). It integrates directly with
+with efficient demand management (backpressure). It integrates directly with the
 Java 8 functional APIs, notably `CompletableFuture`, `Stream` and `Duration`.
 It offers composable asynchronous sequence APIs `Flux` ([N] elements) and `Mono`
 ([0|1] elements), extensively implementing the Reactive Extensions specification.
 
-Reactor also supports non-blocking IPC with the `reactor-ipc` components.
+Reactor also supports non-blocking inter-process communication (IPC) with the `reactor-ipc` components.
 Suited for Microservices Architecture, Reactor IPC offers backpressure-ready
 network engines for HTTP (including Websockets), TCP and UDP. Reactive Encoding/
 Decoding is fully supported.
@@ -32,23 +32,23 @@ It only brings a transitive dependency to `org.reactive-streams:reactive-streams
 
 
 == The BOM
-Reactor 3 uses a BOMfootnote:['Bill Of Materials', a curated list of versioned compatible artifacts]
+Reactor 3 uses a BOM (Bill of Materials - a standard Maven artifact)
 model since `reactor-core 3.0.4`, with the `Aluminium` release train.
 
-This allows to regroup artifacts that are meant to work well together without
+The BOM lets you group artifacts that are meant to work well together without
 having to wonder about the sometimes divergent versioning schemes of these artifacts.
 
-The BOM is like a curated list of versions. It is itself versioned, using a
-release train scheme with a codename followed by a qualifier:
+The BOM is a list of versioned artifacts that is itself versioned, using a
+release train scheme with a codename followed by a qualifier. Here's an example:
 [verse]
 Aluminium-RELEASE
 Carbon-BUILD-SNAPSHOT
 Aluminium-SR1
-Carbon-SR32footnote:[(hopefully not)]
+Carbon-SR32
 
-The codenames represent what would traditionally be the MAJOR.MINOR number. They
-come from the https://en.wikipedia.org/wiki/Periodic_table#Overview[Periodic Table of Elements]
-(mostly), in growing alphabetical order.
+The codenames represent what would traditionally be the MAJOR.MINOR number. They (mostly)
+come from the https://en.wikipedia.org/wiki/Periodic_table#Overview[Periodic Table of Elements],
+in growing alphabetical order.
 
 The qualifiers are (in chronological order):
 
@@ -60,18 +60,18 @@ The qualifiers are (in chronological order):
 
 [[getting]]
 == Getting Reactor
-As mentioned above, the easiest way to use Reactor in your core is to use
+As mentioned earlier, the easiest way to use Reactor in your core is to use
 the BOM and add the relevant dependencies to your project. Note that when adding
-such a dependency, you omit the version so that it gets picked up from the BOM.
+such a dependency, you must omit the version so that it gets picked up from the BOM.
 
 However, if you want to force the use of a specific artifact's version, you can
-specify it when adding your dependency, as you usually would. You can also of
-course forgo the BOM entirely and always specify dependencies with their artifact
-versions.
+specify it when adding your dependency, as you usually would. You can also forgo
+the BOM entirely and specify dependencies by their artifact versions.
 
 === Maven installation
 The BOM concept is natively supported by Maven. First, you'll need to import the
-BOM by adding the following to your `pom.xml`:footnote:[if the top section already exist in your pom, just append the contents]
+BOM by adding the following to your `pom.xml`. If the top section already exists
+in your pom, just append the contents.
 
 [source,xml]
 ----
@@ -87,11 +87,11 @@ BOM by adding the following to your `pom.xml`:footnote:[if the top section alrea
     </dependencies>
 </dependencyManagement>
 ----
-<1> Notice the `dependencyManagement` tag, this is in addition to the regular
+<1> Notice the `dependencyManagement` tag. This is in addition to the regular
 `dependencies` section.
 
-Next, add your dependencies to the relevant reactor projects as usual, except
-without a `<version>`:
+Next, add your dependencies to the relevant reactor projects, as usual, except
+without a `<version>`, as shown here:
 
 [source,xml]
 ----
@@ -108,9 +108,9 @@ without a `<version>`:
     </dependency>
 </dependencies>
 ----
-<1> dependency to the core library
-<2> no version tag here
-<3> reactor-test provides facilities to unit test reactive streams
+<1> Dependency on the core library
+<2> No version tag here
+<3> `reactor-test` provides facilities to unit test reactive streams
 
 === Gradle installation
 Gradle has no core support for Maven BOMs, but you can use Spring's
@@ -193,4 +193,3 @@ repositories {
   mavenCentral()
 }
 ----
-

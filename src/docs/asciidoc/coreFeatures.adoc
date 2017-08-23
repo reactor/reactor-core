@@ -1,58 +1,62 @@
 [[core-features]]
 = Reactor Core Features
-`reactor-core` is the main artifact of the project, a reactive library that
+The Reactor project main artifact is `reactor-core`, a reactive library that
 focuses on the Reactive Streams specification and targets Java 8.
 
 Reactor introduces composable reactive types that implement `Publisher` but also
-provide a rich vocabulary of operators, `Flux` and `Mono`. The former represents
-a reactive sequence of 0..N items, while the later represents a single-valued-or-empty
-result.
+provide a rich vocabulary of operators, most notably `Flux` and `Mono`. A `Flux`
+object represents a reactive sequence of 0..N items, while a `Mono` object
+represents a single-valued-or-empty (0..1) result.
 
-This distinction allows to carry a bit of semantic into the type, indicating the
-rough cardinality of the asynchronous processing. For instance, an HTTP request
-only produces one response so there wouldn't be much sense in doing a `count`
-operation... Expressing the result of such an HTTP call as a
-`Mono<HttpResponse>` thus makes more sense than as a `Flux<HttpResponse>`, as it
-offers only operators that are relevant to a "zero or one item" context.
+This distinction carries a bit of semantic information into the type, indicating
+the rough cardinality of the asynchronous processing. For instance, an HTTP
+request only produces one response, so there wouldn't be much sense in doing a
+`count` operation. Expressing the result of such an HTTP call as a
+`Mono<HttpResponse>` thus makes more sense than expressing it as a
+`Flux<HttpResponse>`, as it offers only operators that are relevant to a "zero
+or one item" context.
 
-In parallel, operators that change the maximum cardinality of the processing
-will also switch to the relevant type. For instance the `count` operator exists
+Operators that change the maximum cardinality of the processing
+will also switch to the relevant type. For instance, the `count` operator exists
 in `Flux`, but returns a `Mono<Long>`.
 
 [[flux]]
-== `Flux`, an asynchronous sequence of 0-n items
+== `Flux`, an Asynchronous Sequence of 0-n Items
 
 image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.7.RELEASE/src/docs/marble/flux.png[Flux]
 
 
 A `Flux<T>` is a standard `Publisher<T>` representing an asynchronous sequence
 of 0 to N emitted items, optionally terminated by either a success signal or an
-error.
+error. Thus, the possible values of a flux are a value, a success signal, or an
+error. As in the Reactive Streams spec, these 3 types of signal translate to
+calls to a downstream object's `onNext`, `onComplete` or `onError` methods.
 
-As in the RS spec, these 3 types of signal translate to calls to downstream's
-`onNext`, `onComplete` or `onError` methods.
-
-With this large scope of possible signal, `Flux` is the general-purpose reactive
-type. Note that all events, even terminating ones, are optional: no onNext event
-but an onComplete event represents an _empty_ finite sequence, but remove the
-onComplete and you have an _infinite_ empty sequence. Similarly, infinite
-sequences are not necessarily empty: `Flux.interval(Duration)` produces a
-`Flux<Long>` that is infinite and emits regular ticks from a clock.
+With this large scope of possible signals, `Flux` is the general-purpose
+reactive type. Note that all events, even terminating ones, are optional: no
+`onNext` event but an `onComplete` event represents an _empty_ finite sequence,
+but remove the `onComplete` and you have an _infinite_ empty sequence.
+Similarly, infinite sequences are not necessarily empty. For example,
+`Flux.interval(Duration)` produces a `Flux<Long>` that is infinite and emits
+regular ticks from a clock.
 
 [[mono]]
-== `Mono`, an asynchronous 0-1 result
+== `Mono`, an Asynchronous 0-1 Result
 image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.7.RELEASE/src/docs/marble/mono.png[Mono]
 
 A `Mono<T>` is a specialized `Publisher<T>` that emits at most one item then
 optionally terminates with an `onComplete` signal or an `onError`.
 
-As such it offers only a relevant subset of operators. For instance, combination
-operators can either ignore the right hand-side emissions and return another
-`Mono` or emit values from both sides, in which case they'll switch to a `Flux`.
+As such it offers only a subset of the operators that are available for a
+`Flux`. For instance, combination operators can either ignore the right
+hand-side emissions and return another `Mono` or emit values from both sides,
+in which case they'll switch to a `Flux`.
+// This needs an example of each kind (ignoring the right and emiting from both
+//sides).
 
 Note that a `Mono` can be used to represent no-value asynchronous processes that
-only have the concept of completion (think `Runnable`): just use an empty
-`Mono<Void>`.
+only have the concept of completion (think `Runnable`). To create one, use an
+empty `Mono<Void>`.
 
 == Simple ways to create a Flux/Mono and to subscribe to it
 The easiest way to get started with `Flux` and `Mono` is to use one of the
@@ -108,13 +112,14 @@ subscribe(Consumer<? super T> consumer,
           Runnable completeConsumer,
           Consumer<? super Subscription> subscriptionConsumer); <5>
 ----
-<1> Just subscribe and trigger the sequence.
+<1> Subscribe and trigger the sequence.
 <2> Do something with each produced value.
 <3> Deal with values but also react to an error.
-<4> Deal with values, errors but also execute some code when the sequence
+<4> Deal with values and errors but also execute some code when the sequence
 successfully completes.
-<5> Deal with values, errors, successful completion but also do something with
+<5> Deal with values and errors and successful completion but also do something with
 the `Subscription` produced by this `subscribe` call.
+// Each of these needs an example
 
 TIP: These variants return a reference to the subscription that one can use to
 cancel said subscription when no more data is needed. Upon cancellation, the
@@ -122,20 +127,24 @@ source should stop producing values and clean up any resources it created. This
 cancel and clean-up behavior is represented in Reactor by the general-purpose
 `Disposable` interface.
 
-These are convenience variant over the Reactive Streams defined subscribe:
+include::subscribe-details.adoc[]
+
+The Reactive Streams specification defines another variant of the `subscribe`
+method. It allows the attachment of a custom Subscriber without all the other
+options, as shown here:
 
 [source,java]
 ----
 subscribe(Subscriber<? super T> subscriber);
 ----
 
-That last variant is useful if you already have a `Subscriber` handy, but more
-often you'll need it because you want to do something subscription-related in
-the other callbacks. Most probably, that'd be dealing with backpressure and
-triggering the requests yourself.
+This variant of the `subscribe` method is useful if you already have a
+`Subscriber` handy, but more often you'll need it because you want to do
+something subscription-related in the other callbacks. Most probably, that's
+dealing with backpressure and triggering the requests yourself.
 
-In that case, you can ease things up by using the `BaseSubscriber` abstract
-class, which offers convenience methods for that:
+In that case, you can make things easier by using the `BaseSubscriber` abstract
+class, which offers convenience methods for handling backpressure:
 
 .Using a `BaseSubscriber` to fine tune backpressure
 [source,java]
@@ -158,24 +167,24 @@ source.map(String::toUpperCase)
 	      //<5>
       });
 ----
-<1> The `BaseSubscriber` is an abstract class so we create an anonymous
+<1> The `BaseSubscriber` is an abstract class, so we create an anonymous
 implementation and specify the generic type.
 <2> `BaseSubscriber` defines hooks for the various signal handling you can
 implement in a `Subscriber`. It also deals with the boilerplate of capturing the
 `Subscription` object so you can manipulate it in other hooks.
-<3> `request(n)` is such a method: it propagates backpressure request to the
+<3> `request(n)` is such a method. It propagates backpressure request to the
 capture subscription from any of the hooks. Here we start the stream by
 requesting 1 element from the source.
-<4> upon receiving a new value, we continue requesting new items from the source
+<4> Upon receiving a new value, we continue requesting new items from the source
 one by one.
-<5> Other hooks are `hookOnComplete`, `hookOnError`, `hookOnCancel` and
+<5> Other hooks are `hookOnComplete`, `hookOnError`, `hookOnCancel`, and
 `hookFinally` (which is always called when the sequence terminates, with the
 type of termination passed in as a `SignalType` parameter).
 
-WARNING: When manipulating request like that, you must be careful to produce
-enough demand for the sequence to advance or your Flux will get "stuck". That is
-the reason why `BaseSubscriber` forces you to implement the subscription and
-onNext hooks, where you should usually call `request` at least once.
+WARNING: When manipulating a request, you must be careful to produce enough
+demand for the sequence to advance or your Flux will get "stuck". That is why
+`BaseSubscriber` forces you to implement the subscription and `onNext` hooks,
+where you should usually call `request` at least once.
 
 `BaseSubscriber` also offers a `requestUnbounded()` method to switch to unbounded
 mode (equivalent to `request(Long.MAX_VALUE)`.
@@ -185,66 +194,84 @@ include::producing.adoc[leveloffset=2]
 
 [[schedulers]]
 == `Schedulers`
-Reactor, like RxJava, can be considered **concurrency agnostic**. It doesn't
-enforce a concurrency model but rather leave you, the developer, in command.
-
-But that doesn't prevent the library from helping you with concurrency...
+Reactor, like RxJava, can be considered *concurrency agnostic*. It doesn't
+enforce a concurrency model but rather leaves you, the developer, in command.
+However, that doesn't prevent the library from helping you with concurrency.
 
 In Reactor, the execution model and where the execution happens is determined by
-the `Scheduler` that is used. A `Scheduler` is an interface that can abstract
-a wide range of implementations. The `Schedulers` class has static methods that
-give access to the following execution contexts:
+the `Scheduler` that is used. A
+https://projectreactor.io/docs/core/release/api/reactor/core/scheduler/Scheduler.html[`Scheduler`]
+is an interface that can abstract a wide range of implementations. The
+https://projectreactor.io/docs/core/release/api/reactor/core/scheduler/Schedulers.html[`Schedulers`]
+class has static methods that give access to the following execution contexts:
 
 - the current thread (`Schedulers.immediate()`)
 - a single, reusable thread (`Schedulers.single()`). Note that this method
 reuses the same thread for all callers, until the Scheduler is disposed. If you
-want a per-call dedicated thread, use `Schedulers.newSingle()` instead.
+want a per-call dedicated thread, use `Schedulers.newSingle()` for each call.
 - an elastic thread pool (`Schedulers.elastic()`). It will create new worker
-pools as needed, and reuse idle ones unless they stay idle for too long (default
-is 60s), in which case the workers are disposed. This is a good choice for I/O
-blocking work for instance.
+pools as needed, and reuse idle ones. Worker pools that stay idle for too long
+(default is 60s) are disposed. This is a good choice for I/O blocking work for
+instance.
 - a fixed pool of workers that is tuned for parallel work
 (`Schedulers.parallel()`). It will create as many workers as you have CPU cores.
 
 Additionally, you can create a `Scheduler` out of any pre-existing
-`ExecutorService` footnote:[you can also create one from an `Executor`, although
-it is discouraged] using `Schedulers.fromExecutorService(ExecutorService)`, and
-also create new instances of the various scheduler types using `newXXX` methods.
+`ExecutorService` using `Schedulers.fromExecutorService(ExecutorService)`. (You
+can also create one from an `Executor`, although doing so is discouraged.)
+You can also create new instances of the various scheduler types using `newXXX`
+methods. For example, `Schedulers.newElastic(yourScheduleName)` creates a new
+elastic scheduler named `yourScheduleName`.
 
-NOTE: Operators are implemented using non-blocking algorithms that are
-tuned to facilitate the work-stealing that can happen in some Schedulers.
+NOTE: Operators are implemented using non-blocking algorithms tuned to
+facilitate the work stealing that can happen in some Schedulers.
+//Explain work stealing.
+
+`Flux` and `Mono` do not create threads. Some operators, such as `publishOn` do
+create threads. Also, as a form of work sharing, these operators can "steal"
+threads from other work pools if the other pools are currently idle.
+Consequently, neither the `Flux` or `Mono` objects nor the `Subscriber` objects
+have to be smart about threads. They rely on the operators to manage the
+threads and work pools.
 
 Some operators use a specific Scheduler from `Schedulers` by default (and will
 usually give you the option of providing a different one). For instance, calling
 the factory method `Flux.interval(Duration.ofMillis(300))` will produces a `Flux<Long>`
 that ticks every 300ms. This is enabled by `Schedulers.parallel()` by default.
 
-Reactor offers two means of switching execution context (or `Scheduler`) in a
-reactive chain: `publishOn` and `subscribeOn`. Both take a `Scheduler` and allow
-to switch the execution context to that scheduler. But `publishOn` placement in
-the chain matters, while `subscribeOn`'s doesn't. To understand that difference,
-you first have to remember that <<reactive.subscribe>>.
+Reactor offers two means of switching the execution context (or `Scheduler`) in
+a reactive chain: `publishOn` and `subscribeOn`. Both take a `Scheduler` and
+let you switch the execution context to that scheduler. But `publishOn`
+placement in the chain matters, while `subscribeOn`'s doesn't. To understand
+that difference, you first have to remember that <<reactive.subscribe,nothing
+happens until you subscribe()>>.
 
 In Reactor, when you chain operators you wrap as many `Flux`/`Mono` specific
-implementations inside one another. And as soon as you subscribe, a chain of
-`Subscriber` is created backward. This is effectively hidden from you and all
-you can see is the outer layer of `Flux` (or `Mono`) and `Subscription`, but
-these intermediate operator-specific subscribers are where the real work happens.
+implementations inside one another as you need. Once you subscribe, a chain of
+`Subscriber` objects is created, backward (up the chain) to the first publisher.
+This is effectively hidden from you. All you can see is the outer layer of
+`Flux` (or `Mono`) and `Subscription`, but these intermediate operator-specific
+subscribers are where the real work happens.
 
-With that knowledge, let's have a closer look at the two operators:
+With that knowledge, let's have a closer look at the `publishOn` and
+`subscribeOn` operators:
 
 - `publishOn` applies as any other operator, in the middle of that subscriber
-chain. As such, it takes signals from downstream and replays them upstream, but
+chain. It takes signals from downstream and replays them upstream while
 executing the callback on a worker from the associated `Scheduler`. So it
-**affects where the subsequent operators will execute** (until another publishOn
+*affects where the subsequent operators will execute* (until another `publishOn`
 is chained in).
-- `subscribeOn` rather applies to the subscription process, when that backward
+- `subscribeOn` applies to the subscription process, when that backward
 chain is constructed. As a consequence, no matter where you place the
-`subscribeOn` in the chain, **it is always the context of the source emission**
-that is affected. However, this doesn't affect the behavior of subsequent calls
-to `publishOn`: they will still switch the execution context for the part of the
-chain after them. Also, only the earliest `subscribeOn` call in the chain is
+`subscribeOn` in the chain, *it always affects the context of the source
+emission*. However, this doesn't affect the behavior of subsequent calls to
+`publishOn`: they will still switch the execution context for the part of the
+chain after them.
+
+NOTE: Only the earliest `subscribeOn` call in the chain is
 actually taken into account.
+
+include::threading.adoc[]
 
 [[error.handling]]
 == Handling Errors
@@ -252,19 +279,19 @@ TIP: For a quick look at the available operators for error handling, see
 <<which.errors,the relevant operator decision tree>>.
 
 In Reactive Streams, errors are terminal events. As soon as an error occurs, it
-stop the sequence and gets propagated down the chain of operators to the last
+stops the sequence and gets propagated down the chain of operators to the last
 step, the `Subscriber` you defined and its `onError` method.
 
-Such errors should still be dealt with at the application level, for instance
-by displaying an error notification in a UI, or sending a meaningful error
-payload in a REST endpoint, so the subscriber's `onError` method should always
-be defined.
+Such errors should still be dealt with at the application level. For instance,
+you might display an error notification in a UI or send a meaningful error
+payload in a REST endpoint. For this reason, the subscriber's `onError` method
+should always be defined.
 
-WARNING: If not defined, `onError` will throw an `UnsupportedOperationException`.
-You can further detect and triage it by the `Exceptions.isErrorCallbackNotImplemented`
-method.
+WARNING: If not defined, `onError` will throw an
+`UnsupportedOperationException`. You can further detect and triage it with the
+`Exceptions.isErrorCallbackNotImplemented` method.
 
-But Reactor also offers alternative means of dealing with errors in the middle
+Reactor also offers alternative means of dealing with errors in the middle
 of the chain, as error-handling operators.
 
 IMPORTANT: Before you learn about error-handling operators, you must keep in
@@ -274,24 +301,26 @@ continue, but rather converts the `onError` signal into the start of a *new*
 sequence (the fallback one). As such it replaces the terminated sequence
 _upstream_.
 
-Let's go through each mean of error handling one-by-one. When relevant we'll
-make a parallel with imperative world's `try` patterns.
+Let's go through each means of error handling one-by-one. When relevant, we'll
+make a parallel with imperative programming's `try` patterns.
 
 === Error handling operators
-You may be familiar with several ways of dealing with exceptions in a try/catch
+You may be familiar with several ways of dealing with exceptions in a try-catch
 block. Most notably:
 
- 1. catch and return a static default value
- 2. catch and execute an alternative path (fallback method)
- 3. catch and dynamically compute a fallback value
- 4. catch, wrap to a `BusinessException` and re-throw
- 5. catch, log an error specific message and re-throw
- 6. the `finally` block to clean up resources, or a Java 7's "try-with-resource" construct
+ 1. Catch and return a static default value.
+ 2. Catch and execute an alternative path with a fallback method.
+ 3. Catch and dynamically compute a fallback value.
+ 4. Catch, wrap to a `BusinessException`, and re-throw.
+ 5. Catch, log an error-specific message, and re-throw.
+ 6. Use the `finally` block to clean up resources or a Java 7
+ "try-with-resource" construct.
 
-All of these have equivalent in Reactor, in the form of error handling operators.
+All of these have equivalents in Reactor, in the form of error-handling
+operators.
 
-Before looking into these operators, let's first try to establish a parallel between a
-reactive chain and a try-catch block.
+Before looking into these operators, let's first try to establish a parallel
+between a reactive chain and a try-catch block.
 
 When subscribing, the `onError` callback at the end of the chain is akin to a `catch`
 block. There, execution skips to the catch in case an Exception is thrown:
@@ -307,7 +336,8 @@ s.subscribe(value -> System.out.println("RECEIVED " + value), // <3>
 <1> a transformation is performed that can throw an exception.
 <2> if everything went well, a second transformation is performed.
 <3> each successfully transformed value is printed out.
-<4> in case of an error, the sequence terminates and an error message is displayed.
+<4> in case of an error, the sequence terminates and an error message is
+displayed.
 
 This is conceptually similar to the following try/catch block:
 [source,java]
@@ -323,14 +353,15 @@ try {
 }
 ----
 <1> if an exception is thrown here...
-<2> ...the rest of the loops is skipped...
+<2> ...the rest of the loop is skipped...
 <3> ...and the execution goes straight to here.
 
 Now that we've established a parallel, we'll look at the different error handling
 cases and their equivalent operators.
 
 ==== Static fallback value
-The equivalent of **(1)** is `onErrorReturn`:
+The equivalent of *(1)* (catch and return a static default value) is
+`onErrorReturn`:
 [source,java]
 ----
 Flux.just(10)
@@ -338,8 +369,8 @@ Flux.just(10)
     .onErrorReturn("RECOVERED");
 ----
 
-You also have the option of filtering when to recover with a default value vs
-letting the error propagate, depending on the exception that occurred:
+You also have the option of filtering (choosing) when to recover with a default
+value versus letting the error propagate, depending on the exception that occurred:
 [source,java]
 ----
 Flux.just(10)
@@ -350,7 +381,7 @@ Flux.just(10)
 ==== Fallback method
 If you want more than a single default value and you have an alternative safer
 way of processing your data, you can use `onErrorResume`. This would be the
-equivalent of *(2)*.
+equivalent of *(2)* (catch and execute an alternative path with a fallback method).
 
 For example, if your nominal process is fetching data from an external
 unreliable service, but you also keep a local cache of the same data that _can_
@@ -363,9 +394,9 @@ Flux.just("key1", "key2")
           .onErrorResume(e -> getFromCache(k)) // <2>
     );
 ----
-<1> for each key, we asynchronously call the external service.
-<2> if the external service call fails, we fallback to the cache for that key. Note we
-always apply the same fallback, whatever the source error `e` is.
+<1> For each key, we asynchronously call the external service.
+<2> If the external service call fails, we fallback to the cache for that key.
+Note that we always apply the same fallback, whatever the source error `e` is.
 
 Like `onErrorReturn`, `onErrorResume` has variants that let you filter which exceptions
 to fallback on, based either on the exception's class or a `Predicate`. The fact that it
@@ -386,21 +417,24 @@ Flux.just("timeout1", "unknown", "key2")
           })
     );
 ----
-<1> The function allows to dynamically choose how to continue.
+<1> The function allows dynamically choosing how to continue.
 <2> If the source times out, let's hit the local cache.
 <3> If the source says the key is unknown, let's create a new entry.
 <4> In all other cases, "re-throw".
 
 === Dynamic fallback value
-Even if you don't have an alternative safer way of processing your data, you might want
-to compute a fallback value out of the exception you received (*(3)*).
+Even if you don't have an alternative safer way of processing your data, you
+might want to compute a fallback value out of the exception you received. This
+would be the equivalent of *(3)* (catch and dynamically compute a fallback
+value).
 
-For instance, if your return type has a variant dedicated to holding an exception
-(think `Future.complete(T success)` vs `Future.completeExceptionally(Throwable error)`),
-you could simply instantiate the error-holding variant and pass the exception.
+For instance, if your return type has a variant dedicated to holding an
+exception (think `Future.complete(T success)` vs
+`Future.completeExceptionally(Throwable error)`), you could instantiate the
+error-holding variant and pass the exception.
 
-This can be done in the same way than the fallback method solution, using `onErrorResume`.
-You just need a tiny bit of boilerplate:
+This can be done in the same way as the fallback method solution, using
+`onErrorResume`. You just need a tiny bit of boilerplate:
 
 [source,java]
 ----
@@ -408,13 +442,16 @@ erroringFlux.onErrorResume(error -> Mono.just( // <1>
 	myWrapper.fromError(error) // <2>
 ));
 ----
-<1> The boilerplate secret sauce is to use `Mono.just` with `onErrorResume`
-<2> You then wrap the exception into the adhoc class, or otherwise compute the value out of the exception...
+<1> The boilerplate secret sauce is to use `Mono.just` with `onErrorResume`.
+<2> You then wrap the exception into the adhoc class, or otherwise compute the
+value out of the exception...
 
 
 ==== Catch and rethrow
-Back in the "fallback method" example, the last line inside the `flatMap` gives us an hint
-as to how item *(4)* (catch wrap and rethrow) could be achieved:
+In the "fallback method" example, the last line inside the `flatMap` gives us a
+hint as to how item *(4)* (Catch, wrap to a `BusinessException`, and re-throw)
+could be achieved:
+
 [source,java]
 ----
 Flux.just("timeout1")
@@ -425,7 +462,8 @@ Flux.just("timeout1")
     );
 ----
 
-But actually, there is a more straightforward way of achieving the same with `onErrorMap`:
+But actually, there is a more straightforward way of achieving the same with
+`onErrorMap`:
 [source,java]
 ----
 Flux.just("timeout1")
@@ -436,14 +474,16 @@ Flux.just("timeout1")
 
 ==== Log or react on the side
 For cases where you want the error to continue propagating, but you still want
-to react to it without modifying the sequence (for instance logging it like in
-item *(5)*), there is the `doOnError` operator. This operator as well as all
-`doOn` prefixed operators are sometimes referred to as a "side-effect". That is
-because they allow to peek inside the sequence's events without modifying them.
+to react to it without modifying the sequence (logging it, for instance) there
+is the `doOnError` operator. This is the equivalent of *(5)* (Catch, log an
+error-specific message, and re-throw). This operator, as well as all`doOn`
+prefixed operators, are sometimes referred to as a "side-effect". That's
+because they let you peek inside the sequence's events without modifying them.
 
-The example below makes use of that to ensure that when we fallback to the cache,
-we at least log that the external service had a failure. We could also imagine
-we have statistic counters to increment as an error side-effect...
+The following example ensures that, when we fallback to the cache, we at least
+log that the external service had a failure. We can also imagine we have
+statistic counters to increment as an error side-effect.
+
 [source,java]
 ----
 LongAdder failureStat = new LongAdder();
@@ -464,8 +504,9 @@ Flux.just("unknown")
 ==== Using resources and the finally block
 The last parallel to draw with the imperative world is the cleaning up that can
 be done either via a Java 7 "try-with-resources" construct or the use of the
-`finally` block (*(6)*). Both have their Reactor equivalent, actually: `using`
-and `doFinally`:
+`finally` block. This is the equivalent of *(6)* (use the `finally` block to
+clean up resources or a Java 7 "try-with-resource" construct). Both have their
+Reactor equivalents: `using` and `doFinally`:
 [source,java]
 ----
 AtomicBoolean isDisposed = new AtomicBoolean();
@@ -488,14 +529,19 @@ Flux.using(
 		Disposable::dispose // <3>
 );
 ----
-<1> The first lambda generates the resource. Here we return our mock `Disposable`.
+<1> The first lambda generates the resource. Here we return our mock
+`Disposable`.
 <2> The second lambda processes the resource, returning a `Flux<T>`.
-<3> The third lambda is called when the flux from 2) terminates or is cancelled, to clean up resources.
-<4> After subscription and execution of the sequence, the `isDisposed` atomic boolean would become `true`.
+<3> The third lambda is called when the `Flux` from 2) terminates or is
+cancelled, to clean up resources.
+<4> After subscription and execution of the sequence, the `isDisposed` atomic
+boolean would become `true`.
 
-On the other hand, `doFinally` is about side-effects that you want to be executed
-whenever the sequence terminates, either with onComplete, onError or a cancel.
-It gives you a hint as to what kind of termination triggered the side-effect:
+On the other hand, `doFinally` is about side-effects that you want to be
+executed whenever the sequence terminates, whether with `onComplete`,
+`onError`, or cancellation. It gives you a hint as to what kind of termination
+triggered the side-effect:
+
 [source,java]
 ----
 LongAdder statsCancel = new LongAdder(); // <1>
@@ -508,7 +554,7 @@ Flux.just("foo", "bar")
     })
     .take(1); // <4>
 ----
-<1> We assume we want to gather statistics, here we use a `LongAdder`.
+<1> We assume we want to gather statistics. Here we use a `LongAdder`.
 <2> `doFinally` consumes a `SignalType` for the type of termination.
 <3> Here we increment statistics in case of cancellation only.
 <4> `take(1)` will cancel after 1 item is emitted.
@@ -549,10 +595,10 @@ The sequence was indeed terminated by the error.
 ==== Retrying
 There is another operator of interest with regards to error handling, and you
 might be tempted to use it in the case above. `retry`, as its name indicates,
-allows to retry an erroring sequence.
+allows to retry an error-producing sequence.
 
-But the caveat is that it works by *re-subscribing* to the upstream `Flux`. So
-this is still in effect a different sequence, and the original one is still
+The trouble is that it works by *re-subscribing* to the upstream `Flux`.
+This is really a different sequence, and the original one is still
 terminated. To verify that, we can re-use the previous example and append a
 `retry(1)` to retry once instead of the onErrorReturn:
 [source,java]
@@ -571,10 +617,11 @@ Thread.sleep(2100); // <3>
 ----
 <1> `elapsed` will associate each value with the duration since previous value
 was emitted.
-<2> We also want to see when there is an `onError`
-<3> We have enough time for our 4x2 ticks
+<2> We also want to see when there is an `onError`.
+<3> We have enough time for our 4x2 ticks.
 
 This prints out:
+
 ----
 259,tick 0
 249,tick 1
@@ -584,12 +631,13 @@ This prints out:
 253,tick 2
 java.lang.RuntimeException: boom
 ----
-<1> Here a new `interval` started, from tick 0. The additional 250ms duration is
-coming from the 4th tick, the one that causes the exception and subsequent retry
+<1> A new `interval` started, from tick 0. The additional 250ms duration is
+coming from the 4th tick, the one that causes the exception and subsequent
+retry.
 
 As you can see above, `retry(1)` merely re-subscribed to the original `interval`
 once, restarting the tick from 0. The second time around, since the exception
-still occurs, it gives up and propagate it downstream.
+still occurs, it gives up and propagates the error downstream.
 
 There is a more advanced version of `retry` that uses a "companion" flux to tell
 whether or not a particular failure should retry: `retryWhen`. This companion
@@ -600,18 +648,19 @@ The companion flux is a `Flux<Throwable>` that gets passed to a `Function`, the
 sole parameter of retryWhen. As the user, you define that function and make it
 return a new `Publisher<?>`. Retry cycles will go like this:
 
- 1. each time an error happens (potential for a retry), the error is emitted into
- the companion flux. That flux has been originally decorated by your function.
- 2. If the companion flux emits something, a retry happens.
- 3. If the companion flux completes, the retry cycle stops and the original
- sequence *completes* too.
- 4. If the companion flux errors, the retry cycle stops and the original
- sequence *stops* too. or completes, the error causes the original
- sequence to fail and terminate.
+1. Each time an error happens (potential for a retry), the error is emitted into
+the companion flux, which has been decorated by your function.
+2. If the companion flux emits something, a retry happens.
+3. If the companion flux completes, the retry cycle stops and the original
+sequence *completes* too.
+4. If the companion flux produces an error, the retry cycle stops and the
+original sequence also stops *or* completes, the error causes the original
+sequence to fail and terminate.
 
-The distinction between the last two cases is important. Simply completing the
-companion would effectively swallow an error. Consider the following attempt
-at emulating `retry(3)` using `retryWhen`:
+The distinction between the previous two cases is important. Simply completing
+the companion would effectively swallow an error. Consider the following way of
+emulating `retry(3)` using `retryWhen`:
+
 [source,java]
 ----
 Flux<String> flux =
@@ -619,26 +668,28 @@ Flux.<String>error(new IllegalArgumentException()) // <1>
     .doOnError(System.out::println) // <2>
     .retryWhen(companion -> companion.take(3)); // <3>
 ----
-<1> This continuously errors, calling for retry attempts
+<1> This continuously produces errors, calling for retry attempts.
 <2> `doOnError` *before* the retry will let us see all failures
-<3> Here we just consider the first 3 errors as retry-able (`take(3)`), then give up.
+<3> Here, we consider the first 3 errors as retry-able (`take(3)`), then give
+up.
 
-In effect, this results in an *empty* flux, but that completes *successfully*.
+In effect, this results in an *empty* flux, but it completes *successfully*.
 Since `retry(3)` on the same flux would have terminated with the latest error,
-this is not entirely the same...
+this is not entirely the same.
+// Same as what?
 
 Getting to the same behavior involves a few additional tricks:
 include::snippetRetryWhenRetry.adoc[]
 
-TIP: A similar code can be used to implement an _exponential backoff and retry_
+TIP: Similar code can be used to implement an _exponential backoff and retry_
 pattern, as shown in the <<faq.exponentialBackoff,FAQ>>.
 
-=== How are exceptions in operators or functions handled?
+=== Handling Exceptions in Operators or Functions
 In general, all operators can themselves contain code that potentially trigger
-an exception, or calls a user-defined callback that similarly can fail, so they
+an exception or calls a user-defined callback that can similarly fail, so they
 all contain some form of error handling.
 
-As a rule of thumb, an **Unchecked Exception** will always be propagated through
+As a rule of thumb, an *Unchecked Exception* will always be propagated through
 `onError`. For instance, throwing a `RuntimeException` inside a `map` function
 will translate to an `onError` event:
 
@@ -650,44 +701,44 @@ Flux.just("foo")
                e -> System.out.println("ERROR: " + e));
 ----
 
-This would print out:
+The preceding code would print out:
 ----
 ERROR: java.lang.IllegalArgumentException: foo
 ----
 
-Reactor however defines a set of exceptions that are always
-deemed **fatal**footnote:[think `OutOfMemoryError`. Have a look at the `Exceptions.throwIfFatal` method for details]
-, meaning that Reactor cannot keep operating. These are thrown rather than
+Reactor, however, defines a set of exceptions (such as `OutOfMemoryError`) that
+are always deemed *fatal*. See the `Exceptions.throwIfFatal` method. These
+errors mean that Reactor cannot keep operating and are thrown rather than
 propagated.
 
-NOTE: *Internally* There are also cases where an unchecked exception still
-cannot be propagated, most notably during the subscribe and request phases, due
-to concurrency races that could lead to double onError/onComplete. When these
-races happen, the error that cannot be propagated is "dropped". These cases can
-still be managed to some extent, as the error goes through the
-`Hooks.onErrorDropped` customizable hook.
+NOTE: Internally, there are also cases where an unchecked exception still
+cannot be propagated (most notably during the subscribe and request phases),
+due to concurrency races that could lead to double `onError` or `onComplete`
+conditions. When these races happen, the error that cannot be propagated is
+"dropped". These cases can still be managed to some extent, as the error goes
+through the `Hooks.onErrorDropped` customizable hook.
 
-You may wonder, what about **Checked Exceptions**?
+You may wonder, what about *Checked Exceptions*?
 
 If, say, you need to call some method that declares it `throws` exceptions, you
-will still have to deal with said exceptions in a `try/catch` block. You have
+will still have to deal with those exceptions in a `try-catch` block. You have
 several options, though:
 
- 1. catch the exception and recover from it, the sequence continues normally.
- 2. catch the exception and wrap it into an _unchecked_ one, then throw it
-    (interrupting the sequence). The `Exceptions` utility class can help you
-    with that (see below).
- 3. if you're expected to return a `Flux` (eg. you're in a `flatMap`), just wrap
-    the exception into an erroring flux: `return Flux.error(checkedException)`.
-    (the sequence also terminates)
+1. Catch the exception and recover from it. The sequence continues normally.
+2. Catch the exception and wrap it into an _unchecked_ exception, then throw
+it (interrupting the sequence). The `Exceptions` utility class can help you
+with that (we'll get to that next).
+3. If you're expected to return a `Flux` (for example, you're in a `flatMap`),
+wrap the exception into an erroring flux: `return
+Flux.error(checkedException)`. (The sequence also terminates.)
 
-Reactor has an `Exceptions` utility class that you can use, notably to ensure
-that exceptions are wrapped only if they are checked exceptions:
+Reactor has an `Exceptions` utility class that you can use to ensure that
+exceptions are wrapped only if they are checked exceptions:
 
- - use the `Exceptions.propagate` method to wrap exceptions if necessary. It will also call
-   `throwIfFatal` first, and won't wrap `RuntimeException`.
- - use the `Exceptions.unwrap` method to get the original unwrapped exception (going back to
-   the root cause of a hierarchy of reactor-specific exceptions).
+- Use the `Exceptions.propagate` method to wrap exceptions if necessary. It
+will also call `throwIfFatal` first, and won't wrap `RuntimeException`.
+- Use the `Exceptions.unwrap` method to get the original unwrapped exception
+(going back to  the root cause of a hierarchy of reactor-specific exceptions).
 
 Let's take the example of a `map` that uses a conversion method that can throw
 an `IOException`:
@@ -703,8 +754,9 @@ public String convert(int i) throws IOException {
 
 Now imagine you want to use that method in a `map`. You now have to explicitly
 catch the exception, and your map function cannot re-throw it. So you can
-propagate it to map's `onError` as a `RuntimeException`:
+propagate it to the map's `onError` as a `RuntimeException`:
 [source,java]
+
 ----
 Flux<String> converted = Flux
     .range(1, 10)
@@ -714,9 +766,10 @@ Flux<String> converted = Flux
     });
 ----
 
-Later on, when subscribing to the above flux and reacting to errors, eg. in the
-UI, you could revert back to the original exception in case you want to do
-something special for IOExceptions:
+Later on, when subscribing to the above `Flux` and reacting to errors (such as
+in the UI) you could revert back to the original exception in case you want to
+do something special for IOExceptions:
+
 [source,java]
 ----
 converted.subscribe(
@@ -735,29 +788,32 @@ converted.subscribe(
 Processors are a special kind of `Publisher` that are also a `Subscriber`. That
 means that you can `subscribe` to a `Processor` (generally, they implement
 `Flux`), but also call methods to manually inject data into the sequence or
-terminate it...
+terminate it.
 
 There are several kind of Processors, each with a few particular semantics, but
-before you start looking into these, you need to ask yourself the following question:
+before you start looking into these, you need to ask yourself the following
+question:
 
 === Do I need a Processor?
 Most of the time, you should try to avoid using a `Processor`. They are harder
 to use correctly and prone to some corner cases.
 
-So if you think a `Processor` could be a good match for your use-case, ask
-yourself if you have tried these two alternatives before:
+If you think a `Processor` could be a good match for your use-case, ask
+yourself if you have tried these two alternatives:
 
- 1. could a classic operator or combination of operators fit the bill? (see
-   <<which-operator>>)
- 2. could a <<producing,"generator">> operator work instead? (generally these
+ 1. Could an operator or combination of operators fit the bill? (See
+   <<which-operator>>.)
+ 2. Could a <<producing,"generator">> operator work instead? (Generally, these
    operators are made to bridge APIs that are not reactive, providing a "sink"
-   that is very similar in concept to a `Processor` in the sense that it allows
-   you to populate the sequence with data, or terminate it).
+   that is similar in concept to a `Processor` in the sense that it allows
+   you to populate the sequence with data or terminate it).
 
-If after exploring the above alternatives you still think you need a `Processor`,
-head to the <<processor>> appendix to learn about the different implementations.
+If, after exploring the above alternatives, you still think you need a
+`Processor`, head to the <<processor>> appendix to learn about the different
+implementations.
 
 === Producing from multiple threads
+
 `FluxProcessor` sinks safely gate multi-threaded producers and can be used
 by applications that generate data from multiple threads concurrently.
 For example, a thread-safe serialized sink can be created for `UnicastProcessor`:
@@ -769,13 +825,16 @@ FluxSink<Integer> sink = processor.sink(overflowStrategy);
 ----
 
 Multiple producer threads may concurrently generate data on this serialized sink:
+
 [source,java]
 ----
 sink.next(n);
 ----
 
-Overflow from `next` will behave in two possible ways depending on the `Processor`:
+Overflow from `next` will behave in two possible ways, depending on the
+`Processor`:
 
-- an unbounded processor will handle the overflow itself by dropping or buffering
-- a bounded processor will block/spin on `IGNORE` strategy, or apply the `overflowStrategy` behavior specified for `sink`.
-
+- An unbounded processor will handle the overflow itself by dropping or
+buffering.
+- A bounded processor will block or spin on `IGNORE` strategy or apply the
+`overflowStrategy` behavior specified for the `sink`.

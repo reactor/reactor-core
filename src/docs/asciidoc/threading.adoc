@@ -1,0 +1,43 @@
+[[threading]]
+== Threading
+
+`Flux` and `Mono` do not create threads. Some operators, such as `publishOn`, do
+create threads. Also, as a form of work sharing, these operators can "steal"
+threads from other work pools if the other pools are currently idle.
+Consequently, neither the `Flux` or `Mono` objects nor the `Subscriber` objects
+have to be smart about threads. They rely on the operators to manage the
+threads and work pools.
+
+`publishOn` forces the next operator (and possibly subsequent operators after
+the next one) to run on a different thread. Similarly, `subscribeOn` forces the
+previous operator (and possibly operators prior to the previous one) to run on
+a different thread. Remember that, until you subscribe, you're defining a
+process but not starting it. For that reason, Reactor can use these rules to
+determine how the processing must proceed. Then, when you subscribe, the whole
+process starts working.
+
+Let's consider an example that shows multiple threads can support work sharing:
+
+[source,java]
+----
+Flux.range(1, 10000) <1>
+    .publishOn(Schedulers.parallel()) <2>
+    .subscribe(result) <3>
+----
+<1> Create a `Flux` for 10,000 items
+<2> Create as many threads as there are CPUs (minimum 4).
+<3> <<reactive.subscribe>>.
+
+`Scheduler.parallel()` creates a fixed pool of single-threaded
+`ExecutorService`-based workers. Because one or two threads may lead to
+problems, it always creates at least four threads. The publishOn method then
+shares these threaded workers, getting items from whichever is emitting when
+publishOn requests an item. In this fashion, we get work sharing (a form of
+resource sharing). Reactor enables several other ways to share for resources
+as well, as documented in
+https://projectreactor.io/docs/core/release/api/reactor/core/scheduler/Schedulers.html[Schedulers].
+
+Behind the scenes, the operators ensure thread safety by using incremental
+counters and guard conditions. For instance, if we have four threads hitting a
+single stream (as shown in the preceding example) each request increments a
+counter, so that future requests from the threads get the right item.

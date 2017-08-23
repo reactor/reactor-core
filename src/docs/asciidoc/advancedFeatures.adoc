@@ -2,17 +2,18 @@
 = Advanced features and concepts
 
 == Mutualizing operator usage
-From a clean code perspective, code reuse is generally a good thing. Reactor
+From a clean-code perspective, code reuse is generally a good thing. Reactor
 offers a few patterns that will help you reuse and mutualize code, notably
 for operators or combination of operators that you might want to apply regularly
-in your codebase.
+in your codebase. If you think of a chain of operators as a recipe, you can
+create a cookbook of operator recipes.
 
 === transform
 The `transform` operator lets you encapsulate a piece of an operator chain into
 a function. That function will be applied to an original operator chain at
-assembly time to augment it with the encapsulated operators. So this applies the
-same to all the subscribers of a sequence, and is basically equivalent to
-chaining the operators directly.
+assembly time to augment it with the encapsulated operators. Doing so applies
+the same operations to all the subscribers of a sequence and is basically
+equivalent to chaining the operators directly. Here's an example:
 
 [source,java]
 ----
@@ -27,7 +28,7 @@ Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
 ----
 image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.7.RELEASE/src/docs/marble/gs-transform.png[Transform Operator : encapsulate flows]
 
-This outputs:
+This produces:
 
 ----
 blue
@@ -44,7 +45,7 @@ The `compose` operator is very similar to `transform` and also lets you
 encapsulate operators in a function. The major difference is that this function
 is applied to the original sequence *on a per-subscriber basis*. It means that
 the function can actually produce a different operator chain for each
-subscription (eg. by maintaining some state).
+subscription (by maintaining some state). Here's an example:
 
 [source,java]
 ----
@@ -93,32 +94,31 @@ So far we have considered that all `Flux` (and `Mono`) are the same: they all
 represent an asynchronous sequence of data, and nothing happens before you
 subscribe.
 
-There are however in reality two broad families of publishers: *cold* ones and
-*hot* ones.
+Really, though, there are two broad families of publishers: *cold* and *hot*.
 
 The description above applies to the *cold* family of publishers. They generate
-data anew for each subscription, and if no subscription is done then data never
-start generating.
+data anew for each subscription If no subscription is created, then data never
+gets generated.
 
-Think HTTP request: each new subscriber will trigger an HTTP call, but no call
-is made if no one is interested in the result.
+Think of an HTTP request: each new subscriber will trigger an HTTP call, but no
+call is made if no one is interested in the result.
 
-*Hot* publishers on the other hand don't really depend on any number of
-subscribers. They might start publishing data right away, and would continue
+*Hot* publishers, on the other hand, don't depend on any number of
+subscribers. They might start publishing data right away and would continue
 doing so whenever a new `Subscriber` comes in (in which case said subscriber
-would only see new elements emitted _after_ it subscribed). So for such hot
-publishers, _something_ indeed happens before you subscribe.
+would only see new elements emitted _after_ it subscribed). For hot
+publishers, _something_ does indeed happen before you subscribe.
 
-One example of the few hot operators in Reactor is `just`: it directly capture
-the value at assembly time, and will replay it to anybody subscribing to it
+One example of the few hot operators in Reactor is `just`: it directly captures
+the value at assembly time and will replay it to anybody subscribing to it
 later on. To re-use the HTTP call analogy, if the captured data is the result
 of an HTTP call then only one network call is made, when instantiating _just_.
 
-To transform `just` into a _cold_ publisher, you can use `defer`. This will
-defer the HTTP request in our example to subscription time (and would result in
-a separate network call for each new subscription).
+To transform `just` into a _cold_ publisher, you can use `defer`. It defers the
+HTTP request in our example to subscription time (and would result in a
+separate network call for each new subscription).
 
-NOTE: Most other _hot_ publishers in Reactor are `Processor`.
+NOTE: Most other _hot_ publishers in Reactor extend `Processor`.
 
 Contrast these two other examples:
 
@@ -133,7 +133,7 @@ source.subscribe(d -> System.out.println("Subscriber 1: "+d));
 source.subscribe(d -> System.out.println("Subscriber 2: "+d));
 ----
 
-Which outputs:
+This first example produces:
 
 ----
 blue
@@ -150,7 +150,10 @@ purple
 
 image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.7.RELEASE/src/docs/marble/gs-cold.png[Replaying behavior]
 
-Compared to:
+Both subscribers catch all four colors, because each subscriber causes the
+process defined by the operators on the `Flux` to run.
+
+Compare the first example to this second example:
 
 [source,java]
 ----
@@ -173,7 +176,7 @@ hotSource.onNext("purple");
 hotSource.onComplete();
 ----
 
-Which outputs:
+The second example produces:
 ----
 Subscriber 1 to Hot Source: BLUE
 Subscriber 1 to Hot Source: GREEN
@@ -184,33 +187,41 @@ Subscriber 2 to Hot Source: PURPLE
 ----
 image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.7.RELEASE/src/docs/marble/gs-hot.png[Broadcasting a subscription]
 
+Subscriber 1 catches all four colors. Subscriber 2, having been created after
+the first two colors were produced, catches only the last two colors. This
+difference accounts for the doubling of "ORANGE" and "PURPLE" in the output.
+The process described by the operators on this Flux runs regardless of when
+subscriptions have been attached.
+
 == Broadcast to multiple subscribers with `ConnectableFlux`
-Sometimes, you don't only want to defer some processing to the subscription time
+Sometimes, you want to not only defer some processing to the subscription time
 of one subscriber, but you might actually want for several of them to
-_rendez-vous_ and *then* trigger the subscription / data generation.
+_rendezvous_ and *then* trigger the subscription / data generation.
 
 This is what `ConnectableFlux` is made for. Two main patterns are covered in the
 `Flux` API that return a `ConnectableFlux`: `publish` and `replay`.
 
- * `publish` will dynamically try to respect the demand from its various
- subscribers, in terms of backpressure, by forwarding these requests to the
- source. Most notably, if any subscriber has a pending demand of `0`, publish
- will *pause* its requesting to the source.
- * `replay` will bufferize data seen through the first subscription, up to
- configurable limits (in time and buffer size). It will replay these to
- subsequent subscribers.
+* `publish` dynamically tries to respect the demand from its various
+subscribers, in terms of backpressure, by forwarding these requests to the
+source. Most notably, if any subscriber has a pending demand of `0`, publish
+will *pause* its requesting to the source.
+* `replay` buffers data seen through the first subscription, up to
+configurable limits (in time and buffer size). It will replay the data to
+subsequent subscribers.
 
 A `ConnectableFlux` offers additional methods to manage subscriptions downstream
 vs subscription to the original source. For instance:
 
- * `connect` can be called manually once you've reached enough subscriptions to
- the flux. That will trigger the subscription to the upstream source.
- * `autoConnect(n)` can do the same job automatically once `n` subscriptions
- have been made.
- * `refCount(n)` not only automatically tracks incoming subscriptions but also
- detects when these subscriptions are cancelled. If not enough subscribers are
- tracked, the source is "disconnected", causing a new subscription to the source
- later on if additional subscribers come back in.
+* `connect` can be called manually once you've reached enough subscriptions to
+the flux. That will trigger the subscription to the upstream source.
+* `autoConnect(n)` can do the same job automatically once `n` subscriptions
+have been made.
+* `refCount(n)` not only automatically tracks incoming subscriptions but also
+detects when these subscriptions are cancelled. If not enough subscribers are
+tracked, the source is "disconnected", causing a new subscription to the source
+later if additional subscribers appear.
+
+Consider the following example:
 
 [source,java]
 ----
@@ -229,7 +240,7 @@ System.out.println("will now connect");
 co.connect();
 ----
 
-This outputs:
+This code produces:
 ----
 done subscribing
 will now connect
@@ -271,29 +282,32 @@ subscribed to source
 3
 ----
 
-== 3 sorts of batching
-When you have lots of elements and you want to separate them into batches, you have 3
-broad solutions in Reactor: grouping, windowing and buffering. These 3 are conceptually
-close, in the sense that they redistribute a `Flux<T>` into a `Flux<Flux<T>>` (except for
-buffering, which aggregates into `Collection<T>` rather than `Flux<T>`).
+== Three Sorts of Batching
+When you have lots of elements and you want to separate them into batches, you
+have three broad solutions in Reactor: grouping, windowing, and buffering.
+These three are conceptually close, because they redistribute a `Flux<T>` into
+an aggregate. Grouping and windowing create a `Flux<Flux<T>>`, while buffering
+aggregates into `Collection<T>`.
 
 === Grouping: `Flux<GroupedFlux<T>>`
-Grouping is the act of splitting the source `Flux<T>` into multiple batches by a *key*.
+Grouping is the act of splitting the source `Flux<T>` into multiple batches by
+a *key*.
 
 The associated operator is `groupBy`.
 
-Each group is represented as a `GroupedFlux<T>`, which notably allows to retrieve the
+Each group is represented as a `GroupedFlux<T>`, which lets you retrieve the
 key via its `key()` method.
 
-There is no necessary continuity in the content of the groups: once a source element
-produces a new key, the group for this key is opened and elements that match the key end
-up in said group (so several groups could be open at the same time).
+There is no necessary continuity in the content of the groups. Once a source
+element produces a new key, the group for this key is opened and elements that
+match the key end up in said group (several groups could be open at the same
+time).
 
 This means that groups:
 
- 1. are always disjoint (a source element belongs to 1 and only 1 group)
- 2. can contain elements from different places in the original sequence
- 3. are never empty
+ 1. Are always disjoint (a source element belongs to 1 and only 1 group).
+ 2. Can contain elements from different places in the original sequence.
+ 3. Are never empty.
 
 [source,java]
 ----
@@ -309,27 +323,34 @@ StepVerifier.create(
 	.verifyComplete();
 ----
 
-WARNING: Grouping is best suited for when you have a medium to low number of groups.
-The groups must also imperatively be consumed (eg. in a `flatMap`) so that `groupBy` will
-continue fetching data from upstream and feeding more groups. Sometimes these two
-constraints multiply and lead to hangs, like when you have a high cardinality and the
-concurrency of the `flatMap` consuming the groups is too low.
+WARNING: Grouping is best suited for when you have a medium to low number of
+groups. The groups must also imperatively be consumed (eg. in a `flatMap`) so
+that `groupBy` will continue fetching data from upstream and feeding more
+groups. Sometimes these two constraints multiply and lead to hangs, like when
+you have a high cardinality and the concurrency of the `flatMap` consuming the
+groups is too low.
+
+// We should provide sample code that produces this problem, to illustrate the
+// anti-pattern.
 
 === Windowing: `Flux<Flux<T>>`
-Windowing is the act of splitting the source `Flux<T>` into _windows_, by criteria of size,
-time, boundary-defining predicates or boundary-defining `Publisher`.
+Windowing is the act of splitting the source `Flux<T>` into _windows_, by
+criteria of size, time, boundary-defining predicates, or boundary-defining
+`Publisher`.
 
-The associated operators are `window`, `windowTimeout`, `windowUntil`, `windowWhile` and
-`windowWhen`.
+The associated operators are `window`, `windowTimeout`, `windowUntil`,
+`windowWhile` and `windowWhen`.
 
-A major difference with `groupBy` is that windows are always sequential: no more than 2
-windows can be open at the same time.
+A major difference with `groupBy` is that windows are always sequential. No
+more than 2 windows can be open at the same time.
 
-They *can* overlap though: for instance, there is a variant with a `maxSize` and `skip`
-parameters. The maxSize is the number of elements after which a window will close, and
-the skip parameter is the number of elements in the source after which a new window is
-opened. So if `maxSize > skip`, a new window will open before the previous one closes and
-2 windows will overlap.
+They *can* overlap though. For instance, there is a variant with a `maxSize`
+and `skip` parameters. The maxSize is the number of elements after which a
+window will close, and the skip parameter is the number of elements in the
+source after which a new window is opened. So if `maxSize > skip`, a new window
+will open before the previous one closes and the 2 windows will overlap.
+
+This example shows overlapping windows:
 
 [source,java]
 ----
@@ -345,12 +366,12 @@ StepVerifier.create(
 		.verifyComplete();
 ----
 
-With the reverse configuration (maxSize < skip), some elements from the source would be
-dropped, not part of any window.
+NOTE: With the reverse configuration (`maxSize` < `skip`), some elements from
+the source would be dropped and not be part of any window.
 
-In the case of predicate-based windowing via `windowUntil` and `windowWhile`, having
-subsequent source elements that don't match the predicate can also lead to _empty windows_
-as demonstrated in the following snippet:
+In the case of predicate-based windowing via `windowUntil` and `windowWhile`,
+having subsequent source elements that don't match the predicate can also lead
+to _empty windows_, as demonstrated in this example:
 
 [source,java]
 ----
@@ -367,18 +388,19 @@ StepVerifier.create(
 ----
 
 === Buffering: `Flux<List<T>>`
-Buffering is very close to the behavior of windowing, with a twist: instead of emitting
-_windows_ (which each are a `Flux<T>`), it emits _buffers_ (which are `Collection<T>`, by
-default `List<T>`).
+Buffering is very close to the behavior of windowing, with a twist: instead of
+emitting _windows_ (which each are a `Flux<T>`), it emits _buffers_ (which are
+`Collection<T>` - by default `List<T>`).
 
-The operators for buffering mirror those for windowing: `buffer`, `bufferTimeout`,
-`bufferUntil`, `bufferWhile` and `bufferWhen`.
+The operators for buffering mirror those for windowing: `buffer`,
+`bufferTimeout`, `bufferUntil`, `bufferWhile`, and `bufferWhen`.
 
-Where the corresponding windowing operator would open a window, a buffering operator would
-create a new collection and start adding elements to it. Where a window would close, the
-buffering operator would emit the buffer/collection.
+Where the corresponding windowing operator would open a window, a buffering
+operator would create a new collection and start adding elements to it. Where a
+window would close, the buffering operator would emit the collection.
 
-So buffering can also lead to dropping source elements or having overlapping buffers:
+Buffering can also lead to dropping source elements or having overlapping
+buffers, as shown here:
 
 [source,java]
 ----
@@ -393,7 +415,8 @@ StepVerifier.create(
 		.verifyComplete();
 ----
 
-Unlike in windowing, `bufferUntil` and `bufferWhile` don't emit an empty buffer:
+Unlike in windowing, `bufferUntil` and `bufferWhile` don't emit an empty
+buffer, as shown here:
 
 [source,java]
 ----
@@ -407,6 +430,7 @@ StepVerifier.create(
 ----
 
 == Parallelize work with `ParallelFlux`
+
 With multi-core architectures being a commodity nowadays, being able to easily
 parallelize work is very important. Reactor helps with that by providing a
 special type, `ParallelFlux`, that exposes operators that are optimized for
@@ -421,7 +445,7 @@ by extension to execute rails in parallel) you have to use `runOn(Scheduler)`.
 Note that there is a recommended dedicated Scheduler for parallel work:
 `Schedulers.parallel()`.
 
-Contrast:
+Compare the next two code examples:
 
 [source,java]
 ----
@@ -429,7 +453,7 @@ Flux.range(1, 10)
     .parallel(2) //<1>
     .subscribe(i -> System.out.println(Thread.currentThread().getName() + " -> " + i));
 ----
-<1> here we force a number of rails instead of relying on the number of CPU cores
+<1> We force a number of rails instead of relying on the number of CPU cores.
 
 with:
 [source,java]
@@ -440,7 +464,7 @@ Flux.range(1, 10)
     .subscribe(i -> System.out.println(Thread.currentThread().getName() + " -> " + i));
 ----
 
-The first outputs:
+The first code block produces:
 ----
 main -> 1
 main -> 2
@@ -454,7 +478,7 @@ main -> 9
 main -> 10
 ----
 
-While the second correctly parallelizes on two threads:
+The second correctly parallelizes on two threads, as shown here:
 ----
 parallel-1 -> 1
 parallel-2 -> 2
@@ -468,13 +492,19 @@ parallel-2 -> 8
 parallel-2 -> 10
 ----
 
-If once you've processed your sequence in parallel you want to revert back to a
-"normal" flux and apply the rest of the operator chain in a sequential manner,
+If, once you've processed your sequence in parallel, you want to revert back to a
+"normal" `Flux` and apply the rest of the operator chain in a sequential manner,
 you can use the `sequential()` method on `ParallelFlux`.
 
 Note that it is the case by default if you `subscribe` to the ParallelFlux with
 a single provided `Subscriber`, but not when using the lambda-based variants of
 `subscribe`.
+//The preceding paragraph is nearly meaningless, because "it" has no logical
+// antecedent. "it" needs to be replaced by a concrete object.
+
+Note that `subscribe(Subscriber<T>)` merges all the rails, while
+`subscribe(Consumer<T>)` runs all the rails. If the `subscribe()` method has a
+lambda, each lambda is executed as many times as there are rails.
 
 You can also access individual rails or "groups" as a `Flux<GroupedFlux<T>>` via
 the `groups()` method and apply additional operators to them via the

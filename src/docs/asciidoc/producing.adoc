@@ -1,28 +1,29 @@
 [[producing]]
 = Programmatically creating a sequence
-In this section, we'll introduce means of creating a `Flux` (or `Mono`) by
-programmatically defining its associated events (onNext, onError, onComplete).
-All these methods share the fact that they expose an API to trigger
-the events that we call a **sink**. There are actually a few sink variants, as
-you will discover below.
+In this section, we'll introduce the creation of a `Flux` or a `Mono` by
+programmatically defining its associated events (`onNext`, `onError`, and
+`onComplete`). All these methods share the fact that they expose an API to
+trigger the events that we call a *sink*. There are actually a few sink
+variants, as you will soon see.
 
 [[producing.generate]]
 == Generate
 The simplest form of programmatic creation of a `Flux` is through the `generate`
 method, which takes a generator function.
 
-This is for **synchronous** and **one-by-one** emissions, meaning that
+This is for *synchronous* and *one-by-one* emissions, meaning that
 the sink is a `SynchronousSink` and that its `next()` method can only be called
 at most once per callback invocation. You can then additionally call `error(Throwable)`
 or `complete()`.
+// Is calling `error()` or `complete()` optional?
 
-The most useful variant is probably the one that also allow you to keep a state
+The most useful variant is probably the one that also lets you keep a state
 that you can refer to in your sink usage to decide what to emit next. The generator
 function then becomes a `BiFunction<S, SynchronousSink<T>, S>`, with `<S>` the
 type of the state object. You have to provide a `Supplier<S>` for the initial
 state, and your generator function now returns a new state on each round.
 
-For instance, you could simply use an `int` as the state:
+For instance, you could use an `int` as the state:
 
 .Example of state-based `generate`
 [source,java]
@@ -78,22 +79,23 @@ Flux<String> flux = Flux.generate(
 TIP: If your state object needs to clean up some resources, use the
 `generate(Supplier<S>, BiFunction, Consumer<S>)` variant to clean up the last
 state instance.
+// Insert an example here
 
 [[producing.create]]
 == Create
-The more advanced form of programmatic creation of a `Flux`, `create` can both
-work asynchronously or synchronously and is suitable for multiple emissions per
+The more advanced form of programmatic creation of a `Flux`, `create` can work
+asynchronously or synchronously and is suitable for multiple emissions per
 round.
 
-It exposes a `FluxSink`, with its `next`/`error`/`complete` methods. Contrary
-to generate, it doesn't have a state-based variant, but on the other hand it
-can trigger multiple events in the callback (and even from any thread at a later
-point in time).
+It exposes a `FluxSink`, with its `next`, `error`, and `complete` methods.
+Contrary to `generate`, it doesn't have a state-based variant. On the other
+hand, it can trigger multiple events in the callback (and even from any thread
+at a later point in time).
 
 TIP: `create` can be very useful to bridge an existing API with the reactive
-world. For instance, an asynchronous API based on listeners.
+world - such as an asynchronous API based on listeners.
 
-Imagine that you use an API that is listener-based. It processes data by chunks
+Imagine that you use a listener-based API. It processes data by chunks
 and has two events: (1) a chunk of data is ready and (2) the processing is
 complete (terminal event), as represented in the `MyEventListener` interface:
 
@@ -125,31 +127,32 @@ Flux<String> bridge = Flux.create(sink -> {
     });
 });
 ----
-<1> we bridge to the `MyEventListener` API
-<2> each element in a chunk becomes an element in the `Flux`.
-<3> the processComplete event is translated to an `onComplete`
-<4> all of this is done asynchronously whenever the myEventProcessor executes
+<1> Bridge to the `MyEventListener` API
+<2> Each element in a chunk becomes an element in the `Flux`.
+<3> The `processComplete` event is translated to `onComplete`.
+<4> All of this is done asynchronously whenever the `myEventProcessor` executes.
 
 Additionally, since `create` can be asynchronous and manages backpressure, you
 can refine how to behave backpressure-wise, by indicating an `OverflowStrategy`:
 
  - `IGNORE` to Completely ignore downstream backpressure requests.
 This may yield `IllegalStateException` when queues get full downstream.
- - `ERROR` to signal an `IllegalStateException` when the downstream can't keep up
- - `DROP` to drop the incoming signal if the downstream is not ready to receive it.
+ - `ERROR` to signal an `IllegalStateException` when the downstream can't keep
+ up.
+ - `DROP` to drop the incoming signal if the downstream is not ready to receive
+ it.
  - `LATEST` to let downstream only get the latest signals from upstream.
  - `BUFFER` (the default) to buffer all signals if the downstream can't keep up.
- (this does unbounded buffering and may lead to `OutOfMemoryError`)
+ (this does unbounded buffering and may lead to `OutOfMemoryError`).
 
-NOTE: `Mono` also has a `create` generator. As you should expect, the
-`MonoSink` of Mono's create doesn't allow several emissions. It will drop all
-signals subsequent to the first one.
+NOTE: `Mono` also has a `create` generator. The `MonoSink` of Mono's create
+doesn't allow several emissions. It will drop all signals after the first one.
 
 === Push model
 A variant of `create` is `push`, which is suitable for processing events
 from a single producer. Similar to `create`, `push` can also be asynchronous
 and can manage backpressure using any of the overflow strategies supported
-by `create`. But only one producing thread may invoke `next`, `complete` or
+by `create`. Only one producing thread may invoke `next`, `complete` or
 `error` at a time.
 
 [source,java]
@@ -174,20 +177,20 @@ Flux<String> bridge = Flux.push(sink -> {
     });
 });
 ----
-<1> we bridge to the `SingleThreadEventListener` API
-<2> events are pushed to sink using `next` from a single listener thread
-<3> `complete` event generated from the same listener thread
-<4> `error` event also generated from the same listener thread
+<1> Bridge to the `SingleThreadEventListener` API.
+<2> Events are pushed to the sink using `next` from a single listener thread.
+<3> `complete` event generated from the same listener thread.
+<4> `error` event also generated from the same listener thread.
 
 === Hybrid push/pull model
 Unlike `push`, `create` may be used in `push` or `pull` mode, making it suitable
 for bridging with listener-based APIs where data may be delivered asynchronously
-at any time. `onRequest` callback can be registered on `FluxSink` to track requests.
-The callback may be used to request more data from source if required and to manage
-backpressure by delivering data to sink only when requests are pending. This enables
-a hybrid push/pull model where downstream can pull data that is already available
-from upstream and upstream can push data to downstream when data becomes available
-at a later time.
+at any time. An `onRequest` callback can be registered on `FluxSink` to track
+requests. The callback may be used to request more data from the source if
+required and to manage backpressure by delivering data to sink only when
+requests are pending. This enables a hybrid push/pull model where downstream can
+pull data that is already available from upstream and upstream can push data to
+downstream when data becomes available at a later time.
 
 [source,java]
 ----
@@ -208,15 +211,15 @@ Flux<String> bridge = Flux.create(sink -> {
         }
     });
 ----
-<1> Poll for messages when requests are made
-<2> If messages are available immediately, push them to sink
-<3> Remaining messages that arrive asynchronously later are also delivered
+<1> Poll for messages when requests are made.
+<2> If messages are available immediately, push them to sink.
+<3> Remaining messages that arrive asynchronously later are also delivered.
 
 === Cleaning up
 
-Two callbacks `onDispose` and `onCancel` are provided to perform any cleanup
+Two callbacks, `onDispose` and `onCancel`, are provided to perform any cleanup
 on cancellation or termination. `onDispose` can be used to perform cleanup
-when the `Flux` completes, errors out or is cancelled. 'onCancel can be
+when the `Flux` completes, errors out, or is cancelled. 'onCancel can be
 used to perform any action specific to cancellation prior to cleanup using
 `onDispose`.
 
@@ -228,28 +231,29 @@ Flux<String> bridge = Flux.create(sink -> {
         .onDipose(() -> channel.close())  // <2>
     });
 ----
-<1> onCancel is invoked for cancel signal
-<2> onDispose is invoked for complete/error/cancel
+<1> `onCancel` is invoked for cancel signal.
+<2> `onDispose` is invoked for complete, error, or cancel.
 
 == Handle
-Both present in `Mono` and `Flux`, `handle` is a tiny bit different. It is an
-instance method, meaning that it is chained on an existing source like common
-operators.
+Present in both `Mono` and `Flux`, `handle` is a bit different. It is an
+instance method, meaning that it is chained on an existing source (as are the
+common operators).
 
 It is close to `generate`, in the sense that it uses a `SynchronousSink` and
-only allows one-by-one emissions.
+only allows one-by-one emissions. However, `handle` can be used to generate an
+arbitrary value out of each source element, possibly skipping some elements. In
+this way, it can serve as a combination of `map` and `filter`. The signature of
+handle is
 
-But `handle` can be used to generate an arbitrary value out of each source
-element, possibly skipping some elements. In that sense, it can serve as a
-combination of `map` and `filter`.
+[source,java]
+handle(BiConsumer<T, SynchronousSink<R>>)
 
-As such, the signature of handle is `handle(BiConsumer<T, SynchronousSink<R>>)`.
-
-Let's take an example: the reactive streams specification disallows `null`
+Let's consider an example. The reactive streams specification disallows `null`
 values in a sequence. What if you want to perform a `map` but you want to use
-a preexisting method as the map function, and said method sometimes returns null?
+a preexisting method as the map function, and that method sometimes returns null?
 
-For instance, the following method:
+For instance, the following method can be applied safely to a source of
+integers:
 [source,java]
 ----
 public String alphabet(int letterNumber) {
@@ -261,7 +265,8 @@ public String alphabet(int letterNumber) {
 }
 ----
 
-Can be applied safely to a source of integers:
+We can then use `handle` to remove any nulls:
+
 .Using `handle` for a "map and eliminate nulls" scenario
 [source,java]
 ----
@@ -274,9 +279,9 @@ Flux<String> alphabet = Flux.just(-1, 30, 13, 9, 20)
 
 alphabet.subscribe(System.out::println);
 ----
-<1> map to letters
-<2> but if the "map function" returns null...
-<3> ...filter it out by not calling `sink.next`
+<1> Map to letters.
+<2> If the "map function" returns null....
+<3> Filter it out by not calling `sink.next`.
 
 Which will print out:
 ----

@@ -1,15 +1,16 @@
 [[faq]]
 = FAQ, best practices and other "How do I...?"
 [[faq.chain]]
-== I just used an operator on my `Flux` but it doesn't seem to apply... What gives?
+== I just used an operator on my `Flux` but it doesn't seem to apply. What gives?
 
-Check you have affected the result of the operator to the variable you `.subscribe()` to.
+Make sure that the variable you `.subscribe()` to has been affected by the
+operators you think should have been applied to it.
 
-Reactor operators are decorators, they return a different instance that wraps
+Reactor operators are decorators. They return a different instance that wraps
 the source sequence and add behavior. That is why the preferred way of using
 operators is to *chain* the calls.
 
-Compare the following:
+Compare the following two examples:
 
 .without chaining (incorrect)
 [source,java]
@@ -18,9 +19,7 @@ Flux<String> flux = Flux.just("foo", "chain");
 flux.map(secret -> secret.replaceAll(".", "*")); <1>
 flux.subscribe(next -> System.out.println("Received: " + next));
 ----
-<1> mistake is here, the result isn't reaffected to `flux` variable
-
-With:
+<1> The mistake is here. The result isn't attached to the `flux` variable.
 
 .without chaining (correct)
 [source,java]
@@ -29,7 +28,7 @@ Flux<String> flux = Flux.just("foo", "chain");
 flux = flux.map(secret -> secret.replaceAll(".", "*"));
 flux.subscribe(next -> System.out.println("Received: " + next));
 ----
-And even better:
+This sample is even better (because it's simpler):
 
 .with chaining (best)
 [source,java]
@@ -68,18 +67,20 @@ myMethod.process("a") // this method returns Mono<Void>
 ----
 
 If the source `Mono` is either `empty` or a `Mono<Void>` (a `Mono<Void>` is
-empty for all intent and purposes), some combinations will never be called.
+empty for all intents and purposes), some combinations will never be called.
 
-This is the typical case for the `and` operator, which by definition needs an element
-from each source to produce its output. If any of the sources are empty, `and` produces
-an empty sequence as well, so be careful of its usage eg. after a `then()`.
+This is the typical case for the `and` operator, which by definition needs an
+element from each source to produce its output. If any of the sources are
+empty, `and` produces an empty sequence as well, so be careful of its usage.
+For example, using `and()` after a `then()` may cause this problem.
 
-This is even more true of the variants of `and` that take a `Function`, meaning that
-the associated Mono is chosen lazily depending on the incoming value (which never
-comes in case of an empty or `Void` sequence).
+This is even more true of the variants of `and` that take a `Function`, meaning
+that the associated Mono is chosen lazily depending on the incoming value
+(which never comes in the cases of empty or `Void` sequences).
 
-You can use `.defaultIfEmpty(T)` to replace an *empty* sequence of `T` (not a `Void`
-sequence) with a default value, which could help aVoid some of these situations:
+You can use `.defaultIfEmpty(T)` to replace an *empty* sequence of `T` (not a
+`Void` sequence) with a default value, which could help avoid some of these
+situations. Here's an example:
 
 .use `defaultIfEmpty` before `and`
 [source,java]
@@ -99,14 +100,15 @@ include::snippetRetryWhenRetry.adoc[]
 
 [[faq.exponentialBackoff]]
 == How to use `retryWhen` for exponential backoff?
-Exponential backoff produces retry attempts with a growing delay between each of
-the attempts, so as not to overload the source systems and risk an all out
-crash. The rationale is that if the source errors, it is already in an unstable
-state, and not likely to immediately recover from it. So blindly retrying
-immediately is likely to produce yet another error and add to the instability.
+Exponential backoff produces retry attempts with a growing delay between each
+of the attempts, so as not to overload the source systems and risk an all out
+crash. The rationale is that if the source produces an error, it is already in
+an unstable state and not likely to immediately recover from it. So blindly
+retrying immediately is likely to produce yet another error and add to the
+instability.
 
 Here is how to implement an exponential backoff that delays retries and increase
-the delay between each attempt (delay == attempt number * 100 milliseconds):
+the delay between each attempt (psuedocode: delay = attempt number * 100 milliseconds):
 [source,java]
 ----
 Flux<String> flux =
@@ -121,10 +123,11 @@ Flux.<String>error(new IllegalArgumentException())
         .doOnNext(s -> System.out.println("retried at " + LocalTime.now())) // <4>
     );
 ----
-<1> We log the time of errors
-<2> We use the `retryWhen` + `zipWith` trick to propagate the error after 3 retries.
+<1> We log the time of errors.
+<2> We use the `retryWhen` + `zipWith` trick to propagate the error after 3
+retries.
 <3> Through `flatMap`, we cause a delay that depends on the attempt's index.
-<4> We also log the time at which the retry effectively occurs.
+<4> We also log the time at which the retry happens.
 
 When subscribed to, this fails and terminates after printing out:
 ----
@@ -147,11 +150,11 @@ execution contexts. The `publishOn` operator influences the threading context
 where the rest of the operators in the chain below it will execute, up to a new
 occurrence of `publishOn`. So the placement of `publishOn` is significant.
 
-For instance, in the example below, the `transform` function in `map()` is executed
-on a worker of `scheduler1` and the `processNext` method in `doOnNext()` is executed
-on a worker of `scheduler2`. Single threaded schedulers may be used to ensure thread affinity
-for different stages in the chain or different subscribers.
-
+For instance, in the example below, the `transform` function in `map()` is
+executed on a worker of `scheduler1` and the `processNext` method in
+`doOnNext()` is executed on a worker of `scheduler2`. Single threaded
+schedulers may be used to ensure thread affinity for different stages in the
+chain or for different subscribers.
 
 [source,java]
 ----
@@ -162,6 +165,5 @@ processor.publishOn(scheduler1)
          .doOnNext(i -> processNext(i))
          .subscribe();
 ----
-
 
 //TODO reactive gems
