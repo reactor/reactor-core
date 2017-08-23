@@ -9,8 +9,7 @@
 [![Codecov](https://img.shields.io/codecov/c/github/reactor/reactor-core.svg)]()
 
 
-Non-Blocking [Reactive Streams](http://reactive-streams.org) Foundation for the JVM both implementing a [Reactive Extensions]
-(http://reactivex.io) inspired API and efficient event streaming support.
+Non-Blocking [Reactive Streams](http://reactive-streams.org) Foundation for the JVM both implementing a [Reactive Extensions](http://reactivex.io) inspired API and efficient event streaming support.
 
 ## Getting it
    
