@@ -1,3 +1,4 @@
+[[faq]]
 = FAQ, best practices and other "How do I...?"
 [[faq.chain]]
 == I just used an operator on my `Flux` but it doesn't seem to apply... What gives?

@@ -1,3 +1,4 @@
+[[advanced]]
 = Advanced features and concepts
 
 == Mutualizing operator usage

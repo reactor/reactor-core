@@ -1,3 +1,4 @@
+[[about-doc]]
 = About the Documentation
 This section provides a brief overview of Reactor reference documentation.
 You can read this reference guide in a linear fashion, or you can skip
@@ -17,8 +18,20 @@ The reference guide is written in http://asciidoctor.org/docs/asciidoc-writers-g
 format and sources can be found at https://github.com/reactor/reactor-core/tree/master/src/docs/asciidoc.
 
 If you come up with any improvement, we'll be happy to get a pull-request from you!
-For example, you can directly edit the <<core-features>> section in GitHub's UI
-https://github.com/reactor/reactor-core/edit/master/src/docs/asciidoc/coreFeatures.adoc[here]
+
+It is recommended to check out a local copy of the repository so that you can generate
+the documentation using the `asciidoctor` gradle task and check the rendering. Some of
+the sections rely on included files, so GitHub rendering is not always relevant.
+
+TIP: To facilitate documentation edits, most sections have a link at the end that opens
+an edit UI directly on GitHub, for the main source file for that section.
+ifeval::["{backend}" != "html5"]
+These links are only present in the HTML5 version of this reference guide.
+endif::[]
+ifeval::["{backend}" == "html5"]
+They look like this:
+https://github.com/reactor/reactor-core/edit/master/src/docs/asciidoc/aboutDoc.adoc[Suggest Edit^, role="fa fa-edit"].
+endif::[]
 
 == Getting help
 There are several ways to reach out for help with Reactor.
