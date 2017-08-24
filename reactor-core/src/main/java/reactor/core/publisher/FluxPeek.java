@@ -118,10 +118,10 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 
 		@Override
 		public void request(long n) {
-			if(parent.onRequestCall() != null) {
+			final LongConsumer requestHook = parent.onRequestCall();
+			if (requestHook != null) {
 				try {
-					//noinspection ConstantConditions
-					parent.onRequestCall().accept(n);
+					requestHook.accept(n);
 				}
 				catch (Throwable e) {
 					Operators.onOperatorError(e);
@@ -132,10 +132,10 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 
 		@Override
 		public void cancel() {
-			if(parent.onCancelCall() != null) {
+			final Runnable cancelHook = parent.onCancelCall();
+			if (cancelHook != null) {
 				try {
-					//noinspection ConstantConditions
-					parent.onCancelCall().run();
+					cancelHook.run();
 				}
 				catch (Throwable e) {
 					onError(Operators.onOperatorError(s, e));
@@ -148,11 +148,10 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 		@Override
 		public void onSubscribe(Subscription s) {
 			if(Operators.validate(this.s, s)) {
-				if (parent.onSubscribeCall() != null) {
+				final Consumer<? super Subscription> subscribeHook = parent.onSubscribeCall();
+				if (subscribeHook != null) {
 					try {
-						//noinspection ConstantConditions
-						parent.onSubscribeCall()
-						      .accept(s);
+						subscribeHook.accept(s);
 					}
 					catch (Throwable e) {
 						Operators.error(actual, Operators.onOperatorError(s, e));
@@ -170,10 +169,11 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 				Operators.onNextDropped(t);
 				return;
 			}
-			if(parent.onNextCall() != null) {
+
+			final Consumer<? super T> nextHook = parent.onNextCall();
+			if(nextHook != null) {
 				try {
-					//noinspection ConstantConditions
-					parent.onNextCall().accept(t);
+					nextHook.accept(t);
 				}
 				catch (Throwable e) {
 					onError(Operators.onOperatorError(s, e, t));
@@ -191,10 +191,10 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 				return;
 			}
 			done = true;
-			if(parent.onErrorCall() != null) {
+			final Consumer<? super Throwable> errorHook = parent.onErrorCall();
+			if(errorHook != null) {
 				try {
-					//noinspection ConstantConditions
-					parent.onErrorCall().accept(t);
+					errorHook.accept(t);
 				}
 				catch (Throwable e) {
 					//this performs a throwIfFatal or suppresses t in e
@@ -206,17 +206,17 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 				actual.onError(t);
 			}
 			catch (UnsupportedOperationException use){
-				if(parent.onErrorCall() == null
+				if(errorHook == null
 						|| !Exceptions.isErrorCallbackNotImplemented(use) && use.getCause() != t){
 					throw use;
 				}
 				//ignore if missing callback
 			}
 
-			if(parent.onAfterTerminateCall() != null) {
+			final Runnable afterTerminateHook = parent.onAfterTerminateCall();
+			if(afterTerminateHook != null) {
 				try {
-					//noinspection ConstantConditions
-					parent.onAfterTerminateCall().run();
+					afterTerminateHook.run();
 				}
 				catch (Throwable e) {
 					afterErrorWithFailure(parent, e, t);
@@ -229,10 +229,10 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 			if (done) {
 				return;
 			}
-			if(parent.onCompleteCall() != null) {
+			final Runnable completeHook = parent.onCompleteCall();
+			if(completeHook != null) {
 				try {
-					//noinspection ConstantConditions
-					parent.onCompleteCall().run();
+					completeHook.run();
 				}
 				catch (Throwable e) {
 					onError(Operators.onOperatorError(s, e));
@@ -243,10 +243,10 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 
 			actual.onComplete();
 
-			if(parent.onAfterTerminateCall() != null) {
+			final Runnable afterTerminateHook = parent.onAfterTerminateCall();
+			if(afterTerminateHook != null) {
 				try {
-					//noinspection ConstantConditions
-					parent.onAfterTerminateCall().run();
+					afterTerminateHook.run();
 				}
 				catch (Throwable e) {
 					afterCompleteWithFailure(parent, e);

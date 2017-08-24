@@ -117,19 +117,19 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 		@Override
 		public Context currentContext() {
 			Context c = actual.currentContext();
-			if(!c.isEmpty() && parent.onCurrentContextCall() != null) {
-				parent.onCurrentContextCall().accept(c);
+			final Consumer<? super Context> contextHook = parent.onCurrentContextCall();
+			if(!c.isEmpty() && contextHook != null) {
+				contextHook.accept(c);
 			}
 			return c;
 		}
 
 		@Override
 		public void request(long n) {
-			if (parent.onRequestCall() != null) {
+			final LongConsumer requestHook = parent.onRequestCall();
+			if (requestHook != null) {
 				try {
-					//noinspection ConstantConditions
-					parent.onRequestCall()
-					      .accept(n);
+					requestHook.accept(n);
 				}
 				catch (Throwable e) {
 					Operators.onOperatorError(e);
@@ -140,11 +140,10 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 
 		@Override
 		public void cancel() {
-			if (parent.onCancelCall() != null) {
+			final Runnable cancelHook = parent.onCancelCall();
+			if (cancelHook != null) {
 				try {
-					//noinspection ConstantConditions
-					parent.onCancelCall()
-					      .run();
+					cancelHook.run();
 				}
 				catch (Throwable e) {
 					onError(Operators.onOperatorError(s, e));
@@ -158,10 +157,10 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 		@Override
 		public void onSubscribe(Subscription s) {
 			if(Operators.validate(this.s, s)) {
-				if (parent.onSubscribeCall() != null) {
+				final Consumer<? super Subscription> subscribeHook = parent.onSubscribeCall();
+				if (subscribeHook != null) {
 					try {
-						//noinspection ConstantConditions
-						parent.onSubscribeCall().accept(s);
+						subscribeHook.accept(s);
 					}
 					catch (Throwable e) {
 						Operators.error(actual, Operators.onOperatorError(s, e));
@@ -183,11 +182,11 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					Operators.onNextDropped(t);
 					return;
 				}
-				if (parent.onNextCall() != null) {
+
+				final Consumer<? super T> nextHook = parent.onNextCall();
+				if (nextHook != null) {
 					try {
-						//noinspection ConstantConditions
-						parent.onNextCall()
-						      .accept(t);
+						nextHook.accept(t);
 					}
 					catch (Throwable e) {
 						onError(Operators.onOperatorError(s, e, t));
@@ -205,11 +204,11 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 				return;
 			}
 			done = true;
-			if (parent.onErrorCall() != null) {
+			final Consumer<? super Throwable> errorHook = parent.onErrorCall();
+			if (errorHook != null) {
 				Exceptions.throwIfFatal(t);
 				try {
-					//noinspection ConstantConditions
-					parent.onErrorCall().accept(t);
+					errorHook.accept(t);
 				}
 				catch (Throwable e) {
 					//this performs a throwIfFatal or suppresses t in e
@@ -221,17 +220,16 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 				actual.onError(t);
 			}
 			catch (UnsupportedOperationException use) {
-				if (parent.onErrorCall() == null
+				if (errorHook == null
 						|| !Exceptions.isErrorCallbackNotImplemented(use) && use.getCause() != t) {
 					throw use;
 				}
 			}
 
-			if (parent.onAfterTerminateCall() != null) {
+			final Runnable afterTerminateHook = parent.onAfterTerminateCall();
+			if (afterTerminateHook != null) {
 				try {
-					//noinspection ConstantConditions
-					parent.onAfterTerminateCall()
-					      .run();
+					afterTerminateHook.run();
 				}
 				catch (Throwable e) {
 					FluxPeek.afterErrorWithFailure(parent, e, t);
@@ -250,11 +248,10 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 				actual.onComplete();
 			}
 			else {
-				if (parent.onCompleteCall() != null) {
+				final Runnable completeHook = parent.onCompleteCall();
+				if (completeHook != null) {
 					try {
-						//noinspection ConstantConditions
-						parent.onCompleteCall()
-						      .run();
+						completeHook.run();
 					}
 					catch (Throwable e) {
 						onError(Operators.onOperatorError(s, e));
@@ -265,11 +262,10 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 
 				actual.onComplete();
 
-				if (parent.onAfterTerminateCall() != null) {
+				final Runnable afterTerminateHook = parent.onAfterTerminateCall();
+				if (afterTerminateHook != null) {
 					try {
-						//noinspection ConstantConditions
-						parent.onAfterTerminateCall()
-						      .run();
+						afterTerminateHook.run();
 					}
 					catch (Throwable e) {
 						FluxPeek.afterCompleteWithFailure(parent, e);
@@ -292,10 +288,10 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 				v = s.poll();
 			}
 			catch (Throwable e) {
-				if (parent.onErrorCall() != null) {
+				final Consumer<? super Throwable> errorHook = parent.onErrorCall();
+				if (errorHook != null) {
 					try {
-						parent.onErrorCall()
-						      .accept(e);
+						errorHook.accept(e);
 					}
 					catch (Throwable errorCallbackError) {
 						throw Exceptions.propagate(Operators.onOperatorError(s, errorCallbackError, e));
@@ -303,11 +299,11 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 				}
 				throw Exceptions.propagate(Operators.onOperatorError(s, e));
 			}
-			if (v != null && parent.onNextCall() != null) {
+
+			final Consumer<? super T> nextHook = parent.onNextCall();
+			if (v != null && nextHook != null) {
 				try {
-					//noinspection ConstantConditions
-					parent.onNextCall()
-					      .accept(v);
+					nextHook.accept(v);
 				}
 				catch (Throwable e) {
 					throw Exceptions.propagate(Operators.onOperatorError(s, e, v));
@@ -378,8 +374,9 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 		@Override
 		public Context currentContext() {
 			Context c = actual.currentContext();
-			if(!c.isEmpty() && parent.onCurrentContextCall() != null) {
-				parent.onCurrentContextCall().accept(c);
+			final Consumer<? super Context> contextHook = parent.onCurrentContextCall();
+			if(!c.isEmpty() && contextHook != null) {
+				contextHook.accept(c);
 			}
 			return c;
 		}
@@ -395,11 +392,10 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 
 		@Override
 		public void request(long n) {
-			if (parent.onRequestCall() != null) {
+			final LongConsumer requestHook = parent.onRequestCall();
+			if (requestHook != null) {
 				try {
-					//noinspection ConstantConditions
-					parent.onRequestCall()
-					      .accept(n);
+					requestHook.accept(n);
 				}
 				catch (Throwable e) {
 					Operators.onOperatorError(e);
@@ -410,11 +406,10 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 
 		@Override
 		public void cancel() {
-			if (parent.onCancelCall() != null) {
+			final Runnable cancelHook = parent.onCancelCall();
+			if (cancelHook != null) {
 				try {
-					//noinspection ConstantConditions
-					parent.onCancelCall()
-					      .run();
+					cancelHook.run();
 				}
 				catch (Throwable e) {
 					onError(Operators.onOperatorError(s, e));
@@ -428,11 +423,10 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 		@Override
 		public void onSubscribe(Subscription s) {
 			if(Operators.validate(this.s, s)) {
-				if (parent.onSubscribeCall() != null) {
+				final Consumer<? super Subscription> subscribeHook = parent.onSubscribeCall();
+				if (subscribeHook != null) {
 					try {
-						//noinspection ConstantConditions
-						parent.onSubscribeCall()
-						      .accept(s);
+						subscribeHook.accept(s);
 					}
 					catch (Throwable e) {
 						Operators.error(actual, Operators.onOperatorError(s, e));
@@ -454,11 +448,11 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					Operators.onNextDropped(t);
 					return;
 				}
-				if (parent.onNextCall() != null) {
+
+				final Consumer<? super T> nextHook = parent.onNextCall();
+				if (nextHook != null) {
 					try {
-						//noinspection ConstantConditions
-						parent.onNextCall()
-						      .accept(t);
+						nextHook.accept(t);
 					}
 					catch (Throwable e) {
 						onError(Operators.onOperatorError(s, e, t));
@@ -476,11 +470,10 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 				return false;
 			}
 
-			if (parent.onNextCall() != null) {
+			final Consumer<? super T> nextHook = parent.onNextCall();
+			if (nextHook != null) {
 				try {
-					//noinspection ConstantConditions
-					parent.onNextCall()
-					      .accept(t);
+					nextHook.accept(t);
 				}
 				catch (Throwable e) {
 					onError(Operators.onOperatorError(s, e, t));
@@ -497,11 +490,11 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 				return;
 			}
 			done = true;
-			if (parent.onErrorCall() != null) {
+			final Consumer<? super Throwable> errorHook = parent.onErrorCall();
+			if (errorHook != null) {
 				Exceptions.throwIfFatal(t);
 				try {
-					//noinspection ConstantConditions
-					parent.onErrorCall().accept(t);
+					errorHook.accept(t);
 				}
 				catch (Throwable e) {
 					//this performs a throwIfFatal or suppresses t in e
@@ -513,16 +506,16 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 				actual.onError(t);
 			}
 			catch (UnsupportedOperationException use) {
-				if (parent.onErrorCall() == null
+				if (errorHook == null
 						|| !Exceptions.isErrorCallbackNotImplemented(use) && use.getCause() != t) {
 					throw use;
 				}
 			}
 
-			if (parent.onAfterTerminateCall() != null) {
+			final Runnable afterTerminateHook = parent.onAfterTerminateCall();
+			if (afterTerminateHook != null) {
 				try {
-					//noinspection ConstantConditions
-					parent.onAfterTerminateCall().run();
+					afterTerminateHook.run();
 				}
 				catch (Throwable e) {
 					FluxPeek.afterErrorWithFailure(parent, e, t);
@@ -541,11 +534,10 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 				actual.onComplete();
 			}
 			else {
-				if (parent.onCompleteCall() != null) {
+				final Runnable completeHook = parent.onCompleteCall();
+				if (completeHook != null) {
 					try {
-						//noinspection ConstantConditions
-						parent.onCompleteCall()
-						      .run();
+						completeHook.run();
 					}
 					catch (Throwable e) {
 						onError(Operators.onOperatorError(s, e));
@@ -555,11 +547,10 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 				done = true;
 				actual.onComplete();
 
-				if (parent.onAfterTerminateCall() != null) {
+				final Runnable afterTerminateHook = parent.onAfterTerminateCall();
+				if (afterTerminateHook != null) {
 					try {
-						//noinspection ConstantConditions
-						parent.onAfterTerminateCall()
-						      .run();
+						afterTerminateHook.run();
 					}
 					catch (Throwable e) {
 						FluxPeek.afterCompleteWithFailure(parent, e);
@@ -582,10 +573,10 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 				v = s.poll();
 			}
 			catch (Throwable e) {
-				if (parent.onErrorCall() != null) {
+				final Consumer<? super Throwable> errorHook = parent.onErrorCall();
+				if (errorHook != null) {
 					try {
-						parent.onErrorCall()
-						      .accept(e);
+						errorHook.accept(e);
 					}
 					catch (Throwable errorCallbackError) {
 						throw Exceptions.propagate(Operators.onOperatorError(s, errorCallbackError, e));
@@ -593,11 +584,11 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 				}
 				throw Exceptions.propagate(Operators.onOperatorError(s, e));
 			}
-			if (v != null && parent.onNextCall() != null) {
+
+			final Consumer<? super T> nextHook = parent.onNextCall();
+			if (v != null && nextHook != null) {
 				try {
-					//noinspection ConstantConditions
-					parent.onNextCall()
-					      .accept(v);
+					nextHook.accept(v);
 				}
 				catch (Throwable e) {
 					throw Exceptions.propagate(Operators.onOperatorError(s, e, v));
@@ -715,11 +706,10 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 
 		@Override
 		public void request(long n) {
-			if (parent.onRequestCall() != null) {
+			final LongConsumer requestHook = parent.onRequestCall();
+			if (requestHook != null) {
 				try {
-					//noinspection ConstantConditions
-					parent.onRequestCall()
-					      .accept(n);
+					requestHook.accept(n);
 				}
 				catch (Throwable e) {
 					Operators.onOperatorError(e);
@@ -730,11 +720,10 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 
 		@Override
 		public void cancel() {
-			if (parent.onCancelCall() != null) {
+			final Runnable cancelHook = parent.onCancelCall();
+			if (cancelHook != null) {
 				try {
-					//noinspection ConstantConditions
-					parent.onCancelCall()
-					      .run();
+					cancelHook.run();
 				}
 				catch (Throwable e) {
 					onError(Operators.onOperatorError(s, e));
@@ -747,11 +736,10 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 		@Override
 		public void onSubscribe(Subscription s) {
 			if(Operators.validate(this.s, s)) {
-				if (parent.onSubscribeCall() != null) {
+				final Consumer<? super Subscription> subscribeHook = parent.onSubscribeCall();
+				if (subscribeHook != null) {
 					try {
-						//noinspection ConstantConditions
-						parent.onSubscribeCall()
-						      .accept(s);
+						subscribeHook.accept(s);
 					}
 					catch (Throwable e) {
 						Operators.error(actual, Operators.onOperatorError(s, e));
@@ -778,11 +766,11 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 				Operators.onNextDropped(t);
 				return;
 			}
-			if (parent.onNextCall() != null) {
+
+			final Consumer<? super T> nextHook = parent.onNextCall();
+			if (nextHook != null) {
 				try {
-					//noinspection ConstantConditions
-					parent.onNextCall()
-					      .accept(t);
+					nextHook.accept(t);
 				}
 				catch (Throwable e) {
 					onError(Operators.onOperatorError(s, e, t));
@@ -799,11 +787,10 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 				return false;
 			}
 
-			if (parent.onNextCall() != null) {
+			final Consumer<? super T> nextHook = parent.onNextCall();
+			if (nextHook != null) {
 				try {
-					//noinspection ConstantConditions
-					parent.onNextCall()
-					      .accept(t);
+					nextHook.accept(t);
 				}
 				catch (Throwable e) {
 					onError(Operators.onOperatorError(s, e, t));
@@ -820,11 +807,11 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 				return;
 			}
 			done = true;
-			if (parent.onErrorCall() != null) {
+			final Consumer<? super Throwable> errorHook = parent.onErrorCall();
+			if (errorHook != null) {
 				Exceptions.throwIfFatal(t);
 				try {
-					//noinspection ConstantConditions
-					parent.onErrorCall().accept(t);
+					errorHook.accept(t);
 				}
 				catch (Throwable e) {
 					//this performs a throwIfFatal or suppresses t in e
@@ -836,17 +823,16 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 				actual.onError(t);
 			}
 			catch (UnsupportedOperationException use) {
-				if (parent.onErrorCall() == null
+				if (errorHook == null
 						|| !Exceptions.isErrorCallbackNotImplemented(use) && use.getCause() != t) {
 					throw use;
 				}
 			}
 
-			if (parent.onAfterTerminateCall() != null) {
+			final Runnable afterTerminateHook = parent.onAfterTerminateCall();
+			if (afterTerminateHook != null) {
 				try {
-					//noinspection ConstantConditions
-					parent.onAfterTerminateCall()
-					      .run();
+					afterTerminateHook.run();
 				}
 				catch (Throwable e) {
 					FluxPeek.afterErrorWithFailure(parent, e, t);
@@ -859,11 +845,10 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 			if (done) {
 				return;
 			}
-			if (parent.onCompleteCall() != null) {
+			final Runnable completeHook = parent.onCompleteCall();
+			if (completeHook != null) {
 				try {
-					//noinspection ConstantConditions
-					parent.onCompleteCall()
-					      .run();
+					completeHook.run();
 				}
 				catch (Throwable e) {
 					onError(Operators.onOperatorError(s, e));
@@ -874,11 +859,10 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 
 			actual.onComplete();
 
-			if (parent.onAfterTerminateCall() != null) {
+			final Runnable afterTerminateHook = parent.onAfterTerminateCall();
+			if (afterTerminateHook != null) {
 				try {
-					//noinspection ConstantConditions
-					parent.onAfterTerminateCall()
-					      .run();
+					afterTerminateHook.run();
 				}
 				catch (Throwable e) {
 					FluxPeek.afterCompleteWithFailure(parent, e);
