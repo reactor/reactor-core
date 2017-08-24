@@ -34,7 +34,7 @@ public interface Disposable {
 	 * @return an empty atomic {@link Composite}
 	 */
 	static Composite composite() {
-		return new DefaultDisposable.CompositeDisposable();
+		return new Disposables.CompositeDisposable();
 	}
 
 	/**
@@ -44,7 +44,7 @@ public interface Disposable {
 	 * @return a pre-filled atomic {@link Composite}
 	 */
 	static Composite composite(Disposable... disposables) {
-		return new DefaultDisposable.CompositeDisposable(disposables);
+		return new Disposables.CompositeDisposable(disposables);
 	}
 
 	/**
@@ -54,7 +54,7 @@ public interface Disposable {
 	 * @return a pre-filled atomic {@link Composite}
 	 */
 	static Composite composite(Iterable<? extends Disposable> disposables) {
-		return new DefaultDisposable.CompositeDisposable(disposables);
+		return new Disposables.CompositeDisposable(disposables);
 	}
 
 	/**
@@ -64,7 +64,7 @@ public interface Disposable {
 	 * @return an empty atomic {@link Swap}
 	 */
 	static Swap swap() {
-		return new DefaultDisposable.SwapDisposable();
+		return new Disposables.SwapDisposable();
 	}
 
 	/**
@@ -74,7 +74,7 @@ public interface Disposable {
 	 * @return a new {@link Disposable} initially not yet disposed.
 	 */
 	static Disposable single() {
-		return new DefaultDisposable.SimpleDisposable();
+		return new Disposables.SimpleDisposable();
 	}
 
 	/**
@@ -83,7 +83,7 @@ public interface Disposable {
 	 * @return a new disposed {@link Disposable}.
 	 */
 	static Disposable disposed() {
-		return new DefaultDisposable.AlwaysDisposable();
+		return new Disposables.AlwaysDisposable();
 	}
 
 	/**
@@ -93,7 +93,7 @@ public interface Disposable {
 	 * @return a new {@link Disposable} that can never be disposed.
 	 */
 	static Disposable never() {
-		return new DefaultDisposable.NeverDisposable();
+		return new Disposables.NeverDisposable();
 	}
 
 	/**

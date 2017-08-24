@@ -28,16 +28,16 @@ import javax.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 
 /**
- * A support class that offers implementations for the specialized {@link Disposable}
- * sub-interfaces ({@link Disposable.Composite Disposable.Composite},
+ * A support class that offers factory methods for implementations of the specialized
+ * {@link Disposable} sub-interfaces ({@link Disposable.Composite Disposable.Composite},
  * {@link Disposable.Swap Disposable.Swap}).
  *
  * @author Simon Baslé
  * @author Stephane Maldini
  */
-abstract class DefaultDisposable {
+public abstract class Disposables {
 
-	DefaultDisposable() { }
+	Disposables() { }
 
 	/**
 	 * A {@link Disposable.Composite} that allows to atomically add, remove and mass dispose.
@@ -363,12 +363,12 @@ abstract class DefaultDisposable {
 
 		@Override
 		public boolean update(Disposable next) {
-			return DefaultDisposable.set(INNER, this, next);
+			return Disposables.set(INNER, this, next);
 		}
 
 		@Override
 		public boolean replace(@Nullable Disposable next) {
-			return DefaultDisposable.replace(INNER, this, next);
+			return Disposables.replace(INNER, this, next);
 		}
 
 		@Override
@@ -379,12 +379,12 @@ abstract class DefaultDisposable {
 
 		@Override
 		public void dispose() {
-			DefaultDisposable.dispose(INNER, this);
+			Disposables.dispose(INNER, this);
 		}
 
 		@Override
 		public boolean isDisposed() {
-			return DefaultDisposable.isDisposed(INNER.get(this));
+			return Disposables.isDisposed(INNER.get(this));
 		}
 	}
 

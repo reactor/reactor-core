@@ -26,7 +26,7 @@ import reactor.test.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class DefaultDisposableTest {
+public class DisposablesTest {
 
 	//==== PUBLIC API TESTS ====
 
@@ -88,10 +88,10 @@ public class DefaultDisposableTest {
 
 	@Test
 	public void singletonIsDisposed() {
-		assertThat(DefaultDisposable.DISPOSED.isDisposed()).isTrue();
-		DefaultDisposable.DISPOSED.dispose();
-		assertThat(DefaultDisposable.DISPOSED.isDisposed()).isTrue();
-		assertThat(DefaultDisposable.DISPOSED).isNotSameAs(Disposable.disposed());
+		assertThat(Disposables.DISPOSED.isDisposed()).isTrue();
+		Disposables.DISPOSED.dispose();
+		assertThat(Disposables.DISPOSED.isDisposed()).isTrue();
+		assertThat(Disposables.DISPOSED).isNotSameAs(Disposable.disposed());
 	}
 
 	@Test
@@ -101,7 +101,7 @@ public class DefaultDisposableTest {
 			TestDisposable r = new TestDisposable() {
 				@Override
 				public void run() {
-					DefaultDisposable.dispose(DISPOSABLE_UPDATER, this);
+					Disposables.dispose(DISPOSABLE_UPDATER, this);
 				}
 			};
 
@@ -116,7 +116,7 @@ public class DefaultDisposableTest {
 			TestDisposable r = new TestDisposable() {
 				@Override
 				public void run() {
-					DefaultDisposable.replace(DISPOSABLE_UPDATER, this, Disposable.single());
+					Disposables.replace(DISPOSABLE_UPDATER, this, Disposable.single());
 				}
 			};
 
@@ -130,7 +130,7 @@ public class DefaultDisposableTest {
 			TestDisposable r = new TestDisposable() {
 				@Override
 				public void run() {
-					DefaultDisposable.set(DISPOSABLE_UPDATER, this, Disposable.single());
+					Disposables.set(DISPOSABLE_UPDATER, this, Disposable.single());
 				}
 			};
 
@@ -142,10 +142,10 @@ public class DefaultDisposableTest {
 	public void setReplaceNull() {
 		TestDisposable r = new TestDisposable();
 
-		DefaultDisposable.dispose(DISPOSABLE_UPDATER, r);
+		Disposables.dispose(DISPOSABLE_UPDATER, r);
 
-		assertThat(DefaultDisposable.set(DISPOSABLE_UPDATER, r, null)).isFalse();
-		assertThat(DefaultDisposable.replace(DISPOSABLE_UPDATER, r, null)).isFalse();
+		assertThat(Disposables.set(DISPOSABLE_UPDATER, r, null)).isFalse();
+		assertThat(Disposables.replace(DISPOSABLE_UPDATER, r, null)).isFalse();
 	}
 
 	@Test
@@ -153,7 +153,7 @@ public class DefaultDisposableTest {
 		Disposable u = Disposable.single();
 		TestDisposable r = new TestDisposable(u);
 
-		DefaultDisposable.dispose(DISPOSABLE_UPDATER, r);
+		Disposables.dispose(DISPOSABLE_UPDATER, r);
 
 		assertThat(u.isDisposed()).isTrue();
 	}
