@@ -106,9 +106,6 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 	static final class CoordinatorSubscriber<T> implements InnerConsumer<T>, Signal<T> {
 
 		final MonoCacheTime<T> main;
-		final Scheduler.Worker worker;
-
-		Disposable   timer;
 
 		volatile Subscription subscription;
 
@@ -124,9 +121,9 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 			this.main = main;
 			//noinspection unchecked
 			this.subscribers = EMPTY;
-			this.worker = main.clock.createWorker();
 		}
 
+		//== a bunch of unused methods so that it can be comparedAndSet in main state ==
 		@Nullable
 		@Override
 		public Throwable getThrowable() {
@@ -149,6 +146,7 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 		public SignalType getType() {
 			return SignalType.SUBSCRIBE; //for the lolz
 		}
+		//====
 
 		final boolean add(Operators.MonoSubscriber<T, T> toAdd) {
 			for (; ; ) {
@@ -196,10 +194,6 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 					System.arraycopy(a, j + 1, b, j, n - j - 1);
 				}
 				if (SUBSCRIBERS.compareAndSet(this, a, b)) {
-//					if (b == EMPTY && Operators.terminate(S, this)) {
-//						main.state = main.STATE_INIT;
-//					}
-					//no-op
 					return;
 				}
 			}
@@ -215,7 +209,7 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 
 		private void signalCached(Signal<T> signal) {
 			if (STATE.compareAndSet(main, this, signal)) {
-				timer = worker.schedule(main, main.ttl.toMillis(), TimeUnit.MILLISECONDS);
+				main.clock.schedule(main, main.ttl.toMillis(), TimeUnit.MILLISECONDS);
 			}
 
 			//noinspection unchecked
