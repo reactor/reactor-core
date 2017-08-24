@@ -75,7 +75,13 @@ public class Context1Test {
 
 	@Test
 	public void getUnknownWithDefault() throws Exception {
-		assertThat(c.getOrDefault(2, "boo")).isEqualTo("boo");
+		assertThat(c.getOrDefault("peeka", "boo")).isEqualTo("boo");
+	}
+
+	@Test
+	public void getUnknownWithDefaultNull() throws Exception {
+		Object def = null;
+		assertThat(c.getOrDefault("peeka", def)).isNull();
 	}
 
 	@Test

@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /**
  * A key/value store that is propagated between components such as operators via the
@@ -176,7 +177,8 @@ public interface Context {
 	 *
 	 * @return an eventual value or the default passed
 	 */
-	default <T> T getOrDefault(Object key, T defaultValue){
+	@Nullable
+	default <T> T getOrDefault(Object key, @Nullable T defaultValue){
 		if(!hasKey(key)){
 			return defaultValue;
 		}
