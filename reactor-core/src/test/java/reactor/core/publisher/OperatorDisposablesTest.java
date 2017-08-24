@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.junit.Test;
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.RaceTestUtils;
 
@@ -52,7 +53,7 @@ public class OperatorDisposablesTest {
 		assertThat(OperatorDisposables.DISPOSED.isDisposed()).isTrue();
 		OperatorDisposables.DISPOSED.dispose();
 		assertThat(OperatorDisposables.DISPOSED.isDisposed()).isTrue();
-		assertThat(OperatorDisposables.DISPOSED).isNotSameAs(Disposable.disposed());
+		assertThat(OperatorDisposables.DISPOSED).isNotSameAs(Disposables.disposed());
 	}
 
 	@Test
@@ -88,7 +89,7 @@ public class OperatorDisposablesTest {
 			TestDisposable r = new TestDisposable() {
 				@Override
 				public void run() {
-					OperatorDisposables.replace(DISPOSABLE_UPDATER, this, Disposable.single());
+					OperatorDisposables.replace(DISPOSABLE_UPDATER, this, Disposables.single());
 				}
 			};
 
@@ -102,7 +103,7 @@ public class OperatorDisposablesTest {
 			TestDisposable r = new TestDisposable() {
 				@Override
 				public void run() {
-					OperatorDisposables.set(DISPOSABLE_UPDATER, this, Disposable.single());
+					OperatorDisposables.set(DISPOSABLE_UPDATER, this, Disposables.single());
 				}
 			};
 
@@ -122,7 +123,7 @@ public class OperatorDisposablesTest {
 
 	@Test
 	public void dispose() {
-		Disposable u = Disposable.single();
+		Disposable u = Disposables.single();
 		TestDisposable r = new TestDisposable(u);
 
 		OperatorDisposables.dispose(DISPOSABLE_UPDATER, r);
@@ -134,11 +135,11 @@ public class OperatorDisposablesTest {
 	public void trySet() {
 		TestDisposable r = new TestDisposable();
 
-		Disposable d1 = Disposable.single();
+		Disposable d1 = Disposables.single();
 
 		assertThat(OperatorDisposables.trySet(DISPOSABLE_UPDATER, r, d1)).isTrue();
 
-		Disposable d2 = Disposable.single();
+		Disposable d2 = Disposables.single();
 
 		assertThat(OperatorDisposables.trySet(DISPOSABLE_UPDATER, r, d2)).isFalse();
 
@@ -148,7 +149,7 @@ public class OperatorDisposablesTest {
 
 		OperatorDisposables.dispose(DISPOSABLE_UPDATER, r);
 
-		Disposable d3 = Disposable.single();
+		Disposable d3 = Disposables.single();
 
 		assertThat(OperatorDisposables.trySet(DISPOSABLE_UPDATER, r, d3)).isFalse();
 

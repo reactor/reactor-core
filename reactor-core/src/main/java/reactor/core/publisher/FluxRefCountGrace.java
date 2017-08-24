@@ -26,6 +26,7 @@ import javax.annotation.Nullable;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
@@ -115,7 +116,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 				timeout(rc);
 				return;
 			}
-			sd = Disposable.swap();
+			sd = Disposables.swap();
 			rc.timer = sd;
 		}
 

@@ -32,13 +32,13 @@ public class DisposablesTest {
 
 	@Test
 	public void sequentialEmpty() {
-		assertThat(Disposable.swap()
-		                     .get()).isNull();
+		assertThat(Disposables.swap()
+		                      .get()).isNull();
 	}
 
 	@Test
 	public void compositeEmpty() {
-		Disposable.Composite cd = Disposable.composite();
+		Disposable.Composite cd = Disposables.composite();
 		assertThat(cd.size()).isZero();
 		assertThat(cd.isDisposed()).isFalse();
 	}
@@ -48,7 +48,7 @@ public class DisposablesTest {
 		Disposable d1 = new FakeDisposable();
 		Disposable d2 = new FakeDisposable();
 
-		Disposable.Composite cd = Disposable.composite(d1, d2);
+		Disposable.Composite cd = Disposables.composite(d1, d2);
 		assertThat(cd.size()).isEqualTo(2);
 		assertThat(cd.isDisposed()).isFalse();
 	}
@@ -58,7 +58,7 @@ public class DisposablesTest {
 		Disposable d1 = new FakeDisposable();
 		Disposable d2 = new FakeDisposable();
 
-		Disposable.Composite cd = Disposable.composite(Arrays.asList(d1, d2));
+		Disposable.Composite cd = Disposables.composite(Arrays.asList(d1, d2));
 		assertThat(cd.size()).isEqualTo(2);
 		assertThat(cd.isDisposed()).isFalse();
 	}
@@ -91,7 +91,7 @@ public class DisposablesTest {
 		assertThat(Disposables.DISPOSED.isDisposed()).isTrue();
 		Disposables.DISPOSED.dispose();
 		assertThat(Disposables.DISPOSED.isDisposed()).isTrue();
-		assertThat(Disposables.DISPOSED).isNotSameAs(Disposable.disposed());
+		assertThat(Disposables.DISPOSED).isNotSameAs(Disposables.disposed());
 	}
 
 	@Test
@@ -116,7 +116,7 @@ public class DisposablesTest {
 			TestDisposable r = new TestDisposable() {
 				@Override
 				public void run() {
-					Disposables.replace(DISPOSABLE_UPDATER, this, Disposable.single());
+					Disposables.replace(DISPOSABLE_UPDATER, this, Disposables.single());
 				}
 			};
 
@@ -130,7 +130,7 @@ public class DisposablesTest {
 			TestDisposable r = new TestDisposable() {
 				@Override
 				public void run() {
-					Disposables.set(DISPOSABLE_UPDATER, this, Disposable.single());
+					Disposables.set(DISPOSABLE_UPDATER, this, Disposables.single());
 				}
 			};
 
@@ -150,7 +150,7 @@ public class DisposablesTest {
 
 	@Test
 	public void dispose() {
-		Disposable u = Disposable.single();
+		Disposable u = Disposables.single();
 		TestDisposable r = new TestDisposable(u);
 
 		Disposables.dispose(DISPOSABLE_UPDATER, r);

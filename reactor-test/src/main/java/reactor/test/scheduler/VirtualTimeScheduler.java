@@ -28,6 +28,7 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -466,8 +467,8 @@ public class VirtualTimeScheduler implements Scheduler {
 		}
 	}
 
-	static final Disposable CANCELLED = Disposable.disposed();
-	static final Disposable EMPTY = Disposable.never();
+	static final Disposable CANCELLED = Disposables.disposed();
+	static final Disposable EMPTY = Disposables.never();
 
 	static boolean replace(AtomicReference<Disposable> ref, @Nullable Disposable c) {
 		for (; ; ) {

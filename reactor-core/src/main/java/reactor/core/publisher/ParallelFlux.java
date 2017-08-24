@@ -38,6 +38,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
 import reactor.core.scheduler.Scheduler;
@@ -976,7 +977,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 		}
 
 		onLastAssembly(this).subscribe(subscribers);
-		return Disposable.composite(subscribers);
+		return Disposables.composite(subscribers);
 	}
 
 	/**

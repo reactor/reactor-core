@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Exceptions;
 
 import static reactor.core.scheduler.ExecutorServiceScheduler.CANCELLED;
@@ -273,7 +274,7 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 		CachedWorker(ScheduledExecutorService executor, ElasticScheduler parent) {
 			this.executor = executor;
 			this.parent = parent;
-			this.tasks = Disposable.composite();
+			this.tasks = Disposables.composite();
 		}
 
 		@Override

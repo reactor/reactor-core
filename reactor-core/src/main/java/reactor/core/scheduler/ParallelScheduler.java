@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
 
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Exceptions;
 
 /**
@@ -184,7 +185,7 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
         
         ParallelWorker(ScheduledExecutorService exec) {
             this.exec = exec;
-            this.tasks = Disposable.composite();
+            this.tasks = Disposables.composite();
         }
 
 	    @Override

@@ -23,6 +23,7 @@ import javax.annotation.Nullable;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 
@@ -73,7 +74,7 @@ final class MonoDelay extends Mono<Long> {
 
 		volatile boolean requested;
 
-		static final Disposable FINISHED = Disposable.disposed();
+		static final Disposable FINISHED = Disposables.disposed();
 
 		MonoDelayRunnable(CoreSubscriber<? super Long> actual) {
 			this.actual = actual;

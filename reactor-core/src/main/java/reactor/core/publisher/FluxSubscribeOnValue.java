@@ -25,6 +25,7 @@ import javax.annotation.Nullable;
 import org.reactivestreams.Subscriber;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
@@ -88,7 +89,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 						Disposable.class,
 						"future");
 
-		static final Disposable FINISHED = Disposable.disposed();
+		static final Disposable FINISHED = Disposables.disposed();
 
 		int fusionState;
 
@@ -218,7 +219,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 						Disposable.class,
 						"future");
 
-		static final Disposable FINISHED = Disposable.disposed();
+		static final Disposable FINISHED = Disposables.disposed();
 
 		ScheduledEmpty(Subscriber<?> actual) {
 			this.actual = actual;

@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Exceptions;
 
 /**
@@ -194,7 +195,7 @@ final class ExecutorScheduler implements Scheduler {
 
 		ExecutorSchedulerWorker(Executor executor) {
 			this.executor = executor;
-			this.tasks = Disposable.composite();
+			this.tasks = Disposables.composite();
 		}
 
 		@Override
