@@ -35,10 +35,9 @@ import reactor.util.concurrent.Queues;
  * @author Simon Baslé
  * @author Stephane Maldini
  */
-public abstract class Disposables {
+public final class Disposables {
 
-	Disposables() { }
-
+	private Disposables() { }
 
 	/**
 	 * Create a new empty {@link Disposable.Composite} with atomic guarantees on all mutative
@@ -111,7 +110,6 @@ public abstract class Disposables {
 	}
 
 	//==== STATIC package private implementations ====
-
 
 	/**
 	 * A {@link Disposable.Composite} that allows to atomically add, remove and mass dispose.
