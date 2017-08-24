@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
+import reactor.core.Disposable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.MonoOperatorTest;
 
@@ -81,49 +82,49 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 		assertThat(subCount.get()).isEqualTo(1);
 	}
 
-	@Test
-	public void expireAfterTtlFused() throws InterruptedException {
-		AtomicInteger subCount = new AtomicInteger();
-		Mono<Integer> source = Mono.defer(() -> Mono.just(subCount.incrementAndGet())).log("SOURCE");
-
-		Mono<Integer> cached = source.cache(Duration.ofMillis(100)).log("CACHED");
-
-		StepVerifier.create(cached)
-		            .expectFusion()
-		            .expectNext(1)
-		            .as("first subscription caches 1")
-		            .verifyComplete();
-
-		Thread.sleep(110);
-
-		StepVerifier.create(cached)
-		            .expectNext(2)
-		            .as("cached value should expire")
-		            .verifyComplete();
-
-		assertThat(subCount.get()).isEqualTo(2);
-	}
-
-	@Test
-	public void doesntResubscribeFused() {
-		AtomicInteger subCount = new AtomicInteger();
-		Mono<Integer> source = Mono.defer(() -> Mono.just(subCount.incrementAndGet())).log();
-
-		Mono<Integer> cached = source.cache(Duration.ofMillis(100)).log();
-
-		StepVerifier.create(cached)
-		            .expectFusion()
-		            .expectNext(1)
-		            .as("first subscription caches 1")
-		            .verifyComplete();
-
-		StepVerifier.create(cached)
-		            .expectNext(1)
-		            .as("second subscription uses cache")
-		            .verifyComplete();
-
-		assertThat(subCount.get()).isEqualTo(1);
-	}
+//	@Test
+//	public void expireAfterTtlFused() throws InterruptedException {
+//		AtomicInteger subCount = new AtomicInteger();
+//		Mono<Integer> source = Mono.defer(() -> Mono.just(subCount.incrementAndGet())).log("SOURCE");
+//
+//		Mono<Integer> cached = source.cache(Duration.ofMillis(100)).log("CACHED");
+//
+//		StepVerifier.create(cached)
+//		            .expectFusion()
+//		            .expectNext(1)
+//		            .as("first subscription caches 1")
+//		            .verifyComplete();
+//
+//		Thread.sleep(110);
+//
+//		StepVerifier.create(cached)
+//		            .expectNext(2)
+//		            .as("cached value should expire")
+//		            .verifyComplete();
+//
+//		assertThat(subCount.get()).isEqualTo(2);
+//	}
+//
+//	@Test
+//	public void doesntResubscribeFused() {
+//		AtomicInteger subCount = new AtomicInteger();
+//		Mono<Integer> source = Mono.defer(() -> Mono.just(subCount.incrementAndGet())).log();
+//
+//		Mono<Integer> cached = source.cache(Duration.ofMillis(100)).log();
+//
+//		StepVerifier.create(cached)
+//		            .expectFusion()
+//		            .expectNext(1)
+//		            .as("first subscription caches 1")
+//		            .verifyComplete();
+//
+//		StepVerifier.create(cached)
+//		            .expectNext(1)
+//		            .as("second subscription uses cache")
+//		            .verifyComplete();
+//
+//		assertThat(subCount.get()).isEqualTo(1);
+//	}
 
 	@Test
 	public void expireAfterTtlConditional() throws InterruptedException {
@@ -172,51 +173,82 @@ public class MonoCacheTimeTest extends MonoOperatorTest<String, String> {
 
 		assertThat(subCount.get()).isEqualTo(1);
 	}
+//
+//	@Test
+//	public void expireAfterTtlConditionalFused() throws InterruptedException {
+//		AtomicInteger subCount = new AtomicInteger();
+//		Mono<Integer> source = Mono.defer(() -> Mono.just(subCount.incrementAndGet()));
+//
+//		Mono<Integer> cached = source.cache(Duration.ofMillis(100))
+//				.filter(always -> true);
+//
+//		StepVerifier.create(cached)
+//		            .expectFusion()
+//		            .expectNext(1)
+//		            .as("first subscription caches 1")
+//		            .verifyComplete();
+//
+//		Thread.sleep(110);
+//
+//		StepVerifier.create(cached)
+//		            .expectNext(2)
+//		            .as("cached value should expire")
+//		            .verifyComplete();
+//
+//		assertThat(subCount.get()).isEqualTo(2);
+//	}
+//
+//	@Test
+//	public void doesntResubscribeConditionalFused() {
+//		AtomicInteger subCount = new AtomicInteger();
+//		Mono<Integer> source = Mono.defer(() -> Mono.just(subCount.incrementAndGet()));
+//
+//		Mono<Integer> cached = source.cache(Duration.ofMillis(100))
+//				.filter(always -> true);
+//
+//		StepVerifier.create(cached)
+//		            .expectFusion()
+//		            .expectNext(1)
+//		            .as("first subscription caches 1")
+//		            .verifyComplete();
+//
+//		StepVerifier.create(cached)
+//		            .expectNext(1)
+//		            .as("second subscription uses cache")
+//		            .verifyComplete();
+//
+//		assertThat(subCount.get()).isEqualTo(1);
+//	}
 
 	@Test
-	public void expireAfterTtlConditionalFused() throws InterruptedException {
-		AtomicInteger subCount = new AtomicInteger();
-		Mono<Integer> source = Mono.defer(() -> Mono.just(subCount.incrementAndGet()));
+	public void testTotalCancel() {
+		AtomicInteger cancelled = new AtomicInteger();
+		Mono<Object> cached = Mono.never()
+		                          .doOnCancel(cancelled::incrementAndGet)
+		                          .cache(Duration.ofMillis(200));
 
-		Mono<Integer> cached = source.cache(Duration.ofMillis(100))
-				.filter(always -> true);
+		Disposable d1 = cached.subscribe();
+		Disposable d2 = cached.subscribe();
 
-		StepVerifier.create(cached)
-		            .expectFusion()
-		            .expectNext(1)
-		            .as("first subscription caches 1")
-		            .verifyComplete();
+		d1.dispose();
+		d2.dispose();
 
-		Thread.sleep(110);
-
-		StepVerifier.create(cached)
-		            .expectNext(2)
-		            .as("cached value should expire")
-		            .verifyComplete();
-
-		assertThat(subCount.get()).isEqualTo(2);
+		assertThat(cancelled.get()).isEqualTo(1);
 	}
 
 	@Test
-	public void doesntResubscribeConditionalFused() {
-		AtomicInteger subCount = new AtomicInteger();
-		Mono<Integer> source = Mono.defer(() -> Mono.just(subCount.incrementAndGet()));
+	public void testPartialCancel() {
+		AtomicInteger cancelled = new AtomicInteger();
+		Mono<Object> cached = Mono.never()
+		                          .doOnCancel(cancelled::incrementAndGet)
+		                          .cache(Duration.ofMillis(200));
 
-		Mono<Integer> cached = source.cache(Duration.ofMillis(100))
-				.filter(always -> true);
+		Disposable d1 = cached.subscribe();
+		Disposable d2 = cached.subscribe();
 
-		StepVerifier.create(cached)
-		            .expectFusion()
-		            .expectNext(1)
-		            .as("first subscription caches 1")
-		            .verifyComplete();
+		d1.dispose();
 
-		StepVerifier.create(cached)
-		            .expectNext(1)
-		            .as("second subscription uses cache")
-		            .verifyComplete();
-
-		assertThat(subCount.get()).isEqualTo(1);
+		assertThat(cancelled.get()).isEqualTo(0);
 	}
 
 }
