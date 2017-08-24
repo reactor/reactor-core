@@ -64,7 +64,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 		
 		for (;;) {
 			state = connection;
-			if (state == null || Disposables.isDisposed(state.disconnect)) {
+			if (state == null || OperatorDisposables.isDisposed(state.disconnect)) {
 				RefCountMonitor<T> u = new RefCountMonitor<>(n, this);
 				
 				if (!CONNECTION.compareAndSet(this, state, u)) {
@@ -129,14 +129,14 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 
 		void innerCancelled() {
 			if (SUBSCRIBERS.decrementAndGet(this) == 0) {
-				Disposables.dispose(DISCONNECT, this);
+				OperatorDisposables.dispose(DISCONNECT, this);
 			}
 		}
 		
 		void upstreamFinished() {
 			Disposable a = disconnect;
-			if (a != Disposables.DISPOSED) {
-				DISCONNECT.getAndSet(this, Disposables.DISPOSED);
+			if (a != OperatorDisposables.DISPOSED) {
+				DISCONNECT.getAndSet(this, OperatorDisposables.DISPOSED);
 			}
 		}
 	}

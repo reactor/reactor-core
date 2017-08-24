@@ -134,7 +134,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 	void timeout(RefConnection rc) {
 		synchronized (this) {
 			if (rc.subscriberCount == 0 && rc == connection) {
-				Disposables.dispose(RefConnection.SOURCE_DISCONNECTOR, rc);
+				OperatorDisposables.dispose(RefConnection.SOURCE_DISCONNECTOR, rc);
 				if (source instanceof Disposable) {
 					((Disposable) source).dispose();
 				}
@@ -167,7 +167,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 
 		@Override
 		public void accept(Disposable t) {
-			Disposables.replace(SOURCE_DISCONNECTOR, this, t);
+			OperatorDisposables.replace(SOURCE_DISCONNECTOR, this, t);
 		}
 	}
 

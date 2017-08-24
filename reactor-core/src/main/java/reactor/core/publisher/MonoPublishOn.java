@@ -82,7 +82,7 @@ final class MonoPublishOn<T> extends MonoOperator<T, T> {
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.CANCELLED) return future == Disposables.DISPOSED;
+			if (key == Attr.CANCELLED) return future == OperatorDisposables.DISPOSED;
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.ERROR) return error;
 
@@ -148,9 +148,9 @@ final class MonoPublishOn<T> extends MonoOperator<T, T> {
 		@Override
 		public void cancel() {
 			Disposable c = future;
-			if (c != Disposables.DISPOSED) {
-				c = FUTURE.getAndSet(this, Disposables.DISPOSED);
-				if (c != null && !Disposables.isDisposed(c)) {
+			if (c != OperatorDisposables.DISPOSED) {
+				c = FUTURE.getAndSet(this, OperatorDisposables.DISPOSED);
+				if (c != null && !OperatorDisposables.isDisposed(c)) {
 					c.dispose();
 				}
 				value = null;
@@ -161,7 +161,7 @@ final class MonoPublishOn<T> extends MonoOperator<T, T> {
 		@Override
 		@SuppressWarnings("unchecked")
 		public void run() {
-			if (Disposables.isDisposed(future)) {
+			if (OperatorDisposables.isDisposed(future)) {
 				return;
 			}
 			T v = (T)VALUE.getAndSet(this, null);

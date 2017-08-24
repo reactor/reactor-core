@@ -25,7 +25,7 @@ import reactor.test.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class DisposablesTest {
+public class OperatorDisposablesTest {
 
 	static final AtomicReferenceFieldUpdater<TestDisposable, Disposable> DISPOSABLE_UPDATER =
 			AtomicReferenceFieldUpdater.newUpdater(TestDisposable.class, Disposable.class, "disp");
@@ -49,10 +49,10 @@ public class DisposablesTest {
 	
 	@Test
 	public void singletonIsDisposed() {
-		assertThat(Disposables.DISPOSED.isDisposed()).isTrue();
-		Disposables.DISPOSED.dispose();
-		assertThat(Disposables.DISPOSED.isDisposed()).isTrue();
-		assertThat(Disposables.DISPOSED).isNotSameAs(Disposable.disposed());
+		assertThat(OperatorDisposables.DISPOSED.isDisposed()).isTrue();
+		OperatorDisposables.DISPOSED.dispose();
+		assertThat(OperatorDisposables.DISPOSED.isDisposed()).isTrue();
+		assertThat(OperatorDisposables.DISPOSED).isNotSameAs(Disposable.disposed());
 	}
 
 	@Test
@@ -60,7 +60,7 @@ public class DisposablesTest {
 		Hooks.onErrorDropped(e -> assertThat(e).isInstanceOf(NullPointerException.class)
 		                                       .hasMessage("next is null"));
 		try {
-			assertThat(Disposables.validate(null, null, Operators::onErrorDropped)).isFalse();
+			assertThat(OperatorDisposables.validate(null, null, Operators::onErrorDropped)).isFalse();
 		} finally {
 			Hooks.resetOnErrorDropped();
 		}
@@ -73,7 +73,7 @@ public class DisposablesTest {
 			TestDisposable r = new TestDisposable() {
 				@Override
 				public void run() {
-					Disposables.dispose(DISPOSABLE_UPDATER, this);
+					OperatorDisposables.dispose(DISPOSABLE_UPDATER, this);
 				}
 			};
 
@@ -88,7 +88,7 @@ public class DisposablesTest {
 			TestDisposable r = new TestDisposable() {
 				@Override
 				public void run() {
-					Disposables.replace(DISPOSABLE_UPDATER, this, Disposable.single());
+					OperatorDisposables.replace(DISPOSABLE_UPDATER, this, Disposable.single());
 				}
 			};
 
@@ -102,7 +102,7 @@ public class DisposablesTest {
 			TestDisposable r = new TestDisposable() {
 				@Override
 				public void run() {
-					Disposables.set(DISPOSABLE_UPDATER, this, Disposable.single());
+					OperatorDisposables.set(DISPOSABLE_UPDATER, this, Disposable.single());
 				}
 			};
 
@@ -114,10 +114,10 @@ public class DisposablesTest {
 	public void setReplaceNull() {
 		TestDisposable r = new TestDisposable();
 
-		Disposables.dispose(DISPOSABLE_UPDATER, r);
+		OperatorDisposables.dispose(DISPOSABLE_UPDATER, r);
 
-		assertThat(Disposables.set(DISPOSABLE_UPDATER, r, null)).isFalse();
-		assertThat(Disposables.replace(DISPOSABLE_UPDATER, r, null)).isFalse();
+		assertThat(OperatorDisposables.set(DISPOSABLE_UPDATER, r, null)).isFalse();
+		assertThat(OperatorDisposables.replace(DISPOSABLE_UPDATER, r, null)).isFalse();
 	}
 
 	@Test
@@ -125,7 +125,7 @@ public class DisposablesTest {
 		Disposable u = Disposable.single();
 		TestDisposable r = new TestDisposable(u);
 
-		Disposables.dispose(DISPOSABLE_UPDATER, r);
+		OperatorDisposables.dispose(DISPOSABLE_UPDATER, r);
 
 		assertThat(u.isDisposed()).isTrue();
 	}
@@ -136,21 +136,21 @@ public class DisposablesTest {
 
 		Disposable d1 = Disposable.single();
 
-		assertThat(Disposables.trySet(DISPOSABLE_UPDATER, r, d1)).isTrue();
+		assertThat(OperatorDisposables.trySet(DISPOSABLE_UPDATER, r, d1)).isTrue();
 
 		Disposable d2 = Disposable.single();
 
-		assertThat(Disposables.trySet(DISPOSABLE_UPDATER, r, d2)).isFalse();
+		assertThat(OperatorDisposables.trySet(DISPOSABLE_UPDATER, r, d2)).isFalse();
 
 		assertThat(d1.isDisposed()).isFalse();
 
 		assertThat(d2.isDisposed()).isFalse();
 
-		Disposables.dispose(DISPOSABLE_UPDATER, r);
+		OperatorDisposables.dispose(DISPOSABLE_UPDATER, r);
 
 		Disposable d3 = Disposable.single();
 
-		assertThat(Disposables.trySet(DISPOSABLE_UPDATER, r, d3)).isFalse();
+		assertThat(OperatorDisposables.trySet(DISPOSABLE_UPDATER, r, d3)).isFalse();
 
 		assertThat(d3.isDisposed()).isTrue();
 	}

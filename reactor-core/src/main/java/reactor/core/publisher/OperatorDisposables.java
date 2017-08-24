@@ -29,7 +29,7 @@ import reactor.core.Disposable;
  * @author Simon Baslé
  * @author David Karnok
  */
-final class Disposables {
+final class OperatorDisposables {
 
 	/**
 	 * A singleton {@link Disposable} that represents a disposed instance. Should not be

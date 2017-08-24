@@ -132,16 +132,16 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 			state = HAS_CANCELLED;
 			fusionState = COMPLETE;
 			Disposable a = mainFuture;
-			if (a != Disposables.DISPOSED) {
-				a = MAIN_FUTURE.getAndSet(this, Disposables.DISPOSED);
-				if (a != null && a != Disposables.DISPOSED) {
+			if (a != OperatorDisposables.DISPOSED) {
+				a = MAIN_FUTURE.getAndSet(this, OperatorDisposables.DISPOSED);
+				if (a != null && a != OperatorDisposables.DISPOSED) {
 					a.dispose();
 				}
 			}
 			a = requestFuture;
-			if (a != Disposables.DISPOSED) {
-				a = REQUEST_FUTURE.getAndSet(this, Disposables.DISPOSED);
-				if (a != null && a != Disposables.DISPOSED) {
+			if (a != OperatorDisposables.DISPOSED) {
+				a = REQUEST_FUTURE.getAndSet(this, OperatorDisposables.DISPOSED);
+				if (a != null && a != OperatorDisposables.DISPOSED) {
 					a.dispose();
 				}
 			}
@@ -185,7 +185,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 		void setMainFuture(Disposable c) {
 			for (; ; ) {
 				Disposable a = mainFuture;
-				if (a == Disposables.DISPOSED) {
+				if (a == OperatorDisposables.DISPOSED) {
 					c.dispose();
 					return;
 				}
@@ -198,7 +198,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 		void setRequestFuture(Disposable c) {
 			for (; ; ) {
 				Disposable a = requestFuture;
-				if (a == Disposables.DISPOSED) {
+				if (a == OperatorDisposables.DISPOSED) {
 					c.dispose();
 					return;
 				}
