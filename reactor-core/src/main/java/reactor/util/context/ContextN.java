@@ -22,6 +22,7 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 @SuppressWarnings("unchecked")
 final class ContextN extends HashMap<Object, Object>
@@ -72,7 +73,8 @@ final class ContextN extends HashMap<Object, Object>
 	}
 
 	@Override
-	public Object getOrDefault(Object key, Object defaultValue) {
+	@Nullable
+	public Object getOrDefault(Object key, @Nullable Object defaultValue) {
 		return Context.super.getOrDefault(key, defaultValue);
 	}
 
