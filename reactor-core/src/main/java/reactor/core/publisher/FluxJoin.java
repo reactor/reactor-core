@@ -34,6 +34,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxGroupJoin.JoinSupport;
@@ -154,7 +155,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 				BiFunction<? super TLeft, ? super TRight, ? extends R> resultSelector,
 				Queue<Object> queue) {
 			this.actual = actual;
-			this.cancellations = Disposable.composite();
+			this.cancellations = Disposables.composite();
 			this.queue = queue;
 			if (!(queue instanceof BiPredicate)) {
 				throw new IllegalArgumentException("The provided queue must implement " + "BiPredicate to expose atomic dual insert");

@@ -436,9 +436,9 @@ final class FluxCreate<T> extends Flux<T> {
 
 		void disposeResource(boolean isCancel) {
 			Disposable d = disposable;
-			if (d != Disposables.DISPOSED) {
-				d = DISPOSABLE.getAndSet(this, Disposables.DISPOSED);
-				if (d != null && d != Disposables.DISPOSED) {
+			if (d != OperatorDisposables.DISPOSED) {
+				d = DISPOSABLE.getAndSet(this, OperatorDisposables.DISPOSED);
+				if (d != null && d != OperatorDisposables.DISPOSED) {
 					if (isCancel && d instanceof SinkDisposable) {
 						((SinkDisposable) d).cancel();
 					}
@@ -458,7 +458,7 @@ final class FluxCreate<T> extends Flux<T> {
 
 		@Override
 		public final boolean isCancelled() {
-			return Disposables.isDisposed(disposable);
+			return OperatorDisposables.isDisposed(disposable);
 		}
 
 		@Override
@@ -528,7 +528,7 @@ final class FluxCreate<T> extends Flux<T> {
 			SinkDisposable sd = new SinkDisposable(d, null);
 			if (!DISPOSABLE.compareAndSet(this, null, sd)) {
 				Disposable c = disposable;
-				if (c == Disposables.DISPOSED) {
+				if (c == OperatorDisposables.DISPOSED) {
 					d.dispose();
 				}
 				else if (c instanceof SinkDisposable) {
@@ -548,7 +548,7 @@ final class FluxCreate<T> extends Flux<T> {
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.TERMINATED || key == Attr.CANCELLED) {
-				return Disposables.isDisposed(disposable);
+				return OperatorDisposables.isDisposed(disposable);
 			}
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) {
 				return requested;

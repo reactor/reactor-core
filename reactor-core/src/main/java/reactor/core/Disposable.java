@@ -28,75 +28,6 @@ import javax.annotation.Nullable;
 public interface Disposable {
 
 	/**
-	 * Create a new empty {@link Composite} with atomic guarantees on all mutative
-	 * operations.
-	 *
-	 * @return an empty atomic {@link Composite}
-	 */
-	static Composite composite() {
-		return new DefaultDisposable.CompositeDisposable();
-	}
-
-	/**
-	 * Create and initialize a new {@link Composite} with atomic guarantees on
-	 * all mutative operations.
-	 *
-	 * @return a pre-filled atomic {@link Composite}
-	 */
-	static Composite composite(Disposable... disposables) {
-		return new DefaultDisposable.CompositeDisposable(disposables);
-	}
-
-	/**
-	 * Create and initialize a new {@link Composite} with atomic guarantees on
-	 * all mutative operations.
-	 *
-	 * @return a pre-filled atomic {@link Composite}
-	 */
-	static Composite composite(Iterable<? extends Disposable> disposables) {
-		return new DefaultDisposable.CompositeDisposable(disposables);
-	}
-
-	/**
-	 * Create a new empty {@link Swap} with atomic guarantees on all mutative
-	 * operations.
-	 *
-	 * @return an empty atomic {@link Swap}
-	 */
-	static Swap swap() {
-		return new DefaultDisposable.SwapDisposable();
-	}
-
-	/**
-	 * Return a new simple {@link Disposable} instance that is initially not disposed but
-	 * can be by calling {@link Disposable#dispose()}.
-	 *
-	 * @return a new {@link Disposable} initially not yet disposed.
-	 */
-	static Disposable single() {
-		return new DefaultDisposable.SimpleDisposable();
-	}
-
-	/**
-	 * Return a new {@link Disposable} that is already disposed.
-	 *
-	 * @return a new disposed {@link Disposable}.
-	 */
-	static Disposable disposed() {
-		return new DefaultDisposable.AlwaysDisposable();
-	}
-
-	/**
-	 * Return a new {@link Disposable} that can never be disposed. Calling {@link #dispose()}
-	 * is a NO-OP and {@link #isDisposed()} always return false.
-	 *
-	 * @return a new {@link Disposable} that can never be disposed.
-	 */
-	static Disposable never() {
-		return new DefaultDisposable.NeverDisposable();
-	}
-
-	/**
 	 * Cancel or dispose the underlying task or resource.
 	 * <p>
 	 * Implementations are required to make this method idempotent.
@@ -174,7 +105,7 @@ public interface Disposable {
 		 * @implNote The default implementation is not atomic, meaning that if the container is
 		 * disposed while the content of the collection is added, first elements might be
 		 * effectively added. Stronger consistency is enforced by composites created via
-		 * {@link Disposable#composite()} variants.
+		 * {@link Disposables#composite()} variants.
 		 * @param ds the collection of Disposables
 		 * @return true if the operation was successful, false if the container has been disposed
 		 */

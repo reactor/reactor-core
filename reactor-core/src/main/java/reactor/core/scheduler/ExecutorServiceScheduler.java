@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Exceptions;
 
 /**
@@ -137,7 +138,7 @@ final class ExecutorServiceScheduler implements Scheduler {
 		ExecutorServiceWorker(ExecutorService executor, boolean interruptOnCancel) {
 			this.executor = executor;
 			this.interruptOnCancel = interruptOnCancel;
-			this.tasks = Disposable.composite();
+			this.tasks = Disposables.composite();
 		}
 
 		boolean isTimeCapable() {

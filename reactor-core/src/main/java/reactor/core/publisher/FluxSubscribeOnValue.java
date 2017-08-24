@@ -25,6 +25,7 @@ import javax.annotation.Nullable;
 import org.reactivestreams.Subscriber;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
@@ -57,7 +58,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 				parent.setFuture(scheduler.schedule(parent));
 			}
 			catch (RejectedExecutionException ree) {
-				if (parent.future != Disposables.DISPOSED) {
+				if (parent.future != OperatorDisposables.DISPOSED) {
 					s.onError(Operators.onRejectedExecution(ree));
 				}
 			}
@@ -88,7 +89,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 						Disposable.class,
 						"future");
 
-		static final Disposable FINISHED = Disposable.disposed();
+		static final Disposable FINISHED = Disposables.disposed();
 
 		int fusionState;
 
@@ -111,7 +112,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 		@Nullable
 		public Object scanUnsafe(Scannable.Attr key) {
 			if (key == Attr.CANCELLED) {
-				return future == Disposables.DISPOSED;
+				return future == OperatorDisposables.DISPOSED;
 			}
 			if (key == Attr.TERMINATED) {
 				return future == FINISHED;
@@ -131,12 +132,12 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 						Disposable f = scheduler.schedule(this);
 						if (!FUTURE.compareAndSet(this,
 								null,
-								f) && future != FINISHED && future != Disposables.DISPOSED) {
+								f) && future != FINISHED && future != OperatorDisposables.DISPOSED) {
 							f.dispose();
 						}
 					}
 					catch (RejectedExecutionException ree) {
-						if (future != FINISHED && future != Disposables.DISPOSED) {
+						if (future != FINISHED && future != OperatorDisposables.DISPOSED) {
 							actual.onError(Operators.onRejectedExecution(ree,
 									this,
 									null,
@@ -151,9 +152,9 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 		public void cancel() {
 			ONCE.lazySet(this, 1);
 			Disposable f = future;
-			if (f != Disposables.DISPOSED && future != FINISHED) {
-				f = FUTURE.getAndSet(this, Disposables.DISPOSED);
-				if (f != null && f != Disposables.DISPOSED && f != FINISHED) {
+			if (f != OperatorDisposables.DISPOSED && future != FINISHED) {
+				f = FUTURE.getAndSet(this, OperatorDisposables.DISPOSED);
+				if (f != null && f != OperatorDisposables.DISPOSED && f != FINISHED) {
 					f.dispose();
 				}
 			}
@@ -218,7 +219,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 						Disposable.class,
 						"future");
 
-		static final Disposable FINISHED = Disposable.disposed();
+		static final Disposable FINISHED = Disposables.disposed();
 
 		ScheduledEmpty(Subscriber<?> actual) {
 			this.actual = actual;
@@ -232,9 +233,9 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 		@Override
 		public void cancel() {
 			Disposable f = future;
-			if (f != Disposables.DISPOSED && f != FINISHED) {
-				f = FUTURE.getAndSet(this, Disposables.DISPOSED);
-				if (f != null && f != Disposables.DISPOSED && f != FINISHED) {
+			if (f != OperatorDisposables.DISPOSED && f != FINISHED) {
+				f = FUTURE.getAndSet(this, OperatorDisposables.DISPOSED);
+				if (f != null && f != OperatorDisposables.DISPOSED && f != FINISHED) {
 					f.dispose();
 				}
 			}
@@ -253,7 +254,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 		void setFuture(Disposable f) {
 			if (!FUTURE.compareAndSet(this, null, f)) {
 				Disposable a = future;
-				if (a != FINISHED && a != Disposables.DISPOSED) {
+				if (a != FINISHED && a != OperatorDisposables.DISPOSED) {
 					f.dispose();
 				}
 			}

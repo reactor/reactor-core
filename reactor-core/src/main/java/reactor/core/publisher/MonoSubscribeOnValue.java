@@ -21,7 +21,6 @@ import java.util.concurrent.RejectedExecutionException;
 import javax.annotation.Nullable;
 
 import reactor.core.CoreSubscriber;
-import reactor.core.Disposable;
 import reactor.core.publisher.FluxSubscribeOnValue.ScheduledEmpty;
 import reactor.core.publisher.FluxSubscribeOnValue.ScheduledScalar;
 import reactor.core.scheduler.Scheduler;
@@ -52,7 +51,7 @@ final class MonoSubscribeOnValue<T> extends Mono<T> {
 				parent.setFuture(scheduler.schedule(parent));
 			}
 			catch (RejectedExecutionException ree) {
-				if (parent.future != Disposables.DISPOSED) {
+				if (parent.future != OperatorDisposables.DISPOSED) {
 					s.onError(Operators.onRejectedExecution(ree));
 				}
 			}

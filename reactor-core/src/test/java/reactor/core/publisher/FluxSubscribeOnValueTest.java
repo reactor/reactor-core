@@ -88,7 +88,7 @@ public class FluxSubscribeOnValueTest {
         assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 
         assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
-        test.future = Disposables.DISPOSED;
+        test.future = OperatorDisposables.DISPOSED;
         assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
 }

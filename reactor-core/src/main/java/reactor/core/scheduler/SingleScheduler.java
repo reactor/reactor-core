@@ -16,7 +16,6 @@
 
 package reactor.core.scheduler;
 
-import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
@@ -29,6 +28,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
 
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Exceptions;
 
 /**
@@ -155,7 +155,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 
 		SingleWorker(ScheduledExecutorService exec) {
 			this.exec = exec;
-			this.tasks = Disposable.composite();
+			this.tasks = Disposables.composite();
 		}
 
 		@Override

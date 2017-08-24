@@ -16,6 +16,7 @@
 package reactor.core.scheduler;
 
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Exceptions;
 
 /**
@@ -38,7 +39,7 @@ final class ImmediateScheduler implements Scheduler {
         
     }
     
-    static final Disposable FINISHED = Disposable.disposed();
+    static final Disposable FINISHED = Disposables.disposed();
     
     @Override
     public Disposable schedule(Runnable task) {

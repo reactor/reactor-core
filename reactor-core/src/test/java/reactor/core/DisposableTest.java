@@ -176,14 +176,14 @@ public class DisposableTest {
 
 	@Test
 	public void singleDisposableInitiallyNotDisposed() {
-		Disposable single = Disposable.single();
+		Disposable single = Disposables.single();
 
 		assertThat(single.isDisposed()).isFalse();
 	}
 
 	@Test
 	public void singleDisposableCanBeDisposed() {
-		Disposable single = Disposable.single();
+		Disposable single = Disposables.single();
 		assertThat(single.isDisposed()).isFalse();
 
 		single.dispose();
@@ -192,27 +192,27 @@ public class DisposableTest {
 
 	@Test
 	public void singleDisposableCreatesInstances() {
-		assertThat(Disposable.single()).isNotSameAs(Disposable.single());
+		assertThat(Disposables.single()).isNotSameAs(Disposables.single());
 	}
 
 	@Test
 	public void disposedInitiallyDisposed() {
-		assertThat(Disposable.disposed().isDisposed()).isTrue();
+		assertThat(Disposables.disposed().isDisposed()).isTrue();
 	}
 
 	@Test
 	public void disposedCreatesInstances() {
-		assertThat(Disposable.disposed()).isNotSameAs(Disposable.disposed());
+		assertThat(Disposables.disposed()).isNotSameAs(Disposables.disposed());
 	}
 
 	@Test
 	public void neverInitiallyNotDisposed() {
-		assertThat(Disposable.never().isDisposed()).isFalse();
+		assertThat(Disposables.never().isDisposed()).isFalse();
 	}
 
 	@Test
 	public void neverImmutable() {
-		Disposable never = Disposable.never();
+		Disposable never = Disposables.never();
 		assertThat(never.isDisposed()).isFalse();
 
 		never.dispose();
@@ -221,7 +221,7 @@ public class DisposableTest {
 
 	@Test
 	public void neverCreatesInstances() {
-		assertThat(Disposable.never()).isNotSameAs(Disposable.never());
+		assertThat(Disposables.never()).isNotSameAs(Disposables.never());
 	}
 
 }

@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -133,7 +132,7 @@ public class OperatorsTest {
 
 	@Test
 	public void noopFluxCancelled(){
-		Disposables.DISPOSED.dispose(); //noop
+		OperatorDisposables.DISPOSED.dispose(); //noop
 	}
 
 	@Test

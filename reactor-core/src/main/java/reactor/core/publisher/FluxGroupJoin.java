@@ -35,6 +35,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.context.Context;
@@ -190,7 +191,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 				Supplier<? extends
 						Queue<TRight>> processorQueueSupplier) {
 			this.actual = actual;
-			this.cancellations = Disposable.composite();
+			this.cancellations = Disposables.composite();
 			this.queue = queue;
 			this.processorQueueSupplier = processorQueueSupplier;
 			if (!(queue instanceof BiPredicate)) {

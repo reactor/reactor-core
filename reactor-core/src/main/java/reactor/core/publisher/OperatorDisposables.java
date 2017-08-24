@@ -22,6 +22,7 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 
 /**
  * Utility methods to work with {@link Disposable} atomically.
@@ -29,14 +30,14 @@ import reactor.core.Disposable;
  * @author Simon Baslé
  * @author David Karnok
  */
-final class Disposables {
+final class OperatorDisposables {
 
 	/**
 	 * A singleton {@link Disposable} that represents a disposed instance. Should not be
 	 * leaked to clients.
 	 */
 	//NOTE: There is a private similar DISPOSED singleton in DefaultDisposable as well
-	static final Disposable DISPOSED = Disposable.disposed();
+	static final Disposable DISPOSED = Disposables.disposed();
 
 	/**
 	 * Atomically push the field to a {@link Disposable} and dispose the old content.

@@ -35,11 +35,11 @@ import static org.mockito.Mockito.*;
 @RunWith(MockitoJUnitRunner.class)
 public class SwapDisposableTest {
 
-	private DefaultDisposable.SwapDisposable sequentialDisposable;
+	private Disposables.SwapDisposable sequentialDisposable;
 
 	@Before
 	public void setUp() {
-		sequentialDisposable = new DefaultDisposable.SwapDisposable();
+		sequentialDisposable = new Disposables.SwapDisposable();
 	}
 
 	@Test

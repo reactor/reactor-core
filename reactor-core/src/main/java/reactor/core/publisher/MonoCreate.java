@@ -104,7 +104,7 @@ final class MonoCreate<T> extends Mono<T> {
 				return state == HAS_REQUEST_HAS_VALUE || state == NO_REQUEST_HAS_VALUE;
 			}
 			if (key == Attr.CANCELLED) {
-				return Disposables.isDisposed(disposable);
+				return OperatorDisposables.isDisposed(disposable);
 			}
 
 			return InnerProducer.super.scanUnsafe(key);
@@ -261,9 +261,9 @@ final class MonoCreate<T> extends Mono<T> {
 
 		void disposeResource(boolean isCancel) {
 			Disposable d = disposable;
-			if (d != Disposables.DISPOSED) {
-				d = DISPOSABLE.getAndSet(this, Disposables.DISPOSED);
-				if (d != null && d != Disposables.DISPOSED) {
+			if (d != OperatorDisposables.DISPOSED) {
+				d = DISPOSABLE.getAndSet(this, OperatorDisposables.DISPOSED);
+				if (d != null && d != OperatorDisposables.DISPOSED) {
 					if (isCancel && d instanceof SinkDisposable) {
 						((SinkDisposable) d).cancel();
 					}

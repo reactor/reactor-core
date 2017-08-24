@@ -28,16 +28,88 @@ import javax.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 
 /**
- * A support class that offers implementations for the specialized {@link Disposable}
- * sub-interfaces ({@link Disposable.Composite Disposable.Composite},
+ * A support class that offers factory methods for implementations of the specialized
+ * {@link Disposable} sub-interfaces ({@link Disposable.Composite Disposable.Composite},
  * {@link Disposable.Swap Disposable.Swap}).
  *
  * @author Simon Baslé
  * @author Stephane Maldini
  */
-abstract class DefaultDisposable {
+public final class Disposables {
 
-	DefaultDisposable() { }
+	private Disposables() { }
+
+	/**
+	 * Create a new empty {@link Disposable.Composite} with atomic guarantees on all mutative
+	 * operations.
+	 *
+	 * @return an empty atomic {@link Disposable.Composite}
+	 */
+	public static Disposable.Composite composite() {
+		return new CompositeDisposable();
+	}
+
+	/**
+	 * Create and initialize a new {@link Disposable.Composite} with atomic guarantees on
+	 * all mutative operations.
+	 *
+	 * @return a pre-filled atomic {@link Disposable.Composite}
+	 */
+	public static Disposable.Composite composite(Disposable... disposables) {
+		return new CompositeDisposable(disposables);
+	}
+
+	/**
+	 * Create and initialize a new {@link Disposable.Composite} with atomic guarantees on
+	 * all mutative operations.
+	 *
+	 * @return a pre-filled atomic {@link Disposable.Composite}
+	 */
+	public static Disposable.Composite composite(
+			Iterable<? extends Disposable> disposables) {
+		return new CompositeDisposable(disposables);
+	}
+
+	/**
+	 * Return a new {@link Disposable} that is already disposed.
+	 *
+	 * @return a new disposed {@link Disposable}.
+	 */
+	public static Disposable disposed() {
+		return new AlwaysDisposable();
+	}
+
+	/**
+	 * Return a new {@link Disposable} that can never be disposed. Calling {@link Disposable#dispose()}
+	 * is a NO-OP and {@link Disposable#isDisposed()} always return false.
+	 *
+	 * @return a new {@link Disposable} that can never be disposed.
+	 */
+	public static Disposable never() {
+		return new NeverDisposable();
+	}
+
+	/**
+	 * Return a new simple {@link Disposable} instance that is initially not disposed but
+	 * can be by calling {@link Disposable#dispose()}.
+	 *
+	 * @return a new {@link Disposable} initially not yet disposed.
+	 */
+	public static Disposable single() {
+		return new SimpleDisposable();
+	}
+
+	/**
+	 * Create a new empty {@link Disposable.Swap} with atomic guarantees on all mutative
+	 * operations.
+	 *
+	 * @return an empty atomic {@link Disposable.Swap}
+	 */
+	public static Disposable.Swap swap() {
+		return new SwapDisposable();
+	}
+
+	//==== STATIC package private implementations ====
 
 	/**
 	 * A {@link Disposable.Composite} that allows to atomically add, remove and mass dispose.
@@ -363,12 +435,12 @@ abstract class DefaultDisposable {
 
 		@Override
 		public boolean update(Disposable next) {
-			return DefaultDisposable.set(INNER, this, next);
+			return Disposables.set(INNER, this, next);
 		}
 
 		@Override
 		public boolean replace(@Nullable Disposable next) {
-			return DefaultDisposable.replace(INNER, this, next);
+			return Disposables.replace(INNER, this, next);
 		}
 
 		@Override
@@ -379,12 +451,12 @@ abstract class DefaultDisposable {
 
 		@Override
 		public void dispose() {
-			DefaultDisposable.dispose(INNER, this);
+			Disposables.dispose(INNER, this);
 		}
 
 		@Override
 		public boolean isDisposed() {
-			return DefaultDisposable.isDisposed(INNER.get(this));
+			return Disposables.isDisposed(INNER.get(this));
 		}
 	}
 
@@ -446,7 +518,7 @@ abstract class DefaultDisposable {
 	 * leaked to clients.
 	 */
 	//NOTE: There is a private similar DISPOSED singleton in Disposables as well
-	static final Disposable DISPOSED = Disposable.disposed();
+	static final Disposable DISPOSED = disposed();
 
 	/**
 	 * Atomically push the field to a {@link Disposable} and dispose the old content.
