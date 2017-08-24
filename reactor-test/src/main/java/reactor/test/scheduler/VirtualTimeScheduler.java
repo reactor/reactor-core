@@ -150,8 +150,7 @@ public class VirtualTimeScheduler implements Scheduler {
 	public static VirtualTimeScheduler get(){
 		VirtualTimeScheduler s = CURRENT.get();
 		if (s == null) {
-			throw new IllegalStateException(
-					"Check if VirtualTimeScheduler#enable has been invoked" + " first" + ": " + s);
+			throw new IllegalStateException("Check if VirtualTimeScheduler#enable has been invoked first");
 		}
 		return s;
 	}
