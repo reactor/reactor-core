@@ -23,7 +23,6 @@ import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
-import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.Logger;
 import reactor.util.Loggers;
@@ -70,7 +69,7 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 				CoordinatorSubscriber<T> newState = new CoordinatorSubscriber<>(this);
 				if (STATE.compareAndSet(this, EMPTY, newState)) {
 					source.subscribe(newState);
-					Operators.MonoSubscriber<T, T> inner = new Operators.MonoSubscriber<>(s);
+					CacheMonoSubscriber<T> inner = new CacheMonoSubscriber<>(s, newState);
 					if (newState.add(inner)) {
 						s.onSubscribe(inner);
 						break;
@@ -80,14 +79,15 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 			else if (state instanceof CoordinatorSubscriber) {
 				//subscribed to source once, but not yet valued / cached
 				CoordinatorSubscriber<T> coordinator = (CoordinatorSubscriber<T>) state;
-				Operators.MonoSubscriber<T, T> inner = new Operators.MonoSubscriber<>(s);
+
+				CacheMonoSubscriber<T> inner = new CacheMonoSubscriber<>(s, coordinator);
 				if (coordinator.add(inner)) {
 					s.onSubscribe(inner);
 					break;
 				}
 			}
 			else {
-				//state is an actual signal
+				//state is an actual signal, cached
 				if (state.isOnNext()) {
 					s.onSubscribe(new Operators.ScalarSubscription<>(s, state.get()));
 				}
@@ -102,18 +102,15 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 		}
 	}
 
-
 	static final class CoordinatorSubscriber<T> implements InnerConsumer<T>, Signal<T> {
 
 		final MonoCacheTime<T> main;
 
 		volatile Subscription subscription;
-
 		static final AtomicReferenceFieldUpdater<CoordinatorSubscriber, Subscription> S =
 				AtomicReferenceFieldUpdater.newUpdater(CoordinatorSubscriber.class, Subscription.class, "subscription");
 
 		volatile Operators.MonoSubscriber<T, T>[] subscribers;
-		@SuppressWarnings("rawtypes")
 		static final AtomicReferenceFieldUpdater<CoordinatorSubscriber, Operators.MonoSubscriber[]> SUBSCRIBERS =
 				AtomicReferenceFieldUpdater.newUpdater(CoordinatorSubscriber.class, Operators.MonoSubscriber[].class, "subscribers");
 
@@ -123,30 +120,48 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 			this.subscribers = EMPTY;
 		}
 
-		//== a bunch of unused methods so that it can be comparedAndSet in main state ==
+		/**
+		 * @deprecated unused in this context as the {@link Signal} interface is only
+		 * implemented for use in the main's STATE compareAndSet.
+		 */
+		@Deprecated
 		@Nullable
 		@Override
 		public Throwable getThrowable() {
 			return null;
 		}
 
+		/**
+		 * @deprecated unused in this context as the {@link Signal} interface is only
+		 * implemented for use in the main's STATE compareAndSet.
+		 */
+		@Deprecated
 		@Nullable
 		@Override
 		public Subscription getSubscription() {
 			return null;
 		}
 
+		/**
+		 * @deprecated unused in this context as the {@link Signal} interface is only
+		 * implemented for use in the main's STATE compareAndSet.
+		 */
+		@Deprecated
 		@Nullable
 		@Override
 		public T get() {
 			return null;
 		}
 
+		/**
+		 * @deprecated unused in this context as the {@link Signal} interface is only
+		 * implemented for use in the main's STATE compareAndSet.
+		 */
+		@Deprecated
 		@Override
 		public SignalType getType() {
-			return SignalType.SUBSCRIBE; //for the lolz
+			return SignalType.SUBSCRIBE;
 		}
-		//====
 
 		final boolean add(Operators.MonoSubscriber<T, T> toAdd) {
 			for (; ; ) {
@@ -194,6 +209,10 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 					System.arraycopy(a, j + 1, b, j, n - j - 1);
 				}
 				if (SUBSCRIBERS.compareAndSet(this, a, b)) {
+					//no particular cleanup here for the EMPTY case, we don't cancel the
+					// source because a new subscriber could come in before the coordinator
+					// is terminated.
+
 					return;
 				}
 			}
@@ -228,17 +247,24 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 
 		@Override
 		public void onNext(T t) {
+			if (main.state != this) {
+				Operators.onNextDropped(t);
+				return;
+			}
 			signalCached(Signal.next(t));
 		}
 
 		@Override
 		public void onError(Throwable t) {
+			if (main.state != this) {
+				Operators.onErrorDropped(t);
+				return;
+			}
 			signalCached(Signal.error(t));
 		}
 
 		@Override
 		public void onComplete() {
-			//TODO avoid propagate onComplete after onNext
 			signalCached(Signal.complete());
 		}
 
@@ -250,6 +276,22 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 
 		private static final Operators.MonoSubscriber[] TERMINATED = new Operators.MonoSubscriber[0];
 		private static final Operators.MonoSubscriber[] EMPTY = new Operators.MonoSubscriber[0];
+	}
+
+	static final class CacheMonoSubscriber<T> extends Operators.MonoSubscriber<T, T> {
+
+		final CoordinatorSubscriber<T> coordinator;
+
+		CacheMonoSubscriber(CoreSubscriber<? super T> actual, CoordinatorSubscriber<T> coordinator) {
+			super(actual);
+			this.coordinator = coordinator;
+		}
+
+		@Override
+		public void cancel() {
+			super.cancel();
+			coordinator.remove(this);
+		}
 	}
 
 }
