@@ -77,9 +77,11 @@ ints.subscribe(i -> System.out.println(i),
 <1> Set up a Flux that produces four values when a subscriber attaches.
 <2> Subscribe with a Subscriber that includes a handler for completion events.
 
-Error signals and completion signals are both terminal events. To make the
-completion consumer work, we had to not intentionally create an error. The
-completion matcher is a pair of empty parentheses because it matches the `run`
+Error signals and completion signals are both terminal events, one excluding
+the other. To make the completion consumer work, we had to take care not to
+trigger and error.
+
+The completion matcher is a pair of empty parentheses because it matches the `run`
 method in the `Runnable` interface, which has no parameters. The preceding code
 produces the following output:
 
@@ -132,10 +134,14 @@ public class SampleSubscriber<T> extends BaseSubscriber<T> {
 }
 ----
 
-The SampleSubscriber class extends `BaseSubscriber`, which is the abstract
-class that underlies all `Subscribers` in Reactor. The bare minimum
-implementation is to create `hookOnSubscribe(Subscription subscription)` and
-`hookOnNext(T value)`. In this case, the `hookOnSubscribe` method prints a
+The SampleSubscriber class extends `BaseSubscriber`, which is the recommended
+abstract class for user-defined `Subscribers` in Reactor. The class offers
+hooks that can be overridden to tune the subscriber's behavior. By default,
+it will trigger an unbounded request and behave exactly like `subscribe()`.
+
+It is much more useful however when you want a custom request amount. To that
+effect, the bare minimum implementation is to implement both `hookOnSubscribe(Subscription subscription)`
+and `hookOnNext(T value)`. In this case, the `hookOnSubscribe` method prints a
 statement to standard out and makes the first request. Then the `hookOnNext`
 method prints and statement and processes each of the remaining requests, one
 request at a time.
@@ -151,8 +157,8 @@ Subscribed
 ----
 
 NOTE: You almost certainly want to implement the `hookOnError`, `hookOnCancel`,
-and `hookonComplete` methods. You may also want to implement the `hookFinally`
+and `hookOnComplete` methods. You may also want to implement the `hookFinally`
 method. `SampleSubscribe` is the absolute minimum implementation of a
-`Subscriber`.
+`Subscriber` that performs bounded requests.
 
 We'll see `BaseSubscriber` again soon.

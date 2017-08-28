@@ -3,8 +3,6 @@
 Reactor is an implementation of the Reactive Programming paradigm, which can be
 summed up as:
 
-//TODO Find a better quotation. What is wrong with this one? What do we want in
-// a quotation here?
 [quote, https://en.wikipedia.org/wiki/Reactive_programming]
 Reactive programming is an asynchronous programming paradigm concerned with data
 streams and the propagation of change. This means that it becomes possible to
@@ -25,14 +23,15 @@ there is a duality to the `Iterable`-`Iterator` pair in all  these libraries.
 One major difference is that while an Iterator is *pull*-based, reactive
 streams are *push*-based.
 
-Using an iterator is essential, even though the method of accessing
-values is solely the responsibility of the `Iterable`. Indeed, it is up to the
+Using an iterator is an imperative programming pattern, even though the method of
+accessing values is solely the responsibility of the `Iterable`. Indeed, it is up to the
 developer to choose when to access the `next()` item in the sequence. In
 reactive streams, the equivalent of the above pair is `Publisher-Subscriber`.
 But it is the `Publisher` that notifies the Subscriber of newly available values
 _as they come_, and this push aspect is key to being reactive. Also, operations
-applied to pushed values are expressed declaratively rather than imperatively.
-// What does "declaratively rather than imperatively" mean? What's the difference?
+applied to pushed values are expressed declaratively rather than imperatively:
+the programmer expresses the expresses the logic of the computation rather than
+describing its exact control flow.
 
 In addition to pushing values, the error handling and completion aspects are
 also covered in a well defined manner. A `Publisher` can push new values to
@@ -154,7 +153,7 @@ userService.getFavorites(userId, new Callback<List<String>>() { //<1>
 when the async process was successful and one invoked in case of an error.
 <2> The first service invokes its callback with the list of favorite IDs.
 <3> If the list is empty, we must go to the `suggestionService`.
-<4> Te `suggestionService` gives a `List<Favorite>` to a second callback.
+<4> The `suggestionService` gives a `List<Favorite>` to a second callback.
 <5> Since we're dealing with UI we need to ensure our consuming code will run in
 the UI thread.
 <6> We use Java 8 `Stream` to limit the number of suggestions processed to 5, and
@@ -304,9 +303,9 @@ assertThat(results).containsExactly( // <8>
 <5> Asynchronously combining these 2 values.
 <6> Aggregate the values into a `List` as they become available.
 <7> In production, we'd continue working with the `Flux` asynchronously by further combining
-it or subscribing to it. Since we're in a test, we'll block waiting for the processing to finish
-instead, directly returning the aggregated list of values.
-// What would the code look like if it weren't blocking?
+it or subscribing to it. Most probably, we'd return the `result` `Mono`. Since we're in a
+test, we'll block waiting for the processing to finish instead, directly returning the
+aggregated list of values.
 <8> Assert the result.
 
 These perils of Callback and Future are similar and are what Reactive
@@ -420,9 +419,8 @@ made for each subscription
 late subscribers will receive signals emitted _after_ they subscribed. Note,
 however, that some hot reactive streams can cache or replay the history of
 emissions totally or partially. From a general perspective, a hot sequence
-will emit whether or not there any subscriber is listening.
-// Is that an exception to the rule of needing a subscriber before anything
-// happens?
+can even emit when no subscriber is listening (an exception to the "nothing
+happens before you subscribe" rule).
 
 For more information on hot vs cold in the context of Reactor, see
 <<reactor.hotCold,this reactor-specific section>>.

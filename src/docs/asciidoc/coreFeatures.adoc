@@ -51,8 +51,9 @@ As such it offers only a subset of the operators that are available for a
 `Flux`. For instance, combination operators can either ignore the right
 hand-side emissions and return another `Mono` or emit values from both sides,
 in which case they'll switch to a `Flux`.
-// This needs an example of each kind (ignoring the right and emiting from both
-//sides).
+
+For example, `Mono#concatWith(Publisher)` returns a `Flux` while `Mono#then(Mono)`
+returns another `Mono`.
 
 Note that a `Mono` can be used to represent no-value asynchronous processes that
 only have the concept of completion (think `Runnable`). To create one, use an
@@ -225,6 +226,7 @@ elastic scheduler named `yourScheduleName`.
 
 NOTE: Operators are implemented using non-blocking algorithms tuned to
 facilitate the work stealing that can happen in some Schedulers.
+//TODO: the paragraphs below and the `threading.adoc` file have overlap. The latter explains work-stealing a bit
 //Explain work stealing.
 
 `Flux` and `Mono` do not create threads. Some operators, such as `publishOn` do
@@ -675,8 +677,7 @@ up.
 
 In effect, this results in an *empty* flux, but it completes *successfully*.
 Since `retry(3)` on the same flux would have terminated with the latest error,
-this is not entirely the same.
-// Same as what?
+this `retryWhen` example is not exactly the same as a `retry(3)`.
 
 Getting to the same behavior involves a few additional tricks:
 include::snippetRetryWhenRetry.adoc[]

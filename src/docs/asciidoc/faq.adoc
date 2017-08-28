@@ -108,7 +108,7 @@ retrying immediately is likely to produce yet another error and add to the
 instability.
 
 Here is how to implement an exponential backoff that delays retries and increase
-the delay between each attempt (psuedocode: delay = attempt number * 100 milliseconds):
+the delay between each attempt (pseudocode: delay = attempt number * 100 milliseconds):
 [source,java]
 ----
 Flux<String> flux =

@@ -110,7 +110,7 @@ might use `thenAwait(Duration)`, `then(Runnable)`.
 For terminal events, the corresponding expectation methods (`expectComplete()`
 and `expectError()` and all its variants) will switch to an API where you cannot
 express expectations anymore. In that last step, all you can do is perform some
-additional configuration on the `StepVerifier` an then *trigger the
+additional configuration on the `StepVerifier` and then *trigger the
 verification*, eg. with `verify()`.
 
 What happens at this point is that the StepVerifier subscribes to the tested
@@ -162,7 +162,7 @@ in a lazy fashion. Otherwise, virtual time is not guaranteed. Especially avoid
 instantiating the flux earlier in the test code and having the `Supplier`
 return that variable. Instead, always instantiate the `Flux` inside the lambda.
 
-There are two of expectation methods that deal with time, and they are both
+There are two expectation methods that deal with time, and they are both
 valid with or without virtual time:
 
 - `thenAwait(Duration)` pauses the evaluation of steps (allowing a few signals

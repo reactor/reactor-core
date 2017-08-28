@@ -14,7 +14,7 @@ improper parameters that ultimately caused the failure?
 But as soon as you shift to asynchronous code, things can get much more
 complicated...
 
-// The code that generated the following stack trace should be here
+//TODO The code that generated the following stack trace should be here
 
 Consider the following stack trace:
 
@@ -152,7 +152,7 @@ stack.
 <2> Apart from that, the first section of the stack trace is still the same for
 the most part, showing a bit of the operator's internals (so we removed a bit
 of the snippet here)
-// I'd put it back in. Wading through the whole thing is part of the task
+//TODO I'd put it back in. Wading through the whole thing is part of the task
 // you're describing. You might instead highlight the most relevant lines, to
 // teach people what to look for.
 <3> This is where the new stuff from debugging mode starts to appear.
@@ -340,7 +340,7 @@ This prints out (through the logger's console appender):
 10:45:20.205 [main] INFO  reactor.Flux.Range.1 - | cancel() <4>
 ----
 
-Here, in additional to the logger's own formatter (time, thread, level,
+Here, in addition to the logger's own formatter (time, thread, level,
 message), the `log()` operator outputs a few things in its own format:
 
 <1> `reactor.Flux.Range.1` is an automatic _category_ for the log, in case you

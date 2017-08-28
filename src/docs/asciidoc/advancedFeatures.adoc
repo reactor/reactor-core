@@ -496,13 +496,10 @@ If, once you've processed your sequence in parallel, you want to revert back to 
 "normal" `Flux` and apply the rest of the operator chain in a sequential manner,
 you can use the `sequential()` method on `ParallelFlux`.
 
-Note that it is the case by default if you `subscribe` to the ParallelFlux with
-a single provided `Subscriber`, but not when using the lambda-based variants of
-`subscribe`.
-//The preceding paragraph is nearly meaningless, because "it" has no logical
-// antecedent. "it" needs to be replaced by a concrete object.
+Note that `sequential()` is implicitly applied if you `subscribe` to the ParallelFlux
+with a `Subscriber`, but not when using the lambda-based variants of `subscribe`.
 
-Note that `subscribe(Subscriber<T>)` merges all the rails, while
+Note also that `subscribe(Subscriber<T>)` merges all the rails, while
 `subscribe(Consumer<T>)` runs all the rails. If the `subscribe()` method has a
 lambda, each lambda is executed as many times as there are rails.
 

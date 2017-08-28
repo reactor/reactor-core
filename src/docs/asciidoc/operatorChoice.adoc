@@ -85,7 +85,7 @@ I want to deal with:
 *** ...with different types (transforming merge): `Flux#zip` / `Flux#zipWith`
 ** by pairing values:
 *** from 2 Monos into a `Tuple2`: `Mono#and`
-*** from n Monos when they all completed: `Mono#when`
+*** from n Monos when they all completed: `Mono#zip`
 *** into an arbitrary container type:
 **** each time all sides have emitted: `Flux#zip` (up to the smallest cardinality)
 **** each time a new value arrives at either side: `Flux#combineLatest`
