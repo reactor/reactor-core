@@ -1694,6 +1694,10 @@ public abstract class Mono<T> implements Publisher<T> {
 		return onAssembly(new MonoProcessor<>(this));
 	}
 
+	public final Mono<T> cache(Duration ttl) {
+		return onAssembly(new MonoCacheTime<>(this, ttl, Schedulers.parallel()));
+	}
+
 	/**
 	 * Prepare this {@link Mono} so that subscribers will cancel from it on a
 	 * specified
