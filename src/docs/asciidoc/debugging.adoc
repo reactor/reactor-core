@@ -13,7 +13,7 @@ improper parameters that ultimately caused the failure?
 == The typical Reactor Stack Trace
 When you shift to asynchronous code, things can get much more complicated.
 
-// The code that generated the following stack trace should be here
+//TODO The code that generated the following stack trace should be here
 
 Consider the following stack trace:
 
@@ -150,8 +150,8 @@ Error has been observed by the following operator(s): <5>
 <1> This is new: We see the wrapper operator that captures the stack.
 <2> Apart from that, the first section of the stack trace is still the same for
 the most part, showing a bit of the operator's internals (so we removed a bit
-of the snippet here).
-// I'd put it back in. Wading through the whole thing is part of the task
+of the snippet here)
+//TODO I'd put it back in. Wading through the whole thing is part of the task
 // you're describing. You might instead highlight the most relevant lines, to
 // teach people what to look for.
 <3> This is where the new stuff from debugging mode starts to appear.
