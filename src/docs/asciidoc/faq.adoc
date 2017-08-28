@@ -1,7 +1,34 @@
 [[faq]]
-= FAQ, best practices and other "How do I...?"
+= FAQ, Best Practices, and "How do I...?"
+
+[[faq.wrap-blocking]]
+== How do I wrap a synchronous, blocking call?
+
+It's often the case that a source of information is synchronous and blocking.
+To deal with such sources in your Reactor applications, apply the following
+pattern:
+
+[source,java]
+----
+Mono blockingWrapper = Mono.fromCallable(() -> { <1>
+    return /* make a remote synchronous call */ <2>
+});
+blockingWrapper.subscribeOn(Schedulers.elastic()); <3>
+----
+
+<1> Create a new `Mono` by using `fromCallable`.
+<2> Return the asynchronous, blocking resource.
+<3> Subscribe with a single-threaded worker with `Schedulers.elastic()`.
+
+You should use a Mono because the source returns one value. You should use
+`Schedulers.elastic` because it creates a dedicated thread to wait for the
+blocking resource without tying up some other resource.
+
+Note that `subscribeOn` does not subscribe to the `Mono`. It specifies what 
+kind of `Scheduler` to use when a subscribe call happens.
+
 [[faq.chain]]
-== I just used an operator on my `Flux` but it doesn't seem to apply. What gives?
+== I used an operator on my `Flux` but it doesn't seem to apply. What gives?
 
 Make sure that the variable you `.subscribe()` to has been affected by the
 operators you think should have been applied to it.

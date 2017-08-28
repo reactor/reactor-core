@@ -1,7 +1,7 @@
 === `subscribe` Method Examples
 
 This section contains minimal examples of each of the five signatures for the
-`subscribe` method. Here's an example of the basic method with no arguments:
+`subscribe` method. Here is an example of the basic method with no arguments:
 
 [source,java]
 ----
@@ -13,8 +13,8 @@ ints.subscribe(); <2>
 <2> Subscribe in the simplest way.
 
 The preceding code produces no visible output, but it does work. The `Flux`
-produces three values. As you'll see next, if we provide a lambda, we can make
-the values visible. Here's the next signature for the `subscribe` method:
+produces three values. If we provide a lambda, we can make
+the values visible. The next example for the `subscribe` method shows how:
 
 [source,java]
 ----
@@ -33,7 +33,7 @@ The preceding code produces the following output:
 3
 ----
 
-To demonstrate the next signature, we'll intentionally introduce an error, as
+To demonstrate the next signature, we intentionally introduce an error, as
 shown here:
 
 [source, java]
@@ -50,7 +50,7 @@ ints.subscribe(i -> System.out.println(i), <5>
 <1> Set up a Flux that produces four values when a subscriber attaches.
 <2> We need a map so that we can handle some values differently.
 <3> For most values, return the value.
-<4> For one value, though, force an error.
+<4> For one value, force an error.
 <5> Subscribe with a subscriber that includes an error handler.
 
 We now have two lambda expressions: one for the content we expect and one for
@@ -92,7 +92,7 @@ Done
 ----
 
 The last signature of the `subscribe` method includes a custom `Subscriber`,
-which we'll get to right after this bit of code, which shows how to attach a
+which we describe right after this bit of code, which shows how to attach a
 custom `Subscriber`:
 
 [source,java]
@@ -107,7 +107,7 @@ ints.subscribe(ss);
 ----
 
 As you can see, we provide a custom `Subscriber` as the last argument to the
-`subscribe` method. Here's that custom `Subscriber` object, which is the
+`subscribe` method. Here is that custom `Subscriber` object, which is the
 simplest possible implementation of a `Subscriber`:
 
 [source,java]
@@ -137,7 +137,7 @@ class that underlies all `Subscribers` in Reactor. The bare minimum
 implementation is to create `hookOnSubscribe(Subscription subscription)` and
 `hookOnNext(T value)`. In this case, the `hookOnSubscribe` method prints a
 statement to standard out and makes the first request. Then the `hookOnNext`
-method prints and statement and processes each of the remaining requests, one
+method prints a statement and processes each of the remaining requests, one
 request at a time.
 
 The `SampleSubscriber` class produces the following output:
@@ -154,5 +154,3 @@ NOTE: You almost certainly want to implement the `hookOnError`, `hookOnCancel`,
 and `hookonComplete` methods. You may also want to implement the `hookFinally`
 method. `SampleSubscribe` is the absolute minimum implementation of a
 `Subscriber`.
-
-We'll see `BaseSubscriber` again soon.

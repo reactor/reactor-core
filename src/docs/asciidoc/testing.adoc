@@ -21,7 +21,7 @@ To use it in your tests, add it as a test dependency:
     <1>
 </dependency>
 ----
-<1> If you use the <<getting,BOM>>, you don't need to specify a `<version>`...
+<1> If you use the <<getting,BOM>>, you do not need to specify a `<version>`...
 
 .reactor-test in Gradle, amend the `dependencies` block
 [source,groovy]
@@ -59,7 +59,7 @@ public <T> Flux<T> appendBoomError(Flux<T> source) {
 }
 ----
 
-So in order to test it, you'd want to verify the following scenario:
+So in order to test it, you want to verify the following scenario:
 
 > I expect this `Flux` to first emit `foo`, then emit `bar`, then *produce an
 error* with the message, `boom`. Subscribe and *verify* these expectations.
@@ -95,8 +95,8 @@ The API is a builder. You start by creating a `StepVerifier` and passing the
 sequence to be tested. This offers a choice of methods that allow you to:
 
 - express _expectations_ about the next signals to occur: if any other signal
-is received (or the content of the signal doesn't match the expectation), the
- whole test will fail with a meaningful `AssertionError`. For example, you
+is received (or the content of the signal does not match the expectation), the
+ whole test fails with a meaningful `AssertionError`. For example, you
  might use `expectNext(T...)`, `expectNextCount(long)`.
 - _consume_ the next signal. This is used when you want to skip part of the
 sequence OR when you want to apply a custom `assertion` on the content of the
@@ -108,7 +108,7 @@ you want to manipulate a test specific state or context). For example, you
 might use `thenAwait(Duration)`, `then(Runnable)`.
 
 For terminal events, the corresponding expectation methods (`expectComplete()`
-and `expectError()` and all its variants) will switch to an API where you cannot
+and `expectError()` and all its variants) switch to an API where you cannot
 express expectations anymore. In that last step, all you can do is perform some
 additional configuration on the `StepVerifier` an then *trigger the
 verification*, eg. with `verify()`.
@@ -118,13 +118,13 @@ What happens at this point is that the StepVerifier subscribes to the tested
 next step in the scenario. As long as these match, the test is considered a
 success. As soon as there is a discrepancy, an `AssertionError` is thrown.
 
-IMPORTANT: Don't forget the `verify()` step, which triggers the verification.
+IMPORTANT: Remember the `verify()` step, which triggers the verification.
 In order to help, the API includes a few shortcut methods that combine the
 terminal expectations with a call to `verify()`: `verifyComplete()`,
 `verifyError()`, `verifyErrorMessage(String)`, and others.
 
 Note that if one of the lambda-based expectations throws an `AssertionError`, it
-will be reported as is, failing the test. This is useful for custom assertions.
+is reported as is, failing the test. This is useful for custom assertions.
 
 TIP: The `verify()` method and derived shortcut methods (`verifyThenAssertThat`,
 `verifyComplete()`, etc.) has no timeout by default, meaning it can block
@@ -146,40 +146,41 @@ StepVerifier.withVirtualTime(() -> Mono.delay(Duration.ofDays(1)))
 //... continue expectations here
 ----
 
-The way this *virtual time* feature works is that it plugs in a custom `Scheduler`
-in Reactor's `Schedulers` factory. Since these timed operators usually use the
-default `Schedulers.parallel()` scheduler, replacing it with a `VirtualTimeScheduler`
-does the trick. However, an important pre-requisite is that the operator be
-instantiated _after_ the virtual time scheduler has been activated.
+The way this *virtual time* feature works is that it plugs in a custom
+`Scheduler` in Reactor's `Schedulers` factory. Since these timed operators
+usually use the default `Schedulers.parallel()` scheduler, replacing it with a
+`VirtualTimeScheduler` does the trick. However, an important pre-requisite is
+that the operator be instantiated _after_ the virtual time scheduler has been
+activated.
 
 In order to increase the chances this happens correctly, the `StepVerifier`
-won't take a simple `Flux` as input. `withVirtualTime` takes a `Supplier`, which
-allows for lazily creating the instance of the tested flux AFTER having done the
-scheduler set up.
+does not take a simple `Flux` as input. `withVirtualTime` takes a `Supplier`,
+which allows for lazily creating the instance of the tested flux AFTER having
+done the scheduler set up.
 
 IMPORTANT: Take extra care to ensure the `Supplier<Publisher<T>>` can be used
 in a lazy fashion. Otherwise, virtual time is not guaranteed. Especially avoid
-instantiating the flux earlier in the test code and having the `Supplier`
+instantiating the `Flux` earlier in the test code and having the `Supplier`
 return that variable. Instead, always instantiate the `Flux` inside the lambda.
 
-There are two of expectation methods that deal with time, and they are both
-valid with or without virtual time:
+There are two expectation methods that deal with time, and they are both valid
+with or without virtual time:
 
 - `thenAwait(Duration)` pauses the evaluation of steps (allowing a few signals
 to occur or delays to run out)
 - `expectNoEvent(Duration)` also lets the sequence play out for a given
 duration, but fails the test if *any* signal occurs during that time.
 
-Both methods will pause the thread for the given duration in classic mode and
+Both methods pause the thread for the given duration in classic mode and
 advance the virtual clock instead in virtual mode.
 
 [[tip-expectNoEvent]]
 TIP: `expectNoEvent` also considers the `subscription` as an event. If you use
-it as a first step, it will usually fail because the subscription signal will be
+it as a first step, it usually fails because the subscription signal is
 detected. Use `expectSubscription().expectNoEvent(duration)` instead.
 
 In order to quickly evaluate the behavior of our `Mono.delay` above, we can
-finish writing up our code like this:
+finish writing our code like this:
 
 [source,java]
 ----
@@ -190,15 +191,15 @@ StepVerifier.withVirtualTime(() -> Mono.delay(Duration.ofDays(1)))
     .verifyComplete(); // <4>
 ----
 <1> See the <<tip-expectNoEvent,tip>> above.
-<2> Expect nothing happens during a full day...
-<3> ...then expect delay emits `0`...
+<2> Expect nothing to happen during a full day...
+<3> ...then expect a delay that emits `0`...
 <4> ...then expect completion (and trigger the verification).
 
 We could have used `thenAwait(Duration.ofDays(1))` above, but `expectNoEvent`
 has the benefit of guaranteeing that nothing happened earlier than it should
 have.
 
-Note also that `verify()` returns a `Duration` value. This is the *real time*
+Note that `verify()` returns a `Duration` value. This is the *real-time*
 duration of the entire test.
 
 WARNING: Virtual time is not a silver bullet. Keep in mind that _all_
@@ -210,18 +211,18 @@ you need to advance the virtual clock for sequences to emit. Virtual time also
 gets very limited with infinite sequences, which might hog the thread on which
 both the sequence and its verification run.
 
-== Performing post-execution assertions with `StepVerifier`
+== Performing Post-execution Assertions with `StepVerifier`
 After having described the final expectation of your scenario, you can switch to
-a complementary assertion API instead of plainly triggering the `verify()`.
-To do so, use `verifyThenAssertThat()` instead.
+a complementary assertion API instead of triggering `verify()`. To do so, use
+`verifyThenAssertThat()` instead.
 
 This method returns a `StepVerifier.Assertions` object, which you can use to
 assert a few elements of state once the whole scenario has played out
-successfully (since it does *also call `verify()`*). Typical (albeit advanced)
+successfully (since it *also calls `verify()`*). Typical (albeit advanced)
 usage is to capture elements that have been dropped by some operator and assert
 them (see the section on <<hooks,Hooks>>).
 
-== Manually emitting with `TestPublisher`
+== Manually Emitting with `TestPublisher`
 For more advanced test cases, it might be useful to have complete mastery over
 the source of data, in order to trigger finely chosen signals that closely match
 the particular situation you want to test.
@@ -230,19 +231,19 @@ Another situation is when you have implemented your own operator and you want to
 verify how it behaves with regards to the Reactive Streams specification,
 especially if its source is not well behaved.
 
-For both cases, `reactor-test` offers the `TestPublisher`. This is a `Publisher<T>`
-that lets you programmatically trigger various signals:
+For both cases, `reactor-test` offers the `TestPublisher` class. This is a
+`Publisher<T>` that lets you programmatically trigger various signals:
 
-- `next(T)` and `next(T, T...)` will trigger 1-n `onNext` signals
-- `emit(T...)` will do the same AND `complete()`
-- `complete()` will terminate with an `onComplete` signal
-- `error(Throwable)` will terminate with an `onError` signal
+- `next(T)` and `next(T, T...)` triggers 1-n `onNext` signals.
+- `emit(T...)` does the same AND does `complete()`.
+- `complete()` terminates with an `onComplete` signal.
+- `error(Throwable)` terminates with an `onError` signal.
 
-A well-behaved `TestPublisher` can be obtained through the `create` factory
+A well behaved `TestPublisher` can be obtained through the `create` factory
 method. Also, a misbehaving `TestPublisher` can be created using the
 `createNonCompliant` factory method. The latter takes a number of `Violation`
-enums that will define which parts of the specification the publisher can
-overlook. For instance:
+enums that define which parts of the specification the publisher can overlook.
+For instance:
 
 - `REQUEST_OVERFLOW`: Allows `next` calls to be made despite an insufficient
 request, without triggering an `IllegalStateException`.
@@ -252,7 +253,7 @@ triggering a `NullPointerException`.
 in a row. This includes `complete()`, `error()` and `emit()`.
 
 Finally, the `TestPublisher` keeps track of internal state after subscription,
-which can be asserted through its various `assertXXX` methods.
+which can be asserted through its various `assert*` methods.
 
 It can be used as a `Flux` or `Mono` by using the conversion methods `flux()`
 and `mono()`.
