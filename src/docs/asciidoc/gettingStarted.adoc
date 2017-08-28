@@ -35,6 +35,8 @@ It only brings a transitive dependency to `org.reactive-streams:reactive-streams
 Reactor 3 uses a BOM (Bill of Materials - a standard Maven artifact)
 model since `reactor-core 3.0.4`, with the `Aluminium` release train.
 
+//TODO re-state that this is a curated list of versions as opposed to generated?
+
 The BOM lets you group artifacts that are meant to work well together without
 having to wonder about the sometimes divergent versioning schemes of these artifacts.
 

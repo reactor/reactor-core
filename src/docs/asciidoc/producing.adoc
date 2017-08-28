@@ -14,8 +14,7 @@ method, which takes a generator function.
 This is for *synchronous* and *one-by-one* emissions, meaning that
 the sink is a `SynchronousSink` and that its `next()` method can only be called
 at most once per callback invocation. You can then additionally call `error(Throwable)`
-or `complete()`.
-// Is calling `error()` or `complete()` optional?
+or `complete()`, but this is optional.
 
 The most useful variant is probably the one that also lets you keep a state
 that you can refer to in your sink usage to decide what to emit next. The generator
