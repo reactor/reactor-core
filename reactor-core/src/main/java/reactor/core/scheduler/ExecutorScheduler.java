@@ -54,8 +54,16 @@ final class ExecutorScheduler implements Scheduler {
 		}
 		Objects.requireNonNull(task, "task");
 		ExecutorPlainRunnable r = new ExecutorPlainRunnable(task);
-		//RejectedExecutionException are propagated up
-		executor.execute(r);
+		//RejectedExecutionException are propagated up, but since Executor doesn't from
+		//failing tasks we'll also wrap the execute call in a try catch:
+		try {
+			executor.execute(r);
+		}
+		catch (Throwable ex) {
+			terminated = true;
+			Schedulers.handleError(ex);
+			throw Exceptions.failWithRejected(ex);
+		}
 		return r;
 	}
 
@@ -212,7 +220,7 @@ final class ExecutorScheduler implements Scheduler {
 			catch (Throwable ex) {
 				tasks.remove(r);
 				Schedulers.handleError(ex);
-				throw Exceptions.failWithRejected();
+				throw Exceptions.failWithRejected(ex);
 			}
 
 			return r;
@@ -279,7 +287,7 @@ final class ExecutorScheduler implements Scheduler {
 				catch (Throwable ex) {
 					r.dispose();
 					Schedulers.handleError(ex);
-					throw Exceptions.failWithRejected();
+					throw Exceptions.failWithRejected(ex);
 				}
 			}
 
