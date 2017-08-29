@@ -179,4 +179,76 @@ public class ContextTests {
 		            .expectNext("barfoo1")
 		            .verifyComplete();
 	}
+
+	@Test
+	public void monoSubscriberContextPutsAll() {
+		StepVerifier.create(
+				Mono.just("foo")
+				    .flatMap(v -> Mono.currentContext())
+				    .subscriberContext(Context.of("foo", "bar", 1, "baz"))
+					.subscriberContext(Context.of("initial", "value"))
+		)
+		            .expectNextMatches(c -> c.hasKey("foo") && c.hasKey(1) && c.hasKey("initial"))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void monoSubscriberContextWithMergedEmpty() {
+		StepVerifier.create(
+				Mono.just("foo")
+				    .flatMap(v -> Mono.currentContext())
+				    .subscriberContext(Context.empty())
+				    .subscriberContext(Context.of("initial", "value"))
+		)
+		            .expectNextMatches(c -> c.hasKey("initial"))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void monoSubscriberContextWithBothEmpty() {
+		StepVerifier.create(
+				Mono.just("foo")
+				    .flatMap(v -> Mono.currentContext())
+				    .subscriberContext(Context.empty())
+				    .subscriberContext(Context.empty())
+		)
+		            .expectNextMatches(Context::isEmpty)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void fluxSubscriberContextPutsAll() {
+		StepVerifier.create(
+				Flux.just("foo")
+				    .flatMap(v -> Mono.currentContext())
+				    .subscriberContext(Context.of("foo", "bar", 1, "baz"))
+					.subscriberContext(Context.of("initial", "value"))
+		)
+		            .expectNextMatches(c -> c.hasKey("foo") && c.hasKey(1) && c.hasKey("initial"))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void fluxSubscriberContextWithMergedEmpty() {
+		StepVerifier.create(
+				Flux.just("foo")
+				    .flatMap(v -> Mono.currentContext())
+				    .subscriberContext(Context.empty())
+				    .subscriberContext(Context.of("initial", "value"))
+		)
+		            .expectNextMatches(c -> c.hasKey("initial"))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void fluxSubscriberContextWithBothEmpty() {
+		StepVerifier.create(
+				Flux.just("foo")
+				    .flatMap(v -> Mono.currentContext())
+				    .subscriberContext(Context.empty())
+				    .subscriberContext(Context.empty())
+		)
+		            .expectNextMatches(Context::isEmpty)
+		            .verifyComplete();
+	}
 }

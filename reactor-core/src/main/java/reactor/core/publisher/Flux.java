@@ -6305,21 +6305,50 @@ public abstract class Flux<T> implements Publisher<T> {
 	public abstract void subscribe(CoreSubscriber<? super T> actual);
 
 	/**
+	 * Enrich a potentially empty downstream {@link Context} by adding all values
+	 * from the given {@link Context}, producing a new {@link Context} that is propagated
+	 * upstream.
+	 * <p>
+	 * Lifecycle for {@link Context} propagation is as such :
+	 * <ol>
+	 *     <li>
+	 *         During right-to-left {@code subscribe(Subscriber)} phase {@link #subscriberContext(Function)}
+	 *         will read the target {@link Subscriber} context and merge it with the given Context.
+	 *     </li>
+	 *     <li>
+	 *         {@link #subscriberContext(Context)} will then propagate the resulting
+	 *         {@link Context} upstream using {@code Flux#subscribe(Subscriber,Context)}.
+	 *     </li>
+	 * </ol>
+	 * <p>
+	 * Note this all happens once per-subscription, not on each onNext.
+	 *
+	 * @param mergeContext the {@link Context} to merge with a previous {@link Context}
+	 * state, returning a new one which is propagated if not empty and different from the
+	 * original.
+	 *
+	 * @return a contextualized {@link Flux}
+	 * @see Context
+	 */
+	public final Flux<T> subscriberContext(Context mergeContext) {
+		return subscriberContext(c -> c.putAll(mergeContext));
+	}
+
+	/**
 	 * Enrich a potentially empty downstream {@link Context}, producing a new
-	 * {@link Context}
-	 * that is propagated upstream. If the returned {@link Context} is empty, the
+	 * {@link Context} that is propagated upstream. If the returned {@link Context} is empty, the
 	 * propagation will be halted.
 	 * <p>
 	 * Lifecycle for {@link Context} propagation is as such :
 	 * <ol>
 	 *     <li>
-	 *         During right-to-left {@code subscribe(Subscriber)} phase, contextInit will
-	 *         read the target {@link Subscriber} context and call the given
-	 *         {@link Function}.
+	 *         During right-to-left {@code subscribe(Subscriber)} phase,
+	 *         {@link #subscriberContext(Function)} will read the target
+	 *         {@link Subscriber} context and apply the given {@link Function}.
 	 *     </li>
 	 *     <li>
-	 *         contextInit will then propagate the resulting {@link Context} upstream
-	 *         using {@code Flux#subscribe(Subscriber,Context)} is invoked.
+	 *         {@link #subscriberContext(Function)} will then propagate the resulting
+	 *         {@link Context} upstream using {@code Flux#subscribe(Subscriber,Context)}.
 	 *     </li>
 	 * </ol>
 	 * <p>
