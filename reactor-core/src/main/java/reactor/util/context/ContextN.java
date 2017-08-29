@@ -15,8 +15,11 @@
  */
 package reactor.util.context;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Function;
@@ -26,7 +29,7 @@ import javax.annotation.Nullable;
 
 @SuppressWarnings("unchecked")
 final class ContextN extends HashMap<Object, Object>
-		implements Context, Function<Map.Entry<Object, Object>, Map.Entry<Object, Object>> {
+		implements Context, Function<Entry<Object, Object>, Entry<Object, Object>> {
 
 	ContextN(Object key1, Object value1, Object key2, Object value2,
 			Object key3, Object value3, Object key4, Object value4,
@@ -42,14 +45,14 @@ final class ContextN extends HashMap<Object, Object>
 
 	ContextN(Map<Object, Object> map, Object key, Object value) {
 		super(map.size() + 1, 1f);
-		putAll(map);
+		super.putAll(map);
 		super.put(key, value);
 	}
 
 	ContextN(Map<Object, Object> sourceMap, Map<?, ?> other) {
 		super(sourceMap.size() + other.size(), 1f);
-		putAll(sourceMap);
-		putAll(other);
+		super.putAll(sourceMap);
+		super.putAll(other);
 	}
 
 	@Override
@@ -60,8 +63,38 @@ final class ContextN extends HashMap<Object, Object>
 	}
 
 	@Override
+	public Context delete(Object key) {
+		Objects.requireNonNull(key, "key");
+		if (!hasKey(key)) {
+			return this;
+		}
+
+		int s = size() - 1;
+		if (s == 5) {
+			Entry<Object, Object>[] arr = new Entry[s];
+			int idx = 0;
+			for (Entry<Object, Object> entry : entrySet()) {
+				if (!entry.getKey().equals(key)) {
+					arr[idx] = entry;
+					idx++;
+				}
+			}
+			return new Context5(
+					arr[0].getKey(), arr[0].getValue(),
+					arr[1].getKey(), arr[1].getValue(),
+					arr[2].getKey(), arr[2].getValue(),
+					arr[3].getKey(), arr[3].getValue(),
+					arr[4].getKey(), arr[4].getValue());
+		}
+
+		ContextN newInstance = new ContextN(this, Collections.emptyMap());
+		newInstance.remove(key);
+		return newInstance;
+	}
+
+	@Override
 	public boolean hasKey(Object key) {
-		return containsKey(key);
+		return super.containsKey(key);
 	}
 
 	@Override
@@ -91,7 +124,7 @@ final class ContextN extends HashMap<Object, Object>
 	@Override
 	public Context putAll(Context other) {
 		if (other.isEmpty()) return this;
-		if (other instanceof ContextN) return new ContextN(this, (ContextN) other);
+		if (other instanceof ContextN) return new ContextN(this, ((ContextN) other));
 
 		Map<?, ?> mapOther = other.stream()
 		                          .collect(Collectors.toMap(Entry::getKey, Entry::getValue));

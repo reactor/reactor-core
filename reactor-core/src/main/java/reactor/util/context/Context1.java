@@ -43,6 +43,15 @@ final class Context1 implements Context, Map.Entry<Object, Object> {
 	}
 
 	@Override
+	public Context delete(Object key) {
+		Objects.requireNonNull(key, "key");
+		if (this.key.equals(key)) {
+			return Context.empty();
+		}
+		return this;
+	}
+
+	@Override
 	public boolean hasKey(Object key) {
 		return this.key.equals(key);
 	}

@@ -16,8 +16,6 @@
 
 package reactor.util.context;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
@@ -26,6 +24,7 @@ import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static reactor.util.context.ContextTest.key;
 
 public class Context1Test {
 
@@ -59,6 +58,17 @@ public class Context1Test {
 	public void hasKey() throws Exception {
 		assertThat(c.hasKey(1)).as("hasKey(1)").isTrue();
 		assertThat(c.hasKey(2)).as("hasKey(2)").isFalse();
+	}
+
+
+	@Test
+	public void removeKeys() {
+		assertThat(c.delete(1))
+				.as("delete(1)")
+				.isInstanceOf(Context0.class)
+				.doesNotHave(key(1));
+
+		assertThat(c.delete(2)).isSameAs(c);
 	}
 
 	@Test

@@ -16,8 +16,6 @@
 
 package reactor.util.context;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
@@ -26,6 +24,8 @@ import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static reactor.util.context.ContextTest.key;
+import static reactor.util.context.ContextTest.keyValue;
 
 public class Context3Test {
 
@@ -87,6 +87,32 @@ public class Context3Test {
 		assertThat(c.hasKey(2)).as("hasKey(2)").isTrue();
 		assertThat(c.hasKey(3)).as("hasKey(3)").isTrue();
 		assertThat(c.hasKey(4)).as("hasKey(4)").isFalse();
+	}
+
+	@Test
+	public void removeKeys() {
+		assertThat(c.delete(1))
+				.as("delete(1)")
+				.isInstanceOf(Context2.class)
+				.has(keyValue(2, "B"))
+				.has(keyValue(3, "C"))
+				.doesNotHave(key(1));
+
+		assertThat(c.delete(2))
+				.as("delete(2)")
+				.isInstanceOf(Context2.class)
+				.has(keyValue(1, "A"))
+				.has(keyValue(3, "C"))
+				.doesNotHave(key(2));
+
+		assertThat(c.delete(3))
+				.as("delete(3)")
+				.isInstanceOf(Context2.class)
+				.has(keyValue(1, "A"))
+				.has(keyValue(2, "B"))
+				.doesNotHave(key(3));
+
+		assertThat(c.delete(4)).isSameAs(c);
 	}
 
 	@Test

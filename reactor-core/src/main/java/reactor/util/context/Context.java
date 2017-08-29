@@ -230,6 +230,18 @@ public interface Context {
 	Context put(Object key, Object value);
 
 	/**
+	 * Return a new {@link Context} that will resolve all existing keys except the
+	 * removed one, {@code key}.
+	 * <p>
+	 * Note that if this {@link Context} doesn't contain the key, this method simply
+	 * returns this same instance.
+	 *
+	 * @param key the key to remove.
+	 * @return a new {@link Context} that doesn't include the provided key
+	 */
+	Context delete(Object key);
+
+	/**
 	 * Stream key/value pairs from this {@link Context}
 	 *
 	 * @return a {@link Stream} of key/value pairs held by this context

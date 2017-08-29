@@ -16,21 +16,26 @@
 
 package reactor.util.context;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static reactor.util.context.ContextTest.*;
 
 public class ContextNTest {
 
-	ContextN c = new ContextN(1, "A", 2, "B", 3, "C",
+	Context c;
+
+	@Before
+	public void initContext() {
+		c = new ContextN(1, "A", 2, "B", 3, "C",
 			4, "D", 5, "E", 6, "F");
+	}
 
 	@Test
 	public void replaceKey1NewContext() throws Exception {
@@ -133,13 +138,102 @@ public class ContextNTest {
 	}
 
 	@Test
+	public void removeKeys() {
+		assertThat(c.delete(1))
+				.as("delete(1)")
+				.isInstanceOf(Context5.class)
+				.has(keyValue(2, "B"))
+				.has(keyValue(3, "C"))
+				.has(keyValue(4, "D"))
+				.has(keyValue(5, "E"))
+				.has(keyValue(6, "F"))
+				.doesNotHave(key(1));
+
+		assertThat(c.delete(2))
+				.as("delete(2)")
+				.isInstanceOf(Context5.class)
+				.has(keyValue(1, "A"))
+				.has(keyValue(3, "C"))
+				.has(keyValue(4, "D"))
+				.has(keyValue(5, "E"))
+				.has(keyValue(6, "F"))
+				.doesNotHave(key(2));
+
+		assertThat(c.delete(3))
+				.as("delete(3)")
+				.isInstanceOf(Context5.class)
+				.has(keyValue(1, "A"))
+				.has(keyValue(2, "B"))
+				.has(keyValue(4, "D"))
+				.has(keyValue(5, "E"))
+				.has(keyValue(6, "F"))
+				.doesNotHave(key(3));
+
+		assertThat(c.delete(4))
+				.as("delete(4)")
+				.isInstanceOf(Context5.class)
+				.has(keyValue(1, "A"))
+				.has(keyValue(2, "B"))
+				.has(keyValue(3, "C"))
+				.has(keyValue(5, "E"))
+				.has(keyValue(6, "F"))
+				.doesNotHave(key(4));
+
+		assertThat(c.delete(5))
+				.as("delete(5)")
+				.isInstanceOf(Context5.class)
+				.has(keyValue(1, "A"))
+				.has(keyValue(2, "B"))
+				.has(keyValue(3, "C"))
+				.has(keyValue(4, "D"))
+				.has(keyValue(6, "F"))
+				.doesNotHave(key(5));
+
+		assertThat(c.delete(6))
+				.as("delete(6)")
+				.isInstanceOf(Context5.class)
+				.has(keyValue(1, "A"))
+				.has(keyValue(2, "B"))
+				.has(keyValue(3, "C"))
+				.has(keyValue(4, "D"))
+				.has(keyValue(5, "E"))
+				.doesNotHave(key(6));
+
+		assertThat(c.delete(7)).isSameAs(c);
+
+		assertThat(c).has(size(6)); //sanity check size unchanged for c
+	}
+
+	@Test
+	public void removeKeysOver6ReturnsSame() {
+		Context largerThan6 = c.put(100, 200);
+		assertThat(largerThan6)
+				.isNotSameAs(c)
+				.has(size(7));
+
+		Context test = largerThan6.delete(6);
+
+		assertThat(test)
+				.has(size(6))
+				.isNotSameAs(c)
+				.isNotSameAs(largerThan6)
+				.has(key(1))
+				.has(key(2))
+				.has(key(3))
+				.has(key(4))
+				.has(key(5))
+				.has(key(100))
+				.doesNotHave(key(6));
+	}
+
+	@Test
 	public void get() throws Exception {
-		assertThat(c.get(1)).isEqualTo("A");
-		assertThat(c.get(2)).isEqualTo("B");
-		assertThat(c.get(3)).isEqualTo("C");
-		assertThat(c.get(4)).isEqualTo("D");
-		assertThat(c.get(5)).isEqualTo("E");
-		assertThat(c.get(6)).isEqualTo("F");
+		assertThat((Object) c.get(1)).isEqualTo("A");
+		assertThat((Object) c.get(2)).isEqualTo("B");
+		assertThat((Object) c.get(3)).isEqualTo("C");
+		assertThat((Object) c.get(4)).isEqualTo("D");
+		assertThat((Object) c.get(5)).isEqualTo("E");
+		assertThat((Object) c.get(6)).isEqualTo("F");
 	}
 
 	@Test

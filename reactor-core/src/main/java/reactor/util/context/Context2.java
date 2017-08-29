@@ -51,6 +51,24 @@ final class Context2 implements Context {
 		return new Context3(this.key1, this.value1, this.key2, this.value2, key, value);
 	}
 
+
+	@Override
+	public Context delete(Object key) {
+		Objects.requireNonNull(key, "key");
+
+		if(this.key1.equals(key)){
+			return new Context1(key2, value2);
+		}
+
+		if (this.key2.equals(key)) {
+			return new Context1(key1, value1);
+		}
+
+		return this;
+	}
+
+
+
 	@Override
 	public boolean hasKey(Object key) {
 		return this.key1.equals(key) || this.key2.equals(key);
