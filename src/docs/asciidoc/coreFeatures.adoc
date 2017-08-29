@@ -228,11 +228,6 @@ elastic scheduler named `yourScheduleName`.
 
 NOTE: Operators are implemented using non-blocking algorithms tuned to
 facilitate the work stealing that can happen in some Schedulers.
-<<<<<<< HEAD
-=======
-//TODO: the paragraphs below and the `threading.adoc` file have overlap. The latter explains work-stealing a bit
-//Explain work stealing.
->>>>>>> after the last doc pass, fix a few mistakes and some TODOs
 
 `Flux` and `Mono` do not create threads. Some operators, such as `publishOn` do
 create threads. Also, as a form of work sharing, these operators can "steal"
@@ -682,15 +677,9 @@ Flux.<String>error(new IllegalArgumentException()) // <1>
 <3> Here, we consider the first 3 errors as retry-able (`take(3)`) and then
 give up.
 
-<<<<<<< HEAD
 In effect, this results in an *empty* `Flux`, but it completes *successfully*.
 Since `retry(3)` on the same `Flux` would have terminated with the latest error,
 this is not entirely the same as using `retryWhen`.
-=======
-In effect, this results in an *empty* flux, but it completes *successfully*.
-Since `retry(3)` on the same flux would have terminated with the latest error,
-this `retryWhen` example is not exactly the same as a `retry(3)`.
->>>>>>> after the last doc pass, fix a few mistakes and some TODOs
 
 Getting to the same behavior involves a few additional tricks:
 include::snippetRetryWhenRetry.adoc[]
@@ -823,7 +812,7 @@ that is similar in concept to a `Processor` in the sense that it lets you
 populate the sequence with data or terminate it).
 
 If, after exploring the above alternatives, you still think you need a
-`Processor`, head to the <<processor>> appendix to learn about the different
+`Processor`, to the <<processor>> appendix to learn about the different
 implementations.
 
 === Producing from multiple threads

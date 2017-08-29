@@ -13,18 +13,19 @@ pattern:
 Mono blockingWrapper = Mono.fromCallable(() -> { <1>
     return /* make a remote synchronous call */ <2>
 });
-blockingWrapper.subscribeOn(Schedulers.elastic()); <3>
+blockingWrapper = blockingWrapper.subscribeOn(Schedulers.elastic()); <3>
 ----
 
 <1> Create a new `Mono` by using `fromCallable`.
 <2> Return the asynchronous, blocking resource.
-<3> Subscribe with a single-threaded worker with `Schedulers.elastic()`.
+<3> Ensure each subscription will happen on a dedicated single-threaded worker
+from `Schedulers.elastic()`.
 
 You should use a Mono because the source returns one value. You should use
 `Schedulers.elastic` because it creates a dedicated thread to wait for the
 blocking resource without tying up some other resource.
 
-Note that `subscribeOn` does not subscribe to the `Mono`. It specifies what 
+Note that `subscribeOn` does not subscribe to the `Mono`. It specifies what
 kind of `Scheduler` to use when a subscribe call happens.
 
 [[faq.chain]]
