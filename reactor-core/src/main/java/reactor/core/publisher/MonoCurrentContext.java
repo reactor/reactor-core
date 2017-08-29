@@ -30,11 +30,6 @@ final class MonoCurrentContext extends Mono<Context> implements Fuseable {
 	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super Context> s) {
 		Context ctx = s.currentContext();
-		if (ctx != Context.empty()) {
-			s.onSubscribe(Operators.scalarSubscription(s, ctx));
-		}
-		else {
-			Operators.complete(s);
-		}
+		s.onSubscribe(Operators.scalarSubscription(s, ctx));
 	}
 }
