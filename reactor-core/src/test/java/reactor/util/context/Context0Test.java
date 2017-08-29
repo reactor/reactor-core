@@ -18,7 +18,6 @@ package reactor.util.context;
 
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.stream.Collectors;
 
 import org.junit.Test;
 
@@ -49,6 +48,11 @@ public class Context0Test {
 	@Test
 	public void hasKey() throws Exception {
 		assertThat(c.hasKey(1)).as("hasKey(1)").isFalse();
+	}
+
+	@Test
+	public void removeKeys() {
+		assertThat(c.delete(1)).isSameAs(c);
 	}
 
 	@Test

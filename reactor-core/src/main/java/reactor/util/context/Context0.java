@@ -32,6 +32,11 @@ final class Context0 implements Context {
 	}
 
 	@Override
+	public Context delete(Object key) {
+		return this;
+	}
+
+	@Override
 	public <T> T get(Object key) {
 		throw new NoSuchElementException("Context is empty");
 	}

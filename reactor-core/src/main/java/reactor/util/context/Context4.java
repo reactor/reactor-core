@@ -72,6 +72,29 @@ final class Context4 implements Context {
 	}
 
 	@Override
+	public Context delete(Object key) {
+		Objects.requireNonNull(key, "key");
+
+		if(this.key1.equals(key)){
+			return new Context3(key2, value2, key3, value3, key4, value4);
+		}
+
+		if (this.key2.equals(key)) {
+			return new Context3(key1, value1, key3, value3, key4, value4);
+		}
+
+		if (this.key3.equals(key)) {
+			return new Context3(key1, value1, key2, value2, key4, value4);
+		}
+
+		if (this.key4.equals(key)) {
+			return new Context3(key1, value1, key2, value2, key3, value3);
+		}
+
+		return this;
+	}
+
+	@Override
 	public boolean hasKey(Object key) {
 		return this.key1.equals(key) || this.key2.equals(key) || this.key3.equals(key) || this.key4.equals(key);
 	}
