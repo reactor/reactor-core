@@ -173,7 +173,8 @@ public abstract class Mono<T> implements Publisher<T> {
 
 	/**
 	 * Create a {@link Mono} emitting the {@link Context} available on subscribe.
-	 * If no {@link Context is available}, the mono will simply complete.
+	 * If no Context is available, the mono will simply emit the
+	 * {@link Context#empty() empty Context}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/justorempty.png" alt="">

@@ -15,6 +15,7 @@
  */
 package reactor.core.publisher;
 
+import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
@@ -110,27 +111,24 @@ public class ContextTests {
 
 	@Test
 	public void currentContext() throws InterruptedException {
-
 		StepVerifier.create(Mono.just("foo")
 		                        .flatMap(d -> Mono.currentContext()
 		                                          .map(c -> d + c.get(Integer.class)))
 		                        .subscriberContext(ctx ->
 				                        ctx.put(Integer.class, ctx.get(Integer.class) + 1))
 		                        .flatMapMany(Mono::just)
-		                        .subscriberContext(ctx -> ctx.put(Integer.class, 0))
-		                        .log())
+		                        .subscriberContext(ctx -> ctx.put(Integer.class, 0)))
 		            .expectNext("foo1")
 		            .verifyComplete();
 	}
 
 	@Test
-	public void currentContextEmpty() throws InterruptedException {
-
+	public void currentContextWithEmpty() throws InterruptedException {
 		StepVerifier.create(Mono.just("foo")
 		                        .flatMap(d -> Mono.currentContext()
-		                                          .map(c -> d + c.get(Integer.class)))
-		                        .log())
-		            .verifyComplete();
+		                                          .map(c -> d + c.get(Integer.class))))
+		            .verifyErrorMatches(t -> t instanceof NoSuchElementException
+				            && "Context is empty".equals(t.getMessage()));
 	}
 
 	@Test
