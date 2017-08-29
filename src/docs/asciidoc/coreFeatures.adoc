@@ -229,13 +229,6 @@ elastic scheduler named `yourScheduleName`.
 NOTE: Operators are implemented using non-blocking algorithms tuned to
 facilitate the work stealing that can happen in some Schedulers.
 
-`Flux` and `Mono` do not create threads. Some operators, such as `publishOn` do
-create threads. Also, as a form of work sharing, these operators can "steal"
-threads from other work pools if the other pools are currently idle.
-Consequently, neither the `Flux` or `Mono` objects nor the `Subscriber` objects
-have to be smart about threads. They rely on the operators to manage the
-threads and work pools.
-
 Some operators use a specific Scheduler from `Schedulers` by default (and
 usually give you the option of providing a different one). For instance, calling
 the factory method `Flux.interval(Duration.ofMillis(300))` produces a
