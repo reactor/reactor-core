@@ -15,9 +15,7 @@
  */
 package reactor.core.scheduler;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -26,8 +24,6 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
 
 import reactor.core.Disposable;
-import reactor.core.Disposables;
-import reactor.core.Exceptions;
 
 /**
  * Scheduler that hosts a fixed pool of single-threaded ScheduledExecutorService-based workers
@@ -80,7 +76,7 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
     void init(int n) {
         ScheduledExecutorService[] a = new ScheduledExecutorService[n];
         for (int i = 0; i < n; i++) {
-            a[i] = Schedulers.decorateScheduledExecutorService(Schedulers.PARALLEL, this);
+            a[i] = Schedulers.decorateExecutorService(Schedulers.PARALLEL, this);
         }
         EXECUTORS.lazySet(this, a);
     }
@@ -107,7 +103,7 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
             if (b == null) {
                 b = new ScheduledExecutorService[n];
                 for (int i = 0; i < n; i++) {
-                    b[i] = Schedulers.decorateScheduledExecutorService(Schedulers.PARALLEL, this);
+                    b[i] = Schedulers.decorateExecutorService(Schedulers.PARALLEL, this);
                 }
             }
             
@@ -124,7 +120,7 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
             a = EXECUTORS.getAndSet(this, SHUTDOWN);
             if (a != SHUTDOWN) {
                 for (ScheduledExecutorService exec : a) {
-                    Schedulers.executorServiceShutdown(exec, Schedulers.PARALLEL);
+                    exec.shutdownNow();
                 }
             }
         }
@@ -146,199 +142,30 @@ final class ParallelScheduler implements Scheduler, Supplier<ScheduledExecutorSe
         return TERMINATED;
     }
 
-	@Override
+    @Override
     public Disposable schedule(Runnable task) {
-        ScheduledExecutorService exec = pick();
-        //RejectedExecutionException are propagated up
-        return new ExecutorServiceScheduler.DisposableFuture(
-                exec.submit(task),
-                false);
+	    return Schedulers.directSchedule(pick(), task, 0L, TimeUnit.MILLISECONDS);
     }
 
     @Override
     public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
-        ScheduledExecutorService exec = pick();
-        //RejectedExecutionException are propagated up
-        return new ExecutorServiceScheduler.DisposableFuture(
-                exec.schedule(task, delay, unit),
-                false);
+	    return Schedulers.directSchedule(pick(), task, delay, unit);
     }
 
     @Override
-    public Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
-        ScheduledExecutorService exec = pick();
-        //RejectedExecutionException are propagated up
-        return new ExecutorServiceScheduler.DisposableFuture(
-                exec.scheduleAtFixedRate(task, initialDelay, period, unit),
-                false);
+    public Disposable schedulePeriodically(Runnable task,
+            long initialDelay,
+            long period,
+            TimeUnit unit) {
+	    return Schedulers.directSchedulePeriodically(pick(),
+			    task,
+			    initialDelay,
+			    period,
+			    unit);
     }
 
     @Override
     public Worker createWorker() {
-        return new ParallelWorker(pick());
-    }
-    
-    static final class ParallelWorker implements Worker {
-        final ScheduledExecutorService exec;
-
-        final Disposable.Composite tasks;
-        
-        ParallelWorker(ScheduledExecutorService exec) {
-            this.exec = exec;
-            this.tasks = Disposables.composite();
-        }
-
-	    @Override
-        public Disposable schedule(Runnable task) {
-            ParallelWorkerTask pw = new ParallelWorkerTask(task, this);
-
-            if (!tasks.add(pw)) {
-	            throw Exceptions.failWithRejected();
-            }
-
-            //RejectedExecutionException are propagated up
-            Future<?> f = exec.submit(pw);
-
-            if (tasks.isDisposed()){
-            	f.cancel(true);
-            	return pw;
-            }
-
-            pw.setFuture(f);
-            
-            return pw;
-        }
-
-        @Override
-        public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
-           ParallelWorkerTask pw = new ParallelWorkerTask(task, this);
-
-	        if (!tasks.add(pw)) {
-		        throw Exceptions.failWithRejected();
-	        }
-
-            //RejectedExecutionException are propagated up
-            Future<?> f = exec.schedule(pw, delay, unit);
-
-            if (tasks.isDisposed()){
-                f.cancel(true);
-                return pw;
-            }
-
-            pw.setFuture(f);
-
-            return pw;
-        }
-
-        @Override
-        public Disposable schedulePeriodically(Runnable task, long initialDelay,
-                long period, TimeUnit unit) {
-           ParallelWorkerTask pw = new ParallelWorkerTask(task, this);
-
-	        if (!tasks.add(pw)) {
-		        throw Exceptions.failWithRejected();
-	        }
-
-	        //RejectedExecutionException are propagated up
-            Future<?> f = exec.scheduleAtFixedRate(pw, initialDelay, period, unit);
-
-            if (tasks.isDisposed()){
-                f.cancel(true);
-                return pw;
-            }
-
-            pw.setFuture(f);
-
-            return pw;
-        }
-
-        @Override
-        public void dispose() {
-	        tasks.dispose();
-        }
-
-        @Override
-        public boolean isDisposed() {
-            return tasks.isDisposed();
-        }
-        
-        static final class ParallelWorkerTask implements Runnable, Disposable {
-            final Runnable run;
-            
-            final ParallelWorker parent;
-            
-            volatile boolean cancelled;
-            
-            volatile Future<?> future;
-            @SuppressWarnings("rawtypes")
-            static final AtomicReferenceFieldUpdater<ParallelWorkerTask, Future> FUTURE =
-                    AtomicReferenceFieldUpdater.newUpdater(ParallelWorkerTask.class, Future.class, "future");
-            
-            static final Future<Object> FINISHED = CompletableFuture.completedFuture(null);
-            static final Future<Object> CANCELLED = CompletableFuture.completedFuture(null);
-            
-            ParallelWorkerTask(Runnable run, ParallelWorker parent) {
-                this.run = run;
-                this.parent = parent;
-            }
-            
-            @Override
-            public void run() {
-                if (cancelled || parent.isDisposed()) {
-                    return;
-                }
-                try {
-                    try {
-                        run.run();
-                    } catch (Throwable ex) {
-                        Schedulers.handleError(ex);
-                    }
-                } finally {
-                    for (;;) {
-                        Future<?> f = future;
-                        if (f == CANCELLED) {
-                            break;
-                        }
-                        if (FUTURE.compareAndSet(this, f, FINISHED)) {
-                            parent.tasks.remove(this);
-                            break;
-                        }
-                    }
-                }
-            }
-
-	        @Override
-	        public boolean isDisposed() {
-		        Future<?> a = future;
-		        return FINISHED == a || CANCELLED == a;
-	        }
-
-	        @Override
-            public void dispose() {
-                if (!cancelled) {
-                    cancelled = true;
-                    
-                    Future<?> f = future;
-                    if (f != CANCELLED && f != FINISHED) {
-                        f = FUTURE.getAndSet(this, CANCELLED);
-                        if (f != CANCELLED && f != FINISHED) {
-                            if (f != null) {
-                                f.cancel(parent.isDisposed());
-                            }
-                            
-                            parent.tasks.remove(this);
-                        }
-                    }
-                }
-            }
-            
-            void setFuture(Future<?> f) {
-                if (future != null || !FUTURE.compareAndSet(this, null, f)) {
-                    if (future != FINISHED) {
-                        f.cancel(parent.isDisposed());
-                    }
-                }
-            }
-        }
+        return new ExecutorServiceWorker(pick());
     }
 }

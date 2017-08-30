@@ -30,8 +30,7 @@ import reactor.core.Exceptions;
  * Implementations that use an underlying {@link ExecutorService} or
  * {@link ScheduledExecutorService} should instantiate it through a {@link Supplier}
  * passed through the relevant {@link Schedulers} hook
- * ({@link Schedulers#decorateExecutorService(String, Supplier)} or
- * {@link Schedulers#decorateScheduledExecutorService(String, Supplier)}).
+ * ({@link Schedulers#decorateExecutorService(String, Supplier)}.
  *
  * @author Stephane Maldini
  * @author Simon Baslé

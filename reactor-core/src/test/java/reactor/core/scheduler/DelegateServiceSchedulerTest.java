@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 /**
  * @author Stephane Maldini
  */
-public class ExecutorServiceSchedulerTest extends AbstractSchedulerTest {
+public class DelegateServiceSchedulerTest extends AbstractSchedulerTest {
 
 	@Override
 	protected Scheduler scheduler() {
@@ -44,11 +44,6 @@ public class ExecutorServiceSchedulerTest extends AbstractSchedulerTest {
 	@Override
 	protected boolean shouldCheckDisposeTask() {
 		return false;
-	}
-
-	@Test
-	public void noopCancelledAndFinished() throws Exception {
-		ExecutorServiceScheduler.EMPTY.run();
 	}
 
 	@Test

@@ -17,8 +17,11 @@
 package reactor.core.scheduler;
 
 import java.util.Objects;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -85,7 +88,7 @@ public abstract class Schedulers {
 	 */
 	public static Scheduler fromExecutor(Executor executor, boolean trampoline) {
 		if(!trampoline && executor instanceof ExecutorService){
-			return fromExecutorService((ExecutorService)executor, false);
+			return fromExecutorService((ExecutorService) executor);
 		}
 		return new ExecutorScheduler(executor, trampoline);
 	}
@@ -99,22 +102,7 @@ public abstract class Schedulers {
 	 * @return a new {@link Scheduler}
 	 */
 	public static Scheduler fromExecutorService(ExecutorService executorService) {
-		return fromExecutorService(executorService, false);
-	}
-
-	/**
-	 * Create a {@link Scheduler} which uses a backing {@link ExecutorService} to schedule
-	 * Runnables for async operators.
-	 *
-	 * @param executorService an {@link ExecutorService}
-	 * @param interruptOnCancel delegate to {@link java.util.concurrent.Future#cancel(boolean)
-	 * future.cancel(true)}  on {@link Disposable#dispose()}
-	 *
-	 * @return a new {@link Scheduler}
-	 */
-	public static Scheduler fromExecutorService(ExecutorService executorService,
-			boolean interruptOnCancel) {
-		return new ExecutorServiceScheduler(executorService, interruptOnCancel);
+		return new DelegateServiceScheduler(executorService);
 	}
 
 	/**
@@ -428,37 +416,9 @@ public abstract class Schedulers {
 	}
 
 	/**
-	 * Attempt to dispose a {@link Scheduler}'s {@link ExecutorService}.
-	 */
-	static void executorServiceShutdown(ExecutorService executorService, String type) {
-		executorService.shutdownNow();
-//		try {
-//			executorService.awaitTermination(30, TimeUnit.SECONDS);
-//		}
-//		catch (InterruptedException e) {
-//			log.warn("{} scheduler in-flight tasks didn't terminate within 30 seconds", type);
-//		}
-	}
-
-	/**
 	 * Public factory hook to override Schedulers behavior globally
 	 */
 	public interface Factory {
-
-		/**
-		 * Override this method to decorate {@link ExecutorService} internally used by
-		 * Reactor's various {@link Scheduler} implementations, allowing to tune the
-		 * {@link ExecutorService} backing implementation.
-		 *
-		 * @param schedulerType a name hinting at the flavor of Scheduler being tuned.
-		 * @param actual the default backing implementation, provided lazily as a Supplier
-		 * so that you can bypass instantiation completely if you want to replace it.
-		 * @return the internal {@link ExecutorService} instance to use.
-		 */
-		default ExecutorService decorateExecutorService(String schedulerType,
-				Supplier<? extends ExecutorService> actual) {
-			return actual.get();
-		}
 
 		/**
 		 * Override this method to decorate {@link ScheduledExecutorService} internally used by
@@ -470,7 +430,7 @@ public abstract class Schedulers {
 		 * so that you can bypass instantiation completely if you want to replace it.
 		 * @return the internal {@link ScheduledExecutorService} instance to use.
 		 */
-		default ScheduledExecutorService decorateScheduledExecutorService(String schedulerType,
+		default ScheduledExecutorService decorateExecutorService(String schedulerType,
 				Supplier<? extends ScheduledExecutorService> actual) {
 			return actual.get();
 		}
@@ -692,14 +652,96 @@ public abstract class Schedulers {
 		}
 	}
 
-	static ExecutorService decorateExecutorService(String schedulerType,
-			Supplier<? extends ExecutorService> actual) {
-		return factory.decorateExecutorService(schedulerType, actual);
+	static Disposable directSchedule(ScheduledExecutorService exec,
+			Runnable task,
+			long delay,
+			TimeUnit unit) {
+		SchedulerTask sr = new SchedulerTask(task);
+		Future<?> f;
+		if (delay <= 0L) {
+			f = exec.submit((Callable<?>) sr);
+		}
+		else {
+			f = exec.schedule((Callable<?>) sr, delay, unit);
+		}
+		sr.setFuture(f);
+
+		return sr;
 	}
 
-	static ScheduledExecutorService decorateScheduledExecutorService(String schedulerType,
+	static Disposable directSchedulePeriodically(ScheduledExecutorService exec,
+			Runnable task,
+			long initialDelay,
+			long period,
+			TimeUnit unit) {
+
+		SchedulerTask sr = new SchedulerTask(task);
+
+		Future<?> f = exec.scheduleAtFixedRate(sr, initialDelay, period, unit);
+		sr.setFuture(f);
+
+		return sr;
+	}
+
+	static Disposable workerSchedule(ScheduledExecutorService exec,
+			Disposable.Composite tasks,
+			Runnable task,
+			long delay,
+			TimeUnit unit) {
+
+		WorkerTask sr = new WorkerTask(task, tasks);
+		if (!tasks.add(sr)) {
+			throw Exceptions.failWithRejected();
+		}
+
+		try {
+			Future<?> f;
+			if (delay <= 0L) {
+				f = exec.submit((Callable<?>) sr);
+			}
+			else {
+				f = exec.schedule((Callable<?>) sr, delay, unit);
+			}
+			sr.setFuture(f);
+		}
+		catch (RejectedExecutionException ex) {
+			sr.dispose();
+			//RejectedExecutionException are propagated up
+			throw ex;
+		}
+
+		return sr;
+	}
+
+	static Disposable workerSchedulePeriodically(ScheduledExecutorService exec,
+			Disposable.Composite tasks,
+			Runnable task,
+			long initialDelay,
+			long period,
+			TimeUnit unit) {
+
+		WorkerTask sr = new WorkerTask(task, tasks);
+		if (!tasks.add(sr)) {
+			throw Exceptions.failWithRejected();
+		}
+
+		try {
+			Future<?> f = exec.scheduleAtFixedRate(sr, initialDelay, period, unit);
+			sr.setFuture(f);
+		}
+		catch (RejectedExecutionException ex) {
+			sr.dispose();
+			//RejectedExecutionException are propagated up
+			throw ex;
+		}
+
+		return sr;
+	}
+
+
+	static ScheduledExecutorService decorateExecutorService(String schedulerType,
 			Supplier<? extends ScheduledExecutorService> actual) {
-		return factory.decorateScheduledExecutorService(schedulerType, actual);
+		return factory.decorateExecutorService(schedulerType, actual);
 	}
 
 }

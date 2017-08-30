@@ -22,9 +22,11 @@ import java.util.function.Function;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -257,5 +259,44 @@ public class FluxSubscribeOnTest {
 		            .verify(Duration.ofSeconds(5));
 
 		assertThat(count.get()).isEqualTo(Queues.SMALL_BUFFER_SIZE);
+	}
+
+	@Test
+	public void gh507() {
+		Scheduler s = Schedulers.newSingle("subscribe");
+		Scheduler s2 = Schedulers.newParallel("receive");
+
+		Flux.from((Publisher<String>) subscriber -> {
+			subscriber.onSubscribe(new Subscription() {
+				private int totalCount;
+
+				@Override
+				public void request(long n) {
+					for (int i = 0; i < n; i++) {
+						if (totalCount++ < 317) {
+							subscriber.onNext(String.valueOf(totalCount));
+						}
+						else {
+							subscriber.onComplete();
+						}
+					}
+				}
+
+				@Override
+				public void cancel() {
+					// do nothing
+				}
+			});
+		})
+		    .subscribeOn(s)
+		    .limitRate(10)
+		    .doOnNext(d -> {
+			    Mono.fromCallable(() -> d)
+			        .subscribeOn(s2)
+			        .block();
+		    })
+		    .blockLast();
+
+		s.dispose();
 	}
 }
