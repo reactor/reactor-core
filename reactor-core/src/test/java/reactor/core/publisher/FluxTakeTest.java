@@ -104,29 +104,18 @@ public class FluxTakeTest {
 
 	@Test
 	public void takeOverflowAttempt() {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create();
-
 		Publisher<Integer> p = s -> {
 			s.onSubscribe(Operators.emptySubscription());
 			s.onNext(1);
 			s.onNext(2);
-			try {
-				s.onNext(3);
-			}
-			catch(RuntimeException re){
-				Assert.assertTrue("cancelled", Exceptions.isCancel(re));
-				return;
-			}
-			Assert.fail();
+			s.onNext(3);
 		};
 
-		Flux.from(p)
-		    .take(2)
-		    .subscribe(ts);
-
-		ts.assertValues(1, 2)
-		  .assertNoError()
-		  .assertComplete();
+		StepVerifier.create(Flux.from(p).take(2))
+		            .expectNext(1, 2)
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasDroppedExactly(3);
 	}
 
 	@Test

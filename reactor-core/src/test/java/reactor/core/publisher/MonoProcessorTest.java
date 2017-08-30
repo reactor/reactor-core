@@ -241,12 +241,19 @@ public class MonoProcessorTest {
 		assertThat(mp.isError()).isTrue();
 	}
 
-	@Test(expected = RuntimeException.class)
+	@Test
 	public void MonoProcessorDoubleFulfill() {
 		MonoProcessor<String> mp = MonoProcessor.create();
 
-		mp.onNext("test");
-		mp.onNext("test");
+		StepVerifier.create(mp)
+		            .then(() -> {
+			            mp.onNext("test1");
+			            mp.onNext("test2");
+		            })
+		            .expectNext("test1")
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasDroppedExactly("test2");
 	}
 
 	@Test
