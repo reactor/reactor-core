@@ -16,42 +16,56 @@
 
 package reactor.core.scheduler;
 
+import java.util.Collection;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import reactor.core.Disposable;
+import javax.annotation.Nullable;
 
-import static reactor.core.scheduler.ExecutorServiceScheduler.CANCELLED;
-import static reactor.core.scheduler.ExecutorServiceScheduler.FINISHED;
+import reactor.core.Disposable;
 
 /**
  * A runnable task for {@link Scheduler} Workers that are time-capable (implementing a
  * relevant schedule(delay) and schedulePeriodically(period) methods).
  *
- * Unlike the one in {@link ExecutorServiceScheduler}, this runnable doesn't expose the
+ * Unlike the one in {@link DelegateServiceScheduler}, this runnable doesn't expose the
  * ability to cancel inner task when interrupted.
  *
  * @author Simon Baslé
+ * @author David Karnok
  */
-final class ScheduledRunnable implements Runnable, Disposable {
+final class WorkerTask implements Runnable, Disposable, Callable<Void> {
 
 	final Runnable task;
 
+	static final Composite DISPOSED = new EmptyCompositeDisposable();
+	static final Composite DONE     = new EmptyCompositeDisposable();
+
+
+	static final Future<Void> FINISHED = new FutureTask<>(() -> null);
+	static final Future<Void> CANCELLED = new FutureTask<>(() -> null);
+
 	volatile Future<?> future;
-	static final AtomicReferenceFieldUpdater<ScheduledRunnable, Future> FUTURE =
-			AtomicReferenceFieldUpdater.newUpdater(ScheduledRunnable.class, Future.class, "future");
+	static final AtomicReferenceFieldUpdater<WorkerTask, Future> FUTURE =
+			AtomicReferenceFieldUpdater.newUpdater(WorkerTask.class, Future.class, "future");
 
 	volatile Composite parent;
-	static final AtomicReferenceFieldUpdater<ScheduledRunnable, Composite> PARENT =
-			AtomicReferenceFieldUpdater.newUpdater(ScheduledRunnable.class, Composite.class, "parent");
+	static final AtomicReferenceFieldUpdater<WorkerTask, Composite> PARENT =
+			AtomicReferenceFieldUpdater.newUpdater(WorkerTask.class, Composite.class, "parent");
 
-	ScheduledRunnable(Runnable task, Composite parent) {
+	Thread thread;
+
+	WorkerTask(Runnable task, Composite parent) {
 		this.task = task;
 		PARENT.lazySet(this, parent);
 	}
 
 	@Override
-	public void run() {
+	@Nullable
+	public Void call() {
+		thread = Thread.currentThread();
 		try {
 			try {
 				task.run();
@@ -61,8 +75,9 @@ final class ScheduledRunnable implements Runnable, Disposable {
 			}
 		}
 		finally {
+			thread = null;
 			Composite o = parent;
-			if (o != EmptyCompositeDisposable.DISPOSED_PARENT && o != null && PARENT.compareAndSet(this, o, EmptyCompositeDisposable.DONE_PARENT)) {
+			if (o != DISPOSED && o != null && PARENT.compareAndSet(this, o, DONE)) {
 				o.remove(this);
 			}
 
@@ -74,6 +89,12 @@ final class ScheduledRunnable implements Runnable, Disposable {
 				}
 			}
 		}
+		return null;
+	}
+
+	@Override
+	public void run() {
+		call();
 	}
 
 	void setFuture(Future<?> f) {
@@ -83,7 +104,7 @@ final class ScheduledRunnable implements Runnable, Disposable {
 				return;
 			}
 			if (o == CANCELLED) {
-				f.cancel(true);
+				f.cancel(thread != Thread.currentThread());
 				return;
 			}
 			if (FUTURE.compareAndSet(this, o, f)) {
@@ -107,7 +128,7 @@ final class ScheduledRunnable implements Runnable, Disposable {
 			}
 			if (FUTURE.compareAndSet(this, f, CANCELLED)) {
 				if (f != null) {
-					f.cancel(true);
+					f.cancel(thread != Thread.currentThread());
 				}
 				break;
 			}
@@ -115,14 +136,45 @@ final class ScheduledRunnable implements Runnable, Disposable {
 
 		for (;;) {
 			Composite o = parent;
-			if (o == EmptyCompositeDisposable.DONE_PARENT || o == EmptyCompositeDisposable.DISPOSED_PARENT || o == null) {
+			if (o == DONE || o == DISPOSED || o == null) {
 				return;
 			}
-			if (PARENT.compareAndSet(this, o, EmptyCompositeDisposable.DISPOSED_PARENT)) {
+			if (PARENT.compareAndSet(this, o, DISPOSED)) {
 				o.remove(this);
 				return;
 			}
 		}
 	}
 
+	static final class EmptyCompositeDisposable implements Composite {
+
+		@Override
+		public boolean add(Disposable d) {
+			return false;
+		}
+
+		@Override
+		public boolean addAll(Collection<? extends Disposable> ds) {
+			return false;
+		}
+
+		@Override
+		public boolean remove(Disposable d) {
+			return false;
+		}
+
+		@Override
+		public int size() {
+			return 0;
+		}
+
+		@Override
+		public void dispose() {	}
+
+		@Override
+		public boolean isDisposed() {
+			return false;
+		}
+
+	}
 }

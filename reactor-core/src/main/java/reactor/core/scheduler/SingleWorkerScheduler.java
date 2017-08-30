@@ -64,7 +64,6 @@ final class SingleWorkerScheduler implements Scheduler, Executor {
     
     @Override
     public Worker createWorker() {
-        //TODO could this be simplified by returning this.main?
         return new ExecutorScheduler.ExecutorSchedulerWorker(this);
     }
 

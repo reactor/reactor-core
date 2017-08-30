@@ -17,8 +17,6 @@
 package reactor.core.scheduler;
 
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
@@ -28,8 +26,6 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
 
 import reactor.core.Disposable;
-import reactor.core.Disposables;
-import reactor.core.Exceptions;
 
 /**
  * Scheduler that works with a single-threaded ScheduledExecutorService and is suited for
@@ -73,7 +69,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 
 	private void init() {
 		EXECUTORS.lazySet(this,
-				Schedulers.decorateScheduledExecutorService(Schedulers.SINGLE, this));
+				Schedulers.decorateExecutorService(Schedulers.SINGLE, this));
 	}
 
 	@Override
@@ -95,7 +91,7 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 			}
 
 			if (b == null) {
-				b = Schedulers.decorateScheduledExecutorService(Schedulers.SINGLE, this);
+				b = Schedulers.decorateExecutorService(Schedulers.SINGLE, this);
 			}
 
 			if (EXECUTORS.compareAndSet(this, a, b)) {
@@ -110,25 +106,19 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 		if (a != TERMINATED) {
 			a = EXECUTORS.getAndSet(this, TERMINATED);
 			if (a != TERMINATED) {
-				Schedulers.executorServiceShutdown(a, Schedulers.SINGLE);
+				a.shutdownNow();
 			}
 		}
 	}
 
 	@Override
 	public Disposable schedule(Runnable task) {
-		//RejectedExecutionException are propagated up
-		return new ExecutorServiceScheduler.DisposableFuture(
-				executor.submit(task),
-				false);
+		return Schedulers.directSchedule(executor, task, 0L, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
 	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
-		//RejectedExecutionException are propagated up
-		return new ExecutorServiceScheduler.DisposableFuture(
-				executor.schedule(task, delay, unit),
-				false);
+		return Schedulers.directSchedule(executor, task, delay, unit);
 	}
 
 	@Override
@@ -136,91 +126,16 @@ final class SingleScheduler implements Scheduler, Supplier<ScheduledExecutorServ
 			long initialDelay,
 			long period,
 			TimeUnit unit) {
-		//RejectedExecutionException are propagated up
-		return new ExecutorServiceScheduler.DisposableFuture(
-				executor.scheduleAtFixedRate(task, initialDelay, period, unit),
-				false);
+		return Schedulers.directSchedulePeriodically(executor,
+				task,
+				initialDelay,
+				period,
+				unit);
 	}
 
 	@Override
 	public Worker createWorker() {
-		return new SingleWorker(executor);
+		return new ExecutorServiceWorker(executor);
 	}
 
-	static final class SingleWorker implements Worker, Disposable {
-
-		final ScheduledExecutorService exec;
-
-		final Disposable.Composite tasks;
-
-		SingleWorker(ScheduledExecutorService exec) {
-			this.exec = exec;
-			this.tasks = Disposables.composite();
-		}
-
-		@Override
-		public Disposable schedule(Runnable task) {
-			return schedule(task, 0L, TimeUnit.MILLISECONDS);
-		}
-
-		@Override
-		public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
-			ScheduledRunnable sr = new ScheduledRunnable(task, tasks);
-			if(!tasks.add(sr)){
-				throw Exceptions.failWithRejected();
-			}
-
-			try {
-				Future<?> f;
-				if (delay <= 0L) {
-					f = exec.submit(sr);
-				}
-				else {
-					f = exec.schedule(sr, delay, unit);
-				}
-				sr.setFuture(f);
-			}
-			catch (RejectedExecutionException ex) {
-				sr.dispose();
-				//RejectedExecutionException are propagated up
-				throw ex;
-			}
-
-			return sr;
-		}
-
-		@Override
-		public Disposable schedulePeriodically(Runnable task,
-				long initialDelay,
-				long period,
-				TimeUnit unit) {
-
-			ScheduledRunnable sr = new ScheduledRunnable(task, tasks);
-			if(!tasks.add(sr)) {
-				throw Exceptions.failWithRejected();
-			}
-
-			try {
-				Future<?> f = exec.scheduleAtFixedRate(sr, initialDelay, period, unit);
-				sr.setFuture(f);
-			}
-			catch (RejectedExecutionException ex) {
-				sr.dispose();
-				//RejectedExecutionException are propagated up
-				throw ex;
-			}
-
-			return sr;
-		}
-
-		@Override
-		public void dispose() {
-			tasks.dispose();
-		}
-
-		@Override
-		public boolean isDisposed() {
-			return tasks.isDisposed();
-		}
-	}
 }

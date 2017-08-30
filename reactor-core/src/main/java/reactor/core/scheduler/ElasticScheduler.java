@@ -20,22 +20,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import reactor.core.Disposable;
 import reactor.core.Disposables;
-import reactor.core.Exceptions;
-
-import static reactor.core.scheduler.ExecutorServiceScheduler.CANCELLED;
-import static reactor.core.scheduler.ExecutorServiceScheduler.FINISHED;
 
 /**
  * Dynamically creates ScheduledExecutorService-based Workers and caches the thread pools, reusing
@@ -62,24 +57,21 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 		return t;
 	};
 
+	static final CachedService SHUTDOWN = new CachedService(null);
+
+	static final int DEFAULT_TTL_SECONDS = 60;
+
 	final ThreadFactory factory;
 
 	final int ttlSeconds;
 
-	static final int DEFAULT_TTL_SECONDS = 60;
 
 	final Queue<ScheduledExecutorServiceExpiry> cache;
 
-	final Queue<ScheduledExecutorService> all;
+	final Queue<CachedService> all;
 
 	final ScheduledExecutorService evictor;
 
-	static final ScheduledExecutorService SHUTDOWN;
-
-	static {
-		SHUTDOWN = Executors.newSingleThreadScheduledExecutor();
-		SHUTDOWN.shutdownNow();
-	}
 
 	volatile boolean shutdown;
 
@@ -128,24 +120,24 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 
 		cache.clear();
 
-		ScheduledExecutorService exec;
+		CachedService cached;
 
-		while ((exec = all.poll()) != null) {
-			exec.shutdownNow();
+		while ((cached = all.poll()) != null) {
+			cached.exec.shutdownNow();
 		}
 	}
 
-	ScheduledExecutorService pick() {
+	CachedService pick() {
 		if (shutdown) {
 			return SHUTDOWN;
 		}
-		ScheduledExecutorService result;
+		CachedService result;
 		ScheduledExecutorServiceExpiry e = cache.poll();
 		if (e != null) {
-			return e.executor;
+			return e.cached;
 		}
 
-		result = Schedulers.decorateScheduledExecutorService(Schedulers.ELASTIC, this);
+		result = new CachedService(this);
 		all.offer(result);
 		if (shutdown) {
 			all.remove(result);
@@ -156,87 +148,38 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 
 	@Override
 	public Disposable schedule(Runnable task) {
-		ScheduledExecutorService exec = pick();
+		CachedService cached = pick();
 
-		Runnable wrapper = () -> {
-			try {
-				task.run();
-			}
-			catch (Throwable ex) {
-				Schedulers.handleError(ex);
-			}
-			finally {
-				release(exec);
-			}
-		};
-		Future<?> f;
-
-		//RejectedExecutionException are propagated up
-		f = exec.submit(wrapper);
-		return new ExecutorServiceScheduler.DisposableFuture(f, true);
+		return Schedulers.directSchedule(cached.exec,
+				new DirectScheduleTask(task, cached),
+				0L,
+				TimeUnit.MILLISECONDS);
 	}
 
 	@Override
 	public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
-		ScheduledExecutorService exec = pick();
+		CachedService cached = pick();
 
-		Runnable wrapper = () -> {
-			try {
-				task.run();
-			}
-			catch (Throwable ex) {
-				Schedulers.handleError(ex);
-			}
-			finally {
-				release(exec);
-			}
-		};
-		Future<?> f;
-
-		//RejectedExecutionException are propagated up
-		f = exec.schedule(wrapper, delay, unit);
-		return new ExecutorServiceScheduler.DisposableFuture(f, true);
+		return Schedulers.directSchedule(cached.exec,
+				new DirectScheduleTask(task, cached),
+				delay,
+				unit);
 	}
 
 	@Override
 	public Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
-		ScheduledExecutorService exec = pick();
+		CachedService cached = pick();
 
-		Runnable wrapper = () -> {
-			try {
-				task.run();
-			}
-			catch (Throwable ex) {
-				Schedulers.handleError(ex);
-			}
-			finally {
-				release(exec);
-			}
-		};
-		Future<?> f;
-
-		//RejectedExecutionException are propagated up
-		f = exec.scheduleAtFixedRate(wrapper, initialDelay, period, unit);
-		return new ExecutorServiceScheduler.DisposableFuture(f, true);
+		return Disposables.composite(Schedulers.directSchedulePeriodically(cached.exec,
+				task,
+				initialDelay,
+				period,
+				unit), cached);
 	}
 
 	@Override
 	public Worker createWorker() {
-		ScheduledExecutorService exec = pick();
-		return new CachedWorker(exec, this);
-	}
-
-	void release(ScheduledExecutorService exec) {
-		if (exec != SHUTDOWN && !shutdown) {
-			ScheduledExecutorServiceExpiry e = new ScheduledExecutorServiceExpiry(exec,
-					System.currentTimeMillis() + ttlSeconds * 1000L);
-			cache.offer(e);
-			if (shutdown) {
-				if (cache.remove(e)) {
-					exec.shutdownNow();
-				}
-			}
-		}
+		return new ElasticWorker(pick());
 	}
 
 	void eviction() {
@@ -246,160 +189,131 @@ final class ElasticScheduler implements Scheduler, Supplier<ScheduledExecutorSer
 		for (ScheduledExecutorServiceExpiry e : list) {
 			if (e.expireMillis < now) {
 				if (cache.remove(e)) {
-					e.executor.shutdownNow();
+					e.cached.exec.shutdownNow();
 				}
+			}
+		}
+	}
+
+	static final class CachedService implements Disposable {
+
+		final ElasticScheduler         parent;
+		final ScheduledExecutorService exec;
+
+		CachedService(@Nullable ElasticScheduler parent) {
+			this.parent = parent;
+			if (parent != null) {
+				this.exec =
+						Schedulers.decorateExecutorService(Schedulers.ELASTIC, parent);
+			}
+			else {
+				this.exec = Executors.newSingleThreadScheduledExecutor();
+				this.exec.shutdownNow();
+			}
+		}
+
+		@Override
+		public void dispose() {
+			if (exec != null) {
+				if (this != SHUTDOWN && !parent.shutdown) {
+					ScheduledExecutorServiceExpiry e = new
+							ScheduledExecutorServiceExpiry(this,
+							System.currentTimeMillis() + parent.ttlSeconds * 1000L);
+					parent.cache.offer(e);
+					if (parent.shutdown) {
+						if (parent.cache.remove(e)) {
+							exec.shutdownNow();
+						}
+					}
+				}
+			}
+		}
+	}
+
+	static final class DirectScheduleTask implements Runnable {
+
+		final Runnable      delegate;
+		final CachedService cached;
+
+		DirectScheduleTask(Runnable delegate, CachedService cached) {
+			this.delegate = delegate;
+			this.cached = cached;
+		}
+
+		@Override
+		public void run() {
+			try {
+				delegate.run();
+			}
+			catch (Throwable ex) {
+				Schedulers.handleError(ex);
+			}
+			finally {
+				cached.dispose();
 			}
 		}
 	}
 
 	static final class ScheduledExecutorServiceExpiry {
 
-		final ScheduledExecutorService executor;
-		final long                     expireMillis;
+		final CachedService cached;
+		final long          expireMillis;
 
-		ScheduledExecutorServiceExpiry(ScheduledExecutorService executor, long expireMillis) {
-			this.executor = executor;
+		ScheduledExecutorServiceExpiry(CachedService cached, long expireMillis) {
+			this.cached = cached;
 			this.expireMillis = expireMillis;
 		}
 	}
 
-	static final class CachedWorker extends AtomicBoolean implements Worker {
+	static final class ElasticWorker extends AtomicBoolean implements Worker {
 
-		final ScheduledExecutorService executor;
-
-		final ElasticScheduler parent;
+		final CachedService cached;
 
 		final Disposable.Composite tasks;
 
-		CachedWorker(ScheduledExecutorService executor, ElasticScheduler parent) {
-			this.executor = executor;
-			this.parent = parent;
+		ElasticWorker(CachedService cached) {
+			this.cached = cached;
 			this.tasks = Disposables.composite();
 		}
 
 		@Override
 		public Disposable schedule(Runnable task) {
-			CachedTask ct = new CachedTask(task, this);
-
-			if (!tasks.add(ct)) {
-				throw Exceptions.failWithRejected();
-			}
-
-			//RejectedExecutionException are propagated up
-			Future<?> f = executor.submit(ct);
-
-			ct.setFuture(f);
-
-			return ct;
+			return Schedulers.workerSchedule(cached.exec,
+					tasks,
+					task,
+					0L,
+					TimeUnit.MILLISECONDS);
 		}
 
 		@Override
 		public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
-			CachedTask ct = new CachedTask(task, this);
-
-			if (!tasks.add(ct)) {
-				throw Exceptions.failWithRejected();
-			}
-
-			//RejectedExecutionException are propagated up
-			Future<?> f = executor.schedule(ct, delay, unit);
-
-			ct.setFuture(f);
-
-			return ct;
+			return Schedulers.workerSchedule(cached.exec, tasks, task, delay, unit);
 		}
 
 		@Override
-		public Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
-			CachedTask ct = new CachedTask(task, this);
-
-			if (!tasks.add(ct)) {
-				throw Exceptions.failWithRejected();
-			}
-
-			//RejectedExecutionException are propagated up
-			Future<?> f = executor.scheduleAtFixedRate(ct, initialDelay, period, unit);
-
-			ct.setFuture(f);
-
-			return ct;
+		public Disposable schedulePeriodically(Runnable task,
+				long initialDelay,
+				long period,
+				TimeUnit unit) {
+			return Schedulers.workerSchedulePeriodically(cached.exec,
+					tasks,
+					task,
+					initialDelay,
+					period,
+					unit);
 		}
 
 		@Override
 		public void dispose() {
-			if(compareAndSet(false,true)) {
+			if (compareAndSet(false, true)) {
 				tasks.dispose();
-				parent.release(executor);
+				cached.dispose();
 			}
 		}
 
 		@Override
 		public boolean isDisposed() {
 			return tasks.isDisposed();
-		}
-
-		static final class CachedTask extends AtomicReference<Future<?>>
-				implements Runnable, Disposable {
-
-			/** */
-			private static final long serialVersionUID = 6799295393954430738L;
-
-			final Runnable run;
-
-			final CachedWorker parent;
-
-			volatile boolean cancelled;
-
-			CachedTask(Runnable run, CachedWorker parent) {
-				this.run = run;
-				this.parent = parent;
-			}
-
-			@Override
-			public void run() {
-				try {
-					if (!parent.isDisposed() && !cancelled) {
-						run.run();
-					}
-				}
-				catch (Throwable ex) {
-					Schedulers.handleError(ex);
-				}
-				finally {
-					lazySet(FINISHED);
-					parent.tasks.remove(this);
-				}
-			}
-
-			@Override
-			public void dispose() {
-				cancelled = true;
-				cancelFuture();
-			}
-
-			@Override
-			public boolean isDisposed() {
-				Future<?> f = get();
-				return f == CANCELLED || f == FINISHED;
-			}
-
-			void setFuture(Future<?> f) {
-				if (!compareAndSet(null, f)) {
-					if (get() != FINISHED) {
-						f.cancel(true);
-					}
-				}
-			}
-
-			void cancelFuture() {
-				Future<?> f = get();
-				if (f != CANCELLED && f != FINISHED) {
-					f = getAndSet(CANCELLED);
-					if (f != null && f != CANCELLED && f != FINISHED) {
-						f.cancel(true);
-					}
-				}
-			}
 		}
 	}
 }
