@@ -311,4 +311,41 @@ public class FluxTimeoutTest {
 		            .thenAwait(Duration.ofMillis(500))
 		            .verifyError(TimeoutException.class);
 	}
+
+	//see https://github.com/reactor/reactor-core/issues/744
+	@Test
+	public void timeoutDropWhenNoCancelWithoutFallback() {
+		for (int i = 0; i < 50; i++) {
+			StepVerifier.withVirtualTime(
+					() -> Flux.just("cat")
+					          .delaySubscription(Duration.ofMillis(3))
+					          // We cancel on another scheduler that won't do anything to force it to act like
+					          // the event is already in flight
+					          .cancelOn(Schedulers.fromExecutor(r -> {}))
+					          .timeout(Duration.ofMillis(2))
+			)
+			            .thenAwait(Duration.ofSeconds(5))
+			            .expectError(TimeoutException.class)
+			            .verify();
+		}
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/744
+	@Test
+	public void timeoutDropWhenNoCancelWithFallback() {
+		for (int i = 0; i < 50; i++) {
+			StepVerifier.withVirtualTime(
+					() -> Flux.just("cat")
+					          .delaySubscription(Duration.ofMillis(3))
+					          // We cancel on another scheduler that won't do anything to force it to act like
+					          // the event is already in flight
+					          .cancelOn(Schedulers.fromExecutor(r -> {}))
+					          .timeout(Duration.ofMillis(2), Flux.just("dog").delayElements(Duration.ofMillis(5)))
+			)
+			            .thenAwait(Duration.ofSeconds(5))
+			            .expectNext("dog")
+			            .expectComplete()
+			            .verify();
+		}
+	}
 }
