@@ -3,8 +3,6 @@
 Reactor is an implementation of the Reactive Programming paradigm, which can be
 summed up as:
 
-//TODO Find a better quotation. What is wrong with this one? What do we want in
-// a quotation here?
 [quote, https://en.wikipedia.org/wiki/Reactive_programming]
 Reactive programming is an asynchronous programming paradigm concerned with data
 streams and the propagation of change. This means that it becomes possible to
@@ -13,31 +11,32 @@ ease via the employed programming language(s)
 
 As a first step in the direction of reactive programming, Microsoft created the
 Reactive Extensions (Rx) library in the .NET ecosystem. Then RxJava implemented
-reactive programming on the JVM.  As time went on, a standardization for Java emerged through the *Reactive Streams* effort,
-a specification which defines a set of interfaces and interaction rules for
-reactive libraries on the JVM. It will be integrated into Java 9 (with the
-`Flow` class).
+reactive programming on the JVM.  As time went on, a standardization for Java
+emerged through the *Reactive Streams* effort, a specification which defines a
+set of interfaces and interaction rules for reactive libraries on the JVM. It
+will be integrated into Java 9 (with the `Flow` class).
 
 The reactive programming paradigm is often presented in object-oriented
 languages as an extension of the Observer design pattern. One can also compare
 the main reactive streams pattern with the familiar Iterator design pattern, as
-there is a duality to the `Iterable`-`Iterator` pair in all  these libraries.
+there is a duality to the `Iterable`-`Iterator` pair in all of these libraries.
 One major difference is that while an Iterator is *pull*-based, reactive
 streams are *push*-based.
 
-Using an iterator is essential, even though the method of accessing
-values is solely the responsibility of the `Iterable`. Indeed, it is up to the
+Using an iterator is an imperative programming pattern, even though the method of
+accessing values is solely the responsibility of the `Iterable`. Indeed, it is up to the
 developer to choose when to access the `next()` item in the sequence. In
 reactive streams, the equivalent of the above pair is `Publisher-Subscriber`.
 But it is the `Publisher` that notifies the Subscriber of newly available values
 _as they come_, and this push aspect is key to being reactive. Also, operations
-applied to pushed values are expressed declaratively rather than imperatively.
-// What does "declaratively rather than imperatively" mean? What's the difference?
+applied to pushed values are expressed declaratively rather than imperatively:
+the programmer expresses the expresses the logic of the computation rather than
+describing its exact control flow.
 
 In addition to pushing values, the error handling and completion aspects are
 also covered in a well defined manner. A `Publisher` can push new values to
-its `Subscriber` (calling `onNext`), but also signal an error (calling
-`onError`) or completion (calling `onComplete`). Both errors and completion
+its `Subscriber` (by calling `onNext`) but can also signal an error (by calling
+`onError`) or completion (by calling `onComplete`). Both errors and completion
 terminate the sequence. The following descriptor shows the possibilities:
 
 [source]
@@ -47,32 +46,31 @@ This approach is very flexible. The pattern supports use cases where there is
 no value, one value, or n values (including an infinite sequence of values,
 such as the continuing ticks of a clock).
 
-But let's step back a bit and reflect on why we would need such an asynchronous
-reactive library in the first place.
+Consider why we would need such an asynchronous reactive library in the first
+place.
 
 //TODO flesh out, add more preamble?
 
 == Blocking can be wasteful
 Modern applications can reach huge numbers of concurrent users, and, even though the
-capabilities of modern hardware have continued to improve, performance of the
+capabilities of modern hardware have continued to improve, performance of
 modern software is still a key concern.
 
 There are broadly two ways one can improve a program's performance:
 
-. *parallelize*: use more threads and more hardware resources +
-and/or
+. *parallelize*: use more threads and more hardware resources.
 . *seek more efficiency* in how current resources are used.
 
-Usually, Java developers will naturally write programs using blocking code. This
+Usually, Java developers write programs using blocking code. This practice
 is fine until there is a performance bottleneck, at which point the time
-comes to introduce additional thread(s), running similar blocking code. But this
+comes to introduce additional threads, running similar blocking code. But this
 scaling in resource utilization can quickly introduce contention and concurrency
 problems.
 
 Worse still, blocking wastes resources. If you look closely, as soon as a
-program involves some latency (notably I/O, like a database request or a
-network call), there is a waste of resources because a thread (or many threads)
-now sits idle, waiting for some data.
+program involves some latency (notably I/O, such as a database request or a
+network call), resources are wasted because a thread (or many threads)
+now sits idle, waiting for data.
 
 So the parallelization approach is not a silver bullet. It is necessary in
 order to access the full power of the hardware, but it is also complex to
@@ -80,33 +78,33 @@ reason about and susceptible to resource wasting.
 
 == Asynchronicity to the rescue?
 The second approach mentioned above, seeking more efficiency, can be a solution
-to the resource wasting problem. By writing _asynchronous_ _non-blocking_ code,
-you allow for the execution to switch to another active task *using the same
-underlying resources* and to later come back to the current process when the
-asynchronous processing has completed.
+to the resource wasting problem. By writing _asynchronous_, _non-blocking_ code,
+you let the execution switch to another active task *using the same underlying
+resources* and later come back to the current process when the asynchronous
+processing has finished.
 
 But how can you produce asynchronous code on the JVM? Java offers two models of
 asynchronous programming:
 
-- *Callbacks*: Asynchronous methods don't have a return value but take an
-extra `callback` parameter (a lambda or simple anonymous class) that will get
-called when the result is available. Most well known example is Swing's
-`EventListener` hierarchy.
+- *Callbacks*: Asynchronous methods do not have a return value but take an
+extra `callback` parameter (a lambda or anonymous class) that gets called when
+the result is available. A well known example is Swing's `EventListener`
+hierarchy.
 - *Futures*: Asynchronous methods return a `Future<T>` *immediately*. The
-asynchronous process computes a `T` value, but the Future object wraps access
-to it. The value isn't immediately available, and the object can be polled
-until the value is available. For instance, `ExecutorService` running `Callable<T>` tasks use
-Futures.
+asynchronous process computes a `T` value, but the `Future` object wraps access
+to it. The value is not immediately available, and the object can be polled
+until the value is available. For instance, `ExecutorService` running
+`Callable<T>` tasks use `Future` objects.
 
-Are these techniques good enough? Well, not for every use case, and both
-approaches have limitations...
+Are these techniques good enough? Not for every use case, and both approaches
+have limitations.
 
-Callbacks are very hard to compose together, quickly leading to code that is
-difficult to read and maintain ("Callback Hell").
+Callbacks are hard to compose together, quickly leading to code that is
+difficult to read and maintain (known as "Callback Hell").
 
-Consider an example: showing top 5 favorites from a user on the UI, or
-suggestions if he/she doesn't have any favorite. This goes through 3 services
-(one gives favorite IDs, the other fetches favorite details, while the third
+Consider an example: showing top five favorites from a user on the UI or
+suggestions if she doesn't have a favorite. This goes through three services
+(one gives favorite IDs, the second fetches favorite details, while the third
 offers suggestions with details):
 
 .Example of Callback Hell
@@ -154,20 +152,19 @@ userService.getFavorites(userId, new Callback<List<String>>() { //<1>
 when the async process was successful and one invoked in case of an error.
 <2> The first service invokes its callback with the list of favorite IDs.
 <3> If the list is empty, we must go to the `suggestionService`.
-<4> Te `suggestionService` gives a `List<Favorite>` to a second callback.
+<4> The `suggestionService` gives a `List<Favorite>` to a second callback.
 <5> Since we're dealing with UI we need to ensure our consuming code will run in
 the UI thread.
-<6> We use Java 8 `Stream` to limit the number of suggestions processed to 5, and
-we show them in a graphical list in the UI.
-<7> At each level we'll repeatedly deal with errors the same way: show them in a
-popup.
+<6> We use Java 8 `Stream` to limit the number of suggestions processed to five,
+and we show them in a graphical list in the UI.
+<7> At each level, we deal with errors the same way: show them in a popup.
 <8> Back to the favorite ID level. If the service returned a full list, then we
 need to go to the `favoriteService` to get detailed `Favorite` objects. Since we
-only want 5 of them, we first stream the list of IDs to limit it to 5.
+want only five, we first stream the list of IDs to limit it to five.
 <9> Once again, a callback. This time we get a fully-fledged `Favorite` object
-that we'll push to the UI inside the UI thread.
+that we push to the UI inside the UI thread.
 
-That's a lot of code, and it is a bit hard to follow and has repetitive parts.
+That is a lot of code, and it is a bit hard to follow and has repetitive parts.
 Consider its equivalent in Reactor:
 
 .Example of Reactor code equivalent to callback code
@@ -181,11 +178,11 @@ userService.getFavorites(userId) // <1>
            .subscribe(uiList::show, UiUtils::errorPopup); // <6>
 ----
 <1> We start with a flow of favorite IDs.
-<2> We _asynchronously transform_ these into detailed `Favorite` objects (`flatMap`).
-We now have a flow of `Favorite`.
+<2> We _asynchronously transform_ these into detailed `Favorite` objects
+(`flatMap`). We now have a flow of `Favorite`.
 <3> In case the flow of `Favorite` is empty, we switch to a fallback through the
 `suggestionService`.
-<4> We are only interested in, at most, 5 elements from the resulting flow.
+<4> We are only interested in, at most, five elements from the resulting flow.
 <5> At the end, we want to process each piece of data in the UI thread.
 <6> We trigger the flow by describing what to do with the final form of the data
 (show it in a UI list) and what to do in case of an error (show a popup).
@@ -208,12 +205,12 @@ userService.getFavorites(userId)
            .subscribe(uiList::show, UiUtils::errorPopup);
 ----
 <1> If the part above emits nothing for more than 800ms, propagate an error.
-<2> In case of any error from above, fallback to the `cacheService`.
+<2> In case of any error, fall back to the `cacheService`.
 <3> The rest of the chain is similar to the previous example.
 
-Futures are a bit better, but they are still good at composition, despite
+Futures are a bit better, but they are still not good at composition, despite
 the improvements brought in Java 8 by `CompletableFuture`. Orchestrating
-multiple futures together is doable, but it's not easy. Also `Future` has other
+multiple futures together is doable but not easy. Also, `Future` has other
 problems: It is easy to end up with another blocking situation with `Future`
 objects by calling the `get()` method, and they lack support for multiple
 values and advanced error handling.
@@ -251,21 +248,21 @@ assertThat(results).contains(
 				"Name NameNicole has stats 106",
 				"Name NameABSLAJNFOAJNFOANFANSF has stats 121");
 ----
-<1> We start off a future that gives us a list of id values to process.
+<1> We start off with a future that gives us a list of `id` values to process.
 <2> We want to start some deeper asynchronous processing once we get the list.
-<3> For each element in the list.
+<3> For each element in the list:
 <4> Asynchronously get the associated name.
 <5> Asynchronously get the associated task.
 <6> Combine both results.
 <7> We now have a list of futures that represent all the combination tasks.
 In order to execute these tasks, we need to convert the list to an array.
-<8> Pass the array to `CompletableFuture.allOf`, which outputs a `Future` that completes
-when all tasks have completed.
-<9> The tricky bit is that `allOf` returns `CompletableFuture<Void>`, so we reiterate
-over the list of futures, collecting their result via `join()` (which here doesn't block
-since `allOf` ensures the futures are all done).
-<10> Once the whole asynchronous pipeline has been triggered, we wait for it to be processed
-and return the list of results that we can assert.
+<8> Pass the array to `CompletableFuture.allOf`, which outputs a `Future` that
+completes when all tasks have completed.
+<9> The tricky bit is that `allOf` returns `CompletableFuture<Void>`, so we
+reiterate over the list of futures, collecting their results via `join()`
+(which here doesn't block since `allOf` ensures the futures are all done).
+<10> Once the whole asynchronous pipeline has been triggered, we wait for it to
+be processed and return the list of results that we can assert.
 
 Since Reactor has more combination operators out of the box, this process can
 be simplified:
@@ -295,48 +292,56 @@ assertThat(results).containsExactly( // <8>
 		"Name NameABSLAJNFOAJNFOANFANSF has stats 121"
 );
 ----
-<1> This time we'll start from an asynchronously provided sequence of ids (a
+<1> This time, we start from an asynchronously provided sequence of `ids` (a
 `Flux<String>`).
-<2> For each element in the sequence, we'll asynchronously process it
-(`flatMap`) twice.
+<2> For each element in the sequence, we asynchronously process it
+(inside the fuction that is the body `flatMap` call) twice.
 <3> Get the associated name.
 <4> Get the associated statistic.
-<5> Asynchronously combining these 2 values.
+<5> Asynchronously combine the 2 values.
 <6> Aggregate the values into a `List` as they become available.
-<7> In production, we'd continue working with the `Flux` asynchronously by further combining
-it or subscribing to it. Since we're in a test, we'll block waiting for the processing to finish
-instead, directly returning the aggregated list of values.
+<<<<<<< HEAD
+<7> In production, we would continue working with the `Flux` asynchronously by
+further combining it or subscribing to it. Since we are in a test, we block
+while waiting for the processing to finish, directly returning the aggregated
+list of values.
 // What would the code look like if it weren't blocking?
+=======
+<7> In production, we'd continue working with the `Flux` asynchronously by further combining
+it or subscribing to it. Most probably, we'd return the `result` `Mono`. Since we're in a
+test, we'll block waiting for the processing to finish instead, directly returning the
+aggregated list of values.
+>>>>>>> after the last doc pass, fix a few mistakes and some TODOs
 <8> Assert the result.
 
 These perils of Callback and Future are similar and are what Reactive
 Programming addresses with the `Publisher-Subscriber` pair.
 
 == From Imperative to Reactive Programming
-Reactive libraries like Reactor aim to address these drawbacks of
+Reactive libraries such as Reactor aim to address these drawbacks of
 "classic" asynchronous approaches on the JVM while also focusing on a few
 additional aspects:
 
 - *Composability* and *readability*
-- Data as a *flow* manipulated using a rich vocabulary of *operators*
-- Nothing happens until you **subscribe**
+- Data as a *flow* manipulated with a rich vocabulary of *operators*
+- Nothing happens until you *subscribe*
 - *Backpressure* or _the ability for the consumer to signal the producer that
 the rate of emission is too high_
 - *High level* but *high value* abstraction that is _concurrency-agnostic_
 
-=== Composability and readability
-By composability, we mean the ability to orchestrate multiple asynchronous tasks
-together, using results from previous tasks to feed input to subsequent ones or
+=== Composability and Readability
+By composability, we mean the ability to orchestrate multiple asynchronous
+tasks, using results from previous tasks to feed input to subsequent ones or
 executing several tasks in a fork-join style, as well as reusing asynchronous
-tasks as discrete components in a higher level system.
+tasks as discrete components in a higher-level system.
 
 The ability to orchestrate tasks is tightly coupled to the readability and
 maintainability of code. As the layers of asynchronous processes increase in
 both number and complexity, being able to compose and read code becomes
 increasingly difficult. As we saw, the callback model is simple, but one of its
-main drawbacks is that for complex processes you need to have a callback
+main drawbacks is that, for complex processes, you need to have a callback
 executed from a callback, itself nested inside another callback, and so on.
-That mess is known as **Callback Hell**. And as you can guess (or know from
+That mess is known as *Callback Hell*. And as you can guess (or know from
 experience), such code is pretty hard to go back to and reason about.
 
 Reactor offers rich composition options, wherein code mirrors the
@@ -345,15 +350,15 @@ same level (nesting is minimized).
 
 === The assembly line analogy
 You can think of data processed by a reactive application as moving through
-an assembly line. Reactor is both the conveyor belt and workstations. The
+an assembly line. Reactor is both the conveyor belt and the workstations. The
 raw material pours from a source (the original `Publisher`) and ends up as a
 finished product ready to be pushed to the consumer (or `Subscriber`).
 
 The raw material can go through various transformations and other intermediary
 steps or be part of a larger assembly line that aggregates intermediate pieces
-together. If there is a glitch or a clogging at one point (perhaps boxing
-the products takes a disproportionately long time), the afflicted workstation
-can signal upstream to limit the flow of raw material.
+together. If there is a glitch or clogging at one point (perhaps boxing the
+products takes a disproportionately long time), the afflicted workstation can
+signal upstream to limit the flow of raw material.
 
 === Operators
 In Reactor, operators are the workstations in our assembly analogy. Each
@@ -361,8 +366,8 @@ operator adds behavior to a `Publisher` and wraps the previous step's
 `Publisher` into a new instance. The whole chain is thus linked, such that data
 originates from the first `Publisher` and moves down the chain, transformed by
 each link. Eventually, a `Subscriber` finishes the process. Remember that
-nothing happens until a `Subscriber` subscribes to a `Publisher`, as we'll soon
-see.
+nothing happens until a `Subscriber` subscribes to a `Publisher`, as we see
+shortly.
 
 TIP: Understanding this can help you avoid a common mistake that would lead you
 to believe that an operator you used in your chain is not being applied. See
@@ -374,11 +379,10 @@ vocabulary of operators that they provide. These cover a lot of ground, from
 simple transformation and filtering to complex orchestration and error handling.
 
 [[reactive.subscribe]]
-=== Nothing happens until you `subscribe()`
-In Reactor when you write a `Publisher` chain, data doesn't start pumping into
+=== Nothing Happens Until You `subscribe()`
+In Reactor, when you write a `Publisher` chain, data doesn't start pumping into
 it by default. Instead, what you have is an abstract description of your
-asynchronous process (which can help with reusability and composition, by the
-way).
+asynchronous process (which can help with reusability and composition).
 
 By the act of *subscribing*, you tie the `Publisher` to a `Subscriber`, which
 triggers the flow of data in the whole chain. This is achieved internally by a
@@ -388,12 +392,12 @@ the way back to the source `Publisher`.
 [[reactive.backpressure]]
 === Backpressure
 Propagating signals upstream is also used to implement *backpressure*, which we
-described in the assembly line analogy as a feedback signal sent up the line when
-a workstation processes more slowly than than an upstream workstation.
+described in the assembly line analogy as a feedback signal sent up the line
+when a workstation processes more slowly than an upstream workstation.
 
 The real mechanism defined by the Reactive Streams specification is pretty close
 to the analogy: a subscriber can work in _unbounded_ mode and let the source
-push all the data at its fastest achievable rate but can also use the `request`
+push all the data at its fastest achievable rate or it can use the `request`
 mechanism to signal the source that it is ready to process at most `n` elements.
 
 Intermediate operators can also change the request in-transit. Imagine a
@@ -413,6 +417,18 @@ In the Rx family of reactive libraries, one can distinguish two broad categories
 of reactive sequences: *hot* and *cold*. This distinction mainly has to do
 with how the reactive stream reacts to subscribers:
 
+<<<<<<< HEAD
+- A *Cold* sequence starts anew for each `Subscriber`, including at the source
+of data. For example, if the source wraps an HTTP call, a new HTTP request will
+be made for each subscription
+- A *Hot* sequence does not start from scratch for each `Subscriber`. Rather,
+late subscribers receive signals emitted _after_ they subscribed. Note,
+however, that some hot reactive streams can totally or partially cache or
+replay the history of emissions. From a general perspective, a hot sequence
+emits whether or not there any subscriber is listening.
+// Is that an exception to the rule of needing a subscriber before anything
+// happens?
+=======
 - A *Cold* sequence will start anew for each `Subscriber`, including at the
 source of data. If the source wraps an HTTP call, a new HTTP request will be
 made for each subscription
@@ -420,9 +436,9 @@ made for each subscription
 late subscribers will receive signals emitted _after_ they subscribed. Note,
 however, that some hot reactive streams can cache or replay the history of
 emissions totally or partially. From a general perspective, a hot sequence
-will emit whether or not there any subscriber is listening.
-// Is that an exception to the rule of needing a subscriber before anything
-// happens?
+can even emit when no subscriber is listening (an exception to the "nothing
+happens before you subscribe" rule).
+>>>>>>> after the last doc pass, fix a few mistakes and some TODOs
 
 For more information on hot vs cold in the context of Reactor, see
 <<reactor.hotCold,this reactor-specific section>>.

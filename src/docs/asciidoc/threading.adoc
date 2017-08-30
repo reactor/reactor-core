@@ -16,7 +16,7 @@ process but not starting it. For that reason, Reactor can use these rules to
 determine how the processing must proceed. Then, when you subscribe, the whole
 process starts working.
 
-Let's consider an example that shows multiple threads can support work sharing:
+Consider an example showing that multiple threads can support work sharing:
 
 [source,java]
 ----
@@ -36,6 +36,10 @@ publishOn requests an item. In this fashion, we get work sharing (a form of
 resource sharing). Reactor enables several other ways to share for resources
 as well, as documented in
 https://projectreactor.io/docs/core/release/api/reactor/core/scheduler/Schedulers.html[Schedulers].
+
+`Scheduler.elastic()` also creates threads and is a handy way to create a
+dedicated thread in the case of wrapping a blocking resource (such as a
+synchronous service). See <<faq.wrap-blocking>>.
 
 Behind the scenes, the operators ensure thread safety by using incremental
 counters and guard conditions. For instance, if we have four threads hitting a

@@ -1,10 +1,10 @@
 [[producing]]
 = Programmatically creating a sequence
-In this section, we'll introduce the creation of a `Flux` or a `Mono` by
+In this section, we introduce the creation of a `Flux` or a `Mono` by
 programmatically defining its associated events (`onNext`, `onError`, and
 `onComplete`). All these methods share the fact that they expose an API to
 trigger the events that we call a *sink*. There are actually a few sink
-variants, as you will soon see.
+variants, which we'll get to shortly.
 
 [[producing.generate]]
 == Generate
@@ -14,8 +14,7 @@ method, which takes a generator function.
 This is for *synchronous* and *one-by-one* emissions, meaning that
 the sink is a `SynchronousSink` and that its `next()` method can only be called
 at most once per callback invocation. You can then additionally call `error(Throwable)`
-or `complete()`.
-// Is calling `error()` or `complete()` optional?
+or `complete()`, but this is optional.
 
 The most useful variant is probably the one that also lets you keep a state
 that you can refer to in your sink usage to decide what to emit next. The generator
@@ -36,10 +35,12 @@ Flux<String> flux = Flux.generate(
       return state + 1; // <4>
     });
 ----
-<1> we supply the initial state value of 0
-<2> we use the state to choose what to emit (a row in the multiplication table of 3)
-<3> we also use it to choose when to stop (multiplication tables traditionally stop at times ten)
-<4> we return a new state that will be used in next invocation (unless the sequence terminated in this one)
+<1> We supply the initial state value of 0.
+<2> We use the state to choose what to emit (a row in the multiplication table
+of 3).
+<3> We also use it to choose when to stop.
+<4> We return a new state that we use in the next invocation (unless the
+sequence terminated in this one).
 
 The code above generates the table of 3, as the following sequence:
 
@@ -57,8 +58,8 @@ The code above generates the table of 3, as the following sequence:
 3 x 10 = 30
 ----
 
-You can also use a mutable `<S>`. The example above could for instance be rewritten
-using a single `AtomicLong` as the state, mutating it on each round:
+You can also use a mutable `<S>`. The example above could for instance be
+rewritten using a single `AtomicLong` as the state, mutating it on each round:
 
 .Mutable state variant
 [source,java]
@@ -72,14 +73,36 @@ Flux<String> flux = Flux.generate(
       return state; // <3>
     });
 ----
-<1> this time we generate a mutable object as the state
-<2> we mutate the state here
-<3> we return the *same* instance as the new state
+<1> This time, we generate a mutable object as the state.
+<2> We mutate the state here.
+<3> We return the *same* instance as the new state.
 
 TIP: If your state object needs to clean up some resources, use the
 `generate(Supplier<S>, BiFunction, Consumer<S>)` variant to clean up the last
 state instance.
-// Insert an example here
+
+Here is an example of using the generate method that includes a `Consumer`:
+[source, java]
+----
+Flux<String> flux = Flux.generate(
+    AtomicLong::new,
+      (state, sink) -> { // <1>
+      long i = state.getAndIncrement(); // <2>
+      sink.next("3 x " + i + " = " + 3*i);
+      if (i == 10) sink.complete();
+      return state; // <3>
+    }, (state) -> System.out.println("state: " + state)); // <4>
+}
+----
+<1> Again, we generate a mutable object as the state.
+<2> We mutate the state here.
+<3> We return the *same* instance as the new state.
+<4> We see the last state value (11) as the output of this `Consumer` lambda.
+
+In the case of the state containing a database connection or other resource
+that needs to be handled at the end of the process, the `Consumer` lambda could
+close the connection or  otherwise handle any tasks that should be done at the
+end of the process.
 
 [[producing.create]]
 == Create
@@ -89,7 +112,7 @@ round.
 
 It exposes a `FluxSink`, with its `next`, `error`, and `complete` methods.
 Contrary to `generate`, it doesn't have a state-based variant. On the other
-hand, it can trigger multiple events in the callback (and even from any thread
+hand, it can trigger multiple events in the callback (even from any thread
 at a later point in time).
 
 TIP: `create` can be very useful to bridge an existing API with the reactive
@@ -152,7 +175,7 @@ doesn't allow several emissions. It will drop all signals after the first one.
 A variant of `create` is `push`, which is suitable for processing events
 from a single producer. Similar to `create`, `push` can also be asynchronous
 and can manage backpressure using any of the overflow strategies supported
-by `create`. Only one producing thread may invoke `next`, `complete` or
+by `create`. Only one producing thread may invoke `next`, `complete`, or
 `error` at a time.
 
 [source,java]
@@ -187,7 +210,7 @@ Unlike `push`, `create` may be used in `push` or `pull` mode, making it suitable
 for bridging with listener-based APIs where data may be delivered asynchronously
 at any time. An `onRequest` callback can be registered on `FluxSink` to track
 requests. The callback may be used to request more data from the source if
-required and to manage backpressure by delivering data to sink only when
+required and to manage backpressure by delivering data to the sink only when
 requests are pending. This enables a hybrid push/pull model where downstream can
 pull data that is already available from upstream and upstream can push data to
 downstream when data becomes available at a later time.
@@ -212,16 +235,15 @@ Flux<String> bridge = Flux.create(sink -> {
     });
 ----
 <1> Poll for messages when requests are made.
-<2> If messages are available immediately, push them to sink.
-<3> Remaining messages that arrive asynchronously later are also delivered.
+<2> If messages are available immediately, push them to the sink.
+<3> The remaining messages that arrive asynchronously later are also delivered.
 
 === Cleaning up
 
-Two callbacks, `onDispose` and `onCancel`, are provided to perform any cleanup
-on cancellation or termination. `onDispose` can be used to perform cleanup
-when the `Flux` completes, errors out, or is cancelled. 'onCancel can be
-used to perform any action specific to cancellation prior to cleanup using
-`onDispose`.
+Two callbacks, `onDispose` and `onCancel`, perform any cleanup on cancellation
+or termination. `onDispose` can be used to perform cleanup when the `Flux`
+completes, errors out, or is cancelled. 'onCancel can be used to perform any
+action specific to cancellation prior to cleanup with `onDispose`.
 
 [source,java]
 ----
@@ -235,15 +257,15 @@ Flux<String> bridge = Flux.create(sink -> {
 <2> `onDispose` is invoked for complete, error, or cancel.
 
 == Handle
-Present in both `Mono` and `Flux`, `handle` is a bit different. It is an
-instance method, meaning that it is chained on an existing source (as are the
-common operators).
+The `handle` method is a bit different. It is present in both `Mono` and
+`Flux`.  Also, it is an instance method, meaning that it is chained on an
+existing source (as are the common operators).
 
 It is close to `generate`, in the sense that it uses a `SynchronousSink` and
 only allows one-by-one emissions. However, `handle` can be used to generate an
 arbitrary value out of each source element, possibly skipping some elements. In
 this way, it can serve as a combination of `map` and `filter`. The signature of
-handle is
+handle is as follows:
 
 [source,java]
 handle(BiConsumer<T, SynchronousSink<R>>)

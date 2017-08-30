@@ -1,9 +1,9 @@
 [[which-operator]]
 = Which operator do I need?
-TIP: In this section, if an operator is specific to `Flux` or `Mono` it will be
+TIP: In this section, if an operator is specific to `Flux` or `Mono` it is
 prefixed accordingly. Common operators have no prefix. When a specific use case
 is covered by a combination of operators, it is presented as a method call, with
-leading dot and parameters in parenthesis, like `.methodCall(parameter)`.
+leading dot and parameters in parentheses, like this: `.methodCall(parameter)`.
 
 //TODO flux: cache, share, replay, publish, publishOn/subscribeOn/cancelOn
 //compose/transform, retryWhen, repeatWhen, sort, startWith
@@ -27,7 +27,7 @@ I want to deal with:
 
 [[which.create]]
 == Creating a new sequence...
-* that emits a `T` I already have: `just`
+* that emits a `T`, and I already have: `just`
 ** ...from an `Optional<T>`: `Mono#justOrEmpty(Optional<T>)`
 ** ...from a potentially `null` T: `Mono#justOrEmpty(T)`
 * that emits a `T` returned by a method: `just` as well
@@ -85,7 +85,7 @@ I want to deal with:
 *** ...with different types (transforming merge): `Flux#zip` / `Flux#zipWith`
 ** by pairing values:
 *** from 2 Monos into a `Tuple2`: `Mono#and`
-*** from n Monos when they all completed: `Mono#when`
+*** from n Monos when they all completed: `Mono#zip`
 *** into an arbitrary container type:
 **** each time all sides have emitted: `Flux#zip` (up to the smallest cardinality)
 **** each time a new value arrives at either side: `Flux#combineLatest`
@@ -100,7 +100,7 @@ I want to deal with:
 ** I want a value instead: `defaultIfEmpty`
 ** I want another sequence instead: `switchIfEmpty`
 
-* I have a sequence but I'm not interested in values: `ignoreElements`
+* I have a sequence but I am not interested in values: `ignoreElements`
 ** ...and I want the completion represented as a `Mono`: `then`
 ** ...and I want to wait for another task to complete at the end: `thenEmpty`
 ** ...and I want to switch to another `Mono` at the end: `Mono#then(mono)`
@@ -167,7 +167,7 @@ I want to deal with:
 *** by duration: `Flux#sample(Duration)`
 **** but keeping the first element in the sampling window instead of the last: `sampleFirst`
 *** by a publisher-based window: `Flux#sample(Publisher)`
-*** based on a publisher "timing out": `Flux#sampleTimeout` (each element triggers a publisher, and is emitted if that publisher doesn't overlap with the next)
+*** based on a publisher "timing out": `Flux#sampleTimeout` (each element triggers a publisher, and is emitted if that publisher does not overlap with the next)
 
 * I expect at most 1 element (error if more than one)...
 ** and I want an error if the sequence is empty: `Flux#single()`
@@ -199,7 +199,7 @@ I want to deal with:
 ** by retrying: `retry`
 *** ...triggered by a companion control Flux: `retryWhen`
 
-* I want to deal with backpressure "errors"footnote:[request max from upstream and apply the strategy when downstream doesn't produce enough request]...
+* I want to deal with backpressure "errors"footnote:[request max from upstream and apply the strategy when downstream does not produce enough request]...
 ** by throwing a special `IllegalStateException`: `Flux#onBackpressureError`
 ** by dropping excess values: `Flux#onBackpressureDrop`
 *** ...except the last one seen: `Flux#onBackpressureLatest`
@@ -212,7 +212,7 @@ I want to deal with:
 ** since subscription: `elapsed`
 ** since the dawn of time (well, computer time): `timestamp`
 
-* I want my sequence to be interrupted if there's too much delay between emissions: `timeout`
+* I want my sequence to be interrupted if there is too much delay between emissions: `timeout`
 
 * I want to get ticks from a clock, regular time intervals: `Flux#interval`
 

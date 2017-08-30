@@ -5,16 +5,15 @@ and asynchronous one can sometimes be daunting. One of the steepest steps in the
 learning curve is how to analyze and debug when something goes wrong.
 
 In the imperative world, this is usually pretty straightforward: just
-read the stacktrace and you'll spot where the problem originated and more: Was
+read the stacktrace and you see where the problem originated and more: Was
 it entirely a failure of your code? Did the failure occur in some library code?
 If so, what part of your code called the library, potentially passing in
 improper parameters that ultimately caused the failure?
 
 == The typical Reactor Stack Trace
-But as soon as you shift to asynchronous code, things can get much more
-complicated...
+When you shift to asynchronous code, things can get much more complicated.
 
-// The code that generated the following stack trace should be here
+//TODO The code that generated the following stack trace should be here
 
 Consider the following stack trace:
 
@@ -42,20 +41,20 @@ java.lang.IndexOutOfBoundsException: Source emitted more than one item
 	at reactor.guide.GuideTests.debuggingCommonStacktrace(GuideTests.java:722)
 ----
 
-There is a lot going on there! We get an `IndexOutOfBoundsException`, which tells
+There is a lot going on there. We get an `IndexOutOfBoundsException`, which tells
 us that a "*source emitted* _more than one item_".
 
 We can probably quickly come to assume that this source is a Flux/Mono, as
 confirmed by the line below that mentions `MonoSingle`. So it appears to be some
 sort of complaint from a `single` operator.
 
-Referring to the javadoc for `Mono#single` operator, we indeed remember that
-`single` has a contract: the source must emit exactly one element. It appears
-we had a source that emitted more than one and thus violated that contract.
+Referring to the Javadoc for `Mono#single` operator, we see that `single` has a
+contract: the source must emit exactly one element. It appears we had a source
+that emitted more than one and thus violated that contract.
 
 Can we dig deeper and identify that source? The following rows don't seem very
 helpful. They take us on a travel inside the internals of what seems to be a
-reactive chain, through `subscribes` and `requests`...
+reactive chain, through `subscribes` and `requests`.
 
 By skimming over these rows, we can at least start to form a picture of the kind
 of chain that went wrong: it seems to involve a `MonoSingle`, a `FluxFlatMap`
@@ -63,26 +62,27 @@ and a `FluxRange` (each get several rows in the trace, but overall these 3
 classes are involved). So a `range().flatMap().single()` chain maybe?
 
 But what if we use that pattern a lot in our application? This still doesn't
-tell us much, and simply searching for `single` isn't going to cut it. Then the
-last line refers to some of our code. Finally!
+tell us much, and simply searching for `single` isn't going to find the
+problem. Then the last line refers to some of our code. Finally, we are getting
+close.
 
-Hold on... When we go to the source file, all we see is that a pre-existing
-`Flux` is subscribed to:
+Hold on, though. When we go to the source file, all we see is that a
+pre-existing `Flux` is subscribed to:
 [source,java]
 ----
 toDebug.subscribe(System.out::println, Throwable::printStackTrace);
 ----
 
-All of this happened at subscription time, but the `Flux` itself wasn't
+All of this happened at subscription time, but the `Flux` itself was not
 _declared_ there. Worse, when we go to where the variable is declared, we see:
 [source,java]
 ----
 public Mono<String> toDebug; //please overlook the public class attribute
 ----
 
-The variable isn't even _instantiated_ where it is declared. Let's assume a
-worst-case scenario where we find out that there could be a few different code paths
-that set it in the application. We're still unsure of which one caused the
+The variable is not _instantiated_ where it is declared. We must assume a
+worst-case scenario where we find out that there could be a few different code
+paths that set it in the application. We're still unsure of which one caused the
 issue.
 
 NOTE: This is kind of the Reactor equivalent of a runtime error, as opposed to a
@@ -107,20 +107,20 @@ This is done by customizing the `Hook.onOperator` hook *at application start*
 Hooks.onOperatorDebug();
 ----
 
-The idea is that this will start instrumenting the calls to the `Flux` (and
+The idea is that this starts instrumenting the calls to the `Flux` (and
 `Mono`) operator methods (where they are assembled into the chain) by wrapping
 the construction of the operator and capturing a stacktrace there. Since this is
-done when the operator chain is declared, the hook should be activate *before*
+done when the operator chain is declared, the hook should be activated *before*
 that, so the safest way is to activate it right at the start of your
 application.
 
-Later on, if an exception occurs, the failing operator will be able to refer
+Later on, if an exception occurs, the failing operator is able to refer
 to that capture and append it to the stack trace.
 
-In the next section, we'll see how the stack trace differs and how to interpret
+In the next section, we see how the stack trace differs and how to interpret
 that new information.
 
-== Reading a stack trace in debug mode
+== Reading a Stack Trace in Debug Mode
 Reusing our initial example but activating the `operatorStacktrace` debug
 feature, the stack trace is now this:
 
@@ -147,16 +147,15 @@ Assembly trace from producer [reactor.core.publisher.MonoSingle] : <4>
 Error has been observed by the following operator(s): <5>
 	|_	Flux.single(TestWatcher.java:55) <6>
 ----
-<1> This is new: what we see here is the wrapper operator that captures the
-stack.
+<1> This is new: We see the wrapper operator that captures the stack.
 <2> Apart from that, the first section of the stack trace is still the same for
 the most part, showing a bit of the operator's internals (so we removed a bit
 of the snippet here)
-// I'd put it back in. Wading through the whole thing is part of the task
+//TODO I'd put it back in. Wading through the whole thing is part of the task
 // you're describing. You might instead highlight the most relevant lines, to
 // teach people what to look for.
 <3> This is where the new stuff from debugging mode starts to appear.
-<4> First, we get some details on where the operator was assembled - hurray!
+<4> First, we get some details on where the operator was assembled.
 <5> We also get a traceback of the error as it propagated through the operator
 chain, from first to last (error site to subscribe site).
 <6> Each operator that saw the error is mentioned along with the class and line
@@ -170,8 +169,8 @@ operator that triggered the exception. Here it shows that the `single` that
 caused our issue was created in the `scatterAndGather` method, itself called
 from a `populateDebug` method that got executed through JUnit.
 
-Now that we are armed with enough information to find the culprit, let's have a look
-at that `scatterAndGather` method:
+Now that we are armed with enough information to find the culprit, we can have
+a meaningful look at that `scatterAndGather` method:
 [source,java]
 ----
 private Mono<String> scatterAndGather(Flux<String> urls) {
@@ -182,19 +181,19 @@ private Mono<String> scatterAndGather(Flux<String> urls) {
 <1> Sure enough, here is our `single`.
 
 Now we can see what the root cause of the error was: a `flatMap` that performs
-several HTTP calls to a few urls is chained with `single`, which seem a bit too
+several HTTP calls to a few URLs is chained with `single`, which is too
 restrictive. After a short `git blame` and a quick discussion with the author of
-that line, we find out he meant to use the less restrictive `take(1)` instead...
+that line, we find out he meant to use the less restrictive `take(1)` instead.
 
-*We solved our problem*!
+*We have solved our problem.*
 
 [quote]
 Error has been observed by the following operator(s):
 
-That second part of the debug stack trace was not necessarily very interesting in
+That second part of the debug stack trace was not necessarily interesting in
 this particular example, because the error was actually happening in the last
-operator in the chain (the one closest to `subscribe`). Taking another example
-might make it more clear:
+operator in the chain (the one closest to `subscribe`). Considering another
+example might make it more clear:
 [source,java]
 ----
 FakeRepository.findAllUserByName(Flux.just("pedro", "simon", "stephane"))
@@ -203,8 +202,8 @@ FakeRepository.findAllUserByName(Flux.just("pedro", "simon", "stephane"))
               .blockLast();
 ----
 
-Now imagine that inside `findAllUserByName` there is a `map` that fails. Here we
-would see the following final traceback:
+Now imagine that, inside `findAllUserByName`, there is a `map` that fails. Here
+we would see the following final traceback:
 [source,java]
 ----
 Error has been observed by the following operator(s):
@@ -216,7 +215,7 @@ Error has been observed by the following operator(s):
 	|_	Flux.transform(GuideDebuggingExtraTests.java:42)
 ----
 
-This corresponds to a flattened version of the chain of operators, or rather
+This corresponds to a flattened version of the chain of operators or rather
 of the section of the chain that gets notified of the error:
 
 1. The exception originates in the first `map`.
@@ -257,9 +256,9 @@ with the `checkpoint()` operator.*
 You can chain this operator into a method chain. The `checkpoint` operator
 works like the hook version, but only for its link of that particular chain.
 
-There is also a `checkpoint(String)` variant that allows you to add a
-unique String identifier to the assembly traceback. This way, the stack trace is
-omitted and you rely on the description to identify the assembly site. A
+There is also a `checkpoint(String)` variant that lets you add a unique String
+identifier to the assembly traceback. This way, the stack trace is omitted and
+you rely on the description to identify the assembly site. A
 `checkpoint(String)` imposes less processing cost than a regular `checkpoint`.
 
 `checkpoint(String)` includes "light" in its output (which can be handy when
@@ -291,11 +290,11 @@ The description could be a static identifier or user-readable description, or a
 wider *correlation ID* (for instance, coming from a header in the case of an
 HTTP request).
 
-NOTE: When both global debugging and local `checkpoint()` are enabled, checkpointed snapshot
-stacks will be appended as suppressed error output after the observing operator graph and
-following the same declarative order.
+NOTE: When both global debugging and local `checkpoint()` are enabled,
+checkpointed snapshot stacks are appended as suppressed error output after the
+observing operator graph and following the same declarative order.
 
-== Logging a stream
+== Logging a Stream
 In addition to stack trace debugging and analysis, another powerful tool to have
 in your toolkit is the ability to trace and log events in an asynchronous
 sequence.
@@ -309,7 +308,7 @@ _requests_).
 ****
 The `log` operator uses the `Loggers` utility class, which picks up common
 logging frameworks like Log4J and Logback through *`SLF4J`* and defaults to
-logging to the console in case SLF4J isn't available.
+logging to the console in case SLF4J is unavailable.
 
 The Console fallback uses `System.err` for WARN and ERROR and `System.out`
 for everything else.
@@ -340,7 +339,7 @@ This prints out (through the logger's console appender):
 10:45:20.205 [main] INFO  reactor.Flux.Range.1 - | cancel() <4>
 ----
 
-Here, in additional to the logger's own formatter (time, thread, level,
+Here, in addition to the logger's own formatter (time, thread, level,
 message), the `log()` operator outputs a few things in its own format:
 
 <1> `reactor.Flux.Range.1` is an automatic _category_ for the log, in case you
@@ -358,7 +357,7 @@ up from downstream.
 <3> Then the range sends three values in a row.
 <4> On the last line, we see a `cancel()`.
 
-The last line *(4)* is the most interesting. We can see the `take` in action
+The last line, *(4)*, is the most interesting. We can see the `take` in action
 there. It operates by cutting the sequence short after it has seen enough
 elements emitted. In short, `take()` causes the source to `cancel()` once it has
 emitted the user-requested amount.
