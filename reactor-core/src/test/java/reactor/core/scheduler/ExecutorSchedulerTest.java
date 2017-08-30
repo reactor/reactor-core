@@ -17,6 +17,8 @@ package reactor.core.scheduler;
 
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 import reactor.core.Exceptions;
@@ -71,5 +73,46 @@ public class ExecutorSchedulerTest extends AbstractSchedulerTest {
 		finally {
 			worker.dispose();
 		}
+	}
+
+	@Test
+	public void failingExecutorRejects() {
+		final IllegalStateException boom = new IllegalStateException("boom");
+		ExecutorScheduler scheduler = new ExecutorScheduler(
+				task -> { throw boom;},
+				false
+		);
+
+		AtomicBoolean done = new AtomicBoolean();
+
+		assertThatExceptionOfType(RejectedExecutionException.class)
+				.isThrownBy(() -> scheduler.schedule(() -> done.set(true)))
+				.withCause(boom);
+
+		assertThat(done.get()).isFalse();
+	}
+
+	@Test
+	public void failingExecutorIsTerminated() {
+		AtomicInteger count = new AtomicInteger();
+		final IllegalStateException boom = new IllegalStateException("boom");
+		ExecutorScheduler scheduler = new ExecutorScheduler(
+				task -> {
+					if (count.incrementAndGet() == 1)
+						throw boom;
+					},
+				false
+		);
+
+		assertThatExceptionOfType(RejectedExecutionException.class)
+				.isThrownBy(() -> scheduler.schedule(() -> {}))
+				.withCause(boom);
+
+		assertThatExceptionOfType(RejectedExecutionException.class)
+				.isThrownBy(() -> scheduler.schedule(() -> {}))
+				.withNoCause()
+				.isSameAs(Exceptions.failWithRejected());
+
+		assertThat(count.get()).isEqualTo(1);
 	}
 }
