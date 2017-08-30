@@ -108,9 +108,6 @@ final class LambdaSubscriber<T>
 
 	@Override
 	public final void onError(Throwable t) {
-		if (t == null) {
-			throw Exceptions.argumentIsNullException();
-		}
 		Subscription s = S.getAndSet(this, Operators.cancelledSubscription());
 		if (s == Operators.cancelledSubscription()) {
 			Operators.onErrorDropped(t);
@@ -126,9 +123,6 @@ final class LambdaSubscriber<T>
 
 	@Override
 	public final void onNext(T x) {
-		if (x == null) {
-			throw Exceptions.argumentIsNullException();
-		}
 		try {
 			if (consumer != null) {
 				consumer.accept(x);

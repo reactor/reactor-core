@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
@@ -291,10 +292,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 	@Override
 	public void subscribe(final CoreSubscriber<? super E> subscriber) {
-		//noinspection ConstantConditions
-		if (subscriber == null) {
-			throw Exceptions.argumentIsNullException();
-		}
+		Objects.requireNonNull(subscriber, "subscribe");
 
 		if (!alive()) {
 			TopicProcessor.coldSource(ringBuffer, null, error, workSequence).subscribe(subscriber);

@@ -124,14 +124,6 @@ public abstract class Exceptions {
 	}
 
 	/**
-	 * @return a new {@link NullPointerException} with a cause message abiding to reactive
-	 * stream specification rule 2.13.
-	 */
-	public static NullPointerException argumentIsNullException() {
-		return new NullPointerException("Spec 2.13: Signal/argument cannot be null");
-	}
-
-	/**
 	 * Prepare an unchecked {@link RuntimeException} that will bubble upstream if thrown
 	 * by an operator. <p>This method invokes {@link #throwIfFatal(Throwable)}.
 	 *

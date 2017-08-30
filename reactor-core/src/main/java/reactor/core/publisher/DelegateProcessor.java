@@ -71,10 +71,7 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT> {
 
 	@Override
 	public void subscribe(CoreSubscriber<? super OUT> s) {
-		//noinspection ConstantConditions
-		if (s == null) {
-			throw Exceptions.argumentIsNullException();
-		}
+		Objects.requireNonNull(s, "subscribe");
 		downstream.subscribe(s);
 	}
 

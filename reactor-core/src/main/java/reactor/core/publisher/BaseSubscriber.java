@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.reactivestreams.Subscriber;
@@ -152,9 +153,7 @@ public abstract class BaseSubscriber<T> implements CoreSubscriber<T>, Subscripti
 
 	@Override
 	public final void onNext(T value) {
-		if (value == null) {
-			throw Exceptions.argumentIsNullException();
-		}
+		Objects.requireNonNull(value, "onNext");
 		try {
 			hookOnNext(value);
 		}
@@ -165,6 +164,8 @@ public abstract class BaseSubscriber<T> implements CoreSubscriber<T>, Subscripti
 
 	@Override
 	public final void onError(Throwable t) {
+		Objects.requireNonNull(t, "onError");
+
 		if (S.getAndSet(this, Operators.cancelledSubscription()) == Operators
 				.cancelledSubscription()) {
 			//already cancelled concurrently
@@ -172,9 +173,6 @@ public abstract class BaseSubscriber<T> implements CoreSubscriber<T>, Subscripti
 			return;
 		}
 
-		if (t == null) {
-			throw Exceptions.argumentIsNullException();
-		}
 
 		try {
 			hookOnError(t);

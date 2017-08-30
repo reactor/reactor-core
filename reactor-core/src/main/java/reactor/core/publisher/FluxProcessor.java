@@ -117,6 +117,24 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 		return downstreamCount() != 0L;
 	}
 
+	/**
+	 * Return true if terminated with onComplete
+	 *
+	 * @return true if terminated with onComplete
+	 */
+	public final boolean hasCompleted() {
+		return isTerminated() && getError() == null;
+	}
+
+	/**
+	 * Return true if terminated with onError
+	 *
+	 * @return true if terminated with onError
+	 */
+	public final boolean hasError() {
+		return isTerminated() && getError() != null;
+	}
+
 	@Override
 	public Stream<? extends Scannable> inners() {
 		return Stream.empty();

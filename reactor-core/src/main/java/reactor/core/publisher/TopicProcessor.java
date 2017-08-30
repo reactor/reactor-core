@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
@@ -294,21 +295,18 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 	}
 
 	@Override
-	public void subscribe(final CoreSubscriber<? super E> subscriber) {
-		//noinspection ConstantConditions
-		if (subscriber == null) {
-			throw Exceptions.argumentIsNullException();
-		}
+	public void subscribe(final CoreSubscriber<? super E> actual) {
+		Objects.requireNonNull(actual, "subscribe");
 
 		if (!alive()) {
-			coldSource(ringBuffer, null, error, minimum).subscribe(subscriber);
+			coldSource(ringBuffer, null, error, minimum).subscribe(actual);
 			return;
 		}
 
 		//create a unique eventProcessor for this subscriber
 		final RingBuffer.Sequence pendingRequest = RingBuffer.newSequence(0);
 		final TopicInner<E> signalProcessor =
-				new TopicInner<>(this, pendingRequest, subscriber);
+				new TopicInner<>(this, pendingRequest, actual);
 
 		//bind eventProcessor sequence to observe the ringBuffer
 
@@ -337,10 +335,10 @@ public final class TopicProcessor<E> extends EventLoopProcessor<E>  {
 			ringBuffer.removeGatingSequence(signalProcessor.sequence);
 			decrementSubscribers();
 			if (!alive() && RejectedExecutionException.class.isAssignableFrom(t.getClass())){
-				coldSource(ringBuffer, t, error, minimum).subscribe(subscriber);
+				coldSource(ringBuffer, t, error, minimum).subscribe(actual);
 			}
 			else{
-				Operators.error(subscriber, t);
+				Operators.error(actual, t);
 			}
 		}
 	}

@@ -307,7 +307,7 @@ public final class UnicastProcessor<T>
 	@Override
 	public void onNext(T t) {
 		if (done || cancelled) {
-			//Exceptions.onNextDropped(t);
+			Operators.onNextDropped(t);
 			return;
 		}
 
@@ -359,10 +359,7 @@ public final class UnicastProcessor<T>
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> s) {
-		//noinspection ConstantConditions
-		if (s == null) {
-			throw Exceptions.argumentIsNullException();
-		}
+		Objects.requireNonNull(s, "subscribe");
 		if (once == 0 && ONCE.compareAndSet(this, 0, 1)) {
 
 			s.onSubscribe(this);

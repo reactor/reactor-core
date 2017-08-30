@@ -306,10 +306,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> s) {
-		//noinspection ConstantConditions
-		if (s == null) {
-			throw Exceptions.argumentIsNullException();
-		}
+		Objects.requireNonNull(s, "subscribe");
 		FluxReplay.ReplaySubscription<T> rs = new ReplayInner<>(s, this);
 		s.onSubscribe(rs);
 

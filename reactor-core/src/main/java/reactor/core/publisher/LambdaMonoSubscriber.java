@@ -107,9 +107,6 @@ final class LambdaMonoSubscriber<T> implements InnerConsumer<T>, Disposable {
 
 	@Override
 	public final void onError(Throwable t) {
-		if (t == null) {
-			throw Exceptions.argumentIsNullException();
-		}
 		Subscription s = S.getAndSet(this, Operators.cancelledSubscription());
 		if (s == Operators.cancelledSubscription()) {
 			Operators.onErrorDropped(t);
@@ -129,11 +126,8 @@ final class LambdaMonoSubscriber<T> implements InnerConsumer<T>, Disposable {
 
 	@Override
 	public final void onNext(T x) {
-		if (x == null) {
-			throw Exceptions.argumentIsNullException();
-		}
 		Subscription s = S.getAndSet(this, Operators.cancelledSubscription());
-		if (s == null || s == Operators.cancelledSubscription()) {
+		if (s == Operators.cancelledSubscription()) {
 			Operators.onNextDropped(x);
 			return;
 		}

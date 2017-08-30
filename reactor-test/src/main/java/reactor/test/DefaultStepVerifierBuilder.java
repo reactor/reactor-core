@@ -909,9 +909,7 @@ final class DefaultStepVerifierBuilder<T>
 
 		@Override
 		public void onSubscribe(Subscription subscription) {
-			if (subscription == null) {
-				throw Exceptions.argumentIsNullException();
-			}
+			Objects.requireNonNull(subscription, "onSubscribe");
 
 			if (this.compareAndSet(null, subscription)) {
 				onExpectation(Signal.subscribe(subscription));

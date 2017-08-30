@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -159,10 +160,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> s) {
-		//noinspection ConstantConditions
-		if (s == null) {
-			throw Exceptions.argumentIsNullException();
-		}
+		Objects.requireNonNull(s, "subscribe");
 		EmitterInner<T> inner = new EmitterInner<>(s, this);
 		s.onSubscribe(inner);
 
@@ -229,17 +227,16 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	@Override
 	@SuppressWarnings("unchecked")
 	public void onNext(T t) {
-		if (t == null && sourceMode == Fuseable.NONE) {
-			throw Exceptions.argumentIsNullException();
-		}
-
 		if (done) {
 			return;
 		}
+
 		if (sourceMode == Fuseable.ASYNC) {
 			drain();
 			return;
 		}
+
+		Objects.requireNonNull(t, "onNext");
 
 		Queue<T> q = queue;
 
@@ -269,9 +266,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 
 	@Override
 	public void onError(Throwable t) {
-		if (t == null) {
-			throw Exceptions.argumentIsNullException();
-		}
+		Objects.requireNonNull(t, "onError");
 		if (done) {
 			Operators.onErrorDropped(t);
 			return;

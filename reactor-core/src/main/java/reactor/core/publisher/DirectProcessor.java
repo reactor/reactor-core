@@ -95,7 +95,14 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 	public void onNext(T t) {
 		Objects.requireNonNull(t, "t");
 
-		for (DirectInner<T> s : subscribers) {
+		DirectInner<T>[] inners = subscribers;
+
+		if (inners == TERMINATED) {
+			Operators.onNextDropped(t);
+			return;
+		}
+
+		for (DirectInner<T> s : inners) {
 			s.onNext(t);
 		}
 	}
@@ -103,6 +110,13 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 	@Override
 	public void onError(Throwable t) {
 		Objects.requireNonNull(t, "t");
+
+		DirectInner<T>[] inners = subscribers;
+
+		if (inners == TERMINATED) {
+			Operators.onErrorDropped(t);
+			return;
+		}
 
 		error = t;
 		for (DirectInner<?> s : SUBSCRIBERS.getAndSet(this, TERMINATED)) {
@@ -119,10 +133,7 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> s) {
-		//noinspection ConstantConditions
-		if (s == null) {
-			throw Exceptions.argumentIsNullException();
-		}
+		Objects.requireNonNull(s, "subscribe");
 
 		DirectInner<T> p = new DirectInner<>(s, this);
 		s.onSubscribe(p);
@@ -223,24 +234,6 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 	public boolean hasDownstreams() {
 		DirectInner<T>[] s = subscribers;
 		return s != EMPTY && s != TERMINATED;
-	}
-
-	/**
-	 * Return true if terminated with onComplete
-	 *
-	 * @return true if terminated with onComplete
-	 */
-	public boolean hasCompleted() {
-		return subscribers == TERMINATED && error == null;
-	}
-
-	/**
-	 * Return true if terminated with onError
-	 *
-	 * @return true if terminated with onError
-	 */
-	public boolean hasError() {
-		return subscribers == TERMINATED && error != null;
 	}
 
 	@Override
