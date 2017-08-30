@@ -672,7 +672,7 @@ give up.
 
 In effect, this results in an *empty* `Flux`, but it completes *successfully*.
 Since `retry(3)` on the same `Flux` would have terminated with the latest error,
-this is not entirely the same as using `retryWhen`.
+this `retryWhen` example is not exactly the same as a `retry(3)`.
 
 Getting to the same behavior involves a few additional tricks:
 include::snippetRetryWhenRetry.adoc[]
@@ -805,7 +805,7 @@ that is similar in concept to a `Processor` in the sense that it lets you
 populate the sequence with data or terminate it).
 
 If, after exploring the above alternatives, you still think you need a
-`Processor`, to the <<processor>> appendix to learn about the different
+`Processor`, read the <<processor>> appendix to learn about the different
 implementations.
 
 === Producing from multiple threads
