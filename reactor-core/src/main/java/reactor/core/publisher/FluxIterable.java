@@ -41,18 +41,18 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		Iterator<? extends T> it;
 
 		try {
 			it = iterable.iterator();
 		}
 		catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e));
 			return;
 		}
 
-		subscribe(s, it);
+		subscribe(actual, it);
 	}
 
 	/**

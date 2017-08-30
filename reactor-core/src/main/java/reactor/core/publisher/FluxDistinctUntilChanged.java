@@ -46,13 +46,13 @@ final class FluxDistinctUntilChanged<T, K> extends FluxOperator<T, T> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> s) {
-		if (s instanceof ConditionalSubscriber) {
-			source.subscribe(new DistinctUntilChangedConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		if (actual instanceof ConditionalSubscriber) {
+			source.subscribe(new DistinctUntilChangedConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual,
 					keyExtractor, keyComparator));
 		}
 		else {
-			source.subscribe(new DistinctUntilChangedSubscriber<>(s, keyExtractor, keyComparator));
+			source.subscribe(new DistinctUntilChangedSubscriber<>(actual, keyExtractor, keyComparator));
 		}
 	}
 

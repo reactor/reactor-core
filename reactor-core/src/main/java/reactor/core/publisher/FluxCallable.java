@@ -36,16 +36,16 @@ final class FluxCallable<T> extends Flux<T> implements Callable<T>, Fuseable {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		Operators.MonoSubscriber<T, T> wrapper = new Operators.MonoSubscriber<>(s);
-		s.onSubscribe(wrapper);
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		Operators.MonoSubscriber<T, T> wrapper = new Operators.MonoSubscriber<>(actual);
+		actual.onSubscribe(wrapper);
 
 		T v;
 		try {
 			v = Objects.requireNonNull(callable.call(), "callable returned null");
 		}
 		catch (Throwable ex) {
-			s.onError(Operators.onOperatorError(ex));
+			actual.onError(Operators.onOperatorError(ex));
 			return;
 		}
 

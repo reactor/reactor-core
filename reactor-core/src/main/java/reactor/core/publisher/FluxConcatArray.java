@@ -43,38 +43,38 @@ final class FluxConcatArray<T> extends Flux<T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		Publisher<? extends T>[] a = array;
 
 		if (a.length == 0) {
-			Operators.complete(s);
+			Operators.complete(actual);
 			return;
 		}
 		if (a.length == 1) {
 			Publisher<? extends T> p = a[0];
 
 			if (p == null) {
-				Operators.error(s, new NullPointerException("The single source Publisher is null"));
+				Operators.error(actual, new NullPointerException("The single source Publisher is null"));
 			} else {
-				p.subscribe(s);
+				p.subscribe(actual);
 			}
 			return;
 		}
 
 		if (delayError) {
 			ConcatArrayDelayErrorSubscriber<T> parent = new
-					ConcatArrayDelayErrorSubscriber<>(s, a);
+					ConcatArrayDelayErrorSubscriber<>(actual, a);
 
-			s.onSubscribe(parent);
+			actual.onSubscribe(parent);
 
 			if (!parent.isCancelled()) {
 				parent.onComplete();
 			}
 			return;
 		}
-		ConcatArraySubscriber<T> parent = new ConcatArraySubscriber<>(s, a);
+		ConcatArraySubscriber<T> parent = new ConcatArraySubscriber<>(actual, a);
 
-		s.onSubscribe(parent);
+		actual.onSubscribe(parent);
 
 		if (!parent.isCancelled()) {
 			parent.onComplete();

@@ -44,7 +44,7 @@ final class MonoCollectList<T, C extends Collection<? super T>>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super C> s) {
+	public void subscribe(CoreSubscriber<? super C> actual) {
 		C collection;
 
 		try {
@@ -52,11 +52,11 @@ final class MonoCollectList<T, C extends Collection<? super T>>
 					"The collectionSupplier returned a null collection");
 		}
 		catch (Throwable ex) {
-			Operators.error(s, Operators.onOperatorError(ex));
+			Operators.error(actual, Operators.onOperatorError(ex));
 			return;
 		}
 
-		source.subscribe(new MonoBufferAllSubscriber<>(s, collection));
+		source.subscribe(new MonoBufferAllSubscriber<>(actual, collection));
 	}
 
 	static final class MonoBufferAllSubscriber<T, C extends Collection<? super T>>

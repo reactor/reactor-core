@@ -49,9 +49,9 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Fuseable {
     }
     
     @Override
-    public void subscribe(CoreSubscriber<? super T> s) {
-        ThenIgnoreMain<T> manager = new ThenIgnoreMain<>(s, ignore, last);
-        s.onSubscribe(manager);
+    public void subscribe(CoreSubscriber<? super T> actual) {
+        ThenIgnoreMain<T> manager = new ThenIgnoreMain<>(actual, ignore, last);
+        actual.onSubscribe(manager);
         
         manager.drain();
     }

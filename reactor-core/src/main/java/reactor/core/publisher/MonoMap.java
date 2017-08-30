@@ -46,12 +46,12 @@ final class MonoMap<T, R> extends MonoOperator<T, R> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super R> s) {
-		if (s instanceof Fuseable.ConditionalSubscriber) {
-			Fuseable.ConditionalSubscriber<? super R> cs = (Fuseable.ConditionalSubscriber<? super R>) s;
+	public void subscribe(CoreSubscriber<? super R> actual) {
+		if (actual instanceof Fuseable.ConditionalSubscriber) {
+			Fuseable.ConditionalSubscriber<? super R> cs = (Fuseable.ConditionalSubscriber<? super R>) actual;
 			source.subscribe(new FluxMap.MapConditionalSubscriber<>(cs, mapper));
 			return;
 		}
-		source.subscribe(new FluxMap.MapSubscriber<>(s, mapper));
+		source.subscribe(new FluxMap.MapSubscriber<>(actual, mapper));
 	}
 }

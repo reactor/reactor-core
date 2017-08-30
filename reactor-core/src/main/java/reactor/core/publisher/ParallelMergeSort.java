@@ -57,10 +57,10 @@ final class ParallelMergeSort<T> extends Flux<T> implements Scannable {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		MergeSortMain<T> parent =
-				new MergeSortMain<>(s, source.parallelism(), comparator);
-		s.onSubscribe(parent);
+				new MergeSortMain<>(actual, source.parallelism(), comparator);
+		actual.onSubscribe(parent);
 
 		source.subscribe(parent.subscribers);
 	}

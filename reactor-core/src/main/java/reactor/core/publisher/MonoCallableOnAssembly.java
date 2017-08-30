@@ -70,16 +70,16 @@ final class MonoCallableOnAssembly<T> extends MonoOperator<T, T>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> s) {
-		if (s instanceof Fuseable.ConditionalSubscriber) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		if (actual instanceof Fuseable.ConditionalSubscriber) {
 			Fuseable.ConditionalSubscriber<? super T>
-					cs = (Fuseable.ConditionalSubscriber<? super T>) s;
+					cs = (Fuseable.ConditionalSubscriber<? super T>) actual;
 			source.subscribe(new FluxOnAssembly.OnAssemblyConditionalSubscriber<>(cs,
 					stacktrace,
 					source));
 		}
 		else {
-			source.subscribe(new FluxOnAssembly.OnAssemblySubscriber<>(s, stacktrace, source));
+			source.subscribe(new FluxOnAssembly.OnAssemblySubscriber<>(actual, stacktrace, source));
 		}
 	}
 

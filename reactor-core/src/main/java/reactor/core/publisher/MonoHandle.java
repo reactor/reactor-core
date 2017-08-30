@@ -39,7 +39,7 @@ final class MonoHandle<T, R> extends MonoOperator<T, R> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super R> s) {
-		source.subscribe(new FluxHandle.HandleSubscriber<>(s, handler));
+	public void subscribe(CoreSubscriber<? super R> actual) {
+		source.subscribe(new FluxHandle.HandleSubscriber<>(actual, handler));
 	}
 }

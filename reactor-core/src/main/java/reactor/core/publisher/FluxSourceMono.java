@@ -38,12 +38,12 @@ final class FluxSourceMono<I> extends FluxFromMonoOperator<I, I> {
 	/**
 	 * Default is simply delegating and decorating with {@link Flux} API. Note this
 	 * assumes an identity between input and output types.
-	 * @param s
+	 * @param actual
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super I> s) {
-		source.subscribe(s);
+	public void subscribe(CoreSubscriber<? super I> actual) {
+		source.subscribe(actual);
 	}
 
 }

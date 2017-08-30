@@ -98,7 +98,7 @@ final class MonoZip<T, R> extends Mono<R> {
 
     @SuppressWarnings("unchecked")
     @Override
-    public void subscribe(CoreSubscriber<? super R> s) {
+    public void subscribe(CoreSubscriber<? super R> actual) {
 	    Publisher<?>[] a;
 	    int n = 0;
         if (sources != null) {
@@ -117,13 +117,13 @@ final class MonoZip<T, R> extends Mono<R> {
         }
         
         if (n == 0) {
-            Operators.complete(s);
+            Operators.complete(actual);
             return;
         }
 
 	    ZipCoordinator<R> parent =
-			    new ZipCoordinator<>(s, n, delayError, zipper);
-	    s.onSubscribe(parent);
+			    new ZipCoordinator<>(actual, n, delayError, zipper);
+	    actual.onSubscribe(parent);
         parent.subscribe(a);
     }
 

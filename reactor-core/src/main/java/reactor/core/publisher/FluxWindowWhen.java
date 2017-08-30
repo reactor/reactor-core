@@ -74,14 +74,14 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super Flux<T>> s) {
+	public void subscribe(CoreSubscriber<? super Flux<T>> actual) {
 
 		Queue<Object> q = drainQueueSupplier.get();
 
 		WindowStartEndMainSubscriber<T, U, V> main =
-				new WindowStartEndMainSubscriber<>(s, q, end, processorQueueSupplier);
+				new WindowStartEndMainSubscriber<>(actual, q, end, processorQueueSupplier);
 
-		s.onSubscribe(main);
+		actual.onSubscribe(main);
 
 		start.subscribe(main.starter);
 

@@ -58,11 +58,11 @@ final class FluxScanSeed<T, R> extends FluxOperator<T, R> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super R> s) {
+	public void subscribe(CoreSubscriber<? super R> actual) {
 		ScanSeedCoordinator<T, R> coordinator =
-				new ScanSeedCoordinator<>(s, source, accumulator, initialSupplier);
+				new ScanSeedCoordinator<>(actual, source, accumulator, initialSupplier);
 
-		s.onSubscribe(coordinator);
+		actual.onSubscribe(coordinator);
 
 		if (!coordinator.isCancelled()) {
 			coordinator.onComplete();

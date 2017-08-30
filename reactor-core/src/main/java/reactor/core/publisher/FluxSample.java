@@ -59,13 +59,13 @@ final class FluxSample<T, U> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 
-		CoreSubscriber<T> serial = Operators.serialize(s);
+		CoreSubscriber<T> serial = Operators.serialize(actual);
 
 		SampleMainSubscriber<T> main = new SampleMainSubscriber<>(serial);
 
-		s.onSubscribe(main);
+		actual.onSubscribe(main);
 
 		other.subscribe(new SampleOther<>(main));
 

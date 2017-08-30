@@ -44,7 +44,7 @@ final class FluxDoFinallyFuseable<T> extends FluxOperator<T, T> implements Fusea
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		source.subscribe(FluxDoFinally.createSubscriber(s, onFinally, true));
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		source.subscribe(FluxDoFinally.createSubscriber(actual, onFinally, true));
 	}
 }

@@ -41,14 +41,14 @@ final class MonoLog<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		if (s instanceof ConditionalSubscriber) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		if (actual instanceof ConditionalSubscriber) {
 			@SuppressWarnings("unchecked") // javac, give reason to suppress because inference anomalies
-					ConditionalSubscriber<T> s2 = (ConditionalSubscriber<T>) s;
+					ConditionalSubscriber<T> s2 = (ConditionalSubscriber<T>) actual;
 			source.subscribe(new PeekConditionalSubscriber<>(s2, log));
 			return;
 		}
-		source.subscribe(new FluxPeek.PeekSubscriber<>(s, log));
+		source.subscribe(new FluxPeek.PeekSubscriber<>(actual, log));
 	}
 
 }

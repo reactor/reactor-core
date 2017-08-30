@@ -43,17 +43,17 @@ final class MonoSubscribeOnCallable<T> extends Mono<T> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		FluxSubscribeOnCallable.CallableSubscribeOnSubscription<T> parent =
-				new FluxSubscribeOnCallable.CallableSubscribeOnSubscription<>(s, callable, scheduler);
-		s.onSubscribe(parent);
+				new FluxSubscribeOnCallable.CallableSubscribeOnSubscription<>(actual, callable, scheduler);
+		actual.onSubscribe(parent);
 
 		try {
 			parent.setMainFuture(scheduler.schedule(parent));
 		}
 		catch (RejectedExecutionException ree) {
 			if(parent.state != FluxSubscribeOnCallable.CallableSubscribeOnSubscription.HAS_CANCELLED) {
-				s.onError(Operators.onRejectedExecution(ree));
+				actual.onError(Operators.onRejectedExecution(ree));
 			}
 		}
 	}

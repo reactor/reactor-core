@@ -39,11 +39,11 @@ final class MonoRepeat<T> extends FluxFromMonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		FluxRepeat.RepeatSubscriber<T> parent =
-				new FluxRepeat.RepeatSubscriber<>(source, s, times);
+				new FluxRepeat.RepeatSubscriber<>(source, actual, times);
 
-		s.onSubscribe(parent);
+		actual.onSubscribe(parent);
 
 		if (!parent.isCancelled()) {
 			parent.onComplete();

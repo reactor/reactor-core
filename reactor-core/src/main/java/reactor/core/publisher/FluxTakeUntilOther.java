@@ -48,8 +48,8 @@ final class FluxTakeUntilOther<T, U> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		TakeUntilMainSubscriber<T> mainSubscriber = new TakeUntilMainSubscriber<>(s);
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		TakeUntilMainSubscriber<T> mainSubscriber = new TakeUntilMainSubscriber<>(actual);
 
 		TakeUntilOtherSubscriber<U> otherSubscriber = new TakeUntilOtherSubscriber<>(mainSubscriber);
 

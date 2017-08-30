@@ -71,10 +71,10 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super R> s) {
+	public void subscribe(CoreSubscriber<? super R> actual) {
 
 		FluxPublishMulticaster<T, R> multicast =
-				new FluxPublishMulticaster<>(prefetch, queueSupplier, s.currentContext());
+				new FluxPublishMulticaster<>(prefetch, queueSupplier, actual.currentContext());
 
 		Publisher<? extends R> out;
 
@@ -83,15 +83,15 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 					"The transform returned a null Publisher");
 		}
 		catch (Throwable ex) {
-			Operators.error(s, Operators.onOperatorError(ex));
+			Operators.error(actual, Operators.onOperatorError(ex));
 			return;
 		}
 
 		if (out instanceof Fuseable) {
-			out.subscribe(new CancelFuseableMulticaster<>(s, multicast));
+			out.subscribe(new CancelFuseableMulticaster<>(actual, multicast));
 		}
 		else {
-			out.subscribe(new CancelMulticaster<>(s, multicast));
+			out.subscribe(new CancelMulticaster<>(actual, multicast));
 		}
 
 		source.subscribe(multicast);
@@ -183,9 +183,9 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 		}
 
 		@Override
-		public void subscribe(CoreSubscriber<? super T> s) {
-			PublishMulticastInner<T> pcs = new PublishMulticastInner<>(this, s);
-			s.onSubscribe(pcs);
+		public void subscribe(CoreSubscriber<? super T> actual) {
+			PublishMulticastInner<T> pcs = new PublishMulticastInner<>(this, actual);
+			actual.onSubscribe(pcs);
 
 			if (add(pcs)) {
 				if (pcs.once != 0) {
@@ -198,10 +198,10 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 			else {
 				Throwable ex = error;
 				if (ex != null) {
-					s.onError(ex);
+					actual.onError(ex);
 				}
 				else {
-					s.onComplete();
+					actual.onComplete();
 				}
 			}
 		}

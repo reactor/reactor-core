@@ -295,11 +295,11 @@ public class MonoFilterWhenTest {
 		TestPublisher<Boolean> filter = TestPublisher.create();
 		new MonoFilterWhen<>(new Mono<Integer>() {
 			@Override
-			public void subscribe(CoreSubscriber<? super Integer> s) {
-				subscriber.set(s);
+			public void subscribe(CoreSubscriber<? super Integer> actual) {
+				subscriber.set(actual);
 				//NON-EMPTY SOURCE WILL TRIGGER FILTER SUBSCRIPTION
-				s.onNext(2);
-				s.onComplete();
+				actual.onNext(2);
+				actual.onComplete();
 			}
 		}, w -> filter)
 	        .subscribe();

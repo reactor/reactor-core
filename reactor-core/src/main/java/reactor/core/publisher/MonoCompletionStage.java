@@ -40,11 +40,11 @@ extends Mono<T>
     }
 
     @Override
-    public void subscribe(CoreSubscriber<? super T> s) {
+    public void subscribe(CoreSubscriber<? super T> actual) {
         Operators.MonoSubscriber<T, T>
-                sds = new Operators.MonoSubscriber<>(s);
+                sds = new Operators.MonoSubscriber<>(actual);
 
-        s.onSubscribe(sds);
+        actual.onSubscribe(sds);
 
         if (sds.isCancelled()) {
             return;
@@ -52,11 +52,11 @@ extends Mono<T>
 
         future.whenComplete((v, e) -> {
             if (e != null) {
-                s.onError(e);
+                actual.onError(e);
             } else if (v != null) {
                 sds.complete(v);
             } else {
-                s.onComplete();
+                actual.onComplete();
             }
         });
     }

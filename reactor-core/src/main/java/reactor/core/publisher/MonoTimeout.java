@@ -58,9 +58,9 @@ final class MonoTimeout<T, U, V> extends MonoOperator<T, T> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 
-		CoreSubscriber<T> serial = Operators.serialize(s);
+		CoreSubscriber<T> serial = Operators.serialize(actual);
 
 		FluxTimeout.TimeoutMainSubscriber<T, V> main =
 				new FluxTimeout.TimeoutMainSubscriber<>(serial, NEVER, other);

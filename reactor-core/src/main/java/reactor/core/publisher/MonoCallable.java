@@ -42,12 +42,12 @@ extends Mono<T>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 
 		Operators.MonoSubscriber<T, T>
-				sds = new Operators.MonoSubscriber<>(s);
+				sds = new Operators.MonoSubscriber<>(actual);
 
-		s.onSubscribe(sds);
+		actual.onSubscribe(sds);
 
 		if (sds.isCancelled()) {
 			return;
@@ -58,7 +58,7 @@ extends Mono<T>
 			t = Objects.requireNonNull(callable.call(), "callable returned null");
 		}
 		catch (Throwable e) {
-			s.onError(Operators.onOperatorError(e));
+			actual.onError(Operators.onOperatorError(e));
 			return;
 		}
 

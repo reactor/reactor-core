@@ -132,11 +132,11 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		Objects.requireNonNull(s, "subscribe");
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		Objects.requireNonNull(actual, "subscribe");
 
-		DirectInner<T> p = new DirectInner<>(s, this);
-		s.onSubscribe(p);
+		DirectInner<T> p = new DirectInner<>(actual, this);
+		actual.onSubscribe(p);
 
 		if (add(p)) {
 			if (p.cancelled) {
@@ -146,10 +146,10 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 		else {
 			Throwable e = error;
 			if (e != null) {
-				s.onError(e);
+				actual.onError(e);
 			}
 			else {
-				s.onComplete();
+				actual.onComplete();
 			}
 		}
 	}

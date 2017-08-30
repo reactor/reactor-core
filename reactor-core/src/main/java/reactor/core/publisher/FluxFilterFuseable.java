@@ -42,13 +42,13 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> s) {
-		if (s instanceof ConditionalSubscriber) {
-			source.subscribe(new FilterFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		if (actual instanceof ConditionalSubscriber) {
+			source.subscribe(new FilterFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual,
 					predicate));
 			return;
 		}
-		source.subscribe(new FilterFuseableSubscriber<>(s, predicate));
+		source.subscribe(new FilterFuseableSubscriber<>(actual, predicate));
 	}
 
 	static final class FilterFuseableSubscriber<T>

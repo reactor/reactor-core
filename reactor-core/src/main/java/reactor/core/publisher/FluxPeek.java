@@ -73,14 +73,14 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		if (s instanceof ConditionalSubscriber) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		if (actual instanceof ConditionalSubscriber) {
 			@SuppressWarnings("unchecked") // javac, give reason to suppress because inference anomalies
-					ConditionalSubscriber<T> s2 = (ConditionalSubscriber<T>) s;
+					ConditionalSubscriber<T> s2 = (ConditionalSubscriber<T>) actual;
 			source.subscribe(new PeekConditionalSubscriber<>(s2, this));
 			return;
 		}
-		source.subscribe(new PeekSubscriber<>(s, this));
+		source.subscribe(new PeekSubscriber<>(actual, this));
 	}
 
 	static final class PeekSubscriber<T> implements InnerOperator<T, T> {

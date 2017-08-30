@@ -84,8 +84,8 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super Flux<T>> s) {
-		source.subscribe(new WindowPredicateMain<>(s,
+	public void subscribe(CoreSubscriber<? super Flux<T>> actual) {
+		source.subscribe(new WindowPredicateMain<>(actual,
 				mainQueueSupplier.get(),
 				groupQueueSupplier,
 				prefetch,
@@ -742,14 +742,14 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 		}
 
 		@Override
-		public void subscribe(CoreSubscriber<? super T> s) {
+		public void subscribe(CoreSubscriber<? super T> actual) {
 			if (once == 0 && ONCE.compareAndSet(this, 0, 1)) {
-				s.onSubscribe(this);
-				ACTUAL.lazySet(this, s);
+				actual.onSubscribe(this);
+				ACTUAL.lazySet(this, actual);
 				drain();
 			}
 			else {
-				s.onError(new IllegalStateException(
+				actual.onError(new IllegalStateException(
 						"This processor allows only a single Subscriber"));
 			}
 		}

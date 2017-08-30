@@ -69,7 +69,7 @@ final class FluxFlattenIterable<T, R> extends FluxOperator<T, R> implements Fuse
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public void subscribe(CoreSubscriber<? super R> s) {
+	public void subscribe(CoreSubscriber<? super R> actual) {
 		if (source instanceof Callable) {
 			T v;
 
@@ -77,12 +77,12 @@ final class FluxFlattenIterable<T, R> extends FluxOperator<T, R> implements Fuse
 				v = ((Callable<T>) source).call();
 			}
 			catch (Throwable ex) {
-				Operators.error(s, Operators.onOperatorError(ex));
+				Operators.error(actual, Operators.onOperatorError(ex));
 				return;
 			}
 
 			if (v == null) {
-				Operators.complete(s);
+				Operators.complete(actual);
 				return;
 			}
 
@@ -94,15 +94,15 @@ final class FluxFlattenIterable<T, R> extends FluxOperator<T, R> implements Fuse
 				it = iter.iterator();
 			}
 			catch (Throwable ex) {
-				Operators.error(s, Operators.onOperatorError(ex));
+				Operators.error(actual, Operators.onOperatorError(ex));
 				return;
 			}
 
-			FluxIterable.subscribe(s, it);
+			FluxIterable.subscribe(actual, it);
 
 			return;
 		}
-		source.subscribe(new FlattenIterableSubscriber<>(s,
+		source.subscribe(new FlattenIterableSubscriber<>(actual,
 				mapper,
 				prefetch,
 				queueSupplier));

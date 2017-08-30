@@ -55,10 +55,10 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		MergeReduceMain<T> parent =
-				new MergeReduceMain<>(s, source.parallelism(), reducer);
-		s.onSubscribe(parent);
+				new MergeReduceMain<>(actual, source.parallelism(), reducer);
+		actual.onSubscribe(parent);
 
 		source.subscribe(parent.subscribers);
 	}

@@ -55,8 +55,8 @@ final class FluxArray<T> extends Flux<T> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		subscribe(s, array);
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		subscribe(actual, array);
 	}
 
 	static final class ArraySubscription<T>

@@ -47,13 +47,13 @@ final class FluxTake<T> extends FluxOperator<T, T> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> s) {
-			if (s instanceof ConditionalSubscriber) {
-				source.subscribe(new TakeConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
+	public void subscribe(CoreSubscriber<? super T> actual) {
+			if (actual instanceof ConditionalSubscriber) {
+				source.subscribe(new TakeConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual,
 						n));
 			}
 			else {
-				source.subscribe(new TakeSubscriber<>(s, n));
+				source.subscribe(new TakeSubscriber<>(actual, n));
 			}
 	}
 

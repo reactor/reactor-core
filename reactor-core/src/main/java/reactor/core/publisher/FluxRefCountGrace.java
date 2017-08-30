@@ -68,7 +68,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		for (; ; ) {
 			RefConnection conn;
 
@@ -91,7 +91,7 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 				}
 			}
 
-			source.subscribe(new RefCountInner<>(s, this, conn));
+			source.subscribe(new RefCountInner<>(actual, this, conn));
 
 			if (connect) {
 				source.connect(conn);

@@ -36,17 +36,17 @@ final class FluxContextStart<T> extends FluxOperator<T, T> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		Context c;
 		try {
-			c = doOnContext.apply(s.currentContext());
+			c = doOnContext.apply(actual.currentContext());
 		}
 		catch (Throwable t) {
-			Operators.error(s, Operators.onOperatorError(t));
+			Operators.error(actual, Operators.onOperatorError(t));
 			return;
 		}
 
-		source.subscribe(new ContextStartSubscriber<>(s, c));
+		source.subscribe(new ContextStartSubscriber<>(actual, c));
 	}
 
 	static final class ContextStartSubscriber<T>

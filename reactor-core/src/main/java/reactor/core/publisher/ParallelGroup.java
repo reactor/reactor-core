@@ -43,7 +43,7 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super GroupedFlux<Integer, T>> s) {
+	public void subscribe(CoreSubscriber<? super GroupedFlux<Integer, T>> actual) {
 		int n = source.parallelism();
 
 		@SuppressWarnings("unchecked")
@@ -53,7 +53,7 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements
 			groups[i] = new ParallelInnerGroup<>(i);
 		}
 
-		FluxArray.subscribe(s, groups);
+		FluxArray.subscribe(actual, groups);
 
 		source.subscribe(groups);
 	}
@@ -98,12 +98,12 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements
 		}
 
 		@Override
-		public void subscribe(CoreSubscriber<? super T> s) {
+		public void subscribe(CoreSubscriber<? super T> actual) {
 			if (ONCE.compareAndSet(this, 0, 1)) {
-				this.actual = s;
-				s.onSubscribe(this);
+				this.actual = actual;
+				actual.onSubscribe(this);
 			} else {
-				Operators.error(s, new IllegalStateException("This ParallelGroup can be subscribed to at most once."));
+				Operators.error(actual, new IllegalStateException("This ParallelGroup can be subscribed to at most once."));
 			}
 		}
 

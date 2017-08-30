@@ -46,7 +46,7 @@ final class MonoRetryWhen<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		FluxRetryWhen.subscribe(s, whenSourceFactory, source);
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		FluxRetryWhen.subscribe(actual, whenSourceFactory, source);
 	}
 }

@@ -90,17 +90,17 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super R> s) {
+	public void subscribe(CoreSubscriber<? super R> actual) {
 
 		GroupJoinSubscription<TLeft, TRight, TLeftEnd, TRightEnd, R> parent =
-				new GroupJoinSubscription<>(s,
+				new GroupJoinSubscription<>(actual,
 						leftEnd,
 						rightEnd,
 						resultSelector,
 						queueSupplier.get(),
 						processorQueueSupplier);
 
-		s.onSubscribe(parent);
+		actual.onSubscribe(parent);
 
 		LeftRightSubscriber left = new LeftRightSubscriber(parent, true);
 		parent.cancellations.add(left);

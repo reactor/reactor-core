@@ -159,10 +159,10 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		Objects.requireNonNull(s, "subscribe");
-		EmitterInner<T> inner = new EmitterInner<>(s, this);
-		s.onSubscribe(inner);
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		Objects.requireNonNull(actual, "subscribe");
+		EmitterInner<T> inner = new EmitterInner<>(actual, this);
+		actual.onSubscribe(inner);
 
 		if (inner.isCancelled()) {
 			return;

@@ -56,8 +56,8 @@ final class FluxAutoConnectFuseable<T> extends Flux<T>
 	}
 	
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		source.subscribe(s);
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		source.subscribe(actual);
 		if (remaining > 0 && REMAINING.decrementAndGet(this) == 0) {
 			source.connect(cancelSupport);
 		}

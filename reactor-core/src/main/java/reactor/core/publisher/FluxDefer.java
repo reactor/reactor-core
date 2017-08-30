@@ -39,7 +39,7 @@ final class FluxDefer<T> extends Flux<T> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		Publisher<? extends T> p;
 
 		try {
@@ -47,10 +47,10 @@ final class FluxDefer<T> extends Flux<T> {
 					"The Publisher returned by the supplier is null");
 		}
 		catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e));
 			return;
 		}
 
-		from(p).subscribe(s);
+		from(p).subscribe(actual);
 	}
 }

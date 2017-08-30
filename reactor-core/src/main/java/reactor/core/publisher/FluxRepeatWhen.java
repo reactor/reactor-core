@@ -53,13 +53,13 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		RepeatWhenOtherSubscriber other = new RepeatWhenOtherSubscriber();
 		Subscriber<Long> signaller = Operators.serialize(other.completionSignal);
 
 		signaller.onSubscribe(Operators.emptySubscription());
 
-		CoreSubscriber<T> serial = Operators.serialize(s);
+		CoreSubscriber<T> serial = Operators.serialize(actual);
 
 		RepeatWhenMainSubscriber<T> main =
 				new RepeatWhenMainSubscriber<>(serial, signaller, source);
@@ -74,7 +74,7 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 					"The whenSourceFactory returned a null Publisher");
 		}
 		catch (Throwable e) {
-			s.onError(Operators.onOperatorError(e));
+			actual.onError(Operators.onOperatorError(e));
 			return;
 		}
 
@@ -223,8 +223,8 @@ final class FluxRepeatWhen<T> extends FluxOperator<T, T> {
 		}
 
 		@Override
-		public void subscribe(CoreSubscriber<? super Long> s) {
-			completionSignal.subscribe(s);
+		public void subscribe(CoreSubscriber<? super Long> actual) {
+			completionSignal.subscribe(actual);
 		}
 
 	}

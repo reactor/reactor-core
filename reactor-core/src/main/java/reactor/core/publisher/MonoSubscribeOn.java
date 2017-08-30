@@ -44,18 +44,19 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		Scheduler.Worker worker = scheduler.createWorker();
 
-		SubscribeOnSubscriber<T> parent = new SubscribeOnSubscriber<>(source, s, worker);
-		s.onSubscribe(parent);
+		SubscribeOnSubscriber<T> parent = new SubscribeOnSubscriber<>(source,
+				actual, worker);
+		actual.onSubscribe(parent);
 
 		try {
 			worker.schedule(parent);
 		}
 		catch (RejectedExecutionException ree) {
 			if (parent.s != Operators.cancelledSubscription()) {
-				s.onError(Operators.onRejectedExecution(ree, parent, null, null));
+				actual.onError(Operators.onRejectedExecution(ree, parent, null, null));
 			}
 		}
 	}

@@ -39,7 +39,7 @@ final class FluxConcatIterable<T> extends Flux<T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 
 		Iterator<? extends Publisher<? extends T>> it;
 
@@ -48,13 +48,13 @@ final class FluxConcatIterable<T> extends Flux<T> {
 					"The Iterator returned is null");
 		}
 		catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e));
 			return;
 		}
 
-		ConcatIterableSubscriber<T> parent = new ConcatIterableSubscriber<>(s, it);
+		ConcatIterableSubscriber<T> parent = new ConcatIterableSubscriber<>(actual, it);
 
-		s.onSubscribe(parent);
+		actual.onSubscribe(parent);
 
 		if (!parent.isCancelled()) {
 			parent.onComplete();

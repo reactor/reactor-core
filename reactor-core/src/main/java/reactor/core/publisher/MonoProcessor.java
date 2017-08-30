@@ -405,30 +405,30 @@ public final class MonoProcessor<O> extends Mono<O>
 	}
 
 	@Override
-	public void subscribe(final CoreSubscriber<? super O> subscriber) {
+	public void subscribe(final CoreSubscriber<? super O> actual) {
 		for (; ; ) {
 			int endState = this.state;
 			if (endState == STATE_COMPLETE_NO_VALUE) {
-				Operators.complete(subscriber);
+				Operators.complete(actual);
 				return;
 			}
 			else if (endState == STATE_SUCCESS_VALUE) {
-				subscriber.onSubscribe(Operators.scalarSubscription(subscriber, value));
+				actual.onSubscribe(Operators.scalarSubscription(actual, value));
 				return;
 			}
 			else if (endState == STATE_ERROR) {
-				Operators.error(subscriber, error);
+				Operators.error(actual, error);
 				return;
 			}
 			else if (endState == STATE_CANCELLED) {
-				Operators.error(subscriber, new CancellationException("Mono has previously been cancelled"));
+				Operators.error(actual, new CancellationException("Mono has previously been cancelled"));
 				return;
 			}
 			Processor<O, O> out = getOrStart();
 			if (out == NOOP_PROCESSOR) {
 				continue;
 			}
-			out.subscribe(subscriber);
+			out.subscribe(actual);
 			break;
 		}
 
@@ -577,7 +577,7 @@ public final class MonoProcessor<O> extends Mono<O>
 		}
 
 		@Override
-		public void subscribe(CoreSubscriber s) {
+		public void subscribe(CoreSubscriber actual) {
 
 		}
 	}

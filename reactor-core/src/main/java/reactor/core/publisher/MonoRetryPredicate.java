@@ -39,12 +39,13 @@ final class MonoRetryPredicate<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 
 		FluxRetryPredicate.RetryPredicateSubscriber<T> parent =
-				new FluxRetryPredicate.RetryPredicateSubscriber<>(source, s, predicate);
+				new FluxRetryPredicate.RetryPredicateSubscriber<>(source,
+						actual, predicate);
 
-		s.onSubscribe(parent);
+		actual.onSubscribe(parent);
 
 		if (!parent.isCancelled()) {
 			parent.resubscribe();

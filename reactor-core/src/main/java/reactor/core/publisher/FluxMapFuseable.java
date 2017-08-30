@@ -54,13 +54,13 @@ final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super R> s) {
-		if (s instanceof ConditionalSubscriber) {
-			ConditionalSubscriber<? super R> cs = (ConditionalSubscriber<? super R>) s;
+	public void subscribe(CoreSubscriber<? super R> actual) {
+		if (actual instanceof ConditionalSubscriber) {
+			ConditionalSubscriber<? super R> cs = (ConditionalSubscriber<? super R>) actual;
 			source.subscribe(new MapFuseableConditionalSubscriber<>(cs, mapper));
 			return;
 		}
-		source.subscribe(new MapFuseableSubscriber<>(s, mapper));
+		source.subscribe(new MapFuseableSubscriber<>(actual, mapper));
 	}
 
 	static final class MapFuseableSubscriber<T, R>

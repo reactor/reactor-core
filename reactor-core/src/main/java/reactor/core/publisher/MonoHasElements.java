@@ -32,8 +32,8 @@ final class MonoHasElements<T> extends MonoFromFluxOperator<T, Boolean>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super Boolean> s) {
-		source.subscribe(new HasElementsSubscriber<>(s));
+	public void subscribe(CoreSubscriber<? super Boolean> actual) {
+		source.subscribe(new HasElementsSubscriber<>(actual));
 	}
 
 	static final class HasElementsSubscriber<T> extends Operators.MonoSubscriber<T, Boolean> {

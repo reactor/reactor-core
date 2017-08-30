@@ -49,23 +49,23 @@ final class FluxRange extends Flux<Integer>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super Integer> s) {
+	public void subscribe(CoreSubscriber<? super Integer> actual) {
 		long st = start;
 		long en = end;
 		if (st == en) {
-			Operators.complete(s);
+			Operators.complete(actual);
 			return;
 		} else
 		if (st + 1 == en) {
-			s.onSubscribe(Operators.scalarSubscription(s, (int)st));
+			actual.onSubscribe(Operators.scalarSubscription(actual, (int)st));
 			return;
 		}
 		
-		if (s instanceof ConditionalSubscriber) {
-			s.onSubscribe(new RangeSubscriptionConditional((ConditionalSubscriber<? super Integer>)s, st, en));
+		if (actual instanceof ConditionalSubscriber) {
+			actual.onSubscribe(new RangeSubscriptionConditional((ConditionalSubscriber<? super Integer>) actual, st, en));
 			return;
 		}
-		s.onSubscribe(new RangeSubscription(s, st, en));
+		actual.onSubscribe(new RangeSubscription(actual, st, en));
 	}
 
 	static final class RangeSubscription implements InnerProducer<Integer>,

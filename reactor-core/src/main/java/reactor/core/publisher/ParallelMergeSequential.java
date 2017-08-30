@@ -60,10 +60,10 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		MergeSequentialMain<T> parent = new MergeSequentialMain<>(s, source
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		MergeSequentialMain<T> parent = new MergeSequentialMain<>(actual, source
 				.parallelism(), prefetch, queueSupplier);
-		s.onSubscribe(parent);
+		actual.onSubscribe(parent);
 		source.subscribe(parent.subscribers);
 	}
 	

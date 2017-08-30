@@ -70,9 +70,9 @@ final class DelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super OUT> s) {
-		Objects.requireNonNull(s, "subscribe");
-		downstream.subscribe(s);
+	public void subscribe(CoreSubscriber<? super OUT> actual) {
+		Objects.requireNonNull(actual, "subscribe");
+		downstream.subscribe(actual);
 	}
 
 	@Override

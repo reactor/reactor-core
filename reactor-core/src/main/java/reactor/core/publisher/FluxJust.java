@@ -64,8 +64,8 @@ final class FluxJust<T> extends Flux<T> implements Fuseable.ScalarCallable<T>, F
 	}
 
 	@Override
-	public void subscribe(final CoreSubscriber<? super T> subscriber) {
-		subscriber.onSubscribe(new WeakScalarSubscription<>(value, subscriber));
+	public void subscribe(final CoreSubscriber<? super T> actual) {
+		actual.onSubscribe(new WeakScalarSubscription<>(value, actual));
 	}
 
 	static final class WeakScalarSubscription<T> implements QueueSubscription<T>,

@@ -62,13 +62,13 @@ final class MonoPeek<T> extends MonoOperator<T, T> implements SignalPeek<T> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> s) {
-		if (s instanceof ConditionalSubscriber) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		if (actual instanceof ConditionalSubscriber) {
 			source.subscribe(new PeekConditionalSubscriber<>(
-					(ConditionalSubscriber<? super T>)s, this));
+					(ConditionalSubscriber<? super T>) actual, this));
 			return;
 		}
-		source.subscribe(new FluxPeek.PeekSubscriber<>(s, this));
+		source.subscribe(new FluxPeek.PeekSubscriber<>(actual, this));
 	}
 
 	@Override

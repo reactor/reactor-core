@@ -33,8 +33,8 @@ final class MonoIgnoreElements<T> extends MonoFromFluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		source.subscribe(new IgnoreElementsSubscriber<>(s));
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		source.subscribe(new IgnoreElementsSubscriber<>(actual));
 	}
 
 	static final class IgnoreElementsSubscriber<T> implements InnerOperator<T, T> {

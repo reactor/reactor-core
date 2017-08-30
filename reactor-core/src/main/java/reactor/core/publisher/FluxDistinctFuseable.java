@@ -52,7 +52,7 @@ final class FluxDistinctFuseable<T, K, C extends Collection<? super K>>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		C collection;
 
 		try {
@@ -60,10 +60,10 @@ final class FluxDistinctFuseable<T, K, C extends Collection<? super K>>
 					"The collectionSupplier returned a null collection");
 		}
 		catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e));
 			return;
 		}
 
-		source.subscribe(new DistinctFuseableSubscriber<>(s, collection, keyExtractor));
+		source.subscribe(new DistinctFuseableSubscriber<>(actual, collection, keyExtractor));
 	}
 }

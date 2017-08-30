@@ -64,13 +64,13 @@ final class FluxSampleTimeout<T, U> extends FluxOperator<T, T> {
 
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 
 		Queue<SampleTimeoutOther<T, U>> q = (Queue) queueSupplier.get();
 
-		SampleTimeoutMain<T, U> main = new SampleTimeoutMain<>(s, throttler, q);
+		SampleTimeoutMain<T, U> main = new SampleTimeoutMain<>(actual, throttler, q);
 
-		s.onSubscribe(main);
+		actual.onSubscribe(main);
 
 		source.subscribe(main);
 	}

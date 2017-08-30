@@ -35,8 +35,8 @@ final class FluxMaterialize<T> extends FluxOperator<T, Signal<T>> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super Signal<T>> subscriber) {
-		source.subscribe(new MaterializeSubscriber<>(subscriber));
+	public void subscribe(CoreSubscriber<? super Signal<T>> actual) {
+		source.subscribe(new MaterializeSubscriber<>(actual));
 	}
 
 	final static class MaterializeSubscriber<T>

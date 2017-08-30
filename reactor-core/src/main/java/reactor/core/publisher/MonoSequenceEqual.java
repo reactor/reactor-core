@@ -52,9 +52,9 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super Boolean> s) {
-		EqualCoordinator<T> ec = new EqualCoordinator<>(s, bufferSize, first, second, comparer);
-		s.onSubscribe(ec);
+	public void subscribe(CoreSubscriber<? super Boolean> actual) {
+		EqualCoordinator<T> ec = new EqualCoordinator<>(actual, bufferSize, first, second, comparer);
+		actual.onSubscribe(ec);
 		ec.subscribe();
 	}
 

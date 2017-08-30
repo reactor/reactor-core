@@ -77,14 +77,14 @@ final class FluxBufferWhen<T, U, V, C extends Collection<? super T>>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super C> s) {
+	public void subscribe(CoreSubscriber<? super C> actual) {
 
 		Queue<C> q = queueSupplier.get();
 
 		BufferStartEndMainSubscriber<T, U, V, C> parent =
-				new BufferStartEndMainSubscriber<>(s, bufferSupplier, q, end);
+				new BufferStartEndMainSubscriber<>(actual, bufferSupplier, q, end);
 
-		s.onSubscribe(parent);
+		actual.onSubscribe(parent);
 
 		start.subscribe(parent.starter);
 

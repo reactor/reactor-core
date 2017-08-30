@@ -37,7 +37,7 @@ final class MonoDefer<T> extends Mono<T> {
 	}
 
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		Mono<? extends T> p;
 
 		try {
@@ -45,10 +45,10 @@ final class MonoDefer<T> extends Mono<T> {
 					"The Mono returned by the supplier is null");
 		}
 		catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e));
 			return;
 		}
 
-		p.subscribe(s);
+		p.subscribe(actual);
 	}
 }

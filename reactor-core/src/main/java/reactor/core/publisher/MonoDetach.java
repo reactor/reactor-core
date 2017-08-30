@@ -33,8 +33,8 @@ final class MonoDetach<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		source.subscribe(new FluxDetach.DetachSubscriber<>(s));
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		source.subscribe(new FluxDetach.DetachSubscriber<>(actual));
 	}
 
 }

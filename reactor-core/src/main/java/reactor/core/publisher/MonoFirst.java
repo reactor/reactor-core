@@ -64,7 +64,7 @@ final class MonoFirst<T> extends Mono<T> {
 	@SuppressWarnings("unchecked")
 	@Override
 	//TODO mutualize with FluxFirstEmitting
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		Publisher<? extends T>[] a = array;
 		int n;
 		if (a == null) {
@@ -77,7 +77,7 @@ final class MonoFirst<T> extends Mono<T> {
 				it = Objects.requireNonNull(iterable.iterator(), "The iterator returned is null");
 			}
 			catch (Throwable e) {
-				Operators.error(s, Operators.onOperatorError(e));
+				Operators.error(actual, Operators.onOperatorError(e));
 				return;
 			}
 
@@ -89,7 +89,7 @@ final class MonoFirst<T> extends Mono<T> {
 					b = it.hasNext();
 				}
 				catch (Throwable e) {
-					Operators.error(s, Operators.onOperatorError(e));
+					Operators.error(actual, Operators.onOperatorError(e));
 					return;
 				}
 
@@ -104,7 +104,7 @@ final class MonoFirst<T> extends Mono<T> {
 					"The Publisher returned by the iterator is null");
 				}
 				catch (Throwable e) {
-					Operators.error(s, Operators.onOperatorError(e));
+					Operators.error(actual, Operators.onOperatorError(e));
 					return;
 				}
 
@@ -122,18 +122,18 @@ final class MonoFirst<T> extends Mono<T> {
 		}
 
 		if (n == 0) {
-			Operators.complete(s);
+			Operators.complete(actual);
 			return;
 		}
 		if (n == 1) {
 			Publisher<? extends T> p = a[0];
 
 			if (p == null) {
-				Operators.error(s,
+				Operators.error(actual,
 						Operators.onOperatorError(new NullPointerException("The single source Publisher is null")));
 			}
 			else {
-				p.subscribe(s);
+				p.subscribe(actual);
 			}
 			return;
 		}
@@ -141,7 +141,7 @@ final class MonoFirst<T> extends Mono<T> {
 		FluxFirstEmitting.RaceCoordinator<T> coordinator =
 				new FluxFirstEmitting.RaceCoordinator<>(n);
 
-		coordinator.subscribe(a, n, s);
+		coordinator.subscribe(a, n, actual);
 	}
 
 }

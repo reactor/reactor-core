@@ -93,7 +93,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public void subscribe(CoreSubscriber<? super R> s) {
+	public void subscribe(CoreSubscriber<? super R> actual) {
 		Publisher<? extends T>[] a = array;
 		int n;
 		if (a == null) {
@@ -106,7 +106,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 				it = Objects.requireNonNull(iterable.iterator(), "The iterator returned is null");
 			}
 			catch (Throwable e) {
-				Operators.error(s, Operators.onOperatorError(e));
+				Operators.error(actual, Operators.onOperatorError(e));
 				return;
 			}
 
@@ -118,7 +118,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 					b = it.hasNext();
 				}
 				catch (Throwable e) {
-					Operators.error(s, Operators.onOperatorError(e));
+					Operators.error(actual, Operators.onOperatorError(e));
 					return;
 				}
 
@@ -133,7 +133,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 							"The Publisher returned by the iterator is null");
 				}
 				catch (Throwable e) {
-					Operators.error(s, Operators.onOperatorError(e));
+					Operators.error(actual, Operators.onOperatorError(e));
 					return;
 				}
 
@@ -151,16 +151,16 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 		}
 
 		if (n == 0) {
-			Operators.complete(s);
+			Operators.complete(actual);
 			return;
 		}
 		if (n == 1) {
 			Function<T, R> f = t -> combiner.apply(new Object[]{t});
 			if (a[0] instanceof Fuseable) {
-				new FluxMapFuseable<>(from(a[0]), f).subscribe(s);
+				new FluxMapFuseable<>(from(a[0]), f).subscribe(actual);
 			}
 			else {
-				new FluxMap<>(from(a[0]), f).subscribe(s);
+				new FluxMap<>(from(a[0]), f).subscribe(actual);
 			}
 			return;
 		}
@@ -168,9 +168,9 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 		Queue<SourceAndArray> queue = queueSupplier.get();
 
 		CombineLatestCoordinator<T, R> coordinator =
-				new CombineLatestCoordinator<>(s, combiner, n, queue, bufferSize);
+				new CombineLatestCoordinator<>(actual, combiner, n, queue, bufferSize);
 
-		s.onSubscribe(coordinator);
+		actual.onSubscribe(coordinator);
 
 		coordinator.subscribe(a, n);
 	}

@@ -39,7 +39,7 @@ final class FluxStream<T> extends Flux<T> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		Iterator<? extends T> it;
 
 		try {
@@ -47,11 +47,11 @@ final class FluxStream<T> extends Flux<T> implements Fuseable {
 			"The stream returned a null Iterator");
 		}
 		catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e));
 			return;
 		}
 
-		FluxIterable.subscribe(s, it);
+		FluxIterable.subscribe(actual, it);
 	}
 
 }

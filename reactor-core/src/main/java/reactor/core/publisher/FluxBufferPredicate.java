@@ -76,7 +76,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super C> s) {
+	public void subscribe(CoreSubscriber<? super C> actual) {
 		C initialBuffer;
 
 		try {
@@ -84,11 +84,11 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 					"The bufferSupplier returned a null initial buffer");
 		}
 		catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e));
 			return;
 		}
 
-		BufferPredicateSubscriber<T, C> parent = new BufferPredicateSubscriber<>(s,
+		BufferPredicateSubscriber<T, C> parent = new BufferPredicateSubscriber<>(actual,
 				initialBuffer, bufferSupplier, predicate, mode);
 
 		source.subscribe(parent);

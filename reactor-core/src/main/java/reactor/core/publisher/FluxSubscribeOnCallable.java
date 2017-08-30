@@ -46,10 +46,10 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		CallableSubscribeOnSubscription<T> parent =
-				new CallableSubscribeOnSubscription<>(s, callable, scheduler);
-		s.onSubscribe(parent);
+				new CallableSubscribeOnSubscription<>(actual, callable, scheduler);
+		actual.onSubscribe(parent);
 
 		try {
 			Disposable f = scheduler.schedule(parent);
@@ -57,7 +57,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 		}
 		catch (RejectedExecutionException ree) {
 			if(parent.state != CallableSubscribeOnSubscription.HAS_CANCELLED) {
-				s.onError(Operators.onRejectedExecution(ree));
+				actual.onError(Operators.onRejectedExecution(ree));
 			}
 		}
 	}

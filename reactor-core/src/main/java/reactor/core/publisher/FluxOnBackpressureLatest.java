@@ -38,8 +38,8 @@ final class FluxOnBackpressureLatest<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		source.subscribe(new LatestSubscriber<>(s));
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		source.subscribe(new LatestSubscriber<>(actual));
 	}
 
 	@Override

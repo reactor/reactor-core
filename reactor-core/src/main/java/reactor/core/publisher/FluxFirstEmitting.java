@@ -54,7 +54,7 @@ final class FluxFirstEmitting<T> extends Flux<T> {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		Publisher<? extends T>[] a = array;
 		int n;
 		if (a == null) {
@@ -68,7 +68,7 @@ final class FluxFirstEmitting<T> extends Flux<T> {
 						"The iterator returned is null");
 			}
 			catch (Throwable e) {
-				Operators.error(s, Operators.onOperatorError(e));
+				Operators.error(actual, Operators.onOperatorError(e));
 				return;
 			}
 
@@ -80,7 +80,7 @@ final class FluxFirstEmitting<T> extends Flux<T> {
 					b = it.hasNext();
 				}
 				catch (Throwable e) {
-					Operators.error(s, Operators.onOperatorError(e));
+					Operators.error(actual, Operators.onOperatorError(e));
 					return;
 				}
 
@@ -95,7 +95,7 @@ final class FluxFirstEmitting<T> extends Flux<T> {
 							"The Publisher returned by the iterator is null");
 				}
 				catch (Throwable e) {
-					Operators.error(s, Operators.onOperatorError(e));
+					Operators.error(actual, Operators.onOperatorError(e));
 					return;
 				}
 
@@ -113,25 +113,25 @@ final class FluxFirstEmitting<T> extends Flux<T> {
 		}
 
 		if (n == 0) {
-			Operators.complete(s);
+			Operators.complete(actual);
 			return;
 		}
 		if (n == 1) {
 			Publisher<? extends T> p = a[0];
 
 			if (p == null) {
-				Operators.error(s,
+				Operators.error(actual,
 						new NullPointerException("The single source Publisher is null"));
 			}
 			else {
-				p.subscribe(s);
+				p.subscribe(actual);
 			}
 			return;
 		}
 
 		RaceCoordinator<T> coordinator = new RaceCoordinator<>(n);
 
-		coordinator.subscribe(a, n, s);
+		coordinator.subscribe(a, n, actual);
 	}
 
 	/**

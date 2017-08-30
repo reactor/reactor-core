@@ -27,7 +27,8 @@ final class MonoMaterialize<T> extends MonoOperator<T, Signal<T>> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super Signal<T>> subscriber) {
-		source.subscribe(new FluxMaterialize.MaterializeSubscriber<>(new MonoNext.NextSubscriber<Signal<T>>(subscriber)));
+	public void subscribe(CoreSubscriber<? super Signal<T>> actual) {
+		source.subscribe(new FluxMaterialize.MaterializeSubscriber<>(new MonoNext.NextSubscriber<Signal<T>>(
+				actual)));
 	}
 }

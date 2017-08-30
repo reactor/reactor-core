@@ -54,8 +54,8 @@ final class FluxWindowTimeOrSize<T> extends FluxOperator<T, Flux<T>> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super Flux<T>> subscriber) {
-		source.subscribe(new WindowTimeoutSubscriber<>(Operators.serialize(subscriber),
+	public void subscribe(CoreSubscriber<? super Flux<T>> actual) {
+		source.subscribe(new WindowTimeoutSubscriber<>(Operators.serialize(actual),
 				batchSize,
 				timespan,
 				timer));
@@ -94,8 +94,8 @@ final class FluxWindowTimeOrSize<T> extends FluxOperator<T, Flux<T>> {
 		}
 
 		@Override
-		public void subscribe(CoreSubscriber<? super T> s) {
-			processor.subscribe(s);
+		public void subscribe(CoreSubscriber<? super T> actual) {
+			processor.subscribe(actual);
 		}
 
 		@Override

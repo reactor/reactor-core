@@ -50,7 +50,7 @@ extends Mono<T>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		s.onSubscribe(Operators.scalarSubscription(s, value));
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		actual.onSubscribe(Operators.scalarSubscription(actual, value));
 	}
 }

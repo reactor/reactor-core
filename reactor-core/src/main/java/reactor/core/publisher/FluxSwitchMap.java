@@ -75,12 +75,12 @@ final class FluxSwitchMap<T, R> extends FluxOperator<T, R> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super R> s) {
-		if (FluxFlatMap.trySubscribeScalarMap(source, s, mapper, false)) {
+	public void subscribe(CoreSubscriber<? super R> actual) {
+		if (FluxFlatMap.trySubscribeScalarMap(source, actual, mapper, false)) {
 			return;
 		}
 
-		source.subscribe(new SwitchMapMain<T, R>(s,
+		source.subscribe(new SwitchMapMain<T, R>(actual,
 				mapper,
 				queueSupplier.get(), bufferSize));
 	}

@@ -85,12 +85,12 @@ final class FluxMergeSequential<T, R> extends FluxOperator<T, R> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super R> s) {
-		if (FluxFlatMap.trySubscribeScalarMap(source, s, mapper, false)) {
+	public void subscribe(CoreSubscriber<? super R> actual) {
+		if (FluxFlatMap.trySubscribeScalarMap(source, actual, mapper, false)) {
 			return;
 		}
 
-		Subscriber<T> parent = new MergeSequentialMain<T, R>(s,
+		Subscriber<T> parent = new MergeSequentialMain<T, R>(actual,
 				mapper,
 				maxConcurrency,
 				prefetch,

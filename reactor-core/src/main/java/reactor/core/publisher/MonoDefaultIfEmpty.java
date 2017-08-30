@@ -33,7 +33,7 @@ final class MonoDefaultIfEmpty<T> extends MonoOperator<T, T> {
     }
     
     @Override
-    public void subscribe(CoreSubscriber<? super T> s) {
-        source.subscribe(new FluxDefaultIfEmpty.DefaultIfEmptySubscriber<>(s, defaultValue));
+    public void subscribe(CoreSubscriber<? super T> actual) {
+        source.subscribe(new FluxDefaultIfEmpty.DefaultIfEmptySubscriber<>(actual, defaultValue));
     }
 }

@@ -101,9 +101,9 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		PublishInner<T> inner = new PublishInner<>(s);
-		s.onSubscribe(inner);
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		PublishInner<T> inner = new PublishInner<>(actual);
+		actual.onSubscribe(inner);
 		for (; ; ) {
 			if (inner.isCancelled()) {
 				break;

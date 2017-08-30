@@ -56,7 +56,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		C collection;
 
 		try {
@@ -64,17 +64,17 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 					"The collectionSupplier returned a null collection");
 		}
 		catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e));
 			return;
 		}
 
-		if (s instanceof ConditionalSubscriber) {
-			source.subscribe(new DistinctConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
+		if (actual instanceof ConditionalSubscriber) {
+			source.subscribe(new DistinctConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual,
 					collection,
 					keyExtractor));
 		}
 		else {
-			source.subscribe(new DistinctSubscriber<>(s, collection, keyExtractor));
+			source.subscribe(new DistinctSubscriber<>(actual, collection, keyExtractor));
 		}
 	}
 

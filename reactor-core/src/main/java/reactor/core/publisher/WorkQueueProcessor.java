@@ -291,16 +291,17 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	}
 
 	@Override
-	public void subscribe(final CoreSubscriber<? super E> subscriber) {
-		Objects.requireNonNull(subscriber, "subscribe");
+	public void subscribe(final CoreSubscriber<? super E> actual) {
+		Objects.requireNonNull(actual, "subscribe");
 
 		if (!alive()) {
-			TopicProcessor.coldSource(ringBuffer, null, error, workSequence).subscribe(subscriber);
+			TopicProcessor.coldSource(ringBuffer, null, error, workSequence).subscribe(
+					actual);
 			return;
 		}
 
 		final WorkQueueInner<E> signalProcessor =
-				new WorkQueueInner<>(subscriber, this);
+				new WorkQueueInner<>(actual, this);
 		try {
 
 			incrementSubscribers();
@@ -322,10 +323,11 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 			decrementSubscribers();
 			ringBuffer.removeGatingSequence(signalProcessor.sequence);
 			if(RejectedExecutionException.class.isAssignableFrom(t.getClass())){
-				TopicProcessor.coldSource(ringBuffer, t, error, workSequence).subscribe(subscriber);
+				TopicProcessor.coldSource(ringBuffer, t, error, workSequence).subscribe(
+						actual);
 			}
 			else {
-				Operators.error(subscriber, t);
+				Operators.error(actual, t);
 			}
 		}
 	}

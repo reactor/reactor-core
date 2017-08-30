@@ -54,8 +54,8 @@ final class MonoSingle<T> extends MonoFromFluxOperator<T, T>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		source.subscribe(new SingleSubscriber<>(s, defaultValue, completeOnEmpty));
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		source.subscribe(new SingleSubscriber<>(actual, defaultValue, completeOnEmpty));
 	}
 
 	static final class SingleSubscriber<T> extends Operators.MonoSubscriber<T, T>  {

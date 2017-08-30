@@ -67,14 +67,14 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		S resource;
 
 		try {
 			resource = resourceSupplier.call();
 		}
 		catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e));
 			return;
 		}
 
@@ -94,24 +94,24 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable {
 				e = ex;
 			}
 
-			Operators.error(s, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e));
 			return;
 		}
 
 		if (p instanceof Fuseable) {
-			from(p).subscribe(new UsingFuseableSubscriber<>(s,
+			from(p).subscribe(new UsingFuseableSubscriber<>(actual,
 					resourceCleanup,
 					resource,
 					eager));
 		}
-		else if (s instanceof ConditionalSubscriber) {
-			from(p).subscribe(new UsingConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
+		else if (actual instanceof ConditionalSubscriber) {
+			from(p).subscribe(new UsingConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual,
 					resourceCleanup,
 					resource,
 					eager));
 		}
 		else {
-			from(p).subscribe(new UsingSubscriber<>(s, resourceCleanup,
+			from(p).subscribe(new UsingSubscriber<>(actual, resourceCleanup,
 					resource, eager));
 		}
 	}

@@ -38,11 +38,11 @@ final class MonoFilter<T> extends MonoOperator<T, T> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> s) {
-		if (s instanceof ConditionalSubscriber) {
-			source.subscribe(new FluxFilter.FilterConditionalSubscriber<>((ConditionalSubscriber<? super T>)s, predicate));
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		if (actual instanceof ConditionalSubscriber) {
+			source.subscribe(new FluxFilter.FilterConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual, predicate));
 			return;
 		}
-		source.subscribe(new FluxFilter.FilterSubscriber<>(s, predicate));
+		source.subscribe(new FluxFilter.FilterSubscriber<>(actual, predicate));
 	}
 }

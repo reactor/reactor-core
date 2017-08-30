@@ -67,15 +67,15 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super C> s) {
+	public void subscribe(CoreSubscriber<? super C> actual) {
 		if (size == skip) {
-			source.subscribe(new BufferExactSubscriber<>(s, size, bufferSupplier));
+			source.subscribe(new BufferExactSubscriber<>(actual, size, bufferSupplier));
 		}
 		else if (skip > size) {
-			source.subscribe(new BufferSkipSubscriber<>(s, size, skip, bufferSupplier));
+			source.subscribe(new BufferSkipSubscriber<>(actual, size, skip, bufferSupplier));
 		}
 		else {
-			source.subscribe(new BufferOverlappingSubscriber<>(s,
+			source.subscribe(new BufferOverlappingSubscriber<>(actual,
 					size,
 					skip,
 					bufferSupplier));

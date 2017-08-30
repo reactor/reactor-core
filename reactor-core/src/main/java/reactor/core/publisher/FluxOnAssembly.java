@@ -240,16 +240,16 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		if(snapshotStack != null) {
-			if (s instanceof ConditionalSubscriber) {
-				ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) s;
+			if (actual instanceof ConditionalSubscriber) {
+				ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) actual;
 				source.subscribe(new OnAssemblyConditionalSubscriber<>(cs,
 						snapshotStack,
 						source));
 			}
 			else {
-				source.subscribe(new OnAssemblySubscriber<>(s, snapshotStack, source));
+				source.subscribe(new OnAssemblySubscriber<>(actual, snapshotStack, source));
 			}
 		}
 	}

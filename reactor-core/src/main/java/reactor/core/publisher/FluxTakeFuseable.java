@@ -41,7 +41,7 @@ final class FluxTakeFuseable<T> extends FluxOperator<T, T> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		source.subscribe(new TakeFuseableSubscriber<>(s, n));
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		source.subscribe(new TakeFuseableSubscriber<>(actual, n));
 	}
 }

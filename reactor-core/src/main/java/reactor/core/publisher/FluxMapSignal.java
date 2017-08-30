@@ -65,8 +65,8 @@ final class FluxMapSignal<T, R> extends FluxOperator<T, R> {
     }
 
     @Override
-    public void subscribe(CoreSubscriber<? super R> s) {
-	    source.subscribe(new FluxMapSignalSubscriber<>(s,
+    public void subscribe(CoreSubscriber<? super R> actual) {
+	    source.subscribe(new FluxMapSignalSubscriber<>(actual,
 			    mapperNext,
 			    mapperError,
 			    mapperComplete));

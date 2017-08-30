@@ -39,8 +39,8 @@ final class FluxErrorOnRequest<T> extends Flux<T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		s.onSubscribe(new ErrorSubscription(s, error));
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		actual.onSubscribe(new ErrorSubscription(actual, error));
 	}
 
 	static final class ErrorSubscription implements InnerProducer {

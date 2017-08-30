@@ -35,8 +35,8 @@ final class FluxCancelOn<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		source.subscribe(new CancelSubscriber<T>(s, scheduler));
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		source.subscribe(new CancelSubscriber<T>(actual, scheduler));
 	}
 
 	static final class CancelSubscriber<T>

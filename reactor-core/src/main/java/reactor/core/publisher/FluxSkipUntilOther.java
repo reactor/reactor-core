@@ -46,8 +46,8 @@ final class FluxSkipUntilOther<T, U> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		SkipUntilMainSubscriber<T> mainSubscriber = new SkipUntilMainSubscriber<>(s);
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		SkipUntilMainSubscriber<T> mainSubscriber = new SkipUntilMainSubscriber<>(actual);
 
 		SkipUntilOtherSubscriber<U> otherSubscriber = new SkipUntilOtherSubscriber<>(mainSubscriber);
 

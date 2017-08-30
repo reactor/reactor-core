@@ -63,14 +63,14 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		S resource;
 
 		try {
 			resource = resourceSupplier.call();
 		}
 		catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e));
 			return;
 		}
 
@@ -90,25 +90,25 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable {
 				e = ex;
 			}
 
-			Operators.error(s, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e));
 			return;
 		}
 
 		if (p instanceof Fuseable) {
-			p.subscribe(new FluxUsing.UsingFuseableSubscriber<>(s,
+			p.subscribe(new FluxUsing.UsingFuseableSubscriber<>(actual,
 					resourceCleanup,
 					resource,
 					eager));
 		}
-		else if (s instanceof ConditionalSubscriber) {
+		else if (actual instanceof ConditionalSubscriber) {
 			p.subscribe(new FluxUsing.UsingConditionalSubscriber<>((ConditionalSubscriber<? super
-					T>) s,
+					T>) actual,
 					resourceCleanup,
 					resource,
 					eager));
 		}
 		else {
-			p.subscribe(new FluxUsing.UsingSubscriber<>(s,
+			p.subscribe(new FluxUsing.UsingSubscriber<>(actual,
 					resourceCleanup,
 					resource,
 					eager));

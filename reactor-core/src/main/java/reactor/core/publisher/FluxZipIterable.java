@@ -48,7 +48,7 @@ final class FluxZipIterable<T, U, R> extends FluxOperator<T, R> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super R> s) {
+	public void subscribe(CoreSubscriber<? super R> actual) {
 		Iterator<? extends U> it;
 
 		try {
@@ -56,7 +56,7 @@ final class FluxZipIterable<T, U, R> extends FluxOperator<T, R> {
 					"The other iterable produced a null iterator");
 		}
 		catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e));
 			return;
 		}
 
@@ -66,16 +66,16 @@ final class FluxZipIterable<T, U, R> extends FluxOperator<T, R> {
 			b = it.hasNext();
 		}
 		catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e));
 			return;
 		}
 
 		if (!b) {
-			Operators.complete(s);
+			Operators.complete(actual);
 			return;
 		}
 
-		source.subscribe(new ZipSubscriber<>(s, it, zipper));
+		source.subscribe(new ZipSubscriber<>(actual, it, zipper));
 	}
 
 	static final class ZipSubscriber<T, U, R>

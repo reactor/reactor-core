@@ -43,13 +43,13 @@ final class FluxFilter<T> extends FluxOperator<T, T> {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> s) {
-		if (s instanceof ConditionalSubscriber) {
-			source.subscribe(new FilterConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		if (actual instanceof ConditionalSubscriber) {
+			source.subscribe(new FilterConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual,
 					predicate));
 			return;
 		}
-		source.subscribe(new FilterSubscriber<>(s, predicate));
+		source.subscribe(new FilterSubscriber<>(actual, predicate));
 	}
 
 	static final class FilterSubscriber<T>

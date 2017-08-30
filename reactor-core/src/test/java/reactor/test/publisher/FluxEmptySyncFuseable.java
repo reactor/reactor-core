@@ -27,8 +27,8 @@ import reactor.core.publisher.Flux;
 final class FluxEmptySyncFuseable<T> extends Flux<T> implements Fuseable {
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		s.onSubscribe(new SynchronousSubscription<T>() {
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		actual.onSubscribe(new SynchronousSubscription<T>() {
 			@Override
 			@Nullable
 			public T poll() {
@@ -60,6 +60,6 @@ final class FluxEmptySyncFuseable<T> extends Flux<T> implements Fuseable {
 
 			}
 		});
-		s.onComplete();
+		actual.onComplete();
 	}
 }

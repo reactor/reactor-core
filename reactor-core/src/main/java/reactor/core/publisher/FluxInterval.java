@@ -57,19 +57,19 @@ final class FluxInterval extends Flux<Long> {
 	}
 	
 	@Override
-	public void subscribe(CoreSubscriber<? super Long> s) {
+	public void subscribe(CoreSubscriber<? super Long> actual) {
 		Worker w = timedScheduler.createWorker();
 
-		IntervalRunnable r = new IntervalRunnable(s, w);
+		IntervalRunnable r = new IntervalRunnable(actual, w);
 
-		s.onSubscribe(r);
+		actual.onSubscribe(r);
 
 		try {
 			w.schedulePeriodically(r, initialDelay, period, unit);
 		}
 		catch (RejectedExecutionException ree) {
 			if (!r.cancelled) {
-				s.onError(Operators.onRejectedExecution(ree, r, null, null));
+				actual.onError(Operators.onRejectedExecution(ree, r, null, null));
 			}
 		}
 	}

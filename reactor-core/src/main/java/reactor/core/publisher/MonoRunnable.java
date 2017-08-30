@@ -35,14 +35,14 @@ final class MonoRunnable<T> extends Mono<T> implements Callable<Void> {
     }
 
     @Override
-    public void subscribe(CoreSubscriber<? super T> s) {
+    public void subscribe(CoreSubscriber<? super T> actual) {
         try {
             run.run();
         } catch (Throwable ex) {
-            Operators.error(s, Operators.onOperatorError(ex));
+            Operators.error(actual, Operators.onOperatorError(ex));
             return;
         }
-        Operators.complete(s);
+        Operators.complete(actual);
     }
     
     @Override

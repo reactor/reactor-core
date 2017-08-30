@@ -44,10 +44,10 @@ final class MonoCreate<T> extends Mono<T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		DefaultMonoSink<T> emitter = new DefaultMonoSink<>(s);
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		DefaultMonoSink<T> emitter = new DefaultMonoSink<>(actual);
 
-		s.onSubscribe(emitter);
+		actual.onSubscribe(emitter);
 
 		try {
 			callback.accept(emitter);

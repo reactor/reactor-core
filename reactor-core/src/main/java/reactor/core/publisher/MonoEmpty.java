@@ -41,8 +41,8 @@ extends Mono<Object>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super Object> s) {
-		Operators.complete(s);
+	public void subscribe(CoreSubscriber<? super Object> actual) {
+		Operators.complete(actual);
 	}
 
 	/**

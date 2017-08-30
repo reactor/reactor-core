@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -61,7 +61,7 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		for(;;){
 			Signal<T> state = this.state;
 			if (state == EMPTY) {
@@ -69,9 +69,9 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 				CoordinatorSubscriber<T> newState = new CoordinatorSubscriber<>(this);
 				if (STATE.compareAndSet(this, EMPTY, newState)) {
 					source.subscribe(newState);
-					CacheMonoSubscriber<T> inner = new CacheMonoSubscriber<>(s, newState);
+					CacheMonoSubscriber<T> inner = new CacheMonoSubscriber<>(actual, newState);
 					if (newState.add(inner)) {
-						s.onSubscribe(inner);
+						actual.onSubscribe(inner);
 						break;
 					}
 				}
@@ -80,22 +80,22 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 				//subscribed to source once, but not yet valued / cached
 				CoordinatorSubscriber<T> coordinator = (CoordinatorSubscriber<T>) state;
 
-				CacheMonoSubscriber<T> inner = new CacheMonoSubscriber<>(s, coordinator);
+				CacheMonoSubscriber<T> inner = new CacheMonoSubscriber<>(actual, coordinator);
 				if (coordinator.add(inner)) {
-					s.onSubscribe(inner);
+					actual.onSubscribe(inner);
 					break;
 				}
 			}
 			else {
 				//state is an actual signal, cached
 				if (state.isOnNext()) {
-					s.onSubscribe(new Operators.ScalarSubscription<>(s, state.get()));
+					actual.onSubscribe(new Operators.ScalarSubscription<>(actual, state.get()));
 				}
 				else if (state.isOnComplete()) {
-					Operators.complete(s);
+					Operators.complete(actual);
 				}
 				else {
-					Operators.error(s, state.getThrowable());
+					Operators.error(actual, state.getThrowable());
 				}
 				break;
 			}

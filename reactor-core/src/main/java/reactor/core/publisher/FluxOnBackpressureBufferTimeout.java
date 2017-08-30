@@ -65,8 +65,8 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super O> s) {
-		source.subscribe(new BackpressureBufferTimeoutSubscriber<>(s,
+	public void subscribe(CoreSubscriber<? super O> actual) {
+		source.subscribe(new BackpressureBufferTimeoutSubscriber<>(actual,
 				ttl,
 				ttlScheduler,
 				bufferSize,

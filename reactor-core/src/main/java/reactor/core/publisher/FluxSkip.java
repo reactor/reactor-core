@@ -39,8 +39,8 @@ final class FluxSkip<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		source.subscribe(new SkipSubscriber<>(s, n));
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		source.subscribe(new SkipSubscriber<>(actual, n));
 	}
 
 	//Fixme Does not implement ConditionalSubscriber until the full chain of operators

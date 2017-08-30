@@ -73,16 +73,16 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super R> s) {
+	public void subscribe(CoreSubscriber<? super R> actual) {
 
 		JoinSubscription<TLeft, TRight, TLeftEnd, TRightEnd, R> parent =
-				new JoinSubscription<>(s,
+				new JoinSubscription<>(actual,
 						leftEnd,
 						rightEnd,
 						resultSelector,
 						queueSupplier.get());
 
-		s.onSubscribe(parent);
+		actual.onSubscribe(parent);
 
 		LeftRightSubscriber left = new LeftRightSubscriber(parent, true);
 		parent.cancellations.add(left);

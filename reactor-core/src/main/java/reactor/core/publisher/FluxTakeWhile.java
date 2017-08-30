@@ -39,8 +39,8 @@ final class FluxTakeWhile<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		source.subscribe(new TakeWhileSubscriber<>(s, predicate));
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		source.subscribe(new TakeWhileSubscriber<>(actual, predicate));
 	}
 
 	static final class TakeWhileSubscriber<T>

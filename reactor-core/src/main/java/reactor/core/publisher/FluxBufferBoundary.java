@@ -60,7 +60,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super C> s) {
+	public void subscribe(CoreSubscriber<? super C> actual) {
 		C buffer;
 
 		try {
@@ -68,16 +68,17 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 					"The bufferSupplier returned a null buffer");
 		}
 		catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e));
 			return;
 		}
 
 		BufferBoundaryMain<T, U, C> parent =
 				new BufferBoundaryMain<>(
-						source instanceof FluxInterval ? s : Operators.serialize(s),
+						source instanceof FluxInterval ?
+								actual : Operators.serialize(actual),
 						buffer, bufferSupplier);
 
-		s.onSubscribe(parent);
+		actual.onSubscribe(parent);
 
 		other.subscribe(parent.other);
 

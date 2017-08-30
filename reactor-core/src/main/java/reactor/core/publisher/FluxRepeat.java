@@ -42,10 +42,10 @@ final class FluxRepeat<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		RepeatSubscriber<T> parent = new RepeatSubscriber<>(source, s, times);
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		RepeatSubscriber<T> parent = new RepeatSubscriber<>(source, actual, times);
 
-		s.onSubscribe(parent);
+		actual.onSubscribe(parent);
 
 		if (!parent.isCancelled()) {
 			parent.onComplete();

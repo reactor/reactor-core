@@ -59,7 +59,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 	}
 	
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		RefCountMonitor<T> state;
 		
 		for (;;) {
@@ -74,7 +74,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 				state = u;
 			}
 			
-			state.subscribe(s);
+			state.subscribe(actual);
 			break;
 		}
 	}

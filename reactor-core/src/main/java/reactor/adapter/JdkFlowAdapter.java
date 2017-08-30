@@ -63,8 +63,8 @@ public abstract class JdkFlowAdapter {
         }
 
         @Override
-        public void subscribe(final CoreSubscriber<? super T> s) {
-        	pub.subscribe(new SubscriberToRS<>(s));
+        public void subscribe(final CoreSubscriber<? super T> actual) {
+        	pub.subscribe(new SubscriberToRS<>(actual));
         }
     }
 

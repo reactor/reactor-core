@@ -78,8 +78,8 @@ final class FluxGroupBy<T, K, V> extends FluxOperator<T, GroupedFlux<K, V>>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super GroupedFlux<K, V>> s) {
-		source.subscribe(new GroupByMain<>(s,
+	public void subscribe(CoreSubscriber<? super GroupedFlux<K, V>> actual) {
+		source.subscribe(new GroupByMain<>(actual,
 				mainQueueSupplier.get(),
 				groupQueueSupplier,
 				prefetch,
@@ -694,14 +694,14 @@ final class FluxGroupBy<T, K, V> extends FluxOperator<T, GroupedFlux<K, V>>
 		}
 
 		@Override
-		public void subscribe(CoreSubscriber<? super V> s) {
+		public void subscribe(CoreSubscriber<? super V> actual) {
 			if (once == 0 && ONCE.compareAndSet(this, 0, 1)) {
-				s.onSubscribe(this);
-				ACTUAL.lazySet(this, s);
+				actual.onSubscribe(this);
+				ACTUAL.lazySet(this, actual);
 				drain();
 			}
 			else {
-				s.onError(new IllegalStateException(
+				actual.onError(new IllegalStateException(
 						"GroupedFlux allows only one Subscriber"));
 			}
 		}

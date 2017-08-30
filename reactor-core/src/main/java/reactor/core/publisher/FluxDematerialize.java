@@ -35,8 +35,8 @@ final class FluxDematerialize<T> extends FluxOperator<Signal<T>, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> subscriber) {
-		source.subscribe(new DematerializeSubscriber<>(subscriber));
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		source.subscribe(new DematerializeSubscriber<>(actual));
 	}
 
 	static final class DematerializeSubscriber<T> extends AbstractQueue<T>

@@ -84,10 +84,10 @@ final class FluxCreate<T> extends Flux<T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> t) {
-		BaseSink<T> sink = createSink(t, backpressure);
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		BaseSink<T> sink = createSink(actual, backpressure);
 
-		t.onSubscribe(sink);
+		actual.onSubscribe(sink);
 		try {
 			source.accept(
 					createMode == CreateMode.PUSH_PULL ? new SerializedSink<>(sink) :

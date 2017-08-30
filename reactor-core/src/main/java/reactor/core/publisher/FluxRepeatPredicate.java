@@ -39,11 +39,11 @@ final class FluxRepeatPredicate<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		RepeatPredicateSubscriber<T> parent = new RepeatPredicateSubscriber<>(source,
-				s, predicate);
+				actual, predicate);
 
-		s.onSubscribe(parent);
+		actual.onSubscribe(parent);
 
 		if (!parent.isCancelled()) {
 			parent.resubscribe();

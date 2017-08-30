@@ -47,8 +47,8 @@ final class FluxCallableOnAssembly<T> extends FluxOperator<T, T>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> s) {
-		FluxOnAssembly.subscribe(s, source, stacktrace);
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		FluxOnAssembly.subscribe(actual, source, stacktrace);
 	}
 
 	@SuppressWarnings("unchecked")

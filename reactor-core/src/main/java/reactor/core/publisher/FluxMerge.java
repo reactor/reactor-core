@@ -61,9 +61,9 @@ final class FluxMerge<T> extends Flux<T> {
 	}
 	
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		FluxFlatMap.FlatMapMain<Publisher<? extends T>, T> merger = new FluxFlatMap.FlatMapMain<>(
-				s, identityFunction(), delayError, maxConcurrency, mainQueueSupplier, prefetch,
+				actual, identityFunction(), delayError, maxConcurrency, mainQueueSupplier, prefetch,
 				innerQueueSupplier);
 		
 		merger.onSubscribe(new FluxArray.ArraySubscription<>(merger, sources));

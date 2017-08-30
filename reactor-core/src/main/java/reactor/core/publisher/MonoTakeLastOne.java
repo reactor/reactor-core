@@ -44,8 +44,8 @@ final class MonoTakeLastOne<T> extends MonoFromFluxOperator<T, T>
 	}
 
     @Override
-    public void subscribe(CoreSubscriber<? super T> s) {
-        source.subscribe(new TakeLastOneSubscriber<>(s, defaultValue, true));
+    public void subscribe(CoreSubscriber<? super T> actual) {
+        source.subscribe(new TakeLastOneSubscriber<>(actual, defaultValue, true));
     }
 
 	static final class TakeLastOneSubscriber<T>

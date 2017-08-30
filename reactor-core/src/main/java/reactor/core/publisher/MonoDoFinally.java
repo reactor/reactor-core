@@ -43,8 +43,8 @@ final class MonoDoFinally<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		source.subscribe(FluxDoFinally.createSubscriber(s, onFinally, false));
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		source.subscribe(FluxDoFinally.createSubscriber(actual, onFinally, false));
 	}
 
 }

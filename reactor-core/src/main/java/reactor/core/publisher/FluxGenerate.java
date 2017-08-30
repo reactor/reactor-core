@@ -71,16 +71,16 @@ extends Flux<T> implements Fuseable {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		S state;
 
 		try {
 			state = stateSupplier.call();
 		} catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e));
 			return;
 		}
-		s.onSubscribe(new GenerateSubscription<>(s, state, generator, stateConsumer));
+		actual.onSubscribe(new GenerateSubscription<>(actual, state, generator, stateConsumer));
 	}
 
 	static final class GenerateSubscription<T, S>

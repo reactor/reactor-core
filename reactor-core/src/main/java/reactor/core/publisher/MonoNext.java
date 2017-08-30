@@ -36,8 +36,8 @@ final class MonoNext<T> extends MonoFromFluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		source.subscribe(new NextSubscriber<>(s));
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		source.subscribe(new NextSubscriber<>(actual));
 	}
 
 	static final class NextSubscriber<T> implements InnerOperator<T, T> {

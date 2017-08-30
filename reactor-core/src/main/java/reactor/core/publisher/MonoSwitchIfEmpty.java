@@ -35,11 +35,11 @@ final class MonoSwitchIfEmpty<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		FluxSwitchIfEmpty.SwitchIfEmptySubscriber<T> parent = new
-				FluxSwitchIfEmpty.SwitchIfEmptySubscriber<>(s, other);
+				FluxSwitchIfEmpty.SwitchIfEmptySubscriber<>(actual, other);
 
-		s.onSubscribe(parent);
+		actual.onSubscribe(parent);
 
 		source.subscribe(parent);
 	}

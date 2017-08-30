@@ -130,13 +130,13 @@ final class FluxZip<T, R> extends Flux<R> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super R> s) {
+	public void subscribe(CoreSubscriber<? super R> actual) {
 		Publisher<? extends T>[] srcs = sources;
 		if (srcs != null) {
-			handleArrayMode(s, srcs);
+			handleArrayMode(actual, srcs);
 		}
 		else {
-			handleIterableMode(s, sourcesIterable);
+			handleIterableMode(actual, sourcesIterable);
 		}
 	}
 

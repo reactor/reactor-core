@@ -36,8 +36,8 @@ extends Flux<Object> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super Object> s) {
-		s.onSubscribe(Operators.emptySubscription());
+	public void subscribe(CoreSubscriber<? super Object> actual) {
+		actual.onSubscribe(Operators.emptySubscription());
 	}
 
 	/**

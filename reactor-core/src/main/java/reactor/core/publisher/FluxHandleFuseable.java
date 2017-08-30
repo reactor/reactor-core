@@ -56,14 +56,14 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super R> s) {
-		if (s instanceof ConditionalSubscriber) {
+	public void subscribe(CoreSubscriber<? super R> actual) {
+		if (actual instanceof ConditionalSubscriber) {
 
-			ConditionalSubscriber<? super R> cs = (ConditionalSubscriber<? super R>) s;
+			ConditionalSubscriber<? super R> cs = (ConditionalSubscriber<? super R>) actual;
 			source.subscribe(new HandleFuseableConditionalSubscriber<>(cs, handler));
 			return;
 		}
-		source.subscribe(new HandleFuseableSubscriber<>(s, handler));
+		source.subscribe(new HandleFuseableSubscriber<>(actual, handler));
 	}
 
 	static final class HandleFuseableSubscriber<T, R>

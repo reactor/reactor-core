@@ -39,11 +39,11 @@ final class MonoRetry<T> extends MonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		FluxRetry.RetrySubscriber<T> parent = new FluxRetry.RetrySubscriber<>(source,
-				s, times);
+				actual, times);
 
-		s.onSubscribe(parent);
+		actual.onSubscribe(parent);
 
 		if (!parent.isCancelled()) {
 			parent.resubscribe();

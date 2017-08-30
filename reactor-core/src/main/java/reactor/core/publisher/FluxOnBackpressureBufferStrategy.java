@@ -54,8 +54,8 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxOperator<O, O> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super O> s) {
-		source.subscribe(new BackpressureBufferDropOldestSubscriber<>(s,
+	public void subscribe(CoreSubscriber<? super O> actual) {
+		source.subscribe(new BackpressureBufferDropOldestSubscriber<>(actual,
 				bufferSize,
 				delayError, onBufferOverflow, bufferOverflowStrategy));
 	}

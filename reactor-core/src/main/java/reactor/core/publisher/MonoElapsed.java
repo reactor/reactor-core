@@ -34,7 +34,7 @@ final class MonoElapsed<T> extends MonoOperator<T, Tuple2<Long, T>> implements F
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super Tuple2<Long, T>> s) {
-		source.subscribe(new FluxElapsed.ElapsedSubscriber<T>(s, scheduler));
+	public void subscribe(CoreSubscriber<? super Tuple2<Long, T>> actual) {
+		source.subscribe(new FluxElapsed.ElapsedSubscriber<T>(actual, scheduler));
 	}
 }

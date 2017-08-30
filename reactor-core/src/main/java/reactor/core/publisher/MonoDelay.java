@@ -48,17 +48,17 @@ final class MonoDelay extends Mono<Long> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super Long> s) {
-		MonoDelayRunnable r = new MonoDelayRunnable(s);
+	public void subscribe(CoreSubscriber<? super Long> actual) {
+		MonoDelayRunnable r = new MonoDelayRunnable(actual);
 
-		s.onSubscribe(r);
+		actual.onSubscribe(r);
 
 		try {
 			r.setCancel(timedScheduler.schedule(r, delay, unit));
 		}
 		catch (RejectedExecutionException ree) {
 			if(r.cancel != OperatorDisposables.DISPOSED) {
-				s.onError(Operators.onRejectedExecution(ree, r, null, null));
+				actual.onError(Operators.onRejectedExecution(ree, r, null, null));
 			}
 		}
 	}

@@ -47,14 +47,14 @@ final class MonoRepeatWhen<T> extends FluxFromMonoOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		FluxRepeatWhen.RepeatWhenOtherSubscriber other =
 				new FluxRepeatWhen.RepeatWhenOtherSubscriber();
 		Subscriber<Long> signaller = Operators.serialize(other.completionSignal);
 
 		signaller.onSubscribe(Operators.emptySubscription());
 
-		CoreSubscriber<T> serial = Operators.serialize(s);
+		CoreSubscriber<T> serial = Operators.serialize(actual);
 
 		FluxRepeatWhen.RepeatWhenMainSubscriber<T> main =
 				new FluxRepeatWhen.RepeatWhenMainSubscriber<>(serial, signaller, source);
@@ -69,7 +69,7 @@ final class MonoRepeatWhen<T> extends FluxFromMonoOperator<T, T> {
 					"The whenSourceFactory returned a null Publisher");
 		}
 		catch (Throwable e) {
-			s.onError(Operators.onOperatorError(e));
+			actual.onError(Operators.onOperatorError(e));
 			return;
 		}
 

@@ -77,9 +77,9 @@ final class MonoDelayUntil<T> extends Mono<T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		DelayUntilCoordinator<T> parent = new DelayUntilCoordinator<>(s, otherGenerators);
-		s.onSubscribe(parent);
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		DelayUntilCoordinator<T> parent = new DelayUntilCoordinator<>(actual, otherGenerators);
+		actual.onSubscribe(parent);
 		source.subscribe(parent);
 	}
 

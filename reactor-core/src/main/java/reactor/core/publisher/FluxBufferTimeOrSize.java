@@ -61,8 +61,8 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super C> subscriber) {
-		source.subscribe(new BufferTimeoutSubscriber<>(Operators.serialize(subscriber),
+	public void subscribe(CoreSubscriber<? super C> actual) {
+		source.subscribe(new BufferTimeoutSubscriber<>(Operators.serialize(actual),
 				batchSize,
 				timespan,
 				timer.createWorker(),

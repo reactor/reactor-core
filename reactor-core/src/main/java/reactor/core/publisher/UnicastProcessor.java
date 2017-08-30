@@ -358,19 +358,19 @@ public final class UnicastProcessor<T>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		Objects.requireNonNull(s, "subscribe");
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		Objects.requireNonNull(actual, "subscribe");
 		if (once == 0 && ONCE.compareAndSet(this, 0, 1)) {
 
-			s.onSubscribe(this);
-			actual = s;
+			actual.onSubscribe(this);
+			this.actual = actual;
 			if (cancelled) {
-				actual = null;
+				this.actual = null;
 			} else {
 				drain();
 			}
 		} else {
-			Operators.error(s, new IllegalStateException("UnicastProcessor " +
+			Operators.error(actual, new IllegalStateException("UnicastProcessor " +
 					"allows only a single Subscriber"));
 		}
 	}

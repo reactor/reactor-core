@@ -35,8 +35,8 @@ final class MonoCount<T> extends MonoFromFluxOperator<T, Long> implements Fuseab
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super Long> s) {
-		source.subscribe(new CountSubscriber<>(s));
+	public void subscribe(CoreSubscriber<? super Long> actual) {
+		source.subscribe(new CountSubscriber<>(actual));
 	}
 
 	static final class CountSubscriber<T> extends Operators.MonoSubscriber<T, Long>  {

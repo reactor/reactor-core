@@ -77,13 +77,13 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> s) {
-		if (s instanceof ConditionalSubscriber) {
-			source.subscribe(new PeekFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) s,
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		if (actual instanceof ConditionalSubscriber) {
+			source.subscribe(new PeekFuseableConditionalSubscriber<>((ConditionalSubscriber<? super T>) actual,
 					this));
 			return;
 		}
-		source.subscribe(new PeekFuseableSubscriber<>(s, this));
+		source.subscribe(new PeekFuseableSubscriber<>(actual, this));
 	}
 
 	static final class PeekFuseableSubscriber<T>

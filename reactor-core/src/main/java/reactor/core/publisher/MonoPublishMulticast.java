@@ -44,11 +44,11 @@ final class MonoPublishMulticast<T, R> extends MonoOperator<T, R> implements Fus
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super R> s) {
+	public void subscribe(CoreSubscriber<? super R> actual) {
 
 		FluxPublishMulticast.FluxPublishMulticaster<T, R> multicast =
 				new FluxPublishMulticast.FluxPublishMulticaster<>(Integer.MAX_VALUE,
-						Queues.one(), s.currentContext());
+						Queues.one(), actual.currentContext());
 
 		Mono<? extends R> out;
 
@@ -57,15 +57,15 @@ final class MonoPublishMulticast<T, R> extends MonoOperator<T, R> implements Fus
 					"The transform returned a null Mono");
 		}
 		catch (Throwable ex) {
-			Operators.error(s, Operators.onOperatorError(ex));
+			Operators.error(actual, Operators.onOperatorError(ex));
 			return;
 		}
 
 		if (out instanceof Fuseable) {
-			out.subscribe(new FluxPublishMulticast.CancelFuseableMulticaster<>(s, multicast));
+			out.subscribe(new FluxPublishMulticast.CancelFuseableMulticaster<>(actual, multicast));
 		}
 		else {
-			out.subscribe(new FluxPublishMulticast.CancelMulticaster<>(s, multicast));
+			out.subscribe(new FluxPublishMulticast.CancelMulticaster<>(actual, multicast));
 		}
 
 		source.subscribe(multicast);

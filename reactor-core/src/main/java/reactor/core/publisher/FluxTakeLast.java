@@ -44,12 +44,12 @@ final class FluxTakeLast<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		if (n == 0) {
-			source.subscribe(new TakeLastZeroSubscriber<>(s));
+			source.subscribe(new TakeLastZeroSubscriber<>(actual));
 		}
 		else {
-			source.subscribe(new TakeLastManySubscriber<>(s, n));
+			source.subscribe(new TakeLastManySubscriber<>(actual, n));
 		}
 	}
 

@@ -69,8 +69,8 @@ final class FluxDoFinally<T> extends FluxOperator<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		source.subscribe(createSubscriber(s, onFinally, false));
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		source.subscribe(createSubscriber(actual, onFinally, false));
 	}
 
 	static class DoFinallySubscriber<T> implements InnerOperator<T, T> {

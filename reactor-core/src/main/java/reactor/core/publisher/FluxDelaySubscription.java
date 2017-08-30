@@ -48,8 +48,8 @@ final class FluxDelaySubscription<T, U> extends FluxOperator<T, T>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		other.subscribe(new DelaySubscriptionOtherSubscriber<>(s, this));
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		other.subscribe(new DelaySubscriptionOtherSubscriber<>(actual, this));
 	}
 
 	@Override

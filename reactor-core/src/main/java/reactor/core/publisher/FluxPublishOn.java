@@ -71,7 +71,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		Worker worker;
 
 		try {
@@ -79,12 +79,12 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 					"The scheduler returned a null worker");
 		}
 		catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e));
 			return;
 		}
 
-		if (s instanceof ConditionalSubscriber) {
-			ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) s;
+		if (actual instanceof ConditionalSubscriber) {
+			ConditionalSubscriber<? super T> cs = (ConditionalSubscriber<? super T>) actual;
 			source.subscribe(new PublishOnConditionalSubscriber<>(cs,
 					scheduler,
 					worker,
@@ -93,7 +93,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 					queueSupplier));
 			return;
 		}
-		source.subscribe(new PublishOnSubscriber<>(s,
+		source.subscribe(new PublishOnSubscriber<>(actual,
 				scheduler,
 				worker,
 				delayError,

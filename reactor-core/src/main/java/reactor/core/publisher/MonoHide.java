@@ -34,7 +34,7 @@ final class MonoHide<T> extends MonoOperator<T, T> {
     }
     
     @Override
-    public void subscribe(CoreSubscriber<? super T> s) {
-        source.subscribe(new FluxHide.HideSubscriber<>(s));
+    public void subscribe(CoreSubscriber<? super T> actual) {
+        source.subscribe(new FluxHide.HideSubscriber<>(actual));
     }
 }

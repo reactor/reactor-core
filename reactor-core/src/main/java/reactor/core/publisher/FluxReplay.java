@@ -1052,8 +1052,8 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		ReplayInner<T> inner = new ReplayInner<>(s);
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		ReplayInner<T> inner = new ReplayInner<>(actual);
 		for (; ; ) {
 			ReplaySubscriber<T> c = connection;
 			if (scheduler != null && c != null && c.buffer.isExpired()) {
@@ -1075,7 +1075,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 			c.add(inner);
 
-			s.onSubscribe(inner);
+			actual.onSubscribe(inner);
 
 			if (inner.isCancelled()) {
 				c.remove(inner);

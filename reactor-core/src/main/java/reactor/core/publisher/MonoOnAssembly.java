@@ -64,16 +64,16 @@ final class MonoOnAssembly<T> extends MonoOperator<T, T> implements Fuseable,
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
-		if (s instanceof ConditionalSubscriber) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
+		if (actual instanceof ConditionalSubscriber) {
 			@SuppressWarnings("unchecked") ConditionalSubscriber<? super T> cs =
-					(ConditionalSubscriber<? super T>) s;
+					(ConditionalSubscriber<? super T>) actual;
 			source.subscribe(new FluxOnAssembly.OnAssemblyConditionalSubscriber<>(cs,
 					stacktrace,
 					source));
 		}
 		else {
-			source.subscribe(new FluxOnAssembly.OnAssemblySubscriber<>(s,
+			source.subscribe(new FluxOnAssembly.OnAssemblySubscriber<>(actual,
 					stacktrace,
 					source));
 		}

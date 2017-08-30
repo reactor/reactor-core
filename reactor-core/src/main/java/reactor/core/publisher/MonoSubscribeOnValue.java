@@ -42,22 +42,22 @@ final class MonoSubscribeOnValue<T> extends Mono<T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> s) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		T v = value;
 		if (v == null) {
-			ScheduledEmpty parent = new ScheduledEmpty(s);
-			s.onSubscribe(parent);
+			ScheduledEmpty parent = new ScheduledEmpty(actual);
+			actual.onSubscribe(parent);
 			try {
 				parent.setFuture(scheduler.schedule(parent));
 			}
 			catch (RejectedExecutionException ree) {
 				if (parent.future != OperatorDisposables.DISPOSED) {
-					s.onError(Operators.onRejectedExecution(ree));
+					actual.onError(Operators.onRejectedExecution(ree));
 				}
 			}
 		}
 		else {
-			s.onSubscribe(new ScheduledScalar<>(s, v, scheduler));
+			actual.onSubscribe(new ScheduledScalar<>(actual, v, scheduler));
 		}
 	}
 }
