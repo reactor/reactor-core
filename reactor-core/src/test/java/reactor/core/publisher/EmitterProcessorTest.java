@@ -21,8 +21,10 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
 import javax.annotation.Nullable;
 
@@ -824,4 +826,257 @@ public class EmitterProcessorTest {
 
 		assertThat(test.scan(Attr.ERROR)).hasMessage("boom");
 	}
+
+	//see https://github.com/reactor/reactor-core/issues/763
+	@Test(timeout = 5000)
+	public void testRingbufferOverflowNoDroppedHook() throws Exception {
+		int bufferSize = 10;
+		EmitterProcessor<Integer> processor = EmitterProcessor.create(bufferSize);
+		for (int i = 0; i < bufferSize * 10; i++) {
+			processor.onNext(i);
+		}
+		processor.onComplete();
+
+		List<Integer> block = processor.collectList().block();
+		assertThat(block).hasSize(bufferSize);
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/763
+	@Test(timeout = 5000)
+	public void testRingbufferOverflowDropHook() throws Exception {
+		try {
+			AtomicInteger dropCount = new AtomicInteger();
+			Hooks.onNextDropped(v -> {
+				System.out.println("recycling " + v);
+				dropCount.incrementAndGet();
+			});
+
+			int bufferSize = 10;
+			EmitterProcessor<Integer> processor = EmitterProcessor.create(bufferSize);
+			for (int i = 0; i < bufferSize * 10; i++) {
+				processor.onNext(i);
+			}
+			processor.onComplete();
+
+			List<Integer> block = processor.collectList().block();
+			assertThat(block).hasSize(bufferSize);
+			assertThat(dropCount.get()).isEqualTo(bufferSize * 10 - bufferSize);
+		}
+		finally {
+			Hooks.resetOnNextDropped();
+		}
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/763
+	@Test
+	public void unblockWhenSubscriberDisconnectWhileFull() throws Exception {
+		try {
+			int bufferSize = 9; //on purpose not a power of 2
+			int additional = 5;
+			int sleep = 400;
+
+			List<Integer> drops = new ArrayList<>();
+			List<Integer> seenFirst = new ArrayList<>();
+			CountDownLatch latch = new CountDownLatch(1);
+			Hooks.onNextDropped(v -> {
+				System.out.println("recycling " + v);
+				drops.add((Integer) v);
+			});
+
+			EmitterProcessor<Integer> processor = EmitterProcessor.create(bufferSize, false);
+
+			final Disposable d = processor.subscribe(seenFirst::add, e -> {}, () -> {},
+					subscription -> {}); //prevents the processor from immediately draining
+
+			new Thread(() -> {
+				try {
+					latch.await();
+					Thread.sleep(sleep);
+					d.dispose();
+				}
+				catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}).start();
+
+			for (int i = 0; i < bufferSize; i++) {
+				processor.onNext(i);
+			}
+
+			latch.countDown();
+			long overflowStart = System.nanoTime();
+			processor.onNext(100);
+			assertThat(System.nanoTime() - overflowStart)
+					.as("overflow call with subscriber should be delayed until subscriber disposed")
+					.isGreaterThanOrEqualTo(TimeUnit.MILLISECONDS.toNanos(sleep));
+
+			for (int i = 0; i < additional; i++) {
+				long overflowNoSubscriberStart = System.nanoTime();
+				processor.onNext(200 + i);
+				assertThat(System.nanoTime() - overflowNoSubscriberStart)
+						.as("overflow calls without subscriber should be instant and drop")
+						.isLessThanOrEqualTo(TimeUnit.MILLISECONDS.toNanos(50));
+			}
+
+			processor.onComplete();
+			List<Integer> seenSecond = processor.collectList().block();
+
+			//the first subscriber never requested data, so it saw nothing
+			assertThat(seenFirst).as("seen by first")
+			                     .isEmpty();
+
+			//the second subscriber saw the last bufferSize elements
+			List<Integer> expectedSeenSecond = new ArrayList<>();
+			for (int i = additional + 1; i < bufferSize; i++) {
+				expectedSeenSecond.add(i);
+			}
+			expectedSeenSecond.add(100);
+			for (int i = 0; i < additional; i++) {
+				expectedSeenSecond.add(200 + i);
+			}
+			assertThat(seenSecond).as("seen by second")
+			                      .hasSize(bufferSize)
+			                      .containsExactlyElementsOf(expectedSeenSecond);
+
+			//elements before the last bufferSize elements were dropped
+			List<Integer> expectedDrops = new ArrayList<>(additional + 1);
+			for (int i = 0; i < additional + 1; i++) {
+				expectedDrops.add(i);
+			}
+			assertThat(drops).as("recycled")
+			                 .containsExactlyElementsOf(expectedDrops);
+
+			//sanity check the total size
+			assertThat(seenFirst.size() + seenSecond.size() + drops.size())
+					.as("total size")
+					.isEqualTo(bufferSize + additional + 1);
+		}
+		finally {
+			Hooks.resetOnNextDropped();
+		}
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/763
+	@Test
+	public void unblockWhenSubscriberRequestsWhileFull() throws Exception {
+		try {
+			int bufferSize = 9;
+			int additional = 5;
+			int sleep = 400;
+
+			List<Integer> drops = new ArrayList<>();
+			List<Integer> seenFirst = new ArrayList<>();
+			CountDownLatch latch = new CountDownLatch(1);
+			Hooks.onNextDropped(v -> {
+				System.out.println("recycling " + v);
+				drops.add((Integer) v);
+			});
+
+			EmitterProcessor<Integer> processor = EmitterProcessor.create(bufferSize, false);
+			AtomicReference<Subscription> sub = new AtomicReference<>();
+
+			processor.subscribe(
+					v -> {
+						seenFirst.add(v);
+						if (v == 100) {
+							sub.get().request(additional);
+						}
+					},
+					Throwable::printStackTrace, () -> {},
+					sub::set); //prevents the processor from immediately draining
+
+			new Thread(() -> {
+				try {
+					latch.await();
+					Thread.sleep(sleep);
+					// start consuming the processor's data
+					sub.get().request(bufferSize + 1);
+				}
+				catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}).start();
+
+			for (int i = 0; i < bufferSize; i++) {
+				processor.onNext(i);
+			}
+
+			latch.countDown();
+			long overflowStart = System.nanoTime();
+			processor.onNext(100);
+			assertThat(System.nanoTime() - overflowStart)
+					.as("overflow call with subscriber should be delayed until subscriber disposed")
+					.isGreaterThanOrEqualTo(TimeUnit.MILLISECONDS.toNanos(sleep));
+
+			for (int i = 0; i < additional; i++) {
+				long overflowNoSubscriberStart = System.nanoTime();
+				processor.onNext(200 + i);
+				assertThat(System.nanoTime() - overflowNoSubscriberStart)
+						.as("overflow calls without subscriber should be instant")
+						.isLessThanOrEqualTo(TimeUnit.MILLISECONDS.toNanos(50));
+			}
+
+			processor.onComplete();
+
+			//the 1st subscriber requested all data -> processor is drained
+			assertThat(processor.collectList().block()).isEmpty();
+			//the 1st subscriber consumed all data on the go -> no drops
+			assertThat(drops).isEmpty();
+			//the 1st subscriber saw all data
+			ArrayList<Integer> expected = new ArrayList<>(bufferSize + 1 + additional);
+			for (int i = 0; i < bufferSize; i++) {
+				expected.add(i);
+			}
+			expected.add(100);
+			for (int i = 0; i < additional; i++) {
+				expected.add(200 + i);
+			}
+			assertThat(seenFirst).containsExactlyElementsOf(expected);
+
+			//sanity check the total size
+			assertThat(seenFirst.size() + drops.size())
+					.as("total size")
+					.isEqualTo(bufferSize + additional + 1);
+		}
+		finally {
+			Hooks.resetOnNextDropped();
+		}
+	}
+
+	@Test
+	public void noSubscriberOverflowThenTwoSubscribesWithAutoCancel() {
+		EmitterProcessor<Integer> processor = EmitterProcessor.create(4, true);
+		processor.onNext(1);
+		processor.onNext(2);
+		processor.onNext(3);
+		processor.onNext(4);
+		processor.onNext(5);
+		processor.onComplete();
+
+		assertThat(processor.collectList().block())
+				.as("first following subscribe sees and consumes all")
+				.startsWith(2).endsWith(5).hasSize(4);
+		assertThat(processor.collectList().block())
+				.as("second following subscribe sees nothing")
+				.isEmpty();
+	}
+
+	@Test
+	public void noSubscriberOverflowThenTwoSubscribesWithoutAutoCancel() {
+		EmitterProcessor<Integer> processor = EmitterProcessor.create(4, false);
+		processor.onNext(1);
+		processor.onNext(2);
+		processor.onNext(3);
+		processor.onNext(4);
+		processor.onNext(5);
+		processor.onComplete();
+
+		assertThat(processor.collectList().block())
+				.as("first following subscribe sees and consumes all")
+				.startsWith(2).endsWith(5).hasSize(4);
+		assertThat(processor.collectList().block())
+				.as("second following subscribe sees nothing")
+				.isEmpty();
+	}
+
 }
