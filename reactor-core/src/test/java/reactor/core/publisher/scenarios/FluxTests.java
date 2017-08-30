@@ -46,6 +46,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.assertj.core.api.Assertions;
 import org.hamcrest.Matcher;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -342,35 +343,35 @@ public class FluxTests extends AbstractReactorTest {
 	@Test
 	public void promiseErrorCountCannotExceedOne() {
 		MonoProcessor<Object> deferred = MonoProcessor.create();
-		Throwable error = new Exception();
-		try {
-			deferred.onError(error);
-			deferred.onNext(error);
-			fail();
-		}
-		catch (Exception ise) {
-			if(!Exceptions.isBubbling(ise)){
-				throw ise;
-			}
-		}
-		assertTrue(deferred.getError() instanceof Exception);
+		Throwable error = new IOException("foo");
+
+		StepVerifier.create(deferred)
+		            .then(() -> {
+			            deferred.onError(error);
+			            deferred.onNext(error);
+		            })
+		            .expectErrorMessage("foo")
+		            .verifyThenAssertThat()
+		            .hasDroppedExactly(error);
+
+		Assertions.assertThat(deferred.getError()).isSameAs(error);
 	}
 
 	@Test
 	public void promiseAcceptCountAndErrorCountCannotExceedOneInTotal() {
 		MonoProcessor<Object> deferred = MonoProcessor.create();
-		Throwable error = new Exception();
-		try {
-			deferred.onError(error);
-			deferred.onNext("alpha");
-			fail();
-		}
-		catch (RuntimeException ise) {
-			if(!Exceptions.isBubbling(ise)){
-				throw ise;
-			}
-		}
-		assertTrue(deferred.getError() instanceof Exception);
+		Throwable error = new IOException("foo");
+
+		StepVerifier.create(deferred)
+		            .then(() -> {
+			            deferred.onError(error);
+			            deferred.onNext("alpha");
+		            })
+		            .expectErrorMessage("foo")
+		            .verifyThenAssertThat()
+		            .hasDroppedExactly("alpha");
+
+		Assertions.assertThat(deferred.getError()).isSameAs(error);
 	}
 
 	<T> void await(Flux<T> s, Matcher<T> expected) throws InterruptedException {

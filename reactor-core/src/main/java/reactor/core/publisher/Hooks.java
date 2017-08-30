@@ -29,6 +29,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
+import reactor.core.Exceptions;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 
@@ -239,13 +240,13 @@ public abstract class Hooks {
 	}
 
 	/**
-	 * Override global data dropped strategy which by default throw {@link
-	 * reactor.core.Exceptions#failWithCancel()}
+	 * Override global data dropped strategy which by default logs at DEBUG level.
 	 * <p>
 	 * The hook is cumulative, so calling this method several times will set up the hook
 	 * for as many consumer invocations (even if called with the same consumer instance).
 	 *
 	 * @param c the {@link Consumer} to apply to data (onNext) that is dropped
+	 * @see #onNextDroppedFail()
 	 */
 	public static void onNextDropped(Consumer<Object> c) {
 		Objects.requireNonNull(c, "onNextDroppedHook");
@@ -258,6 +259,20 @@ public abstract class Hooks {
 			else {
 				onNextDroppedHook = c;
 			}
+		}
+	}
+
+	/**
+	 * Resets {@link #resetOnNextDropped() onNextDropped hook(s)} and
+	 * apply a strategy of throwing {@link Exceptions#failWithCancel()} instead.
+	 * <p>
+	 * Use {@link #resetOnNextDropped()} to reset to the default strategy of logging.
+	 */
+	public static void onNextDroppedFail() {
+		log.debug("Enabling failure mode for onNextDropped");
+
+		synchronized(log) {
+			onNextDroppedHook = n -> {throw Exceptions.failWithCancel();};
 		}
 	}
 

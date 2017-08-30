@@ -34,6 +34,7 @@ import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -930,5 +931,33 @@ public class HooksTest {
 		                                .log())
 		            .expectNext(6, 6)
 		            .verifyComplete();
+	}
+
+	@Test
+	public void onNextDroppedFailReplaces() {
+		AtomicReference<Object> dropHook = new AtomicReference<>();
+		Publisher<Integer> p = s -> {
+			s.onSubscribe(Operators.emptySubscription());
+			s.onNext(1);
+			s.onNext(2);
+			s.onNext(3);
+		};
+		List<Integer> seen = new ArrayList<>();
+
+		try {
+			Hooks.onNextDropped(dropHook::set);
+			Hooks.onNextDroppedFail();
+
+			assertThatExceptionOfType(RuntimeException.class)
+					.isThrownBy(() -> Flux.from(p).take(2).subscribe(seen::add))
+					.isInstanceOf(RuntimeException.class)
+					.matches(Exceptions::isCancel);
+
+			assertThat(seen).containsExactly(1, 2);
+			assertThat(dropHook.get()).isNull();
+		}
+		finally {
+			Hooks.resetOnNextDropped();
+		}
 	}
 }
