@@ -160,7 +160,7 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 				actual.onError(ex);
 			}
 			else if(error != ex) {
-				Operators.onErrorDropped(ex);
+				Operators.onErrorDropped(ex, actual.currentContext());
 			}
 		}
 
@@ -252,7 +252,7 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, parent.currentContext());
 				return;
 			}
 			T v = value;
@@ -277,7 +277,7 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, parent.currentContext());
 				return;
 			}
 			done = true;

@@ -307,7 +307,7 @@ public final class UnicastProcessor<T>
 	@Override
 	public void onNext(T t) {
 		if (done || cancelled) {
-			Operators.onNextDropped(t);
+			Operators.onNextDropped(t, actual.currentContext());
 			return;
 		}
 
@@ -332,7 +332,7 @@ public final class UnicastProcessor<T>
 	@Override
 	public void onError(Throwable t) {
 		if (done || cancelled) {
-			Operators.onErrorDropped(t);
+			Operators.onErrorDropped(t, actual.currentContext());
 			return;
 		}
 

@@ -129,7 +129,7 @@ public abstract class BaseSubscriber<T> implements CoreSubscriber<T>, Subscripti
 	 * cancel). The hook is executed in addition to and after {@link #hookOnError(Throwable)},
 	 * {@link #hookOnComplete()} and {@link #hookOnCancel()} hooks, even if these callbacks
 	 * fail. Defaults to doing nothing. A failure of the callback will be caught by
-	 * {@link Operators#onErrorDropped(Throwable)}.
+	 * {@link Operators#onErrorDropped(Throwable, reactor.util.context.Context)}.
 	 *
 	 * @param type the type of termination event that triggered the hook
 	 * ({@link SignalType#ON_ERROR}, {@link SignalType#ON_COMPLETE} or
@@ -169,7 +169,7 @@ public abstract class BaseSubscriber<T> implements CoreSubscriber<T>, Subscripti
 		if (S.getAndSet(this, Operators.cancelledSubscription()) == Operators
 				.cancelledSubscription()) {
 			//already cancelled concurrently
-			Operators.onErrorDropped(t);
+			Operators.onErrorDropped(t, currentContext());
 			return;
 		}
 
@@ -181,7 +181,7 @@ public abstract class BaseSubscriber<T> implements CoreSubscriber<T>, Subscripti
 			if (e != t) {
 				e.addSuppressed(t);
 			}
-			Operators.onErrorDropped(e);
+			Operators.onErrorDropped(e, currentContext());
 		}
 		finally {
 			safeHookFinally(SignalType.ON_ERROR);
@@ -243,7 +243,7 @@ public abstract class BaseSubscriber<T> implements CoreSubscriber<T>, Subscripti
 			hookFinally(type);
 		}
 		catch (Throwable finallyFailure) {
-			Operators.onErrorDropped(finallyFailure);
+			Operators.onErrorDropped(finallyFailure, currentContext());
 		}
 	}
 

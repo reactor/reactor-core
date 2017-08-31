@@ -92,7 +92,7 @@ final class FluxMaterialize<T> extends FluxOperator<T, Signal<T>> {
 		@Override
 		public void onNext(T ev) {
 			if(terminalSignal != null){
-				Operators.onNextDropped(ev);
+				Operators.onNextDropped(ev, actual.currentContext());
 				return;
 			}
 		    produced++;
@@ -102,7 +102,7 @@ final class FluxMaterialize<T> extends FluxOperator<T, Signal<T>> {
 		@Override
 		public void onError(Throwable ev) {
 			if(terminalSignal != null){
-				Operators.onErrorDropped(ev);
+				Operators.onErrorDropped(ev, actual.currentContext());
 				return;
 			}
 			terminalSignal = Signal.error(ev);

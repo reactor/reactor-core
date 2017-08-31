@@ -98,7 +98,7 @@ final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable
 			}
 			else {
 				if (done) {
-					Operators.onNextDropped(t);
+					Operators.onNextDropped(t, actual.currentContext());
 					return;
 				}
 				R v;
@@ -119,7 +119,7 @@ final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 
@@ -248,7 +248,7 @@ final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable
 			}
 			else {
 				if (done) {
-					Operators.onNextDropped(t);
+					Operators.onNextDropped(t, actual.currentContext());
 					return;
 				}
 
@@ -270,7 +270,7 @@ final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return true;
 			}
 
@@ -291,7 +291,7 @@ final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 

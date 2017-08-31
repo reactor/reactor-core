@@ -137,6 +137,7 @@ final class FluxCreate<T> extends Flux<T> {
 		@Override
 		public FluxSink<T> next(T t) {
 			if (sink.isCancelled() || done) {
+				Operators.onNextDropped(t, sink.currentContext());
 				return this;
 			}
 			//noinspection ConstantConditions
@@ -165,7 +166,7 @@ final class FluxCreate<T> extends Flux<T> {
 		@Override
 		public void error(Throwable t) {
 			if (sink.isCancelled() || done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, sink.currentContext());
 				return;
 			}
 			//noinspection ConstantConditions
@@ -177,7 +178,7 @@ final class FluxCreate<T> extends Flux<T> {
 				drain();
 			}
 			else {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, sink.currentContext());
 			}
 		}
 
@@ -418,6 +419,7 @@ final class FluxCreate<T> extends Flux<T> {
 		@Override
 		public void error(Throwable e) {
 			if (isCancelled()) {
+				Operators.onErrorDropped(e, actual.currentContext());
 				return;
 			}
 			try {
@@ -567,6 +569,7 @@ final class FluxCreate<T> extends Flux<T> {
 		@Override
 		public FluxSink<T> next(T t) {
 			if (isCancelled()) {
+				Operators.onNextDropped(t, actual.currentContext());
 				return this;
 			}
 
@@ -591,6 +594,7 @@ final class FluxCreate<T> extends Flux<T> {
 		@Override
 		public final FluxSink<T> next(T t) {
 			if (isCancelled()) {
+				Operators.onNextDropped(t, actual.currentContext());
 				return this;
 			}
 

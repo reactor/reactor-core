@@ -132,7 +132,7 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			done = true;

@@ -289,7 +289,7 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 								evicted,
 								ex);
 					}
-					Operators.onErrorDropped(ex);
+					Operators.onErrorDropped(ex, actual.currentContext());
 				}
 			}
 		}

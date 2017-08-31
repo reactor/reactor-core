@@ -281,7 +281,7 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Fuseable {
         @Override
         public void onNext(T t) {
             if (done) {
-                Operators.onNextDropped(t);
+                Operators.onNextDropped(t, parent.currentContext());
                 return;
             }
             done = true;
@@ -291,7 +291,7 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Fuseable {
         @Override
         public void onError(Throwable t) {
             if (done) {
-                Operators.onErrorDropped(t);
+                Operators.onErrorDropped(t, parent.currentContext());
                 return;
             }
             done = true;

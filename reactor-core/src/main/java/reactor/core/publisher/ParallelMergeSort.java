@@ -191,7 +191,7 @@ final class ParallelMergeSort<T> extends Flux<T> implements Scannable {
 				drain();
 			}
 			else if(error != ex) {
-				Operators.onErrorDropped(ex);
+				Operators.onErrorDropped(ex, actual.currentContext());
 			}
 		}
 

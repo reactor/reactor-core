@@ -163,7 +163,7 @@ final class MonoCreate<T> extends Mono<T> {
 				}
 			}
 			else {
-				Operators.onErrorDropped(e);
+				Operators.onErrorDropped(e, actual.currentContext());
 			}
 		}
 

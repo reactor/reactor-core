@@ -478,7 +478,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 				drain();
 			}
 			else {
-				Operators.onErrorDropped(ex);
+				Operators.onErrorDropped(ex, actual.currentContext());
 			}
 		}
 
@@ -511,7 +511,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 				drain();
 			}
 			else {
-				Operators.onErrorDropped(ex);
+				Operators.onErrorDropped(ex, actual.currentContext());
 			}
 		}
 	}

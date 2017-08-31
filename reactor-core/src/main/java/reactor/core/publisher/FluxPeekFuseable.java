@@ -179,7 +179,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 			}
 			else {
 				if (done) {
-					Operators.onNextDropped(t);
+					Operators.onNextDropped(t, actual.currentContext());
 					return;
 				}
 
@@ -200,7 +200,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			done = true;
@@ -232,7 +232,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					afterTerminateHook.run();
 				}
 				catch (Throwable e) {
-					FluxPeek.afterErrorWithFailure(parent, e, t);
+					FluxPeek.afterErrorWithFailure(parent, e, t, actual.currentContext());
 				}
 			}
 		}
@@ -268,7 +268,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 						afterTerminateHook.run();
 					}
 					catch (Throwable e) {
-						FluxPeek.afterCompleteWithFailure(parent, e);
+						FluxPeek.afterCompleteWithFailure(parent, e, actual.currentContext());
 					}
 				}
 			}
@@ -445,7 +445,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 			}
 			else {
 				if (done) {
-					Operators.onNextDropped(t);
+					Operators.onNextDropped(t, actual.currentContext());
 					return;
 				}
 
@@ -466,7 +466,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return false;
 			}
 
@@ -486,7 +486,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			done = true;
@@ -518,7 +518,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					afterTerminateHook.run();
 				}
 				catch (Throwable e) {
-					FluxPeek.afterErrorWithFailure(parent, e, t);
+					FluxPeek.afterErrorWithFailure(parent, e, t, actual.currentContext());
 				}
 			}
 		}
@@ -553,7 +553,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 						afterTerminateHook.run();
 					}
 					catch (Throwable e) {
-						FluxPeek.afterCompleteWithFailure(parent, e);
+						FluxPeek.afterCompleteWithFailure(parent, e, actual.currentContext());
 					}
 				}
 			}
@@ -763,7 +763,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 
@@ -783,7 +783,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return false;
 			}
 
@@ -803,7 +803,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			done = true;
@@ -835,7 +835,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					afterTerminateHook.run();
 				}
 				catch (Throwable e) {
-					FluxPeek.afterErrorWithFailure(parent, e, t);
+					FluxPeek.afterErrorWithFailure(parent, e, t, actual.currentContext());
 				}
 			}
 		}
@@ -865,7 +865,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					afterTerminateHook.run();
 				}
 				catch (Throwable e) {
-					FluxPeek.afterCompleteWithFailure(parent, e);
+					FluxPeek.afterCompleteWithFailure(parent, e, actual.currentContext());
 				}
 			}
 		}

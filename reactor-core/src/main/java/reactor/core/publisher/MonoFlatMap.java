@@ -107,7 +107,7 @@ final class MonoFlatMap<T, R> extends MonoOperator<T, R> implements Fuseable {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 			done = true;
@@ -155,7 +155,7 @@ final class MonoFlatMap<T, R> extends MonoOperator<T, R> implements Fuseable {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			done = true;
@@ -231,7 +231,7 @@ final class MonoFlatMap<T, R> extends MonoOperator<T, R> implements Fuseable {
 		@Override
 		public void onNext(R t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, parent.currentContext());
 				return;
 			}
 			done = true;
@@ -241,7 +241,7 @@ final class MonoFlatMap<T, R> extends MonoOperator<T, R> implements Fuseable {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, parent.currentContext());
 				return;
 			}
 			done = true;

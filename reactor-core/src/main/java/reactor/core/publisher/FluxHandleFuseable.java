@@ -96,7 +96,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return true;
 			}
 
@@ -141,7 +141,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 			}
 			else {
 				if (done) {
-					Operators.onNextDropped(t);
+					Operators.onNextDropped(t, actual.currentContext());
 					return;
 				}
 				try {
@@ -173,7 +173,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 
@@ -373,7 +373,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 			}
 			else  {
 				if (done) {
-					Operators.onNextDropped(t);
+					Operators.onNextDropped(t, actual.currentContext());
 					return;
 				}
 				try {
@@ -405,7 +405,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return true;
 			}
 
@@ -438,7 +438,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 

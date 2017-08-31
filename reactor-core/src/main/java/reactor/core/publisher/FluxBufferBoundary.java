@@ -167,7 +167,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 				}
 			}
 
-			Operators.onNextDropped(t);
+			Operators.onNextDropped(t, actual.currentContext());
 		}
 
 		@Override
@@ -181,7 +181,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 				actual.onError(t);
 				return;
 			}
-			Operators.onErrorDropped(t);
+			Operators.onErrorDropped(t, actual.currentContext());
 		}
 
 		@Override
@@ -242,7 +242,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 				actual.onError(t);
 				return;
 			}
-			Operators.onErrorDropped(t);
+			Operators.onErrorDropped(t, actual.currentContext());
 		}
 
 		void otherNext() {

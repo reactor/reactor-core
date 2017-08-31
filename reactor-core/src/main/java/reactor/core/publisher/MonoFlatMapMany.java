@@ -185,7 +185,7 @@ final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
 		@Override
 		public void onError(Throwable t) {
 			if (hasValue) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			actual.onError(t);

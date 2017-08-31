@@ -101,7 +101,7 @@ final class FluxSkipUntilOther<T, U> extends FluxOperator<T, T> {
 		public void onError(Throwable t) {
 			SkipUntilMainSubscriber<?> m = main;
 			if (m.gate) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, main.currentContext());
 				return;
 			}
 			m.onError(t);
@@ -217,7 +217,7 @@ final class FluxSkipUntilOther<T, U> extends FluxOperator<T, T> {
 					return;
 			}
 			else if (main == Operators.cancelledSubscription()){
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			cancel();

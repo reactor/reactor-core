@@ -355,7 +355,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 				drain();
 			}
 			else {
-				Operators.onErrorDropped(e);
+				Operators.onErrorDropped(e, actual.currentContext());
 			}
 		}
 

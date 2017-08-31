@@ -119,7 +119,7 @@ final class FluxZipIterable<T, U, R> extends FluxOperator<T, R> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 
@@ -169,7 +169,7 @@ final class FluxZipIterable<T, U, R> extends FluxOperator<T, R> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			done = true;

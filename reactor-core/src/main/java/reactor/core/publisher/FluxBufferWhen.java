@@ -185,7 +185,7 @@ final class FluxBufferWhen<T, U, V, C extends Collection<? super T>>
 				}
 			}
 
-			Operators.onNextDropped(t);
+			Operators.onNextDropped(t, actual.currentContext());
 		}
 
 		@Override
@@ -206,7 +206,7 @@ final class FluxBufferWhen<T, U, V, C extends Collection<? super T>>
 				anyError(t);
 			}
 			else {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 			}
 		}
 
@@ -312,7 +312,7 @@ final class FluxBufferWhen<T, U, V, C extends Collection<? super T>>
 				drain();
 			}
 			else {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 			}
 		}
 

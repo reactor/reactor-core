@@ -107,7 +107,7 @@ final class MonoDelayElement<T> extends MonoOperator<T, T> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 			this.done = true;
@@ -131,7 +131,7 @@ final class MonoDelayElement<T> extends MonoOperator<T, T> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			this.done = true;

@@ -212,7 +212,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 			WindowFlux<T> g = window;
@@ -253,7 +253,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 				drain();
 			}
 			else {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 			}
 		}
 

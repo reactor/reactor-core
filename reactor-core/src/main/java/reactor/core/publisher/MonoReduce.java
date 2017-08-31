@@ -83,7 +83,7 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 			T r = result;
@@ -109,7 +109,7 @@ final class MonoReduce<T> extends MonoFromFluxOperator<T, T>
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			done = true;

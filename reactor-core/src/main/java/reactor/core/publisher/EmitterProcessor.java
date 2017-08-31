@@ -228,6 +228,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	@SuppressWarnings("unchecked")
 	public void onNext(T t) {
 		if (done) {
+			Operators.onNextDropped(t);
 			return;
 		}
 
