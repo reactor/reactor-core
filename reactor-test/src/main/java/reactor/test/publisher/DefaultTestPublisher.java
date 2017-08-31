@@ -52,6 +52,8 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 	Throwable error;
 
 	volatile boolean hasOverflown;
+	volatile boolean wasRequested;
+	volatile boolean wasSubscribed;
 
 	final EnumSet<Violation> violations;
 
@@ -82,6 +84,7 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 			if (p.cancelled) {
 				remove(p);
 			}
+			wasSubscribed = true;
 		} else {
 			Throwable e = error;
 			if (e != null) {
@@ -190,6 +193,7 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 		public void request(long n) {
 			if (Operators.validate(n)) {
 				Operators.getAndAddCap(REQUESTED, this, n);
+				parent.wasRequested = true;
 			}
 		}
 
@@ -240,6 +244,21 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 	@Override
 	public Flux<T> flux() {
 		return Flux.from(this);
+	}
+
+	@Override
+	public boolean wasSubscribed() {
+		return wasSubscribed;
+	}
+
+	@Override
+	public boolean wasCancelled() {
+		return cancelCount > 0;
+	}
+
+	@Override
+	public boolean wasRequested() {
+		return wasRequested;
 	}
 
 	@Override
