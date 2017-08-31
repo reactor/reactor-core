@@ -132,7 +132,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					requestHook.accept(n);
 				}
 				catch (Throwable e) {
-					Operators.onOperatorError(e);
+					Operators.onOperatorError(e, actual.currentContext());
 				}
 			}
 			s.request(n);
@@ -146,7 +146,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					cancelHook.run();
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e));
+					onError(Operators.onOperatorError(s, e, actual.currentContext()));
 					return;
 				}
 			}
@@ -163,7 +163,8 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 						subscribeHook.accept(s);
 					}
 					catch (Throwable e) {
-						Operators.error(actual, Operators.onOperatorError(s, e));
+						Operators.error(actual, Operators.onOperatorError(s, e,
+								actual.currentContext()));
 						return;
 					}
 				}
@@ -189,7 +190,8 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 						nextHook.accept(t);
 					}
 					catch (Throwable e) {
-						onError(Operators.onOperatorError(s, e, t));
+						onError(Operators.onOperatorError(s, e, t,
+								actual.currentContext()));
 						return;
 					}
 				}
@@ -212,7 +214,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 				}
 				catch (Throwable e) {
 					//this performs a throwIfFatal or suppresses t in e
-					t = Operators.onOperatorError(null, e, t);
+					t = Operators.onOperatorError(null, e, t, actual.currentContext());
 				}
 			}
 
@@ -254,7 +256,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 						completeHook.run();
 					}
 					catch (Throwable e) {
-						onError(Operators.onOperatorError(s, e));
+						onError(Operators.onOperatorError(s, e, actual.currentContext()));
 						return;
 					}
 				}
@@ -294,10 +296,12 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 						errorHook.accept(e);
 					}
 					catch (Throwable errorCallbackError) {
-						throw Exceptions.propagate(Operators.onOperatorError(s, errorCallbackError, e));
+						throw Exceptions.propagate(Operators.onOperatorError(s, errorCallbackError, e,
+								actual.currentContext()));
 					}
 				}
-				throw Exceptions.propagate(Operators.onOperatorError(s, e));
+				throw Exceptions.propagate(Operators.onOperatorError(s, e,
+						actual.currentContext()));
 			}
 
 			final Consumer<? super T> nextHook = parent.onNextCall();
@@ -306,7 +310,8 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					nextHook.accept(v);
 				}
 				catch (Throwable e) {
-					throw Exceptions.propagate(Operators.onOperatorError(s, e, v));
+					throw Exceptions.propagate(Operators.onOperatorError(s, e, v,
+							actual.currentContext()));
 				}
 			}
 			if (v == null && (d || sourceMode == SYNC)) {
@@ -398,7 +403,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					requestHook.accept(n);
 				}
 				catch (Throwable e) {
-					Operators.onOperatorError(e);
+					Operators.onOperatorError(e, actual.currentContext());
 				}
 			}
 			s.request(n);
@@ -412,7 +417,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					cancelHook.run();
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e));
+					onError(Operators.onOperatorError(s, e, actual.currentContext()));
 					return;
 				}
 			}
@@ -429,7 +434,8 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 						subscribeHook.accept(s);
 					}
 					catch (Throwable e) {
-						Operators.error(actual, Operators.onOperatorError(s, e));
+						Operators.error(actual, Operators.onOperatorError(s, e,
+								actual.currentContext()));
 						return;
 					}
 				}
@@ -455,7 +461,8 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 						nextHook.accept(t);
 					}
 					catch (Throwable e) {
-						onError(Operators.onOperatorError(s, e, t));
+						onError(Operators.onOperatorError(s, e, t,
+								actual.currentContext()));
 						return;
 					}
 				}
@@ -476,7 +483,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					nextHook.accept(t);
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, t));
+					onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 					return true;
 				}
 			}
@@ -498,7 +505,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 				}
 				catch (Throwable e) {
 					//this performs a throwIfFatal or suppresses t in e
-					t = Operators.onOperatorError(null, e, t);
+					t = Operators.onOperatorError(null, e, t, actual.currentContext());
 				}
 			}
 
@@ -540,7 +547,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 						completeHook.run();
 					}
 					catch (Throwable e) {
-						onError(Operators.onOperatorError(s, e));
+						onError(Operators.onOperatorError(s, e, actual.currentContext()));
 						return;
 					}
 				}
@@ -579,10 +586,12 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 						errorHook.accept(e);
 					}
 					catch (Throwable errorCallbackError) {
-						throw Exceptions.propagate(Operators.onOperatorError(s, errorCallbackError, e));
+						throw Exceptions.propagate(Operators.onOperatorError(s, errorCallbackError, e,
+								actual.currentContext()));
 					}
 				}
-				throw Exceptions.propagate(Operators.onOperatorError(s, e));
+				throw Exceptions.propagate(Operators.onOperatorError(s, e,
+						actual.currentContext()));
 			}
 
 			final Consumer<? super T> nextHook = parent.onNextCall();
@@ -591,7 +600,8 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					nextHook.accept(v);
 				}
 				catch (Throwable e) {
-					throw Exceptions.propagate(Operators.onOperatorError(s, e, v));
+					throw Exceptions.propagate(Operators.onOperatorError(s, e, v,
+							actual.currentContext()));
 				}
 			}
 			if (v == null && (d || sourceMode == SYNC)) {
@@ -712,7 +722,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					requestHook.accept(n);
 				}
 				catch (Throwable e) {
-					Operators.onOperatorError(e);
+					Operators.onOperatorError(e, actual.currentContext());
 				}
 			}
 			s.request(n);
@@ -726,7 +736,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					cancelHook.run();
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e));
+					onError(Operators.onOperatorError(s, e, actual.currentContext()));
 					return;
 				}
 			}
@@ -742,7 +752,8 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 						subscribeHook.accept(s);
 					}
 					catch (Throwable e) {
-						Operators.error(actual, Operators.onOperatorError(s, e));
+						Operators.error(actual, Operators.onOperatorError(s, e,
+								actual.currentContext()));
 						return;
 					}
 				}
@@ -773,7 +784,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					nextHook.accept(t);
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, t));
+					onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 					return;
 				}
 			}
@@ -793,7 +804,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					nextHook.accept(t);
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, t));
+					onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 					return true;
 				}
 			}
@@ -815,7 +826,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 				}
 				catch (Throwable e) {
 					//this performs a throwIfFatal or suppresses t in e
-					t = Operators.onOperatorError(null, e, t);
+					t = Operators.onOperatorError(null, e, t, actual.currentContext());
 				}
 			}
 
@@ -851,7 +862,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					completeHook.run();
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e));
+					onError(Operators.onOperatorError(s, e, actual.currentContext()));
 					return;
 				}
 			}

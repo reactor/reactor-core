@@ -88,7 +88,7 @@ final class FluxOnErrorResume<T> extends FluxOperator<T, T> {
 					"The nextFactory returned a null Publisher");
 				}
 				catch (Throwable e) {
-					Throwable _e = Operators.onOperatorError(e);
+					Throwable _e = Operators.onOperatorError(e, actual.currentContext());
 					if (t != _e) {
 						_e.addSuppressed(t);
 					}

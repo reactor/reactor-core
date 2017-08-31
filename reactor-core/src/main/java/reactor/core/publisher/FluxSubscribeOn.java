@@ -57,7 +57,7 @@ final class FluxSubscribeOn<T> extends FluxOperator<T, T> {
 			worker = Objects.requireNonNull(scheduler.createWorker(),
 					"The scheduler returned a null Function");
 		} catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
 			return;
 		}
 
@@ -70,7 +70,8 @@ final class FluxSubscribeOn<T> extends FluxOperator<T, T> {
 		}
 		catch (RejectedExecutionException ree) {
 			if (parent.s != Operators.cancelledSubscription()) {
-				actual.onError(Operators.onRejectedExecution(ree, parent, null, null));
+				actual.onError(Operators.onRejectedExecution(ree, parent, null, null,
+						actual.currentContext()));
 			}
 		}
 	}
@@ -138,7 +139,8 @@ final class FluxSubscribeOn<T> extends FluxOperator<T, T> {
 						//FIXME should not throw but if we implement strict
 						// serialization like in StrictSubscriber, onNext will carry an
 						// extra cost
-						throw Operators.onRejectedExecution(ree, this, null, null);
+						throw Operators.onRejectedExecution(ree, this, null, null,
+								actual.currentContext());
 					}
 				}
 			}

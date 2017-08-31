@@ -240,7 +240,8 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 							Exceptions.throwIfFatal(ex);
 							cancel(s1, q1, s2, q2);
 
-							actual.onError(Operators.onOperatorError(ex));
+							actual.onError(Operators.onOperatorError(ex,
+									actual.currentContext()));
 							return;
 						}
 
@@ -328,7 +329,8 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 		public void onNext(T t) {
 			if (!queue.offer(t)) {
 				onError(Operators.onOperatorError(cachedSubscription, Exceptions
-						.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), t));
+						.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), t,
+						currentContext()));
 				return;
 			}
 			parent.drain();

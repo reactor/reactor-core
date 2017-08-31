@@ -48,7 +48,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 			it = iterable.iterator();
 		}
 		catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
 			return;
 		}
 
@@ -75,7 +75,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 			b = it.hasNext();
 		}
 		catch (Throwable e) {
-			Operators.error(s, Operators.onOperatorError(e));
+			Operators.error(s, Operators.onOperatorError(e, s.currentContext()));
 			return;
 		}
 		if (!b) {

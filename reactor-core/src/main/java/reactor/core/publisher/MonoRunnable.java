@@ -39,7 +39,7 @@ final class MonoRunnable<T> extends Mono<T> implements Callable<Void> {
         try {
             run.run();
         } catch (Throwable ex) {
-            Operators.error(actual, Operators.onOperatorError(ex));
+            Operators.error(actual, Operators.onOperatorError(ex, actual.currentContext()));
             return;
         }
         Operators.complete(actual);

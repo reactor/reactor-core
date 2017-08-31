@@ -328,7 +328,8 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 						catch (Throwable exc) {
 							Exceptions.addThrowable(ERROR,
 									this,
-									Operators.onOperatorError(this, exc, left));
+									Operators.onOperatorError(this, exc, left,
+											actual.currentContext()));
 							errorAll(a);
 							return;
 						}
@@ -355,7 +356,8 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 						}
 						catch (Throwable exc) {
 							Exceptions.addThrowable(ERROR,
-									this, Operators.onOperatorError(this, exc, up));
+									this, Operators.onOperatorError(this, exc, up,
+											actual.currentContext()));
 							errorAll(a);
 							return;
 						}
@@ -374,7 +376,8 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 									Exceptions.addThrowable(ERROR,
 											this,
 											Operators.onOperatorError(this,
-													Exceptions.failWithOverflow()));
+													Exceptions.failWithOverflow(),
+													actual.currentContext()));
 									errorAll(a);
 									return;
 								}
@@ -412,7 +415,8 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 						catch (Throwable exc) {
 							Exceptions.addThrowable(ERROR,
 									this,
-									Operators.onOperatorError(this, exc, right));
+									Operators.onOperatorError(this, exc, right,
+											actual.currentContext()));
 							errorAll(a);
 							return;
 						}

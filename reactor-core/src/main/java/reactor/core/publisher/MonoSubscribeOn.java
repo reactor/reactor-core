@@ -56,7 +56,8 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 		}
 		catch (RejectedExecutionException ree) {
 			if (parent.s != Operators.cancelledSubscription()) {
-				actual.onError(Operators.onRejectedExecution(ree, parent, null, null));
+				actual.onError(Operators.onRejectedExecution(ree, parent, null, null,
+						actual.currentContext()));
 			}
 		}
 	}
@@ -168,7 +169,8 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 			}
 			catch (RejectedExecutionException ree) {
 				if (!worker.isDisposed()) {
-					actual.onError(Operators.onRejectedExecution(ree, this, null, null));
+					actual.onError(Operators.onRejectedExecution(ree, this, null, null,
+							actual.currentContext()));
 				}
 			}
 		}

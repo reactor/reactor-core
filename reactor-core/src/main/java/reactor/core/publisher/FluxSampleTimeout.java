@@ -191,7 +191,7 @@ final class FluxSampleTimeout<T, U> extends FluxOperator<T, T> {
 						"throttler returned a null publisher");
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return;
 			}
 

@@ -58,7 +58,7 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 					"The initial value supplied is null");
 		}
 		catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
 			return;
 		}
 
@@ -122,7 +122,7 @@ final class MonoReduceSeed<T, R> extends MonoFromFluxOperator<T, R>
 
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(this, e, t));
+				onError(Operators.onOperatorError(this, e, t, actual.currentContext()));
 				return;
 			}
 

@@ -30,6 +30,7 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.util.concurrent.Queues;
+import reactor.util.context.Context;
 
 /**
  * A Processor implementation that takes a custom queue and allows
@@ -305,15 +306,21 @@ public final class UnicastProcessor<T>
 	}
 
 	@Override
+	public Context currentContext() {
+		CoreSubscriber<? super T> actual = this.actual;
+		return actual != null ? actual.currentContext() : Context.empty();
+	}
+
+	@Override
 	public void onNext(T t) {
 		if (done || cancelled) {
-			Operators.onNextDropped(t, actual.currentContext());
+			Operators.onNextDropped(t, currentContext());
 			return;
 		}
 
 		if (!queue.offer(t)) {
 			Throwable ex = Operators.onOperatorError(null,
-					Exceptions.failWithOverflow(), t);
+					Exceptions.failWithOverflow(), t, currentContext());
 			if(onOverflow != null) {
 				try {
 					onOverflow.accept(t);
@@ -323,7 +330,7 @@ public final class UnicastProcessor<T>
 					ex.initCause(e);
 				}
 			}
-			onError(Operators.onOperatorError(null, ex, t));
+			onError(Operators.onOperatorError(null, ex, t, currentContext()));
 			return;
 		}
 		drain();
@@ -332,7 +339,7 @@ public final class UnicastProcessor<T>
 	@Override
 	public void onError(Throwable t) {
 		if (done || cancelled) {
-			Operators.onErrorDropped(t, actual.currentContext());
+			Operators.onErrorDropped(t, currentContext());
 			return;
 		}
 

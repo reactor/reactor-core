@@ -62,7 +62,7 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 			finisher = collector.finisher();
 		}
 		catch (Throwable ex) {
-			Operators.error(actual, Operators.onOperatorError(ex));
+			Operators.error(actual, Operators.onOperatorError(ex, actual.currentContext()));
 			return;
 		}
 
@@ -125,7 +125,7 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 				accumulator.accept(container, t);
 			}
 			catch (Throwable ex) {
-				onError(Operators.onOperatorError(s, ex, t));
+				onError(Operators.onOperatorError(s, ex, t, actual.currentContext()));
 			}
 		}
 
@@ -156,7 +156,7 @@ final class MonoStreamCollector<T, A, R> extends MonoFromFluxOperator<T, R>
 				r = finisher.apply(a);
 			}
 			catch (Throwable ex) {
-				actual.onError(Operators.onOperatorError(ex));
+				actual.onError(Operators.onOperatorError(ex, actual.currentContext()));
 				return;
 			}
 

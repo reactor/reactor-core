@@ -84,7 +84,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 					"The bufferSupplier returned a null initial buffer");
 		}
 		catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
 			return;
 		}
 
@@ -195,7 +195,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 				match = predicate.test(t);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return true;
 			}
 
@@ -237,7 +237,7 @@ final class FluxBufferPredicate<T, C extends Collection<? super T>>
 						"The bufferSupplier returned a null buffer");
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e));
+				onError(Operators.onOperatorError(s, e, actual.currentContext()));
 				return null;
 			}
 

@@ -139,7 +139,7 @@ final class FluxMapSignal<T, R> extends FluxOperator<T, R> {
             }
             catch (Throwable e) {
 	            done = true;
-	            actual.onError(Operators.onOperatorError(s, e, t));
+	            actual.onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
                 return;
             }
 
@@ -169,7 +169,7 @@ final class FluxMapSignal<T, R> extends FluxOperator<T, R> {
 	        }
 	        catch (Throwable e) {
 		        done = true;
-		        actual.onError(Operators.onOperatorError(s, e, t));
+		        actual.onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 		        return;
 	        }
 
@@ -201,7 +201,7 @@ final class FluxMapSignal<T, R> extends FluxOperator<T, R> {
 	        }
 	        catch (Throwable e) {
 		        done = true;
-		        actual.onError(Operators.onOperatorError(s, e));
+		        actual.onError(Operators.onOperatorError(s, e, actual.currentContext()));
 		        return;
 	        }
 

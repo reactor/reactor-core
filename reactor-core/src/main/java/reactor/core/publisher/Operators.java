@@ -334,11 +334,12 @@ public abstract class Operators {
 	 * {@link Exceptions#throwIfFatal(Throwable)}.
 	 *
 	 * @param error the callback or operator error
+	 * @param context a context that might hold a local error consumer
 	 * @return mapped {@link Throwable}
 	 *
 	 */
-	public static Throwable onOperatorError(Throwable error) {
-		return onOperatorError(null, error, null);
+	public static Throwable onOperatorError(Throwable error, Context context) {
+		return onOperatorError(null, error, context);
 	}
 
 	/**
@@ -349,11 +350,14 @@ public abstract class Operators {
 	 *
 	 * @param subscription the linked operator parent {@link Subscription}
 	 * @param error the callback or operator error
+	 * @param context a context that might hold a local error consumer
 	 * @return mapped {@link Throwable}
 	 *
 	 */
-	public static Throwable onOperatorError(@Nullable Subscription subscription, Throwable error) {
-		return onOperatorError(subscription, error, null);
+	public static Throwable onOperatorError(@Nullable Subscription subscription,
+			Throwable error,
+			Context context) {
+		return onOperatorError(subscription, error, null, context);
 	}
 
 	/**
@@ -367,12 +371,13 @@ public abstract class Operators {
 	 * @param subscription the linked operator parent {@link Subscription}
 	 * @param error the callback or operator error
 	 * @param dataSignal the value (onNext or onError) signal processed during failure
+	 * @param context a context that might hold a local error consumer
 	 * @return mapped {@link Throwable}
 	 *
 	 */
 	public static Throwable onOperatorError(@Nullable Subscription subscription,
 			Throwable error,
-			@Nullable Object dataSignal) {
+			@Nullable Object dataSignal, Context context) {
 
 		Exceptions.throwIfFatal(error);
 		if(subscription != null) {
@@ -402,11 +407,14 @@ public abstract class Operators {
 	 * {@link reactor.core.scheduler.Scheduler}, notably when it was already disposed.
 	 * <p>
 	 * Wrapping is done by calling both {@link Exceptions#bubble(Throwable)} and
-	 * {@link #onOperatorError(Subscription, Throwable, Object)}.
+	 * {@link #onOperatorError(Subscription, Throwable, Object, Context)}.
+	 *
+	 * @param original the original execution error
+	 * @param context a context that might hold a local error consumer
 	 *
 	 */
-	public static RuntimeException onRejectedExecution(Throwable original) {
-		return onRejectedExecution(original, null, null, null);
+	public static RuntimeException onRejectedExecution(Throwable original, Context context) {
+		return onRejectedExecution(original, null, null, null, context);
 	}
 
 	/**
@@ -415,26 +423,30 @@ public abstract class Operators {
 	 * {@link reactor.core.scheduler.Scheduler}, notably when it was already disposed.
 	 * <p>
 	 * Wrapping is done by calling both {@link Exceptions#bubble(Throwable)} and
-	 * {@link #onOperatorError(Subscription, Throwable, Object)} (with the passed
+	 * {@link #onOperatorError(Subscription, Throwable, Object, Context)} (with the passed
 	 * {@link Subscription}).
 	 *
+	 * @param original the original execution error
 	 * @param subscription the subscription to pass to onOperatorError.
 	 * @param suppressed a Throwable to be suppressed by the {@link RejectedExecutionException} (or null if not relevant)
-	 * @param dataSignal a value to be passed to {@link #onOperatorError(Subscription, Throwable, Object)} (or null if not relevant)
+	 * @param dataSignal a value to be passed to {@link #onOperatorError(Subscription, Throwable, Object, Context)} (or null if not relevant)
+	 * @param context a context that might hold a local error consumer
 	 */
 	public static RuntimeException onRejectedExecution(Throwable original,
 			@Nullable Subscription subscription,
 			@Nullable Throwable suppressed,
-			@Nullable Object dataSignal) {
+			@Nullable Object dataSignal, Context context) {
 		//FIXME only create REE if original is REE singleton OR there's suppressed OR there's Throwable dataSignal
 		RejectedExecutionException ree = Exceptions.failWithRejected(original);
 		if (suppressed != null) {
 			ree.addSuppressed(suppressed);
 		}
 		if (dataSignal != null) {
-			return Exceptions.propagate(Operators.onOperatorError(subscription, ree, dataSignal));
+			return Exceptions.propagate(Operators.onOperatorError(subscription, ree, dataSignal,
+					Context.empty()));
 		}
-		return Exceptions.propagate(Operators.onOperatorError(subscription, ree));
+		return Exceptions.propagate(Operators.onOperatorError(subscription, ree,
+				Context.empty()));
 	}
 
 	/**

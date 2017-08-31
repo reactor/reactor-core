@@ -31,7 +31,6 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.reactivestreams.Subscription;
-import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.concurrent.Queues;
 import reactor.util.concurrent.WaitStrategy;
@@ -427,7 +426,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 				}
 			}
 			catch (Throwable t) {
-				onError(Operators.onOperatorError(s, t));
+				onError(Operators.onOperatorError(s, t, currentContext()));
 			}
 		}
 	}
@@ -448,7 +447,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 			requestTaskExecutor.shutdown();
 		}
 		catch (Throwable t) {
-			onError(Operators.onOperatorError(t));
+			onError(Operators.onOperatorError(t, currentContext()));
 		}
 	}
 
@@ -527,7 +526,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 					}
 					return;
 				}
-				parent.onError(Operators.onOperatorError(t));
+				parent.onError(Operators.onOperatorError(t, parent.currentContext()));
 			}
 		}
 	}

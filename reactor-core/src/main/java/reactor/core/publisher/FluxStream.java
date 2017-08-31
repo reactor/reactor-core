@@ -47,7 +47,7 @@ final class FluxStream<T> extends Flux<T> implements Fuseable {
 			"The stream returned a null Iterator");
 		}
 		catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
 			return;
 		}
 

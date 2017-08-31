@@ -128,7 +128,7 @@ final class FluxOnBackpressureDrop<T> extends FluxOperator<T, T> {
 					onDrop.accept(t);
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, t));
+					onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				}
 			}
 		}

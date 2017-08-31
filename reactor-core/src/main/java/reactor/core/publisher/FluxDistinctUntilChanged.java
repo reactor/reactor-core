@@ -107,7 +107,7 @@ final class FluxDistinctUntilChanged<T, K> extends FluxOperator<T, T> {
 				"The distinct extractor returned a null value.");
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return true;
 			}
 
@@ -123,7 +123,7 @@ final class FluxDistinctUntilChanged<T, K> extends FluxOperator<T, T> {
 				equiv = keyComparator.test(lastKey, k);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return true;
 			}
 
@@ -233,7 +233,7 @@ final class FluxDistinctUntilChanged<T, K> extends FluxOperator<T, T> {
 				"The distinct extractor returned a null value.");
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return true;
 			}
 
@@ -248,7 +248,7 @@ final class FluxDistinctUntilChanged<T, K> extends FluxOperator<T, T> {
 				equiv = keyComparator.test(lastKey, k);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return true;
 			}
 

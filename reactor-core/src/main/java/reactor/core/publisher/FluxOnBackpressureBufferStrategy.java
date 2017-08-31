@@ -166,14 +166,16 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxOperator<O, O> {
 					onOverflow.accept(overflowElement);
 				}
 				catch (Throwable e) {
-					Throwable ex = Operators.onOperatorError(s, e, overflowElement);
+					Throwable ex = Operators.onOperatorError(s, e, overflowElement,
+							actual.currentContext());
 					onError(ex);
 					return;
 				}
 			}
 
 			if (callOnError) {
-				Throwable ex = Operators.onOperatorError(s, Exceptions.failWithOverflow(), overflowElement);
+				Throwable ex = Operators.onOperatorError(s, Exceptions.failWithOverflow(), overflowElement,
+						actual.currentContext());
 				onError(ex);
 			}
 

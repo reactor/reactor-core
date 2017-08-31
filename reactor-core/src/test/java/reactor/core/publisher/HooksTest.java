@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -41,6 +41,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -534,7 +535,7 @@ public class HooksTest {
 			throw new TestException("errorDrop");
 		});
 
-		Throwable w = Operators.onOperatorError(null, new Exception(), "hello");
+		Throwable w = Operators.onOperatorError(null, new Exception(), "hello", Context.empty());
 
 		Assert.assertTrue(w instanceof TestException);
 		Assert.assertTrue(w.getMessage()
@@ -599,7 +600,7 @@ public class HooksTest {
 			return error;
 		});
 
-		Operators.onOperatorError(null, null, "foo");
+		Operators.onOperatorError(null, null, "foo", Context.empty());
 
 		assertThat(ref.get()).isEqualTo("foobar");
 

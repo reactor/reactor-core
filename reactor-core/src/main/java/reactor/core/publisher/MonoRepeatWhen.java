@@ -69,7 +69,7 @@ final class MonoRepeatWhen<T> extends FluxFromMonoOperator<T, T> {
 					"The whenSourceFactory returned a null Publisher");
 		}
 		catch (Throwable e) {
-			actual.onError(Operators.onOperatorError(e));
+			actual.onError(Operators.onOperatorError(e, actual.currentContext()));
 			return;
 		}
 

@@ -83,7 +83,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 					"The transform returned a null Publisher");
 		}
 		catch (Throwable ex) {
-			Operators.error(actual, Operators.onOperatorError(ex));
+			Operators.error(actual, Operators.onOperatorError(ex, actual.currentContext()));
 			return;
 		}
 
@@ -256,7 +256,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 				if (!queue.offer(t)) {
 					onError(Operators.onOperatorError(s,
 							Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL),
-							t));
+							t, context));
 					return;
 				}
 			}
@@ -334,7 +334,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 								v = queue.poll();
 							}
 							catch (Throwable ex) {
-								error = Operators.onOperatorError(s, ex);
+								error = Operators.onOperatorError(s, ex, context);
 								queue.clear();
 								a = SUBSCRIBERS.getAndSet(this, TERMINATED);
 								n = a.length;
@@ -432,7 +432,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 							}
 							catch (Throwable ex) {
 								queue.clear();
-								error = Operators.onOperatorError(s, ex);
+								error = Operators.onOperatorError(s, ex, context);
 								a = SUBSCRIBERS.getAndSet(this, TERMINATED);
 								n = a.length;
 								for (int i = 0; i < n; i++) {

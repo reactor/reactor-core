@@ -71,7 +71,7 @@ final class FluxRetryWhen<T> extends FluxOperator<T, T> {
 			"The whenSourceFactory returned a null Publisher");
 		}
 		catch (Throwable e) {
-			s.onError(Operators.onOperatorError(e));
+			s.onError(Operators.onOperatorError(e, s.currentContext()));
 			return;
 		}
 

@@ -119,7 +119,8 @@ final class MonoFlatMap<T, R> extends MonoOperator<T, R> implements Fuseable {
 						"The mapper returned a null Mono");
 			}
 			catch (Throwable ex) {
-				actual.onError(Operators.onOperatorError(s, ex, t));
+				actual.onError(Operators.onOperatorError(s, ex, t,
+						actual.currentContext()));
 				return;
 			}
 
@@ -131,7 +132,8 @@ final class MonoFlatMap<T, R> extends MonoOperator<T, R> implements Fuseable {
 					v = c.call();
 				}
 				catch (Throwable ex) {
-					actual.onError(Operators.onOperatorError(s, ex, t));
+					actual.onError(Operators.onOperatorError(s, ex, t,
+							actual.currentContext()));
 					return;
 				}
 
@@ -148,7 +150,8 @@ final class MonoFlatMap<T, R> extends MonoOperator<T, R> implements Fuseable {
 				m.subscribe(second);
 			}
 			catch (Throwable e) {
-				actual.onError(Operators.onOperatorError(this, e, t));
+				actual.onError(Operators.onOperatorError(this, e, t,
+						actual.currentContext()));
 			}
 		}
 

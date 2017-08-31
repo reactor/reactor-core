@@ -58,7 +58,8 @@ final class MonoDelay extends Mono<Long> {
 		}
 		catch (RejectedExecutionException ree) {
 			if(r.cancel != OperatorDisposables.DISPOSED) {
-				actual.onError(Operators.onRejectedExecution(ree, r, null, null));
+				actual.onError(Operators.onRejectedExecution(ree, r, null, null,
+						actual.currentContext()));
 			}
 		}
 	}
@@ -110,7 +111,7 @@ final class MonoDelay extends Mono<Long> {
 					}
 				}
 				catch (Throwable t){
-					actual.onError(Operators.onOperatorError(t));
+					actual.onError(Operators.onOperatorError(t, actual.currentContext()));
 				}
 			} else {
 				actual.onError(Exceptions.failWithOverflow("Could not emit value due to lack of requests"));

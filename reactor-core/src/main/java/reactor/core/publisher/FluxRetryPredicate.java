@@ -87,7 +87,7 @@ final class FluxRetryPredicate<T> extends FluxOperator<T, T> {
 			try {
 				b = predicate.test(t);
 			} catch (Throwable e) {
-				Throwable _t = Operators.onOperatorError(e);
+				Throwable _t = Operators.onOperatorError(e, actual.currentContext());
 				if (_t != t) {
 					_t.addSuppressed(t);
 				}

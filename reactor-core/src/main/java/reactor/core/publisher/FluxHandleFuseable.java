@@ -104,7 +104,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 				handler.accept(t, this);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return false;
 			}
 			R v = data;
@@ -114,7 +114,8 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 			}
 			if (done) {
 				if (error != null) {
-					actual.onError(Operators.onOperatorError(s, error, t));
+					actual.onError(Operators.onOperatorError(s, error, t,
+							actual.currentContext()));
 				}
 				else {
 					s.cancel();
@@ -148,7 +149,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 					handler.accept(t, this);
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, t));
+					onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 					return;
 				}
 				R v = data;
@@ -159,7 +160,8 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 				if (done) {
 					s.cancel();
 					if (error != null) {
-						actual.onError(Operators.onOperatorError(null, error, t));
+						actual.onError(Operators.onOperatorError(null, error, t,
+								actual.currentContext()));
 						return;
 					}
 					actual.onComplete();
@@ -236,7 +238,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 							s.cancel();
 							if (error != null) {
 								throw Exceptions.propagate(Operators.onOperatorError
-										(null, error, v));
+										(null, error, v, actual.currentContext()));
 							}
 							else {
 								actual.onComplete();
@@ -267,7 +269,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 						if (done) {
 							if (error != null) {
 								throw Exceptions.propagate(Operators.onOperatorError
-										(null, error, v));
+										(null, error, v, actual.currentContext()));
 							}
 							return u;
 						}
@@ -380,7 +382,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 					handler.accept(t, this);
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, t));
+					onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 					return;
 				}
 				R v = data;
@@ -391,7 +393,8 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 				if (done) {
 					s.cancel();
 					if (error != null) {
-						actual.onError(Operators.onOperatorError(null, error, v));
+						actual.onError(Operators.onOperatorError(null, error, v,
+								actual.currentContext()));
 						return;
 					}
 					actual.onComplete();
@@ -413,7 +416,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 				handler.accept(t, this);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return false;
 			}
 			R v = data;
@@ -425,7 +428,8 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 			if (done) {
 				s.cancel();
 				if (error != null) {
-					actual.onError(Operators.onOperatorError(null, error, v));
+					actual.onError(Operators.onOperatorError(null, error, v,
+							actual.currentContext()));
 				}
 				else {
 					actual.onComplete();
@@ -520,7 +524,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 							s.cancel();
 							if (error != null) {
 								throw Exceptions.propagate(Operators.onOperatorError
-										(null, error, v));
+										(null, error, v, actual.currentContext()));
 							}
 							else {
 								actual.onComplete();
@@ -551,7 +555,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 						if (done) {
 							if (error != null) {
 								throw Exceptions.propagate(Operators.onOperatorError
-										(null, error, v));
+										(null, error, v, actual.currentContext()));
 							}
 							return u;
 						}

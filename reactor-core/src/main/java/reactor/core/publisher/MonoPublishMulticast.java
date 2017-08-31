@@ -57,7 +57,7 @@ final class MonoPublishMulticast<T, R> extends MonoOperator<T, R> implements Fus
 					"The transform returned a null Mono");
 		}
 		catch (Throwable ex) {
-			Operators.error(actual, Operators.onOperatorError(ex));
+			Operators.error(actual, Operators.onOperatorError(ex, actual.currentContext()));
 			return;
 		}
 

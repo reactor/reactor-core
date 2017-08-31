@@ -60,7 +60,7 @@ final class FluxDistinctFuseable<T, K, C extends Collection<? super K>>
 					"The collectionSupplier returned a null collection");
 		}
 		catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
 			return;
 		}
 

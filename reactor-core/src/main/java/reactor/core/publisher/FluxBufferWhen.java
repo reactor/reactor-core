@@ -328,7 +328,7 @@ final class FluxBufferWhen<T, U, V, C extends Collection<? super T>>
 				"The bufferSupplier returned a null buffer");
 			}
 			catch (Throwable e) {
-				anyError(Operators.onOperatorError(starter, e, u));
+				anyError(Operators.onOperatorError(starter, e, u, actual.currentContext()));
 				return;
 			}
 
@@ -348,7 +348,7 @@ final class FluxBufferWhen<T, U, V, C extends Collection<? super T>>
 				"The end returned a null publisher");
 			}
 			catch (Throwable e) {
-				anyError(Operators.onOperatorError(starter, e, u));
+				anyError(Operators.onOperatorError(starter, e, u, actual.currentContext()));
 				return;
 			}
 

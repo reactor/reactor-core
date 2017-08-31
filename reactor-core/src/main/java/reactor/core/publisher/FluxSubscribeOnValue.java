@@ -59,7 +59,8 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 			}
 			catch (RejectedExecutionException ree) {
 				if (parent.future != OperatorDisposables.DISPOSED) {
-					actual.onError(Operators.onRejectedExecution(ree));
+					actual.onError(Operators.onRejectedExecution(ree,
+							actual.currentContext()));
 				}
 			}
 		}
@@ -141,7 +142,7 @@ final class FluxSubscribeOnValue<T> extends Flux<T> implements Fuseable {
 							actual.onError(Operators.onRejectedExecution(ree,
 									this,
 									null,
-									value));
+									value, actual.currentContext()));
 						}
 					}
 				}

@@ -35,6 +35,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.util.context.Context;
 
 /**
  * An iterable that consumes a Publisher in a blocking fashion.
@@ -221,7 +222,7 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 
 				onError(Operators.onOperatorError(null,
 						Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL),
-						t));
+						t, currentContext()));
 			}
 			else {
 				signalConsumer();

@@ -228,7 +228,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	@SuppressWarnings("unchecked")
 	public void onNext(T t) {
 		if (done) {
-			Operators.onNextDropped(t);
+			Operators.onNextDropped(t, currentContext());
 			return;
 		}
 
@@ -269,7 +269,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	public void onError(Throwable t) {
 		Objects.requireNonNull(t, "onError");
 		if (done) {
-			Operators.onErrorDropped(t);
+			Operators.onErrorDropped(t, currentContext());
 			return;
 		}
 		if (Exceptions.addThrowable(ERROR, this, t)) {
@@ -374,8 +374,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 					}
 					catch (Throwable ex) {
 						Exceptions.addThrowable(ERROR,
-								this,
-								Operators.onOperatorError(s, ex));
+								this, Operators.onOperatorError(s, ex, currentContext()));
 						d = true;
 						v = null;
 					}
@@ -399,8 +398,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 					}
 					catch (Throwable ex) {
 						Exceptions.addThrowable(ERROR,
-								this,
-								Operators.onOperatorError(s, ex));
+								this, Operators.onOperatorError(s, ex, currentContext()));
 						d = true;
 						v = null;
 					}

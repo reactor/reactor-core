@@ -68,7 +68,8 @@ final class FluxFirstEmitting<T> extends Flux<T> {
 						"The iterator returned is null");
 			}
 			catch (Throwable e) {
-				Operators.error(actual, Operators.onOperatorError(e));
+				Operators.error(actual, Operators.onOperatorError(e,
+						actual.currentContext()));
 				return;
 			}
 
@@ -80,7 +81,8 @@ final class FluxFirstEmitting<T> extends Flux<T> {
 					b = it.hasNext();
 				}
 				catch (Throwable e) {
-					Operators.error(actual, Operators.onOperatorError(e));
+					Operators.error(actual, Operators.onOperatorError(e,
+							actual.currentContext()));
 					return;
 				}
 
@@ -95,7 +97,8 @@ final class FluxFirstEmitting<T> extends Flux<T> {
 							"The Publisher returned by the iterator is null");
 				}
 				catch (Throwable e) {
-					Operators.error(actual, Operators.onOperatorError(e));
+					Operators.error(actual, Operators.onOperatorError(e,
+							actual.currentContext()));
 					return;
 				}
 

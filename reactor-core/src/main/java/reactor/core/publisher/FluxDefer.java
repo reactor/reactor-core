@@ -47,7 +47,7 @@ final class FluxDefer<T> extends Flux<T> {
 					"The Publisher returned by the supplier is null");
 		}
 		catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
 			return;
 		}
 

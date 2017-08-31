@@ -175,7 +175,7 @@ final class FluxSampleFirst<T, U> extends FluxOperator<T, T> {
 				}
 				catch (Throwable e) {
 					Operators.terminate(S, this);
-					error(Operators.onOperatorError(null, e, t));
+					error(Operators.onOperatorError(null, e, t, actual.currentContext()));
 					return;
 				}
 

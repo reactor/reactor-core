@@ -58,7 +58,7 @@ extends Mono<T>
 			t = Objects.requireNonNull(callable.call(), "callable returned null");
 		}
 		catch (Throwable e) {
-			actual.onError(Operators.onOperatorError(e));
+			actual.onError(Operators.onOperatorError(e, actual.currentContext()));
 			return;
 		}
 

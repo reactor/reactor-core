@@ -98,7 +98,8 @@ final class MonoTakeLastOne<T> extends MonoFromFluxOperator<T, T>
 					}
 					else {
 						actual.onError(Operators.onOperatorError(new NoSuchElementException(
-								"Flux#last() didn't observe any " + "onNext signal")));
+								"Flux#last() didn't observe any " + "onNext signal"),
+								actual.currentContext()));
 					}
 				}
 				else {

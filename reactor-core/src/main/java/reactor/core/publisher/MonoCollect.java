@@ -59,7 +59,7 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 					"The supplier returned a null container");
 		}
 		catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
 			return;
 		}
 
@@ -119,7 +119,7 @@ final class MonoCollect<T, R> extends MonoFromFluxOperator<T, R>
 				action.accept(value, t);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(this, e, t));
+				onError(Operators.onOperatorError(this, e, t, actual.currentContext()));
 			}
 		}
 

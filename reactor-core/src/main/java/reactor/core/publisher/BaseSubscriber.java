@@ -146,7 +146,7 @@ public abstract class BaseSubscriber<T> implements CoreSubscriber<T>, Subscripti
 				hookOnSubscribe(s);
 			}
 			catch (Throwable throwable) {
-				onError(Operators.onOperatorError(s, throwable));
+				onError(Operators.onOperatorError(s, throwable, currentContext()));
 			}
 		}
 	}
@@ -158,7 +158,7 @@ public abstract class BaseSubscriber<T> implements CoreSubscriber<T>, Subscripti
 			hookOnNext(value);
 		}
 		catch (Throwable throwable) {
-			onError(Operators.onOperatorError(subscription, throwable, value));
+			onError(Operators.onOperatorError(subscription, throwable, value, currentContext()));
 		}
 	}
 
@@ -198,7 +198,7 @@ public abstract class BaseSubscriber<T> implements CoreSubscriber<T>, Subscripti
 			}
 			catch (Throwable throwable) {
 				//onError itself will short-circuit due to the CancelledSubscription being push above
-				hookOnError(Operators.onOperatorError(throwable));
+				hookOnError(Operators.onOperatorError(throwable, currentContext()));
 			}
 			finally {
 				safeHookFinally(SignalType.ON_COMPLETE);
@@ -230,7 +230,7 @@ public abstract class BaseSubscriber<T> implements CoreSubscriber<T>, Subscripti
 				hookOnCancel();
 			}
 			catch (Throwable throwable) {
-				hookOnError(Operators.onOperatorError(subscription, throwable));
+				hookOnError(Operators.onOperatorError(subscription, throwable, currentContext()));
 			}
 			finally {
 				safeHookFinally(SignalType.CANCEL);

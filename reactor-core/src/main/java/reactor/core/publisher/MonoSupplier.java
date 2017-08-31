@@ -57,7 +57,7 @@ extends Mono<T>
 					"The supplier source returned null");
 		}
 		catch (Throwable e) {
-			actual.onError(Operators.onOperatorError(e));
+			actual.onError(Operators.onOperatorError(e, actual.currentContext()));
 			return;
 		}
 

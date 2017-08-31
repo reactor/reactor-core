@@ -81,7 +81,8 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Scannable, 
 						"The initialSupplier returned a null value");
 			}
 			catch (Throwable ex) {
-				reportError(subscribers, Operators.onOperatorError(ex));
+				reportError(subscribers, Operators.onOperatorError(ex,
+						subscribers[i].currentContext()));
 				return;
 			}
 
@@ -145,7 +146,7 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Scannable, 
 				collector.accept(collection, t);
 			}
 			catch (Throwable ex) {
-				onError(Operators.onOperatorError(this, ex, t));
+				onError(Operators.onOperatorError(this, ex, t, actual.currentContext()));
 			}
 		}
 

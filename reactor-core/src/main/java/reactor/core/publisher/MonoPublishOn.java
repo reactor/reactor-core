@@ -136,7 +136,7 @@ final class MonoPublishOn<T> extends MonoOperator<T, T> {
 				}
 				catch (RejectedExecutionException ree) {
 					actual.onError(Operators.onRejectedExecution(ree, subscription,
-							suppressed,	dataSignal));
+							suppressed,	dataSignal, actual.currentContext()));
 				}
 		}
 

@@ -240,7 +240,8 @@ final class MonoZip<T, R> extends Mono<R> {
 				            "zipper produced a null value");
 	            }
 	            catch (Throwable t) {
-		            actual.onError(Operators.onOperatorError(null, t, o));
+		            actual.onError(Operators.onOperatorError(null, t, o,
+				            actual.currentContext()));
 		            return;
 	            }
 	            complete(r);

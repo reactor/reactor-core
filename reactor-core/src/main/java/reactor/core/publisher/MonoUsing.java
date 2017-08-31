@@ -70,7 +70,7 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable {
 			resource = resourceSupplier.call();
 		}
 		catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
 			return;
 		}
 
@@ -86,11 +86,11 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable {
 				resourceCleanup.accept(resource);
 			}
 			catch (Throwable ex) {
-				ex.addSuppressed(Operators.onOperatorError(e));
+				ex.addSuppressed(Operators.onOperatorError(e, actual.currentContext()));
 				e = ex;
 			}
 
-			Operators.error(actual, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
 			return;
 		}
 

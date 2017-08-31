@@ -423,7 +423,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	public void onNext(T t) {
 		FluxReplay.ReplayBuffer<T> b = buffer;
 		if (b.isDone()) {
-			Operators.onNextDropped(t);
+			Operators.onNextDropped(t, currentContext());
 		}
 		else {
 			b.add(t);

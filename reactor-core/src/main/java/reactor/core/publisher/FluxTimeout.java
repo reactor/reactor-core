@@ -153,7 +153,8 @@ final class FluxTimeout<T, U, V> extends FluxOperator<T, T> {
 						"The itemTimeout returned a null Publisher");
 			}
 			catch (Throwable e) {
-				actual.onError(Operators.onOperatorError(this, e, t));
+				actual.onError(Operators.onOperatorError(this, e, t,
+						actual.currentContext()));
 				return;
 			}
 

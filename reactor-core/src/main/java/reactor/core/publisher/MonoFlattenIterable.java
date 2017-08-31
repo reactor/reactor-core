@@ -71,7 +71,8 @@ final class MonoFlattenIterable<T, R> extends FluxFromMonoOperator<T, R>
 				v = ((Callable<T>) source).call();
 			}
 			catch (Throwable ex) {
-				Operators.error(actual, Operators.onOperatorError(ex));
+				Operators.error(actual, Operators.onOperatorError(ex,
+						actual.currentContext()));
 				return;
 			}
 
@@ -88,7 +89,8 @@ final class MonoFlattenIterable<T, R> extends FluxFromMonoOperator<T, R>
 				it = iter.iterator();
 			}
 			catch (Throwable ex) {
-				Operators.error(actual, Operators.onOperatorError(ex));
+				Operators.error(actual, Operators.onOperatorError(ex,
+						actual.currentContext()));
 				return;
 			}
 

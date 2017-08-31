@@ -45,7 +45,7 @@ final class MonoDefer<T> extends Mono<T> {
 					"The Mono returned by the supplier is null");
 		}
 		catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
 			return;
 		}
 
