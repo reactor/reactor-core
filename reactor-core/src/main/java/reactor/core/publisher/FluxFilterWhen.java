@@ -439,7 +439,7 @@ class FluxFilterWhen<T> extends FluxOperator<T, T> {
 				done = true;
 				parent.innerError(t);
 			} else {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, parent.currentContext());
 			}
 		}
 

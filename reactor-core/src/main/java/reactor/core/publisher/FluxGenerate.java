@@ -145,7 +145,7 @@ extends Flux<T> implements Fuseable {
 		@Override
 		public void next(T t) {
 			if (terminate) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 			if (hasValue) {
@@ -306,7 +306,7 @@ extends Flux<T> implements Fuseable {
 
 				stateConsumer.accept(s);
 			} catch (Throwable e) {
-				Operators.onErrorDropped(e);
+				Operators.onErrorDropped(e, actual.currentContext());
 			}
 		}
 		

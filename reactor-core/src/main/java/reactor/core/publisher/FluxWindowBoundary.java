@@ -172,7 +172,7 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 			synchronized (this) {
@@ -184,7 +184,7 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			done = true;
@@ -255,7 +255,7 @@ final class FluxWindowBoundary<T, U> extends FluxOperator<T, Flux<T>> {
 			if (Exceptions.addThrowable(ERROR, this, e)) {
 				drain();
 			} else {
-				Operators.onErrorDropped(e);
+				Operators.onErrorDropped(e, actual.currentContext());
 			}
 		}
 

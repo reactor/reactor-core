@@ -114,7 +114,7 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 		static final AtomicReferenceFieldUpdater<CoordinatorSubscriber, Operators.MonoSubscriber[]> SUBSCRIBERS =
 				AtomicReferenceFieldUpdater.newUpdater(CoordinatorSubscriber.class, Operators.MonoSubscriber[].class, "subscribers");
 
-		public CoordinatorSubscriber(MonoCacheTime<T> main) {
+		CoordinatorSubscriber(MonoCacheTime<T> main) {
 			this.main = main;
 			//noinspection unchecked
 			this.subscribers = EMPTY;

@@ -35,7 +35,7 @@ import reactor.core.Fuseable.QueueSubscription;
  * {@link SignalType#CANCEL}).
  * <p>
  * Note that any exception thrown by the hook are caught and bubbled up
- * using {@link Operators#onErrorDropped(Throwable)}.
+ * using {@link Operators#onErrorDropped(Throwable, reactor.util.context.Context)}.
  *
  * @param <T> the value type
  * @author Simon Baslé
@@ -152,7 +152,7 @@ final class FluxDoFinally<T> extends FluxOperator<T, T> {
 					onFinally.accept(signalType);
 				} catch (Throwable ex) {
 					Exceptions.throwIfFatal(ex);
-					Operators.onErrorDropped(ex);
+					Operators.onErrorDropped(ex, actual.currentContext());
 				}
 			}
 		}

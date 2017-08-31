@@ -208,7 +208,7 @@ final class FluxSampleTimeout<T, U> extends FluxOperator<T, T> {
 				drain();
 			}
 			else {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 			}
 		}
 
@@ -243,7 +243,7 @@ final class FluxSampleTimeout<T, U> extends FluxOperator<T, T> {
 				error(e);
 			}
 			else {
-				Operators.onErrorDropped(e);
+				Operators.onErrorDropped(e, actual.currentContext());
 			}
 		}
 
@@ -386,7 +386,7 @@ final class FluxSampleTimeout<T, U> extends FluxOperator<T, T> {
 				main.otherError(index, t);
 			}
 			else {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, main.currentContext());
 			}
 		}
 

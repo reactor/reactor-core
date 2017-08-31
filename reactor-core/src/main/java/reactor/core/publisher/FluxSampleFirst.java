@@ -204,7 +204,7 @@ final class FluxSampleFirst<T, U> extends FluxOperator<T, T> {
 				}
 			}
 			else {
-				Operators.onErrorDropped(e);
+				Operators.onErrorDropped(e, actual.currentContext());
 			}
 		}
 

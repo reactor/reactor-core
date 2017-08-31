@@ -262,7 +262,7 @@ class MonoFilterWhen<T> extends MonoOperator<T, T> {
 				done = true;
 				main.innerError(t);
 			} else {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, main.currentContext());
 			}
 		}
 

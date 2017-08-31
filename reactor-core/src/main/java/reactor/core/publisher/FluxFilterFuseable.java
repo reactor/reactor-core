@@ -88,7 +88,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 			}
 			else {
 				if (done) {
-					Operators.onNextDropped(t);
+					Operators.onNextDropped(t, actual.currentContext());
 					return;
 				}
 				boolean b;
@@ -112,7 +112,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return false;
 			}
 
@@ -135,7 +135,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			done = true;
@@ -269,7 +269,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 			}
 			else {
 				if (done) {
-					Operators.onNextDropped(t);
+					Operators.onNextDropped(t, actual.currentContext());
 					return;
 				}
 				boolean b;
@@ -293,7 +293,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return false;
 			}
 
@@ -312,7 +312,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			done = true;

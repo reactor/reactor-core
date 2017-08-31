@@ -118,7 +118,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return true;
 			}
 
@@ -153,7 +153,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			done = true;
@@ -230,7 +230,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 
@@ -266,7 +266,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 		@Override
 		public boolean tryOnNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return true;
 			}
 
@@ -297,7 +297,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			done = true;
@@ -391,7 +391,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 				return true;
 			}
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return true;
 			}
 
@@ -426,7 +426,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			done = true;

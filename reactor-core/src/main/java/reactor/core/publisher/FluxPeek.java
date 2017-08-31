@@ -166,7 +166,7 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 
@@ -187,7 +187,7 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			done = true;
@@ -219,7 +219,7 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 					afterTerminateHook.run();
 				}
 				catch (Throwable e) {
-					afterErrorWithFailure(parent, e, t);
+					afterErrorWithFailure(parent, e, t, actual.currentContext());
 				}
 			}
 		}
@@ -249,7 +249,7 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 					afterTerminateHook.run();
 				}
 				catch (Throwable e) {
-					afterCompleteWithFailure(parent, e);
+					afterCompleteWithFailure(parent, e, actual.currentContext());
 				}
 			}
 		}
@@ -309,20 +309,21 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 	 * <ul>
 	 *     <li>The callback failure is thrown immediately if fatal.</li>
 	 *     <li>{@link Operators#onOperatorError(Throwable)} is called</li>
-	 *     <li>{@link Operators#onErrorDropped(Throwable)} is called</li>
+	 *     <li>{@link Operators#onErrorDropped(Throwable, Context)} is called</li>
 	 * </ul>
 	 * <p>
 	 *
 	 * @param parent the {@link SignalPeek} from which to get the callbacks
 	 * @param callbackFailure the afterTerminate callback failure
+	 * @param context subscriber context
 	 */
 	//see https://github.com/reactor/reactor-core/issues/270
 	static <T> void afterCompleteWithFailure(SignalPeek<T> parent,
-			Throwable callbackFailure) {
+			Throwable callbackFailure, Context context) {
 
 		Exceptions.throwIfFatal(callbackFailure);
 		Throwable _e = Operators.onOperatorError(callbackFailure);
-		Operators.onErrorDropped(_e);
+		Operators.onErrorDropped(_e, context);
 	}
 
 	/**
@@ -332,20 +333,21 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 	 *     <li>The callback failure is thrown immediately if fatal.</li>
 	 *     <li>{@link Operators#onOperatorError(Subscription, Throwable, Object)} is
 	 *     called, adding the original error as suppressed</li>
-	 *     <li>{@link Operators#onErrorDropped(Throwable)} is called</li>
+	 *     <li>{@link Operators#onErrorDropped(Throwable, Context)} is called</li>
 	 * </ul>
 	 * <p>
 	 *
 	 * @param parent the {@link SignalPeek} from which to get the callbacks
 	 * @param callbackFailure the afterTerminate callback failure
 	 * @param originalError the onError throwable
+	 * @param context subscriber context
 	 */
 	//see https://github.com/reactor/reactor-core/issues/270
 	static <T> void afterErrorWithFailure(SignalPeek<T> parent,
-			Throwable callbackFailure, Throwable originalError) {
+			Throwable callbackFailure, Throwable originalError, Context context) {
 		Exceptions.throwIfFatal(callbackFailure);
 		Throwable _e = Operators.onOperatorError(null, callbackFailure, originalError);
-		Operators.onErrorDropped(_e);
+		Operators.onErrorDropped(_e, context);
 	}
 
 }

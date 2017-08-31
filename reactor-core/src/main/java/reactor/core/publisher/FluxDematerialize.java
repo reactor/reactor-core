@@ -94,7 +94,7 @@ final class FluxDematerialize<T> extends FluxOperator<Signal<T>, T> {
 		@Override
 		public void onNext(Signal<T> t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 			if (t.isOnComplete()) {
@@ -119,7 +119,7 @@ final class FluxDematerialize<T> extends FluxOperator<Signal<T>, T> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			done = true;

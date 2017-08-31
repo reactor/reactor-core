@@ -254,7 +254,7 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 				}
 			}
 			else {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 			}
 		}
 
@@ -297,7 +297,7 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 				}
 			}
 			else {
-				Operators.onErrorDropped(e);
+				Operators.onErrorDropped(e, actual.currentContext());
 			}
 		}
 
@@ -584,7 +584,7 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 				drain();
 			}
 			else {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 			}
 		}
 
@@ -616,7 +616,7 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 				drain();
 			}
 			else {
-				Operators.onErrorDropped(e);
+				Operators.onErrorDropped(e, actual.currentContext());
 			}
 		}
 

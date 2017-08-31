@@ -68,7 +68,7 @@ final class MonoNext<T> extends MonoFromFluxOperator<T, T> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 
@@ -80,7 +80,7 @@ final class MonoNext<T> extends MonoFromFluxOperator<T, T> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			done = true;

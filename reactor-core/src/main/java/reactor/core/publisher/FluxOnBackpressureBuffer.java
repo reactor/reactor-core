@@ -142,7 +142,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 			if (!queue.offer(t)) {
@@ -166,7 +166,7 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			error = t;

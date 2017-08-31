@@ -343,7 +343,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 
@@ -391,7 +391,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			if (Exceptions.addThrowable(ERROR, this, t)) {
@@ -399,7 +399,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 				drain();
 			}
 			else {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 			}
 		}
 
@@ -622,7 +622,8 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 									catch (Throwable ex) {
 										ex = Operators.onOperatorError(inner, ex);
 										if (!Exceptions.addThrowable(ERROR, this, ex)) {
-											Operators.onErrorDropped(ex);
+											Operators.onErrorDropped(ex,
+													actual.currentContext());
 										}
 										v = null;
 										d = true;
@@ -790,7 +791,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 				drain();
 			}
 			else {
-				Operators.onErrorDropped(e);
+				Operators.onErrorDropped(e, actual.currentContext());
 			}
 		}
 
@@ -800,7 +801,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 					v);
 
 			if (!Exceptions.addThrowable(ERROR, this, e)) {
-				Operators.onErrorDropped(e);
+				Operators.onErrorDropped(e, actual.currentContext());
 				return false;
 			}
 			return true;

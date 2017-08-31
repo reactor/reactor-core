@@ -29,7 +29,7 @@ import reactor.core.Fuseable;
  * {@link SignalType#CANCEL}).
  * <p>
  * Note that any exception thrown by the hook are caught and bubbled up
- * using {@link Operators#onErrorDropped(Throwable)}.
+ * using {@link Operators#onErrorDropped(Throwable, reactor.util.context.Context)}.
  *
  * @param <T> the value type
  * @author Simon Baslé

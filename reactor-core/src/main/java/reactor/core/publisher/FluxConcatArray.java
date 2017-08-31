@@ -247,7 +247,7 @@ final class FluxConcatArray<T> extends Flux<T> {
 			if (Exceptions.addThrowable(ERROR, this, t)) {
 				onComplete();
 			} else {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 			}
 		}
 

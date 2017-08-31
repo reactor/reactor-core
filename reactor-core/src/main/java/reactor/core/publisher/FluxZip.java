@@ -393,7 +393,7 @@ final class FluxZip<T, R> extends Flux<R> {
 				actual.onError(e);
 			}
 			else {
-				Operators.onErrorDropped(e);
+				Operators.onErrorDropped(e, actual.currentContext());
 			}
 		}
 
@@ -482,7 +482,7 @@ final class FluxZip<T, R> extends Flux<R> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, parent.currentContext());
 				return;
 			}
 			done = true;
@@ -493,7 +493,7 @@ final class FluxZip<T, R> extends Flux<R> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, parent.currentContext());
 				return;
 			}
 			done = true;
@@ -612,7 +612,7 @@ final class FluxZip<T, R> extends Flux<R> {
 				drain();
 			}
 			else {
-				Operators.onErrorDropped(e);
+				Operators.onErrorDropped(e, actual.currentContext());
 			}
 		}
 
@@ -888,7 +888,7 @@ final class FluxZip<T, R> extends Flux<R> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, parent.actual.currentContext());
 				return;
 			}
 			done = true;

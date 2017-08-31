@@ -129,7 +129,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 
@@ -157,7 +157,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			done = true;
@@ -271,7 +271,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 
@@ -306,7 +306,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 
@@ -450,7 +450,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 
@@ -495,7 +495,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 

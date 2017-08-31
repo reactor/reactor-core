@@ -30,12 +30,12 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
-import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
+import reactor.util.context.Context;
 
 /**
  * An helper to support "Operator" writing, handle noop subscriptions, validate request
@@ -268,26 +268,22 @@ public abstract class Operators {
 	}
 
 	/**
-	 * An unexpected exception is about to be dropped, and it additionally
-	 * masks another one due to callback failure. The later will be suppressed by
-	 * the dropped exception.
+	 * An unexpected exception is about to be dropped.
 	 *
-	 * @param e the exception to handle
-	 * @param root the optional root cause to suppress
+	 * @param e the dropped exception
+	 * @see #onErrorDropped(Throwable, Context)
 	 */
-	public static void onErrorDropped(Throwable e, @Nullable Throwable root) {
-		if(root != null && root != e) {
-			e.addSuppressed(root);
-		}
-		onErrorDropped(e);
+	public static void onErrorDropped(Throwable e) {
+		onErrorDropped(e, Context.empty());
 	}
 
 	/**
 	 * An unexpected exception is about to be dropped.
 	 *
 	 * @param e the dropped exception
+	 * @param context a context that might hold a local error consumer
 	 */
-	public static void onErrorDropped(Throwable e) {
+	public static void onErrorDropped(Throwable e, Context context) {
 		Consumer<? super Throwable> hook = Hooks.onErrorDroppedHook;
 		if (hook == null) {
 			throw Exceptions.bubble(e);
@@ -303,18 +299,31 @@ public abstract class Operators {
 	 *
 	 * @param <T> the dropped value type
 	 * @param t the dropped data
-	 * @see #onNextDropped(Object)
+	 * @see #onNextDropped(Object, Context)
 	 */
 	public static <T> void onNextDropped(T t) {
-		//noinspection ConstantConditions
-		if(t != null) {
-			Consumer<Object> hook = Hooks.onNextDroppedHook;
-			if (hook != null) {
-				hook.accept(t);
-			}
-			else if (log.isDebugEnabled()) {
-				log.debug("onNextDropped: " + t);
-			}
+		onNextDropped(t, Context.empty());
+	}
+
+	/**
+	 * An unexpected event is about to be dropped.
+	 * <p>
+	 * If no hook is registered for {@link Hooks#onNextDropped(Consumer)}, the dropped
+	 * element is just logged at DEBUG level.
+	 *
+	 * @param <T> the dropped value type
+	 * @param t the dropped data
+	 * @param context a context that might hold a local error consumer
+	 */
+	public static <T> void onNextDropped(T t, Context context) {
+		Objects.requireNonNull(t, "onNext");
+		Objects.requireNonNull(context, "context");
+		Consumer<Object> hook = Hooks.onNextDroppedHook;
+		if (hook != null) {
+			hook.accept(t);
+		}
+		else if (log.isDebugEnabled()) {
+			log.debug("onNextDropped: " + t);
 		}
 	}
 

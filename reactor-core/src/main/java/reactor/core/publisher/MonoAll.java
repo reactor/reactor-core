@@ -112,7 +112,7 @@ final class MonoAll<T> extends MonoFromFluxOperator<T, Boolean>
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			done = true;

@@ -125,7 +125,7 @@ final class FluxDelaySubscription<T, U> extends FluxOperator<T, T>
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			done = true;

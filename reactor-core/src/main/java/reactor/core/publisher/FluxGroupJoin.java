@@ -466,7 +466,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 				drain();
 			}
 			else {
-				Operators.onErrorDropped(ex);
+				Operators.onErrorDropped(ex, actual.currentContext());
 			}
 		}
 
@@ -499,7 +499,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 				drain();
 			}
 			else {
-				Operators.onErrorDropped(ex);
+				Operators.onErrorDropped(ex, actual.currentContext());
 			}
 		}
 	}

@@ -195,7 +195,7 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 				drain();
 			}
 			else {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 			}
 		}
 
@@ -237,7 +237,7 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 				drain();
 			}
 			else {
-				Operators.onErrorDropped(e);
+				Operators.onErrorDropped(e, actual.currentContext());
 			}
 		}
 
@@ -262,7 +262,7 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 				drain();
 			}
 			else {
-				Operators.onErrorDropped(e);
+				Operators.onErrorDropped(e, actual.currentContext());
 			}
 		}
 

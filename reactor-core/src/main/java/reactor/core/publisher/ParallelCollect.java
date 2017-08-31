@@ -137,7 +137,7 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Scannable, 
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 
@@ -152,7 +152,7 @@ final class ParallelCollect<T, C> extends ParallelFlux<C> implements Scannable, 
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			done = true;

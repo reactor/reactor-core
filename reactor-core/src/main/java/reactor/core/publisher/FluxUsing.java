@@ -177,7 +177,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable {
 				resourceCleanup.accept(resource);
 			}
 			catch (Throwable e) {
-				Operators.onErrorDropped(e);
+				Operators.onErrorDropped(e, actual.currentContext());
 			}
 		}
 
@@ -329,7 +329,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable {
 				resourceCleanup.accept(resource);
 			}
 			catch (Throwable e) {
-				Operators.onErrorDropped(e);
+				Operators.onErrorDropped(e, actual.currentContext());
 			}
 		}
 
@@ -489,7 +489,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable {
 				resourceCleanup.accept(resource);
 			}
 			catch (Throwable e) {
-				Operators.onErrorDropped(e);
+				Operators.onErrorDropped(e, actual.currentContext());
 			}
 		}
 

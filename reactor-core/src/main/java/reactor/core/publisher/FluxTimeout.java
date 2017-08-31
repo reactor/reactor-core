@@ -133,12 +133,12 @@ final class FluxTimeout<T, U, V> extends FluxOperator<T, T> {
 			long idx = index;
 			if (idx == Long.MIN_VALUE) {
 				s.cancel();
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 			if (!INDEX.compareAndSet(this, idx, idx + 1)) {
 				s.cancel();
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 
@@ -170,11 +170,11 @@ final class FluxTimeout<T, U, V> extends FluxOperator<T, T> {
 		public void onError(Throwable t) {
 			long idx = index;
 			if (idx == Long.MIN_VALUE) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			if (!INDEX.compareAndSet(this, idx, Long.MIN_VALUE)) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 

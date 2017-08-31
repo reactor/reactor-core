@@ -248,7 +248,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, context);
 				return;
 			}
 
@@ -266,7 +266,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, context);
 				return;
 			}
 			error = t;
@@ -726,7 +726,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 		@Override
 		public void onError(Throwable t) {
 			if(!parent.terminate()){
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			actual.onError(t);
@@ -825,7 +825,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 		@Override
 		public void onError(Throwable t) {
 			if(!parent.terminate()){
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			actual.onError(t);

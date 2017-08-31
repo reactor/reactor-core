@@ -220,7 +220,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 			}
 
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 			if (!queue.offer(t)) {
@@ -235,7 +235,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			error = t;
@@ -699,7 +699,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 			}
 
 			if (done) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, actual.currentContext());
 				return;
 			}
 			if (!queue.offer(t)) {
@@ -712,7 +712,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 		@Override
 		public void onError(Throwable t) {
 			if(done){
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 				return;
 			}
 			error = t;

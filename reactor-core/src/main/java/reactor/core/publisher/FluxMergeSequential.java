@@ -242,7 +242,7 @@ final class FluxMergeSequential<T, R> extends FluxOperator<T, R> {
 				drain();
 			}
 			else {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, actual.currentContext());
 			}
 		}
 
@@ -307,7 +307,7 @@ final class FluxMergeSequential<T, R> extends FluxOperator<T, R> {
 				drain();
 			}
 			else {
-				Operators.onErrorDropped(e);
+				Operators.onErrorDropped(e, actual.currentContext());
 			}
 		}
 
