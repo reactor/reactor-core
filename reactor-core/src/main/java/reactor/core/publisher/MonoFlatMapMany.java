@@ -154,7 +154,8 @@ final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
 						"The mapper returned a null Publisher.");
 			}
 			catch (Throwable ex) {
-				actual.onError(Operators.onOperatorError(this, ex, t));
+				actual.onError(Operators.onOperatorError(this, ex, t,
+						actual.currentContext()));
 				return;
 			}
 
@@ -165,7 +166,8 @@ final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
 					v = ((Callable<R>) p).call();
 				}
 				catch (Throwable ex) {
-					actual.onError(Operators.onOperatorError(this, ex, t));
+					actual.onError(Operators.onOperatorError(this, ex, t,
+							actual.currentContext()));
 					return;
 				}
 

@@ -82,7 +82,8 @@ final class ParallelReduceSeed<T, R> extends ParallelFlux<R> implements
 						"The initialSupplier returned a null value");
 			}
 			catch (Throwable ex) {
-				reportError(subscribers, Operators.onOperatorError(ex));
+				reportError(subscribers, Operators.onOperatorError(ex,
+						subscribers[i].currentContext()));
 				return;
 			}
 			parents[i] =
@@ -147,7 +148,7 @@ final class ParallelReduceSeed<T, R> extends ParallelFlux<R> implements
 				v = Objects.requireNonNull(reducer.apply(accumulator, t), "The reducer returned a null value");
 			}
 			catch (Throwable ex) {
-				onError(Operators.onOperatorError(this, ex, t));
+				onError(Operators.onOperatorError(this, ex, t, actual.currentContext()));
 				return;
 			}
 

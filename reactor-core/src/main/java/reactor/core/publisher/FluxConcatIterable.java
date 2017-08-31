@@ -48,7 +48,7 @@ final class FluxConcatIterable<T> extends Flux<T> {
 					"The Iterator returned is null");
 		}
 		catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
 			return;
 		}
 
@@ -102,7 +102,8 @@ final class FluxConcatIterable<T> extends Flux<T> {
 						b = a.hasNext();
 					}
 					catch (Throwable e) {
-						onError(Operators.onOperatorError(this, e));
+						onError(Operators.onOperatorError(this, e,
+								actual.currentContext()));
 						return;
 					}
 
@@ -122,7 +123,8 @@ final class FluxConcatIterable<T> extends Flux<T> {
 								"The Publisher returned by the iterator is null");
 					}
 					catch (Throwable e) {
-						actual.onError(Operators.onOperatorError(this, e));
+						actual.onError(Operators.onOperatorError(this, e,
+								actual.currentContext()));
 						return;
 					}
 

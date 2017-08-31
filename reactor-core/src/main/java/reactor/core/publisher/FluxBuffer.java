@@ -140,7 +140,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 							"The bufferSupplier returned a null buffer");
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, t));
+					onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 					return;
 				}
 				buffer = b;
@@ -285,7 +285,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 							"The bufferSupplier returned a null buffer");
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, t));
+					onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 					return;
 				}
 
@@ -464,7 +464,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 							"The bufferSupplier returned a null buffer");
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, t));
+					onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 					return;
 				}
 

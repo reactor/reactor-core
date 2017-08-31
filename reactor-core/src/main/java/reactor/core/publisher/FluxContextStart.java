@@ -42,7 +42,7 @@ final class FluxContextStart<T> extends FluxOperator<T, T> implements Fuseable {
 			c = doOnContext.apply(actual.currentContext());
 		}
 		catch (Throwable t) {
-			Operators.error(actual, Operators.onOperatorError(t));
+			Operators.error(actual, Operators.onOperatorError(t, actual.currentContext()));
 			return;
 		}
 

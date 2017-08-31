@@ -201,7 +201,7 @@ final class FluxMergeSequential<T, R> extends FluxOperator<T, R> {
 				publisher = Objects.requireNonNull(mapper.apply(t), "publisher");
 			}
 			catch (Throwable ex) {
-				onError(Operators.onOperatorError(s, ex, t));
+				onError(Operators.onOperatorError(s, ex, t, actual.currentContext()));
 				return;
 			}
 
@@ -219,7 +219,7 @@ final class FluxMergeSequential<T, R> extends FluxOperator<T, R> {
 						new IllegalStateException("Too many subscribers for " +
 								"fluxMergeSequential on item: " + t +
 								"; subscribers: " + badSize),
-						t));
+						t, actual.currentContext()));
 				return;
 			}
 
@@ -294,7 +294,8 @@ final class FluxMergeSequential<T, R> extends FluxOperator<T, R> {
 			}
 			else {
 				inner.cancel();
-				onError(Operators.onOperatorError(null, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), value));
+				onError(Operators.onOperatorError(null, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), value,
+						actual.currentContext()));
 			}
 		}
 
@@ -396,7 +397,8 @@ final class FluxMergeSequential<T, R> extends FluxOperator<T, R> {
 							catch (Throwable ex) {
 								current = null;
 								inner.cancel();
-								ex = Operators.onOperatorError(ex);
+								ex = Operators.onOperatorError(ex,
+										actual.currentContext());
 								cancelAll();
 								a.onError(ex);
 								return;

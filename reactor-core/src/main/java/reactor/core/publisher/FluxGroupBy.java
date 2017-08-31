@@ -186,7 +186,7 @@ final class FluxGroupBy<T, K, V> extends FluxOperator<T, GroupedFlux<K, V>>
 				value = Objects.requireNonNull(valueSelector.apply(t), "The valueSelector returned a null value");
 			}
 			catch (Throwable ex) {
-				onError(Operators.onOperatorError(s, ex, t));
+				onError(Operators.onOperatorError(s, ex, t, actual.currentContext()));
 				return;
 			}
 
@@ -663,7 +663,8 @@ final class FluxGroupBy<T, K, V> extends FluxOperator<T, GroupedFlux<K, V>>
 			Subscriber<? super V> a = actual;
 
 			if (!queue.offer(t)) {
-				onError(Operators.onOperatorError(this, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), t));
+				onError(Operators.onOperatorError(this, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), t,
+						actual.currentContext()));
 				return;
 			}
 			if (outputFused) {

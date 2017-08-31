@@ -126,7 +126,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 				t = ((Callable<? extends T>) source).call();
 			}
 			catch (Throwable e) {
-				Operators.error(s, Operators.onOperatorError(e));
+				Operators.error(s, Operators.onOperatorError(e, s.currentContext()));
 				return true;
 			}
 
@@ -142,7 +142,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 						"The mapper returned a null Publisher");
 			}
 			catch (Throwable e) {
-				Operators.error(s, Operators.onOperatorError(null, e, t));
+				Operators.error(s, Operators.onOperatorError(null, e, t, s.currentContext()));
 				return true;
 			}
 
@@ -153,7 +153,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 					v = ((Callable<R>) p).call();
 				}
 				catch (Throwable e) {
-					Operators.error(s, Operators.onOperatorError(null, e, t));
+					Operators.error(s, Operators.onOperatorError(null, e, t, s.currentContext()));
 					return true;
 				}
 
@@ -354,7 +354,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 				"The mapper returned a null Publisher");
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return;
 			}
 
@@ -364,7 +364,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 					v = ((Callable<R>) p).call();
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, t));
+					onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 					return;
 				}
 				tryEmitScalar(v);
@@ -620,7 +620,8 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 										v = q.poll();
 									}
 									catch (Throwable ex) {
-										ex = Operators.onOperatorError(inner, ex);
+										ex = Operators.onOperatorError(inner, ex,
+												actual.currentContext());
 										if (!Exceptions.addThrowable(ERROR, this, ex)) {
 											Operators.onErrorDropped(ex,
 													actual.currentContext());
@@ -798,7 +799,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 		boolean failOverflow(R v, Subscription toCancel){
 			Throwable e = Operators.onOperatorError(toCancel,
 					Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL),
-					v);
+					v, actual.currentContext());
 
 			if (!Exceptions.addThrowable(ERROR, this, e)) {
 				Operators.onErrorDropped(e, actual.currentContext());

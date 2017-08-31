@@ -1151,7 +1151,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		public void onNext(T t) {
 			ReplayBuffer<T> b = buffer;
 			if (b.isDone()) {
-				Operators.onNextDropped(t);
+				Operators.onNextDropped(t, currentContext());
 			}
 			else {
 				b.add(t);
@@ -1165,7 +1165,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		public void onError(Throwable t) {
 			ReplayBuffer<T> b = buffer;
 			if (b.isDone()) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, currentContext());
 			}
 			else {
 				b.onError(t);

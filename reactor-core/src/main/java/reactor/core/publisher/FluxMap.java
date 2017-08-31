@@ -101,7 +101,7 @@ final class FluxMap<T, R> extends FluxOperator<T, R> {
 						"The mapper returned a null value.");
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return;
 			}
 
@@ -194,7 +194,7 @@ final class FluxMap<T, R> extends FluxOperator<T, R> {
 						"The mapper returned a null value.");
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return;
 			}
 
@@ -216,7 +216,7 @@ final class FluxMap<T, R> extends FluxOperator<T, R> {
 			}
 			catch (Throwable e) {
 				done = true;
-				actual.onError(Operators.onOperatorError(s, e, t));
+				actual.onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return true;
 			}
 

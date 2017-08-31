@@ -69,7 +69,8 @@ final class FluxInterval extends Flux<Long> {
 		}
 		catch (RejectedExecutionException ree) {
 			if (!r.cancelled) {
-				actual.onError(Operators.onRejectedExecution(ree, r, null, null));
+				actual.onError(Operators.onRejectedExecution(ree, r, null, null,
+						actual.currentContext()));
 			}
 		}
 	}

@@ -40,7 +40,7 @@ final class MonoSubscriberContext<T> extends MonoOperator<T, T> implements Fusea
 			c = doOnContext.apply(actual.currentContext());
 		}
 		catch (Throwable t) {
-			Operators.error(actual, Operators.onOperatorError(t));
+			Operators.error(actual, Operators.onOperatorError(t, actual.currentContext()));
 			return;
 		}
 

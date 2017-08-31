@@ -56,7 +56,7 @@ final class FluxZipIterable<T, U, R> extends FluxOperator<T, R> {
 					"The other iterable produced a null iterator");
 		}
 		catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
 			return;
 		}
 
@@ -66,7 +66,7 @@ final class FluxZipIterable<T, U, R> extends FluxOperator<T, R> {
 			b = it.hasNext();
 		}
 		catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
 			return;
 		}
 
@@ -130,7 +130,7 @@ final class FluxZipIterable<T, U, R> extends FluxOperator<T, R> {
 			}
 			catch (Throwable e) {
 				done = true;
-				actual.onError(Operators.onOperatorError(s, e, t));
+				actual.onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return;
 			}
 
@@ -142,7 +142,7 @@ final class FluxZipIterable<T, U, R> extends FluxOperator<T, R> {
 			}
 			catch (Throwable e) {
 				done = true;
-				actual.onError(Operators.onOperatorError(s, e, t));
+				actual.onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return;
 			}
 
@@ -155,7 +155,7 @@ final class FluxZipIterable<T, U, R> extends FluxOperator<T, R> {
 			}
 			catch (Throwable e) {
 				done = true;
-				actual.onError(Operators.onOperatorError(s, e, t));
+				actual.onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return;
 			}
 

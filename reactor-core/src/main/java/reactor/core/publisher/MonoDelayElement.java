@@ -115,7 +115,8 @@ final class MonoDelayElement<T> extends MonoOperator<T, T> {
 				this.task = scheduler.schedule(() -> complete(t), delay, unit);
 			}
 			catch (RejectedExecutionException ree) {
-				throw Operators.onRejectedExecution(ree, this, null, t);
+				throw Operators.onRejectedExecution(ree, this, null, t,
+						actual.currentContext());
 			}
 		}
 

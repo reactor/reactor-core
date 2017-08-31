@@ -115,7 +115,7 @@ final class FluxScanSeed<T, R> extends FluxOperator<T, R> {
 									"The initial value supplied is null");
 						}
 						catch (Throwable e) {
-							onError(Operators.onOperatorError(e));
+							onError(Operators.onOperatorError(e, actual.currentContext()));
 							return;
 						}
 
@@ -210,7 +210,7 @@ final class FluxScanSeed<T, R> extends FluxOperator<T, R> {
 						"The accumulator returned a null value");
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return;
 			}
 

@@ -52,7 +52,8 @@ final class MonoSubscribeOnValue<T> extends Mono<T> {
 			}
 			catch (RejectedExecutionException ree) {
 				if (parent.future != OperatorDisposables.DISPOSED) {
-					actual.onError(Operators.onRejectedExecution(ree));
+					actual.onError(Operators.onRejectedExecution(ree,
+							actual.currentContext()));
 				}
 			}
 		}

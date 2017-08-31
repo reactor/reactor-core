@@ -79,7 +79,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 					"The scheduler returned a null worker");
 		}
 		catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
 			return;
 		}
 
@@ -226,7 +226,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 			if (!queue.offer(t)) {
 				error = Operators.onOperatorError(s,
 						Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL),
-						t);
+						t, actual.currentContext());
 				done = true;
 			}
 			trySchedule(this, null, t);
@@ -290,7 +290,8 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 			}
 			catch (RejectedExecutionException ree) {
 				queue.clear();
-				actual.onError(Operators.onRejectedExecution(ree, subscription, suppressed, dataSignal));
+				actual.onError(Operators.onRejectedExecution(ree, subscription, suppressed, dataSignal,
+						actual.currentContext()));
 			}
 		}
 
@@ -313,7 +314,8 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 						v = q.poll();
 					}
 					catch (Throwable ex) {
-						doError(a, Operators.onOperatorError(s, ex));
+						doError(a, Operators.onOperatorError(s, ex,
+								actual.currentContext()));
 						return;
 					}
 
@@ -377,7 +379,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 						s.cancel();
 						q.clear();
 
-						doError(a, Operators.onOperatorError(ex));
+						doError(a, Operators.onOperatorError(ex, actual.currentContext()));
 						return;
 					}
 
@@ -703,7 +705,8 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 				return;
 			}
 			if (!queue.offer(t)) {
-				error = Operators.onOperatorError(s, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), t);
+				error = Operators.onOperatorError(s, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), t,
+						actual.currentContext());
 				done = true;
 			}
 			trySchedule(this, null, t);
@@ -765,7 +768,8 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 			}
 			catch (RejectedExecutionException ree) {
 				queue.clear();
-				actual.onError(Operators.onRejectedExecution(ree, subscription, suppressed, dataSignal));
+				actual.onError(Operators.onRejectedExecution(ree, subscription, suppressed, dataSignal,
+						actual.currentContext()));
 			}
 		}
 
@@ -787,7 +791,8 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 						v = q.poll();
 					}
 					catch (Throwable ex) {
-						doError(a, Operators.onOperatorError(s, ex));
+						doError(a, Operators.onOperatorError(s, ex,
+								actual.currentContext()));
 						return;
 					}
 
@@ -851,7 +856,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 						s.cancel();
 						q.clear();
 
-						doError(a, Operators.onOperatorError(ex));
+						doError(a, Operators.onOperatorError(ex, actual.currentContext()));
 						return;
 					}
 					boolean empty = v == null;

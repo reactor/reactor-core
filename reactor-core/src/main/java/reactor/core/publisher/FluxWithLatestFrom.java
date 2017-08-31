@@ -187,7 +187,7 @@ final class FluxWithLatestFrom<T, U, R> extends FluxOperator<T, R> {
 					"The combiner returned a null value");
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(this, e, t));
+					onError(Operators.onOperatorError(this, e, t, actual.currentContext()));
 					return;
 				}
 

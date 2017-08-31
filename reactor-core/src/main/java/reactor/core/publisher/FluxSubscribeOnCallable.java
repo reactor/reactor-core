@@ -57,7 +57,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 		}
 		catch (RejectedExecutionException ree) {
 			if(parent.state != CallableSubscribeOnSubscription.HAS_CANCELLED) {
-				actual.onError(Operators.onRejectedExecution(ree));
+				actual.onError(Operators.onRejectedExecution(ree, actual.currentContext()));
 			}
 		}
 	}
@@ -216,7 +216,8 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 				v = callable.call();
 			}
 			catch (Throwable ex) {
-				actual.onError(Operators.onOperatorError(this, ex));
+				actual.onError(Operators.onOperatorError(this, ex,
+						actual.currentContext()));
 				return;
 			}
 
@@ -262,7 +263,8 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 								setRequestFuture(f);
 							}
 							catch (RejectedExecutionException ree) {
-								actual.onError(Operators.onRejectedExecution(ree));
+								actual.onError(Operators.onRejectedExecution(ree,
+										actual.currentContext()));
 							}
 						}
 						return;

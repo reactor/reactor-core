@@ -108,7 +108,7 @@ final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable
 							"The mapper returned a null value.");
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, t));
+					onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 					return;
 				}
 
@@ -259,7 +259,7 @@ final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable
 							"The mapper returned a null value.");
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, t));
+					onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 					return;
 				}
 
@@ -281,7 +281,7 @@ final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable
 						"The mapper returned a null value.");
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return true;
 			}
 

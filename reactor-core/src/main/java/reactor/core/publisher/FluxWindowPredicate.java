@@ -202,7 +202,8 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 				window = g;
 
 				if (!queue.offer(g)) {
-					onError(Operators.onOperatorError(this, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), emitInNewWindow));
+					onError(Operators.onOperatorError(this, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), emitInNewWindow,
+							actual.currentContext()));
 					return;
 				}
 				drain();
@@ -222,7 +223,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 				match = predicate.test(t);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return;
 			}
 
@@ -705,7 +706,8 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 			Subscriber<? super T> a = actual;
 
 			if (!queue.offer(t)) {
-				onError(Operators.onOperatorError(this, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), t));
+				onError(Operators.onOperatorError(this, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), t,
+						actual.currentContext()));
 				return;
 			}
 			if (enableOperatorFusion) {

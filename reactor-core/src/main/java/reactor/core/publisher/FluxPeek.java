@@ -124,7 +124,7 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 					requestHook.accept(n);
 				}
 				catch (Throwable e) {
-					Operators.onOperatorError(e);
+					Operators.onOperatorError(e, actual.currentContext());
 				}
 			}
 			s.request(n);
@@ -138,7 +138,7 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 					cancelHook.run();
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e));
+					onError(Operators.onOperatorError(s, e, actual.currentContext()));
 					return;
 				}
 			}
@@ -154,7 +154,8 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 						subscribeHook.accept(s);
 					}
 					catch (Throwable e) {
-						Operators.error(actual, Operators.onOperatorError(s, e));
+						Operators.error(actual, Operators.onOperatorError(s, e,
+								actual.currentContext()));
 						return;
 					}
 				}
@@ -176,7 +177,7 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 					nextHook.accept(t);
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, t));
+					onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 					return;
 				}
 			}
@@ -198,7 +199,7 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 				}
 				catch (Throwable e) {
 					//this performs a throwIfFatal or suppresses t in e
-					t = Operators.onOperatorError(null, e, t);
+					t = Operators.onOperatorError(null, e, t, actual.currentContext());
 				}
 			}
 
@@ -235,7 +236,7 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 					completeHook.run();
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e));
+					onError(Operators.onOperatorError(s, e, actual.currentContext()));
 					return;
 				}
 			}
@@ -308,7 +309,7 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 	 * callback that fails during onComplete. It drops the error to the global hook.
 	 * <ul>
 	 *     <li>The callback failure is thrown immediately if fatal.</li>
-	 *     <li>{@link Operators#onOperatorError(Throwable)} is called</li>
+	 *     <li>{@link Operators#onOperatorError(Throwable, Context)} is called</li>
 	 *     <li>{@link Operators#onErrorDropped(Throwable, Context)} is called</li>
 	 * </ul>
 	 * <p>
@@ -322,7 +323,7 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 			Throwable callbackFailure, Context context) {
 
 		Exceptions.throwIfFatal(callbackFailure);
-		Throwable _e = Operators.onOperatorError(callbackFailure);
+		Throwable _e = Operators.onOperatorError(callbackFailure, context);
 		Operators.onErrorDropped(_e, context);
 	}
 
@@ -331,7 +332,7 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 	 * callback that fails during onError. It drops the error to the global hook.
 	 * <ul>
 	 *     <li>The callback failure is thrown immediately if fatal.</li>
-	 *     <li>{@link Operators#onOperatorError(Subscription, Throwable, Object)} is
+	 *     <li>{@link Operators#onOperatorError(Subscription, Throwable, Object, Context)} is
 	 *     called, adding the original error as suppressed</li>
 	 *     <li>{@link Operators#onErrorDropped(Throwable, Context)} is called</li>
 	 * </ul>
@@ -346,7 +347,7 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 	static <T> void afterErrorWithFailure(SignalPeek<T> parent,
 			Throwable callbackFailure, Throwable originalError, Context context) {
 		Exceptions.throwIfFatal(callbackFailure);
-		Throwable _e = Operators.onOperatorError(null, callbackFailure, originalError);
+		Throwable _e = Operators.onOperatorError(null, callbackFailure, originalError, context);
 		Operators.onErrorDropped(_e, context);
 	}
 

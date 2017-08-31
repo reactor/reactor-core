@@ -222,7 +222,8 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 			}
 			catch (RejectedExecutionException re) {
 				done = true;
-				error = Operators.onRejectedExecution(re, this, null, t);
+				error = Operators.onRejectedExecution(re, this, null, t,
+						actual.currentContext());
 			}
 			drain();
 		}

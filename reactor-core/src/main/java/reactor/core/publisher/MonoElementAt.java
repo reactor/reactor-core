@@ -150,7 +150,7 @@ final class MonoElementAt<T> extends MonoFromFluxOperator<T, T>
 			}
 			else{
 				actual.onError(Operators.onOperatorError(new
-						IndexOutOfBoundsException()));
+						IndexOutOfBoundsException(), actual.currentContext()));
 			}
 		}
 	}

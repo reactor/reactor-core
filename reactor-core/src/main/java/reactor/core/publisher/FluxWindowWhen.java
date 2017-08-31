@@ -402,7 +402,7 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 										this,
 										Operators.onOperatorError(s,
 												ex,
-												newWindow.value));
+												newWindow.value, actual.currentContext()));
 								continue;
 							}
 

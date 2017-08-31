@@ -74,7 +74,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable {
 			resource = resourceSupplier.call();
 		}
 		catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
 			return;
 		}
 
@@ -90,11 +90,11 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable {
 				resourceCleanup.accept(resource);
 			}
 			catch (Throwable ex) {
-				ex.addSuppressed(Operators.onOperatorError(e));
+				ex.addSuppressed(Operators.onOperatorError(e, actual.currentContext()));
 				e = ex;
 			}
 
-			Operators.error(actual, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
 			return;
 		}
 
@@ -202,7 +202,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable {
 					resourceCleanup.accept(resource);
 				}
 				catch (Throwable e) {
-					Throwable _e = Operators.onOperatorError(e);
+					Throwable _e = Operators.onOperatorError(e, actual.currentContext());
 					if (_e != t) {
 						_e.addSuppressed(t);
 					}
@@ -224,7 +224,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable {
 					resourceCleanup.accept(resource);
 				}
 				catch (Throwable e) {
-					actual.onError(Operators.onOperatorError(e));
+					actual.onError(Operators.onOperatorError(e, actual.currentContext()));
 					return;
 				}
 			}
@@ -355,7 +355,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable {
 					resourceCleanup.accept(resource);
 				}
 				catch (Throwable e) {
-					Throwable _e = Operators.onOperatorError(e);
+					Throwable _e = Operators.onOperatorError(e, actual.currentContext());
 					if (_e != t) {
 						_e.addSuppressed(t);
 					}
@@ -377,7 +377,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable {
 					resourceCleanup.accept(resource);
 				}
 				catch (Throwable e) {
-					actual.onError(Operators.onOperatorError(e));
+					actual.onError(Operators.onOperatorError(e, actual.currentContext()));
 					return;
 				}
 			}
@@ -519,7 +519,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable {
 					resourceCleanup.accept(resource);
 				}
 				catch (Throwable e) {
-					Throwable _e = Operators.onOperatorError(e);
+					Throwable _e = Operators.onOperatorError(e, actual.currentContext());
 					if (_e != t) {
 						_e.addSuppressed(t);
 					}
@@ -541,7 +541,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable {
 					resourceCleanup.accept(resource);
 				}
 				catch (Throwable e) {
-					actual.onError(Operators.onOperatorError(e));
+					actual.onError(Operators.onOperatorError(e, actual.currentContext()));
 					return;
 				}
 			}

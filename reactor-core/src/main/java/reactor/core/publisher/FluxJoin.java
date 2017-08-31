@@ -279,7 +279,8 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 						catch (Throwable exc) {
 							Exceptions.addThrowable(ERROR,
 									this,
-									Operators.onOperatorError(this, exc, left));
+									Operators.onOperatorError(this, exc, left,
+											actual.currentContext()));
 							errorAll(a);
 							return;
 						}
@@ -314,7 +315,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 								Exceptions.addThrowable(ERROR,
 										this,
 										Operators.onOperatorError(this,
-												exc, right));
+												exc, right, actual.currentContext()));
 								errorAll(a);
 								return;
 							}
@@ -346,7 +347,8 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 									Exceptions.addThrowable(ERROR,
 											this,
 											Operators.onOperatorError(this,
-													Exceptions.failWithOverflow()));
+													Exceptions.failWithOverflow(),
+													actual.currentContext()));
 									errorAll(a);
 									return;
 								}
@@ -373,7 +375,8 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 						catch (Throwable exc) {
 							Exceptions.addThrowable(ERROR,
 									this,
-									Operators.onOperatorError(this, exc, right));
+									Operators.onOperatorError(this, exc, right,
+											actual.currentContext()));
 							errorAll(a);
 							return;
 						}
@@ -407,7 +410,8 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 							catch (Throwable exc) {
 								Exceptions.addThrowable(ERROR,
 										this,
-										Operators.onOperatorError(this, exc, left));
+										Operators.onOperatorError(this, exc, left,
+												actual.currentContext()));
 								errorAll(a);
 								return;
 							}
@@ -439,7 +443,8 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 									Exceptions.addThrowable(ERROR,
 											this,
 											Operators.onOperatorError(this,
-													Exceptions.failWithOverflow()));
+													Exceptions.failWithOverflow(),
+													actual.currentContext()));
 									errorAll(a);
 									return;
 								}

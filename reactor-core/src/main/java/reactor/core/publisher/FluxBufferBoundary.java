@@ -68,7 +68,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 					"The bufferSupplier returned a null buffer");
 		}
 		catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
 			return;
 		}
 
@@ -253,7 +253,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 						"The bufferSupplier returned a null buffer");
 			}
 			catch (Throwable e) {
-				otherError(Operators.onOperatorError(other, e));
+				otherError(Operators.onOperatorError(other, e, actual.currentContext()));
 				return;
 			}
 
@@ -281,7 +281,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 			}
 			else {
 				actual.onError(Operators.onOperatorError(this, Exceptions
-						.failWithOverflow(), b));
+						.failWithOverflow(), b, actual.currentContext()));
 
 				return false;
 			}

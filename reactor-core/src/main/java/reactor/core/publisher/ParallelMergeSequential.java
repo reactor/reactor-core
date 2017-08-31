@@ -179,7 +179,8 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 					Queue<T> q = inner.getQueue(queueSupplier);
 
 					if(!q.offer(value)){
-						onError(Operators.onOperatorError(this, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), value));
+						onError(Operators.onOperatorError(this, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), value,
+								actual.currentContext()));
 						return;
 					}
 				}
@@ -190,7 +191,8 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 				Queue<T> q = inner.getQueue(queueSupplier);
 
 				if(!q.offer(value)){
-					onError(Operators.onOperatorError(this, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), value));
+					onError(Operators.onOperatorError(this, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), value,
+							actual.currentContext()));
 					return;
 				}
 

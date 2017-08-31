@@ -215,7 +215,7 @@ final class FluxSwitchMap<T, R> extends FluxOperator<T, R> {
 				"The mapper returned a null publisher");
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return;
 			}
 

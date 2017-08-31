@@ -52,7 +52,7 @@ final class MonoCollectList<T, C extends Collection<? super T>>
 					"The collectionSupplier returned a null collection");
 		}
 		catch (Throwable ex) {
-			Operators.error(actual, Operators.onOperatorError(ex));
+			Operators.error(actual, Operators.onOperatorError(ex, actual.currentContext()));
 			return;
 		}
 

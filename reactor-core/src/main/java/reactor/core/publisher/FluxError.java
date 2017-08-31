@@ -18,12 +18,8 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 
-import org.reactivestreams.Subscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.util.context.Context;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import javax.annotation.Nullable;
 
 import reactor.core.CoreSubscriber;
 
@@ -44,7 +40,7 @@ final class FluxError<T> extends Flux<T> implements Fuseable.ScalarCallable {
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-		Operators.error(actual, Operators.onOperatorError(error));
+		Operators.error(actual, Operators.onOperatorError(error, actual.currentContext()));
 	}
 
 	@Override

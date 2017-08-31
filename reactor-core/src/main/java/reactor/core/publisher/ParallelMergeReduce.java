@@ -176,7 +176,8 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 									sp.second), "The reducer returned a null value");
 						}
 						catch (Throwable ex) {
-							innerError(Operators.onOperatorError(this, ex));
+							innerError(Operators.onOperatorError(this, ex,
+									actual.currentContext()));
 							return;
 						}
 					}
@@ -252,7 +253,7 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, parent.currentContext());
+				Operators.onNextDropped(t, currentContext());
 				return;
 			}
 			T v = value;
@@ -266,7 +267,7 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 					v = Objects.requireNonNull(reducer.apply(v, t), "The reducer returned a null value");
 				}
 				catch (Throwable ex) {
-					onError(Operators.onOperatorError(s, ex, t));
+					onError(Operators.onOperatorError(s, ex, t, currentContext()));
 					return;
 				}
 

@@ -98,7 +98,7 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 		DirectInner<T>[] inners = subscribers;
 
 		if (inners == TERMINATED) {
-			Operators.onNextDropped(t);
+			Operators.onNextDropped(t, currentContext());
 			return;
 		}
 
@@ -114,7 +114,7 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 		DirectInner<T>[] inners = subscribers;
 
 		if (inners == TERMINATED) {
-			Operators.onErrorDropped(t);
+			Operators.onErrorDropped(t, currentContext());
 			return;
 		}
 

@@ -130,7 +130,8 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Fuseable {
                                 v = ((Callable<T>)m).call();
                             }
                             catch (Throwable ex) {
-	                            actual.onError(Operators.onOperatorError(ex));
+	                            actual.onError(Operators.onOperatorError(ex,
+                                        actual.currentContext()));
 	                            return;
                             }
                             
@@ -154,7 +155,8 @@ final class MonoIgnoreThen<T> extends Mono<T> implements Fuseable {
                                 ((Callable<?>)m).call();
                             }
                             catch (Throwable ex) {
-	                            actual.onError(Operators.onOperatorError(ex));
+	                            actual.onError(Operators.onOperatorError(ex,
+                                        actual.currentContext()));
 	                            return;
                             }
                             

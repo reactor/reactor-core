@@ -21,6 +21,7 @@ import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -423,8 +424,8 @@ public class StepVerifierAssertionsTests {
 			StepVerifier.create(Flux.from(s -> {
 				s.onSubscribe(Operators.emptySubscription());
 				s.onError(err1);
-				Operators.onOperatorError(err2);
-				Operators.onOperatorError(err3);
+				Operators.onOperatorError(err2, Context.empty());
+				Operators.onOperatorError(err3, Context.empty());
 			}).buffer(1))
 			            .expectError()
 			            .verifyThenAssertThat()
@@ -446,8 +447,8 @@ public class StepVerifierAssertionsTests {
 			StepVerifier.create(Flux.from(s -> {
 				s.onSubscribe(Operators.emptySubscription());
 				s.onError(err1);
-				Operators.onOperatorError(err2);
-				Operators.onOperatorError(err3);
+				Operators.onOperatorError(err2, Context.empty());
+				Operators.onOperatorError(err3, Context.empty());
 			}).buffer(1))
 			            .expectError()
 			            .verifyThenAssertThat()
@@ -470,8 +471,8 @@ public class StepVerifierAssertionsTests {
 			StepVerifier.create(Flux.from(s -> {
 				s.onSubscribe(Operators.emptySubscription());
 				s.onError(err1);
-				Operators.onOperatorError(err2);
-				Operators.onOperatorError(err3);
+				Operators.onOperatorError(err2, Context.empty());
+				Operators.onOperatorError(err3, Context.empty());
 			}).buffer(1))
 			            .expectError()
 			            .verifyThenAssertThat()
@@ -564,7 +565,7 @@ public class StepVerifierAssertionsTests {
 		try {
 			StepVerifier.create(Flux.from(f -> {
 				f.onSubscribe(Operators.emptySubscription());
-				Operators.onOperatorError(null, null, "foo");
+				Operators.onOperatorError(null, null, "foo", Context.empty());
 				f.onComplete();
 			}))
 			            .expectComplete()

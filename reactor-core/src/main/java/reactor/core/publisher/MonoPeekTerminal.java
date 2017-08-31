@@ -166,7 +166,8 @@ final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable {
 						parent.onTerminateCall.accept(t, null);
 					}
 					catch (Throwable e) {
-						onError(Operators.onOperatorError(s, e, t));
+						onError(Operators.onOperatorError(s, e, t,
+								actual.currentContext()));
 						return;
 					}
 				}
@@ -175,7 +176,8 @@ final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable {
 						parent.onSuccessCall.accept(t);
 					}
 					catch (Throwable e) {
-						onError(Operators.onOperatorError(s, e, t));
+						onError(Operators.onOperatorError(s, e, t,
+								actual.currentContext()));
 						return;
 					}
 				}
@@ -188,7 +190,8 @@ final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable {
 					}
 					catch (Throwable e) {
 						//don't invoke error callback, see https://github.com/reactor/reactor-core/issues/270
-						Operators.onErrorDropped(Operators.onOperatorError(s, e, t),
+						Operators.onErrorDropped(Operators.onOperatorError(s, e, t,
+								actual.currentContext()),
 								actual.currentContext());
 					}
 				}
@@ -215,7 +218,7 @@ final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable {
 					parent.onTerminateCall.accept(t, null);
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, t));
+					onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 					return false;
 				}
 			}
@@ -224,7 +227,7 @@ final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable {
 					parent.onSuccessCall.accept(t);
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, t));
+					onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 					return false;
 				}
 			}
@@ -237,7 +240,8 @@ final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable {
 				}
 				catch (Throwable e) {
 					//don't invoke error callback, see https://github.com/reactor/reactor-core/issues/270
-					Operators.onErrorDropped(Operators.onOperatorError(s, e, t),
+					Operators.onErrorDropped(Operators.onOperatorError(s, e, t,
+							actual.currentContext()),
 							actual.currentContext());
 				}
 			}
@@ -258,7 +262,7 @@ final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable {
 					parent.onTerminateCall.accept(null, t);
 				}
 				catch (Throwable e) {
-					t = Operators.onOperatorError(null, e, t);
+					t = Operators.onOperatorError(null, e, t, actual.currentContext());
 				}
 			}
 
@@ -277,7 +281,8 @@ final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable {
 				}
 				catch (Throwable e) {
 					//don't invoke error callback, see https://github.com/reactor/reactor-core/issues/270
-					Operators.onErrorDropped(Operators.onOperatorError(e),
+					Operators.onErrorDropped(Operators.onOperatorError(e,
+							actual.currentContext()),
 							actual.currentContext());
 				}
 			}
@@ -294,7 +299,7 @@ final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable {
 						parent.onTerminateCall.accept(null, null);
 					}
 					catch (Throwable e) {
-						onError(Operators.onOperatorError(s, e));
+						onError(Operators.onOperatorError(s, e, actual.currentContext()));
 						return;
 					}
 				}
@@ -303,7 +308,7 @@ final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable {
 						parent.onSuccessCall.accept(null);
 					}
 					catch (Throwable e) {
-						onError(Operators.onOperatorError(s, e));
+						onError(Operators.onOperatorError(s, e, actual.currentContext()));
 						return;
 					}
 				}
@@ -318,7 +323,8 @@ final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable {
 				}
 				catch (Throwable e) {
 					//don't invoke error callback, see https://github.com/reactor/reactor-core/issues/270
-					Operators.onErrorDropped(Operators.onOperatorError(e),
+					Operators.onErrorDropped(Operators.onOperatorError(e,
+							actual.currentContext()),
 							actual.currentContext());
 				}
 			}
@@ -341,7 +347,8 @@ final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable {
 						parent.onTerminateCall.accept(v, null);
 					}
 					catch (Throwable e) {
-						throw Exceptions.propagate(Operators.onOperatorError(s, e, v));
+						throw Exceptions.propagate(Operators.onOperatorError(s, e, v,
+								actual.currentContext()));
 					}
 				}
 				if (parent.onSuccessCall != null) {
@@ -349,7 +356,8 @@ final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable {
 						parent.onSuccessCall.accept(v);
 					}
 					catch (Throwable e) {
-						throw Exceptions.propagate(Operators.onOperatorError(s, e, v));
+						throw Exceptions.propagate(Operators.onOperatorError(s, e, v,
+								actual.currentContext()));
 					}
 				}
 				if (parent.onAfterTerminateCall != null) {
@@ -357,7 +365,8 @@ final class MonoPeekTerminal<T> extends MonoOperator<T, T> implements Fuseable {
 						parent.onAfterTerminateCall.accept(v, null);
 					}
 					catch (Throwable t) {
-						Operators.onErrorDropped(Operators.onOperatorError(t),
+						Operators.onErrorDropped(Operators.onOperatorError(t,
+								actual.currentContext()),
 								actual.currentContext());
 					}
 				}

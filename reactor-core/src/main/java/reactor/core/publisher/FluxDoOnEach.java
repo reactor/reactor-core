@@ -106,7 +106,7 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 				onSignal.accept(this);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return;
 			}
 
@@ -126,7 +126,7 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 			}
 			catch (Throwable e) {
 				//this performs a throwIfFatal or suppresses t in e
-				t = Operators.onOperatorError(null, e, t);
+				t = Operators.onOperatorError(null, e, t, actual.currentContext());
 			}
 
 			try {
@@ -152,7 +152,7 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 			}
 			catch (Throwable e) {
 				done = false;
-				onError(Operators.onOperatorError(s, e));
+				onError(Operators.onOperatorError(s, e, actual.currentContext()));
 				return;
 			}
 

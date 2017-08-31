@@ -226,7 +226,7 @@ final class ParallelSource<T> extends ParallelFlux<T> implements Scannable {
 			}
 			if (sourceMode == Fuseable.NONE) {
 				if (!queue.offer(t)) {
-					onError(Operators.onOperatorError(s, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), t));
+					onError(Operators.onOperatorError(s, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), t, currentContext()));
 					return;
 				}
 			}
@@ -268,7 +268,7 @@ final class ParallelSource<T> extends ParallelFlux<T> implements Scannable {
 			int missed = 1;
 			
 			Queue<T> q = queue;
-			Subscriber<? super T>[] a = this.subscribers;
+			CoreSubscriber<? super T>[] a = this.subscribers;
 			AtomicLongArray r = this.requests;
 			long[] e = this.emissions;
 			int n = e.length;
@@ -319,7 +319,7 @@ final class ParallelSource<T> extends ParallelFlux<T> implements Scannable {
 						try {
 							v = q.poll();
 						} catch (Throwable ex) {
-							ex = Operators.onOperatorError(s, ex);
+							ex = Operators.onOperatorError(s, ex, a[idx].currentContext());
 							for (Subscriber<? super T> s : a) {
 								s.onError(ex);
 							}
@@ -372,7 +372,7 @@ final class ParallelSource<T> extends ParallelFlux<T> implements Scannable {
 			int missed = 1;
 			
 			Queue<T> q = queue;
-			Subscriber<? super T>[] a = this.subscribers;
+			CoreSubscriber<? super T>[] a = this.subscribers;
 			AtomicLongArray r = this.requests;
 			long[] e = this.emissions;
 			int n = e.length;
@@ -388,19 +388,7 @@ final class ParallelSource<T> extends ParallelFlux<T> implements Scannable {
 						return;
 					}
 					
-					boolean empty;
-					
-					try {
-						empty = q.isEmpty();
-					} catch (Throwable ex) {
-						ex = Operators.onOperatorError(s, ex);
-						for (Subscriber<? super T> s : a) {
-							s.onError(ex);
-						}
-						return;
-					}
-					
-					if (empty) {
+					if (q.isEmpty()) {
 						for (Subscriber<? super T> s : a) {
 							s.onComplete();
 						}
@@ -416,7 +404,7 @@ final class ParallelSource<T> extends ParallelFlux<T> implements Scannable {
 						try {
 							v = q.poll();
 						} catch (Throwable ex) {
-							ex = Operators.onOperatorError(s, ex);
+							ex = Operators.onOperatorError(s, ex, a[idx].currentContext());
 							for (Subscriber<? super T> s : a) {
 								s.onError(ex);
 							}

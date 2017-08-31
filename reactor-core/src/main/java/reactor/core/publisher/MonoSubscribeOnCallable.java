@@ -21,7 +21,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.RejectedExecutionException;
 
 import reactor.core.CoreSubscriber;
-import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 
@@ -53,7 +52,7 @@ final class MonoSubscribeOnCallable<T> extends Mono<T> implements Fuseable {
 		}
 		catch (RejectedExecutionException ree) {
 			if(parent.state != FluxSubscribeOnCallable.CallableSubscribeOnSubscription.HAS_CANCELLED) {
-				actual.onError(Operators.onRejectedExecution(ree));
+				actual.onError(Operators.onRejectedExecution(ree, actual.currentContext()));
 			}
 		}
 	}

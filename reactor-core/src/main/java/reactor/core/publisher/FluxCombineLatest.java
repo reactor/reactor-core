@@ -106,7 +106,8 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 				it = Objects.requireNonNull(iterable.iterator(), "The iterator returned is null");
 			}
 			catch (Throwable e) {
-				Operators.error(actual, Operators.onOperatorError(e));
+				Operators.error(actual, Operators.onOperatorError(e,
+						actual.currentContext()));
 				return;
 			}
 
@@ -118,7 +119,8 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 					b = it.hasNext();
 				}
 				catch (Throwable e) {
-					Operators.error(actual, Operators.onOperatorError(e));
+					Operators.error(actual, Operators.onOperatorError(e,
+							actual.currentContext()));
 					return;
 				}
 
@@ -133,7 +135,8 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 							"The Publisher returned by the iterator is null");
 				}
 				catch (Throwable e) {
-					Operators.error(actual, Operators.onOperatorError(e));
+					Operators.error(actual, Operators.onOperatorError(e,
+							actual.currentContext()));
 					return;
 				}
 
@@ -307,7 +310,8 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 							new SourceAndArray(subscribers[index], os.clone());
 
 					if (!queue.offer(sa)) {
-						innerError(Operators.onOperatorError(this, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL)));
+						innerError(Operators.onOperatorError(this, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL),
+								actual.currentContext()));
 						return;
 					}
 
@@ -432,7 +436,8 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 						w = Objects.requireNonNull(combiner.apply(v.array), "Combiner returned null");
 					}
 					catch (Throwable ex) {
-						ex = Operators.onOperatorError(this,	ex,	v.array);
+						ex = Operators.onOperatorError(this,	ex,	v.array,
+								actual.currentContext());
 						Exceptions.addThrowable(ERROR, this, ex);
 						//noinspection ConstantConditions
 						ex = Exceptions.terminate(ERROR, this);

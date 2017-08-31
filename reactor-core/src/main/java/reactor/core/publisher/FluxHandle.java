@@ -97,7 +97,7 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 				handler.accept(t, this);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return;
 			}
 			R v = data;
@@ -108,7 +108,8 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 			if(stop){
 				s.cancel();
 				if(error != null){
-					onError(Operators.onOperatorError(null, error, t));
+					onError(Operators.onOperatorError(null, error, t,
+							actual.currentContext()));
 					return;
 				}
 				onComplete();
@@ -129,7 +130,7 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 				handler.accept(t, this);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return false;
 			}
 			R v = data;
@@ -140,7 +141,8 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 			if(stop){
 				s.cancel();
 				if(error != null){
-					onError(Operators.onOperatorError(null, error, t));
+					onError(Operators.onOperatorError(null, error, t,
+							actual.currentContext()));
 				}
 				else {
 					onComplete();
@@ -259,7 +261,7 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 				handler.accept(t, this);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return;
 			}
 			R v = data;
@@ -270,7 +272,8 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 			if(done){
 				s.cancel();
 				if(error != null){
-					actual.onError(Operators.onOperatorError(null, error, t));
+					actual.onError(Operators.onOperatorError(null, error, t,
+							actual.currentContext()));
 					return;
 				}
 				actual.onComplete();
@@ -291,7 +294,7 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 				handler.accept(t, this);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return false;
 			}
 			R v = data;
@@ -303,7 +306,8 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 			if(done){
 				s.cancel();
 				if(error != null){
-					actual.onError(Operators.onOperatorError(null, error, t));
+					actual.onError(Operators.onOperatorError(null, error, t,
+							actual.currentContext()));
 				}
 				else {
 					actual.onComplete();

@@ -110,7 +110,7 @@ final class FluxCancelOn<T> extends FluxOperator<T, T> {
 					scheduler.schedule(this);
 				}
 				catch (RejectedExecutionException ree) {
-					throw Operators.onRejectedExecution(ree);
+					throw Operators.onRejectedExecution(ree, actual.currentContext());
 				}
 			}
 		}

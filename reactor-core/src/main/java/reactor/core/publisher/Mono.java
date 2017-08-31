@@ -2159,7 +2159,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Add behavior triggering a {@link LongConsumer} when the {@link Mono} receives any request.
 	 * <p>
 	 *     Note that non fatal error raised in the callback will not be propagated and
-	 *     will simply trigger {@link Operators#onOperatorError(Throwable)}.
+	 *     will simply trigger {@link Operators#onOperatorError(Throwable, Context)}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/doonrequest1.png" alt="">

@@ -64,7 +64,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 					"The collectionSupplier returned a null collection");
 		}
 		catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
 			return;
 		}
 
@@ -129,7 +129,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 				"The distinct extractor returned a null value.");
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return true;
 			}
 
@@ -139,7 +139,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 				b = collection.add(k);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return true;
 			}
 
@@ -241,7 +241,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 				"The distinct extractor returned a null value.");
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return;
 			}
 
@@ -251,7 +251,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 				b = collection.add(k);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return;
 			}
 
@@ -277,7 +277,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 						"The distinct extractor returned a null value.");
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return true;
 			}
 
@@ -287,7 +287,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 				b = collection.add(k);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t));
+				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 				return true;
 			}
 
@@ -402,7 +402,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 						"The distinct extractor returned a null value.");
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(qs, e, t));
+				onError(Operators.onOperatorError(qs, e, t, actual.currentContext()));
 				return true;
 			}
 
@@ -412,7 +412,7 @@ final class FluxDistinct<T, K, C extends Collection<? super K>> extends
 				b = collection.add(k);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(qs, e, t));
+				onError(Operators.onOperatorError(qs, e, t, actual.currentContext()));
 				return true;
 			}
 

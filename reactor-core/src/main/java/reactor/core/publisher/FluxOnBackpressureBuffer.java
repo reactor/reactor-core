@@ -147,7 +147,8 @@ final class FluxOnBackpressureBuffer<O> extends FluxOperator<O, O> implements Fu
 			}
 			if (!queue.offer(t)) {
 				Throwable ex =
-						Operators.onOperatorError(s, Exceptions.failWithOverflow(), t);
+						Operators.onOperatorError(s, Exceptions.failWithOverflow(), t,
+								actual.currentContext());
 				if (onOverflow != null) {
 					try {
 						onOverflow.accept(t);

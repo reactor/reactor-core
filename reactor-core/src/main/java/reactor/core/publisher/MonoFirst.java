@@ -77,7 +77,8 @@ final class MonoFirst<T> extends Mono<T> {
 				it = Objects.requireNonNull(iterable.iterator(), "The iterator returned is null");
 			}
 			catch (Throwable e) {
-				Operators.error(actual, Operators.onOperatorError(e));
+				Operators.error(actual, Operators.onOperatorError(e,
+						actual.currentContext()));
 				return;
 			}
 
@@ -89,7 +90,8 @@ final class MonoFirst<T> extends Mono<T> {
 					b = it.hasNext();
 				}
 				catch (Throwable e) {
-					Operators.error(actual, Operators.onOperatorError(e));
+					Operators.error(actual, Operators.onOperatorError(e,
+							actual.currentContext()));
 					return;
 				}
 
@@ -104,7 +106,8 @@ final class MonoFirst<T> extends Mono<T> {
 					"The Publisher returned by the iterator is null");
 				}
 				catch (Throwable e) {
-					Operators.error(actual, Operators.onOperatorError(e));
+					Operators.error(actual, Operators.onOperatorError(e,
+							actual.currentContext()));
 					return;
 				}
 
@@ -130,7 +133,8 @@ final class MonoFirst<T> extends Mono<T> {
 
 			if (p == null) {
 				Operators.error(actual,
-						Operators.onOperatorError(new NullPointerException("The single source Publisher is null")));
+						Operators.onOperatorError(new NullPointerException("The single source Publisher is null"),
+								actual.currentContext()));
 			}
 			else {
 				p.subscribe(actual);

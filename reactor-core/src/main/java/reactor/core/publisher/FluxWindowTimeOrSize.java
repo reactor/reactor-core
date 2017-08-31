@@ -194,7 +194,8 @@ final class FluxWindowTimeOrSize<T> extends FluxOperator<T, Flux<T>> {
 				//or the first emission, which will follow the subscribe
 			}
 			catch (RejectedExecutionException ree) {
-				RuntimeException error = Operators.onRejectedExecution(ree, subscription, null, null);
+				RuntimeException error = Operators.onRejectedExecution(ree, subscription, null, null,
+						actual.currentContext());
 				Operators.error(actual, error);
 			}
 		}
@@ -235,7 +236,7 @@ final class FluxWindowTimeOrSize<T> extends FluxOperator<T, Flux<T>> {
 				return true;
 			}
 			catch (RejectedExecutionException ree) {
-				onError(Operators.onRejectedExecution(ree));
+				onError(Operators.onRejectedExecution(ree, actual.currentContext()));
 				return false;
 			}
 		}

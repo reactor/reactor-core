@@ -53,7 +53,7 @@ final class MonoCreate<T> extends Mono<T> {
 			callback.accept(emitter);
 		}
 		catch (Throwable ex) {
-			emitter.error(Operators.onOperatorError(ex));
+			emitter.error(Operators.onOperatorError(ex, actual.currentContext()));
 		}
 	}
 

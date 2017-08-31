@@ -77,7 +77,7 @@ extends Flux<T> implements Fuseable {
 		try {
 			state = stateSupplier.call();
 		} catch (Throwable e) {
-			Operators.error(actual, Operators.onOperatorError(e));
+			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
 			return;
 		}
 		actual.onSubscribe(new GenerateSubscription<>(actual, state, generator, stateConsumer));
@@ -219,7 +219,7 @@ extends Flux<T> implements Fuseable {
 				} catch (Throwable e) {
 					cleanup(s);
 
-					actual.onError(Operators.onOperatorError(e));
+					actual.onError(Operators.onOperatorError(e, actual.currentContext()));
 					return;
 				}
 				if (terminate || cancelled) {

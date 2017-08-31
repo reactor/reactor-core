@@ -153,7 +153,8 @@ final class FluxZip<T, R> extends Flux<R> {
 			if (p == null) {
 				Operators.error(s,
 						Operators.onOperatorError(new NullPointerException(
-								"The sourcesIterable returned a null Publisher")));
+								"The sourcesIterable returned a null Publisher"),
+								s.currentContext()));
 				return;
 			}
 
@@ -166,7 +167,8 @@ final class FluxZip<T, R> extends Flux<R> {
 					v = callable.call();
 				}
 				catch (Throwable e) {
-					Operators.error(s, Operators.onOperatorError(e));
+					Operators.error(s, Operators.onOperatorError(e,
+							s.currentContext()));
 					return;
 				}
 
@@ -243,7 +245,8 @@ final class FluxZip<T, R> extends Flux<R> {
 					v = ((Callable<? extends T>) p).call();
 				}
 				catch (Throwable e) {
-					Operators.error(s, Operators.onOperatorError(e));
+					Operators.error(s, Operators.onOperatorError(e,
+							s.currentContext()));
 					return;
 				}
 
@@ -306,7 +309,7 @@ final class FluxZip<T, R> extends Flux<R> {
 							"The zipper returned a null value");
 				}
 				catch (Throwable e) {
-					s.onError(Operators.onOperatorError(e));
+					s.onError(Operators.onOperatorError(e, s.currentContext()));
 					return;
 				}
 
@@ -379,7 +382,8 @@ final class FluxZip<T, R> extends Flux<R> {
 							"The zipper returned a null value");
 				}
 				catch (Throwable e) {
-					actual.onError(Operators.onOperatorError(this, e, value));
+					actual.onError(Operators.onOperatorError(this, e, value,
+							actual.currentContext()));
 					return;
 				}
 
@@ -682,7 +686,8 @@ final class FluxZip<T, R> extends Flux<R> {
 								}
 							}
 							catch (Throwable ex) {
-								ex = Operators.onOperatorError(ex);
+								ex = Operators.onOperatorError(ex,
+										actual.currentContext());
 
 								cancelAll();
 
@@ -708,7 +713,8 @@ final class FluxZip<T, R> extends Flux<R> {
 					}
 					catch (Throwable ex) {
 
-						ex = Operators.onOperatorError(null, ex, values.clone());
+						ex = Operators.onOperatorError(null, ex, values.clone(),
+								actual.currentContext());
 						cancelAll();
 
 						Exceptions.addThrowable(ERROR, this, ex);
@@ -762,7 +768,8 @@ final class FluxZip<T, R> extends Flux<R> {
 								}
 							}
 							catch (Throwable ex) {
-								ex = Operators.onOperatorError(null, ex, values);
+								ex = Operators.onOperatorError(null, ex, values,
+										actual.currentContext());
 
 								cancelAll();
 
@@ -873,7 +880,8 @@ final class FluxZip<T, R> extends Flux<R> {
 		public void onNext(T t) {
 			if (sourceMode != ASYNC) {
 				if (!queue.offer(t)) {
-					onError(Operators.onOperatorError(s, Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), t));
+					onError(Operators.onOperatorError(s, Exceptions.failWithOverflow
+							(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL), currentContext()));
 					return;
 				}
 			}
@@ -888,7 +896,7 @@ final class FluxZip<T, R> extends Flux<R> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t, parent.actual.currentContext());
+				Operators.onErrorDropped(t, currentContext());
 				return;
 			}
 			done = true;

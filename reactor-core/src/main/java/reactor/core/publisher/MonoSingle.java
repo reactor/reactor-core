@@ -162,7 +162,8 @@ final class MonoSingle<T> extends MonoFromFluxOperator<T, T>
 				}
 				else {
 					actual.onError(Operators.onOperatorError(this,
-							new NoSuchElementException("Source was empty")));
+							new NoSuchElementException("Source was empty"),
+							actual.currentContext()));
 				}
 			}
 			else if (c == 1) {

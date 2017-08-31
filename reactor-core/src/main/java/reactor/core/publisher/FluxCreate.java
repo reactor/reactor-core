@@ -95,7 +95,7 @@ final class FluxCreate<T> extends Flux<T> {
 		}
 		catch (Throwable ex) {
 			Exceptions.throwIfFatal(ex);
-			sink.error(Operators.onOperatorError(ex));
+			sink.error(Operators.onOperatorError(ex, actual.currentContext()));
 		}
 	}
 
