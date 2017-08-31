@@ -180,7 +180,8 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 
 	/**
 	 * Create a {@link FluxSink} that safely gates multi-threaded producer
-	 * {@link Subscriber#onNext(Object)}.
+	 * {@link Subscriber#onNext(Object)}. This processor will be subscribed to 
+	 * that {@link FluxSink}, and any previous subscribers will be unsubscribed.
 	 *
 	 * <p> The returned {@link FluxSink} will not apply any
 	 * {@link FluxSink.OverflowStrategy} and overflowing {@link FluxSink#next(Object)}
@@ -199,7 +200,8 @@ public abstract class FluxProcessor<IN, OUT> extends Flux<OUT>
 
 	/**
 	 * Create a {@link FluxSink} that safely gates multi-threaded producer
-	 * {@link Subscriber#onNext(Object)}.
+	 * {@link Subscriber#onNext(Object)}.  This processor will be subscribed to 
+	 * that {@link FluxSink}, and any previous subscribers will be unsubscribed.
 	 *
 	 * <p> The returned {@link FluxSink} will not apply any
 	 * {@link FluxSink.OverflowStrategy} and overflowing {@link FluxSink#next(Object)}
