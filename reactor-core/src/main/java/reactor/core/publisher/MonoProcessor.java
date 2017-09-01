@@ -33,6 +33,7 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.concurrent.WaitStrategy;
+import reactor.util.context.Context;
 
 /**
  * A {@code MonoProcessor} is a {@link Mono} extension that implements stateful semantics. Multi-subscribe is allowed.
@@ -275,7 +276,7 @@ public final class MonoProcessor<O> extends Mono<O>
 		Subscription s = subscription;
 
 		if ((source != null && s == null) || this.error != null) {
-			Operators.onErrorDropped(cause);
+			Operators.onErrorDroppedMulticast(cause);
 			return;
 		}
 
@@ -286,7 +287,7 @@ public final class MonoProcessor<O> extends Mono<O>
 		int state = this.state;
 		for (; ; ) {
 			if (state != STATE_READY && state != STATE_SUBSCRIBED && state != STATE_POST_SUBSCRIBED) {
-				Operators.onErrorDropped(cause);
+				Operators.onErrorDroppedMulticast(cause);
 				return;
 			}
 			if (STATE.compareAndSet(this, state, STATE_ERROR)) {
@@ -305,7 +306,7 @@ public final class MonoProcessor<O> extends Mono<O>
 		Subscription s = subscription;
 
 		if (value != null && ((source != null && s == null) || this.value != null)) {
-			Operators.onNextDropped(value);
+			Operators.onNextDroppedMulticast(value);
 			return;
 		}
 		subscription = null;
@@ -328,7 +329,7 @@ public final class MonoProcessor<O> extends Mono<O>
 		for (; ; ) {
 			if (state != STATE_READY && state != STATE_SUBSCRIBED && state != STATE_POST_SUBSCRIBED) {
 				if(value != null) {
-					Operators.onNextDropped(value);
+					Operators.onNextDroppedMulticast(value);
 				}
 				return;
 			}

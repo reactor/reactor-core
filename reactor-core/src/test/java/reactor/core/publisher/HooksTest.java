@@ -542,7 +542,7 @@ public class HooksTest {
 		                   .equals("hello"));
 
 		try {
-			Operators.onNextDropped("hello");
+			Operators.onNextDropped("hello", Context.empty());
 			Assert.fail();
 		}
 		catch (Throwable t) {
@@ -553,7 +553,7 @@ public class HooksTest {
 		}
 
 		try {
-			Operators.onErrorDropped(new Exception());
+			Operators.onErrorDropped(new Exception(), Context.empty());
 			Assert.fail();
 		}
 		catch (Throwable t) {
@@ -573,7 +573,7 @@ public class HooksTest {
 			ref.set(ref.get()+"bar");
 		});
 
-		Operators.onNextDropped("foo");
+		Operators.onNextDropped("foo", Context.empty());
 
 		assertThat(ref.get()).isEqualTo("foobar");
 
@@ -584,7 +584,7 @@ public class HooksTest {
 			ref.set(ref.get()+"bar");
 		});
 
-		Operators.onErrorDropped(new Exception("foo"));
+		Operators.onErrorDropped(new Exception("foo"), Context.empty());
 
 		assertThat(ref.get()).isEqualTo("foobar");
 

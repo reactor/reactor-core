@@ -23,6 +23,7 @@ import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.RaceTestUtils;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -61,7 +62,8 @@ public class OperatorDisposablesTest {
 		Hooks.onErrorDropped(e -> assertThat(e).isInstanceOf(NullPointerException.class)
 		                                       .hasMessage("next is null"));
 		try {
-			assertThat(OperatorDisposables.validate(null, null, Operators::onErrorDropped)).isFalse();
+			assertThat(OperatorDisposables.validate(null, null,
+					e -> Operators.onErrorDropped(e, Context.empty()))).isFalse();
 		} finally {
 			Hooks.resetOnErrorDropped();
 		}

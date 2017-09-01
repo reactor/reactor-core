@@ -26,6 +26,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.util.context.Context;
 
 /**
  * Reactive Streams Commons safe exit
@@ -106,7 +107,7 @@ final class StrictSubscriber<T> implements Scannable, CoreSubscriber<T>, Subscri
 			}
 		}
 		else {
-			Operators.onErrorDropped(t);
+			Operators.onErrorDropped(t, Context.empty());
 		}
 	}
 

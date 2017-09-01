@@ -23,6 +23,8 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
+import reactor.util.context.Context;
+
 import javax.annotation.Nullable;
 
 /**
@@ -110,7 +112,7 @@ final class LambdaSubscriber<T>
 	public final void onError(Throwable t) {
 		Subscription s = S.getAndSet(this, Operators.cancelledSubscription());
 		if (s == Operators.cancelledSubscription()) {
-			Operators.onErrorDropped(t);
+			Operators.onErrorDropped(t, Context.empty());
 			return;
 		}
 		if (errorConsumer != null) {

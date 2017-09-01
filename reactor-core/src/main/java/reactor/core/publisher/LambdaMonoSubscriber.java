@@ -24,6 +24,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
+import reactor.util.context.Context;
 
 /**
  * An unbounded Java Lambda adapter to {@link Subscriber}, targetted at {@link Mono}.
@@ -100,7 +101,7 @@ final class LambdaMonoSubscriber<T> implements InnerConsumer<T>, Disposable {
 				completeConsumer.run();
 			}
 			catch (Throwable t) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, Context.empty());
 			}
 		}
 	}
@@ -109,7 +110,7 @@ final class LambdaMonoSubscriber<T> implements InnerConsumer<T>, Disposable {
 	public final void onError(Throwable t) {
 		Subscription s = S.getAndSet(this, Operators.cancelledSubscription());
 		if (s == Operators.cancelledSubscription()) {
-			Operators.onErrorDropped(t);
+			Operators.onErrorDropped(t, Context.empty());
 			return;
 		}
 		doError(t);
@@ -128,7 +129,7 @@ final class LambdaMonoSubscriber<T> implements InnerConsumer<T>, Disposable {
 	public final void onNext(T x) {
 		Subscription s = S.getAndSet(this, Operators.cancelledSubscription());
 		if (s == Operators.cancelledSubscription()) {
-			Operators.onNextDropped(x, currentContext());
+			Operators.onNextDropped(x, Context.empty());
 			return;
 		}
 		if (consumer != null) {
@@ -136,7 +137,7 @@ final class LambdaMonoSubscriber<T> implements InnerConsumer<T>, Disposable {
 				consumer.accept(x);
 			}
 			catch (Throwable t) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, Context.empty());
 				return;
 			}
 		}
@@ -145,7 +146,7 @@ final class LambdaMonoSubscriber<T> implements InnerConsumer<T>, Disposable {
 				completeConsumer.run();
 			}
 			catch (Throwable t) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDropped(t, Context.empty());
 			}
 		}
 	}

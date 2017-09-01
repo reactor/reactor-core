@@ -437,7 +437,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	public void onError(Throwable t) {
 		FluxReplay.ReplayBuffer<T> b = buffer;
 		if (b.isDone()) {
-			Operators.onErrorDropped(t);
+			Operators.onErrorDroppedMulticast(t);
 		}
 		else {
 			b.onError(t);

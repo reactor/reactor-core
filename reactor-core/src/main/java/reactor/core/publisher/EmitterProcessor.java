@@ -277,7 +277,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 			drain();
 		}
 		else {
-			Operators.onErrorDropped(t);
+			Operators.onErrorDroppedMulticast(t);
 		}
 	}
 
