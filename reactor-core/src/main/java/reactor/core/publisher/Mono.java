@@ -172,22 +172,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Create a {@link Mono} emitting the {@link Context} available on subscribe.
-	 * If no Context is available, the mono will simply emit the
-	 * {@link Context#empty() empty Context}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/justorempty.png" alt="">
-	 * <p>
-	 *
-	 * @return a new {@link Mono} emitting current context
-	 * @see #subscribe(CoreSubscriber)
-	 */
-	public static  Mono<Context> currentContext() {
-		return onAssembly(MonoCurrentContext.INSTANCE);
-	}
-
-	/**
 	 * Create a {@link Mono} provider that will {@link Supplier#get supply} a target {@link Mono} to subscribe to for
 	 * each {@link Subscriber} downstream.
 	 *
@@ -534,7 +518,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Returns a Mono that emits a Boolean value that indicates whether two Publisher sequences are the
 	 * same by comparing the items emitted by each Publisher pairwise.
-	 * 
+	 *
 	 * @param source1
 	 *            the first Publisher to compare
 	 * @param source2
@@ -586,10 +570,26 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a Mono that emits a Boolean value that indicates whether the two Publisher two sequences
 	 *         are the same according to the specified function
 	 */
-	public static <T> Mono<Boolean> sequenceEqual(Publisher<? extends T> source1, 
+	public static <T> Mono<Boolean> sequenceEqual(Publisher<? extends T> source1,
 			Publisher<? extends T> source2,
 			BiPredicate<? super T, ? super T> isEqual, int bufferSize) {
 		return onAssembly(new MonoSequenceEqual<>(source1, source2, isEqual, bufferSize));
+	}
+
+	/**
+	 * Create a {@link Mono} emitting the {@link Context} available on subscribe.
+	 * If no Context is available, the mono will simply emit the
+	 * {@link Context#empty() empty Context}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/justorempty.png" alt="">
+	 * <p>
+	 *
+	 * @return a new {@link Mono} emitting current context
+	 * @see #subscribe(CoreSubscriber)
+	 */
+	public static  Mono<Context> subscriberContext() {
+		return onAssembly(MonoCurrentContext.INSTANCE);
 	}
 
 	/**
