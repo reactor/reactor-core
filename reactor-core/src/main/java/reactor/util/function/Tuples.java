@@ -17,7 +17,9 @@
 package reactor.util.function;
 
 import java.util.Collection;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * A {@literal Tuples} is an immutable {@link Collection} of objects, each of which can be of an arbitrary type.
@@ -459,6 +461,328 @@ public abstract class Tuples implements Function {
 	public static <T1, T2, T3, T4, T5, T6, T7, T8, R> Function<Object[], R> fn8(final Function<Tuple8<T1, T2, T3, T4, T5, T6, T7, T8>, R> delegate) {
 		return objects -> delegate.apply(Tuples.<T1, T2, T3, T4, T5, T6, T7, T8>fn8().apply(objects));
 	}
+
+    /**
+     * Returns a {@link Consumer} of {@link Tuple2} that wraps a consumer of the component values of the tuple.
+     *
+     * @param consumer The component value consumer.
+     * @param <T1> The type of the first value.
+     * @param <T2> The type of the second value.
+     * @return The wrapper consumer
+     */
+    public static <T1, T2> Consumer<Tuple2<T1, T2>> consumer(Consumer2<T1, T2> consumer) {
+        return tuple -> consumer.accept(tuple.getT1(), tuple.getT2());
+    }
+
+    /**
+     * Returns a {@link Consumer} of {@link Tuple3} that wraps a consumer of the component values of the tuple.
+     *
+     * @param consumer The component value consumer.
+     * @param <T1> The type of the first value.
+     * @param <T2> The type of the second value.
+     * @param <T3> The type of the third value.
+     * @return The wrapper consumer
+     */
+    public static <T1, T2, T3> Consumer<Tuple3<T1, T2, T3>> consumer(Consumer3<T1, T2, T3> consumer) {
+        return tuple -> consumer.accept(tuple.getT1(), tuple.getT2(), tuple.getT3());
+    }
+
+    /**
+     * Returns a {@link Consumer} of {@link Tuple4} that wraps a consumer of the component values of the tuple.
+     *
+     * @param consumer The component value consumer.
+     * @param <T1> The type of the first value.
+     * @param <T2> The type of the second value.
+     * @param <T3> The type of the third value.
+     * @param <T4> The type of the fourth value.
+     * @return The wrapper consumer
+     */
+    public static <T1, T2, T3, T4> Consumer<Tuple4<T1, T2, T3, T4>> consumer(Consumer4<T1, T2, T3, T4> consumer) {
+        return tuple -> consumer.accept(tuple.getT1(), tuple.getT2(), tuple.getT3(), tuple.getT4());
+    }
+
+    /**
+     * Returns a {@link Consumer} of {@link Tuple5} that wraps a consumer of the component values of the tuple.
+     *
+     * @param consumer The component value consumer.
+     * @param <T1> The type of the first value.
+     * @param <T2> The type of the second value.
+     * @param <T3> The type of the third value.
+     * @param <T4> The type of the fourth value.
+     * @param <T5> The type of the fifth value.
+     * @return The wrapper consumer
+     */
+    public static <T1, T2, T3, T4, T5> Consumer<Tuple5<T1, T2, T3, T4, T5>> consumer(Consumer5<T1, T2, T3, T4, T5> consumer) {
+        return tuple -> consumer.accept(tuple.getT1(), tuple.getT2(), tuple.getT3(), tuple.getT4(), tuple.getT5());
+    }
+
+    /**
+     * Returns a {@link Consumer} of {@link Tuple6} that wraps a consumer of the component values of the tuple.
+     *
+     * @param consumer The component value consumer.
+     * @param <T1> The type of the first value.
+     * @param <T2> The type of the second value.
+     * @param <T3> The type of the third value.
+     * @param <T4> The type of the fourth value.
+     * @param <T5> The type of the fifth value.
+     * @param <T6> The type of the sixth value.
+     * @return The wrapper consumer
+     */
+    public static <T1, T2, T3, T4, T5, T6> Consumer<Tuple6<T1, T2, T3, T4, T5, T6>> consumer(Consumer6<T1, T2, T3, T4, T5, T6> consumer) {
+        return tuple -> consumer.accept(tuple.getT1(), tuple.getT2(), tuple.getT3(), tuple.getT4(), tuple.getT5(), tuple.getT6());
+    }
+
+    /**
+     * Returns a {@link Consumer} of {@link Tuple7} that wraps a consumer of the component values of the tuple.
+     *
+     * @param consumer The component value consumer.
+     * @param <T1> The type of the first value.
+     * @param <T2> The type of the second value.
+     * @param <T3> The type of the third value.
+     * @param <T4> The type of the fourth value.
+     * @param <T5> The type of the fifth value.
+     * @param <T6> The type of the sixth value.
+     * @param <T7> The type of the seventh value.
+     * @return The wrapper consumer
+     */
+    public static <T1, T2, T3, T4, T5, T6, T7> Consumer<Tuple7<T1, T2, T3, T4, T5, T6, T7>> consumer(Consumer7<T1, T2, T3, T4, T5, T6, T7> consumer) {
+        return tuple -> consumer.accept(tuple.getT1(), tuple.getT2(), tuple.getT3(), tuple.getT4(), tuple.getT5(), tuple.getT6(), tuple.getT7());
+    }
+
+    /**
+     * Returns a {@link Consumer} of {@link Tuple8} that wraps a consumer of the component values of the tuple.
+     *
+     * @param consumer The component value consumer.
+     * @param <T1> The type of the first value.
+     * @param <T2> The type of the second value.
+     * @param <T3> The type of the third value.
+     * @param <T4> The type of the fourth value.
+     * @param <T5> The type of the fifth value.
+     * @param <T6> The type of the sixth value.
+     * @param <T7> The type of the seventh value.
+     * @param <T8> The type of the eighth value.
+     * @return The wrapper consumer
+     */
+    public static <T1, T2, T3, T4, T5, T6, T7, T8> Consumer<Tuple8<T1, T2, T3, T4, T5, T6, T7, T8>> consumer(Consumer8<T1, T2, T3, T4, T5, T6, T7, T8> consumer) {
+        return tuple -> consumer.accept(tuple.getT1(), tuple.getT2(), tuple.getT3(), tuple.getT4(), tuple.getT5(), tuple.getT6(), tuple.getT7(), tuple.getT8());
+    }
+
+    /**
+     * Returns a {@link Function} of {@link Tuple2} that wraps a function of the component values of the tuple.
+     *
+     * @param function The component value function.
+     * @param <T1> The type of the first value.
+     * @param <T2> The type of the second value.
+     * @param <R> The type of the result of the function
+     * @return The wrapper function
+     */
+    public static <T1, T2, R> Function<Tuple2<T1, T2>, R> function(Function2<T1, T2, R> function) {
+        return tuple -> function.apply(tuple.getT1(), tuple.getT2());
+    }
+
+    /**
+     * Returns a {@link Function} of {@link Tuple3} that wraps a function of the component values of the tuple.
+     *
+     * @param function The component value function.
+     * @param <T1> The type of the first value.
+     * @param <T2> The type of the second value.
+     * @param <T3> The type of the third value.
+     * @param <R> The type of the result of the function
+     * @return The wrapper function
+     */
+    public static <T1, T2, T3, R> Function<Tuple3<T1, T2, T3>, R> function(Function3<T1, T2, T3, R> function) {
+        return tuple -> function.apply(tuple.getT1(), tuple.getT2(), tuple.getT3());
+    }
+
+    /**
+     * Returns a {@link Function} of {@link Tuple4} that wraps a function of the component values of the tuple.
+     *
+     * @param function The component value function.
+     * @param <T1> The type of the first value.
+     * @param <T2> The type of the second value.
+     * @param <T3> The type of the third value.
+     * @param <T4> The type of the fourth value.
+     * @param <R> The type of the result of the function
+     * @return The wrapper function
+     */
+    public static <T1, T2, T3, T4, R> Function<Tuple4<T1, T2, T3, T4>, R> function(Function4<T1, T2, T3, T4, R> function) {
+        return tuple -> function.apply(tuple.getT1(), tuple.getT2(), tuple.getT3(), tuple.getT4());
+    }
+
+    /**
+     * Returns a {@link Function} of {@link Tuple5} that wraps a function of the component values of the tuple.
+     *
+     * @param function The component value function.
+     * @param <T1> The type of the first value.
+     * @param <T2> The type of the second value.
+     * @param <T3> The type of the third value.
+     * @param <T4> The type of the fourth value.
+     * @param <T5> The type of the fifth value.
+     * @param <R> The type of the result of the function
+     * @return The wrapper function
+     */
+    public static <T1, T2, T3, T4, T5, R> Function<Tuple5<T1, T2, T3, T4, T5>, R> function(Function5<T1, T2, T3, T4, T5, R> function) {
+        return tuple -> function.apply(tuple.getT1(), tuple.getT2(), tuple.getT3(), tuple.getT4(), tuple.getT5());
+    }
+
+    /**
+     * Returns a {@link Function} of {@link Tuple6} that wraps a function of the component values of the tuple.
+     *
+     * @param function The component value function.
+     * @param <T1> The type of the first value.
+     * @param <T2> The type of the second value.
+     * @param <T3> The type of the third value.
+     * @param <T4> The type of the fourth value.
+     * @param <T5> The type of the fifth value.
+     * @param <T6> The type of the sixth value.
+     * @param <R> The type of the result of the function
+     * @return The wrapper function
+     */
+    public static <T1, T2, T3, T4, T5, T6, R> Function<Tuple6<T1, T2, T3, T4, T5, T6>, R> function(Function6<T1, T2, T3, T4, T5, T6, R> function) {
+        return tuple -> function.apply(tuple.getT1(), tuple.getT2(), tuple.getT3(), tuple.getT4(), tuple.getT5(), tuple.getT6());
+    }
+
+    /**
+     * Returns a {@link Function} of {@link Tuple7} that wraps a function of the component values of the tuple.
+     *
+     * @param function The component value function.
+     * @param <T1> The type of the first value.
+     * @param <T2> The type of the second value.
+     * @param <T3> The type of the third value.
+     * @param <T4> The type of the fourth value.
+     * @param <T5> The type of the fifth value.
+     * @param <T6> The type of the sixth value.
+     * @param <T7> The type of the seventh value.
+     * @param <R> The type of the result of the function
+     * @return The wrapper function
+     */
+    public static <T1, T2, T3, T4, T5, T6, T7, R> Function<Tuple7<T1, T2, T3, T4, T5, T6, T7>, R> function(Function7<T1, T2, T3, T4, T5, T6, T7, R> function) {
+        return tuple -> function.apply(tuple.getT1(), tuple.getT2(), tuple.getT3(), tuple.getT4(), tuple.getT5(), tuple.getT6(), tuple.getT7());
+    }
+
+    /**
+     * Returns a {@link Function} of {@link Tuple8} that wraps a function of the component values of the tuple.
+     *
+     * @param function The component value function.
+     * @param <T1> The type of the first value.
+     * @param <T2> The type of the second value.
+     * @param <T3> The type of the third value.
+     * @param <T4> The type of the fourth value.
+     * @param <T5> The type of the fifth value.
+     * @param <T6> The type of the sixth value.
+     * @param <T7> The type of the seventh value.
+     * @param <T8> The type of the eighth value.
+     * @param <R> The type of the result of the function
+     * @return The wrapper function
+     */
+    public static <T1, T2, T3, T4, T5, T6, T7, T8, R> Function<Tuple8<T1, T2, T3, T4, T5, T6, T7, T8>, R> function(Function8<T1, T2, T3, T4, T5, T6, T7, T8, R> function) {
+        return tuple -> function.apply(tuple.getT1(), tuple.getT2(), tuple.getT3(), tuple.getT4(), tuple.getT5(), tuple.getT6(), tuple.getT7(), tuple.getT8());
+    }
+
+    /**
+     * Returns a {@link Predicate} of {@link Tuple2} that wraps a predicate of the component values of the tuple.
+     *
+     * @param predicate The component value predicate.
+     * @param <T1> The type of the first value.
+     * @param <T2> The type of the second value.
+     * @return The wrapper predicate
+     */
+    public static <T1, T2> Predicate<Tuple2<T1, T2>> predicate(Predicate2<T1, T2> predicate) {
+        return tuple -> predicate.test(tuple.getT1(), tuple.getT2());
+    }
+
+    /**
+     * Returns a {@link Predicate} of {@link Tuple3} that wraps a predicate of the component values of the tuple.
+     *
+     * @param predicate The component value predicate.
+     * @param <T1> The type of the first value.
+     * @param <T2> The type of the second value.
+     * @param <T3> The type of the third value.
+     * @return The wrapper predicate
+     */
+    public static <T1, T2, T3> Predicate<Tuple3<T1, T2, T3>> predicate(Predicate3<T1, T2, T3> predicate) {
+        return tuple -> predicate.test(tuple.getT1(), tuple.getT2(), tuple.getT3());
+    }
+
+    /**
+     * Returns a {@link Predicate} of {@link Tuple4} that wraps a predicate of the component values of the tuple.
+     *
+     * @param predicate The component value predicate.
+     * @param <T1> The type of the first value.
+     * @param <T2> The type of the second value.
+     * @param <T3> The type of the third value.
+     * @param <T4> The type of the fourth value.
+     * @return The wrapper predicate
+     */
+    public static <T1, T2, T3, T4> Predicate<Tuple4<T1, T2, T3, T4>> predicate(Predicate4<T1, T2, T3, T4> predicate) {
+        return tuple -> predicate.test(tuple.getT1(), tuple.getT2(), tuple.getT3(), tuple.getT4());
+    }
+
+    /**
+     * Returns a {@link Predicate} of {@link Tuple5} that wraps a predicate of the component values of the tuple.
+     *
+     * @param predicate The component value predicate.
+     * @param <T1> The type of the first value.
+     * @param <T2> The type of the second value.
+     * @param <T3> The type of the third value.
+     * @param <T4> The type of the fourth value.
+     * @param <T5> The type of the fifth value.
+     * @return The wrapper predicate
+     */
+    public static <T1, T2, T3, T4, T5> Predicate<Tuple5<T1, T2, T3, T4, T5>> predicate(Predicate5<T1, T2, T3, T4, T5> predicate) {
+        return tuple -> predicate.test(tuple.getT1(), tuple.getT2(), tuple.getT3(), tuple.getT4(), tuple.getT5());
+    }
+
+    /**
+     * Returns a {@link Predicate} of {@link Tuple6} that wraps a predicate of the component values of the tuple.
+     *
+     * @param predicate The component value predicate.
+     * @param <T1> The type of the first value.
+     * @param <T2> The type of the second value.
+     * @param <T3> The type of the third value.
+     * @param <T4> The type of the fourth value.
+     * @param <T5> The type of the fifth value.
+     * @param <T6> The type of the sixth value.
+     * @return The wrapper predicate
+     */
+    public static <T1, T2, T3, T4, T5, T6> Predicate<Tuple6<T1, T2, T3, T4, T5, T6>> predicate(Predicate6<T1, T2, T3, T4, T5, T6> predicate) {
+        return tuple -> predicate.test(tuple.getT1(), tuple.getT2(), tuple.getT3(), tuple.getT4(), tuple.getT5(), tuple.getT6());
+    }
+
+    /**
+     * Returns a {@link Predicate} of {@link Tuple7} that wraps a predicate of the component values of the tuple.
+     *
+     * @param predicate The component value predicate.
+     * @param <T1> The type of the first value.
+     * @param <T2> The type of the second value.
+     * @param <T3> The type of the third value.
+     * @param <T4> The type of the fourth value.
+     * @param <T5> The type of the fifth value.
+     * @param <T6> The type of the sixth value.
+     * @param <T7> The type of the seventh value.
+     * @return The wrapper predicate
+     */
+    public static <T1, T2, T3, T4, T5, T6, T7> Predicate<Tuple7<T1, T2, T3, T4, T5, T6, T7>> predicate(Predicate7<T1, T2, T3, T4, T5, T6, T7> predicate) {
+        return tuple -> predicate.test(tuple.getT1(), tuple.getT2(), tuple.getT3(), tuple.getT4(), tuple.getT5(), tuple.getT6(), tuple.getT7());
+    }
+
+    /**
+     * Returns a {@link Predicate} of {@link Tuple8} that wraps a predicate of the component values of the tuple.
+     *
+     * @param predicate The component value predicate.
+     * @param <T1> The type of the first value.
+     * @param <T2> The type of the second value.
+     * @param <T3> The type of the third value.
+     * @param <T4> The type of the fourth value.
+     * @param <T5> The type of the fifth value.
+     * @param <T6> The type of the sixth value.
+     * @param <T7> The type of the seventh value.
+     * @param <T8> The type of the eighth value.
+     * @return The wrapper predicate
+     */
+    public static <T1, T2, T3, T4, T5, T6, T7, T8> Predicate<Tuple8<T1, T2, T3, T4, T5, T6, T7, T8>> predicate(Predicate8<T1, T2, T3, T4, T5, T6, T7, T8> predicate) {
+        return tuple -> predicate.test(tuple.getT1(), tuple.getT2(), tuple.getT3(), tuple.getT4(), tuple.getT5(), tuple.getT6(), tuple.getT7(), tuple.getT8());
+    }
 
 	@Override
 	public Tuple2 apply(Object o) {

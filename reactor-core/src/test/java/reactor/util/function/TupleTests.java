@@ -19,7 +19,6 @@ package reactor.util.function;
 import java.util.function.Function;
 
 import org.junit.Test;
-import java.lang.Object;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -405,6 +404,335 @@ public class TupleTests {
 		Integer result = Tuples.fn8(sum).apply(source);
 
 		assertThat(result).isEqualTo(36);
+	}
+
+	@Test
+	public void consumer2() {
+		Tuples
+			.consumer((first, second) -> {
+				assertThat(first).isEqualTo(1);
+				assertThat(second).isEqualTo(2);
+			})
+			.accept(Tuples.of(1, 2));
+	}
+
+	@Test
+	public void consumer3() {
+		Tuples
+			.consumer((first, second, third) -> {
+				assertThat(first).isEqualTo(1);
+				assertThat(second).isEqualTo(2);
+				assertThat(third).isEqualTo(3);
+			})
+			.accept(Tuples.of(1, 2, 3));
+	}
+
+	@Test
+	public void consumer4() {
+		Tuples
+			.consumer((first, second, third, fourth) -> {
+				assertThat(first).isEqualTo(1);
+				assertThat(second).isEqualTo(2);
+				assertThat(third).isEqualTo(3);
+				assertThat(fourth).isEqualTo(4);
+			})
+			.accept(Tuples.of(1, 2, 3, 4));
+	}
+
+	@Test
+	public void consumer5() {
+		Tuples
+			.consumer((first, second, third, fourth, fifth) -> {
+				assertThat(first).isEqualTo(1);
+				assertThat(second).isEqualTo(2);
+				assertThat(third).isEqualTo(3);
+				assertThat(fourth).isEqualTo(4);
+				assertThat(fifth).isEqualTo(5);
+			})
+			.accept(Tuples.of(1, 2, 3, 4, 5));
+	}
+
+	@Test
+	public void consumer6() {
+		Tuples
+			.consumer((first, second, third, fourth, fifth, sixth) -> {
+				assertThat(first).isEqualTo(1);
+				assertThat(second).isEqualTo(2);
+				assertThat(third).isEqualTo(3);
+				assertThat(fourth).isEqualTo(4);
+				assertThat(fifth).isEqualTo(5);
+				assertThat(sixth).isEqualTo(6);
+			})
+			.accept(Tuples.of(1, 2, 3, 4, 5, 6));
+	}
+
+	@Test
+	public void consumer7() {
+		Tuples
+			.consumer((first, second, third, fourth, fifth, sixth, seventh) -> {
+				assertThat(first).isEqualTo(1);
+				assertThat(second).isEqualTo(2);
+				assertThat(third).isEqualTo(3);
+				assertThat(fourth).isEqualTo(4);
+				assertThat(fifth).isEqualTo(5);
+				assertThat(sixth).isEqualTo(6);
+				assertThat(seventh).isEqualTo(7);
+			})
+			.accept(Tuples.of(1, 2, 3, 4, 5, 6, 7));
+	}
+
+	@Test
+	public void consumer8() {
+		Tuples
+			.consumer((first, second, third, fourth, fifth, sixth, seventh, eighth) -> {
+				assertThat(first).isEqualTo(1);
+				assertThat(second).isEqualTo(2);
+				assertThat(third).isEqualTo(3);
+				assertThat(fourth).isEqualTo(4);
+				assertThat(fifth).isEqualTo(5);
+				assertThat(sixth).isEqualTo(6);
+				assertThat(seventh).isEqualTo(7);
+				assertThat(eighth).isEqualTo(8);
+			})
+			.accept(Tuples.of(1, 2, 3, 4, 5, 6, 7, 8));
+	}
+
+	@Test
+	public void function2() {
+		int result = Tuples
+			.function((first, second) -> {
+				assertThat(first).isEqualTo(1);
+				assertThat(second).isEqualTo(2);
+
+				return -1;
+			})
+			.apply(Tuples.of(1, 2));
+
+		assertThat(result).isEqualTo(-1);
+	}
+
+	@Test
+	public void function3() {
+		int result = Tuples
+			.function((first, second, third) -> {
+				assertThat(first).isEqualTo(1);
+				assertThat(second).isEqualTo(2);
+				assertThat(third).isEqualTo(3);
+
+				return -1;
+			})
+			.apply(Tuples.of(1, 2, 3));
+
+		assertThat(result).isEqualTo(-1);
+	}
+
+	@Test
+	public void function4() {
+		int result = Tuples
+			.function((first, second, third, fourth) -> {
+				assertThat(first).isEqualTo(1);
+				assertThat(second).isEqualTo(2);
+				assertThat(third).isEqualTo(3);
+				assertThat(fourth).isEqualTo(4);
+
+				return -1;
+			})
+			.apply(Tuples.of(1, 2, 3, 4));
+
+		assertThat(result).isEqualTo(-1);
+	}
+
+	@Test
+	public void function5() {
+		int result = Tuples
+			.function((first, second, third, fourth, fifth) -> {
+				assertThat(first).isEqualTo(1);
+				assertThat(second).isEqualTo(2);
+				assertThat(third).isEqualTo(3);
+				assertThat(fourth).isEqualTo(4);
+				assertThat(fifth).isEqualTo(5);
+
+				return -1;
+			})
+			.apply(Tuples.of(1, 2, 3, 4, 5));
+
+		assertThat(result).isEqualTo(-1);
+	}
+
+	@Test
+	public void function6() {
+		int result = Tuples
+			.function((first, second, third, fourth, fifth, sixth) -> {
+				assertThat(first).isEqualTo(1);
+				assertThat(second).isEqualTo(2);
+				assertThat(third).isEqualTo(3);
+				assertThat(fourth).isEqualTo(4);
+				assertThat(fifth).isEqualTo(5);
+				assertThat(sixth).isEqualTo(6);
+
+				return -1;
+			})
+			.apply(Tuples.of(1, 2, 3, 4, 5, 6));
+
+		assertThat(result).isEqualTo(-1);
+	}
+
+	@Test
+	public void function7() {
+		int result = Tuples
+			.function((first, second, third, fourth, fifth, sixth, seventh) -> {
+				assertThat(first).isEqualTo(1);
+				assertThat(second).isEqualTo(2);
+				assertThat(third).isEqualTo(3);
+				assertThat(fourth).isEqualTo(4);
+				assertThat(fifth).isEqualTo(5);
+				assertThat(sixth).isEqualTo(6);
+				assertThat(seventh).isEqualTo(7);
+
+				return -1;
+			})
+			.apply(Tuples.of(1, 2, 3, 4, 5, 6, 7));
+
+		assertThat(result).isEqualTo(-1);
+	}
+
+	@Test
+	public void function8() {
+		int result = Tuples
+			.function((first, second, third, fourth, fifth, sixth, seventh, eighth) -> {
+				assertThat(first).isEqualTo(1);
+				assertThat(second).isEqualTo(2);
+				assertThat(third).isEqualTo(3);
+				assertThat(fourth).isEqualTo(4);
+				assertThat(fifth).isEqualTo(5);
+				assertThat(sixth).isEqualTo(6);
+				assertThat(seventh).isEqualTo(7);
+				assertThat(eighth).isEqualTo(8);
+
+				return -1;
+			})
+			.apply(Tuples.of(1, 2, 3, 4, 5, 6, 7, 8));
+
+		assertThat(result).isEqualTo(-1);
+	}
+
+	@Test
+	public void predicate2() {
+		boolean result = Tuples
+			.predicate((first, second) -> {
+				assertThat(first).isEqualTo(1);
+				assertThat(second).isEqualTo(2);
+
+				return true;
+			})
+			.test(Tuples.of(1, 2));
+
+		assertThat(result).isTrue();
+	}
+
+	@Test
+	public void predicate3() {
+		boolean result = Tuples
+			.predicate((first, second, third) -> {
+				assertThat(first).isEqualTo(1);
+				assertThat(second).isEqualTo(2);
+				assertThat(third).isEqualTo(3);
+
+				return true;
+			})
+			.test(Tuples.of(1, 2, 3));
+
+		assertThat(result).isTrue();
+	}
+
+	@Test
+	public void predicate4() {
+		boolean result = Tuples
+			.predicate((first, second, third, fourth) -> {
+				assertThat(first).isEqualTo(1);
+				assertThat(second).isEqualTo(2);
+				assertThat(third).isEqualTo(3);
+				assertThat(fourth).isEqualTo(4);
+
+				return true;
+			})
+			.test(Tuples.of(1, 2, 3, 4));
+
+		assertThat(result).isTrue();
+	}
+
+	@Test
+	public void predicate5() {
+		boolean result = Tuples
+			.predicate((first, second, third, fourth, fifth) -> {
+				assertThat(first).isEqualTo(1);
+				assertThat(second).isEqualTo(2);
+				assertThat(third).isEqualTo(3);
+				assertThat(fourth).isEqualTo(4);
+				assertThat(fifth).isEqualTo(5);
+
+				return true;
+			})
+			.test(Tuples.of(1, 2, 3, 4, 5));
+
+		assertThat(result).isTrue();
+	}
+
+	@Test
+	public void predicate6() {
+		boolean result = Tuples
+			.predicate((first, second, third, fourth, fifth, sixth) -> {
+				assertThat(first).isEqualTo(1);
+				assertThat(second).isEqualTo(2);
+				assertThat(third).isEqualTo(3);
+				assertThat(fourth).isEqualTo(4);
+				assertThat(fifth).isEqualTo(5);
+				assertThat(sixth).isEqualTo(6);
+
+				return true;
+			})
+			.test(Tuples.of(1, 2, 3, 4, 5, 6));
+
+		assertThat(result).isTrue();
+	}
+
+	@Test
+	public void predicate7() {
+		boolean result = Tuples
+			.predicate((first, second, third, fourth, fifth, sixth, seventh) -> {
+				assertThat(first).isEqualTo(1);
+				assertThat(second).isEqualTo(2);
+				assertThat(third).isEqualTo(3);
+				assertThat(fourth).isEqualTo(4);
+				assertThat(fifth).isEqualTo(5);
+				assertThat(sixth).isEqualTo(6);
+				assertThat(seventh).isEqualTo(7);
+
+				return true;
+			})
+			.test(Tuples.of(1, 2, 3, 4, 5, 6, 7));
+
+		assertThat(result).isTrue();
+	}
+
+	@Test
+	public void predicate8() {
+		boolean result = Tuples
+			.predicate((first, second, third, fourth, fifth, sixth, seventh, eighth) -> {
+				assertThat(first).isEqualTo(1);
+				assertThat(second).isEqualTo(2);
+				assertThat(third).isEqualTo(3);
+				assertThat(fourth).isEqualTo(4);
+				assertThat(fifth).isEqualTo(5);
+				assertThat(sixth).isEqualTo(6);
+				assertThat(seventh).isEqualTo(7);
+				assertThat(eighth).isEqualTo(8);
+
+				return true;
+			})
+			.test(Tuples.of(1, 2, 3, 4, 5, 6, 7, 8));
+
+		assertThat(result).isTrue();
 	}
 
 	@Test
