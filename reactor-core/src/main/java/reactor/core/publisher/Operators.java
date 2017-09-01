@@ -268,12 +268,15 @@ public abstract class Operators {
 	}
 
 	/**
-	 * An unexpected exception is about to be dropped.
+	 * An unexpected exception is about to be dropped from an operator that has multiple
+	 * subscribers (and thus potentially multiple Context with local onErrorDropped handlers).
 	 *
 	 * @param e the dropped exception
 	 * @see #onErrorDropped(Throwable, Context)
 	 */
-	public static void onErrorDropped(Throwable e) {
+	public static void onErrorDroppedMulticast(Throwable e) {
+		//FIXME let this method go through multiple contexts and use their local handlers
+		//if at least one has no local handler, also call onErrorDropped(e, Context.empty())
 		onErrorDropped(e, Context.empty());
 	}
 
@@ -284,6 +287,7 @@ public abstract class Operators {
 	 * @param context a context that might hold a local error consumer
 	 */
 	public static void onErrorDropped(Throwable e, Context context) {
+		//FIXME check for hook in context first
 		Consumer<? super Throwable> hook = Hooks.onErrorDroppedHook;
 		if (hook == null) {
 			throw Exceptions.bubble(e);
@@ -292,7 +296,8 @@ public abstract class Operators {
 	}
 
 	/**
-	 * An unexpected event is about to be dropped.
+	 * An unexpected event is about to be dropped from an operator that has multiple
+	 * subscribers (and thus potentially multiple Context with local onNextDropped handlers).
 	 * <p>
 	 * If no hook is registered for {@link Hooks#onNextDropped(Consumer)}, the dropped
 	 * element is just logged at DEBUG level.
@@ -301,7 +306,9 @@ public abstract class Operators {
 	 * @param t the dropped data
 	 * @see #onNextDropped(Object, Context)
 	 */
-	public static <T> void onNextDropped(T t) {
+	public static <T> void onNextDroppedMulticast(T t) {
+		//FIXME let this method go through multiple contexts and use their local handlers
+		//if at least one has no local handler, also call onNextDropped(t, Context.empty())
 		onNextDropped(t, Context.empty());
 	}
 
@@ -318,6 +325,7 @@ public abstract class Operators {
 	public static <T> void onNextDropped(T t, Context context) {
 		Objects.requireNonNull(t, "onNext");
 		Objects.requireNonNull(context, "context");
+		//FIXME check for hook in context first
 		Consumer<Object> hook = Hooks.onNextDroppedHook;
 		if (hook != null) {
 			hook.accept(t);
@@ -385,6 +393,7 @@ public abstract class Operators {
 		}
 
 		Throwable t = Exceptions.unwrap(error);
+		//FIXME check for hook in context first
 		BiFunction<? super Throwable, Object, ? extends Throwable> hook =
 				Hooks.onOperatorErrorHook;
 		if (hook == null) {
@@ -435,7 +444,8 @@ public abstract class Operators {
 	public static RuntimeException onRejectedExecution(Throwable original,
 			@Nullable Subscription subscription,
 			@Nullable Throwable suppressed,
-			@Nullable Object dataSignal, Context context) {
+			@Nullable Object dataSignal,
+			Context context) {
 		//FIXME only create REE if original is REE singleton OR there's suppressed OR there's Throwable dataSignal
 		RejectedExecutionException ree = Exceptions.failWithRejected(original);
 		if (suppressed != null) {
@@ -443,9 +453,11 @@ public abstract class Operators {
 		}
 		if (dataSignal != null) {
 			return Exceptions.propagate(Operators.onOperatorError(subscription, ree, dataSignal,
+					//TODO shouldn't we use the passed Context here?
 					Context.empty()));
 		}
 		return Exceptions.propagate(Operators.onOperatorError(subscription, ree,
+				//TODO shouldn't we use the passed Context here?
 				Context.empty()));
 	}
 
@@ -1643,7 +1655,7 @@ public abstract class Operators {
 
 		@Override
 		public void onError(Throwable t) {
-			Operators.onErrorDropped(Exceptions.errorCallbackNotImplemented(t));
+			Operators.onErrorDropped(Exceptions.errorCallbackNotImplemented(t), Context.empty());
 		}
 
 		@Override

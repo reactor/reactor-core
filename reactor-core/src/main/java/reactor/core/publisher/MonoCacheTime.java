@@ -248,7 +248,7 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 		@Override
 		public void onNext(T t) {
 			if (main.state != this) {
-				Operators.onNextDropped(t);
+				Operators.onNextDroppedMulticast(t);
 				return;
 			}
 			signalCached(Signal.next(t));
@@ -257,7 +257,7 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 		@Override
 		public void onError(Throwable t) {
 			if (main.state != this) {
-				Operators.onErrorDropped(t);
+				Operators.onErrorDroppedMulticast(t);
 				return;
 			}
 			signalCached(Signal.error(t));
