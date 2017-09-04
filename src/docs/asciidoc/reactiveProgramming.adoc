@@ -300,18 +300,10 @@ assertThat(results).containsExactly( // <8>
 <4> Get the associated statistic.
 <5> Asynchronously combine the 2 values.
 <6> Aggregate the values into a `List` as they become available.
-<<<<<<< HEAD
-<7> In production, we would continue working with the `Flux` asynchronously by
-further combining it or subscribing to it. Since we are in a test, we block
-while waiting for the processing to finish, directly returning the aggregated
-list of values.
-// What would the code look like if it weren't blocking?
-=======
-<7> In production, we'd continue working with the `Flux` asynchronously by further combining
-it or subscribing to it. Most probably, we'd return the `result` `Mono`. Since we're in a
-test, we'll block waiting for the processing to finish instead, directly returning the
-aggregated list of values.
->>>>>>> after the last doc pass, fix a few mistakes and some TODOs
+<7> In production, we would continue working with the `Flux` asynchronously by further
+combining it or subscribing to it. Most probably, we would return the `result` `Mono`.
+Since we are in a test, we block, waiting for the processing to finish instead, and then
+directly return the aggregated list of values.
 <8> Assert the result.
 
 These perils of Callback and Future are similar and are what Reactive
@@ -417,28 +409,13 @@ In the Rx family of reactive libraries, one can distinguish two broad categories
 of reactive sequences: *hot* and *cold*. This distinction mainly has to do
 with how the reactive stream reacts to subscribers:
 
-<<<<<<< HEAD
-- A *Cold* sequence starts anew for each `Subscriber`, including at the source
-of data. For example, if the source wraps an HTTP call, a new HTTP request will
-be made for each subscription
-- A *Hot* sequence does not start from scratch for each `Subscriber`. Rather,
-late subscribers receive signals emitted _after_ they subscribed. Note,
-however, that some hot reactive streams can totally or partially cache or
-replay the history of emissions. From a general perspective, a hot sequence
-emits whether or not there any subscriber is listening.
-// Is that an exception to the rule of needing a subscriber before anything
-// happens?
-=======
-- A *Cold* sequence will start anew for each `Subscriber`, including at the
-source of data. If the source wraps an HTTP call, a new HTTP request will be
-made for each subscription
-- A *Hot* sequence will not start from scratch for each `Subscriber`. Rather,
-late subscribers will receive signals emitted _after_ they subscribed. Note,
-however, that some hot reactive streams can cache or replay the history of
-emissions totally or partially. From a general perspective, a hot sequence
-can even emit when no subscriber is listening (an exception to the "nothing
-happens before you subscribe" rule).
->>>>>>> after the last doc pass, fix a few mistakes and some TODOs
+- A *Cold* sequence starts anew for each `Subscriber`, including at the source of data.
+If the source wraps an HTTP call, a new HTTP request is made for each subscription.
+- A *Hot* sequence does not start from scratch for each `Subscriber`. Rather, late
+subscribers receive signals emitted _after_ they subscribed. Note, however, that some hot
+reactive streams can cache or replay the history of emissions totally or partially. From
+a general perspective, a hot sequence can even emit when no subscriber is listening (an
+exception to the "nothing happens before you subscribe" rule).
 
 For more information on hot vs cold in the context of Reactor, see
 <<reactor.hotCold,this reactor-specific section>>.
