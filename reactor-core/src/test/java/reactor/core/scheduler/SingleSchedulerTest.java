@@ -55,7 +55,7 @@ public class SingleSchedulerTest extends AbstractSchedulerTest {
 						.delay(Duration.ofMillis(100), s)
 						.log()
 						.doOnSubscribe(sub -> start.set(System.nanoTime()))
-						.doOnTerminate((v, e) -> end.set(System.nanoTime()))
+						.doOnTerminate(() -> end.set(System.nanoTime()))
 				)
 				            .expectSubscription()
 				            .expectNext(0L)

@@ -115,7 +115,7 @@ public class ElasticSchedulerTest extends AbstractSchedulerTest {
 				StepVerifier.create(Mono
 						.delay(Duration.ofMillis(100), s)
 						.doOnSubscribe(sub -> start.set(System.nanoTime()))
-						.doOnTerminate((v, e) -> end.set(System.nanoTime()))
+						.doOnTerminate(() -> end.set(System.nanoTime()))
 				)
 				            .expectSubscription()
 				            .expectNext(0L)

@@ -19,11 +19,9 @@ package reactor.core.publisher;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Condition;
 import org.junit.Assert;
 import org.junit.Test;
-import org.testng.remote.strprotocol.IStringMessage;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -55,7 +53,7 @@ public class MonoUsingTest {
 		AtomicInteger cleanup = new AtomicInteger();
 
 		Mono.using(() -> 1, r -> Mono.just(1), cleanup::set, false)
-		    .doAfterTerminate((v, e) ->  Assert.assertEquals(0, cleanup.get()))
+		    .doAfterSuccessOrError((v, e) ->  Assert.assertEquals(0, cleanup.get()))
 		    .subscribe(ts);
 
 		ts.assertValues(1)
@@ -72,7 +70,7 @@ public class MonoUsingTest {
 		AtomicInteger cleanup = new AtomicInteger();
 
 		Mono.using(() -> 1, r -> Mono.just(1), cleanup::set)
-		    .doAfterTerminate((v, e) ->  Assert.assertEquals(0, cleanup.get()))
+		    .doAfterSuccessOrError((v, e) ->  Assert.assertEquals(0, cleanup.get()))
 		    .subscribe(ts);
 
 		ts.assertValues(1)
