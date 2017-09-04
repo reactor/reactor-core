@@ -1622,6 +1622,11 @@ final class DefaultStepVerifierBuilder<T>
 		}
 
 		@Override
+		public StepVerifier.Assertions hasNotDroppedElements() {
+			return satisfies(droppedElements::isEmpty, () -> String.format("Expected no dropped elements, found <%s>.", droppedElements));
+		}
+
+		@Override
 		public StepVerifier.Assertions hasDropped(Object... values) {
 			//noinspection ConstantConditions
 			satisfies(() -> values != null && values.length > 0, () -> "Require non-empty values");
@@ -1638,6 +1643,12 @@ final class DefaultStepVerifierBuilder<T>
 			return satisfies(() -> droppedElements.containsAll(valuesList)
 							&& droppedElements.size() == valuesList.size(),
 					() -> String.format("Expected dropped elements to contain exactly <%s>, was <%s>.", valuesList, droppedElements));
+		}
+
+		@Override
+		public StepVerifier.Assertions hasNotDroppedErrors() {
+			return satisfies(droppedErrors::isEmpty,
+					() -> String.format("Expected no dropped errors, found <%s>.", droppedErrors));
 		}
 
 		@Override
