@@ -45,11 +45,32 @@ public class StepVerifierAssertionsTests {
 	}
 
 	@Test
+	public void assertNotDroppedElementsFailureOneDrop() {
+		try {
+			StepVerifier.create(Flux.from(s -> {
+				s.onSubscribe(Operators.emptySubscription());
+				s.onNext("foo");
+				s.onComplete();
+				s.onNext("bar");
+			}).take(2))
+			            .expectNext("foo")
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasNotDroppedElements();
+			fail("expected an AssertionError");
+		}
+		catch (AssertionError ae) {
+			assertThat(ae).hasMessage("Expected no dropped elements, found <[bar]>.");
+		}
+	}
+
+	@Test
 	public void assertDroppedElementsFailureNoDrop() {
 		try {
 			StepVerifier.create(Mono.empty())
 			            .expectComplete()
 			            .verifyThenAssertThat()
+			            .hasNotDroppedElements()
 			            .hasDroppedElements();
 			fail("expected an AssertionError");
 		}
@@ -119,12 +140,34 @@ public class StepVerifierAssertionsTests {
 		            .hasDroppedErrorMatching(t -> t instanceof IllegalStateException && "boom2".equals(t.getMessage()));
 	}
 
+
+	@Test
+	public void assertNotDroppedErrorsFailureOneDrop() {
+		try {
+			StepVerifier.create(Flux.from(s -> {
+				s.onSubscribe(Operators.emptySubscription());
+				s.onNext("foo");
+				s.onComplete();
+				s.onError(new IllegalStateException("boom"));
+			}).take(2))
+			            .expectNext("foo")
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasNotDroppedErrors();
+			fail("expected an AssertionError");
+		}
+		catch (AssertionError ae) {
+			assertThat(ae).hasMessage("Expected no dropped errors, found <[java.lang.IllegalStateException: boom]>.");
+		}
+	}
+
 	@Test
 	public void assertDroppedErrorFailureNoDrop() {
 		try {
 			StepVerifier.create(Mono.empty())
 			            .expectComplete()
 			            .verifyThenAssertThat()
+			            .hasNotDroppedErrors()
 			            .hasDroppedErrors();
 			fail("expected an AssertionError");
 		}

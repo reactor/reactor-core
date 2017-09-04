@@ -944,6 +944,12 @@ public interface StepVerifier {
 		Assertions hasDroppedElements();
 
 		/**
+		 * Assert that the tested publisher has not dropped any element to the
+		 * {@link Hooks#onNextDropped(Consumer)} hook.
+		 */
+		Assertions hasNotDroppedElements();
+
+		/**
 		 * Assert that the tested publisher has dropped at least all of the provided
 		 * elements to the {@link Hooks#onNextDropped(Consumer)} hook, in any order.
 		 */
@@ -961,6 +967,12 @@ public interface StepVerifier {
 		 * {@link Hooks#onErrorDropped(Consumer)} hook.
 		 */
 		Assertions hasDroppedErrors();
+
+		/**
+		 * Assert that the tested publisher has not dropped any error to the
+		 * {@link Hooks#onErrorDropped(Consumer)} hook.
+		 */
+		Assertions hasNotDroppedErrors();
 
 		/**
 		 * Assert that the tested publisher has dropped exactly n errors to the
