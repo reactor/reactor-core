@@ -17,6 +17,9 @@
 package reactor.util.function;
 
 import java.util.Collection;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -470,7 +473,7 @@ public abstract class Tuples implements Function {
      * @param <T2> The type of the second value.
      * @return The wrapper consumer
      */
-    public static <T1, T2> Consumer<Tuple2<T1, T2>> consumer(Consumer2<T1, T2> consumer) {
+    public static <T1, T2> Consumer<Tuple2<T1, T2>> consumer(BiConsumer<T1, T2> consumer) {
         return tuple -> consumer.accept(tuple.getT1(), tuple.getT2());
     }
 
@@ -576,7 +579,7 @@ public abstract class Tuples implements Function {
      * @param <R> The type of the result of the function
      * @return The wrapper function
      */
-    public static <T1, T2, R> Function<Tuple2<T1, T2>, R> function(Function2<T1, T2, R> function) {
+    public static <T1, T2, R> Function<Tuple2<T1, T2>, R> function(BiFunction<T1, T2, R> function) {
         return tuple -> function.apply(tuple.getT1(), tuple.getT2());
     }
 
@@ -687,7 +690,7 @@ public abstract class Tuples implements Function {
      * @param <T2> The type of the second value.
      * @return The wrapper predicate
      */
-    public static <T1, T2> Predicate<Tuple2<T1, T2>> predicate(Predicate2<T1, T2> predicate) {
+    public static <T1, T2> Predicate<Tuple2<T1, T2>> predicate(BiPredicate<T1, T2> predicate) {
         return tuple -> predicate.test(tuple.getT1(), tuple.getT2());
     }
 
