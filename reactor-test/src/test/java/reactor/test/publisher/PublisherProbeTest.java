@@ -30,12 +30,12 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class PublisherProbeTest {
 
-	private class ControlFlowTest {
+	private static class TestControlFlow {
 
 		private final Mono<Void>   a;
 		private final Mono<String> b;
 
-		ControlFlowTest(Mono<Void> a, Mono<String> b) {
+		TestControlFlow(Mono<Void> a, Mono<String> b) {
 			this.a = a;
 			this.b = b;
 		}
@@ -61,7 +61,7 @@ public class PublisherProbeTest {
 		PublisherProbe<Void> a = PublisherProbe.empty();
 		PublisherProbe<String> b = PublisherProbe.empty();
 
-		ControlFlowTest t = new ControlFlowTest(a.mono(), b.mono());
+		TestControlFlow t = new TestControlFlow(a.mono(), b.mono());
 
 		StepVerifier.create(t.toTest(Mono.empty()))
 		            .verifyComplete();
@@ -78,7 +78,7 @@ public class PublisherProbeTest {
 		PublisherProbe<Void> a = PublisherProbe.empty();
 		PublisherProbe<String> b = PublisherProbe.empty();
 
-		ControlFlowTest t = new ControlFlowTest(a.mono(), b.mono());
+		TestControlFlow t = new TestControlFlow(a.mono(), b.mono());
 
 		StepVerifier.create(t.toTest(Mono.just("principal")))
 		            .verifyComplete();
@@ -95,7 +95,7 @@ public class PublisherProbeTest {
 		PublisherProbe<Void> a = PublisherProbe.empty();
 		PublisherProbe<String> b = PublisherProbe.of(Mono.just("b"));
 
-		ControlFlowTest t = new ControlFlowTest(a.mono(), b.mono());
+		TestControlFlow t = new TestControlFlow(a.mono(), b.mono());
 
 		StepVerifier.create(t.toTest(Mono.empty()))
 		            .verifyComplete();
@@ -112,7 +112,7 @@ public class PublisherProbeTest {
 		PublisherProbe<Void> a = PublisherProbe.empty();
 		PublisherProbe<String> b = PublisherProbe.of(Mono.just("b"));
 
-		ControlFlowTest t = new ControlFlowTest(a.mono(), b.mono());
+		TestControlFlow t = new TestControlFlow(a.mono(), b.mono());
 
 		StepVerifier.create(t.toTest(Mono.just("principal")))
 		            .verifyComplete();
