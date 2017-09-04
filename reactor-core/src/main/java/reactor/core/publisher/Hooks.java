@@ -299,6 +299,19 @@ public abstract class Hooks {
 	}
 
 	/**
+	 * Set the custom global error mode hook for operators that support {@link OnNextFailureStrategy}
+	 * during a failure in their {@link org.reactivestreams.Subscriber#onNext(Object)}.
+	 * @param onNextFailure the new {@link OnNextFailureStrategy} to use.
+	 */
+	public static void onNextFailure(OnNextFailureStrategy onNextFailure) {
+		Objects.requireNonNull(onNextFailure, "onNextFailure");
+		log.debug("Hooking new default : onNextFailure");
+
+		synchronized(log) {
+			onNextFailureHook = onNextFailure;
+		}
+	}
+	/**
 	 * Add a custom error mapping, overriding the default one. Custom mapping can be an
 	 * accumulation of several sub-hooks each subsequently added via this method.
 	 * <p>
@@ -406,6 +419,17 @@ public abstract class Hooks {
 		}
 	}
 
+	/**
+	 * Reset global onNext failure handling strategy to terminating the sequence with
+	 * an onError and cancelling upstream ({@link OnNextFailureStrategy#STOP}).
+	 */
+	public static void resetOnNextFailure() {
+		log.debug("Reset to factory defaults : onNextFailure");
+		synchronized (log) {
+			onNextFailureHook = null;
+		}
+	}
+
 	@Nullable
 	@SuppressWarnings("unchecked")
 	static Function<Publisher, Publisher> createOrUpdateOpHook(Collection<Function<? super Publisher<Object>, ? extends Publisher<Object>>> hooks) {
@@ -446,13 +470,17 @@ public abstract class Hooks {
 	static volatile Consumer<? super Throwable> onErrorDroppedHook;
 	static volatile Consumer<Object>            onNextDroppedHook;
 
+	//Special hook that is between the two (strategy can be transformative, but not named)
+	static volatile OnNextFailureStrategy onNextFailureHook;
+
+
 	//For transformative hooks, allow to name them, keep track in an internal Map that retains insertion order
 	//internal use only as it relies on external synchronization
 	private static final LinkedHashMap<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> onEachOperatorHooks;
 	private static final LinkedHashMap<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> onLastOperatorHooks;
 	private static final LinkedHashMap<String, BiFunction<? super Throwable, Object, ? extends Throwable>> onOperatorErrorHooks;
 
-	//Immutable views on shook trackers, for testing purpose
+	//Immutable views on hook trackers, for testing purpose
 	static final Map<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> getOnEachOperatorHooks() {
 		return Collections.unmodifiableMap(onEachOperatorHooks);
 	}
