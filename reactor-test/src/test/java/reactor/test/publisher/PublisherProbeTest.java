@@ -215,19 +215,6 @@ public class PublisherProbeTest {
 	}
 
 	@Test
-	public void getRequestedMono() {
-		PublisherProbe<Void> probe = PublisherProbe.of(Mono.never());
-		AtomicReference<Subscription> sub = new AtomicReference<>();
-		probe.mono().subscribe(null, null, null, sub::set);
-
-		assertThat(probe.getRequested()).isEqualTo(0);
-
-		sub.get().request(3L);
-
-		assertThat(probe.getRequested()).isEqualTo(3);
-	}
-
-	@Test
 	public void assertWasRequestedMono() {
 		PublisherProbe<Void> probe = PublisherProbe.empty();
 		AtomicReference<Subscription> sub = new AtomicReference<>();
@@ -254,7 +241,7 @@ public class PublisherProbeTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(probe::assertWasNotRequested)
-				.withMessage("ControlFlowProbe should not have been requested but it was, by 3");
+				.withMessage("ControlFlowProbe should not have been requested but it was");
 	}
 
 	@Test
@@ -348,19 +335,6 @@ public class PublisherProbeTest {
 	}
 
 	@Test
-	public void getRequestedFlux() {
-		PublisherProbe<Void> probe = PublisherProbe.of(Flux.never());
-		AtomicReference<Subscription> sub = new AtomicReference<>();
-		probe.flux().subscribe(null, null, null, sub::set);
-
-		assertThat(probe.getRequested()).isEqualTo(0);
-
-		sub.get().request(3L);
-
-		assertThat(probe.getRequested()).isEqualTo(3);
-	}
-
-	@Test
 	public void assertWasRequestedFlux() {
 		PublisherProbe<Void> probe = PublisherProbe.empty();
 		AtomicReference<Subscription> sub = new AtomicReference<>();
@@ -387,7 +361,7 @@ public class PublisherProbeTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(probe::assertWasNotRequested)
-				.withMessage("ControlFlowProbe should not have been requested but it was, by 3");
+				.withMessage("ControlFlowProbe should not have been requested but it was");
 	}
 
 }
