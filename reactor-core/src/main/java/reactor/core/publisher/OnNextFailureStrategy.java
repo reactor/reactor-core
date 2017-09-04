@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.util.function.BiConsumer;
+import java.util.function.BiPredicate;
 import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscription;
@@ -90,19 +91,39 @@ public interface OnNextFailureStrategy {
 	};
 
 	/**
-	 * Create a non-terminal strategy where the error and incriminating value is passed to
+	 * Create a non-terminal strategy where the error and incriminating value are passed to
 	 * a custom {@link BiConsumer}, allowing the sequence to continue with further values.
 	 * <p>
-	 * Note that any {@link Exception} thrown by the consumer is wrapped by {@link Exceptions#propagate(Throwable)}
-	 * and is returned to the operator, in effect falling back to a terminal strategy
-	 * comparable to {@link #STOP}.
+	 * Note that any {@link Exception} thrown by the consumer will suppress the original
+	 * error and will be returned to the operator after cancelling upstream (behaving a
+	 * bit like {@link #STOP} in this case).
 	 *
 	 * @param causeConsumer the {@link BiConsumer} to process the recovered errors (and
 	 * cause values) with.
-	 * @return a new {@link OnNextFailureStrategy} strategy that allows resuming the sequence.
+	 * @return a new {@link OnNextFailureStrategy} that allows resuming the sequence.
 	 */
 	static OnNextFailureStrategy resume(BiConsumer<Throwable, Object> causeConsumer) {
 		return new ResumeStrategy(causeConsumer);
+	}
+
+	/**
+	 * Create a partially non-terminal strategy where the sequence is allowed to continue
+	 * with further values when a {@link BiPredicate} returns true. In that case, the error
+	 * and incriminating value are passed to a custom {@link BiConsumer}. Otherwise, falls
+	 * back to the {@link #STOP} terminal strategy.
+	 * <p>
+	 * Note that any {@link Exception} thrown by the predicate or consumer will suppress
+	 * the original error and will be processed by the {@link #STOP} strategy.
+	 *
+	 * @param causePredicate the {@link BiPredicate} to use to determine if a failure
+	 * should be recovered from.
+	 * @param causeConsumer the {@link BiConsumer} to process the recovered errors (and
+	 * cause values) with.
+	 * @return a new {@link OnNextFailureStrategy} that allows resuming the sequence.
+	 */
+	static OnNextFailureStrategy conditionalResume(BiPredicate<Throwable, Object> causePredicate,
+			BiConsumer<Throwable, Object> causeConsumer) {
+		return new ConditionalResumeStrategy(causePredicate, causeConsumer, STOP);
 	}
 
 	final class ResumeStrategy implements OnNextFailureStrategy {
@@ -122,7 +143,48 @@ public interface OnNextFailureStrategy {
 				return null;
 			}
 			catch (Throwable t) {
+				if (forCancel != null) {
+					forCancel.cancel();
+				}
+				if (t != error) {
+					t.addSuppressed(error);
+				}
 				return Exceptions.propagate(t);
+			}
+		}
+
+	}
+
+	final class ConditionalResumeStrategy implements OnNextFailureStrategy {
+
+		final BiPredicate<Throwable, Object> errorValuePredicate;
+		final BiConsumer<Throwable, Object>  errorValueConsumer;
+		final OnNextFailureStrategy          fallback;
+
+		ConditionalResumeStrategy(BiPredicate<Throwable, Object> errorValuePredicate,
+				BiConsumer<Throwable, Object> errorValueConsumer,
+				OnNextFailureStrategy fallback) {
+			this.errorValuePredicate = errorValuePredicate;
+			this.errorValueConsumer = errorValueConsumer;
+			this.fallback = fallback;
+		}
+
+		@Override
+		@Nullable
+		public final <T> Throwable apply(T value, Throwable error, Context context,
+				@Nullable Subscription forCancel) {
+			try {
+				if (errorValuePredicate.test(error, value)) {
+					errorValueConsumer.accept(error, value);
+					return null;
+				}
+				else {
+					return fallback.apply(value, error, context, forCancel);
+				}
+			}
+			catch (Throwable t) {
+				if (t != error) t.addSuppressed(error);
+				return fallback.apply(value, t, context, forCancel);
 			}
 		}
 
