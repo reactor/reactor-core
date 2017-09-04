@@ -16,8 +16,12 @@
 
 package reactor.core.publisher;
 
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
@@ -33,6 +37,7 @@ import reactor.core.publisher.Operators.MonoSubscriber;
 import reactor.core.publisher.Operators.MultiSubscriptionSubscriber;
 import reactor.core.publisher.Operators.ScalarSubscription;
 import reactor.test.RaceTestUtils;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -249,5 +254,79 @@ public class OperatorsTest {
 		test.poll();
 		Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	public void onErrorDroppedLocal() {
+		AtomicReference<Throwable> hookState = new AtomicReference<>();
+		Consumer<Throwable> localHook = hookState::set;
+		Context c = Context.of(Operators.KEY_ON_ERROR_DROPPED, localHook);
+
+		Operators.onErrorDropped(new IllegalArgumentException("boom"), c);
+
+		assertThat(hookState.get()).isInstanceOf(IllegalArgumentException.class)
+		                           .hasMessage("boom");
+	}
+
+	@Test
+	public void onNextDroppedLocal() {
+		AtomicReference<Object> hookState = new AtomicReference<>();
+		Consumer<Object> localHook = hookState::set;
+		Context c = Context.of(Operators.KEY_ON_NEXT_DROPPED, localHook);
+
+		Operators.onNextDropped("foo", c);
+
+		assertThat(hookState.get()).isEqualTo("foo");
+	}
+
+	@Test
+	public void onOperatorErrorLocal() {
+		BiFunction<Throwable, Object, Throwable> localHook = (e, v) ->
+				new IllegalStateException("boom_" + v, e);
+		Context c = Context.of(Operators.KEY_ON_OPERATOR_ERROR, localHook);
+
+		IllegalArgumentException failure = new IllegalArgumentException("foo");
+
+		final Throwable throwable = Operators.onOperatorError(null, failure,
+				"foo", c);
+
+		assertThat(throwable).isInstanceOf(IllegalStateException.class)
+		                     .hasMessage("boom_foo")
+		                     .hasCause(failure);
+	}
+
+	@Test
+	public void onRejectedExecutionWithoutDataSignalErrorLocal() {
+		BiFunction<Throwable, Object, Throwable> localHook = (e, v) ->
+				new IllegalStateException("boom_" + v, e);
+		Context c = Context.of(Operators.KEY_ON_OPERATOR_ERROR, localHook);
+
+		IllegalArgumentException failure = new IllegalArgumentException("foo");
+		final Throwable throwable = Operators.onRejectedExecution(failure, null, null, null, c);
+
+		assertThat(throwable).isInstanceOf(IllegalStateException.class)
+		                     .hasMessage("boom_null")
+		                     .hasNoSuppressedExceptions();
+		assertThat(throwable.getCause()).isInstanceOf(RejectedExecutionException.class)
+		                                .hasMessage("Scheduler unavailable")
+		                                .hasCause(failure);
+	}
+
+	@Test
+	public void onRejectedExecutionWithDataSignalErrorLocal() {
+		BiFunction<Throwable, Object, Throwable> localHook = (e, v) ->
+				new IllegalStateException("boom_" + v, e);
+		Context c = Context.of(Operators.KEY_ON_OPERATOR_ERROR, localHook);
+
+		IllegalArgumentException failure = new IllegalArgumentException("foo");
+		final Throwable throwable = Operators.onRejectedExecution(failure, null,
+				null, "bar", c);
+
+		assertThat(throwable).isInstanceOf(IllegalStateException.class)
+		                     .hasMessage("boom_bar")
+		                     .hasNoSuppressedExceptions();
+		assertThat(throwable.getCause()).isInstanceOf(RejectedExecutionException.class)
+		                                .hasMessage("Scheduler unavailable")
+		                                .hasCause(failure);
 	}
 }
