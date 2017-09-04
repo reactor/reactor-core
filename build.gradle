@@ -15,7 +15,7 @@
  */
 
 buildscript {
-  ext.kotlinVersion = '1.1.2-5'
+  ext.kotlinVersion = '1.1.4-3'
   repositories {
 	maven { url "http://repo.spring.io/plugins-release" }
   }
@@ -130,10 +130,12 @@ configure(subprojects) { p ->
 
   compileKotlin {
 	kotlinOptions.jvmTarget = "1.8"
+	kotlinOptions.freeCompilerArgs = ["-Xjsr305-annotations=enable"]
   }
 
   compileTestKotlin {
 	kotlinOptions.jvmTarget = "1.8"
+	kotlinOptions.freeCompilerArgs = ["-Xjsr305-annotations=enable"]
   }
 
   if (JavaVersion.current().isJava8Compatible()) {
