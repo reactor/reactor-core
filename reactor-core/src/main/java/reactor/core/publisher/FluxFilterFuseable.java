@@ -82,7 +82,6 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 
 		@Override
 		public void onNext(T t) {
-
 			if (sourceMode == ASYNC) {
 				actual.onNext(null);
 			}
@@ -97,7 +96,13 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 					b = predicate.test(t);
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+					Throwable e_ = Operators.onNextFailure(t, e, actual.currentContext(), s);
+					if (e_ != null) {
+						onError(e_);
+					}
+					else {
+						s.request(1);
+					}
 					return;
 				}
 				if (b) {
@@ -122,7 +127,10 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 				b = predicate.test(t);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+				Throwable e_ = Operators.onNextFailure(t, e, actual.currentContext(), s);
+				if (e_ != null) {
+					onError(e_);
+				}
 				return false;
 			}
 			if (b) {
@@ -183,21 +191,43 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 				for (; ; ) {
 					T v = s.poll();
 
-					if (v == null || predicate.test(v)) {
-						if (dropped != 0) {
-							request(dropped);
+					try {
+						if (v == null || predicate.test(v)) {
+							if (dropped != 0) {
+								request(dropped);
+							}
+							return v;
 						}
-						return v;
+						dropped++;
 					}
-					dropped++;
+					catch (Throwable e) {
+						RuntimeException e_ = Operators.onNextPollFailure(v, e, currentContext());
+						if (e_ != null) {
+							throw e_;
+						}
+						else {
+							return poll();
+						}
+					}
 				}
 			}
 			else {
 				for (; ; ) {
 					T v = s.poll();
 
-					if (v == null || predicate.test(v)) {
-						return v;
+					try {
+						if (v == null || predicate.test(v)) {
+							return v;
+						}
+					}
+					catch (Throwable e) {
+						RuntimeException e_ = Operators.onNextPollFailure(v, e, currentContext());
+						if (e_ != null) {
+							throw e_;
+						}
+						else {
+							return poll();
+						}
 					}
 				}
 			}
@@ -278,7 +308,13 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 					b = predicate.test(t);
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+					Throwable e_ = Operators.onNextFailure(t, e, actual.currentContext(), s);
+					if (e_ != null) {
+						onError(e_);
+					}
+					else {
+						s.request(1);
+					}
 					return;
 				}
 				if (b) {
@@ -303,7 +339,10 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 				b = predicate.test(t);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+				Throwable e_ = Operators.onNextFailure(t, e, actual.currentContext(), s);
+				if (e_ != null) {
+					onError(e_);
+				}
 				return false;
 			}
 			return b && actual.tryOnNext(t);
@@ -359,22 +398,43 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 				long dropped = 0;
 				for (; ; ) {
 					T v = s.poll();
-
-					if (v == null || predicate.test(v)) {
-						if (dropped != 0) {
-							request(dropped);
+					try {
+						if (v == null || predicate.test(v)) {
+							if (dropped != 0) {
+								request(dropped);
+							}
+							return v;
 						}
-						return v;
+						dropped++;
 					}
-					dropped++;
+					catch (Throwable e) {
+						RuntimeException e_ = Operators.onNextPollFailure(v, e, currentContext());
+						if (e_ != null) {
+							throw e_;
+						}
+						else {
+							return poll();
+						}
+					}
 				}
 			}
 			else {
 				for (; ; ) {
 					T v = s.poll();
 
-					if (v == null || predicate.test(v)) {
-						return v;
+					try {
+						if (v == null || predicate.test(v)) {
+							return v;
+						}
+					}
+					catch (Throwable e) {
+						RuntimeException e_ = Operators.onNextPollFailure(v, e, currentContext());
+						if (e_ != null) {
+							throw e_;
+						}
+						else {
+							return poll();
+						}
 					}
 				}
 			}
