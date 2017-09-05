@@ -306,7 +306,14 @@ final class FluxFlattenIterable<T, R> extends FluxOperator<T, R> implements Fuse
 
 					T t;
 
-					t = q.poll();
+					try {
+						t = q.poll();
+					} catch (Throwable pollEx) {
+						current = null;
+						q.clear();
+						a.onError(pollEx);
+						return;
+					}
 
 					boolean empty = t == null;
 
@@ -464,7 +471,6 @@ final class FluxFlattenIterable<T, R> extends FluxOperator<T, R> implements Fuse
 
 		void drainSync() {
 			final Subscriber<? super R> a = actual;
-//			final Queue<T> q = queue;
 
 			int missed = 1;
 
@@ -482,8 +488,16 @@ final class FluxFlattenIterable<T, R> extends FluxOperator<T, R> implements Fuse
 					boolean d = done;
 
 					T t;
+					Queue<T> q = queue;
 
-					t = queue.poll();
+					try {
+						t = q.poll();
+					} catch (Throwable pollEx) {
+						current = null;
+						q.clear();
+						a.onError(pollEx);
+						return;
+					}
 
 					boolean empty = t == null;
 

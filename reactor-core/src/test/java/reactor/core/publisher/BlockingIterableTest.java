@@ -19,19 +19,24 @@ package reactor.core.publisher;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
 import reactor.core.Scannable.Attr;
+import reactor.test.StepVerifier;
 import reactor.util.concurrent.Queues;
 
-import static org.assertj.core.api.Java6Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class BlockingIterableTest {
 
@@ -216,5 +221,97 @@ public class BlockingIterableTest {
 
 		test.onNext("b");
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).describedAs("after CANCELLED").isTrue();
+	}
+
+	@Test(timeout = 1000)
+	public void gh841_streamCreate() {
+		Flux<String> source = Flux.<String>create(sink -> {
+			sink.next("a");
+			sink.next("b");
+			sink.complete();
+		})
+				.sort((a, b) -> { throw new IllegalStateException("boom"); });
+
+		assertThatExceptionOfType(IllegalStateException.class)
+				.isThrownBy(() -> source.toStream()
+				                        .collect(Collectors.toSet()))
+				.withMessage("boom");
+	}
+
+	@Test(timeout = 1000)
+	public void gh841_streamCreateDeferredError() {
+		Flux<Integer> source = Flux.<Integer>create(sink -> {
+			sink.next(1);
+			sink.next(2);
+			sink.next(0);
+			sink.complete();
+		})
+				.map(v -> 4 / v)
+				.log();
+
+		assertThatExceptionOfType(ArithmeticException.class)
+				.isThrownBy(() -> source.toStream(1)
+				                        .collect(Collectors.toSet()))
+				.withMessage("/ by zero");
+	}
+
+	@Test(timeout = 1000)
+	public void gh841_streamFromIterable() {
+		Flux<String> source = Flux.fromIterable(Arrays.asList("a","b"))
+		                          .sort((a, b) -> { throw new IllegalStateException("boom"); });
+
+		assertThatExceptionOfType(IllegalStateException.class)
+				.isThrownBy(() -> source.toStream()
+				                        .collect(Collectors.toSet()))
+				.withMessage("boom");
+	}
+
+	@Test(timeout = 1000)
+	public void gh841_iteratorFromCreate() {
+		Iterator<String> it = Flux.<String>create(sink -> {
+			sink.next("a");
+			sink.next("b");
+			sink.complete();
+		}).sort((a, b) -> {
+			throw new IllegalStateException("boom");
+		}).toIterable().iterator();
+
+		assertThatExceptionOfType(IllegalStateException.class)
+				.isThrownBy(it::hasNext)
+				.withMessage("boom");
+	}
+
+	@Test(timeout = 1000)
+	public void gh841_workaroundFlux() {
+		Flux<String> source = Flux.<String>create(sink -> {
+			sink.next("a");
+			sink.next("b");
+			sink.complete();
+		})
+				.collectSortedList((a, b) -> { throw new IllegalStateException("boom"); })
+				.hide()
+				.flatMapIterable(Function.identity());
+
+		StepVerifier.create(source)
+		            .expectErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		            .hasMessage("boom"))
+		            .verify();
+	}
+
+	@Test(timeout = 1000)
+	public void gh841_workaroundStream() {
+		Flux<String> source = Flux.<String>create(sink -> {
+			sink.next("a");
+			sink.next("b");
+			sink.complete();
+		})
+				.collectSortedList((a, b) -> { throw new IllegalStateException("boom"); })
+				.hide()
+				.flatMapIterable(Function.identity());
+
+		assertThatExceptionOfType(IllegalStateException.class)
+				.isThrownBy(() -> source.toStream()
+				                        .collect(Collectors.toSet()))
+				.withMessage("boom");
 	}
 }
