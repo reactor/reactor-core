@@ -16,8 +16,10 @@
 
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
@@ -370,5 +372,27 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
         test.cancel();
         assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 
+    }
+
+    public void asyncDrainWithPollFailure() {
+	    Flux<Integer> p = Flux.range(1, 3)
+	                       .collectList()
+			               .filter(l -> { throw new IllegalStateException("boom"); })
+			               .flatMapIterable(Function.identity());
+
+	    StepVerifier.create(p)
+	                .expectErrorMessage("boom")
+	                .verify(Duration.ofSeconds(1));
+    }
+
+    @Test
+	public void syncDrainWithPollFailure() {
+	    Flux<Integer> p = Mono.just(Arrays.asList(1, 2, 3))
+			    .filter(l -> { throw new IllegalStateException("boom"); })
+			    .flatMapIterable(Function.identity());
+
+	    StepVerifier.create(p)
+	                .expectErrorMessage("boom")
+	                .verify(Duration.ofSeconds(1));
     }
 }
