@@ -25,42 +25,42 @@ class MonoWhenFunctionsTests {
 
     @Test
     fun `whenComplete with two Monos`() {
-        StepVerifier.create(whenComplete("foo1".toMono(), "foo2".toMono()))
+        StepVerifier.create(Mono.zip("foo1".toMono(), "foo2".toMono()))
                 .expectNext(Tuples.of("foo1", "foo2"))
                 .verifyComplete()
     }
 
     @Test
     fun `whenComplete with two Monos and combinator`() {
-        StepVerifier.create(whenComplete("foo1".toMono(), "foo2".toMono()) { a, b -> Pair(a, b) })
+        StepVerifier.create(Mono.zip("foo1".toMono(), "foo2".toMono()) { a, b -> Pair(a, b) })
                 .expectNext(Pair("foo1", "foo2"))
                 .verifyComplete()
     }
 
     @Test
     fun `whenComplete with three Monos`() {
-        StepVerifier.create(whenComplete("foo1".toMono(), "foo2".toMono(), "foo3".toMono()))
+        StepVerifier.create(Mono.zip("foo1".toMono(), "foo2".toMono(), "foo3".toMono()))
                 .expectNext(Tuples.of("foo1", "foo2", "foo3"))
                 .verifyComplete()
     }
 
     @Test
     fun `whenComplete with four Monos`() {
-        StepVerifier.create(whenComplete("foo1".toMono(), "foo2".toMono(), "foo3".toMono(), "foo4".toMono()))
+        StepVerifier.create(Mono.zip("foo1".toMono(), "foo2".toMono(), "foo3".toMono(), "foo4".toMono()))
                 .expectNext(Tuples.of("foo1", "foo2", "foo3", "foo4"))
                 .verifyComplete()
     }
 
     @Test
     fun `whenComplete with five Monos`() {
-        StepVerifier.create(whenComplete("foo1".toMono(), "foo2".toMono(), "foo3".toMono(), "foo4".toMono(), "foo5".toMono()))
+        StepVerifier.create(Mono.zip("foo1".toMono(), "foo2".toMono(), "foo3".toMono(), "foo4".toMono(), "foo5".toMono()))
                 .expectNext(Tuples.of("foo1", "foo2", "foo3", "foo4", "foo5"))
                 .verifyComplete()
     }
 
     @Test
     fun `whenComplete with six Monos`() {
-        StepVerifier.create(whenComplete("foo1".toMono(), "foo2".toMono(), "foo3".toMono(),
+        StepVerifier.create(Mono.zip("foo1".toMono(), "foo2".toMono(), "foo3".toMono(),
                 "foo4".toMono(), "foo5".toMono(), "foo6".toMono()))
                 .expectNext(Tuples.of("foo1", "foo2", "foo3", "foo4", "foo5", "foo6"))
                 .verifyComplete()
@@ -69,7 +69,7 @@ class MonoWhenFunctionsTests {
     @Test
     fun `whenComplete with an Iterable of Mono + and a combinator`() {
         StepVerifier.create(listOf("foo1".toMono(), "foo2".toMono(), "foo3".toMono())
-                .whenComplete { it.reduce { acc, s -> acc + s }})
+                .zip { it.reduce { acc, s -> acc + s }})
                 .expectNext("foo1foo2foo3")
                 .verifyComplete()
     }
@@ -92,7 +92,7 @@ class MonoWhenFunctionsTests {
 
     @Test
     fun `whenComplete on an Iterable of Monos with combinator`() {
-        StepVerifier.create(listOf("foo1", "foo2", "foo3").map { it.toMono() }.whenComplete { it.joinToString() })
+        StepVerifier.create(listOf("foo1", "foo2", "foo3").map { it.toMono() }.zip { it.joinToString() })
                 .expectNext("foo1, foo2, foo3")
                 .verifyComplete()
     }
@@ -114,7 +114,7 @@ class MonoWhenFunctionsTests {
 
     @Test
     fun `whenComplete with Monos and combinator`() {
-        StepVerifier.create(whenComplete("foo1".toMono(), "foo2".toMono(), "foo3".toMono()) { it.joinToString() })
+        StepVerifier.create(zip("foo1".toMono(), "foo2".toMono(), "foo3".toMono()) { it.joinToString() })
                 .expectNext("foo1, foo2, foo3")
                 .verifyComplete()
     }

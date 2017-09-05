@@ -121,46 +121,39 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 		}
 
 		/**
-		 * @deprecated unused in this context as the {@link Signal} interface is only
+		 * unused in this context as the {@link Signal} interface is only
 		 * implemented for use in the main's STATE compareAndSet.
 		 */
-		@Deprecated
-		@Nullable
 		@Override
 		public Throwable getThrowable() {
-			return null;
+			throw new UnsupportedOperationException("illegal signal use");
 		}
 
 		/**
-		 * @deprecated unused in this context as the {@link Signal} interface is only
+		 * unused in this context as the {@link Signal} interface is only
 		 * implemented for use in the main's STATE compareAndSet.
 		 */
-		@Deprecated
-		@Nullable
 		@Override
 		public Subscription getSubscription() {
-			return null;
+			throw new UnsupportedOperationException("illegal signal use");
 		}
 
 		/**
-		 * @deprecated unused in this context as the {@link Signal} interface is only
+		 * unused in this context as the {@link Signal} interface is only
 		 * implemented for use in the main's STATE compareAndSet.
 		 */
-		@Deprecated
-		@Nullable
 		@Override
 		public T get() {
-			return null;
+			throw new UnsupportedOperationException("illegal signal use");
 		}
 
 		/**
-		 * @deprecated unused in this context as the {@link Signal} interface is only
+		 * unused in this context as the {@link Signal} interface is only
 		 * implemented for use in the main's STATE compareAndSet.
 		 */
-		@Deprecated
 		@Override
 		public SignalType getType() {
-			return SignalType.SUBSCRIBE;
+			throw new UnsupportedOperationException("illegal signal use");
 		}
 
 		final boolean add(Operators.MonoSubscriber<T, T> toAdd) {
