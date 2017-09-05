@@ -646,7 +646,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Aggregate given void publishers into a new {@literal Mono} that will be fulfilled
+	 * Aggregate given publishers into a new {@literal Mono} that will be fulfilled
 	 * when all of the given {@literal sources} have been fulfilled. An error will cause
 	 * pending results to be cancelled and immediate error emission to the returned {@link Mono}.
 	 * <p>
@@ -656,20 +656,19 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	@SafeVarargs
-	public static Mono<Void> when(Publisher<Void>... sources) {
+	public static Mono<Void> when(Publisher<?>... sources) {
 		if (sources.length == 0) {
 			return empty();
 		}
 		if (sources.length == 1) {
 			return empty(sources[0]);
 		}
-		return onAssembly(new MonoZip<>(false, VOID_FUNCTION, sources));
+		return onAssembly(new MonoWhen(false, sources));
 	}
 
 
 	/**
-	 * Aggregate given void publishers into a new {@literal Mono} that will be
+	 * Aggregate given publishers into a new {@literal Mono} that will be
 	 * fulfilled when all of the given {@literal Publishers} have been fulfilled.
 	 * An error will cause pending results to be cancelled and immediate error emission
 	 * to the returned {@link Mono}.
@@ -682,12 +681,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static Mono<Void> when(final Iterable<? extends Publisher<Void>> sources) {
-		return onAssembly(new MonoZip<>(false, VOID_FUNCTION, sources));
+	public static Mono<Void> when(final Iterable<? extends Publisher<?>> sources) {
+		return onAssembly(new MonoWhen(false, sources));
 	}
 
 	/**
-	 * Aggregate given void publishers into a new {@literal Mono} that will be
+	 * Aggregate given publishers into a new {@literal Mono} that will be
 	 * fulfilled when all of the given {@literal sources} have been fulfilled. If any Publisher
 	 * terminates without value, the returned sequence will be terminated immediately and
 	 * pending results cancelled. Errors from the sources are delayed.
@@ -701,12 +700,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static Mono<Void> whenDelayError(final Iterable<? extends Publisher<Void>> sources) {
-		return onAssembly(new MonoZip<>(true, VOID_FUNCTION, sources));
+	public static Mono<Void> whenDelayError(final Iterable<? extends Publisher<?>> sources) {
+		return onAssembly(new MonoWhen(true, sources));
 	}
 
 	/**
-	 * Merge given void publishers into a new {@literal Mono} that will be fulfilled when
+	 * Merge given publishers into a new {@literal Mono} that will be fulfilled when
 	 * all of the given {@literal sources} have been fulfilled. Errors from the sources are delayed.
 	 * If several Publishers error, the exceptions are combined (as suppressed exceptions on a root exception).
 	 *
@@ -717,15 +716,14 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	@SafeVarargs
-	public static  Mono<Void> whenDelayError(Publisher<Void>... sources) {
+	public static  Mono<Void> whenDelayError(Publisher<?>... sources) {
 		if (sources.length == 0) {
 			return empty();
 		}
 		if (sources.length == 1) {
 			return empty(sources[0]);
 		}
-		return onAssembly(new MonoZip<>(true, VOID_FUNCTION, sources));
+		return onAssembly(new MonoWhen(true, sources));
 	}
 
 	/**
@@ -1135,86 +1133,27 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Combine the result from this mono and another into a {@link Tuple2}.
+	 * Join the termination signals from this mono and another source into the returned
+	 * void mono
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/and.png" alt="">
 	 * <p>
-	 * @param other the {@link Mono} to combine with
-	 * @param <T2> the element type of the other Mono instance
-	 * 
-	 * @return a new combined Mono
-	 * @see #zip(Mono, Mono)
-	 */
-	public final <T2> Mono<Tuple2<T, T2>> and(Mono<? extends T2> other) {
-		return and(other, Flux.tuple2Function());
-	}
-
-	/**
-	 * Combine the result from this mono and another into an arbitrary {@code O} object,
-	 * as defined by the provided {@code combinator} function.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/and.png" alt="">
-	 * <p>
-	 * @param other the {@link Mono} to combine with
-	 * @param combinator a {@link BiFunction} combinator function when both sources
+	 * @param other the {@link Publisher} to wait for
 	 * complete
-	 * @param <T2> the element type of the other Mono instance
-	 * @param <O> the element type of the combination
-	 *
 	 * @return a new combined Mono
-	 * @see #zip(Mono, Mono)
+	 * @see #when
 	 */
-	public final <T2, O> Mono<O> and(Mono<? extends T2> other, BiFunction<?
-			super T, ? super T2, ? extends O> combinator) {
-		if (this instanceof MonoZip) {
-			@SuppressWarnings("unchecked") MonoZip<T, O> o = (MonoZip<T, O>) this;
-			Mono<O> result = o.whenAdditionalSource(other, combinator);
+	public final Mono<Void> and(Publisher<?> other) {
+		if (this instanceof MonoWhen) {
+			@SuppressWarnings("unchecked") MonoWhen o = (MonoWhen) this;
+			Mono<Void> result = o.whenAdditionalSource(other);
 			if (result != null) {
 				return result;
 			}
 		}
 
-		return zip(this, other, combinator);
-	}
-
-	/**
-	 * Wait for the result from this mono, use it to create a second mono via the
-	 * provided {@code rightGenerator} function and combine both results into a {@link Tuple2}.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/and.png" alt="">
-	 * <p>
-	 * @param rightGenerator the {@link Function} to generate a {@code Mono} to combine with
-	 * @param <T2> the element type of the other Mono instance
-	 *
-	 * @return a new combined Mono
-	 */
-	public final <T2> Mono<Tuple2<T, T2>> and(Function<T, Mono<? extends T2>> rightGenerator) {
-		return and(rightGenerator, Tuples::of);
-	}
-
-	/**
-	 * Wait for the result from this mono, use it to create a second mono via the
-	 * provided {@code rightGenerator} function and combine both results into an arbitrary
-	 * {@code O} object, as defined by the provided {@code combinator} function.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/and.png" alt="">
-	 * <p>
-	 * @param rightGenerator the {@link Function} to generate a {@code Mono} to combine with
-	 * @param combinator a {@link BiFunction} combinator function when both sources complete
-	 * @param <T2> the element type of the other Mono instance
-	 * @param <O> the element type of the combination
-	 *
-	 * @return a new combined Mono
-	 */
-	public final <T2, O> Mono<O> and(Function<T, Mono<? extends T2>> rightGenerator,
-			BiFunction<T, T2, O> combinator) {
-		Objects.requireNonNull(rightGenerator, "rightGenerator function is mandatory to get the right-hand side Mono");
-		Objects.requireNonNull(combinator, "combinator function is mandatory to combine results from both Monos");
-		return flatMap(t -> rightGenerator.apply(t).map(t2 -> combinator.apply(t, t2)));
+		return when(this, other);
 	}
 
 	/**
@@ -3312,8 +3251,45 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Combine the result from this mono and another into a {@link Tuple2}. This is an
-	 * alias for {@link #and(Mono)}.
+	 * Wait for the result from this mono, use it to create a second mono via the
+	 * provided {@code rightGenerator} function and combine both results into a {@link Tuple2}.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/and.png" alt="">
+	 * <p>
+	 * @param rightGenerator the {@link Function} to generate a {@code Mono} to combine with
+	 * @param <T2> the element type of the other Mono instance
+	 *
+	 * @return a new combined Mono
+	 */
+	public final <T2> Mono<Tuple2<T, T2>> zipWhen(Function<T, Mono<? extends T2>> rightGenerator) {
+		return zipWhen(rightGenerator, Tuples::of);
+	}
+
+	/**
+	 * Wait for the result from this mono, use it to create a second mono via the
+	 * provided {@code rightGenerator} function and combine both results into an arbitrary
+	 * {@code O} object, as defined by the provided {@code combinator} function.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/and.png" alt="">
+	 * <p>
+	 * @param rightGenerator the {@link Function} to generate a {@code Mono} to combine with
+	 * @param combinator a {@link BiFunction} combinator function when both sources complete
+	 * @param <T2> the element type of the other Mono instance
+	 * @param <O> the element type of the combination
+	 *
+	 * @return a new combined Mono
+	 */
+	public final <T2, O> Mono<O> zipWhen(Function<T, Mono<? extends T2>> rightGenerator,
+			BiFunction<T, T2, O> combinator) {
+		Objects.requireNonNull(rightGenerator, "rightGenerator function is mandatory to get the right-hand side Mono");
+		Objects.requireNonNull(combinator, "combinator function is mandatory to combine results from both Monos");
+		return flatMap(t -> rightGenerator.apply(t).map(t2 -> combinator.apply(t, t2)));
+	}
+
+	/**
+	 * Combine the result from this mono and another into a {@link Tuple2}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/and.png" alt="">
@@ -3322,15 +3298,14 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param <T2> the element type of the other Mono instance
 	 *
 	 * @return a new combined Mono
-	 * @see #and(Mono)
 	 */
 	public final <T2> Mono<Tuple2<T, T2>> zipWith(Mono<? extends T2> other) {
-		return and(other);
+		return zipWith(other, Flux.tuple2Function());
 	}
 
 	/**
 	 * Combine the result from this mono and another into an arbitrary {@code O} object,
-	 * as defined by the provided {@code combinator} function. This is an alias for {@link #and(Mono, BiFunction)}.
+	 * as defined by the provided {@code combinator} function.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/and.png" alt="">
@@ -3342,11 +3317,18 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param <O> the element type of the combination
 	 *
 	 * @return a new combined Mono
-	 * @see #and(Mono, BiFunction)
 	 */
 	public final <T2, O> Mono<O> zipWith(Mono<? extends T2> other,
 			BiFunction<? super T, ? super T2, ? extends O> combinator) {
-		return and(other, combinator);
+		if (this instanceof MonoZip) {
+			@SuppressWarnings("unchecked") MonoZip<T, O> o = (MonoZip<T, O>) this;
+			Mono<O> result = o.zipAdditionalSource(other, combinator);
+			if (result != null) {
+				return result;
+			}
+		}
+
+		return zip(this, other, combinator);
 	}
 
 	/**
@@ -3418,8 +3400,6 @@ public abstract class Mono<T> implements Publisher<T> {
 				onComplete, onRequest,
 				onCancel));
 	}
-	
-	static final Function<? super Object[], Void> VOID_FUNCTION = t -> null;
 
 	@SuppressWarnings("unchecked")
 	static <T> BiPredicate<? super T, ? super T> equalsBiPredicate(){

@@ -1317,7 +1317,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	    Flux<Tuple2<String, String>> flux =
 			    Flux.from(a)
 			        .flatMap(value -> Mono.just(value)
-			                              .and(Mono.from(b)))
+			                              .zipWith(Mono.from(b)))
 			        .publishOn(Schedulers.single());
 
 	    StepVerifier.create(flux)
@@ -1338,7 +1338,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	    Flux<Tuple2<String, String>> flux =
 			    Flux.from(a)
 			        .flatMap(value -> Mono.just(value)
-			                              .and(Mono.from(b)))
+			                              .zipWith(Mono.from(b)))
 			        .publishOn(Schedulers.single())
 			        .filter(t -> true);
 

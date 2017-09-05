@@ -19,8 +19,6 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
@@ -37,7 +35,7 @@ import reactor.util.context.Context;
  *
  * @param <R> the source value types
  */
-final class MonoZip<T, R> extends Mono<R> {
+final class MonoWhen extends Mono<Void> {
 
 	final boolean delayError;
 
@@ -45,59 +43,36 @@ final class MonoZip<T, R> extends Mono<R> {
 
 	final Iterable<? extends Publisher<?>> sourcesIterable;
 
-	final Function<? super Object[], ? extends R> zipper;
-
-	@SuppressWarnings("unchecked")
-	<U> MonoZip(boolean delayError,
-			Publisher<? extends T> p1,
-			Publisher<? extends U> p2,
-			BiFunction<? super T, ? super U, ? extends R> zipper2) {
-		this(delayError,
-				new FluxZip.PairwiseZipper<>(new BiFunction[]{
-						Objects.requireNonNull(zipper2, "zipper2")}),
-				Objects.requireNonNull(p1, "p1"),
-				Objects.requireNonNull(p2, "p2"));
-	}
-
-	MonoZip(boolean delayError,
-			Function<? super Object[], ? extends R> zipper,
-			Publisher<?>... sources) {
+	MonoWhen(boolean delayError, Publisher<?>... sources) {
 		this.delayError = delayError;
-		this.zipper = Objects.requireNonNull(zipper, "zipper");
 		this.sources = Objects.requireNonNull(sources, "sources");
 		this.sourcesIterable = null;
 	}
 
-	MonoZip(boolean delayError,
-			Function<? super Object[], ? extends R> zipper,
-			Iterable<? extends Publisher<?>> sourcesIterable) {
+	MonoWhen(boolean delayError, Iterable<? extends Publisher<?>> sourcesIterable) {
 		this.delayError = delayError;
-		this.zipper = Objects.requireNonNull(zipper, "zipper");
 		this.sources = null;
 		this.sourcesIterable = Objects.requireNonNull(sourcesIterable, "sourcesIterable");
 	}
 
 	@SuppressWarnings("unchecked")
 	@Nullable
-	Mono<R> zipAdditionalSource(Publisher source, BiFunction zipper) {
+	Mono<Void> whenAdditionalSource(Publisher<?> source) {
 		Publisher[] oldSources = sources;
-		if (oldSources != null && this.zipper instanceof FluxZip.PairwiseZipper) {
+		if (oldSources != null) {
 			int oldLen = oldSources.length;
 			Publisher<?>[] newSources = new Publisher[oldLen + 1];
 			System.arraycopy(oldSources, 0, newSources, 0, oldLen);
 			newSources[oldLen] = source;
 
-			Function<Object[], R> z =
-					((FluxZip.PairwiseZipper<R>) this.zipper).then(zipper);
-
-			return new MonoZip<>(delayError, z, newSources);
+			return new MonoWhen(delayError, newSources);
 		}
 		return null;
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public void subscribe(CoreSubscriber<? super R> actual) {
+	public void subscribe(CoreSubscriber<? super Void> actual) {
 		Publisher<?>[] a;
 		int n = 0;
 		if (sources != null) {
@@ -121,35 +96,31 @@ final class MonoZip<T, R> extends Mono<R> {
 			return;
 		}
 
-		ZipCoordinator<R> parent = new ZipCoordinator<>(actual, n, delayError, zipper);
+		WhenCoordinator parent = new WhenCoordinator(actual, n, delayError);
 		actual.onSubscribe(parent);
 		parent.subscribe(a);
 	}
 
-	static final class ZipCoordinator<R> extends Operators.MonoSubscriber<Object, R> {
+	static final class WhenCoordinator extends Operators.MonoSubscriber<Object, Void> {
 
-		final ZipInner<R>[] subscribers;
+		final WhenInner[] subscribers;
 
 		final boolean delayError;
 
-		final Function<? super Object[], ? extends R> zipper;
-
 		volatile int done;
 		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<ZipCoordinator> DONE =
-				AtomicIntegerFieldUpdater.newUpdater(ZipCoordinator.class, "done");
+		static final AtomicIntegerFieldUpdater<WhenCoordinator> DONE =
+				AtomicIntegerFieldUpdater.newUpdater(WhenCoordinator.class, "done");
 
 		@SuppressWarnings("unchecked")
-		ZipCoordinator(CoreSubscriber<? super R> subscriber,
+		WhenCoordinator(CoreSubscriber<? super Void> subscriber,
 				int n,
-				boolean delayError,
-				Function<? super Object[], ? extends R> zipper) {
+				boolean delayError) {
 			super(subscriber);
 			this.delayError = delayError;
-			this.zipper = zipper;
-			subscribers = new ZipInner[n];
+			subscribers = new WhenInner[n];
 			for (int i = 0; i < n; i++) {
-				subscribers[i] = new ZipInner<>(this);
+				subscribers[i] = new WhenInner(this);
 			}
 		}
 
@@ -175,7 +146,7 @@ final class MonoZip<T, R> extends Mono<R> {
 		}
 
 		void subscribe(Publisher<?>[] sources) {
-			ZipInner<R>[] a = subscribers;
+			WhenInner[] a = subscribers;
 			for (int i = 0; i < a.length; i++) {
 				sources[i].subscribe(a[i]);
 			}
@@ -196,40 +167,30 @@ final class MonoZip<T, R> extends Mono<R> {
 
 		@SuppressWarnings("unchecked")
 		void signal() {
-			ZipInner<R>[] a = subscribers;
+			WhenInner[] a = subscribers;
 			int n = a.length;
 			if (DONE.incrementAndGet(this) != n) {
 				return;
 			}
 
-			Object[] o = new Object[n];
 			Throwable error = null;
 			Throwable compositeError = null;
-			boolean hasEmpty = false;
 
 			for (int i = 0; i < a.length; i++) {
-				ZipInner<R> m = a[i];
-				Object v = m.value;
-				if (v != null) {
-					o[i] = v;
-				}
-				else {
-					Throwable e = m.error;
-					if (e != null) {
-						if (compositeError != null) {
-							compositeError.addSuppressed(e);
-						}
-						else if (error != null) {
-							compositeError = Exceptions.multiple(error, e);
-						}
-						else {
-							error = e;
-						}
+				WhenInner m = a[i];
+				Throwable e = m.error;
+				if (e != null) {
+					if (compositeError != null) {
+						compositeError.addSuppressed(e);
+					}
+					else if (error != null) {
+						compositeError = Exceptions.multiple(error, e);
 					}
 					else {
-						hasEmpty = true;
+						error = e;
 					}
 				}
+
 			}
 
 			if (compositeError != null) {
@@ -238,23 +199,8 @@ final class MonoZip<T, R> extends Mono<R> {
 			else if (error != null) {
 				actual.onError(error);
 			}
-			else if (hasEmpty) {
-				actual.onComplete();
-			}
 			else {
-				R r;
-				try {
-					r = Objects.requireNonNull(zipper.apply(o),
-							"zipper produced a null value");
-				}
-				catch (Throwable t) {
-					actual.onError(Operators.onOperatorError(null,
-							t,
-							o,
-							actual.currentContext()));
-					return;
-				}
-				complete(r);
+				actual.onComplete();
 			}
 		}
 
@@ -262,28 +208,26 @@ final class MonoZip<T, R> extends Mono<R> {
 		public void cancel() {
 			if (!isCancelled()) {
 				super.cancel();
-				for (ZipInner<R> ms : subscribers) {
+				for (WhenInner ms : subscribers) {
 					ms.cancel();
 				}
 			}
 		}
 	}
 
-	static final class ZipInner<R> implements InnerConsumer<Object> {
+	static final class WhenInner implements InnerConsumer<Object> {
 
-		final ZipCoordinator<R> parent;
+		final WhenCoordinator parent;
 
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<ZipInner, Subscription> S =
-				AtomicReferenceFieldUpdater.newUpdater(ZipInner.class,
+		static final AtomicReferenceFieldUpdater<WhenInner, Subscription> S =
+				AtomicReferenceFieldUpdater.newUpdater(WhenInner.class,
 						Subscription.class,
 						"s");
-
-		Object    value;
 		Throwable error;
 
-		ZipInner(ZipCoordinator<R> parent) {
+		WhenInner(WhenCoordinator parent) {
 			this.parent = parent;
 		}
 
@@ -323,10 +267,6 @@ final class MonoZip<T, R> extends Mono<R> {
 
 		@Override
 		public void onNext(Object t) {
-			if (value == null) {
-				value = t;
-				parent.signal();
-			}
 		}
 
 		@Override
@@ -337,9 +277,7 @@ final class MonoZip<T, R> extends Mono<R> {
 
 		@Override
 		public void onComplete() {
-			if (value == null) {
-				parent.signal();
-			}
+			parent.signal();
 		}
 
 		void cancel() {
