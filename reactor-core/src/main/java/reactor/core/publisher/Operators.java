@@ -48,31 +48,6 @@ import reactor.util.context.Context;
 public abstract class Operators {
 
 	/**
-	 * A key that can be used to store a sequence-specific {@link Hooks#onErrorDropped(Consumer)}
-	 * hook in a {@link Context}, as a {@link Consumer Consumer&lt;Throwable&gt;}.
-	 */
-	public static final String KEY_ON_ERROR_DROPPED = "reactor.onErrorDropped.local";
-
-	/**
-	 * A key that can be used to store a sequence-specific {@link Hooks#onNextDropped(Consumer)}
-	 * hook in a {@link Context}, as a {@link Consumer Consumer&lt;Object&gt;}.
-	 */
-	public static final String KEY_ON_NEXT_DROPPED = "reactor.onNextDropped.local";
-
-	/**
-	 * A key that can be used to store a sequence-specific {@link Hooks#onOperatorError(BiFunction)}
-	 * hook in a {@link Context}, as a {@link BiFunction BiFunction&lt;Throwable, Object, Throwable&gt;}.
-	 */
-	public static final String KEY_ON_OPERATOR_ERROR = "reactor.onOperatorError.local";
-
-	/**
-	 * A key that can be used to store a sequence-specific {@link Hooks#onOperatorError(BiFunction)}
-	 * hook THAT IS ONLY APPLIED TO Operators{@link #onRejectedExecution(Throwable, Context) onRejectedExecution}
-	 * in a {@link Context}, as a {@link BiFunction BiFunction&lt;Throwable, Object, Throwable&gt;}.
-	 */
-	public static final String KEY_ON_REJECTED_EXECUTION = "reactor.onRejectedExecution.local";
-
-	/**
 	 * Concurrent addition bound to Long.MAX_VALUE. Any concurrent write will "happen
 	 * before" this operation.
 	 *
@@ -293,26 +268,13 @@ public abstract class Operators {
 	}
 
 	/**
-	 * An unexpected exception is about to be dropped from an operator that has multiple
-	 * subscribers (and thus potentially multiple Context with local onErrorDropped handlers).
-	 *
-	 * @param e the dropped exception
-	 * @see #onErrorDropped(Throwable, Context)
-	 */
-	public static void onErrorDroppedMulticast(Throwable e) {
-		//TODO let this method go through multiple contexts and use their local handlers
-		//if at least one has no local handler, also call onErrorDropped(e, Context.empty())
-		onErrorDropped(e, Context.empty());
-	}
-
-	/**
 	 * An unexpected exception is about to be dropped.
 	 *
 	 * @param e the dropped exception
-	 * @param context a context that might hold a local error consumer (see {@link #KEY_ON_ERROR_DROPPED})
+	 * @param context a context that might hold a local error consumer
 	 */
 	public static void onErrorDropped(Throwable e, Context context) {
-		Consumer<? super Throwable> hook = context.getOrDefault(KEY_ON_ERROR_DROPPED,null);
+		Consumer<? super Throwable> hook = context.getOrDefault(Hooks.KEY_ON_ERROR_DROPPED,null);
 		if (hook == null) {
 			hook = Hooks.onErrorDroppedHook;
 		}
@@ -323,23 +285,6 @@ public abstract class Operators {
 	}
 
 	/**
-	 * An unexpected event is about to be dropped from an operator that has multiple
-	 * subscribers (and thus potentially multiple Context with local onNextDropped handlers).
-	 * <p>
-	 * If no hook is registered for {@link Hooks#onNextDropped(Consumer)}, the dropped
-	 * element is just logged at DEBUG level.
-	 *
-	 * @param <T> the dropped value type
-	 * @param t the dropped data
-	 * @see #onNextDropped(Object, Context)
-	 */
-	public static <T> void onNextDroppedMulticast(T t) {
-		//TODO let this method go through multiple contexts and use their local handlers
-		//if at least one has no local handler, also call onNextDropped(t, Context.empty())
-		onNextDropped(t, Context.empty());
-	}
-
-	/**
 	 * An unexpected event is about to be dropped.
 	 * <p>
 	 * If no hook is registered for {@link Hooks#onNextDropped(Consumer)}, the dropped
@@ -347,12 +292,12 @@ public abstract class Operators {
 	 *
 	 * @param <T> the dropped value type
 	 * @param t the dropped data
-	 * @param context a context that might hold a local next consumer (see {@link #KEY_ON_NEXT_DROPPED})
+	 * @param context a context that might hold a local next consumer
 	 */
 	public static <T> void onNextDropped(T t, Context context) {
 		Objects.requireNonNull(t, "onNext");
 		Objects.requireNonNull(context, "context");
-		Consumer<Object> hook = context.getOrDefault(KEY_ON_NEXT_DROPPED, null);
+		Consumer<Object> hook = context.getOrDefault(Hooks.KEY_ON_NEXT_DROPPED, null);
 		if (hook == null) {
 			hook = Hooks.onNextDroppedHook;
 		}
@@ -423,7 +368,7 @@ public abstract class Operators {
 
 		Throwable t = Exceptions.unwrap(error);
 		BiFunction<? super Throwable, Object, ? extends Throwable> hook =
-				context.getOrDefault(KEY_ON_OPERATOR_ERROR, null);
+				context.getOrDefault(Hooks.KEY_ON_OPERATOR_ERROR, null);
 		if (hook == null) {
 			hook = Hooks.onOperatorErrorHook;
 		}
@@ -478,8 +423,8 @@ public abstract class Operators {
 			@Nullable Object dataSignal,
 			Context context) {
 		//we "cheat" to apply the special key for onRejectedExecution in onOperatorError
-		if (context.hasKey(KEY_ON_REJECTED_EXECUTION)) {
-			context = context.put(KEY_ON_OPERATOR_ERROR, context.get(KEY_ON_REJECTED_EXECUTION));
+		if (context.hasKey(Hooks.KEY_ON_REJECTED_EXECUTION)) {
+			context = context.put(Hooks.KEY_ON_OPERATOR_ERROR, context.get(Hooks.KEY_ON_REJECTED_EXECUTION));
 		}
 
 		//FIXME only create REE if original is REE singleton OR there's suppressed OR there's Throwable dataSignal
@@ -807,6 +752,37 @@ public abstract class Operators {
 		}
 
 		return _actual;
+	}
+
+
+	/**
+	 * An unexpected exception is about to be dropped from an operator that has multiple
+	 * subscribers (and thus potentially multiple Context with local onErrorDropped handlers).
+	 *
+	 * @param e the dropped exception
+	 * @see #onErrorDropped(Throwable, Context)
+	 */
+	static void onErrorDroppedMulticast(Throwable e) {
+		//TODO let this method go through multiple contexts and use their local handlers
+		//if at least one has no local handler, also call onErrorDropped(e, Context.empty())
+		onErrorDropped(e, Context.empty());
+	}
+
+	/**
+	 * An unexpected event is about to be dropped from an operator that has multiple
+	 * subscribers (and thus potentially multiple Context with local onNextDropped handlers).
+	 * <p>
+	 * If no hook is registered for {@link Hooks#onNextDropped(Consumer)}, the dropped
+	 * element is just logged at DEBUG level.
+	 *
+	 * @param <T> the dropped value type
+	 * @param t the dropped data
+	 * @see #onNextDropped(Object, Context)
+	 */
+	static <T> void onNextDroppedMulticast(T t) {
+		//TODO let this method go through multiple contexts and use their local handlers
+		//if at least one has no local handler, also call onNextDropped(t, Context.empty())
+		onNextDropped(t, Context.empty());
 	}
 
 	Operators() {

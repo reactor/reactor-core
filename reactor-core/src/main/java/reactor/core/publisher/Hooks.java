@@ -32,6 +32,7 @@ import org.reactivestreams.Publisher;
 import reactor.core.Exceptions;
 import reactor.util.Logger;
 import reactor.util.Loggers;
+import reactor.util.context.Context;
 
 /**
  * A push of overridable lifecycle hooks that can be used for cross-cutting
@@ -39,7 +40,7 @@ import reactor.util.Loggers;
  */
 public abstract class Hooks {
 
-	static final String ON_OPERATOR_DEBUG_KEY = "onOperatorDebug";
+
 
 	/**
 	 * Add a {@link Publisher} operator interceptor for each operator created
@@ -513,4 +514,28 @@ public abstract class Hooks {
 	}
 
 	static final Logger log = Loggers.getLogger(Hooks.class);
+
+	/**
+	 * A key that can be used to store a sequence-specific {@link Hooks#onErrorDropped(Consumer)}
+	 * hook in a {@link Context}, as a {@link Consumer Consumer&lt;Throwable&gt;}.
+	 */
+	static final String KEY_ON_ERROR_DROPPED = "reactor.onErrorDropped.local";
+	/**
+	 * A key that can be used to store a sequence-specific {@link Hooks#onNextDropped(Consumer)}
+	 * hook in a {@link Context}, as a {@link Consumer Consumer&lt;Object&gt;}.
+	 */
+	static final String KEY_ON_NEXT_DROPPED = "reactor.onNextDropped.local";
+	/**
+	 * A key that can be used to store a sequence-specific {@link Hooks#onOperatorError(BiFunction)}
+	 * hook in a {@link Context}, as a {@link BiFunction BiFunction&lt;Throwable, Object, Throwable&gt;}.
+	 */
+	static final String KEY_ON_OPERATOR_ERROR = "reactor.onOperatorError.local";
+	/**
+	 * A key that can be used to store a sequence-specific {@link Hooks#onOperatorError(BiFunction)}
+	 * hook THAT IS ONLY APPLIED TO Operators{@link Operators#onRejectedExecution(Throwable, Context) onRejectedExecution}
+	 * in a {@link Context}, as a {@link BiFunction BiFunction&lt;Throwable, Object, Throwable&gt;}.
+	 */
+	static final String KEY_ON_REJECTED_EXECUTION = "reactor.onRejectedExecution.local";
+
+	static final String ON_OPERATOR_DEBUG_KEY = "onOperatorDebug";
 }

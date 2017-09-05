@@ -260,7 +260,7 @@ public class OperatorsTest {
 	public void onErrorDroppedLocal() {
 		AtomicReference<Throwable> hookState = new AtomicReference<>();
 		Consumer<Throwable> localHook = hookState::set;
-		Context c = Context.of(Operators.KEY_ON_ERROR_DROPPED, localHook);
+		Context c = Context.of(Hooks.KEY_ON_ERROR_DROPPED, localHook);
 
 		Operators.onErrorDropped(new IllegalArgumentException("boom"), c);
 
@@ -272,7 +272,7 @@ public class OperatorsTest {
 	public void onNextDroppedLocal() {
 		AtomicReference<Object> hookState = new AtomicReference<>();
 		Consumer<Object> localHook = hookState::set;
-		Context c = Context.of(Operators.KEY_ON_NEXT_DROPPED, localHook);
+		Context c = Context.of(Hooks.KEY_ON_NEXT_DROPPED, localHook);
 
 		Operators.onNextDropped("foo", c);
 
@@ -283,7 +283,7 @@ public class OperatorsTest {
 	public void onOperatorErrorLocal() {
 		BiFunction<Throwable, Object, Throwable> localHook = (e, v) ->
 				new IllegalStateException("boom_" + v, e);
-		Context c = Context.of(Operators.KEY_ON_OPERATOR_ERROR, localHook);
+		Context c = Context.of(Hooks.KEY_ON_OPERATOR_ERROR, localHook);
 
 		IllegalArgumentException failure = new IllegalArgumentException("foo");
 
@@ -299,7 +299,7 @@ public class OperatorsTest {
 	public void onRejectedExecutionWithoutDataSignalDelegatesToErrorLocal() {
 		BiFunction<Throwable, Object, Throwable> localHook = (e, v) ->
 				new IllegalStateException("boom_" + v, e);
-		Context c = Context.of(Operators.KEY_ON_OPERATOR_ERROR, localHook);
+		Context c = Context.of(Hooks.KEY_ON_OPERATOR_ERROR, localHook);
 
 		IllegalArgumentException failure = new IllegalArgumentException("foo");
 		final Throwable throwable = Operators.onRejectedExecution(failure, null, null, null, c);
@@ -316,7 +316,7 @@ public class OperatorsTest {
 	public void onRejectedExecutionWithDataSignalDelegatesToErrorLocal() {
 		BiFunction<Throwable, Object, Throwable> localHook = (e, v) ->
 				new IllegalStateException("boom_" + v, e);
-		Context c = Context.of(Operators.KEY_ON_OPERATOR_ERROR, localHook);
+		Context c = Context.of(Hooks.KEY_ON_OPERATOR_ERROR, localHook);
 
 		IllegalArgumentException failure = new IllegalArgumentException("foo");
 		final Throwable throwable = Operators.onRejectedExecution(failure, null,
@@ -338,8 +338,8 @@ public class OperatorsTest {
 		BiFunction<Throwable, Object, Throwable> localReeHook = (e, v) ->
 				new IllegalStateException("rejected_" + v, e);
 		Context c = Context.of(
-				Operators.KEY_ON_OPERATOR_ERROR, localOperatorErrorHook,
-				Operators.KEY_ON_REJECTED_EXECUTION, localReeHook);
+				Hooks.KEY_ON_OPERATOR_ERROR, localOperatorErrorHook,
+				Hooks.KEY_ON_REJECTED_EXECUTION, localReeHook);
 
 		IllegalArgumentException failure = new IllegalArgumentException("foo");
 		final Throwable throwable = Operators.onRejectedExecution(failure, null,
