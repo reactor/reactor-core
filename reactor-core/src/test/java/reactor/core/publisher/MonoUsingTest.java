@@ -53,7 +53,7 @@ public class MonoUsingTest {
 		AtomicInteger cleanup = new AtomicInteger();
 
 		Mono.using(() -> 1, r -> Mono.just(1), cleanup::set, false)
-		    .doAfterSuccessOrError((v, e) ->  Assert.assertEquals(0, cleanup.get()))
+		    .doAfterTerminate(() ->  Assert.assertEquals(0, cleanup.get()))
 		    .subscribe(ts);
 
 		ts.assertValues(1)
@@ -70,7 +70,7 @@ public class MonoUsingTest {
 		AtomicInteger cleanup = new AtomicInteger();
 
 		Mono.using(() -> 1, r -> Mono.just(1), cleanup::set)
-		    .doAfterSuccessOrError((v, e) ->  Assert.assertEquals(0, cleanup.get()))
+		    .doAfterTerminate(() ->  Assert.assertEquals(0, cleanup.get()))
 		    .subscribe(ts);
 
 		ts.assertValues(1)

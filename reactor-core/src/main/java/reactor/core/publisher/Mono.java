@@ -1978,27 +1978,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Add behavior triggered after the {@link Mono} terminates, either by completing downstream successfully or with an error.
-	 * The arguments will be null depending on success, success with data and error:
-	 * <ul>
-	 *     <li>null, null : completed without data</li>
-	 *     <li>T, null : completed with data</li>
-	 *     <li>null, Throwable : failed with/without data</li>
-	 * </ul>
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/doafterterminate1.png" alt="">
-	 * <p>
-	 * @param afterSuccessOrError the callback to call after {@link Subscriber#onNext}, {@link Subscriber#onComplete} without preceding {@link Subscriber#onNext} or {@link Subscriber#onError}
-	 *
-	 * @return a new {@link Mono}
-	 */
-	public final Mono<T> doAfterSuccessOrError(BiConsumer<? super T, Throwable> afterSuccessOrError) {
-		Objects.requireNonNull(afterSuccessOrError, "afterSuccessOrError");
-		return onAssembly(new MonoPeekTerminal<>(this, null, null, afterSuccessOrError));
-	}
-
-	/**
 	 * Add behavior (side-effect) triggered after the {@link Mono} terminates, either by
 	 * completing downstream successfully or with an error.
 	 * <p>
@@ -2010,7 +1989,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final Mono<T> doAfterTerminate(Runnable afterTerminate) {
 		Objects.requireNonNull(afterTerminate, "afterTerminate");
-		return doAfterSuccessOrError((s, e)  -> afterTerminate.run());
+		return onAssembly(new MonoPeekTerminal<>(this, null, null,
+				(s, e)  -> afterTerminate.run()));
 	}
 
 	/**
