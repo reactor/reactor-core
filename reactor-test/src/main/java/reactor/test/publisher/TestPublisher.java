@@ -38,7 +38,7 @@ import javax.annotation.Nullable;
  *
  * @author Simon Basle
  */
-public abstract class TestPublisher<T> implements Publisher<T> {
+public abstract class TestPublisher<T> implements Publisher<T>, PublisherProbe<T> {
 
 	/**
 	 * Create a standard {@link TestPublisher}.
