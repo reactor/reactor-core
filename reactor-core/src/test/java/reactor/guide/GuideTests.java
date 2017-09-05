@@ -106,7 +106,7 @@ public class GuideTests {
 					Mono<String> nameTask = ifhrName(id); // <3>
 					Mono<Integer> statTask = ifhrStat(id); // <4>
 
-					return nameTask.and(statTask, // <5>
+					return nameTask.zipWith(statTask, // <5>
 							(name, stat) -> "Name " + name + " has stats " + stat);
 				});
 

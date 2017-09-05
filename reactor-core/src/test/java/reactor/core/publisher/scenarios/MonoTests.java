@@ -181,7 +181,7 @@ public class MonoTests {
 	@Test
 	public void testMonoAndFunction() {
 		StepVerifier.create(Mono.just("source")
-		                        .and(t -> handle(t)))
+		                        .zipWhen(t -> handle(t)))
 		            .expectNextMatches(pair -> pair.getT1().equals("source") && pair.getT2() == 6)
 		            .expectComplete()
 		            .verify();
@@ -190,7 +190,7 @@ public class MonoTests {
 	@Test
 	public void testMonoAndFunctionEmpty() {
 		StepVerifier.create(
-				Mono.<String>empty().and(t -> handle(t)))
+				Mono.<String>empty().zipWhen(MonoTests::handle))
 		            .expectComplete()
 		            .verify();
 	}
@@ -198,7 +198,7 @@ public class MonoTests {
 	@Test
 	public void testMonoAndFunctionRightSideEmpty() {
 		StepVerifier.create(
-				Mono.just("foo").and(t -> Mono.empty()))
+				Mono.just("foo").zipWhen(t -> Mono.empty()))
 		            .expectComplete()
 		            .verify();
 	}

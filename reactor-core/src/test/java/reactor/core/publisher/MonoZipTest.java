@@ -138,7 +138,7 @@ public class MonoZipTest {
 	@Test
 	public void pairWise() {
 		Mono<Tuple2<Integer, String>> f = Mono.just(1)
-		                                      .and(Mono.just("test2"));
+		                                      .zipWith(Mono.just("test2"));
 
 		Assert.assertTrue(f instanceof MonoZip);
 		MonoZip<?, ?> s = (MonoZip<?, ?>) f;
@@ -154,7 +154,7 @@ public class MonoZipTest {
 	public void pairWise2() {
 		Mono<Tuple2<Tuple2<Integer, String>, String>> f =
 				Mono.zip(Mono.just(1), Mono.just("test"))
-				    .and(Mono.just("test2"));
+				    .zipWith(Mono.just("test2"));
 
 		Assert.assertTrue(f instanceof MonoZip);
 		MonoZip<?, ?> s = (MonoZip<?, ?>) f;
@@ -176,7 +176,7 @@ public class MonoZipTest {
 		Mono<Tuple2<Tuple2<Integer, String>, String>> f =
 				Mono.zip(Arrays.asList(Mono.just(1), Mono.just("test")),
 						obj -> Tuples.of((int) obj[0], (String) obj[1]))
-				    .and(Mono.just("test2"));
+				    .zipWith(Mono.just("test2"));
 
 		Assert.assertTrue(f instanceof MonoZip);
 		MonoZip<?, ?> s = (MonoZip<?, ?>) f;
@@ -449,7 +449,7 @@ public class MonoZipTest {
 	@Test
 	public void andAliasZipWith() {
 		Mono<Tuple2<Integer, String>> and = Mono.just(1)
-		                                        .and(Mono.just("B"));
+		                                        .zipWith(Mono.just("B"));
 
 		Mono<Tuple2<Tuple2<Integer, String>, Integer>> zipWith = and.zipWith(Mono.just(3));
 
@@ -460,7 +460,7 @@ public class MonoZipTest {
 
 	@Test
 	public void andCombinatorAliasZipWithCombinator() {
-		Mono<String> and = Mono.just(1).and(Mono.just("B"), (i, s) -> i + s);
+		Mono<String> and = Mono.just(1).zipWith(Mono.just("B"), (i, s) -> i + s);
 
 		Mono<String> zipWith = and.zipWith(Mono.just(3), (s, i) -> s + i);
 

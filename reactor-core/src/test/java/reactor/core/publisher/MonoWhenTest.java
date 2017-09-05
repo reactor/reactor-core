@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,11 +18,30 @@ package reactor.core.publisher;
 
 import java.util.Arrays;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import reactor.test.StepVerifier;
+import reactor.test.subscriber.AssertSubscriber;
 
 public class MonoWhenTest {
+
+
+	@Test
+	public void pairWise() {
+		Mono<Void> f = Mono.just(1)
+		                                      .and(Mono.just("test2"));
+
+		Assert.assertTrue(f instanceof MonoWhen);
+		MonoWhen s = (MonoWhen) f;
+		Assert.assertTrue(s.sources != null);
+		Assert.assertTrue(s.sources.length == 2);
+
+		f.subscribeWith(AssertSubscriber.create())
+		 .assertComplete()
+		.assertNoValues();
+	}
+
 
 	@Test
 	public void allEmptyPublisherIterable() {
@@ -34,6 +53,20 @@ public class MonoWhenTest {
 	@Test
 	public void allEmptyPublisher() {
 		Mono<Void> test = Mono.when(Mono.empty(), Flux.empty());
+		StepVerifier.create(test)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void someEmptyPublisher() {
+		Mono<Void> test = Mono.when(Mono.just(1), Flux.empty());
+		StepVerifier.create(test)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void noEmptyPublisher() {
+		Mono<Void> test = Mono.when(Mono.just(1), Flux.just(3));
 		StepVerifier.create(test)
 		            .verifyComplete();
 	}
