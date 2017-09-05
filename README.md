@@ -27,8 +27,8 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
     dependencies {
       //compile "io.projectreactor:reactor-core:3.1.0.BUILD-SNAPSHOT"
       //testCompile("io.projectreactor:reactor-test:BUILD-SNAPSHOT")
-      compile "io.projectreactor:reactor-core:3.1.0.M3"
-      testCompile("io.projectreactor:reactor-test:3.1.0.M3")
+      compile "io.projectreactor:reactor-core:3.1.0.RC1"
+      testCompile("io.projectreactor:reactor-test:3.1.0.RC1")
     }
 ```
 
@@ -108,7 +108,7 @@ Mono.fromCallable( () -> System.currentTimeMillis() )
 	.repeat()
     .publishOn(Schedulers.single())
     .log("foo.bar")
-    .flatMapMany(time ->
+    .flatMap(time ->
         Mono.fromCallable(() -> { Thread.sleep(1000); return time; })
             .subscribeOn(Schedulers.parallel())
     , 8) //maxConcurrency 8
@@ -127,7 +127,6 @@ Mono.fromCallable( () -> System.currentTimeMillis() )
     .parallel(8) //parallelism
     .runOn(Schedulers.parallel())
     .doOnNext( d -> System.out.println("I'm on thread "+Thread.currentThread()) )
-    .sequential()
     .subscribe()
 ```
 
