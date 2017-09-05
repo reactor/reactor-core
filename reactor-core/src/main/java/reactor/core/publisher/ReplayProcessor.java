@@ -39,7 +39,7 @@ import static reactor.core.publisher.FluxReplay.ReplaySubscriber.TERMINATED;
 /**
  * Replays all or the last N items to Subscribers.
  * <p>
- * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/emitterreplay.png"
+ * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/emitterreplay.png"
  * alt="">
  * <p>
  *
@@ -55,7 +55,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * (buffer and history size of 1).
 	 * <p>
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/replaylast.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/replaylast.png"
 	 * alt="">
 	 *
 	 * @param <T> the relayed type
@@ -73,7 +73,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * (buffer and history size of 1).
 	 * <p>
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/replaylastd.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/replaylastd.png"
 	 * alt="">
 	 *
 	 * @param value a default value to start the sequence with

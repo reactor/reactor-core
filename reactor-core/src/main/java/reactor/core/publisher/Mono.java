@@ -63,7 +63,7 @@ import reactor.util.function.Tuples;
  * with an error.
  *
  * <p>
- * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/mono.png" alt="">
+ * <img width="640" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/mono.png" alt="">
  * <p>
  *
  * <p>The rx operators will offer aliases for input {@link Mono} type to preserve the "at most one"
@@ -176,7 +176,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * each {@link Subscriber} downstream.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/defer1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/defer1.png" alt="">
 	 * <p>
 	 * @param supplier a {@link Mono} factory
 	 *
@@ -195,7 +195,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * The delay is introduced through the {@link Schedulers#parallel() parallel} default Scheduler.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/delay.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/delay.png" alt="">
 	 * <p>
 	 * @param duration the duration of the delay
 	 *
@@ -211,7 +211,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * If the demand cannot be produced in time, an onError will be signalled instead.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/delay.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/delay.png" alt="">
 	 * <p>
 	 * @param duration the {@link Duration} of the delay
 	 * @param timer a time-capable {@link Scheduler} instance to run on
@@ -226,7 +226,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Create a {@link Mono} that completes without emitting any item.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/empty.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/empty.png" alt="">
 	 * <p>
 	 * @param <T> the reified {@link Subscriber} type
 	 *
@@ -241,7 +241,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * (dropping the emitted items) and only react to completion signal.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/ignorethen.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/ignorethen.png" alt="">
 	 * <p>
 	 * @param source the {@link Publisher} to ignore
 	 * @param <T> the reified {@link Publisher} type
@@ -258,7 +258,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Create a {@link Mono} that terminates with the specified error immediately after
 	 * being subscribed to.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/error.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/error.png" alt="">
 	 * <p>
 	 * @param error the onError signal
 	 * @param <T> the reified {@link Subscriber} type
@@ -274,7 +274,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * and replay that signal, effectively behaving like the fastest of these competing
 	 * sources.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/first.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/first.png" alt="">
 	 * <p>
 	 * @param monos The deferred monos to use.
 	 * @param <T> The type of the function result.
@@ -290,7 +290,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Pick the first available result coming from any of the given monos and populate a new {@literal Mono}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/first.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/first.png" alt="">
 	 * <p>
 	 * @param monos The monos to use.
 	 * @param <T> The type of the function result.
@@ -305,7 +305,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Expose the specified {@link Publisher} with the {@link Mono} API, and ensure it will emit 0 or 1 item.
 	 * The source emitter will be cancelled on the first `onNext`.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/from1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/from1.png" alt="">
 	 * <p>
 	 * @param source the {@link Publisher} source
 	 * @param <T> the source type
@@ -330,7 +330,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Create a {@link Mono} producing its value using the provided {@link Callable}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/fromcallable.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/fromcallable.png" alt="">
 	 * <p>
 	 * @param supplier {@link Callable} that will produce the value
 	 * @param <T> type of the expected value
@@ -345,7 +345,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Create a {@link Mono}, producing its value using the provided {@link CompletionStage}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/fromfuture.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/fromfuture.png" alt="">
 	 * <p>
 	 * @param completionStage {@link CompletionStage} that will produce a value (or a null to
 	 * complete immediately)
@@ -392,7 +392,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Create a {@link Mono}, producing its value using the provided {@link CompletableFuture}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/fromfuture.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/fromfuture.png" alt="">
 	 * <p>
 	 * @param future {@link CompletableFuture} that will produce a value (or a null to
 	 * complete immediately)
@@ -409,7 +409,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * been executed.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/fromrunnable.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/fromrunnable.png" alt="">
 	 * <p>
 	 * @param runnable {@link Runnable} that will be executed before emitting the completion signal
 	 *
@@ -424,7 +424,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Create a {@link Mono}, producing its value using the provided {@link Supplier}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/fromsupplier.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/fromsupplier.png" alt="">
 	 * <p>
 	 * @param supplier {@link Supplier} that will produce the value
 	 * @param <T> type of the expected value
@@ -441,7 +441,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * but completes when the source completes.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/ignoreelements.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/ignoreelements.png" alt="">
 	 * <p>
 	 * @param source the {@link Publisher} to ignore
 	 * @param <T> the source type of the ignored data
@@ -457,7 +457,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * instantiation time.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/just.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/just.png" alt="">
 	 * <p>
 	 * @param data the only item to onNext
 	 * @param <T> the type of the produced item
@@ -473,7 +473,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * onComplete.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/justorempty.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/justorempty.png" alt="">
 	 * <p>
 	 * @param data the {@link Optional} item to onNext or onComplete if not present
 	 * @param <T> the type of the produced item
@@ -489,7 +489,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * onComplete.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/justorempty.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/justorempty.png" alt="">
 	 * <p>
 	 * @param data the item to onNext or onComplete if null
 	 * @param <T> the type of the produced item
@@ -505,7 +505,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Return a {@link Mono} that will never signal any data, error or completion signal,
 	 * essentially running indefinitely.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/never.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/never.png" alt="">
 	 * <p>
 	 * @param <T> the {@link Subscriber} type target
 	 *
@@ -582,7 +582,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * {@link Context#empty() empty Context}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/justorempty.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/justorempty.png" alt="">
 	 * <p>
 	 *
 	 * @return a new {@link Mono} emitting current context
@@ -600,7 +600,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <ul> <li>Eager resource cleanup happens just before the source termination and exceptions raised by the cleanup
 	 * Consumer may override the terminal event.</li> <li>Non-eager cleanup will drop any exception.</li> </ul>
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/using.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/using.png"
 	 * alt="">
 	 *
 	 * @param resourceSupplier a {@link Callable} that is called on subscribe to create the resource
@@ -628,7 +628,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Eager resource cleanup happens just before the source termination and exceptions raised by the cleanup Consumer
 	 * may override the terminal event.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/using.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/using.png"
 	 * alt="">
 	 *
 	 * @param resourceSupplier a {@link Callable} that is called on subscribe to create the resource
@@ -650,7 +650,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * when all of the given {@literal sources} have been fulfilled. An error will cause
 	 * pending results to be cancelled and immediate error emission to the returned {@link Mono}.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/whent.png" alt="">
 	 * <p>
 	 * @param sources The sources to use.
 	 *
@@ -674,7 +674,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * to the returned {@link Mono}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/whent.png" alt="">
 	 * <p>
 	 *
 	 * @param sources The sources to use.
@@ -693,7 +693,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * If several Publishers error, the exceptions are combined (as suppressed exceptions on a root exception).
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/whent.png" alt="">
 	 * <p>
 	 *
 	 * @param sources The sources to use.
@@ -710,7 +710,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * If several Publishers error, the exceptions are combined (as suppressed exceptions on a root exception).
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/whent.png" alt="">
 	 * <p>
 	 * @param sources The sources to use.
 	 *
@@ -733,7 +733,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * returned {@link Mono}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/whent.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -753,7 +753,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * returned {@link Mono}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/whent.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -777,7 +777,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * returned {@link Mono}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/whent.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -800,7 +800,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * returned {@link Mono}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/whent.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -828,7 +828,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * returned {@link Mono}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/whent.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -859,7 +859,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * returned {@link Mono}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/whent.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -892,7 +892,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * If any Mono terminates without value, the returned sequence will be terminated immediately and pending results cancelled.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/whent.png" alt="">
 	 * <p>
 	 *
 	 * @param monos The monos to use.
@@ -912,7 +912,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * An error will cause pending results to be cancelled and immediate error emission to the
 	 * returned {@link Mono}.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/whent.png" alt="">
 	 * <p>
 	 * @param monos The monos to use.
 	 * @param combinator the function to transform the combined array into an arbitrary
@@ -937,7 +937,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * If both Monos error, the two exceptions are combined (as suppressed exceptions on a root exception).
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/whent.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -957,7 +957,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * If several Monos error, the two exceptions are combined (as suppressed exceptions on a root exception).
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/whent.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -979,7 +979,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * If several Monos error, the exceptions are combined (as suppressed exceptions on a root exception).
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/whent.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -1005,7 +1005,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * have been fulfilled, aggregating their values into a {@link Tuple5} and delaying errors.
 	 * If several Monos error, the exceptions are combined (as suppressed exceptions on a root exception).
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/whent.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -1035,7 +1035,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * If several Monos error, the exceptions are combined (as suppressed exceptions on a root exception).
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/whent.png" alt="">
 	 * <p>
 	 * @param p1 The first upstream {@link Publisher} to subscribe to.
 	 * @param p2 The second upstream {@link Publisher} to subscribe to.
@@ -1069,7 +1069,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * If several Monos error, the exceptions are combined (as suppressed exceptions on a root exception).
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/whent.png" alt="">
 	 * <p>
 	 *
 	 * @param monos The monos to use.
@@ -1090,7 +1090,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * If several Monos error, the exceptions are combined (as suppressed exceptions on a root exception).
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/whent.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/whent.png" alt="">
 	 * <p>
 	 * @param monos The monos to use.
 	 * @param combinator the function to transform the combined array into an arbitrary
@@ -1137,7 +1137,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * void mono
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/and.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/and.png" alt="">
 	 * <p>
 	 * @param other the {@link Publisher} to wait for
 	 * complete
@@ -1163,7 +1163,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * it was a checked exception).
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/block.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/block.png" alt="">
 	 * <p>
 	 * Note that each block() will trigger a new subscription: in other words, the result
 	 * might miss signal from hot publishers.
@@ -1185,7 +1185,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * If the provided timeout expires,a {@link RuntimeException} is thrown.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/block.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/block.png" alt="">
 	 * <p>
 	 * Note that each block() will trigger a new subscription: in other words, the result
 	 * might miss signal from hot publishers.
@@ -1205,7 +1205,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Cast the current {@link Mono} produced type into a target produced type.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/cast1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/cast1.png" alt="">
 	 *
 	 * @param <E> the {@link Mono} output type
 	 * @param clazz the target type to cast to
@@ -1221,7 +1221,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Turn this {@link Mono} into a hot source and cache last emitted signals for further {@link Subscriber}.
 	 * Completion and Error will also be replayed.
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/cache1.png"
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/cache1.png"
 	 * alt="">
 	 *
 	 * @return a replaying {@link Mono}
@@ -1336,7 +1336,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Concatenate emissions of this {@link Mono} with the provided {@link Publisher}
 	 * (no interleave).
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/concat1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/concat1.png" alt="">
 	 *
 	 * @param other the {@link Publisher} sequence to concat after this {@link Flux}
 	 *
@@ -1350,7 +1350,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Provide a default single value if this mono is completed without any data
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/defaultifempty.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/defaultifempty.png" alt="">
 	 * <p>
 	 * @param defaultV the alternate value if this sequence is empty
 	 *
@@ -1379,7 +1379,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * duration. Empty Monos or error signals are not delayed.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/delayonnext.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/delayonnext.png" alt="">
 	 *
 	 * <p>
 	 * Note that the scheduler on which the Mono chain continues execution will be the
@@ -1398,7 +1398,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * {@link Duration}, on a particular {@link Scheduler}. Empty monos or error signals are not delayed.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/delayonnext.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/delayonnext.png" alt="">
 	 *
 	 * <p>
 	 * Note that the scheduler on which the mono chain continues execution will be the
@@ -1426,7 +1426,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * completes. Error is propagated immediately
 	 * downstream. In both cases, an error in the source is immediately propagated.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/delayUntil.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/delayUntil.png" alt="">
 	 *
 	 * @param triggerProvider a {@link Function} that maps this Mono's value into a
 	 * {@link Publisher} whose termination will trigger relaying the value.
@@ -1446,7 +1446,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * period elapses.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/delaysubscription1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/delaysubscription1.png" alt="">
 	 *
 	 * @param delay duration before subscribing this {@link Mono}
 	 *
@@ -1462,7 +1462,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * {@link Duration} elapses.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/delaysubscription1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/delaysubscription1.png" alt="">
 	 *
 	 * @param delay {@link Duration} before subscribing this {@link Mono}
 	 * @param timer a time-capable {@link Scheduler} instance to run on
@@ -1479,7 +1479,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * signals a value or completes.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/delaysubscriptionp1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/delaysubscriptionp1.png" alt="">
 	 *
 	 * @param subscriptionDelay a
 	 * {@link Publisher} to signal by next or complete this {@link Mono#subscribe(Subscriber)}
@@ -1500,7 +1500,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * onComplete.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/dematerialize1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/dematerialize1.png" alt="">
 	 * @param <X> the dematerialized type
 	 *
 	 * @return a dematerialized {@link Mono}
@@ -1522,7 +1522,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * </ul>
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/doafterterminate1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/doafterterminate1.png" alt="">
 	 * <p>
 	 * @param afterSuccessOrError the callback to call after {@link Subscriber#onNext}, {@link Subscriber#onComplete} without preceding {@link Subscriber#onNext} or {@link Subscriber#onError}
 	 *
@@ -1536,7 +1536,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Add behavior (side-effect) triggered after the {@link Mono} terminates, either by
 	 * completing downstream successfully or with an error.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/doafterterminate1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/doafterterminate1.png" alt="">
 	 * <p>
 	 * @param afterTerminate the callback to call after {@link Subscriber#onComplete} or {@link Subscriber#onError}
 	 *
@@ -1576,7 +1576,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/dooncancel.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/dooncancel.png" alt="">
 	 * <p>
 	 * @param onCancel the callback to call on {@link Subscription#cancel()}
 	 *
@@ -1592,7 +1592,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Add behavior triggered when the {@link Mono} emits a data successfully.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/doonnext.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/doonnext.png" alt="">
 	 * <p>
 	 * @param onNext the callback to call on {@link Subscriber#onNext}
 	 *
@@ -1612,7 +1612,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * </ul>
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/doonsuccess.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/doonsuccess.png" alt="">
 	 * <p>
 	 * @param onSuccess the callback to call on, argument is null if the {@link Mono}
 	 * completes without data
@@ -1653,7 +1653,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Add behavior triggered when the {@link Mono} completes with an error.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/doonerror1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/doonerror1.png" alt="">
 	 * <p>
 	 * @param onError the error callback to call on {@link Subscriber#onError(Throwable)}
 	 *
@@ -1668,7 +1668,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Add behavior triggered when the {@link Mono} completes with an error matching the given exception type.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/doonerrorw.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/doonerrorw.png" alt="">
 	 *
 	 * @param exceptionType the type of exceptions to handle
 	 * @param onError the error handler for relevant errors
@@ -1688,7 +1688,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Add behavior triggered when the {@link Mono} completes with an error matching the given predicate.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/doonerrorw.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/doonerrorw.png" alt="">
 	 *
 	 * @param predicate the matcher for exceptions to handle
 	 * @param onError the error handler for relevant error
@@ -1712,7 +1712,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *     will simply trigger {@link Operators#onOperatorError(Throwable, Context)}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/doonrequest1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/doonrequest1.png" alt="">
 	 *
 	 * @param consumer the consumer to invoke on each request
 	 *
@@ -1727,7 +1727,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Add behavior triggered when the {@link Mono} is subscribed.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/doonsubscribe.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/doonsubscribe.png" alt="">
 	 * <p>
 	 * @param onSubscribe the callback to call on {@link Subscriber#onSubscribe(Subscription)}
 	 *
@@ -1748,7 +1748,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * </ul>
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/doonterminate1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/doonterminate1.png" alt="">
 	 * <p>
 	 * @param onSuccessOrError the callback to call {@link Subscriber#onNext}, {@link Subscriber#onComplete} without preceding {@link Subscriber#onNext} or {@link Subscriber#onError}
 	 *
@@ -1763,7 +1763,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Add behavior triggered when the {@link Mono} terminates, either by completing successfully or with an error.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/doonterminate1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/doonterminate1.png" alt="">
 	 * <p>
 	 * @param onTerminate the callback to call {@link Subscriber#onNext}, {@link Subscriber#onComplete} without preceding {@link Subscriber#onNext} or {@link Subscriber#onError}
 	 *
@@ -1786,7 +1786,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * the subscribe and the first next signal, as measured by the {@link Schedulers#parallel() parallel} scheduler.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/elapsed1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/elapsed1.png" alt="">
 	 *
 	 * @return a new {@link Mono} that emits a tuple of time elapsed in milliseconds and matching data
 	 */
@@ -1800,7 +1800,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * next signal, as measured by the provided {@link Scheduler}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/elapsed1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/elapsed1.png" alt="">
 	 *
 	 * @param scheduler a {@link Scheduler} instance to read time from
 	 * @return a new {@link Mono} that emits a tuple of time elapsed in milliseconds and matching data
@@ -1815,7 +1815,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Otherwise complete without value.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/filter1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/filter1.png" alt="">
 	 * <p>
 	 * @param tester the predicate to evaluate
 	 *
@@ -1850,7 +1850,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * value emitted by another {@link Mono} (possibly changing the value type).
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/then.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/then.png" alt="">
 	 * <p>
 	 * @param transformer the function to dynamically bind a new {@link Mono}
 	 * @param <R> the result type bound
@@ -1867,7 +1867,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * its emissions into the returned {@link Flux}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/flatmap1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/flatmap1.png" alt="">
 	 * <p>
 	 * @param mapper the
 	 * {@link Function} to produce a sequence of R from the the eventual passed {@link Subscriber#onNext}
@@ -1884,7 +1884,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * then forward the applicable Publisher's emissions into the returned {@link Flux}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/flatmaps1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/flatmaps1.png" alt="">
 	 * <p>
 	 * @param mapperOnNext the {@link Function} to call on next data and returning a sequence to merge
 	 * @param mapperOnError the {@link Function} to call on error signal and returning a sequence to merge
@@ -1907,7 +1907,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * give an arbitrary prefetch size to the inner {@link Iterable}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/flatmap.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/flatmap.png" alt="">
 	 *
 	 * @param mapper the {@link Function} to transform input item into a sequence {@link Iterable}
 	 * @param <R> the merged output sequence type
@@ -1950,7 +1950,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Emit a single boolean true if this {@link Mono} has an element.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/haselement.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/haselement.png" alt="">
 	 *
 	 * @return a new {@link Mono} with <code>true</code> if a value is emitted and <code>false</code>
 	 * otherwise
@@ -1993,7 +1993,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Ignores onNext signal (dropping it) and only propagates termination events.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/ignoreelement.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/ignoreelement.png" alt="">
 	 * <p>
 	 *
 	 * @return a new empty {@link Mono} representing the completion of this {@link Mono}.
@@ -2008,7 +2008,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * If SLF4J is available, it will be used instead.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/log1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/log1.png" alt="">
 	 * <p>
 	 * The default log category will be "reactor.Mono", followed by a suffix generated from
 	 * the source operator, e.g. "reactor.Mono.Map".
@@ -2026,7 +2026,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * use {@link Level#INFO} and java.util.logging. If SLF4J is available, it will be used instead.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/log1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/log1.png" alt="">
 	 * <p>
 	 * @param category to be mapped into logger configuration (e.g. org.springframework
 	 * .reactor). If category ends with "." like "reactor.", a generated operator
@@ -2047,7 +2047,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <pre>
 	 *     mono.log("category", SignalType.ON_NEXT, SignalType.ON_ERROR)
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/log1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/log1.png" alt="">
 	 * <p>
 	 * @param category to be mapped into logger configuration (e.g. org.springframework
 	 * .reactor). If category ends with "." like "reactor.", a generated operator
@@ -2074,7 +2074,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <pre>
 	 *     mono.log("category", Level.INFO, SignalType.ON_NEXT, SignalType.ON_ERROR)
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/log.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/log.png" alt="">
 	 * <p>
 	 * @param category to be mapped into logger configuration (e.g. org.springframework
 	 * .reactor). If category ends with "." like "reactor.", a generated operator
@@ -2104,7 +2104,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Transform the item emitted by this {@link Mono} by applying a synchronous function to it.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/map1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/map1.png" alt="">
 	 * <p>
 	 * @param mapper the synchronous transforming {@link Function}
 	 * @param <R> the transformed type
@@ -2125,7 +2125,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * emitted. Complete signal will first emit a {@code Signal.complete()} and then effectively complete the flux.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/materialize1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/materialize1.png" alt="">
 	 *
 	 * @return a {@link Mono} of materialized {@link Signal}
 	 * @see #dematerialize()
@@ -2139,7 +2139,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * The element from the Mono may be interleaved with the elements of the Publisher.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/merge1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/merge1.png" alt="">
 	 * <p>
 	 * @param other the {@link Publisher} to merge with
 	 *
@@ -2164,7 +2164,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Emit the first available result from this mono or the other mono.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/or.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/or.png" alt="">
 	 * <p>
 	 * @param other the racing other {@link Mono} to compete with for the result
 	 *
@@ -2188,7 +2188,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * value is ignored.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/filter.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/filter.png" alt="">
 	 *
 	 * @param clazz the {@link Class} type to test values against
 	 *
@@ -2203,7 +2203,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Transform an error emitted by this {@link Mono} by synchronously applying a function
 	 * to it if the error matches the given predicate. Otherwise let the error pass through.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/maperror.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/maperror.png"
 	 * alt="">
 	 *
 	 * @param predicate the error predicate
@@ -2220,7 +2220,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Transform any error emitted by this {@link Mono} by synchronously applying a function to it.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/maperror.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/maperror.png" alt="">
 	 * <p>
 	 * @param mapper the error transforming {@link Function}
 	 *
@@ -2234,7 +2234,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Transform an error emitted by this {@link Mono} by synchronously applying a function
 	 * to it if the error matches the given type. Otherwise let the error pass through.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/maperror.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/maperror.png" alt="">
 	 * <p>
 	 * @param type the class of the exception type to react to
 	 * @param mapper the error transforming {@link Function}
@@ -2254,7 +2254,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * choose the fallback depending on the error.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/otherwise.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/otherwise.png" alt="">
 	 * <p>
 	 * @param fallback the function to choose the fallback to an alternative {@link Mono}
 	 *
@@ -2271,7 +2271,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Subscribe to a fallback publisher when an error matching the given type
 	 * occurs, using a function to choose the fallback depending on the error.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/otherwise.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/otherwise.png"
 	 * alt="">
 	 *
 	 * @param type the error type to match
@@ -2294,7 +2294,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Subscribe to a fallback publisher when an error matching a given predicate
 	 * occurs.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/otherwise.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/otherwise.png"
 	 * alt="">
 	 *
 	 * @param predicate the error predicate to match
@@ -2312,7 +2312,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Simply emit a captured fallback value when any error is observed on this {@link Mono}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/otherwisereturn.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/otherwisereturn.png" alt="">
 	 * <p>
 	 * @param fallback the value to emit if an error occurs
 	 *
@@ -2326,7 +2326,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Simply emit a captured fallback value when an error of the specified type is
 	 * observed on this {@link Mono}.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/otherwisereturn.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/otherwisereturn.png" alt="">
 	 * @param type the error type to match
 	 * @param fallbackValue the value to emit if an error occurs that matches the type
 	 * @param <E> the error type
@@ -2341,7 +2341,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Simply emit a captured fallback value when an error matching the given predicate is
 	 * observed on this {@link Mono}.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/otherwisereturn.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/otherwisereturn.png" alt="">
 	 * @param predicate the error predicate to match
 	 * @param fallbackValue the value to emit if an error occurs that matches the predicate
 	 *
@@ -2385,7 +2385,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * This operator influences the threading context where the rest of the operators in
 	 * the chain below it will execute, up to a new occurrence of {@code publishOn}.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/publishon1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/publishon1.png" alt="">
 	 * <p>
 	 * Typically used for fast publisher, slow consumer(s) scenarios.
 	 *
@@ -2420,7 +2420,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * previous subscription.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/repeat.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/repeat.png" alt="">
 	 *
 	 * @return an indefinitely repeated {@link Flux} on onComplete
 	 */
@@ -2432,7 +2432,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Repeatedly subscribe to the source if the predicate returns true after completion of the previous subscription.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/repeatb.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/repeatb.png" alt="">
 	 *
 	 * @param predicate the boolean to evaluate on onComplete.
 	 *
@@ -2447,7 +2447,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Repeatedly subscribe to the source {@literal numRepeat} times.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/repeatn.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/repeatn.png" alt="">
 	 *
 	 * @param numRepeat the number of times to re-subscribe on onComplete
 	 *
@@ -2465,7 +2465,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * subscription. A specified maximum of repeat will limit the number of re-subscribe.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/repeatnb.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/repeatnb.png" alt="">
 	 *
 	 * @param numRepeat the number of times to re-subscribe on complete
 	 * @param predicate the boolean to evaluate on onComplete
@@ -2485,7 +2485,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * attempt is suppressed.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/repeatwhen.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/repeatwhen.png" alt="">
 	 *
 	 * @param repeatFactory the {@link Function} that returns the associated {@link Publisher}
 	 * companion, given a {@link Flux} that signals each onComplete as a {@link Long}
@@ -2505,7 +2505,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Any terminal signal will terminate the resulting {@link Mono} with the same signal immediately.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/repeatwhenempty.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/repeatwhenempty.png" alt="">
 	 *
 	 * @param repeatFactory the {@link Function} that returns the associated {@link Publisher}
 	 * companion, given a {@link Flux} that signals each onComplete as a 0-based incrementing {@link Long}.
@@ -2528,7 +2528,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * it is different from {@code Integer.MAX_VALUE}).
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/repeatwhen1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/repeatwhen1.png" alt="">
 	 *
 	 * @param maxRepeat the maximum number of repeats (infinite if {@code Integer.MAX_VALUE})
 	 * @param repeatFactory the {@link Function} that returns the associated {@link Publisher}
@@ -2561,7 +2561,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	/**
 	 * Re-subscribes to this {@link Mono} sequence if it signals any error, indefinitely.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/retry1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/retry1.png" alt="">
 	 *
 	 * @return a {@link Mono} that retries on onError
 	 */
@@ -2575,7 +2575,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * Note that passing {@literal Long.MAX_VALUE} is treated as infinite retry.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/retryn1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/retryn1.png" alt="">
 	 *
 	 * @param numRetries the number of times to tolerate an error
 	 *
@@ -2590,7 +2590,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * that matches the given {@link Predicate}, otherwise push the error downstream.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/retryb1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/retryb1.png" alt="">
 	 *
 	 * @param retryMatcher the predicate to evaluate if retry should occur based on a given error signal
 	 *
@@ -2605,7 +2605,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * error that match the given {@link Predicate}, otherwise push the error downstream.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/retrynb1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/retrynb1.png" alt="">
 	 *
 	 * @param numRetries the number of times to tolerate an error
 	 * @param retryMatcher the predicate to evaluate if retry should occur based on a given error signal
@@ -2626,7 +2626,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * immediately.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/retrywhen1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/retrywhen1.png" alt="">
 	 *
 	 * @param whenFactory the {@link Function} that returns the associated {@link Publisher}
 	 * companion, given a {@link Flux} that signals each onError as a {@link Throwable}.
@@ -2645,7 +2645,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * chain, especially no error handling, so other variants should usually be preferred.
 	 *
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/unbounded1.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/unbounded1.png" alt="">
 	 * <p>
 	 *
 	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
@@ -2672,7 +2672,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * not invoked when executing in a main thread or a unit test for instance.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/subscribe1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/subscribe1.png" alt="">
 	 *
 	 * @param consumer the consumer to invoke on each value (onNext signal)
 	 *
@@ -2696,7 +2696,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * not invoked when executing in a main thread or a unit test for instance.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/subscribeerror1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/subscribeerror1.png" alt="">
 	 *
 	 * @param consumer the consumer to invoke on each next signal
 	 * @param errorConsumer the consumer to invoke on error signal
@@ -2721,7 +2721,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * not invoked when executing in a main thread or a unit test for instance.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/subscribecomplete1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/subscribecomplete1.png" alt="">
 	 *
 	 * @param consumer the consumer to invoke on each value
 	 * @param errorConsumer the consumer to invoke on error signal
@@ -2751,7 +2751,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * not invoked when executing in a main thread or a unit test for instance.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/subscribecomplete1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/subscribecomplete1.png" alt="">
 	 *
 	 * @param consumer the consumer to invoke on each value
 	 * @param errorConsumer the consumer to invoke on error signal
@@ -2853,7 +2853,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * context of onNext/onError/onComplete signals from the beginning of the chain up to
 	 * the next occurrence of a {@link #publishOn(Scheduler) publishOn}.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/subscribeon1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/subscribeon1.png" alt="">
 	 *
 	 * <blockquote><pre>
 	 * {@code mono.subscribeOn(Schedulers.parallel()).subscribe()) }
@@ -2901,7 +2901,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Fallback to an alternative {@link Mono} if this mono is completed without data
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/otherwiseempty.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/otherwiseempty.png" alt="">
 	 * <p>
 	 * @param alternate the alternate mono if this mono is empty
 	 *
@@ -2979,7 +2979,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * from this {@link Mono}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/ignorethen.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/ignorethen.png" alt="">
 	 * <p>
 	 * @return a {@link Mono} ignoring its payload (actively dropping)
 	 */
@@ -2995,7 +2995,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * replayed in the resulting {@code Mono<V>}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/ignorethen1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/ignorethen1.png" alt="">
 	 *
 	 * @param other a {@link Mono} to emit from after termination
 	 * @param <V> the element type of the supplied Mono
@@ -3015,7 +3015,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * for a supplied {@link Publisher Publisher&lt;Void&gt;} to also complete. The
 	 * second completion signal is replayed, or any error signal that occurs instead.
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/ignorethen.png"
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/ignorethen.png"
 	 * alt="">
 	 *
 	 * @param other a {@link Publisher} to wait for after this Mono's termination
@@ -3033,7 +3033,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * {@code Flux<V>} that will emit elements from the provided {@link Publisher}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/ignorethens.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/ignorethens.png" alt="">
 	 *
 	 * @param other a {@link Publisher} to emit from after termination
 	 * @param <V> the element type of the supplied Publisher
@@ -3052,7 +3052,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * {@link Duration}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/timeouttime1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/timeouttime1.png" alt="">
 	 *
 	 * @param timeout the timeout before the onNext signal from this {@link Mono}
 	 *
@@ -3069,7 +3069,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * If the fallback {@link Mono} is null, signal a {@link TimeoutException} instead.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/timeouttimefallback1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/timeouttimefallback1.png" alt="">
 	 *
 	 * @param timeout the timeout before the onNext signal from this {@link Mono}
 	 * @param fallback the fallback {@link Mono} to subscribe to when a timeout occurs
@@ -3085,7 +3085,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * as measured on the provided {@link Scheduler}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/timeouttime1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/timeouttime1.png" alt="">
 	 *
 	 * @param timeout the timeout before the onNext signal from this {@link Mono}
 	 * @param timer a time-capable {@link Scheduler} instance to run the delay on
@@ -3103,7 +3103,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p> If the given {@link Mono} is null, signal a {@link TimeoutException}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/timeouttimefallback1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/timeouttimefallback1.png" alt="">
 	 *
 	 * @param timeout the timeout before the onNext signal from this {@link Mono}
 	 * @param fallback the fallback {@link Mono} to subscribe when a timeout occurs
@@ -3126,7 +3126,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * not been emitted before the given {@link Publisher} emits.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/timeoutp1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/timeoutp1.png" alt="">
 	 *
 	 * @param firstTimeout the timeout {@link Publisher} that must not emit before the first signal from this {@link Mono}
 	 * @param <U> the element type of the timeout Publisher
@@ -3143,7 +3143,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * not been emitted before the given {@link Publisher} emits.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/timeoutfallbackp1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/timeoutfallbackp1.png" alt="">
 	 *
 	 * @param firstTimeout the timeout
 	 * {@link Publisher} that must not emit before the first signal from this {@link Mono}
@@ -3164,7 +3164,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * {@link Schedulers#parallel() parallel} Scheduler) and T2 the emitted data (as a {@code T}).
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/timestamp1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/timestamp1.png" alt="">
 	 *
 	 * @return a timestamped {@link Mono}
 	 */
@@ -3178,7 +3178,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * provided {@link Scheduler}) and T2 the emitted data (as a {@code T}).
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/timestamp1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/timestamp1.png" alt="">
 	 *
 	 * @param scheduler a {@link Scheduler} instance to read time from
 	 * @return a timestamped {@link Mono}
@@ -3193,7 +3193,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * onError.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/tofuture.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/tofuture.png" alt="">
 	 * <p>
 	 *
 	 * @return a {@link CompletableFuture}
@@ -3209,7 +3209,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * on it).
 	 *
 	 * <p>
-	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/unbounded1.png" alt="">
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/unbounded1.png" alt="">
 	 * <p>
 	 *
 	 * @return a {@link MonoProcessor} to use to either retrieve value or cancel the underlying {@link Subscription}
@@ -3292,7 +3292,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * Combine the result from this mono and another into a {@link Tuple2}.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/and.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/and.png" alt="">
 	 * <p>
 	 * @param other the {@link Mono} to combine with
 	 * @param <T2> the element type of the other Mono instance
@@ -3308,7 +3308,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * as defined by the provided {@code combinator} function.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/and.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/and.png" alt="">
 	 * <p>
 	 * @param other the {@link Mono} to combine with
 	 * @param combinator a {@link BiFunction} combinator function when both sources
