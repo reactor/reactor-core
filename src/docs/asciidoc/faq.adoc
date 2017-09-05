@@ -84,23 +84,24 @@ Received: *****
 ----
 
 [[faq.monoThen]]
-== My `Mono` `and` is never called
+== My `Mono` `zipWith`/`zipWhen` is never called
 
 .example
 [source,java]
 ----
 myMethod.process("a") // this method returns Mono<Void>
-        .and(myMethod.process("b")) //this is never called
+        .zipWith(myMethod.process("b"), combinator) //this is never called
         .subscribe();
 ----
 
 If the source `Mono` is either `empty` or a `Mono<Void>` (a `Mono<Void>` is
 empty for all intents and purposes), some combinations will never be called.
 
-This is the typical case for the `and` operator, which by definition needs an
+This is the typical case for any transformer like the `zipWith` operator, which by
+definition needs an
 element from each source to produce its output. If any of the sources are
 empty, `and` produces an empty sequence as well, so be careful of its usage.
-For example, using `and()` after a `then()` may cause this problem.
+For example, using `zipWith()` after a `then()` may cause this problem.
 
 This is even more true of the variants of `and` that take a `Function`, meaning
 that the associated Mono is chosen lazily depending on the incoming value
@@ -108,14 +109,14 @@ that the associated Mono is chosen lazily depending on the incoming value
 
 You can use `.defaultIfEmpty(T)` to replace an *empty* sequence of `T` (not a
 `Void` sequence) with a default value, which could help avoid some of these
-situations. Here's an example:
+situations. Here's an example this:
 
-.use `defaultIfEmpty` before `and`
+.use `defaultIfEmpty` before `zipWhen`
 [source,java]
 ----
 myMethod.emptySequenceForKey("a") // this method returns empty Mono<String>
         .defaultIfEmpty("") // this converts empty sequence to just the empty String
-        .and(aString -> myMethod.process("b")) //this is called with the empty String
+        .zipWhen(aString -> myMethod.process("b")) //this is called with the empty String
         .subscribe();
 ----
 

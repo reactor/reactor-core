@@ -30,7 +30,7 @@ public class MonoWhenTest {
 	@Test
 	public void pairWise() {
 		Mono<Void> f = Mono.just(1)
-		                                      .and(Mono.just("test2"));
+		                   .and(Mono.just("test2"));
 
 		Assert.assertTrue(f instanceof MonoWhen);
 		MonoWhen s = (MonoWhen) f;
