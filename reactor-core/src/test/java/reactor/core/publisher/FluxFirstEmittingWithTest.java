@@ -15,7 +15,6 @@
  */
 package reactor.core.publisher;
 
-import java.time.Duration;
 import java.util.Arrays;
 
 import org.junit.Assert;
@@ -34,7 +33,7 @@ public class FluxFirstEmittingWithTest {
 		Flux<Integer> result = source;
 		
 		for (int i = 0; i < n; i++) {
-			result = result.firstEmittingWith(source);
+			result = result.or(source);
 		}
 		
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
@@ -50,7 +49,7 @@ public class FluxFirstEmittingWithTest {
 	public void dontBreakAmb() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 		
-		Flux.firstEmitting(Flux.just(1), Flux.just(2)).firstEmittingWith(Flux.just(3))
+		Flux.first(Flux.just(1), Flux.just(2)).or(Flux.just(3))
 		    .subscribe(ts);
 
 		
@@ -61,8 +60,8 @@ public class FluxFirstEmittingWithTest {
 
 	@Test
 	public void pairWise() {
-		Flux<Integer> f = Flux.firstEmitting(Mono.just(1), Mono.just(2))
-		                      .firstEmittingWith(Mono.just(3));
+		Flux<Integer> f = Flux.first(Mono.just(1), Mono.just(2))
+		                      .or(Mono.just(3));
 
 		Assert.assertTrue(f instanceof FluxFirstEmitting);
 		FluxFirstEmitting<Integer> s = (FluxFirstEmitting<Integer>) f;
@@ -76,8 +75,8 @@ public class FluxFirstEmittingWithTest {
 
 	@Test
 	public void pairWiseIterable() {
-		Flux<Integer> f = Flux.firstEmitting(Arrays.asList(Mono.just(1), Mono.just(2)))
-		                      .firstEmittingWith(Mono.just(3));
+		Flux<Integer> f = Flux.first(Arrays.asList(Mono.just(1), Mono.just(2)))
+		                      .or(Mono.just(3));
 
 		Assert.assertTrue(f instanceof FluxFirstEmitting);
 		FluxFirstEmitting<Integer> s = (FluxFirstEmitting<Integer>) f;

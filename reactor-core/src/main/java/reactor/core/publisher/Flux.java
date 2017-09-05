@@ -771,7 +771,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux} behaving like the fastest of its sources
 	 */
 	@SafeVarargs
-	public static <I> Flux<I> firstEmitting(Publisher<? extends I>... sources) {
+	public static <I> Flux<I> first(Publisher<? extends I>... sources) {
 		return onAssembly(new FluxFirstEmitting<>(sources));
 	}
 
@@ -789,7 +789,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} behaving like the fastest of its sources
 	 */
-	public static <I> Flux<I> firstEmitting(Iterable<? extends Publisher<? extends I>> sources) {
+	public static <I> Flux<I> first(Iterable<? extends Publisher<? extends I>> sources) {
 		return onAssembly(new FluxFirstEmitting<>(sources));
 	}
 
@@ -3734,31 +3734,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Pick the first {@link Publisher} between this {@link Flux} and another publisher
-	 * to emit any signal (onNext/onError/onComplete) and replay all signals from that
-	 * {@link Publisher}, effectively behaving like the fastest of these competing sources.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/firstemitting.png" alt="">
-	 * <p>
-	 * @param other the {@link Publisher} to race with
-	 *
-	 * @return the fastest sequence
-	 * @see #firstEmitting
-	 */
-	public final Flux<T> firstEmittingWith(Publisher<? extends T> other) {
-		if (this instanceof FluxFirstEmitting) {
-			FluxFirstEmitting<T> publisherAmb = (FluxFirstEmitting<T>) this;
-
-			FluxFirstEmitting<T> result = publisherAmb.ambAdditionalSource(other);
-			if (result != null) {
-				return result;
-			}
-		}
-		return firstEmitting(this, other);
-	}
-
-	/**
 	 * Transform the elements emitted by this {@link Flux} asynchronously into Publishers,
 	 * then flatten these inner publishers into a single {@link Flux} through merging,
 	 * which allow them to interleave.
@@ -5065,6 +5040,32 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Flux<T> onTerminateDetach() {
 		return new FluxDetach<>(this);
+	}
+
+
+	/**
+	 * Pick the first {@link Publisher} between this {@link Flux} and another publisher
+	 * to emit any signal (onNext/onError/onComplete) and replay all signals from that
+	 * {@link Publisher}, effectively behaving like the fastest of these competing sources.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.M3/src/docs/marble/firstemitting.png" alt="">
+	 * <p>
+	 * @param other the {@link Publisher} to race with
+	 *
+	 * @return the fastest sequence
+	 * @see #first
+	 */
+	public final Flux<T> or(Publisher<? extends T> other) {
+		if (this instanceof FluxFirstEmitting) {
+			FluxFirstEmitting<T> publisherAmb = (FluxFirstEmitting<T>) this;
+
+			FluxFirstEmitting<T> result = publisherAmb.ambAdditionalSource(other);
+			if (result != null) {
+				return result;
+			}
+		}
+		return first(this, other);
 	}
 
 	/**

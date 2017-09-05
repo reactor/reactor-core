@@ -123,8 +123,8 @@ public class CombinationTests {
 		int elements = 40;
 		CountDownLatch latch = new CountDownLatch(elements / 2 + 1);
 
-		Flux<SensorData> p = Flux.firstEmitting(sensorOdd(), sensorEven())
-		                              .log("firstEmitting");
+		Flux<SensorData> p = Flux.first(sensorOdd(), sensorEven())
+		                              .log("first");
 
 		p.subscribe(d -> latch.countDown(), null, latch::countDown);
 		Thread.sleep(1000);
