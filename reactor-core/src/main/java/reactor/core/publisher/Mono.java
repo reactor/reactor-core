@@ -237,24 +237,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Create a new {@link Mono} from a {@link Publisher} that ignores its onNext signals
-	 * (dropping the emitted items) and only react to completion signal.
-	 *
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/ignorethen.png" alt="">
-	 * <p>
-	 * @param source the {@link Publisher} to ignore
-	 * @param <T> the reified {@link Publisher} type
-	 *
-	 * @return a new completable {@link Mono}.
-	 */
-	public static <T> Mono<Void> empty(Publisher<T> source) {
-		@SuppressWarnings("unchecked")
-		Mono<Void> then = (Mono<Void>)ignoreElements(source);
-		return then;
-	}
-
-	/**
 	 * Create a {@link Mono} that terminates with the specified error immediately after
 	 * being subscribed to.
 	 * <p>
@@ -3376,6 +3358,12 @@ public abstract class Mono<T> implements Publisher<T> {
 		return getClass().getSimpleName();
 	}
 
+
+	static <T> Mono<Void> empty(Publisher<T> source) {
+		@SuppressWarnings("unchecked")
+		Mono<Void> then = (Mono<Void>)ignoreElements(source);
+		return then;
+	}
 
 	@SuppressWarnings("unchecked")
 	static <T> Mono<T> doOnSignal(Mono<T> source,
