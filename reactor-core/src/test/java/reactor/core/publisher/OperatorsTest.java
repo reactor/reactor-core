@@ -296,7 +296,7 @@ public class OperatorsTest {
 	}
 
 	@Test
-	public void onRejectedExecutionWithoutDataSignalErrorLocal() {
+	public void onRejectedExecutionWithoutDataSignalDelegatesToErrorLocal() {
 		BiFunction<Throwable, Object, Throwable> localHook = (e, v) ->
 				new IllegalStateException("boom_" + v, e);
 		Context c = Context.of(Operators.KEY_ON_OPERATOR_ERROR, localHook);
@@ -313,7 +313,7 @@ public class OperatorsTest {
 	}
 
 	@Test
-	public void onRejectedExecutionWithDataSignalErrorLocal() {
+	public void onRejectedExecutionWithDataSignalDelegatesToErrorLocal() {
 		BiFunction<Throwable, Object, Throwable> localHook = (e, v) ->
 				new IllegalStateException("boom_" + v, e);
 		Context c = Context.of(Operators.KEY_ON_OPERATOR_ERROR, localHook);
@@ -324,6 +324,29 @@ public class OperatorsTest {
 
 		assertThat(throwable).isInstanceOf(IllegalStateException.class)
 		                     .hasMessage("boom_bar")
+		                     .hasNoSuppressedExceptions();
+		assertThat(throwable.getCause()).isInstanceOf(RejectedExecutionException.class)
+		                                .hasMessage("Scheduler unavailable")
+		                                .hasCause(failure);
+	}
+
+	@Test
+	public void onRejectedExecutionLocalTakesPrecedenceOverOnOperatorError() {
+		BiFunction<Throwable, Object, Throwable> localOperatorErrorHook = (e, v) ->
+				new IllegalStateException("boom_" + v, e);
+
+		BiFunction<Throwable, Object, Throwable> localReeHook = (e, v) ->
+				new IllegalStateException("rejected_" + v, e);
+		Context c = Context.of(
+				Operators.KEY_ON_OPERATOR_ERROR, localOperatorErrorHook,
+				Operators.KEY_ON_REJECTED_EXECUTION, localReeHook);
+
+		IllegalArgumentException failure = new IllegalArgumentException("foo");
+		final Throwable throwable = Operators.onRejectedExecution(failure, null,
+				null, "bar", c);
+
+		assertThat(throwable).isInstanceOf(IllegalStateException.class)
+		                     .hasMessage("rejected_bar")
 		                     .hasNoSuppressedExceptions();
 		assertThat(throwable.getCause()).isInstanceOf(RejectedExecutionException.class)
 		                                .hasMessage("Scheduler unavailable")

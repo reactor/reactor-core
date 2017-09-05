@@ -66,6 +66,13 @@ public abstract class Operators {
 	public static final String KEY_ON_OPERATOR_ERROR = "reactor.onOperatorError.local";
 
 	/**
+	 * A key that can be used to store a sequence-specific {@link Hooks#onOperatorError(BiFunction)}
+	 * hook THAT IS ONLY APPLIED TO Operators{@link #onRejectedExecution(Throwable, Context) onRejectedExecution}
+	 * in a {@link Context}, as a {@link BiFunction BiFunction&lt;Throwable, Object, Throwable&gt;}.
+	 */
+	public static final String KEY_ON_REJECTED_EXECUTION = "reactor.onRejectedExecution.local";
+
+	/**
 	 * Concurrent addition bound to Long.MAX_VALUE. Any concurrent write will "happen
 	 * before" this operation.
 	 *
@@ -470,6 +477,11 @@ public abstract class Operators {
 			@Nullable Throwable suppressed,
 			@Nullable Object dataSignal,
 			Context context) {
+		//we "cheat" to apply the special key for onRejectedExecution in onOperatorError
+		if (context.hasKey(KEY_ON_REJECTED_EXECUTION)) {
+			context = context.put(KEY_ON_OPERATOR_ERROR, context.get(KEY_ON_REJECTED_EXECUTION));
+		}
+
 		//FIXME only create REE if original is REE singleton OR there's suppressed OR there's Throwable dataSignal
 		RejectedExecutionException ree = Exceptions.failWithRejected(original);
 		if (suppressed != null) {
