@@ -1409,7 +1409,7 @@ public class FluxTests extends AbstractReactorTest {
 		final MonoProcessor<List<String>> listPromise = joinStream.flatMap(Flux::fromIterable)
 		                                                 .log("resultStream")
 		                                                 .collectList()
-		                                                 .doOnTerminate((v, e) -> doneSemaphore.release())
+		                                                 .doOnTerminate(doneSemaphore::release)
 		                                                 .toProcessor();
 		listPromise.subscribe();
 

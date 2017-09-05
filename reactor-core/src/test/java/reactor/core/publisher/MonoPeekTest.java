@@ -15,6 +15,7 @@
  */
 package reactor.core.publisher;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
@@ -26,25 +27,47 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class MonoPeekTest {
 
 	@Test
-	public void onMonoRejectedDoOnTerminate() {
+	public void onMonoRejectedDoOnSuccessOrError() {
 		Mono<String> mp = Mono.error(new Exception("test"));
 		AtomicReference<Throwable> ref = new AtomicReference<>();
 
-		mp.doOnTerminate((s, f) -> ref.set(f))
+		mp.doOnSuccessOrError((s, f) -> ref.set(f))
 		  .subscribe();
 
 		assertThat(ref.get()).hasMessage("test");
 	}
 
 	@Test
-	public void onMonoSuccessDoOnTerminate() {
+	public void onMonoSuccessDoOnSuccessOrError() {
 		Mono<String> mp = Mono.just("test");
 		AtomicReference<String> ref = new AtomicReference<>();
 
-		mp.doOnTerminate((s, f) -> ref.set(s))
+		mp.doOnSuccessOrError((s, f) -> ref.set(s))
 		  .subscribe();
 
 		assertThat(ref.get()).isEqualToIgnoringCase("test");
+	}
+
+	@Test
+	public void onMonoRejectedDoOnTerminate() {
+		Mono<String> mp = Mono.error(new Exception("test"));
+		AtomicInteger invoked = new AtomicInteger();
+
+		mp.doOnTerminate(invoked::incrementAndGet)
+		  .subscribe();
+
+		assertThat(invoked.get()).isEqualTo(1);
+	}
+
+	@Test
+	public void onMonoSuccessDoOnTerminate() {
+		Mono<String> mp = Mono.just("test");
+		AtomicInteger invoked = new AtomicInteger();
+
+		mp.doOnTerminate(invoked::incrementAndGet)
+		  .subscribe();
+
+		assertThat(invoked.get()).isEqualTo(1);
 	}
 
 	@Test

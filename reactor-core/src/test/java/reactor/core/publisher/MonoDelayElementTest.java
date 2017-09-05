@@ -349,16 +349,16 @@ public class MonoDelayElementTest {
 			s.onSubscribe(Operators.emptySubscription());
 			s.onNext("foo");
 		})
-		.doOnCancel(() -> sourceOnCancel.incrementAndGet())
-		.doOnTerminate((v, e) -> sourceOnTerminate.incrementAndGet());
+		.doOnCancel(sourceOnCancel::incrementAndGet)
+		.doOnSuccessOrError((v, e) -> sourceOnTerminate.incrementAndGet());
 
 
 		StepVerifier.withVirtualTime(() -> new MonoDelayElement<>(source,
 				2,
 				TimeUnit.SECONDS,
 				defaultSchedulerForDelay())
-				.doOnCancel(() -> onCancel.incrementAndGet())
-				.doOnTerminate((v, e) -> onTerminate.incrementAndGet()))
+				.doOnCancel(onCancel::incrementAndGet)
+				.doOnSuccessOrError((v, e) -> onTerminate.incrementAndGet()))
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofSeconds(2))
 		            .expectNext("foo")

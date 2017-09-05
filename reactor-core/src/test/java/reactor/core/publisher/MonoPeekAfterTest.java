@@ -130,7 +130,7 @@ public class MonoPeekAfterTest {
 	}
 
 	@Test
-	public void onTerminateNormal() {
+	public void onSuccessOrErrorNormal() {
 		LongAdder invoked = new LongAdder();
 		AtomicBoolean completedEmpty = new AtomicBoolean();
 		AtomicReference<Throwable> error = new AtomicReference<>();
@@ -139,7 +139,7 @@ public class MonoPeekAfterTest {
 				.range(1, 10)
 				.reduce((a, b) -> a + b)
 				.hide()
-				.doOnTerminate((v, t) -> {
+				.doOnSuccessOrError((v, t) -> {
 					if (v == null && t == null) completedEmpty.set(true);
 					if (t != null) error.set(t);
 					invoked.increment();
@@ -157,7 +157,7 @@ public class MonoPeekAfterTest {
 	}
 
 	@Test
-	public void onTerminateNormalConditional() {
+	public void onSuccessOrErrorNormalConditional() {
 		LongAdder invoked = new LongAdder();
 		AtomicBoolean completedEmpty = new AtomicBoolean();
 		AtomicReference<Throwable> error = new AtomicReference<>();
@@ -167,7 +167,7 @@ public class MonoPeekAfterTest {
 				.reduce((a, b) -> a + b)
 				.hide()
 				.filter(v -> true)
-				.doOnTerminate((v, t) -> {
+				.doOnSuccessOrError((v, t) -> {
 					if (v == null && t == null) completedEmpty.set(true);
 					if (t != null) error.set(t);
 					invoked.increment();
@@ -185,7 +185,7 @@ public class MonoPeekAfterTest {
 	}
 
 	@Test
-	public void onTerminateFusion() {
+	public void onSuccessOrErrorFusion() {
 		LongAdder invoked = new LongAdder();
 		AtomicBoolean completedEmpty = new AtomicBoolean();
 		AtomicReference<Throwable> error = new AtomicReference<>();
@@ -193,7 +193,7 @@ public class MonoPeekAfterTest {
 		Mono<Integer> mono = Flux
 				.range(1, 10)
 				.reduce((a, b) -> a + b)
-				.doOnTerminate((v, t) -> {
+				.doOnSuccessOrError((v, t) -> {
 					if (v == null && t == null) completedEmpty.set(true);
 					if (t != null) error.set(t);
 					invoked.increment();
@@ -211,7 +211,7 @@ public class MonoPeekAfterTest {
 	}
 
 	@Test
-	public void onTerminateFusionConditional() {
+	public void onSuccessOrErrorFusionConditional() {
 		LongAdder invoked = new LongAdder();
 		AtomicBoolean completedEmpty = new AtomicBoolean();
 		AtomicReference<Throwable> error = new AtomicReference<>();
@@ -220,7 +220,7 @@ public class MonoPeekAfterTest {
 				.range(1, 10)
 				.reduce((a, b) -> a + b)
 				.filter(v -> true)
-				.doOnTerminate((v, t) -> {
+				.doOnSuccessOrError((v, t) -> {
 					if (v == null && t == null) completedEmpty.set(true);
 					if (t != null) error.set(t);
 					invoked.increment();
@@ -240,18 +240,12 @@ public class MonoPeekAfterTest {
 	@Test
 	public void onAfterTerminateNormal() {
 		LongAdder invoked = new LongAdder();
-		AtomicBoolean completedEmpty = new AtomicBoolean();
-		AtomicReference<Throwable> error = new AtomicReference<>();
 
 		Mono<Integer> mono = Flux
 				.range(1, 10)
 				.reduce((a, b) -> a + b)
 				.hide()
-				.doAfterTerminate((v, t) -> {
-					if (v == null && t == null) completedEmpty.set(true);
-					if (t != null) error.set(t);
-					invoked.increment();
-				});
+				.doAfterTerminate(invoked::increment);
 
 		StepVerifier.create(mono)
 		            .expectFusion(Fuseable.ANY, Fuseable.NONE)
@@ -259,27 +253,19 @@ public class MonoPeekAfterTest {
 	                .expectComplete()
 	                .verify();
 
-		assertFalse("unexpected empty completion", completedEmpty.get());
 		assertEquals(1, invoked.intValue());
-		assertEquals("unexpected error", null, error.get());
 	}
 
 	@Test
 	public void onAfterTerminateNormalConditional() {
 		LongAdder invoked = new LongAdder();
-		AtomicBoolean completedEmpty = new AtomicBoolean();
-		AtomicReference<Throwable> error = new AtomicReference<>();
 
 		Mono<Integer> mono = Flux
 				.range(1, 10)
 				.reduce((a, b) -> a + b)
 				.hide()
 				.filter(v -> true)
-				.doAfterTerminate((v, t) -> {
-					if (v == null && t == null) completedEmpty.set(true);
-					if (t != null) error.set(t);
-					invoked.increment();
-				});
+				.doAfterTerminate(invoked::increment);
 
 		StepVerifier.create(mono)
 		            .expectFusion(Fuseable.ANY, Fuseable.NONE)
@@ -287,25 +273,17 @@ public class MonoPeekAfterTest {
 		            .expectComplete()
 		            .verify();
 
-		assertFalse("unexpected empty completion", completedEmpty.get());
 		assertEquals(1, invoked.intValue());
-		assertEquals("unexpected error", null, error.get());
 	}
 
 	@Test
 	public void onAfterTerminateFusion() {
 		LongAdder invoked = new LongAdder();
-		AtomicBoolean completedEmpty = new AtomicBoolean();
-		AtomicReference<Throwable> error = new AtomicReference<>();
 
 		Mono<Integer> mono = Flux
 				.range(1, 10)
 				.reduce((a, b) -> a + b)
-				.doAfterTerminate((v, t) -> {
-					if (v == null && t == null) completedEmpty.set(true);
-					if (t != null) error.set(t);
-					invoked.increment();
-				});
+				.doAfterTerminate(invoked::increment);
 
 		StepVerifier.create(mono.log())
 		            .expectFusion()
@@ -313,26 +291,18 @@ public class MonoPeekAfterTest {
 		            .expectComplete()
 		            .verify();
 
-		assertFalse("unexpected empty completion", completedEmpty.get());
 		assertEquals(1, invoked.intValue());
-		assertEquals("unexpected error", null, error.get());
 	}
 
 	@Test
 	public void onAfterTerminateFusionConditional() {
 		LongAdder invoked = new LongAdder();
-		AtomicBoolean completedEmpty = new AtomicBoolean();
-		AtomicReference<Throwable> error = new AtomicReference<>();
 
 		Mono<Integer> mono = Flux
 				.range(1, 10)
 				.reduce((a, b) -> a + b)
 				.filter(v -> true)
-				.doAfterTerminate((v, t) -> {
-					if (v == null && t == null) completedEmpty.set(true);
-					if (t != null) error.set(t);
-					invoked.increment();
-				});
+				.doAfterTerminate(invoked::increment);
 
 		StepVerifier.create(mono)
 		            .expectFusion()
@@ -340,9 +310,7 @@ public class MonoPeekAfterTest {
 		            .expectComplete()
 		            .verify();
 
-		assertFalse("unexpected empty completion", completedEmpty.get());
 		assertEquals(1, invoked.intValue());
-		assertEquals("unexpected error", null, error.get());
 	}
 
 	@Test
@@ -359,10 +327,10 @@ public class MonoPeekAfterTest {
 	}
 
 	@Test
-	public void onTerminateCallbackFailureInterruptsOnNext() {
+	public void onSuccessOrErrorCallbackFailureInterruptsOnNext() {
 		LongAdder invoked = new LongAdder();
 		StepVerifier.create(Mono.just("foo")
-		                        .doOnTerminate((v, t) -> {
+		                        .doOnSuccessOrError((v, t) -> {
 			                        invoked.increment();
 			                        throw new IllegalArgumentException(v);
 		                        }))
@@ -377,9 +345,9 @@ public class MonoPeekAfterTest {
 		LongAdder invoked = new LongAdder();
 		try {
 			StepVerifier.create(Mono.just("foo")
-			                        .doAfterTerminate((v, t) -> {
+			                        .doAfterTerminate(() -> {
 				                        invoked.increment();
-				                        throw new IllegalArgumentException(v);
+				                        throw new IllegalArgumentException("boom");
 			                        }))
 			            .expectNext("bar") //irrelevant
 			            .expectErrorMessage("baz") //irrelevant
@@ -388,7 +356,7 @@ public class MonoPeekAfterTest {
 		catch (Throwable t) {
 			Throwable e = Exceptions.unwrap(t);
 			assertEquals(IllegalArgumentException.class, e.getClass());
-			assertEquals("foo", e.getMessage());
+			assertEquals("boom", e.getMessage());
 		}
 
 		assertEquals(1, invoked.intValue());
@@ -408,7 +376,7 @@ public class MonoPeekAfterTest {
 	}
 
 	@Test
-	public void onTerminateForOnError() {
+	public void onSuccessOrErrorForOnError() {
 		LongAdder invoked = new LongAdder();
 		AtomicReference<String> value = new AtomicReference<>();
 		AtomicReference<Throwable> error = new AtomicReference<>();
@@ -416,7 +384,7 @@ public class MonoPeekAfterTest {
 		IllegalArgumentException err = new IllegalArgumentException("boom");
 
 		StepVerifier.create(Mono.<String>error(err)
-		                        .doOnTerminate((v, t) -> {
+		                        .doOnSuccessOrError((v, t) -> {
 			                        invoked.increment();
 			                        value.set(v);
 			                        error.set(t);
@@ -432,23 +400,15 @@ public class MonoPeekAfterTest {
 	@Test
 	public void afterTerminateForOnError() {
 		LongAdder invoked = new LongAdder();
-		AtomicReference<String> value = new AtomicReference<>();
-		AtomicReference<Throwable> error = new AtomicReference<>();
 
 		IllegalArgumentException err = new IllegalArgumentException("boom");
 
 		StepVerifier.create(Mono.<String>error(err)
-				.doAfterTerminate((v, t) -> {
-					invoked.increment();
-					value.set(v);
-					error.set(t);
-				}))
+				.doAfterTerminate(invoked::increment))
 		            .expectErrorMessage("boom")
 		            .verify();
 
 		assertEquals(1, invoked.intValue());
-		assertEquals(null, value.get());
-		assertEquals(err, error.get());
 	}
 
 	@Test
@@ -469,13 +429,13 @@ public class MonoPeekAfterTest {
 	}
 
 	@Test
-	public void onTerminateForEmpty() {
+	public void onSuccessOrErrorForEmpty() {
 		LongAdder invoked = new LongAdder();
 		AtomicReference<String> value = new AtomicReference<>();
 		AtomicReference<Throwable> error = new AtomicReference<>();
 
 		StepVerifier.create(Mono.<String>empty()
-				.doOnTerminate((v, t) -> {
+				.doOnSuccessOrError((v, t) -> {
 					invoked.increment();
 					value.set(v);
 					error.set(t);
@@ -491,21 +451,15 @@ public class MonoPeekAfterTest {
 	@Test
 	public void afterTerminateForEmpty() {
 		LongAdder invoked = new LongAdder();
-		AtomicReference<String> value = new AtomicReference<>();
-		AtomicReference<Throwable> error = new AtomicReference<>();
 
 		StepVerifier.create(Mono.<String>empty()
-				.doAfterTerminate((v, t) -> {
+				.doAfterTerminate(() -> {
 					invoked.increment();
-					value.set(v);
-					error.set(t);
 				}))
 		            .expectComplete()
 		            .verify();
 
 		assertEquals(1, invoked.intValue());
-		assertEquals(null, value.get());
-		assertEquals(null, error.get());
 	}
 
 	@Test
