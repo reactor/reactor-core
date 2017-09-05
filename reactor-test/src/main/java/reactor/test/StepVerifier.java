@@ -283,8 +283,8 @@ public interface StepVerifier {
 	 *
 	 * @return the actual {@link Duration} the verification took.
 	 * @throws AssertionError in case of expectation failures
-	 * @see #verify(Duration) verify(Duration) to put a specific timeout
-	 * @see #setDefaultTimeout setDefaultTimeout(Duration) to change the global default timeout
+	 * @see #verify(Duration)
+	 * @see #setDefaultTimeout(Duration)
 	 */
 	Duration verify() throws AssertionError;
 

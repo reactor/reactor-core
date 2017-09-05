@@ -122,8 +122,8 @@ public interface Context {
 	 * @param value3 the value for the third key.
 	 * @param key4 the fourth key to initialize.
 	 * @param value4 the value for the fourth key.
-	 * @param key4 the fifth key to initialize.
-	 * @param value4 the value for the fifth key.
+	 * @param key5 the fifth key to initialize.
+	 * @param value5 the value for the fifth key.
 	 * @return a {@link Context} with five entries.
 	 */
 	static Context of(Object key1, Object value1,

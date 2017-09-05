@@ -2931,7 +2931,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * The timeframe is evaluated using the provided {@link Scheduler}.
 	 *
 	 * @param duration the maximum duration to wait for the source Mono to resolve.
-	 * @parama timer the {@link Scheduler} on which to measure the duration.
+	 * @param timer the {@link Scheduler} on which to measure the duration.
 	 *
 	 * @return a new {@link Mono} that will propagate the signals from the source unless
 	 * no signal is received for {@code duration}, in which case it completes.
