@@ -267,30 +267,6 @@ public abstract class Exceptions {
 	}
 
 	/**
-	 * Attempt to unwrap a {@link Throwable} into a {@link List} of Throwables. This is
-	 * only done on the condition that said Throwable is a composite exception built by
-	 * {@link #multiple(Throwable...)}, in which case the list contains the exceptions
-	 * wrapped as suppressed exceptions in the composite. In any other case, the list
-	 * only contains the input Throwable (or is empty in case of null input).
-	 *
-	 * @param potentialMultiple the {@link Throwable} to unwrap if multiple
-	 * @return a {@link List} of the exceptions suppressed by the {@link Throwable} if
-	 * multiple, or a List containing the Throwable otherwise. Null input results in an
-	 * empty List.
-	 */
-	public static List<Throwable> unwrapMultiple(@Nullable Throwable potentialMultiple) {
-		if (potentialMultiple == null) {
-			return Collections.emptyList();
-		}
-
-		if (isMultiple(potentialMultiple)) {
-			return Arrays.asList(potentialMultiple.getSuppressed());
-		}
-
-		return Collections.singletonList(potentialMultiple);
-	}
-
-	/**
 	 * @param elements the invalid requested demand
 	 *
 	 * @return a new {@link IllegalArgumentException} with a cause message abiding to
@@ -383,14 +359,38 @@ public abstract class Exceptions {
 	 *
 	 * @param t the exception to unwrap
 	 *
-	 * @return the unwrapped exception
+	 * @return the unwrapped exception or current one if null
 	 */
 	public static Throwable unwrap(Throwable t) {
 		Throwable _t = t;
 		while (_t instanceof ReactiveException) {
 			_t = _t.getCause();
 		}
-		return _t;
+		return _t == null ? t : _t;
+	}
+
+	/**
+	 * Attempt to unwrap a {@link Throwable} into a {@link List} of Throwables. This is
+	 * only done on the condition that said Throwable is a composite exception built by
+	 * {@link #multiple(Throwable...)}, in which case the list contains the exceptions
+	 * wrapped as suppressed exceptions in the composite. In any other case, the list
+	 * only contains the input Throwable (or is empty in case of null input).
+	 *
+	 * @param potentialMultiple the {@link Throwable} to unwrap if multiple
+	 * @return a {@link List} of the exceptions suppressed by the {@link Throwable} if
+	 * multiple, or a List containing the Throwable otherwise. Null input results in an
+	 * empty List.
+	 */
+	public static List<Throwable> unwrapMultiple(@Nullable Throwable potentialMultiple) {
+		if (potentialMultiple == null) {
+			return Collections.emptyList();
+		}
+
+		if (isMultiple(potentialMultiple)) {
+			return Arrays.asList(potentialMultiple.getSuppressed());
+		}
+
+		return Collections.singletonList(potentialMultiple);
 	}
 
 	Exceptions() {
