@@ -231,7 +231,7 @@ public abstract class AbstractSchedulerTest {
 				assertThatExceptionOfType(RejectedExecutionException.class)
 						.isThrownBy(() -> s.schedule(() -> { }, 10, TimeUnit.MILLISECONDS))
 						.as("Scheduler marked as not supporting time scheduling")
-						.isSameAs(Exceptions.failWithRejected());
+						.isSameAs(Exceptions.failWithRejectedNotTimeCapable());
 				return;
 			}
 
@@ -278,7 +278,7 @@ public abstract class AbstractSchedulerTest {
 				assertThatExceptionOfType(RejectedExecutionException.class)
 						.isThrownBy(() -> w.schedule(() -> { }, 10, TimeUnit.MILLISECONDS))
 						.as("Worker marked as not supporting time scheduling")
-						.isSameAs(Exceptions.failWithRejected());
+						.isSameAs(Exceptions.failWithRejectedNotTimeCapable());
 				return;
 			}
 
@@ -326,7 +326,7 @@ public abstract class AbstractSchedulerTest {
 				assertThatExceptionOfType(RejectedExecutionException.class)
 						.isThrownBy(() -> s.schedule(() -> { }, 10, TimeUnit.MILLISECONDS))
 						.as("Scheduler marked as not supporting time scheduling")
-						.isSameAs(Exceptions.failWithRejected());
+						.isSameAs(Exceptions.failWithRejectedNotTimeCapable());
 				return;
 			}
 
@@ -376,7 +376,7 @@ public abstract class AbstractSchedulerTest {
 				assertThatExceptionOfType(RejectedExecutionException.class)
 						.isThrownBy(() -> w.schedule(() -> { }, 10, TimeUnit.MILLISECONDS))
 						.as("Worker marked as not supporting time scheduling")
-						.isSameAs(Exceptions.failWithRejected());
+						.isSameAs(Exceptions.failWithRejectedNotTimeCapable());
 				return;
 			}
 
