@@ -66,17 +66,16 @@ https://github.com/reactor/reactor-core/edit/master/src/docs/asciidoc/faq.adoc[S
 to "<<faq>>"
 endif::[]
 
-[appendix]
-include::apdx-implem.adoc[]
-
-[appendix]
-include::apdx-writingOperator.adoc[]
+//TODO later add appendices about internals, writing operators
+//[appendix]
+//include::apdx-implem.adoc[]
+//
+//[appendix]
+//include::apdx-writingOperator.adoc[]
 
 [appendix]
 include::apdx-optimizations.adoc[]
 
-[appendix]
-include::apdx-migrating.adoc[]
-
-[appendix]
-include::apdx-processors.adoc[]
+//TODO later add appendix about migrating from RxJava?
+//[appendix]
+//include::apdx-migrating.adoc[]
