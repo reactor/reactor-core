@@ -40,6 +40,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
@@ -52,6 +53,7 @@ import reactor.core.publisher.SignalType;
 import reactor.core.publisher.UnicastProcessor;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.PublisherProbe;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.util.function.Tuple2;
 import reactor.util.lang.NonNullApi;
@@ -874,6 +876,64 @@ public class GuideTests {
 	                .verifyComplete();
 	}
 
+
+	public Flux<String> processOrFallback(Mono<String> source, Publisher<String> fallback) {
+		return source
+				.flatMapMany(phrase -> Flux.fromArray(phrase.split("\\s+")))
+				.switchIfEmpty(fallback);
+	}
+
+	@Test
+	public void testSplitPathIsUsed() {
+		StepVerifier.create(processOrFallback(Mono.just("just a  phrase with    tabs!"),
+				Mono.just("EMPTY_PHRASE")))
+		            .expectNext("just", "a", "phrase", "with", "tabs!")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void testEmptyPathIsUsed() {
+		StepVerifier.create(processOrFallback(Mono.empty(), Mono.just("EMPTY_PHRASE")))
+		            .expectNext("EMPTY_PHRASE")
+		            .verifyComplete();
+	}
+
+	private Mono<String> executeCommand(String command) {
+		return Mono.just(command + " DONE");
+	}
+
+	public Mono<Void> processOrFallback(Mono<String> commandSource, Mono<Void> doWhenEmpty) {
+		return commandSource
+				.flatMap(command -> executeCommand(command).then()) // <1>
+				.switchIfEmpty(doWhenEmpty); // <2>
+	}
+
+	@Test
+	public void testCommandEmptyPathIsUsedBoilerplate() {
+		AtomicBoolean wasInvoked = new AtomicBoolean();
+		AtomicBoolean wasRequested = new AtomicBoolean();
+		Mono<Void> testFallback = Mono.<Void>empty()
+				.doOnSubscribe(s -> wasInvoked.set(true))
+				.doOnRequest(l -> wasRequested.set(true));
+
+		processOrFallback(Mono.empty(), testFallback).subscribe();
+
+		assertThat(wasInvoked.get()).isTrue();
+		assertThat(wasRequested.get()).isTrue();
+	}
+
+	@Test
+	public void testCommandEmptyPathIsUsed() {
+		PublisherProbe<Void> probe = PublisherProbe.empty(); // <1>
+
+		StepVerifier.create(processOrFallback(Mono.empty(), probe.mono())) // <2>
+		            .verifyComplete();
+
+		probe.assertWasSubscribed(); //<3>
+		probe.assertWasRequested(); //<4>
+		probe.assertWasNotCancelled(); //<5>
+	}
+
 	private Flux<String> urls() {
 		return Flux.range(1, 5)
 		           .map(i -> "http://mysite.io/quote/" + i);
@@ -924,7 +984,7 @@ public class GuideTests {
 				assertThat(withSuppressed.getSuppressed()).hasSize(1);
 				assertThat(withSuppressed.getSuppressed()[0])
 						.hasMessageStartingWith("\nAssembly trace from producer [reactor.core.publisher.MonoSingle] :")
-						.hasMessageEndingWith("Flux.single(GuideTests.java:888)\n");
+						.hasMessageEndingWith("Flux.single(GuideTests.java:948)\n");
 			});
 		}
 	}
