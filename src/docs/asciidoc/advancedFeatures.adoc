@@ -220,6 +220,10 @@ have been made.
 detects when these subscriptions are cancelled. If not enough subscribers are
 tracked, the source is "disconnected", causing a new subscription to the source
 later if additional subscribers appear.
+* `refCount(int, Duration)` adds a "grace period": once the number of tracked
+subscribers becomes too low, it waits for the `Duration` before disconnecting
+the source, potentially allowing for enough new subscribers to come in and cross
+the connection threshold again.
 
 Consider the following example:
 
