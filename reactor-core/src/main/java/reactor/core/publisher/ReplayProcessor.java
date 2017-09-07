@@ -49,37 +49,37 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		implements Fuseable {
 
 	/**
-	 * Create a {@link ReplayProcessor} from hot-cold {@link ReplayProcessor#create
-	 * ReplayProcessor}  that will not propagate cancel upstream if {@link Subscription}
-	 * has been push. The last emitted item will be replayable to late {@link Subscriber}
-	 * (buffer and history size of 1).
-	 * <p>
+	 * Create a {@link ReplayProcessor} that caches the last element it has pushed,
+	 * replaying it to late subscribers. This is a buffer-based ReplayProcessor with
+	 * a history size of 1.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/replaylast.png"
 	 * alt="">
 	 *
-	 * @param <T> the relayed type
+	 * @param <T> the type of the pushed elements
 	 *
-	 * @return a non interruptable last item cached pub-sub {@link ReplayProcessor}
+	 * @return a new {@link ReplayProcessor} that replays its last pushed element to each new
+	 * {@link Subscriber}
 	 */
 	public static <T> ReplayProcessor<T> cacheLast() {
 		return cacheLastOrDefault(null);
 	}
 
 	/**
-	 * Create a {@link ReplayProcessor} from hot-cold {@link ReplayProcessor#create
-	 * ReplayProcessor}  that will not propagate cancel upstream if {@link Subscription}
-	 * has been push. The last emitted item will be replayable to late {@link Subscriber}
-	 * (buffer and history size of 1).
-	 * <p>
+	 * Create a {@link ReplayProcessor} that caches the last element it has pushed,
+	 * replaying it to late subscribers. If a {@link Subscriber} comes in <b>before</b>
+	 * any value has been pushed, then the {@code defaultValue} is emitted instead. 
+	 * This is a buffer-based ReplayProcessor with a history size of 1.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/replaylastd.png"
 	 * alt="">
 	 *
-	 * @param value a default value to start the sequence with
-	 * @param <T> the relayed type
+	 * @param value a default value to start the sequence with in case nothing has been
+	 * cached yet.
+	 * @param <T> the type of the pushed elements
 	 *
-	 * @return a non interruptable last item cached pub-sub {@link ReplayProcessor}
+	 * @return a new {@link ReplayProcessor} that replays its last pushed element to each new
+	 * {@link Subscriber}, or a default one if nothing was pushed yet
 	 */
 	public static <T> ReplayProcessor<T> cacheLastOrDefault(@Nullable T value) {
 		ReplayProcessor<T> b = create(1);
@@ -90,39 +90,42 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	/**
-	 * Create a new {@link ReplayProcessor} using {@link Queues#SMALL_BUFFER_SIZE}
-	 * backlog size, blockingWait Strategy and auto-cancel.
+	 * Create a new {@link ReplayProcessor} that replays an unbounded number of elements,
+	 * using a default internal {@link Queues#SMALL_BUFFER_SIZE Queue}.
+	 * 
+	 * @param <E> the type of the pushed elements
 	 *
-	 * @param <E> Type of processed signals
-	 *
-	 * @return a fresh processor
+	 * @return a new {@link ReplayProcessor} that replays the whole history to each new
+	 * {@link Subscriber}.
 	 */
 	public static <E> ReplayProcessor<E> create() {
 		return create(Queues.SMALL_BUFFER_SIZE, true);
 	}
 
 	/**
-	 * Create a new {@link ReplayProcessor} using a provided backlog size, blockingWait
-	 * Strategy and auto-cancel.
+	 * Create a new {@link ReplayProcessor} that replays up to {@code historySize}
+	 * elements.
 	 *
-	 * @param historySize the backlog size, ie. maximum items retained
-	 * @param <E> Type of processed signals
+	 * @param historySize the backlog size, ie. maximum items retained for replay.
+	 * @param <E> the type of the pushed elements
 	 *
-	 * @return a fresh processor
+	 * @return a new {@link ReplayProcessor} that replays a limited history to each new
+	 * {@link Subscriber}.
 	 */
 	public static <E> ReplayProcessor<E> create(int historySize) {
 		return create(historySize, false);
 	}
 
 	/**
-	 * Create a new {@link ReplayProcessor} using a provided backlog size, blockingWait
-	 * Strategy and auto-cancel.
+	 * Create a new {@link ReplayProcessor} that either replay all the elements or a
+	 * limited amount of elements depending on the {@code unbounded} parameter.
 	 *
-	 * @param historySize maximum items retained if bounded, or link size if unbounded
+	 * @param historySize maximum items retained if bounded, or initial link size if unbounded
 	 * @param unbounded true if "unlimited" data store must be supplied
-	 * @param <E> Type of processed signals
+	 * @param <E> the type of the pushed elements
 	 *
-	 * @return a fresh processor
+	 * @return a new {@link ReplayProcessor} that replays the whole history to each new
+	 * {@link Subscriber} if configured as unbounded, a limited history otherwise.
 	 */
 	public static <E> ReplayProcessor<E> create(int historySize, boolean unbounded) {
 		FluxReplay.ReplayBuffer<E> buffer;
@@ -164,7 +167,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * @param <T> the type of items observed and emitted by the Processor
 	 * @param maxAge the maximum age of the contained items
 	 *
-	 * @return a new {@link ReplayProcessor}
+	 * @return a new {@link ReplayProcessor} that replays elements based on their age.
 	 */
 	public static <T> ReplayProcessor<T> createTimeout(Duration maxAge) {
 		return createTimeout(maxAge, Schedulers.parallel());
@@ -199,7 +202,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * @param <T> the type of items observed and emitted by the Processor
 	 * @param maxAge the maximum age of the contained items
 	 *
-	 * @return a new {@link ReplayProcessor}
+	 * @return a new {@link ReplayProcessor} that replays elements based on their age.
 	 */
 	public static <T> ReplayProcessor<T> createTimeout(Duration maxAge, Scheduler scheduler) {
 		return createSizeAndTimeout(Integer.MAX_VALUE, maxAge, scheduler);
@@ -236,7 +239,8 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * @param maxAge the maximum age of the contained items
 	 * @param size the maximum number of buffered items
 	 *
-	 * @return a new {@link ReplayProcessor}
+	 * @return a new {@link ReplayProcessor} that replay up to {@code size} elements, but
+	 * will evict them from its history based on their age.
 	 */
 	public static <T> ReplayProcessor<T> createSizeAndTimeout(int size, Duration maxAge) {
 		return createSizeAndTimeout(size, maxAge, Schedulers.parallel());
@@ -273,7 +277,8 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * @param size the maximum number of buffered items
 	 * @param scheduler the {@link Scheduler} that provides the current time
 	 *
-	 * @return a new {@link ReplayProcessor}
+	 * @return a new {@link ReplayProcessor} that replay up to {@code size} elements, but
+	 * will evict them from its history based on their age.
 	 */
 	public static <T> ReplayProcessor<T> createSizeAndTimeout(int size,
 			Duration maxAge,

@@ -334,7 +334,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 
 	/**
 	 * This method will attempt to compute the maximum amount of subscribers a
-	 * {@link WorkQueueProcessor} can accomodate based on a given {@link ExecutorService}.
+	 * {@link WorkQueueProcessor} can accommodate based on a given {@link ExecutorService}.
 	 * <p>
 	 * It can only accurately detect this for {@link ThreadPoolExecutor} and
 	 * {@link ForkJoinPool} instances, and will return {@link Integer#MIN_VALUE} for other
