@@ -513,7 +513,47 @@ the `groups()` method and apply additional operators to them via the
 
 == Backpressure and the associated rules
 
-[[hooks]]
-== Global hooks
-
+[[scheduler-factory]]
 == Replacing default `Schedulers`
+As we've seen in the <<schedulers>> section, Reactor Core comes with several `Scheduler`
+implementations. While you can always create new instances via `new*` factory methods,
+each `Scheduler` flavor also has a default singleton instance accessible through the
+direct factory method (eg. `Schedulers.elastic()` vs `Schedulers.newElastic()`).
+
+These default instances are the ones used by operators that need a `Scheduler` to work,
+when you don't explicitly specify one. For example, `Flux#delayElements(Duration)` uses
+the `Schedulers.parallel()` instance.
+
+In some cases however, you might need to change these default instances with something
+else in a cross-cutting way, without having to make sure every single operator you call
+has your specific `Scheduler` as a parameter. This could be for instrumentation purpose
+for example: measuring the time every single scheduled task takes by wrapping the real
+schedulers.
+
+In other words, you might want to change the defaults.
+
+This is possible through the `Schedulers.Factory` class. By default a `Factory` creates
+all the standard `Scheduler` through similarly named methods. Each of these can be
+overridden with your custom implementation.
+
+Additionally, the `Factory` exposes one additional customization methods: `decorateExecutorService`.
+It is invoked during creation of every single reactor-core `Scheduler` that is backed by
+a `ScheduledExecutorService` (even non-default instances, eg. one created by a call to
+`Schedulers.newParallel()`).
+
+This allows to tune the `ScheduledExecutorService` to be used: the default one is exposed
+as a `Supplier` and, depending on the type of `Scheduler` being configured, you can choose
+to entirely bypass that supplier and return your own instance or you can `get()` the
+default instance and wrap it.
+
+IMPORTANT: Once you've created a `Factory` that fits your needs, install it via
+`Schedulers.setFactory(Factory)`
+
+Finally, there is a last customizable hook in `Schedulers`: `onHandleError`. This hook is
+invoked whenever a `Runnable` task submitted to a `Scheduler` throws an `Exception` (note
+that if there is an `UncaughtExceptionHandler` set for the `Thread` that ran the task,
+both the handler and the hook will be invoked).
+
+
+[[hooks]]
+== Global Hooks
