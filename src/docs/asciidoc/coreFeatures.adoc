@@ -193,7 +193,7 @@ mode (equivalent to `request(Long.MAX_VALUE)`).
 include::producing.adoc[leveloffset=2]
 
 [[schedulers]]
-== `Schedulers`
+== Schedulers
 Reactor, like RxJava, can be considered *concurrency agnostic*. That is, it
 does not enforce a concurrency model but rather leaves you, the developer, in
 command. However, that doesn't prevent the library from helping you with

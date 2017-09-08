@@ -54,11 +54,10 @@ https://github.com/reactor/reactor-core/blob/master/CONTRIBUTING.md[get involved
 == Where to go from here
 * Head to <<getting-started>> if you feel like jumping straight into the code.
 * If you are new to _Reactive Programming_ though, you should probably better
-start
-with the <<intro-reactive>>.
+start with the <<intro-reactive>>.
+* If you are familiar with Reactor concepts and are just looking for the right tool
+for the job but cannot think of a relevant operator, try the <<which-operator>> Appendix.
 * In order to dig deeper into the core features of Reactor, head to <<core-features>>:
-** If you are looking for the right tool for the job but cannot think of a
-relevant operator, try <<which-operator>>.
 ** Learn more about Reactor's reactive types in the "<<flux>>" and "<<mono>>"
 sections.
 ** Switch threading contexts using <<schedulers,a Scheduler>>.
@@ -66,3 +65,4 @@ sections.
 * Unit testing? Yes it is possible with the `reactor-test` project! See
 <<testing>>.
 * <<producing>> is possible for more advanced creation of reactive sources.
+* More advanced topics are covered in <<advanced>>.
