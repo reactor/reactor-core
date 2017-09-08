@@ -215,7 +215,7 @@ final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
 
 		@Override
 		public Context currentContext() {
-			return parent.currentContext();
+			return actual.currentContext();
 		}
 
 		@Override
