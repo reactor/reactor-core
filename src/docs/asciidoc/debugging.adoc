@@ -92,6 +92,7 @@ What we want to find out more easily is where the operator was added into the
 chain, where the `Flux` was declared. We usually refer to that as the *assembly*
 of the Flux.
 
+[[debug-activate]]
 == Activating debug mode
 Even though the stacktrace was still able to convey some information for someone
 with a bit of experience, we can see that it is not ideal by itself in more
