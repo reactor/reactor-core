@@ -702,6 +702,9 @@ The preceding code would print out:
 ERROR: java.lang.IllegalArgumentException: foo
 ----
 
+TIP: The `Exception` can be tuned before it is passed to `onError`, through the use
+of a <<hooks-internal,hook>>.
+
 Reactor, however, defines a set of exceptions (such as `OutOfMemoryError`) that
 are always deemed *fatal*. See the `Exceptions.throwIfFatal` method. These
 errors mean that Reactor cannot keep operating and are thrown rather than
@@ -711,8 +714,8 @@ NOTE: Internally, there are also cases where an unchecked exception still
 cannot be propagated (most notably during the subscribe and request phases),
 due to concurrency races that could lead to double `onError` or `onComplete`
 conditions. When these races happen, the error that cannot be propagated is
-"dropped". These cases can still be managed to some extent, as the error goes
-through the `Hooks.onErrorDropped` customizable hook.
+"dropped". These cases can still be managed to some extent via customizable
+hooks, see <<hooks-dropping>>.
 
 You may wonder, what about *Checked Exceptions*?
 
