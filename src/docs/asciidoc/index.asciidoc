@@ -36,12 +36,6 @@ endif::[]
 
 //TODO see other sections from consuming.adoc
 
-include::operatorChoice.adoc[leveloffset=1]
-ifeval::["{backend}" == "html5"]
-https://github.com/reactor/reactor-core/edit/master/src/docs/asciidoc/operatorChoice.adoc[Suggest Edit, title="Suggest an edit to the above section via github", role="fa fa-edit"]
-to "<<which-operator>>"
-endif::[]
-
 include::testing.adoc[leveloffset=1]
 ifeval::["{backend}" == "html5"]
 https://github.com/reactor/reactor-core/edit/master/src/docs/asciidoc/testing.adoc[Suggest Edit, title="Suggest an edit to the above section via github", role="fa fa-edit"]
@@ -60,21 +54,29 @@ https://github.com/reactor/reactor-core/edit/master/src/docs/asciidoc/advancedFe
 to "<<advanced>>"
 endif::[]
 
+
+[appendix]
+include::operatorChoice.adoc[leveloffset=1]
+ifeval::["{backend}" == "html5"]
+https://github.com/reactor/reactor-core/edit/master/src/docs/asciidoc/operatorChoice.adoc[Suggest Edit, title="Suggest an edit to the above section via github", role="fa fa-edit"]
+to "<<which-operator>>"
+endif::[]
+
+[appendix]
 include::faq.adoc[leveloffset=1]
 ifeval::["{backend}" == "html5"]
 https://github.com/reactor/reactor-core/edit/master/src/docs/asciidoc/faq.adoc[Suggest Edit, title="Suggest an edit to the above section via github", role="fa fa-edit"]
 to "<<faq>>"
 endif::[]
 
-//TODO later add appendices about internals, writing operators
+//TODO later add appendices about internals, writing operators, fusion
 //[appendix]
 //include::apdx-implem.adoc[]
 //
 //[appendix]
 //include::apdx-writingOperator.adoc[]
-
-[appendix]
-include::apdx-optimizations.adoc[]
+//[appendix]
+//include::apdx-optimizations.adoc[]
 
 //TODO later add appendix about migrating from RxJava?
 //[appendix]
