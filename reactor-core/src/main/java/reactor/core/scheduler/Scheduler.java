@@ -65,7 +65,7 @@ public interface Scheduler extends Disposable {
 	 * or throw a {@link RejectedExecutionException} if the Scheduler is not capable of scheduling periodically.
 	 */
 	default Disposable schedule(Runnable task, long delay, TimeUnit unit) {
-		throw Exceptions.failWithRejected();
+		throw Exceptions.failWithRejectedNotTimeCapable();
 	}
 
 	/**
@@ -87,7 +87,7 @@ public interface Scheduler extends Disposable {
 	 * or throw a {@link RejectedExecutionException} if the Scheduler is not capable of scheduling periodically.
 	 */
 	default Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
-		throw Exceptions.failWithRejected();
+		throw Exceptions.failWithRejectedNotTimeCapable();
 	}
 
 	/**
@@ -172,7 +172,7 @@ public interface Scheduler extends Disposable {
 		 * or throw a {@link RejectedExecutionException} if the Worker is not capable of scheduling with delay.
 		 */
 		default Disposable schedule(Runnable task, long delay, TimeUnit unit) {
-			throw Exceptions.failWithRejected();
+			throw Exceptions.failWithRejectedNotTimeCapable();
 		}
 
 		/**
@@ -193,7 +193,7 @@ public interface Scheduler extends Disposable {
 		 * or throw a {@link RejectedExecutionException} if the Worker is not capable of scheduling periodically.
 		 */
 		default Disposable schedulePeriodically(Runnable task, long initialDelay, long period, TimeUnit unit) {
-			throw Exceptions.failWithRejected();
+			throw Exceptions.failWithRejectedNotTimeCapable();
 		}
 	}
 	

@@ -208,6 +208,16 @@ public abstract class Exceptions {
 	}
 
 	/**
+	 * Return a singleton {@link RejectedExecutionException} with a message indicating
+	 * the reason is due to the scheduler not being time-capable
+	 *
+	 * @return a singleton {@link RejectedExecutionException}
+	 */
+	public static RejectedExecutionException failWithRejectedNotTimeCapable() {
+		return NOT_TIME_CAPABLE_REJECTED_EXECUTION;
+	}
+
+	/**
 	 * Return a new {@link RejectedExecutionException} with standard message and cause
 	 *
 	 * @param cause
@@ -397,6 +407,10 @@ public abstract class Exceptions {
 	}
 
 	static final RejectedExecutionException REJECTED_EXECUTION = new RejectedExecutionException("Scheduler unavailable");
+
+	static final RejectedExecutionException NOT_TIME_CAPABLE_REJECTED_EXECUTION =
+			new RejectedExecutionException(
+					"Scheduler is not capable of time-based scheduling");
 
 	static class CompositeException extends ReactiveException {
 

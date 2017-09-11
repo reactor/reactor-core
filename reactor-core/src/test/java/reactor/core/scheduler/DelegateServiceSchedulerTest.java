@@ -52,21 +52,21 @@ public class DelegateServiceSchedulerTest extends AbstractSchedulerTest {
 		assertThatExceptionOfType(RejectedExecutionException.class)
 				.isThrownBy(() -> s.schedule(() -> {}, 100, TimeUnit.MILLISECONDS))
 				.describedAs("direct delayed scheduling")
-				.isSameAs(Exceptions.failWithRejected());
+				.isSameAs(Exceptions.failWithRejectedNotTimeCapable());
 		assertThatExceptionOfType(RejectedExecutionException.class)
 				.isThrownBy(() -> s.schedulePeriodically(() -> {}, 100, 100, TimeUnit.MILLISECONDS))
 				.describedAs("direct periodic scheduling")
-				.isSameAs(Exceptions.failWithRejected());
+				.isSameAs(Exceptions.failWithRejectedNotTimeCapable());
 
 		Worker w = s.createWorker();
 		assertThatExceptionOfType(RejectedExecutionException.class)
 				.isThrownBy(() -> w.schedule(() -> {}, 100, TimeUnit.MILLISECONDS))
 				.describedAs("worker delayed scheduling")
-				.isSameAs(Exceptions.failWithRejected());
+				.isSameAs(Exceptions.failWithRejectedNotTimeCapable());
 		assertThatExceptionOfType(RejectedExecutionException.class)
 				.isThrownBy(() -> w.schedulePeriodically(() -> {}, 100, 100, TimeUnit.MILLISECONDS))
-				.describedAs("worder periodic scheduling")
-				.isSameAs(Exceptions.failWithRejected());
+				.describedAs("worker periodic scheduling")
+				.isSameAs(Exceptions.failWithRejectedNotTimeCapable());
 	}
 
 	@Test

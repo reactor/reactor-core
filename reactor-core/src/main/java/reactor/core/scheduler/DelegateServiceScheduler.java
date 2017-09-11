@@ -193,7 +193,7 @@ final class DelegateServiceScheduler implements Scheduler {
 		public ScheduledFuture<?> schedule(@NotNull Runnable command,
 				long delay,
 				@NotNull TimeUnit unit) {
-			throw Exceptions.failWithRejected();
+			throw Exceptions.failWithRejectedNotTimeCapable();
 		}
 
 		@NotNull
@@ -201,7 +201,7 @@ final class DelegateServiceScheduler implements Scheduler {
 		public <V> ScheduledFuture<V> schedule(@NotNull Callable<V> callable,
 				long delay,
 				@NotNull TimeUnit unit) {
-			throw Exceptions.failWithRejected();
+			throw Exceptions.failWithRejectedNotTimeCapable();
 		}
 
 		@NotNull
@@ -210,7 +210,7 @@ final class DelegateServiceScheduler implements Scheduler {
 				long initialDelay,
 				long period,
 				@NotNull TimeUnit unit) {
-			throw Exceptions.failWithRejected();
+			throw Exceptions.failWithRejectedNotTimeCapable();
 		}
 
 		@NotNull
@@ -219,7 +219,7 @@ final class DelegateServiceScheduler implements Scheduler {
 				long initialDelay,
 				long delay,
 				@NotNull TimeUnit unit) {
-			throw Exceptions.failWithRejected();
+			throw Exceptions.failWithRejectedNotTimeCapable();
 		}
 	}
 
