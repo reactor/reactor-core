@@ -24,17 +24,17 @@ import javax.annotation.Nullable;
 
 /**
  * A key/value store that is propagated between components such as operators via the
- *  context protocol. Contexts are ideal to transport orthogonal
- * infos such as tracing or security tokens.
+ *  context protocol. Contexts are ideal to transport orthogonal information such as
+ *  tracing or security tokens.
  * <p>
- * {@link Context} implementations are thread-safe {@link #put(Object, Object)} will
- * usually return a safe new {@link Context} object.
+ * {@link Context} implementations are thread-safe and immutable: mutative operations like
+ * {@link #put(Object, Object)} will in fact return a new {@link Context} instance.
  * <p>
- * Note that contexts are optimized for single key/value storage, and a user might want
- * to represent his own context instead of using more costly {@link #put}.
- * Past one user key/value pair, the context will use a copy-on-write {@link Context}
- * backed by
- * a new {@link java.util.Map} on each {@link #put}.
+ * Note that contexts are optimized for low cardinality key/value storage, and a user
+ * might want to associate a dedicated mutable structure to a single key to represent his
+ * own context instead of using multiple {@link #put}, which could be more costly.
+ * Past five user key/value pair, the {@link Context} will use a copy-on-write
+ * implementation backed by a new {@link java.util.Map} on each {@link #put}.
  *
  * @author Stephane Maldini
  */
@@ -145,6 +145,7 @@ public interface Context {
 	 * @return the value resolved for this key (throws if key not found)
 	 * @throws NoSuchElementException when the given key is not present
 	 * @see #getOrDefault(Object, Object)
+	 * @see #getOrEmpty(Object)
 	 * @see #hasKey(Object)
 	 */
 	<T> T get(Object key);
@@ -158,6 +159,8 @@ public interface Context {
 	 *
 	 * @return the value resolved for this type key (throws if key not found)
 	 * @throws NoSuchElementException when the given type key is not present
+	 * @see #getOrDefault(Object, Object)
+	 * @see #getOrEmpty(Object)
 	 */
 	default <T> T get(Class<T> key){
 		T v = get((Object)key);
@@ -175,7 +178,7 @@ public interface Context {
 	 * @param key a lookup key to resolve the value within the context
 	 * @param defaultValue a fallback value if key doesn't resolve
 	 *
-	 * @return an eventual value or the default passed
+	 * @return the value resolved for this key, or the given default if not present
 	 */
 	@Nullable
 	default <T> T getOrDefault(Object key, @Nullable T defaultValue){
@@ -190,7 +193,7 @@ public interface Context {
 	 *
 	 * @param key a lookup key to resolve the value within the context
 	 *
-	 * @return an eventual value or the default passed
+	 * @return an {@link Optional} of the value for that key.
 	 */
 	default <T> Optional<T> getOrEmpty(Object key){
 		if(hasKey(key)) {
@@ -200,32 +203,32 @@ public interface Context {
 	}
 
 	/**
-	 * Return true if a value is resolvable given a key within the {@link Context}.
+	 * Return true if a particular key resolves to a value within the {@link Context}.
 	 *
-	 * @param key a lookup key to resolve the value within the context
+	 * @param key a lookup key to test for
 	 *
-	 * @return true if this context contains the passed key
+	 * @return true if this context contains the given key
 	 */
 	boolean hasKey(Object key);
 
 	/**
-	 * Return true if {@link Context} is empty.
+	 * Return true if the {@link Context} is empty.
 	 *
-	 * @return true if {@link Context} is empty.
+	 * @return true if the {@link Context} is empty.
 	 */
 	default boolean isEmpty() {
 		return this == Context0.INSTANCE || this instanceof Context0;
 	}
 
 	/**
-	 * Inject a key/value pair in a new {@link Context} inheriting current state.
-	 * The returned {@link Context} will resolve the new key/value pair and any
-	 * existing key/value pair.
+	 * Create a new {@link Context} that contains all current key/value pairs plus the
+	 * given key/value pair. If that key existed in the current Context, its associated
+	 * value is replaced in the resulting {@link Context}.
 	 *
-	 * @param key a lookup key to reuse later for value resolution
-	 * @param value the target object to store in the new {@link Context}
+	 * @param key the key to add/update in the new {@link Context}
+	 * @param value the value to associate to the key in the new {@link Context}
 	 *
-	 * @return a new {@link Context} including the user-provided key/value
+	 * @return a new {@link Context} including the provided key/value
 	 */
 	Context put(Object key, Object value);
 

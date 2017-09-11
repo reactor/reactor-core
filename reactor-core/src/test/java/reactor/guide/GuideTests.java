@@ -22,6 +22,7 @@ import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -55,7 +56,9 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.PublisherProbe;
 import reactor.test.scheduler.VirtualTimeScheduler;
+import reactor.util.context.Context;
 import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 import reactor.util.lang.NonNullApi;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -984,7 +987,7 @@ public class GuideTests {
 				assertThat(withSuppressed.getSuppressed()).hasSize(1);
 				assertThat(withSuppressed.getSuppressed()[0])
 						.hasMessageStartingWith("\nAssembly trace from producer [reactor.core.publisher.MonoSingle] :")
-						.hasMessageEndingWith("Flux.single(GuideTests.java:948)\n");
+						.hasMessageEndingWith("Flux.single(GuideTests.java:951)\n");
 			});
 		}
 	}
@@ -1008,5 +1011,48 @@ public class GuideTests {
 
 		//nothing much to test, but...
 		StepVerifier.create(flux).expectNext(1, 2, 3).verifyComplete();
+	}
+
+	private static final String HTTP_CORRELATION_ID = "reactive.http.library.correlationId";
+
+	Mono<Tuple2<Integer, String>> doPut(String url, Mono<String> data) {
+		Mono<Tuple2<String, Optional<Object>>> dataAndContext =
+				data.zipWith(Mono.subscriberContext()
+				                 .map(c -> c.getOrEmpty(HTTP_CORRELATION_ID)));
+
+		return dataAndContext
+				.<String>handle((dac, sink) -> {
+					if (dac.getT2().isPresent()) {
+						sink.next("PUT <" + dac.getT1() + "> sent to " + url + " with header X-Correlation-ID = " + dac.getT2().get());
+					}
+					else {
+						sink.next("PUT <" + dac.getT1() + "> sent to " + url);
+					}
+					sink.complete();
+				})
+				.map(msg -> Tuples.of(200, msg));
+	}
+
+	@Test
+	public void contextForLibraryReactivePut() {
+		Mono<String> put = doPut("www.example.com", Mono.just("Walter"))
+				.subscriberContext(Context.of(HTTP_CORRELATION_ID, "2-j3r9afaf92j-afkaf"))
+				.filter(t -> t.getT1() < 300)
+				.map(Tuple2::getT2);
+
+		StepVerifier.create(put)
+		            .expectNext("PUT <Walter> sent to www.example.com with header X-Correlation-ID = 2-j3r9afaf92j-afkaf")
+		            .verifyComplete();
+	}
+
+	@Test
+	public void contextForLibraryReactivePutNoContext() {
+	Mono<String> put = doPut("www.example.com", Mono.just("Walter"))
+			.filter(t -> t.getT1() < 300)
+			.map(Tuple2::getT2);
+
+		StepVerifier.create(put)
+		            .expectNext("PUT <Walter> sent to www.example.com")
+		            .verifyComplete();
 	}
 }

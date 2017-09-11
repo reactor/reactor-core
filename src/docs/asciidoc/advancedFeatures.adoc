@@ -623,3 +623,165 @@ than coming up with the hook yourself:
  - `onOperatorDebug()`: this activates <<debug-activate,debug mode>>. It ties into the
  `onOperatorError` hook, so calling `resetOnOperatorError()` will also reset it. It can be
  independently reset via `resetOnOperatorDebug()` as it uses a specific key internally.
+
+[[context]]
+== Adding a Context to a Reactive Sequence
+One of the big technical challenges encountered when switching from an imperative
+programming perspective to a reactive programming mindset lies in how you deal with threading.
+
+Contrary to what you're used to, in reactive programming a `Thread` can (and will) be used
+to process several asynchronous sequences that run roughly at the same time (actually, in
+non-blocking locksteps). The execution can also very easily and very often jump from a
+thread to another.
+
+This is especially hard for developers that use features dependent on the threading model
+being more "stable", like `ThreadLocal`. As it allows you to associate data with a
+*thread*, it becomes tricky to use in a reactive context. As a result, libraries that rely
+on `ThreadLocal` will at least introduce new challenges when used with Reactor, if not
+work badly. Using the MDC of Logback to store and log correlation IDs is a prime example
+of such a situation.
+
+The usual workaround for `ThreadLocal` usage is to move the contextual data `C` along your
+business data `T` in the sequence, by using `Tuple2<T, C>` for instance. This doesn't look
+very good and leaks an orthogonal concern (the contextual data) into your method and `Flux`
+signatures.
+
+=== The `Context`
+Since `3.1.0`, Reactor comes with an advanced feature that is somewhat comparable to
+`ThreadLocal`, but applied to a `Flux` or a `Mono` instead of a `Thread`: the `Context`.
+
+IMPORTANT: This is an advanced feature that is more targeted at library developers. It
+requires good understanding of the lifecycle of a `Subscription`, and is intended for
+libraries that are responsible for the subscriptions.
+
+A `Context` is an interface reminiscent of `Map`: it stores key-value pairs and allows you
+to fetch a value you stored by its key. More specifically:
+
+  * both key and values are `Object`, so a `Context` can contain any number of highly
+  different values from different libraries and sources.
+  * a `Context` is *immutable*.
+  * use `put(Object key, Object value)` to store a key-value pair, returning a new `Context`
+  instance. You can also merge two contexts into a new one using `putAll(Context)`.
+  * you can check if the key is present with `hasKey(Object key)`.
+  * use `getOrDefault(Object key, T defaultValue)` to retrieve a value (cast to a `T`) or
+  fall back to a default one if the Context doesn't have that key.
+  * use `getOrEmpty(Object key)` to get an `Optional<T>` (the context will attempt to cast
+  the stored value to `T`).
+  * use `delete(Object key)` to remove the value associated to a key, returning a new
+  `Context`.
+
+TIP: *Creating a* `Context`: You can create pre-valued contexts with up to five key-value
+pairs using the static `Context.of` methods. It takes 2, 4, 6, 8 or 10 `Object`, each
+couple of `Object` being a key-value pair to add to the `Context`. +
+ +
+Alternatively you can also create a `Context.empty()`.
+
+
+=== Tying the `Context` to a `Flux`
+To make the context useful, it must be tied to a specific sequence and be accessible by
+each operator in a chain.footnote:[as long as it is a Reactor native operator, as `Context`
+is specific to Reactor]
+
+Actually, a `Context` is tied to each `Subscriber` to a chain. It uses the `Subscription`
+propagation mechanism to make itself available to each operator, starting with the final
+`subscribe` and moving up the chain.
+
+In order to populate the `Context`, which can only be done at subscription time, you need
+to use the `subscriberContext` operator.
+
+Simply use `subscriberContext(Context)`, which merges the Context you provide and the
+Context from downstream (remember, the Context is propagated from the bottom of the chain
+towards the top). This is done via `putAll`, resulting in a new `Context` for upstream.
+
+TIP: You can also use the more advanced `subscriberContext(Function<Context, Context>)`.
+It receives the state of the Context from downstream and lets you put or delete values as
+you see fit, returning the new `Context` to use. You can even decide to return a
+completely different instance, although it is really not recommended (this might impact
+libraries that depend on the `Context`).
+
+=== Using the Context
+Populating the `Context` is one aspect, but retrieving that data from it is of course just
+as important. Most of the time, the responsibility of putting information into the
+`Context` will be on the end user's side, while exploiting that information will be on the
+library's side, as the library is usually upstream of the client code.
+
+The tool for reading data from the context is the static `Mono.subscriberContext()` method.
+
+Let's take an example of a library reading information from the `Context`: a reactive
+HTTP client that takes a `Mono<String>` as the source of data for a `PUT`, but also looks
+for a particular Context key to add a correlation ID to the request's headers.
+
+From the user perspective, it is called like this:
+
+[source,java]
+----
+doPut("www.example.com", Mono.just("Walter"))
+----
+
+In order to propagate a correlation ID, it would be called like that:
+
+[source,java]
+----
+doPut("www.example.com", Mono.just("Walter"))
+	.subscriberContext(Context.of(HTTP_CORRELATION_ID, "2-j3r9afaf92j-afkaf"))
+----
+
+As you can see in the snippets above, the user code uses `subscriberContext` to populate
+a `Context` with an `HTTP_CORRELATION_ID` key-value pair. The upstream of the operator is
+a `Mono<Tuple2<Integer, String>>` (a simplistic representation of an HTTP response)
+returned by the HTTP client library. So it is effectively passing information from the
+user code to the library code.
+
+Here is the mock code from the library's perspective that reads the context and "augments
+the request" if it can find the correlation ID:
+
+[source,java]
+----
+static final String HTTP_CORRELATION_ID = "reactive.http.library.correlationId";
+
+Mono<Tuple2<Integer, String>> doPut(String url, Mono<String> data) {
+	Mono<Tuple2<String, Optional<Object>>> dataAndContext =
+			data.zipWith(Mono.subscriberContext() // <1>
+			                 .map(c -> c.getOrEmpty(HTTP_CORRELATION_ID))); // <2>
+
+	return dataAndContext
+			.<String>handle((dac, sink) -> {
+				if (dac.getT2().isPresent()) { // <3>
+					sink.next("PUT <" + dac.getT1() + "> sent to " + url + " with header X-Correlation-ID = " + dac.getT2().get());
+				}
+				else {
+					sink.next("PUT <" + dac.getT1() + "> sent to " + url);
+				}
+				sink.complete();
+			})
+			.map(msg -> Tuples.of(200, msg));
+}
+----
+<1> Materialize the `Context` through `Mono.subscriberContext()`
+<2> Extract value for a the correlation id key, as an `Optional`
+<3> If the key was present in the context, use the correlation id as a header
+
+In the library snippet, you can see how it zips the data `Mono` with `Mono.subscriberContext()`.
+This gives the library a `Tuple2<String, Context>` and that context will indeed contain
+the `HTTP_CORRELATION_ID` entry from downstream (as it is on the direct path to the
+subscriber).
+
+The library code then uses `map` to extract an `Optional<String>` for that key, and if the
+entry is present it will use the passed correlation id as a `X-Correlation-ID` header.
+That last part is simulated by the `handle` above.
+
+The whole test that validates the library code used the correlation ID can be written as:
+[source,java]
+----
+@Test
+public void contextForLibraryReactivePut() {
+	Mono<String> put = doPut("www.example.com", Mono.just("Walter"))
+			.subscriberContext(Context.of(HTTP_CORRELATION_ID, "2-j3r9afaf92j-afkaf"))
+			.filter(t -> t.getT1() < 300)
+			.map(Tuple2::getT2);
+
+	StepVerifier.create(put)
+	            .expectNext("PUT <Walter> sent to www.example.com with header X-Correlation-ID = 2-j3r9afaf92j-afkaf")
+	            .verifyComplete();
+}
+----
