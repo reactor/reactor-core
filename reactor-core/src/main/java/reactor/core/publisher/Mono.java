@@ -2774,23 +2774,17 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * from the given {@link Context}, producing a new {@link Context} that is propagated
 	 * upstream.
 	 * <p>
-	 * Lifecycle for {@link Context} propagation is as such :
-	 * <ol>
-	 *     <li>
-	 *         During right-to-left {@code subscribe(Subscriber)} phase {@link #subscriberContext(Function)}
-	 *         will read the target {@link Subscriber} context and merge it with the given Context.
-	 *     </li>
-	 *     <li>
-	 *         {@link #subscriberContext(Context)} will then propagate the resulting
-	 *         {@link Context} upstream using {@code Flux#subscribe(Subscriber,Context)}.
-	 *     </li>
-	 * </ol>
+	 * The {@link Context} propagation happens once per subscription (not on each onNext):
+	 * it is done during the {@code subscribe(Subscriber)} phase, which runs from
+	 * the last operator of a chain towards the first.
 	 * <p>
-	 * Note this all happens once per-subscription, not on each onNext.
+	 * So this operator enriches a {@link Context} coming from under it in the chain
+	 * (downstream, by default an empty one) and passes the new enriched {@link Context}
+	 * to operators above it in the chain (upstream, by way of them using
+	 * {@code Flux#subscribe(Subscriber,Context)}).
 	 *
 	 * @param mergeContext the {@link Context} to merge with a previous {@link Context}
-	 * state, returning a new one which is propagated if not empty and different from the
-	 * original.
+	 * state, returning a new one.
 	 *
 	 * @return a contextualized {@link Mono}
 	 * @see Context
@@ -2800,27 +2794,20 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Enrich a potentially empty downstream {@link Context}, producing a new
-	 * {@link Context} that is propagated upstream. If the returned {@link Context} is empty, the
-	 * propagation will be halted.
+	 * Enrich a potentially empty downstream {@link Context} by applying a {@link Function}
+	 * to it, producing a new {@link Context} that is propagated upstream.
 	 * <p>
-	 * Lifecycle for {@link Context} propagation is as such :
-	 * <ol>
-	 *     <li>
-	 *         During right-to-left {@code subscribe(Subscriber)} phase,
-	 *         {@link #subscriberContext(Function)} will read the target
-	 *         {@link Subscriber} context and apply the given {@link Function}.
-	 *     </li>
-	 *     <li>
-	 *         {@link #subscriberContext(Function)} will then propagate the resulting
-	 *         {@link Context} upstream using {@code Flux#subscribe(Subscriber,Context)}.
-	 *     </li>
-	 * </ol>
+	 * The {@link Context} propagation happens once per subscription (not on each onNext):
+	 * it is done during the {@code subscribe(Subscriber)} phase, which runs from
+	 * the last operator of a chain towards the first.
 	 * <p>
-	 * Note this all happens once per-subscription, not on each onNext.
+	 * So this operator enriches a {@link Context} coming from under it in the chain
+	 * (downstream, by default an empty one) and passes the new enriched {@link Context}
+	 * to operators above it in the chain (upstream, by way of them using
+	 * {@code Flux#subscribe(Subscriber,Context)}).
 	 *
 	 * @param doOnContext the function taking a previous {@link Context} state
-	 *  and returning a new one, propagated if not empty and different from the original.
+	 *  and returning a new one.
 	 *
 	 * @return a contextualized {@link Mono}
 	 * @see Context
