@@ -815,8 +815,8 @@ public abstract class Operators {
 	};
 
 	//
-	enum CancelledSubscription implements Subscription, Scannable {
-		INSTANCE;
+	final static class CancelledSubscription implements Subscription, Scannable {
+		static final CancelledSubscription INSTANCE = new CancelledSubscription();
 
 		@Override
 		@Nullable
@@ -841,8 +841,8 @@ public abstract class Operators {
 
 	}
 
-	enum EmptySubscription implements Fuseable.QueueSubscription<Object>, Scannable {
-		INSTANCE;
+	final static class EmptySubscription implements Fuseable.QueueSubscription<Object>, Scannable {
+		static final EmptySubscription INSTANCE = new EmptySubscription();
 
 		@Override
 		public void cancel() {
