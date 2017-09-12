@@ -18,11 +18,16 @@ package reactor.core.publisher;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.function.Supplier;
 
 import org.junit.Test;
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
+import reactor.core.publisher.ParallelCollect.ParallelCollectSubscriber;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -85,5 +90,44 @@ public class ParallelCollectTest {
 		               .parallel(3)
 		               .collect(ArrayList::new, List::add)
 		               .getPrefetch()).isEqualTo(Integer.MAX_VALUE);
+	}
+
+	@Test
+	public void parallelism() {
+		ParallelFlux<Integer> source = Flux.range(1, 4).parallel(3);
+		ParallelCollect<Integer, List<Integer>> test = new ParallelCollect<>(source, ArrayList::new, List::add);
+
+		assertThat(test.parallelism())
+				.isEqualTo(3)
+				.isEqualTo(source.parallelism());
+	}
+
+	@Test
+	public void scanOperator() {
+		ParallelFlux<Integer> source = Flux.range(1, 4).parallel(3);
+		ParallelCollect<Integer, List<Integer>> test = new ParallelCollect<>(source, ArrayList::new, List::add);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+	}
+
+	@Test
+	public void scanSubscriber() {
+		CoreSubscriber<List<Integer>> subscriber = new LambdaSubscriber<>(null, e -> {}, null, null);
+		ParallelCollectSubscriber<Integer, List<Integer>> test = new ParallelCollectSubscriber<>(
+				subscriber, new ArrayList<>(), List::add);
+		Subscription s = Operators.emptySubscription();
+		test.onSubscribe(s);
+
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(subscriber);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		test.complete(Collections.emptyList());
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 }

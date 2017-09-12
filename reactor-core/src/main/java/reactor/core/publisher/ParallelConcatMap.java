@@ -61,6 +61,7 @@ final class ParallelConcatMap<T, R> extends ParallelFlux<R> implements Scannable
 	public Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) return source;
 		if (key == Attr.PREFETCH) return getPrefetch();
+		if (key == Attr.DELAY_ERROR) return errorMode != ErrorMode.IMMEDIATE;
 
 		return null;
 	}

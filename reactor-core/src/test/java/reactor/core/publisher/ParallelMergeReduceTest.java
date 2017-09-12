@@ -19,12 +19,16 @@ package reactor.core.publisher;
 import java.time.Duration;
 
 import org.junit.Test;
+import org.reactivestreams.Subscription;
+import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
+import reactor.core.publisher.ParallelMergeReduce.MergeReduceInner;
+import reactor.core.publisher.ParallelMergeReduce.MergeReduceMain;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertTrue;
 
 public class ParallelMergeReduceTest {
 
@@ -79,5 +83,75 @@ public class ParallelMergeReduceTest {
 				}
 			}
 		}
+	}
+
+	@Test
+	public void scanOperator() {
+		ParallelFlux<Integer> source = Flux.range(1, 4).parallel();
+		ParallelMergeReduce<Integer> test = new ParallelMergeReduce<>(source, (a, b) -> a + b);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
+	}
+
+	@Test
+	public void scanMainSubscriber() {
+		CoreSubscriber<? super Integer> subscriber = new LambdaSubscriber<>(null, e -> { }, null,
+				sub -> sub.request(2));
+		MergeReduceMain<Integer> test = new MergeReduceMain<>(subscriber, 2, (a, b) -> a + b);
+
+		subscriber.onSubscribe(test);
+
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(subscriber);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
+
+		test.innerComplete(1);
+		test.innerComplete(2);
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	public void scanMainSubscriberError() {
+		CoreSubscriber<? super Integer> subscriber = new LambdaSubscriber<>(null, e -> { }, null,
+				sub -> sub.request(2));
+		MergeReduceMain<Integer> test = new MergeReduceMain<>(subscriber, 2, (a, b) -> a + b);
+
+		subscriber.onSubscribe(test);
+
+		assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
+		test.innerError(new IllegalStateException("boom"));
+		assertThat(test.scan(Scannable.Attr.ERROR)).hasMessage("boom");
+	}
+
+	@Test
+	public void scanInnerSubscriber() {
+		CoreSubscriber<? super Integer> subscriber = new LambdaSubscriber<>(null, e -> { }, null, null);
+		MergeReduceMain<Integer> main = new MergeReduceMain<>(subscriber, 2, (a, b) -> a + b);
+		MergeReduceInner<Integer> test = new MergeReduceInner<>(main, (a, b) -> a + b);
+
+		Subscription s = Operators.emptySubscription();
+		test.onSubscribe(s);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(s);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		test.done = true;
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isZero();
+		test.value = 3;
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
+
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 }

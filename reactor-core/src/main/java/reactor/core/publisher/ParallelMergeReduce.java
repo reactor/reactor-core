@@ -152,6 +152,7 @@ final class ParallelMergeReduce<T> extends Mono<T> implements Scannable, Fuseabl
 			for (MergeReduceInner<T> inner : subscribers) {
 				inner.cancel();
 			}
+			super.cancel();
 		}
 
 		void innerError(Throwable ex) {
