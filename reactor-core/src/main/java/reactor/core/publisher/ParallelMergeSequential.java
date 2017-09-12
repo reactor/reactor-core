@@ -60,6 +60,11 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 	}
 
 	@Override
+	public int getPrefetch() {
+		return prefetch;
+	}
+
+	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		MergeSequentialMain<T> parent = new MergeSequentialMain<>(actual, source
 				.parallelism(), prefetch, queueSupplier);
@@ -123,7 +128,7 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == Attr.TERMINATED) return done == 0;
+			if (key == Attr.TERMINATED) return done == 0 ;
 			if (key == Attr.ERROR) return error;
 
 			return InnerProducer.super.scanUnsafe(key);

@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import org.junit.Test;
+import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
@@ -226,5 +228,54 @@ public class ParallelReduceSeedTest extends ParallelOperatorTest<String, String>
 		               .parallel(3)
 		               .reduce(() -> 0, (a, b) -> a + b)
 		               .getPrefetch()).isEqualTo(Integer.MAX_VALUE);
+	}
+
+	@Test
+	public void parallelism() {
+		ParallelFlux<Integer> source = Flux.just(500, 300).parallel(10);
+		ParallelReduceSeed<Integer, String> test = new ParallelReduceSeed<>(source, () -> "", (s, i) -> s + i);
+
+		assertThat(test.parallelism())
+				.isEqualTo(source.parallelism())
+				.isEqualTo(10);
+	}
+
+	@Test
+	public void scanOperator() {
+		ParallelFlux<Integer> source = Flux.just(500, 300).parallel(10);
+		ParallelReduceSeed<Integer, String> test = new ParallelReduceSeed<>(source, () -> "", (s, i) -> s + i);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+	}
+
+	@Test
+	public void scanSubscriber() {
+		ParallelFlux<Integer> source = Flux.just(500, 300).parallel(10);
+
+		LambdaSubscriber<String> subscriber = new LambdaSubscriber<>(null, e -> {
+		}, null, null);
+
+		ParallelReduceSeed.ParallelReduceSeedSubscriber<Integer, String> test = new ParallelReduceSeed.ParallelReduceSeedSubscriber<>(
+				subscriber, "", (s, i) -> s + i);
+
+		source.subscribe(new CoreSubscriber[] { test });
+
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(subscriber);
+
+		test.state = Operators.MonoSubscriber.HAS_REQUEST_HAS_VALUE;
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+
+		test.state = Operators.MonoSubscriber.HAS_REQUEST_NO_VALUE;
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+
+		test.state = Operators.MonoSubscriber.NO_REQUEST_HAS_VALUE;
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 }
