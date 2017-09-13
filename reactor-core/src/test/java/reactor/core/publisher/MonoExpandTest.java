@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -475,5 +476,49 @@ public class MonoExpandTest {
 
 			assertThat(cdl.await(5, TimeUnit.SECONDS)).as("runs under 5s").isTrue();
 		}
+	}
+
+	static final FluxExpandTest.Node ROOT = new FluxExpandTest.Node("A",
+			new FluxExpandTest.Node("AA",
+					new FluxExpandTest.Node("aa1")),
+			new FluxExpandTest.Node("AB",
+					new FluxExpandTest.Node("ab1")),
+			new FluxExpandTest.Node("a1")
+	);
+
+	@Test
+	public void javadocExampleBreadthFirst() {
+		List<String> breadthFirstExpected = Arrays.asList(
+				"A",
+				"AA",
+				"AB",
+				"a1",
+				"aa1",
+				"ab1");
+
+		StepVerifier.create(
+				Mono.just(ROOT)
+				    .expand(v -> Flux.fromIterable(v.children))
+				    .map(n -> n.name))
+		            .expectNextSequence(breadthFirstExpected)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void javadocExampleDepthFirst() {
+		List<String> depthFirstExpected = Arrays.asList(
+				"A",
+				"AA",
+				"aa1",
+				"AB",
+				"ab1",
+				"a1");
+
+		StepVerifier.create(
+				Mono.just(ROOT)
+				    .expandDeep(v -> Flux.fromIterable(v.children))
+				    .map(n -> n.name))
+		            .expectNextSequence(depthFirstExpected)
+		            .verifyComplete();
 	}
 }

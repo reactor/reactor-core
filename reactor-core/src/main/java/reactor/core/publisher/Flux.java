@@ -3686,39 +3686,19 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *  A
 	 *   - AA
 	 *     - aa1
-	 *   - AB
-	 *     - ab1
-	 *   - a1
 	 *  B
-	 *   - BA
-	 *     - ba1
 	 *   - BB
 	 *     - bb1
-	 *   - BC
-	 *     - bc1
-	 *     - bc2
-	 *   - b1
-	 *   - b2
 	 * </pre>
 	 *
-	 * Visits
+	 * Expands {@code Flux.just(A, B)} into
 	 * <pre>
 	 *  A
 	 *  AA
 	 *  aa1
-	 *  AB
-	 *  ab1
-	 *  a1
 	 *  B
-	 *  BA
-	 *  ba1
 	 *  BB
 	 *  bb1
-	 *  BC
-	 *  bc1
-	 *  bc2
-	 *  b1
-	 *  b2
 	 * </pre>
 	 *
 	 * @param expander the {@link Function} applied at each level of recursion to expand
@@ -3746,39 +3726,19 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *  A
 	 *   - AA
 	 *     - aa1
-	 *   - AB
-	 *     - ab1
-	 *   - a1
 	 *  B
-	 *   - BA
-	 *     - ba1
 	 *   - BB
 	 *     - bb1
-	 *   - BC
-	 *     - bc1
-	 *     - bc2
-	 *   - b1
-	 *   - b2
 	 * </pre>
 	 *
-	 * Visits
+	 * Expands {@code Flux.just(A, B)} into
 	 * <pre>
 	 *  A
 	 *  AA
 	 *  aa1
-	 *  AB
-	 *  ab1
-	 *  a1
 	 *  B
-	 *  BA
-	 *  ba1
 	 *  BB
 	 *  bb1
-	 *  BC
-	 *  bc1
-	 *  bc2
-	 *  b1
-	 *  b2
 	 * </pre>
 	 *
 	 * @param expander the {@link Function} applied at each level of recursion to expand
@@ -3803,39 +3763,19 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *  A
 	 *   - AA
 	 *     - aa1
-	 *   - AB
-	 *     - ab1
-	 *   - a1
 	 *  B
-	 *   - BA
-	 *     - ba1
 	 *   - BB
 	 *     - bb1
-	 *   - BC
-	 *     - bc1
-	 *     - bc2
-	 *   - b1
-	 *   - b2
 	 * </pre>
 	 *
-	 * Visits
+	 * Expands {@code Flux.just(A, B)} into
 	 * <pre>
 	 *  A
 	 *  B
 	 *  AA
 	 *  AB
-	 *  a1
-	 *  BA
-	 *  BB
-	 *  BC
-	 *  b1
-	 *  b2
 	 *  aa1
-	 *  ab1
-	 *  ba1
 	 *  bb1
-	 *  bc1
-	 *  bc2
 	 * </pre>
 	 *
 	 * @param expander the {@link Function} applied at each level of recursion to expand
@@ -3863,39 +3803,19 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *  A
 	 *   - AA
 	 *     - aa1
-	 *   - AB
-	 *     - ab1
-	 *   - a1
 	 *  B
-	 *   - BA
-	 *     - ba1
 	 *   - BB
 	 *     - bb1
-	 *   - BC
-	 *     - bc1
-	 *     - bc2
-	 *   - b1
-	 *   - b2
 	 * </pre>
 	 *
-	 * Visits
+	 * Expands {@code Flux.just(A, B)} into
 	 * <pre>
 	 *  A
 	 *  B
 	 *  AA
 	 *  AB
-	 *  a1
-	 *  BA
-	 *  BB
-	 *  BC
-	 *  b1
-	 *  b2
 	 *  aa1
-	 *  ab1
-	 *  ba1
 	 *  bb1
-	 *  bc1
-	 *  bc2
 	 * </pre>
 	 *
 	 * @param expander the {@link Function} applied at each level of recursion to expand

@@ -496,23 +496,11 @@ public class FluxExpandTest {
 
 	static final Node ROOT_A = new Node("A",
 			new Node("AA",
-					new Node("aa1")),
-			new Node("AB",
-					new Node("ab1")),
-			new Node("a1")
-	);
+					new Node("aa1")));
 
 	static final Node ROOT_B = new Node("B",
-			new Node("BA",
-					new Node("ba1")),
 			new Node("BB",
-					new Node("bb1")),
-			new Node("BC",
-					new Node("bc1"),
-					new Node("bc2")),
-			new Node("b1"),
-			new Node("b2")
-	);
+					new Node("bb1")));
 
 	@Test
 	public void javadocExampleBreadthFirst() {
@@ -520,19 +508,9 @@ public class FluxExpandTest {
 				"A",
 				"B",
 				"AA",
-				"AB",
-				"a1",
-				"BA",
 				"BB",
-				"BC",
-				"b1",
-				"b2",
 				"aa1",
-				"ab1",
-				"ba1",
-				"bb1",
-				"bc1",
-				"bc2");
+				"bb1");
 
 		StepVerifier.create(
 				Flux.just(ROOT_A, ROOT_B)
@@ -548,19 +526,9 @@ public class FluxExpandTest {
 				"A",
 				"AA",
 				"aa1",
-				"AB",
-				"ab1",
-				"a1",
 				"B",
-				"BA",
-				"ba1",
 				"BB",
-				"bb1",
-				"BC",
-				"bc1",
-				"bc2",
-				"b1",
-				"b2");
+				"bb1");
 
 		StepVerifier.create(
 				Flux.just(ROOT_A, ROOT_B)
