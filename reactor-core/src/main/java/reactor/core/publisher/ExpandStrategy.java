@@ -19,7 +19,10 @@ package reactor.core.publisher;
 public enum ExpandStrategy {
 
 	/**
-	 * Given the hierarchical structure
+	 * A depth-first strategy for traversal of an expanded sequence.
+	 * <p>
+	 * For example, given the hierarchical structure
+	 * <pre>
 	 *  A
 	 *   - AA
 	 *     - aa1
@@ -36,8 +39,10 @@ public enum ExpandStrategy {
 	 *     - bc2
 	 *   - b1
 	 *   - b2
+	 * </pre>
 	 *
 	 * Visits
+	 * <pre>
 	 *  A
 	 *  AA
 	 *  aa1
@@ -54,11 +59,15 @@ public enum ExpandStrategy {
 	 *  bc2
 	 *  b1
 	 *  b2
+	 * </pre>
 	 */
 	DEPTH_FIRST,
 
 	/**
-	 * Given the hierarchical structure
+	 * A breadth-first strategy for traversal of an expanded sequence.
+	 * <p>
+	 * For example, given the hierarchical structure
+	 * <pre>
 	 *  A
 	 *   - AA
 	 *     - aa1
@@ -75,8 +84,10 @@ public enum ExpandStrategy {
 	 *     - bc2
 	 *   - b1
 	 *   - b2
+	 * </pre>
 	 *
 	 * Visits
+	 * <pre>
 	 *  A
 	 *  B
 	 *  AA
@@ -93,7 +104,7 @@ public enum ExpandStrategy {
 	 *  bb1
 	 *  bc1
 	 *  bc2
+	 * </pre>
 	 */
-	BREADTH_FIRST;
-
+	BREADTH_FIRST
 }

@@ -29,7 +29,7 @@ import reactor.core.CoreSubscriber;
  * @author David Karnok
  * @author Simon Baslé
  */
-public class MonoExpand<T> extends FluxFromMonoOperator<T, T> {
+final class MonoExpand<T> extends FluxFromMonoOperator<T, T> {
 
 	final Function<? super T, ? extends Publisher<? extends T>> expander;
 

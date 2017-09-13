@@ -1793,14 +1793,15 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Recursively expand elements into other sequence and emit all the resulting element,
-	 * in an order driven by the {@link ExpandStrategy} recursion strategy:
+	 * Recursively expand elements into a graph and emit all the resulting element,
+	 * in an order driven by the {@link ExpandStrategy} traversal strategy:
+	 * <p>
 	 * <ul>
 	 *     <li>
 	 *         {@link ExpandStrategy#BREADTH_FIRST}: Emit the value from this {@link Mono}
 	 *         first, then it each at a first level of recursion and emit all of the
 	 *         resulting values, then expand all of these at a second level and so on...
-	 *         (see the {@link ExpandStrategy#BREADTH_FIRST strategy's javadoc) for an
+	 *         (see the {@link ExpandStrategy#BREADTH_FIRST strategy's javadoc} for an
 	 *         example)
 	 *     </li>
 	 *     <li>
@@ -1813,9 +1814,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *     </li>
 	 * </ul>
 	 *
-	 * @param expander the {@link Function} that expands a value into the next {@link Publisher}.
+	 * @param expander the {@link Function} applied at each level of recursion to expand
+	 * values into a {@link Publisher}, producing a graph.
 	 * @param expandStrategy the recursion {@link ExpandStrategy strategy} to use.
-	 * @param capacityHint a capacity hint to prepare the inner queues to accomodate n
+	 * @param capacityHint a capacity hint to prepare the inner queues to accommodate n
 	 * elements per level of recursion.
 	 *
 	 * @return this Mono expanded to a {@link Flux}
@@ -1827,14 +1829,15 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Recursively expand elements into other sequence and emit all the resulting element,
-	 * in an order driven by the {@link ExpandStrategy} recursion strategy:
+	 * Recursively expand elements into a graph and emit all the resulting element,
+	 * in an order driven by the {@link ExpandStrategy} traversal strategy:
+	 * <p>
 	 * <ul>
 	 *     <li>
 	 *         {@link ExpandStrategy#BREADTH_FIRST}: Emit the value from this {@link Mono}
 	 *         first, then it each at a first level of recursion and emit all of the
 	 *         resulting values, then expand all of these at a second level and so on...
-	 *         (see the {@link ExpandStrategy#BREADTH_FIRST strategy's javadoc) for an
+	 *         (see the {@link ExpandStrategy#BREADTH_FIRST strategy's javadoc} for an
 	 *         example)
 	 *     </li>
 	 *     <li>
@@ -1847,7 +1850,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *     </li>
 	 * </ul>
 	 *
-	 * @param expander the {@link Function} that expands a value into the next {@link Publisher}.
+	 * @param expander the {@link Function} applied at each level of recursion to expand
+	 * values into a {@link Publisher}, producing a graph.
 	 * @param expandStrategy the recursion {@link ExpandStrategy strategy} to use.
 	 *
 	 * @return this Mono expanded to a {@link Flux}
@@ -1858,12 +1862,16 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * {@link ExpandStrategy#BREADTH_FIRST}: Emit the value from this {@link Mono} first,
-	 * then it each at a first level of recursion and emit all of the resulting values,
-	 * then expand all of these at a second level and so on... (see the
-	 * {@link ExpandStrategy#BREADTH_FIRST} strategy's javadoc for an example)
+	 * Recursively expand elements into a graph and emit all the resulting element using
+	 * a breadth-first traversal strategy.
+	 * <p>
+	 * Emit the value from this {@link Mono} first, then it each at a first level of
+	 * recursion and emit all of the resulting values, then expand all of these at a
+	 * second level and so on... (see the {@link ExpandStrategy#BREADTH_FIRST} strategy's
+	 * javadoc for an example)
 	 *
-	 * @param expander the {@link Function} that expands a value into the next {@link Publisher}.
+	 * @param expander the {@link Function} applied at each level of recursion to expand
+	 * values into a {@link Publisher}, producing a graph.
 	 *
 	 * @return this Mono expanded breadth-first to a {@link Flux}
 	 */
