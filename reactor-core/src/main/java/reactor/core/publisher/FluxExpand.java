@@ -32,6 +32,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.util.concurrent.Queues;
+import reactor.util.context.Context;
 
 /**
  * A {@link Flux} that emits items from upstream and recursively expand them into
@@ -167,12 +168,20 @@ final class FluxExpand<T> extends FluxOperator<T, T> {
 				} while (WIP.decrementAndGet(this) != 0);
 			}
 		}
+
+		@Nullable
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.BUFFERED) return queue != null ? queue.size() : 0;
+
+			return super.scanUnsafe(key);
+		}
 	}
 
 	static final class ExpandDepthSubscription<T>
-			implements Subscription {
+			implements InnerProducer<T> {
 
-		final Subscriber<? super T> actual;
+		final CoreSubscriber<? super T> actual;
 		final Function<? super T, ? extends Publisher<? extends T>> expander;
 
 		volatile Throwable error;
@@ -208,6 +217,11 @@ final class FluxExpand<T> extends FluxOperator<T, T> {
 			this.actual = actual;
 			this.expander = expander;
 			this.subscriptionStack = new ArrayDeque<>(capacityHint);
+		}
+
+		@Override
+		public CoreSubscriber<? super T> actual() {
+			return actual;
 		}
 
 		@Override
@@ -392,10 +406,20 @@ final class FluxExpand<T> extends FluxOperator<T, T> {
 			inner.done = true;
 			drainQueue();
 		}
+
+		@Nullable
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.CANCELLED) return cancelled;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return this.requested;
+			if (key == Attr.ERROR) return this.error;
+
+			return InnerProducer.super.scanUnsafe(key);
+		}
 	}
 
 	static final class ExpandDepthSubscriber<T>
-			implements CoreSubscriber<T> {
+			implements InnerConsumer<T> {
 
 		ExpandDepthSubscription<T> parent;
 
@@ -445,6 +469,21 @@ final class FluxExpand<T> extends FluxOperator<T, T> {
 
 		void dispose() {
 			Operators.setTerminated(S, this);
+		}
+
+		@Nullable
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.PARENT) return s;
+			if (key == Attr.ACTUAL) return parent.actual;
+			if (key == Attr.TERMINATED) return this.done;
+
+			return null;
+		}
+
+		@Override
+		public Context currentContext() {
+			return parent.actual().currentContext();
 		}
 	}
 }

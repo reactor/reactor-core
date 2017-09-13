@@ -537,4 +537,6 @@ public class FluxExpandTest {
 		            .expectNextSequence(depthFirstExpected)
 		            .verifyComplete();
 	}
+
+	//TODO test scanUnsafe
 }
