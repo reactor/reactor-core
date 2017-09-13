@@ -1793,6 +1793,85 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Recursively expand elements into other sequence and emit all the resulting element,
+	 * in an order driven by the {@link ExpandStrategy} recursion strategy:
+	 * <ul>
+	 *     <li>
+	 *         {@link ExpandStrategy#BREADTH_FIRST}: Emit the value from this {@link Mono}
+	 *         first, then it each at a first level of recursion and emit all of the
+	 *         resulting values, then expand all of these at a second level and so on...
+	 *         (see the {@link ExpandStrategy#BREADTH_FIRST strategy's javadoc) for an
+	 *         example)
+	 *     </li>
+	 *     <li>
+	 *         {@link ExpandStrategy#DEPTH_FIRST}: Emit the value from this {@link Mono},
+	 *         expand it and emit the first value at this first level of recursion, and
+	 *         so on... When no more recursion is possible, backtrack to the previous level
+	 *         and re-apply the strategy. (see the
+	 *         {@link ExpandStrategy#DEPTH_FIRST strategy's javadoc} for an example)
+	 *
+	 *     </li>
+	 * </ul>
+	 *
+	 * @param expander the {@link Function} that expands a value into the next {@link Publisher}.
+	 * @param expandStrategy the recursion {@link ExpandStrategy strategy} to use.
+	 * @param capacityHint a capacity hint to prepare the inner queues to accomodate n
+	 * elements per level of recursion.
+	 *
+	 * @return this Mono expanded to a {@link Flux}
+	 */
+	public final Flux<T> expand(Function<? super T, ? extends Publisher<? extends T>> expander,
+			ExpandStrategy expandStrategy,
+			int capacityHint) {
+		return Flux.onAssembly(new MonoExpand<>(this, expander, expandStrategy, capacityHint));
+	}
+
+	/**
+	 * Recursively expand elements into other sequence and emit all the resulting element,
+	 * in an order driven by the {@link ExpandStrategy} recursion strategy:
+	 * <ul>
+	 *     <li>
+	 *         {@link ExpandStrategy#BREADTH_FIRST}: Emit the value from this {@link Mono}
+	 *         first, then it each at a first level of recursion and emit all of the
+	 *         resulting values, then expand all of these at a second level and so on...
+	 *         (see the {@link ExpandStrategy#BREADTH_FIRST strategy's javadoc) for an
+	 *         example)
+	 *     </li>
+	 *     <li>
+	 *         {@link ExpandStrategy#DEPTH_FIRST}: Emit the value from this {@link Mono},
+	 *         expand it and emit the first value at this first level of recursion, and
+	 *         so on... When no more recursion is possible, backtrack to the previous level
+	 *         and re-apply the strategy. (see the
+	 *         {@link ExpandStrategy#DEPTH_FIRST strategy's javadoc} for an example)
+	 *
+	 *     </li>
+	 * </ul>
+	 *
+	 * @param expander the {@link Function} that expands a value into the next {@link Publisher}.
+	 * @param expandStrategy the recursion {@link ExpandStrategy strategy} to use.
+	 *
+	 * @return this Mono expanded to a {@link Flux}
+	 */
+	public final Flux<T> expand(Function<? super T, ? extends Publisher<? extends T>> expander,
+			ExpandStrategy expandStrategy) {
+		return expand(expander, expandStrategy, Queues.SMALL_BUFFER_SIZE);
+	}
+
+	/**
+	 * {@link ExpandStrategy#BREADTH_FIRST}: Emit the value from this {@link Mono} first,
+	 * then it each at a first level of recursion and emit all of the resulting values,
+	 * then expand all of these at a second level and so on... (see the
+	 * {@link ExpandStrategy#BREADTH_FIRST} strategy's javadoc for an example)
+	 *
+	 * @param expander the {@link Function} that expands a value into the next {@link Publisher}.
+	 *
+	 * @return this Mono expanded breadth-first to a {@link Flux}
+	 */
+	public final Flux<T> expand(Function<? super T, ? extends Publisher<? extends T>> expander) {
+		return expand(expander, ExpandStrategy.BREADTH_FIRST);
+	}
+
+	/**
 	 * If this {@link Mono} is valued, test the result and replay it if predicate returns true.
 	 * Otherwise complete without value.
 	 *
