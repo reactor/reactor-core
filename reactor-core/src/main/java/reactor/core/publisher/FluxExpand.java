@@ -36,7 +36,7 @@ import reactor.util.concurrent.Queues;
 /**
  * A {@link Flux} that emits items from upstream and recursively expand them into
  * inner sequences that are also replayed. The type of recursion is driven by the
- * {@link ExpandStrategy} used.
+ * {@code breadthFirst} parameter.
  *
  * @param <T>
  * @author David Karnok
@@ -45,24 +45,22 @@ import reactor.util.concurrent.Queues;
 //adapted from RxJava2Extensions: https://github.com/akarnokd/RxJava2Extensions/blob/master/src/main/java/hu/akarnokd/rxjava2/operators/FlowableExpand.java
 final class FluxExpand<T> extends FluxOperator<T, T> {
 
+	final boolean breadthFirst;
 	final Function<? super T, ? extends Publisher<? extends T>> expander;
-
-	final ExpandStrategy strategy;
-
 	final int capacityHint;
 
 	FluxExpand(Flux<T> source,
 			Function<? super T, ? extends Publisher<? extends T>> expander,
-			ExpandStrategy strategy, int capacityHint) {
+			boolean breadthFirst, int capacityHint) {
 		super(source);
 		this.expander = expander;
-		this.strategy = strategy;
+		this.breadthFirst = breadthFirst;
 		this.capacityHint = capacityHint;
 	}
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> s) {
-		if (strategy == ExpandStrategy.BREADTH_FIRST) {
+		if (breadthFirst) {
 			ExpandBreathSubscriber<T> parent = new ExpandBreathSubscriber<>(s, expander, capacityHint);
 			parent.queue.offer(source);
 			s.onSubscribe(parent);

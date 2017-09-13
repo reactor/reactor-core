@@ -41,16 +41,9 @@ public class MonoExpandTest {
 	Function<Integer, Publisher<Integer>> countDown =
 			v -> v == 0 ? Flux.empty() : Flux.just(v - 1);
 
-	@Test
-	public void recursiveCountdownDepth() {
-		StepVerifier.create(Mono.just(10)
-		                        .expand(countDown, ExpandStrategy.DEPTH_FIRST))
-		            .expectNext(10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
-		            .verifyComplete();
-	}
 
 	@Test
-	public void recursiveCountdownDefault() {
+	public void recursiveCountdown() {
 		StepVerifier.create(Mono.just(10)
 		                        .expand(countDown))
 		            .expectNext(10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
@@ -58,111 +51,177 @@ public class MonoExpandTest {
 	}
 
 	@Test
-	public void recursiveCountdownBreadth() {
+	public void recursiveCountdownDepth() {
 		StepVerifier.create(Mono.just(10)
-		                        .expand(countDown, ExpandStrategy.BREADTH_FIRST))
+		                        .expandDeep(countDown))
 		            .expectNext(10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
 		            .verifyComplete();
 	}
 
 	@Test
 	public void error() {
-		for (ExpandStrategy strategy : ExpandStrategy.values()) {
-			StepVerifier.create(Mono.<Integer>error(new IllegalStateException("boom"))
-					.expand(countDown, strategy))
-			            .verifyErrorMessage("boom");
-		}
+		StepVerifier.create(Mono.<Integer>error(new IllegalStateException("boom"))
+				.expand(countDown))
+		            .verifyErrorMessage("boom");
+	}
+
+	@Test
+	public void errorDepth() {
+		StepVerifier.create(Mono.<Integer>error(new IllegalStateException("boom"))
+				.expandDeep(countDown))
+		            .verifyErrorMessage("boom");
 	}
 
 	@Test
 	public void empty() {
-		for (ExpandStrategy strategy : ExpandStrategy.values()) {
-			StepVerifier.create(Mono.<Integer>empty()
-					.expand(countDown, strategy))
+		StepVerifier.create(Mono.<Integer>empty()
+				.expand(countDown))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void emptyDepth() {
+		StepVerifier.create(Mono.<Integer>empty()
+				.expandDeep(countDown))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void recursiveCountdownLoop() {
+		for (int i = 0; i < 1000; i = (i < 100 ? i + 1 : i + 50)) {
+			String tag = "i = " + i + ", strategy = breadth";
+
+			List<Integer> list = new ArrayList<>();
+
+			StepVerifier.create(Mono.just(i)
+			                        .expand(countDown))
+			            .expectSubscription()
+			            .recordWith(() -> list)
+			            .expectNextCount(i + 1)
+			            .as(tag)
 			            .verifyComplete();
+
+			for (int j = 0; j <= i; j++) {
+				assertThat(list.get(j).intValue())
+						.as(tag + ", " + list)
+						.isEqualTo(i - j);
+			}
 		}
 	}
 
 	@Test
-	public void recursiveCountdown() {
-		for (ExpandStrategy strategy : ExpandStrategy.values()) {
-			for (int i = 0; i < 1000; i = (i < 100 ? i + 1 : i + 50)) {
-				String tag = "i = " + i + ", strategy = " + strategy;
+	public void recursiveCountdownLoopDepth() {
+		for (int i = 0; i < 1000; i = (i < 100 ? i + 1 : i + 50)) {
+			String tag = "i = " + i + ", strategy = depth";
 
-				List<Integer> list = new ArrayList<>();
+			List<Integer> list = new ArrayList<>();
 
-				StepVerifier.create(Mono.just(i)
-				                        .expand(countDown, strategy))
-				            .expectSubscription()
-				            .recordWith(() -> list)
-				            .expectNextCount(i + 1)
-				            .as(tag)
-				            .verifyComplete();
+			StepVerifier.create(Mono.just(i)
+			                        .expandDeep(countDown))
+			            .expectSubscription()
+			            .recordWith(() -> list)
+			            .expectNextCount(i + 1)
+			            .as(tag)
+			            .verifyComplete();
 
-				for (int j = 0; j <= i; j++) {
-					assertThat(list.get(j).intValue())
-							.as(tag + ", " + list)
-							.isEqualTo(i - j);
-				}
+			for (int j = 0; j <= i; j++) {
+				assertThat(list.get(j).intValue())
+						.as(tag + ", " + list)
+						.isEqualTo(i - j);
 			}
 		}
 	}
 
 	@Test
 	public void recursiveCountdownTake() {
-		for (ExpandStrategy strategy : ExpandStrategy.values()) {
-			StepVerifier.create(Mono.just(10)
-			                        .expand(countDown, strategy)
-			                        .take(5)
-			)
-			            .expectNext(10, 9, 8, 7, 6)
-			            .as(strategy.toString()) //TODO replace with a global test description?
-			            .verifyComplete();
-		}
+		StepVerifier.create(Mono.just(10)
+		                        .expand(countDown)
+		                        .take(5)
+		)
+		            .expectNext(10, 9, 8, 7, 6)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void recursiveCountdownTakeDepth() {
+		StepVerifier.create(Mono.just(10)
+		                        .expandDeep(countDown)
+		                        .take(5)
+		)
+		            .expectNext(10, 9, 8, 7, 6)
+		            .verifyComplete();
 	}
 
 	@Test
 	public void recursiveCountdownBackpressure() {
-		for (ExpandStrategy strategy : ExpandStrategy.values()) {
-			StepVerifier.create(Mono.just(10)
-			                        .expand(countDown, strategy),
-					StepVerifierOptions.create()
-					                   .initialRequest(0)
-					                   .checkUnderRequesting(false))
-			            .thenRequest(1)
-			            .expectNext(10)
-			            .thenRequest(3)
-			            .expectNext(9, 8, 7)
-			            .thenRequest(4)
-			            .expectNext(6, 5, 4, 3)
-			            .thenRequest(3)
-			            .expectNext(2, 1, 0)
-			            .verifyComplete();
-		}
+		StepVerifier.create(Mono.just(10)
+		                        .expand(countDown),
+				StepVerifierOptions.create()
+				                   .initialRequest(0)
+				                   .checkUnderRequesting(false))
+		            .thenRequest(1)
+		            .expectNext(10)
+		            .thenRequest(3)
+		            .expectNext(9, 8, 7)
+		            .thenRequest(4)
+		            .expectNext(6, 5, 4, 3)
+		            .thenRequest(3)
+		            .expectNext(2, 1, 0)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void recursiveCountdownBackpressureDepth() {
+		StepVerifier.create(Mono.just(10)
+		                        .expandDeep(countDown),
+				StepVerifierOptions.create()
+				                   .initialRequest(0)
+				                   .checkUnderRequesting(false))
+		            .thenRequest(1)
+		            .expectNext(10)
+		            .thenRequest(3)
+		            .expectNext(9, 8, 7)
+		            .thenRequest(4)
+		            .expectNext(6, 5, 4, 3)
+		            .thenRequest(3)
+		            .expectNext(2, 1, 0)
+		            .verifyComplete();
 	}
 
 	@Test
 	public void expanderThrows() {
-		for (ExpandStrategy strategy : ExpandStrategy.values()) {
-			StepVerifier.create(Mono.just(10)
-			                        .expand(v -> {
-				                        throw new IllegalStateException("boom");
-			                        }, strategy))
-			            .expectNext(10)
-			            .as(strategy.toString()) //TODO replace with global test description
-			            .verifyErrorMessage("boom");
-		}
+		StepVerifier.create(Mono.just(10)
+		                        .expand(v -> {
+			                        throw new IllegalStateException("boom");
+		                        }))
+		            .expectNext(10)
+		            .verifyErrorMessage("boom");
+	}
+
+	@Test
+	public void expanderThrowsDepth() {
+		StepVerifier.create(Mono.just(10)
+		                        .expandDeep(v -> {
+			                        throw new IllegalStateException("boom");
+		                        }))
+		            .expectNext(10)
+		            .verifyErrorMessage("boom");
 	}
 
 	@Test
 	public void expanderReturnsNull() {
-		for (ExpandStrategy strategy : ExpandStrategy.values()) {
-			StepVerifier.create(Mono.just(10)
-			                        .expand(v -> null, strategy))
-			            .expectNext(10)
-			            .as(strategy.toString())
-			            .verifyError(NullPointerException.class);
-		}
+		StepVerifier.create(Mono.just(10)
+		                        .expand(v -> null))
+		            .expectNext(10)
+		            .verifyError(NullPointerException.class);
+	}
+
+	@Test
+	public void expanderReturnsNullDepth() {
+		StepVerifier.create(Mono.just(10)
+		                        .expandDeep(v -> null))
+		            .expectNext(10)
+		            .verifyError(NullPointerException.class);
 	}
 
 	FluxExpandTest.Node createTest() {
@@ -218,7 +277,7 @@ public class MonoExpandTest {
 		FluxExpandTest.Node root = createTest();
 
 		StepVerifier.create(Mono.just(root)
-		                        .expand(v -> Flux.fromIterable(v.children), ExpandStrategy.DEPTH_FIRST)
+		                        .expandDeep(v -> Flux.fromIterable(v.children))
 		                        .map(v -> v.name))
 		            .expectNext(
 				            "root",
@@ -236,9 +295,8 @@ public class MonoExpandTest {
 		FluxExpandTest.Node root = createTest();
 
 		StepVerifier.create(Mono.just(root)
-		                        .expand(v -> Flux.fromIterable(v.children)
-		                                         .subscribeOn(Schedulers.elastic()),
-				                        ExpandStrategy.DEPTH_FIRST)
+		                        .expandDeep(v -> Flux.fromIterable(v.children)
+		                                         .subscribeOn(Schedulers.elastic()))
 		                        .map(v -> v.name))
 		            .expectNext(
 				            "root",
@@ -257,7 +315,7 @@ public class MonoExpandTest {
 		FluxExpandTest.Node root = createTest();
 
 		StepVerifier.create(Mono.just(root)
-		                        .expand(v -> Flux.fromIterable(v.children), ExpandStrategy.BREADTH_FIRST)
+		                        .expand(v -> Flux.fromIterable(v.children))
 		                        .map(v -> v.name))
 		            .expectNext(
 				            "root",
@@ -274,7 +332,7 @@ public class MonoExpandTest {
 		FluxExpandTest.Node root = createTest();
 
 		StepVerifier.create(Mono.just(root)
-		                        .expand(v -> Flux.fromIterable(v.children).subscribeOn(Schedulers.elastic()), ExpandStrategy.BREADTH_FIRST)
+		                        .expand(v -> Flux.fromIterable(v.children).subscribeOn(Schedulers.elastic()))
 		                        .map(v -> v.name))
 		            .expectNext(
 				            "root",
@@ -321,7 +379,7 @@ public class MonoExpandTest {
 		};
 
 		Mono.just(1)
-		    .expand(it -> pp, ExpandStrategy.DEPTH_FIRST)
+		    .expandDeep(it -> pp)
 		    .subscribe(s);
 
 		pp.assertNoSubscribers();
@@ -335,7 +393,7 @@ public class MonoExpandTest {
 			final AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 
 			Mono.just(0)
-			    .expand(countDown, ExpandStrategy.DEPTH_FIRST)
+			    .expandDeep(countDown)
 			    .subscribe(ts);
 
 			Runnable r1 = () -> ts.request(1);
@@ -354,7 +412,7 @@ public class MonoExpandTest {
 			final AssertSubscriber<Integer> ts = AssertSubscriber.create(1);
 
 			Mono.just(0)
-			    .expand(it -> pp, ExpandStrategy.DEPTH_FIRST)
+			    .expandDeep(it -> pp)
 			    .subscribe(ts);
 
 			Runnable r1 = () -> pp.next(1);
@@ -372,7 +430,7 @@ public class MonoExpandTest {
 
 			final AssertSubscriber<Integer> ts = AssertSubscriber.create(1);
 			Mono.just(0)
-			    .expand(it -> pp, ExpandStrategy.DEPTH_FIRST)
+			    .expandDeep(it -> pp)
 			    .subscribe(ts);
 
 			Runnable r1 = pp::complete;
@@ -389,7 +447,7 @@ public class MonoExpandTest {
 			final TestPublisher<Integer> pp = TestPublisher.create();
 
 			Flux<Integer> source = Mono.just(0)
-			                           .expand(it -> pp, ExpandStrategy.DEPTH_FIRST);
+			                           .expandDeep(it -> pp);
 
 			final CountDownLatch cdl = new CountDownLatch(1);
 
@@ -417,27 +475,5 @@ public class MonoExpandTest {
 
 			assertThat(cdl.await(5, TimeUnit.SECONDS)).as("runs under 5s").isTrue();
 		}
-	}
-
-	@Test
-	public void defaultIsBreadthFirst() {
-		ExpandStrategy expectedStrategy = ExpandStrategy.BREADTH_FIRST;
-
-		List<String> explicitStrategy = Mono.just(FluxExpandTest.ROOT_A)
-		                                    .expand(v -> Flux.fromIterable(v.children),
-				                                    expectedStrategy)
-		                                    .map(n -> n.name)
-		                                    .collectList()
-		                                    .block();
-
-		List<String> defaultStrategy = Mono.just(FluxExpandTest.ROOT_A)
-		                                   .expand(v -> Flux.fromIterable(v.children))
-		                                   .map(n -> n.name)
-		                                   .collectList()
-		                                   .block();
-
-		assertThat(defaultStrategy)
-				.withFailMessage("default is not breadth first. Expected:\n%s\nGot:\n%s", explicitStrategy, defaultStrategy)
-				.containsExactlyElementsOf(explicitStrategy);
 	}
 }

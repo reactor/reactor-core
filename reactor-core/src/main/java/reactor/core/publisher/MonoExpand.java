@@ -24,31 +24,29 @@ import reactor.core.CoreSubscriber;
 /**
  * A {@link Flux} that emits the item from a {@link Mono} and recursively expand it into
  * inner sequences that are also replayed. The type of recursion is driven by the
- * {@link ExpandStrategy} used.
+ * {@code breadthFirst} parameter.
  *
  * @author David Karnok
  * @author Simon Baslé
  */
 final class MonoExpand<T> extends FluxFromMonoOperator<T, T> {
 
+	final boolean breadthFirst;
 	final Function<? super T, ? extends Publisher<? extends T>> expander;
-
-	final ExpandStrategy strategy;
-
 	final int capacityHint;
 
 	MonoExpand(Mono<T> source,
 			Function<? super T, ? extends Publisher<? extends T>> expander,
-			ExpandStrategy strategy, int capacityHint) {
+			boolean breadthFirst, int capacityHint) {
 		super(source);
 		this.expander = expander;
-		this.strategy = strategy;
+		this.breadthFirst = breadthFirst;
 		this.capacityHint = capacityHint;
 	}
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> s) {
-		if (strategy == ExpandStrategy.BREADTH_FIRST) {
+		if (breadthFirst) {
 			FluxExpand.ExpandBreathSubscriber<T>
 					parent = new FluxExpand.ExpandBreathSubscriber<>(s, expander, capacityHint);
 			parent.queue.offer(source);

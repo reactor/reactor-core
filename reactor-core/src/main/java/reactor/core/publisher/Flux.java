@@ -3675,81 +3675,228 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Recursively expand elements into a graph and emit all the resulting element,
-	 * in an order driven by the {@link ExpandStrategy} traversal strategy:
+	 * in a depth-first traversal order.
 	 * <p>
-	 * <ul>
-	 *     <li>
-	 *         {@link ExpandStrategy#BREADTH_FIRST}: Emit the values from this {@link Flux}
-	 *         first, then expand each at a first level of recursion and emit all of the
-	 *         resulting values, then expand all of these at a second level and so on...
-	 *         (see the {@link ExpandStrategy#BREADTH_FIRST strategy's javadoc} for an
-	 *         example)
-	 *     </li>
-	 *     <li>
-	 *         {@link ExpandStrategy#DEPTH_FIRST}: Emit one value from this {@link Flux},
-	 *         expand it and emit the first value at this first level of recursion, and
-	 *         so on... When no more recursion is possible, backtrack to the previous level
-	 *         and re-apply the strategy. (see the
-	 *         {@link ExpandStrategy#DEPTH_FIRST strategy's javadoc} for an example)
+	 * That is: emit one value from this {@link Flux}, expand it and emit the first value
+	 * at this first level of recursion, and so on... When no more recursion is possible,
+	 * backtrack to the previous level and re-apply the strategy.
+	 * <p>
+	 * For example, given the hierarchical structure
+	 * <pre>
+	 *  A
+	 *   - AA
+	 *     - aa1
+	 *   - AB
+	 *     - ab1
+	 *   - a1
+	 *  B
+	 *   - BA
+	 *     - ba1
+	 *   - BB
+	 *     - bb1
+	 *   - BC
+	 *     - bc1
+	 *     - bc2
+	 *   - b1
+	 *   - b2
+	 * </pre>
 	 *
-	 *     </li>
-	 * </ul>
+	 * Visits
+	 * <pre>
+	 *  A
+	 *  AA
+	 *  aa1
+	 *  AB
+	 *  ab1
+	 *  a1
+	 *  B
+	 *  BA
+	 *  ba1
+	 *  BB
+	 *  bb1
+	 *  BC
+	 *  bc1
+	 *  bc2
+	 *  b1
+	 *  b2
+	 * </pre>
 	 *
 	 * @param expander the {@link Function} applied at each level of recursion to expand
 	 * values into a {@link Publisher}, producing a graph.
-	 * @param expandStrategy the recursion {@link ExpandStrategy strategy} to use.
 	 * @param capacityHint a capacity hint to prepare the inner queues to accommodate n
 	 * elements per level of recursion.
 	 *
-	 * @return an expanded {@link Flux}
+	 * @return a {@link Flux} expanded depth-first
 	 */
-	public final Flux<T> expand(Function<? super T, ? extends Publisher<? extends T>> expander,
-			ExpandStrategy expandStrategy,
+	public final Flux<T> expandDeep(Function<? super T, ? extends Publisher<? extends T>> expander,
 			int capacityHint) {
-		return onAssembly(new FluxExpand<>(this, expander, expandStrategy, capacityHint));
+		return onAssembly(new FluxExpand<>(this, expander, false, capacityHint));
 	}
 
 	/**
 	 * Recursively expand elements into a graph and emit all the resulting element,
-	 * in an order driven by the {@link ExpandStrategy} traversal strategy:
+	 * in a depth-first traversal order.
 	 * <p>
-	 * <ul>
-	 *     <li>
-	 *         {@link ExpandStrategy#BREADTH_FIRST}: Emit the values from this {@link Flux}
-	 *         first, then expand each at a first level of recursion and emit all of the
-	 *         resulting values, then expand all of these at a second level and so on...
-	 *         (see the {@link ExpandStrategy#BREADTH_FIRST strategy's javadoc} for an
-	 *         example)
-	 *     </li>
-	 *     <li>
-	 *         {@link ExpandStrategy#DEPTH_FIRST}: Emit one value from this {@link Flux},
-	 *         expand it and emit the first value at this first level of recursion, and
-	 *         so on... When no more recursion is possible, backtrack to the previous level
-	 *         and re-apply the strategy. (see the
-	 *         {@link ExpandStrategy#DEPTH_FIRST strategy's javadoc} for an example)
+	 * That is: emit one value from this {@link Flux}, expand it and emit the first value
+	 * at this first level of recursion, and so on... When no more recursion is possible,
+	 * backtrack to the previous level and re-apply the strategy.
+	 * <p>
+	 * For example, given the hierarchical structure
+	 * <pre>
+	 *  A
+	 *   - AA
+	 *     - aa1
+	 *   - AB
+	 *     - ab1
+	 *   - a1
+	 *  B
+	 *   - BA
+	 *     - ba1
+	 *   - BB
+	 *     - bb1
+	 *   - BC
+	 *     - bc1
+	 *     - bc2
+	 *   - b1
+	 *   - b2
+	 * </pre>
 	 *
-	 *     </li>
-	 * </ul>
+	 * Visits
+	 * <pre>
+	 *  A
+	 *  AA
+	 *  aa1
+	 *  AB
+	 *  ab1
+	 *  a1
+	 *  B
+	 *  BA
+	 *  ba1
+	 *  BB
+	 *  bb1
+	 *  BC
+	 *  bc1
+	 *  bc2
+	 *  b1
+	 *  b2
+	 * </pre>
 	 *
 	 * @param expander the {@link Function} applied at each level of recursion to expand
 	 * values into a {@link Publisher}, producing a graph.
-	 * @param expandStrategy the recursion {@link ExpandStrategy strategy} to use.
 	 *
-	 * @return an expanded {@link Flux}
+	 * @return a {@link Flux} expanded depth-first
 	 */
-	public final Flux<T> expand(Function<? super T, ? extends Publisher<? extends T>> expander,
-			ExpandStrategy expandStrategy) {
-		return expand(expander, expandStrategy, Queues.SMALL_BUFFER_SIZE);
+	public final Flux<T> expandDeep(Function<? super T, ? extends Publisher<? extends T>> expander) {
+		return expandDeep(expander, Queues.SMALL_BUFFER_SIZE);
 	}
 
 	/**
 	 * Recursively expand elements into a graph and emit all the resulting element using
 	 * a breadth-first traversal strategy.
 	 * <p>
-	 * Emit the values from this {@link Flux} first, then expand each at a first level of
+	 * That is: emit the values from this {@link Flux} first, then expand each at a first level of
 	 * recursion and emit all of the resulting values, then expand all of these at a second
-	 * level and so on... (see the {@link ExpandStrategy#BREADTH_FIRST} strategy's javadoc
-	 * for an example)
+	 * level and so on..
+	 * <p>
+	 * For example, given the hierarchical structure
+	 * <pre>
+	 *  A
+	 *   - AA
+	 *     - aa1
+	 *   - AB
+	 *     - ab1
+	 *   - a1
+	 *  B
+	 *   - BA
+	 *     - ba1
+	 *   - BB
+	 *     - bb1
+	 *   - BC
+	 *     - bc1
+	 *     - bc2
+	 *   - b1
+	 *   - b2
+	 * </pre>
+	 *
+	 * Visits
+	 * <pre>
+	 *  A
+	 *  B
+	 *  AA
+	 *  AB
+	 *  a1
+	 *  BA
+	 *  BB
+	 *  BC
+	 *  b1
+	 *  b2
+	 *  aa1
+	 *  ab1
+	 *  ba1
+	 *  bb1
+	 *  bc1
+	 *  bc2
+	 * </pre>
+	 *
+	 * @param expander the {@link Function} applied at each level of recursion to expand
+	 * values into a {@link Publisher}, producing a graph.
+	 * @param capacityHint a capacity hint to prepare the inner queues to accommodate n
+	 * elements per level of recursion.
+	 *
+	 * @return an breadth-first expanded {@link Flux}
+	 */
+	public final Flux<T> expand(Function<? super T, ? extends Publisher<? extends T>> expander,
+			int capacityHint) {
+		return Flux.onAssembly(new FluxExpand<>(this, expander, true, capacityHint));
+	}
+
+	/**
+	 * Recursively expand elements into a graph and emit all the resulting element using
+	 * a breadth-first traversal strategy.
+	 * <p>
+	 * That is: emit the values from this {@link Flux} first, then expand each at a first level of
+	 * recursion and emit all of the resulting values, then expand all of these at a second
+	 * level and so on..
+	 * <p>
+	 * For example, given the hierarchical structure
+	 * <pre>
+	 *  A
+	 *   - AA
+	 *     - aa1
+	 *   - AB
+	 *     - ab1
+	 *   - a1
+	 *  B
+	 *   - BA
+	 *     - ba1
+	 *   - BB
+	 *     - bb1
+	 *   - BC
+	 *     - bc1
+	 *     - bc2
+	 *   - b1
+	 *   - b2
+	 * </pre>
+	 *
+	 * Visits
+	 * <pre>
+	 *  A
+	 *  B
+	 *  AA
+	 *  AB
+	 *  a1
+	 *  BA
+	 *  BB
+	 *  BC
+	 *  b1
+	 *  b2
+	 *  aa1
+	 *  ab1
+	 *  ba1
+	 *  bb1
+	 *  bc1
+	 *  bc2
+	 * </pre>
 	 *
 	 * @param expander the {@link Function} applied at each level of recursion to expand
 	 * values into a {@link Publisher}, producing a graph.
@@ -3757,7 +3904,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return an breadth-first expanded {@link Flux}
 	 */
 	public final Flux<T> expand(Function<? super T, ? extends Publisher<? extends T>> expander) {
-		return expand(expander, ExpandStrategy.BREADTH_FIRST);
+		return expand(expander, Queues.SMALL_BUFFER_SIZE);
 	}
 
 	/**
