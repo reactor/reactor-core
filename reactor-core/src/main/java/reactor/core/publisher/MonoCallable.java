@@ -69,6 +69,7 @@ extends Mono<T>
 	}
 
 	@Override
+	@Nullable
 	public T block() {
 		//duration is ignored below
 		return block(Duration.ZERO);
