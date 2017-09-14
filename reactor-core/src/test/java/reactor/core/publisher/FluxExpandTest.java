@@ -29,12 +29,17 @@ import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Scannable;
+import reactor.core.publisher.FluxExpand.ExpandBreathSubscriber;
+import reactor.core.publisher.FluxExpand.ExpandDepthSubscriber;
+import reactor.core.publisher.FluxExpand.ExpandDepthSubscription;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.RaceTestUtils;
 import reactor.test.StepVerifier;
 import reactor.test.StepVerifierOptions;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -538,5 +543,98 @@ public class FluxExpandTest {
 		            .verifyComplete();
 	}
 
-	//TODO test scanUnsafe
+	@Test
+	public void scanExpandBreathSubscriber() {
+		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null,
+				Throwable::printStackTrace, null,null);
+		ExpandBreathSubscriber<Integer> test = new ExpandBreathSubscriber<>(actual,
+				i -> i > 5 ? Mono.empty() : Mono.just(i + 1), 123);
+
+		Subscription s = Operators.emptySubscription();
+		test.onSubscribe(s);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isEqualTo(s);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isEqualTo(actual);
+
+		test.request(3);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(3);
+
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
+		test.onNext(1);
+		assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(1);
+
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	public void scanExpandDepthSubscriber() {
+		CoreSubscriber<Integer> parentActual = new LambdaSubscriber<>(null,
+				Throwable::printStackTrace, null,null);
+		ExpandDepthSubscription<Integer> eds = new ExpandDepthSubscription<>(
+				parentActual, i -> i > 5 ? Mono.empty() : Mono.just(i + 1), 123);
+		ExpandDepthSubscriber<Integer> test = new ExpandDepthSubscriber<>(eds);
+
+		Subscription s = Operators.emptySubscription();
+		test.onSubscribe(s);
+
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(s);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(parentActual);
+
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		test.onComplete();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+	}
+
+	@Test
+	public void scanExpandDepthSubscriberError() {
+		CoreSubscriber<Integer> parentActual = new LambdaSubscriber<>(null,
+				Throwable::printStackTrace, null,null);
+		ExpandDepthSubscription<Integer> eds = new ExpandDepthSubscription<>(
+				parentActual, i -> i > 5 ? Mono.empty() : Mono.just(i + 1), 123);
+		ExpandDepthSubscriber<Integer> test = new ExpandDepthSubscriber<>(eds);
+
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		test.onError(new IllegalStateException("boom"));
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+	}
+
+	@Test
+	public void currentContextForExpandDepthSubscriber() {
+		final Context context = Context.of("foo", "bar");
+		CoreSubscriber<Integer> parentActual = new BaseSubscriber<Integer>() {
+			@Override
+			public Context currentContext() {
+				return context;
+			}
+		};
+		ExpandDepthSubscription<Integer> expandDepthSubscription = new ExpandDepthSubscription<>(
+				parentActual, i -> i > 5 ? Mono.empty() : Mono.just(i + 1), 123);
+		ExpandDepthSubscriber<Integer> test = new ExpandDepthSubscriber<>(expandDepthSubscription);
+
+		assertThat(test.currentContext()).isSameAs(context);
+	}
+
+	@Test
+	public void scanExpandDepthSubscription() {
+		CoreSubscriber<Integer> parentActual = new LambdaSubscriber<>(null,
+				Throwable::printStackTrace, null,null);
+		ExpandDepthSubscription<Integer> test = new ExpandDepthSubscription<>(
+				parentActual, i -> i > 5 ? Mono.empty() : Mono.just(i + 1), 123);
+
+
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(parentActual);
+
+		assertThat(test.scan(Scannable.Attr.ERROR)).isNull();
+		test.error = new IllegalStateException("boom");
+		assertThat(test.scan(Scannable.Attr.ERROR)).isSameAs(test.error);
+
+		test.request(20);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(20);
+
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		test.cancel();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+	}
 }
