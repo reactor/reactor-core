@@ -7842,9 +7842,6 @@ public abstract class Flux<T> implements Publisher<T> {
 			}
 			return Mono.just(v);
 		}
-		if (supplier instanceof MonoCallable) {
-			return (MonoCallable<T>) supplier;
-		}
 		return Mono.onAssembly(new MonoCallable<>(supplier));
 	}
 
