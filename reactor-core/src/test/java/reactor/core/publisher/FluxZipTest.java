@@ -604,10 +604,10 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
-	public void failIterableCallableNull() {
+	public void prematureCompleteIterableCallableNull() {
 		StepVerifier.create(Flux.zip(Arrays.asList(Flux.just(1),
 				Mono.fromCallable(() -> null)), obj -> 0))
-		            .verifyError(NullPointerException.class);
+		            .verifyComplete();
 	}
 
 	@Test
@@ -955,30 +955,30 @@ public class FluxZipTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
-	public void failCallableNull() {
+	public void prematureCompleteCallableNull() {
 		StepVerifier.create(Flux.zip(obj -> 0,
 				Flux.just(1),
 				Mono.fromCallable(() -> null)))
-		            .verifyError(NullPointerException.class);
+		            .verifyComplete();
 	}
 
 	@Test
-	public void failCallableNullHide() {
+	public void prematureCompleteCallableNullHide() {
 		StepVerifier.create(Flux.zip(obj -> 0,
 				Flux.just(1)
 				    .hide(),
 				Mono.fromCallable(() -> null)))
-		            .verifyError(NullPointerException.class);
+		            .verifyComplete();
 	}
 
 	@Test
-	public void failCallableNullHideAll() {
+	public void prematureCompleteCallableNullHideAll() {
 		StepVerifier.create(Flux.zip(obj -> 0,
 				Flux.just(1)
 				    .hide(),
 				Mono.fromCallable(() -> null)
 				    .hide()))
-		            .verifyError(NullPointerException.class);
+		            .verifyComplete();
 	}
 
 	@Test

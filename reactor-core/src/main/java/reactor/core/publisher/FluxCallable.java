@@ -16,8 +16,8 @@
 
 package reactor.core.publisher;
 
-import java.util.Objects;
 import java.util.concurrent.Callable;
+import javax.annotation.Nullable;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
@@ -40,19 +40,22 @@ final class FluxCallable<T> extends Flux<T> implements Callable<T>, Fuseable {
 		Operators.MonoSubscriber<T, T> wrapper = new Operators.MonoSubscriber<>(actual);
 		actual.onSubscribe(wrapper);
 
-		T v;
 		try {
-			v = Objects.requireNonNull(callable.call(), "callable returned null");
+			T v = callable.call();
+			if (v == null) {
+				wrapper.onComplete();
+			}
+			else {
+				wrapper.complete(v);
+			}
 		}
 		catch (Throwable ex) {
 			actual.onError(Operators.onOperatorError(ex, actual.currentContext()));
-			return;
 		}
-
-		wrapper.complete(v);
 	}
 
 	@Override
+	@Nullable
 	public T call() throws Exception {
 		return callable.call();
 	}

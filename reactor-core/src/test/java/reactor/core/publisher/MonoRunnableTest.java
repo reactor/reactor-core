@@ -72,11 +72,11 @@ public class MonoRunnableTest {
 		assertThat(t).isNotEqualTo(Thread.currentThread());
 	}
 
-	@Test
+	@Test()
 	public void asyncRunnableBackpressured() {
 		AtomicReference<Thread> t = new AtomicReference<>();
 		StepVerifier.create(Mono.fromRunnable(() -> t.set(Thread.currentThread()))
-		                        .subscribeOn(Schedulers.single()), 0)
+		                        .subscribeOn(Schedulers.single()), 1)
 		            .verifyComplete();
 
 		assertThat(t).isNotNull();

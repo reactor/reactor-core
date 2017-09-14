@@ -54,4 +54,23 @@ public class MonoSubscribeOnCallableTest {
 				            && e.getMessage().equals("forced failure"))
 		            .verify();
 	}
+
+	@Test
+	public void callableNull() {
+		StepVerifier.create(Mono.fromCallable(() -> null).subscribeOn(Schedulers.single()))
+		            .expectComplete()
+		            .verify();
+	}
+
+	@Test
+	public void callableNullBackpressured() {
+		StepVerifier.withVirtualTime( () ->
+				Mono.fromCallable(() -> null).subscribeOn(Schedulers.single()), 0)
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofSeconds(1))
+		            .thenRequest(1)
+		            .thenAwait()
+		            .expectComplete()
+		            .verify();
+	}
 }

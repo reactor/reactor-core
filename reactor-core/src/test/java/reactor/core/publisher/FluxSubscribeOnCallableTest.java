@@ -54,6 +54,23 @@ public class FluxSubscribeOnCallableTest {
 	}
 
 	@Test
+	public void callableReturnsNull2() {
+		StepVerifier.create(Mono.fromCallable(() -> null)
+		                        .flux()
+		                        .subscribeOn(Schedulers.single()))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void callableReturnsNull3() {
+		StepVerifier.create(Mono.fromCallable(() -> null)
+		                        .flux()
+		                        .subscribeOn(Schedulers.single()), 0)
+		            .thenRequest(1)
+		            .verifyComplete();
+	}
+
+	@Test
 	public void normal() {
 		StepVerifier.create(Mono.fromCallable(() -> 1)
 		                        .flux()
@@ -80,6 +97,25 @@ public class FluxSubscribeOnCallableTest {
 	@Test
 	public void callableReturnsNullFused() {
 		StepVerifier.create(Mono.empty()
+		                        .flux()
+		                        .subscribeOn(Schedulers.single()))
+		            .expectFusion(Fuseable.ASYNC)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void callableReturnsNullFused2() {
+		StepVerifier.create(Mono.fromCallable(() -> null)
+		                        .flux()
+		                        .subscribeOn(Schedulers.single())
+				.doOnNext(v -> System.out.println(v)), 1)
+		            .expectFusion(Fuseable.ASYNC)
+		            .thenRequest(1)
+		            .verifyComplete();
+	}
+	@Test
+	public void callableReturnsNullFused3() {
+		StepVerifier.create(Mono.fromCallable(() -> null)
 		                        .flux()
 		                        .subscribeOn(Schedulers.single()))
 		            .expectFusion(Fuseable.ASYNC)
