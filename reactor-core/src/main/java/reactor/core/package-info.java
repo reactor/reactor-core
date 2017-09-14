@@ -22,4 +22,4 @@
 @NonNullApi
 package reactor.core;
 
-import reactor.util.lang.NonNullApi;
+import reactor.util.annotation.NonNullApi;

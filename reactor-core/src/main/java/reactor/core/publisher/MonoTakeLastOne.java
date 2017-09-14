@@ -17,11 +17,11 @@ package reactor.core.publisher;
 
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
+import reactor.util.annotation.Nullable;
 
 /**
  * Take the very last value from a Publisher source and and emit that one.

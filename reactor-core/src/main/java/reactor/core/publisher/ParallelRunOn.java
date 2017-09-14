@@ -17,13 +17,13 @@ package reactor.core.publisher;
 
 import java.util.Queue;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Scheduler.Worker;
+import reactor.util.annotation.Nullable;
 
 /**
  * Ensures each 'rail' from upstream runs on a Worker from a Scheduler.

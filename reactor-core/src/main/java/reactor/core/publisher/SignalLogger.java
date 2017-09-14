@@ -30,7 +30,9 @@ import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.context.Context;
-import javax.annotation.Nullable;
+import reactor.util.annotation.NonNull;
+import reactor.util.annotation.Nullable;
+
 
 /**
  * A logging interceptor that intercepts all reactive calls and trace them.
@@ -71,7 +73,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 			@Nullable String category,
 			Level level,
 			boolean correlateStack,
-			SignalType... options) {
+			SignalType @NonNull ... options) {
 		this(source, category, level, correlateStack, Loggers::getLogger, options);
 	}
 
@@ -80,7 +82,7 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 			Level level,
 			boolean correlateStack,
 			Function<String, Logger> loggerSupplier,
-			@Nullable SignalType... options) {
+			@Nullable SignalType @NonNull ... options) {
 
 		this.source = Objects.requireNonNull(source, "source");
 		this.id = IDS.getAndIncrement();

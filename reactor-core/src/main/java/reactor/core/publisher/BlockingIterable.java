@@ -29,13 +29,13 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import reactor.util.context.Context;
+import reactor.util.annotation.NonNull;
+import reactor.util.annotation.Nullable;
 
 /**
  * An iterable that consumes a Publisher in a blocking fashion.
@@ -74,7 +74,7 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 	}
 
 	@Override
-	public Iterator<T> iterator() {
+	public Iterator<@NonNull T> iterator() {
 		SubscriberIterator<T> it = createIterator();
 
 		source.subscribe(it);
@@ -83,7 +83,7 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 	}
 
 	@Override
-	public Spliterator<T> spliterator() {
+	public Spliterator<@NonNull T> spliterator() {
 		return stream().spliterator(); // cancellation should be composed through this way
 	}
 
@@ -91,7 +91,7 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 	 * @return a {@link Stream} of unknown size with onClose attached to {@link
 	 * Subscription#cancel()}
 	 */
-	public Stream<T> stream() {
+	public Stream<@NonNull T> stream() {
 		SubscriberIterator<T> it = createIterator();
 		source.subscribe(it);
 

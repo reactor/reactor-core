@@ -59,7 +59,6 @@ import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.util.context.Context;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
-import reactor.util.lang.NonNullApi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -69,7 +68,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Stephane Maldini
  * @author Simon Baslé
  */
-@NonNullApi
 public class GuideTests {
 
 	@Test @SuppressWarnings("unchecked")
@@ -987,7 +985,7 @@ public class GuideTests {
 				assertThat(withSuppressed.getSuppressed()).hasSize(1);
 				assertThat(withSuppressed.getSuppressed()[0])
 						.hasMessageStartingWith("\nAssembly trace from producer [reactor.core.publisher.MonoSingle] :")
-						.hasMessageEndingWith("Flux.single(GuideTests.java:951)\n");
+						.hasMessageEndingWith("Flux.single(GuideTests.java:949)\n");
 			});
 		}
 	}

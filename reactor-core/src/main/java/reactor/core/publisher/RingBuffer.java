@@ -27,7 +27,7 @@ import java.util.function.Supplier;
 
 import reactor.util.concurrent.Queues;
 import reactor.util.concurrent.WaitStrategy;
-import javax.annotation.Nullable;
+import reactor.util.annotation.Nullable;
 import sun.misc.Unsafe;
 
 import static java.util.Arrays.copyOf;

@@ -16,10 +16,10 @@
 
 package reactor.core.publisher;
 
-import javax.annotation.Nullable;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.util.annotation.Nullable;
 
 /**
  * Hides the identities of the upstream Publisher object and its Subscription as well.

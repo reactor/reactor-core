@@ -16,11 +16,11 @@
 package reactor.core.publisher;
 
 import java.util.function.Predicate;
-import javax.annotation.Nullable;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.util.annotation.Nullable;
 
 /**
  * Filters each 'rail' of the source ParallelFlux with a predicate function.

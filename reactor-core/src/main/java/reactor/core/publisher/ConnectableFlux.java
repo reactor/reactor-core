@@ -22,6 +22,7 @@ import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.annotation.NonNull;
 
 /**
  * The abstract base class for connectable publishers that let subscribers pile up
@@ -42,7 +43,7 @@ public abstract class ConnectableFlux<T> extends Flux<T> {
 	 *
 	 * @return a {@link Flux} that connects to the upstream source when the first {@link org.reactivestreams.Subscriber} subscribes
 	 */
-	public final Flux<T> autoConnect() {
+	public final Flux<@NonNull T> autoConnect() {
 		return autoConnect(1);
 	}
 
@@ -60,7 +61,7 @@ public abstract class ConnectableFlux<T> extends Flux<T> {
 	 *
 	 * @return a {@link Flux} that connects to the upstream source when the given amount of Subscribers subscribed
 	 */
-	public final Flux<T> autoConnect(int minSubscribers) {
+	public final Flux<@NonNull T> autoConnect(int minSubscribers) {
 		return autoConnect(minSubscribers, NOOP_DISCONNECT);
 	}
 
@@ -75,7 +76,7 @@ public abstract class ConnectableFlux<T> extends Flux<T> {
 	 *
 	 * @return a {@link Flux} that connects to the upstream source when the given amount of subscribers subscribed
 	 */
-	public final Flux<T> autoConnect(int minSubscribers, Consumer<? super Disposable> cancelSupport) {
+	public final Flux<@NonNull T> autoConnect(int minSubscribers, Consumer<? super Disposable> cancelSupport) {
 		if (minSubscribers == 0) {
 			connect(cancelSupport);
 			return this;
@@ -111,7 +112,7 @@ public abstract class ConnectableFlux<T> extends Flux<T> {
 	 * @param cancelSupport the callback is called with a Disposable instance that can
 	 * be called to disconnect the source, even synchronously.
 	 */
-	public abstract void connect(Consumer<? super Disposable> cancelSupport);
+	public abstract void connect(Consumer<? super @NonNull Disposable> cancelSupport);
 
 	/**
 	 * Connects to the upstream source when the first {@link org.reactivestreams.Subscriber} subscribes and disconnects

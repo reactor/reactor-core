@@ -17,10 +17,10 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.function.BiFunction;
-import javax.annotation.Nullable;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.util.annotation.Nullable;
 
 /**
  * @author Stephane Maldini

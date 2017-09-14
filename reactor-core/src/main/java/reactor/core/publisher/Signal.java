@@ -18,10 +18,11 @@ package reactor.core.publisher;
 
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import reactor.util.annotation.NonNull;
+import reactor.util.annotation.Nullable;
 
 /**
  * A domain representation of a Reactive Stream signal.
@@ -42,7 +43,7 @@ public interface Signal<T> extends Supplier<T>, Consumer<Subscriber<? super T>> 
 	 * @return an {@code OnCompleted} variety of {@code Signal}
 	 */
 	@SuppressWarnings("unchecked")
-	static <T> Signal<T> complete() {
+	static <T> Signal<@Nullable T> complete() {
 		return (Signal<T>) ImmutableSignal.ON_COMPLETE;
 	}
 
@@ -55,7 +56,7 @@ public interface Signal<T> extends Supplier<T>, Consumer<Subscriber<? super T>> 
 	 *
 	 * @return an {@code OnError} variety of {@code Signal}
 	 */
-	static <T> Signal<T> error(Throwable e) {
+	static <T> Signal<@Nullable T> error(Throwable e) {
 		return new ImmutableSignal<>(SignalType.ON_ERROR, null, e, null);
 	}
 
@@ -78,7 +79,7 @@ public interface Signal<T> extends Supplier<T>, Consumer<Subscriber<? super T>> 
 	 * @param o the object to check
 	 * @return true if object represents the completion signal
 	 */
-	static boolean isComplete(Object o) {
+	static boolean isComplete(@Nullable Object o) {
 		return o == ImmutableSignal.ON_COMPLETE;
 	}
 
@@ -88,7 +89,7 @@ public interface Signal<T> extends Supplier<T>, Consumer<Subscriber<? super T>> 
 	 * @param o the object to check
 	 * @return true if object represents the error signal
 	 */
-	static boolean isError(Object o) {
+	static boolean isError(@Nullable Object o) {
 		return o instanceof Signal && ((Signal) o).getType() == SignalType.ON_ERROR;
 	}
 
@@ -100,7 +101,7 @@ public interface Signal<T> extends Supplier<T>, Consumer<Subscriber<? super T>> 
 	 *
 	 * @return an {@code OnSubscribe} variety of {@code Signal}
 	 */
-	static <T> Signal<T> subscribe(Subscription subscription) {
+	static <T> Signal<@Nullable T> subscribe(Subscription subscription) {
 		return new ImmutableSignal<>(SignalType.ON_SUBSCRIBE, null, null, subscription);
 	}
 
@@ -205,7 +206,7 @@ public interface Signal<T> extends Supplier<T>, Consumer<Subscriber<? super T>> 
 	 * @param observer the {@link Subscriber} to play the {@link Signal} on
 	 */
 	@Override
-	default void accept(Subscriber<? super T> observer) {
+	default void accept(Subscriber<? super @NonNull T> observer) {
 		if (isOnNext()) {
 			observer.onNext(get());
 		}

@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
-import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -31,6 +30,8 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
+import reactor.util.annotation.NonNull;
+import reactor.util.annotation.Nullable;
 
 /**
  * A Processor implementation that takes a custom queue and allows
@@ -52,7 +53,7 @@ public final class UnicastProcessor<T>
 	 * @param <E> the relayed type
 	 * @return a unicast {@link FluxProcessor}
 	 */
-	public static <E> UnicastProcessor<E> create() {
+	public static <E> UnicastProcessor<@NonNull E> create() {
 		return new UnicastProcessor<>(Queues.<E>unbounded().get());
 	}
 
@@ -64,7 +65,7 @@ public final class UnicastProcessor<T>
 	 * @param <E> the relayed type
 	 * @return a unicast {@link FluxProcessor}
 	 */
-	public static <E> UnicastProcessor<E> create(Queue<E> queue) {
+	public static <E> UnicastProcessor<@NonNull E> create(Queue<@NonNull E> queue) {
 		return new UnicastProcessor<>(queue);
 	}
 
@@ -77,7 +78,7 @@ public final class UnicastProcessor<T>
 	 * @param <E> the relayed type
 	 * @return a unicast {@link FluxProcessor}
 	 */
-	public static <E> UnicastProcessor<E> create(Queue<E> queue, Disposable endcallback) {
+	public static <E> UnicastProcessor<@NonNull E> create(Queue<@NonNull E> queue, Disposable endcallback) {
 		return new UnicastProcessor<>(queue, endcallback);
 	}
 
@@ -93,8 +94,8 @@ public final class UnicastProcessor<T>
 	 *
 	 * @return a unicast {@link FluxProcessor}
 	 */
-	public static <E> UnicastProcessor<E> create(Queue<E> queue,
-			Consumer<? super E> onOverflow,
+	public static <E> UnicastProcessor<@NonNull E> create(Queue<@NonNull E> queue,
+			Consumer<? super @NonNull E> onOverflow,
 			Disposable endcallback) {
 		return new UnicastProcessor<>(queue, onOverflow, endcallback);
 	}
@@ -131,20 +132,20 @@ public final class UnicastProcessor<T>
 
 	volatile boolean outputFused;
 
-	public UnicastProcessor(Queue<T> queue) {
+	public UnicastProcessor(Queue<@NonNull T> queue) {
 		this.queue = Objects.requireNonNull(queue, "queue");
 		this.onTerminate = null;
 		this.onOverflow = null;
 	}
 
-	public UnicastProcessor(Queue<T> queue, Disposable onTerminate) {
+	public UnicastProcessor(Queue<@NonNull T> queue, Disposable onTerminate) {
 		this.queue = Objects.requireNonNull(queue, "queue");
 		this.onTerminate = Objects.requireNonNull(onTerminate, "onTerminate");
 		this.onOverflow = null;
 	}
 
-	public UnicastProcessor(Queue<T> queue,
-			Consumer<? super T> onOverflow,
+	public UnicastProcessor(Queue<@NonNull T> queue,
+			Consumer<? super @NonNull T> onOverflow,
 			Disposable onTerminate) {
 		this.queue = Objects.requireNonNull(queue, "queue");
 		this.onOverflow = Objects.requireNonNull(onOverflow, "onOverflow");
@@ -163,7 +164,7 @@ public final class UnicastProcessor<T>
 		}
 	}
 
-	void drainRegular(Subscriber<? super T> a) {
+	void drainRegular(Subscriber<? super @NonNull T> a) {
 		int missed = 1;
 
 		final Queue<T> q = queue;
@@ -209,7 +210,7 @@ public final class UnicastProcessor<T>
 		}
 	}
 
-	void drainFused(Subscriber<? super T> a) {
+	void drainFused(Subscriber<? super @NonNull T> a) {
 		int missed = 1;
 
 		final Queue<T> q = queue;
@@ -271,7 +272,7 @@ public final class UnicastProcessor<T>
 		}
 	}
 
-	boolean checkTerminated(boolean d, boolean empty, Subscriber<? super T> a, Queue<T> q) {
+	boolean checkTerminated(boolean d, boolean empty, Subscriber<? super @NonNull T> a, Queue<@NonNull T> q) {
 		if (cancelled) {
 			q.clear();
 			actual = null;
@@ -365,7 +366,7 @@ public final class UnicastProcessor<T>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public void subscribe(CoreSubscriber<? super @NonNull T> actual) {
 		Objects.requireNonNull(actual, "subscribe");
 		if (once == 0 && ONCE.compareAndSet(this, 0, 1)) {
 
@@ -453,7 +454,7 @@ public final class UnicastProcessor<T>
 	}
 
 	@Override
-	public CoreSubscriber<? super T> actual() {
+	public CoreSubscriber<? super @NonNull T> actual() {
 		return actual;
 	}
 

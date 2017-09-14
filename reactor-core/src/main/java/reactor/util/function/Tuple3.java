@@ -18,7 +18,9 @@ package reactor.util.function;
 
 import java.util.Objects;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+
+import reactor.util.annotation.NonNull;
+import reactor.util.annotation.Nullable;
 
 /**
  * A tuple that holds three non-null values.
@@ -65,7 +67,7 @@ public class Tuple3<T1, T2, T3> extends Tuple2<T1, T2> {
 	}
 
 	@Override
-	public Object[] toArray() {
+	public Object @NonNull [] toArray() {
 		return new Object[]{t1, t2, t3};
 	}
 

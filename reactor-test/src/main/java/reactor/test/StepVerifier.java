@@ -35,6 +35,7 @@ import reactor.core.publisher.Hooks;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.util.function.Tuple2;
+import reactor.util.annotation.NonNull;
 
 /**
  * A {@link StepVerifier} provides a declarative way of creating a verifiable script for
@@ -670,7 +671,7 @@ public interface StepVerifier {
 		 *
 		 * @see Subscriber#onNext(Object)
 		 */
-		Step<T> expectNext(T... ts);
+		Step<T> expectNext(T @NonNull ... ts);
 
 		/**
 		 * Expect to received {@code count} elements, starting from the previous
@@ -953,14 +954,14 @@ public interface StepVerifier {
 		 * Assert that the tested publisher has dropped at least all of the provided
 		 * elements to the {@link Hooks#onNextDropped(Consumer)} hook, in any order.
 		 */
-		Assertions hasDropped(Object... values);
+		Assertions hasDropped(Object @NonNull ... values);
 
 		/**
 		 * Assert that the tested publisher has dropped all of the provided elements to
 		 * the {@link Hooks#onNextDropped(Consumer)} hook, in any order, and that no
 		 * other elements were dropped.
 		 */
-		Assertions hasDroppedExactly(Object... values);
+		Assertions hasDroppedExactly(Object @NonNull ... values);
 
 		/**
 		 * Assert that the tested publisher has dropped at least one error to the

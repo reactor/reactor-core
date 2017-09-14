@@ -17,12 +17,12 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.function.Consumer;
-import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.util.context.Context;
+import reactor.util.annotation.Nullable;
 
 /**
  * Delays the subscription to the main source until another Publisher
