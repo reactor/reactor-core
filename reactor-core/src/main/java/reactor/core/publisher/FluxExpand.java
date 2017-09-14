@@ -40,15 +40,16 @@ import reactor.util.context.Context;
  * {@code breadthFirst} parameter.
  *
  * @param <T>
+ *
  * @author David Karnok
  * @author Simon Baslé
  */
 //adapted from RxJava2Extensions: https://github.com/akarnokd/RxJava2Extensions/blob/master/src/main/java/hu/akarnokd/rxjava2/operators/FlowableExpand.java
 final class FluxExpand<T> extends FluxOperator<T, T> {
 
-	final boolean breadthFirst;
+	final boolean                                               breadthFirst;
 	final Function<? super T, ? extends Publisher<? extends T>> expander;
-	final int capacityHint;
+	final int                                                   capacityHint;
 
 	FluxExpand(Flux<T> source,
 			Function<? super T, ? extends Publisher<? extends T>> expander,
@@ -62,12 +63,15 @@ final class FluxExpand<T> extends FluxOperator<T, T> {
 	@Override
 	public void subscribe(CoreSubscriber<? super T> s) {
 		if (breadthFirst) {
-			ExpandBreathSubscriber<T> parent = new ExpandBreathSubscriber<>(s, expander, capacityHint);
+			ExpandBreathSubscriber<T> parent =
+					new ExpandBreathSubscriber<>(s, expander, capacityHint);
 			parent.queue.offer(source);
 			s.onSubscribe(parent);
 			parent.drainQueue();
-		} else {
-			ExpandDepthSubscription<T> parent = new ExpandDepthSubscription<>(s, expander, capacityHint);
+		}
+		else {
+			ExpandDepthSubscription<T> parent =
+					new ExpandDepthSubscription<>(s, expander, capacityHint);
 			parent.source = source;
 			s.onSubscribe(parent);
 		}
@@ -77,8 +81,7 @@ final class FluxExpand<T> extends FluxOperator<T, T> {
 			extends Operators.MultiSubscriptionSubscriber<T, T> {
 
 		final Function<? super T, ? extends Publisher<? extends T>> expander;
-		final Queue<Publisher<? extends T>> queue;
-
+		final Queue<Publisher<? extends T>>                         queue;
 
 		volatile boolean active;
 		volatile int     wip;
@@ -108,8 +111,10 @@ final class FluxExpand<T> extends FluxOperator<T, T> {
 
 			Publisher<? extends T> p;
 			try {
-				p = Objects.requireNonNull(expander.apply(t), "The expander returned a null Publisher");
-			} catch (Throwable ex) {
+				p = Objects.requireNonNull(expander.apply(t),
+						"The expander returned a null Publisher");
+			}
+			catch (Throwable ex) {
 				Exceptions.throwIfFatal(ex);
 				super.cancel();
 				actual.onError(ex);
@@ -146,13 +151,15 @@ final class FluxExpand<T> extends FluxOperator<T, T> {
 					Queue<Publisher<? extends T>> q = queue;
 					if (isCancelled()) {
 						q.clear();
-					} else {
+					}
+					else {
 						if (!active) {
 							if (q.isEmpty()) {
 								set(Operators.cancelledSubscription());
 								super.cancel();
 								actual.onComplete();
-							} else {
+							}
+							else {
 								Publisher<? extends T> p = q.poll();
 								long c = produced;
 								if (c != 0L) {
@@ -165,7 +172,8 @@ final class FluxExpand<T> extends FluxOperator<T, T> {
 							}
 						}
 					}
-				} while (WIP.decrementAndGet(this) != 0);
+				}
+				while (WIP.decrementAndGet(this) != 0);
 			}
 		}
 
@@ -178,10 +186,9 @@ final class FluxExpand<T> extends FluxOperator<T, T> {
 		}
 	}
 
-	static final class ExpandDepthSubscription<T>
-			implements InnerProducer<T> {
+	static final class ExpandDepthSubscription<T> implements InnerProducer<T> {
 
-		final CoreSubscriber<? super T> actual;
+		final CoreSubscriber<? super T>                             actual;
 		final Function<? super T, ? extends Publisher<? extends T>> expander;
 
 		volatile Throwable error;
@@ -209,7 +216,7 @@ final class FluxExpand<T> extends FluxOperator<T, T> {
 		volatile boolean cancelled;
 
 		Publisher<? extends T> source;
-		long consumed;
+		long                   consumed;
 
 		ExpandDepthSubscription(CoreSubscriber<? super T> actual,
 				Function<? super T, ? extends Publisher<? extends T>> expander,
@@ -249,9 +256,9 @@ final class FluxExpand<T> extends FluxOperator<T, T> {
 					}
 				}
 
-				Object o = CURRENT.getAndSet(this,this);
+				Object o = CURRENT.getAndSet(this, this);
 				if (o != this && o != null) {
-					((ExpandDepthSubscriber)o).dispose();
+					((ExpandDepthSubscriber) o).dispose();
 				}
 			}
 		}
@@ -315,7 +322,8 @@ final class FluxExpand<T> extends FluxOperator<T, T> {
 					ExpandDepthSubscriber<T> eds = new ExpandDepthSubscriber<>(this);
 					if (setCurrent(eds)) {
 						p.subscribe(eds);
-					} else {
+					}
+					else {
 						return;
 					}
 				}
@@ -333,8 +341,10 @@ final class FluxExpand<T> extends FluxOperator<T, T> {
 						e++;
 
 						try {
-							p = Objects.requireNonNull(expander.apply(v), "The expander returned a null Publisher");
-						} catch (Throwable ex) {
+							p = Objects.requireNonNull(expander.apply(v),
+									"The expander returned a null Publisher");
+						}
+						catch (Throwable ex) {
 							Exceptions.throwIfFatal(ex);
 							p = null;
 							curr.dispose();
@@ -351,7 +361,8 @@ final class FluxExpand<T> extends FluxOperator<T, T> {
 								if (setCurrent(curr)) {
 									p.subscribe(curr);
 									newSource = true;
-								} else {
+								}
+								else {
 									return;
 								}
 							}
@@ -364,7 +375,8 @@ final class FluxExpand<T> extends FluxOperator<T, T> {
 								Throwable ex = Exceptions.terminate(ERROR, this);
 								if (ex != null) {
 									a.onError(ex);
-								} else {
+								}
+								else {
 									a.onComplete();
 								}
 								return;
@@ -373,7 +385,8 @@ final class FluxExpand<T> extends FluxOperator<T, T> {
 							if (curr != null && setCurrent(curr)) {
 								curr.requestOne();
 								continue;
-							} else {
+							}
+							else {
 								return;
 							}
 						}
@@ -386,7 +399,8 @@ final class FluxExpand<T> extends FluxOperator<T, T> {
 					if (missed == 0) {
 						break;
 					}
-				} else {
+				}
+				else {
 					missed = w;
 				}
 			}
@@ -418,13 +432,12 @@ final class FluxExpand<T> extends FluxOperator<T, T> {
 		}
 	}
 
-	static final class ExpandDepthSubscriber<T>
-			implements InnerConsumer<T> {
+	static final class ExpandDepthSubscriber<T> implements InnerConsumer<T> {
 
 		ExpandDepthSubscription<T> parent;
 
 		volatile boolean done;
-		volatile T value;
+		volatile T       value;
 
 		volatile Subscription s;
 		static final AtomicReferenceFieldUpdater<ExpandDepthSubscriber, Subscription> S =
@@ -436,7 +449,7 @@ final class FluxExpand<T> extends FluxOperator<T, T> {
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (Operators.setOnce(S,this, s)) {
+			if (Operators.setOnce(S, this, s)) {
 				s.request(1);
 			}
 		}

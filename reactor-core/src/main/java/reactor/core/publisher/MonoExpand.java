@@ -31,9 +31,9 @@ import reactor.core.CoreSubscriber;
  */
 final class MonoExpand<T> extends FluxFromMonoOperator<T, T> {
 
-	final boolean breadthFirst;
+	final boolean                                               breadthFirst;
 	final Function<? super T, ? extends Publisher<? extends T>> expander;
-	final int capacityHint;
+	final int                                                   capacityHint;
 
 	MonoExpand(Mono<T> source,
 			Function<? super T, ? extends Publisher<? extends T>> expander,
@@ -47,14 +47,15 @@ final class MonoExpand<T> extends FluxFromMonoOperator<T, T> {
 	@Override
 	public void subscribe(CoreSubscriber<? super T> s) {
 		if (breadthFirst) {
-			FluxExpand.ExpandBreathSubscriber<T>
-					parent = new FluxExpand.ExpandBreathSubscriber<>(s, expander, capacityHint);
+			FluxExpand.ExpandBreathSubscriber<T> parent =
+					new FluxExpand.ExpandBreathSubscriber<>(s, expander, capacityHint);
 			parent.queue.offer(source);
 			s.onSubscribe(parent);
 			parent.drainQueue();
-		} else {
-			FluxExpand.ExpandDepthSubscription<T>
-					parent = new FluxExpand.ExpandDepthSubscription<>(s, expander, capacityHint);
+		}
+		else {
+			FluxExpand.ExpandDepthSubscription<T> parent =
+					new FluxExpand.ExpandDepthSubscription<>(s, expander, capacityHint);
 			parent.source = source;
 			s.onSubscribe(parent);
 		}
