@@ -117,7 +117,7 @@ public class FluxSubscribeOnCallableTest {
 	public void callableReturnsNullFused3() {
 		StepVerifier.create(Mono.fromCallable(() -> null)
 		                        .flux()
-		                        .subscribeOn(Schedulers.single()))
+		                        .subscribeOn(Schedulers.single()), 0)
 		            .expectFusion(Fuseable.ASYNC)
 		            .verifyComplete();
 	}
