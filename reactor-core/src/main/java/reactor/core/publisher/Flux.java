@@ -6372,7 +6372,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * the next occurrence of a {@link #publishOn(Scheduler) publishOn}.
 	 * <p>
 	 * Note that if you are using an eager or blocking
-	 * {@link Flux#create(Consumer, OverflowStrategy)}
+	 * {@link #create(Consumer, FluxSink.OverflowStrategy)}
 	 * as the source, it can lead to deadlocks due to requests piling up behind the emitter.
 	 * In such case, you should call {@link #subscribeOn(Scheduler, boolean) subscribeOn(scheduler, false)}
 	 * instead.
@@ -6386,7 +6386,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * </pre></blockquote>
 	 *
 	 * <p>
-	 *     Note that {@link Scheduler.Worker#schedule(Runnable)} raising
+	 *     Note that {@link Worker#schedule(Runnable)} raising
 	 *     {@link java.util.concurrent.RejectedExecutionException} on late
 	 *     {@link Subscription#request(long)} will be propagated to the request caller.
 	 *
@@ -6409,7 +6409,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * the next occurrence of a {@link #publishOn(Scheduler) publishOn}.
 	 * <p>
 	 * Note that if you are using an eager or blocking
-	 * {@link Flux#create(Consumer, OverflowStrategy)}
+	 * {@link Flux#create(Consumer, FluxSink.OverflowStrategy)}
 	 * as the source, it can lead to deadlocks due to requests piling up behind the emitter.
 	 * Thus this operator has a {@code requestOnSeparateThread} parameter, which should be
 	 * set to {@code false} in this case.
@@ -6423,7 +6423,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * </pre></blockquote>
 	 *
 	 * <p>
-	 *     Note that {@link Scheduler.Worker#schedule(Runnable)} raising
+	 *     Note that {@link Worker#schedule(Runnable)} raising
 	 *     {@link java.util.concurrent.RejectedExecutionException} on late
 	 *     {@link Subscription#request(long)} will be propagated to the request caller.
 	 *
