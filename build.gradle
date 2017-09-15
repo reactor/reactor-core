@@ -1,3 +1,5 @@
+import org.gradle.api.internal.plugins.osgi.OsgiHelper
+
 /*
  * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
@@ -38,6 +40,14 @@ apply from: "gradle/setup.gradle"
 
 
 ext {
+  //also set up the special version at root, for refguide
+  if (project.hasProperty('versionBranch') && version.toString().endsWith(".BUILD-SNAPSHOT")) {
+	versionBranch = versionBranch.replaceAll("\"", "").trim()
+	if (!versionBranch.isEmpty()) {
+	  realVersion = version.toString().replace("BUILD-SNAPSHOT", versionBranch + ".BUILD-SNAPSHOT")
+	  project.version = realVersion
+	}
+  }
   gradleVersion = '3.5'
 
   // Logging
@@ -71,6 +81,20 @@ configure(subprojects) { p ->
 
   description = 'Non-Blocking Reactive Foundation for the JVM'
   group = 'io.projectreactor'
+
+  ext {
+	//set up special version per sub-project
+	//(the root level configuration doesn't seem to propagate)
+	if (project.hasProperty('versionBranch') && version.toString().endsWith(".BUILD-SNAPSHOT")) {
+	  versionBranch = versionBranch.replaceAll("\"", "").trim()
+	  if (!versionBranch.isEmpty()) {
+		realVersion = p.version.toString().replace("BUILD-SNAPSHOT", versionBranch + ".BUILD-SNAPSHOT")
+		p.version = realVersion
+		println "Building special ${project} snapshot ${p.version}"
+		println "OSGI version would be: ${new OsgiHelper().getVersion(p.version.toString())}"
+	  }
+	}
+  }
 
   repositories {
 	mavenLocal()
