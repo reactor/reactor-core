@@ -64,12 +64,9 @@ public class MonoSubscribeOnCallableTest {
 
 	@Test
 	public void callableNullBackpressured() {
-		StepVerifier.withVirtualTime( () ->
+		StepVerifier.create(
 				Mono.fromCallable(() -> null).subscribeOn(Schedulers.single()), 0)
 		            .expectSubscription()
-		            .expectNoEvent(Duration.ofSeconds(1))
-		            .thenRequest(1)
-		            .thenAwait()
 		            .expectComplete()
 		            .verify();
 	}

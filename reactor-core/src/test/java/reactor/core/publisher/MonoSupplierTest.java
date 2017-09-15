@@ -15,7 +15,6 @@
  */
 package reactor.core.publisher;
 
-import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
@@ -62,12 +61,10 @@ public class MonoSupplierTest {
 	}
 
 	@Test
-	public void asyncSupplyingNullBackpressured() {
+	public void asyncSupplyingNullBackpressuredShortcuts() {
 		StepVerifier.create(Mono.fromSupplier(() -> null)
 		                        .subscribeOn(Schedulers.single()), 0)
 		            .expectSubscription()
-		            .expectNoEvent(Duration.ofMillis(200))
-		            .thenRequest(1)
 		            .verifyComplete();
 	}
 

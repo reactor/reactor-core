@@ -57,7 +57,7 @@ public class FluxSubscribeOnCallableTest {
 	public void callableReturnsNull2() {
 		StepVerifier.create(Mono.fromCallable(() -> null)
 		                        .flux()
-		                        .subscribeOn(Schedulers.single()))
+		                        .subscribeOn(Schedulers.single()), 0)
 		            .verifyComplete();
 	}
 
@@ -65,8 +65,7 @@ public class FluxSubscribeOnCallableTest {
 	public void callableReturnsNull3() {
 		StepVerifier.create(Mono.fromCallable(() -> null)
 		                        .flux()
-		                        .subscribeOn(Schedulers.single()), 0)
-		            .thenRequest(1)
+		                        .subscribeOn(Schedulers.single()), 1)
 		            .verifyComplete();
 	}
 
@@ -113,6 +112,7 @@ public class FluxSubscribeOnCallableTest {
 		            .thenRequest(1)
 		            .verifyComplete();
 	}
+
 	@Test
 	public void callableReturnsNullFused3() {
 		StepVerifier.create(Mono.fromCallable(() -> null)

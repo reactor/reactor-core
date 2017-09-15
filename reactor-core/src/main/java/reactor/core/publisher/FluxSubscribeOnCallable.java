@@ -155,7 +155,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 
 		@Override
 		public boolean isEmpty() {
-			return fusionState == COMPLETE || (fusionState == HAS_VALUE && value == null);
+			return fusionState == COMPLETE;
 		}
 
 		@Override
@@ -221,6 +221,12 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 				return;
 			}
 
+			if (v == null) {
+				fusionState = COMPLETE;
+				actual.onComplete();
+				return;
+			}
+
 			for (; ; ) {
 				int s = state;
 				if (s == HAS_CANCELLED || s == HAS_REQUEST_HAS_VALUE || s == NO_REQUEST_HAS_VALUE) {
@@ -231,9 +237,7 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 						this.value = v;
 						this.fusionState = HAS_VALUE;
 					}
-					if (v != null) {
-						actual.onNext(v);
-					}
+					actual.onNext(v);
 					if (state != HAS_CANCELLED) {
 						actual.onComplete();
 					}
@@ -275,10 +279,10 @@ final class FluxSubscribeOnCallable<T> extends Flux<T> implements Fuseable {
 		}
 
 		void emitValue() {
-			T v = value;
 			if (fusionState == NO_VALUE) {
 				this.fusionState = HAS_VALUE;
 			}
+			T v = value;
 			clear();
 			if (v != null) {
 				actual.onNext(v);
