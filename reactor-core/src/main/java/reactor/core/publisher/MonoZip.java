@@ -217,6 +217,7 @@ final class MonoZip<T, R> extends Mono<R> {
 					Throwable e = m.error;
 					if (e != null) {
 						if (compositeError != null) {
+							//this is ok as the composite created below is never a singleton
 							compositeError.addSuppressed(e);
 						}
 						else if (error != null) {

@@ -22,6 +22,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import reactor.core.CoreSubscriber;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 
 /**
@@ -86,8 +87,7 @@ final class MonoUsing<T, S> extends Mono<T> implements Fuseable {
 				resourceCleanup.accept(resource);
 			}
 			catch (Throwable ex) {
-				ex.addSuppressed(Operators.onOperatorError(e, actual.currentContext()));
-				e = ex;
+				e = Exceptions.addSuppressed(ex, Operators.onOperatorError(e, actual.currentContext()));
 			}
 
 			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));

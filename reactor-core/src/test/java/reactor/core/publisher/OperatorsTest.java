@@ -352,4 +352,34 @@ public class OperatorsTest {
 		                                .hasMessage("Scheduler unavailable")
 		                                .hasCause(failure);
 	}
+
+	@Test
+	public void testOnRejectedWithReactorRee() {
+		Exception originalCause = new Exception("boom");
+		RejectedExecutionException original = Exceptions.failWithRejected(originalCause);
+		Exception suppressed = new Exception("suppressed");
+
+		RuntimeException test = Operators.onRejectedExecution(original,
+				null, suppressed, null, Context.empty());
+
+		assertThat(test)
+				.isSameAs(original)
+				.hasSuppressedException(suppressed);
+	}
+
+	@Test
+	public void testOnRejectedWithOutsideRee() {
+		RejectedExecutionException original = new RejectedExecutionException("outside");
+		Exception suppressed = new Exception("suppressed");
+
+		RuntimeException test = Operators.onRejectedExecution(original,
+				null, suppressed, null, Context.empty());
+
+		assertThat(test)
+				.isNotSameAs(original)
+				.isInstanceOf(RejectedExecutionException.class)
+				.hasMessage("Scheduler unavailable")
+				.hasCause(original)
+				.hasSuppressedException(suppressed);
+	}
 }

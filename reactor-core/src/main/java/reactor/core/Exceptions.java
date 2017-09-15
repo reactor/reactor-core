@@ -43,7 +43,7 @@ public abstract class Exceptions {
 	 * don't leak this!
 	 */
 	@SuppressWarnings("ThrowableInstanceNeverThrown")
-	public static final Throwable TERMINATED = new Throwable("No further exceptions");
+	public static final Throwable TERMINATED = new Throwable("Operator has been terminated");
 
 	/**
 	 * Update an empty atomic reference with the given exception, or combine further added
@@ -71,6 +71,7 @@ public abstract class Exceptions {
 			}
 
 			if (current instanceof CompositeException) {
+				//this is ok, composite exceptions are never singletons
 				current.addSuppressed(exception);
 				return true;
 			}
@@ -90,7 +91,7 @@ public abstract class Exceptions {
 
 	/**
 	 * Create a composite exception that wraps the given {@link Throwable Throwable(s)},
-	 * as suppressed exceptions.Instances create by this method can be detected using the
+	 * as suppressed exceptions. Instances create by this method can be detected using the
 	 * {@link #isMultiple(Throwable)} check. The {@link #unwrapMultiple(Throwable)} method
 	 * will correctly unwrap these to a {@link List} of the suppressed exceptions. Note
 	 * that is will also be consistent in producing a List for other types of exceptions
@@ -106,17 +107,32 @@ public abstract class Exceptions {
 		//noinspection ConstantConditions
 		if (throwables != null) {
 			for (Throwable t : throwables) {
+				//this is ok, multiple is always a new non-singleton instance
 				multiple.addSuppressed(t);
 			}
 		}
 		return multiple;
 	}
 
+	/**
+	 * Create a composite exception that wraps the given {@link Throwable Throwable(s)},
+	 * as suppressed exceptions. Instances create by this method can be detected using the
+	 * {@link #isMultiple(Throwable)} check. The {@link #unwrapMultiple(Throwable)} method
+	 * will correctly unwrap these to a {@link List} of the suppressed exceptions. Note
+	 * that is will also be consistent in producing a List for other types of exceptions
+	 * by putting the input inside a single-element List.
+	 *
+	 * @param throwables the exceptions to wrap into a composite
+	 * @return a composite exception with a standard message, and the given throwables as
+	 * suppressed exceptions
+	 * @see #addThrowable(AtomicReferenceFieldUpdater, Object, Throwable)
+	 */
 	public static RuntimeException multiple(Iterable<Throwable> throwables) {
 		RuntimeException multiple = new RuntimeException("Multiple exceptions");
 		//noinspection ConstantConditions
 		if (throwables != null) {
 			for (Throwable t : throwables) {
+				//this is ok, multiple is always a new non-singleton instance
 				multiple.addSuppressed(t);
 			}
 		}
@@ -218,13 +234,18 @@ public abstract class Exceptions {
 	}
 
 	/**
-	 * Return a new {@link RejectedExecutionException} with standard message and cause
+	 * Return a new {@link RejectedExecutionException} with standard message and cause,
+	 * unless the {@code cause} is already a {@link RejectedExecutionException} created
+	 * via {@link #failWithRejected(Throwable)} (not the singleton-producing variants).
 	 *
-	 * @param cause
+	 * @param cause the original exception that caused the rejection
 	 * @return a new {@link RejectedExecutionException} with standard message and cause
 	 */
 	public static RejectedExecutionException failWithRejected(Throwable cause) {
-		return new RejectedExecutionException("Scheduler unavailable", cause);
+		if (cause instanceof ReactorRejectedExecutionException) {
+			return (RejectedExecutionException) cause;
+		}
+		return new ReactorRejectedExecutionException("Scheduler unavailable", cause);
 	}
 
 	/**
@@ -403,6 +424,77 @@ public abstract class Exceptions {
 		return Collections.singletonList(potentialMultiple);
 	}
 
+	/**
+	 * Safely suppress a {@link Throwable} on a {@link RuntimeException}. The returned
+	 * {@link RuntimeException}, bearing the suppressed exception, is most often the same
+	 * as the original exception unless:
+	 * <ul>
+	 *     <li>original and tentatively suppressed exceptions are one and the same: do
+	 *     nothing but return the original.</li>
+	 *     <li>original is one of the singleton {@link RejectedExecutionException} created
+	 *     by Reactor: make a copy the {@link RejectedExecutionException}, add the
+	 *     suppressed exception to it and return that copy.</li>
+	 *
+	 * </ul>
+	 * @param original the original {@link RuntimeException} to bear a suppressed exception
+	 * @param suppressed the {@link Throwable} to suppress
+	 * @return the (most of the time original) {@link RuntimeException} bearing the
+	 * suppressed {@link Throwable}
+	 */
+	public static final RuntimeException addSuppressed(RuntimeException original, Throwable suppressed) {
+		if (original == suppressed) {
+			return original;
+		}
+		if (original == REJECTED_EXECUTION || original == NOT_TIME_CAPABLE_REJECTED_EXECUTION) {
+			RejectedExecutionException ree = new RejectedExecutionException(original.getMessage());
+			ree.addSuppressed(suppressed);
+			return ree;
+		}
+		else {
+			original.addSuppressed(suppressed);
+			return original;
+		}
+	}
+
+	/**
+	 * Safely suppress a {@link Throwable} on an original {@link Throwable}. The returned
+	 * {@link Throwable}, bearing the suppressed exception, is most often the same
+	 * as the original one unless:
+	 * <ul>
+	 *     <li>original and tentatively suppressed exceptions are one and the same: do
+	 *     nothing but return the original.</li>
+	 *     <li>original is one of the singleton {@link RejectedExecutionException} created
+	 *     by Reactor: make a copy the {@link RejectedExecutionException}, add the
+	 *     suppressed exception to it and return that copy.</li>
+	 *     <li>original is a special internal TERMINATED singleton instance: return it
+	 *     without suppressing the exception.</li>
+	 *
+	 * </ul>
+	 * @param original the original {@link Throwable} to bear a suppressed exception
+	 * @param suppressed the {@link Throwable} to suppress
+	 * @return the (most of the time original) {@link Throwable} bearing the
+	 * suppressed {@link Throwable}
+	 */
+	public static final Throwable addSuppressed(Throwable original, final Throwable suppressed) {
+		if (original == suppressed) {
+			return original;
+		}
+
+		if (original == TERMINATED) {
+			return original;
+		}
+
+		if (original == REJECTED_EXECUTION || original == NOT_TIME_CAPABLE_REJECTED_EXECUTION) {
+			RejectedExecutionException ree = new RejectedExecutionException(original.getMessage());
+			ree.addSuppressed(suppressed);
+			return ree;
+		}
+		else {
+			original.addSuppressed(suppressed);
+			return original;
+		}
+	}
+
 	Exceptions() {
 	}
 
@@ -490,6 +582,13 @@ public abstract class Exceptions {
 
 		OverflowException(String s) {
 			super(s);
+		}
+	}
+
+	static final class ReactorRejectedExecutionException extends RejectedExecutionException {
+
+		ReactorRejectedExecutionException(String message, Throwable cause) {
+			super(message, cause);
 		}
 	}
 

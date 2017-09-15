@@ -178,9 +178,7 @@ public abstract class BaseSubscriber<T> implements CoreSubscriber<T>, Subscripti
 			hookOnError(t);
 		}
 		catch (Throwable e) {
-			if (e != t) {
-				e.addSuppressed(t);
-			}
+			e = Exceptions.addSuppressed(e, t);
 			Operators.onErrorDropped(e, currentContext());
 		}
 		finally {
