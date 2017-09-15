@@ -184,6 +184,7 @@ final class MonoDelayUntil<T> extends Mono<T> {
 				Throwable e = mt.error;
 				if (e != null) {
 					if (compositeError != null) {
+						//this is ok as the composite created by multiple is never a singleton
 						compositeError.addSuppressed(e);
 					} else
 					if (error != null) {

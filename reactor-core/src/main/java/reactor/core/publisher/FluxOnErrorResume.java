@@ -22,6 +22,7 @@ import java.util.function.Function;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Exceptions;
 
 /**
  * Resumes the failed main sequence with another sequence returned by
@@ -89,9 +90,7 @@ final class FluxOnErrorResume<T> extends FluxOperator<T, T> {
 				}
 				catch (Throwable e) {
 					Throwable _e = Operators.onOperatorError(e, actual.currentContext());
-					if (t != _e) {
-						_e.addSuppressed(t);
-					}
+					_e = Exceptions.addSuppressed(_e, t);
 					actual.onError(_e);
 					return;
 				}

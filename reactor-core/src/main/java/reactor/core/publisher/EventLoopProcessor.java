@@ -31,6 +31,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.util.concurrent.Queues;
 import reactor.util.concurrent.WaitStrategy;
@@ -63,9 +64,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		});
 		if (error != null) {
 			if (t != null) {
-				if (t != error) {
-					t.addSuppressed(error);
-				}
+				t = Exceptions.addSuppressed(t, error);
 				return concat(bufferIterable, Flux.error(t));
 			}
 			return concat(bufferIterable, Flux.error(error));

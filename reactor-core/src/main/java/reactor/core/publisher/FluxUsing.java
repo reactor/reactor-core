@@ -26,6 +26,7 @@ import javax.annotation.Nullable;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 
 /**
@@ -85,16 +86,15 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable {
 					"The sourceFactory returned a null value");
 		}
 		catch (Throwable e) {
-
+			Throwable _e = Operators.onOperatorError(e, actual.currentContext());
 			try {
 				resourceCleanup.accept(resource);
 			}
 			catch (Throwable ex) {
-				ex.addSuppressed(Operators.onOperatorError(e, actual.currentContext()));
-				e = ex;
+				_e = Exceptions.addSuppressed(ex, _e);
 			}
 
-			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
+			Operators.error(actual, _e);
 			return;
 		}
 
@@ -203,10 +203,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable {
 				}
 				catch (Throwable e) {
 					Throwable _e = Operators.onOperatorError(e, actual.currentContext());
-					if (_e != t) {
-						_e.addSuppressed(t);
-					}
-					t = _e;
+					t = Exceptions.addSuppressed(_e, t);
 				}
 			}
 
@@ -356,10 +353,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable {
 				}
 				catch (Throwable e) {
 					Throwable _e = Operators.onOperatorError(e, actual.currentContext());
-					if (_e != t) {
-						_e.addSuppressed(t);
-					}
-					t = _e;
+					t = Exceptions.addSuppressed(_e, t);
 				}
 			}
 
@@ -520,10 +514,7 @@ final class FluxUsing<T, S> extends Flux<T> implements Fuseable {
 				}
 				catch (Throwable e) {
 					Throwable _e = Operators.onOperatorError(e, actual.currentContext());
-					if (_e != t) {
-						_e.addSuppressed(t);
-					}
-					t = _e;
+					t = Exceptions.addSuppressed(_e, t);
 				}
 			}
 

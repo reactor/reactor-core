@@ -452,8 +452,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 
 		@Override
 		final public void onError(Throwable t) {
-			fail(t);
-			actual.onError(t);
+			actual.onError(fail(t));
 		}
 
 		@Override
@@ -474,7 +473,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 			return Fuseable.NONE;
 		}
 
-		final void fail(Throwable t) {
+		final Throwable fail(Throwable t) {
 			StringBuilder sb = new StringBuilder();
 			fillStacktraceHeader(sb, parent.getClass(), snapshotStack);
 			OnAssemblyException set = null;
@@ -489,13 +488,13 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 				}
 			}
 			if (set == null) {
-				t.addSuppressed(new OnAssemblyException(parent, snapshotStack,
+				t = Exceptions.addSuppressed(t, new OnAssemblyException(parent, snapshotStack,
 						sb.append(snapshotStack.toString()).toString()));
 			}
-			else if(snapshotStack.checkpointed && t != snapshotStack){
-				t.addSuppressed(snapshotStack);
+			else if(snapshotStack.checkpointed) {
+				t = Exceptions.addSuppressed(t, snapshotStack);
 			}
-
+			return t;
 		}
 
 		@Override
@@ -503,10 +502,9 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 			try {
 				return qs.isEmpty();
 			}
-			catch (final Throwable ex) {
+			catch (Throwable ex) {
 				Exceptions.throwIfFatal(ex);
-				fail(ex);
-				throw ex;
+				throw Exceptions.propagate(fail(ex));
 			}
 		}
 
@@ -547,8 +545,7 @@ final class FluxOnAssembly<T> extends FluxOperator<T, T> implements Fuseable,
 			}
 			catch (final Throwable ex) {
 				Exceptions.throwIfFatal(ex);
-				fail(ex);
-				throw ex;
+				throw Exceptions.propagate(fail(ex));
 			}
 		}
 	}

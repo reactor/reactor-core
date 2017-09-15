@@ -375,7 +375,7 @@ public abstract class Operators {
 		if (hook == null) {
 			if (dataSignal != null) {
 				if (dataSignal != t && dataSignal instanceof Throwable) {
-					t.addSuppressed((Throwable) dataSignal);
+					t = Exceptions.addSuppressed(t, (Throwable) dataSignal);
 				}
 				//do not wrap original value to avoid strong references
 				/*else {
@@ -407,7 +407,7 @@ public abstract class Operators {
 	 * operator. This exception denotes that an execution was rejected by a
 	 * {@link reactor.core.scheduler.Scheduler}, notably when it was already disposed.
 	 * <p>
-	 * Wrapping is done by calling both {@link Exceptions#bubble(Throwable)} and
+	 * Wrapping is done by calling both {@link Exceptions#asRejected(Throwable)} and
 	 * {@link #onOperatorError(Subscription, Throwable, Object, Context)} (with the passed
 	 * {@link Subscription}).
 	 *
@@ -427,8 +427,8 @@ public abstract class Operators {
 			context = context.put(Hooks.KEY_ON_OPERATOR_ERROR, context.get(Hooks.KEY_ON_REJECTED_EXECUTION));
 		}
 
-		//FIXME only create REE if original is REE singleton OR there's suppressed OR there's Throwable dataSignal
-		RejectedExecutionException ree = Exceptions.failWithRejected(original);
+		//don't create REE if original is a reactor-produced REE (not including singletons)
+		RejectedExecutionException ree = Exceptions.asRejected(original);
 		if (suppressed != null) {
 			ree.addSuppressed(suppressed);
 		}
