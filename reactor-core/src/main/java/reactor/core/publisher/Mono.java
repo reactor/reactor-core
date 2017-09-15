@@ -309,7 +309,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Create a {@link Mono} producing its value using the provided {@link Callable}.
+	 * Create a {@link Mono} producing its value using the provided {@link Callable}. If
+	 * the Callable resolves to {@code null}, the resulting Mono completes empty.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/fromcallable.png" alt="">
@@ -403,7 +404,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Create a {@link Mono}, producing its value using the provided {@link Supplier}.
+	 * Create a {@link Mono}, producing its value using the provided {@link Supplier}. If
+	 * the Supplier resolves to {@code null}, the resulting Mono completes empty.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/fromsupplier.png" alt="">

@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -37,6 +38,34 @@ public class MonoSupplierTest {
 		m.subscribeWith(AssertSubscriber.create())
 				.assertValues(2)
 				.assertComplete();
+	}
+
+	@Test
+	public void normalSupplyingNull() {
+		StepVerifier.create(Mono.fromSupplier(() -> null))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void normalSupplyingNullBackpressuredShortcuts() {
+		StepVerifier.create(Mono.fromSupplier(() -> null), 0)
+		            .expectSubscription()
+		            .verifyComplete();
+	}
+
+	@Test
+	public void asyncSupplyingNull() {
+		StepVerifier.create(Mono.fromSupplier(() -> null)
+		                        .subscribeOn(Schedulers.single()), 1)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void asyncSupplyingNullBackpressuredShortcuts() {
+		StepVerifier.create(Mono.fromSupplier(() -> null)
+		                        .subscribeOn(Schedulers.single()), 0)
+		            .expectSubscription()
+		            .verifyComplete();
 	}
 
 	@Test

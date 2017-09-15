@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import javax.annotation.Nullable;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
@@ -43,7 +44,6 @@ extends Mono<T>
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-
 		Operators.MonoSubscriber<T, T>
 				sds = new Operators.MonoSubscriber<>(actual);
 
@@ -53,41 +53,42 @@ extends Mono<T>
 			return;
 		}
 
-		T t;
 		try {
-			t = Objects.requireNonNull(callable.call(), "callable returned null");
+			T t = callable.call();
+			if (t == null) {
+				sds.onComplete();
+			}
+			else {
+				sds.complete(t);
+			}
 		}
 		catch (Throwable e) {
 			actual.onError(Operators.onOperatorError(e, actual.currentContext()));
-			return;
 		}
 
-		sds.complete(t);
 	}
 
 	@Override
+	@Nullable
 	public T block() {
 		//duration is ignored below
 		return block(Duration.ZERO);
 	}
 
 	@Override
+	@Nullable
 	public T block(Duration m) {
 		try {
-			return Objects.requireNonNull(callable.call(),
-					"The callable source returned null");
+			return callable.call();
 		}
 		catch (Throwable e) {
-			if (e instanceof RuntimeException) {
-				throw (RuntimeException)e;
-			}
 			throw Exceptions.propagate(e);
 		}
 	}
 
 	@Override
+	@Nullable
 	public T call() throws Exception {
-		return Objects.requireNonNull(callable.call(),
-				"The callable source returned null");
+		return callable.call();
 	}
 }

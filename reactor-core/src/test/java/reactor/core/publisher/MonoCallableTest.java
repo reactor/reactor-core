@@ -21,6 +21,7 @@ import org.junit.Test;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class MonoCallableTest {
 
@@ -36,8 +37,19 @@ public class MonoCallableTest {
         Mono.<Integer>fromCallable(() -> null).subscribe(ts);
 
         ts.assertNoValues()
-          .assertNotComplete()
-          .assertError(NullPointerException.class);
+          .assertNoError()
+          .assertComplete();
+    }
+
+    @Test
+    public void callableReturnsNullShortcircuitsBackpressure() {
+        AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
+
+        Mono.<Integer>fromCallable(() -> null).subscribe(ts);
+
+        ts.assertNoValues()
+          .assertNoError()
+          .assertComplete();
     }
 
     @Test
@@ -88,11 +100,42 @@ public class MonoCallableTest {
                        .block()).isEqualToIgnoringCase("test");
     }
 
+    @Test
+    public void onMonoEmptyCallableOnBlock() {
+        assertThat(Mono.fromCallable(() -> null)
+                       .block()).isNull();
+    }
+
     @Test(expected = RuntimeException.class)
     public void onMonoErrorCallableOnBlock() {
         Mono.fromCallable(() -> {
             throw new Exception("test");
         })
             .block();
+    }
+
+    @Test
+    public void delegateCall() throws Exception {
+        MonoCallable<Integer> monoCallable = new MonoCallable<>(() -> 1);
+
+        assertThat(monoCallable.call()).isEqualTo(1);
+    }
+
+    @Test
+    public void delegateCallError() {
+        MonoCallable<Integer> monoCallable = new MonoCallable<>(() -> {
+            throw new IllegalStateException("boom");
+        });
+
+        assertThatExceptionOfType(IllegalStateException.class)
+                .isThrownBy(monoCallable::call)
+                .withMessage("boom");
+    }
+
+    @Test
+    public void delegateCallNull() throws Exception {
+        MonoCallable<Integer> monoCallable = new MonoCallable<>(() -> null);
+
+        assertThat(monoCallable.call()).isNull();
     }
 }

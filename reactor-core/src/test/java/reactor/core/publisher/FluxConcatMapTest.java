@@ -68,7 +68,20 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 				scenario(f -> f.concatMapDelayError(d -> Flux.empty(), true, 32))
 						.receiverEmpty(),
 
-				scenario(f -> f.concatMap(Flux::just, 1)).prefetch(1)
+				scenario(f -> f.concatMap(Flux::just, 1)).prefetch(1),
+
+				//scenarios with fromCallable(() -> null)
+				scenario(f -> f.concatMap(d -> Mono.fromCallable(() -> null)))
+						.receiverEmpty(),
+				scenario(f -> f.concatMap(d -> Mono.fromCallable(() -> null), 1))
+						.prefetch(1)
+						.receiverEmpty(),
+				scenario(f -> f.concatMapDelayError(d -> Mono.fromCallable(() -> null)))
+						.shouldHitDropErrorHookAfterTerminate(true)
+						.receiverEmpty(),
+				scenario(f -> f.concatMapDelayError(d -> Mono.fromCallable(() -> null), true, 32))
+						.shouldHitDropErrorHookAfterTerminate(true)
+						.receiverEmpty()
 		);
 	}
 
@@ -94,19 +107,12 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 					throw exception();
 				})),
 
-				scenario(f -> f.concatMap(d -> Mono.fromCallable(() -> null)))
-					,
-
 				scenario(f -> f.concatMap(d -> null))
 					,
 
 				scenario(f -> f.concatMap(d -> {
 					throw exception();
 				}, 1)).prefetch(1),
-
-				scenario(f -> f.concatMap(d -> Mono.fromCallable(() -> null), 1))
-						.prefetch(1)
-						,
 
 				scenario(f -> f.concatMap(d -> null, 1))
 						.prefetch(1)
@@ -117,10 +123,6 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 				}))
 						.shouldHitDropErrorHookAfterTerminate(true),
 
-				scenario(f -> f.concatMapDelayError(d -> Mono.fromCallable(() -> null)))
-						.shouldHitDropErrorHookAfterTerminate(true)
-						,
-
 				scenario(f -> f.concatMapDelayError(d -> null))
 						.shouldHitDropErrorHookAfterTerminate(true)
 						,
@@ -129,10 +131,6 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 					throw exception();
 				}, true, 32))
 						.shouldHitDropErrorHookAfterTerminate(true),
-
-				scenario(f -> f.concatMapDelayError(d -> Mono.fromCallable(() -> null), true, 32))
-						.shouldHitDropErrorHookAfterTerminate(true)
-						,
 
 				scenario(f -> f.concatMapDelayError(d -> null, true, 32))
 						.shouldHitDropErrorHookAfterTerminate(true)

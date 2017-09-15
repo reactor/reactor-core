@@ -1248,7 +1248,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		StepVerifier.create(Mono.fromCallable(() -> null)
 		                        .flux()
 		                        .publishOn(Schedulers.immediate()))
-		            .verifyError(NullPointerException.class);
+		            .verifyComplete();
 	}
 
 	@Test

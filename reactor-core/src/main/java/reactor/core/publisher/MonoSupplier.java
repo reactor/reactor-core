@@ -20,6 +20,8 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 
+import javax.annotation.Nullable;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 
@@ -41,7 +43,6 @@ extends Mono<T>
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
-
 		Operators.MonoSubscriber<T, T>
 				sds = new Operators.MonoSubscriber<>(actual);
 
@@ -51,34 +52,36 @@ extends Mono<T>
 			return;
 		}
 
-		T t;
 		try {
-			t = Objects.requireNonNull(supplier.get(),
-					"The supplier source returned null");
+			T t = supplier.get();
+			if (t == null) {
+				sds.onComplete();
+			}
+			else {
+				sds.complete(t);
+			}
 		}
 		catch (Throwable e) {
 			actual.onError(Operators.onOperatorError(e, actual.currentContext()));
-			return;
 		}
-
-		sds.complete(t);
 	}
 	
 	@Override
+	@Nullable
 	public T block(Duration m) {
-		return Objects.requireNonNull(supplier.get(),
-				"The supplier source returned null");
+		return supplier.get();
 	}
 
 	@Override
+	@Nullable
 	public T block() {
 		//the duration is ignored above
 		return block(Duration.ZERO);
 	}
 	
 	@Override
+	@Nullable
 	public T call() throws Exception {
-		return Objects.requireNonNull(supplier.get(),
-				"The supplier source returned null");
+		return supplier.get();
 	}
 }

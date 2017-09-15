@@ -26,12 +26,12 @@ public class FluxCallableTest {
 	public void callableReturnsNull() {
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Mono.<Integer>fromCallable(() -> null).flux()
+		Mono.<Integer>fromCallable(() -> null).log().flux()
 		                                      .subscribe(ts);
 
 		ts.assertNoValues()
-		  .assertNotComplete()
-		  .assertError(NullPointerException.class);
+		  .assertNoError()
+		  .assertComplete();
 	}
 
 	@Test
