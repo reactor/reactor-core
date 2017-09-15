@@ -25,18 +25,23 @@ import reactor.core.publisher.Mono;
 import reactor.test.publisher.TestPublisher.Violation;
 
 /**
- * A test utility that allow to easily produce a {@link Publisher} ({@link Mono} or {@link Flux})
- * for tests involving control flow. For instance, say you have a {@link Mono#switchIfEmpty(Mono)}
- * and you want to make sure that your code branched into the "if empty" case.
+ * A test utility that allow to easily obtain an instrumented {@link Publisher}
+ * ({@link Mono} or {@link Flux}) for tests involving control flow. For instance, you might
+ * have a {@link Mono#switchIfEmpty(Mono)}  and you want to make sure that your code
+ * branched into the "if empty" case. The contract of this interface does not cover what
+ * signals the {@link Publisher} emits, although factory methods {@link #of(Publisher)}
+ * and {@link #empty()} produce probes that do emit signals like a common sequence.
  * <p>
- * The publisher acts as a probe capturing subscription, cancellation and request events.
- * Later, the {@link PublisherProbe} can be used post completion to check if that
- * particular probe was hit.
+ * The {@link PublisherProbe} acts as a probe capturing subscription, cancellation and
+ * request events. Later, it can be used post completion to check if that particular
+ * probe was hit.
  * <p>
- * This is very close to a {@link TestPublisher} but avoids the mental overhead of remembering
- * to 1) use the {@link TestPublisher#emit(Object[]) TestPublisher emit methods} and
- * 2) the {@link Violation#CLEANUP_ON_TERMINATE} so that the subscription state can be checked
- * post-completion...
+ * Even though {@link TestPublisher} implements {@link PublisherProbe}, prefer creating
+ * probes through the static {@link #empty()} and {@link #of(Publisher)} methods.
+ * This is because the {@link TestPublisher} exposes assertions from {@link PublisherProbe}
+ * but still requires you to 1) use the {@link TestPublisher#emit(Object[]) TestPublisher emit methods}
+ * and 2) use the {@link Violation#CLEANUP_ON_TERMINATE} in order for these assertions to
+ * be usable post-completion...
  *
  * @author Simon Baslé
  */
@@ -47,7 +52,7 @@ public interface PublisherProbe<T> {
 	 */
 	default void assertWasNotSubscribed() {
 		if (wasSubscribed()) {
-			throw new AssertionError("ControlFlowProbe should not have been subscribed but it was");
+			throw new AssertionError("PublisherProbe should not have been subscribed but it was");
 		}
 	}
 
@@ -56,7 +61,7 @@ public interface PublisherProbe<T> {
 	 */
 	default void assertWasSubscribed() {
 		if (!wasSubscribed()) {
-			throw new AssertionError("ControlFlowProbe should have been subscribed but it wasn't");
+			throw new AssertionError("PublisherProbe should have been subscribed but it wasn't");
 		}
 	}
 
@@ -65,7 +70,7 @@ public interface PublisherProbe<T> {
 	 */
 	default void assertWasNotCancelled() {
 		if (wasCancelled()) {
-			throw new AssertionError("ControlFlowProbe should not have been cancelled but it was");
+			throw new AssertionError("PublisherProbe should not have been cancelled but it was");
 		}
 	}
 
@@ -74,7 +79,7 @@ public interface PublisherProbe<T> {
 	 */
 	default void assertWasCancelled() {
 		if (!wasCancelled()) {
-			throw new AssertionError("ControlFlowProbe should have been cancelled but it wasn't");
+			throw new AssertionError("PublisherProbe should have been cancelled but it wasn't");
 		}
 	}
 
@@ -83,7 +88,7 @@ public interface PublisherProbe<T> {
 	 */
 	default void assertWasNotRequested() {
 		if (wasRequested()) {
-			throw new AssertionError("ControlFlowProbe should not have been requested but it was");
+			throw new AssertionError("PublisherProbe should not have been requested but it was");
 		}
 	}
 
@@ -92,7 +97,7 @@ public interface PublisherProbe<T> {
 	 */
 	default void assertWasRequested() {
 		if (!wasRequested()) {
-			throw new AssertionError("ControlFlowProbe should have been requested but it wasn't");
+			throw new AssertionError("PublisherProbe should have been requested but it wasn't");
 		}
 	}
 
