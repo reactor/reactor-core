@@ -114,6 +114,10 @@ I want to deal with:
 ** ...only when 1-N other publishers have all emitted (or completed): `Mono#delayUntilOther`
 *** ...and deriving these publishers from the Mono value: `Mono#delayUntil(Function)`
 
+* I want to expand elements recursively into a graph of sequences and emit the combination...
+** ...expanding the graph breadth first: `expand(Function)`
+** ...expanding the graph depth first: `expandDeep(Function)`
+
 [[which.peeking]]
 == Peeking into a sequence
 * Without modifying the final sequence, I want to:

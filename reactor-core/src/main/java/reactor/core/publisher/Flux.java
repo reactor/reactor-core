@@ -3674,6 +3674,160 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Recursively expand elements into a graph and emit all the resulting element,
+	 * in a depth-first traversal order.
+	 * <p>
+	 * That is: emit one value from this {@link Flux}, expand it and emit the first value
+	 * at this first level of recursion, and so on... When no more recursion is possible,
+	 * backtrack to the previous level and re-apply the strategy.
+	 * <p>
+	 * For example, given the hierarchical structure
+	 * <pre>
+	 *  A
+	 *   - AA
+	 *     - aa1
+	 *  B
+	 *   - BB
+	 *     - bb1
+	 * </pre>
+	 *
+	 * Expands {@code Flux.just(A, B)} into
+	 * <pre>
+	 *  A
+	 *  AA
+	 *  aa1
+	 *  B
+	 *  BB
+	 *  bb1
+	 * </pre>
+	 *
+	 * @param expander the {@link Function} applied at each level of recursion to expand
+	 * values into a {@link Publisher}, producing a graph.
+	 * @param capacityHint a capacity hint to prepare the inner queues to accommodate n
+	 * elements per level of recursion.
+	 *
+	 * @return a {@link Flux} expanded depth-first
+	 */
+	public final Flux<T> expandDeep(Function<? super T, ? extends Publisher<? extends T>> expander,
+			int capacityHint) {
+		return onAssembly(new FluxExpand<>(this, expander, false, capacityHint));
+	}
+
+	/**
+	 * Recursively expand elements into a graph and emit all the resulting element,
+	 * in a depth-first traversal order.
+	 * <p>
+	 * That is: emit one value from this {@link Flux}, expand it and emit the first value
+	 * at this first level of recursion, and so on... When no more recursion is possible,
+	 * backtrack to the previous level and re-apply the strategy.
+	 * <p>
+	 * For example, given the hierarchical structure
+	 * <pre>
+	 *  A
+	 *   - AA
+	 *     - aa1
+	 *  B
+	 *   - BB
+	 *     - bb1
+	 * </pre>
+	 *
+	 * Expands {@code Flux.just(A, B)} into
+	 * <pre>
+	 *  A
+	 *  AA
+	 *  aa1
+	 *  B
+	 *  BB
+	 *  bb1
+	 * </pre>
+	 *
+	 * @param expander the {@link Function} applied at each level of recursion to expand
+	 * values into a {@link Publisher}, producing a graph.
+	 *
+	 * @return a {@link Flux} expanded depth-first
+	 */
+	public final Flux<T> expandDeep(Function<? super T, ? extends Publisher<? extends T>> expander) {
+		return expandDeep(expander, Queues.SMALL_BUFFER_SIZE);
+	}
+
+	/**
+	 * Recursively expand elements into a graph and emit all the resulting element using
+	 * a breadth-first traversal strategy.
+	 * <p>
+	 * That is: emit the values from this {@link Flux} first, then expand each at a first level of
+	 * recursion and emit all of the resulting values, then expand all of these at a second
+	 * level and so on..
+	 * <p>
+	 * For example, given the hierarchical structure
+	 * <pre>
+	 *  A
+	 *   - AA
+	 *     - aa1
+	 *  B
+	 *   - BB
+	 *     - bb1
+	 * </pre>
+	 *
+	 * Expands {@code Flux.just(A, B)} into
+	 * <pre>
+	 *  A
+	 *  B
+	 *  AA
+	 *  AB
+	 *  aa1
+	 *  bb1
+	 * </pre>
+	 *
+	 * @param expander the {@link Function} applied at each level of recursion to expand
+	 * values into a {@link Publisher}, producing a graph.
+	 * @param capacityHint a capacity hint to prepare the inner queues to accommodate n
+	 * elements per level of recursion.
+	 *
+	 * @return an breadth-first expanded {@link Flux}
+	 */
+	public final Flux<T> expand(Function<? super T, ? extends Publisher<? extends T>> expander,
+			int capacityHint) {
+		return Flux.onAssembly(new FluxExpand<>(this, expander, true, capacityHint));
+	}
+
+	/**
+	 * Recursively expand elements into a graph and emit all the resulting element using
+	 * a breadth-first traversal strategy.
+	 * <p>
+	 * That is: emit the values from this {@link Flux} first, then expand each at a first level of
+	 * recursion and emit all of the resulting values, then expand all of these at a second
+	 * level and so on..
+	 * <p>
+	 * For example, given the hierarchical structure
+	 * <pre>
+	 *  A
+	 *   - AA
+	 *     - aa1
+	 *  B
+	 *   - BB
+	 *     - bb1
+	 * </pre>
+	 *
+	 * Expands {@code Flux.just(A, B)} into
+	 * <pre>
+	 *  A
+	 *  B
+	 *  AA
+	 *  AB
+	 *  aa1
+	 *  bb1
+	 * </pre>
+	 *
+	 * @param expander the {@link Function} applied at each level of recursion to expand
+	 * values into a {@link Publisher}, producing a graph.
+	 *
+	 * @return an breadth-first expanded {@link Flux}
+	 */
+	public final Flux<T> expand(Function<? super T, ? extends Publisher<? extends T>> expander) {
+		return expand(expander, Queues.SMALL_BUFFER_SIZE);
+	}
+
+	/**
 	 * Evaluate each source value against the given {@link Predicate}. If the predicate test succeeds, the value is
 	 * emitted. If the predicate test fails, the value is ignored and a request of 1 is made upstream.
 	 *

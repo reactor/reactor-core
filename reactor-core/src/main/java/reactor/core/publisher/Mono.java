@@ -1793,6 +1793,160 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Recursively expand elements into a graph and emit all the resulting element,
+	 * in a depth-first traversal order.
+	 * <p>
+	 * That is: emit the value from this {@link Mono}, expand it and emit the first value
+	 * at this first level of recursion, and so on... When no more recursion is possible,
+	 * backtrack to the previous level and re-apply the strategy.
+	 * <p>
+	 * For example, given the hierarchical structure
+	 * <pre>
+	 *  A
+	 *   - AA
+	 *     - aa1
+	 *   - AB
+	 *     - ab1
+	 *   - a1
+	 * </pre>
+	 *
+	 * Expands {@code Mono.just(A)} into
+	 * <pre>
+	 *  A
+	 *  AA
+	 *  aa1
+	 *  AB
+	 *  ab1
+	 *  a1
+	 * </pre>
+	 *
+	 * @param expander the {@link Function} applied at each level of recursion to expand
+	 * values into a {@link Publisher}, producing a graph.
+	 * @param capacityHint a capacity hint to prepare the inner queues to accommodate n
+	 * elements per level of recursion.
+	 *
+	 * @return this Mono expanded depth-first to a {@link Flux}
+	 */
+	public final Flux<T> expandDeep(Function<? super T, ? extends Publisher<? extends T>> expander,
+			int capacityHint) {
+		return Flux.onAssembly(new MonoExpand<>(this, expander, false, capacityHint));
+	}
+
+	/**
+	 * Recursively expand elements into a graph and emit all the resulting element,
+	 * in a depth-first traversal order.
+	 * <p>
+	 * That is: emit the value from this {@link Mono}, expand it and emit the first value
+	 * at this first level of recursion, and so on... When no more recursion is possible,
+	 * backtrack to the previous level and re-apply the strategy.
+	 * <p>
+	 * For example, given the hierarchical structure
+	 * <pre>
+	 *  A
+	 *   - AA
+	 *     - aa1
+	 *   - AB
+	 *     - ab1
+	 *   - a1
+	 * </pre>
+	 *
+	 * Expands {@code Mono.just(A)} into
+	 * <pre>
+	 *  A
+	 *  AA
+	 *  aa1
+	 *  AB
+	 *  ab1
+	 *  a1
+	 * </pre>
+	 *
+	 * @param expander the {@link Function} applied at each level of recursion to expand
+	 * values into a {@link Publisher}, producing a graph.
+	 *
+	 * @return this Mono expanded depth-first to a {@link Flux}
+	 */
+	public final Flux<T> expandDeep(Function<? super T, ? extends Publisher<? extends T>> expander) {
+		return expandDeep(expander, Queues.SMALL_BUFFER_SIZE);
+	}
+
+	/**
+	 * Recursively expand elements into a graph and emit all the resulting element using
+	 * a breadth-first traversal strategy.
+	 * <p>
+	 * That is: emit the value from this {@link Mono} first, then it each at a first level of
+	 * recursion and emit all of the resulting values, then expand all of these at a
+	 * second level and so on...
+	 * <p>
+	 * For example, given the hierarchical structure
+	 * <pre>
+	 *  A
+	 *   - AA
+	 *     - aa1
+	 *   - AB
+	 *     - ab1
+	 *   - a1
+	 * </pre>
+	 *
+	 * Expands {@code Mono.just(A)} into
+	 * <pre>
+	 *  A
+	 *  AA
+	 *  AB
+	 *  a1
+	 *  aa1
+	 *  ab1
+	 * </pre>
+	 *
+	 * @param expander the {@link Function} applied at each level of recursion to expand
+	 * values into a {@link Publisher}, producing a graph.
+	 * @param capacityHint a capacity hint to prepare the inner queues to accommodate n
+	 * elements per level of recursion.
+	 *
+	 * @return this Mono expanded breadth-first to a {@link Flux}
+	 */
+	public final Flux<T> expand(Function<? super T, ? extends Publisher<? extends T>> expander,
+			int capacityHint) {
+		return Flux.onAssembly(new MonoExpand<>(this, expander, true, capacityHint));
+	}
+
+	/**
+	 * Recursively expand elements into a graph and emit all the resulting element using
+	 * a breadth-first traversal strategy.
+	 * <p>
+	 * That is: emit the value from this {@link Mono} first, then it each at a first level of
+	 * recursion and emit all of the resulting values, then expand all of these at a
+	 * second level and so on...
+	 * <p>
+	 * For example, given the hierarchical structure
+	 * <pre>
+	 *  A
+	 *   - AA
+	 *     - aa1
+	 *   - AB
+	 *     - ab1
+	 *   - a1
+	 * </pre>
+	 *
+	 * Expands {@code Mono.just(A)} into
+	 * <pre>
+	 *  A
+	 *  AA
+	 *  AB
+	 *  a1
+	 *  aa1
+	 *  ab1
+	 * </pre>
+	 *
+	 * @param expander the {@link Function} applied at each level of recursion to expand
+	 * values into a {@link Publisher}, producing a graph.
+	 *
+	 * @return this Mono expanded breadth-first to a {@link Flux}
+	 */
+	public final Flux<T> expand(Function<? super T, ? extends Publisher<? extends T>> expander) {
+		return expand(expander, Queues.SMALL_BUFFER_SIZE);
+	}
+
+	/**
 	 * If this {@link Mono} is valued, test the result and replay it if predicate returns true.
 	 * Otherwise complete without value.
 	 *
