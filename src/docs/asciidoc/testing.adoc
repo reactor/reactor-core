@@ -322,29 +322,12 @@ you need to write a bit of boilerplate. Namely you need a `Mono<Void>` that:
  - captures the fact that it has been subscribed to
  - lets you assert that fact **after** the whole processing has terminated...
 
-Most straightforward way of doing that yourself involves a `Mono.empty()`, doOn*
-callbacks and an `AtomicBoolean`. If you also want to assert that it was actually
-requested for data, you need a second `AtomicBoolean`:
+Before 3.1 you would need to manually maintain one `AtomicBoolean` per state you
+wanted to assert, and attach a corresponding `doOn*` callback to the publisher
+you wanted to evaluate. This could be a lot of boilerplate when having to apply this
+pattern regularly...
 
-[source,java]
-----
-@Test
-public void testCommandEmptyPathIsUsedBoilerplate() {
-    AtomicBoolean wasInvoked = new AtomicBoolean();
-    AtomicBoolean wasRequested = new AtomicBoolean();
-    Mono<Void> testFallback = Mono.<Void>empty()
-                                  .doOnSubscribe(s -> wasInvoked.set(true))
-                                  .doOnRequest(l -> wasRequested.set(true));
-
-    processOrFallback(Mono.empty(), testFallback).subscribe();
-
-    assertThat(wasInvoked.get()).isTrue();
-    assertThat(wasRequested.get()).isTrue();
-}
-----
-
-When you have to write a lot of tests like that, the boilerplate can become a hurdle.
-Fortunately, there's an alternative with `PublisherProbe`:
+Fortunately, since 3.1.0 there's an alternative with `PublisherProbe`:
 
 [source,java]
 ----
