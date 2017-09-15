@@ -16,6 +16,7 @@
 package reactor.core;
 
 import java.io.IOException;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.junit.Before;
@@ -25,6 +26,9 @@ import reactor.test.RaceTestUtils;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static reactor.core.Exceptions.NOT_TIME_CAPABLE_REJECTED_EXECUTION;
+import static reactor.core.Exceptions.REJECTED_EXECUTION;
+import static reactor.core.Exceptions.TERMINATED;
 
 /**
  * @author Stephane Maldini
@@ -169,5 +173,151 @@ public class ExceptionsTest {
 
 		assertThat(addThrowable.getSuppressed())
 				.hasSize(20);
+	}
+
+	@Test
+	public void addSuppressedToNormal() {
+		Exception original = new Exception("foo");
+		Exception suppressed = new IllegalStateException("boom");
+
+		assertThat(Exceptions.addSuppressed(original, suppressed))
+				.isSameAs(original)
+				.hasSuppressedException(suppressed);
+	}
+
+	@Test
+	public void addSuppressedToRejectedInstance() {
+		Throwable original = new RejectedExecutionException("foo");
+		Exception suppressed = new IllegalStateException("boom");
+
+		assertThat(Exceptions.addSuppressed(original, suppressed))
+				.isSameAs(original)
+				.hasSuppressedException(suppressed);
+	}
+
+	@Test
+	public void addSuppressedToSame() {
+		Throwable original = new Exception("foo");
+
+		assertThat(Exceptions.addSuppressed(original, original))
+				.isSameAs(original)
+				.hasNoSuppressedExceptions();
+	}
+
+	@Test
+	public void addSuppressedToRejectedSingleton1() {
+		Throwable original = REJECTED_EXECUTION;
+		Exception suppressed = new IllegalStateException("boom");
+
+		assertThat(Exceptions.addSuppressed(original, suppressed))
+				.isNotSameAs(original)
+				.hasMessage(original.getMessage())
+				.hasSuppressedException(suppressed);
+	}
+
+	@Test
+	public void addSuppressedToRejectedSingleton2() {
+		Throwable original = NOT_TIME_CAPABLE_REJECTED_EXECUTION;
+		Exception suppressed = new IllegalStateException("boom");
+
+		assertThat(Exceptions.addSuppressed(original, suppressed))
+				.isNotSameAs(original)
+				.hasMessage(original.getMessage())
+				.hasSuppressedException(suppressed);
+	}
+
+	@Test
+	public void addSuppressedToTERMINATED() {
+		Exception suppressed = new IllegalStateException("boom");
+
+		assertThat(Exceptions.addSuppressed(TERMINATED, suppressed))
+				.hasNoSuppressedExceptions()
+				.isSameAs(TERMINATED);
+	}
+
+	@Test
+	public void addSuppressedRuntimeToNormal() {
+		RuntimeException original = new RuntimeException("foo");
+		Exception suppressed = new IllegalStateException("boom");
+
+		assertThat(Exceptions.addSuppressed(original, suppressed))
+				.isSameAs(original)
+				.hasSuppressedException(suppressed);
+	}
+
+	@Test
+	public void addSuppressedRuntimeToRejectedInstance() {
+		RuntimeException original = new RejectedExecutionException("foo");
+		Exception suppressed = new IllegalStateException("boom");
+
+		assertThat(Exceptions.addSuppressed(original, suppressed))
+				.isSameAs(original)
+				.hasSuppressedException(suppressed);
+	}
+
+	@Test
+	public void addSuppressedRuntimeToSame() {
+		RuntimeException original = new RuntimeException("foo");
+
+		assertThat(Exceptions.addSuppressed(original, original))
+				.isSameAs(original)
+				.hasNoSuppressedExceptions();
+	}
+
+	@Test
+	public void addSuppressedRuntimeToRejectedSingleton1() {
+		RuntimeException original = REJECTED_EXECUTION;
+		Exception suppressed = new IllegalStateException("boom");
+
+		assertThat(Exceptions.addSuppressed(original, suppressed))
+				.isNotSameAs(original)
+				.hasMessage(original.getMessage())
+				.hasSuppressedException(suppressed);
+	}
+
+	@Test
+	public void addSuppressedRuntimeToRejectedSingleton2() {
+		RuntimeException original = NOT_TIME_CAPABLE_REJECTED_EXECUTION;
+		Exception suppressed = new IllegalStateException("boom");
+
+		assertThat(Exceptions.addSuppressed(original, suppressed))
+				.isNotSameAs(original)
+				.hasMessage(original.getMessage())
+				.hasSuppressedException(suppressed);
+	}
+
+	@Test
+	public void asRejectedNormalWraps() {
+		Throwable test = new IllegalStateException("boom");
+		assertThat(Exceptions.asRejected(test))
+				.isInstanceOf(Exceptions.ReactorRejectedExecutionException.class)
+				.hasMessage("Scheduler unavailable")
+				.hasCause(test);
+	}
+
+	@Test
+	public void asRejectedSingletonReeWraps() {
+		Throwable test = REJECTED_EXECUTION;
+		assertThat(Exceptions.asRejected(test))
+				.isInstanceOf(Exceptions.ReactorRejectedExecutionException.class)
+				.hasMessage("Scheduler unavailable")
+				.hasCause(test);
+	}
+
+	@Test
+	public void asRejectedNormalReeWraps() {
+		Throwable test = new RejectedExecutionException("boom");
+		assertThat(Exceptions.asRejected(test))
+				.isInstanceOf(Exceptions.ReactorRejectedExecutionException.class)
+				.hasMessage("Scheduler unavailable")
+				.hasCause(test);
+	}
+
+	@Test
+	public void asRejectedReactorReeNoOp() {
+		Throwable test = new Exceptions.ReactorRejectedExecutionException("boom", REJECTED_EXECUTION);
+		assertThat(Exceptions.asRejected(test))
+				.isSameAs(test)
+				.hasCause(REJECTED_EXECUTION);
 	}
 }

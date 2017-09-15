@@ -255,7 +255,7 @@ public abstract class Exceptions {
 		if (cause instanceof ReactorRejectedExecutionException) {
 			return (RejectedExecutionException) cause;
 		}
-		return new RejectedExecutionException("Scheduler unavailable", cause);
+		return new ReactorRejectedExecutionException("Scheduler unavailable", cause);
 	}
 
 	/**
@@ -434,6 +434,23 @@ public abstract class Exceptions {
 		return Collections.singletonList(potentialMultiple);
 	}
 
+	/**
+	 * Safely suppress a {@link Throwable} on a {@link RuntimeException}. The returned
+	 * {@link RuntimeException}, bearing the suppressed exception, is most often the same
+	 * as the original exception unless:
+	 * <ul>
+	 *     <li>original and tentatively suppressed exceptions are one and the same: do
+	 *     nothing but return the original.</li>
+	 *     <li>original is one of the singleton {@link RejectedExecutionException} created
+	 *     by Reactor: make a copy the {@link RejectedExecutionException}, add the
+	 *     suppressed exception to it and return that copy.</li>
+	 *
+	 * </ul>
+	 * @param original the original {@link RuntimeException} to bear a suppressed exception
+	 * @param suppressed the {@link Throwable} to suppress
+	 * @return the (most of the time original) {@link RuntimeException} bearing the
+	 * suppressed {@link Throwable}
+	 */
 	public static final RuntimeException addSuppressed(RuntimeException original, Throwable suppressed) {
 		if (original == suppressed) {
 			return original;
@@ -449,6 +466,25 @@ public abstract class Exceptions {
 		}
 	}
 
+	/**
+	 * Safely suppress a {@link Throwable} on an original {@link Throwable}. The returned
+	 * {@link Throwable}, bearing the suppressed exception, is most often the same
+	 * as the original one unless:
+	 * <ul>
+	 *     <li>original and tentatively suppressed exceptions are one and the same: do
+	 *     nothing but return the original.</li>
+	 *     <li>original is one of the singleton {@link RejectedExecutionException} created
+	 *     by Reactor: make a copy the {@link RejectedExecutionException}, add the
+	 *     suppressed exception to it and return that copy.</li>
+	 *     <li>original is a special internal TERMINATED singleton instance: return it
+	 *     without suppressing the exception.</li>
+	 *
+	 * </ul>
+	 * @param original the original {@link Throwable} to bear a suppressed exception
+	 * @param suppressed the {@link Throwable} to suppress
+	 * @return the (most of the time original) {@link Throwable} bearing the
+	 * suppressed {@link Throwable}
+	 */
 	public static final Throwable addSuppressed(Throwable original, final Throwable suppressed) {
 		if (original == suppressed) {
 			return original;
