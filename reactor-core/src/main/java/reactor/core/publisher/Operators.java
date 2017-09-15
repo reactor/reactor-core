@@ -407,7 +407,7 @@ public abstract class Operators {
 	 * operator. This exception denotes that an execution was rejected by a
 	 * {@link reactor.core.scheduler.Scheduler}, notably when it was already disposed.
 	 * <p>
-	 * Wrapping is done by calling both {@link Exceptions#asRejected(Throwable)} and
+	 * Wrapping is done by calling both {@link Exceptions#failWithRejected(Throwable)} and
 	 * {@link #onOperatorError(Subscription, Throwable, Object, Context)} (with the passed
 	 * {@link Subscription}).
 	 *
@@ -428,7 +428,7 @@ public abstract class Operators {
 		}
 
 		//don't create REE if original is a reactor-produced REE (not including singletons)
-		RejectedExecutionException ree = Exceptions.asRejected(original);
+		RejectedExecutionException ree = Exceptions.failWithRejected(original);
 		if (suppressed != null) {
 			ree.addSuppressed(suppressed);
 		}

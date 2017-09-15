@@ -287,36 +287,36 @@ public class ExceptionsTest {
 	}
 
 	@Test
-	public void asRejectedNormalWraps() {
+	public void failWithRejectedNormalWraps() {
 		Throwable test = new IllegalStateException("boom");
-		assertThat(Exceptions.asRejected(test))
+		assertThat(Exceptions.failWithRejected(test))
 				.isInstanceOf(Exceptions.ReactorRejectedExecutionException.class)
 				.hasMessage("Scheduler unavailable")
 				.hasCause(test);
 	}
 
 	@Test
-	public void asRejectedSingletonReeWraps() {
+	public void failWithRejectedSingletonReeWraps() {
 		Throwable test = REJECTED_EXECUTION;
-		assertThat(Exceptions.asRejected(test))
+		assertThat(Exceptions.failWithRejected(test))
 				.isInstanceOf(Exceptions.ReactorRejectedExecutionException.class)
 				.hasMessage("Scheduler unavailable")
 				.hasCause(test);
 	}
 
 	@Test
-	public void asRejectedNormalReeWraps() {
+	public void failWithRejectedNormalReeWraps() {
 		Throwable test = new RejectedExecutionException("boom");
-		assertThat(Exceptions.asRejected(test))
+		assertThat(Exceptions.failWithRejected(test))
 				.isInstanceOf(Exceptions.ReactorRejectedExecutionException.class)
 				.hasMessage("Scheduler unavailable")
 				.hasCause(test);
 	}
 
 	@Test
-	public void asRejectedReactorReeNoOp() {
+	public void failWithRejectedReactorReeNoOp() {
 		Throwable test = new Exceptions.ReactorRejectedExecutionException("boom", REJECTED_EXECUTION);
-		assertThat(Exceptions.asRejected(test))
+		assertThat(Exceptions.failWithRejected(test))
 				.isSameAs(test)
 				.hasCause(REJECTED_EXECUTION);
 	}

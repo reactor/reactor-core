@@ -234,16 +234,6 @@ public abstract class Exceptions {
 	}
 
 	/**
-	 * Return a new {@link RejectedExecutionException} with standard message and cause
-	 *
-	 * @param cause the original exception that caused the rejection
-	 * @return a new {@link RejectedExecutionException} with standard message and cause
-	 */
-	public static RejectedExecutionException failWithRejected(Throwable cause) {
-		return new ReactorRejectedExecutionException("Scheduler unavailable", cause);
-	}
-
-	/**
 	 * Return a new {@link RejectedExecutionException} with standard message and cause,
 	 * unless the {@code cause} is already a {@link RejectedExecutionException} created
 	 * via {@link #failWithRejected(Throwable)} (not the singleton-producing variants).
@@ -251,7 +241,7 @@ public abstract class Exceptions {
 	 * @param cause the original exception that caused the rejection
 	 * @return a new {@link RejectedExecutionException} with standard message and cause
 	 */
-	public static RejectedExecutionException asRejected(Throwable cause) {
+	public static RejectedExecutionException failWithRejected(Throwable cause) {
 		if (cause instanceof ReactorRejectedExecutionException) {
 			return (RejectedExecutionException) cause;
 		}
