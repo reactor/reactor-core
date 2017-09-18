@@ -412,7 +412,7 @@ public abstract class Operators {
 	 * terminal and cancelled the subscription, null if not.
 	 */
 	@Nullable
-	public static <T> Throwable onNextFailure(T value, Throwable error, Context context, Subscription subscriptionForCancel) {
+	public static <T> Throwable onNextFailure(@Nullable T value, Throwable error, Context context, Subscription subscriptionForCancel) {
 		Exceptions.throwIfFatal(error);
 		OnNextFailureStrategy strategy = context.getOrDefault(OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY, null);
 		if (strategy == null) strategy = Hooks.onNextFailureHook;
