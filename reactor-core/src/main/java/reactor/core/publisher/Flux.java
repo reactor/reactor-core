@@ -5120,6 +5120,88 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Let compatible operators upstream recover from an error by dropping the incriminating
+	 * element from the sequence and continuing with subsequent elements.
+	 * <p>
+	 * Note that this error handling mode is not necessarily implemented by all operators.
+	 * The error and associated root-cause element are dropped to {@link Operators#onErrorDropped(Throwable, Context)}
+	 * and {@link Operators#onNextDropped(Object, Context)} respectively.
+	 *
+	 * @return a {@link Flux} that attempts to continue processing on errors.
+	 */
+	public final Flux<T> onErrorContinue() {
+		return subscriberContext(Context.of(
+				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
+				OnNextFailureStrategy.resumeDrop()));
+	}
+
+	/**
+	 * Let compatible operators upstream recover from some errors by dropping the
+	 * incriminating element from the sequence and continuing with subsequent elements.
+	 * The recovering of errors is validated by passing the error and associated value
+	 * through a {@link BiPredicate}.
+	 * <p>
+	 * Note that this error handling mode is not necessarily implemented by all operators.
+	 * The error and associated root-cause element are dropped to {@link Operators#onErrorDropped(Throwable, Context)}
+	 * and {@link Operators#onNextDropped(Object, Context)} respectively.
+	 *
+	 * @return a {@link Flux} that attempts to continue processing on some errors.
+	 */
+	public final Flux<T> onErrorContinue(BiPredicate<Throwable, ? super T> errorPredicate) {
+		//this cast is ok as only T values will be propagated in this sequence
+		@SuppressWarnings("unchecked") BiPredicate<Throwable, Object> genericPredicate = (BiPredicate<Throwable, Object>) errorPredicate;
+		return subscriberContext(Context.of(
+				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
+				OnNextFailureStrategy.resumeDropIf(genericPredicate)
+		));
+	}
+
+	/**
+	 * Let compatible operators upstream recover from errors by dropping the
+	 * incriminating element from the sequence and continuing with subsequent elements.
+	 * The recovering of errors is validated by passing the error and associated value
+	 * through a {@link BiPredicate}.
+	 * The recovered error and associated value are notified to a provided
+	 * {@link BiConsumer}.
+	 * <p>
+	 * Note that this error handling mode is not necessarily implemented by all operators.
+	 *
+	 * @return a {@link Flux} that attempts to continue processing on errors.
+	 */
+	public final Flux<T> onErrorContinue(BiConsumer<Throwable, ? super T> incriminatingConsumer) {
+		//this cast is ok as only T values will be propagated in this sequence
+		@SuppressWarnings("unchecked") BiConsumer<Throwable, Object> genericConsumer = (BiConsumer<Throwable, Object>) incriminatingConsumer;
+		return subscriberContext(Context.of(
+				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
+				OnNextFailureStrategy.resume(genericConsumer)
+		));
+	}
+
+	/**
+	 * Let compatible operators upstream recover from errors by dropping the
+	 * incriminating element from the sequence and continuing with subsequent elements.
+	 * The recovering of errors is validated by passing the error and associated value
+	 * through a {@link BiPredicate}.
+	 * The recovered error and associated value are notified to a provided
+	 * {@link BiConsumer}.
+	 * <p>
+	 * Note that this error handling mode is not necessarily implemented by all operators.
+	 *
+	 * @return a {@link Flux} that attempts to continue processing on some errors.
+	 */
+	public final Flux<T> onErrorContinue(BiPredicate<Throwable, ? super T> errorPredicate,
+			BiConsumer<Throwable, ? super T> incriminatingConsumer) {
+		//this cast is ok as only T values will be propagated in this sequence
+		@SuppressWarnings("unchecked") BiPredicate<Throwable, Object> genericPredicate = (BiPredicate<Throwable, Object>) errorPredicate;
+		//this cast is ok as only T values will be propagated in this sequence
+		@SuppressWarnings("unchecked") BiConsumer<Throwable, Object> genericConsumer = (BiConsumer<Throwable, Object>) incriminatingConsumer;
+		return subscriberContext(Context.of(
+				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
+				OnNextFailureStrategy.resumeIf(genericPredicate, genericConsumer)
+		));
+	}
+
+	/**
 	 * Transform any error emitted by this {@link Flux} by synchronously applying a function to it.
 
 	 * <p>
