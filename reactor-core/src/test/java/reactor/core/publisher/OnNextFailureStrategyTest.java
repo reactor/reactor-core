@@ -359,4 +359,22 @@ public class OnNextFailureStrategyTest {
 		assertThat(errorDropped).isEmpty();
 	}
 
+	@Test
+	public void fluxApiWithinFlatMap() {
+		Flux<Integer> test = Flux.just(1, 2, 3)
+		                         .flatMap(i -> Flux.range(0, i + 1)
+		                                           .map(v -> 30 / v))
+		                         .onErrorContinue();
+
+		StepVerifier.create(test)
+		            .expectNext(30, 30, 15, 30, 15, 10)
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasDroppedExactly(0, 0, 0)
+		            .hasDroppedErrorsSatisfying(
+		            		errors -> assertThat(errors)
+						            .hasSize(3)
+						            .allMatch(e -> e instanceof ArithmeticException));
+	}
+
 }
