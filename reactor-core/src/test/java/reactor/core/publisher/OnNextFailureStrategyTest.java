@@ -16,9 +16,12 @@
 
 package reactor.core.publisher;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
+import reactor.test.StepVerifier;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -73,7 +76,7 @@ public class OnNextFailureStrategyTest {
 		Hooks.onErrorDropped(errorDropped::set);
 
 		try {
-			OnNextFailureStrategy strategy = OnNextFailureStrategy.conditionalResume(
+			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeIf(
 					(e, v) -> e instanceof NullPointerException,
 					(e, v) -> {
 						error.set(e);
@@ -108,7 +111,7 @@ public class OnNextFailureStrategyTest {
 		Hooks.onErrorDropped(errorDropped::set);
 
 		try {
-			OnNextFailureStrategy strategy = OnNextFailureStrategy.conditionalResume(
+			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeIf(
 					(e, v) -> e instanceof IllegalArgumentException,
 					(e, v) -> {
 						error.set(e);
@@ -147,7 +150,7 @@ public class OnNextFailureStrategyTest {
 		});
 
 		try {
-			OnNextFailureStrategy strategy = OnNextFailureStrategy.conditionalResume(
+			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeIf(
 					(e, v) -> { throw new IllegalStateException("boom"); },
 					(e, v) -> {
 						error.set(e);
@@ -187,7 +190,7 @@ public class OnNextFailureStrategyTest {
 		});
 
 		try {
-			OnNextFailureStrategy strategy = OnNextFailureStrategy.conditionalResume(
+			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeIf(
 					(e, v) -> e instanceof NullPointerException,
 					(e, v) -> { throw new IllegalStateException("boom"); });
 
@@ -206,6 +209,154 @@ public class OnNextFailureStrategyTest {
 		finally {
 			Hooks.resetOnOperatorError("test");
 		}
+	}
+
+	@Test
+	public void fluxApiErrorDrop() {
+		Flux<String> test = Flux.just("foo", "", "bar", "baz")
+		                        .filter(s -> 3 / s.length() == 1)
+		                        .onErrorContinue();
+
+		StepVerifier.create(test)
+		            .expectNext("foo", "bar", "baz")
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasDroppedExactly("")
+		            .hasDroppedErrorWithMessage("/ by zero");
+	}
+
+	@Test
+	public void fluxApiErrorDropConditional() {
+		Flux<String> test = Flux.just("foo", "", "bar", "baz")
+		                        .filter(s -> 3 / s.length() == 1)
+		                        .onErrorContinue((t, v) -> t instanceof ArithmeticException);
+
+		StepVerifier.create(test)
+		            .expectNext("foo", "bar", "baz")
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasDroppedExactly("")
+		            .hasDroppedErrorWithMessage("/ by zero");
+	}
+
+	@Test
+	public void fluxApiErrorDropConditionalErrorNotMatching() {
+		Flux<String> test = Flux.just("foo", "", "bar", "baz")
+		                        .filter(s -> 3 / s.length() == 1)
+		                        .onErrorContinue((t, v) -> t instanceof IllegalStateException);
+
+		StepVerifier.create(test)
+		            .expectNext("foo")
+		            .verifyError(ArithmeticException.class);
+	}
+
+	@Test
+	public void fluxApiErrorDropConditionalValueNotMatching() {
+		Flux<String> test = Flux.just("foo", "", "bar", "baz")
+		                        .filter(s -> 3 / s.length() == 1)
+		                        .onErrorContinue((t, v) -> v.length() == 3);
+
+		StepVerifier.create(test)
+		            .expectNext("foo")
+		            .verifyError(ArithmeticException.class);
+	}
+
+	@Test
+	public void fluxApiErrorContinue() {
+		List<String> valueDropped = new ArrayList<>();
+		List<Throwable> errorDropped = new ArrayList<>();
+		Flux<String> test = Flux.just("foo", "", "bar", "baz")
+		                        .filter(s -> 3 / s.length() == 1)
+		                        .onErrorContinue((t, v) -> {
+			                        valueDropped.add(v);
+			                        errorDropped.add(t);
+		                        });
+
+		StepVerifier.create(test)
+		            .expectNext("foo", "bar", "baz")
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasNotDroppedElements()
+		            .hasNotDroppedErrors();
+
+		assertThat(valueDropped).containsExactly("");
+		assertThat(errorDropped)
+				.hasSize(1)
+				.allSatisfy(e -> assertThat(e).hasMessage("/ by zero"));
+	}
+
+	@Test
+	public void fluxApiErrorContinueConditional() {
+		List<String> valueDropped = new ArrayList<>();
+		List<Throwable> errorDropped = new ArrayList<>();
+		Flux<String> test = Flux.just("foo", "", "bar", "baz")
+		                        .filter(s -> 3 / s.length() == 1)
+		                        .onErrorContinue(
+				                        (t, v) -> t instanceof ArithmeticException,
+				                        (t, v) -> {
+					                        valueDropped.add(v);
+					                        errorDropped.add(t);
+				                        });
+
+		StepVerifier.create(test)
+		            .expectNext("foo", "bar", "baz")
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasNotDroppedElements()
+		            .hasNotDroppedErrors();
+
+		assertThat(valueDropped).containsExactly("");
+		assertThat(errorDropped)
+				.hasSize(1)
+				.allSatisfy(e -> assertThat(e).hasMessage("/ by zero"));
+	}
+
+	@Test
+	public void fluxApiErrorContinueConditionalErrorNotMatch() {
+		List<String> valueDropped = new ArrayList<>();
+		List<Throwable> errorDropped = new ArrayList<>();
+		Flux<String> test = Flux.just("foo", "", "bar", "baz")
+		                        .filter(s -> 3 / s.length() == 1)
+		                        .onErrorContinue(
+				                        (t, v) -> t instanceof IllegalStateException,
+				                        (t, v) -> {
+					                        valueDropped.add(v);
+					                        errorDropped.add(t);
+				                        });
+
+		StepVerifier.create(test)
+		            .expectNext("foo")
+		            .expectErrorMessage("/ by zero")
+		            .verifyThenAssertThat()
+		            .hasNotDroppedElements()
+		            .hasNotDroppedErrors();
+
+		assertThat(valueDropped).isEmpty();
+		assertThat(errorDropped).isEmpty();
+	}
+
+	@Test
+	public void fluxApiErrorContinueConditionalValueNotMatch() {
+		List<String> valueDropped = new ArrayList<>();
+		List<Throwable> errorDropped = new ArrayList<>();
+		Flux<String> test = Flux.just("foo", "", "bar", "baz")
+		                        .filter(s -> 3 / s.length() == 1)
+		                        .onErrorContinue(
+				                        (t, v) -> v.length() == 3,
+				                        (t, v) -> {
+					                        valueDropped.add(v);
+					                        errorDropped.add(t);
+				                        });
+
+		StepVerifier.create(test)
+		            .expectNext("foo")
+		            .expectErrorMessage("/ by zero")
+		            .verifyThenAssertThat()
+		            .hasNotDroppedElements()
+		            .hasNotDroppedErrors();
+
+		assertThat(valueDropped).isEmpty();
+		assertThat(errorDropped).isEmpty();
 	}
 
 }
