@@ -63,32 +63,29 @@ public interface OnNextFailureStrategy {
 	 * hook (which therefore cancels the upstream subscription and propagates an error,
 	 * potentially different from the original one).
 	 */
-	OnNextFailureStrategy STOP = new OnNextFailureStrategy() {
-
-		@Override
-		public <T> Throwable apply(T value, Throwable error, Context context, Subscription forCancel) {
-			return Operators.onOperatorError(forCancel, error, value, context);
-		}
-
-	};
+	static OnNextFailureStrategy stop() {
+		return STOP;
+	}
 
 	/**
 	 * A non-terminal strategy where the error is passed to the {@link Operators#onErrorDropped(Throwable, Context)}
 	 * hook and the incriminating source value is passed to the {@link Operators#onNextDropped(Object, Context)}
 	 * hook, allowing the sequence to continue with further values.
 	 */
-	OnNextFailureStrategy RESUME_DROP = new OnNextFailureStrategy() {
+	static OnNextFailureStrategy resumeDrop() {
+		return RESUME_DROP;
+	}
 
-		@Override
-		@Nullable
-		public <T> Throwable apply(T value, Throwable error, Context context,
-				@Nullable Subscription forCancel) {
-			Operators.onNextDropped(value, context);
-			Operators.onErrorDropped(error, context);
-			return null;
-		}
-
-	};
+	/**
+	 * A conditionally non-terminal strategy where the error is passed to the {@link Operators#onErrorDropped(Throwable, Context)}
+	 * hook and the incriminating source value is passed to the {@link Operators#onNextDropped(Object, Context)}
+	 * hook IF they match a predicate, allowing the sequence to continue with further values.
+	 * <p>
+	 * In case they don't match the predicate, falls back to the #stop
+	 */
+	static <T> OnNextFailureStrategy resumeDropIf(BiPredicate<Throwable, Object> causePredicate) {
+		return new ConditionalDropStrategy(causePredicate);
+	}
 
 	/**
 	 * Create a non-terminal strategy where the error and incriminating value are passed to
@@ -96,7 +93,7 @@ public interface OnNextFailureStrategy {
 	 * <p>
 	 * Note that any {@link Exception} thrown by the consumer will suppress the original
 	 * error and will be returned to the operator after cancelling upstream (behaving a
-	 * bit like {@link #STOP} in this case).
+	 * bit like {@link #stop()} in this case).
 	 *
 	 * @param causeConsumer the {@link BiConsumer} to process the recovered errors (and
 	 * cause values) with.
@@ -110,10 +107,10 @@ public interface OnNextFailureStrategy {
 	 * Create a partially non-terminal strategy where the sequence is allowed to continue
 	 * with further values when a {@link BiPredicate} returns true. In that case, the error
 	 * and incriminating value are passed to a custom {@link BiConsumer}. Otherwise, falls
-	 * back to the {@link #STOP} terminal strategy.
+	 * back to the {@link #stop()} terminal strategy.
 	 * <p>
 	 * Note that any {@link Exception} thrown by the predicate or consumer will suppress
-	 * the original error and will be processed by the {@link #STOP} strategy.
+	 * the original error and will be processed by the {@link #stop()} strategy.
 	 *
 	 * @param causePredicate the {@link BiPredicate} to use to determine if a failure
 	 * should be recovered from.
@@ -121,10 +118,34 @@ public interface OnNextFailureStrategy {
 	 * cause values) with.
 	 * @return a new {@link OnNextFailureStrategy} that allows resuming the sequence.
 	 */
-	static OnNextFailureStrategy conditionalResume(BiPredicate<Throwable, Object> causePredicate,
+	static OnNextFailureStrategy resumeIf(BiPredicate<Throwable, Object> causePredicate,
 			BiConsumer<Throwable, Object> causeConsumer) {
 		return new ConditionalResumeStrategy(causePredicate, causeConsumer, STOP);
 	}
+
+	//==== IMPLEMENTATIONS ====
+	OnNextFailureStrategy STOP = new OnNextFailureStrategy() {
+
+		@Override
+		public <T> Throwable apply(T value, Throwable error, Context context,
+				@Nullable Subscription forCancel) {
+			return Operators.onOperatorError(forCancel, error, value, context);
+		}
+
+	};
+
+	OnNextFailureStrategy RESUME_DROP = new OnNextFailureStrategy() {
+
+		@Override
+		@Nullable
+		public <T> Throwable apply(T value, Throwable error, Context context,
+				@Nullable Subscription forCancel) {
+			Operators.onNextDropped(value, context);
+			Operators.onErrorDropped(error, context);
+			return null;
+		}
+
+	};
 
 	final class ResumeStrategy implements OnNextFailureStrategy {
 
@@ -188,6 +209,39 @@ public interface OnNextFailureStrategy {
 			}
 		}
 
+	}
+
+	/**
+	 * A strategy that conditionally drops-and-resumes from errors. For errors that
+	 * don't match the predicate, falls back to the STOP strategy.
+	 */
+	final class ConditionalDropStrategy implements OnNextFailureStrategy {
+
+		final BiPredicate<Throwable, Object> errorValuePredicate;
+
+		ConditionalDropStrategy(BiPredicate<Throwable, Object> errorValuePredicate) {
+			this.errorValuePredicate = errorValuePredicate;
+		}
+
+		@Override
+		@Nullable
+		public final <T> Throwable apply(T value, Throwable error, Context context,
+				@Nullable Subscription forCancel) {
+			try {
+				if (errorValuePredicate.test(error, value)) {
+					Operators.onNextDropped(value, context);
+					Operators.onErrorDropped(error, context);
+					return null;
+				}
+				else {
+					return STOP.apply(value, error, context, forCancel);
+				}
+			}
+			catch (Throwable t) {
+				if (t != error) t.addSuppressed(error);
+				return STOP.apply(value, t, context, forCancel);
+			}
+		}
 	}
 
 }
