@@ -49,7 +49,9 @@ import reactor.util.context.Context;
  * @author Stephane Maldini
  */
 public final class MonoProcessor<O> extends Mono<O>
-		implements Processor<O, O>, Disposable, Subscription, Scannable, LongSupplier {
+		implements Processor<O, O>, CoreSubscriber<O>, Disposable, Subscription,
+		           Scannable,
+		           LongSupplier {
 
 	/**
 	 * Create a {@link MonoProcessor} that will eagerly request 1 on {@link #onSubscribe(Subscription)}, cache and emit
