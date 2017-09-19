@@ -19,6 +19,7 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 import reactor.core.Scannable;
 
 /**
@@ -47,19 +48,28 @@ final class ParallelFilter<T> extends ParallelFlux<T> implements Scannable{
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super T>[] subscribers) {
 		if (!validate(subscribers)) {
 			return;
 		}
 		
 		int n = subscribers.length;
-		@SuppressWarnings("unchecked")
+
 		CoreSubscriber<? super T>[] parents = new CoreSubscriber[n];
-		
+
+		boolean conditional = subscribers[0] instanceof Fuseable.ConditionalSubscriber;
+
 		for (int i = 0; i < n; i++) {
-			parents[i] = new FluxFilter.FilterSubscriber<>(subscribers[i], predicate);
+			if (conditional) {
+				parents[i] = new FluxFilter.FilterConditionalSubscriber<>(
+						(Fuseable.ConditionalSubscriber<T>)subscribers[i], predicate);
+			}
+			else {
+				parents[i] = new FluxFilter.FilterSubscriber<>(subscribers[i], predicate);
+			}
 		}
-		
+
 		source.subscribe(parents);
 	}
 

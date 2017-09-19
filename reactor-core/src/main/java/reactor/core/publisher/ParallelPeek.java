@@ -21,6 +21,7 @@ import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 
 /**
  * Execute a Consumer in each 'rail' for the current element passing through.
@@ -63,17 +64,26 @@ final class ParallelPeek<T> extends ParallelFlux<T> implements SignalPeek<T>{
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super T>[] subscribers) {
 		if (!validate(subscribers)) {
 			return;
 		}
 		
 		int n = subscribers.length;
-		@SuppressWarnings("unchecked")
+
 		CoreSubscriber<? super T>[] parents = new CoreSubscriber[n];
-		
+
+		boolean conditional = subscribers[0] instanceof Fuseable.ConditionalSubscriber;
+
 		for (int i = 0; i < n; i++) {
-			parents[i] = new FluxPeek.PeekSubscriber<>(subscribers[i], this);
+			if (conditional) {
+				parents[i] = new FluxPeekFuseable.PeekConditionalSubscriber<>(
+						(Fuseable.ConditionalSubscriber<T>)subscribers[i], this);
+			}
+			else {
+				parents[i] = new FluxPeek.PeekSubscriber<>(subscribers[i], this);
+			}
 		}
 		
 		source.subscribe(parents);

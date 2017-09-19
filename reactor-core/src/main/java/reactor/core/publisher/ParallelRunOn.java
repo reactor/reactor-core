@@ -60,6 +60,7 @@ final class ParallelRunOn<T> extends ParallelFlux<T> implements Scannable{
 	}
 	
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super T>[] subscribers) {
 		if (!validate(subscribers)) {
 			return;
@@ -67,18 +68,25 @@ final class ParallelRunOn<T> extends ParallelFlux<T> implements Scannable{
 		
 		int n = subscribers.length;
 		
-		@SuppressWarnings("unchecked")
+
 		CoreSubscriber<T>[] parents = new CoreSubscriber[n];
-		
+
+		boolean conditional = subscribers[0] instanceof Fuseable.ConditionalSubscriber;
+
 		for (int i = 0; i < n; i++) {
-			CoreSubscriber<? super T> a = subscribers[i];
-			
 			Worker w = scheduler.createWorker();
 
-			CoreSubscriber<T> parent = new FluxPublishOn.PublishOnSubscriber<>(a,
-					scheduler, w, true,
-					prefetch, queueSupplier);
-			parents[i] = parent;
+			if (conditional) {
+				parents[i] = new FluxPublishOn.PublishOnConditionalSubscriber<>(
+						(Fuseable.ConditionalSubscriber<T>)subscribers[i],
+						scheduler, w, true,
+						prefetch, queueSupplier);
+			}
+			else {
+				parents[i] = new FluxPublishOn.PublishOnSubscriber<>(subscribers[i],
+						scheduler, w, true,
+						prefetch, queueSupplier);
+			}
 		}
 		
 		source.subscribe(parents);

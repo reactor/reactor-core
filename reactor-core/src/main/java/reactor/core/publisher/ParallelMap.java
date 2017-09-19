@@ -19,6 +19,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import reactor.core.CoreSubscriber;
+import reactor.core.Fuseable;
 import reactor.core.Scannable;
 
 /**
@@ -48,17 +49,26 @@ final class ParallelMap<T, R> extends ParallelFlux<R> implements Scannable {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void subscribe(CoreSubscriber<? super R>[] subscribers) {
 		if (!validate(subscribers)) {
 			return;
 		}
 		
 		int n = subscribers.length;
-		@SuppressWarnings("unchecked")
 		CoreSubscriber<? super T>[] parents = new CoreSubscriber[n];
-		
+
+		boolean conditional = subscribers[0] instanceof Fuseable.ConditionalSubscriber;
+
 		for (int i = 0; i < n; i++) {
-			parents[i] = new FluxMap.MapSubscriber<>(subscribers[i], mapper);
+			if (conditional) {
+				parents[i] =
+						new FluxMap.MapConditionalSubscriber<>((Fuseable.ConditionalSubscriber<R>) subscribers[i],
+								mapper);
+			}
+			else {
+				parents[i] = new FluxMap.MapSubscriber<>(subscribers[i], mapper);
+			}
 		}
 		
 		source.subscribe(parents);
