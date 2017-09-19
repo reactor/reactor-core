@@ -202,7 +202,7 @@ public class FluxSubscribeOnTest {
 				.publishOn(Schedulers.elastic());
 
 		StepVerifier.create(test)
-		            .expectNextCount(Queues.SMALL_BUFFER_SIZE)
+		            .expectNextCount(Queues.BUFFER_SIZE)
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(5));
 	}
@@ -231,7 +231,7 @@ public class FluxSubscribeOnTest {
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(5));
 
-		assertThat(count.get()).isGreaterThan(Queues.SMALL_BUFFER_SIZE);
+		assertThat(count.get()).isGreaterThan(Queues.BUFFER_SIZE);
 	}
 
 	@Test
@@ -258,7 +258,7 @@ public class FluxSubscribeOnTest {
 		            .expectComplete()
 		            .verify(Duration.ofSeconds(5));
 
-		assertThat(count.get()).isEqualTo(Queues.SMALL_BUFFER_SIZE);
+		assertThat(count.get()).isEqualTo(Queues.BUFFER_SIZE);
 	}
 
 	@Test

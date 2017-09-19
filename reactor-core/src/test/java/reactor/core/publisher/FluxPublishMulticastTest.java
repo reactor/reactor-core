@@ -48,7 +48,7 @@ public class FluxPublishMulticastTest extends FluxOperatorTest<String, String> {
 
 	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
-		return defaultOptions.prefetch(Queues.SMALL_BUFFER_SIZE)
+		return defaultOptions.prefetch(Queues.BUFFER_SIZE)
 		                     .fusionModeThreadBarrier(Fuseable.ANY);
 	}
 

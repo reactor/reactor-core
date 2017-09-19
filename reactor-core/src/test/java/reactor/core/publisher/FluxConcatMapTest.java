@@ -41,7 +41,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
 		return defaultOptions.shouldHitDropNextHookAfterTerminate(false)
 		                     .shouldHitDropErrorHookAfterTerminate(false)
-		                     .prefetch(Queues.XS_BUFFER_SIZE);
+		                     .prefetch(Queues.BUFFER_SIZE);
 	}
 
 	@Override

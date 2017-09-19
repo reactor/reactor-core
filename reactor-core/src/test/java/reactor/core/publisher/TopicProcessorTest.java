@@ -821,7 +821,7 @@ public class TopicProcessorTest {
 			@Nullable ExecutorService requestTaskExecutor) {
 
 		String expectedName = name != null ? name : TopicProcessor.class.getSimpleName();
-		int expectedBufferSize = bufferSize != null ? bufferSize : Queues.SMALL_BUFFER_SIZE;
+		int expectedBufferSize = bufferSize != null ? bufferSize : Queues.BUFFER_SIZE;
 		boolean expectedAutoCancel = autoCancel != null ? autoCancel : true;
 		WaitStrategy expectedWaitStrategy = waitStrategy != null ? waitStrategy : WaitStrategy.phasedOffLiteLock(200, 100, TimeUnit.MILLISECONDS);
 		Class<?> sequencerClass = shared ? MultiProducerRingBuffer.class : SingleProducerSequencer.class;

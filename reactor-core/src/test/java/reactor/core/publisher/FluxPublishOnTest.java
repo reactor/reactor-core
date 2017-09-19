@@ -69,7 +69,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
-		return defaultOptions.prefetch(Queues.SMALL_BUFFER_SIZE)
+		return defaultOptions.prefetch(Queues.BUFFER_SIZE)
 		                     .fusionModeThreadBarrier(Fuseable.ASYNC)
 		                     .fusionMode(Fuseable.ASYNC);
 	}
@@ -495,7 +495,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 
 		int s = clq.size();
 		Assert.assertTrue("More requests?" + clq, s == 1 || s == 2 || s == 3);
-		Assert.assertEquals((Long) (long) Queues.SMALL_BUFFER_SIZE, clq.poll());
+		Assert.assertEquals((Long) (long) Queues.BUFFER_SIZE, clq.poll());
 	}
 
 	@Test

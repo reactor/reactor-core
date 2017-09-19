@@ -43,7 +43,7 @@ public class FluxGroupByTest extends
 	protected Scenario<String, GroupedFlux<Integer, String>> defaultScenarioOptions(Scenario<String, GroupedFlux<Integer, String>> defaultOptions) {
 		return defaultOptions.fusionMode(Fuseable.ASYNC)
 		                     .fusionModeThreadBarrier(Fuseable.ANY)
-		                     .prefetch(Queues.SMALL_BUFFER_SIZE)
+		                     .prefetch(Queues.BUFFER_SIZE)
 		                     .shouldAssertPostTerminateState(false);
 	}
 

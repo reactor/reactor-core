@@ -1022,7 +1022,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 			return new ReplaySubscriber<>(new SizeBoundReplayBuffer<>(history),
 					this);
 		}
-		return new ReplaySubscriber<>(new UnboundedReplayBuffer<>(Queues.SMALL_BUFFER_SIZE),
+		return new ReplaySubscriber<>(new UnboundedReplayBuffer<>(Queues.BUFFER_SIZE),
 					this);
 	}
 

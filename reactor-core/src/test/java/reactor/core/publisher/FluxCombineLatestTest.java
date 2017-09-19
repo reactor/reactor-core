@@ -39,7 +39,7 @@ public class FluxCombineLatestTest extends FluxOperatorTest<String, String> {
 	@Override
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
 		return defaultOptions.fusionMode(Fuseable.ASYNC)
-		                     .prefetch(Queues.XS_BUFFER_SIZE);
+		                     .prefetch(Queues.BUFFER_SIZE);
 	}
 
 	@Override

@@ -177,7 +177,7 @@ public class VirtualTimeScheduler implements Scheduler {
 	}
 
 	final Queue<TimedRunnable> queue =
-			new PriorityBlockingQueue<>(Queues.XS_BUFFER_SIZE);
+			new PriorityBlockingQueue<>(Queues.BUFFER_SIZE);
 
 	@SuppressWarnings("unused")
 	volatile long counter;

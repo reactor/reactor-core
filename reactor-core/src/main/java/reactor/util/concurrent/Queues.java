@@ -36,6 +36,12 @@ public final class Queues {
 	public static final int CAPACITY_UNSURE = Integer.MIN_VALUE;
 
 	/**
+	 * A small default of available slots in a given container, compromise between intensive pipelines, small
+	 * subscribers numbers and memory use.
+	 */
+	public static final int BUFFER_SIZE = Math.max(16,
+			Integer.parseInt(System.getProperty("reactor.bufferSize", "128")));
+	/**
 	 * Return the capacity of a given {@link Queue} in a best effort fashion. Queues that
 	 * are known to be unbounded will return {@code Integer.MAX_VALUE} and queues that
 	 * have a known bounded capacity will return that capacity. For other {@link Queue}
@@ -45,7 +51,7 @@ public final class Queues {
 	 * @param q the {@link Queue} to try to get a capacity for
 	 * @return the capacity of the queue, if discoverable with confidence, or {@link #CAPACITY_UNSURE} negative constant.
 	 */
-	public static final int capacity(Queue q) {
+	public static int capacity(Queue q) {
 		if (q instanceof SpscLinkedArrayQueue) {
 			return Integer.MAX_VALUE;
 		}
@@ -62,19 +68,6 @@ public final class Queues {
 			return CAPACITY_UNSURE;
 		}
 	}
-
-	/**
-	 * An allocation friendly default of available slots in a given container, e.g. slow publishers and or fast/few
-	 * subscribers
-	 */
-	public static final int XS_BUFFER_SIZE    = Math.max(8,
-			Integer.parseInt(System.getProperty("reactor.bufferSize.x", "32")));
-	/**
-	 * A small default of available slots in a given container, compromise between intensive pipelines, small
-	 * subscribers numbers and memory use.
-	 */
-	public static final int SMALL_BUFFER_SIZE = Math.max(16,
-			Integer.parseInt(System.getProperty("reactor.bufferSize.small", "256")));
 
 	/**
 	 * Calculate the next power of 2, greater than or equal to x.<p> From Hacker's Delight, Chapter 3, Harry S. Warren
@@ -99,10 +92,7 @@ public final class Queues {
 		if (batchSize == Integer.MAX_VALUE) {
 			return SMALL_UNBOUNDED;
 		}
-		if (batchSize == XS_BUFFER_SIZE) {
-			return XS_SUPPLIER;
-		}
-		if (batchSize == SMALL_BUFFER_SIZE) {
+		if (batchSize == BUFFER_SIZE) {
 			return SMALL_SUPPLIER;
 		}
 		if (batchSize == 1) {
@@ -159,30 +149,20 @@ public final class Queues {
 
 	/**
 	 * Returns an unbounded, linked-array-based Queue. Integer.max sized link will
-	 * return the default {@link #SMALL_BUFFER_SIZE} size.
+	 * return the default {@link #BUFFER_SIZE} size.
 	 * @param linkSize the link size
 	 * @param <T> the reified {@link Queue} generic type
 	 * @return an unbounded {@link Queue} {@link Supplier}
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> Supplier<Queue<T>> unbounded(int linkSize) {
-		if (linkSize == XS_BUFFER_SIZE) {
-			return XS_UNBOUNDED;
+		if (linkSize == BUFFER_SIZE) {
+			return SMALL_UNBOUNDED;
 		}
-		else if (linkSize == Integer.MAX_VALUE || linkSize == SMALL_BUFFER_SIZE) {
+		else if (linkSize == Integer.MAX_VALUE) {
 			return unbounded();
 		}
 		return  () -> new SpscLinkedArrayQueue<>(linkSize);
-	}
-
-	/**
-	 *
-	 * @param <T> the reified {@link Queue} generic type
-	 * @return a bounded {@link Queue} {@link Supplier}
-	 */
-	@SuppressWarnings("unchecked")
-	public static <T> Supplier<Queue<T>> xs() {
-		return XS_SUPPLIER;
 	}
 
 	private Queues() {
@@ -334,12 +314,8 @@ public final class Queues {
     @SuppressWarnings("rawtypes")
     static final Supplier ONE_SUPPLIER   = OneQueue::new;
 	@SuppressWarnings("rawtypes")
-    static final Supplier XS_SUPPLIER    = () -> new SpscArrayQueue<>(XS_BUFFER_SIZE);
-	@SuppressWarnings("rawtypes")
-    static final Supplier SMALL_SUPPLIER = () -> new SpscArrayQueue<>(SMALL_BUFFER_SIZE);
+    static final Supplier SMALL_SUPPLIER = () -> new SpscArrayQueue<>(BUFFER_SIZE);
 	@SuppressWarnings("rawtypes")
 	static final Supplier SMALL_UNBOUNDED =
-			() -> new SpscLinkedArrayQueue<>(SMALL_BUFFER_SIZE);
-	@SuppressWarnings("rawtypes")
-	static final Supplier XS_UNBOUNDED = () -> new SpscLinkedArrayQueue<>(XS_BUFFER_SIZE);
+			() -> new SpscLinkedArrayQueue<>(BUFFER_SIZE);
 }

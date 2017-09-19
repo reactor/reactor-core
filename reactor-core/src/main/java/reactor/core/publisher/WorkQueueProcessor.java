@@ -86,7 +86,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		boolean autoCancel;
 
 		Builder() {
-			this.bufferSize = Queues.SMALL_BUFFER_SIZE;
+			this.bufferSize = Queues.BUFFER_SIZE;
 			this.autoCancel = true;
 			this.share = false;
 		}
@@ -106,7 +106,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		}
 
 		/**
-		 * Configures buffer size for this builder. Default value is {@link Queues#SMALL_BUFFER_SIZE}.
+		 * Configures buffer size for this builder. Default value is {@link Queues#BUFFER_SIZE}.
 		 * @param bufferSize the internal buffer size to hold signals, must be a power of 2
 		 * @return builder with provided buffer size
 		 */
@@ -210,7 +210,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	}
 
 	/**
-	 * Create a new WorkQueueProcessor using {@link Queues#SMALL_BUFFER_SIZE} backlog size,
+	 * Create a new WorkQueueProcessor using {@link Queues#BUFFER_SIZE} backlog size,
 	 * blockingWait Strategy and auto-cancel. <p> A new Cached ThreadExecutorPool will be
 	 * implicitly created.
 	 * @param <E> Type of processed signals

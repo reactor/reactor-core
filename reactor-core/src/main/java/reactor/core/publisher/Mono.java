@@ -512,7 +512,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a Mono that emits a Boolean value that indicates whether the two sequences are the same
 	 */
 	public static <T> Mono<Boolean> sequenceEqual(Publisher<? extends T> source1, Publisher<? extends T> source2) {
-		return sequenceEqual(source1, source2, equalsBiPredicate(), Queues.SMALL_BUFFER_SIZE);
+		return sequenceEqual(source1, source2, equalsBiPredicate(), Queues.BUFFER_SIZE);
 	}
 
 	/**
@@ -533,7 +533,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public static <T> Mono<Boolean> sequenceEqual(Publisher<? extends T> source1, Publisher<? extends T> source2,
 			BiPredicate<? super T, ? super T> isEqual) {
-		return sequenceEqual(source1, source2, isEqual, Queues.SMALL_BUFFER_SIZE);
+		return sequenceEqual(source1, source2, isEqual, Queues.BUFFER_SIZE);
 	}
 
 	/**
@@ -1868,7 +1868,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return this Mono expanded depth-first to a {@link Flux}
 	 */
 	public final Flux<T> expandDeep(Function<? super T, ? extends Publisher<? extends T>> expander) {
-		return expandDeep(expander, Queues.SMALL_BUFFER_SIZE);
+		return expandDeep(expander, Queues.BUFFER_SIZE);
 	}
 
 	/**
@@ -1945,7 +1945,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return this Mono expanded breadth-first to a {@link Flux}
 	 */
 	public final Flux<T> expand(Function<? super T, ? extends Publisher<? extends T>> expander) {
-		return expand(expander, Queues.SMALL_BUFFER_SIZE);
+		return expand(expander, Queues.BUFFER_SIZE);
 	}
 
 	/**

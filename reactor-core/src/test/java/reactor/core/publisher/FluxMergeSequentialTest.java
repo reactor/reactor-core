@@ -193,10 +193,10 @@ public class FluxMergeSequentialTest {
 	@Test
 	public void longEager() {
 
-		Flux.range(1, 2 * Queues.SMALL_BUFFER_SIZE)
+		Flux.range(1, 2 * Queues.BUFFER_SIZE)
 		        .flatMapSequential(v -> Flux.just(1))
 		        .subscribeWith(AssertSubscriber.create())
-		        .assertValueCount(2 * Queues.SMALL_BUFFER_SIZE)
+		        .assertValueCount(2 * Queues.BUFFER_SIZE)
 		        .assertNoError()
 		        .assertComplete();
 	}
@@ -419,12 +419,12 @@ public class FluxMergeSequentialTest {
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testInvalidCapacityHint() {
-		Flux.just(1).flatMapSequential(toJust, 0, Queues.SMALL_BUFFER_SIZE);
+		Flux.just(1).flatMapSequential(toJust, 0, Queues.BUFFER_SIZE);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testInvalidMaxConcurrent() {
-		Flux.just(1).flatMapSequential(toJust, Queues.SMALL_BUFFER_SIZE, 0);
+		Flux.just(1).flatMapSequential(toJust, Queues.BUFFER_SIZE, 0);
 	}
 
 	@Test
@@ -486,7 +486,7 @@ public class FluxMergeSequentialTest {
 		AssertSubscriber<Object> ts = AssertSubscriber.create(0);
 
 		Flux.just(1).hide()
-		    .flatMapSequential(t -> Flux.range(1, Queues.SMALL_BUFFER_SIZE * 2)
+		    .flatMapSequential(t -> Flux.range(1, Queues.BUFFER_SIZE * 2)
 		                                .doOnNext(t1 -> count.getAndIncrement())
 		                                .hide())
 		    .subscribe(ts);
@@ -494,14 +494,14 @@ public class FluxMergeSequentialTest {
 		ts.assertNoError();
 		ts.assertNoValues();
 		ts.assertNotComplete();
-		Assert.assertEquals(Queues.XS_BUFFER_SIZE, count.get());
+		Assert.assertEquals(Queues.BUFFER_SIZE, count.get());
 	}
 
 	@Test
 	public void testMaxConcurrent5() {
 		final List<Long> requests = new ArrayList<>();
 		Flux.range(1, 100).doOnRequest(requests::add)
-		    .flatMapSequential(toJust, 5, Queues.SMALL_BUFFER_SIZE)
+		    .flatMapSequential(toJust, 5, Queues.BUFFER_SIZE)
 		    .subscribe(ts);
 
 		ts.assertNoError();

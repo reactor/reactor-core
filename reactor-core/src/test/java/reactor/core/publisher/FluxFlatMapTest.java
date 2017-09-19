@@ -445,7 +445,7 @@ public class FluxFlatMapTest {
 	public void defaultPrefetch() {
 		assertThat(Flux.just(1, 2, 3)
 		               .flatMap(Flux::just)
-		               .getPrefetch()).isEqualTo(Queues.XS_BUFFER_SIZE);
+		               .getPrefetch()).isEqualTo(Queues.BUFFER_SIZE);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
