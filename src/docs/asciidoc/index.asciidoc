@@ -39,7 +39,7 @@ endif::[]
 include::kotlin.adoc[leveloffset=1]
 ifeval::["{backend}" == "html5"]
 https://github.com/reactor/reactor-core/edit/master/src/docs/asciidoc/kotlin.adoc[Suggest Edit, title="Suggest an edit to the above section via github", role="fa fa-edit"]
-to "<<which-operator>>"
+to "<<kotlin>>"
 endif::[]
 
 include::testing.adoc[leveloffset=1]
