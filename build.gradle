@@ -33,6 +33,7 @@ buildscript {
 plugins {
   id 'org.asciidoctor.convert' version '1.5.2'
   id "me.champeau.gradle.jmh" version "0.3.1" apply false
+  id "org.jetbrains.dokka" version "0.9.15"
 }
 
 apply from: "gradle/doc.gradle"
@@ -352,3 +353,4 @@ project('reactor-test') {
 }
 
 assemble.dependsOn docsZip
+assemble.dependsOn kdocZip
