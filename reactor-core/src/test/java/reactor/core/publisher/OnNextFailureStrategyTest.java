@@ -25,6 +25,8 @@ import reactor.test.StepVerifier;
 import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.fail;
 
 public class OnNextFailureStrategyTest {
 
@@ -32,16 +34,17 @@ public class OnNextFailureStrategyTest {
 	public void resume() throws Exception {
 		AtomicReference<Throwable> error = new AtomicReference<>();
 		AtomicReference<Object> value = new AtomicReference<>();
-		Operators.DeferredSubscription s = new Operators.DeferredSubscription();
 
 		OnNextFailureStrategy strategy = OnNextFailureStrategy.resume(
 				error::set, value::set);
 
-		Throwable result = strategy.apply("foo", new NullPointerException("foo"),
-				Context.empty(), s);
+		String data = "foo";
+		Throwable exception = new NullPointerException("foo");
 
-		assertThat(result).isNull();
-		assertThat(s.isCancelled()).as("s cancelled").isFalse();
+		assertThat(strategy.canResume(exception, data)).isTrue();
+
+		strategy.process(exception, data, Context.empty());
+
 		assertThat(error.get()).isInstanceOf(NullPointerException.class).hasMessage("foo");
 		assertThat(value.get()).isEqualTo("foo");
 	}
@@ -51,21 +54,20 @@ public class OnNextFailureStrategyTest {
 		IllegalStateException failureValue = new IllegalStateException("boomInValueConsumer");
 		IllegalStateException failureError = new IllegalStateException("boomInErrorConsumer");
 		NullPointerException npe = new NullPointerException("foo");
-		Operators.DeferredSubscription s = new Operators.DeferredSubscription();
+
 		OnNextFailureStrategy strategy = OnNextFailureStrategy.resume(
 				e -> { throw failureError; },
 				v -> { throw failureValue; });
 
-		Throwable result = strategy.apply("foo", npe, Context.empty(), s);
+		assertThat(strategy.canResume(npe, "foo")).isTrue();
 
-		assertThat(result).isSameAs(failureValue)
-		                  .hasSuppressedException(npe);
-		assertThat(s.isCancelled()).as("s cancelled").isTrue();
+		assertThatExceptionOfType(IllegalStateException.class)
+				.isThrownBy(() -> strategy.process(npe, "foo", Context.empty()))
+				.isSameAs(failureValue);
 	}
 
 	@Test
 	public void conditionalResume() throws Exception {
-		Operators.DeferredSubscription s = new Operators.DeferredSubscription();
 		AtomicReference<Throwable> error = new AtomicReference<>();
 		AtomicReference<Object> value = new AtomicReference<>();
 		AtomicReference<Throwable> errorDropped = new AtomicReference<>();
@@ -74,16 +76,18 @@ public class OnNextFailureStrategyTest {
 		Hooks.onNextDropped(valueDropped::set);
 		Hooks.onErrorDropped(errorDropped::set);
 
+		String data = "foo";
+		Throwable exception = new NullPointerException("foo");
+
 		try {
 			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeIf(
 					e -> e instanceof NullPointerException,
 					error::set, value::set);
 
-			Throwable result = strategy.apply("foo", new NullPointerException("foo"),
-					Context.empty(), s);
+			assertThat(strategy.canResume(exception, data)).isTrue();
 
-			assertThat(result).isNull();
-			assertThat(s.isCancelled()).isFalse();
+			strategy.process(exception, data, Context.empty());
+
 			assertThat(error.get()).isInstanceOf(NullPointerException.class).hasMessage("foo");
 			assertThat(value.get()).isEqualTo("foo");
 			assertThat(errorDropped.get()).isNull();
@@ -96,41 +100,24 @@ public class OnNextFailureStrategyTest {
 	}
 
 	@Test
-	public void conditionalResumeFallback() throws Exception {
-		Operators.DeferredSubscription s = new Operators.DeferredSubscription();
+	public void conditionalResumeNoMatch() throws Exception {
 		AtomicReference<Throwable> error = new AtomicReference<>();
 		AtomicReference<Object> value = new AtomicReference<>();
-		AtomicReference<Throwable> errorDropped = new AtomicReference<>();
-		AtomicReference<Object> valueDropped = new AtomicReference<>();
 
-		Hooks.onNextDropped(valueDropped::set);
-		Hooks.onErrorDropped(errorDropped::set);
+		OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeIf(
+				e -> e instanceof IllegalArgumentException,
+				error::set, value::set);
 
-		try {
-			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeIf(
-					e -> e instanceof IllegalArgumentException,
-					error::set, value::set);
+		assertThat(strategy.canResume(new NullPointerException("foo"), "foo"))
+				.isFalse();
 
-			Throwable result = strategy.apply("foo", new NullPointerException("foo"),
-					Context.empty(), s);
-
-			assertThat(result).isInstanceOf(NullPointerException.class).hasMessage("foo");
-			assertThat(s.isCancelled()).isTrue();
-			assertThat(error.get()).isNull();
-			assertThat(value.get()).isNull();
-			assertThat(errorDropped.get()).isNull();
-			assertThat(valueDropped.get()).isNull();
-		}
-		finally {
-			Hooks.resetOnNextDropped();
-			Hooks.resetOnErrorDropped();
-		}
+		assertThat(error.get()).isNull();
+		assertThat(value.get()).isNull();
 	}
 
 	@Test
 	public void conditionalResumeFailingPredicate() throws Exception {
 		NullPointerException npe = new NullPointerException("foo");
-		Operators.DeferredSubscription s = new Operators.DeferredSubscription();
 		AtomicReference<Throwable> error = new AtomicReference<>();
 		AtomicReference<Object> value = new AtomicReference<>();
 		AtomicReference<Throwable> onOperatorError = new AtomicReference<>();
@@ -147,19 +134,15 @@ public class OnNextFailureStrategyTest {
 					e -> { throw new IllegalStateException("boom"); },
 					error::set, value::set);
 
-			Throwable result = strategy.apply("foo", npe, Context.empty(), s);
+			assertThatExceptionOfType(IllegalStateException.class)
+					.isThrownBy(() -> strategy.canResume(npe, "foo"))
+					.withMessage("boom")
+					.satisfies(e -> assertThat(e).hasNoSuppressedExceptions());
 
-			assertThat(result).isInstanceOf(IllegalStateException.class)
-			                  .hasMessage("boom")
-			                  .hasSuppressedException(npe);
-			assertThat(s.isCancelled()).isTrue();
 			assertThat(error.get()).isNull();
 			assertThat(value.get()).isNull();
-			assertThat(onOperatorError.get())
-					.isInstanceOf(IllegalStateException.class)
-					.hasMessage("boom")
-					.hasSuppressedException(npe);
-			assertThat(onOperatorValue.get()).isEqualTo("foo");
+			assertThat(onOperatorError.get()).isNull();
+			assertThat(onOperatorValue.get()).isNull();
 		}
 		finally {
 			Hooks.resetOnOperatorError("test");
@@ -169,7 +152,6 @@ public class OnNextFailureStrategyTest {
 	@Test
 	public void conditionalResumeFailingConsumer() throws Exception {
 		NullPointerException error = new NullPointerException("foo");
-		Operators.DeferredSubscription s = new Operators.DeferredSubscription();
 		AtomicReference<Throwable> onOperatorError = new AtomicReference<>();
 		AtomicReference<Object> onOperatorValue = new AtomicReference<>();
 
@@ -185,17 +167,15 @@ public class OnNextFailureStrategyTest {
 					e -> { throw new IllegalStateException("boomError"); },
 					v -> { throw new IllegalStateException("boomValue"); });
 
-			Throwable result = strategy.apply("foo", error, Context.empty(), s);
+			assertThat(strategy.canResume(error, "foo")).isTrue();
 
-			assertThat(result).isInstanceOf(IllegalStateException.class)
-			                  .hasMessage("boomValue")
-			                  .hasSuppressedException(error);
-			assertThat(s.isCancelled()).isTrue();
-			assertThat(onOperatorError.get())
-					.isInstanceOf(IllegalStateException.class)
-					.hasMessage("boomValue")
-					.hasSuppressedException(error);
-			assertThat(onOperatorValue.get()).isEqualTo("foo");
+			assertThatExceptionOfType(IllegalStateException.class)
+					.isThrownBy(() -> strategy.process(error, "foo", Context.empty()))
+					.withMessage("boomValue")
+					.satisfies(e -> assertThat(e).hasNoSuppressedExceptions());
+
+			assertThat(onOperatorError.get()).isNull();
+			assertThat(onOperatorValue.get()).isNull();
 		}
 		finally {
 			Hooks.resetOnOperatorError("test");

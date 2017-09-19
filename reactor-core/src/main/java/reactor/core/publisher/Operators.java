@@ -377,6 +377,13 @@ public abstract class Operators {
 		return onRejectedExecution(original, null, null, null, context);
 	}
 
+	public static final OnNextFailureStrategy failureStrategy(Context context) {
+		OnNextFailureStrategy strategy = context.getOrDefault(OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY, null);
+		if (strategy == null) strategy = Hooks.onNextFailureHook;
+		if (strategy == null) strategy = OnNextFailureStrategy.STOP;
+		return strategy;
+	}
+
 	/**
 	 * Find the {@link OnNextFailureStrategy} to apply to the calling operator (which could be a local
 	 * error mode defined in the {@link Context}) and apply it. For poll(), prefer
@@ -414,11 +421,16 @@ public abstract class Operators {
 	@Nullable
 	public static <T> Throwable onNextFailure(@Nullable T value, Throwable error, Context context, Subscription subscriptionForCancel) {
 		Exceptions.throwIfFatal(error);
-		OnNextFailureStrategy strategy = context.getOrDefault(OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY, null);
-		if (strategy == null) strategy = Hooks.onNextFailureHook;
-		if (strategy == null) strategy = OnNextFailureStrategy.STOP;
 
-		return strategy.apply(value, error, context, subscriptionForCancel);
+		OnNextFailureStrategy strategy = failureStrategy(context);
+		if (strategy.canResume(error, value)) {
+			strategy.process(error, value, context);
+			return null;
+		}
+		else {
+			//falls back to operator errors
+			return onOperatorError(subscriptionForCancel, error, value, context);
+		}
 	}
 
 	/**
@@ -440,15 +452,14 @@ public abstract class Operators {
 	@Nullable
 	public static <T> RuntimeException onNextPollFailure(T value, Throwable error, Context context) {
 		Exceptions.throwIfFatal(error);
-		OnNextFailureStrategy strategy = context.getOrDefault(OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY, null);
-		if (strategy == null) strategy = Hooks.onNextFailureHook;
-		if (strategy == null) strategy = OnNextFailureStrategy.STOP;
 
-		Throwable t = strategy.apply(value, error, context, null);
-		if (t == null) {
+		OnNextFailureStrategy strategy = failureStrategy(context);
+		if (strategy.canResume(error, value)) {
+			strategy.process(error, value, context);
 			return null;
 		}
 		else {
+			Throwable t = onOperatorError(null, error, value, context);
 			return Exceptions.propagate(t);
 		}
 	}
