@@ -863,4 +863,93 @@ public class FluxPeekFuseableTest {
         test.onError(new IllegalStateException("boom"));
         assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
     }
+
+	@Test
+	public void errorStrategyResumeCoversSubNextComplete() {
+		RuntimeException subscriptionError = new IllegalStateException("subscription");
+		RuntimeException nextError = new IllegalStateException("next");
+		RuntimeException completeError = new IllegalStateException("complete");
+
+		List<Throwable> resumedErrors = new ArrayList<>();
+		List<Object> resumedValues = new ArrayList<>();
+
+		Flux<Integer> source = Flux.just(1, 2);
+
+		Flux<Integer> test = new FluxPeekFuseable<>(source,
+				sub -> { throw subscriptionError; },
+				v -> { throw nextError; },
+				null,
+				() -> { throw completeError; },
+				null, null, null)
+				.onErrorContinue(resumedErrors::add, resumedValues::add);
+
+		StepVerifier.create(test)
+		            .expectFusion()
+		            .expectNext(1, 2)
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasNotDroppedElements()
+		            .hasNotDroppedErrors();
+
+		assertThat(resumedValues).isEmpty();
+		assertThat(resumedErrors)
+				.containsExactly(subscriptionError, nextError, nextError, completeError);
+	}
+
+	@Test
+	public void errorStrategyResumeExclusions() {
+		RuntimeException requestError = new IllegalStateException("request");
+		RuntimeException errorError = new IllegalStateException("error");
+		RuntimeException afterTerminateError = new IllegalStateException("afterTerminate");
+
+		List<Throwable> resumedErrors = new ArrayList<>();
+		List<Object> resumedValues = new ArrayList<>();
+
+		Flux<Integer> source = Flux.just(1, 0).map(i -> 4 / i);
+
+		Flux<Integer> test = new FluxPeekFuseable<>(source, null, null,
+				e -> { throw errorError; },
+				null,
+				() -> { throw afterTerminateError; },
+				req -> { throw requestError; },
+				null)
+				.onErrorContinue(
+						e -> !(e instanceof ArithmeticException),
+						resumedErrors::add, resumedValues::add);
+
+		StepVerifier.create(test)
+		            .expectFusion()
+		            .expectNext(4)
+		            .expectErrorSatisfies(e -> assertThat(e).isSameAs(errorError))
+		            .verifyThenAssertThat()
+		            .hasNotDroppedElements()
+		            .hasNotDroppedErrors();
+
+		assertThat(resumedValues).isEmpty();
+		assertThat(resumedErrors).isEmpty();
+	}
+
+	@Test
+	public void errorStrategyResumeOnCancel() {
+		RuntimeException cancelError = new IllegalStateException("cancel");
+		Flux<Integer> source = Flux.just(1, 2);
+
+		List<Throwable> resumedErrors = new ArrayList<>();
+		List<Object> resumedValues = new ArrayList<>();
+
+		Flux<Integer> test = new FluxPeekFuseable<>(source,
+				null, null, null, null, null, null,
+				() -> { throw cancelError; })
+				.onErrorContinue(resumedErrors::add, resumedValues::add);
+
+		StepVerifier.create(test)
+		            .expectFusion()
+		            .thenCancel()
+		            .verifyThenAssertThat()
+		            .hasNotDroppedElements()
+		            .hasNotDroppedErrors();
+
+		assertThat(resumedValues).isEmpty();
+		assertThat(resumedErrors).containsExactly(cancelError);
+	}
 }
