@@ -336,7 +336,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param <T> type of the expected value
 	 * @return A {@link Mono}.
 	 */
-	public static <T> Mono<@NonNull T> fromCompletionStage(@Nullable CompletionStage<? extends @Nullable T> completionStage) {
+	public static <T> Mono<@NonNull T> fromCompletionStage(CompletionStage<? extends @Nullable T> completionStage) {
 		return onAssembly(new MonoCompletionStage<>(completionStage));
 	}
 

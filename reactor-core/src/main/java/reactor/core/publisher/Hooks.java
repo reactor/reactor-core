@@ -424,7 +424,7 @@ public abstract class Hooks {
 	}
 
 	@Nullable
-	static BiFunction<? super @NonNull Throwable, @Nullable Object, ? extends @NonNull Throwable> createOrUpdateOpErrorHook(Collection<@NonNull BiFunction<? super @NonNull Throwable, @NonNull Object, ? extends @NonNull Throwable>> hooks) {
+	static BiFunction<? super @NonNull Throwable, @Nullable Object, ? extends @NonNull Throwable> createOrUpdateOpErrorHook(Collection<@NonNull BiFunction<? super @NonNull Throwable, @Nullable Object, ? extends @NonNull Throwable>> hooks) {
 		BiFunction<? super Throwable, Object, ? extends Throwable> composite = null;
 		for (BiFunction<? super Throwable, Object, ? extends Throwable> function : hooks) {
 			if (composite != null) {
