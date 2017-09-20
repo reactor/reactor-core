@@ -3972,6 +3972,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
 	 * @param <R> the merged output sequence type
 	 *
+	 * @reactor.errorMode This operator supports {@link #onErrorContinue() resuming on errors}
+	 * in the mapper {@link Function}. Exceptions thrown by the mapper then behave as if
+	 * it had mapped the value to an empty publisher. If the mapper does map to a scalar
+	 * publisher (an optimization in which the value can be resolved immediately without
+	 * subscribing to the publisher, e.g. a {@link Mono#fromCallable(Callable)}) but said
+	 * publisher throws, this can be resumed from in the same manner.
+	 *
 	 * @return a new {@link Flux}
 	 */
 	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper) {
@@ -4003,6 +4010,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
 	 * @param concurrency the maximum number of in-flight inner sequences
 	 * @param <V> the merged output sequence type
+	 *
+	 * @reactor.errorMode This operator supports {@link #onErrorContinue() resuming on errors}
+	 * in the mapper {@link Function}. Exceptions thrown by the mapper then behave as if
+	 * it had mapped the value to an empty publisher. If the mapper does map to a scalar
+	 * publisher (an optimization in which the value can be resolved immediately without
+	 * subscribing to the publisher, e.g. a {@link Mono#fromCallable(Callable)}) but said
+	 * publisher throws, this can be resumed from in the same manner.
 	 *
 	 * @return a new {@link Flux}
 	 */
@@ -4038,6 +4052,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param prefetch the maximum in-flight elements from each inner {@link Publisher} sequence
 	 * @param <V> the merged output sequence type
 	 *
+	 * @reactor.errorMode This operator supports {@link #onErrorContinue() resuming on errors}
+	 * in the mapper {@link Function}. Exceptions thrown by the mapper then behave as if
+	 * it had mapped the value to an empty publisher. If the mapper does map to a scalar
+	 * publisher (an optimization in which the value can be resolved immediately without
+	 * subscribing to the publisher, e.g. a {@link Mono#fromCallable(Callable)}) but said
+	 * publisher throws, this can be resumed from in the same manner.
+	 *
 	 * @return a merged {@link Flux}
 	 */
 	public final <V> Flux<V> flatMap(Function<? super T, ? extends Publisher<? extends V>> mapper, int
@@ -4072,6 +4093,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param concurrency the maximum number of in-flight inner sequences
 	 * @param prefetch the maximum in-flight elements from each inner {@link Publisher} sequence
 	 * @param <V> the merged output sequence type
+	 *
+	 * @reactor.errorMode This operator supports {@link #onErrorContinue() resuming on errors}
+	 * in the mapper {@link Function}. Exceptions thrown by the mapper then behave as if
+	 * it had mapped the value to an empty publisher. If the mapper does map to a scalar
+	 * publisher (an optimization in which the value can be resolved immediately without
+	 * subscribing to the publisher, e.g. a {@link Mono#fromCallable(Callable)}) but said
+	 * publisher throws, this can be resumed from in the same manner.
 	 *
 	 * @return a merged {@link Flux}
 	 */
