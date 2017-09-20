@@ -138,15 +138,8 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 					cancelHook.run();
 				}
 				catch (Throwable e) {
-					OnNextFailureStrategy strategy = Operators.failureStrategy(actual.currentContext());
-					if (strategy.canResume(e, null)) {
-						strategy.process(e, null, actual.currentContext());
-					}
-					else {
-						onError(Operators.onOperatorError(s, e, actual.currentContext()));
-						return;
-
-					}
+					onError(Operators.onOperatorError(s, e, actual.currentContext()));
+					return;
 				}
 			}
 			s.cancel();
@@ -161,15 +154,9 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 						subscribeHook.accept(s);
 					}
 					catch (Throwable e) {
-						OnNextFailureStrategy strategy = Operators.failureStrategy(actual.currentContext());
-						if (strategy.canResume(e, null)) {
-							strategy.process(e, null, actual.currentContext());
-						}
-						else {
-							Operators.error(actual, Operators.onOperatorError(s, e,
-									actual.currentContext()));
-							return;
-						}
+						Operators.error(actual, Operators.onOperatorError(s, e,
+								actual.currentContext()));
+						return;
 					}
 				}
 				this.s = s;
@@ -190,14 +177,13 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 					nextHook.accept(t);
 				}
 				catch (Throwable e) {
-					OnNextFailureStrategy strategy = Operators.failureStrategy(actual.currentContext());
-					if (strategy.canResume(e, t)) {
-						//for callbacks we don't pass the t if we can resume
-						// as it won't be dropped from the sequence.
-						strategy.process(e, null, actual.currentContext());
+					Throwable e_ = Operators.onNextFailure(t, e, actual.currentContext(), s);
+					if (e_ == null) {
+						request(1);
+						return;
 					}
 					else {
-						onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+						onError(e_);
 						return;
 					}
 				}
@@ -257,14 +243,8 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 					completeHook.run();
 				}
 				catch (Throwable e) {
-					OnNextFailureStrategy strategy = Operators.failureStrategy(actual.currentContext());
-					if (strategy.canResume(e, null)) {
-						strategy.process(e, null, actual.currentContext());
-					}
-					else {
-						onError(Operators.onOperatorError(s, e, actual.currentContext()));
-						return;
-					}
+					onError(Operators.onOperatorError(s, e, actual.currentContext()));
+					return;
 				}
 			}
 			done = true;

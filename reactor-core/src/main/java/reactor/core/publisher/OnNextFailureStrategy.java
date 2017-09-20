@@ -21,6 +21,7 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscription;
+import reactor.core.Exceptions;
 import reactor.util.context.Context;
 
 /**
@@ -41,32 +42,13 @@ public interface OnNextFailureStrategy {
 	 */
 	String KEY_ON_NEXT_ERROR_STRATEGY = "reactor.onNextError.localStrategy";
 
-//	/**
-//	 * Apply the {@link OnNextFailureStrategy} by returning a {@link Throwable} when the
-//	 * error strategy doesn't allow sequences to continue, or null otherwise.
-//	 *
-//	 * @param value The onNext value that caused an error. null for cases like peek that
-//	 * are not tied to a particular value but still allow for resume.
-//	 * @param error The error.
-//	 * @param context The most significant {@link Context} in case the strategy needs it.
-//	 * @param forCancel The {@link Subscription} that should be cancelled if the
-//	 * strategy is terminal. Null to ignore (typically from a poll()).
-//	 * @param <T> The type of the value causing the error.
-//	 * @return a {@link Throwable} to propagate through onError if the strategy is
-//	 * terminal and cancelled the subscription, null if not.
-//	 */
-//	@Nullable
-//	<T> Throwable apply(@Nullable T value, Throwable error, Context context,
-//			@Nullable Subscription forCancel);
-
 	/**
 	 * Returns whether or not this strategy allows resume of a particular error (and
 	 * optionally the value that caused it).
 	 *
 	 * @param error the error being potentially recovered from.
 	 * @param value the value causing the error, null if not applicable.
-	 * @return true if this strategy would allow resuming the sequence, in which case
-	 * {@link #process(Throwable, Object, Context)} should be invoked.
+	 * @return true if this strategy would allow resuming the sequence.
 	 * @see #process(Throwable, Object, Context)
 	 */
 	boolean canResume(Throwable error, @Nullable Object value);
@@ -74,15 +56,21 @@ public interface OnNextFailureStrategy {
 	/**
 	 * Process an error and the optional value that caused it (when applicable) in
 	 * preparation for sequence resume, so that the error is not completely swallowed.
-	 * Note that this method should only be called if the {@link #canResume(Throwable, Object)}
-	 * method returns {@code true}.
+	 * <p>
+	 * If the strategy cannot resume this kind of error (ie. {@link #canResume(Throwable, Object)}
+	 * returns false), return the original error. Any exception in the processing will be
+	 * caught and returned. If the strategy was able to process the error correctly,
+	 * returns null.
 	 *
 	 * @param error the error being recovered from.
 	 * @param value the value causing the error, null if not applicable.
 	 * @param context the {@link Context} associated with the recovering sequence.
+	 * @return null if the error was processed for resume, a {@link Throwable} to propagate
+	 * otherwise.
 	 * @see #canResume(Throwable, Object)
 	 */
-	void process(Throwable error, @Nullable Object value, Context context);
+	@Nullable
+	Throwable process(Throwable error, @Nullable Object value, Context context);
 
 	/**
 	 * A strategy that never let any error resume.
@@ -94,7 +82,7 @@ public interface OnNextFailureStrategy {
 	/**
 	 * A strategy that let all error resume. When processing, the error is passed to the
 	 * {@link Operators#onErrorDropped(Throwable, Context)} hook and the incriminating
-	 * source value is passed to the {@link Operators#onNextDropped(Object, Context)}
+	 * source value (if available) is passed to the {@link Operators#onNextDropped(Object, Context)}
 	 * hook, allowing the sequence to continue with further values.
 	 */
 	static OnNextFailureStrategy resumeDrop() {
@@ -104,10 +92,9 @@ public interface OnNextFailureStrategy {
 	/**
 	 * A strategy that let some error resume. When processing, the error is passed to the
 	 * {@link Operators#onErrorDropped(Throwable, Context)} hook and the incriminating
-	 * source value is passed to the {@link Operators#onNextDropped(Object, Context)}
+	 * source value (if available) is passed to the {@link Operators#onNextDropped(Object, Context)}
 	 * hook, allowing the sequence to continue with further values.
 	 * <p>
-	 * The predicate is not tested again by {@link #process(Throwable, Object, Context)}.
 	 * Any exception thrown by the predicate is thrown as is.
 	 *
 	 * @param causePredicate the predicate to match in order to resume from an error.
@@ -120,28 +107,35 @@ public interface OnNextFailureStrategy {
 	 * A strategy that let all errors resume. When processing, the error and the
 	 * incriminating source value are passed to custom {@link Consumer Consumers}.
 	 * <p>
-	 * Any exception thrown by the consumers is thrown as is.
+	 * Any exception thrown by the consumers will suppress the original error and be
+	 * returned for propagation. If the original error is fatal then it is thrown
+	 * upon processing it (see {@link Exceptions#throwIfFatal(Throwable)}).
+	 *
 	 *
 	 * @param errorConsumer the {@link Consumer} to process the recovered errors with.
 	 * @param valueConsumer the {@link Consumer} to process the error-causing values with.
+	 * It must deal with potential {@code null}s.
 	 * @return a new {@link OnNextFailureStrategy} that allows resuming the sequence.
 	 */
 	static OnNextFailureStrategy resume(Consumer<Throwable> errorConsumer,
 			Consumer<Object> valueConsumer) {
-		return new ResumeStrategy(e -> true, errorConsumer, valueConsumer);
+		return new ResumeStrategy(null, errorConsumer, valueConsumer);
 	}
 
 	/**
 	 * A strategy that let some errors resume. When processing, the error and the
 	 * incriminating source value are passed to custom {@link Consumer Consumers}.
 	 * <p>
-	 * The predicate is not tested again by {@link #process(Throwable, Object, Context)}.
-	 * Any exception thrown by the predicate or consumers is thrown as is.
+	 * Any exception thrown by the predicate is thrown as is. Any exception thrown by
+	 * the consumers will suppress the original error and be returned for propagation.
+	 * Even if the original error is fatal, if it passes the predicate then it can
+	 * be processed and recovered from (see {@link Exceptions#throwIfFatal(Throwable)}).
 	 *
 	 * @param causePredicate the {@link Predicate} to use to determine if a failure
 	 * should be recovered from.
 	 * @param errorConsumer the {@link Consumer} to process the recovered errors with.
 	 * @param valueConsumer the {@link Consumer} to process the error-causing values with.
+	 * It must deal with potential {@code null}s.
 	 * @return a new {@link OnNextFailureStrategy} that allows resuming the sequence.
 	 */
 	static OnNextFailureStrategy resumeIf(
@@ -160,12 +154,15 @@ public interface OnNextFailureStrategy {
 		}
 
 		@Override
-		public void process(Throwable error, @Nullable Object value, Context context) {
-			throw new IllegalStateException("STOP strategy cannot process errors");
+		public Throwable process(Throwable error, @Nullable Object value, Context context) {
+			Exceptions.throwIfFatal(error);
+			Throwable iee = new IllegalStateException("STOP strategy cannot process errors");
+			iee.addSuppressed(error);
+			return iee;
 		}
 	};
 
-	OnNextFailureStrategy RESUME_DROP = new ResumeDropStrategy(e -> true);
+	OnNextFailureStrategy RESUME_DROP = new ResumeDropStrategy(null);
 
 	final class ResumeStrategy implements OnNextFailureStrategy {
 
@@ -173,7 +170,7 @@ public interface OnNextFailureStrategy {
 		final Consumer<Throwable>   errorConsumer;
 		final Consumer<Object>      valueConsumer;
 
-		ResumeStrategy(Predicate<Throwable> errorPredicate,
+		ResumeStrategy(@Nullable Predicate<Throwable> errorPredicate,
 				Consumer<Throwable> errorConsumer,
 				Consumer<Object> valueConsumer) {
 			this.errorPredicate = errorPredicate;
@@ -183,15 +180,28 @@ public interface OnNextFailureStrategy {
 
 		@Override
 		public boolean canResume(Throwable error, @Nullable Object value) {
-			return errorPredicate.test(error);
+			return errorPredicate == null || errorPredicate.test(error);
 		}
 
 		@Override
-		public void process(Throwable error, @Nullable Object value, Context context) {
-			if (value != null) {
-				valueConsumer.accept(value);
+		@Nullable
+		public Throwable process(Throwable error, @Nullable Object value, Context context) {
+			if (errorPredicate == null) {
+				Exceptions.throwIfFatal(error);
 			}
-			errorConsumer.accept(error);
+			else if (!errorPredicate.test(error)) {
+				Exceptions.throwIfFatal(error);
+				return error;
+			}
+			try {
+				valueConsumer.accept(value);
+				errorConsumer.accept(error);
+				return null;
+			}
+			catch (Throwable e) {
+				e.addSuppressed(error);
+				return e;
+			}
 		}
 	}
 
@@ -199,19 +209,36 @@ public interface OnNextFailureStrategy {
 
 		final Predicate<Throwable> errorPredicate;
 
-		ResumeDropStrategy(Predicate<Throwable> errorPredicate) {
+		ResumeDropStrategy(@Nullable Predicate<Throwable> errorPredicate) {
 			this.errorPredicate = errorPredicate;
 		}
 
 		@Override
 		public boolean canResume(Throwable error, @Nullable Object value) {
-			return errorPredicate.test(error);
+			return errorPredicate == null || errorPredicate.test(error);
 		}
 
 		@Override
-		public void process(Throwable error, @Nullable Object value, Context context) {
-			if (value != null) Operators.onNextDropped(value, context);
-			Operators.onErrorDropped(error, context);
+		@Nullable
+		public Throwable process(Throwable error, @Nullable Object value, Context context) {
+			if (errorPredicate == null) {
+				Exceptions.throwIfFatal(error);
+			}
+			else if (!errorPredicate.test(error)) {
+				Exceptions.throwIfFatal(error);
+				return error;
+			}
+			try {
+				if (value != null) {
+					Operators.onNextDropped(value, context);
+				}
+				Operators.onErrorDropped(error, context);
+				return null;
+			}
+			catch (Throwable e) {
+				e.addSuppressed(error);
+				return e;
+			}
 		}
 	}
 

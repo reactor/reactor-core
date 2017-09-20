@@ -190,9 +190,15 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 						nextHook.accept(t);
 					}
 					catch (Throwable e) {
-						onError(Operators.onOperatorError(s, e, t,
-								actual.currentContext()));
-						return;
+						Throwable e_ = Operators.onNextFailure(t, e, actual.currentContext(), s);
+						if (e_ == null) {
+							request(1);
+							return;
+						}
+						else {
+							onError(e_);
+							return;
+						}
 					}
 				}
 				actual.onNext(t);
@@ -310,8 +316,13 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					nextHook.accept(v);
 				}
 				catch (Throwable e) {
-					throw Exceptions.propagate(Operators.onOperatorError(s, e, v,
-							actual.currentContext()));
+					Throwable e_ = Operators.onNextFailure(v, e, actual.currentContext(), s);
+					if (e_ == null) {
+						return poll();
+					}
+					else {
+						throw Exceptions.propagate(e_);
+					}
 				}
 			}
 			if (v == null && (d || sourceMode == SYNC)) {
@@ -417,14 +428,8 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					cancelHook.run();
 				}
 				catch (Throwable e) {
-					OnNextFailureStrategy strategy = Operators.failureStrategy(actual.currentContext());
-					if (strategy.canResume(e, null)) {
-						strategy.process(e, null, actual.currentContext());
-					}
-					else {
-						onError(Operators.onOperatorError(s, e, actual.currentContext()));
-						return;
-					}
+					onError(Operators.onOperatorError(s, e, actual.currentContext()));
+					return;
 				}
 			}
 			s.cancel();
@@ -440,15 +445,9 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 						subscribeHook.accept(s);
 					}
 					catch (Throwable e) {
-						OnNextFailureStrategy strategy = Operators.failureStrategy(actual.currentContext());
-						if (strategy.canResume(e, null)) {
-							strategy.process(e, null, actual.currentContext());
-						}
-						else {
-							Operators.error(actual, Operators.onOperatorError(s, e,
-									actual.currentContext()));
-							return;
-						}
+						Operators.error(actual, Operators.onOperatorError(s, e,
+								actual.currentContext()));
+						return;
 					}
 				}
 				this.s = (QueueSubscription<T>) s;
@@ -473,13 +472,13 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 						nextHook.accept(t);
 					}
 					catch (Throwable e) {
-						OnNextFailureStrategy strategy = Operators.failureStrategy(actual.currentContext());
-						if (strategy.canResume(e, null)) {
-							strategy.process(e, null, actual.currentContext());
+						Throwable e_ = Operators.onNextFailure(t, e, actual.currentContext(), s);
+						if (e_ == null) {
+							request(1);
+							return;
 						}
 						else {
-							onError(Operators.onOperatorError(s, e, t,
-									actual.currentContext()));
+							onError(e_);
 							return;
 						}
 					}
@@ -501,12 +500,12 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					nextHook.accept(t);
 				}
 				catch (Throwable e) {
-					OnNextFailureStrategy strategy = Operators.failureStrategy(actual.currentContext());
-					if (strategy.canResume(e, null)) {
-						strategy.process(e, null, actual.currentContext());
+					Throwable e_ = Operators.onNextFailure(t, e, actual.currentContext(), s);
+					if (e_ == null) {
+						return false;
 					}
 					else {
-						onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+						onError(e_);
 						return true;
 					}
 				}
@@ -571,14 +570,8 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 						completeHook.run();
 					}
 					catch (Throwable e) {
-						OnNextFailureStrategy strategy = Operators.failureStrategy(actual.currentContext());
-						if (strategy.canResume(e, null)) {
-							strategy.process(e, null, actual.currentContext());
-						}
-						else {
-							onError(Operators.onOperatorError(s, e, actual.currentContext()));
-							return;
-						}
+						onError(Operators.onOperatorError(s, e, actual.currentContext()));
+						return;
 					}
 				}
 				done = true;
@@ -630,31 +623,19 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					nextHook.accept(v);
 				}
 				catch (Throwable e) {
-					OnNextFailureStrategy strategy = Operators.failureStrategy(actual.currentContext());
-					if (strategy.canResume(e, null)) {
-						strategy.process(e, null, actual.currentContext());
+					Throwable e_ = Operators.onNextFailure(v, e, actual.currentContext(), s);
+					if (e_ == null) {
+						return poll();
 					}
 					else {
-						throw Exceptions.propagate(Operators.onOperatorError(s, e, v,
-								actual.currentContext()));
+						throw Exceptions.propagate(e_);
 					}
 				}
 			}
 			if (v == null && (d || sourceMode == SYNC)) {
 				Runnable call = parent.onCompleteCall();
 				if (call != null) {
-					try {
-						call.run();
-					}
-					catch (Throwable e) {
-						OnNextFailureStrategy strategy = Operators.failureStrategy(actual.currentContext());
-						if (strategy.canResume(e, null)) {
-							strategy.process(e, null, actual.currentContext());
-						}
-						else {
-							throw e;
-						}
-					}
+					call.run();
 				}
 				call = parent.onAfterTerminateCall();
 				if (call != null) {
@@ -783,14 +764,8 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					cancelHook.run();
 				}
 				catch (Throwable e) {
-					OnNextFailureStrategy strategy = Operators.failureStrategy(actual.currentContext());
-					if (strategy.canResume(e, null)) {
-						strategy.process(e, null, actual.currentContext());
-					}
-					else {
-						onError(Operators.onOperatorError(s, e, actual.currentContext()));
-						return;
-					}
+					onError(Operators.onOperatorError(s, e, actual.currentContext()));
+					return;
 				}
 			}
 			s.cancel();
@@ -805,15 +780,9 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 						subscribeHook.accept(s);
 					}
 					catch (Throwable e) {
-						OnNextFailureStrategy strategy = Operators.failureStrategy(actual.currentContext());
-						if (strategy.canResume(e, null)) {
-							strategy.process(e, null, actual.currentContext());
-						}
-						else {
-							Operators.error(actual, Operators.onOperatorError(s, e,
-									actual.currentContext()));
-							return;
-						}
+						Operators.error(actual, Operators.onOperatorError(s, e,
+								actual.currentContext()));
+						return;
 					}
 				}
 				this.s = s;
@@ -843,12 +812,13 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					nextHook.accept(t);
 				}
 				catch (Throwable e) {
-					OnNextFailureStrategy strategy = Operators.failureStrategy(actual.currentContext());
-					if (strategy.canResume(e, null)) {
-						strategy.process(e, null, actual.currentContext());
+					Throwable e_ = Operators.onNextFailure(t, e, actual.currentContext(), s);
+					if (e_ == null) {
+						request(1);
+						return;
 					}
 					else {
-						onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+						onError(e_);
 						return;
 					}
 				}
@@ -869,12 +839,12 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					nextHook.accept(t);
 				}
 				catch (Throwable e) {
-					OnNextFailureStrategy strategy = Operators.failureStrategy(actual.currentContext());
-					if (strategy.canResume(e, null)) {
-						strategy.process(e, null, actual.currentContext());
+					Throwable e_ = Operators.onNextFailure(t, e, actual.currentContext(), s);
+					if (e_ == null) {
+						return false;
 					}
 					else {
-						onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+						onError(e_);
 						return true;
 					}
 				}
@@ -933,14 +903,8 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					completeHook.run();
 				}
 				catch (Throwable e) {
-					OnNextFailureStrategy strategy = Operators.failureStrategy(actual.currentContext());
-					if (strategy.canResume(e, null)) {
-						strategy.process(e, null, actual.currentContext());
-					}
-					else {
-						onError(Operators.onOperatorError(s, e, actual.currentContext()));
-						return;
-					}
+					onError(Operators.onOperatorError(s, e, actual.currentContext()));
+					return;
 				}
 			}
 			done = true;
