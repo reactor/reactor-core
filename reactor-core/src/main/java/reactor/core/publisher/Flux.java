@@ -3501,6 +3501,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * @param onCancel the callback to call on {@link Subscription#cancel}
 	 *
+	 * @reactor.errorMode This operator supports {@link #onErrorContinue() resuming on errors}
+	 * (including when fusion is enabled). Exceptions thrown by the runnable are passed to
+	 * the {@link #onErrorContinue(Consumer, Consumer)} error consumer (the value consumer
+	 * is not invoked). The source cancel signal is then propagated as normal.
+	 *
 	 * @return an observed  {@link Flux}
 	 */
 	public final Flux<T> doOnCancel(Runnable onCancel) {
@@ -3514,6 +3519,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/dooncomplete.png" alt="">
 	 * <p>
 	 * @param onComplete the callback to call on {@link Subscriber#onComplete}
+	 *
+	 * @reactor.errorMode This operator supports {@link #onErrorContinue() resuming on errors}
+	 * (including when fusion is enabled). Exceptions thrown by the runnable during a
+	 * onComplete event are passed to the {@link #onErrorContinue(Consumer, Consumer)}
+	 * error consumer (the value consumer is not invoked). The source completion signal is
+	 * then propagated as normal.
 	 *
 	 * @return an observed  {@link Flux}
 	 */
@@ -3605,6 +3616,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * @param onNext the callback to call on {@link Subscriber#onNext}
 	 *
+	 * @reactor.errorMode This operator supports {@link #onErrorContinue() resuming on errors}
+	 * (including when fusion is enabled). Exceptions thrown by the consumer are passed to
+	 * the {@link #onErrorContinue(Consumer, Consumer)} error consumer (the value consumer
+	 * is not invoked, as the source element will be part of the sequence). The onNext
+	 * signal is then propagated as normal.
+	 *
 	 * @return an observed  {@link Flux}
 	 */
 	public final Flux<T> doOnNext(Consumer<? super T> onNext) {
@@ -3638,6 +3655,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * @param onSubscribe the callback to call on {@link Subscriber#onSubscribe}
 	 *
+	 * @reactor.errorMode This operator supports {@link #onErrorContinue() resuming on errors}
+	 * (including when fusion is enabled). Exceptions thrown by the consumer are passed
+	 * to the {@link #onErrorContinue(Consumer, Consumer)} error consumer (the value
+	 * consumer is not invoked). The source subscription signal is then propagated as normal.
+	 *
 	 * @return an observed  {@link Flux}
 	 */
 	public final Flux<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
@@ -3652,6 +3674,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/doonterminate.png" alt="">
 	 * <p>
 	 * @param onTerminate the callback to call on {@link Subscriber#onComplete} or {@link Subscriber#onError}
+	 *
+	 * @reactor.errorMode This operator supports {@link #onErrorContinue() resuming on errors}
+	 * in the {@code onComplete} case (including when fusion is enabled). Exceptions
+	 * thrown by the runnable during a onComplete event are passed to the
+	 * {@link #onErrorContinue(Consumer, Consumer)} error consumer (the value consumer is
+	 * not invoked). The source completion signal is then propagated as normal.
 	 *
 	 * @return an observed  {@link Flux}
 	 */
@@ -3917,6 +3945,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/filter.png" alt="">
 	 *
 	 * @param p the {@link Predicate} to test values against
+	 *
+	 * @reactor.errorMode This operator supports {@link #onErrorContinue() resuming on errors}
+	 * (including when fusion is enabled). Exceptions thrown by the predicate are
+	 * considered as if the predicate returned false: they cause the source value to be
+	 * dropped and a new element ({@code request(1)}) being requested from upstream.
 	 *
 	 * @return a new {@link Flux} containing only values that pass the predicate test
 	 */
@@ -4897,6 +4930,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param mapper the synchronous transforming {@link Function}
 	 * @param <V> the transformed type
 	 *
+	 * @reactor.errorMode This operator supports {@link #onErrorContinue() resuming on errors}
+	 * (including when fusion is enabled). Exceptions thrown by the mapper then cause the
+	 * source value to be dropped and a new element ({@code request(1)}) being requested
+	 * from upstream.
+	 *
 	 * @return a transformed {@link Flux}
 	 */
 	public final <V> Flux<V> map(Function<? super T, ? extends V> mapper) {
@@ -5210,7 +5248,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Let compatible operators upstream recover from an error by dropping the incriminating
 	 * element from the sequence and continuing with subsequent elements.
 	 * <p>
-	 * Note that this error handling mode is not necessarily implemented by all operators.
+	 * Note that this error handling mode is not necessarily implemented by all operators
+	 * (look for the {@code Error Mode Support} javadoc section to find operators that
+	 * support it).
 	 * The error and associated root-cause element are dropped to {@link Operators#onErrorDropped(Throwable, Context)}
 	 * and {@link Operators#onNextDropped(Object, Context)} respectively.
 	 *
@@ -5227,7 +5267,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * incriminating element from the sequence and continuing with subsequent elements.
 	 * Only errors matching the {@link Predicate} are recovered from.
 	 * <p>
-	 * Note that this error handling mode is not necessarily implemented by all operators.
+	 * Note that this error handling mode is not necessarily implemented by all operators
+	 * (look for the {@code Error Mode Support} javadoc section to find operators that
+	 * support it).
 	 * The error and associated root-cause element are dropped to {@link Operators#onErrorDropped(Throwable, Context)}
 	 * and {@link Operators#onNextDropped(Object, Context)} respectively.
 	 *
@@ -5247,7 +5289,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * The recovered error and associated value are notified to the respective provided
 	 * {@link Consumer Consumers}.
 	 * <p>
-	 * Note that this error handling mode is not necessarily implemented by all operators.
+	 * Note that this error handling mode is not necessarily implemented by all operators
+	 * (look for the {@code Error Mode Support} javadoc section to find operators that
+	 * support it).
 	 *
 	 * @return a {@link Flux} that attempts to continue processing on errors.
 	 */
@@ -5268,7 +5312,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * The recovered error and associated value are notified to their respective provided
 	 * {@link Consumer Consumers}.
 	 * <p>
-	 * Note that this error handling mode is not necessarily implemented by all operators.
+	 * Note that this error handling mode is not necessarily implemented by all operators
+	 * (look for the {@code Error Mode Support} javadoc section to find operators that
+	 * support it).
 	 *
 	 * @return a {@link Flux} that attempts to continue processing on some errors.
 	 */
