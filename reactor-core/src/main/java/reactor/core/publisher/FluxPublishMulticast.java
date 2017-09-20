@@ -35,9 +35,8 @@ import reactor.core.Scannable;
 import reactor.util.context.Context;
 
 /**
- * Shares a sequence for the duration of a function that may transform it and
- * consume it as many times as necessary without causing multiple subscriptions
- * to the upstream.
+ * Shares a sequence for the duration of a function that may transform it and consume it
+ * as many times as necessary without causing multiple subscriptions to the upstream.
  *
  * @param <T> the source value type
  * @param <R> the output value type
@@ -73,8 +72,9 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 	@Override
 	public void subscribe(CoreSubscriber<? super R> actual) {
 
-		FluxPublishMulticaster<T, R> multicast =
-				new FluxPublishMulticaster<>(prefetch, queueSupplier, actual.currentContext());
+		FluxPublishMulticaster<T> multicast = new FluxPublishMulticaster<>(prefetch,
+				queueSupplier,
+				actual.currentContext());
 
 		Publisher<? extends R> out;
 
@@ -83,7 +83,8 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 					"The transform returned a null Publisher");
 		}
 		catch (Throwable ex) {
-			Operators.error(actual, Operators.onOperatorError(ex, actual.currentContext()));
+			Operators.error(actual,
+					Operators.onOperatorError(ex, actual.currentContext()));
 			return;
 		}
 
@@ -97,7 +98,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 		source.subscribe(multicast);
 	}
 
-	static final class FluxPublishMulticaster<T, R> extends Flux<T>
+	static final class FluxPublishMulticaster<T> extends Flux<T>
 			implements InnerConsumer<T> {
 
 		final int limit;
@@ -132,14 +133,11 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 		static final PublishMulticastInner[] EMPTY = new PublishMulticastInner[0];
 
 		@SuppressWarnings("rawtypes")
-		static final PublishMulticastInner[] TERMINATED =
-				new PublishMulticastInner[0];
+		static final PublishMulticastInner[] TERMINATED = new PublishMulticastInner[0];
 
 		volatile boolean done;
 
 		volatile boolean connected;
-
-		volatile boolean cancelled;
 
 		Throwable error;
 
@@ -150,24 +148,37 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 		int sourceMode;
 
 		@SuppressWarnings("unchecked")
-		FluxPublishMulticaster(int prefetch, Supplier<? extends Queue<T>>
-				queueSupplier, Context ctx) {
+		FluxPublishMulticaster(int prefetch,
+				Supplier<? extends Queue<T>> queueSupplier,
+				Context ctx) {
 			this.prefetch = prefetch;
 			this.limit = prefetch - (prefetch >> 2);
 			this.queueSupplier = queueSupplier;
-			this.subscribers = EMPTY;
+			SUBSCRIBERS.lazySet(this, EMPTY);
 			this.context = ctx;
 		}
 
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.PARENT) return s;
-			if (key == Attr.ERROR) return error;
-			if (key == Attr.CANCELLED) return cancelled;
-			if (key == Attr.TERMINATED) return done;
-			if (key == Attr.PREFETCH) return prefetch;
-			if (key == Attr.BUFFERED) return queue != null ? queue.size() : 0;
+			if (key == Attr.PARENT) {
+				return s;
+			}
+			if (key == Attr.ERROR) {
+				return error;
+			}
+			if (key == Attr.CANCELLED) {
+				return s == Operators.cancelledSubscription();
+			}
+			if (key == Attr.TERMINATED) {
+				return done;
+			}
+			if (key == Attr.PREFETCH) {
+				return prefetch;
+			}
+			if (key == Attr.BUFFERED) {
+				return queue != null ? queue.size() : 0;
+			}
 
 			return null;
 		}
@@ -188,12 +199,11 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 			actual.onSubscribe(pcs);
 
 			if (add(pcs)) {
-				if (pcs.once != 0) {
-					removeAndDrain(pcs);
+				if (pcs.requested == Long.MIN_VALUE) {
+					remove(pcs);
+					return;
 				}
-				else {
-					drain();
-				}
+				drain();
 			}
 			else {
 				Throwable ex = error;
@@ -256,7 +266,8 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 				if (!queue.offer(t)) {
 					onError(Operators.onOperatorError(s,
 							Exceptions.failWithOverflow(Exceptions.BACKPRESSURE_ERROR_QUEUE_FULL),
-							t, context));
+							t,
+							context));
 					return;
 				}
 			}
@@ -301,7 +312,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 
 				if (connected) {
 
-					if (cancelled) {
+					if (s == Operators.cancelledSubscription()) {
 						queue.clear();
 						return;
 					}
@@ -314,16 +325,19 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 					if (n != 0) {
 
 						long r = Long.MAX_VALUE;
-
+						long u;
 						for (int i = 0; i < n; i++) {
-							r = Math.min(r, a[i].requested);
+							u = a[i].requested;
+							if (u != Long.MIN_VALUE) {
+								r = Math.min(r, u);
+							}
 						}
 
 						long e = 0L;
 
 						while (e != r) {
 
-							if (cancelled) {
+							if (s == Operators.cancelledSubscription()) {
 								queue.clear();
 								return;
 							}
@@ -360,7 +374,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 							e++;
 						}
 
-						if (cancelled) {
+						if (s == Operators.cancelledSubscription()) {
 							queue.clear();
 							return;
 						}
@@ -397,7 +411,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 			for (; ; ) {
 
 				if (connected) {
-					if (cancelled) {
+					if (s == Operators.cancelledSubscription()) {
 						queue.clear();
 						return;
 					}
@@ -410,15 +424,18 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 					if (n != 0) {
 
 						long r = Long.MAX_VALUE;
-
+						long u;
 						for (int i = 0; i < n; i++) {
-							r = Math.min(r, a[i].requested);
+							u = a[i].requested;
+							if (u != Long.MIN_VALUE) {
+								r = Math.min(r, u);
+							}
 						}
 
 						long e = 0L;
 
 						while (e != r) {
-							if (cancelled) {
+							if (s == Operators.cancelledSubscription()) {
 								queue.clear();
 								return;
 							}
@@ -454,7 +471,8 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 									}
 									return;
 								}
-								else if (empty) {
+
+								if (empty) {
 									a = SUBSCRIBERS.getAndSet(this, TERMINATED);
 									n = a.length;
 									for (int i = 0; i < n; i++) {
@@ -481,7 +499,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 						}
 
 						if (e == r) {
-							if (cancelled) {
+							if (s == Operators.cancelledSubscription()) {
 								queue.clear();
 								return;
 							}
@@ -499,7 +517,8 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 									}
 									return;
 								}
-								else if (queue.isEmpty()) {
+
+								if (queue.isEmpty()) {
 									a = SUBSCRIBERS.getAndSet(this, TERMINATED);
 									n = a.length;
 									for (int i = 0; i < n; i++) {
@@ -550,7 +569,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 		}
 
 		@SuppressWarnings("unchecked")
-		void removeAndDrain(PublishMulticastInner<T> s) {
+		void remove(PublishMulticastInner<T> s) {
 			for (; ; ) {
 				PublishMulticastInner<T>[] a = subscribers;
 
@@ -582,37 +601,25 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 					System.arraycopy(a, j + 1, b, j, n - j - 1);
 				}
 				if (SUBSCRIBERS.compareAndSet(this, a, b)) {
-					drain();
 					return;
 				}
 			}
 		}
 
-		void cancel() {
-			if (!cancelled) {
-				cancelled = true;
-				terminate();
-			}
-		}
-
 		@SuppressWarnings("unchecked")
-		boolean terminate() {
-			if(Operators.replace(S, this, Operators.cancelledSubscription())) {
-				subscribers = TERMINATED;
-				if (WIP.getAndIncrement(this) == 0) {
-					if (connected) {
-						queue.clear();
-					}
+		void terminate() {
+			Operators.terminate(S, this);
+			if (WIP.getAndIncrement(this) == 0) {
+				if (connected) {
+					queue.clear();
 				}
-				return true;
 			}
-			return false;
 		}
 	}
 
 	static final class PublishMulticastInner<T> implements InnerProducer<T> {
 
-		final FluxPublishMulticaster<T, ?> parent;
+		final FluxPublishMulticaster<T> parent;
 
 		final CoreSubscriber<? super T> actual;
 
@@ -622,13 +629,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 				AtomicLongFieldUpdater.newUpdater(PublishMulticastInner.class,
 						"requested");
 
-		volatile int once;
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<PublishMulticastInner> ONCE =
-				AtomicIntegerFieldUpdater.newUpdater(PublishMulticastInner.class,
-						"once");
-
-		PublishMulticastInner(FluxPublishMulticaster<T, ?> parent,
+		PublishMulticastInner(FluxPublishMulticaster<T> parent,
 				CoreSubscriber<? super T> actual) {
 			this.parent = parent;
 			this.actual = actual;
@@ -637,9 +638,15 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
-			if (key == Attr.PARENT) return parent;
-			if (key == Attr.CANCELLED) return once == 1;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) {
+				return Math.max(0L, requested);
+			}
+			if (key == Attr.PARENT) {
+				return parent;
+			}
+			if (key == Attr.CANCELLED) {
+				return Long.MIN_VALUE == requested;
+			}
 
 			return InnerProducer.super.scanUnsafe(key);
 		}
@@ -659,8 +666,9 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 
 		@Override
 		public void cancel() {
-			if (ONCE.compareAndSet(this, 0, 1)) {
-				parent.removeAndDrain(this);
+			if (REQUESTED.getAndSet(this, Long.MIN_VALUE) != Long.MIN_VALUE) {
+				parent.remove(this);
+				parent.drain();
 			}
 		}
 
@@ -676,12 +684,12 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 
 		final CoreSubscriber<? super T> actual;
 
-		final FluxPublishMulticaster<?, ?> parent;
+		final FluxPublishMulticaster<?> parent;
 
 		Subscription s;
 
 		CancelMulticaster(CoreSubscriber<? super T> actual,
-				FluxPublishMulticaster<?, ?> parent) {
+				FluxPublishMulticaster<?> parent) {
 			this.actual = actual;
 			this.parent = parent;
 		}
@@ -694,7 +702,9 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.PARENT) return s;
+			if (key == Attr.PARENT) {
+				return s;
+			}
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -707,12 +717,12 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 		@Override
 		public void cancel() {
 			s.cancel();
-			parent.cancel();
+			parent.terminate();
 		}
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if(Operators.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = s;
 				actual.onSubscribe(this);
 			}
@@ -725,18 +735,14 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 
 		@Override
 		public void onError(Throwable t) {
-			if(!parent.terminate()){
-				Operators.onErrorDropped(t, actual.currentContext());
-				return;
-			}
 			actual.onError(t);
+			parent.terminate();
 		}
 
 		@Override
 		public void onComplete() {
-			if(parent.terminate()) {
-				actual.onComplete();
-			}
+			actual.onComplete();
+			parent.terminate();
 		}
 
 		@Override
@@ -774,12 +780,12 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 
 		final CoreSubscriber<? super T> actual;
 
-		final FluxPublishMulticaster<?, ?> parent;
+		final FluxPublishMulticaster<?> parent;
 
 		QueueSubscription<T> s;
 
 		CancelFuseableMulticaster(CoreSubscriber<? super T> actual,
-				FluxPublishMulticaster<?, ?> parent) {
+				FluxPublishMulticaster<?> parent) {
 			this.actual = actual;
 			this.parent = parent;
 		}
@@ -792,7 +798,9 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
-			if (key == Attr.PARENT) return s;
+			if (key == Attr.PARENT) {
+				return s;
+			}
 
 			return InnerOperator.super.scanUnsafe(key);
 		}
@@ -805,13 +813,13 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 		@Override
 		public void cancel() {
 			s.cancel();
-			parent.cancel();
+			parent.terminate();
 		}
 
 		@SuppressWarnings("unchecked")
 		@Override
 		public void onSubscribe(Subscription s) {
-			if(Operators.validate(this.s, s)) {
+			if (Operators.validate(this.s, s)) {
 				this.s = Operators.as(s);
 				actual.onSubscribe(this);
 			}
@@ -824,18 +832,14 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 
 		@Override
 		public void onError(Throwable t) {
-			if(!parent.terminate()){
-				Operators.onErrorDropped(t, actual.currentContext());
-				return;
-			}
 			actual.onError(t);
+			parent.terminate();
 		}
 
 		@Override
 		public void onComplete() {
-			if(parent.terminate()){
-				actual.onComplete();
-			}
+			actual.onComplete();
+			parent.terminate();
 		}
 
 		@Override
