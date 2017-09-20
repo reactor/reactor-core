@@ -977,97 +977,29 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
     }
 
     @Test
-	public void errorStrategyResumeCoversSubNextComplete() {
-		RuntimeException subscriptionError = new IllegalStateException("subscription");
+	public void errorStrategyResumeDropsNext() {
 		RuntimeException nextError = new IllegalStateException("next");
-		RuntimeException completeError = new IllegalStateException("complete");
-		RuntimeException afterTerminateError = new IllegalStateException("afterTerminate");
 
 		List<Throwable> resumedErrors = new ArrayList<>();
 		List<Object> resumedValues = new ArrayList<>();
 
-		Flux<Integer> source = Flux.just(1, 2);
+		Flux<Integer> source = Flux.just(1, 2).hide();
 
-	    Flux<Integer> test = new FluxPeek<>(source,
-			    sub -> { throw subscriptionError; },
+	    Flux<Integer> test = new FluxPeek<>(source, null,
 			    v -> { throw nextError; },
-			    null,
-			    () -> { throw completeError; },
-			    () -> { throw afterTerminateError; },
-			    null, null)
+			    null, null, null, null, null)
 			    .hide()
 			    .onErrorContinue(resumedErrors::add, resumedValues::add);
 
 	    StepVerifier.create(test)
 	                .expectNoFusionSupport()
-	                .expectNext(1, 2)
 	                .expectComplete()
 	                .verifyThenAssertThat()
 	                .hasNotDroppedElements()
 	                //classically dropped in all error modes:
-	                .hasDroppedErrorMatching(e -> e == afterTerminateError);
-
-	    assertThat(resumedValues).isEmpty();
-	    assertThat(resumedErrors)
-			    .containsExactly(subscriptionError, nextError, nextError, completeError);
-    }
-
-    @Test
-	public void errorStrategyResumeExclusions() {
-		RuntimeException requestError = new IllegalStateException("request");
-		RuntimeException errorError = new IllegalStateException("error");
-		RuntimeException afterTerminateError = new IllegalStateException("afterTerminate");
-	    Throwable failure = new ArithmeticException();
-
-		List<Throwable> resumedErrors = new ArrayList<>();
-		List<Object> resumedValues = new ArrayList<>();
-
-	    Flux<Integer> source = Flux.error(failure);
-
-	    Flux<Integer> test = new FluxPeek<>(source, null, null,
-			    e -> { throw errorError; },
-			    null,
-			    () -> { throw afterTerminateError; },
-			    req -> { throw requestError; },
-			    null)
-			    .hide()
-			    .onErrorContinue(resumedErrors::add, resumedValues::add);
-
-	    StepVerifier.create(test)
-	                .expectNoFusionSupport()
-	                .expectErrorSatisfies(e -> assertThat(e).isSameAs(errorError))
-	                .verifyThenAssertThat()
-	                .hasNotDroppedElements()
-	                //the failure is dropped by StepVerifier's hook
-	                .hasDroppedErrorsSatisfying(errors -> assertThat(errors)
-			                .containsExactly(/*requestError, failure,*/ afterTerminateError));
-
-	    assertThat(resumedValues).isEmpty();
-	    assertThat(resumedErrors).isEmpty();
-    }
-
-    @Test
-	public void errorStrategyResumeOnCancel() {
-		RuntimeException cancelError = new IllegalStateException("cancel");
-	    Flux<Integer> source = Flux.just(1, 2);
-
-		List<Throwable> resumedErrors = new ArrayList<>();
-		List<Object> resumedValues = new ArrayList<>();
-
-	    Flux<Integer> test = new FluxPeek<>(source,
-			    null, null, null, null, null, null,
-			    () -> { throw cancelError; })
-			    .hide()
-			    .onErrorContinue(resumedErrors::add, resumedValues::add);
-
-	    StepVerifier.create(test)
-	                .expectNoFusionSupport()
-	                .thenCancel()
-	                .verifyThenAssertThat()
-	                .hasNotDroppedElements()
 	                .hasNotDroppedErrors();
 
-	    assertThat(resumedValues).isEmpty();
-	    assertThat(resumedErrors).containsExactly(cancelError);
+	    assertThat(resumedValues).containsExactly(1, 2);
+	    assertThat(resumedErrors).containsExactly(nextError, nextError);
     }
 }
