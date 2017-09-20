@@ -26,12 +26,263 @@ import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.fail;
 
 public class OnNextFailureStrategyTest {
 
 	@Test
-	public void resume() throws Exception {
+	public void resumeDrop() {
+		AtomicReference<Throwable> error = new AtomicReference<>();
+		AtomicReference<Object> value = new AtomicReference<>();
+		Hooks.onErrorDropped(error::set);
+		Hooks.onNextDropped(value::set);
+
+		try {
+			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDrop();
+
+			String data = "foo";
+			Throwable exception = new NullPointerException("foo");
+
+			assertThat(strategy.canResume(exception, data)).isTrue();
+			Throwable t = strategy.process(exception, data, Context.empty());
+
+			assertThat(t).isNull();
+			assertThat(error.get()).isInstanceOf(NullPointerException.class).hasMessage("foo");
+			assertThat(value.get()).isEqualTo("foo");
+		}
+		finally {
+			Hooks.resetOnErrorDropped();
+			Hooks.resetOnNextDropped();
+		}
+	}
+
+	@Test
+	public void resumeDropWithFatal() {
+		AtomicReference<Throwable> error = new AtomicReference<>();
+		AtomicReference<Object> value = new AtomicReference<>();
+		Hooks.onErrorDropped(error::set);
+		Hooks.onNextDropped(value::set);
+
+		try {
+			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDrop();
+
+			String data = "foo";
+			Throwable exception = new NoSuchMethodError("foo");
+
+			assertThat(strategy.canResume(exception, data)).isTrue();
+
+			assertThatExceptionOfType(NoSuchMethodError.class)
+					.isThrownBy(() -> strategy.process(exception, data, Context.empty()));
+
+			assertThat(error.get()).isNull();
+			assertThat(value.get()).isNull();
+		}
+		finally {
+			Hooks.resetOnErrorDropped();
+			Hooks.resetOnNextDropped();
+		}
+	}
+
+
+	@Test
+	public void resumeDropIfMatch() {
+		AtomicReference<Throwable> error = new AtomicReference<>();
+		AtomicReference<Object> value = new AtomicReference<>();
+		Hooks.onErrorDropped(error::set);
+		Hooks.onNextDropped(value::set);
+
+		try {
+			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDropIf(
+					e -> e instanceof NullPointerException);
+
+			String data = "foo";
+			Throwable exception = new NullPointerException("foo");
+
+			assertThat(strategy.canResume(exception, data)).isTrue();
+			Throwable t = strategy.process(exception, data, Context.empty());
+
+			assertThat(t).isNull();
+			assertThat(error.get()).isInstanceOf(NullPointerException.class).hasMessage("foo");
+			assertThat(value.get()).isEqualTo("foo");
+		}
+		finally {
+			Hooks.resetOnErrorDropped();
+			Hooks.resetOnNextDropped();
+		}
+	}
+
+	@Test
+	public void resumeDropIfNoMatch() {
+		AtomicReference<Throwable> error = new AtomicReference<>();
+		AtomicReference<Object> value = new AtomicReference<>();
+		Hooks.onErrorDropped(error::set);
+		Hooks.onNextDropped(value::set);
+
+		try {
+			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDropIf(
+					e -> e instanceof IllegalArgumentException);
+
+			String data = "foo";
+			Throwable exception = new NullPointerException("foo");
+
+			assertThat(strategy.canResume(exception, data)).isFalse();
+			Throwable t = strategy.process(exception, data, Context.empty());
+
+			assertThat(t)
+					.isSameAs(exception)
+					.hasNoSuppressedExceptions();
+			assertThat(error.get()).isNull();
+			assertThat(value.get()).isNull();
+		}
+		finally {
+			Hooks.resetOnErrorDropped();
+			Hooks.resetOnNextDropped();
+		}
+	}
+
+	@Test
+	public void resumeDropIfWithFatalMatch() {
+		AtomicReference<Throwable> error = new AtomicReference<>();
+		AtomicReference<Object> value = new AtomicReference<>();
+		Hooks.onErrorDropped(error::set);
+		Hooks.onNextDropped(value::set);
+
+		try {
+			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDropIf(
+					e -> e instanceof NoSuchMethodError);
+
+			String data = "foo";
+			Throwable exception = new NoSuchMethodError("foo");
+
+			assertThat(strategy.canResume(exception, data)).isTrue();
+			Throwable t = strategy.process(exception, data, Context.empty());
+
+			assertThat(t).isNull();
+			assertThat(error.get())
+					.isInstanceOf(NoSuchMethodError.class)
+					.hasMessage("foo");
+			assertThat(value.get()).isEqualTo("foo");
+		}
+		finally {
+			Hooks.resetOnErrorDropped();
+			Hooks.resetOnNextDropped();
+		}
+	}
+
+	@Test
+	public void resumeDropIfWithFatalNoMatch() {
+		AtomicReference<Throwable> error = new AtomicReference<>();
+		AtomicReference<Object> value = new AtomicReference<>();
+		Hooks.onErrorDropped(error::set);
+		Hooks.onNextDropped(value::set);
+
+		try {
+			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDropIf(
+					e -> e instanceof NullPointerException);
+
+			String data = "foo";
+			Throwable exception = new NoSuchMethodError("foo");
+
+			assertThat(strategy.canResume(exception, data)).isFalse();
+
+			assertThatExceptionOfType(NoSuchMethodError.class)
+					.isThrownBy(() -> strategy.process(exception, data, Context.empty()));
+
+			assertThat(error.get()).isNull();
+			assertThat(value.get()).isNull();
+		}
+		finally {
+			Hooks.resetOnErrorDropped();
+			Hooks.resetOnNextDropped();
+		}
+	}
+
+	@Test
+	public void resumeDropIfPredicateFails() {
+		AtomicReference<Throwable> error = new AtomicReference<>();
+		AtomicReference<Object> value = new AtomicReference<>();
+		Hooks.onErrorDropped(error::set);
+		Hooks.onNextDropped(value::set);
+
+		try {
+			IllegalStateException failurePredicate = new IllegalStateException("boomInPredicate");
+
+			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDropIf(
+					e -> { throw failurePredicate; });
+
+			String data = "foo";
+			Throwable exception = new NullPointerException("foo");
+
+			assertThatExceptionOfType(IllegalStateException.class)
+					.isThrownBy(() -> strategy.canResume(exception, data))
+					.withMessage("boomInPredicate");
+
+			assertThatExceptionOfType(IllegalStateException.class)
+					.isThrownBy(() -> strategy.process(exception, data, Context.empty()))
+					.withMessage("boomInPredicate");
+
+			assertThat(error.get()).isNull();
+			assertThat(value.get()).isNull();
+		}
+		finally {
+			Hooks.resetOnErrorDropped();
+			Hooks.resetOnNextDropped();
+		}
+	}
+
+	@Test
+	public void resumeDropValueHookFails() {
+		AtomicReference<Throwable> error = new AtomicReference<>();
+		UnsupportedOperationException failure = new UnsupportedOperationException("value hook");
+		Hooks.onErrorDropped(error::set);
+		Hooks.onNextDropped(v -> { throw failure; });
+
+		try {
+			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDrop();
+
+			String data = "foo";
+			Throwable exception = new NullPointerException("foo");
+
+			Throwable t = strategy.process(exception, data, Context.empty());
+			assertThat(t)
+					.hasMessage("value hook")
+					.hasSuppressedException(exception);
+
+			assertThat(error.get()).isNull();
+		}
+		finally {
+			Hooks.resetOnErrorDropped();
+			Hooks.resetOnNextDropped();
+		}
+	}
+
+	@Test
+	public void resumeDropErrorHookFails() {
+		AtomicReference<Object> value = new AtomicReference<>();
+		UnsupportedOperationException failure = new UnsupportedOperationException("error hook");
+		Hooks.onNextDropped(value::set);
+		Hooks.onErrorDropped(v -> { throw failure; });
+
+		try {
+			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeDrop();
+
+			String data = "foo";
+			Throwable exception = new NullPointerException("foo");
+
+			Throwable t = strategy.process(exception, data, Context.empty());
+			assertThat(t)
+					.hasMessage("error hook")
+					.hasSuppressedException(exception);
+
+			assertThat(value.get()).isEqualTo("foo");
+		}
+		finally {
+			Hooks.resetOnErrorDropped();
+			Hooks.resetOnNextDropped();
+		}
+	}
+
+	@Test
+	public void resume() {
 		AtomicReference<Throwable> error = new AtomicReference<>();
 		AtomicReference<Object> value = new AtomicReference<>();
 
@@ -42,65 +293,97 @@ public class OnNextFailureStrategyTest {
 		Throwable exception = new NullPointerException("foo");
 
 		assertThat(strategy.canResume(exception, data)).isTrue();
+		Throwable t = strategy.process(exception, data, Context.empty());
 
-		strategy.process(exception, data, Context.empty());
-
+		assertThat(t).isNull();
 		assertThat(error.get()).isInstanceOf(NullPointerException.class).hasMessage("foo");
 		assertThat(value.get()).isEqualTo("foo");
 	}
 
 	@Test
-	public void resumeFailingConsumer() throws Exception {
-		IllegalStateException failureValue = new IllegalStateException("boomInValueConsumer");
-		IllegalStateException failureError = new IllegalStateException("boomInErrorConsumer");
-		NullPointerException npe = new NullPointerException("foo");
+	public void resumeWithFatal() {
+		AtomicReference<Throwable> error = new AtomicReference<>();
+		AtomicReference<Object> value = new AtomicReference<>();
 
 		OnNextFailureStrategy strategy = OnNextFailureStrategy.resume(
-				e -> { throw failureError; },
-				v -> { throw failureValue; });
+				error::set, value::set);
 
-		assertThat(strategy.canResume(npe, "foo")).isTrue();
+		String data = "foo";
+		Throwable exception = new NoSuchMethodError("foo");
 
-		assertThatExceptionOfType(IllegalStateException.class)
-				.isThrownBy(() -> strategy.process(npe, "foo", Context.empty()))
-				.isSameAs(failureValue);
+		assertThat(strategy.canResume(exception, data)).isTrue();
+
+		assertThatExceptionOfType(NoSuchMethodError.class)
+				.isThrownBy(() -> strategy.process(exception, data, Context.empty()));
+
+		assertThat(error.get()).isNull();
+		assertThat(value.get()).isNull();
 	}
 
 	@Test
-	public void conditionalResume() throws Exception {
-		AtomicReference<Throwable> error = new AtomicReference<>();
+	public void resumeErrorConsumerFails() {
 		AtomicReference<Object> value = new AtomicReference<>();
-		AtomicReference<Throwable> errorDropped = new AtomicReference<>();
-		AtomicReference<Object> valueDropped = new AtomicReference<>();
+		IllegalStateException failureError = new IllegalStateException("boomInErrorConsumer");
 
-		Hooks.onNextDropped(valueDropped::set);
-		Hooks.onErrorDropped(errorDropped::set);
+		OnNextFailureStrategy strategy = OnNextFailureStrategy.resume(
+				e -> { throw failureError; },
+				value::set);
 
 		String data = "foo";
 		Throwable exception = new NullPointerException("foo");
 
-		try {
-			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeIf(
-					e -> e instanceof NullPointerException,
-					error::set, value::set);
+		assertThat(strategy.canResume(exception, data)).isTrue();
+		Throwable t = strategy.process(exception, data, Context.empty());
 
-			assertThat(strategy.canResume(exception, data)).isTrue();
+		assertThat(t).isSameAs(failureError)
+		             .hasSuppressedException(exception);
 
-			strategy.process(exception, data, Context.empty());
-
-			assertThat(error.get()).isInstanceOf(NullPointerException.class).hasMessage("foo");
-			assertThat(value.get()).isEqualTo("foo");
-			assertThat(errorDropped.get()).isNull();
-			assertThat(valueDropped.get()).isNull();
-		}
-		finally {
-			Hooks.resetOnNextDropped();
-			Hooks.resetOnErrorDropped();
-		}
+		assertThat(value.get()).isEqualTo("foo");
 	}
 
 	@Test
-	public void conditionalResumeNoMatch() throws Exception {
+	public void resumeValueConsumerFails() {
+		AtomicReference<Throwable> error = new AtomicReference<>();
+		IllegalStateException failureValue = new IllegalStateException("boomInValueConsumer");
+
+		OnNextFailureStrategy strategy = OnNextFailureStrategy.resume(
+				error::set,
+				v -> { throw failureValue; });
+
+		String data = "foo";
+		Throwable exception = new NullPointerException("foo");
+
+		assertThat(strategy.canResume(exception, data)).isTrue();
+		Throwable t = strategy.process(exception, data, Context.empty());
+
+		assertThat(t).isSameAs(failureValue)
+		             .hasSuppressedException(exception);
+
+		assertThat(error.get()).isNull();
+	}
+
+	@Test
+	public void resumeIfMatch() {
+		AtomicReference<Throwable> error = new AtomicReference<>();
+		AtomicReference<Object> value = new AtomicReference<>();
+
+		OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeIf(
+				e -> e instanceof NullPointerException,
+				error::set, value::set);
+
+		String data = "foo";
+		Throwable exception = new NullPointerException("foo");
+
+		assertThat(strategy.canResume(exception, data)).isTrue();
+		Throwable t = strategy.process(exception, data, Context.empty());
+
+		assertThat(t).isNull();
+		assertThat(error.get()).isInstanceOf(NullPointerException.class).hasMessage("foo");
+		assertThat(value.get()).isEqualTo("foo");
+	}
+
+	@Test
+	public void resumeIfNoMatch() {
 		AtomicReference<Throwable> error = new AtomicReference<>();
 		AtomicReference<Object> value = new AtomicReference<>();
 
@@ -108,78 +391,162 @@ public class OnNextFailureStrategyTest {
 				e -> e instanceof IllegalArgumentException,
 				error::set, value::set);
 
-		assertThat(strategy.canResume(new NullPointerException("foo"), "foo"))
-				.isFalse();
+		String data = "foo";
+		Throwable exception = new NullPointerException("foo");
+
+		assertThat(strategy.canResume(exception, data)).isFalse();
+		Throwable t = strategy.process(exception, data, Context.empty());
+
+		assertThat(t)
+				.isSameAs(exception)
+				.hasNoSuppressedExceptions();
+		assertThat(error.get()).isNull();
+		assertThat(value.get()).isNull();
+	}
+
+	@Test
+	public void resumeIfWithFatalMatch() {
+		AtomicReference<Throwable> error = new AtomicReference<>();
+		AtomicReference<Object> value = new AtomicReference<>();
+
+		OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeIf(
+				e -> e instanceof NoSuchMethodError,
+				error::set, value::set);
+
+		String data = "foo";
+		Throwable exception = new NoSuchMethodError("foo");
+
+		assertThat(strategy.canResume(exception, data)).isTrue();
+		Throwable t = strategy.process(exception, data, Context.empty());
+
+		assertThat(t).isNull();
+		assertThat(error.get())
+				.isInstanceOf(NoSuchMethodError.class)
+				.hasMessage("foo");
+		assertThat(value.get()).isEqualTo("foo");
+	}
+
+	@Test
+	public void resumeIfWithFatalNoMatch() {
+		AtomicReference<Throwable> error = new AtomicReference<>();
+		AtomicReference<Object> value = new AtomicReference<>();
+
+		OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeIf(
+				e -> e instanceof IllegalArgumentException,
+				error::set, value::set);
+
+		String data = "foo";
+		Throwable exception = new NoSuchMethodError("foo");
+
+		assertThat(strategy.canResume(exception, data)).isFalse();
+
+		assertThatExceptionOfType(NoSuchMethodError.class)
+				.isThrownBy(() -> strategy.process(exception, data, Context.empty()));
 
 		assertThat(error.get()).isNull();
 		assertThat(value.get()).isNull();
 	}
 
 	@Test
-	public void conditionalResumeFailingPredicate() throws Exception {
-		NullPointerException npe = new NullPointerException("foo");
+	public void resumeIfValueConsumerFails() {
 		AtomicReference<Throwable> error = new AtomicReference<>();
-		AtomicReference<Object> value = new AtomicReference<>();
-		AtomicReference<Throwable> onOperatorError = new AtomicReference<>();
-		AtomicReference<Object> onOperatorValue = new AtomicReference<>();
+		IllegalStateException failureValue = new IllegalStateException("boomInValueConsumer");
 
-		Hooks.onOperatorError("test", (e, v) -> {
-			onOperatorError.set(e);
-			onOperatorValue.set(v);
-			return e;
-		});
+		OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeIf(
+				e -> true,
+				error::set,
+				v -> { throw failureValue; });
 
-		try {
-			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeIf(
-					e -> { throw new IllegalStateException("boom"); },
-					error::set, value::set);
+		String data = "foo";
+		Throwable exception = new NullPointerException("foo");
 
-			assertThatExceptionOfType(IllegalStateException.class)
-					.isThrownBy(() -> strategy.canResume(npe, "foo"))
-					.withMessage("boom")
-					.satisfies(e -> assertThat(e).hasNoSuppressedExceptions());
+		assertThat(strategy.canResume(exception, data)).isTrue();
+		Throwable t = strategy.process(exception, data, Context.empty());
 
-			assertThat(error.get()).isNull();
-			assertThat(value.get()).isNull();
-			assertThat(onOperatorError.get()).isNull();
-			assertThat(onOperatorValue.get()).isNull();
-		}
-		finally {
-			Hooks.resetOnOperatorError("test");
-		}
+		assertThat(t).isSameAs(failureValue)
+		             .hasSuppressedException(exception);
+
+		assertThat(error.get()).isNull();
 	}
 
 	@Test
-	public void conditionalResumeFailingConsumer() throws Exception {
-		NullPointerException error = new NullPointerException("foo");
-		AtomicReference<Throwable> onOperatorError = new AtomicReference<>();
-		AtomicReference<Object> onOperatorValue = new AtomicReference<>();
+	public void resumeIfErrorConsumerFails() {
+		AtomicReference<Object> value = new AtomicReference<>();
+		IllegalStateException failureError = new IllegalStateException("boomInErrorConsumer");
 
-		Hooks.onOperatorError("test", (e, v) -> {
-			onOperatorError.set(e);
-			onOperatorValue.set(v);
-			return e;
-		});
+		OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeIf(
+				e -> true,
+				e -> { throw failureError; },
+				value::set);
 
-		try {
-			OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeIf(
-					e -> e instanceof NullPointerException,
-					e -> { throw new IllegalStateException("boomError"); },
-					v -> { throw new IllegalStateException("boomValue"); });
+		String data = "foo";
+		Throwable exception = new NullPointerException("foo");
 
-			assertThat(strategy.canResume(error, "foo")).isTrue();
+		assertThat(strategy.canResume(exception, data)).isTrue();
+		Throwable t = strategy.process(exception, data, Context.empty());
 
-			assertThatExceptionOfType(IllegalStateException.class)
-					.isThrownBy(() -> strategy.process(error, "foo", Context.empty()))
-					.withMessage("boomValue")
-					.satisfies(e -> assertThat(e).hasNoSuppressedExceptions());
+		assertThat(t).isSameAs(failureError)
+		             .hasSuppressedException(exception);
 
-			assertThat(onOperatorError.get()).isNull();
-			assertThat(onOperatorValue.get()).isNull();
-		}
-		finally {
-			Hooks.resetOnOperatorError("test");
-		}
+		assertThat(value.get()).isEqualTo("foo");
+	}
+
+	@Test
+	public void resumeIfPredicateFails() {
+		AtomicReference<Throwable> error = new AtomicReference<>();
+		AtomicReference<Object> value = new AtomicReference<>();
+		IllegalStateException failurePredicate = new IllegalStateException("boomInPredicate");
+
+		OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeIf(
+				e -> { throw failurePredicate; },
+				error::set, value::set);
+
+		String data = "foo";
+		Throwable exception = new NullPointerException("foo");
+
+		assertThatExceptionOfType(IllegalStateException.class)
+				.isThrownBy(() -> strategy.canResume(exception, data))
+				.withMessage("boomInPredicate");
+
+		assertThatExceptionOfType(IllegalStateException.class)
+				.isThrownBy(() -> strategy.process(exception, data, Context.empty()))
+				.withMessage("boomInPredicate");
+
+		assertThat(error.get()).isNull();
+		assertThat(value.get()).isNull();
+	}
+
+	@Test
+	public void stopCannotResume() {
+		OnNextFailureStrategy strategy = OnNextFailureStrategy.stop();
+		assertThat(strategy.canResume(new IllegalStateException(), null))
+				.isFalse();
+		assertThat(strategy.canResume(new NoSuchMethodError(), null))
+				.isFalse();
+	}
+
+	@Test
+	public void stopProcessReturnsNewException() {
+		OnNextFailureStrategy strategy = OnNextFailureStrategy.stop();
+		Throwable exception = new NullPointerException("foo");
+
+		Throwable t = strategy.process(exception, null, Context.empty());
+
+		assertThat(t).isInstanceOf(IllegalStateException.class)
+		             .hasMessage("STOP strategy cannot process errors")
+		             .hasSuppressedException(exception);
+	}
+
+	@Test
+	public void stopProcessWithFatal() {
+		OnNextFailureStrategy strategy = OnNextFailureStrategy.stop();
+		Throwable exception = new NoSuchMethodError("foo");
+
+		assertThatExceptionOfType(NoSuchMethodError.class)
+				.isThrownBy(() -> strategy.process(exception, null, Context.empty()))
+				.satisfies(e -> assertThat(e)
+						.hasMessage("foo")
+						.hasNoSuppressedExceptions());
 	}
 
 	@Test

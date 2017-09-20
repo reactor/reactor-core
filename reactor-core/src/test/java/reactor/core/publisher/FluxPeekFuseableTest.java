@@ -19,10 +19,15 @@ package reactor.core.publisher;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
+
+import javax.annotation.Nullable;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -32,11 +37,15 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.core.publisher.FluxPeekFuseable.PeekConditionalSubscriber;
+import reactor.core.publisher.FluxPeekFuseable.PeekFuseableConditionalSubscriber;
+import reactor.core.publisher.FluxPeekFuseable.PeekFuseableSubscriber;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.MockUtils;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
+import reactor.util.context.Context;
 
 import static java.lang.Thread.sleep;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -832,7 +841,7 @@ public class FluxPeekFuseableTest {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxPeek<Integer> peek = new FluxPeek<>(Flux.just(1), s -> {}, s -> {},
         		e -> {}, () -> {}, () -> {}, r -> {}, () -> {});
-        FluxPeekFuseable.PeekFuseableSubscriber<Integer> test = new FluxPeekFuseable.PeekFuseableSubscriber<>(actual, peek);
+        PeekFuseableSubscriber<Integer> test = new PeekFuseableSubscriber<>(actual, peek);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -850,8 +859,8 @@ public class FluxPeekFuseableTest {
 	    Fuseable.ConditionalSubscriber<Integer> actual = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
         FluxPeek<Integer> peek = new FluxPeek<>(Flux.just(1), s -> {}, s -> {},
         		e -> {}, () -> {}, () -> {}, r -> {}, () -> {});
-        FluxPeekFuseable.PeekFuseableConditionalSubscriber<Integer> test =
-        		new FluxPeekFuseable.PeekFuseableConditionalSubscriber<>(actual, peek);
+        PeekFuseableConditionalSubscriber<Integer> test =
+        		new PeekFuseableConditionalSubscriber<>(actual, peek);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -863,92 +872,275 @@ public class FluxPeekFuseableTest {
         assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
     }
 
+	static final class SignalPeekThrowNext<T> implements SignalPeek<T> {
+
+		private final RuntimeException exception;
+
+		SignalPeekThrowNext(RuntimeException exception) {
+			this.exception = exception;
+		}
+
+		@Override
+		public Consumer<? super T> onNextCall() {
+			return t -> { throw exception; };
+		}
+
+		@Nullable
+		@Override
+		public Consumer<? super Subscription> onSubscribeCall() {
+			return null;
+		}
+
+		@Nullable
+		@Override
+		public Consumer<? super Throwable> onErrorCall() {
+			return null;
+		}
+
+		@Nullable
+		@Override
+		public Runnable onCompleteCall() {
+			return null;
+		}
+
+		@Nullable
+		@Override
+		public Runnable onAfterTerminateCall() {
+			return null;
+		}
+
+		@Nullable
+		@Override
+		public LongConsumer onRequestCall() {
+			return null;
+		}
+
+		@Nullable
+		@Override
+		public Runnable onCancelCall() {
+			return null;
+		}
+
+		@Nullable
+		@Override
+		public Object scanUnsafe(Attr key) {
+			return null;
+		}
+	}
+
+	static class ConditionalAssertSubscriber<T> implements Fuseable.ConditionalSubscriber<T> {
+
+		List<T> next = new ArrayList<>();
+		boolean subscribed;
+		Throwable error;
+		boolean completed;
+
+		private final Context context;
+
+		ConditionalAssertSubscriber(Context context) {
+			this.context = context;
+		}
+
+		ConditionalAssertSubscriber() {
+			this(Context.empty());
+		}
+
+		@Override
+		public boolean tryOnNext(T v) {
+			next.add(v);
+			return true;
+		}
+
+		@Override
+		public void onSubscribe(Subscription s) {
+			subscribed = true;
+		}
+
+		@Override
+		public void onNext(T v) {
+			next.add(v);
+		}
+
+		@Override
+		public void onError(Throwable throwable) {
+			error = throwable;
+		}
+
+		@Override
+		public void onComplete() {
+			completed = true;
+		}
+
+		@Override
+		public Context currentContext() {
+			return context;
+		}
+	}
+
+	static class AssertQueueSubscription<T> implements Fuseable.QueueSubscription<T> {
+		boolean isCancelled;
+		int requested;
+
+		private Queue<T> q = Queues.<T>small().get();
+
+		@Override
+		public int requestFusion(int requestedMode) {
+			return requestedMode;
+		}
+
+		@Override
+		public boolean add(T t) {
+			return q.add(t);
+		}
+
+		@Override
+		public boolean offer(T t) {
+			return q.offer(t);
+		}
+
+		@Override
+		public T remove() {
+			return q.remove();
+		}
+
+		@Override
+		public T poll() {
+			return q.poll();
+		}
+
+		@Override
+		public T element() {
+			return q.element();
+		}
+
+		@Nullable
+		@Override
+		public T peek() {
+			return q.peek();
+		}
+
+		@Override
+		public int size() {
+			return q.size();
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return q.isEmpty();
+		}
+
+		@Override
+		public void clear() {
+			q.clear();
+		}
+
+		@Override
+		public void request(long l) {
+			requested++;
+		}
+
+		@Override
+		public void cancel() {
+			isCancelled = true;
+		}
+	}
+
 	@Test
-	public void errorStrategyResumeCoversSubNextComplete() {
-		RuntimeException subscriptionError = new IllegalStateException("subscription");
+	public void resumeConditional() {
 		RuntimeException nextError = new IllegalStateException("next");
-		RuntimeException completeError = new IllegalStateException("complete");
-
 		List<Throwable> resumedErrors = new ArrayList<>();
 		List<Object> resumedValues = new ArrayList<>();
+		Context context = Context.of(OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
+				OnNextFailureStrategy.resume(resumedErrors::add, resumedValues::add));
 
-		Flux<Integer> source = Flux.just(1, 2);
+		ConditionalAssertSubscriber<Integer> actual = new ConditionalAssertSubscriber<>(context);
+		SignalPeekThrowNext<Integer> peekParent = new SignalPeekThrowNext<>(nextError);
+		AssertQueueSubscription<Integer> qs = new AssertQueueSubscription<>();
 
-		Flux<Integer> test = new FluxPeekFuseable<>(source,
-				sub -> { throw subscriptionError; },
-				v -> { throw nextError; },
-				null,
-				() -> { throw completeError; },
-				null, null, null)
-				.onErrorContinue(resumedErrors::add, resumedValues::add);
+		PeekConditionalSubscriber<Integer> test = new PeekConditionalSubscriber<>(actual, peekParent);
+		test.onSubscribe(qs);
 
-		StepVerifier.create(test)
-		            .expectFusion()
-		            .expectNext(1, 2)
-		            .expectComplete()
-		            .verifyThenAssertThat()
-		            .hasNotDroppedElements()
-		            .hasNotDroppedErrors();
+		test.onNext(1);
+		assertThat(actual.next).as("onNext skips").isEmpty();
+		assertThat(qs.requested).as("onNext requested more").isEqualTo(1);
 
-		assertThat(resumedValues).isEmpty();
-		assertThat(resumedErrors)
-				.containsExactly(subscriptionError, nextError, nextError, completeError);
+		boolean tryOnNext = test.tryOnNext(2);
+		assertThat(tryOnNext).as("tryOnNext skips").isFalse();
+
+		test.onComplete();
+
+		assertThat(actual.error).isNull();
+		assertThat(actual.completed).isTrue();
+
+		assertThat(resumedErrors).containsExactly(nextError, nextError);
+		assertThat(resumedValues).containsExactly(1, 2);
 	}
 
 	@Test
-	public void errorStrategyResumeExclusions() {
-		RuntimeException requestError = new IllegalStateException("request");
-		RuntimeException errorError = new IllegalStateException("error");
-		RuntimeException afterTerminateError = new IllegalStateException("afterTerminate");
-
+	public void resumeFuseable() {
+		RuntimeException nextError = new IllegalStateException("next");
 		List<Throwable> resumedErrors = new ArrayList<>();
 		List<Object> resumedValues = new ArrayList<>();
+		Context context = Context.of(OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
+				OnNextFailureStrategy.resume(resumedErrors::add, resumedValues::add));
 
-		Flux<Integer> source = Flux.just(1, 0).map(i -> 4 / i);
+		AssertSubscriber<Integer> actual = new AssertSubscriber<>(context, 0);
+		SignalPeekThrowNext<Integer> peekParent = new SignalPeekThrowNext<>(nextError);
+		AssertQueueSubscription<Integer> qs = new AssertQueueSubscription<>();
 
-		Flux<Integer> test = new FluxPeekFuseable<>(source, null, null,
-				e -> { throw errorError; },
-				null,
-				() -> { throw afterTerminateError; },
-				req -> { throw requestError; },
-				null)
-				.onErrorContinue(
-						e -> !(e instanceof ArithmeticException),
-						resumedErrors::add, resumedValues::add);
+		PeekFuseableSubscriber<Integer> test = new PeekFuseableSubscriber<>(actual, peekParent);
+		test.onSubscribe(qs);
 
-		StepVerifier.create(test)
-		            .expectFusion()
-		            .expectNext(4)
-		            .expectErrorSatisfies(e -> assertThat(e).isSameAs(errorError))
-		            .verifyThenAssertThat()
-		            .hasNotDroppedElements()
-		            .hasNotDroppedErrors();
+		test.onNext(1);
+		actual.assertNoValues();
+		assertThat(qs.requested).as("onNext requested more").isEqualTo(1);
 
-		assertThat(resumedValues).isEmpty();
-		assertThat(resumedErrors).isEmpty();
+		qs.offer(3);
+		Integer polled = test.poll();
+		assertThat(polled).as("poll skips").isNull();
+
+		test.onComplete();
+
+		actual.assertNoValues();
+		actual.assertNoError();
+		actual.assertComplete();
+
+		assertThat(resumedErrors).containsExactly(nextError, nextError);
+		assertThat(resumedValues).containsExactly(1, 3);
 	}
 
 	@Test
-	public void errorStrategyResumeOnCancel() {
-		RuntimeException cancelError = new IllegalStateException("cancel");
-		Flux<Integer> source = Flux.just(1, 2);
-
+	public void resumeFuseableConditional() {
+		RuntimeException nextError = new IllegalStateException("next");
 		List<Throwable> resumedErrors = new ArrayList<>();
 		List<Object> resumedValues = new ArrayList<>();
+		Context context = Context.of(OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
+				OnNextFailureStrategy.resume(resumedErrors::add, resumedValues::add));
 
-		Flux<Integer> test = new FluxPeekFuseable<>(source,
-				null, null, null, null, null, null,
-				() -> { throw cancelError; })
-				.onErrorContinue(resumedErrors::add, resumedValues::add);
+		ConditionalAssertSubscriber<Integer> actual = new ConditionalAssertSubscriber<>(context);
+		SignalPeekThrowNext<Integer> peekParent = new SignalPeekThrowNext<>(nextError);
+		AssertQueueSubscription<Integer> qs = new AssertQueueSubscription<>();
 
-		StepVerifier.create(test)
-		            .expectFusion()
-		            .thenCancel()
-		            .verifyThenAssertThat()
-		            .hasNotDroppedElements()
-		            .hasNotDroppedErrors();
+		PeekFuseableConditionalSubscriber<Integer> test = new PeekFuseableConditionalSubscriber<>(actual, peekParent);
+		test.onSubscribe(qs);
 
-		assertThat(resumedValues).isEmpty();
-		assertThat(resumedErrors).containsExactly(cancelError);
+		test.onNext(1);
+		assertThat(actual.next).as("onNext skips").isEmpty();
+		assertThat(qs.requested).as("onNext requested more").isEqualTo(1);
+
+		boolean tryOnNext = test.tryOnNext(2);
+		assertThat(tryOnNext).as("tryOnNext skips").isFalse();
+
+		qs.offer(3);
+		Integer polled = test.poll();
+		assertThat(polled).as("poll skips").isNull();
+
+		test.onComplete();
+
+		assertThat(actual.error).isNull();
+		assertThat(actual.completed).isTrue();
+
+		assertThat(resumedErrors).containsExactly(nextError, nextError, nextError);
+		assertThat(resumedValues).containsExactly(1, 2, 3);
 	}
 }
