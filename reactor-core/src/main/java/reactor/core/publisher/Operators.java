@@ -419,13 +419,16 @@ public abstract class Operators {
 	 * terminal and cancelled the subscription, null if not.
 	 */
 	@Nullable
-	public static <T> Throwable onNextFailure(@Nullable T value, Throwable error, Context context, Subscription subscriptionForCancel) {
-		Exceptions.throwIfFatal(error);
-
+	public static <T> Throwable onNextFailure(@Nullable T value, Throwable error, Context context,
+			Subscription subscriptionForCancel) {
 		OnNextFailureStrategy strategy = failureStrategy(context);
 		if (strategy.canResume(error, value)) {
-			strategy.process(error, value, context);
-			return null;
+			//some strategies could still return an exception, eg. if the consumer throws
+			Throwable t = strategy.process(error, value, context);
+			if (t != null) {
+				subscriptionForCancel.cancel();
+			}
+			return t;
 		}
 		else {
 			//falls back to operator errors
@@ -451,11 +454,11 @@ public abstract class Operators {
 	 */
 	@Nullable
 	public static <T> RuntimeException onNextPollFailure(T value, Throwable error, Context context) {
-		Exceptions.throwIfFatal(error);
-
 		OnNextFailureStrategy strategy = failureStrategy(context);
 		if (strategy.canResume(error, value)) {
-			strategy.process(error, value, context);
+			//some strategies could still return an exception, eg. if the consumer throws
+			Throwable t = strategy.process(error, value, context);
+			if (t != null) return Exceptions.propagate(t);
 			return null;
 		}
 		else {

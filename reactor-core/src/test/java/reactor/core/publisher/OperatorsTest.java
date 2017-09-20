@@ -25,6 +25,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
+import javax.annotation.Nullable;
+
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -479,5 +481,80 @@ public class OperatorsTest {
 		assertThat(Operators.unboundedOrLimit(Integer.MAX_VALUE, 110))
 				.as("smaller lowTide and MAX_VALUE")
 				.isEqualTo(Integer.MAX_VALUE);
+	}
+
+	@Test
+	public void onNextFailureWithStrategyMatchingDoesntCancel() {
+		Context context = Context.of(OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY, new OnNextFailureStrategy() {
+			@Override
+			public boolean canResume(Throwable error, @Nullable Object value) {
+				return true;
+			}
+
+			@Nullable
+			@Override
+			public Throwable process(Throwable error, @Nullable Object value,
+					Context context) {
+				return null;
+			}
+		});
+
+		Operators.DeferredSubscription s = new Operators.DeferredSubscription();
+		Throwable t = Operators.onNextFailure("foo", new NullPointerException("bar"), context, s);
+
+		assertThat(t).as("exception processed").isNull();
+		assertThat(s.isCancelled()).as("subscription cancelled").isFalse();
+	}
+
+	@Test
+	public void onNextFailureWithStrategyNotMatchingDoesCancel() {
+		Context context = Context.of(OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY, new OnNextFailureStrategy() {
+			@Override
+			public boolean canResume(Throwable error, @Nullable Object value) {
+				return false;
+			}
+
+			@Override
+			public Throwable process(Throwable error, @Nullable Object value,
+					Context context) {
+				return error;
+			}
+		});
+
+		Operators.DeferredSubscription s = new Operators.DeferredSubscription();
+		Throwable t = Operators.onNextFailure("foo", new NullPointerException("bar"), context, s);
+
+		assertThat(t).as("exception processed")
+		             .isNotNull()
+		             .isInstanceOf(NullPointerException.class)
+		             .hasNoSuppressedExceptions()
+		             .hasNoCause();
+		assertThat(s.isCancelled()).as("subscription cancelled").isTrue();
+	}
+
+	@Test
+	public void onNextFailureWithStrategyMatchingButNotNullDoesCancel() {
+		Context context = Context.of(OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY, new OnNextFailureStrategy() {
+			@Override
+			public boolean canResume(Throwable error, @Nullable Object value) {
+				return true;
+			}
+
+			@Override
+			public Throwable process(Throwable error, @Nullable Object value,
+					Context context) {
+				return error;
+			}
+		});
+
+		Operators.DeferredSubscription s = new Operators.DeferredSubscription();
+		Throwable t = Operators.onNextFailure("foo", new NullPointerException("bar"), context, s);
+
+		assertThat(t).as("exception processed")
+		             .isNotNull()
+		             .isInstanceOf(NullPointerException.class)
+		             .hasNoSuppressedExceptions()
+		             .hasNoCause();
+		assertThat(s.isCancelled()).as("subscription cancelled").isTrue();
 	}
 }
