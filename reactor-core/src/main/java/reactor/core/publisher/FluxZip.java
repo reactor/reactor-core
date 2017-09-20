@@ -842,7 +842,7 @@ final class FluxZip<T, R> extends Flux<R> {
 			this.prefetch = prefetch;
 			this.index = index;
 			this.queueSupplier = queueSupplier;
-			this.limit = prefetch - (prefetch >> 2);
+			this.limit = Operators.unboundedOrLimit(prefetch);
 		}
 
 		@SuppressWarnings("unchecked")
@@ -872,7 +872,7 @@ final class FluxZip<T, R> extends Flux<R> {
 				else {
 					queue = queueSupplier.get();
 				}
-				s.request(prefetch);
+				s.request(Operators.unboundedOrPrefetch(prefetch));
 			}
 		}
 

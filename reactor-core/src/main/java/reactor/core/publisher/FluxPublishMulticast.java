@@ -153,7 +153,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 		FluxPublishMulticaster(int prefetch, Supplier<? extends Queue<T>>
 				queueSupplier, Context ctx) {
 			this.prefetch = prefetch;
-			this.limit = prefetch - (prefetch >> 2);
+			this.limit = Operators.unboundedOrLimit(prefetch);
 			this.queueSupplier = queueSupplier;
 			this.subscribers = EMPTY;
 			this.context = ctx;
@@ -226,13 +226,13 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 
 						return;
 					}
-					else if (m == Fuseable.ASYNC) {
+					if (m == Fuseable.ASYNC) {
 						sourceMode = m;
 
 						queue = qs;
 						connected = true;
 
-						s.request(prefetch);
+						s.request(Operators.unboundedOrPrefetch(prefetch));
 
 						return;
 					}
@@ -241,7 +241,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 				queue = queueSupplier.get();
 				connected = true;
 
-				s.request(prefetch);
+				s.request(Operators.unboundedOrPrefetch(prefetch));
 			}
 		}
 

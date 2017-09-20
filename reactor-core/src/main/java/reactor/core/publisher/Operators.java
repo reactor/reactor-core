@@ -785,6 +785,14 @@ public abstract class Operators {
 		onNextDropped(t, Context.empty());
 	}
 
+	static long unboundedOrPrefetch(int prefetch) {
+		return prefetch == Integer.MAX_VALUE ? Long.MAX_VALUE : prefetch;
+	}
+
+	static int unboundedOrLimit(int prefetch) {
+		return prefetch == Integer.MAX_VALUE ? Integer.MAX_VALUE : (prefetch - (prefetch >>	2));
+	}
+
 	Operators() {
 	}
 
@@ -813,8 +821,8 @@ public abstract class Operators {
 			log.error("Unexpected call to Operators.emptySubscriber()", e);
 		}
 	};
-
 	//
+
 	final static class CancelledSubscription implements Subscription, Scannable {
 		static final CancelledSubscription INSTANCE = new CancelledSubscription();
 

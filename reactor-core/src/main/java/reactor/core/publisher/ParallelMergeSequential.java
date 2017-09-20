@@ -179,7 +179,7 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 					if (requested != Long.MAX_VALUE) {
 						REQUESTED.decrementAndGet(this);
 					}
-					inner.request(1);
+					inner.requestOne();
 				} else {
 					Queue<T> q = inner.getQueue(queueSupplier);
 
@@ -364,7 +364,7 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 		MergeSequentialInner(MergeSequentialMain<T> parent, int prefetch) {
 			this.parent = parent;
 			this.prefetch = prefetch ;
-			this.limit = prefetch - (prefetch >> 2);
+			this.limit = Operators.unboundedOrLimit(prefetch);
 		}
 
 		@Override
@@ -388,7 +388,7 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.setOnce(S, this, s)) {
-				s.request(prefetch);
+				s.request(Operators.unboundedOrPrefetch(prefetch));
 			}
 		}
 		
@@ -410,16 +410,6 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 		void requestOne() {
 			long p = produced + 1;
 			if (p == limit) {
-				produced = 0;
-				s.request(p);
-			} else {
-				produced = p;
-			}
-		}
-
-		public void request(long n) {
-			long p = produced + n;
-			if (p >= limit) {
 				produced = 0;
 				s.request(p);
 			} else {

@@ -171,12 +171,7 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 				this.s = s;
 				actual.onSubscribe(this);
 				if (cancelled == 0) {
-					if (prefetch == Integer.MAX_VALUE) {
-						s.request(Long.MAX_VALUE);
-					}
-					else {
-						s.request(prefetch);
-					}
+					s.request(Operators.unboundedOrPrefetch(prefetch));
 				}
 			}
 		}

@@ -136,7 +136,7 @@ final class ParallelSource<T> extends ParallelFlux<T> implements Scannable {
 			this.subscribers = subscribers;
 			this.prefetch = prefetch;
 			this.queueSupplier = queueSupplier;
-			this.limit = prefetch - (prefetch >> 2);
+			this.limit = Operators.unboundedOrLimit(prefetch);
 			this.requests = new AtomicLongArray(subscribers.length);
 			this.emissions = new long[subscribers.length];
 		}
@@ -189,7 +189,7 @@ final class ParallelSource<T> extends ParallelFlux<T> implements Scannable {
 						
 						setupSubscribers();
 						
-						s.request(prefetch);
+						s.request(Operators.unboundedOrPrefetch(prefetch));
 						
 						return;
 					}
@@ -199,7 +199,7 @@ final class ParallelSource<T> extends ParallelFlux<T> implements Scannable {
 				
 				setupSubscribers();
 				
-				s.request(prefetch);
+				s.request(Operators.unboundedOrPrefetch(prefetch));
 			}
 		}
 		
