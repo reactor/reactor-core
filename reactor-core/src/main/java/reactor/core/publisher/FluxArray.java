@@ -180,9 +180,7 @@ final class FluxArray<T> extends Flux<T> implements Fuseable {
 			T[] a = array;
 			if (i != a.length) {
 				T t = a[i];
-				if (t == null) {
-					throw new NullPointerException();
-				}
+				Objects.requireNonNull(t);
 				index = i + 1;
 				return t;
 			}

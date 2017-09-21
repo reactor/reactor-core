@@ -673,10 +673,7 @@ final class FluxFlattenIterable<T, R> extends FluxOperator<T, R> implements Fuse
 					continue;
 				}
 
-				R r = it.next();
-				if(r == null){
-					throw new NullPointerException("iterator returned null");
-				}
+				R r = Objects.requireNonNull(it.next(), "iterator returned null");
 
 				if (!it.hasNext()) {
 					current = null;

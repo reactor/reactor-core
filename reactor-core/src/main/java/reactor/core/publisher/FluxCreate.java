@@ -136,16 +136,18 @@ final class FluxCreate<T> extends Flux<T> {
 
 		@Override
 		public FluxSink<T> next(T t) {
+			Objects.requireNonNull(t, "t is null in sink.next(t)");
 			if (sink.isCancelled() || done) {
 				Operators.onNextDropped(t, sink.currentContext());
 				return this;
 			}
-			//noinspection ConstantConditions
-			if (t == null) {
-				throw new NullPointerException("t is null in sink.next(t)");
-			}
 			if (WIP.get(this) == 0 && WIP.compareAndSet(this, 0, 1)) {
-				sink.next(t);
+				try {
+					sink.next(t);
+				}
+				catch (Throwable ex) {
+					Operators.onOperatorError(sink, ex, t, sink.currentContext());
+				}
 				if (WIP.decrementAndGet(this) == 0) {
 					return this;
 				}
@@ -165,13 +167,10 @@ final class FluxCreate<T> extends Flux<T> {
 
 		@Override
 		public void error(Throwable t) {
+			Objects.requireNonNull(t, "t is null in sink.error(t)");
 			if (sink.isCancelled() || done) {
 				Operators.onErrorDropped(t, sink.currentContext());
 				return;
-			}
-			//noinspection ConstantConditions
-			if (t == null) {
-				throw new NullPointerException("t is null in sink.error(t)");
 			}
 			if (Exceptions.addThrowable(ERROR, this, t)) {
 				done = true;
@@ -217,16 +216,7 @@ final class FluxCreate<T> extends Flux<T> {
 					}
 
 					boolean d = done;
-					T v;
-
-					try {
-						v = q.poll();
-					}
-					catch (Throwable ex) {
-						Exceptions.throwIfFatal(ex);
-						// should never happen
-						v = null;
-					}
+					T v = q.poll();
 
 					boolean empty = v == null;
 
@@ -239,7 +229,12 @@ final class FluxCreate<T> extends Flux<T> {
 						break;
 					}
 
-					e.next(v);
+					try {
+						e.next(v);
+					}
+					catch (Throwable ex) {
+						Operators.onOperatorError(sink, ex, v, sink.currentContext());
+					}
 				}
 
 				missed = WIP.addAndGet(this, -missed);

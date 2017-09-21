@@ -166,11 +166,7 @@ final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable
 		public R poll() {
 			T v = s.poll();
 			if (v != null) {
-				R u = mapper.apply(v);
-				if (u == null) {
-					throw new NullPointerException();
-				}
-				return u;
+				return Objects.requireNonNull(mapper.apply(v));
 			}
 			return null;
 		}
@@ -330,11 +326,7 @@ final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable
 		public R poll() {
 			T v = s.poll();
 			if (v != null) {
-				R u = mapper.apply(v);
-				if (u == null) {
-					throw new NullPointerException();
-				}
-				return u;
+				return Objects.requireNonNull(mapper.apply(v));
 			}
 			return null;
 		}
