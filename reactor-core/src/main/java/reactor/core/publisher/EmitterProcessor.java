@@ -213,14 +213,14 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 				else if (m == Fuseable.ASYNC) {
 					sourceMode = m;
 					queue = f;
-					s.request(prefetch);
+					s.request(Operators.unboundedOrPrefetch(prefetch));
 					return;
 				}
 			}
 
 			queue = Queues.<T>get(prefetch).get();
 
-			s.request(prefetch);
+			s.request(Operators.unboundedOrPrefetch(prefetch));
 		}
 	}
 

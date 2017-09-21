@@ -149,10 +149,10 @@ public class BlockingIterableTest {
 	public void scanOperatorLargePrefetchIsLimitedToIntMax() {
 		Flux<Integer> source = Flux.range(1, 10);
 		BlockingIterable<Integer> test = new BlockingIterable<>(source,
-				Integer.MAX_VALUE + 30L,
+				Integer.MAX_VALUE,
 				Queues.one());
 
-		assertThat(test.scan(Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE); //FIXME
+		assertThat(test.scan(Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
 	}
 
 	@Test
@@ -175,7 +175,7 @@ public class BlockingIterableTest {
 	public void scanSubscriberLargePrefetchIsLimitedToIntMax() {
 		BlockingIterable.SubscriberIterator<String> subscriberIterator =
 				new BlockingIterable.SubscriberIterator<>(Queues.<String>one().get(),
-						Integer.MAX_VALUE + 30L);
+						Integer.MAX_VALUE);
 
 		assertThat(subscriberIterator.scan(Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE); //FIXME
 	}

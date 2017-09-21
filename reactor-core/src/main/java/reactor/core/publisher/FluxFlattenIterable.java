@@ -165,7 +165,7 @@ final class FluxFlattenIterable<T, R> extends FluxOperator<T, R> implements Fuse
 			this.mapper = mapper;
 			this.prefetch = prefetch;
 			this.queueSupplier = queueSupplier;
-			this.limit = prefetch - (prefetch >> 2);
+			this.limit = Operators.unboundedOrLimit(prefetch);
 		}
 
 		@Override
@@ -213,7 +213,7 @@ final class FluxFlattenIterable<T, R> extends FluxOperator<T, R> implements Fuse
 
 						actual.onSubscribe(this);
 
-						s.request(prefetch);
+						s.request(Operators.unboundedOrPrefetch(prefetch));
 						return;
 					}
 				}
@@ -222,7 +222,7 @@ final class FluxFlattenIterable<T, R> extends FluxOperator<T, R> implements Fuse
 
 				actual.onSubscribe(this);
 
-				s.request(prefetch);
+				s.request(Operators.unboundedOrPrefetch(prefetch));
 			}
 		}
 

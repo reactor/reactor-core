@@ -162,12 +162,7 @@ final class FluxGroupBy<T, K, V> extends FluxOperator<T, GroupedFlux<K, V>>
 			if (Operators.validate(this.s, s)) {
 				this.s = s;
 				actual.onSubscribe(this);
-				if (prefetch == Integer.MAX_VALUE) {
-					s.request(Long.MAX_VALUE);
-				}
-				else {
-					s.request(prefetch);
-				}
+				s.request(Operators.unboundedOrPrefetch(prefetch));
 			}
 		}
 
@@ -523,7 +518,7 @@ final class FluxGroupBy<T, K, V> extends FluxOperator<T, GroupedFlux<K, V>>
 			this.queue = queue;
 			this.context = parent.currentContext();
 			this.parent = parent;
-			this.limit = prefetch - (prefetch >> 2);
+			this.limit = Operators.unboundedOrLimit(prefetch);
 		}
 
 		void doTerminate() {

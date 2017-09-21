@@ -54,41 +54,39 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 
 	final Supplier<? extends Queue<SourceAndArray>> queueSupplier;
 
-	final int bufferSize;
+	final int prefetch;
 
 	FluxCombineLatest(Publisher<? extends T>[] array,
 			Function<Object[], R> combiner,
-			Supplier<? extends Queue<SourceAndArray>> queueSupplier,
-			int bufferSize) {
-		if (bufferSize <= 0) {
-			throw new IllegalArgumentException("BUFFER_SIZE > 0 required but it was " + bufferSize);
+			Supplier<? extends Queue<SourceAndArray>> queueSupplier, int prefetch) {
+		if (prefetch <= 0) {
+			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
 		}
 
 		this.array = Objects.requireNonNull(array, "array");
 		this.iterable = null;
 		this.combiner = Objects.requireNonNull(combiner, "combiner");
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
-		this.bufferSize = bufferSize;
+		this.prefetch = prefetch;
 	}
 
 	FluxCombineLatest(Iterable<? extends Publisher<? extends T>> iterable,
 			Function<Object[], R> combiner,
-			Supplier<? extends Queue<SourceAndArray>> queueSupplier,
-			int bufferSize) {
-		if (bufferSize <= 0) {
-			throw new IllegalArgumentException("BUFFER_SIZE > 0 required but it was " + bufferSize);
+			Supplier<? extends Queue<SourceAndArray>> queueSupplier, int prefetch) {
+		if (prefetch < 0) {
+			throw new IllegalArgumentException("prefetch > 0 required but it was " + prefetch);
 		}
 
 		this.array = null;
 		this.iterable = Objects.requireNonNull(iterable, "iterable");
 		this.combiner = Objects.requireNonNull(combiner, "combiner");
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
-		this.bufferSize = bufferSize;
+		this.prefetch = prefetch;
 	}
 
 	@Override
 	public int getPrefetch() {
-		return bufferSize;
+		return prefetch;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -171,7 +169,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 		Queue<SourceAndArray> queue = queueSupplier.get();
 
 		CombineLatestCoordinator<T, R> coordinator =
-				new CombineLatestCoordinator<>(actual, combiner, n, queue, bufferSize);
+				new CombineLatestCoordinator<>(actual, combiner, n, queue, prefetch);
 
 		actual.onSubscribe(coordinator);
 
@@ -222,14 +220,13 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 		CombineLatestCoordinator(CoreSubscriber<? super R> actual,
 				Function<Object[], R> combiner,
 				int n,
-				Queue<SourceAndArray> queue,
-				int bufferSize) {
+				Queue<SourceAndArray> queue, int prefetch) {
 		 	this.actual = actual;
 			this.combiner = combiner;
 			@SuppressWarnings("unchecked") CombineLatestInner<T>[] a =
 					new CombineLatestInner[n];
 			for (int i = 0; i < n; i++) {
-				a[i] = new CombineLatestInner<>(this, i, bufferSize);
+				a[i] = new CombineLatestInner<>(this, i, prefetch);
 			}
 			this.subscribers = a;
 			this.latest = new Object[n];
@@ -578,7 +575,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 			this.parent = parent;
 			this.index = index;
 			this.prefetch = prefetch;
-			this.limit = prefetch - (prefetch >> 2);
+			this.limit = Operators.unboundedOrLimit(prefetch);
 		}
 
 		@Override
@@ -589,7 +586,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.setOnce(S, this, s)) {
-				s.request(prefetch);
+				s.request(Operators.unboundedOrPrefetch(prefetch));
 			}
 		}
 
@@ -613,7 +610,6 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 		}
 
 		void requestOne() {
-
 			int p = produced + 1;
 			if (p == limit) {
 				produced = 0;
@@ -622,7 +618,6 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 			else {
 				produced = p;
 			}
-
 		}
 
 		@Override

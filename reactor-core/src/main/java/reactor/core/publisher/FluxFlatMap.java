@@ -241,7 +241,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 			this.mainQueueSupplier = mainQueueSupplier;
 			this.prefetch = prefetch;
 			this.innerQueueSupplier = innerQueueSupplier;
-			this.limit = maxConcurrency - (maxConcurrency >> 2);
+			this.limit = Operators.unboundedOrLimit(maxConcurrency);
 		}
 
 		@Override
@@ -329,13 +329,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 				this.s = s;
 
 				actual.onSubscribe(this);
-
-				if (maxConcurrency == Integer.MAX_VALUE) {
-					s.request(Long.MAX_VALUE);
-				}
-				else {
-					s.request(maxConcurrency);
-				}
+				s.request(Operators.unboundedOrPrefetch(maxConcurrency));
 			}
 		}
 
@@ -883,7 +877,8 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 		FlatMapInner(FlatMapMain<?, R> parent, int prefetch) {
 			this.parent = parent;
 			this.prefetch = prefetch;
-			this.limit = prefetch - (prefetch >> 2);
+//			this.limit = prefetch >> 2;
+			this.limit = Operators.unboundedOrLimit(prefetch);
 		}
 
 		@Override
@@ -906,7 +901,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 					}
 					// NONE is just fall-through as the queue will be created on demand
 				}
-				s.request(prefetch);
+				s.request(Operators.unboundedOrPrefetch(prefetch));
 			}
 		}
 
