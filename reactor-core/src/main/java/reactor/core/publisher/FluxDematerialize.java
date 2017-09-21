@@ -20,10 +20,10 @@ import java.util.AbstractQueue;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BooleanSupplier;
-import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.util.annotation.Nullable;
 
 /**
  * @author Stephane Maldini

@@ -17,11 +17,11 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.function.Predicate;
-import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
+import reactor.util.annotation.Nullable;
 
 /**
  * Emits a single boolean true if any of the values of the source sequence match

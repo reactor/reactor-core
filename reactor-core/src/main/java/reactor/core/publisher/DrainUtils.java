@@ -18,10 +18,11 @@ package reactor.core.publisher;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BooleanSupplier;
-import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.CoreSubscriber;
+import reactor.util.annotation.NonNull;
+import reactor.util.annotation.Nullable;
 
 abstract class DrainUtils {
 
@@ -90,8 +91,8 @@ abstract class DrainUtils {
 	 * @return true if the queue was completely drained or the drain process was cancelled
 	 */
 	static <T, F> boolean postCompleteDrain(long n,
-			Subscriber<? super T> actual,
-			Queue<T> queue,
+			Subscriber<? super @NonNull T> actual,
+			Queue<@NonNull T> queue,
 			AtomicLongFieldUpdater<F> field,
 			F instance,
 			BooleanSupplier isCancelled) {
@@ -172,8 +173,8 @@ abstract class DrainUtils {
 	 * @param instance the parent instance of the requested field
 	 * @param isCancelled callback to detect cancellation
 	 */
-	public static <T, F> void postComplete(CoreSubscriber<? super T> actual,
-			Queue<T> queue,
+	public static <T, F> void postComplete(CoreSubscriber<? super @NonNull T> actual,
+			Queue<@NonNull T> queue,
 			AtomicLongFieldUpdater<F> field,
 			F instance,
 			BooleanSupplier isCancelled) {
@@ -222,8 +223,8 @@ abstract class DrainUtils {
      * @return true if the state indicates a completion state.
      */
     public static <T, F> boolean postCompleteRequestDelayError(long n,
-            Subscriber<? super T> actual,
-            Queue<T> queue,
+            Subscriber<? super @NonNull T> actual,
+            Queue<@NonNull T> queue,
             AtomicLongFieldUpdater<F> field,
             F instance,
             BooleanSupplier isCancelled, Throwable error) {
@@ -266,8 +267,8 @@ abstract class DrainUtils {
      * @return true if the queue was completely drained or the drain process was cancelled
      */
     static <T, F> boolean postCompleteDrainDelayError(long n,
-            Subscriber<? super T> actual,
-            Queue<T> queue,
+            Subscriber<? super @NonNull T> actual,
+            Queue<@NonNull T> queue,
             AtomicLongFieldUpdater<F> field,
             F instance,
             BooleanSupplier isCancelled,
@@ -338,12 +339,12 @@ abstract class DrainUtils {
      * @param isCancelled callback to detect cancellation
      * @param error if not null, the error to signal after the queue has been drained
      */
-    public static <T, F> void postCompleteDelayError(CoreSubscriber<? super T> actual,
-            Queue<T> queue,
+    public static <T, F> void postCompleteDelayError(CoreSubscriber<? super @NonNull T> actual,
+            Queue<@NonNull T> queue,
             AtomicLongFieldUpdater<F> field,
             F instance,
             BooleanSupplier isCancelled,
-		    @Nullable Throwable error) {
+            @Nullable Throwable error) {
 
         if (queue.isEmpty()) {
             if (error == null) {

@@ -24,13 +24,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Consumer;
-import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.Logger;
 import reactor.util.Loggers;
+import reactor.util.annotation.Nullable;
 
 /**
  * Buffers values if the subscriber doesn't request fast enough, bounding the buffer to a

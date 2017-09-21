@@ -25,7 +25,7 @@ import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.util.context.Context;
 
-import javax.annotation.Nullable;
+import reactor.util.annotation.Nullable;
 
 /**
  * An unbounded Java Lambda adapter to {@link Subscriber}

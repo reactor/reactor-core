@@ -24,7 +24,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
-import javax.annotation.Nullable;
+
+import reactor.util.annotation.NonNull;
+import reactor.util.annotation.Nullable;
 
 /**
  * Queue utilities and suppliers for 1-producer/1-consumer ready queues adapted for
@@ -94,7 +96,7 @@ public final class Queues {
 	 * @return an unbounded or bounded {@link Queue} {@link Supplier}
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> Supplier<Queue<T>> get(int batchSize) {
+	public static <T> Supplier<@NonNull Queue<@NonNull T>> get(int batchSize) {
 		if (batchSize == Integer.MAX_VALUE) {
 			return SMALL_UNBOUNDED;
 		}
@@ -132,7 +134,7 @@ public final class Queues {
 	 * @return a bounded {@link Queue} {@link Supplier}
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> Supplier<Queue<T>> one() {
+	public static <T> Supplier<@NonNull Queue<@NonNull T>> one() {
 		return ONE_SUPPLIER;
 	}
 
@@ -142,7 +144,7 @@ public final class Queues {
 	 * @return a bounded {@link Queue} {@link Supplier}
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> Supplier<Queue<T>> small() {
+	public static <T> Supplier<@NonNull Queue<@NonNull T>> small() {
 		return SMALL_SUPPLIER;
 	}
 
@@ -152,7 +154,7 @@ public final class Queues {
 	 * @return an unbounded {@link Queue} {@link Supplier}
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> Supplier<Queue<T>> unbounded() {
+	public static <T> Supplier<@NonNull Queue<@NonNull T>> unbounded() {
 		return SMALL_UNBOUNDED;
 	}
 
@@ -164,7 +166,7 @@ public final class Queues {
 	 * @return an unbounded {@link Queue} {@link Supplier}
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> Supplier<Queue<T>> unbounded(int linkSize) {
+	public static <T> Supplier<@NonNull Queue<@NonNull T>> unbounded(int linkSize) {
 		if (linkSize == XS_BUFFER_SIZE) {
 			return XS_UNBOUNDED;
 		}
@@ -180,7 +182,7 @@ public final class Queues {
 	 * @return a bounded {@link Queue} {@link Supplier}
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> Supplier<Queue<T>> xs() {
+	public static <T> Supplier<@NonNull Queue<@NonNull T>> xs() {
 		return XS_SUPPLIER;
 	}
 

@@ -31,7 +31,6 @@ import java.util.function.LongConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
-import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -44,6 +43,8 @@ import reactor.core.publisher.FluxConcatMap.ErrorMode;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.Logger;
 import reactor.util.concurrent.Queues;
+import reactor.util.annotation.NonNull;
+import reactor.util.annotation.Nullable;
 
 /**
  * A ParallelFlux publishes to an array of Subscribers, in parallel 'rails' (or
@@ -74,7 +75,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the {@link ParallelFlux} instance
 	 */
-	public static <T> ParallelFlux<T> from(Publisher<? extends T> source) {
+	public static <T> ParallelFlux<@NonNull T> from(Publisher<? extends @NonNull T> source) {
 		return from(source,
 				Runtime.getRuntime()
 				       .availableProcessors(), Queues.SMALL_BUFFER_SIZE,
@@ -91,7 +92,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new {@link ParallelFlux} instance
 	 */
-	public static <T> ParallelFlux<T> from(Publisher<? extends T> source,
+	public static <T> ParallelFlux<@NonNull T> from(Publisher<? extends @NonNull T> source,
 			int parallelism) {
 		return from(source,
 				parallelism, Queues.SMALL_BUFFER_SIZE,
@@ -112,7 +113,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new {@link ParallelFlux} instance
 	 */
-	public static <T> ParallelFlux<T> from(Publisher<? extends T> source,
+	public static <T> ParallelFlux<@NonNull T> from(Publisher<? extends @NonNull T> source,
 			int parallelism,
 			int prefetch,
 			Supplier<Queue<T>> queueSupplier) {
@@ -134,7 +135,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @return the new {@link ParallelFlux} instance
 	 */
 	@SafeVarargs
-	public static <T> ParallelFlux<T> from(Publisher<T>... publishers) {
+	public static <T> ParallelFlux<@NonNull T> from(Publisher<T> @NonNull ... publishers) {
 		return onAssembly(new ParallelArraySource<>(publishers));
 	}
 
@@ -147,7 +148,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the value returned by the converter function
 	 */
-	public final <U> U as(Function<? super ParallelFlux<T>, U> converter) {
+	public final <U> U as(Function<? super @NonNull ParallelFlux<@NonNull T>, @NonNull U> converter) {
 		return converter.apply(this);
 	}
 
@@ -161,7 +162,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the assembly tracing {@link ParallelFlux}
 	 */
-	public final ParallelFlux<T> checkpoint() {
+	public final ParallelFlux<@NonNull T> checkpoint() {
 		return new ParallelFluxOnAssembly<>(this, null);
 	}
 
@@ -181,7 +182,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @param description a unique enough description to include in the light assembly traceback.
 	 * @return the assembly marked {@link ParallelFlux}
 	 */
-	public final ParallelFlux<T> checkpoint(String description) {
+	public final ParallelFlux<@NonNull T> checkpoint(String description) {
 		return new ParallelFluxOnAssembly<>(this, description, true);
 	}
 
@@ -211,7 +212,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * to use a stack trace.
 	 * @return the assembly marked {@link ParallelFlux}.
 	 */
-	public final ParallelFlux<T> checkpoint(String description, boolean forceStackTrace) {
+	public final ParallelFlux<@NonNull T> checkpoint(String description, boolean forceStackTrace) {
 		return new ParallelFluxOnAssembly<>(this, description, !forceStackTrace);
 	}
 
@@ -227,8 +228,8 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new {@link ParallelFlux} instance
 	 */
-	public final <C> ParallelFlux<C> collect(Supplier<? extends C> collectionSupplier,
-			BiConsumer<? super C, ? super T> collector) {
+	public final <C> ParallelFlux<@NonNull C> collect(Supplier<? extends @NonNull C> collectionSupplier,
+			BiConsumer<? super @NonNull C, ? super @NonNull T> collector) {
 		return onAssembly(new ParallelCollect<>(this, collectionSupplier, collector));
 	}
 
@@ -242,7 +243,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new Flux instance
 	 */
-	public final Mono<List<T>> collectSortedList(Comparator<? super T> comparator) {
+	public final Mono<@NonNull List<@NonNull T>> collectSortedList(Comparator<? super @NonNull T> comparator) {
 		return collectSortedList(comparator, 16);
 	}
 
@@ -257,7 +258,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new Mono instance
 	 */
-	public final Mono<List<T>> collectSortedList(Comparator<? super T> comparator,
+	public final Mono<@NonNull List<@NonNull T>> collectSortedList(Comparator<? super @NonNull T> comparator,
 			int capacityHint) {
 		int ch = capacityHint / parallelism() + 1;
 		ParallelFlux<List<T>> railReduced =
@@ -288,7 +289,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @param <U> the type of the resulting parallelized flux
 	 * @return a {@link ParallelFlux} of the composed groups
 	 */
-	public final <U> ParallelFlux<U> composeGroup(Function<? super GroupedFlux<Integer, T>,
+	public final <U> ParallelFlux<@NonNull U> composeGroup(Function<? super @NonNull GroupedFlux<@NonNull Integer, @NonNull T>,
 			? extends Publisher<? extends U>> composer) {
 		return from(groups().flatMap(composer::apply));
 	}
@@ -303,7 +304,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new {@link ParallelFlux} instance
 	 */
-	public final <R> ParallelFlux<R> concatMap(Function<? super T, ? extends Publisher<? extends R>> mapper) {
+	public final <R> ParallelFlux<@NonNull R> concatMap(Function<? super @NonNull T, ? extends @NonNull Publisher<? extends @NonNull R>> mapper) {
 		return concatMap(mapper, 2, ErrorMode.IMMEDIATE);
 	}
 
@@ -318,7 +319,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new {@link ParallelFlux} instance
 	 */
-	public final <R> ParallelFlux<R> concatMap(Function<? super T, ? extends Publisher<? extends R>> mapper,
+	public final <R> ParallelFlux<@NonNull R> concatMap(Function<? super @NonNull T, ? extends @NonNull Publisher<? extends @NonNull R>> mapper,
 			int prefetch) {
 		return concatMap(mapper, prefetch, ErrorMode.IMMEDIATE);
 	}
@@ -333,8 +334,8 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new {@link ParallelFlux} instance
 	 */
-	public final <R> ParallelFlux<R> concatMapDelayError(Function<? super T, ? extends
-			Publisher<? extends R>> mapper) {
+	public final <R> ParallelFlux<@NonNull R> concatMapDelayError(Function<? super @NonNull T, ? extends
+            @NonNull Publisher<? extends @NonNull R>> mapper) {
 		return concatMap(mapper, 2, ErrorMode.END);
 	}
 
@@ -345,7 +346,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new {@link ParallelFlux} instance
 	 */
-	public final ParallelFlux<T> doAfterTerminate(Runnable afterTerminate) {
+	public final ParallelFlux<@NonNull T> doAfterTerminate(Runnable afterTerminate) {
 		Objects.requireNonNull(afterTerminate, "afterTerminate");
 		return doOnSignal(this, null, null, null, null, afterTerminate, null, null, null);
 	}
@@ -357,7 +358,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new {@link ParallelFlux} instance
 	 */
-	public final ParallelFlux<T> doOnCancel(Runnable onCancel) {
+	public final ParallelFlux<@NonNull T> doOnCancel(Runnable onCancel) {
 		Objects.requireNonNull(onCancel, "onCancel");
 		return doOnSignal(this, null, null, null, null, null, null, null, onCancel);
 	}
@@ -369,7 +370,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new {@link ParallelFlux} instance
 	 */
-	public final ParallelFlux<T> doOnComplete(Runnable onComplete) {
+	public final ParallelFlux<@NonNull T> doOnComplete(Runnable onComplete) {
 		Objects.requireNonNull(onComplete, "onComplete");
 		return doOnSignal(this, null, null, null, onComplete, null, null, null, null);
 	}
@@ -397,7 +398,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @see #subscribe(CoreSubscriber[])
 	 * @see Signal
 	 */
-	public final ParallelFlux<T> doOnEach(Consumer<? super Signal<T>> signalConsumer) {
+	public final ParallelFlux<@NonNull T> doOnEach(Consumer<? super @NonNull Signal<T>> signalConsumer) {
 		Objects.requireNonNull(signalConsumer, "signalConsumer");
 		return doOnSignal(this,
 				v -> signalConsumer.accept(Signal.next(v)),
@@ -414,7 +415,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new {@link ParallelFlux} instance
 	 */
-	public final ParallelFlux<T> doOnError(Consumer<? super Throwable> onError) {
+	public final ParallelFlux<@NonNull T> doOnError(Consumer<? super @NonNull Throwable> onError) {
 		Objects.requireNonNull(onError, "onError");
 		return doOnSignal(this, null, null, onError, null, null, null, null, null);
 	}
@@ -427,7 +428,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new {@link ParallelFlux} instance
 	 */
-	public final ParallelFlux<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
+	public final ParallelFlux<@NonNull T> doOnSubscribe(Consumer<? super @NonNull Subscription> onSubscribe) {
 		Objects.requireNonNull(onSubscribe, "onSubscribe");
 		return doOnSignal(this, null, null, null, null, null, onSubscribe, null, null);
 	}
@@ -439,7 +440,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new {@link ParallelFlux} instance
 	 */
-	public final ParallelFlux<T> doOnNext(Consumer<? super T> onNext) {
+	public final ParallelFlux<@NonNull T> doOnNext(Consumer<? super @NonNull T> onNext) {
 		Objects.requireNonNull(onNext, "onNext");
 		return doOnSignal(this, onNext, null, null, null, null, null, null, null);
 	}
@@ -452,7 +453,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new {@link ParallelFlux} instance
 	 */
-	public final ParallelFlux<T> doOnRequest(LongConsumer onRequest) {
+	public final ParallelFlux<@NonNull T> doOnRequest(LongConsumer onRequest) {
 		Objects.requireNonNull(onRequest, "onRequest");
 		return doOnSignal(this, null, null, null, null, null, null, onRequest, null);
 	}
@@ -463,7 +464,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return an observed  {@link ParallelFlux}
 	 */
-	public final ParallelFlux<T> doOnTerminate(Runnable onTerminate) {
+	public final ParallelFlux<@NonNull T> doOnTerminate(Runnable onTerminate) {
 		Objects.requireNonNull(onTerminate, "onTerminate");
 		return doOnSignal(this,
 				null,
@@ -486,7 +487,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new {@link ParallelFlux} instance
 	 */
-	public final ParallelFlux<T> filter(Predicate<? super T> predicate) {
+	public final ParallelFlux<@NonNull T> filter(Predicate<? super @NonNull T> predicate) {
 		Objects.requireNonNull(predicate, "predicate");
 		return onAssembly(new ParallelFilter<>(this, predicate));
 	}
@@ -502,7 +503,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new {@link ParallelFlux} instance
 	 */
-	public final <R> ParallelFlux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper) {
+	public final <R> ParallelFlux<@NonNull R> flatMap(Function<? super @NonNull T, ? extends @NonNull Publisher<? extends @NonNull R>> mapper) {
 		return flatMap(mapper,
 				false,
 				Integer.MAX_VALUE, Queues.SMALL_BUFFER_SIZE);
@@ -520,7 +521,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new {@link ParallelFlux} instance
 	 */
-	public final <R> ParallelFlux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper,
+	public final <R> ParallelFlux<@NonNull R> flatMap(Function<? super @NonNull T, ? extends @NonNull Publisher<? extends @NonNull R>> mapper,
 			boolean delayError) {
 		return flatMap(mapper,
 				delayError,
@@ -542,7 +543,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new {@link ParallelFlux} instance
 	 */
-	public final <R> ParallelFlux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper,
+	public final <R> ParallelFlux<@NonNull R> flatMap(Function<? super @NonNull T, ? extends @NonNull Publisher<? extends @NonNull R>> mapper,
 			boolean delayError,
 			int maxConcurrency) {
 		return flatMap(mapper,
@@ -565,7 +566,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new {@link ParallelFlux} instance
 	 */
-	public final <R> ParallelFlux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper,
+	public final <R> ParallelFlux<@NonNull R> flatMap(Function<? super @NonNull T, ? extends @NonNull Publisher<? extends @NonNull R>> mapper,
 			boolean delayError,
 			int maxConcurrency,
 			int prefetch) {
@@ -586,7 +587,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new Flux instance
 	 */
-	public final Flux<GroupedFlux<Integer, T>> groups() {
+	public final Flux<@NonNull GroupedFlux<@NonNull Integer, @NonNull T>> groups() {
 		return Flux.onAssembly(new ParallelGroup<>(this));
 	}
 
@@ -596,7 +597,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link ParallelFlux} defeating any {@link Publisher} / {@link Subscription} feature-detection
 	 */
-	public final ParallelFlux<T> hide() {
+	public final ParallelFlux<@NonNull T> hide() {
 		return new ParallelFluxHide<>(this);
 	}
 
@@ -613,7 +614,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return a new unaltered {@link ParallelFlux}
 	 */
-	public final ParallelFlux<T> log() {
+	public final ParallelFlux<@NonNull T> log() {
 		return log(null, Level.INFO);
 	}
 
@@ -632,7 +633,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return a new unaltered {@link ParallelFlux}
 	 */
-	public final ParallelFlux<T> log(@Nullable String category) {
+	public final ParallelFlux<@NonNull T> log(@Nullable String category) {
 		return log(category, Level.INFO);
 	}
 
@@ -660,9 +661,9 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return a new unaltered {@link ParallelFlux}
 	 */
-	public final ParallelFlux<T> log(@Nullable String category,
+	public final ParallelFlux<@NonNull T> log(@Nullable String category,
 			Level level,
-			SignalType... options) {
+			SignalType @NonNull ... options) {
 		return log(category, level, false, options);
 	}
 
@@ -692,10 +693,10 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return a new unaltered {@link ParallelFlux}
 	 */
-	public final ParallelFlux<T> log(@Nullable String category,
+	public final ParallelFlux<@NonNull T> log(@Nullable String category,
 			Level level,
 			boolean showOperatorLine,
-			SignalType... options) {
+			SignalType @NonNull ... options) {
 		return onAssembly(new ParallelLog<>(this, new SignalLogger<>(this, category, level, showOperatorLine, options)));
 	}
 
@@ -710,7 +711,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new {@link ParallelFlux} instance
 	 */
-	public final <U> ParallelFlux<U> map(Function<? super T, ? extends U> mapper) {
+	public final <U> ParallelFlux<@NonNull U> map(Function<? super @NonNull T, ? extends @NonNull U> mapper) {
 		Objects.requireNonNull(mapper, "mapper");
 		return onAssembly(new ParallelMap<>(this, mapper));
 	}
@@ -722,7 +723,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @param name a name for the sequence
 	 * @return the same sequence, but bearing a name
 	 */
-	public final ParallelFlux<T> name(String name) {
+	public final ParallelFlux<@NonNull T> name(String name) {
 		return ParallelFluxName.createOrAppend(this, name);
 	}
 
@@ -745,7 +746,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @return the new Mono instance emitting the reduced value or empty if the
 	 * {@link ParallelFlux} was empty
 	 */
-	public final Mono<T> reduce(BiFunction<T, T, T> reducer) {
+	public final Mono<@NonNull T> reduce(BiFunction<@NonNull T, @NonNull T, @NonNull T> reducer) {
 		Objects.requireNonNull(reducer, "reducer");
 		return Mono.onAssembly(new ParallelMergeReduce<>(this, reducer));
 	}
@@ -765,8 +766,8 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new {@link ParallelFlux} instance
 	 */
-	public final <R> ParallelFlux<R> reduce(Supplier<R> initialSupplier,
-			BiFunction<R, ? super T, R> reducer) {
+	public final <R> ParallelFlux<@NonNull R> reduce(Supplier<@NonNull R> initialSupplier,
+			BiFunction<@NonNull R, ? super @NonNull T, @NonNull R> reducer) {
 		Objects.requireNonNull(initialSupplier, "initialSupplier");
 		Objects.requireNonNull(reducer, "reducer");
 		return onAssembly(new ParallelReduceSeed<>(this, initialSupplier, reducer));
@@ -793,7 +794,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new {@link ParallelFlux} instance
 	 */
-	public final ParallelFlux<T> runOn(Scheduler scheduler) {
+	public final ParallelFlux<@NonNull T> runOn(Scheduler scheduler) {
 		return runOn(scheduler, Queues.SMALL_BUFFER_SIZE);
 	}
 
@@ -819,7 +820,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new {@link ParallelFlux} instance
 	 */
-	public final ParallelFlux<T> runOn(Scheduler scheduler, int prefetch) {
+	public final ParallelFlux<@NonNull T> runOn(Scheduler scheduler, int prefetch) {
 		Objects.requireNonNull(scheduler, "scheduler");
 		return onAssembly(new ParallelRunOn<>(this,
 				scheduler,
@@ -839,7 +840,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @see ParallelFlux#sequential(int)
 	 */
-	public final Flux<T> sequential() {
+	public final Flux<@NonNull T> sequential() {
 		return sequential(Queues.SMALL_BUFFER_SIZE);
 	}
 
@@ -852,7 +853,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new Flux instance
 	 */
-	public final Flux<T> sequential(int prefetch) {
+	public final Flux<@NonNull T> sequential(int prefetch) {
 		return Flux.onAssembly(new ParallelMergeSequential<>(this,
 				prefetch,
 				Queues.get(prefetch)));
@@ -868,7 +869,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new Flux instance
 	 */
-	public final Flux<T> sorted(Comparator<? super T> comparator) {
+	public final Flux<@NonNull T> sorted(Comparator<? super @NonNull T> comparator) {
 		return sorted(comparator, 16);
 	}
 
@@ -883,7 +884,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new Flux instance
 	 */
-	public final Flux<T> sorted(Comparator<? super T> comparator, int capacityHint) {
+	public final Flux<@NonNull T> sorted(Comparator<? super @NonNull T> comparator, int capacityHint) {
 		int ch = capacityHint / parallelism() + 1;
 		ParallelFlux<List<T>> railReduced = reduce(() -> new ArrayList<>(ch), (a, b) -> {
 					a.add(b);
@@ -904,7 +905,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @param subscribers the subscribers array to run in parallel, the number of items
 	 * must be equal to the parallelism level of this ParallelFlux
 	 */
-	protected abstract void subscribe(CoreSubscriber<? super T>[] subscribers);
+	protected abstract void subscribe(CoreSubscriber<? super @NonNull T> @NonNull [] subscribers);
 
 	/**
 	 * Subscribes to this {@link ParallelFlux} and triggers the execution chain for all
@@ -920,7 +921,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @param onNext consumer of onNext signals
 	 */
-	public final Disposable subscribe(Consumer<? super T> onNext){
+	public final Disposable subscribe(Consumer<? super @NonNull T> onNext){
 		return subscribe(onNext, null, null);
 	}
 
@@ -931,7 +932,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @param onNext consumer of onNext signals
 	 * @param onError consumer of error signal
 	 */
-	public final Disposable subscribe(@Nullable Consumer<? super T> onNext, Consumer<? super Throwable>
+	public final Disposable subscribe(@Nullable Consumer<? super @NonNull T> onNext, Consumer<? super @NonNull Throwable>
 			onError){
 		return subscribe(onNext, onError, null);
 	}
@@ -945,8 +946,8 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @param onComplete callback on completion signal
 	 */
 	public final Disposable subscribe(
-			@Nullable Consumer<? super T> onNext,
-			@Nullable Consumer<? super Throwable> onError,
+			@Nullable Consumer<? super @NonNull T> onNext,
+			@Nullable Consumer<? super @NonNull Throwable> onError,
 			@Nullable Runnable onComplete) {
 		return subscribe(onNext, onError, onComplete, null);
 	}
@@ -962,10 +963,10 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @param onSubscribe consumer of the subscription signal
 	 */
 	public final Disposable subscribe(
-			@Nullable Consumer<? super T> onNext,
-			@Nullable Consumer<? super Throwable> onError,
+			@Nullable Consumer<? super @NonNull T> onNext,
+			@Nullable Consumer<? super @NonNull Throwable> onError,
 			@Nullable Runnable onComplete,
-			@Nullable Consumer<? super Subscription> onSubscribe){
+			@Nullable Consumer<? super @NonNull Subscription> onSubscribe){
 
 		@SuppressWarnings("unchecked")
 		LambdaSubscriber<? super T>[] subscribers = new LambdaSubscriber[parallelism()];
@@ -988,7 +989,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
-	public final void subscribe(Subscriber<? super T> s) {
+	public final void subscribe(Subscriber<? super @NonNull T> s) {
 		Flux.onLastAssembly(sequential())
 		    .subscribe(new FluxHide.SuppressFuseableSubscriber<>(Operators.toCoreSubscriber(s)));
 	}
@@ -1004,7 +1005,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @param value a tag value
 	 * @return the same sequence, but bearing tags
 	 */
-	public final ParallelFlux<T> tag(String key, String value) {
+	public final ParallelFlux<@NonNull T> tag(String key, String value) {
 		return ParallelFluxName.createOrAppend(this, key, value);
 	}
 
@@ -1018,7 +1019,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the {@link ParallelFlux} returned by the function
 	 */
-	public final <U> ParallelFlux<U> transform(Function<? super ParallelFlux<T>, ParallelFlux<U>> composer) {
+	public final <U> ParallelFlux<@NonNull U> transform(Function<? super @NonNull ParallelFlux<@NonNull T>, @NonNull ParallelFlux<@NonNull U>> composer) {
 		return onAssembly(as(composer));
 	}
 
@@ -1035,7 +1036,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return true if the number of subscribers equals to the parallelism level
 	 */
-	protected final boolean validate(Subscriber<?>[] subscribers) {
+	protected final boolean validate(Subscriber<@NonNull ?> @NonNull [] subscribers) {
 		int p = parallelism();
 		if (subscribers.length != p) {
 			IllegalArgumentException iae = new IllegalArgumentException("parallelism = " +
@@ -1060,7 +1061,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new {@link ParallelFlux} instance
 	 */
-	final <R> ParallelFlux<R> concatMap(Function<? super T, ? extends Publisher<? extends R>> mapper,
+	final <R> ParallelFlux<@NonNull R> concatMap(Function<? super @NonNull T, ? extends @NonNull Publisher<? extends @NonNull R>> mapper,
 			int prefetch,
 			ErrorMode errorMode) {
 		return onAssembly(new ParallelConcatMap<>(this,
@@ -1082,8 +1083,8 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new {@link ParallelFlux} instance
 	 */
-	final <R> ParallelFlux<R> concatMapDelayError(Function<? super T, ? extends
-			Publisher<? extends R>> mapper,
+	final <R> ParallelFlux<@NonNull R> concatMapDelayError(Function<? super @NonNull T, ? extends
+            @NonNull Publisher<? extends @NonNull R>> mapper,
 			boolean delayUntilEnd,
 			int prefetch) {
 		return concatMap(mapper, prefetch, delayUntilEnd ? ErrorMode.END: ErrorMode.BOUNDARY);
@@ -1100,8 +1101,8 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 *
 	 * @return the new {@link ParallelFlux} instance
 	 */
-	final <R> ParallelFlux<R> concatMapDelayError(Function<? super T, ? extends
-			Publisher<? extends R>> mapper, int prefetch) {
+	final <R> ParallelFlux<@NonNull R> concatMapDelayError(Function<? super @NonNull T, ? extends
+            @NonNull Publisher<? extends @NonNull R>> mapper, int prefetch) {
 		return concatMap(mapper, prefetch, ErrorMode.END);
 	}
 
@@ -1125,7 +1126,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @return the potentially wrapped source
 	 */
 	@SuppressWarnings("unchecked")
-	protected static <T> ParallelFlux<T> onAssembly(ParallelFlux<T> source) {
+	protected static <T> ParallelFlux<@NonNull T> onAssembly(ParallelFlux<@NonNull T> source) {
 		Function<Publisher, Publisher> hook = Hooks.onEachOperatorHook;
 		if (hook == null) {
 			return source;
@@ -1143,7 +1144,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @return the potentially wrapped source
 	 */
 	@SuppressWarnings("unchecked")
-	protected static <T> ParallelFlux<T> onLastAssembly(ParallelFlux<T> source) {
+	protected static <T> ParallelFlux<@NonNull T> onLastAssembly(ParallelFlux<@NonNull T> source) {
 		Function<Publisher, Publisher> hook = Hooks.onLastOperatorHook;
 		if (hook == null) {
 			return source;
@@ -1153,7 +1154,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	}
 
 	@SuppressWarnings("unchecked")
-	static <T> ParallelFlux<T> doOnSignal(ParallelFlux<T> source,
+	static <T> ParallelFlux<@NonNull T> doOnSignal(ParallelFlux<@NonNull T> source,
 			@Nullable Consumer<? super T> onNext,
 			@Nullable Consumer<? super T> onAfterNext,
 			@Nullable Consumer<? super Throwable> onError,
@@ -1173,7 +1174,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 				onCancel));
 	}
 
-	static final <T> List<T> sortedMerger(List<T> a, List<T> b, Comparator<? super T> comparator) {
+	static final <T> List<@NonNull T> sortedMerger(List<@NonNull T> a, List<@NonNull T> b, Comparator<? super @NonNull T> comparator) {
 		int n = a.size() + b.size();
 		if (n == 0) {
 			return new ArrayList<>();

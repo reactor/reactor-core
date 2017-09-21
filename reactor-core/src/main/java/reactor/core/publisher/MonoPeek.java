@@ -17,12 +17,12 @@ package reactor.core.publisher;
 
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
-import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.core.publisher.FluxPeekFuseable.PeekConditionalSubscriber;
+import reactor.util.annotation.Nullable;
 
 /**
  * Peeks out values that make a filter function return false.

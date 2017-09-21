@@ -22,7 +22,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import javax.annotation.Nullable;
+
+import reactor.util.annotation.NonNull;
+import reactor.util.annotation.Nullable;
 
 /**
  * Global Reactor Core Exception handling and utils to operate on.
@@ -102,7 +104,7 @@ public abstract class Exceptions {
 	 * suppressed exceptions
 	 * @see #addThrowable(AtomicReferenceFieldUpdater, Object, Throwable)
 	 */
-	public static RuntimeException multiple(Throwable... throwables) {
+	public static RuntimeException multiple(Throwable @NonNull ... throwables) {
 		CompositeException multiple = new CompositeException();
 		//noinspection ConstantConditions
 		if (throwables != null) {
@@ -127,7 +129,7 @@ public abstract class Exceptions {
 	 * suppressed exceptions
 	 * @see #addThrowable(AtomicReferenceFieldUpdater, Object, Throwable)
 	 */
-	public static RuntimeException multiple(Iterable<Throwable> throwables) {
+	public static RuntimeException multiple(Iterable<@NonNull Throwable> throwables) {
 		RuntimeException multiple = new RuntimeException("Multiple exceptions");
 		//noinspection ConstantConditions
 		if (throwables != null) {

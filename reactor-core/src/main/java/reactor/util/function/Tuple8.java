@@ -18,7 +18,9 @@ package reactor.util.function;
 
 import java.util.Objects;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+
+import reactor.util.annotation.NonNull;
+import reactor.util.annotation.Nullable;
 
 /**
  * A tuple that holds eight values
@@ -81,7 +83,7 @@ public class Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> extends
 	}
 
 	@Override
-	public Object[] toArray() {
+	public Object @NonNull [] toArray() {
 		return new Object[]{t1, t2, t3, t4, t5, t6, t7, t8};
 	}
 

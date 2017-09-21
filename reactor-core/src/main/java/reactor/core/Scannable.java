@@ -18,13 +18,13 @@ package reactor.core;
 
 import java.util.Iterator;
 import java.util.Objects;
-import java.util.Set;
 import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import javax.annotation.Nullable;
 
 import reactor.util.function.Tuple2;
+import reactor.util.annotation.NonNull;
+import reactor.util.annotation.Nullable;
 
 /**
  * A Scannable component exposes state in a non strictly memory consistent way and
@@ -214,7 +214,7 @@ public interface Scannable {
 			}
 		};
 
-		static Stream<? extends Scannable> recurse(Scannable _s,
+		static Stream<? extends @NonNull Scannable> recurse(Scannable _s,
 				Attr<Scannable> key){
 			Scannable s = Scannable.from(_s.scan(key));
 			if(!s.isScanAvailable()) {
@@ -265,7 +265,7 @@ public interface Scannable {
 	 * @return a {@link Stream} navigating the {@link org.reactivestreams.Subscriber}
 	 * chain (downward)
 	 */
-	default Stream<? extends Scannable> actuals() {
+	default Stream<? extends @NonNull Scannable> actuals() {
 		return Attr.recurse(this, Attr.ACTUAL);
 	}
 
@@ -274,7 +274,7 @@ public interface Scannable {
 	 *
 	 * @return a {@link Stream} of referenced inners (flatmap, multicast etc)
 	 */
-	default Stream<? extends Scannable> inners() {
+	default Stream<? extends @NonNull Scannable> inners() {
 		return Stream.empty();
 	}
 
@@ -330,7 +330,7 @@ public interface Scannable {
 	 * @return a {@link Stream} navigating the {@link org.reactivestreams.Subscription}
 	 * chain (upward)
 	 */
-	default Stream<? extends Scannable> parents() {
+	default Stream<? extends @NonNull Scannable> parents() {
 		return Attr.recurse(this, Attr.PARENT);
 	}
 
@@ -361,7 +361,7 @@ public interface Scannable {
 	 *
 	 */
 	@Nullable
-	default <T> T scan(Attr<T> key) {
+	default <T> T scan(Attr<@Nullable T> key) {
 		@SuppressWarnings("unchecked")
 		T value = (T) scanUnsafe(key);
 		if (value == null)
@@ -379,7 +379,7 @@ public interface Scannable {
 	 *
 	 * @return a value associated to the key or the provided default if unmatched or unresolved
 	 */
-	default <T> T scanOrDefault(Attr<T> key, T defaultValue) {
+	default <T> T scanOrDefault(Attr<@Nullable T> key, T defaultValue) {
 		@SuppressWarnings("unchecked")
 		T v = (T) scanUnsafe(key);
 		if (v == null) {
@@ -394,7 +394,7 @@ public interface Scannable {
 	 *
 	 * @return the stream of tags for this {@link Scannable} and its parents
 	 */
-	default Stream<Tuple2<String, String>> tags() {
+	default Stream<@NonNull Tuple2<@NonNull String, @NonNull String>> tags() {
 		Stream<Tuple2<String, String>> parentTags =
 				parents().flatMap(s -> s.scan(Attr.TAGS));
 

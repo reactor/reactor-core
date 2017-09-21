@@ -33,6 +33,7 @@ import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.concurrent.Queues;
+import reactor.util.annotation.NonNull;
 
 /**
  * A {@link Scheduler} that uses a virtual clock, allowing to manipulate time
@@ -108,7 +109,7 @@ public class VirtualTimeScheduler implements Scheduler {
 	 * @param schedulerSupplier the supplier executed to obtain a fresh {@link VirtualTimeScheduler}
 	 * @return the scheduler that is actually used after the operation.
 	 */
-	static VirtualTimeScheduler enable(Supplier<VirtualTimeScheduler> schedulerSupplier) {
+	static VirtualTimeScheduler enable(Supplier<@NonNull VirtualTimeScheduler> schedulerSupplier) {
 		return enable(schedulerSupplier, false);
 	}
 
@@ -121,7 +122,7 @@ public class VirtualTimeScheduler implements Scheduler {
 	 * @param exact whether or not to force the use of the supplier, even if there's a matching scheduler
 	 * @return the scheduler that is actually used after the operation.
 	 */
-	static VirtualTimeScheduler enable(Supplier<VirtualTimeScheduler>
+	static VirtualTimeScheduler enable(Supplier<@NonNull VirtualTimeScheduler>
 			schedulerSupplier, boolean exact) {
 		for (; ; ) {
 			VirtualTimeScheduler s = CURRENT.get();
@@ -469,7 +470,7 @@ public class VirtualTimeScheduler implements Scheduler {
 	static final Disposable CANCELLED = Disposables.disposed();
 	static final Disposable EMPTY = Disposables.never();
 
-	static boolean replace(AtomicReference<Disposable> ref, @Nullable Disposable c) {
+	static boolean replace(AtomicReference<@NonNull Disposable> ref, @Nullable Disposable c) {
 		for (; ; ) {
 			Disposable current = ref.get();
 			if (current == CANCELLED) {

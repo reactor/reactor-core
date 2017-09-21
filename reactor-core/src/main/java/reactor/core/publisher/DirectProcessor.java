@@ -20,12 +20,13 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.util.annotation.NonNull;
+import reactor.util.annotation.Nullable;
 
 /**
  * Dispatches onNext, onError and onComplete signals to zero-to-many Subscribers.
@@ -132,7 +133,7 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super T> actual) {
+	public void subscribe(CoreSubscriber<? super @NonNull T> actual) {
 		Objects.requireNonNull(actual, "subscribe");
 
 		DirectInner<T> p = new DirectInner<>(actual, this);
@@ -155,7 +156,7 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 	}
 
 	@Override
-	public Stream<? extends Scannable> inners() {
+	public Stream<? extends @NonNull Scannable> inners() {
 		return Stream.of(subscribers);
 	}
 
@@ -169,7 +170,7 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 		return subscribers.length;
 	}
 
-	boolean add(DirectInner<T> s) {
+	boolean add(DirectInner<@NonNull T> s) {
 		DirectInner<T>[] a = subscribers;
 		if (a == TERMINATED) {
 			return false;
@@ -193,7 +194,7 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 	}
 
 	@SuppressWarnings("unchecked")
-	void remove(DirectInner<T> s) {
+	void remove(DirectInner<@NonNull T> s) {
 		DirectInner<T>[] a = subscribers;
 		if (a == TERMINATED || a == EMPTY) {
 			return;
@@ -258,7 +259,7 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 		static final AtomicLongFieldUpdater<DirectInner> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(DirectInner.class, "requested");
 
-		DirectInner(CoreSubscriber<? super T> actual, DirectProcessor<T> parent) {
+		DirectInner(CoreSubscriber<? super @NonNull T> actual, DirectProcessor<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
 		}
@@ -288,7 +289,7 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 		}
 
 		@Override
-		public CoreSubscriber<? super T> actual() {
+		public CoreSubscriber<? super @NonNull T> actual() {
 			return actual;
 		}
 

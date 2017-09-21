@@ -16,12 +16,12 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
-import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.util.annotation.Nullable;
 
 /**
  * @author Stephane Maldini

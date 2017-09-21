@@ -26,13 +26,14 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import reactor.core.Exceptions;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.context.Context;
+import reactor.util.annotation.NonNull;
+import reactor.util.annotation.Nullable;
 
 /**
  * A push of overridable lifecycle hooks that can be used for cross-cutting
@@ -65,7 +66,7 @@ public abstract class Hooks {
 	 * @see #resetOnEachOperator()
 	 * @see #onLastOperator(Function)
 	 */
-	public static void onEachOperator(Function<? super Publisher<Object>, ? extends Publisher<Object>> onEachOperator) {
+	public static void onEachOperator(Function<? super @NonNull Publisher<@NonNull Object>, ? extends @NonNull Publisher<@NonNull Object>> onEachOperator) {
 		onEachOperator(onEachOperator.toString(), onEachOperator);
 	}
 
@@ -94,7 +95,7 @@ public abstract class Hooks {
 	 * @see #resetOnEachOperator()
 	 * @see #onLastOperator(String, Function)
 	 */
-	public static void onEachOperator(String key, Function<? super Publisher<Object>, ? extends Publisher<Object>> onEachOperator) {
+	public static void onEachOperator(String key, Function<? super @NonNull Publisher<@NonNull Object>, ? extends @NonNull Publisher<@NonNull Object>> onEachOperator) {
 		Objects.requireNonNull(key, "key");
 		Objects.requireNonNull(onEachOperator, "onEachOperator");
 		log.debug("Hooking onEachOperator: {}", key);
@@ -141,7 +142,7 @@ public abstract class Hooks {
 	 *
 	 * @param c the {@link Consumer} to apply to dropped errors
 	 */
-	public static void onErrorDropped(Consumer<? super Throwable> c) {
+	public static void onErrorDropped(Consumer<? super @NonNull Throwable> c) {
 		Objects.requireNonNull(c, "onErrorDroppedHook");
 		log.debug("Hooking new default : onErrorDropped");
 
@@ -176,7 +177,7 @@ public abstract class Hooks {
 	 * @see #resetOnLastOperator()
 	 * @see #onEachOperator(Function)
 	 */
-	public static void onLastOperator(Function<? super Publisher<Object>, ? extends Publisher<Object>> onLastOperator) {
+	public static void onLastOperator(Function<? super @NonNull Publisher<@NonNull Object>, ? extends @NonNull Publisher<@NonNull Object>> onLastOperator) {
 		onLastOperator(onLastOperator.toString(), onLastOperator);
 	}
 
@@ -201,7 +202,7 @@ public abstract class Hooks {
 	 * @see #resetOnLastOperator()
 	 * @see #onEachOperator(String, Function)
 	 */
-	public static void onLastOperator(String key, Function<? super Publisher<Object>, ? extends Publisher<Object>> onLastOperator) {
+	public static void onLastOperator(String key, Function<? super @NonNull Publisher<@NonNull Object>, ? extends @NonNull Publisher<@NonNull Object>> onLastOperator) {
 		Objects.requireNonNull(key, "key");
 		Objects.requireNonNull(onLastOperator, "onLastOperator");
 		log.debug("Hooking onLastOperator: {}", key);
@@ -249,7 +250,7 @@ public abstract class Hooks {
 	 * @param c the {@link Consumer} to apply to data (onNext) that is dropped
 	 * @see #onNextDroppedFail()
 	 */
-	public static void onNextDropped(Consumer<Object> c) {
+	public static void onNextDropped(Consumer<@NonNull Object> c) {
 		Objects.requireNonNull(c, "onNextDroppedHook");
 		log.debug("Hooking new default : onNextDropped");
 
@@ -318,7 +319,7 @@ public abstract class Hooks {
 	 * @see #resetOnOperatorError(String)
 	 * @see #resetOnOperatorError()
 	 */
-	public static void onOperatorError(BiFunction<? super Throwable, Object, ? extends Throwable> onOperatorError) {
+	public static void onOperatorError(BiFunction<? super @NonNull Throwable, @Nullable Object, ? extends @NonNull Throwable> onOperatorError) {
 		onOperatorError(onOperatorError.toString(), onOperatorError);
 	}
 
@@ -345,7 +346,7 @@ public abstract class Hooks {
 	 * @see #resetOnOperatorError(String)
 	 * @see #resetOnOperatorError()
 	 */
-	public static void onOperatorError(String key, BiFunction<? super Throwable, Object, ? extends Throwable> onOperatorError) {
+	public static void onOperatorError(String key, BiFunction<? super @NonNull Throwable, @Nullable Object, ? extends @NonNull Throwable> onOperatorError) {
 		Objects.requireNonNull(key, "key");
 		Objects.requireNonNull(onOperatorError, "onOperatorError");
 		log.debug("Hooking onOperatorError: {}", key);
@@ -408,7 +409,7 @@ public abstract class Hooks {
 
 	@Nullable
 	@SuppressWarnings("unchecked")
-	static Function<Publisher, Publisher> createOrUpdateOpHook(Collection<Function<? super Publisher<Object>, ? extends Publisher<Object>>> hooks) {
+	static Function<@NonNull Publisher, @NonNull Publisher> createOrUpdateOpHook(Collection<Function<? super @NonNull Publisher<@NonNull Object>, ? extends @NonNull Publisher<@NonNull Object>>> hooks) {
 		Function<Publisher, Publisher> composite = null;
 		for (Function<? super Publisher<Object>, ? extends Publisher<Object>> function : hooks) {
 			Function<? super Publisher, ? extends Publisher> op = (Function<? super Publisher, ? extends Publisher>) function;
@@ -423,7 +424,7 @@ public abstract class Hooks {
 	}
 
 	@Nullable
-	static BiFunction<? super Throwable, Object, ? extends Throwable> createOrUpdateOpErrorHook(Collection<BiFunction<? super Throwable, Object, ? extends Throwable>> hooks) {
+	static BiFunction<? super @NonNull Throwable, @Nullable Object, ? extends @NonNull Throwable> createOrUpdateOpErrorHook(Collection<@NonNull BiFunction<? super @NonNull Throwable, @Nullable Object, ? extends @NonNull Throwable>> hooks) {
 		BiFunction<? super Throwable, Object, ? extends Throwable> composite = null;
 		for (BiFunction<? super Throwable, Object, ? extends Throwable> function : hooks) {
 			if (composite != null) {
@@ -487,13 +488,13 @@ public abstract class Hooks {
 
 
 		@SuppressWarnings("unchecked")
-		static <T> OnOperatorDebug<T> instance(){
+		static <T> OnOperatorDebug<@NonNull T> instance(){
 			return (OnOperatorDebug<T>)INSTANCE;
 		}
 
 		@Override
 		@SuppressWarnings("unchecked")
-		public Publisher<T> apply(Publisher<T> publisher) {
+		public Publisher<@NonNull T> apply(Publisher<@NonNull T> publisher) {
 			if (publisher instanceof Callable) {
 				if (publisher instanceof Mono) {
 					return new MonoCallableOnAssembly<>((Mono<T>) publisher);

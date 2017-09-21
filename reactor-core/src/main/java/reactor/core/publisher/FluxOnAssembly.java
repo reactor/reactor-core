@@ -17,7 +17,6 @@ package reactor.core.publisher;
 
 import java.util.LinkedList;
 import java.util.List;
-import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -27,6 +26,7 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuples;
+import reactor.util.annotation.Nullable;
 
 /**
  * Captures the current stacktrace when this publisher is created and

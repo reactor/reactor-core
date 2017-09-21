@@ -27,10 +27,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 
 import reactor.core.Disposable;
 import reactor.core.Disposables;
+import reactor.util.annotation.Nullable;
 
 /**
  * Dynamically creates ScheduledExecutorService-based Workers and caches the thread pools, reusing

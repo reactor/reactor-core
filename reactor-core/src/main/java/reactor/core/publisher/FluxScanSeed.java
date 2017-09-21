@@ -20,10 +20,10 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.util.annotation.Nullable;
 
 /**
  * Aggregates the source values with the help of an accumulator function

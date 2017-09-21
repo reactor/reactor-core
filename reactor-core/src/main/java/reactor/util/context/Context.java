@@ -20,7 +20,9 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
+
+import reactor.util.annotation.NonNull;
+import reactor.util.annotation.Nullable;
 
 /**
  * A key/value store that is propagated between components such as operators via the
@@ -249,7 +251,7 @@ public interface Context {
 	 *
 	 * @return a {@link Stream} of key/value pairs held by this context
 	 */
-	Stream<Map.Entry<Object,Object>> stream();
+	Stream<Map.@NonNull Entry<@NonNull Object, @NonNull Object>> stream();
 
 	/**
 	 * Create a new {@link Context} by merging the content of this context and a given

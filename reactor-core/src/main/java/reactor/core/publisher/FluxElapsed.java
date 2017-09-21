@@ -17,7 +17,6 @@
 package reactor.core.publisher;
 
 import java.util.concurrent.TimeUnit;
-import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -25,6 +24,7 @@ import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
+import reactor.util.annotation.Nullable;
 
 /**
  * @author Stephane Maldini

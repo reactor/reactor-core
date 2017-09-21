@@ -18,7 +18,8 @@ package reactor.core;
 
 import java.util.Collection;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
+
+import reactor.util.annotation.Nullable;
 
 /**
  * Indicates that a task or resource can be cancelled/disposed.

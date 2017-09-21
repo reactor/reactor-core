@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -36,6 +35,7 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.concurrent.Queues;
+import reactor.util.annotation.Nullable;
 
 /**
  * @param <T>

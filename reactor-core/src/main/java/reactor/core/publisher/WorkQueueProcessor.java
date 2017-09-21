@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -38,6 +37,8 @@ import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.concurrent.Queues;
 import reactor.util.concurrent.WaitStrategy;
+import reactor.util.annotation.NonNull;
+import reactor.util.annotation.Nullable;
 
 /**
  ** An implementation of a RingBuffer backed message-passing Processor implementing work-queue distribution with
@@ -98,7 +99,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		 *             if {@link #executor(ExecutorService)} is not configured.
 		 * @return builder with provided name
 		 */
-		public Builder<T> name(@Nullable String name) {
+		public Builder<@NonNull T> name(@Nullable String name) {
 			if (executor != null)
 				throw new IllegalArgumentException("Executor service is configured, name will not be used.");
 			this.name = name;
@@ -110,7 +111,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		 * @param bufferSize the internal buffer size to hold signals, must be a power of 2
 		 * @return builder with provided buffer size
 		 */
-		public Builder<T> bufferSize(int bufferSize) {
+		public Builder<@NonNull T> bufferSize(int bufferSize) {
 			if (!Queues.isPowerOfTwo(bufferSize)) {
 				throw new IllegalArgumentException("bufferSize must be a power of 2 : " + bufferSize);
 			}
@@ -129,7 +130,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		 * @param waitStrategy A RingBuffer WaitStrategy to use instead of the default smart blocking wait strategy.
 		 * @return builder with provided wait strategy
 		 */
-		public Builder<T> waitStrategy(@Nullable WaitStrategy waitStrategy) {
+		public Builder<@NonNull T> waitStrategy(@Nullable WaitStrategy waitStrategy) {
 			this.waitStrategy = waitStrategy;
 			return this;
 		}
@@ -139,7 +140,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		 * @param autoCancel automatically cancel
 		 * @return builder with provided auto-cancel
 		 */
-		public Builder<T> autoCancel(boolean autoCancel) {
+		public Builder<@NonNull T> autoCancel(boolean autoCancel) {
 			this.autoCancel = autoCancel;
 			return this;
 		}
@@ -151,7 +152,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		 * @param executor A provided ExecutorService to manage threading infrastructure
 		 * @return builder with provided executor
 		 */
-		public Builder<T> executor(@Nullable ExecutorService executor) {
+		public Builder<@NonNull T> executor(@Nullable ExecutorService executor) {
 			this.executor = executor;
 			return this;
 		}
@@ -162,7 +163,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		 * @param requestTaskExecutor internal request executor
 		 * @return builder with provided internal request executor
 		 */
-		public Builder<T> requestTaskExecutor(@Nullable ExecutorService requestTaskExecutor) {
+		public Builder<@NonNull T> requestTaskExecutor(@Nullable ExecutorService requestTaskExecutor) {
 			this.requestTaskExecutor = requestTaskExecutor;
 			return this;
 		}
@@ -174,7 +175,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		 * @param share true to support concurrent onNext calls
 		 * @return builder with specified sharing
 		 */
-		public Builder<T> share(boolean share) {
+		public Builder<@NonNull T> share(boolean share) {
 			this.share = share;
 			return this;
 		}
@@ -184,7 +185,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		 * of this builder.
 		 * @return a fresh processor
 		 */
-		public WorkQueueProcessor<T>  build() {
+		public WorkQueueProcessor<@NonNull T>  build() {
 			String name = this.name != null ? this.name : WorkQueueProcessor.class.getSimpleName();
 			WaitStrategy waitStrategy = this.waitStrategy != null ? this.waitStrategy : WaitStrategy.liteBlocking();
 			ThreadFactory threadFactory = this.executor != null ? null : new EventLoopFactory(name, autoCancel);
@@ -205,7 +206,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * Create a new {@link WorkQueueProcessor} {@link Builder} with default properties.
 	 * @return new WorkQueueProcessor builder
 	 */
-	public final static <T> Builder<T> builder() {
+	public final static <T> Builder<@NonNull T> builder() {
 		return new Builder<>();
 	}
 
@@ -216,7 +217,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> WorkQueueProcessor<E> create() {
+	public static <E> WorkQueueProcessor<@NonNull E> create() {
 		return WorkQueueProcessor.<E>builder().build();
 	}
 
@@ -230,7 +231,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> WorkQueueProcessor<E> create(String name, int bufferSize) {
+	public static <E> WorkQueueProcessor<@NonNull E> create(String name, int bufferSize) {
 		return WorkQueueProcessor.<E>builder().name(name).bufferSize(bufferSize).build();
 	}
 
@@ -246,7 +247,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	 * @param <E> Type of processed signals
 	 * @return a fresh processor
 	 */
-	public static <E> WorkQueueProcessor<E> share(String name, int bufferSize) {
+	public static <E> WorkQueueProcessor<@NonNull E> share(String name, int bufferSize) {
 		return WorkQueueProcessor.<E>builder().share(true).name(name).bufferSize(bufferSize).build();
 	}
 
@@ -291,7 +292,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 	}
 
 	@Override
-	public void subscribe(final CoreSubscriber<? super E> actual) {
+	public void subscribe(final CoreSubscriber<? super @NonNull E> actual) {
 		Objects.requireNonNull(actual, "subscribe");
 
 		if (!alive()) {
@@ -429,8 +430,8 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		 * @param subscriber the output Subscriber instance
 		 * @param processor the source processor
 		 */
-		WorkQueueInner(CoreSubscriber<? super T> subscriber,
-				WorkQueueProcessor<T> processor) {
+		WorkQueueInner(CoreSubscriber<? super @NonNull T> subscriber,
+				WorkQueueProcessor<@NonNull T> processor) {
 			this.processor = processor;
 			this.subscriber = subscriber;
 
@@ -655,7 +656,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 			}
 		}
 
-		boolean reschedule(@Nullable Slot<T> event) {
+		boolean reschedule(@Nullable Slot<@NonNull T> event) {
 			if (event != null &&
 					event.value != null) {
 				processor.claimedDisposed.add(event.value);
@@ -690,7 +691,7 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 		}
 
 		@Override
-		public CoreSubscriber<? super T> actual() {
+		public CoreSubscriber<? super @NonNull T> actual() {
 			return subscriber;
 		}
 
