@@ -78,7 +78,7 @@ final class FluxCreate<T> extends Flux<T> {
 				return new LatestAsyncSink<>(t);
 			}
 			default: {
-				return new BufferAsyncSink<>(t, Queues.SMALL_BUFFER_SIZE);
+				return new BufferAsyncSink<>(t, Queues.BUFFER_SIZE);
 			}
 		}
 	}

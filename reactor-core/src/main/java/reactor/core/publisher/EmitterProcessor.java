@@ -55,7 +55,7 @@ import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
 public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link Queues#SMALL_BUFFER_SIZE}
+	 * Create a new {@link EmitterProcessor} using {@link Queues#BUFFER_SIZE}
 	 * backlog size and auto-cancel.
 	 *
 	 * @param <E> Type of processed signals
@@ -63,11 +63,11 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	 * @return a fresh processor
 	 */
 	public static <E> EmitterProcessor<E> create() {
-		return create(Queues.SMALL_BUFFER_SIZE, true);
+		return create(Queues.BUFFER_SIZE, true);
 	}
 
 	/**
-	 * Create a new {@link EmitterProcessor} using {@link Queues#SMALL_BUFFER_SIZE}
+	 * Create a new {@link EmitterProcessor} using {@link Queues#BUFFER_SIZE}
 	 * backlog size and the provided auto-cancel.
 	 *
 	 * @param <E> Type of processed signals
@@ -76,7 +76,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	 * @return a fresh processor
 	 */
 	public static <E> EmitterProcessor<E> create(boolean autoCancel) {
-		return create(Queues.SMALL_BUFFER_SIZE, autoCancel);
+		return create(Queues.BUFFER_SIZE, autoCancel);
 	}
 
 	/**

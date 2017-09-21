@@ -538,7 +538,7 @@ public class ParallelFluxTest {
 	@Test
 	public void fromPublisherDefaultPrefetchIsSmallBufferSize() {
 		assertThat(ParallelFlux.from(Flux.range(1, 5))
-				.getPrefetch()).isEqualTo(Queues.SMALL_BUFFER_SIZE);
+				.getPrefetch()).isEqualTo(Queues.BUFFER_SIZE);
 	}
 
 	@Test

@@ -750,8 +750,8 @@ public class WorkQueueProcessorTest {
 		                                                                              .transform(
 				                                                                              function),
 				                                                               true,
-				                                                               Queues.SMALL_BUFFER_SIZE,
-				                                                               Queues.XS_BUFFER_SIZE)))
+				                                                               Queues.BUFFER_SIZE,
+				                                                               Queues.BUFFER_SIZE)))
 		                      .sequential()
 		                      .retry())
 		            .then(() -> {
@@ -828,8 +828,8 @@ public class WorkQueueProcessorTest {
 							                      }
 						                      }).subscribeOn(Schedulers.parallel()),
 				                      true,
-				                      Queues.XS_BUFFER_SIZE,
-				                      Queues.SMALL_BUFFER_SIZE)
+				                      Queues.BUFFER_SIZE,
+				                      Queues.BUFFER_SIZE)
 		                      .retry())
 		            .then(() -> {
 			            wq.onNext(1);
@@ -867,7 +867,7 @@ public class WorkQueueProcessorTest {
 								sink.next(s1);
 							}
 						}).subscribeOn(Schedulers.parallel()),
-				Queues.XS_BUFFER_SIZE,
+				Queues.BUFFER_SIZE,
 				1)
 		                      .retry())
 		            .then(() -> {
@@ -1413,7 +1413,7 @@ public class WorkQueueProcessorTest {
 			@Nullable ExecutorService requestTaskExecutor) {
 
 		String expectedName = name != null ? name : WorkQueueProcessor.class.getSimpleName();
-		int expectedBufferSize = bufferSize != null ? bufferSize : Queues.SMALL_BUFFER_SIZE;
+		int expectedBufferSize = bufferSize != null ? bufferSize : Queues.BUFFER_SIZE;
 		boolean expectedAutoCancel = autoCancel != null ? autoCancel : true;
 		WaitStrategy expectedWaitStrategy = waitStrategy != null ? waitStrategy : WaitStrategy.liteBlocking();
 		Class<?> sequencerClass = shared ? MultiProducerRingBuffer.class : SingleProducerSequencer.class;

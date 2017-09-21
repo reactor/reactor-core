@@ -91,7 +91,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 	/**
 	 * Create a new {@link ReplayProcessor} that replays an unbounded number of elements,
-	 * using a default internal {@link Queues#SMALL_BUFFER_SIZE Queue}.
+	 * using a default internal {@link Queues#BUFFER_SIZE Queue}.
 	 * 
 	 * @param <E> the type of the pushed elements
 	 *
@@ -99,7 +99,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * {@link Subscriber}.
 	 */
 	public static <E> ReplayProcessor<E> create() {
-		return create(Queues.SMALL_BUFFER_SIZE, true);
+		return create(Queues.BUFFER_SIZE, true);
 	}
 
 	/**

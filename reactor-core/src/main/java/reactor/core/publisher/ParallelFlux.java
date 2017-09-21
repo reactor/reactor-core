@@ -77,7 +77,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	public static <T> ParallelFlux<T> from(Publisher<? extends T> source) {
 		return from(source,
 				Runtime.getRuntime()
-				       .availableProcessors(), Queues.SMALL_BUFFER_SIZE,
+				       .availableProcessors(), Queues.BUFFER_SIZE,
 				Queues.small());
 	}
 
@@ -94,7 +94,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	public static <T> ParallelFlux<T> from(Publisher<? extends T> source,
 			int parallelism) {
 		return from(source,
-				parallelism, Queues.SMALL_BUFFER_SIZE,
+				parallelism, Queues.BUFFER_SIZE,
 				Queues.small());
 	}
 
@@ -505,7 +505,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	public final <R> ParallelFlux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper) {
 		return flatMap(mapper,
 				false,
-				Integer.MAX_VALUE, Queues.SMALL_BUFFER_SIZE);
+				Integer.MAX_VALUE, Queues.BUFFER_SIZE);
 	}
 
 	/**
@@ -524,7 +524,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 			boolean delayError) {
 		return flatMap(mapper,
 				delayError,
-				Integer.MAX_VALUE, Queues.SMALL_BUFFER_SIZE);
+				Integer.MAX_VALUE, Queues.BUFFER_SIZE);
 	}
 
 	/**
@@ -547,7 +547,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 			int maxConcurrency) {
 		return flatMap(mapper,
 				delayError,
-				maxConcurrency, Queues.SMALL_BUFFER_SIZE);
+				maxConcurrency, Queues.BUFFER_SIZE);
 	}
 
 	/**
@@ -777,7 +777,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * and default prefetch amount.
 	 * <p>
 	 * This operator uses the default prefetch size returned by {@code
-	 * Queues.SMALL_BUFFER_SIZE}.
+	 * Queues.BUFFER_SIZE}.
 	 * <p>
 	 * The operator will call {@code Scheduler.createWorker()} as many times as this
 	 * ParallelFlux's parallelism level is.
@@ -794,7 +794,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * @return the new {@link ParallelFlux} instance
 	 */
 	public final ParallelFlux<T> runOn(Scheduler scheduler) {
-		return runOn(scheduler, Queues.SMALL_BUFFER_SIZE);
+		return runOn(scheduler, Queues.BUFFER_SIZE);
 	}
 
 	/**
@@ -802,7 +802,7 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * work-stealing and a given prefetch amount.
 	 * <p>
 	 * This operator uses the default prefetch size returned by {@code
-	 * Queues.SMALL_BUFFER_SIZE}.
+	 * Queues.BUFFER_SIZE}.
 	 * <p>
 	 * The operator will call {@code Scheduler.createWorker()} as many times as this
 	 * ParallelFlux's parallelism level is.
@@ -833,14 +833,14 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 * for the rails.
 	 * <p>
 	 * This operator uses the default prefetch size returned by {@code
-	 * Queues.SMALL_BUFFER_SIZE}.
+	 * Queues.BUFFER_SIZE}.
 	 *
 	 * @return the new Flux instance
 	 *
 	 * @see ParallelFlux#sequential(int)
 	 */
 	public final Flux<T> sequential() {
-		return sequential(Queues.SMALL_BUFFER_SIZE);
+		return sequential(Queues.BUFFER_SIZE);
 	}
 
 	/**

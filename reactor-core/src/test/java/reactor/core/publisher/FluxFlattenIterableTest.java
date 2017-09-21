@@ -19,7 +19,6 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
@@ -31,7 +30,6 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
-import reactor.core.Scannable.Attr;
 import reactor.core.Scannable.Attr;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
@@ -46,7 +44,7 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
 	protected Scenario<String, String> defaultScenarioOptions(Scenario<String, String> defaultOptions) {
 		return defaultOptions.fusionMode(Fuseable.SYNC)
 		                     .fusionModeThreadBarrier(Fuseable.ANY)
-		                     .prefetch(Queues.SMALL_BUFFER_SIZE)
+		                     .prefetch(Queues.BUFFER_SIZE)
 		                     .shouldHitDropNextHookAfterTerminate(false);
 	}
 

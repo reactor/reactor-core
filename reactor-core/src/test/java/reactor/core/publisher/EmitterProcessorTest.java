@@ -264,7 +264,7 @@ public class EmitterProcessorTest {
 	public void state(){
 		EmitterProcessor<Integer> tp = EmitterProcessor.create();
 		assertThat(tp.getPending()).isEqualTo(0);
-		assertThat(tp.getBufferSize()).isEqualTo(Queues.SMALL_BUFFER_SIZE);
+		assertThat(tp.getBufferSize()).isEqualTo(Queues.BUFFER_SIZE);
 		assertThat(tp.isCancelled()).isFalse();
 		assertThat(tp.inners()).isEmpty();
 
@@ -721,7 +721,7 @@ public class EmitterProcessorTest {
 	public void assertProcessor(EmitterProcessor<Integer> processor,
 			@Nullable Integer bufferSize,
 			@Nullable Boolean autoCancel) {
-		int expectedBufferSize = bufferSize != null ? bufferSize : Queues.SMALL_BUFFER_SIZE;
+		int expectedBufferSize = bufferSize != null ? bufferSize : Queues.BUFFER_SIZE;
 		boolean expectedAutoCancel = autoCancel != null ? autoCancel : true;
 
 		assertEquals(expectedBufferSize, processor.prefetch);
