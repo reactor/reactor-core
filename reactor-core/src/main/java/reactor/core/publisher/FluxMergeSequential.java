@@ -283,7 +283,7 @@ final class FluxMergeSequential<T, R> extends FluxOperator<T, R> {
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				Operators.addAndGet(REQUESTED, this, n);
+				Operators.addCap(REQUESTED, this, n);
 				drain();
 			}
 		}

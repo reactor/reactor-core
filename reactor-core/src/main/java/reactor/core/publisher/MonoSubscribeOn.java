@@ -151,7 +151,7 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 					trySchedule(n, a);
 				}
 				else {
-					Operators.getAndAddCap(REQUESTED, this, n);
+					Operators.addCap(REQUESTED, this, n);
 					a = s;
 					if (a != null) {
 						long r = REQUESTED.getAndSet(this, 0L);

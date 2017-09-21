@@ -192,7 +192,7 @@ class DefaultTestPublisher<T> extends TestPublisher<T> {
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				Operators.getAndAddCap(REQUESTED, this, n);
+				Operators.addCap(REQUESTED, this, n);
 				parent.wasRequested = true;
 			}
 		}

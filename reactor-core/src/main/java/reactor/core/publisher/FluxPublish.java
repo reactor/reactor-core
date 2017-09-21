@@ -399,7 +399,7 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 						if (r >= 0L) {
 							maxRequested = Math.min(maxRequested, r);
 						}
-						else { //Long.MIN == PublishInner.CANCEL_REQUEST
+						else { //Long.MIN
 							cancel++;
 						}
 					}
@@ -455,7 +455,9 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 
 						for (PubSubInner<T> inner : a) {
 							inner.actual.onNext(v);
-							if(PubSubInner.produced(inner,1) == PublishInner.CANCEL_REQUEST){
+							if(Operators.producedCancellable(PubSubInner.REQUESTED,
+									inner,1) ==
+									Long.MIN_VALUE){
 								cancel = Integer.MIN_VALUE;
 							}
 						}
@@ -547,26 +549,24 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 		@Override
 		public final void request(long n) {
 			if (Operators.validate(n)) {
-				requested(this, n);
+				Operators.addCapCancellable(REQUESTED, this, n);
 				drainParent();
 			}
 		}
-
-		static final long CANCEL_REQUEST = Long.MIN_VALUE;
 
 		@Override
 		public final void cancel() {
 			long r = requested;
 			if (r != Long.MIN_VALUE) {
-				r = REQUESTED.getAndSet(this, CANCEL_REQUEST);
-				if (r != CANCEL_REQUEST) {
+				r = REQUESTED.getAndSet(this, Long.MIN_VALUE);
+				if (r != Long.MIN_VALUE) {
 					removeAndDrainParent();
 				}
 			}
 		}
 
 		final boolean isCancelled() {
-			return requested == CANCEL_REQUEST;
+			return requested == Long.MIN_VALUE;
 		}
 
 		@Override
@@ -581,40 +581,6 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return isCancelled() ? 0L : requested;
 
 			return InnerProducer.super.scanUnsafe(key);
-		}
-
-		//TODO factorize in Operators ?
-		static <T> void requested(PubSubInner<T> inner, long n) {
-			for (; ; ) {
-				long r = REQUESTED.get(inner);
-				if (r == Long.MIN_VALUE || r == Long.MAX_VALUE) {
-					return;
-				}
-				long u = Operators.addCap(r, n);
-				if (REQUESTED.compareAndSet(inner, r, u)) {
-					return;
-				}
-			}
-		}
-
-		static <T> long produced(PubSubInner<T> inner, long n) {
-			for (; ; ) {
-				long current = REQUESTED.get(inner);
-				if (current == Long.MIN_VALUE) {
-					return Long.MIN_VALUE;
-				}
-				if (current == Long.MAX_VALUE) {
-					return Long.MAX_VALUE;
-				}
-				long update = current - n;
-				if (update < 0L) {
-					Operators.reportBadRequest(update);
-					update = 0L;
-				}
-				if (REQUESTED.compareAndSet(inner, current, update)) {
-					return update;
-				}
-			}
 		}
 
 		abstract void drainParent();

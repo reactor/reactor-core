@@ -81,7 +81,7 @@ final class FluxOnBackpressureLatest<T> extends FluxOperator<T, T> {
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				Operators.getAndAddCap(REQUESTED, this, n);
+				Operators.addCap(REQUESTED, this, n);
 
 				drain();
 			}
@@ -174,7 +174,7 @@ final class FluxOnBackpressureLatest<T> extends FluxOperator<T, T> {
 				}
 
 				if (e != 0L && r != Long.MAX_VALUE) {
-					REQUESTED.addAndGet(this, -e);
+					Operators.produced(REQUESTED, this, 1);
 				}
 
 				missed = WIP.addAndGet(this, -missed);

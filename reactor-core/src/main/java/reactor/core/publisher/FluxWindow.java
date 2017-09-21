@@ -673,7 +673,7 @@ final class FluxWindow<T> extends FluxOperator<T, Flux<T>> {
 		public void request(long n) {
 			if (Operators.validate(n)) {
 
-				Operators.getAndAddCap(REQUESTED, this, n);
+				Operators.addCap(REQUESTED, this, n);
 
 				if (firstRequest == 0 && FIRST_REQUEST.compareAndSet(this, 0, 1)) {
 					long u = Operators.multiplyCap(skip, n - 1);

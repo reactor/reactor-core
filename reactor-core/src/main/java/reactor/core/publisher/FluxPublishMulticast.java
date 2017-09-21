@@ -659,7 +659,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				Operators.getAndAddCap(REQUESTED, this, n);
+				Operators.addCapCancellable(REQUESTED, this, n);
 				parent.drain();
 			}
 		}
@@ -673,9 +673,7 @@ final class FluxPublishMulticast<T, R> extends FluxOperator<T, R> implements Fus
 		}
 
 		void produced(long n) {
-			if (requested != Long.MAX_VALUE) {
-				REQUESTED.addAndGet(this, -n);
-			}
+			Operators.producedCancellable(REQUESTED, this, n);
 		}
 	}
 

@@ -176,7 +176,7 @@ final class FluxMapSignal<T, R> extends FluxOperator<T, R> {
 	        value = v;
             long p = produced;
             if (p != 0L) {
-	            Operators.addAndGet(REQUESTED, this, -p);
+	            Operators.addCap(REQUESTED, this, -p);
             }
 	        DrainUtils.postComplete(actual, this, REQUESTED, this, this);
         }
@@ -208,7 +208,7 @@ final class FluxMapSignal<T, R> extends FluxOperator<T, R> {
             value = v;
             long p = produced;
             if (p != 0L) {
-	            Operators.addAndGet(REQUESTED, this, -p);
+	            Operators.addCap(REQUESTED, this, -p);
             }
             DrainUtils.postComplete(actual, this, REQUESTED, this, this);
         }

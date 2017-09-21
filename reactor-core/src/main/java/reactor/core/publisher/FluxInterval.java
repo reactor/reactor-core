@@ -126,7 +126,7 @@ final class FluxInterval extends Flux<Long> {
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				Operators.getAndAddCap(REQUESTED, this, n);
+				Operators.addCap(REQUESTED, this, n);
 			}
 		}
 		

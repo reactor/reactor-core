@@ -415,8 +415,9 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 
 					for (FluxPublish.PubSubInner<T> inner : a) {
 						inner.actual.onNext(v);
-						if (FluxPublish.PubSubInner.produced(inner,
-								1) == FluxPublish.PublishInner.CANCEL_REQUEST) {
+						if (Operators.producedCancellable(FluxPublish
+										.PublishInner.REQUESTED, inner,
+								1) == Long.MIN_VALUE) {
 							cancel = Integer.MIN_VALUE;
 						}
 					}

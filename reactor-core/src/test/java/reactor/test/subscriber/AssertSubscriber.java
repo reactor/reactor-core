@@ -966,7 +966,7 @@ public class AssertSubscriber<T>
 		if (a != null) {
 			a.request(n);
 		} else {
-			Operators.addAndGet(REQUESTED, this, n);
+			Operators.addCap(REQUESTED, this, n);
 
 			a = s;
 

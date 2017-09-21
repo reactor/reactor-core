@@ -154,7 +154,7 @@ final class ParallelMergeSort<T> extends Flux<T> implements Scannable {
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				Operators.getAndAddCap(REQUESTED, this, n);
+				Operators.addCap(REQUESTED, this, n);
 				if (remaining == 0) {
 					drain();
 				}

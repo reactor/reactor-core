@@ -266,8 +266,8 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxOperator<O, O> {
 					}
 				}
 
-				if (e != 0 && r != Long.MAX_VALUE) {
-					REQUESTED.addAndGet(this, -e);
+				if (e != 0L && r != Long.MAX_VALUE) {
+					Operators.produced(REQUESTED, this, e);
 				}
 
 				missed = WIP.addAndGet(this, -missed);
@@ -280,7 +280,7 @@ final class FluxOnBackpressureBufferStrategy<O> extends FluxOperator<O, O> {
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				Operators.getAndAddCap(REQUESTED, this, n);
+				Operators.addCap(REQUESTED, this, n);
 				drain();
 			}
 		}

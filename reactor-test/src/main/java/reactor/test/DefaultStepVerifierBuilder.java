@@ -996,7 +996,7 @@ final class DefaultStepVerifierBuilder<T>
 				}
 
 				if (p != 0) {
-					r = Operators.addAndGet(REQUESTED, this, -p);
+					r = REQUESTED.addAndGet(this, -p);
 				}
 
 				if(r == 0L || qs.isEmpty()){
@@ -1485,7 +1485,7 @@ final class DefaultStepVerifierBuilder<T>
 				return;
 			}
 			else if (requestEvent.isBounded()) {
-				Operators.addAndGet(REQUESTED, this, requestEvent.getRequestAmount());
+				Operators.addCap(REQUESTED, this, requestEvent.getRequestAmount());
 
 			}
 			else {

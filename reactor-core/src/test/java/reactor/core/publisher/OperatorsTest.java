@@ -53,20 +53,22 @@ public class OperatorsTest {
 		TEST_REQUEST.set(this, 0L);
 
 		RaceTestUtils.race(0L,
-				s -> Operators.addAndGet(TEST_REQUEST, this, 1),
+				s -> Operators.addCap(TEST_REQUEST, this, 1),
 				a -> a >= 100_000L,
 				(a, b) -> a == b
 		);
 
-		assertThat(Operators.addAndGet(TEST_REQUEST, this, -1_000_000L))
-				.isEqualTo(Long.MAX_VALUE);
+		TEST_REQUEST.set(this, 0L);
+
+		assertThat(Operators.addCap(TEST_REQUEST, this, -1_000_000L))
+				.isEqualTo(0);
 
 		TEST_REQUEST.set(this, 1L);
 
-		assertThat(Operators.addAndGet(TEST_REQUEST, this, Long.MAX_VALUE))
-				.isEqualTo(Long.MAX_VALUE);
+		assertThat(Operators.addCap(TEST_REQUEST, this, Long.MAX_VALUE))
+				.isEqualTo(1L);
 
-		assertThat(Operators.addAndGet(TEST_REQUEST, this, 0))
+		assertThat(Operators.addCap(TEST_REQUEST, this, 0))
 				.isEqualTo(Long.MAX_VALUE);
 	}
 

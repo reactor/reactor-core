@@ -374,6 +374,8 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 
 		volatile boolean cancelled;
 
+		long produced;
+
 		volatile int once;
 		@SuppressWarnings("rawtypes")
 		static final AtomicIntegerFieldUpdater<BufferOverlappingSubscriber> ONCE =
@@ -480,9 +482,7 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 
 				actual.onNext(b);
 
-				if (requested != Long.MAX_VALUE) {
-					REQUESTED.decrementAndGet(this);
-				}
+				produced++;
 			}
 
 			for (C b0 : this) {
@@ -512,7 +512,10 @@ final class FluxBuffer<T, C extends Collection<? super T>> extends FluxOperator<
 			}
 
 			done = true;
-
+			long p = produced;
+			if (p != 0L) {
+				Operators.produced(REQUESTED,this, p);
+			}
 			DrainUtils.postComplete(actual, this, REQUESTED, this, this);
 		}
 

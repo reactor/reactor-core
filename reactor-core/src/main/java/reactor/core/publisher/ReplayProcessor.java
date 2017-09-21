@@ -498,8 +498,6 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 				AtomicLongFieldUpdater.newUpdater(ReplayInner.class,
 						"requested");
 
-		volatile boolean cancelled;
-
 		int fusionMode;
 
 		ReplayInner(CoreSubscriber<? super T> actual,
@@ -516,7 +514,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 		@Override
 		public boolean isCancelled() {
-			return cancelled;
+			return requested == Long.MIN_VALUE;
 		}
 
 		@Override
@@ -558,7 +556,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		public void request(long n) {
 			if (Operators.validate(n)) {
 				if (fusionMode() == NONE) {
-					Operators.getAndAddCap(REQUESTED, this, n);
+					Operators.addCapCancellable(REQUESTED, this, n);
 				}
 				buffer.replay(this);
 			}
@@ -566,9 +564,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 		@Override
 		public void cancel() {
-			if (!cancelled) {
-				cancelled = true;
-
+			if (REQUESTED.getAndSet(this, Long.MIN_VALUE) != Long.MIN_VALUE) {
 				parent.remove(this);
 
 				if (enter()) {

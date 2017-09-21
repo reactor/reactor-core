@@ -48,32 +48,6 @@ import reactor.util.context.Context;
 public abstract class Operators {
 
 	/**
-	 * Concurrent addition bound to Long.MAX_VALUE. Any concurrent write will "happen
-	 * before" this operation.
-	 *
-	 * @param <T> the parent instance type
-	 * @param updater current field updater
-	 * @param instance current instance to update
-	 * @param n delta to add
-	 *
-	 * @return Addition result or Long.MAX_VALUE
-	 */
-	public static <T> long addAndGet(AtomicLongFieldUpdater<T> updater,
-			T instance,
-			long n) {
-		for (; ; ) {
-			long r = updater.get(instance);
-			if (r == Long.MAX_VALUE) {
-				return Long.MAX_VALUE;
-			}
-			long u = addCap(r, n);
-			if (updater.compareAndSet(instance, r, u)) {
-				return u;
-			}
-		}
-	}
-
-	/**
 	 * Cap an addition to Long.MAX_VALUE
 	 *
 	 * @param a left operand
@@ -89,6 +63,29 @@ public abstract class Operators {
 		return res;
 	}
 
+	/**
+	 * Concurrent addition bound to Long.MAX_VALUE.
+	 * Any concurrent write will "happen before" this operation.
+	 *
+	 * @param <T> the parent instance type
+	 * @param updater  current field updater
+	 * @param instance current instance to update
+	 * @param toAdd    delta to add
+	 * @return value before addition or Long.MAX_VALUE
+	 */
+	public static <T> long addCap(AtomicLongFieldUpdater<T> updater, T instance, long toAdd) {
+		long r, u;
+		for (;;) {
+			r = updater.get(instance);
+			if (r == Long.MAX_VALUE) {
+				return Long.MAX_VALUE;
+			}
+			u = addCap(r, toAdd);
+			if (updater.compareAndSet(instance, r, u)) {
+				return r;
+			}
+		}
+	}
 	/**
 	 * Returns the subscription as QueueSubscription if possible or null.
 	 * @param <T> the value type of the QueueSubscription.
@@ -176,29 +173,6 @@ public abstract class Operators {
 	public static void error(Subscriber<?> s, Throwable e) {
 		s.onSubscribe(EmptySubscription.INSTANCE);
 		s.onError(e);
-	}
-
-	/**
-	 * Concurrent addition bound to Long.MAX_VALUE.
-	 * Any concurrent write will "happen before" this operation.
-	 *
-     * @param <T> the parent instance type
-	 * @param updater  current field updater
-	 * @param instance current instance to update
-	 * @param toAdd    delta to add
-	 * @return value before addition or Long.MAX_VALUE
-	 */
-	public static <T> long getAndAddCap(AtomicLongFieldUpdater<T> updater, T instance, long toAdd) {
-		long r, u;
-		do {
-			r = updater.get(instance);
-			if (r == Long.MAX_VALUE) {
-				return Long.MAX_VALUE;
-			}
-			u = addCap(r, toAdd);
-		} while (!updater.compareAndSet(instance, r, u));
-
-		return r;
 	}
 
 	/**
@@ -754,6 +728,20 @@ public abstract class Operators {
 		return _actual;
 	}
 
+	static <T> long addCapCancellable(AtomicLongFieldUpdater<T> updater, T instance,
+			long n) {
+		for (; ; ) {
+			long r = updater.get(instance);
+			if (r == Long.MIN_VALUE || r == Long.MAX_VALUE) {
+				return r;
+			}
+			long u = addCap(r, n);
+			if (updater.compareAndSet(instance, r, u)) {
+				return r;
+			}
+		}
+	}
+
 
 	/**
 	 * An unexpected exception is about to be dropped from an operator that has multiple
@@ -783,6 +771,26 @@ public abstract class Operators {
 		//TODO let this method go through multiple contexts and use their local handlers
 		//if at least one has no local handler, also call onNextDropped(t, Context.empty())
 		onNextDropped(t, Context.empty());
+	}
+
+	static <T> long producedCancellable(AtomicLongFieldUpdater<T> updater, T instance, long n) {
+		for (; ; ) {
+			long current = updater.get(instance);
+			if (current == Long.MIN_VALUE) {
+				return Long.MIN_VALUE;
+			}
+			if (current == Long.MAX_VALUE) {
+				return Long.MAX_VALUE;
+			}
+			long update = current - n;
+			if (update < 0L) {
+				reportBadRequest(update);
+				update = 0L;
+			}
+			if (updater.compareAndSet(instance, current, update)) {
+				return update;
+			}
+		}
 	}
 
 	static long unboundedOrPrefetch(int prefetch) {
@@ -937,8 +945,9 @@ public abstract class Operators {
 			Subscription a = s;
 			if (a != null) {
 				a.request(n);
-			} else {
-				addAndGet(REQUESTED, this, n);
+			}
+			else {
+				addCap(REQUESTED, this, n);
 
 				a = s;
 
@@ -1348,7 +1357,7 @@ public abstract class Operators {
 				return;
 			}
 
-			getAndAddCap(MISSED_PRODUCED, this, n);
+			addCap(MISSED_PRODUCED, this, n);
 
 			drain();
 		}
@@ -1380,7 +1389,7 @@ public abstract class Operators {
 				return;
 			}
 
-			getAndAddCap(MISSED_PRODUCED, this, 1L);
+			addCap(MISSED_PRODUCED, this, 1L);
 
 			drain();
 		}
@@ -1414,7 +1423,7 @@ public abstract class Operators {
 	                return;
 	            }
 
-	            getAndAddCap(MISSED_REQUESTED, this, n);
+	            addCap(MISSED_REQUESTED, this, n);
 
 	            drain();
 	        }

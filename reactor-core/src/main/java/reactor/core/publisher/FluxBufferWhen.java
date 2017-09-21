@@ -234,7 +234,7 @@ final class FluxBufferWhen<T, U, V, C extends Collection<? super T>>
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				Operators.getAndAddCap(REQUESTED, this, n);
+				Operators.addCap(REQUESTED, this, n);
 			}
 		}
 
