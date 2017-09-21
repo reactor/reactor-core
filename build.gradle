@@ -208,7 +208,6 @@ if (project.hasProperty('platformVersion')) {
   }
 }
 
-
 project('reactor-core') {
   apply plugin: 'idea' //needed to avoid IDEA seeing the jmh folder as source
   apply plugin: 'me.champeau.gradle.jmh'
@@ -276,11 +275,23 @@ project('reactor-core') {
 	description = "Generates Kotlin API documentation."
 	moduleName = "reactor-core"
 	jdkVersion = 8
-	sourceDirs = files("${project.rootDir}/src/main/kotlin")
+
 	outputFormat = "html"
 	outputDirectory = new File(project.buildDir, "docs/kdoc")
 
+	//this is needed so that links to java classes are resolved
+	doFirst {
+	  classpath += project.jar.outputs.files.getFiles()
+	  classpath += project.sourceSets.main.compileClasspath
+	}
+	//this is needed so that the kdoc only generates for kotlin classes
+	//(default kotlinTasks sourceSet also includes java)
+	kotlinTasks {
+
+	}
 	processConfigurations = []
+	sourceDirs = files("src/main/kotlin")
+
 	externalDocumentationLink {
 	  url = new URL("http://projectreactor.io/docs/core/release/api/")
 	}
@@ -376,11 +387,23 @@ project('reactor-test') {
 	description = "Generates Kotlin API documentation."
 	moduleName = "reactor-test"
 	jdkVersion = 8
+
 	outputFormat = "html"
 	outputDirectory = new File(project.buildDir, "docs/kdoc")
-	sourceDirs = files("${project.rootDir}/src/main/kotlin")
 
+	//this is needed so that links to java classes are resolved
+	doFirst {
+	  classpath += project.jar.outputs.files.getFiles()
+	  classpath += project.sourceSets.main.compileClasspath
+	}
+	//this is needed so that the kdoc only generates for kotlin classes
+	//(default kotlinTasks sourceSet also includes java)
+	kotlinTasks {
+
+	}
 	processConfigurations = []
+	sourceDirs = files("src/main/kotlin")
+
 	externalDocumentationLink {
 	  url = new URL("http://projectreactor.io/docs/core/release/api/")
 	}
