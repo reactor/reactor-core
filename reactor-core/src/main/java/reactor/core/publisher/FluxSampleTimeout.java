@@ -31,8 +31,8 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import reactor.util.context.Context;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Emits the last value from upstream only if there were no newer values emitted

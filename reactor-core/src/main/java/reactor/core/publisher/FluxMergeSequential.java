@@ -34,9 +34,9 @@ import reactor.core.Fuseable;
 import reactor.core.Fuseable.QueueSubscription;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
+import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
-import reactor.util.annotation.Nullable;
 
 /**
  * Maps each upstream value into a Publisher and concatenates them into one

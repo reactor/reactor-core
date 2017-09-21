@@ -34,8 +34,8 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import reactor.util.annotation.NonNull;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * An iterable that consumes a Publisher in a blocking fashion.
@@ -74,7 +74,7 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 	}
 
 	@Override
-	public Iterator<@NonNull T> iterator() {
+	public Iterator<T> iterator() {
 		SubscriberIterator<T> it = createIterator();
 
 		source.subscribe(it);
@@ -83,7 +83,7 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 	}
 
 	@Override
-	public Spliterator<@NonNull T> spliterator() {
+	public Spliterator<T> spliterator() {
 		return stream().spliterator(); // cancellation should be composed through this way
 	}
 
@@ -91,7 +91,7 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 	 * @return a {@link Stream} of unknown size with onClose attached to {@link
 	 * Subscription#cancel()}
 	 */
-	public Stream<@NonNull T> stream() {
+	public Stream<T> stream() {
 		SubscriberIterator<T> it = createIterator();
 		source.subscribe(it);
 

@@ -34,8 +34,8 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
-import reactor.util.context.Context;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * buffers elements into possibly overlapping buffers whose boundaries are determined

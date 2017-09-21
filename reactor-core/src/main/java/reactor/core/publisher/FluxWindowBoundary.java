@@ -30,8 +30,8 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
-import reactor.util.context.Context;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Splits the source sequence into continuous, non-overlapping windowEnds

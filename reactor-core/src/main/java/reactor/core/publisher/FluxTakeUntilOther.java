@@ -23,8 +23,8 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import reactor.util.context.Context;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Relays values from the main Publisher until another Publisher signals an event.

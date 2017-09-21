@@ -32,7 +32,7 @@ import javax.annotation.meta.When;
  * indicate nullability in Java to common tools with JSR 305 support and used by Kotlin to
  * infer nullability of Reactor API.
  *
- * <p>Should be used at generic type argument, parameter, return value, and field level.
+ * <p>Should be used at parameter, return value, and field level.
  * Methods overrides should repeat parent {@code @Nullable} annotations unless they behave
  * differently.
  *
@@ -45,7 +45,7 @@ import javax.annotation.meta.When;
  * @see NonNullApi
  * @see NonNull
  */
-@Target({ElementType.METHOD, ElementType.PARAMETER, ElementType.TYPE_USE, ElementType.FIELD})
+@Target({ElementType.METHOD, ElementType.PARAMETER, ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Nonnull(when = When.MAYBE)

@@ -21,8 +21,8 @@ import java.util.function.Consumer;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
-import reactor.util.context.Context;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Delays the subscription to the main source until another Publisher

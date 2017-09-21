@@ -69,7 +69,7 @@ public class Tuple4<T1, T2, T3, T4> extends Tuple3<T1, T2, T3> {
 	}
 
 	@Override
-	public Object @NonNull [] toArray() {
+	public Object[] toArray() {
 		return new Object[]{t1, t2, t3, t4};
 	}
 

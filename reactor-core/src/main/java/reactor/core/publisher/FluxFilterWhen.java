@@ -31,9 +31,9 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
-import reactor.util.annotation.Nullable;
 
 /**
  * Maps each upstream value into a single {@code true} or {@code false} value provided by

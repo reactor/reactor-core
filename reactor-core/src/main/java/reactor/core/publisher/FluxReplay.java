@@ -34,8 +34,8 @@ import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
-import reactor.util.concurrent.Queues;
 import reactor.util.annotation.Nullable;
+import reactor.util.concurrent.Queues;
 
 /**
  * @param <T>

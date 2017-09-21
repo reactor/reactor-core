@@ -22,7 +22,6 @@ import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
-import reactor.util.annotation.NonNull;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -51,18 +50,18 @@ final class ConnectableFluxOnAssembly<T> extends ConnectableFlux<T> implements
 
 	final AssemblySnapshotException stacktrace;
 
-	ConnectableFluxOnAssembly(ConnectableFlux<@NonNull T> source) {
+	ConnectableFluxOnAssembly(ConnectableFlux<T> source) {
 		this.source = source;
 		this.stacktrace = new AssemblySnapshotException();
 	}
 	
 	@Override
-	public void subscribe(CoreSubscriber<? super @NonNull T> actual) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		FluxOnAssembly.subscribe(actual, source, stacktrace);
 	}
 
 	@Override
-	public void connect(Consumer<? super @NonNull Disposable> cancelSupport) {
+	public void connect(Consumer<? super Disposable> cancelSupport) {
 		source.connect(cancelSupport);
 	}
 

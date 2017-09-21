@@ -401,7 +401,7 @@ public abstract class Loggers {
 		}
 
 		@Nullable
-		private String format(@Nullable String from, @Nullable Object @Nullable ... arguments){
+		private String format(@Nullable String from, @Nullable Object... arguments){
 			if(from != null) {
 				String computed = from;
 				if (arguments != null && arguments.length != 0) {
@@ -449,7 +449,7 @@ public abstract class Loggers {
 		}
 
 		@Nullable
-		private String format(@Nullable String from, @Nullable Object @Nullable ... arguments){
+		private String format(@Nullable String from, @Nullable Object... arguments){
 			if(from != null) {
 				String computed = from;
 				if (arguments != null && arguments.length != 0) {

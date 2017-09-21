@@ -33,11 +33,9 @@ import java.util.stream.Stream;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.concurrent.WaitStrategy;
-import reactor.util.annotation.NonNull;
-import reactor.util.annotation.Nullable;
-
 
 /**
  * A base processor used by executor backed processors to take care of their ExecutorService
@@ -47,7 +45,7 @@ import reactor.util.annotation.Nullable;
 abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		implements Runnable {
 
-	static <E> Flux<E> coldSource(RingBuffer<@NonNull Slot<@NonNull E>> ringBuffer,
+	static <E> Flux<E> coldSource(RingBuffer<Slot<E>> ringBuffer,
 			@Nullable Throwable t,
 			@Nullable Throwable error,
 			RingBuffer.Sequence start){
@@ -88,7 +86,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	static Runnable createRequestTask(
 			Subscription upstream,
 			EventLoopProcessor<?> p,
-			@Nullable Consumer<@NonNull Long> postWaitCallback, LongSupplier readCount) {
+			@Nullable Consumer<Long> postWaitCallback, LongSupplier readCount) {
 		return new RequestTask(upstream, p, postWaitCallback, readCount);
 	}
 
@@ -207,7 +205,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 			ExecutorService requestExecutor,
 			boolean autoCancel,
 			boolean multiproducers,
-			Supplier<@NonNull Slot<@NonNull IN>> factory,
+			Supplier<Slot<IN>> factory,
 			WaitStrategy strategy) {
 
 		if (!Queues.isPowerOfTwo(bufferSize)) {
@@ -326,7 +324,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 
 	//FIXME store current subscribers
 	@Override
-	public Stream<? extends @NonNull Scannable> inners() {
+	public Stream<? extends Scannable> inners() {
 		return Stream.empty();
 	}
 
@@ -336,7 +334,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	 *
 	 * @return a {@link Flux} sequence possibly unbounded of incoming buffered values or empty if not supported.
 	 */
-	public Flux<@NonNull IN> drain(){
+	public Flux<IN> drain(){
 		return Flux.empty();
 	}
 
@@ -345,7 +343,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	 * not yet been executed.
 	 * @return a Flux instance with the remaining undelivered values
 	 */
-	final public Flux<@NonNull IN> forceShutdown() {
+	final public Flux<IN> forceShutdown() {
 		int t = terminated;
 		if (t != FORCED_SHUTDOWN && TERMINATED.compareAndSet(this, t, FORCED_SHUTDOWN)) {
 			executor.shutdownNow();
@@ -487,7 +485,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 
 		 RequestTask(Subscription upstream,
 				 EventLoopProcessor<?> p,
-				 @Nullable Consumer<@NonNull Long> postWaitCallback,
+				 @Nullable Consumer<Long> postWaitCallback,
 				LongSupplier readCount) {
 			this.parent = p;
 			this.readCount = readCount;

@@ -75,7 +75,7 @@ public class Tuple6<T1, T2, T3, T4, T5, T6> extends Tuple5<T1, T2, T3, T4, T5> {
 	}
 
 	@Override
-	public Object @NonNull [] toArray() {
+	public Object[] toArray() {
 		return new Object[]{t1, t2, t3, t4, t5, t6};
 	}
 

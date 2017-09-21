@@ -22,9 +22,9 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Scheduler;
+import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
-import reactor.util.annotation.Nullable;
 
 /**
  * @author Stephane Maldini

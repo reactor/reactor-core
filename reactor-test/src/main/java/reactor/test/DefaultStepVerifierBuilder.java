@@ -53,9 +53,9 @@ import reactor.core.publisher.Signal;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.util.Logger;
 import reactor.util.Loggers;
+import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
-import reactor.util.annotation.Nullable;
 
 /**
  * Default implementation of {@link StepVerifier.Step} and

@@ -26,8 +26,8 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
-import reactor.util.concurrent.Queues;
 import reactor.util.annotation.Nullable;
+import reactor.util.concurrent.Queues;
 
 /**
  * @author Stephane Maldini

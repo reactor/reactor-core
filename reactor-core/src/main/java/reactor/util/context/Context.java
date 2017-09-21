@@ -21,7 +21,6 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import reactor.util.annotation.NonNull;
 import reactor.util.annotation.Nullable;
 
 /**
@@ -251,7 +250,7 @@ public interface Context {
 	 *
 	 * @return a {@link Stream} of key/value pairs held by this context
 	 */
-	Stream<Map.@NonNull Entry<@NonNull Object, @NonNull Object>> stream();
+	Stream<Map.Entry<Object,Object>> stream();
 
 	/**
 	 * Create a new {@link Context} by merging the content of this context and a given

@@ -30,9 +30,8 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.util.concurrent.Queues;
-import reactor.util.annotation.NonNull;
 import reactor.util.annotation.Nullable;
+import reactor.util.concurrent.Queues;
 
 import static reactor.core.publisher.FluxReplay.ReplaySubscriber.EMPTY;
 import static reactor.core.publisher.FluxReplay.ReplaySubscriber.TERMINATED;
@@ -62,7 +61,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * @return a new {@link ReplayProcessor} that replays its last pushed element to each new
 	 * {@link Subscriber}
 	 */
-	public static <T> ReplayProcessor<@NonNull T> cacheLast() {
+	public static <T> ReplayProcessor<T> cacheLast() {
 		return cacheLastOrDefault(null);
 	}
 
@@ -82,7 +81,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * @return a new {@link ReplayProcessor} that replays its last pushed element to each new
 	 * {@link Subscriber}, or a default one if nothing was pushed yet
 	 */
-	public static <T> ReplayProcessor<@NonNull T> cacheLastOrDefault(@Nullable T value) {
+	public static <T> ReplayProcessor<T> cacheLastOrDefault(@Nullable T value) {
 		ReplayProcessor<T> b = create(1);
 		if (value != null) {
 			b.onNext(value);
@@ -99,7 +98,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * @return a new {@link ReplayProcessor} that replays the whole history to each new
 	 * {@link Subscriber}.
 	 */
-	public static <E> ReplayProcessor<@NonNull E> create() {
+	public static <E> ReplayProcessor<E> create() {
 		return create(Queues.SMALL_BUFFER_SIZE, true);
 	}
 
@@ -113,7 +112,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * @return a new {@link ReplayProcessor} that replays a limited history to each new
 	 * {@link Subscriber}.
 	 */
-	public static <E> ReplayProcessor<@NonNull E> create(int historySize) {
+	public static <E> ReplayProcessor<E> create(int historySize) {
 		return create(historySize, false);
 	}
 
@@ -128,8 +127,8 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * @return a new {@link ReplayProcessor} that replays the whole history to each new
 	 * {@link Subscriber} if configured as unbounded, a limited history otherwise.
 	 */
-	public static <E> ReplayProcessor<@NonNull E> create(int historySize, boolean unbounded) {
-		FluxReplay.ReplayBuffer<@NonNull E> buffer;
+	public static <E> ReplayProcessor<E> create(int historySize, boolean unbounded) {
+		FluxReplay.ReplayBuffer<E> buffer;
 		if (unbounded) {
 			buffer = new FluxReplay.UnboundedReplayBuffer<>(historySize);
 		}
@@ -170,7 +169,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 *
 	 * @return a new {@link ReplayProcessor} that replays elements based on their age.
 	 */
-	public static <T> ReplayProcessor<@NonNull T> createTimeout(Duration maxAge) {
+	public static <T> ReplayProcessor<T> createTimeout(Duration maxAge) {
 		return createTimeout(maxAge, Schedulers.parallel());
 	}
 
@@ -205,7 +204,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 *
 	 * @return a new {@link ReplayProcessor} that replays elements based on their age.
 	 */
-	public static <T> ReplayProcessor<@NonNull T> createTimeout(Duration maxAge, Scheduler scheduler) {
+	public static <T> ReplayProcessor<T> createTimeout(Duration maxAge, Scheduler scheduler) {
 		return createSizeAndTimeout(Integer.MAX_VALUE, maxAge, scheduler);
 	}
 
@@ -243,7 +242,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * @return a new {@link ReplayProcessor} that replay up to {@code size} elements, but
 	 * will evict them from its history based on their age.
 	 */
-	public static <T> ReplayProcessor<@NonNull T> createSizeAndTimeout(int size, Duration maxAge) {
+	public static <T> ReplayProcessor<T> createSizeAndTimeout(int size, Duration maxAge) {
 		return createSizeAndTimeout(size, maxAge, Schedulers.parallel());
 	}
 
@@ -281,7 +280,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	 * @return a new {@link ReplayProcessor} that replay up to {@code size} elements, but
 	 * will evict them from its history based on their age.
 	 */
-	public static <T> ReplayProcessor<@NonNull T> createSizeAndTimeout(int size,
+	public static <T> ReplayProcessor<T> createSizeAndTimeout(int size,
 			Duration maxAge,
 			Scheduler scheduler) {
 		Objects.requireNonNull(scheduler, "scheduler is null");
@@ -304,13 +303,13 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 			FluxReplay.ReplaySubscription[].class,
 			"subscribers");
 
-	ReplayProcessor(FluxReplay.ReplayBuffer<@NonNull T> buffer) {
+	ReplayProcessor(FluxReplay.ReplayBuffer<T> buffer) {
 		this.buffer = buffer;
 		SUBSCRIBERS.lazySet(this, EMPTY);
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super @NonNull T> actual) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		Objects.requireNonNull(actual, "subscribe");
 		FluxReplay.ReplaySubscription<T> rs = new ReplayInner<>(actual, this);
 		actual.onSubscribe(rs);
@@ -342,7 +341,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@Override
-	public Stream<? extends @NonNull Scannable> inners() {
+	public Stream<? extends Scannable> inners() {
 		return Stream.of(subscribers);
 	}
 
@@ -356,7 +355,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 		return buffer.isDone();
 	}
 
-	boolean add(FluxReplay.ReplaySubscription<@NonNull T> rs) {
+	boolean add(FluxReplay.ReplaySubscription<T> rs) {
 		for (; ; ) {
 			FluxReplay.ReplaySubscription<T>[] a = subscribers;
 			if (a == TERMINATED) {
@@ -375,7 +374,7 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 	}
 
 	@SuppressWarnings("unchecked")
-	void remove(FluxReplay.ReplaySubscription<@NonNull T> rs) {
+	void remove(FluxReplay.ReplaySubscription<T> rs) {
 		outer:
 		for (; ; ) {
 			FluxReplay.ReplaySubscription<T>[] a = subscribers;
@@ -503,8 +502,8 @@ public final class ReplayProcessor<T> extends FluxProcessor<T, T>
 
 		int fusionMode;
 
-		ReplayInner(CoreSubscriber<? super @NonNull T> actual,
-				ReplayProcessor<@NonNull T> parent) {
+		ReplayInner(CoreSubscriber<? super T> actual,
+				ReplayProcessor<T> parent) {
 			this.actual = actual;
 			this.parent = parent;
 			this.buffer = parent.buffer;

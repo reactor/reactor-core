@@ -82,7 +82,7 @@ public class Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> extends
 	}
 
 	@Override
-	public Object @NonNull [] toArray() {
+	public Object[] toArray() {
 		return new Object[]{t1, t2, t3, t4, t5, t6, t7, t8};
 	}
 

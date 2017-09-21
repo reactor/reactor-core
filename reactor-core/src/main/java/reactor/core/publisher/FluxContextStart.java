@@ -22,8 +22,8 @@ import java.util.function.Function;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.context.Context;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 final class FluxContextStart<T> extends FluxOperator<T, T> implements Fuseable {
 

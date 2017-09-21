@@ -1,7 +1,7 @@
 [[kotlin]]
 = Kotlin support
 
-[[kotlin-introduction]]
+[[introduction]]
 == Introduction
 
 https://kotlinlang.org[Kotlin] is a statically-typed language targeting the JVM (and other platforms)
@@ -11,7 +11,7 @@ existing libraries written in Java.
 
 Reactor 3.1 introduces first-class support for Kotlin which is described in this section.
 
-[[kotlin-requirements]]
+[[requirements]]
 == Requirements ==
 
 Kotlin supports Kotlin 1.1+ and requires
@@ -19,7 +19,7 @@ https://bintray.com/bintray/jcenter/org.jetbrains.kotlin%3Akotlin-stdlib[`kotlin
 (or one of its https://bintray.com/bintray/jcenter/org.jetbrains.kotlin%3Akotlin-stdlib-jre7[`kotlin-stdlib-jre7`]
 / https://bintray.com/bintray/jcenter/org.jetbrains.kotlin%3Akotlin-stdlib-jre8[`kotlin-stdlib-jre8`] variants).
 
-[[kotlin-extensions]]
+[[extensions]]
 == Extensions
 
 Thanks to its great https://kotlinlang.org/docs/reference/java-interop.html[Java interoperability]
@@ -60,7 +60,7 @@ You can see bellow a quick comparison of Reactor with Java versus Reactor with K
 https://projectreactor.io/docs/core/release/kdoc-api/[Reactor KDoc API] lists and documents
 all the Kotlin extensions available.
 
-[[kotlin-null-safety]]
+[[null-safety]]
 == Null-safety
 
 One of Kotlin's key features is https://kotlinlang.org/docs/reference/null-safety.html[null-safety]

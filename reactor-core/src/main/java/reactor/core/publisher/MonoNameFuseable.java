@@ -20,8 +20,8 @@ import java.util.Set;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.function.Tuple2;
 import reactor.util.annotation.Nullable;
+import reactor.util.function.Tuple2;
 
 /**
  * An operator that just bears a name or a set of tags, which can be retrieved via the

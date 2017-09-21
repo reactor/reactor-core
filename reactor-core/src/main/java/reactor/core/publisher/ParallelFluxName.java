@@ -23,9 +23,9 @@ import java.util.Set;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
-import reactor.util.annotation.Nullable;
 
 /**
  * Hides the identities of the upstream Publisher object and its Subscription as well.

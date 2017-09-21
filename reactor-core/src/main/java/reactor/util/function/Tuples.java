@@ -19,8 +19,6 @@ package reactor.util.function;
 import java.util.Collection;
 import java.util.function.Function;
 
-import reactor.util.annotation.NonNull;
-
 /**
  * A {@literal Tuples} is an immutable {@link Collection} of objects, each of which can be of an arbitrary type.
  *
@@ -38,7 +36,7 @@ public abstract class Tuples implements Function {
 	 * @return The new {@link Tuple2}.
 	 * @throws IllegalArgumentException if the array is not of length 1-8
 	 */
-	public static Tuple2 fromArray(Object @NonNull [] list) {
+	public static Tuple2 fromArray(Object[] list) {
 		//noinspection ConstantConditions
 		if (list == null || list.length < 2) {
 			throw new IllegalArgumentException("null or too small array, need between 2 and 8 values");
@@ -477,7 +475,7 @@ public abstract class Tuples implements Function {
 	 * @return a {@link StringBuilder} initialized with the string representation of the
 	 * values in the Tuple.
 	 */
-	static StringBuilder tupleStringRepresentation(Object @NonNull ... values) {
+	static StringBuilder tupleStringRepresentation(Object... values) {
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < values.length; i++) {
 			Object t = values[i];

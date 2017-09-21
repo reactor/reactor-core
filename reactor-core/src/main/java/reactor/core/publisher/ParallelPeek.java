@@ -20,8 +20,8 @@ import java.util.function.LongConsumer;
 
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
-import reactor.util.annotation.Nullable;
 import reactor.core.Fuseable;
+import reactor.util.annotation.Nullable;
 
 /**
  * Execute a Consumer in each 'rail' for the current element passing through.

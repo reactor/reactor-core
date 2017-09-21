@@ -24,9 +24,9 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuples;
-import reactor.util.annotation.Nullable;
 
 /**
  * Captures the current stacktrace when this publisher is created and

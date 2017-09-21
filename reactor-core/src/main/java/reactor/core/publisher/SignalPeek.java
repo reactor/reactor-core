@@ -21,8 +21,8 @@ import java.util.function.LongConsumer;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Scannable;
-import reactor.util.context.Context;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Peek into the lifecycle and sequence signals.

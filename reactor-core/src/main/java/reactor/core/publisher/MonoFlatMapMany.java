@@ -27,8 +27,8 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
-import reactor.util.context.Context;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
 
