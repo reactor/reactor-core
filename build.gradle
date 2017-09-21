@@ -301,7 +301,8 @@ project('reactor-core') {
   }
 
   task kdocZip(type: Zip, dependsOn: dokka) {
-	baseName = 'reactor-core-kdoc'
+	//ends up similar to javadoc jar: reactor-core-3.1.0.RELEASE-kdoc.zip
+	classifier = 'kdoc'
 	from("${project.buildDir}/docs/kdoc")
   }
 
@@ -416,7 +417,8 @@ project('reactor-test') {
   }
 
   task kdocZip(type: Zip, dependsOn: dokka) {
-	baseName = 'reactor-test-kdoc'
+	//ends up similar to javadoc jar: reactor-test-3.1.0.RELEASE-kdoc.zip
+	classifier = 'kdoc'
 	from("${project.buildDir}/docs/kdoc")
   }
 
