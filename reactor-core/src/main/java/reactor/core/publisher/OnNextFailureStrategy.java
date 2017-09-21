@@ -18,10 +18,11 @@ package reactor.core.publisher;
 
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
+import reactor.util.annotation.NonNull;
+import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
