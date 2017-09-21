@@ -21,10 +21,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 
-import javax.annotation.Nullable;
-
 import org.reactivestreams.Publisher;
 import reactor.test.StepVerifier;
+import reactor.util.annotation.Nullable;
 
 import static reactor.core.Fuseable.NONE;
 

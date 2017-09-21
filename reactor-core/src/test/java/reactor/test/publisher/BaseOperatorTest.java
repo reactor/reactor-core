@@ -22,8 +22,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-import javax.annotation.Nullable;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -40,6 +38,7 @@ import reactor.core.publisher.ParallelFlux;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.UnicastProcessor;
 import reactor.test.StepVerifier;
+import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;

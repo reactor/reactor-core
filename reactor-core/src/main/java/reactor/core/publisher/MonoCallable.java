@@ -18,11 +18,11 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.Callable;
-import javax.annotation.Nullable;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.util.annotation.Nullable;
 
 /**
  * Executes a Callable function and emits a single value to each individual Subscriber.
