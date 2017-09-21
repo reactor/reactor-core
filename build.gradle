@@ -250,7 +250,7 @@ project('reactor-core') {
 
   javadoc {
 	dependsOn jar
-	group = "Reactor Core Javadoc"
+	group = "documentation"
 	description = "Generates aggregated Javadoc API documentation."
 	title = "Reactor Core $version"
 
@@ -267,10 +267,31 @@ project('reactor-core') {
 
 	maxMemory = "1024m"
 	destinationDir = new File(project.buildDir, "docs/javadoc")
-	source project.sourceSets.main.allJava
-	doFirst {
-	  classpath = files(project.sourceSets.main.compileClasspath)
+  }
+
+  // Need https://github.com/Kotlin/dokka/issues/184 to be fixed to avoid "Can't find node by signature" log spam
+  task dokka(type: org.jetbrains.dokka.gradle.DokkaTask) {
+	dependsOn jar
+	group = "documentation"
+	description = "Generates Kotlin API documentation."
+	moduleName = "reactor-core"
+	jdkVersion = 8
+	sourceDirs = files("${project.rootDir}/src/main/kotlin")
+	outputFormat = "html"
+	outputDirectory = new File(project.buildDir, "docs/kdoc")
+
+	processConfigurations = []
+	externalDocumentationLink {
+	  url = new URL("http://projectreactor.io/docs/core/release/api/")
 	}
+	externalDocumentationLink {
+	  url = new URL("http://www.reactive-streams.org/reactive-streams-1.0.1-javadoc/")
+	}
+  }
+
+  task kdocZip(type: Zip, dependsOn: dokka) {
+	baseName = 'reactor-core-kdoc'
+	from("${project.buildDir}/docs/kdoc")
   }
 
   task loops(type: Test) {
@@ -305,6 +326,7 @@ project('reactor-core') {
 	archives sourcesJar
 	archives javadocJar
 	archives docsZip
+	archives kdocZip
   }
 
   jacocoTestReport.dependsOn testNG
@@ -328,13 +350,13 @@ project('reactor-test') {
 
   javadoc {
 	dependsOn jar
-	group = "Reactor Test Javadoc"
+	group = "documentation"
 	description = "Generates aggregated Javadoc API documentation."
 	title = "Reactor Test $version"
 
 	options.addStringOption('charSet', 'UTF-8')
 
-	options.memberLevel = org.gradle.external.javadoc.JavadocMemberLevel.PROTECTED
+	options.memberLevel = JavadocMemberLevel.PROTECTED
 	options.author = true
 	options.header = "$project.name"
 	options.stylesheetFile = file("$rootDir/src/api/stylesheet.css")
@@ -345,12 +367,39 @@ project('reactor-test') {
 
 	maxMemory = "1024m"
 	destinationDir = new File(project.buildDir, "docs/javadoc")
-	source project.sourceSets.main.allJava
-	doFirst {
-	  classpath = files(project.sourceSets.main.compileClasspath)
+  }
+
+  // Need https://github.com/Kotlin/dokka/issues/184 to be fixed to avoid "Can't find node by signature" log spam
+  task dokka(type: org.jetbrains.dokka.gradle.DokkaTask) {
+	dependsOn jar
+	group = "documentation"
+	description = "Generates Kotlin API documentation."
+	moduleName = "reactor-test"
+	jdkVersion = 8
+	outputFormat = "html"
+	outputDirectory = new File(project.buildDir, "docs/kdoc")
+	sourceDirs = files("${project.rootDir}/src/main/kotlin")
+
+	processConfigurations = []
+	externalDocumentationLink {
+	  url = new URL("http://projectreactor.io/docs/core/release/api/")
 	}
+	externalDocumentationLink {
+	  url = new URL("http://projectreactor.io/docs/test/release/api/")
+	}
+	externalDocumentationLink {
+	  url = new URL("http://www.reactive-streams.org/reactive-streams-1.0.1-javadoc/")
+	}
+  }
+
+  task kdocZip(type: Zip, dependsOn: dokka) {
+	baseName = 'reactor-test-kdoc'
+	from("${project.buildDir}/docs/kdoc")
+  }
+
+  artifacts {
+	archives kdocZip
   }
 }
 
 assemble.dependsOn docsZip
-assemble.dependsOn kdocZip

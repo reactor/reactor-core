@@ -40,38 +40,6 @@ configure(rootProject) {
 		}
 	}
 
-	// Need https://github.com/Kotlin/dokka/issues/184 to be fixed to avoid "Can't find node by signature" log spam
-	dokka {
-		dependsOn {
-			subprojects.collect {
-				it.tasks.getByName("jar")
-		}
-		}
-		doFirst {
-			classpath = subprojects.collect { project -> project.jar.outputs.files.getFiles() }.flatten()
-			classpath += files(subprojects.collect { it.sourceSets.main.compileClasspath })
-		}
-		moduleName = "reactor-core"
-		outputFormat = "html"
-		outputDirectory = "$buildDir/reactor-code/build/kdoc"
-
-		processConfigurations = []
-		sourceDirs = files (subprojects.collect {
-			p -> return "$rootProject.rootDir/${p.name}/src/main/kotlin"
-		})
-		externalDocumentationLink {
-			url = new URL("http://projectreactor.io/docs/core/release/api/")
-		}
-		externalDocumentationLink {
-			url = new URL("http://www.reactive-streams.org/reactive-streams-1.0.1-javadoc/")
-		}
-	}
-
-	task kdocZip(type: Zip, dependsOn: dokka) {
-		baseName = 'reactor-core-kdoc'
-		from("$buildDir/reactor-code/build/kdoc")
-	}
-
 	task docsZip(type: Zip, dependsOn: asciidoctor) {
 	  baseName = 'reactor-core-docs'
 	  from("$buildDir/reactor-code/build/asciidoc/pdf/reactor-core-reference-guide-${version}.pdf") { into ("docs/") }
