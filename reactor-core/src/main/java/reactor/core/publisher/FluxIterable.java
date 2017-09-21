@@ -320,10 +320,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 					current = null;
 				}
 				state = STATE_CALL_HAS_NEXT;
-				if (c == null) {
-					throw new NullPointerException("The iterator returned a null value");
-				}
-				return c;
+				return Objects.requireNonNull(c, "iterator returned a null value");
 			}
 			return null;
 		}

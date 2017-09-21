@@ -21,12 +21,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
@@ -60,6 +63,51 @@ public class FluxCreateTest {
 		ts.assertValues(1, 2, 3)
 		  .assertNoError()
 		  .assertComplete();
+	}
+
+	@Test
+	public void gh613() {
+		AtomicBoolean cancelled = new AtomicBoolean();
+		AtomicBoolean completed = new AtomicBoolean();
+		AtomicBoolean errored = new AtomicBoolean();
+		AtomicInteger i = new AtomicInteger();
+
+		Flux<Integer> source = Flux.create(e -> {
+			e.next(1);
+			cancelled.set(e.isCancelled());
+			e.next(2);
+			e.next(3);
+			e.complete();
+
+		});
+
+		source.subscribe(new Subscriber<Integer>(){
+			@Override
+			public void onSubscribe(Subscription s) {
+				s.request(Long.MAX_VALUE);
+			}
+
+			@Override
+			public void onNext(Integer integer) {
+				i.incrementAndGet();
+				throw new RuntimeException();
+			}
+
+			@Override
+			public void onError(Throwable t) {
+				errored.set(true);
+			}
+
+			@Override
+			public void onComplete() {
+				completed.set(true);
+			}
+		});
+
+		assertThat(cancelled.get()).isTrue();
+		assertThat(completed.get()).isFalse();
+		assertThat(errored.get()).isFalse();
+		assertThat(i.get()).isEqualTo(1);
 	}
 
 	@Test
@@ -220,9 +268,9 @@ public class FluxCreateTest {
 			s.onRequest(emitter::emit);
 		});
 		StepVerifier.create(flux1, count)
-					.expectNextCount(count)
-					.expectComplete()
-					.verify();
+		            .expectNextCount(count)
+		            .expectComplete()
+		            .verify();
 		assertThat(onDispose.get()).isEqualTo(1);
 		assertThat(onCancel.get()).isEqualTo(0);
 
@@ -235,9 +283,9 @@ public class FluxCreateTest {
 			s.onCancel(() -> onCancel.incrementAndGet());
 		});
 		StepVerifier.create(flux2, count)
-					.expectNextCount(count)
-					.expectComplete()
-					.verify();
+		            .expectNextCount(count)
+		            .expectComplete()
+		            .verify();
 		assertThat(onDispose.get()).isEqualTo(1);
 		assertThat(onCancel.get()).isEqualTo(0);
 	}
@@ -420,11 +468,11 @@ public class FluxCreateTest {
 				            }
 			            })
 			            .assertNext(s -> {
-			            	assertThat(ref.get()).isEqualTo(Thread.currentThread());
+				            assertThat(ref.get()).isEqualTo(Thread.currentThread());
 				            assertThat(s).isEqualTo("test2");
 			            })
 			            .assertNext(s -> {
-			            	assertThat(ref.get()).isEqualTo(Thread.currentThread());
+				            assertThat(ref.get()).isEqualTo(Thread.currentThread());
 				            assertThat(s).isEqualTo("test3");
 			            })
 			            .verifyComplete();
@@ -489,8 +537,8 @@ public class FluxCreateTest {
 
 	@Test
 	public void fluxCreateLatestEmpty() {
-		Flux<String> created = Flux.create(FluxSink::complete
-				, FluxSink.OverflowStrategy.LATEST);
+		Flux<String> created =
+				Flux.create(FluxSink::complete, FluxSink.OverflowStrategy.LATEST);
 
 		StepVerifier.create(created)
 		            .verifyComplete();
@@ -596,8 +644,8 @@ public class FluxCreateTest {
 
 	@Test
 	public void fluxCreateDropEmpty() {
-		Flux<String> created = Flux.create(FluxSink::complete
-				, FluxSink.OverflowStrategy.DROP);
+		Flux<String> created =
+				Flux.create(FluxSink::complete, FluxSink.OverflowStrategy.DROP);
 
 		StepVerifier.create(created)
 		            .verifyComplete();
@@ -702,8 +750,8 @@ public class FluxCreateTest {
 
 	@Test
 	public void fluxCreateErrorEmpty() {
-		Flux<String> created = Flux.create(FluxSink::complete
-				, FluxSink.OverflowStrategy.ERROR);
+		Flux<String> created =
+				Flux.create(FluxSink::complete, FluxSink.OverflowStrategy.ERROR);
 
 		StepVerifier.create(created)
 		            .verifyComplete();
@@ -808,8 +856,8 @@ public class FluxCreateTest {
 
 	@Test
 	public void fluxCreateIgnoreEmpty() {
-		Flux<String> created = Flux.create(FluxSink::complete
-				, FluxSink.OverflowStrategy.IGNORE);
+		Flux<String> created =
+				Flux.create(FluxSink::complete, FluxSink.OverflowStrategy.IGNORE);
 
 		StepVerifier.create(created)
 		            .verifyComplete();
@@ -863,8 +911,7 @@ public class FluxCreateTest {
 		}
 		catch (AssertionError error){
 			assertThat(error).hasMessageContaining(
-					"request overflow (expected production of at most 1; produced: 2; request overflown by signal: onNext(test2))"
-			);
+					"request overflow (expected production of at most 1; produced: 2; request overflown by signal: onNext(test2))");
 		}
 	}
 
