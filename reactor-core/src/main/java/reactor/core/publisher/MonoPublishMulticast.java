@@ -46,7 +46,7 @@ final class MonoPublishMulticast<T, R> extends MonoOperator<T, R> implements Fus
 	@Override
 	public void subscribe(CoreSubscriber<? super R> actual) {
 
-		FluxPublishMulticast.FluxPublishMulticaster<T, R> multicast =
+		FluxPublishMulticast.FluxPublishMulticaster<T> multicast =
 				new FluxPublishMulticast.FluxPublishMulticaster<>(Integer.MAX_VALUE,
 						Queues.one(), actual.currentContext());
 
