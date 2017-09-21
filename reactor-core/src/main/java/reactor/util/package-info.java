@@ -20,5 +20,5 @@
 @NonNullApi
 package reactor.util;
 
-import reactor.util.lang.NonNullApi;
+import reactor.util.annotation.NonNullApi;
 import javax.annotation.Nullable;

@@ -19,10 +19,10 @@ package reactor.core.publisher;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
-import javax.annotation.Nullable;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**

@@ -20,7 +20,7 @@ import java.io.Serializable;
 import java.util.Objects;
 
 import org.reactivestreams.Subscription;
-import javax.annotation.Nullable;
+import reactor.util.annotation.Nullable;
 
 /**
  * The common implementation of a {@link Signal} (serializable and immutable).

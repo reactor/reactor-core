@@ -21,4 +21,4 @@
 @NonNullApi
 package reactor.test.publisher;
 
-import reactor.util.lang.NonNullApi;
+import reactor.util.annotation.NonNullApi;

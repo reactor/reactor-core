@@ -29,8 +29,8 @@ import reactor.core.Fuseable;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
 import reactor.util.Logger;
 import reactor.util.Loggers;
+import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
-import javax.annotation.Nullable;
 
 /**
  * A logging interceptor that intercepts all reactive calls and trace them.

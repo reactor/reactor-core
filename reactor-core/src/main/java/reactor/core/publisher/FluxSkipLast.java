@@ -16,10 +16,10 @@
 package reactor.core.publisher;
 
 import java.util.ArrayDeque;
-import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.util.annotation.Nullable;
 
 /**
  * Skips the last N elements from the source stream.

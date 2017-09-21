@@ -33,9 +33,9 @@ import java.util.stream.Stream;
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.concurrent.WaitStrategy;
-import javax.annotation.Nullable;
 
 /**
  * A base processor used by executor backed processors to take care of their ExecutorService

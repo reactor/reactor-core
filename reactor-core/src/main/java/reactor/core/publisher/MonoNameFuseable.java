@@ -17,10 +17,10 @@
 package reactor.core.publisher;
 
 import java.util.Set;
-import javax.annotation.Nullable;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
+import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 
 /**

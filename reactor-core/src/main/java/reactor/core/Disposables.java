@@ -23,8 +23,8 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
+import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 
 /**

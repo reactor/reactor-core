@@ -22,8 +22,8 @@ import java.util.Set;
 import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import javax.annotation.Nullable;
 
+import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 
 /**

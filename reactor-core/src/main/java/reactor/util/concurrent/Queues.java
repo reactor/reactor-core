@@ -24,7 +24,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
-import javax.annotation.Nullable;
+import reactor.util.annotation.Nullable;
+
 
 /**
  * Queue utilities and suppliers for 1-producer/1-consumer ready queues adapted for

@@ -16,13 +16,13 @@
 
 package reactor.core.publisher;
 
-import javax.annotation.Nullable;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.publisher.FluxOnAssembly.AssemblyLightSnapshotException;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
+import reactor.util.annotation.Nullable;
 
 /**
  * Captures the current stacktrace when this connectable publisher is created and makes it

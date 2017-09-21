@@ -22,8 +22,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+
+import reactor.util.annotation.NonNull;
+import reactor.util.annotation.Nullable;
 
 /**
  * A tuple that holds two non-null values.
@@ -38,8 +39,8 @@ public class Tuple2<T1, T2> implements Iterable<Object>, Serializable {
 
 	private static final long serialVersionUID = -3518082018884860684L;
 
-	@Nonnull final T1 t1;
-	@Nonnull final T2 t2;
+	@NonNull final T1 t1;
+	@NonNull final T2 t2;
 
 	Tuple2(T1 t1, T2 t2) {
 		this.t1 = Objects.requireNonNull(t1, "t1");

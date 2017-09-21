@@ -223,7 +223,7 @@ project('reactor-core') {
 	testCompile "org.reactivestreams:reactive-streams-tck:1.0.1"
 
 	// JSR-305 annotations
-	optional "com.google.code.findbugs:jsr305:3.0.0"
+	optional "com.google.code.findbugs:jsr305:3.0.2"
 
 	//Optional Logging Operator
 	optional "org.slf4j:slf4j-api:$slf4jVersion"

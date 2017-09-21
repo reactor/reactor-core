@@ -19,12 +19,12 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.scheduler.Scheduler;
+import reactor.util.annotation.Nullable;
 
 /**
  * Emits the first value emitted by a given source publisher, delayed by some time amount

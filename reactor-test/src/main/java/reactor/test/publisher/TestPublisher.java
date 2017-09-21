@@ -21,7 +21,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import javax.annotation.Nullable;
+import reactor.util.annotation.Nullable;
 
 /**
  * A {@link Publisher} that you can directly manipulate, triggering

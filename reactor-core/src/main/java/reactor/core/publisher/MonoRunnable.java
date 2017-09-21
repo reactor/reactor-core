@@ -19,9 +19,9 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.Callable;
-import javax.annotation.Nullable;
 
 import reactor.core.CoreSubscriber;
+import reactor.util.annotation.Nullable;
 
 /**
  * Executes the runnable whenever a Subscriber subscribes to this Mono.

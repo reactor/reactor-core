@@ -16,11 +16,11 @@
 
 package reactor.core.publisher;
 
-import javax.annotation.Nullable;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.publisher.FluxOnAssembly.AssemblySnapshotException;
+import reactor.util.annotation.Nullable;
 
 /**
  * Captures the current stacktrace when this publisher is created and makes it

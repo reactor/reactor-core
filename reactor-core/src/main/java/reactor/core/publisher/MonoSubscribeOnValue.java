@@ -18,12 +18,12 @@ package reactor.core.publisher;
 
 import java.util.Objects;
 import java.util.concurrent.RejectedExecutionException;
-import javax.annotation.Nullable;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.publisher.FluxSubscribeOnValue.ScheduledEmpty;
 import reactor.core.publisher.FluxSubscribeOnValue.ScheduledScalar;
 import reactor.core.scheduler.Scheduler;
+import reactor.util.annotation.Nullable;
 
 /**
  * Mono indicating a scalar/empty source that subscribes on the specified scheduler.

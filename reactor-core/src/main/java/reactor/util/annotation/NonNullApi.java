@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,36 +14,36 @@
  * limitations under the License.
  */
 
-package reactor.util.lang;
+package reactor.util.annotation;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
 import javax.annotation.Nonnull;
 import javax.annotation.meta.TypeQualifierDefault;
 
 /**
- * Leverage JSR 305 meta-annotations to define that parameters and return values are
- * non-nullable by default.
+ * A common Reactor annotation (similar to Spring one) to declare that parameters and return
+ * values are to be considered as non-nullable by default for a given package.
+ * Leverages JSR 305 meta-annotations to indicate nullability in Java to common tools with
+ * JSR 305 support and used by Kotlin to infer nullability of Reactor API.
  *
- * Should be used at package level in association with {@link javax.annotation.Nullable}
- * parameters and return values level annotations.
- *
- * Present in Spring Framework 5
+ * <p>Should be used at package level in association with {@link Nullable}
+ * annotations at parameter and return value level.
  *
  * @author Sebastien Deleuze
+ * @author Juergen Hoeller
  * @since 3.1.0
- * @see javax.annotation.Nullable
- * @see javax.annotation.Nonnull
+ * @see Nullable
+ * @see NonNull
  */
-//this is similar to what in done in Spring Framework 5 `org.springframework.lang.NonNullApi`
+@Target(ElementType.PACKAGE)
+@Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Nonnull
-@Target({ElementType.PACKAGE, ElementType.TYPE})
 @TypeQualifierDefault({ElementType.METHOD, ElementType.PARAMETER})
-@Retention(RetentionPolicy.RUNTIME)
 public @interface NonNullApi {
-
 }

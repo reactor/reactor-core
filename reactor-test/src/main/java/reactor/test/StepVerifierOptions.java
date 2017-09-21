@@ -18,7 +18,7 @@ package reactor.test;
 import java.util.function.Supplier;
 
 import reactor.test.scheduler.VirtualTimeScheduler;
-import javax.annotation.Nullable;
+import reactor.util.annotation.Nullable;
 
 /**
  * Options for a {@link StepVerifier}, including the initial request amount,

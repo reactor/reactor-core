@@ -18,10 +18,10 @@ package reactor.core.publisher;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BooleanSupplier;
-import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import reactor.core.CoreSubscriber;
+import reactor.util.annotation.Nullable;
 
 abstract class DrainUtils {
 
