@@ -17,6 +17,7 @@ package reactor.util.context;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
@@ -24,8 +25,7 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import reactor.util.annotation.Nullable;
+import javax.annotation.Nullable;
 
 @SuppressWarnings("unchecked")
 final class ContextN extends HashMap<Object, Object>

@@ -36,6 +36,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.stream.LongStream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -56,8 +57,6 @@ import reactor.util.function.Tuple4;
 import reactor.util.function.Tuple5;
 import reactor.util.function.Tuple6;
 import reactor.util.function.Tuples;
-import reactor.util.annotation.NonNull;
-import reactor.util.annotation.Nullable;
 
 /**
  * A Reactive Streams {@link Publisher} with basic rx operators that completes successfully by emitting an element, or
@@ -168,7 +167,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param <T> The type of the value emitted
 	 * @return a {@link Mono}
 	 */
-	public static <T> Mono<@NonNull T> create(Consumer<@NonNull MonoSink<@NonNull T>> callback) {
+	public static <T> Mono<T> create(Consumer<MonoSink<T>> callback) {
 	    return onAssembly(new MonoCreate<>(callback));
 	}
 
@@ -185,7 +184,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Mono} factory
 	 */
-	public static <T> Mono<@NonNull T> defer(Supplier<? extends @NonNull Mono<? extends @NonNull T>> supplier) {
+	public static <T> Mono<T> defer(Supplier<? extends Mono<? extends T>> supplier) {
 		return onAssembly(new MonoDefer<>(supplier));
 	}
 
@@ -202,7 +201,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public static Mono<@NonNull Long> delay(Duration duration) {
+	public static Mono<Long> delay(Duration duration) {
 		return delay(duration, Schedulers.parallel());
 	}
 
@@ -219,7 +218,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public static Mono<@NonNull Long> delay(Duration duration, Scheduler timer) {
+	public static Mono<Long> delay(Duration duration, Scheduler timer) {
 		return onAssembly(new MonoDelay(duration.toMillis(), TimeUnit.MILLISECONDS, timer));
 	}
 
@@ -233,7 +232,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a completed {@link Mono}
 	 */
-	public static <T> Mono<@NonNull T> empty() {
+	public static <T> Mono<T> empty() {
 		return MonoEmpty.instance();
 	}
 
@@ -248,7 +247,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a failed {@link Mono}
 	 */
-	public static <T> Mono<@NonNull T> error(Throwable error) {
+	public static <T> Mono<T> error(Throwable error) {
 		return onAssembly(new MonoError<>(error));
 	}
 
@@ -265,7 +264,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Mono} behaving like the fastest of its sources.
 	 */
 	@SafeVarargs
-	public static <T> Mono<@NonNull T> first(Mono<? extends @NonNull T> @NonNull ... monos) {
+	public static <T> Mono<T> first(Mono<? extends T>... monos) {
 		return onAssembly(new MonoFirst<>(monos));
 	}
 
@@ -280,7 +279,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static <T> Mono<@NonNull T> first(Iterable<? extends @NonNull Mono<? extends @NonNull T>> monos) {
+	public static <T> Mono<T> first(Iterable<? extends Mono<? extends T>> monos) {
 		return onAssembly(new MonoFirst<>(monos));
 	}
 
@@ -295,7 +294,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return the next item emitted as a {@link Mono}
 	 */
-	public static <T> Mono<@NonNull T> from(Publisher<? extends @NonNull T> source) {
+	public static <T> Mono<T> from(Publisher<? extends T> source) {
 		if (source instanceof Mono) {
 			@SuppressWarnings("unchecked")
 			Mono<T> casted = (Mono<T>) source;
@@ -321,7 +320,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return A {@link Mono}.
 	 */
-	public static <T> Mono<@NonNull T> fromCallable(Callable<? extends @Nullable T> supplier) {
+	public static <T> Mono<T> fromCallable(Callable<? extends T> supplier) {
 		return onAssembly(new MonoCallable<>(supplier));
 	}
 
@@ -336,7 +335,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param <T> type of the expected value
 	 * @return A {@link Mono}.
 	 */
-	public static <T> Mono<@NonNull T> fromCompletionStage(CompletionStage<? extends @Nullable T> completionStage) {
+	public static <T> Mono<T> fromCompletionStage(CompletionStage<? extends T> completionStage) {
 		return onAssembly(new MonoCompletionStage<>(completionStage));
 	}
 
@@ -352,7 +351,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param <I> type of the value emitted by the publisher
 	 * @return a wrapped {@link Mono}
 	 */
-	public static <I> Mono<@NonNull I> fromDirect(Publisher<? extends @NonNull I> source){
+	public static <I> Mono<I> fromDirect(Publisher<? extends I> source){
 		if(source instanceof Mono){
 			@SuppressWarnings("unchecked")
 			Mono<I> m = (Mono<I>)source;
@@ -384,7 +383,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return A {@link Mono}.
 	 * @see #fromCompletionStage(CompletionStage) fromCompletionStage for a generalization
 	 */
-	public static <T> Mono<@NonNull T> fromFuture(CompletableFuture<? extends @Nullable T> future) {
+	public static <T> Mono<T> fromFuture(CompletableFuture<? extends T> future) {
 		return onAssembly(new MonoCompletionStage<>(future));
 	}
 
@@ -400,7 +399,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param <T> The generic type of the upstream, which is preserved by this operator
 	 * @return A {@link Mono}.
 	 */
-	public static <T> Mono<@NonNull T> fromRunnable(Runnable runnable) {
+	public static <T> Mono<T> fromRunnable(Runnable runnable) {
 		return onAssembly(new MonoRunnable<>(runnable));
 	}
 
@@ -416,7 +415,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return A {@link Mono}.
 	 */
-	public static <T> Mono<@NonNull T> fromSupplier(Supplier<? extends @Nullable T> supplier) {
+	public static <T> Mono<T> fromSupplier(Supplier<? extends T> supplier) {
 		return onAssembly(new MonoSupplier<>(supplier));
 	}
 
@@ -433,7 +432,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new completable {@link Mono}.
 	 */
-	public static <T> Mono<@NonNull T> ignoreElements(Publisher<@NonNull T> source) {
+	public static <T> Mono<T> ignoreElements(Publisher<T> source) {
 		return onAssembly(new MonoIgnorePublisher<>(source));
 	}
 
@@ -449,7 +448,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static <T> Mono<@NonNull T> just(T data) {
+	public static <T> Mono<T> just(T data) {
 		return onAssembly(new MonoJust<>(data));
 	}
 
@@ -465,7 +464,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static <T> Mono<@NonNull T> justOrEmpty(@Nullable Optional<? extends T> data) {
+	public static <T> Mono<T> justOrEmpty(@Nullable Optional<? extends T> data) {
 		return data != null && data.isPresent() ? just(data.get()) : empty();
 	}
 
@@ -481,7 +480,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static <T> Mono<@NonNull T> justOrEmpty(@Nullable T data) {
+	public static <T> Mono<T> justOrEmpty(@Nullable T data) {
 		return data != null ? just(data) : empty();
 	}
 
@@ -496,7 +495,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a never completing {@link Mono}
 	 */
-	public static <T> Mono<@NonNull T> never() {
+	public static <T> Mono<T> never() {
 		return MonoNever.instance();
 	}
 
@@ -512,7 +511,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *            the type of items emitted by each Publisher
 	 * @return a Mono that emits a Boolean value that indicates whether the two sequences are the same
 	 */
-	public static <T> Mono<@NonNull Boolean> sequenceEqual(Publisher<? extends @NonNull T> source1, Publisher<? extends @NonNull T> source2) {
+	public static <T> Mono<Boolean> sequenceEqual(Publisher<? extends T> source1, Publisher<? extends T> source2) {
 		return sequenceEqual(source1, source2, equalsBiPredicate(), Queues.SMALL_BUFFER_SIZE);
 	}
 
@@ -532,7 +531,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a Mono that emits a Boolean value that indicates whether the two Publisher two sequences
 	 *         are the same according to the specified function
 	 */
-	public static <T> Mono<@NonNull Boolean> sequenceEqual(Publisher<? extends @NonNull T> source1, Publisher<? extends @NonNull T> source2,
+	public static <T> Mono<Boolean> sequenceEqual(Publisher<? extends T> source1, Publisher<? extends T> source2,
 			BiPredicate<? super T, ? super T> isEqual) {
 		return sequenceEqual(source1, source2, isEqual, Queues.SMALL_BUFFER_SIZE);
 	}
@@ -555,9 +554,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a Mono that emits a Boolean value that indicates whether the two Publisher two sequences
 	 *         are the same according to the specified function
 	 */
-	public static <T> Mono<@NonNull Boolean> sequenceEqual(Publisher<? extends @NonNull T> source1,
-			Publisher<? extends @NonNull T> source2,
-			BiPredicate<? super @NonNull T, ? super @NonNull T> isEqual, int prefetch) {
+	public static <T> Mono<Boolean> sequenceEqual(Publisher<? extends T> source1,
+			Publisher<? extends T> source2,
+			BiPredicate<? super T, ? super T> isEqual, int prefetch) {
 		return onAssembly(new MonoSequenceEqual<>(source1, source2, isEqual, prefetch));
 	}
 
@@ -573,7 +572,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Mono} emitting current context
 	 * @see #subscribe(CoreSubscriber)
 	 */
-	public static  Mono<@NonNull Context> subscriberContext() {
+	public static  Mono<Context> subscriberContext() {
 		return onAssembly(MonoCurrentContext.INSTANCE);
 	}
 
@@ -597,9 +596,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return new {@link Mono}
 	 */
-	public static <T, D> Mono<@NonNull T> using(Callable<? extends @NonNull D> resourceSupplier,
-			Function<? super @NonNull D, ? extends Mono<? extends @NonNull T>> sourceSupplier,
-			Consumer<? super @NonNull D> resourceCleanup,
+	public static <T, D> Mono<T> using(Callable<? extends D> resourceSupplier,
+			Function<? super D, ? extends Mono<? extends T>> sourceSupplier,
+			Consumer<? super D> resourceCleanup,
 			boolean eager) {
 		return onAssembly(new MonoUsing<>(resourceSupplier, sourceSupplier,
 				resourceCleanup, eager));
@@ -624,9 +623,9 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return new {@link Mono}
 	 */
-	public static <T, D> Mono<@NonNull T> using(Callable<? extends @NonNull D> resourceSupplier,
-			Function<? super @NonNull D, ? extends Mono<? extends @NonNull T>> sourceSupplier,
-			Consumer<? super @NonNull D> resourceCleanup) {
+	public static <T, D> Mono<T> using(Callable<? extends D> resourceSupplier,
+			Function<? super D, ? extends Mono<? extends T>> sourceSupplier,
+			Consumer<? super D> resourceCleanup) {
 		return using(resourceSupplier, sourceSupplier, resourceCleanup, true);
 	}
 
@@ -641,7 +640,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static Mono<Void> when(Publisher<@NonNull ?> @NonNull ... sources) {
+	public static Mono<Void> when(Publisher<?>... sources) {
 		if (sources.length == 0) {
 			return empty();
 		}
@@ -666,7 +665,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static Mono<Void> when(final @NonNull Iterable<? extends @NonNull Publisher<@NonNull ?>> sources) {
+	public static Mono<Void> when(final Iterable<? extends Publisher<?>> sources) {
 		return onAssembly(new MonoWhen(false, sources));
 	}
 
@@ -685,7 +684,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static Mono<Void> whenDelayError(final Iterable<? extends @NonNull Publisher<@NonNull ?>> sources) {
+	public static Mono<Void> whenDelayError(final Iterable<? extends Publisher<?>> sources) {
 		return onAssembly(new MonoWhen(true, sources));
 	}
 
@@ -701,7 +700,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static  Mono<Void> whenDelayError(Publisher<@NonNull ?> @NonNull ... sources) {
+	public static  Mono<Void> whenDelayError(Publisher<?>... sources) {
 		if (sources.length == 0) {
 			return empty();
 		}
@@ -727,7 +726,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static <T1, T2> Mono<@NonNull Tuple2<@NonNull T1, @NonNull T2>> zip(Mono<? extends @NonNull T1> p1, Mono<? extends @NonNull T2> p2) {
+	public static <T1, T2> Mono<Tuple2<T1, T2>> zip(Mono<? extends T1> p1, Mono<? extends T2> p2) {
 		return zip(p1, p2, Flux.tuple2Function());
 	}
 
@@ -750,8 +749,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static <T1, T2, O> Mono<O> zip(Mono<? extends @NonNull T1> p1, Mono<?
-			extends @NonNull T2> p2, BiFunction<? super @NonNull T1, ? super @NonNull T2, ? extends @NonNull O> combinator) {
+	public static <T1, T2, O> Mono<O> zip(Mono<? extends T1> p1, Mono<?
+			extends T2> p2, BiFunction<? super T1, ? super T2, ? extends O> combinator) {
 		return onAssembly(new MonoZip<T1, O>(false, p1, p2, combinator));
 	}
 
@@ -774,7 +773,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono}.
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static <T1, T2, T3> Mono<@NonNull Tuple3<@NonNull T1, @NonNull T2, @NonNull T3>> zip(Mono<? extends @NonNull T1> p1, Mono<? extends @NonNull T2> p2, Mono<? extends @NonNull T3> p3) {
+	public static <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> zip(Mono<? extends T1> p1, Mono<? extends T2> p2, Mono<? extends T3> p3) {
 		return onAssembly(new MonoZip(false, a -> Tuples.fromArray((Object[])a), p1, p2, p3));
 	}
 
@@ -799,7 +798,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono}.
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static <T1, T2, T3, T4> Mono<@NonNull Tuple4<@NonNull T1, @NonNull T2, @NonNull T3, @NonNull T4>> zip(Mono<? extends @NonNull T1> p1,
+	public static <T1, T2, T3, T4> Mono<Tuple4<T1, T2, T3, T4>> zip(Mono<? extends T1> p1,
 			Mono<? extends T2> p2,
 			Mono<? extends T3> p3,
 			Mono<? extends T4> p4) {
@@ -829,11 +828,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono}.
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static <T1, T2, T3, T4, T5> Mono<@NonNull Tuple5<@NonNull T1, @NonNull T2, @NonNull T3, @NonNull T4, @NonNull T5>> zip(Mono<? extends @NonNull T1> p1,
-			Mono<? extends @NonNull T2> p2,
-			Mono<? extends @NonNull T3> p3,
-			Mono<? extends @NonNull T4> p4,
-			Mono<? extends @NonNull T5> p5) {
+	public static <T1, T2, T3, T4, T5> Mono<Tuple5<T1, T2, T3, T4, T5>> zip(Mono<? extends T1> p1,
+			Mono<? extends T2> p2,
+			Mono<? extends T3> p3,
+			Mono<? extends T4> p4,
+			Mono<? extends T5> p5) {
 		return onAssembly(new MonoZip(false, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4, p5));
 	}
 
@@ -862,12 +861,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono}.
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static <T1, T2, T3, T4, T5, T6> Mono<@NonNull Tuple6<@NonNull T1, @NonNull T2, @NonNull T3, @NonNull T4, @NonNull T5, @NonNull T6>> zip(Mono<? extends @NonNull T1> p1,
-			Mono<? extends @NonNull T2> p2,
-			Mono<? extends @NonNull T3> p3,
-			Mono<? extends @NonNull T4> p4,
-			Mono<? extends @NonNull T5> p5,
-			Mono<? extends @NonNull T6> p6) {
+	public static <T1, T2, T3, T4, T5, T6> Mono<Tuple6<T1, T2, T3, T4, T5, T6>> zip(Mono<? extends T1> p1,
+			Mono<? extends T2> p2,
+			Mono<? extends T3> p3,
+			Mono<? extends T4> p4,
+			Mono<? extends T5> p5,
+			Mono<? extends T6> p6) {
 		return onAssembly(new MonoZip(false, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4, p5, p6));
 	}
 
@@ -887,7 +886,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static <R> Mono<@NonNull R> zip(final Iterable<? extends @NonNull Mono<@NonNull ?>> monos, Function<? super @NonNull Object @NonNull [], ? extends @NonNull R> combinator) {
+	public static <R> Mono<R> zip(final Iterable<? extends Mono<?>> monos, Function<? super Object[], ? extends R> combinator) {
 		return onAssembly(new MonoZip<>(false, combinator, monos));
 	}
 
@@ -906,7 +905,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static <R> Mono<@NonNull R> zip(Function<? super @NonNull Object @NonNull [], ? extends @NonNull R> combinator, Mono<@NonNull ?> @NonNull ... monos) {
+	public static <R> Mono<R> zip(Function<? super Object[], ? extends R> combinator, Mono<?>... monos) {
 		if (monos.length == 0) {
 			return empty();
 		}
@@ -932,7 +931,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono}.
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static <T1, T2> Mono<@NonNull Tuple2<@NonNull T1, @NonNull T2>> zipDelayError(Mono<? extends @NonNull T1> p1, Mono<? extends @NonNull T2> p2) {
+	public static <T1, T2> Mono<Tuple2<T1, T2>> zipDelayError(Mono<? extends T1> p1, Mono<? extends T2> p2) {
 		return onAssembly(new MonoZip(true, a -> Tuples.fromArray((Object[])a), p1, p2));
 	}
 
@@ -954,7 +953,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono}.
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static <T1, T2, T3> Mono<@NonNull Tuple3<@NonNull T1, @NonNull T2, @NonNull T3>> zipDelayError(Mono<? extends @NonNull T1> p1, Mono<? extends @NonNull T2> p2, Mono<? extends @NonNull T3> p3) {
+	public static <T1, T2, T3> Mono<Tuple3<T1, T2, T3>> zipDelayError(Mono<? extends T1> p1, Mono<? extends T2> p2, Mono<? extends T3> p3) {
 		return onAssembly(new MonoZip(true, a -> Tuples.fromArray((Object[])a), p1, p2, p3));
 	}
 
@@ -978,10 +977,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono}.
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static <T1, T2, T3, T4> Mono<@NonNull Tuple4<@NonNull T1, @NonNull T2, @NonNull T3, @NonNull T4>> zipDelayError(Mono<? extends @NonNull T1> p1,
-			Mono<? extends @NonNull T2> p2,
-			Mono<? extends @NonNull T3> p3,
-			Mono<? extends @NonNull T4> p4) {
+	public static <T1, T2, T3, T4> Mono<Tuple4<T1, T2, T3, T4>> zipDelayError(Mono<? extends T1> p1,
+			Mono<? extends T2> p2,
+			Mono<? extends T3> p3,
+			Mono<? extends T4> p4) {
 		return onAssembly(new MonoZip(true, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4));
 	}
 
@@ -1006,11 +1005,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono}.
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static <T1, T2, T3, T4, T5> Mono<@NonNull Tuple5<@NonNull T1, @NonNull T2, @NonNull T3, @NonNull T4, @NonNull T5>> zipDelayError(Mono<? extends @NonNull T1> p1,
-			Mono<? extends @NonNull T2> p2,
-			Mono<? extends @NonNull T3> p3,
-			Mono<? extends @NonNull T4> p4,
-			Mono<? extends @NonNull T5> p5) {
+	public static <T1, T2, T3, T4, T5> Mono<Tuple5<T1, T2, T3, T4, T5>> zipDelayError(Mono<? extends T1> p1,
+			Mono<? extends T2> p2,
+			Mono<? extends T3> p3,
+			Mono<? extends T4> p4,
+			Mono<? extends T5> p5) {
 		return onAssembly(new MonoZip(true, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4, p5));
 	}
 
@@ -1038,12 +1037,12 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono}.
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static <T1, T2, T3, T4, T5, T6> Mono<@NonNull Tuple6<@NonNull T1, @NonNull T2, @NonNull T3, @NonNull T4, @NonNull T5, @NonNull T6>> zipDelayError(Mono<? extends @NonNull T1> p1,
-			Mono<? extends @NonNull T2> p2,
-			Mono<? extends @NonNull T3> p3,
-			Mono<? extends @NonNull T4> p4,
-			Mono<? extends @NonNull T5> p5,
-			Mono<? extends @NonNull T6> p6) {
+	public static <T1, T2, T3, T4, T5, T6> Mono<Tuple6<T1, T2, T3, T4, T5, T6>> zipDelayError(Mono<? extends T1> p1,
+			Mono<? extends T2> p2,
+			Mono<? extends T3> p3,
+			Mono<? extends T4> p4,
+			Mono<? extends T5> p5,
+			Mono<? extends T6> p6) {
 		return onAssembly(new MonoZip(true, a -> Tuples.fromArray((Object[])a), p1, p2, p3, p4, p5, p6));
 	}
 
@@ -1064,7 +1063,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono}.
 	 */
-	public static <R> Mono<@NonNull R> zipDelayError(final Iterable<? extends @NonNull Mono<@NonNull ?>> monos, Function<? super @NonNull Object @NonNull [], ? extends @NonNull R> combinator) {
+	public static <R> Mono<R> zipDelayError(final Iterable<? extends Mono<?>> monos, Function<? super Object[], ? extends R> combinator) {
 		return onAssembly(new MonoZip<>(true, combinator, monos));
 	}
 
@@ -1084,8 +1083,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a combined {@link Mono}.
 	 */
-	public static <R>  Mono<@NonNull R> zipDelayError(Function<? super @NonNull Object @NonNull [], ? extends @NonNull R>
-			combinator, Mono<?> @NonNull ... monos) {
+	public static <R>  Mono<R> zipDelayError(Function<? super Object[], ? extends R>
+			combinator, Mono<?>... monos) {
 		if (monos.length == 0) {
 			return empty();
 		}
@@ -1113,7 +1112,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return the {@link Mono} transformed to an instance of P
 	 * @see #compose for a bounded conversion to {@link Publisher}
 	 */
-	public final <P> P as(Function<? super @NonNull Mono<@NonNull T>, @NonNull P> transformer) {
+	public final <P> P as(Function<? super Mono<T>, P> transformer) {
 		return transformer.apply(this);
 	}
 
@@ -1129,7 +1128,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new combined Mono
 	 * @see #when
 	 */
-	public final Mono<Void> and(Publisher<@NonNull ?> other) {
+	public final Mono<Void> and(Publisher<?> other) {
 		if (this instanceof MonoWhen) {
 			@SuppressWarnings("unchecked") MonoWhen o = (MonoWhen) this;
 			Mono<Void> result = o.whenAdditionalSource(other);
@@ -1197,7 +1196,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a casted {@link Mono}
 	 */
-	public final <E> Mono<@NonNull E> cast(Class<E> clazz) {
+	public final <E> Mono<E> cast(Class<E> clazz) {
 		Objects.requireNonNull(clazz, "clazz");
 		return map(clazz::cast);
 	}
@@ -1211,11 +1210,11 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a replaying {@link Mono}
 	 */
-	public final Mono<@NonNull T> cache() {
+	public final Mono<T> cache() {
 		return onAssembly(new MonoProcessor<>(this));
 	}
 
-	public final Mono<@NonNull T> cache(Duration ttl) {
+	public final Mono<T> cache(Duration ttl) {
 		return onAssembly(new MonoCacheTime<>(this, ttl, Schedulers.parallel()));
 	}
 
@@ -1228,7 +1227,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a scheduled cancel {@link Mono}
 	 */
-	public final Mono<@NonNull T> cancelOn(Scheduler scheduler) {
+	public final Mono<T> cancelOn(Scheduler scheduler) {
 		return onAssembly(new MonoCancelOn<>(this, scheduler));
 	}
 
@@ -1242,7 +1241,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return the assembly tracing {@link Mono}
 	 */
-	public final Mono<@NonNull T> checkpoint() {
+	public final Mono<T> checkpoint() {
 		return checkpoint(null, true);
 	}
 
@@ -1262,7 +1261,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param description a unique enough description to include in the light assembly traceback.
 	 * @return the assembly marked {@link Mono}
 	 */
-	public final Mono<@NonNull T> checkpoint(String description) {
+	public final Mono<T> checkpoint(String description) {
 		return checkpoint(Objects.requireNonNull(description), false);
 	}
 
@@ -1292,7 +1291,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * to use a stack trace.
 	 * @return the assembly marked {@link Mono}.
 	 */
-	public final Mono<@NonNull T> checkpoint(@Nullable String description, boolean forceStackTrace) {
+	public final Mono<T> checkpoint(@Nullable String description, boolean forceStackTrace) {
 		return new MonoOnAssembly<>(this, description, !forceStackTrace);
 	}
 
@@ -1313,7 +1312,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @see #as as() for a loose conversion to an arbitrary type
 	 * @see #transform(Function)
 	 */
-	public final <V> Mono<@NonNull V> compose(Function<? super @NonNull Mono<@NonNull T>, ? extends @NonNull Publisher<@NonNull V>> transformer) {
+	public final <V> Mono<V> compose(Function<? super Mono<T>, ? extends Publisher<V>> transformer) {
 		return defer(() -> from(transformer.apply(this)));
 	}
 
@@ -1327,7 +1326,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a concatenated {@link Flux}
 	 */
-	public final Flux<@NonNull T> concatWith(Publisher<? extends @NonNull T> other) {
+	public final Flux<T> concatWith(Publisher<? extends T> other) {
 		return Flux.concat(this, other);
 	}
 
@@ -1343,7 +1342,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @see Flux#defaultIfEmpty(Object)
 	 */
-	public final Mono<@NonNull T> defaultIfEmpty(T defaultV) {
+	public final Mono<T> defaultIfEmpty(T defaultV) {
 	    if (this instanceof Fuseable.ScalarCallable) {
 		    try {
 			    T v = block();
@@ -1374,7 +1373,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param delay duration by which to delay the {@link Subscriber#onNext} signal
 	 * @return a delayed {@link Mono}
 	 */
-	public final Mono<@NonNull T> delayElement(Duration delay) {
+	public final Mono<T> delayElement(Duration delay) {
 		return delayElement(delay, Schedulers.parallel());
 	}
 
@@ -1394,7 +1393,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param timer a time-capable {@link Scheduler} instance to delay the value signal on
 	 * @return a delayed {@link Mono}
 	 */
-	public final Mono<@NonNull T> delayElement(Duration delay, Scheduler timer) {
+	public final Mono<T> delayElement(Duration delay, Scheduler timer) {
 		return onAssembly(new MonoDelayElement<>(this, delay.toMillis(), TimeUnit.MILLISECONDS, timer));
 	}
 
@@ -1418,7 +1417,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return this Mono, but delayed until the derived publisher terminates.
 	 */
-	public final Mono<@NonNull T> delayUntil(Function<? super @NonNull T, ? extends @NonNull Publisher<@NonNull ?>> triggerProvider) {
+	public final Mono<T> delayUntil(Function<? super T, ? extends Publisher<?>> triggerProvider) {
 		Objects.requireNonNull(triggerProvider, "triggerProvider required");
 		if (this instanceof MonoDelayUntil) {
 			return ((MonoDelayUntil<T>) this).copyWithNewTriggerGenerator(false,triggerProvider);
@@ -1438,7 +1437,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a delayed {@link Mono}
 	 *
 	 */
-	public final Mono<@NonNull T> delaySubscription(Duration delay) {
+	public final Mono<T> delaySubscription(Duration delay) {
 		return delaySubscription(delay, Schedulers.parallel());
 	}
 
@@ -1455,7 +1454,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a delayed {@link Mono}
 	 *
 	 */
-	public final Mono<@NonNull T> delaySubscription(Duration delay, Scheduler timer) {
+	public final Mono<T> delaySubscription(Duration delay, Scheduler timer) {
 		return delaySubscription(Mono.delay(delay, timer));
 	}
 
@@ -1473,7 +1472,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a delayed {@link Mono}
 	 *
 	 */
-	public final <U> Mono<@NonNull T> delaySubscription(Publisher<@NonNull U> subscriptionDelay) {
+	public final <U> Mono<T> delaySubscription(Publisher<U> subscriptionDelay) {
 		return onAssembly(new MonoDelaySubscription<>(this, subscriptionDelay));
 	}
 
@@ -1491,7 +1490,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a dematerialized {@link Mono}
 	 * @see #materialize()
 	 */
-	public final <X> Mono<@NonNull X> dematerialize() {
+	public final <X> Mono<X> dematerialize() {
 		@SuppressWarnings("unchecked")
 		Mono<Signal<X>> thiz = (Mono<Signal<X>>) this;
 		return onAssembly(new MonoDematerialize<>(thiz));
@@ -1513,7 +1512,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public final Mono<@NonNull T> doAfterSuccessOrError(BiConsumer<? super @Nullable T, @Nullable Throwable> afterSuccessOrError) {
+	public final Mono<T> doAfterSuccessOrError(BiConsumer<? super T, Throwable> afterSuccessOrError) {
 		return onAssembly(new MonoPeekTerminal<>(this, null, null, afterSuccessOrError));
 	}
 
@@ -1548,7 +1547,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * or cancel)
 	 * @return an observed {@link Mono}
 	 */
-	public final Mono<@NonNull T> doFinally(Consumer<@NonNull SignalType> onFinally) {
+	public final Mono<T> doFinally(Consumer<SignalType> onFinally) {
 		Objects.requireNonNull(onFinally, "onFinally");
 		if (this instanceof Fuseable) {
 			return onAssembly(new MonoDoFinallyFuseable<>(this, onFinally));
@@ -1567,7 +1566,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public final Mono<@NonNull T> doOnCancel(Runnable onCancel) {
+	public final Mono<T> doOnCancel(Runnable onCancel) {
 		Objects.requireNonNull(onCancel, "onCancel");
 		return doOnSignal(this, null, null, null, null, null, onCancel);
 	}
@@ -1583,7 +1582,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public final Mono<@NonNull T> doOnNext(Consumer<? super @NonNull T> onNext) {
+	public final Mono<T> doOnNext(Consumer<? super T> onNext) {
 		Objects.requireNonNull(onNext, "onNext");
 		return doOnSignal(this, null, onNext, null, null, null, null);
 	}
@@ -1605,7 +1604,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public final Mono<@NonNull T> doOnSuccess(Consumer<? super @Nullable T> onSuccess) {
+	public final Mono<T> doOnSuccess(Consumer<? super T> onSuccess) {
 		Objects.requireNonNull(onSuccess, "onSuccess");
 		return onAssembly(new MonoPeekTerminal<>(this, onSuccess, null, null));
 	}
@@ -1625,7 +1624,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @see #materialize()
 	 * @see Signal
 	 */
-	public final Mono<@NonNull T> doOnEach(Consumer<? super @NonNull Signal<@Nullable T>> signalConsumer) {
+	public final Mono<T> doOnEach(Consumer<? super Signal<T>> signalConsumer) {
 		Objects.requireNonNull(signalConsumer, "signalConsumer");
 		return doOnSignal(this,
 				null,
@@ -1644,7 +1643,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public final Mono<@NonNull T> doOnError(Consumer<? super @NonNull Throwable> onError) {
+	public final Mono<T> doOnError(Consumer<? super Throwable> onError) {
 		Objects.requireNonNull(onError, "onError");
 		return doOnSignal(this, null, null, onError, null, null, null);
 	}
@@ -1662,8 +1661,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return an observed  {@link Mono}
 	 *
 	 */
-	public final <E extends Throwable> Mono<@NonNull T> doOnError(Class<E> exceptionType,
-			final Consumer<? super @NonNull E> onError) {
+	public final <E extends Throwable> Mono<T> doOnError(Class<E> exceptionType,
+			final Consumer<? super E> onError) {
 		Objects.requireNonNull(exceptionType, "type");
 		@SuppressWarnings("unchecked")
 		Consumer<Throwable> handler = (Consumer<Throwable>)onError;
@@ -1681,8 +1680,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return an observed  {@link Mono}
 	 *
 	 */
-	public final Mono<@NonNull T> doOnError(Predicate<? super @NonNull Throwable> predicate,
-			final Consumer<? super @NonNull Throwable> onError) {
+	public final Mono<T> doOnError(Predicate<? super Throwable> predicate,
+			final Consumer<? super Throwable> onError) {
 		Objects.requireNonNull(predicate, "predicate");
 		return doOnError(t -> {
 			if (predicate.test(t)) {
@@ -1703,7 +1702,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return an observed  {@link Mono}
 	 */
-	public final Mono<@NonNull T> doOnRequest(final LongConsumer consumer) {
+	public final Mono<T> doOnRequest(final LongConsumer consumer) {
 		Objects.requireNonNull(consumer, "consumer");
 		return doOnSignal(this, null, null, null, null, consumer, null);
 	}
@@ -1718,7 +1717,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public final Mono<@NonNull T> doOnSubscribe(Consumer<? super @NonNull Subscription> onSubscribe) {
+	public final Mono<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
 		Objects.requireNonNull(onSubscribe, "onSubscribe");
 		return doOnSignal(this, onSubscribe, null, null,  null, null, null);
 	}
@@ -1739,7 +1738,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public final Mono<T> doOnSuccessOrError(BiConsumer<? super @Nullable T, @Nullable Throwable> onSuccessOrError) {
+	public final Mono<T> doOnSuccessOrError(BiConsumer<? super T, Throwable> onSuccessOrError) {
 		Objects.requireNonNull(onSuccessOrError, "onSuccessOrError");
 		return onAssembly(new MonoPeekTerminal<>(this, null, onSuccessOrError, null));
 	}
@@ -1775,7 +1774,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Mono} that emits a tuple of time elapsed in milliseconds and matching data
 	 */
-	public final Mono<@NonNull Tuple2<@NonNull Long, @NonNull T>> elapsed() {
+	public final Mono<Tuple2<Long, T>> elapsed() {
 		return elapsed(Schedulers.parallel());
 	}
 
@@ -1790,7 +1789,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param scheduler a {@link Scheduler} instance to read time from
 	 * @return a new {@link Mono} that emits a tuple of time elapsed in milliseconds and matching data
 	 */
-	public final Mono<@NonNull Tuple2<@NonNull Long, @NonNull T>> elapsed(Scheduler scheduler) {
+	public final Mono<Tuple2<Long, T>> elapsed(Scheduler scheduler) {
 		Objects.requireNonNull(scheduler, "scheduler");
 		return onAssembly(new MonoElapsed<>(this, scheduler));
 	}
@@ -1960,7 +1959,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a filtered {@link Mono}
 	 */
-	public final Mono<@NonNull T> filter(final Predicate<? super @NonNull T> tester) {
+	public final Mono<T> filter(final Predicate<? super T> tester) {
 		if (this instanceof Fuseable) {
 			return onAssembly(new MonoFilterFuseable<>(this, tester));
 		}
@@ -1980,7 +1979,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * to filter the Mono with
 	 * @return a filtered {@link Mono}
 	 */
-	public final Mono<@NonNull T> filterWhen(Function<? super @NonNull T, ? extends @NonNull Publisher<@NonNull Boolean>> asyncPredicate) {
+	public final Mono<T> filterWhen(Function<? super T, ? extends Publisher<Boolean>> asyncPredicate) {
 		return onAssembly(new MonoFilterWhen<>(this, asyncPredicate));
 	}
 
@@ -1996,7 +1995,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Mono} with an asynchronously mapped value.
 	 */
-	public final <R> Mono<@NonNull R> flatMap(Function<? super @NonNull T, ? extends @NonNull Mono<? extends @NonNull R>>
+	public final <R> Mono<R> flatMap(Function<? super T, ? extends Mono<? extends R>>
 			transformer) {
 		return onAssembly(new MonoFlatMap<>(this, transformer));
 	}
@@ -2014,7 +2013,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} as the sequence is not guaranteed to be single at most
 	 */
-	public final <R> Flux<@NonNull R> flatMapMany(Function<? super @NonNull T, ? extends @NonNull Publisher<? extends @NonNull R>> mapper) {
+	public final <R> Flux<R> flatMapMany(Function<? super T, ? extends Publisher<? extends R>> mapper) {
 		return Flux.onAssembly(new MonoFlatMapMany<>(this, mapper));
 	}
 
@@ -2034,7 +2033,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @see Flux#flatMap(Function, Function, Supplier)
 	 */
-	public final <R> Flux<@NonNull R> flatMapMany(Function<? super @NonNull T, ? extends @NonNull Publisher<? extends @NonNull R>> mapperOnNext,
+	public final <R> Flux<R> flatMapMany(Function<? super T, ? extends Publisher<? extends R>> mapperOnNext,
 			Function<? super Throwable, ? extends Publisher<? extends R>> mapperOnError,
 			Supplier<? extends Publisher<? extends R>> mapperOnComplete) {
 		return flux().flatMap(mapperOnNext, mapperOnError, mapperOnComplete);
@@ -2054,7 +2053,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a merged {@link Flux}
 	 *
 	 */
-	public final <R> Flux<@NonNull R> flatMapIterable(Function<? super @NonNull T, ? extends @NonNull Iterable<? extends @NonNull R>> mapper) {
+	public final <R> Flux<R> flatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
 		return Flux.onAssembly(new MonoFlattenIterable<>(this, mapper, Integer
 				.MAX_VALUE, Queues.one()));
 	}
@@ -2064,7 +2063,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} variant of this {@link Mono}
 	 */
-    public final Flux<@NonNull T> flux() {
+    public final Flux<T> flux() {
 	    if (this instanceof Callable) {
 	        if (this instanceof Fuseable.ScalarCallable) {
 		        T v;
@@ -2094,7 +2093,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Mono} with <code>true</code> if a value is emitted and <code>false</code>
 	 * otherwise
 	 */
-	public final Mono<@NonNull Boolean> hasElement() {
+	public final Mono<Boolean> hasElement() {
 		return onAssembly(new MonoHasElement<>(this));
 	}
 
@@ -2109,7 +2108,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a transformed {@link Mono}
 	 */
-	public final <R> Mono<@NonNull R> handle(BiConsumer<? super @NonNull T, @NonNull SynchronousSink<@NonNull R>> handler) {
+	public final <R> Mono<R> handle(BiConsumer<? super T, SynchronousSink<R>> handler) {
 		if (this instanceof Fuseable) {
 			return onAssembly(new MonoHandleFuseable<>(this, handler));
 		}
@@ -2124,7 +2123,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Mono} preventing {@link Publisher} / {@link Subscription} based Reactor optimizations
 	 */
-	public final Mono<@NonNull T> hide() {
+	public final Mono<T> hide() {
 	    return onAssembly(new MonoHide<>(this));
 	}
 	
@@ -2137,7 +2136,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new empty {@link Mono} representing the completion of this {@link Mono}.
 	 */
-	public final Mono<@NonNull T> ignoreElement() {
+	public final Mono<T> ignoreElement() {
 		return onAssembly(new MonoIgnoreElement<>(this));
 	}
 
@@ -2156,7 +2155,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @see Flux#log()
 	 */
-	public final Mono<@NonNull T> log() {
+	public final Mono<T> log() {
 		return log(null, Level.INFO);
 	}
 
@@ -2198,7 +2197,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Mono}
 	 *
 	 */
-	public final Mono<@NonNull T> log(@Nullable String category, Level level, SignalType @NonNull ... options) {
+	public final Mono<T> log(@Nullable String category, Level level, SignalType... options) {
 		return log(category, level, false, options);
 	}
 
@@ -2226,10 +2225,10 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new unaltered {@link Mono}
 	 */
-	public final Mono<@NonNull T> log(@Nullable String category,
+	public final Mono<T> log(@Nullable String category,
 			Level level,
 			boolean showOperatorLine,
-			SignalType @NonNull ... options) {
+			SignalType... options) {
 		SignalLogger<T> log = new SignalLogger<>(this, category, level,
 				showOperatorLine, options);
 
@@ -2250,7 +2249,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public final <R> Mono<@NonNull R> map(Function<? super @NonNull T, ? extends @NonNull R> mapper) {
+	public final <R> Mono<R> map(Function<? super T, ? extends R> mapper) {
 		if (this instanceof Fuseable) {
 			return onAssembly(new MonoMapFuseable<>(this, mapper));
 		}
@@ -2269,7 +2268,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono} of materialized {@link Signal}
 	 * @see #dematerialize()
 	 */
-	public final Mono<@NonNull Signal<@Nullable T>> materialize() {
+	public final Mono<Signal<T>> materialize() {
 		return onAssembly(new MonoMaterialize<>(this));
 	}
 
@@ -2284,7 +2283,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} as the sequence is not guaranteed to be at most 1
 	 */
-	public final Flux<@NonNull T> mergeWith(Publisher<? extends @NonNull T> other) {
+	public final Flux<T> mergeWith(Publisher<? extends T> other) {
 		return Flux.merge(this, other);
 	}
 
@@ -2295,7 +2294,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param name a name for the sequence
 	 * @return the same sequence, but bearing a name
 	 */
-	public final Mono<@NonNull T> name(String name) {
+	public final Mono<T> name(String name) {
 		return MonoName.createOrAppend(this, name);
 	}
 
@@ -2310,7 +2309,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Mono}
 	 * @see #first
 	 */
-	public final Mono<@NonNull T> or(Mono<? extends @NonNull T> other) {
+	public final Mono<T> or(Mono<? extends T> other) {
 		if (this instanceof MonoFirst) {
 			MonoFirst<T> a = (MonoFirst<T>) this;
 			Mono<T> result =  a.orAdditionalSource(other);
@@ -2333,7 +2332,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Mono} filtered on the requested type
 	 */
-	public final <U> Mono<@NonNull U> ofType(final Class<U> clazz) {
+	public final <U> Mono<U> ofType(final Class<U> clazz) {
 		Objects.requireNonNull(clazz, "clazz");
 		return filter(o -> clazz.isAssignableFrom(o.getClass())).cast(clazz);
 	}
@@ -2350,8 +2349,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono} that transforms some source errors to other errors
 	 */
-	public final Mono<@NonNull T> onErrorMap(Predicate<? super @NonNull Throwable> predicate,
-			Function<? super @NonNull Throwable, ? extends @NonNull Throwable> mapper) {
+	public final Mono<T> onErrorMap(Predicate<? super Throwable> predicate,
+			Function<? super Throwable, ? extends Throwable> mapper) {
 		return onErrorResume(predicate, e -> Mono.error(mapper.apply(e)));
 	}
 
@@ -2365,7 +2364,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono} that transforms source errors to other errors
 	 */
-	public final Mono<@NonNull T> onErrorMap(Function<? super @NonNull Throwable, ? extends @NonNull Throwable> mapper) {
+	public final Mono<T> onErrorMap(Function<? super Throwable, ? extends Throwable> mapper) {
 		return onErrorResume(e -> Mono.error(mapper.apply(e)));
 	}
 
@@ -2381,8 +2380,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono} that transforms some source errors to other errors
 	 */
-	public final <E extends Throwable> Mono<@NonNull T> onErrorMap(Class<E> type,
-			Function<? super @NonNull E, ? extends @NonNull Throwable> mapper) {
+	public final <E extends Throwable> Mono<T> onErrorMap(Class<E> type,
+			Function<? super E, ? extends Throwable> mapper) {
 		@SuppressWarnings("unchecked")
 		Function<Throwable, Throwable> handler = (Function<Throwable, Throwable>)mapper;
 		return onErrorMap(type::isInstance, handler);
@@ -2401,8 +2400,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @see Flux#onErrorResume
 	 */
-	public final Mono<@NonNull T> onErrorResume(Function<? super @NonNull Throwable, ? extends @NonNull Mono<? extends
-            @NonNull T>> fallback) {
+	public final Mono<T> onErrorResume(Function<? super Throwable, ? extends Mono<? extends
+			T>> fallback) {
 		return onAssembly(new MonoOnErrorResume<>(this, fallback));
 	}
 
@@ -2420,8 +2419,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono} falling back upon source onError
 	 * @see Flux#onErrorResume
 	 */
-	public final <E extends Throwable> Mono<@NonNull T> onErrorResume(Class<E> type,
-			Function<? super @NonNull E, ? extends @NonNull Mono<? extends @NonNull T>> fallback) {
+	public final <E extends Throwable> Mono<T> onErrorResume(Class<E> type,
+			Function<? super E, ? extends Mono<? extends T>> fallback) {
 		Objects.requireNonNull(type, "type");
 		@SuppressWarnings("unchecked")
 		Function<? super Throwable, Mono<? extends T>> handler = (Function<? super
@@ -2441,8 +2440,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono} falling back upon source onError
 	 * @see Flux#onErrorResume
 	 */
-	public final Mono<@NonNull T> onErrorResume(Predicate<? super @NonNull Throwable> predicate,
-			Function<? super @NonNull Throwable, ? extends @NonNull Mono<? extends @NonNull T>> fallback) {
+	public final Mono<T> onErrorResume(Predicate<? super Throwable> predicate,
+			Function<? super Throwable, ? extends Mono<? extends T>> fallback) {
 		Objects.requireNonNull(predicate, "predicate");
 		return onErrorResume(e -> predicate.test(e) ? fallback.apply(e) : error(e));
 	}
@@ -2457,7 +2456,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new falling back {@link Mono}
 	 */
-	public final Mono<@NonNull T> onErrorReturn(final T fallback) {
+	public final Mono<T> onErrorReturn(final T fallback) {
 		return onErrorResume(throwable -> just(fallback));
 	}
 
@@ -2472,7 +2471,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new falling back {@link Mono}
 	 */
-	public final <E extends Throwable> Mono<@NonNull T> onErrorReturn(Class<E> type, T fallbackValue) {
+	public final <E extends Throwable> Mono<T> onErrorReturn(Class<E> type, T fallbackValue) {
 		return onErrorResume(type, throwable -> just(fallbackValue));
 	}
 
@@ -2486,7 +2485,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public final Mono<@NonNull T> onErrorReturn(Predicate<? super @NonNull Throwable> predicate, T fallbackValue) {
+	public final Mono<T> onErrorReturn(Predicate<? super Throwable> predicate, T fallbackValue) {
 		return onErrorResume(predicate,  throwable -> just(fallbackValue));
 	}
 
@@ -2498,7 +2497,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a detachable {@link Mono}
 	 */
-	public final Mono<@NonNull T> onTerminateDetach() {
+	public final Mono<T> onTerminateDetach() {
 		return new MonoDetach<>(this);
 	}
 
@@ -2512,8 +2511,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public final <R> Mono<@NonNull R> publish(Function<? super @NonNull Mono<T>, ? extends @NonNull Mono<? extends
-            @NonNull R>> transform) {
+	public final <R> Mono<R> publish(Function<? super Mono<T>, ? extends Mono<? extends
+			R>> transform) {
 		return onAssembly(new MonoPublishMulticast<>(this, transform));
 	}
 
@@ -2536,7 +2535,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return an asynchronously producing {@link Mono}
 	 */
-	public final Mono<@NonNull T> publishOn(Scheduler scheduler) {
+	public final Mono<T> publishOn(Scheduler scheduler) {
 		if(this instanceof Callable) {
 			if (this instanceof Fuseable.ScalarCallable) {
 				try {
@@ -2563,7 +2562,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return an indefinitely repeated {@link Flux} on onComplete
 	 */
-	public final Flux<@NonNull T> repeat() {
+	public final Flux<T> repeat() {
 		return repeat(Flux.ALWAYS_BOOLEAN_SUPPLIER);
 	}
 
@@ -2578,7 +2577,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Flux} that repeats on onComplete while the predicate matches
 	 *
 	 */
-	public final Flux<@NonNull T> repeat(BooleanSupplier predicate) {
+	public final Flux<T> repeat(BooleanSupplier predicate) {
 		return Flux.onAssembly(new MonoRepeatPredicate<>(this, predicate));
 	}
 
@@ -2592,7 +2591,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} that repeats on onComplete, up to the specified number of repetitions
 	 */
-	public final Flux<@NonNull T> repeat(long numRepeat) {
+	public final Flux<T> repeat(long numRepeat) {
 		if(numRepeat == 0){
 			return Flux.empty();
 		}
@@ -2612,7 +2611,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Flux} that repeats on onComplete while the predicate matches,
 	 * up to the specified number of repetitions
 	 */
-	public final Flux<@NonNull T> repeat(long numRepeat, BooleanSupplier predicate) {
+	public final Flux<T> repeat(long numRepeat, BooleanSupplier predicate) {
 		return Flux.defer(() -> repeat(Flux.countingBooleanSupplier(predicate, numRepeat)));
 	}
 
@@ -2633,7 +2632,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Flux} that repeats on onComplete when the companion {@link Publisher} produces an
 	 * onNext signal
 	 */
-	public final Flux<@NonNull T> repeatWhen(Function<@NonNull Flux<@NonNull Long>, ? extends @NonNull Publisher<@NonNull ?>> repeatFactory) {
+	public final Flux<T> repeatWhen(Function<Flux<Long>, ? extends Publisher<?>> repeatFactory) {
 		return Flux.onAssembly(new MonoRepeatWhen<>(this, repeatFactory));
 	}
 
@@ -2653,7 +2652,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * as long as the companion {@link Publisher} produces an onNext signal
 	 *
 	 */
-	public final Mono<@NonNull T> repeatWhenEmpty(Function<@NonNull Flux<@NonNull Long>, ? extends @NonNull Publisher<@NonNull ?>> repeatFactory) {
+	public final Mono<T> repeatWhenEmpty(Function<Flux<Long>, ? extends Publisher<?>> repeatFactory) {
 		return repeatWhenEmpty(Integer.MAX_VALUE, repeatFactory);
 	}
 
@@ -2676,7 +2675,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono} that resubscribes to this {@link Mono} if the previous subscription was empty,
 	 * as long as the companion {@link Publisher} produces an onNext signal and the maximum number of repeats isn't exceeded.
 	 */
-	public final Mono<@NonNull T> repeatWhenEmpty(int maxRepeat, Function<@NonNull Flux<@NonNull Long>, ? extends @NonNull Publisher<@NonNull ?>> repeatFactory) {
+	public final Mono<T> repeatWhenEmpty(int maxRepeat, Function<Flux<Long>, ? extends Publisher<?>> repeatFactory) {
 		return Mono.defer(() -> {
 			Flux<Long> iterations;
 
@@ -2704,7 +2703,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono} that retries on onError
 	 */
-	public final Mono<@NonNull T> retry() {
+	public final Mono<T> retry() {
 		return retry(Long.MAX_VALUE);
 	}
 
@@ -2720,7 +2719,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono} that retries on onError up to the specified number of retry attempts.
 	 */
-	public final Mono<@NonNull T> retry(long numRetries) {
+	public final Mono<T> retry(long numRetries) {
 		return onAssembly(new MonoRetry<>(this, numRetries));
 	}
 
@@ -2735,7 +2734,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono} that retries on onError if the predicates matches.
 	 */
-	public final Mono<@NonNull T> retry(Predicate<? super @NonNull Throwable> retryMatcher) {
+	public final Mono<T> retry(Predicate<? super Throwable> retryMatcher) {
 		return onAssembly(new MonoRetryPredicate<>(this, retryMatcher));
 	}
 
@@ -2753,7 +2752,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * attempts, only if the predicate matches.
 	 *
 	 */
-	public final Mono<@NonNull T> retry(long numRetries, Predicate<? super @NonNull Throwable> retryMatcher) {
+	public final Mono<T> retry(long numRetries, Predicate<? super Throwable> retryMatcher) {
 		return defer(() -> retry(Flux.countingPredicate(retryMatcher, numRetries)));
 	}
 
@@ -2773,7 +2772,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono} that retries on onError when the companion {@link Publisher} produces an
 	 * onNext signal
 	 */
-	public final Mono<@NonNull T> retryWhen(Function<@NonNull Flux<@NonNull Throwable>, ? extends @NonNull Publisher<@NonNull ?>> whenFactory) {
+	public final Mono<T> retryWhen(Function<Flux<Throwable>, ? extends Publisher<?>> whenFactory) {
 		return onAssembly(new MonoRetryWhen<>(this, whenFactory));
 	}
 
@@ -2817,7 +2816,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
 	 */
-	public final Disposable subscribe(Consumer<? super @NonNull T> consumer) {
+	public final Disposable subscribe(Consumer<? super T> consumer) {
 		Objects.requireNonNull(consumer, "consumer");
 		return subscribe(consumer, null, null);
 	}
@@ -2842,7 +2841,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
 	 */
-	public final Disposable subscribe(@Nullable Consumer<? super @NonNull T> consumer, Consumer<? super @NonNull Throwable> errorConsumer) {
+	public final Disposable subscribe(@Nullable Consumer<? super T> consumer, Consumer<? super Throwable> errorConsumer) {
 		Objects.requireNonNull(errorConsumer, "errorConsumer");
 		return subscribe(consumer, errorConsumer, null);
 	}
@@ -2869,8 +2868,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
 	 */
 	public final Disposable subscribe(
-			@Nullable Consumer<? super @NonNull T> consumer,
-			@Nullable Consumer<? super @NonNull Throwable> errorConsumer,
+			@Nullable Consumer<? super T> consumer,
+			@Nullable Consumer<? super Throwable> errorConsumer,
 			@Nullable Runnable completeConsumer) {
 		return subscribe(consumer, errorConsumer, completeConsumer, null);
 	}
@@ -2901,16 +2900,16 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
 	 */
 	public final Disposable subscribe(
-			@Nullable Consumer<? super @NonNull T> consumer,
-			@Nullable Consumer<? super @NonNull Throwable> errorConsumer,
+			@Nullable Consumer<? super T> consumer,
+			@Nullable Consumer<? super Throwable> errorConsumer,
 			@Nullable Runnable completeConsumer,
-			@Nullable Consumer<? super @Nullable Subscription> subscriptionConsumer) {
+			@Nullable Consumer<? super Subscription> subscriptionConsumer) {
 		return subscribeWith(new LambdaMonoSubscriber<>(consumer, errorConsumer,
 				completeConsumer, subscriptionConsumer));
 	}
 
 	@Override
-	public final void subscribe(Subscriber<? super @NonNull T> actual) {
+	public final void subscribe(Subscriber<? super T> actual) {
 		onLastAssembly(this).subscribe(Operators.toCoreSubscriber(actual));
 	}
 
@@ -2924,7 +2923,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param actual the {@link Subscriber} interested into the published sequence
 	 * @see Publisher#subscribe(Subscriber)
 	 */
-	public abstract void subscribe(CoreSubscriber<? super @NonNull T> actual);
+	public abstract void subscribe(CoreSubscriber<? super T> actual);
 
 	/**
 	 * Enrich a potentially empty downstream {@link Context} by adding all values
@@ -2946,7 +2945,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a contextualized {@link Mono}
 	 * @see Context
 	 */
-	public final Mono<@NonNull T> subscriberContext(Context mergeContext) {
+	public final Mono<T> subscriberContext(Context mergeContext) {
 		return subscriberContext(c -> c.putAll(mergeContext));
 	}
 
@@ -2969,7 +2968,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a contextualized {@link Mono}
 	 * @see Context
 	 */
-	public final Mono<@NonNull T> subscriberContext(Function<@NonNull Context, @NonNull Context> doOnContext) {
+	public final Mono<T> subscriberContext(Function<Context, Context> doOnContext) {
 		return new MonoSubscriberContext<>(this, doOnContext);
 	}
 
@@ -2990,7 +2989,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Flux} requesting asynchronously
 	 * @see #publishOn(Scheduler)
 	 */
-	public final Mono<@NonNull T> subscribeOn(Scheduler scheduler) {
+	public final Mono<T> subscribeOn(Scheduler scheduler) {
 		if(this instanceof Callable) {
 			if (this instanceof Fuseable.ScalarCallable) {
 				try {
@@ -3018,7 +3017,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return the passed {@link Subscriber} after subscribing it to this {@link Mono}
 	 */
-	public final <E extends @NonNull Subscriber<? super @NonNull T>> E subscribeWith(E subscriber) {
+	public final <E extends Subscriber<? super T>> E subscribeWith(E subscriber) {
 		subscribe(subscriber);
 		return subscriber;
 	}
@@ -3034,7 +3033,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a {@link Mono} falling back upon source completing without elements
 	 * @see Flux#switchIfEmpty
 	 */
-	public final Mono<@NonNull T> switchIfEmpty(Mono<? extends @NonNull T> alternate) {
+	public final Mono<T> switchIfEmpty(Mono<? extends T> alternate) {
 		return onAssembly(new MonoSwitchIfEmpty<>(this, alternate));
 	}
 
@@ -3048,7 +3047,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param value a tag value
 	 * @return the same sequence, but bearing tags
 	 */
-	public final Mono<@NonNull T> tag(String key, String value) {
+	public final Mono<T> tag(String key, String value) {
 		return MonoName.createOrAppend(this, key, value);
 	}
 
@@ -3063,7 +3062,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Mono} that will propagate the signals from the source unless
 	 * no signal is received for {@code duration}, in which case it completes.
 	 */
-	public final Mono<@NonNull T> take(Duration duration) {
+	public final Mono<T> take(Duration duration) {
 		return take(duration, Schedulers.parallel());
 	}
 
@@ -3080,7 +3079,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Mono} that will propagate the signals from the source unless
 	 * no signal is received for {@code duration}, in which case it completes.
 	 */
-	public final Mono<@NonNull T> take(Duration duration, Scheduler timer) {
+	public final Mono<T> take(Duration duration, Scheduler timer) {
 		return takeUntilOther(Mono.delay(duration, timer));
 	}
 
@@ -3096,7 +3095,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * a signal is first received from the companion {@link Publisher}, in which case it
 	 * completes.
 	 */
-	public final Mono<@NonNull T> takeUntilOther(Publisher<@NonNull ?> other) {
+	public final Mono<T> takeUntilOther(Publisher<?> other) {
 		return onAssembly(new MonoTakeUntilOther<>(this, other));
 	}
 
@@ -3109,7 +3108,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * <p>
 	 * @return a {@link Mono} ignoring its payload (actively dropping)
 	 */
-	public final Mono<@NonNull Void> then() {
+	public final Mono<Void> then() {
 		return empty(this);
 	}
 
@@ -3128,7 +3127,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Mono} that emits from the supplied {@link Mono}
 	 */
-	public final <V> Mono<@NonNull V> then(Mono<@NonNull V> other) {
+	public final <V> Mono<V> then(Mono<V> other) {
 		if (this instanceof MonoIgnoreThen) {
             MonoIgnoreThen<T> a = (MonoIgnoreThen<T>) this;
             return a.shift(other);
@@ -3148,7 +3147,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Mono} completing when both publishers have completed in
 	 * sequence
 	 */
-	public final Mono<@NonNull Void> thenEmpty(Publisher<@NonNull Void> other) {
+	public final Mono<Void> thenEmpty(Publisher<Void> other) {
 		return then(fromDirect(other));
 	}
 
@@ -3167,7 +3166,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return a new {@link Flux} that emits from the supplied {@link Publisher} after
 	 * this Mono completes.
 	 */
-	public final <V> Flux<@NonNull V> thenMany(Publisher<@NonNull V> other) {
+	public final <V> Flux<V> thenMany(Publisher<V> other) {
 		@SuppressWarnings("unchecked")
 		Flux<V> concat = (Flux<V>)Flux.concat(ignoreElement(), other);
 		return Flux.onAssembly(concat);
@@ -3184,7 +3183,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono} that can time out
 	 */
-	public final Mono<@NonNull T> timeout(Duration timeout) {
+	public final Mono<T> timeout(Duration timeout) {
 		return timeout(timeout, Schedulers.parallel());
 	}
 
@@ -3202,7 +3201,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono} that will fallback to a different {@link Mono} in case of timeout
 	 */
-	public final Mono<@NonNull T> timeout(Duration timeout, @Nullable Mono<? extends @NonNull T> fallback) {
+	public final Mono<T> timeout(Duration timeout, Mono<? extends T> fallback) {
 		return timeout(timeout, fallback, Schedulers.parallel());
 	}
 
@@ -3218,7 +3217,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return an expirable {@link Mono}
 	 */
-	public final Mono<@NonNull T> timeout(Duration timeout, Scheduler timer) {
+	public final Mono<T> timeout(Duration timeout, Scheduler timer) {
 		return timeout(timeout, null, timer);
 	}
 
@@ -3237,7 +3236,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return an expirable {@link Mono} with a fallback {@link Mono}
 	 */
-	public final Mono<@NonNull T> timeout(Duration timeout, @Nullable Mono<? extends @NonNull T> fallback,
+	public final Mono<T> timeout(Duration timeout, @Nullable Mono<? extends T> fallback,
 			Scheduler timer) {
 		final Mono<Long> _timer = Mono.delay(timeout, timer).onErrorReturn(0L);
 
@@ -3260,7 +3259,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return an expirable {@link Mono} if the item does not come before a {@link Publisher} signals
 	 *
 	 */
-	public final <U> Mono<@NonNull T> timeout(Publisher<@NonNull U> firstTimeout) {
+	public final <U> Mono<T> timeout(Publisher<U> firstTimeout) {
 		return onAssembly(new MonoTimeout<>(this, firstTimeout));
 	}
 
@@ -3280,7 +3279,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * come before a {@link Publisher} signals
 	 *
 	 */
-	public final <U> Mono<@NonNull T> timeout(Publisher<@NonNull U> firstTimeout, Mono<? extends @NonNull T> fallback) {
+	public final <U> Mono<T> timeout(Publisher<U> firstTimeout, Mono<? extends T> fallback) {
 		return onAssembly(new MonoTimeout<>(this, firstTimeout, fallback));
 	}
 
@@ -3294,7 +3293,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a timestamped {@link Mono}
 	 */
-	public final Mono<@NonNull Tuple2<@NonNull Long, @NonNull T>> timestamp() {
+	public final Mono<Tuple2<Long, T>> timestamp() {
 		return timestamp(Schedulers.parallel());
 	}
 
@@ -3309,7 +3308,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @param scheduler a {@link Scheduler} instance to read time from
 	 * @return a timestamped {@link Mono}
 	 */
-	public final Mono<@NonNull Tuple2<@NonNull Long, @NonNull T>> timestamp(Scheduler scheduler) {
+	public final Mono<Tuple2<Long, T>> timestamp(Scheduler scheduler) {
 		Objects.requireNonNull(scheduler, "scheduler");
 		return map(d -> Tuples.of(scheduler.now(TimeUnit.MILLISECONDS), d));
 	}
@@ -3324,7 +3323,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link CompletableFuture}
 	 */
-	public final CompletableFuture<@Nullable T> toFuture() {
+	public final CompletableFuture<T> toFuture() {
 		return subscribeWith(new MonoToCompletableFuture<>());
 	}
 
@@ -3340,7 +3339,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a {@link MonoProcessor} to use to either retrieve value or cancel the underlying {@link Subscription}
 	 */
-	public final MonoProcessor<@NonNull T> toProcessor() {
+	public final MonoProcessor<T> toProcessor() {
 		MonoProcessor<T> result;
 		if (this instanceof MonoProcessor) {
 			result = (MonoProcessor<T>)this;
@@ -3372,7 +3371,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @see #compose(Function) compose(Function) for deferred composition of {@link Mono} for each {@link Subscriber}
 	 * @see #as(Function) as(Function) for a loose conversion to an arbitrary type
 	 */
-	public final <V> Mono<@NonNull V> transform(Function<? super @NonNull Mono<@NonNull T>, ? extends @NonNull Publisher<@NonNull V>> transformer) {
+	public final <V> Mono<V> transform(Function<? super Mono<T>, ? extends Publisher<V>> transformer) {
 		return onAssembly(from(transformer.apply(this)));
 	}
 
@@ -3425,7 +3424,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new combined Mono
 	 */
-	public final <T2> Mono<@NonNull Tuple2<@NonNull T, @NonNull T2>> zipWith(Mono<? extends @NonNull T2> other) {
+	public final <T2> Mono<Tuple2<T, T2>> zipWith(Mono<? extends T2> other) {
 		return zipWith(other, Flux.tuple2Function());
 	}
 
@@ -3444,7 +3443,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 * @return a new combined Mono
 	 */
-	public final <T2, O> Mono<@NonNull O> zipWith(Mono<? extends @NonNull T2> other,
+	public final <T2, O> Mono<O> zipWith(Mono<? extends T2> other,
 			BiFunction<? super T, ? super T2, ? extends O> combinator) {
 		if (this instanceof MonoZip) {
 			@SuppressWarnings("unchecked") MonoZip<T, O> o = (MonoZip<T, O>) this;
@@ -3469,7 +3468,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return the source, potentially wrapped with assembly time cross-cutting behavior
 	 */
 	@SuppressWarnings("unchecked")
-	protected static <T> Mono<@NonNull T> onAssembly(Mono<@NonNull T> source) {
+	protected static <T> Mono<T> onAssembly(Mono<T> source) {
 		Function<Publisher, Publisher> hook = Hooks.onEachOperatorHook;
 		if(hook == null) {
 			return source;
@@ -3489,7 +3488,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @return the source, potentially wrapped with assembly time cross-cutting behavior
 	 */
 	@SuppressWarnings("unchecked")
-	protected static <T> Mono<@NonNull T> onLastAssembly(Mono<@NonNull T> source) {
+	protected static <T> Mono<T> onLastAssembly(Mono<T> source) {
 		Function<Publisher, Publisher> hook = Hooks.onLastOperatorHook;
 		if(hook == null) {
 			return source;
@@ -3510,7 +3509,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	@SuppressWarnings("unchecked")
-	static <T> Mono<@NonNull T> doOnSignal(Mono<T> source,
+	static <T> Mono<T> doOnSignal(Mono<T> source,
 			@Nullable Consumer<? super Subscription> onSubscribe,
 			@Nullable Consumer<? super T> onNext,
 			@Nullable Consumer<? super Throwable> onError,

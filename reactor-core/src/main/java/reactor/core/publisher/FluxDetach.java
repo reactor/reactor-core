@@ -15,11 +15,11 @@
  */
 package reactor.core.publisher;
 
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
-import reactor.util.annotation.Nullable;
 
 /**
  * Detaches the both the child Subscriber and the Subscription on

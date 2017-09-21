@@ -18,10 +18,10 @@ package reactor.core.publisher;
 
 import java.util.Iterator;
 import java.util.Objects;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
-import reactor.util.annotation.Nullable;
 
 /**
  * Given a push of source Publishers the values of that Publisher is forwarded to the

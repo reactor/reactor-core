@@ -17,11 +17,11 @@
 package reactor.core.publisher;
 
 import java.util.Set;
+import javax.annotation.Nullable;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.util.function.Tuple2;
-import reactor.util.annotation.Nullable;
 
 /**
  * An operator that just bears a name or a set of tags, which can be retrieved via the

@@ -18,8 +18,6 @@ package reactor.test;
 import java.util.function.Supplier;
 
 import reactor.test.scheduler.VirtualTimeScheduler;
-import reactor.util.annotation.NonNull;
-
 import javax.annotation.Nullable;
 
 /**
@@ -91,7 +89,7 @@ public class StepVerifierOptions {
 	 * @param vtsLookup the supplier of {@link VirtualTimeScheduler} to use.
 	 * @return this instance, to continue setting the options.
 	 */
-	public StepVerifierOptions virtualTimeSchedulerSupplier(Supplier<? extends @NonNull VirtualTimeScheduler> vtsLookup) {
+	public StepVerifierOptions virtualTimeSchedulerSupplier(Supplier<? extends VirtualTimeScheduler> vtsLookup) {
 		this.vtsLookup = vtsLookup;
 		return this;
 	}
@@ -102,7 +100,7 @@ public class StepVerifierOptions {
 	 *
 	 */
 	@Nullable
-	public Supplier<? extends @NonNull VirtualTimeScheduler> getVirtualTimeSchedulerSupplier() {
+	public Supplier<? extends VirtualTimeScheduler> getVirtualTimeSchedulerSupplier() {
 		return vtsLookup;
 	}
 }

@@ -15,8 +15,7 @@
  */
 package reactor.core.publisher;
 
-
-import reactor.util.annotation.Nullable;
+import javax.annotation.Nullable;
 
 /**
  * Represents a sequence of events which has an associated key.

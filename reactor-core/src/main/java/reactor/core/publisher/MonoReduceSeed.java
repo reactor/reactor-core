@@ -19,11 +19,11 @@ package reactor.core.publisher;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 
 /**
  * Aggregates the source values with the help of an accumulator

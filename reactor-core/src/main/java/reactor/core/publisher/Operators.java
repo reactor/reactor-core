@@ -24,6 +24,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -35,8 +36,6 @@ import reactor.core.Scannable;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.context.Context;
-import reactor.util.annotation.NonNull;
-import reactor.util.annotation.Nullable;
 
 /**
  * An helper to support "Operator" writing, handle noop subscriptions, validate request
@@ -98,7 +97,7 @@ public abstract class Operators {
 	 */
 	@SuppressWarnings("unchecked")
 	@Nullable
-	public static <T> Fuseable.QueueSubscription<@NonNull T> as(Subscription s) {
+	public static <T> Fuseable.QueueSubscription<T> as(Subscription s) {
 		if (s instanceof Fuseable.QueueSubscription) {
 			return (Fuseable.QueueSubscription<T>) s;
 		}
@@ -124,7 +123,7 @@ public abstract class Operators {
 	 *
 	 * @param s the target subscriber
 	 */
-	public static void complete(Subscriber<@NonNull ?> s) {
+	public static void complete(Subscriber<?> s) {
 		s.onSubscribe(EmptySubscription.INSTANCE);
 		s.onComplete();
 	}
@@ -137,7 +136,7 @@ public abstract class Operators {
 	 * @return a new {@link Subscriber} whose sole purpose is to request Long.MAX
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> CoreSubscriber<@NonNull T> drainSubscriber() {
+	public static <T> CoreSubscriber<T> drainSubscriber() {
 		return (CoreSubscriber<T>)DrainSubscriber.INSTANCE;
 	}
 
@@ -149,7 +148,7 @@ public abstract class Operators {
 	 * @return a placeholder subscriber
 	 */
 	@SuppressWarnings("unchecked")
-	public static <T> CoreSubscriber<@NonNull T> emptySubscriber() {
+	public static <T> CoreSubscriber<T> emptySubscriber() {
 		return (CoreSubscriber<T>) EMPTY_SUBSCRIBER;
 	}
 
@@ -174,7 +173,7 @@ public abstract class Operators {
 	 * @param s target Subscriber to error
 	 * @param e the actual error
 	 */
-	public static void error(Subscriber<@NonNull ?> s, Throwable e) {
+	public static void error(Subscriber<?> s, Throwable e) {
 		s.onSubscribe(EmptySubscription.INSTANCE);
 		s.onError(e);
 	}
@@ -218,7 +217,7 @@ public abstract class Operators {
 	 *
 	 * @return a new {@link Function}
 	 */
-	public static <I, O> Function<? super @NonNull Publisher<@NonNull I>, ? extends @NonNull Publisher<@NonNull O>> lift(BiFunction<@NonNull Scannable, ? super @NonNull CoreSubscriber<? super O>, ? extends @NonNull CoreSubscriber<? super @NonNull I>> lifter) {
+	public static <I, O> Function<? super Publisher<I>, ? extends Publisher<O>> lift(BiFunction<Scannable, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super I>> lifter) {
 		return new LiftFunction<>(null, lifter);
 	}
 
@@ -244,7 +243,7 @@ public abstract class Operators {
 	 *
 	 * @return a new {@link Function}
 	 */
-	public static <O> Function<? super @NonNull Publisher<O>, ? extends @NonNull Publisher<@NonNull O>> lift(
+	public static <O> Function<? super Publisher<O>, ? extends Publisher<O>> lift(
 			Predicate<Scannable> filter,
 			BiFunction<Scannable, ? super CoreSubscriber<? super O>, ? extends CoreSubscriber<? super O>> lifter) {
 		return new LiftFunction<>(filter, lifter);

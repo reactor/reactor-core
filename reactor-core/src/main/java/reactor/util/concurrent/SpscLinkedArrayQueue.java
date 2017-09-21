@@ -23,8 +23,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.BiPredicate;
 
-import reactor.util.annotation.Nullable;
-
+import javax.annotation.Nullable;
 
 /**
  * An unbounded, array-backed single-producer, single-consumer queue with a fixed link

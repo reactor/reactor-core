@@ -23,7 +23,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.publisher.Flux;
-import reactor.util.annotation.NonNull;
 
 /**
  * Convert a Java 9+ {@literal Flow.Publisher} to/from a Reactive Streams {@link Publisher}.
@@ -40,7 +39,7 @@ public abstract class JdkFlowAdapter {
 	 * @param <T> the type of the publisher
 	 * @return a java {@code Flow.Publisher} from the given {@link Publisher}
 	 */
-	public static <T> Flow.Publisher<@NonNull T> publisherToFlowPublisher(final Publisher<@NonNull T>
+	public static <T> Flow.Publisher<T> publisherToFlowPublisher(final Publisher<T>
 			publisher) {
 		return new PublisherAsFlowPublisher<>(publisher);
 	}
@@ -52,19 +51,19 @@ public abstract class JdkFlowAdapter {
 	 * @param <T> the type of the publisher
 	 * @return a {@link Flux} from a java {@code Flow.Publisher}
 	 */
-	public static <T> Flux<@NonNull T> flowPublisherToFlux(Flow.Publisher<@NonNull T> publisher) {
+	public static <T> Flux<T> flowPublisherToFlux(Flow.Publisher<T> publisher) {
 		return new FlowPublisherAsFlux<>(publisher);
 	}
 
 	private static class FlowPublisherAsFlux<T> extends Flux<T> {
         private final java.util.concurrent.Flow.Publisher<T> pub;
 
-        private FlowPublisherAsFlux(java.util.concurrent.Flow.Publisher<@NonNull T> pub) {
+        private FlowPublisherAsFlux(java.util.concurrent.Flow.Publisher<T> pub) {
             this.pub = pub;
         }
 
         @Override
-        public void subscribe(final CoreSubscriber<? super @NonNull T> actual) {
+        public void subscribe(final CoreSubscriber<? super T> actual) {
         	pub.subscribe(new SubscriberToRS<>(actual));
         }
     }
@@ -72,12 +71,12 @@ public abstract class JdkFlowAdapter {
     private static class PublisherAsFlowPublisher<T> implements Flow.Publisher<T> {
         private final Publisher<T> pub;
 
-        private PublisherAsFlowPublisher(Publisher<@NonNull T> pub) {
+        private PublisherAsFlowPublisher(Publisher<T> pub) {
             this.pub = pub;
         }
 
         @Override
-        public void subscribe(Flow.Subscriber<? super @NonNull T> subscriber) {
+        public void subscribe(Flow.Subscriber<? super T> subscriber) {
         	pub.subscribe(new FlowSubscriber<>(subscriber));
         }
     }
@@ -88,7 +87,7 @@ public abstract class JdkFlowAdapter {
 
 		Subscription subscription;
 
-		public FlowSubscriber(Flow.Subscriber<? super @NonNull T> subscriber) {
+		public FlowSubscriber(Flow.Subscriber<? super T> subscriber) {
 			this.subscriber = subscriber;
 		}
 
@@ -130,7 +129,7 @@ public abstract class JdkFlowAdapter {
 
 		Flow.Subscription subscription;
 
-		public SubscriberToRS(Subscriber<? super @NonNull T> s) {
+		public SubscriberToRS(Subscriber<? super T> s) {
 			this.s = s;
 		}
 

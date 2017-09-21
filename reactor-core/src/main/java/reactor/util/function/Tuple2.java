@@ -23,9 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnull;
-
-import reactor.util.annotation.NonNull;
-import reactor.util.annotation.Nullable;
+import javax.annotation.Nullable;
 
 /**
  * A tuple that holds two non-null values.
@@ -90,7 +88,7 @@ public class Tuple2<T1, T2> implements Iterable<Object>, Serializable {
 	 *
 	 * @return A new Object list.
 	 */
-	public List<@NonNull Object> toList() {
+	public List<Object> toList() {
 		return Arrays.asList(toArray());
 	}
 
@@ -99,7 +97,7 @@ public class Tuple2<T1, T2> implements Iterable<Object>, Serializable {
 	 *
 	 * @return A new Object array.
 	 */
-	public Object @NonNull[] toArray() {
+	public Object[] toArray() {
 		return new Object[]{t1, t2};
 	}
 

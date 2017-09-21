@@ -21,8 +21,7 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.atomic.*;
 
-import reactor.util.annotation.Nullable;
-
+import javax.annotation.Nullable;
 
 /**
  * A bounded, array backed, single-producer single-consumer queue.

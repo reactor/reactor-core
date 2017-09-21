@@ -20,8 +20,7 @@ import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 
-import reactor.util.annotation.Nullable;
-
+import javax.annotation.Nullable;
 
 /**
  * Expose static methods to get a logger depending on the environment. If SL4J is on the
@@ -401,7 +400,7 @@ public abstract class Loggers {
 		}
 
 		@Nullable
-		private String format(@Nullable String from, @Nullable Object @Nullable ... arguments){
+		private String format(@Nullable String from, @Nullable Object... arguments){
 			if(from != null) {
 				String computed = from;
 				if (arguments != null && arguments.length != 0) {
@@ -449,7 +448,7 @@ public abstract class Loggers {
 		}
 
 		@Nullable
-		private String format(@Nullable String from, @Nullable Object @Nullable ... arguments){
+		private String format(@Nullable String from, @Nullable Object... arguments){
 			if(from != null) {
 				String computed = from;
 				if (arguments != null && arguments.length != 0) {

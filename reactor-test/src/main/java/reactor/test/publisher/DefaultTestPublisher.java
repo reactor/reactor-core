@@ -28,7 +28,7 @@ import reactor.core.Fuseable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
-import reactor.util.annotation.Nullable;
+import javax.annotation.Nullable;
 
 /**
  * A default implementation of a {@link TestPublisher}.

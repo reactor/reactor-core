@@ -23,10 +23,9 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import reactor.util.concurrent.Queues;
-import reactor.util.annotation.NonNull;
-import reactor.util.annotation.Nullable;
 
 /**
  * A support class that offers factory methods for implementations of the specialized
@@ -56,7 +55,7 @@ public final class Disposables {
 	 *
 	 * @return a pre-filled atomic {@link Disposable.Composite}
 	 */
-	public static Disposable.Composite composite(Disposable @NonNull ... disposables) {
+	public static Disposable.Composite composite(Disposable... disposables) {
 		return new CompositeDisposable(disposables);
 	}
 
@@ -67,7 +66,7 @@ public final class Disposables {
 	 * @return a pre-filled atomic {@link Disposable.Composite}
 	 */
 	public static Disposable.Composite composite(
-			Iterable<? extends @NonNull Disposable> disposables) {
+			Iterable<? extends Disposable> disposables) {
 		return new CompositeDisposable(disposables);
 	}
 
@@ -147,7 +146,7 @@ public final class Disposables {
 		 * Creates a {@link CompositeDisposable} with the given array of initial elements.
 		 * @param disposables the array of {@link Disposable} to start with
 		 */
-		CompositeDisposable(Disposable @NonNull ... disposables) {
+		CompositeDisposable(Disposable... disposables) {
 			Objects.requireNonNull(disposables, "disposables is null");
 
 			int capacity = disposables.length + 1;
@@ -168,7 +167,7 @@ public final class Disposables {
 		 * initial elements.
 		 * @param disposables the Iterable sequence of {@link Disposable} to start with
 		 */
-		CompositeDisposable(Iterable<? extends @NonNull Disposable> disposables) {
+		CompositeDisposable(Iterable<? extends Disposable> disposables) {
 			Objects.requireNonNull(disposables, "disposables is null");
 			this.loadFactor = DEFAULT_LOAD_FACTOR;
 			int c = DEFAULT_CAPACITY;
@@ -240,7 +239,7 @@ public final class Disposables {
 		}
 
 		@Override
-		public boolean addAll(Collection<? extends @NonNull Disposable> ds) {
+		public boolean addAll(Collection<? extends Disposable> ds) {
 			Objects.requireNonNull(ds, "ds is null");
 			if (!disposed) {
 				synchronized (this) {
@@ -358,7 +357,7 @@ public final class Disposables {
 			}
 		}
 
-		boolean removeEntry(int pos, Disposable @Nullable [] a, int m) {
+		boolean removeEntry(int pos, Disposable[] a, int m) {
 			size--;
 
 			int last;

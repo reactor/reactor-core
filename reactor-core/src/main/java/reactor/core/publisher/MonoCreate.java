@@ -22,12 +22,12 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
+import javax.annotation.Nullable;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.publisher.FluxCreate.SinkDisposable;
 import reactor.util.context.Context;
-import reactor.util.annotation.Nullable;
 
 /**
  * Wraps a the downstream Subscriber into a single emission object and calls the given

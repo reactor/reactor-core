@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -30,8 +31,6 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.util.concurrent.Queues;
-import reactor.util.annotation.NonNull;
-import reactor.util.annotation.Nullable;
 
 import static reactor.core.publisher.FluxPublish.PublishSubscriber.EMPTY;
 import static reactor.core.publisher.FluxPublish.PublishSubscriber.TERMINATED;
@@ -63,7 +62,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	 *
 	 * @return a fresh processor
 	 */
-	public static <E> EmitterProcessor<@NonNull E> create() {
+	public static <E> EmitterProcessor<E> create() {
 		return create(Queues.SMALL_BUFFER_SIZE, true);
 	}
 
@@ -155,12 +154,12 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	}
 
 	@Override
-	public Stream<? extends @NonNull Scannable> inners() {
+	public Stream<? extends Scannable> inners() {
 		return Stream.of(subscribers);
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super @NonNull T> actual) {
+	public void subscribe(CoreSubscriber<? super T> actual) {
 		Objects.requireNonNull(actual, "subscribe");
 		EmitterInner<T> inner = new EmitterInner<>(actual, this);
 		actual.onSubscribe(inner);
@@ -442,7 +441,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 	}
 
 	@SuppressWarnings("unchecked")
-	FluxPublish.PubSubInner<@NonNull T> @NonNull[] terminate() {
+	FluxPublish.PubSubInner<T>[] terminate() {
 		return SUBSCRIBERS.getAndSet(this, TERMINATED);
 	}
 
@@ -479,7 +478,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 		return false;
 	}
 
-	final boolean add(EmitterInner<@NonNull T> inner) {
+	final boolean add(EmitterInner<T> inner) {
 		for (; ; ) {
 			FluxPublish.PubSubInner<T>[] a = subscribers;
 			if (a == TERMINATED) {
@@ -495,7 +494,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 		}
 	}
 
-	final void remove(FluxPublish.PubSubInner<@NonNull T> inner) {
+	final void remove(FluxPublish.PubSubInner<T> inner) {
 		for (; ; ) {
 			FluxPublish.PubSubInner<T>[] a = subscribers;
 			if (a == TERMINATED || a == EMPTY) {
@@ -548,7 +547,7 @@ public final class EmitterProcessor<T> extends FluxProcessor<T, T> {
 
 		final EmitterProcessor<T> parent;
 
-		EmitterInner(CoreSubscriber<? super @NonNull T> actual, EmitterProcessor<@NonNull T> parent) {
+		EmitterInner(CoreSubscriber<? super T> actual, EmitterProcessor<T> parent) {
 			super(actual);
 			this.parent = parent;
 		}

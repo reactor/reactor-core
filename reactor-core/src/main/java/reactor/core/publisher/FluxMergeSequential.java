@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -36,7 +37,6 @@ import reactor.core.Scannable;
 import reactor.core.publisher.FluxConcatMap.ErrorMode;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
-import reactor.util.annotation.Nullable;
 
 /**
  * Maps each upstream value into a Publisher and concatenates them into one

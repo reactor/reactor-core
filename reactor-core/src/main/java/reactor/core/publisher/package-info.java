@@ -47,4 +47,4 @@
 @NonNullApi
 package reactor.core.publisher;
 
-import reactor.util.annotation.NonNullApi;
+import reactor.util.lang.NonNullApi;

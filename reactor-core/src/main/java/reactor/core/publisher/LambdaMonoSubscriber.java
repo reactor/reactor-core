@@ -18,13 +18,13 @@ package reactor.core.publisher;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.util.context.Context;
-import reactor.util.annotation.Nullable;
 
 /**
  * An unbounded Java Lambda adapter to {@link Subscriber}, targetted at {@link Mono}.

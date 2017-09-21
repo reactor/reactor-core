@@ -45,6 +45,7 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -67,8 +68,6 @@ import reactor.util.function.Tuple4;
 import reactor.util.function.Tuple5;
 import reactor.util.function.Tuple6;
 import reactor.util.function.Tuples;
-import reactor.util.annotation.NonNull;
-import reactor.util.annotation.Nullable;
 
 /**
  * A Reactive Streams {@link Publisher} with rx operators that emits 0 to N elements, and then completes
@@ -124,7 +123,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} based on the produced combinations
 	 */
 	@SafeVarargs
-	public static <T, V> Flux<@NonNull V> combineLatest(Function<@NonNull Object @NonNull [], @NonNull V> combinator, Publisher<? extends @NonNull T> @NonNull ... sources) {
+	public static <T, V> Flux<V> combineLatest(Function<Object[], V> combinator, Publisher<? extends T>... sources) {
 		return combineLatest(combinator, Queues.XS_BUFFER_SIZE, sources);
 	}
 
@@ -145,8 +144,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} based on the produced combinations
 	 */
 	@SafeVarargs
-	public static <T, V> Flux<@NonNull V> combineLatest(Function<@NonNull Object @NonNull [], @NonNull V> combinator, int prefetch,
-			Publisher<? extends T> @NonNull ... sources) {
+	public static <T, V> Flux<V> combineLatest(Function<Object[], V> combinator, int prefetch,
+			Publisher<? extends T>... sources) {
 		if (sources.length == 0) {
 			return empty();
 		}
@@ -183,9 +182,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} based on the produced combinations
 	 */
     @SuppressWarnings("unchecked")
-    public static <T1, T2, V> Flux<@NonNull V> combineLatest(Publisher<? extends @NonNull T1> source1,
-			Publisher<? extends @NonNull T2> source2,
-			BiFunction<? super @NonNull T1, ? super @NonNull T2, ? extends @NonNull V> combinator) {
+    public static <T1, T2, V> Flux<V> combineLatest(Publisher<? extends T1> source1,
+			Publisher<? extends T2> source2,
+			BiFunction<? super T1, ? super T2, ? extends V> combinator) {
 	    return combineLatest(tuple -> combinator.apply((T1)tuple[0], (T2)tuple[1]), source1, source2);
 	}
 
@@ -208,10 +207,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} based on the produced combinations
 	 */
-	public static <T1, T2, T3, V> Flux<@NonNull V> combineLatest(Publisher<? extends @NonNull T1> source1,
-			Publisher<? extends @NonNull T2> source2,
-			Publisher<? extends @NonNull T3> source3,
-			Function<@NonNull Object @NonNull [], @NonNull V> combinator) {
+	public static <T1, T2, T3, V> Flux<V> combineLatest(Publisher<? extends T1> source1,
+			Publisher<? extends T2> source2,
+			Publisher<? extends T3> source3,
+			Function<Object[], V> combinator) {
 		return combineLatest(combinator, source1, source2, source3);
 	}
 
@@ -236,11 +235,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} based on the produced combinations
 	 */
-	public static <T1, T2, T3, T4, V> Flux<@NonNull V> combineLatest(Publisher<? extends @NonNull T1> source1,
-			Publisher<? extends @NonNull T2> source2,
-			Publisher<? extends @NonNull T3> source3,
-			Publisher<? extends @NonNull T4> source4,
-			Function<@NonNull Object @NonNull [], @NonNull V> combinator) {
+	public static <T1, T2, T3, T4, V> Flux<V> combineLatest(Publisher<? extends T1> source1,
+			Publisher<? extends T2> source2,
+			Publisher<? extends T3> source3,
+			Publisher<? extends T4> source4,
+			Function<Object[], V> combinator) {
 		return combineLatest(combinator, source1, source2, source3, source4);
 	}
 
@@ -267,12 +266,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} based on the produced combinations
 	 */
-	public static <T1, T2, T3, T4, T5, V> Flux<@NonNull V> combineLatest(Publisher<? extends @NonNull T1> source1,
-			Publisher<? extends @NonNull T2> source2,
-			Publisher<? extends @NonNull T3> source3,
-			Publisher<? extends @NonNull T4> source4,
-			Publisher<? extends @NonNull T5> source5,
-			Function<@NonNull Object @NonNull [], @NonNull V> combinator) {
+	public static <T1, T2, T3, T4, T5, V> Flux<V> combineLatest(Publisher<? extends T1> source1,
+			Publisher<? extends T2> source2,
+			Publisher<? extends T3> source3,
+			Publisher<? extends T4> source4,
+			Publisher<? extends T5> source5,
+			Function<Object[], V> combinator) {
 		return combineLatest(combinator, source1, source2, source3, source4, source5);
 	}
 
@@ -301,13 +300,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} based on the produced combinations
 	 */
-	public static <T1, T2, T3, T4, T5, T6, V> Flux<@NonNull V> combineLatest(Publisher<? extends T1> source1,
-			Publisher<? extends @NonNull T2> source2,
-			Publisher<? extends @NonNull T3> source3,
-			Publisher<? extends @NonNull T4> source4,
-			Publisher<? extends @NonNull T5> source5,
-			Publisher<? extends @NonNull T6> source6,
-			Function<@NonNull Object @NonNull [], @NonNull V> combinator) {
+	public static <T1, T2, T3, T4, T5, T6, V> Flux<V> combineLatest(Publisher<? extends T1> source1,
+			Publisher<? extends T2> source2,
+			Publisher<? extends T3> source3,
+			Publisher<? extends T4> source4,
+			Publisher<? extends T5> source5,
+			Publisher<? extends T6> source6,
+			Function<Object[], V> combinator) {
 		return combineLatest(combinator, source1, source2, source3, source4, source5, source6);
 	}
 
@@ -326,8 +325,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} based on the produced combinations
 	 */
-	public static <T, V> Flux<@NonNull V> combineLatest(Iterable<? extends @NonNull Publisher<? extends @NonNull T>> sources,
-			Function<@NonNull Object @NonNull [], @NonNull V> combinator) {
+	public static <T, V> Flux<V> combineLatest(Iterable<? extends Publisher<? extends T>> sources,
+			Function<Object[], V> combinator) {
 		return combineLatest(sources, Queues.XS_BUFFER_SIZE, combinator);
 	}
 
@@ -347,9 +346,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} based on the produced combinations
 	 */
-	public static <T, V> Flux<@NonNull V> combineLatest(Iterable<? extends @NonNull Publisher<? extends @NonNull T>> sources,
+	public static <T, V> Flux<V> combineLatest(Iterable<? extends Publisher<? extends T>> sources,
 			int prefetch,
-			Function<@NonNull Object @NonNull [], @NonNull V> combinator) {
+			Function<Object[], V> combinator) {
 
 		return onAssembly(new FluxCombineLatest<T, V>(sources,
 				combinator,
@@ -372,7 +371,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} concatenating all source sequences
 	 */
-	public static <T> Flux<@NonNull T> concat(Iterable<? extends @NonNull Publisher<? extends @NonNull T>> sources) {
+	public static <T> Flux<T> concat(Iterable<? extends Publisher<? extends T>> sources) {
 		return onAssembly(new FluxConcatIterable<>(sources));
 	}
 
@@ -392,7 +391,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} concatenating all inner sources sequences
 	 */
-	public static <T> Flux<@NonNull T> concat(Publisher<? extends @NonNull Publisher<? extends @NonNull T>> sources) {
+	public static <T> Flux<T> concat(Publisher<? extends Publisher<? extends T>> sources) {
 		return concat(sources, Queues.XS_BUFFER_SIZE);
 	}
 
@@ -413,7 +412,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} concatenating all inner sources sequences
 	 */
-	public static <T> Flux<@NonNull T> concat(Publisher<? extends @NonNull Publisher<? extends @NonNull T>> sources, int prefetch) {
+	public static <T> Flux<T> concat(Publisher<? extends Publisher<? extends T>> sources, int prefetch) {
 		return onAssembly(new FluxConcatMap<>(from(sources),
 				identityFunction(),
 				Queues.get(prefetch), prefetch,
@@ -437,7 +436,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux} concatenating all source sequences
 	 */
 	@SafeVarargs
-	public static <T> Flux<@NonNull T> concat(Publisher<? extends @NonNull T> @NonNull ... sources) {
+	public static <T> Flux<T> concat(Publisher<? extends T>... sources) {
 		return onAssembly(new FluxConcatArray<>(false, sources));
 	}
 
@@ -457,7 +456,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} concatenating all inner sources sequences, delaying errors
 	 */
-	public static <T> Flux<@NonNull T> concatDelayError(Publisher<? extends @NonNull Publisher<? extends @NonNull T>> sources) {
+	public static <T> Flux<T> concatDelayError(Publisher<? extends Publisher<? extends T>> sources) {
 		return concatDelayError(sources, Queues.XS_BUFFER_SIZE);
 	}
 
@@ -478,7 +477,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} concatenating all inner sources sequences until complete or error
 	 */
-	public static <T> Flux<@NonNull T> concatDelayError(Publisher<? extends @NonNull Publisher<? extends @NonNull T>> sources, int prefetch) {
+	public static <T> Flux<T> concatDelayError(Publisher<? extends Publisher<? extends T>> sources, int prefetch) {
 		return onAssembly(new FluxConcatMap<>(from(sources),
 				identityFunction(),
 				Queues.get(prefetch), prefetch,
@@ -507,8 +506,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} concatenating all inner sources sequences until complete or error
 	 */
-	public static <T> Flux<@NonNull T> concatDelayError(Publisher<? extends @NonNull Publisher<? extends
-            @NonNull T>> sources, boolean delayUntilEnd, int prefetch) {
+	public static <T> Flux<T> concatDelayError(Publisher<? extends Publisher<? extends
+			T>> sources, boolean delayUntilEnd, int prefetch) {
 		return onAssembly(new FluxConcatMap<>(from(sources),
 				identityFunction(),
 				Queues.get(prefetch), prefetch,
@@ -532,7 +531,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux} concatenating all source sequences
 	 */
 	@SafeVarargs
-	public static <T> Flux<@NonNull T> concatDelayError(Publisher<? extends @NonNull T> @NonNull ... sources) {
+	public static <T> Flux<T> concatDelayError(Publisher<? extends T>... sources) {
 		return onAssembly(new FluxConcatArray<>(true, sources));
 	}
 
@@ -569,7 +568,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param emitter Consume the {@link FluxSink} provided per-subscriber by Reactor to generate signals.
 	 * @return a {@link Flux}
 	 */
-    public static <T> Flux<@NonNull T> create(Consumer<? super @NonNull FluxSink<@NonNull T>> emitter) {
+    public static <T> Flux<T> create(Consumer<? super FluxSink<T>> emitter) {
 	    return create(emitter, OverflowStrategy.BUFFER);
     }
 
@@ -608,7 +607,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param emitter Consume the {@link FluxSink} provided per-subscriber by Reactor to generate signals.
 	 * @return a {@link Flux}
 	 */
-	public static <T> Flux<@NonNull T> create(Consumer<? super @NonNull FluxSink<@NonNull T>> emitter, OverflowStrategy backpressure) {
+	public static <T> Flux<T> create(Consumer<? super FluxSink<T>> emitter, OverflowStrategy backpressure) {
 		return onAssembly(new FluxCreate<>(emitter, backpressure, FluxCreate.CreateMode.PUSH_PULL));
 	}
 
@@ -645,7 +644,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param emitter Consume the {@link FluxSink} provided per-subscriber by Reactor to generate signals.
 	 * @return a {@link Flux}
 	 */
-	public static <T> Flux<@NonNull T> push(Consumer<? super @NonNull FluxSink<@NonNull T>> emitter) {
+	public static <T> Flux<T> push(Consumer<? super FluxSink<T>> emitter) {
 		return onAssembly(new FluxCreate<>(emitter, OverflowStrategy.BUFFER, FluxCreate.CreateMode.PUSH_ONLY));
 	}
 
@@ -684,7 +683,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param emitter Consume the {@link FluxSink} provided per-subscriber by Reactor to generate signals.
 	 * @return a {@link Flux}
 	 */
-	public static <T> Flux<@NonNull T> push(Consumer<? super @NonNull FluxSink<@NonNull T>> emitter, OverflowStrategy backpressure) {
+	public static <T> Flux<T> push(Consumer<? super FluxSink<T>> emitter, OverflowStrategy backpressure) {
 		return onAssembly(new FluxCreate<>(emitter, backpressure, FluxCreate.CreateMode.PUSH_ONLY));
 	}
 
@@ -703,7 +702,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a deferred {@link Flux}
 	 */
-	public static <T> Flux<@NonNull T> defer(Supplier<? extends @NonNull Publisher<@NonNull T>> supplier) {
+	public static <T> Flux<T> defer(Supplier<? extends Publisher<T>> supplier) {
 		return onAssembly(new FluxDefer<>(supplier));
 	}
 
@@ -716,7 +715,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return an empty {@link Flux}
 	 */
-	public static <T> Flux<@NonNull T> empty() {
+	public static <T> Flux<T> empty() {
 		return FluxEmpty.instance();
 	}
 
@@ -731,7 +730,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new failed {@link Flux}
 	 */
-	public static <T> Flux<@NonNull T> error(Throwable error) {
+	public static <T> Flux<T> error(Throwable error) {
 		return error(error, false);
 	}
 
@@ -748,7 +747,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new failed {@link Flux}
 	 */
-	public static <O> Flux<@NonNull O> error(Throwable throwable, boolean whenRequested) {
+	public static <O> Flux<O> error(Throwable throwable, boolean whenRequested) {
 		if (whenRequested) {
 			return onAssembly(new FluxErrorOnRequest<>(throwable));
 		}
@@ -772,7 +771,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux} behaving like the fastest of its sources
 	 */
 	@SafeVarargs
-	public static <I> Flux<@NonNull I> first(Publisher<? extends @NonNull I> @NonNull ... sources) {
+	public static <I> Flux<I> first(Publisher<? extends I>... sources) {
 		return onAssembly(new FluxFirstEmitting<>(sources));
 	}
 
@@ -790,7 +789,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} behaving like the fastest of its sources
 	 */
-	public static <I> Flux<@NonNull I> first(Iterable<? extends @NonNull Publisher<? extends @NonNull I>> sources) {
+	public static <I> Flux<I> first(Iterable<? extends Publisher<? extends I>> sources) {
 		return onAssembly(new FluxFirstEmitting<>(sources));
 	}
 
@@ -804,7 +803,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux}
 	 */
-	public static <T> Flux<@NonNull T> from(Publisher<? extends @NonNull T> source) {
+	public static <T> Flux<T> from(Publisher<? extends T> source) {
 		if (source instanceof Flux) {
 			@SuppressWarnings("unchecked")
 			Flux<T> casted = (Flux<T>) source;
@@ -837,7 +836,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux}
 	 */
-	public static <T> Flux<@NonNull T> fromArray(@NonNull T @NonNull [] array) {
+	public static <T> Flux<T> fromArray(T[] array) {
 		if (array.length == 0) {
 			return empty();
 		}
@@ -858,7 +857,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux}
 	 */
-	public static <T> Flux<@NonNull T> fromIterable(Iterable<? extends @NonNull T> it) {
+	public static <T> Flux<T> fromIterable(Iterable<? extends T> it) {
 		return onAssembly(new FluxIterable<>(it));
 	}
 
@@ -875,7 +874,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux}
 	 */
-	public static <T> Flux<@NonNull T> fromStream(Stream<? extends @NonNull T> s) {
+	public static <T> Flux<T> fromStream(Stream<? extends T> s) {
 		return onAssembly(new FluxStream<>(s));
 	}
 
@@ -892,7 +891,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux}
 	 */
-	public static <T> Flux<@NonNull T> generate(Consumer<@NonNull SynchronousSink<@NonNull T>> generator) {
+	public static <T> Flux<T> generate(Consumer<SynchronousSink<T>> generator) {
 		Objects.requireNonNull(generator, "generator");
 		return onAssembly(new FluxGenerate<>(generator));
 	}
@@ -912,7 +911,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * and return a (new) state.
 	 * @return a {@link Flux}
 	 */
-	public static <T, S> Flux<@NonNull T> generate(Callable<@Nullable S> stateSupplier, BiFunction<@NonNull S, SynchronousSink<@NonNull T>, @NonNull S> generator) {
+	public static <T, S> Flux<T> generate(Callable<S> stateSupplier, BiFunction<S, SynchronousSink<T>, S> generator) {
 		return onAssembly(new FluxGenerate<>(stateSupplier, generator));
 	}
 
@@ -936,7 +935,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux}
 	 */
-	public static <T, S> Flux<@NonNull T> generate(Callable<@Nullable S> stateSupplier, BiFunction<@NonNull S, SynchronousSink<@NonNull T>, @NonNull S> generator, Consumer<? super @NonNull S> stateConsumer) {
+	public static <T, S> Flux<T> generate(Callable<S> stateSupplier, BiFunction<S, SynchronousSink<T>, S> generator, Consumer<? super S> stateConsumer) {
 		return onAssembly(new FluxGenerate<>(stateSupplier, generator, stateConsumer));
 	}
 
@@ -952,7 +951,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param period the period {@link Duration} between each increment
 	 * @return a new {@link Flux} emitting increasing numbers at regular intervals
 	 */
-	public static Flux<@NonNull Long> interval(Duration period) {
+	public static Flux<Long> interval(Duration period) {
 		return interval(period, Schedulers.parallel());
 	}
 
@@ -970,7 +969,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} emitting increasing numbers at regular intervals
 	 */
-	public static Flux<@NonNull Long> interval(Duration delay, Duration period) {
+	public static Flux<Long> interval(Duration delay, Duration period) {
 		return interval(delay, period, Schedulers.parallel());
 	}
 
@@ -986,7 +985,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} emitting increasing numbers at regular intervals
 	 */
-	public static Flux<@NonNull Long> interval(Duration period, Scheduler timer) {
+	public static Flux<Long> interval(Duration period, Scheduler timer) {
 		return onAssembly(new FluxInterval(period.toMillis(), period.toMillis(), TimeUnit.MILLISECONDS, timer));
 	}
 
@@ -1004,7 +1003,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} emitting increasing numbers at regular intervals
 	 */
-	public static Flux<@NonNull Long> interval(Duration delay, Duration period, Scheduler timer) {
+	public static Flux<Long> interval(Duration delay, Duration period, Scheduler timer) {
 		return onAssembly(new FluxInterval(delay.toMillis(), period.toMillis(), TimeUnit.MILLISECONDS, timer));
 	}
 
@@ -1019,7 +1018,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux}
 	 */
 	@SafeVarargs
-	public static <T> Flux<@NonNull T> just(@NonNull T @NonNull ... data) {
+	public static <T> Flux<T> just(T... data) {
 		return fromArray(data);
 	}
 
@@ -1033,7 +1032,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux}
 	 */
-	public static <T> Flux<@NonNull T> just(T data) {
+	public static <T> Flux<T> just(T data) {
 		return onAssembly(new FluxJust<>(data));
 	}
 
@@ -1054,7 +1053,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a merged {@link Flux}
 	 */
-	public static <T> Flux<@NonNull T> merge(Publisher<? extends @NonNull Publisher<? extends @NonNull T>> source) {
+	public static <T> Flux<T> merge(Publisher<? extends Publisher<? extends T>> source) {
 		return merge(source,
 				Queues.SMALL_BUFFER_SIZE,
 				Queues.XS_BUFFER_SIZE);
@@ -1079,7 +1078,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a merged {@link Flux}
 	 */
-	public static <T> Flux<@NonNull T> merge(Publisher<? extends @NonNull Publisher<? extends @NonNull T>> source, int concurrency) {
+	public static <T> Flux<T> merge(Publisher<? extends Publisher<? extends T>> source, int concurrency) {
 		return merge(source, concurrency, Queues.XS_BUFFER_SIZE);
 	}
 
@@ -1103,7 +1102,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a merged {@link Flux}
 	 */
-	public static <T> Flux<@NonNull T> merge(Publisher<? extends @NonNull Publisher<? extends @NonNull T>> source, int concurrency, int prefetch) {
+	public static <T> Flux<T> merge(Publisher<? extends Publisher<? extends T>> source, int concurrency, int prefetch) {
 		return onAssembly(new FluxFlatMap<>(
 				from(source),
 				identityFunction(),
@@ -1132,7 +1131,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a merged {@link Flux}
 	 */
-	public static <I> Flux<@NonNull I> merge(Iterable<? extends @NonNull Publisher<? extends I>> sources) {
+	public static <I> Flux<I> merge(Iterable<? extends Publisher<? extends I>> sources) {
 		return merge(fromIterable(sources));
 	}
 
@@ -1154,7 +1153,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a merged {@link Flux}
 	 */
 	@SafeVarargs
-	public static <I> Flux<@NonNull I> merge(Publisher<? extends @NonNull I> @NonNull ... sources) {
+	public static <I> Flux<I> merge(Publisher<? extends I>... sources) {
 		return merge(Queues.XS_BUFFER_SIZE, sources);
 	}
 
@@ -1177,7 +1176,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
 	 */
 	@SafeVarargs
-	public static <I> Flux<@NonNull I> merge(int prefetch, Publisher<? extends @NonNull I> @NonNull ... sources) {
+	public static <I> Flux<I> merge(int prefetch, Publisher<? extends I>... sources) {
 		return merge(prefetch, false, sources);
 	}
 
@@ -1201,7 +1200,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a fresh Reactive {@link Flux} publisher ready to be subscribed
 	 */
 	@SafeVarargs
-	public static <I> Flux<@NonNull I> mergeDelayError(int prefetch, Publisher<? extends @NonNull I> @NonNull ... sources) {
+	public static <I> Flux<I> mergeDelayError(int prefetch, Publisher<? extends I>... sources) {
 		return merge(prefetch, true, sources);
 	}
 
@@ -1218,7 +1217,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
 	 */
-	public static <T> Flux<@NonNull T> mergeSequential(Publisher<? extends @NonNull Publisher<? extends @NonNull T>> sources) {
+	public static <T> Flux<T> mergeSequential(Publisher<? extends Publisher<? extends T>> sources) {
 		return mergeSequential(sources, false, Queues.SMALL_BUFFER_SIZE,
 				Queues.XS_BUFFER_SIZE);
 	}
@@ -1238,7 +1237,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
 	 */
-	public static <T> Flux<@NonNull T> mergeSequential(Publisher<? extends @NonNull Publisher<? extends @NonNull T>> sources,
+	public static <T> Flux<T> mergeSequential(Publisher<? extends Publisher<? extends T>> sources,
 			int maxConcurrency, int prefetch) {
 		return mergeSequential(sources, false, maxConcurrency, prefetch);
 	}
@@ -1259,7 +1258,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
 	 */
-	public static <T> Flux<@NonNull T> mergeSequentialDelayError(Publisher<? extends @NonNull Publisher<? extends @NonNull T>> sources,
+	public static <T> Flux<T> mergeSequentialDelayError(Publisher<? extends Publisher<? extends T>> sources,
 			int maxConcurrency, int prefetch) {
 		return mergeSequential(sources, true, maxConcurrency, prefetch);
 	}
@@ -1277,7 +1276,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
 	 */
 	@SafeVarargs
-	public static <I> Flux<@NonNull I> mergeSequential(Publisher<? extends @NonNull I> @NonNull ... sources) {
+	public static <I> Flux<I> mergeSequential(Publisher<? extends I>... sources) {
 		return mergeSequential(Queues.XS_BUFFER_SIZE, false, sources);
 	}
 
@@ -1295,7 +1294,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
 	 */
 	@SafeVarargs
-	public static <I> Flux<@NonNull I> mergeSequential(int prefetch, Publisher<? extends @NonNull I> @NonNull ... sources) {
+	public static <I> Flux<I> mergeSequential(int prefetch, Publisher<? extends I>... sources) {
 		return mergeSequential(prefetch, false, sources);
 	}
 
@@ -1315,7 +1314,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
 	 */
 	@SafeVarargs
-	public static <I> Flux<@NonNull I> mergeSequentialDelayError(int prefetch, Publisher<? extends @NonNull I> @NonNull ... sources) {
+	public static <I> Flux<I> mergeSequentialDelayError(int prefetch, Publisher<? extends I>... sources) {
 		return mergeSequential(prefetch, true, sources);
 	}
 
@@ -1331,7 +1330,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
 	 */
-	public static <I> Flux<@NonNull I> mergeSequential(Iterable<? extends @NonNull Publisher<? extends @NonNull I>> sources) {
+	public static <I> Flux<I> mergeSequential(Iterable<? extends Publisher<? extends I>> sources) {
 		return mergeSequential(sources, false, Queues.SMALL_BUFFER_SIZE,
 				Queues.XS_BUFFER_SIZE);
 	}
@@ -1351,7 +1350,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
 	 */
-	public static <I> Flux<@NonNull I> mergeSequential(Iterable<? extends @NonNull Publisher<? extends I>> sources,
+	public static <I> Flux<I> mergeSequential(Iterable<? extends Publisher<? extends I>> sources,
 			int maxConcurrency, int prefetch) {
 		return mergeSequential(sources, false, maxConcurrency, prefetch);
 	}
@@ -1373,7 +1372,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
 	 */
-	public static <I> Flux<@NonNull I> mergeSequentialDelayError(Iterable<? extends @NonNull Publisher<? extends @NonNull I>> sources,
+	public static <I> Flux<I> mergeSequentialDelayError(Iterable<? extends Publisher<? extends I>> sources,
 			int maxConcurrency, int prefetch) {
 		return mergeSequential(sources, true, maxConcurrency, prefetch);
 	}
@@ -1387,7 +1386,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a never completing {@link Flux}
 	 */
-	public static <T> Flux<@NonNull T> never() {
+	public static <T> Flux<T> never() {
 		return FluxNever.instance();
 	}
 
@@ -1403,7 +1402,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param count the total number of incrementing values to emit, including the first value
 	 * @return a ranged {@link Flux}
 	 */
-	public static Flux<@NonNull Integer> range(int start, int count) {
+	public static Flux<Integer> range(int start, int count) {
 		if (count == 1) {
 			return just(start);
 		}
@@ -1429,7 +1428,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link FluxProcessor} accepting publishers and producing T
 	 */
-	public static <T> Flux<@NonNull T> switchOnNext(Publisher<? extends @NonNull Publisher<? extends @NonNull T>> mergedPublishers) {
+	public static <T> Flux<T> switchOnNext(Publisher<? extends Publisher<? extends T>> mergedPublishers) {
 		return switchOnNext(mergedPublishers, Queues.XS_BUFFER_SIZE);
 	}
 
@@ -1450,7 +1449,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link FluxProcessor} accepting publishers and producing T
 	 */
-	public static <T> Flux<@NonNull T> switchOnNext(Publisher<? extends @NonNull Publisher<? extends @NonNull T>> mergedPublishers, int prefetch) {
+	public static <T> Flux<T> switchOnNext(Publisher<? extends Publisher<? extends T>> mergedPublishers, int prefetch) {
 		return onAssembly(new FluxSwitchMap<>(from(mergedPublishers),
 				identityFunction(),
 				Queues.unbounded(prefetch), prefetch));
@@ -1475,8 +1474,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} built around a disposable resource
 	 */
-	public static <T, D> Flux<@NonNull T> using(Callable<? extends @NonNull D> resourceSupplier, Function<? super @NonNull D, ? extends
-            @NonNull Publisher<? extends @NonNull T>> sourceSupplier, Consumer<? super @NonNull D> resourceCleanup) {
+	public static <T, D> Flux<T> using(Callable<? extends D> resourceSupplier, Function<? super D, ? extends
+			Publisher<? extends T>> sourceSupplier, Consumer<? super D> resourceCleanup) {
 		return using(resourceSupplier, sourceSupplier, resourceCleanup, true);
 	}
 
@@ -1500,8 +1499,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} built around a disposable resource
 	 */
-	public static <T, D> Flux<@NonNull T> using(Callable<? extends @NonNull D> resourceSupplier, Function<? super @NonNull D, ? extends
-            @NonNull Publisher<? extends @NonNull T>> sourceSupplier, Consumer<? super @NonNull D> resourceCleanup, boolean eager) {
+	public static <T, D> Flux<T> using(Callable<? extends D> resourceSupplier, Function<? super D, ? extends
+			Publisher<? extends T>> sourceSupplier, Consumer<? super D> resourceCleanup, boolean eager) {
 		return onAssembly(new FluxUsing<>(resourceSupplier,
 				sourceSupplier,
 				resourceCleanup,
@@ -1528,9 +1527,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a zipped {@link Flux}
 	 */
-    public static <T1, T2, O> Flux<@NonNull O> zip(Publisher<? extends @NonNull T1> source1,
-			Publisher<? extends @NonNull T2> source2,
-			final BiFunction<? super @NonNull T1, ? super @NonNull T2, ? extends @NonNull O> combinator) {
+    public static <T1, T2, O> Flux<O> zip(Publisher<? extends T1> source1,
+			Publisher<? extends T2> source2,
+			final BiFunction<? super T1, ? super T2, ? extends O> combinator) {
 
 		return onAssembly(new FluxZip<T1, O>(source1,
 				source2,
@@ -1555,7 +1554,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a zipped {@link Flux}
 	 */
-	public static <T1, T2> Flux<@NonNull Tuple2<@NonNull T1, @NonNull T2>> zip(Publisher<? extends @NonNull T1> source1, Publisher<? extends @NonNull T2> source2) {
+	public static <T1, T2> Flux<Tuple2<T1, T2>> zip(Publisher<? extends T1> source1, Publisher<? extends T2> source2) {
 		return zip(source1, source2, tuple2Function());
 	}
 
@@ -1577,9 +1576,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a zipped {@link Flux}
 	 */
-	public static <T1, T2, T3> Flux<@NonNull Tuple3<@NonNull T1, @NonNull T2, @NonNull T3>> zip(Publisher<? extends @NonNull T1> source1,
-			Publisher<? extends @NonNull T2> source2,
-			Publisher<? extends @NonNull T3> source3) {
+	public static <T1, T2, T3> Flux<Tuple3<T1, T2, T3>> zip(Publisher<? extends T1> source1,
+			Publisher<? extends T2> source2,
+			Publisher<? extends T3> source3) {
 		return zip(Tuples.fn3(), source1, source2, source3);
 	}
 
@@ -1603,10 +1602,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a zipped {@link Flux}
 	 */
-	public static <T1, T2, T3, T4> Flux<@NonNull Tuple4<@NonNull T1, @NonNull T2, @NonNull T3, @NonNull T4>> zip(Publisher<? extends @NonNull T1> source1,
-			Publisher<? extends @NonNull T2> source2,
-			Publisher<? extends @NonNull T3> source3,
-			Publisher<? extends @NonNull T4> source4) {
+	public static <T1, T2, T3, T4> Flux<Tuple4<T1, T2, T3, T4>> zip(Publisher<? extends T1> source1,
+			Publisher<? extends T2> source2,
+			Publisher<? extends T3> source3,
+			Publisher<? extends T4> source4) {
 		return zip(Tuples.fn4(), source1, source2, source3, source4);
 	}
 
@@ -1632,11 +1631,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a zipped {@link Flux}
 	 */
-	public static <T1, T2, T3, T4, T5> Flux<@NonNull Tuple5<@NonNull T1, @NonNull T2, @NonNull T3, @NonNull T4, @NonNull T5>> zip(Publisher<? extends @NonNull T1> source1,
-			Publisher<? extends @NonNull T2> source2,
-			Publisher<? extends @NonNull T3> source3,
-			Publisher<? extends @NonNull T4> source4,
-			Publisher<? extends @NonNull T5> source5) {
+	public static <T1, T2, T3, T4, T5> Flux<Tuple5<T1, T2, T3, T4, T5>> zip(Publisher<? extends T1> source1,
+			Publisher<? extends T2> source2,
+			Publisher<? extends T3> source3,
+			Publisher<? extends T4> source4,
+			Publisher<? extends T5> source5) {
 		return zip(Tuples.fn5(), source1, source2, source3, source4, source5);
 	}
 
@@ -1664,12 +1663,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a zipped {@link Flux}
 	 */
-	public static <T1, T2, T3, T4, T5, T6> Flux<@NonNull Tuple6<@NonNull T1, @NonNull T2, @NonNull T3, @NonNull T4, @NonNull T5, @NonNull T6>> zip(Publisher<? extends @NonNull T1> source1,
-			Publisher<? extends @NonNull T2> source2,
-			Publisher<? extends @NonNull T3> source3,
-			Publisher<? extends @NonNull T4> source4,
-			Publisher<? extends @NonNull T5> source5,
-			Publisher<? extends @NonNull T6> source6) {
+	public static <T1, T2, T3, T4, T5, T6> Flux<Tuple6<T1, T2, T3, T4, T5, T6>> zip(Publisher<? extends T1> source1,
+			Publisher<? extends T2> source2,
+			Publisher<? extends T3> source3,
+			Publisher<? extends T4> source4,
+			Publisher<? extends T5> source5,
+			Publisher<? extends T6> source6) {
 		return zip(Tuples.fn6(), source1, source2, source3, source4, source5, source6);
 	}
 
@@ -1693,8 +1692,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a zipped {@link Flux}
 	 */
-	public static <O> Flux<@NonNull O> zip(Iterable<? extends @NonNull Publisher<@NonNull ?>> sources,
-			final Function<? super @NonNull Object @NonNull [], ? extends @NonNull O> combinator) {
+	public static <O> Flux<O> zip(Iterable<? extends Publisher<?>> sources,
+			final Function<? super Object[], ? extends O> combinator) {
 
 		return zip(sources, Queues.XS_BUFFER_SIZE, combinator);
 	}
@@ -1720,9 +1719,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a zipped {@link Flux}
 	 */
-	public static <O> Flux<@NonNull O> zip(Iterable<? extends @NonNull Publisher<@NonNull ?>> sources,
+	public static <O> Flux<O> zip(Iterable<? extends Publisher<?>> sources,
 			int prefetch,
-			final Function<? super @NonNull Object @NonNull [], ? extends @NonNull O> combinator) {
+			final Function<? super Object[], ? extends O> combinator) {
 
 		return onAssembly(new FluxZip<Object, O>(sources,
 				combinator,
@@ -1749,8 +1748,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a zipped {@link Flux}
 	 */
 	@SafeVarargs
-	public static <I, O> Flux<@NonNull O> zip(
-			final Function<? super @NonNull Object @NonNull [], ? extends @NonNull O> combinator, Publisher<? extends @NonNull I> @NonNull ... sources) {
+	public static <I, O> Flux<O> zip(
+			final Function<? super Object[], ? extends O> combinator, Publisher<? extends I>... sources) {
 		return zip(combinator, Queues.XS_BUFFER_SIZE, sources);
 	}
 
@@ -1774,9 +1773,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a zipped {@link Flux}
 	 */
 	@SafeVarargs
-	public static <I, O> Flux<@NonNull O> zip(final Function<? super @NonNull Object[], ? extends @NonNull O> combinator,
+	public static <I, O> Flux<O> zip(final Function<? super Object[], ? extends O> combinator,
 			int prefetch,
-			Publisher<? extends @NonNull I> @NonNull ... sources) {
+			Publisher<? extends I>... sources) {
 
 		if (sources.length == 0) {
 			return empty();
@@ -1820,9 +1819,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} based on the produced value
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-    public static <TUPLE extends Tuple2, V> Flux<@NonNull V> zip(Publisher<? extends
-            @NonNull Publisher<@NonNull ?>> sources,
-			final Function<? super @NonNull TUPLE, ? extends @NonNull V> combinator) {
+    public static <TUPLE extends Tuple2, V> Flux<V> zip(Publisher<? extends
+			Publisher<?>> sources,
+			final Function<? super TUPLE, ? extends V> combinator) {
 
 		return onAssembly(new FluxBuffer<>(from(sources), Integer.MAX_VALUE, listSupplier())
 		                    .flatMap(new Function<List<? extends Publisher<?>>, Publisher<V>>() {
@@ -1851,7 +1850,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Mono} with <code>true</code> if all values satisfies a predicate and <code>false</code>
 	 * otherwise
 	 */
-	public final Mono<Boolean> all(Predicate<? super @NonNull T> predicate) {
+	public final Mono<Boolean> all(Predicate<? super T> predicate) {
 		return Mono.onAssembly(new MonoAll<>(this, predicate));
 	}
 
@@ -1870,7 +1869,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Mono} with <code>true</code> if any value satisfies a predicate and <code>false</code>
 	 * otherwise
 	 */
-	public final Mono<Boolean> any(Predicate<? super @NonNull T> predicate) {
+	public final Mono<Boolean> any(Predicate<? super T> predicate) {
 		return Mono.onAssembly(new MonoAny<>(this, predicate));
 	}
 
@@ -1887,7 +1886,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return the {@link Flux} transformed to an instance of P
 	 * @see #compose for a bounded conversion to {@link Publisher}
 	 */
-	public final <P> P as(Function<? super @NonNull Flux<@NonNull T>, @NonNull P> transformer) {
+	public final <P> P as(Function<? super Flux<T>, P> transformer) {
 		return transformer.apply(this);
 	}
 
@@ -1980,7 +1979,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a buffered {@link Flux} of at most one {@link List}
 	 * @see #collectList() for an alternative collecting algorithm returning {@link Mono}
 	 */
-    public final Flux<@NonNull List<@NonNull T>> buffer() {
+    public final Flux<List<T>> buffer() {
 	    return buffer(Integer.MAX_VALUE);
 	}
 
@@ -1996,7 +1995,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a microbatched {@link Flux} of {@link List}
 	 */
-	public final Flux<@NonNull List<@NonNull T>> buffer(int maxSize) {
+	public final Flux<List<T>> buffer(int maxSize) {
 		return buffer(maxSize, listSupplier());
 	}
 
@@ -2014,7 +2013,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a microbatched {@link Flux} of {@link Collection}
 	 */
-	public final <C extends Collection<? super T>> Flux<@NonNull C> buffer(int maxSize, Supplier<@NonNull C> bufferSupplier) {
+	public final <C extends Collection<? super T>> Flux<C> buffer(int maxSize, Supplier<C> bufferSupplier) {
 		return onAssembly(new FluxBuffer<>(this, maxSize, bufferSupplier));
 	}
 
@@ -2044,7 +2043,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a microbatched {@link Flux} of possibly overlapped or gapped {@link List}
 	 */
-	public final Flux<@NonNull List<@NonNull T>> buffer(int maxSize, int skip) {
+	public final Flux<List<T>> buffer(int maxSize, int skip) {
 		return buffer(maxSize, skip, listSupplier());
 	}
 
@@ -2077,8 +2076,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a microbatched {@link Flux} of possibly overlapped or gapped
 	 * {@link Collection}
 	 */
-	public final <C extends Collection<? super T>> Flux<@NonNull C> buffer(int maxSize,
-			int skip, Supplier<@NonNull C> bufferSupplier) {
+	public final <C extends Collection<? super T>> Flux<C> buffer(int maxSize,
+			int skip, Supplier<C> bufferSupplier) {
 		return onAssembly(new FluxBuffer<>(this, maxSize, skip, bufferSupplier));
 	}
 
@@ -2093,7 +2092,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by signals from a {@link Publisher}
 	 */
-	public final Flux<@NonNull List<@NonNull T>> buffer(Publisher<?> other) {
+	public final Flux<List<T>> buffer(Publisher<?> other) {
 		return buffer(other, listSupplier());
 	}
 
@@ -2111,7 +2110,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a microbatched {@link Flux} of {@link Collection} delimited by signals from a {@link Publisher}
 	 */
-	public final <C extends Collection<? super @NonNull T>> Flux<@NonNull C> buffer(Publisher<@NonNull ?> other, Supplier<@NonNull C> bufferSupplier) {
+	public final <C extends Collection<? super T>> Flux<C> buffer(Publisher<?> other, Supplier<C> bufferSupplier) {
 		return onAssembly(new FluxBufferBoundary<>(this, other, bufferSupplier));
 	}
 
@@ -2126,7 +2125,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by the given time span
 	 */
-	public final Flux<@NonNull List<@NonNull T>> buffer(Duration timespan) {
+	public final Flux<List<T>> buffer(Duration timespan) {
 		return buffer(timespan, Schedulers.parallel());
 	}
 
@@ -2155,7 +2154,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period timeshift and sized by timespan
 	 */
-	public final Flux<@NonNull List<@NonNull T>> buffer(Duration timespan, Duration timeshift) {
+	public final Flux<List<T>> buffer(Duration timespan, Duration timeshift) {
 		return buffer(timespan, timeshift, Schedulers.parallel());
 	}
 
@@ -2171,7 +2170,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period
 	 */
-	public final Flux<@NonNull List<@NonNull T>> buffer(Duration timespan, Scheduler timer) {
+	public final Flux<List<T>> buffer(Duration timespan, Scheduler timer) {
 		return buffer(interval(timespan, timer));
 	}
 
@@ -2202,7 +2201,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by the given period timeshift and sized by timespan
 	 */
-	public final Flux<@NonNull List<@NonNull T>> buffer(Duration timespan, Duration timeshift, Scheduler timer) {
+	public final Flux<List<T>> buffer(Duration timespan, Duration timeshift, Scheduler timer) {
 		if (timespan.equals(timeshift)) {
 			return buffer(timespan, timer);
 		}
@@ -2223,7 +2222,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
 	 */
-	public final Flux<@NonNull List<@NonNull T>> bufferTimeout(int maxSize, Duration timespan) {
+	public final Flux<List<T>> bufferTimeout(int maxSize, Duration timespan) {
 		return bufferTimeout(maxSize, timespan, listSupplier());
 	}
 
@@ -2241,7 +2240,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <C> the {@link Collection} buffer type
 	 * @return a microbatched {@link Flux} of {@link Collection} delimited by given size or a given period timeout
 	 */
-	public final <C extends Collection<? super T>> Flux<@NonNull C> bufferTimeout(int maxSize, Duration timespan, Supplier<@NonNull C> bufferSupplier) {
+	public final <C extends Collection<? super T>> Flux<C> bufferTimeout(int maxSize, Duration timespan, Supplier<C> bufferSupplier) {
 		return bufferTimeout(maxSize, timespan, Schedulers.parallel(),
 				bufferSupplier);
 	}
@@ -2260,7 +2259,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a microbatched {@link Flux} of {@link List} delimited by given size or a given period timeout
 	 */
-	public final Flux<@NonNull List<@NonNull T>> bufferTimeout(int maxSize, Duration timespan, Scheduler timer) {
+	public final Flux<List<T>> bufferTimeout(int maxSize, Duration timespan, Scheduler timer) {
 		return bufferTimeout(maxSize, timespan, timer, listSupplier());
 	}
 
@@ -2279,8 +2278,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <C> the {@link Collection} buffer type
 	 * @return a microbatched {@link Flux} of {@link Collection} delimited by given size or a given period timeout
 	 */
-	public final  <C extends Collection<? super T>> Flux<@NonNull C> bufferTimeout(int maxSize, Duration timespan,
-			Scheduler timer, Supplier<@NonNull C> bufferSupplier) {
+	public final  <C extends Collection<? super T>> Flux<C> bufferTimeout(int maxSize, Duration timespan,
+			Scheduler timer, Supplier<C> bufferSupplier) {
 		return onAssembly(new FluxBufferTimeOrSize<>(this, maxSize, timespan.toMillis(), timer, bufferSupplier));
 	}
 
@@ -2300,7 +2299,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param predicate a predicate that triggers the next buffer when it becomes true.
 	 * @return a microbatched {@link Flux} of {@link List}
 	 */
-	public final Flux<@NonNull List<@NonNull T>> bufferUntil(Predicate<? super @NonNull T> predicate) {
+	public final Flux<List<T>> bufferUntil(Predicate<? super T> predicate) {
 		return onAssembly(new FluxBufferPredicate<>(this, predicate,
 				listSupplier(), FluxBufferPredicate.Mode.UNTIL));
 	}
@@ -2324,7 +2323,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param cutBefore push to true to include the triggering element in the new buffer rather than the old.
 	 * @return a microbatched {@link Flux} of {@link List}
 	 */
-	public final Flux<@NonNull List<@NonNull T>> bufferUntil(Predicate<? super @NonNull T> predicate, boolean cutBefore) {
+	public final Flux<List<T>> bufferUntil(Predicate<? super T> predicate, boolean cutBefore) {
 		return onAssembly(new FluxBufferPredicate<>(this, predicate, listSupplier(),
 				cutBefore ? FluxBufferPredicate.Mode.UNTIL_CUT_BEFORE
 						  : FluxBufferPredicate.Mode.UNTIL));
@@ -2334,7 +2333,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Collect incoming values into multiple {@link List} buffers that will be emitted by
 	 * the resulting {@link Flux}. Each buffer continues aggregating values while the
 	 * given predicate returns true, and a new buffer is created as soon as the
-	 * predicate returns false ... Note that the element that triggers the predicate
+	 * predicate returns false... Note that the element that triggers the predicate
 	 * to return false (and thus closes a buffer) is NOT included in any emitted buffer.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/buffersize.png"
@@ -2347,7 +2346,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param predicate a predicate that triggers the next buffer when it becomes false.
 	 * @return a microbatched {@link Flux} of {@link List}
 	 */
-	public final Flux<@NonNull List<@NonNull T>> bufferWhile(Predicate<? super @NonNull T> predicate) {
+	public final Flux<List<T>> bufferWhile(Predicate<? super T> predicate) {
 		return onAssembly(new FluxBufferPredicate<>(this, predicate,
 				listSupplier(), FluxBufferPredicate.Mode.WHILE));
 	}
@@ -2381,7 +2380,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a microbatched {@link Flux} of {@link List} delimited by an opening {@link Publisher} and a relative
 	 * closing {@link Publisher}
 	 */
-	public final <U, V> Flux<@NonNull List<@NonNull T>> bufferWhen(Publisher<@NonNull U> bucketOpening,
+	public final <U, V> Flux<List<T>> bufferWhen(Publisher<U> bucketOpening,
 			Function<? super U, ? extends Publisher<V>> closeSelector) {
 		return bufferWhen(bucketOpening, closeSelector, listSupplier());
 	}
@@ -2417,8 +2416,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a microbatched {@link Flux} of {@link Collection} delimited by an opening {@link Publisher} and a relative
 	 * closing {@link Publisher}
 	 */
-	public final <U, V, C extends Collection<? super @NonNull T>> Flux<@NonNull C> bufferWhen(Publisher<@NonNull U> bucketOpening,
-			Function<? super @NonNull U, ? extends @NonNull Publisher<@NonNull V>> closeSelector, Supplier<@NonNull C> bufferSupplier) {
+	public final <U, V, C extends Collection<? super T>> Flux<C> bufferWhen(Publisher<U> bucketOpening,
+			Function<? super U, ? extends Publisher<V>> closeSelector, Supplier<C> bufferSupplier) {
 		return onAssembly(new FluxBufferWhen<>(this, bucketOpening, closeSelector,
 				bufferSupplier, Queues.unbounded(Queues.XS_BUFFER_SIZE)));
 	}
@@ -2433,7 +2432,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a replaying {@link Flux}
 	 */
-	public final Flux<@NonNull T> cache() {
+	public final Flux<T> cache() {
 		return cache(Integer.MAX_VALUE);
 	}
 
@@ -2452,7 +2451,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a replaying {@link Flux}
 	 *
 	 */
-	public final Flux<@NonNull T> cache(int history) {
+	public final Flux<T> cache(int history) {
 		return replay(history).autoConnect();
 	}
 
@@ -2470,7 +2469,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a replaying {@link Flux}
 	 */
-	public final Flux<@NonNull T> cache(Duration ttl) {
+	public final Flux<T> cache(Duration ttl) {
 		return replay(Integer.MAX_VALUE, ttl).autoConnect();
 	}
 
@@ -2490,7 +2489,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a replaying {@link Flux}
 	 */
-	public final Flux<@NonNull T> cache(int history, Duration ttl) {
+	public final Flux<T> cache(int history, Duration ttl) {
 		return replay(history, ttl).autoConnect();
 	}
 
@@ -2505,7 +2504,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a casted {@link Flux}
 	 */
-	public final <E> Flux<@NonNull E> cast(Class<E> clazz) {
+	public final <E> Flux<E> cast(Class<E> clazz) {
 		Objects.requireNonNull(clazz, "clazz");
 		return map(clazz::cast);
 	}
@@ -2519,7 +2518,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a scheduled cancel {@link Flux}
 	 */
-	public final Flux<@NonNull T> cancelOn(Scheduler scheduler) {
+	public final Flux<T> cancelOn(Scheduler scheduler) {
 		return onAssembly(new FluxCancelOn<>(this, scheduler));
 	}
 
@@ -2533,7 +2532,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return the assembly tracing {@link Flux}.
 	 */
-	public final Flux<@NonNull T> checkpoint() {
+	public final Flux<T> checkpoint() {
 		return checkpoint(null, true);
 	}
 
@@ -2553,7 +2552,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param description a unique enough description to include in the light assembly traceback.
 	 * @return the assembly marked {@link Flux}
 	 */
-	public final Flux<@NonNull T> checkpoint(String description) {
+	public final Flux<T> checkpoint(String description) {
 		return checkpoint(Objects.requireNonNull(description), false);
 	}
 
@@ -2583,7 +2582,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * to use a stack trace.
 	 * @return the assembly marked {@link Flux}.
 	 */
-	public final Flux<@NonNull T> checkpoint(@Nullable String description, boolean forceStackTrace) {
+	public final Flux<T> checkpoint(@Nullable String description, boolean forceStackTrace) {
 		return new FluxOnAssembly<>(this, description, !forceStackTrace);
 	}
 
@@ -2602,7 +2601,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Mono} of the collected container on complete
 	 *
 	 */
-	public final <E> Mono<@NonNull E> collect(Supplier<@NonNull E> containerSupplier, BiConsumer<@NonNull E, ? super @NonNull T> collector) {
+	public final <E> Mono<E> collect(Supplier<E> containerSupplier, BiConsumer<E, ? super T> collector) {
 		return Mono.onAssembly(new MonoCollect<>(this, containerSupplier, collector));
 	}
 
@@ -2621,7 +2620,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Mono} of the collected container on complete
 	 *
 	 */
-	public final <R, A> Mono<@NonNull R> collect(Collector<? super @NonNull T, @NonNull A, ? extends @NonNull R> collector) {
+	public final <R, A> Mono<R> collect(Collector<? super T, A, ? extends R> collector) {
 		return Mono.onAssembly(new MonoStreamCollector<>(this, collector));
 	}
 
@@ -2634,7 +2633,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono} of a {@link List} of all values from this {@link Flux}
 	 */
-	public final Mono<@NonNull List<@NonNull T>> collectList() {
+	public final Mono<List<T>> collectList() {
 		if (this instanceof Callable) {
 			if (this instanceof Fuseable.ScalarCallable) {
 				@SuppressWarnings("unchecked")
@@ -2685,7 +2684,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * element in case of key conflicts)
 	 *
 	 */
-	public final <K> Mono<@NonNull Map<@NonNull K, @NonNull T>> collectMap(Function<? super @NonNull T, ? extends @NonNull K> keyExtractor) {
+	public final <K> Mono<Map<K, T>> collectMap(Function<? super T, ? extends K> keyExtractor) {
 		return collectMap(keyExtractor, identityFunction());
 	}
 
@@ -2709,8 +2708,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Mono} of a {@link Map} of key-element pairs (only including latest
 	 * element's value in case of key conflicts)
 	 */
-	public final <K, V> Mono<@NonNull Map<@NonNull K, @NonNull V>> collectMap(Function<? super @NonNull T, ? extends @NonNull K> keyExtractor,
-			Function<? super @NonNull T, ? extends @NonNull V> valueExtractor) {
+	public final <K, V> Mono<Map<K, V>> collectMap(Function<? super T, ? extends K> keyExtractor,
+			Function<? super T, ? extends V> valueExtractor) {
 		return collectMap(keyExtractor, valueExtractor, () -> new HashMap<>());
 	}
 
@@ -2735,10 +2734,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Mono} of a {@link Map} of key-value pairs (only including latest
 	 * element's value in case of key conflicts)
 	 */
-	public final <K, V> Mono<@NonNull Map<@NonNull K, @NonNull V>> collectMap(
-			final Function<? super @NonNull T, ? extends @NonNull K> keyExtractor,
-			final Function<? super @NonNull T, ? extends @NonNull V> valueExtractor,
-			Supplier<@NonNull Map<@NonNull K, @NonNull V>> mapSupplier) {
+	public final <K, V> Mono<Map<K, V>> collectMap(
+			final Function<? super T, ? extends K> keyExtractor,
+			final Function<? super T, ? extends V> valueExtractor,
+			Supplier<Map<K, V>> mapSupplier) {
 		Objects.requireNonNull(keyExtractor, "Key extractor is null");
 		Objects.requireNonNull(valueExtractor, "Value extractor is null");
 		Objects.requireNonNull(mapSupplier, "Map supplier is null");
@@ -2760,7 +2759,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param <K> the type of the key extracted from each source element
 	 * @return a {@link Mono} of a {@link Map} of key-List(elements) pairs
 	 */
-	public final <K> Mono<@NonNull Map<@NonNull K, @NonNull Collection<@NonNull T>>> collectMultimap(Function<? super @NonNull T, ? extends @NonNull K> keyExtractor) {
+	public final <K> Mono<Map<K, Collection<T>>> collectMultimap(Function<? super T, ? extends K> keyExtractor) {
 		return collectMultimap(keyExtractor, identityFunction());
 	}
 
@@ -2783,8 +2782,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono} of a {@link Map} of key-List(values) pairs
 	 */
-	public final <K, V> Mono<@NonNull Map<@NonNull K, @NonNull Collection<@NonNull V>>> collectMultimap(Function<? super @NonNull T, ? extends @NonNull K> keyExtractor,
-			Function<? super @NonNull T, ? extends @NonNull V> valueExtractor) {
+	public final <K, V> Mono<Map<K, Collection<V>>> collectMultimap(Function<? super T, ? extends K> keyExtractor,
+			Function<? super T, ? extends V> valueExtractor) {
 		return collectMultimap(keyExtractor, valueExtractor, () -> new HashMap<>());
 	}
 
@@ -2810,9 +2809,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Mono} of a {@link Map} of key-Collection(values) pairs
 	 *
 	 */
-	public final <K, V> Mono<@NonNull Map<@NonNull K, @NonNull Collection<@NonNull V>>> collectMultimap(
-			final Function<? super @NonNull T, ? extends @NonNull K> keyExtractor,
-			final Function<? super @NonNull T, ? extends @NonNull V> valueExtractor,
+	public final <K, V> Mono<Map<K, Collection<V>>> collectMultimap(
+			final Function<? super T, ? extends K> keyExtractor,
+			final Function<? super T, ? extends V> valueExtractor,
 			Supplier<Map<K, Collection<V>>> mapSupplier) {
 		Objects.requireNonNull(keyExtractor, "Key extractor is null");
 		Objects.requireNonNull(valueExtractor, "Value extractor is null");
@@ -2834,7 +2833,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono} of a sorted {@link List} of all values from this {@link Flux}, in natural order
 	 */
-	public final Mono<@NonNull List<@NonNull T>> collectSortedList() {
+	public final Mono<List<T>> collectSortedList() {
 		return collectSortedList(null);
 	}
 
@@ -2851,7 +2850,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Mono} of a sorted {@link List} of all values from this {@link Flux}
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public final Mono<@NonNull List<@NonNull T>> collectSortedList(@Nullable Comparator<? super @NonNull T> comparator) {
+	public final Mono<List<T>> collectSortedList(@Nullable Comparator<? super T> comparator) {
 		return collectList().map(list -> {
 			// Note: this assumes the list emitted by buffer() is mutable
 			if (comparator != null) {
@@ -2880,7 +2879,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @see #transform  transform() for immmediate transformation of {@link Flux}
 	 * @see #as as() for a loose conversion to an arbitrary type
 	 */
-	public final <V> Flux<@NonNull V> compose(Function<? super @NonNull Flux<@NonNull T>, ? extends @NonNull Publisher<@NonNull V>> transformer) {
+	public final <V> Flux<V> compose(Function<? super Flux<T>, ? extends Publisher<V>> transformer) {
 		return defer(() -> transformer.apply(this));
 	}
 
@@ -2912,7 +2911,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a concatenated {@link Flux}
 	 */
-	public final <V> Flux<@NonNull V> concatMap(Function<? super @NonNull T, ? extends @NonNull Publisher<? extends @NonNull V>>
+	public final <V> Flux<V> concatMap(Function<? super T, ? extends Publisher<? extends V>>
 			mapper) {
 		return concatMap(mapper, Queues.XS_BUFFER_SIZE);
 	}
@@ -2947,7 +2946,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a concatenated {@link Flux}
 	 */
-	public final <V> Flux<@NonNull V> concatMap(Function<? super @NonNull T, ? extends @NonNull Publisher<? extends @NonNull V>>
+	public final <V> Flux<V> concatMap(Function<? super T, ? extends Publisher<? extends V>>
 			mapper, int prefetch) {
 		return onAssembly(new FluxConcatMap<>(this, mapper, Queues.get(prefetch), prefetch,
 				FluxConcatMap.ErrorMode.IMMEDIATE));
@@ -2983,7 +2982,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a concatenated {@link Flux}
 	 *
 	 */
-	public final <V> Flux<@NonNull V> concatMapDelayError(Function<? super @NonNull T, @NonNull Publisher<? extends @NonNull V>> mapper) {
+	public final <V> Flux<V> concatMapDelayError(Function<? super T, Publisher<? extends V>> mapper) {
 		return concatMapDelayError(mapper, Queues.XS_BUFFER_SIZE);
 	}
 
@@ -3019,8 +3018,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a concatenated {@link Flux}
 	 *
 	 */
-	public final <V> Flux<@NonNull V> concatMapDelayError(Function<? super @NonNull T, ? extends @NonNull Publisher<?
-			extends @NonNull V>> mapper, int prefetch) {
+	public final <V> Flux<V> concatMapDelayError(Function<? super T, ? extends Publisher<?
+			extends V>> mapper, int prefetch) {
 		return onAssembly(new FluxConcatMap<>(this, mapper, Queues.get(prefetch), prefetch,
 				FluxConcatMap.ErrorMode.BOUNDARY));
 	}
@@ -3060,8 +3059,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a concatenated {@link Flux}
 	 *
 	 */
-	public final <V> Flux<@NonNull V> concatMapDelayError(Function<? super @NonNull T, ? extends @NonNull Publisher<?
-			extends @NonNull V>> mapper, boolean delayUntilEnd, int prefetch) {
+	public final <V> Flux<V> concatMapDelayError(Function<? super T, ? extends Publisher<?
+			extends V>> mapper, boolean delayUntilEnd, int prefetch) {
 		return onAssembly(new FluxConcatMap<>(this, mapper, Queues.get(prefetch), prefetch,
 				delayUntilEnd ? FluxConcatMap.ErrorMode.END : FluxConcatMap.ErrorMode
 						.BOUNDARY));
@@ -3084,7 +3083,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a concatenation of the values from the Iterables obtained from each element in this {@link Flux}
 	 */
-	public final <R> Flux<@NonNull R> concatMapIterable(Function<? super @NonNull T, ? extends @NonNull Iterable<? extends @NonNull R>> mapper) {
+	public final <R> Flux<R> concatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
 		return concatMapIterable(mapper, Queues.XS_BUFFER_SIZE);
 	}
 
@@ -3106,7 +3105,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a concatenation of the values from the Iterables obtained from each element in this {@link Flux}
 	 */
-	public final <R> Flux<@NonNull R> concatMapIterable(Function<? super @NonNull T, ? extends @NonNull Iterable<? extends @NonNull R>> mapper,
+	public final <R> Flux<R> concatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper,
 			int prefetch) {
 		return onAssembly(new FluxFlattenIterable<>(this, mapper, prefetch,
 				Queues.get(prefetch)));
@@ -3122,7 +3121,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a concatenated {@link Flux}
 	 */
-	public final Flux<@NonNull T> concatWith(Publisher<? extends @NonNull T> other) {
+	public final Flux<T> concatWith(Publisher<? extends T> other) {
 		if (this instanceof FluxConcatArray) {
 			@SuppressWarnings({ "unchecked" })
 			FluxConcatArray<T> fluxConcatArray = (FluxConcatArray<T>) this;
@@ -3141,7 +3140,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Mono} of {@link Long} count
 	 */
-	public final Mono<@NonNull Long> count() {
+	public final Mono<Long> count() {
 		return Mono.onAssembly(new MonoCount<>(this));
 	}
 
@@ -3154,7 +3153,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux}
 	 */
-	public final Flux<@NonNull T> defaultIfEmpty(T defaultV) {
+	public final Flux<T> defaultIfEmpty(T defaultV) {
 		return onAssembly(new FluxDefaultIfEmpty<>(this, defaultV));
 	}
 
@@ -3171,7 +3170,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a delayed {@link Flux}
 	 * @see #delaySubscription(Duration) delaySubscription to introduce a delay at the beginning of the sequence only
 	 */
-	public final Flux<@NonNull T> delayElements(Duration delay) {
+	public final Flux<T> delayElements(Duration delay) {
 		return delayElements(delay, Schedulers.parallel());
 	}
 
@@ -3187,7 +3186,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param timer a time-capable {@link Scheduler} instance to delay each signal on
 	 * @return a delayed {@link Flux}
 	 */
-	public final Flux<@NonNull T> delayElements(Duration delay, Scheduler timer) {
+	public final Flux<T> delayElements(Duration delay, Scheduler timer) {
 		return delayUntil(d -> Mono.delay(delay, timer));
 	}
 
@@ -3210,7 +3209,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return this Flux, but with elements delayed until their derived publisher terminates.
 	 */
-	public final Flux<@NonNull T> delayUntil(Function<? super @NonNull T, ? extends @NonNull Publisher<@NonNull ?>> triggerProvider) {
+	public final Flux<T> delayUntil(Function<? super T, ? extends Publisher<?>> triggerProvider) {
 		return concatMap(v -> Mono.just(v)
 		                          .delayUntil(triggerProvider));
 	}
@@ -3228,7 +3227,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a delayed {@link Flux}
 	 *
 	 */
-	public final Flux<@NonNull T> delaySubscription(Duration delay) {
+	public final Flux<T> delaySubscription(Duration delay) {
 		return delaySubscription(delay, Schedulers.parallel());
 	}
 
@@ -3244,7 +3243,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a delayed {@link Flux}
 	 */
-	public final Flux<@NonNull T> delaySubscription(Duration delay, Scheduler timer) {
+	public final Flux<T> delaySubscription(Duration delay, Scheduler timer) {
 		return delaySubscription(Mono.delay(delay, timer));
 	}
 
@@ -3261,7 +3260,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a delayed {@link Flux}
 	 *
 	 */
-	public final <U> Flux<@NonNull T> delaySubscription(Publisher<@NonNull U> subscriptionDelay) {
+	public final <U> Flux<T> delaySubscription(Publisher<U> subscriptionDelay) {
 		return onAssembly(new FluxDelaySubscription<>(this, subscriptionDelay));
 	}
 
@@ -3280,7 +3279,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a dematerialized {@link Flux}
 	 * @see #materialize()
 	 */
-	public final <X> Flux<@NonNull X> dematerialize() {
+	public final <X> Flux<X> dematerialize() {
 		@SuppressWarnings("unchecked")
 		Flux<Signal<X>> thiz = (Flux<Signal<X>>) this;
 		return onAssembly(new FluxDematerialize<>(thiz));
@@ -3295,7 +3294,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a filtering {@link Flux} only emitting distinct values
 	 */
-	public final Flux<@NonNull T> distinct() {
+	public final Flux<T> distinct() {
 		return distinct(hashcodeSupplier());
 	}
 
@@ -3312,7 +3311,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a filtering {@link Flux} only emitting values with distinct keys
 	 */
-	public final <V> Flux<@NonNull T> distinct(Function<? super @NonNull T, ? extends @NonNull V> keySelector) {
+	public final <V> Flux<T> distinct(Function<? super T, ? extends V> keySelector) {
 		return distinct(keySelector, hashSetSupplier());
 	}
 
@@ -3334,9 +3333,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a filtering {@link Flux} only emitting values with distinct keys
 	 */
-	public final <V, C extends Collection<? super V>> Flux<@NonNull T> distinct(
-			Function<? super @NonNull T, ? extends @NonNull V> keySelector,
-			Supplier<@NonNull C> distinctCollectionSupplier) {
+	public final <V, C extends Collection<? super V>> Flux<T> distinct(
+			Function<? super T, ? extends V> keySelector,
+			Supplier<C> distinctCollectionSupplier) {
 		if (this instanceof Fuseable) {
 			return onAssembly(new FluxDistinctFuseable<>(this, keySelector,
 					distinctCollectionSupplier));
@@ -3354,7 +3353,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a filtering {@link Flux} with only one occurrence in a row of each element
 	 * (yet elements can repeat in the overall sequence)
 	 */
-	public final Flux<@NonNull T> distinctUntilChanged() {
+	public final Flux<T> distinctUntilChanged() {
 		return distinctUntilChanged(hashcodeSupplier());
 	}
 
@@ -3373,7 +3372,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a filtering {@link Flux} with only one occurrence in a row of each element of
 	 * the same key (yet element keys can repeat in the overall sequence)
 	 */
-	public final <V> Flux<@NonNull T> distinctUntilChanged(Function<? super @NonNull T, ? extends @NonNull V> keySelector) {
+	public final <V> Flux<T> distinctUntilChanged(Function<? super T, ? extends V> keySelector) {
 		return distinctUntilChanged(keySelector, equalPredicate());
 	}
 
@@ -3393,8 +3392,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * of the same key for which the predicate returns true (yet element keys can repeat
 	 * in the overall sequence)
 	 */
-	public final <V> Flux<@NonNull T> distinctUntilChanged(Function<? super @NonNull T, ? extends @NonNull V> keySelector,
-			BiPredicate<? super @NonNull V, ? super @NonNull V> keyComparator) {
+	public final <V> Flux<T> distinctUntilChanged(Function<? super T, ? extends V> keySelector,
+			BiPredicate<? super V, ? super V> keyComparator) {
 		return onAssembly(new FluxDistinctUntilChanged<>(this,
 				keySelector,
 				keyComparator));
@@ -3409,7 +3408,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return an observed  {@link Flux}
 	 */
-	public final Flux<@NonNull T> doAfterTerminate(Runnable afterTerminate) {
+	public final Flux<T> doAfterTerminate(Runnable afterTerminate) {
 		Objects.requireNonNull(afterTerminate, "afterTerminate");
 		return doOnSignal(this, null, null, null, null, afterTerminate, null, null);
 	}
@@ -3423,7 +3422,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return an observed  {@link Flux}
 	 */
-	public final Flux<@NonNull T> doOnCancel(Runnable onCancel) {
+	public final Flux<T> doOnCancel(Runnable onCancel) {
 		Objects.requireNonNull(onCancel, "onCancel");
 		return doOnSignal(this, null, null, null, null, null, null, onCancel);
 	}
@@ -3437,7 +3436,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return an observed  {@link Flux}
 	 */
-	public final Flux<@NonNull T> doOnComplete(Runnable onComplete) {
+	public final Flux<T> doOnComplete(Runnable onComplete) {
 		Objects.requireNonNull(onComplete, "onComplete");
 		return doOnSignal(this, null, null, null, onComplete, null, null, null);
 	}
@@ -3458,7 +3457,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @see #materialize()
 	 * @see Signal
 	 */
-	public final Flux<@NonNull T> doOnEach(Consumer<? super @NonNull Signal<T>> signalConsumer) {
+	public final Flux<T> doOnEach(Consumer<? super Signal<T>> signalConsumer) {
 		return onAssembly(new FluxDoOnEach<>(this, signalConsumer));
 	}
 
@@ -3471,7 +3470,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return an observed  {@link Flux}
 	 */
-	public final Flux<@NonNull T> doOnError(Consumer<? super @NonNull Throwable> onError) {
+	public final Flux<T> doOnError(Consumer<? super Throwable> onError) {
 		Objects.requireNonNull(onError, "onError");
 		return doOnSignal(this, null, null, onError, null, null, null, null);
 	}
@@ -3488,8 +3487,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return an observed  {@link Flux}
 	 *
 	 */
-	public final <E extends Throwable> Flux<@NonNull T> doOnError(Class<E> exceptionType,
-			final Consumer<? super @NonNull E> onError) {
+	public final <E extends Throwable> Flux<T> doOnError(Class<E> exceptionType,
+			final Consumer<? super E> onError) {
 		Objects.requireNonNull(exceptionType, "type");
 		@SuppressWarnings("unchecked")
 		Consumer<Throwable> handler = (Consumer<Throwable>)onError;
@@ -3507,8 +3506,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return an observed  {@link Flux}
 	 *
 	 */
-	public final Flux<@NonNull T> doOnError(Predicate<? super @NonNull Throwable> predicate,
-			final Consumer<? super @NonNull Throwable> onError) {
+	public final Flux<T> doOnError(Predicate<? super Throwable> predicate,
+			final Consumer<? super Throwable> onError) {
 		Objects.requireNonNull(predicate, "predicate");
 		return doOnError(t -> {
 			if (predicate.test(t)) {
@@ -3526,7 +3525,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return an observed  {@link Flux}
 	 */
-	public final Flux<@NonNull T> doOnNext(Consumer<? super @NonNull T> onNext) {
+	public final Flux<T> doOnNext(Consumer<? super T> onNext) {
 		Objects.requireNonNull(onNext, "onNext");
 		return doOnSignal(this, null, onNext, null, null, null, null, null);
 	}
@@ -3545,7 +3544,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return an observed  {@link Flux}
 	 */
-	public final Flux<@NonNull T> doOnRequest(LongConsumer consumer) {
+	public final Flux<T> doOnRequest(LongConsumer consumer) {
 		Objects.requireNonNull(consumer, "consumer");
 		return doOnSignal(this, null, null, null, null, null, consumer, null);
 	}
@@ -3559,7 +3558,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return an observed  {@link Flux}
 	 */
-	public final Flux<@NonNull T> doOnSubscribe(Consumer<? super @NonNull Subscription> onSubscribe) {
+	public final Flux<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
 		Objects.requireNonNull(onSubscribe, "onSubscribe");
 		return doOnSignal(this, onSubscribe, null, null, null, null, null, null);
 	}
@@ -3574,7 +3573,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return an observed  {@link Flux}
 	 */
-	public final Flux<@NonNull T> doOnTerminate(Runnable onTerminate) {
+	public final Flux<T> doOnTerminate(Runnable onTerminate) {
 		Objects.requireNonNull(onTerminate, "onTerminate");
 		return doOnSignal(this,
 				null,
@@ -3602,7 +3601,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * or cancel)
 	 * @return an observed {@link Flux}
 	 */
-	public final Flux<@NonNull T> doFinally(Consumer<@NonNull SignalType> onFinally) {
+	public final Flux<T> doFinally(Consumer<SignalType> onFinally) {
 		Objects.requireNonNull(onFinally, "onFinally");
 		if (this instanceof Fuseable) {
 			return onAssembly(new FluxDoFinallyFuseable<>(this, onFinally));
@@ -3621,7 +3620,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} that emits a tuple of time elapsed in milliseconds and matching data
 	 */
-	public final Flux<@NonNull Tuple2<@NonNull Long, @NonNull T>> elapsed() {
+	public final Flux<Tuple2<Long, T>> elapsed() {
 		return elapsed(Schedulers.parallel());
 	}
 
@@ -3638,7 +3637,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} that emits tuples of time elapsed in milliseconds and matching data
 	 */
-	public final Flux<@NonNull Tuple2<@NonNull Long, @NonNull T>> elapsed(Scheduler scheduler) {
+	public final Flux<Tuple2<Long, T>> elapsed(Scheduler scheduler) {
 		Objects.requireNonNull(scheduler, "scheduler");
 		return onAssembly(new FluxElapsed<>(this, scheduler));
 	}
@@ -3654,7 +3653,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono} of the item at the specified zero-based index
 	 */
-	public final Mono<@NonNull T> elementAt(int index) {
+	public final Mono<T> elementAt(int index) {
 		return Mono.onAssembly(new MonoElementAt<>(this, index));
 	}
 
@@ -3670,7 +3669,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono} of the item at the specified zero-based index or a default value
 	 */
-	public final Mono<@NonNull T> elementAt(int index, T defaultValue) {
+	public final Mono<T> elementAt(int index, T defaultValue) {
 		return Mono.onAssembly(new MonoElementAt<>(this, index, defaultValue));
 	}
 
@@ -3839,7 +3838,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} containing only values that pass the predicate test
 	 */
-	public final Flux<@NonNull T> filter(Predicate<? super @NonNull T> p) {
+	public final Flux<T> filter(Predicate<? super T> p) {
 		if (this instanceof Fuseable) {
 			return onAssembly(new FluxFilterFuseable<>(this, p));
 		}
@@ -3860,7 +3859,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * for each value, to filter the Flux with
 	 * @return a filtered {@link Flux}
 	 */
-	public final Flux<@NonNull T> filterWhen(Function<? super @NonNull T, ? extends @NonNull Publisher<@NonNull Boolean>> asyncPredicate) {
+	public final Flux<T> filterWhen(Function<? super T, ? extends Publisher<Boolean>> asyncPredicate) {
 		return filterWhen(asyncPredicate, Queues.SMALL_BUFFER_SIZE);
 	}
 
@@ -3883,7 +3882,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * the initial request size for the source.
 	 * @return a filtered {@link Flux}
 	 */
-	public final Flux<@NonNull T> filterWhen(Function<? super @NonNull T, ? extends @NonNull Publisher<@NonNull Boolean>> asyncPredicate,
+	public final Flux<T> filterWhen(Function<? super T, ? extends Publisher<Boolean>> asyncPredicate,
 			int bufferSize) {
 		return onAssembly(new FluxFilterWhen<>(this, asyncPredicate, bufferSize));
 	}
@@ -3911,7 +3910,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux}
 	 */
-	public final <R> Flux<@NonNull R> flatMap(Function<? super @NonNull T, ? extends @NonNull Publisher<? extends @NonNull R>> mapper) {
+	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper) {
 		return flatMap(mapper, Queues.SMALL_BUFFER_SIZE, Queues
 				.XS_BUFFER_SIZE);
 	}
@@ -3943,7 +3942,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux}
 	 */
-	public final <V> Flux<@NonNull V> flatMap(Function<? super @NonNull T, ? extends @NonNull Publisher<? extends @NonNull V>> mapper, int
+	public final <V> Flux<V> flatMap(Function<? super T, ? extends Publisher<? extends V>> mapper, int
 			concurrency) {
 		return flatMap(mapper, concurrency, Queues.XS_BUFFER_SIZE);
 	}
@@ -3977,7 +3976,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a merged {@link Flux}
 	 */
-	public final <V> Flux<@NonNull V> flatMap(Function<? super @NonNull T, ? extends @NonNull Publisher<? extends @NonNull V>> mapper, int
+	public final <V> Flux<V> flatMap(Function<? super T, ? extends Publisher<? extends V>> mapper, int
 			concurrency, int prefetch) {
 		return flatMap(mapper, false, concurrency, prefetch);
 	}
@@ -4012,7 +4011,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a merged {@link Flux}
 	 */
-	public final <V> Flux<@NonNull V> flatMapDelayError(Function<? super @NonNull T, ? extends @NonNull Publisher<? extends @NonNull V>> mapper,
+	public final <V> Flux<V> flatMapDelayError(Function<? super T, ? extends Publisher<? extends V>> mapper,
 			int concurrency, int prefetch) {
 		return flatMap(mapper, true, concurrency, prefetch);
 	}
@@ -4048,10 +4047,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux}
 	 */
-	public final <R> Flux<@NonNull R> flatMap(
-			@Nullable Function<? super @NonNull T, ? extends @NonNull Publisher<? extends @NonNull R>> mapperOnNext,
-			@Nullable Function<? super @NonNull Throwable, ? extends @NonNull Publisher<? extends @NonNull R>> mapperOnError,
-			@Nullable Supplier<? extends @NonNull Publisher<? extends @NonNull R>> mapperOnComplete) {
+	public final <R> Flux<R> flatMap(
+			@Nullable Function<? super T, ? extends Publisher<? extends R>> mapperOnNext,
+			@Nullable Function<? super Throwable, ? extends Publisher<? extends R>> mapperOnError,
+			@Nullable Supplier<? extends Publisher<? extends R>> mapperOnComplete) {
 		return onAssembly(new FluxFlatMap<>(
 				new FluxMapSignal<>(this, mapperOnNext, mapperOnError, mapperOnComplete),
 				identityFunction(),
@@ -4078,7 +4077,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a concatenation of the values from the Iterables obtained from each element in this {@link Flux}
 	 */
-	public final <R> Flux<@NonNull R> flatMapIterable(Function<? super @NonNull T, ? extends @NonNull Iterable<? extends @NonNull R>> mapper) {
+	public final <R> Flux<R> flatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
 		return flatMapIterable(mapper, Queues.SMALL_BUFFER_SIZE);
 	}
 
@@ -4101,7 +4100,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a concatenation of the values from the Iterables obtained from each element in this {@link Flux}
 	 */
-	public final <R> Flux<@NonNull R> flatMapIterable(Function<? super @NonNull T, ? extends @NonNull Iterable<? extends @NonNull R>> mapper, int prefetch) {
+	public final <R> Flux<R> flatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper, int prefetch) {
 		return onAssembly(new FluxFlattenIterable<>(this, mapper, prefetch,
 				Queues.get(prefetch)));
 	}
@@ -4138,8 +4137,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
 	 */
-	public final <R> Flux<@NonNull R> flatMapSequential(Function<? super @NonNull T, ? extends
-            @NonNull Publisher<? extends @NonNull R>> mapper) {
+	public final <R> Flux<R> flatMapSequential(Function<? super T, ? extends
+			Publisher<? extends R>> mapper) {
 		return flatMapSequential(mapper, Queues.SMALL_BUFFER_SIZE);
 	}
 
@@ -4179,8 +4178,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
 	 */
-	public final <R> Flux<@NonNull R> flatMapSequential(Function<? super @NonNull T, ? extends
-            @NonNull Publisher<? extends @NonNull R>> mapper, int maxConcurrency) {
+	public final <R> Flux<R> flatMapSequential(Function<? super T, ? extends
+			Publisher<? extends R>> mapper, int maxConcurrency) {
 		return flatMapSequential(mapper, maxConcurrency, Queues.XS_BUFFER_SIZE);
 	}
 
@@ -4223,8 +4222,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
 	 */
-	public final <R> Flux<@NonNull R> flatMapSequential(Function<? super @NonNull T, ? extends
-            @NonNull Publisher<? extends @NonNull R>> mapper, int maxConcurrency, int prefetch) {
+	public final <R> Flux<R> flatMapSequential(Function<? super T, ? extends
+			Publisher<? extends R>> mapper, int maxConcurrency, int prefetch) {
 		return flatMapSequential(mapper, false, maxConcurrency, prefetch);
 	}
 
@@ -4268,8 +4267,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a merged {@link Flux}, subscribing early but keeping the original ordering
 	 */
-	public final <R> Flux<@NonNull R> flatMapSequentialDelayError(Function<? super @NonNull T, ? extends
-            @NonNull Publisher<? extends @NonNull R>> mapper, int maxConcurrency, int prefetch) {
+	public final <R> Flux<R> flatMapSequentialDelayError(Function<? super T, ? extends
+			Publisher<? extends R>> mapper, int maxConcurrency, int prefetch) {
 		return flatMapSequential(mapper, true, maxConcurrency, prefetch);
 	}
 
@@ -4301,7 +4300,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} of {@link GroupedFlux} grouped sequences
 	 */
-	public final <K> Flux<@NonNull GroupedFlux<@NonNull K, @NonNull T>> groupBy(Function<? super @NonNull T, ? extends @NonNull K> keyMapper) {
+	public final <K> Flux<GroupedFlux<K, T>> groupBy(Function<? super T, ? extends K> keyMapper) {
 		return groupBy(keyMapper, identityFunction());
 	}
 
@@ -4326,7 +4325,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} of {@link GroupedFlux} grouped sequences
 	 */
-	public final <K> Flux<@NonNull GroupedFlux<@NonNull K, @NonNull T>> groupBy(Function<? super @NonNull T, ? extends @NonNull K> keyMapper, int prefetch) {
+	public final <K> Flux<GroupedFlux<K, T>> groupBy(Function<? super T, ? extends K> keyMapper, int prefetch) {
 		return groupBy(keyMapper, identityFunction(), prefetch);
 	}
 
@@ -4354,8 +4353,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} of {@link GroupedFlux} grouped sequences
 	 *
 	 */
-	public final <K, V> Flux<@NonNull GroupedFlux<@NonNull K, @NonNull V>> groupBy(Function<? super @NonNull T, ? extends @NonNull K> keyMapper,
-			Function<? super @NonNull T, ? extends @NonNull V> valueMapper) {
+	public final <K, V> Flux<GroupedFlux<K, V>> groupBy(Function<? super T, ? extends K> keyMapper,
+			Function<? super T, ? extends V> valueMapper) {
 		return groupBy(keyMapper, valueMapper, Queues.SMALL_BUFFER_SIZE);
 	}
 
@@ -4385,8 +4384,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} of {@link GroupedFlux} grouped sequences
 	 *
 	 */
-	public final <K, V> Flux<@NonNull GroupedFlux<@NonNull K, @NonNull V>> groupBy(Function<? super @NonNull T, ? extends @NonNull K> keyMapper,
-			Function<? super @NonNull T, ? extends @NonNull V> valueMapper, int prefetch) {
+	public final <K, V> Flux<GroupedFlux<K, V>> groupBy(Function<? super T, ? extends K> keyMapper,
+			Function<? super T, ? extends V> valueMapper, int prefetch) {
 		return onAssembly(new FluxGroupBy<>(this, keyMapper, valueMapper,
 				Queues.unbounded(prefetch),
 				Queues.unbounded(prefetch), prefetch));
@@ -4423,11 +4422,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a joining {@link Flux}
 	 * @see #join(Publisher, Function, Function, BiFunction)
 	 */
-	public final <TRight, TLeftEnd, TRightEnd, R> Flux<@NonNull R> groupJoin(
-			Publisher<? extends @NonNull TRight> other,
-			Function<? super @NonNull T, ? extends @NonNull Publisher<@NonNull TLeftEnd>> leftEnd,
-			Function<? super @NonNull TRight, ? extends @NonNull Publisher<@NonNull TRightEnd>> rightEnd,
-			BiFunction<? super @NonNull T, ? super @NonNull Flux<@NonNull TRight>, ? extends @NonNull R> resultSelector
+	public final <TRight, TLeftEnd, TRightEnd, R> Flux<R> groupJoin(
+			Publisher<? extends TRight> other,
+			Function<? super T, ? extends Publisher<TLeftEnd>> leftEnd,
+			Function<? super TRight, ? extends Publisher<TRightEnd>> rightEnd,
+			BiFunction<? super T, ? super Flux<TRight>, ? extends R> resultSelector
 	) {
 		return onAssembly(new FluxGroupJoin<T, TRight, TLeftEnd, TRightEnd, R>(
 				this, other, leftEnd, rightEnd, resultSelector,
@@ -4446,7 +4445,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a transformed {@link Flux}
 	 */
-	public final <R> Flux<R> handle(BiConsumer<? super @NonNull T, SynchronousSink<@NonNull R>> handler) {
+	public final <R> Flux<R> handle(BiConsumer<? super T, SynchronousSink<R>> handler) {
 		if (this instanceof Fuseable) {
 			return onAssembly(new FluxHandleFuseable<>(this, handler));
 		}
@@ -4540,11 +4539,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a joining {@link Flux}
 	 * @see #groupJoin(Publisher, Function, Function, BiFunction)
 	 */
-	public final <TRight, TLeftEnd, TRightEnd, R> Flux<@NonNull R> join(
-			Publisher<? extends @NonNull TRight> other,
-			Function<? super @NonNull T, ? extends @NonNull Publisher<@NonNull TLeftEnd>> leftEnd,
-			Function<? super @NonNull TRight, ? extends @NonNull Publisher<@NonNull TRightEnd>> rightEnd,
-			BiFunction<? super @NonNull T, ? super @NonNull TRight, ? extends @NonNull R> resultSelector
+	public final <TRight, TLeftEnd, TRightEnd, R> Flux<R> join(
+			Publisher<? extends TRight> other,
+			Function<? super T, ? extends Publisher<TLeftEnd>> leftEnd,
+			Function<? super TRight, ? extends Publisher<TRightEnd>> rightEnd,
+			BiFunction<? super T, ? super TRight, ? extends R> resultSelector
 	) {
 		return onAssembly(new FluxJoin<T, TRight, TLeftEnd, TRightEnd, R>(
 				this, other, leftEnd, rightEnd, resultSelector, Queues
@@ -4561,7 +4560,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono} with the last value in this {@link Flux}
 	 */
-    public final Mono<@NonNull T> last() {
+    public final Mono<T> last() {
 	    if (this instanceof Callable) {
 		    @SuppressWarnings("unchecked")
 		    Callable<T> thiz = (Callable<T>)this;
@@ -4580,7 +4579,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param defaultValue  a single fallback item if this {@link Flux} is empty
 	 * @return a {@link Mono} with the last value in this {@link Flux}
 	 */
-    public final Mono<@NonNull T> last(T defaultValue) {
+    public final Mono<T> last(T defaultValue) {
 	    if (this instanceof Callable) {
 		    @SuppressWarnings("unchecked")
 		    Callable<T> thiz = (Callable<T>)this;
@@ -4611,7 +4610,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * Typically used for scenarios where consumer(s) request a large amount of data
 	 * (eg. {@code Long.MAX_VALUE}) but the data source behaves better or can be optimized
-	 * with smaller requests (eg. database paging, etc ...). All data is still processed.
+	 * with smaller requests (eg. database paging, etc...). All data is still processed.
 	 * <p>
 	 * Equivalent to {@code flux.publishOn(Schedulers.immediate(), prefetchRate).subscribe() }
 	 *
@@ -4620,7 +4619,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} limiting downstream's backpressure
 	 * @see #publishOn(Scheduler, int)
 	 */
-	public final Flux<@NonNull T> limitRate(int prefetchRate) {
+	public final Flux<T> limitRate(int prefetchRate) {
 		return onAssembly(this.publishOn(Schedulers.immediate(), prefetchRate));
 	}
 
@@ -4636,7 +4635,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} that logs signals
 	 */
-	public final Flux<@NonNull T> log() {
+	public final Flux<T> log() {
 		return log(null, Level.INFO);
 	}
 
@@ -4653,7 +4652,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} that logs signals
 	 */
-	public final Flux<@NonNull T> log(String category) {
+	public final Flux<T> log(String category) {
 		return log(category, Level.INFO);
 	}
 
@@ -4678,7 +4677,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} that logs signals
 	 */
-	public final Flux<@NonNull T> log(@Nullable String category, Level level, SignalType @NonNull ... options) {
+	public final Flux<T> log(@Nullable String category, Level level, SignalType... options) {
 		return log(category, level, false, options);
 	}
 
@@ -4705,10 +4704,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} that logs signals
 	 */
-	public final Flux<@NonNull T> log(@Nullable String category,
+	public final Flux<T> log(@Nullable String category,
 			Level level,
 			boolean showOperatorLine,
-			SignalType @NonNull ... options) {
+			SignalType... options) {
 		SignalLogger<T> log = new SignalLogger<>(this, category, level,
 				showOperatorLine, options);
 
@@ -4729,7 +4728,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a transformed {@link Flux}
 	 */
-	public final <V> Flux<@NonNull V> map(Function<? super @NonNull T, ? extends @NonNull V> mapper) {
+	public final <V> Flux<V> map(Function<? super T, ? extends V> mapper) {
 		if (this instanceof Fuseable) {
 			return onAssembly(new FluxMapFuseable<>(this, mapper));
 		}
@@ -4748,7 +4747,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} of materialized {@link Signal}
 	 * @see #dematerialize()
 	 */
-	public final Flux<@NonNull Signal<@NonNull T>> materialize() {
+	public final Flux<Signal<T>> materialize() {
 		return onAssembly(new FluxMaterialize<>(this));
 	}
 
@@ -4768,7 +4767,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux}
 	 */
-	public final Flux<@NonNull T> mergeWith(Publisher<? extends @NonNull T> other) {
+	public final Flux<T> mergeWith(Publisher<? extends T> other) {
 		if (this instanceof FluxMerge) {
 			FluxMerge<T> fluxMerge = (FluxMerge<T>) this;
 			return fluxMerge.mergeAdditionalSource(other, Queues::get);
@@ -4783,7 +4782,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param name a name for the sequence
 	 * @return the same sequence, but bearing a name
 	 */
-	public final Flux<@NonNull T> name(String name) {
+	public final Flux<T> name(String name) {
 		return FluxName.createOrAppend(this, name);
 	}
 
@@ -4795,7 +4794,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Mono} emitting the first value in this {@link Flux}
 	 */
-	public final Mono<@NonNull T> next() {
+	public final Mono<T> next() {
 		if(this instanceof Callable){
 			@SuppressWarnings("unchecked")
 			Callable<T> m = (Callable<T>)this;
@@ -4816,7 +4815,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} filtered on items of the requested type
 	 */
-	public final <U> Flux<@NonNull U> ofType(final Class<U> clazz) {
+	public final <U> Flux<U> ofType(final Class<U> clazz) {
 			Objects.requireNonNull(clazz, "clazz");
 			return filter(o -> clazz.isAssignableFrom(o.getClass())).cast(clazz);
 	}
@@ -4832,7 +4831,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a backpressured {@link Flux} that buffers with unbounded capacity
 	 *
 	 */
-	public final Flux<@NonNull T> onBackpressureBuffer() {
+	public final Flux<T> onBackpressureBuffer() {
 		return onAssembly(new FluxOnBackpressureBuffer<>(this, Queues
 				.SMALL_BUFFER_SIZE, true, null));
 	}
@@ -4850,7 +4849,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a backpressured {@link Flux} that buffers with bounded capacity
 	 *
 	 */
-	public final Flux<@NonNull T> onBackpressureBuffer(int maxSize) {
+	public final Flux<T> onBackpressureBuffer(int maxSize) {
 		return onAssembly(new FluxOnBackpressureBuffer<>(this, maxSize, false, null));
 	}
 
@@ -4869,7 +4868,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a backpressured {@link Flux} that buffers with a bounded capacity
 	 *
 	 */
-	public final Flux<@NonNull T> onBackpressureBuffer(int maxSize, Consumer<? super @NonNull T> onOverflow) {
+	public final Flux<T> onBackpressureBuffer(int maxSize, Consumer<? super T> onOverflow) {
 		Objects.requireNonNull(onOverflow, "onOverflow");
 		return onAssembly(new FluxOnBackpressureBuffer<>(this, maxSize, false, onOverflow));
 	}
@@ -4891,7 +4890,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a backpressured {@link Flux} that buffers up to a capacity then applies an
 	 * overflow strategy
 	 */
-	public final Flux<@NonNull T> onBackpressureBuffer(int maxSize, BufferOverflowStrategy bufferOverflowStrategy) {
+	public final Flux<T> onBackpressureBuffer(int maxSize, BufferOverflowStrategy bufferOverflowStrategy) {
 		Objects.requireNonNull(bufferOverflowStrategy, "bufferOverflowStrategy");
 		return onAssembly(new FluxOnBackpressureBufferStrategy<>(this, maxSize,
 				null, bufferOverflowStrategy));
@@ -4922,7 +4921,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a backpressured {@link Flux} that buffers up to a capacity then applies an
 	 * overflow strategy
 	 */
-	public final Flux<@NonNull T> onBackpressureBuffer(int maxSize, Consumer<? super @NonNull T> onBufferOverflow,
+	public final Flux<T> onBackpressureBuffer(int maxSize, Consumer<? super T> onBufferOverflow,
 			BufferOverflowStrategy bufferOverflowStrategy) {
 		Objects.requireNonNull(onBufferOverflow, "onBufferOverflow");
 		Objects.requireNonNull(bufferOverflowStrategy, "bufferOverflowStrategy");
@@ -4950,7 +4949,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a backpressured {@link Flux} that buffers with a TTL and up to a capacity then applies an
 	 * overflow strategy
 	 */
-	public final Flux<@NonNull T> onBackpressureBuffer(Duration ttl, int maxSize, Consumer<? super @NonNull T> onBufferEviction) {
+	public final Flux<T> onBackpressureBuffer(Duration ttl, int maxSize, Consumer<? super T> onBufferEviction) {
 		return onBackpressureBuffer(ttl, maxSize, onBufferEviction, Schedulers.parallel());
 	}
 
@@ -4974,7 +4973,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a backpressured {@link Flux} that buffers with a TTL and up to a capacity then applies an
 	 * overflow strategy
 	 */
-	public final Flux<@NonNull T> onBackpressureBuffer(Duration ttl, int maxSize, Consumer<? super @NonNull T> onBufferEviction, Scheduler scheduler) {
+	public final Flux<T> onBackpressureBuffer(Duration ttl, int maxSize, Consumer<? super T> onBufferEviction, Scheduler scheduler) {
 		Objects.requireNonNull(ttl, "ttl");
 		Objects.requireNonNull(onBufferEviction, "onBufferEviction");
 		return onAssembly(new FluxOnBackpressureBufferTimeout<>(this, ttl, scheduler, maxSize, onBufferEviction));
@@ -4989,7 +4988,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a backpressured {@link Flux} that drops overflowing elements
 	 */
-	public final Flux<@NonNull T> onBackpressureDrop() {
+	public final Flux<T> onBackpressureDrop() {
 		return onAssembly(new FluxOnBackpressureDrop<>(this));
 	}
 
@@ -5004,7 +5003,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param onDropped the Consumer called when an value gets dropped due to lack of downstream requests
 	 * @return a backpressured {@link Flux} that drops overflowing elements
 	 */
-	public final Flux<@NonNull T> onBackpressureDrop(Consumer<? super @NonNull T> onDropped) {
+	public final Flux<T> onBackpressureDrop(Consumer<? super T> onDropped) {
 		return onAssembly(new FluxOnBackpressureDrop<>(this, onDropped));
 	}
 
@@ -5018,7 +5017,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a backpressured {@link Flux} that errors on overflowing elements
 	 */
-	public final Flux<@NonNull T> onBackpressureError() {
+	public final Flux<T> onBackpressureError() {
 		return onBackpressureDrop(t -> { throw Exceptions.failWithOverflow();});
 	}
 
@@ -5031,7 +5030,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a backpressured {@link Flux} that will only keep a reference to the last observed item
 	 */
-	public final Flux<@NonNull T> onBackpressureLatest() {
+	public final Flux<T> onBackpressureLatest() {
 		return onAssembly(new FluxOnBackpressureLatest<>(this));
 	}
 
@@ -5047,7 +5046,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} that transforms source errors to other errors
 	 */
-	public final Flux<@NonNull T> onErrorMap(Function<? super @NonNull Throwable, ? extends @NonNull Throwable> mapper) {
+	public final Flux<T> onErrorMap(Function<? super Throwable, ? extends Throwable> mapper) {
 		return onErrorResume(e -> Mono.error(mapper.apply(e)));
 	}
 
@@ -5063,8 +5062,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} that transforms some source errors to other errors
 	 */
-	public final <E extends Throwable> Flux<@NonNull T> onErrorMap(Class<E> type,
-			Function<? super @NonNull E, ? extends @NonNull Throwable> mapper) {
+	public final <E extends Throwable> Flux<T> onErrorMap(Class<E> type,
+			Function<? super E, ? extends Throwable> mapper) {
 		@SuppressWarnings("unchecked")
 		Function<Throwable, Throwable> handler = (Function<Throwable, Throwable>)mapper;
 		return onErrorMap(type::isInstance, handler);
@@ -5082,8 +5081,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} that transforms some source errors to other errors
 	 */
-	public final Flux<@NonNull T> onErrorMap(Predicate<? super @NonNull Throwable> predicate,
-			Function<? super @NonNull Throwable, ? extends @NonNull Throwable> mapper) {
+	public final Flux<T> onErrorMap(Predicate<? super Throwable> predicate,
+			Function<? super Throwable, ? extends Throwable> mapper) {
 		return onErrorResume(predicate, e -> Mono.error(mapper.apply(e)));
 	}
 
@@ -5098,7 +5097,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} falling back upon source onError
 	 */
-	public final Flux<@NonNull T> onErrorResume(Function<? super @NonNull Throwable, ? extends @NonNull Publisher<? extends @NonNull T>> fallback) {
+	public final Flux<T> onErrorResume(Function<? super Throwable, ? extends Publisher<? extends T>> fallback) {
 		return onAssembly(new FluxOnErrorResume<>(this, fallback));
 	}
 
@@ -5115,8 +5114,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} falling back upon source onError
 	 */
-	public final <E extends Throwable> Flux<@NonNull T> onErrorResume(Class<E> type,
-			Function<? super @NonNull E, ? extends @NonNull Publisher<? extends @NonNull T>> fallback) {
+	public final <E extends Throwable> Flux<T> onErrorResume(Class<E> type,
+			Function<? super E, ? extends Publisher<? extends T>> fallback) {
 		Objects.requireNonNull(type, "type");
 		@SuppressWarnings("unchecked")
 		Function<? super Throwable, Publisher<? extends T>> handler = (Function<?
@@ -5136,8 +5135,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} falling back upon source onError
 	 */
-	public final Flux<@NonNull T> onErrorResume(Predicate<? super @NonNull Throwable> predicate,
-			Function<? super @NonNull Throwable, ? extends @NonNull Publisher<? extends @NonNull T>> fallback) {
+	public final Flux<T> onErrorResume(Predicate<? super Throwable> predicate,
+			Function<? super Throwable, ? extends Publisher<? extends T>> fallback) {
 		Objects.requireNonNull(predicate, "predicate");
 		return onErrorResume(e -> predicate.test(e) ? fallback.apply(e) : error(e));
 	}
@@ -5151,7 +5150,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new falling back {@link Flux}
 	 */
-	public final Flux<@NonNull T> onErrorReturn(T fallbackValue) {
+	public final Flux<T> onErrorReturn(T fallbackValue) {
 		return onErrorResume(t -> just(fallbackValue));
 	}
 
@@ -5166,7 +5165,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new falling back {@link Flux}
 	 */
-	public final <E extends Throwable> Flux<@NonNull T> onErrorReturn(Class<E> type,
+	public final <E extends Throwable> Flux<T> onErrorReturn(Class<E> type,
 			T fallbackValue) {
 		return onErrorResume(type, t -> just(fallbackValue));
 	}
@@ -5181,7 +5180,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new falling back {@link Flux}
 	 */
-	public final Flux<@NonNull T> onErrorReturn(Predicate<? super @NonNull Throwable> predicate, T fallbackValue) {
+	public final Flux<T> onErrorReturn(Predicate<? super Throwable> predicate, T fallbackValue) {
 		return onErrorResume(predicate, t -> just(fallbackValue));
 	}
 
@@ -5193,7 +5192,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a detachable {@link Flux}
 	 */
-	public final Flux<@NonNull T> onTerminateDetach() {
+	public final Flux<T> onTerminateDetach() {
 		return new FluxDetach<>(this);
 	}
 
@@ -5233,7 +5232,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link ParallelFlux} instance
 	 */
-	public final ParallelFlux<@NonNull T> parallel() {
+	public final ParallelFlux<T> parallel() {
 		return parallel(Runtime.getRuntime()
 		                       .availableProcessors());
 	}
@@ -5251,7 +5250,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link ParallelFlux} instance
 	 */
-	public final ParallelFlux<@NonNull T> parallel(int parallelism) {
+	public final ParallelFlux<T> parallel(int parallelism) {
 		return parallel(parallelism, Queues.SMALL_BUFFER_SIZE);
 	}
 
@@ -5270,7 +5269,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link ParallelFlux} instance
 	 */
-	public final ParallelFlux<@NonNull T> parallel(int parallelism, int prefetch) {
+	public final ParallelFlux<T> parallel(int parallelism, int prefetch) {
 		return ParallelFlux.from(this,
 				parallelism,
 				prefetch,
@@ -5291,7 +5290,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link ConnectableFlux}
 	 */
-	public final ConnectableFlux<@NonNull T> publish() {
+	public final ConnectableFlux<T> publish() {
 		return publish(Queues.SMALL_BUFFER_SIZE);
 	}
 
@@ -5310,7 +5309,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link ConnectableFlux}
 	 */
-	public final ConnectableFlux<@NonNull T> publish(int prefetch) {
+	public final ConnectableFlux<T> publish(int prefetch) {
 		return onAssembly(new FluxPublish<>(this, prefetch, Queues
 				.get(prefetch)));
 	}
@@ -5325,8 +5324,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux}
 	 */
-	public final <R> Flux<@NonNull R> publish(Function<? super @NonNull Flux<@NonNull T>, ? extends @NonNull Publisher<?
-			extends @NonNull R>> transform) {
+	public final <R> Flux<R> publish(Function<? super Flux<T>, ? extends Publisher<?
+			extends R>> transform) {
 		return publish(transform, Queues.SMALL_BUFFER_SIZE);
 	}
 
@@ -5341,8 +5340,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux}
 	 */
-	public final <R> Flux<@NonNull R> publish(Function<? super @NonNull Flux<T>, ? extends @NonNull Publisher<?
-			extends @NonNull R>> transform, int prefetch) {
+	public final <R> Flux<R> publish(Function<? super Flux<T>, ? extends Publisher<?
+			extends R>> transform, int prefetch) {
 		return onAssembly(new FluxPublishMulticast<>(this, transform, prefetch, Queues
 				.get(prefetch)));
 	}
@@ -5357,7 +5356,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Mono}
 	 */
-	public final Mono<@NonNull T> publishNext() {
+	public final Mono<T> publishNext() {
 		return Mono.onAssembly(new MonoProcessor<>(this));
 	}
 
@@ -5379,7 +5378,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} producing asynchronously on a given {@link Scheduler}
 	 */
-	public final Flux<@NonNull T> publishOn(Scheduler scheduler) {
+	public final Flux<T> publishOn(Scheduler scheduler) {
 		return publishOn(scheduler, Queues.SMALL_BUFFER_SIZE);
 	}
 
@@ -5402,7 +5401,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} producing asynchronously
 	 */
-	public final Flux<@NonNull T> publishOn(Scheduler scheduler, int prefetch) {
+	public final Flux<T> publishOn(Scheduler scheduler, int prefetch) {
 		return publishOn(scheduler, true, prefetch);
 	}
 
@@ -5426,7 +5425,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} producing asynchronously
 	 */
-	public final Flux<@NonNull T> publishOn(Scheduler scheduler, boolean delayError, int prefetch) {
+	public final Flux<T> publishOn(Scheduler scheduler, boolean delayError, int prefetch) {
 		if (this instanceof Callable) {
 			if (this instanceof Fuseable.ScalarCallable) {
 				@SuppressWarnings("unchecked")
@@ -5460,7 +5459,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a reduced {@link Flux}
 	 */
-	public final Mono<@NonNull T> reduce(BiFunction<@NonNull T, @NonNull T, @NonNull T> aggregator) {
+	public final Mono<T> reduce(BiFunction<T, T, T> aggregator) {
 		if (this instanceof Callable){
 			@SuppressWarnings("unchecked")
 			Callable<T> thiz = (Callable<T>)this;
@@ -5486,7 +5485,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a reduced {@link Flux}
 	 *
 	 */
-	public final <A> Mono<@NonNull A> reduce(A initial, BiFunction<@NonNull A, ? super @NonNull T, @NonNull A> accumulator) {
+	public final <A> Mono<A> reduce(A initial, BiFunction<A, ? super T, A> accumulator) {
 		return reduceWith(() -> initial, accumulator);
 	}
 
@@ -5507,7 +5506,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a reduced {@link Flux}
 	 *
 	 */
-	public final <A> Mono<@NonNull A> reduceWith(Supplier<@NonNull A> initial, BiFunction<@NonNull A, ? super @NonNull T, @NonNull A> accumulator) {
+	public final <A> Mono<A> reduceWith(Supplier<A> initial, BiFunction<A, ? super T, A> accumulator) {
 		return Mono.onAssembly(new MonoReduceSeed<>(this, initial, accumulator));
 	}
 
@@ -5520,7 +5519,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return an indefinitely repeated {@link Flux} on onComplete
 	 */
-	public final Flux<@NonNull T> repeat() {
+	public final Flux<T> repeat() {
 		return repeat(ALWAYS_BOOLEAN_SUPPLIER);
 	}
 
@@ -5534,7 +5533,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} that repeats on onComplete while the predicate matches
 	 */
-	public final Flux<@NonNull T> repeat(BooleanSupplier predicate) {
+	public final Flux<T> repeat(BooleanSupplier predicate) {
 		return onAssembly(new FluxRepeatPredicate<>(this, predicate));
 	}
 
@@ -5548,7 +5547,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} that repeats on onComplete, up to the specified number of repetitions
 	 */
-	public final Flux<@NonNull T> repeat(long numRepeat) {
+	public final Flux<T> repeat(long numRepeat) {
 		if(numRepeat == 0L){
 			return empty();
 		}
@@ -5568,7 +5567,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} that repeats on onComplete while the predicate matches,
 	 * up to the specified number of repetitions
 	 */
-	public final Flux<@NonNull T> repeat(long numRepeat, BooleanSupplier predicate) {
+	public final Flux<T> repeat(long numRepeat, BooleanSupplier predicate) {
 		return defer( () -> repeat(countingBooleanSupplier(predicate, numRepeat)));
 	}
 
@@ -5588,7 +5587,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} that repeats on onComplete when the companion {@link Publisher} produces an
 	 * onNext signal
 	 */
-	public final Flux<@NonNull T> repeatWhen(Function<@NonNull Flux<@NonNull Long>, ? extends @NonNull Publisher<@NonNull ?>> repeatFactory) {
+	public final Flux<T> repeatWhen(Function<Flux<Long>, ? extends Publisher<?>> repeatFactory) {
 		return onAssembly(new FluxRepeatWhen<>(this, repeatFactory));
 	}
 
@@ -5602,7 +5601,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a replaying {@link ConnectableFlux}
 	 */
-	public final ConnectableFlux<@NonNull T> replay() {
+	public final ConnectableFlux<T> replay() {
 		return replay(Integer.MAX_VALUE);
 	}
 
@@ -5624,7 +5623,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a replaying {@link ConnectableFlux}
 	 *
 	 */
-	public final ConnectableFlux<@NonNull T> replay(int history) {
+	public final ConnectableFlux<T> replay(int history) {
 		return onAssembly(new FluxReplay<>(this, history, 0L, null));
 	}
 
@@ -5644,7 +5643,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a replaying {@link ConnectableFlux}
 	 */
-	public final ConnectableFlux<@NonNull T> replay(Duration ttl) {
+	public final ConnectableFlux<T> replay(Duration ttl) {
 		return replay(Integer.MAX_VALUE, ttl);
 	}
 
@@ -5665,7 +5664,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a replaying {@link ConnectableFlux}
 	 */
-	public final ConnectableFlux<@NonNull T> replay(int history, Duration ttl) {
+	public final ConnectableFlux<T> replay(int history, Duration ttl) {
 		return replay(history, ttl, Schedulers.parallel());
 	}
 
@@ -5685,7 +5684,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a replaying {@link ConnectableFlux}
 	 */
-	public final ConnectableFlux<@NonNull T> replay(Duration ttl, Scheduler timer) {
+	public final ConnectableFlux<T> replay(Duration ttl, Scheduler timer) {
 		return replay(Integer.MAX_VALUE, ttl, timer);
 	}
 
@@ -5706,7 +5705,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a replaying {@link ConnectableFlux}
 	 */
-	public final ConnectableFlux<@NonNull T> replay(int history, Duration ttl, Scheduler timer) {
+	public final ConnectableFlux<T> replay(int history, Duration ttl, Scheduler timer) {
 		Objects.requireNonNull(timer, "timer");
 		return onAssembly(new FluxReplay<>(this, history, ttl.toMillis(), timer));
 	}
@@ -5718,7 +5717,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} that retries on onError
 	 */
-	public final Flux<@NonNull T> retry() {
+	public final Flux<T> retry() {
 		return retry(Long.MAX_VALUE);
 	}
 
@@ -5735,7 +5734,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} that retries on onError up to the specified number of retry attempts.
 	 *
 	 */
-	public final Flux<@NonNull T> retry(long numRetries) {
+	public final Flux<T> retry(long numRetries) {
 		return onAssembly(new FluxRetry<>(this, numRetries));
 	}
 
@@ -5750,7 +5749,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} that retries on onError if the predicates matches.
 	 */
-	public final Flux<@NonNull T> retry(Predicate<? super @NonNull Throwable> retryMatcher) {
+	public final Flux<T> retry(Predicate<? super Throwable> retryMatcher) {
 		return onAssembly(new FluxRetryPredicate<>(this, retryMatcher));
 	}
 
@@ -5767,7 +5766,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} that retries on onError up to the specified number of retry
 	 * attempts, only if the predicate matches.
 	 */
-	public final Flux<@NonNull T> retry(long numRetries, Predicate<? super @NonNull Throwable> retryMatcher) {
+	public final Flux<T> retry(long numRetries, Predicate<? super Throwable> retryMatcher) {
 		return defer(() -> retry(countingPredicate(retryMatcher, numRetries)));
 	}
 
@@ -5787,7 +5786,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} that retries on onError when the companion {@link Publisher} produces an
 	 * onNext signal
 	 */
-	public final Flux<@NonNull T> retryWhen(Function<@NonNull Flux<@NonNull Throwable>, ? extends @NonNull Publisher<@NonNull ?>> whenFactory) {
+	public final Flux<T> retryWhen(Function<Flux<Throwable>, ? extends Publisher<?>> whenFactory) {
 		return onAssembly(new FluxRetryWhen<>(this, whenFactory));
 	}
 
@@ -5805,7 +5804,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} sampled to the last item seen over each periodic window
 	 */
-	public final Flux<@NonNull T> sample(Duration timespan) {
+	public final Flux<T> sample(Duration timespan) {
 		return sample(interval(timespan));
 	}
 
@@ -5831,7 +5830,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} sampled to the last item observed each time the sampler {@link Publisher} signals
 	 */
-	public final <U> Flux<@NonNull T> sample(Publisher<@NonNull U> sampler) {
+	public final <U> Flux<T> sample(Publisher<U> sampler) {
 		return onAssembly(new FluxSample<>(this, sampler));
 	}
 
@@ -5846,7 +5845,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} sampled to the first item of each duration-based window
 	 */
-	public final Flux<@NonNull T> sampleFirst(Duration timespan) {
+	public final Flux<T> sampleFirst(Duration timespan) {
 		return sampleFirst(t -> Mono.delay(timespan));
 	}
 
@@ -5862,7 +5861,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} sampled to the first item observed in each window closed by the sampler signals
 	 */
-	public final <U> Flux<@NonNull T> sampleFirst(Function<? super @NonNull T, ? extends @NonNull Publisher<@NonNull U>> samplerFactory) {
+	public final <U> Flux<T> sampleFirst(Function<? super T, ? extends Publisher<U>> samplerFactory) {
 		return onAssembly(new FluxSampleFirst<>(this, samplerFactory));
 	}
 
@@ -5884,7 +5883,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} sampled to items not followed by any other item within a window
 	 * defined by a companion {@link Publisher}
 	 */
-	public final <U> Flux<@NonNull T> sampleTimeout(Function<? super @NonNull T, ? extends @NonNull Publisher<@NonNull U>> throttlerFactory) {
+	public final <U> Flux<T> sampleTimeout(Function<? super T, ? extends Publisher<U>> throttlerFactory) {
 		return sampleTimeout(throttlerFactory, Queues.XS_BUFFER_SIZE);
 	}
 
@@ -5909,7 +5908,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} sampled to items not followed by any other item within a window
 	 * defined by a companion {@link Publisher}
 	 */
-	public final <U> Flux<@NonNull T> sampleTimeout(Function<? super @NonNull T, ? extends @NonNull Publisher<@NonNull U>>
+	public final <U> Flux<T> sampleTimeout(Function<? super T, ? extends Publisher<U>>
 			throttlerFactory, int maxConcurrency) {
 		return onAssembly(new FluxSampleTimeout<>(this, throttlerFactory,
 				Queues.get(maxConcurrency)));
@@ -5938,7 +5937,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return an accumulating {@link Flux}
 	 */
-	public final Flux<@NonNull T> scan(BiFunction<@NonNull T, @NonNull T, @NonNull T> accumulator) {
+	public final Flux<T> scan(BiFunction<T, T, T> accumulator) {
 		return onAssembly(new FluxScan<>(this, accumulator));
 	}
 
@@ -5965,7 +5964,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return an accumulating {@link Flux} starting with initial state
 	 *
 	 */
-	public final <A> Flux<@NonNull A> scan(A initial, BiFunction<@NonNull A, ? super @NonNull T, @NonNull A> accumulator) {
+	public final <A> Flux<A> scan(A initial, BiFunction<A, ? super T, A> accumulator) {
 		Objects.requireNonNull(initial, "seed");
 		return scanWith(() -> initial, accumulator);
 	}
@@ -5995,7 +5994,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return an accumulating {@link Flux} starting with initial state
 	 *
 	 */
-	public final <A> Flux<@NonNull A> scanWith(Supplier<@NonNull A> initial, BiFunction<@NonNull A, ? super @NonNull T, @NonNull A>
+	public final <A> Flux<A> scanWith(Supplier<A> initial, BiFunction<A, ? super T, A>
 			accumulator) {
 		return onAssembly(new FluxScanSeed<>(this, initial, accumulator));
 	}
@@ -6011,7 +6010,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} that upon first subscribe causes the source {@link Flux}
 	 * to subscribe once, late subscribers might therefore miss items.
 	 */
-	public final Flux<@NonNull T> share() {
+	public final Flux<T> share() {
 		return onAssembly(new FluxRefCount<>(
 				new FluxPublish<>(this, Queues.SMALL_BUFFER_SIZE, Queues.small()), 1)
 		);
@@ -6027,7 +6026,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono} with the single item or an error signal
 	 */
-    public final Mono<@NonNull T> single() {
+    public final Mono<T> single() {
 	    if (this instanceof Callable) {
 	        if (this instanceof Fuseable.ScalarCallable) {
 		        @SuppressWarnings("unchecked")
@@ -6064,7 +6063,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Mono} with the expected single item, the supplied default value or
 	 * and error signal
 	 */
-    public final Mono<@NonNull T> single(T defaultValue) {
+    public final Mono<T> single(T defaultValue) {
         if (this instanceof Callable) {
             if (this instanceof Fuseable.ScalarCallable) {
 	            @SuppressWarnings("unchecked")
@@ -6098,7 +6097,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Mono} with the expected single item, no item or an error
 	 */
-    public final Mono<@NonNull T> singleOrEmpty() {
+    public final Mono<T> singleOrEmpty() {
 	    if (this instanceof Callable) {
 		    @SuppressWarnings("unchecked")
 		    Callable<T> thiz = (Callable<T>)this;
@@ -6119,7 +6118,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a dropping {@link Flux} with the specified number of elements skipped at
 	 * the beginning
 	 */
-	public final Flux<@NonNull T> skip(long skipped) {
+	public final Flux<T> skip(long skipped) {
 		if (skipped == 0L) {
 			return this;
 		}
@@ -6138,7 +6137,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} dropping at the beginning until the end of the given duration
 	 */
-	public final Flux<@NonNull T> skip(Duration timespan) {
+	public final Flux<T> skip(Duration timespan) {
 		return skip(timespan, Schedulers.parallel());
 	}
 
@@ -6154,7 +6153,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} dropping at the beginning for the given duration
 	 */
-	public final Flux<@NonNull T> skip(Duration timespan, Scheduler timer) {
+	public final Flux<T> skip(Duration timespan, Scheduler timer) {
 		if(!timespan.isZero()) {
 			return skipUntilOther(Mono.delay(timespan, timer));
 		}
@@ -6175,7 +6174,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * sequence
 	 *
 	 */
-	public final Flux<@NonNull T> skipLast(int n) {
+	public final Flux<T> skipLast(int n) {
 		if (n == 0) {
 			return this;
 		}
@@ -6193,7 +6192,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} dropping until the {@link Predicate} matches
 	 */
-	public final Flux<@NonNull T> skipUntil(Predicate<? super @NonNull T> untilPredicate) {
+	public final Flux<T> skipUntil(Predicate<? super T> untilPredicate) {
 		return onAssembly(new FluxSkipUntil<>(this, untilPredicate));
 	}
 
@@ -6209,7 +6208,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} dropping until the other {@link Publisher} emits
 	 *
 	 */
-	public final Flux<@NonNull T> skipUntilOther(Publisher<@NonNull ?> other) {
+	public final Flux<T> skipUntilOther(Publisher<?> other) {
 		return onAssembly(new FluxSkipUntilOther<>(this, other));
 	}
 
@@ -6223,7 +6222,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} dropping while the {@link Predicate} matches
 	 */
-	public final Flux<@NonNull T> skipWhile(Predicate<? super @NonNull T> skipPredicate) {
+	public final Flux<T> skipWhile(Predicate<? super T> skipPredicate) {
 		return onAssembly(new FluxSkipWhile<>(this, skipPredicate));
 	}
 
@@ -6240,7 +6239,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * {@link Comparable} with respect to all other items emitted by the {@link Flux}
 	 * @return a sorted {@link Flux}
 	 */
-	public final Flux<@NonNull T> sort(){
+	public final Flux<T> sort(){
 		return collectSortedList().flatMapIterable(identityFunction());
 	}
 
@@ -6256,7 +6255,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * to indicate their sort order
 	 * @return a sorted {@link Flux}
 	 */
-	public final Flux<@NonNull T> sort(Comparator<? super @NonNull T> sortFunction) {
+	public final Flux<T> sort(Comparator<? super T> sortFunction) {
 		return collectSortedList(sortFunction).flatMapIterable(identityFunction());
 	}
 
@@ -6270,7 +6269,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} prefixed with elements from an {@link Iterable}
 	 */
-	public final Flux<@NonNull T> startWith(Iterable<? extends @NonNull T> iterable) {
+	public final Flux<T> startWith(Iterable<? extends T> iterable) {
 		return startWith(fromIterable(iterable));
 	}
 
@@ -6285,7 +6284,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux} prefixed with the given elements
 	 */
 	@SafeVarargs
-	public final Flux<@NonNull T> startWith(T @NonNull ... values) {
+	public final Flux<T> startWith(T... values) {
 		return startWith(just(values));
 	}
 
@@ -6299,7 +6298,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} prefixed with the given {@link Publisher} sequence
 	 */
-	public final Flux<@NonNull T> startWith(Publisher<? extends @NonNull T> publisher) {
+	public final Flux<T> startWith(Publisher<? extends T> publisher) {
 		if (this instanceof FluxConcatArray) {
 			FluxConcatArray<T> fluxConcatArray = (FluxConcatArray<T>) this;
 			return fluxConcatArray.concatAdditionalSourceFirst(publisher);
@@ -6343,7 +6342,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
 	 */
-	public final Disposable subscribe(Consumer<? super @NonNull T> consumer) {
+	public final Disposable subscribe(Consumer<? super T> consumer) {
 		Objects.requireNonNull(consumer, "consumer");
 		return subscribe(consumer, null, null);
 	}
@@ -6370,7 +6369,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
 	 */
-	public final Disposable subscribe(@Nullable Consumer<? super @NonNull T> consumer, Consumer<? super @NonNull Throwable> errorConsumer) {
+	public final Disposable subscribe(@Nullable Consumer<? super T> consumer, Consumer<? super Throwable> errorConsumer) {
 		Objects.requireNonNull(errorConsumer, "errorConsumer");
 		return subscribe(consumer, errorConsumer, null);
 	}
@@ -6399,8 +6398,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
 	 */
 	public final Disposable subscribe(
-			@Nullable Consumer<? super @NonNull T> consumer,
-			@Nullable Consumer<? super @NonNull Throwable> errorConsumer,
+			@Nullable Consumer<? super T> consumer,
+			@Nullable Consumer<? super Throwable> errorConsumer,
 			@Nullable Runnable completeConsumer) {
 		return subscribe(consumer, errorConsumer, completeConsumer, null);
 	}
@@ -6434,17 +6433,17 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Disposable} that can be used to cancel the underlying {@link Subscription}
 	 */
 	public final Disposable subscribe(
-			@Nullable Consumer<? super @NonNull T> consumer,
-			@Nullable Consumer<? super @NonNull Throwable> errorConsumer,
+			@Nullable Consumer<? super T> consumer,
+			@Nullable Consumer<? super Throwable> errorConsumer,
 			@Nullable Runnable completeConsumer,
-			@Nullable Consumer<? super @NonNull Subscription> subscriptionConsumer) {
+			@Nullable Consumer<? super Subscription> subscriptionConsumer) {
 		return subscribeWith(new LambdaSubscriber<>(consumer, errorConsumer,
 				completeConsumer,
 				subscriptionConsumer));
 	}
 
 	@Override
-	public final void subscribe(Subscriber<? super @NonNull T> actual) {
+	public final void subscribe(Subscriber<? super T> actual) {
 		onLastAssembly(this).subscribe(Operators.toCoreSubscriber(actual));
 	}
 
@@ -6458,7 +6457,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param actual the {@link Subscriber} interested into the published sequence
 	 * @see Flux#subscribe(Subscriber)
 	 */
-	public abstract void subscribe(CoreSubscriber<? super @NonNull T> actual);
+	public abstract void subscribe(CoreSubscriber<? super T> actual);
 
 	/**
 	 * Enrich a potentially empty downstream {@link Context} by adding all values
@@ -6480,7 +6479,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a contextualized {@link Flux}
 	 * @see Context
 	 */
-	public final Flux<@NonNull T> subscriberContext(Context mergeContext) {
+	public final Flux<T> subscriberContext(Context mergeContext) {
 		return subscriberContext(c -> c.putAll(mergeContext));
 	}
 
@@ -6504,7 +6503,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a contextualized {@link Flux}
 	 * @see Context
 	 */
-	public final Flux<@NonNull T> subscriberContext(Function<@NonNull Context, @NonNull Context> doOnContext) {
+	public final Flux<T> subscriberContext(Function<Context, Context> doOnContext) {
 		return new FluxContextStart<>(this, doOnContext);
 	}
 
@@ -6539,7 +6538,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @see #publishOn(Scheduler)
 	 * @see #subscribeOn(Scheduler, boolean)
 	 */
-	public final Flux<@NonNull T> subscribeOn(Scheduler scheduler) {
+	public final Flux<T> subscribeOn(Scheduler scheduler) {
 		return subscribeOn(scheduler, true);
 	}
 
@@ -6578,7 +6577,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @see #publishOn(Scheduler)
 	 * @see #subscribeOn(Scheduler)
 	 */
-	public final Flux<@NonNull T> subscribeOn(Scheduler scheduler, boolean requestOnSeparateThread) {
+	public final Flux<T> subscribeOn(Scheduler scheduler, boolean requestOnSeparateThread) {
 		if (this instanceof Callable) {
 			if (this instanceof Fuseable.ScalarCallable) {
 				try {
@@ -6611,7 +6610,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return the passed {@link Subscriber}
 	 */
-	public final <E extends @NonNull Subscriber<? super @NonNull T>> E subscribeWith(E subscriber) {
+	public final <E extends Subscriber<? super T>> E subscribeWith(E subscriber) {
 		subscribe(subscriber);
 		return subscriber;
 	}
@@ -6625,7 +6624,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} that falls back on a {@link Publisher} if source is empty
 	 */
-	public final Flux<@NonNull T> switchIfEmpty(Publisher<? extends @NonNull T> alternate) {
+	public final Flux<T> switchIfEmpty(Publisher<? extends T> alternate) {
 		return onAssembly(new FluxSwitchIfEmpty<>(this, alternate));
 	}
 
@@ -6644,7 +6643,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * for each source onNext
 	 *
 	 */
-	public final <V> Flux<@NonNull V> switchMap(Function<? super @NonNull T, Publisher<? extends @NonNull V>> fn) {
+	public final <V> Flux<V> switchMap(Function<? super T, Publisher<? extends V>> fn) {
 		return switchMap(fn, Queues.XS_BUFFER_SIZE);
 	}
 
@@ -6664,7 +6663,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux} that emits values from an alternative {@link Publisher}
 	 * for each source onNext
 	 */
-	public final <V> Flux<@NonNull V> switchMap(Function<? super @NonNull T, @NonNull Publisher<? extends @NonNull V>> fn, int prefetch) {
+	public final <V> Flux<V> switchMap(Function<? super T, Publisher<? extends V>> fn, int prefetch) {
 		return onAssembly(new FluxSwitchMap<>(this, fn, Queues.unbounded(prefetch), prefetch));
 	}
 
@@ -6678,7 +6677,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param value a tag value
 	 * @return the same sequence, but bearing tags
 	 */
-	public final Flux<@NonNull T> tag(String key, String value) {
+	public final Flux<T> tag(String key, String value) {
 		return FluxName.createOrAppend(this, key, value);
 	}
 
@@ -6696,7 +6695,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} limited to size N
 	 */
-	public final Flux<@NonNull T> take(long n) {
+	public final Flux<T> take(long n) {
 		if (this instanceof Fuseable) {
 			return onAssembly(new FluxTakeFuseable<>(this, n));
 		}
@@ -6717,7 +6716,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} limited to elements emitted within a specific duration
 	 */
-	public final Flux<@NonNull T> take(Duration timespan) {
+	public final Flux<T> take(Duration timespan) {
 		return take(timespan, Schedulers.parallel());
 	}
 
@@ -6737,7 +6736,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} limited to elements emitted within a specific duration
 	 */
-	public final Flux<@NonNull T> take(Duration timespan, Scheduler timer) {
+	public final Flux<T> take(Duration timespan, Scheduler timer) {
 		if (!timespan.isZero()) {
 			return takeUntilOther(Mono.delay(timespan, timer));
 		}
@@ -6757,7 +6756,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a terminating {@link Flux} sub-sequence
 	 *
 	 */
-	public final Flux<@NonNull T> takeLast(int n) {
+	public final Flux<T> takeLast(int n) {
 		if(n == 1){
 			return onAssembly(new FluxTakeLastOne<>(this));
 		}
@@ -6777,7 +6776,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux} limited by the predicate
 	 *
 	 */
-	public final Flux<@NonNull T> takeUntil(Predicate<? super @NonNull T> predicate) {
+	public final Flux<T> takeUntil(Predicate<? super T> predicate) {
 		return onAssembly(new FluxTakeUntil<>(this, predicate));
 	}
 
@@ -6792,7 +6791,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux} limited by a companion {@link Publisher}
 	 *
 	 */
-	public final Flux<@NonNull T> takeUntilOther(Publisher<@NonNull ?> other) {
+	public final Flux<T> takeUntilOther(Publisher<?> other) {
 		return onAssembly(new FluxTakeUntilOther<>(this, other));
 	}
 
@@ -6809,7 +6808,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} taking values from the source while the predicate matches
 	 */
-	public final Flux<@NonNull T> takeWhile(Predicate<? super @NonNull T> continuePredicate) {
+	public final Flux<T> takeWhile(Predicate<? super T> continuePredicate) {
 		return onAssembly(new FluxTakeWhile<>(this, continuePredicate));
 	}
 
@@ -6821,7 +6820,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * @return a new {@link Mono} representing the termination of this {@link Flux}
 	 */
-	public final Mono<@NonNull Void> then() {
+	public final Mono<Void> then() {
 		@SuppressWarnings("unchecked")
 		Mono<Void> then = (Mono<Void>) new MonoIgnoreElements<>(this);
 		return Mono.onAssembly(then);
@@ -6842,7 +6841,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a new {@link Flux} that wait for source completion then emits from the supplied {@link Mono}
 	 */
-	public final <V> Mono<@NonNull V> then(Mono<@NonNull V> other) {
+	public final <V> Mono<V> then(Mono<V> other) {
 		return Mono.onAssembly(new MonoIgnoreThen<>(new Publisher[] { this }, other));
 	}
 
@@ -6858,7 +6857,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Mono} completing when both publishers have completed in
 	 * sequence
 	 */
-	public final Mono<@NonNull Void> thenEmpty(Publisher<@NonNull Void> other) {
+	public final Mono<Void> thenEmpty(Publisher<Void> other) {
 		return then(Mono.fromDirect(other));
 	}
 
@@ -6876,7 +6875,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux} that emits from the supplied {@link Publisher} after
 	 * this Flux completes.
 	 */
-	public final <V> Flux<@NonNull V> thenMany(Publisher<@NonNull V> other) {
+	public final <V> Flux<V> thenMany(Publisher<V> other) {
 		if (this instanceof FluxConcatArray) {
 			@SuppressWarnings({ "unchecked" })
 			FluxConcatArray<T> fluxConcatArray = (FluxConcatArray<T>) this;
@@ -6899,7 +6898,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} that can time out on a per-item basis
 	 */
-	public final Flux<@NonNull T> timeout(Duration timeout) {
+	public final Flux<T> timeout(Duration timeout) {
 		return timeout(timeout, null, Schedulers.parallel());
 	}
 
@@ -6917,7 +6916,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} that will fallback to a different {@link Publisher} in case of a per-item timeout
 	 */
-	public final Flux<@NonNull T> timeout(Duration timeout, @Nullable Publisher<? extends @NonNull T> fallback) {
+	public final Flux<T> timeout(Duration timeout, @Nullable Publisher<? extends T> fallback) {
 		return timeout(timeout, fallback, Schedulers.parallel());
 	}
 
@@ -6934,7 +6933,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} that can time out on a per-item basis
 	 */
-	public final Flux<@NonNull T> timeout(Duration timeout, Scheduler timer) {
+	public final Flux<T> timeout(Duration timeout, Scheduler timer) {
 		return timeout(timeout, null, timer);
 	}
 
@@ -6954,8 +6953,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} that will fallback to a different {@link Publisher} in case of a per-item timeout
 	 */
-	public final Flux<@NonNull T> timeout(Duration timeout,
-			@Nullable Publisher<? extends @NonNull T> fallback,
+	public final Flux<T> timeout(Duration timeout,
+			@Nullable Publisher<? extends T> fallback,
 			Scheduler timer) {
 		final Mono<Long> _timer = Mono.delay(timeout, timer).onErrorReturn(0L);
 		final Function<T, Publisher<Long>> rest = o -> _timer;
@@ -6982,7 +6981,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * a signal from a companion {@link Publisher}
 	 *
 	 */
-	public final <U> Flux<@NonNull T> timeout(Publisher<@NonNull U> firstTimeout) {
+	public final <U> Flux<T> timeout(Publisher<U> firstTimeout) {
 		return timeout(firstTimeout, t -> never());
 	}
 
@@ -7004,8 +7003,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} that can time out if each element does not come before
 	 * a signal from a per-item companion {@link Publisher}
 	 */
-	public final <U, V> Flux<@NonNull T> timeout(Publisher<@NonNull U> firstTimeout,
-			Function<? super @NonNull T, ? extends @NonNull Publisher<@NonNull V>> nextTimeoutFactory) {
+	public final <U, V> Flux<T> timeout(Publisher<U> firstTimeout,
+			Function<? super T, ? extends Publisher<V>> nextTimeoutFactory) {
 		return onAssembly(new FluxTimeout<>(this, firstTimeout, nextTimeoutFactory));
 	}
 
@@ -7028,8 +7027,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} that can time out if each element does not come before
 	 * a signal from a per-item companion {@link Publisher}
 	 */
-	public final <U, V> Flux<@NonNull T> timeout(Publisher<@NonNull U> firstTimeout,
-			Function<? super @NonNull T, ? extends @NonNull Publisher<@NonNull V>> nextTimeoutFactory, Publisher<? extends @NonNull T>
+	public final <U, V> Flux<T> timeout(Publisher<U> firstTimeout,
+			Function<? super T, ? extends Publisher<V>> nextTimeoutFactory, Publisher<? extends T>
 			fallback) {
 		return onAssembly(new FluxTimeout<>(this, firstTimeout, nextTimeoutFactory,
 				fallback));
@@ -7045,7 +7044,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a timestamped {@link Flux}
 	 */
-	public final Flux<@NonNull Tuple2<@NonNull Long, @NonNull T>> timestamp() {
+	public final Flux<Tuple2<Long, T>> timestamp() {
 		return timestamp(Schedulers.parallel());
 	}
 
@@ -7060,7 +7059,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param scheduler the {@link Scheduler} to read time from
 	 * @return a timestamped {@link Flux}
 	 */
-	public final Flux<@NonNull Tuple2<@NonNull Long, @NonNull T>> timestamp(Scheduler scheduler) {
+	public final Flux<Tuple2<Long, T>> timestamp(Scheduler scheduler) {
 		Objects.requireNonNull(scheduler, "scheduler");
 		return map(d -> Tuples.of(scheduler.now(TimeUnit.MILLISECONDS), d));
 	}
@@ -7075,7 +7074,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a blocking {@link Iterable}
 	 */
-	public final Iterable<@NonNull T> toIterable() {
+	public final Iterable<T> toIterable() {
 		return toIterable(Queues.SMALL_BUFFER_SIZE);
 	}
 
@@ -7092,7 +7091,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a blocking {@link Iterable}
 	 */
-	public final Iterable<@NonNull T> toIterable(int batchSize) {
+	public final Iterable<T> toIterable(int batchSize) {
 		return toIterable(batchSize, null);
 	}
 
@@ -7110,7 +7109,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a blocking {@link Iterable}
 	 */
-	public final Iterable<@NonNull T> toIterable(int batchSize, @Nullable Supplier<@NonNull Queue<@NonNull T>> queueProvider) {
+	public final Iterable<T> toIterable(int batchSize, @Nullable Supplier<Queue<T>>
+			queueProvider) {
 		final Supplier<Queue<T>> provider;
 		if(queueProvider == null){
 			provider = Queues.get(batchSize);
@@ -7130,7 +7130,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Stream} of unknown size with onClose attached to {@link Subscription#cancel()}
 	 */
-	public final Stream<@NonNull T> toStream() {
+	public final Stream<T> toStream() {
 		return toStream(Queues.SMALL_BUFFER_SIZE);
 	}
 
@@ -7145,7 +7145,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Stream} of unknown size with onClose attached to {@link Subscription#cancel()}
 	 */
-	public final Stream<@NonNull T> toStream(int batchSize) {
+	public final Stream<T> toStream(int batchSize) {
 		final Supplier<Queue<T>> provider;
 		provider = Queues.get(batchSize);
 		return new BlockingIterable<>(this, batchSize, provider).stream();
@@ -7170,7 +7170,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @see #compose(Function) for deferred composition of {@link Flux} for each {@link Subscriber}
 	 * @see #as for a loose conversion to an arbitrary type
 	 */
-	public final <V> Flux<@NonNull V> transform(Function<? super @NonNull Flux<@NonNull T>, ? extends @NonNull Publisher<@NonNull V>> transformer) {
+	public final <V> Flux<V> transform(Function<? super Flux<T>, ? extends Publisher<V>> transformer) {
 		return onAssembly(from(transformer.apply(this)));
 	}
 
@@ -7186,7 +7186,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} of {@link Flux} windows based on element count
 	 */
-	public final Flux<@NonNull Flux<@NonNull T>> window(int maxSize) {
+	public final Flux<Flux<T>> window(int maxSize) {
 		return onAssembly(new FluxWindow<>(this, maxSize, Queues.get(maxSize)));
 	}
 
@@ -7212,7 +7212,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} of {@link Flux} windows based on element count and opened every skipCount
 	 */
-	public final Flux<@NonNull Flux<@NonNull T>> window(int maxSize, int skip) {
+	public final Flux<Flux<T>> window(int maxSize, int skip) {
 		return onAssembly(new FluxWindow<>(this,
 				maxSize,
 				skip,
@@ -7231,7 +7231,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} of {@link Flux} windows delimited by a given {@link Publisher}
 	 */
-	public final Flux<@NonNull Flux<@NonNull T>> window(Publisher<@NonNull ?> boundary) {
+	public final Flux<Flux<T>> window(Publisher<?> boundary) {
 		return onAssembly(new FluxWindowBoundary<>(this,
 				boundary,
 				Queues.unbounded(Queues.XS_BUFFER_SIZE),
@@ -7250,7 +7250,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} of {@link Flux} windows continuously opened for a given {@link Duration}
 	 */
-	public final Flux<@NonNull Flux<@NonNull T>> window(Duration timespan) {
+	public final Flux<Flux<T>> window(Duration timespan) {
 		return window(timespan, Schedulers.parallel());
 	}
 
@@ -7281,7 +7281,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * closed after a {@link Duration}
 	 *
 	 */
-	public final Flux<@NonNull Flux<@NonNull T>> window(Duration timespan, Duration timeshift) {
+	public final Flux<Flux<T>> window(Duration timespan, Duration timeshift) {
 		return window(timespan, timeshift, Schedulers.parallel());
 	}
 
@@ -7297,7 +7297,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} of {@link Flux} windows continuously opened for a given {@link Duration}
 	 */
-	public final Flux<@NonNull Flux<@NonNull T>> window(Duration timespan, Scheduler timer) {
+	public final Flux<Flux<T>> window(Duration timespan, Scheduler timer) {
 		return window(interval(timespan, timer));
 	}
 
@@ -7328,7 +7328,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} of {@link Flux} windows opened at regular intervals and
 	 * closed after a {@link Duration}
 	 */
-	public final Flux<@NonNull Flux<@NonNull T>> window(Duration timespan, Duration timeshift, Scheduler timer) {
+	public final Flux<Flux<T>> window(Duration timespan, Duration timeshift, Scheduler timer) {
 		if (timeshift.equals(timespan)) {
 			return window(timespan);
 		}
@@ -7350,7 +7350,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} of {@link Flux} windows based on element count and duration
 	 */
-	public final Flux<@NonNull Flux<@NonNull T>> windowTimeout(int maxSize, Duration timespan) {
+	public final Flux<Flux<T>> windowTimeout(int maxSize, Duration timespan) {
 		return windowTimeout(maxSize, timespan , Schedulers.parallel());
 	}
 
@@ -7370,7 +7370,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} of {@link Flux} windows based on element count and duration
 	 */
-	public final Flux<@NonNull Flux<@NonNull T>> windowTimeout(int maxSize, Duration timespan, Scheduler timer) {
+	public final Flux<Flux<T>> windowTimeout(int maxSize, Duration timespan, Scheduler timer) {
 		return onAssembly(new FluxWindowTimeOrSize<>(this, maxSize, timespan.toMillis(), timer));
 	}
 
@@ -7386,7 +7386,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} of {@link Flux} windows, bounded depending
 	 * on the predicate.
 	 */
-	public final Flux<@NonNull Flux<@NonNull T>> windowUntil(Predicate<@NonNull T> boundaryTrigger) {
+	public final Flux<Flux<T>> windowUntil(Predicate<T> boundaryTrigger) {
 		return windowUntil(boundaryTrigger, false);
 	}
 
@@ -7411,7 +7411,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} of {@link Flux} windows, bounded depending
 	 * on the predicate.
 	 */
-	public final Flux<@NonNull Flux<@NonNull T>> windowUntil(Predicate<@NonNull T> boundaryTrigger, boolean cutBefore) {
+	public final Flux<Flux<T>> windowUntil(Predicate<T> boundaryTrigger, boolean cutBefore) {
 		return windowUntil(boundaryTrigger, cutBefore, Queues.SMALL_BUFFER_SIZE);
 	}
 
@@ -7438,7 +7438,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} of {@link Flux} windows, bounded depending
 	 * on the predicate.
 	 */
-	public final Flux<@NonNull Flux<@NonNull T>> windowUntil(Predicate<@NonNull T> boundaryTrigger, boolean cutBefore, int prefetch) {
+	public final Flux<Flux<T>> windowUntil(Predicate<T> boundaryTrigger, boolean cutBefore, int prefetch) {
 		return onAssembly(new FluxWindowPredicate<>(this,
 				Queues.unbounded(prefetch),
 				Queues.unbounded(prefetch),
@@ -7462,7 +7462,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} of {@link Flux} windows, each containing
 	 * subsequent elements that all passed a predicate.
 	 */
-	public final Flux<@NonNull Flux<@NonNull T>> windowWhile(Predicate<@NonNull T> inclusionPredicate) {
+	public final Flux<Flux<T>> windowWhile(Predicate<T> inclusionPredicate) {
 		return windowWhile(inclusionPredicate, Queues.SMALL_BUFFER_SIZE);
 	}
 
@@ -7482,7 +7482,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} of {@link Flux} windows, each containing
 	 * subsequent elements that all passed a predicate.
 	 */
-	public final Flux<@NonNull Flux<@NonNull T>> windowWhile(Predicate<@NonNull T> inclusionPredicate, int prefetch) {
+	public final Flux<Flux<T>> windowWhile(Predicate<T> inclusionPredicate, int prefetch) {
 		return onAssembly(new FluxWindowPredicate<>(this,
 				Queues.unbounded(prefetch),
 				Queues.unbounded(prefetch),
@@ -7518,8 +7518,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} of {@link Flux} windows opened by signals from a first
 	 * {@link Publisher} and lasting until a selected second {@link Publisher} emits
 	 */
-	public final <U, V> Flux<@NonNull Flux<@NonNull T>> windowWhen(Publisher<@NonNull U> bucketOpening,
-			final Function<? super @NonNull U, ? extends @NonNull Publisher<@NonNull V>> closeSelector) {
+	public final <U, V> Flux<Flux<T>> windowWhen(Publisher<U> bucketOpening,
+			final Function<? super U, ? extends Publisher<V>> closeSelector) {
 		return onAssembly(new FluxWindowWhen<>(this,
 				bucketOpening,
 				closeSelector,
@@ -7548,8 +7548,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a combined {@link Flux} gated by another {@link Publisher}
 	 */
-	public final <U, R> Flux<@NonNull R> withLatestFrom(Publisher<? extends @NonNull U> other, BiFunction<? super @NonNull T, ? super @NonNull U, ?
-			extends @NonNull R> resultSelector){
+	public final <U, R> Flux<R> withLatestFrom(Publisher<? extends U> other, BiFunction<? super T, ? super U, ?
+			extends R > resultSelector){
 		return onAssembly(new FluxWithLatestFrom<>(this, other, resultSelector));
 	}
 
@@ -7568,7 +7568,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a zipped {@link Flux}
 	 *
 	 */
-	public final <T2> Flux<@NonNull Tuple2<@NonNull T, @NonNull T2>> zipWith(Publisher<? extends @NonNull T2> source2) {
+	public final <T2> Flux<Tuple2<T, T2>> zipWith(Publisher<? extends T2> source2) {
 		return zipWith(source2, tuple2Function());
 	}
 
@@ -7590,8 +7590,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a zipped {@link Flux}
 	 */
-	public final <T2, V> Flux<@NonNull V> zipWith(Publisher<? extends @NonNull T2> source2,
-			final BiFunction<? super @NonNull T, ? super @NonNull T2, ? extends @NonNull V> combinator) {
+	public final <T2, V> Flux<V> zipWith(Publisher<? extends T2> source2,
+			final BiFunction<? super T, ? super T2, ? extends V> combinator) {
 		if (this instanceof FluxZip) {
 			@SuppressWarnings("unchecked")
 			FluxZip<T, V> o = (FluxZip<T, V>) this;
@@ -7623,9 +7623,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a zipped {@link Flux}
 	 */
 	@SuppressWarnings("unchecked")
-	public final <T2, V> Flux<@NonNull V> zipWith(Publisher<? extends @NonNull T2> source2,
+	public final <T2, V> Flux<V> zipWith(Publisher<? extends T2> source2,
 			int prefetch,
-			BiFunction<? super @NonNull T, ? super @NonNull T2, ? extends @NonNull V> combinator) {
+			BiFunction<? super T, ? super T2, ? extends V> combinator) {
 		return zip(objects -> combinator.apply((T) objects[0], (T2) objects[1]),
 				prefetch,
 				this,
@@ -7648,7 +7648,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a zipped {@link Flux}
 	 */
-	public final <T2> Flux<@NonNull Tuple2<@NonNull T, @NonNull T2>> zipWith(Publisher<? extends @NonNull T2> source2, int prefetch) {
+	public final <T2> Flux<Tuple2<T, T2>> zipWith(Publisher<? extends T2> source2, int prefetch) {
 		return zipWith(source2, prefetch, tuple2Function());
 	}
 
@@ -7666,7 +7666,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 */
 	@SuppressWarnings("unchecked")
-	public final <T2> Flux<@NonNull Tuple2<@NonNull T, @NonNull T2>> zipWithIterable(Iterable<? extends @NonNull T2> iterable) {
+	public final <T2> Flux<Tuple2<T, T2>> zipWithIterable(Iterable<? extends T2> iterable) {
 		return zipWithIterable(iterable, tuple2Function());
 	}
 
@@ -7687,8 +7687,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a zipped {@link Flux}
 	 *
 	 */
-	public final <T2, V> Flux<@NonNull V> zipWithIterable(Iterable<? extends @NonNull T2> iterable,
-			BiFunction<? super @NonNull T, ? super @NonNull T2, ? extends @NonNull V> zipper) {
+	public final <T2, V> Flux<V> zipWithIterable(Iterable<? extends T2> iterable,
+			BiFunction<? super T, ? super T2, ? extends V> zipper) {
 		return onAssembly(new FluxZipIterable<>(this, iterable, zipper));
 	}
 
@@ -7704,7 +7704,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return the source, potentially wrapped with assembly time cross-cutting behavior
 	 */
 	@SuppressWarnings("unchecked")
-	protected static <T> Flux<@NonNull T> onAssembly(Flux<@NonNull T> source) {
+	protected static <T> Flux<T> onAssembly(Flux<T> source) {
 		Function<Publisher, Publisher> hook = Hooks.onEachOperatorHook;
 		if(hook == null) {
 			return source;
@@ -7724,7 +7724,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return the source, potentially wrapped with assembly time cross-cutting behavior
 	 */
 	@SuppressWarnings("unchecked")
-	protected static <T> Flux<@NonNull T> onLastAssembly(Flux<@NonNull T> source) {
+	protected static <T> Flux<T> onLastAssembly(Flux<T> source) {
 		Function<Publisher, Publisher> hook = Hooks.onLastOperatorHook;
 		if(hook == null) {
 			return source;
@@ -7744,7 +7744,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return the source, potentially wrapped with assembly time cross-cutting behavior
 	 */
 	@SuppressWarnings("unchecked")
-	protected static <T> ConnectableFlux<@NonNull T> onAssembly(ConnectableFlux<@NonNull T> source) {
+	protected static <T> ConnectableFlux<T> onAssembly(ConnectableFlux<T> source) {
 		Function<Publisher, Publisher> hook = Hooks.onEachOperatorHook;
 		if(hook == null) {
 			return source;
@@ -7758,8 +7758,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 
-	final <V> Flux<@NonNull V> flatMap(Function<? super @NonNull T, ? extends @NonNull Publisher<? extends
-            @NonNull V>> mapper, boolean delayError, int concurrency, int prefetch) {
+	final <V> Flux<V> flatMap(Function<? super T, ? extends Publisher<? extends
+			V>> mapper, boolean delayError, int concurrency, int prefetch) {
 		return onAssembly(new FluxFlatMap<>(
 				this,
 				mapper,
@@ -7771,8 +7771,8 @@ public abstract class Flux<T> implements Publisher<T> {
 		));
 	}
 
-	final <R> Flux<@NonNull R> flatMapSequential(Function<? super @NonNull T, ? extends
-            @NonNull Publisher<? extends @NonNull R>> mapper, boolean delayError, int maxConcurrency,
+	final <R> Flux<R> flatMapSequential(Function<? super T, ? extends
+			Publisher<? extends R>> mapper, boolean delayError, int maxConcurrency,
 			int prefetch) {
 		return onAssembly(new FluxMergeSequential<>(this, mapper, maxConcurrency,
 				prefetch, delayError ? FluxConcatMap.ErrorMode.END :
@@ -7780,10 +7780,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	@SuppressWarnings("unchecked")
-	static <T> Flux<@NonNull T> doOnSignal(Flux<@NonNull T> source,
-			@Nullable Consumer<? super @NonNull Subscription> onSubscribe,
-			@Nullable Consumer<? super @NonNull T> onNext,
-			@Nullable Consumer<? super @NonNull Throwable> onError,
+	static <T> Flux<T> doOnSignal(Flux<T> source,
+			@Nullable Consumer<? super Subscription> onSubscribe,
+			@Nullable Consumer<? super T> onNext,
+			@Nullable Consumer<? super Throwable> onError,
 			@Nullable Runnable onComplete,
 			@Nullable Runnable onAfterTerminate,
 			@Nullable LongConsumer onRequest,
@@ -7815,7 +7815,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return the mono representing that Flux
 	 */
-	static <T> Mono<@NonNull T> convertToMono(Callable<@Nullable T> supplier) {
+	static <T> Mono<T> convertToMono(Callable<T> supplier) {
 		if (supplier instanceof Fuseable.ScalarCallable) {
 			Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) supplier;
 
@@ -7835,7 +7835,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	@SafeVarargs
-	static <I> Flux<@NonNull I> merge(int prefetch, boolean delayError, Publisher<? extends @NonNull I> @NonNull ... sources) {
+	static <I> Flux<I> merge(int prefetch, boolean delayError, Publisher<? extends I>... sources) {
 		if (sources.length == 0) {
 			return empty();
 		}
@@ -7851,8 +7851,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	@SafeVarargs
-	static <I> Flux<@NonNull I> mergeSequential(int prefetch, boolean delayError,
-			Publisher<? extends @NonNull I> @NonNull ... sources) {
+	static <I> Flux<I> mergeSequential(int prefetch, boolean delayError,
+			Publisher<? extends I>... sources) {
 		if (sources.length == 0) {
 			return empty();
 		}
@@ -7864,7 +7864,7 @@ public abstract class Flux<T> implements Publisher<T> {
 				delayError ? FluxConcatMap.ErrorMode.END : FluxConcatMap.ErrorMode.IMMEDIATE));
 	}
 
-	static <T> Flux<@NonNull T> mergeSequential(Publisher<? extends @NonNull Publisher<? extends @NonNull T>> sources,
+	static <T> Flux<T> mergeSequential(Publisher<? extends Publisher<? extends T>> sources,
 			boolean delayError, int maxConcurrency, int prefetch) {
 		return onAssembly(new FluxMergeSequential<>(from(sources),
 				identityFunction(),
@@ -7872,7 +7872,7 @@ public abstract class Flux<T> implements Publisher<T> {
 				FluxConcatMap.ErrorMode.IMMEDIATE));
 	}
 
-	static <I> Flux<@NonNull I> mergeSequential(Iterable<? extends @NonNull Publisher<? extends @NonNull I>> sources,
+	static <I> Flux<I> mergeSequential(Iterable<? extends Publisher<? extends I>> sources,
 			boolean delayError, int maxConcurrency, int prefetch) {
 		return onAssembly(new FluxMergeSequential<>(new FluxIterable<>(sources),
 				identityFunction(), maxConcurrency, prefetch,
@@ -7894,7 +7894,7 @@ public abstract class Flux<T> implements Publisher<T> {
 		};
 	}
 
-	static <O> Predicate<@NonNull O> countingPredicate(Predicate<@NonNull O> predicate, long max) {
+	static <O> Predicate<O> countingPredicate(Predicate<O> predicate, long max) {
 		if (max == 0) {
 			return predicate;
 		}
@@ -7909,32 +7909,32 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	@SuppressWarnings("unchecked")
-	static <O> Supplier<@NonNull Set<@NonNull O>> hashSetSupplier() {
+	static <O> Supplier<Set<O>> hashSetSupplier() {
 		return SET_SUPPLIER;
 	}
 
 	@SuppressWarnings("unchecked")
-	static <O> Supplier<@NonNull List<@NonNull O>> listSupplier() {
+	static <O> Supplier<List<O>> listSupplier() {
 		return LIST_SUPPLIER;
 	}
 
 	@SuppressWarnings("unchecked")
-	static <U, V> Function<@NonNull U, @NonNull V> hashcodeSupplier() {
+	static <U, V> Function<U, V> hashcodeSupplier() {
 		return HASHCODE_EXTRACTOR;
 	}
 
 	@SuppressWarnings("unchecked")
-	static <U, V> BiPredicate<@NonNull U, @NonNull V> equalPredicate() {
+	static <U, V> BiPredicate<U, V> equalPredicate() {
 		return OBJECT_EQUAL;
 	}
 
 	@SuppressWarnings("unchecked")
-	static <T> Function<@NonNull T, @NonNull T> identityFunction(){
+	static <T> Function<T, T> identityFunction(){
 		return IDENTITY_FUNCTION;
 	}
 
 	@SuppressWarnings("unchecked")
-	static <A, B> BiFunction<@NonNull A, @NonNull B, @NonNull Tuple2<@NonNull A, @NonNull B>> tuple2Function() {
+	static <A, B> BiFunction<A, B, Tuple2<A, B>> tuple2Function() {
 		return TUPLE2_BIFUNCTION;
 	}
 
@@ -7946,7 +7946,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a wrapped {@link Flux}
 	 */
 	@SuppressWarnings("unchecked")
-	static <I> Flux<@NonNull I> wrap(Publisher<? extends @NonNull I> source){
+	static <I> Flux<I> wrap(Publisher<? extends I> source){
 		if(source instanceof Mono){
 			if(source instanceof Fuseable){
 				return new FluxSourceMonoFuseable<>((Mono<I>)source);
