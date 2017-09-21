@@ -3449,11 +3449,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * @param onCancel the callback to call on {@link Subscription#cancel}
 	 *
-	 * @reactor.errorMode This operator supports {@link #onErrorContinue() resuming on errors}
-	 * (including when fusion is enabled). Exceptions thrown by the runnable are passed to
-	 * the {@link #onErrorContinue(Consumer, Consumer)} error consumer (the value consumer
-	 * is not invoked). The source cancel signal is then propagated as normal.
-	 *
 	 * @return an observed  {@link Flux}
 	 */
 	public final Flux<T> doOnCancel(Runnable onCancel) {
@@ -3467,12 +3462,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/dooncomplete.png" alt="">
 	 * <p>
 	 * @param onComplete the callback to call on {@link Subscriber#onComplete}
-	 *
-	 * @reactor.errorMode This operator supports {@link #onErrorContinue() resuming on errors}
-	 * (including when fusion is enabled). Exceptions thrown by the runnable during a
-	 * onComplete event are passed to the {@link #onErrorContinue(Consumer, Consumer)}
-	 * error consumer (the value consumer is not invoked). The source completion signal is
-	 * then propagated as normal.
 	 *
 	 * @return an observed  {@link Flux}
 	 */
@@ -3602,11 +3591,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * @param onSubscribe the callback to call on {@link Subscriber#onSubscribe}
 	 *
-	 * @reactor.errorMode This operator supports {@link #onErrorContinue() resuming on errors}
-	 * (including when fusion is enabled). Exceptions thrown by the consumer are passed
-	 * to the {@link #onErrorContinue(Consumer, Consumer)} error consumer (the value
-	 * consumer is not invoked). The source subscription signal is then propagated as normal.
-	 *
 	 * @return an observed  {@link Flux}
 	 */
 	public final Flux<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
@@ -3621,12 +3605,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/doonterminate.png" alt="">
 	 * <p>
 	 * @param onTerminate the callback to call on {@link Subscriber#onComplete} or {@link Subscriber#onError}
-	 *
-	 * @reactor.errorMode This operator supports {@link #onErrorContinue() resuming on errors}
-	 * in the {@code onComplete} case (including when fusion is enabled). Exceptions
-	 * thrown by the runnable during a onComplete event are passed to the
-	 * {@link #onErrorContinue(Consumer, Consumer)} error consumer (the value consumer is
-	 * not invoked). The source completion signal is then propagated as normal.
 	 *
 	 * @return an observed  {@link Flux}
 	 */
