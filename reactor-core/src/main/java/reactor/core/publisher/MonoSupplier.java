@@ -20,9 +20,10 @@ import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 
+import javax.annotation.Nullable;
+
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.util.annotation.Nullable;
 
 /**
  * Executes a Supplier function and emits a single value to each individual Subscriber.

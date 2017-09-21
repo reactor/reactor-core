@@ -17,6 +17,7 @@
 package reactor.util.function;
 
 import java.util.Objects;
+import javax.annotation.Nonnull;
 
 import reactor.util.annotation.NonNull;
 import reactor.util.annotation.Nullable;
@@ -40,7 +41,7 @@ public class Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> extends
 
 	private static final long serialVersionUID = -8746796646535446242L;
 
-	@NonNull final T8 t8;
+	@Nonnull final T8 t8;
 
 	Tuple8(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8) {
 		super(t1, t2, t3, t4, t5, t6, t7);
