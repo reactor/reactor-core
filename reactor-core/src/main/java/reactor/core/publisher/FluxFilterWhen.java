@@ -198,7 +198,7 @@ class FluxFilterWhen<T> extends FluxOperator<T, T> {
 			}
 
 			int missed = 1;
-			int limit = bufferSize - (bufferSize >> 2);
+			int limit = Operators.unboundedOrLimit(bufferSize);
 			long e = emitted;
 			long ci = consumerIndex;
 			int f = consumed;

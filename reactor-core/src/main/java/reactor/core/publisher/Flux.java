@@ -7092,7 +7092,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a blocking {@link Iterable}
 	 */
-	public final Iterable<@NonNull T> toIterable(long batchSize) {
+	public final Iterable<@NonNull T> toIterable(int batchSize) {
 		return toIterable(batchSize, null);
 	}
 
@@ -7110,10 +7110,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a blocking {@link Iterable}
 	 */
-	public final Iterable<@NonNull T> toIterable(long batchSize, @Nullable Supplier<@NonNull Queue<@NonNull T>> queueProvider) {
+	public final Iterable<@NonNull T> toIterable(int batchSize, @Nullable Supplier<@NonNull Queue<@NonNull T>> queueProvider) {
 		final Supplier<Queue<T>> provider;
 		if(queueProvider == null){
-			provider = Queues.get((int)Math.min(Integer.MAX_VALUE, batchSize));
+			provider = Queues.get(batchSize);
 		}
 		else{
 			provider = queueProvider;

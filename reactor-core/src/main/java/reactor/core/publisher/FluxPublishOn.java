@@ -156,12 +156,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 			this.delayError = delayError;
 			this.prefetch = prefetch;
 			this.queueSupplier = queueSupplier;
-			if (prefetch != Integer.MAX_VALUE) {
-				this.limit = prefetch - (prefetch >> 2);
-			}
-			else {
-				this.limit = Integer.MAX_VALUE;
-			}
+			this.limit = Operators.unboundedOrLimit(prefetch);
 		}
 
 		@Override
@@ -183,13 +178,13 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 						actual.onSubscribe(this);
 						return;
 					}
-					else if (m == Fuseable.ASYNC) {
+					if (m == Fuseable.ASYNC) {
 						sourceMode = Fuseable.ASYNC;
 						queue = f;
 
 						actual.onSubscribe(this);
 
-						initialRequest();
+						s.request(Operators.unboundedOrPrefetch(prefetch));
 
 						return;
 					}
@@ -199,16 +194,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 
 				actual.onSubscribe(this);
 
-				initialRequest();
-			}
-		}
-
-		void initialRequest() {
-			if (prefetch == Integer.MAX_VALUE) {
-				s.request(Long.MAX_VALUE);
-			}
-			else {
-				s.request(prefetch);
+				s.request(Operators.unboundedOrPrefetch(prefetch));
 			}
 		}
 
@@ -637,12 +623,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 			this.delayError = delayError;
 			this.prefetch = prefetch;
 			this.queueSupplier = queueSupplier;
-			if (prefetch != Integer.MAX_VALUE) {
-				this.limit = prefetch - (prefetch >> 2);
-			}
-			else {
-				this.limit = Integer.MAX_VALUE;
-			}
+			this.limit = Operators.unboundedOrLimit(prefetch);
 		}
 
 		@Override
@@ -664,13 +645,13 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 						actual.onSubscribe(this);
 						return;
 					}
-					else if (m == Fuseable.ASYNC) {
+					if (m == Fuseable.ASYNC) {
 						sourceMode = Fuseable.ASYNC;
 						queue = f;
 
 						actual.onSubscribe(this);
 
-						initialRequest();
+						s.request(Operators.unboundedOrPrefetch(prefetch));
 
 						return;
 					}
@@ -680,16 +661,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 
 				actual.onSubscribe(this);
 
-				initialRequest();
-			}
-		}
-
-		void initialRequest() {
-			if (prefetch == Integer.MAX_VALUE) {
-				s.request(Long.MAX_VALUE);
-			}
-			else {
-				s.request(prefetch);
+				s.request(Operators.unboundedOrPrefetch(prefetch));
 			}
 		}
 

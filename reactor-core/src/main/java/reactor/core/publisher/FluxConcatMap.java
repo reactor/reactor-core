@@ -174,7 +174,7 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 			this.mapper = mapper;
 			this.queueSupplier = queueSupplier;
 			this.prefetch = prefetch;
-			this.limit = prefetch - (prefetch >> 2);
+			this.limit = Operators.unboundedOrLimit(prefetch);
 			this.inner = new ConcatMapInner<>(this);
 		}
 
@@ -224,7 +224,7 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 
 				actual.onSubscribe(this);
 
-				s.request(prefetch == Integer.MAX_VALUE ? Long.MAX_VALUE : prefetch);
+				s.request(Operators.unboundedOrPrefetch(prefetch));
 			}
 		}
 
@@ -505,7 +505,7 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 			this.mapper = mapper;
 			this.queueSupplier = queueSupplier;
 			this.prefetch = prefetch;
-			this.limit = prefetch - (prefetch >> 2);
+			this.limit = Operators.unboundedOrLimit(prefetch);
 			this.veryEnd = veryEnd;
 			this.inner = new ConcatMapInner<>(this);
 		}
@@ -564,7 +564,7 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 
 				actual.onSubscribe(this);
 
-				s.request(prefetch == Integer.MAX_VALUE ? Long.MAX_VALUE : prefetch);
+				s.request(Operators.unboundedOrPrefetch(prefetch));
 			}
 		}
 

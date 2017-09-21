@@ -224,17 +224,17 @@ final class FluxPublish<T> extends ConnectableFlux<T> implements Scannable {
 						drain();
 						return;
 					}
-					else if (m == Fuseable.ASYNC) {
+					if (m == Fuseable.ASYNC) {
 						sourceMode = m;
 						queue = f;
-						s.request(prefetch);
+						s.request(Operators.unboundedOrPrefetch(prefetch));
 						return;
 					}
 				}
 
 				queue = parent.queueSupplier.get();
 
-				s.request(prefetch);
+				s.request(Operators.unboundedOrPrefetch(prefetch));
 			}
 		}
 

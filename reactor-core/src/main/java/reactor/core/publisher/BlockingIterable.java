@@ -49,12 +49,12 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 
 	final Publisher<? extends T> source;
 
-	final long batchSize;
+	final int batchSize;
 
 	final Supplier<Queue<T>> queueSupplier;
 
 	BlockingIterable(Publisher<? extends T> source,
-			long batchSize,
+			int batchSize,
 			Supplier<Queue<T>> queueSupplier) {
 		if (batchSize <= 0) {
 			throw new IllegalArgumentException("batchSize > 0 required but it was " + batchSize);
@@ -67,7 +67,7 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 	@Override
 	@Nullable
 	public Object scanUnsafe(Attr key) {
-		if (key == Attr.PREFETCH) return (int) Math.min(Integer.MAX_VALUE, batchSize); //FIXME should batchSize be forced to int?
+		if (key == Attr.PREFETCH) return Math.min(Integer.MAX_VALUE, batchSize); //FIXME should batchSize be forced to int?
 		if (key == Attr.PARENT) return source;
 
 		return null;
@@ -120,9 +120,9 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 
 		final Queue<T> queue;
 
-		final long batchSize;
+		final int batchSize;
 
-		final long limit;
+		final int limit;
 
 		final Lock lock;
 
@@ -140,10 +140,10 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 		volatile boolean done;
 		Throwable error;
 
-		 SubscriberIterator(Queue<T> queue, long batchSize) {
+		 SubscriberIterator(Queue<T> queue, int batchSize) {
 			this.queue = queue;
 			this.batchSize = batchSize;
-			this.limit = batchSize - (batchSize >> 2);
+			this.limit = Operators.unboundedOrLimit(batchSize);
 			this.lock = new ReentrantLock();
 			this.condition = lock.newCondition();
 		}
@@ -211,7 +211,7 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 		@Override
 		public void onSubscribe(Subscription s) {
 			if (Operators.setOnce(S, this, s)) {
-				s.request(batchSize);
+				s.request(Operators.unboundedOrPrefetch(batchSize));
 			}
 		}
 
@@ -264,7 +264,7 @@ final class BlockingIterable<T> implements Iterable<T>, Scannable {
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.PARENT) return  s;
 			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
-			if (key == Attr.PREFETCH) return (int) Math.min(Integer.MAX_VALUE, batchSize); //FIXME should batchSize be typed int?
+			if (key == Attr.PREFETCH) return batchSize;
 			if (key == Attr.ERROR) return error;
 
 			return null;

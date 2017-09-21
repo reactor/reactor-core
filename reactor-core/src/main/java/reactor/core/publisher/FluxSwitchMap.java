@@ -50,7 +50,7 @@ final class FluxSwitchMap<T, R> extends FluxOperator<T, R> {
 
 	final Supplier<? extends Queue<Object>> queueSupplier;
 
-	final int bufferSize;
+	final int prefetch;
 
 	@SuppressWarnings("ConstantConditions")
 	static final SwitchMapInner<Object> CANCELLED_INNER =
@@ -59,14 +59,15 @@ final class FluxSwitchMap<T, R> extends FluxOperator<T, R> {
 	FluxSwitchMap(Flux<? extends T> source,
 			Function<? super T, ? extends Publisher<? extends R>> mapper,
 			Supplier<? extends Queue<Object>> queueSupplier,
-			int bufferSize) {
+			int prefetch) {
 		super(source);
-		if (bufferSize <= 0) {
-			throw new IllegalArgumentException("BUFFER_SIZE > 0 required but it was " + bufferSize);
+		if (prefetch <= 0) {
+			throw new IllegalArgumentException("prefetch > 0 required but it was " +
+					prefetch);
 		}
 		this.mapper = Objects.requireNonNull(mapper, "mapper");
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
-		this.bufferSize = bufferSize;
+		this.prefetch = prefetch;
 	}
 
 	@Override
@@ -82,7 +83,7 @@ final class FluxSwitchMap<T, R> extends FluxOperator<T, R> {
 
 		source.subscribe(new SwitchMapMain<T, R>(actual,
 				mapper,
-				queueSupplier.get(), bufferSize));
+				queueSupplier.get(), prefetch));
 	}
 
 	static final class SwitchMapMain<T, R> implements InnerOperator<T, R> {
@@ -91,7 +92,7 @@ final class FluxSwitchMap<T, R> extends FluxOperator<T, R> {
 
 		final Queue<Object>               queue;
 		final BiPredicate<Object, Object> queueBiAtomic;
-		final int                         bufferSize;
+		final int                         prefetch;
 		final CoreSubscriber<? super R>   actual;
 
 		Subscription s;
@@ -144,11 +145,11 @@ final class FluxSwitchMap<T, R> extends FluxOperator<T, R> {
 		SwitchMapMain(CoreSubscriber<? super R> actual,
 				Function<? super T, ? extends Publisher<? extends R>> mapper,
 				Queue<Object> queue,
-				int bufferSize) {
+				int prefetch) {
 			this.actual = actual;
 			this.mapper = mapper;
 			this.queue = queue;
-			this.bufferSize = bufferSize;
+			this.prefetch = prefetch;
 			this.active = 1;
 			if(queue instanceof BiPredicate){
 				this.queueBiAtomic = (BiPredicate<Object, Object>) queue;
@@ -170,7 +171,7 @@ final class FluxSwitchMap<T, R> extends FluxOperator<T, R> {
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.TERMINATED) return done;
 			if (key == Attr.ERROR) return error;
-			if (key == Attr.PREFETCH) return bufferSize;
+			if (key == Attr.PREFETCH) return prefetch;
 			if (key == Attr.BUFFERED) return queue.size();
 			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
 
@@ -220,7 +221,7 @@ final class FluxSwitchMap<T, R> extends FluxOperator<T, R> {
 			}
 
 			SwitchMapInner<R> innerSubscriber =
-					new SwitchMapInner<>(this, bufferSize, idx);
+					new SwitchMapInner<>(this, prefetch, idx);
 
 			if (INNER.compareAndSet(this, si, innerSubscriber)) {
 				ACTIVE.getAndIncrement(this);
@@ -429,7 +430,7 @@ final class FluxSwitchMap<T, R> extends FluxOperator<T, R> {
 
 		final SwitchMapMain<?, R> parent;
 
-		final int bufferSize;
+		final int prefetch;
 
 		final int limit;
 
@@ -449,10 +450,10 @@ final class FluxSwitchMap<T, R> extends FluxOperator<T, R> {
 
 		int produced;
 
-		SwitchMapInner(SwitchMapMain<?, R> parent, int bufferSize, long index) {
+		SwitchMapInner(SwitchMapMain<?, R> parent, int prefetch, long index) {
 			this.parent = parent;
-			this.bufferSize = bufferSize;
-			this.limit = bufferSize - (bufferSize >> 2);
+			this.prefetch = prefetch;
+			this.limit = Operators.unboundedOrLimit(prefetch);
 			this.index = index;
 		}
 
@@ -467,7 +468,7 @@ final class FluxSwitchMap<T, R> extends FluxOperator<T, R> {
 			if (key == Attr.CANCELLED) return s == Operators.cancelledSubscription();
 			if (key == Attr.PARENT) return s;
 			if (key == Attr.ACTUAL) return parent;
-			if (key == Attr.PREFETCH) return bufferSize;
+			if (key == Attr.PREFETCH) return prefetch;
 
 			return null;
 		}
@@ -486,7 +487,7 @@ final class FluxSwitchMap<T, R> extends FluxOperator<T, R> {
 			}
 
 			if (S.compareAndSet(this, null, s)) {
-				s.request(bufferSize);
+				s.request(Operators.unboundedOrPrefetch(prefetch));
 				return;
 			}
 			a = this.s;

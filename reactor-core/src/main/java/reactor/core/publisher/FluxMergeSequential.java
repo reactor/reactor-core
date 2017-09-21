@@ -504,7 +504,7 @@ final class FluxMergeSequential<T, R> extends FluxOperator<T, R> {
 		MergeSequentialInner(MergeSequentialMain<?, R> parent, int prefetch) {
 			this.parent = parent;
 			this.prefetch = prefetch;
-			this.limit = prefetch - (prefetch >> 2);
+			this.limit = Operators.unboundedOrLimit(prefetch);
 		}
 
 		@Override
@@ -543,14 +543,13 @@ final class FluxMergeSequential<T, R> extends FluxOperator<T, R> {
 					if (m == Fuseable.ASYNC) {
 						fusionMode = m;
 						queue = qs;
-						//FIXME could be mutualized in DrainUtils or Operators (+ review other prefetch based operators)
-						s.request(prefetch == Integer.MAX_VALUE ? Long.MAX_VALUE : prefetch);
+						s.request(Operators.unboundedOrPrefetch(prefetch));
 						return;
 					}
 				}
 
 				queue = Queues.<R>get(prefetch).get();
-				s.request(prefetch == Integer.MAX_VALUE ? Long.MAX_VALUE : prefetch);
+				s.request(Operators.unboundedOrPrefetch(prefetch));
 			}
 		}
 

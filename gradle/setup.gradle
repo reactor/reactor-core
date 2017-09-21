@@ -101,9 +101,14 @@ def customizePom(pom, gradleProject) {
 					email = 'sbasle@pivotal.io'
 				}
 				developer {
-				  id = 'rsivaram'
-				  name = 'Rajini Sivaram'
-				  email = 'rsivaram@pivotal.io'
+					id = 'rsivaram'
+					name = 'Rajini Sivaram'
+					email = 'rsivaram@pivotal.io'
+				}
+				developer {
+					id = 'sdeleuze'
+					name = 'Sébastien Deleuze'
+					email = 'sdeleuze@pivotal.io'
 				}
 			}
 			issueManagement {

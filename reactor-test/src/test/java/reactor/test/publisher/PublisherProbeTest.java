@@ -141,7 +141,7 @@ public class PublisherProbeTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(probe::assertWasSubscribed)
-				.withMessage("ControlFlowProbe should have been subscribed but it wasn't");
+				.withMessage("PublisherProbe should have been subscribed but it wasn't");
 
 		probe.mono().subscribe();
 
@@ -158,7 +158,7 @@ public class PublisherProbeTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(probe::assertWasNotSubscribed)
-				.withMessage("ControlFlowProbe should not have been subscribed but it was");
+				.withMessage("PublisherProbe should not have been subscribed but it was");
 	}
 
 	@Test
@@ -180,7 +180,7 @@ public class PublisherProbeTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(probe::assertWasCancelled)
-				.withMessage("ControlFlowProbe should have been cancelled but it wasn't");
+				.withMessage("PublisherProbe should have been cancelled but it wasn't");
 
 		d.dispose();
 
@@ -198,7 +198,7 @@ public class PublisherProbeTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(probe::assertWasNotCancelled)
-				.withMessage("ControlFlowProbe should not have been cancelled but it was");
+				.withMessage("PublisherProbe should not have been cancelled but it was");
 	}
 
 	@Test
@@ -222,7 +222,7 @@ public class PublisherProbeTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(probe::assertWasRequested)
-				.withMessage("ControlFlowProbe should have been requested but it wasn't");
+				.withMessage("PublisherProbe should have been requested but it wasn't");
 
 		sub.get().request(3L);
 
@@ -241,7 +241,7 @@ public class PublisherProbeTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(probe::assertWasNotRequested)
-				.withMessage("ControlFlowProbe should not have been requested but it was");
+				.withMessage("PublisherProbe should not have been requested but it was");
 	}
 
 	@Test
@@ -261,7 +261,7 @@ public class PublisherProbeTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(probe::assertWasSubscribed)
-				.withMessage("ControlFlowProbe should have been subscribed but it wasn't");
+				.withMessage("PublisherProbe should have been subscribed but it wasn't");
 
 		probe.flux().subscribe();
 
@@ -278,7 +278,7 @@ public class PublisherProbeTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(probe::assertWasNotSubscribed)
-				.withMessage("ControlFlowProbe should not have been subscribed but it was");
+				.withMessage("PublisherProbe should not have been subscribed but it was");
 	}
 
 	@Test
@@ -300,7 +300,7 @@ public class PublisherProbeTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(probe::assertWasCancelled)
-				.withMessage("ControlFlowProbe should have been cancelled but it wasn't");
+				.withMessage("PublisherProbe should have been cancelled but it wasn't");
 
 		d.dispose();
 
@@ -318,7 +318,7 @@ public class PublisherProbeTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(probe::assertWasNotCancelled)
-				.withMessage("ControlFlowProbe should not have been cancelled but it was");
+				.withMessage("PublisherProbe should not have been cancelled but it was");
 	}
 
 	@Test
@@ -342,7 +342,7 @@ public class PublisherProbeTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(probe::assertWasRequested)
-				.withMessage("ControlFlowProbe should have been requested but it wasn't");
+				.withMessage("PublisherProbe should have been requested but it wasn't");
 
 		sub.get().request(3L);
 
@@ -361,7 +361,7 @@ public class PublisherProbeTest {
 
 		assertThatExceptionOfType(AssertionError.class)
 				.isThrownBy(probe::assertWasNotRequested)
-				.withMessage("ControlFlowProbe should not have been requested but it was");
+				.withMessage("PublisherProbe should not have been requested but it was");
 	}
 
 }

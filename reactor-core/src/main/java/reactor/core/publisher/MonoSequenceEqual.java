@@ -37,23 +37,24 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 	final Publisher<? extends T>            first;
 	final Publisher<? extends T>            second;
 	final BiPredicate<? super T, ? super T> comparer;
-	final int                               bufferSize;
+	final int                               prefetch;
 
 	MonoSequenceEqual(Publisher<? extends T> first, Publisher<? extends T> second,
-			BiPredicate<? super T, ? super T> comparer, int bufferSize) {
+			BiPredicate<? super T, ? super T> comparer, int prefetch) {
 		this.first = Objects.requireNonNull(first, "first");
 		this.second = Objects.requireNonNull(second, "second");
 		this.comparer = Objects.requireNonNull(comparer, "comparer");
-		if(bufferSize < 1){
+		if(prefetch < 1){
 			throw new IllegalArgumentException("Buffer size must be strictly positive: " +
-					""+bufferSize);
+					""+ prefetch);
 		}
-		this.bufferSize = bufferSize;
+		this.prefetch = prefetch;
 	}
 
 	@Override
 	public void subscribe(CoreSubscriber<? super Boolean> actual) {
-		EqualCoordinator<T> ec = new EqualCoordinator<>(actual, bufferSize, first, second, comparer);
+		EqualCoordinator<T> ec = new EqualCoordinator<>(actual,
+				prefetch, first, second, comparer);
 		actual.onSubscribe(ec);
 		ec.subscribe();
 	}
@@ -82,15 +83,15 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 		static final AtomicIntegerFieldUpdater<EqualCoordinator> WIP =
 				AtomicIntegerFieldUpdater.newUpdater(EqualCoordinator.class, "wip");
 
-		EqualCoordinator(CoreSubscriber<? super Boolean> actual, int bufferSize,
+		EqualCoordinator(CoreSubscriber<? super Boolean> actual, int prefetch,
 				Publisher<? extends T> first, Publisher<? extends T> second,
 				BiPredicate<? super T, ? super T> comparer) {
 			this.actual = actual;
 			this.first = first;
 			this.second = second;
 			this.comparer = comparer;
-			firstSubscriber = new EqualSubscriber<>(this, bufferSize);
-			secondSubscriber = new EqualSubscriber<>(this, bufferSize);
+			firstSubscriber = new EqualSubscriber<>(this, prefetch);
+			secondSubscriber = new EqualSubscriber<>(this, prefetch);
 		}
 
 		@Override
@@ -281,7 +282,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 			implements InnerConsumer<T> {
 		final EqualCoordinator<T> parent;
 		final Queue<T>            queue;
-		final int                 bufferSize;
+		final int                 prefetch;
 
 		volatile boolean done;
 		Throwable error;
@@ -292,10 +293,10 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 				AtomicReferenceFieldUpdater.newUpdater(EqualSubscriber.class,
 						Subscription.class, "subscription");
 
-		EqualSubscriber(EqualCoordinator<T> parent, int bufferSize) {
+		EqualSubscriber(EqualCoordinator<T> parent, int prefetch) {
 			this.parent = parent;
-			this.bufferSize = bufferSize;
-			this.queue = Queues.<T>get(bufferSize).get();
+			this.prefetch = prefetch;
+			this.queue = Queues.<T>get(prefetch).get();
 		}
 
 		@Override
@@ -311,7 +312,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 			if (key == Attr.ERROR) return error;
 			if (key == Attr.CANCELLED) return subscription == Operators.cancelledSubscription();
 			if (key == Attr.PARENT) return subscription;
-			if (key == Attr.PREFETCH) return bufferSize;
+			if (key == Attr.PREFETCH) return prefetch;
 			if (key == Attr.BUFFERED) return queue.size();
 
 			return null;
@@ -321,7 +322,7 @@ final class MonoSequenceEqual<T> extends Mono<Boolean> {
 		public void onSubscribe(Subscription s) {
 			if (Operators.setOnce(S, this, s)) {
 				this.cachedSubscription = s;
-				s.request(bufferSize);
+				s.request(Operators.unboundedOrPrefetch(prefetch));
 			}
 		}
 

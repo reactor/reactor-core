@@ -548,7 +548,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *            the second Publisher to compare
 	 * @param isEqual
 	 *            a function used to compare items emitted by each Publisher
-	 * @param bufferSize
+	 * @param prefetch
 	 *            the number of items to prefetch from the first and second source Publisher
 	 * @param <T>
 	 *            the type of items emitted by each Publisher
@@ -557,8 +557,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public static <T> Mono<@NonNull Boolean> sequenceEqual(Publisher<? extends @NonNull T> source1,
 			Publisher<? extends @NonNull T> source2,
-			BiPredicate<? super @NonNull T, ? super @NonNull T> isEqual, int bufferSize) {
-		return onAssembly(new MonoSequenceEqual<>(source1, source2, isEqual, bufferSize));
+			BiPredicate<? super @NonNull T, ? super @NonNull T> isEqual, int prefetch) {
+		return onAssembly(new MonoSequenceEqual<>(source1, source2, isEqual, prefetch));
 	}
 
 	/**
