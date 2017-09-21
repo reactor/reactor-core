@@ -108,7 +108,7 @@ final class FluxMaterialize<T> extends FluxOperator<T, Signal<T>> {
 			terminalSignal = Signal.error(ev);
             long p = produced;
             if (p != 0L) {
-	            Operators.addAndGet(REQUESTED, this, -p);
+	            Operators.addCap(REQUESTED, this, -p);
             }
             DrainUtils.postComplete(actual, this, REQUESTED, this, this);
 		}
@@ -121,7 +121,7 @@ final class FluxMaterialize<T> extends FluxOperator<T, Signal<T>> {
 			terminalSignal = Signal.complete();
             long p = produced;
             if (p != 0L) {
-	            Operators.addAndGet(REQUESTED, this, -p);
+	            Operators.addCap(REQUESTED, this, -p);
             }
             DrainUtils.postComplete(actual, this, REQUESTED, this, this);
 		}

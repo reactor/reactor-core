@@ -152,7 +152,7 @@ final class ParallelGroup<T> extends Flux<GroupedFlux<Integer, T>> implements
 			if (Operators.validate(n)) {
 				Subscription a = s;
 				if (a == null) {
-					Operators.getAndAddCap(REQUESTED, this, n);
+					Operators.addCap(REQUESTED, this, n);
 
 					a = s;
 					if (a != null) {

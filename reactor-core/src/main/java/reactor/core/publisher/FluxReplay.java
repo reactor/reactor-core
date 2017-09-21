@@ -1342,11 +1342,6 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		static final AtomicLongFieldUpdater<ReplayInner> REQUESTED =
 				AtomicLongFieldUpdater.newUpdater(ReplayInner.class, "requested");
 
-		volatile int cancelled;
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<ReplayInner> CANCELLED =
-				AtomicIntegerFieldUpdater.newUpdater(ReplayInner.class,
-						"cancelled");
 
 		ReplayInner(CoreSubscriber<? super T> actual) {
 			this.actual = actual;
@@ -1356,7 +1351,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 		public void request(long n) {
 			if (Operators.validate(n)) {
 				if (fusionMode() == NONE) {
-					Operators.getAndAddCap(REQUESTED, this, n);
+					Operators.addCapCancellable(REQUESTED, this, n);
 				}
 				ReplaySubscriber<T> p = parent;
 				if (p != null) {
@@ -1372,14 +1367,14 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 			if (key == Attr.TERMINATED) return parent != null && parent.isTerminated();
 			if (key == Attr.BUFFERED) return size();
 			if (key == Attr.CANCELLED) return isCancelled();
-			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return isCancelled() ? 0L : requested;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return Math.max(0L, requested);
 
 			return ReplaySubscription.super.scanUnsafe(key);
 		}
 
 		@Override
 		public void cancel() {
-			if (CANCELLED.compareAndSet(this, 0, 1)) {
+			if (REQUESTED.getAndSet(this, Long.MIN_VALUE) != Long.MIN_VALUE) {
 				ReplaySubscriber<T> p = parent;
 				if (p != null) {
 					p.remove(this);
@@ -1397,7 +1392,7 @@ final class FluxReplay<T> extends ConnectableFlux<T> implements Scannable, Fusea
 
 		@Override
 		public boolean isCancelled() {
-			return cancelled == 1;
+			return requested == Long.MIN_VALUE;
 		}
 
 		@Override

@@ -266,7 +266,7 @@ public final class DirectProcessor<T> extends FluxProcessor<T, T> {
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				Operators.getAndAddCap(REQUESTED, this, n);
+				Operators.addCap(REQUESTED, this, n);
 			}
 		}
 

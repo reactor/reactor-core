@@ -214,7 +214,7 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				Operators.getAndAddCap(REQUESTED, this, n);
+				Operators.addCap(REQUESTED, this, n);
 			}
 		}
 

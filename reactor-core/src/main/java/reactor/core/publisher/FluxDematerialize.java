@@ -126,7 +126,7 @@ final class FluxDematerialize<T> extends FluxOperator<Signal<T>, T> {
 			error = t;
 			long p = produced;
 			if (p != 0L) {
-				Operators.addAndGet(REQUESTED, this, -p);
+				Operators.addCap(REQUESTED, this, -p);
 			}
 			DrainUtils.postCompleteDelayError(actual, this, REQUESTED, this, this, error);
 		}
@@ -139,7 +139,7 @@ final class FluxDematerialize<T> extends FluxOperator<Signal<T>, T> {
 			done = true;
 			long p = produced;
 			if (p != 0L) {
-				Operators.addAndGet(REQUESTED, this, -p);
+				Operators.addCap(REQUESTED, this, -p);
 			}
 			DrainUtils.postCompleteDelayError(actual, this, REQUESTED, this, this, error);
 		}

@@ -234,7 +234,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				Operators.getAndAddCap(REQUESTED, this, n);
+				Operators.addCap(REQUESTED, this, n);
 			}
 		}
 
@@ -366,26 +366,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 						long r = requested;
 						if (r != 0L) {
 							a.onNext(w);
-							long upd;
-							for (; ; ) {
-								if (r == Long.MAX_VALUE) {
-									break;
-								}
-								upd = r - 1L;
-								if (upd < 0L) {
-									Exceptions.addThrowable(ERROR,
-											this,
-											Operators.onOperatorError(this,
-													Exceptions.failWithOverflow(),
-													actual.currentContext()));
-									errorAll(a);
-									return;
-								}
-								if (REQUESTED.compareAndSet(this, r, upd)) {
-									break;
-								}
-								r = requested;
-							}
+							Operators.produced(REQUESTED, this, 1);
 						}
 						else {
 							Exceptions.addThrowable(ERROR,
@@ -530,15 +511,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 		@Override
 		public void dispose() {
-			Subscription current = SUBSCRIPTION.get(this);
-			if (current != Operators.cancelledSubscription()) {
-				current = SUBSCRIPTION.getAndSet(this, Operators.cancelledSubscription());
-				if (current != Operators.cancelledSubscription()) {
-					if (current != null) {
-						current.cancel();
-					}
-				}
-			}
+			Operators.terminate(SUBSCRIPTION, this);
 		}
 
 		@Override
@@ -610,15 +583,7 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 		@Override
 		public void dispose() {
-			Subscription current = SUBSCRIPTION.get(this);
-			if (current != Operators.cancelledSubscription()) {
-				current = SUBSCRIPTION.getAndSet(this, Operators.cancelledSubscription());
-				if (current != Operators.cancelledSubscription()) {
-					if (current != null) {
-						current.cancel();
-					}
-				}
-			}
+			Operators.terminate(SUBSCRIPTION, this);
 		}
 
 		@Override
@@ -644,15 +609,8 @@ final class FluxGroupJoin<TLeft, TRight, TLeftEnd, TRightEnd, R>
 
 		@Override
 		public void onNext(Object t) {
-			Subscription current = SUBSCRIPTION.get(this);
-			if (current != Operators.cancelledSubscription()) {
-				current = SUBSCRIPTION.getAndSet(this, Operators.cancelledSubscription());
-				if (current != Operators.cancelledSubscription()) {
-					if (current != null) {
-						current.cancel();
-					}
-					parent.innerClose(isLeft, this);
-				}
+			if (Operators.terminate(SUBSCRIPTION, this)) {
+				parent.innerClose(isLeft, this);
 			}
 		}
 

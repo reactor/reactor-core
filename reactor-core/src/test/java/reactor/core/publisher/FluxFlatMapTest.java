@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -1033,7 +1034,7 @@ public class FluxFlatMapTest {
 
 		ps.onNext(1);
 
-		Operators.addAndGet(FluxFlatMap.FlatMapMain.REQUESTED, fmm, 2L);
+		Operators.addCap(FluxFlatMap.FlatMapMain.REQUESTED, fmm, 2L);
 
 		ps.onNext(2);
 
@@ -1058,7 +1059,7 @@ public class FluxFlatMapTest {
 
 		fmm.onNext(Flux.just(1));
 
-		Operators.addAndGet(FluxFlatMap.FlatMapMain.REQUESTED, fmm, 2L);
+		Operators.addCap(FluxFlatMap.FlatMapMain.REQUESTED, fmm, 2L);
 
 		fmm.onNext(Flux.just(2));
 
@@ -1390,4 +1391,21 @@ public class FluxFlatMapTest {
         inner.cancel();
         assertThat(inner.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
+
+	@Test
+	@Ignore
+	public void progressiveRequest() {
+		TestPublisher<Integer> tp = TestPublisher.create();
+		StepVerifier.create(tp.flux()
+		                      .flatMap(d -> Flux.just(d)
+		                                        .hide()), 1)
+		            .then(() -> tp.next(1))
+		            .expectNext(1)
+		            .thenRequest(2)
+		            .then(() -> tp.next(2))
+		            .expectNext(2)
+		            .thenRequest(Long.MAX_VALUE)
+		            .thenCancel()
+		            .verify();
+	}
 }

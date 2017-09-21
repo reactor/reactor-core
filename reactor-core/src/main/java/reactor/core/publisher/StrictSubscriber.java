@@ -138,7 +138,7 @@ final class StrictSubscriber<T> implements Scannable, CoreSubscriber<T>, Subscri
 			a.request(n);
 		}
 		else {
-			Operators.getAndAddCap(REQUESTED, this, n);
+			Operators.addCap(REQUESTED, this, n);
 			a = s;
 			if (a != null) {
 				long r = REQUESTED.getAndSet(this, 0L);

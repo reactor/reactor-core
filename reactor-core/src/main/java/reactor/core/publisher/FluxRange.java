@@ -97,7 +97,7 @@ final class FluxRange extends Flux<Integer>
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				if (Operators.getAndAddCap(REQUESTED, this, n) == 0) {
+				if (Operators.addCap(REQUESTED, this, n) == 0) {
 					if (n == Long.MAX_VALUE) {
 						fastPath();
 					} else {
@@ -246,7 +246,7 @@ final class FluxRange extends Flux<Integer>
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				if (Operators.getAndAddCap(REQUESTED, this, n) == 0) {
+				if (Operators.addCap(REQUESTED, this, n) == 0) {
 					if (n == Long.MAX_VALUE) {
 						fastPath();
 					} else {

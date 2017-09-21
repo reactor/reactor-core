@@ -160,7 +160,7 @@ final class FluxOnBackpressureBufferTimeout<O> extends FluxOperator<O, O> {
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				Operators.getAndAddCap(REQUESTED, this, n);
+				Operators.addCap(REQUESTED, this, n);
 				drain();
 			}
 		}

@@ -103,7 +103,7 @@ final class MonoFlatMapMany<T, R> extends FluxFromMonoOperator<T, R> {
 			}
 			else {
 				if (Operators.validate(n)) {
-					Operators.getAndAddCap(REQUESTED, this, n);
+					Operators.addCap(REQUESTED, this, n);
 					a = inner;
 					if (a != null) {
 						n = REQUESTED.getAndSet(this, 0L);

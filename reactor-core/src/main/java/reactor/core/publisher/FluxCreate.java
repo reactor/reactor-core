@@ -461,7 +461,7 @@ final class FluxCreate<T> extends Flux<T> {
 		@Override
 		public final void request(long n) {
 			if (Operators.validate(n)) {
-				Operators.getAndAddCap(REQUESTED, this, n);
+				Operators.addCap(REQUESTED, this, n);
 
 				LongConsumer consumer = requestConsumer;
 				if (n > 0 && consumer != null && !isCancelled()) {

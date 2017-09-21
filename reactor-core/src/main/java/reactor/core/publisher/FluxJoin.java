@@ -194,7 +194,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				Operators.getAndAddCap(REQUESTED, this, n);
+				Operators.addCap(REQUESTED, this, n);
 			}
 		}
 
@@ -337,26 +337,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 						}
 
 						if (e != 0L) {
-							long upd;
-							for (; ; ) {
-								if (r == Long.MAX_VALUE) {
-									break;
-								}
-								upd = r - e;
-								if (upd < 0L) {
-									Exceptions.addThrowable(ERROR,
-											this,
-											Operators.onOperatorError(this,
-													Exceptions.failWithOverflow(),
-													actual.currentContext()));
-									errorAll(a);
-									return;
-								}
-								if (REQUESTED.compareAndSet(this, r, upd)) {
-									break;
-								}
-								r = requested;
-							}
+							Operators.produced(REQUESTED, this, e);
 						}
 					}
 					else if (mode == RIGHT_VALUE) {
@@ -433,26 +414,7 @@ final class FluxJoin<TLeft, TRight, TLeftEnd, TRightEnd, R> extends
 						}
 
 						if (e != 0L) {
-							long upd;
-							for (; ; ) {
-								if (r == Long.MAX_VALUE) {
-									break;
-								}
-								upd = r - e;
-								if (upd < 0L) {
-									Exceptions.addThrowable(ERROR,
-											this,
-											Operators.onOperatorError(this,
-													Exceptions.failWithOverflow(),
-													actual.currentContext()));
-									errorAll(a);
-									return;
-								}
-								if (REQUESTED.compareAndSet(this, r, upd)) {
-									break;
-								}
-								r = requested;
-							}
+							Operators.produced(REQUESTED, this, e);
 						}
 					}
 					else if (mode == LEFT_CLOSE) {

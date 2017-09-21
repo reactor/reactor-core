@@ -241,7 +241,7 @@ final class FluxCombineLatest<T, R> extends Flux<R> implements Fuseable {
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				Operators.getAndAddCap(REQUESTED, this, n);
+				Operators.addCap(REQUESTED, this, n);
 				drain();
 			}
 		}

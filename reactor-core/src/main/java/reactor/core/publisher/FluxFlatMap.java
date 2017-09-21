@@ -179,7 +179,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 		return false;
 	}
 
-	static final class FlatMapMain<T, R> extends FlatMapTracker<FlatMapInner<R>, R>
+	static final class FlatMapMain<T, R> extends FlatMapTracker<FlatMapInner<R>>
 			implements InnerOperator<T, R> {
 
 		final boolean                                               delayError;
@@ -305,7 +305,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				Operators.getAndAddCap(REQUESTED, this, n);
+				Operators.addCap(REQUESTED, this, n);
 				drain();
 			}
 		}
@@ -573,7 +573,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 					if (e != 0L) {
 						replenishMain += e;
 						if (r != Long.MAX_VALUE) {
-							r = Operators.addAndGet(REQUESTED, this, -e);
+							r = REQUESTED.addAndGet(this, -e);
 						}
 						e = 0L;
 						again = true;
@@ -661,7 +661,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 										inner.request(e);
 									}
 									if (r != Long.MAX_VALUE) {
-										r = Operators.addAndGet(REQUESTED, this, -e);
+										r = REQUESTED.addAndGet(this, -e);
 										if (r == 0L) {
 											break; // 0 .. n - 1
 										}
@@ -895,7 +895,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 						parent.drain();
 						return;
 					}
-					else if (m == Fuseable.ASYNC) {
+					if (m == Fuseable.ASYNC) {
 						sourceMode = Fuseable.ASYNC;
 						queue = f;
 					}
@@ -965,7 +965,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 	}
 }
 
-abstract class FlatMapTracker<T, O> {
+abstract class FlatMapTracker<T> {
 
 	volatile T[] array = empty();
 

@@ -142,7 +142,7 @@ final class ParallelMergeSequential<T> extends Flux<T> implements Scannable {
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				Operators.getAndAddCap(REQUESTED, this, n);
+				Operators.addCap(REQUESTED, this, n);
 				drain();
 			}
 		}

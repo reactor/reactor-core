@@ -175,7 +175,7 @@ final class FluxSubscribeOn<T> extends FluxOperator<T, T> {
 					requestUpstream(n, s);
 				}
 				else {
-					Operators.addAndGet(REQUESTED, this, n);
+					Operators.addCap(REQUESTED, this, n);
 					s = S.get(this);
 					if (s != null) {
 						long r = REQUESTED.getAndSet(this, 0L);

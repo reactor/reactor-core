@@ -138,7 +138,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				if (Operators.getAndAddCap(REQUESTED, this, n) == 0) {
+				if (Operators.addCap(REQUESTED, this, n) == 0) {
 					if (n == Long.MAX_VALUE) {
 						fastPath();
 					}
@@ -380,7 +380,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				if (Operators.getAndAddCap(REQUESTED, this, n) == 0) {
+				if (Operators.addCap(REQUESTED, this, n) == 0) {
 					if (n == Long.MAX_VALUE) {
 						fastPath();
 					}

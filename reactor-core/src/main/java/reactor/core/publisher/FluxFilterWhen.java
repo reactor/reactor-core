@@ -147,7 +147,7 @@ class FluxFilterWhen<T> extends FluxOperator<T, T> {
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
-				Operators.getAndAddCap(REQUESTED, this, n);
+				Operators.addCap(REQUESTED, this, n);
 				drain();
 			}
 		}
