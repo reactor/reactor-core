@@ -21,7 +21,6 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import javax.annotation.Nullable;
 
 import org.junit.After;
 import org.junit.Before;
@@ -39,6 +38,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.Logger;
 import reactor.util.Loggers;
+import reactor.util.annotation.Nullable;
 
 /**
  * @author Stephane Maldini

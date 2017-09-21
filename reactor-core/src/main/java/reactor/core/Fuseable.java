@@ -22,7 +22,7 @@ import java.util.concurrent.Callable;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import javax.annotation.Nullable;
+import reactor.util.annotation.Nullable;
 
 /**
  * A micro API for stream fusion, in particular marks producers that support a {@link QueueSubscription}.

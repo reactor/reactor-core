@@ -25,15 +25,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 
 import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import reactor.util.concurrent.Queues;
 import reactor.util.annotation.NonNull;
+import reactor.util.annotation.Nullable;
+import reactor.util.concurrent.Queues;
 
 /**
  * A {@link Scheduler} that uses a virtual clock, allowing to manipulate time
