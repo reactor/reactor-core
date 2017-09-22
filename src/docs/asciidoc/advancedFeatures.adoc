@@ -785,3 +785,45 @@ public void contextForLibraryReactivePut() {
 	            .verifyComplete();
 }
 ----
+
+[[null-safety]]
+== Null-safety
+
+Although Java does not allow to express null-safety with its type system, Reactor
+now provides annotations to declare nullability of APIs, similar to those provided by
+Spring Framework 5.
+
+Reactor leverages itself these annotations, but they can also be used in any Reactor based
+Java project to declare null-safe APIs. Nullability of types used inside method bodies
+is outside of the scope of this feature.
+
+These annotations are meta-annotated with https://jcp.org/en/jsr/detail?id=305[JSR 305]
+annotations (a dormant JSR but supported by tools like IntelliJ IDEA) to provide useful
+warnings to Java developers related to null-safety in order to avoid `NullPointerException`
+at runtime. JSR 305 meta-annotations allows tooling vendors to provide null-safety support
+in a generic way, without having to hard-code support for Reactor annotations.
+
+[NOTE]
+====
+It is not necessary with Kotlin 1.1.5+ nor recommanded to have JSR 305 dependency in user project classpath.
+====
+
+They are also used by Kotlin which supports natively
+https://kotlinlang.org/docs/reference/null-safety.html[null-safety], see
+<<kotlin-null-safety,this dedicated section>> for more details.
+
+The following annotations are provided in the `reactor.util.annotation` package:
+
+ * https://projectreactor.io/docs/core/release/api/reactor/util/annotation/NonNull.html[`@NonNull`] annotation where specific parameter,
+ return value or field cannot be `null`
+ (not needed on parameter and return value where `@NonNullApi` applies) .
+ * https://projectreactor.io/docs/core/release/api/reactor/util/annotation/Nullable.html[`@Nullable`] annotation where specific
+ parameter, return value or field can be `null`.
+ * https://projectreactor.io/docs/core/release/api/reactor/util/annotation/NonNullApi.html[`@NonNullApi`] annotation at package level
+ declares non-null as the default behavior for parameters and return values.
+
+[NOTE]
+====
+Generic type arguments, varargs and array elements nullability are not supported yet,
+see https://github.com/reactor/reactor-core/issues/878[issue #878] for up-to-date informations.
+====

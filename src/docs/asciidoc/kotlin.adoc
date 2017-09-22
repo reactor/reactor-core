@@ -1,7 +1,7 @@
 [[kotlin]]
 = Kotlin support
 
-[[introduction]]
+[[kotlin-introduction]]
 == Introduction
 
 https://kotlinlang.org[Kotlin] is a statically-typed language targeting the JVM (and other platforms)
@@ -11,7 +11,7 @@ existing libraries written in Java.
 
 Reactor 3.1 introduces first-class support for Kotlin which is described in this section.
 
-[[requirements]]
+[[kotlin-requirements]]
 == Requirements ==
 
 Kotlin supports Kotlin 1.1+ and requires
@@ -19,7 +19,7 @@ https://bintray.com/bintray/jcenter/org.jetbrains.kotlin%3Akotlin-stdlib[`kotlin
 (or one of its https://bintray.com/bintray/jcenter/org.jetbrains.kotlin%3Akotlin-stdlib-jre7[`kotlin-stdlib-jre7`]
 / https://bintray.com/bintray/jcenter/org.jetbrains.kotlin%3Akotlin-stdlib-jre8[`kotlin-stdlib-jre8`] variants).
 
-[[extensions]]
+[[kotlin-extensions]]
 == Extensions
 
 Thanks to its great https://kotlinlang.org/docs/reference/java-interop.html[Java interoperability]
@@ -60,7 +60,7 @@ You can see bellow a quick comparison of Reactor with Java versus Reactor with K
 https://projectreactor.io/docs/core/release/kdoc-api/[Reactor KDoc API] lists and documents
 all the Kotlin extensions available.
 
-[[null-safety]]
+[[kotlin-null-safety]]
 == Null-safety
 
 One of Kotlin's key features is https://kotlinlang.org/docs/reference/null-safety.html[null-safety]
@@ -70,8 +70,8 @@ declarations and expressing "value or no value" semantics without paying the cos
 (Kotlin allows using functional constructs with nullable values; check out this
 http://www.baeldung.com/kotlin-null-safety[comprehensive guide to Kotlin null-safety].)
 
-Although Java does not allow one to express null-safety in its type-system, Reactor now
-provides null-safety of the whole Reactor API via tooling-friendly annotations declared in
+Although Java does not allow one to express null-safety in its type-system, Reactor <<null-safety,now
+provides null-safety>> of the whole Reactor API via tooling-friendly annotations declared in
 the `reactor.util.annotation` package.
 By default, types from Java APIs used in Kotlin are recognized as
 https://kotlinlang.org/docs/reference/java-interop.html#null-safety-and-platform-types[platform types]
@@ -87,13 +87,7 @@ the default behavior in an upcoming release of Kotlin.
 
 [NOTE]
 ====
-Make sure to http://search.maven.org/#artifactdetails%7Ccom.google.code.findbugs%7Cjsr305%7C3.0.2%7Cjar[include JSR-305 JAR]
-until Kotlin 1.1.5 is released (it will fix https://youtrack.jetbrains.com/issue/KT-19419[KT-19419]).
-
-
-Support for generic type arguments, varargs and array elements is still work in progress,
-see https://youtrack.jetbrains.com/issue/KT-19592[KT-19592] and
-https://youtrack.jetbrains.com/issue/IDEA-153093[IDEA-153093] for up-to-date
-informations.
+Generic type arguments, varargs and array elements nullability are not supported yet,
+see https://github.com/reactor/reactor-core/issues/878[issue #878] for up-to-date informations.
 ====
 
