@@ -675,7 +675,7 @@ public abstract class Schedulers {
 			long period,
 			TimeUnit unit) {
 
-		SchedulerTask sr = new SchedulerTask(task);
+		PeriodicSchedulerTask sr = new PeriodicSchedulerTask(task);
 
 		Future<?> f = exec.scheduleAtFixedRate(sr, initialDelay, period, unit);
 		sr.setFuture(f);

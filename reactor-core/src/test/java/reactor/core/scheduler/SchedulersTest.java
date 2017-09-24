@@ -16,10 +16,15 @@
 
 package reactor.core.scheduler;
 
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.RunnableScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -721,6 +726,56 @@ public class SchedulersTest {
 			public void dispose() {
 				disposeCalled = true;
 			}
+		}
+	}
+
+	@Test
+	public void testScheduleDirectPeriodicallyCancellsSchedulerTask() throws Exception {
+		try(TaskCheckingScheduledExecutor executorService = new TaskCheckingScheduledExecutor()) {
+			CountDownLatch latch = new CountDownLatch(2);
+			Disposable disposable = Schedulers.directSchedulePeriodically(executorService, () -> {
+				latch.countDown();
+			}, 0, 10, TimeUnit.MILLISECONDS);
+			latch.await();
+
+			disposable.dispose();
+
+			assertThat(executorService.isAllTasksCancelled()).isTrue();
+		}
+	}
+
+	final static class TaskCheckingScheduledExecutor extends ScheduledThreadPoolExecutor implements AutoCloseable {
+
+		private final List<RunnableScheduledFuture<?>> tasks = new CopyOnWriteArrayList<>();
+
+		TaskCheckingScheduledExecutor() {
+			super(1);
+		}
+
+		protected <V> RunnableScheduledFuture<V> decorateTask(
+				Runnable r, RunnableScheduledFuture<V> task) {
+			tasks.add(task);
+			return task;
+		}
+
+		protected <V> RunnableScheduledFuture<V> decorateTask(
+				Callable<V> c, RunnableScheduledFuture<V> task) {
+			tasks.add(task);
+			return task;
+		}
+
+		boolean isAllTasksCancelled() {
+			for(RunnableScheduledFuture<?> task: tasks) {
+				if (!task.isCancelled()) {
+					return false;
+				}
+			}
+			return true;
+		}
+
+		@Override
+		public void close() throws Exception {
+			shutdown();
 		}
 	}
 
