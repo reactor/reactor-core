@@ -50,6 +50,7 @@ example:
 Aluminium-RELEASE
 Carbon-BUILD-SNAPSHOT
 Aluminium-SR1
+Bismuth-RELEASE
 Carbon-SR32
 
 The codenames represent what would traditionally be the MAJOR.MINOR number.
@@ -88,7 +89,7 @@ BOM by adding the following snippet to your `pom.xml`. If the top section
         <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-bom</artifactId>
-            <version>Aluminium-SR1</version>
+            <version>Bismuth-RELEASE</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -110,7 +111,7 @@ without a `<version>`, as shown here:
         <2>
     </dependency>
     <dependency>
-        <groupId>io.projectreactor.addons</groupId>
+        <groupId>io.projectreactor</groupId>
         <artifactId>reactor-test</artifactId> <3>
         <scope>test</scope>
     </dependency>
@@ -141,7 +142,7 @@ Then use it to import the BOM:
 ----
 dependencyManagement {
      imports {
-          mavenBom "io.projectreactor:reactor-bom:Aluminium-SR1"
+          mavenBom "io.projectreactor:reactor-bom:Bismuth-RELEASE"
      }
 }
 ----
