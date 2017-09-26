@@ -1,3 +1,4 @@
+import me.champeau.gradle.japicmp.JapicmpTask
 import org.gradle.api.internal.plugins.osgi.OsgiHelper
 
 /*
@@ -34,6 +35,7 @@ plugins {
   id 'org.asciidoctor.convert' version '1.5.2'
   id "me.champeau.gradle.jmh" version "0.4.4" apply false
   id "org.jetbrains.dokka" version "0.9.15"
+  id "me.champeau.gradle.japicmp" version "0.2.5"
 }
 
 apply from: "gradle/doc.gradle"
@@ -49,7 +51,6 @@ ext {
 	  project.version = realVersion
 	}
   }
-  gradleVersion = '3.5'
 
   // Logging
   slf4jVersion = '1.7.12'
@@ -71,7 +72,6 @@ ext {
 						  '*']
 
 }
-
 
 configure(subprojects) { p ->
   apply plugin: 'java'
@@ -208,6 +208,7 @@ if (project.hasProperty('platformVersion')) {
   }
 }
 
+
 project('reactor-core') {
   apply plugin: 'idea' //needed to avoid IDEA seeing the jmh folder as source
   apply plugin: 'me.champeau.gradle.jmh'
@@ -215,6 +216,7 @@ project('reactor-core') {
   configurations {
 	compileOnly.extendsFrom jsr166backport
 	testCompile.extendsFrom jsr166backport
+	baseline
   }
 
   dependencies {
@@ -245,6 +247,21 @@ project('reactor-core') {
 			"org.testng:testng:6.8.5",
 			"org.assertj:assertj-core:$assertJVersion",
 			"org.mockito:mockito-core:$mockitoVersion"
+
+	baseline("io.projectreactor:reactor-core:$compatibleVersion") {
+	  transitive = false
+	  force = true
+	}
+  }
+
+  task japicmp(type: JapicmpTask) {
+	oldClasspath = configurations.baseline
+	newClasspath = files(jar.archivePath)
+	onlyBinaryIncompatibleModified = true
+	failOnModification = true
+	txtOutputFile = file("${project.buildDir}/reports/japi.txt")
+	ignoreMissingClasses = true
+	includeSynthetic = true
   }
 
   javadoc {
@@ -319,7 +336,6 @@ project('reactor-core') {
 
   sourceSets.test.resources.srcDirs = ["src/test/resources", "src/test/java"]
 
-
   if (!JavaVersion.current().isJava9Compatible()) {
 	test {
 	  jvmArgs = ["-Xbootclasspath/p:" + configurations.jsr166backport.asPath]
@@ -343,10 +359,18 @@ project('reactor-core') {
 
   jacocoTestReport.dependsOn testNG
   check.dependsOn jacocoTestReport
+  jar.finalizedBy(japicmp)
 }
+
+
+
 
 project('reactor-test') {
   description = 'Reactor Test support'
+
+  configurations {
+	baseline
+  }
 
   dependencies {
 	compile project(":reactor-core")
@@ -358,6 +382,21 @@ project('reactor-test') {
 	testCompile "org.hamcrest:hamcrest-library:1.3",
 			"org.assertj:assertj-core:$assertJVersion",
 			"org.mockito:mockito-core:$mockitoVersion"
+
+	baseline("io.projectreactor:reactor-test:$compatibleVersion") {
+	  transitive = false
+	  force = true
+	}
+  }
+
+  task japicmp(type: JapicmpTask) {
+	oldClasspath = configurations.baseline
+	newClasspath = files(jar.archivePath)
+	onlyBinaryIncompatibleModified = true
+	failOnModification = true
+	txtOutputFile = file("${project.buildDir}/reports/japi.txt")
+	ignoreMissingClasses = true
+	includeSynthetic = true
   }
 
   javadoc {
@@ -425,6 +464,8 @@ project('reactor-test') {
   artifacts {
 	archives kdocZip
   }
+
+  jar.finalizedBy(japicmp)
 }
 
 assemble.dependsOn docsZip
