@@ -1,23 +1,24 @@
 [[about-doc]]
 = About the Documentation
-This section provides a brief overview of Reactor reference documentation. You
-do not need to read this guide in a linear fashion. Each piece stands on its
-own, though they often refer to other pieces.
+This section provides a brief overview of Reactor reference documentation. You do not
+need to read this guide in a linear fashion. Each piece stands on its own, though they
+often refer to other pieces.
 
-== Latest version & Copyright Notice
-The Reactor reference guide is available as HTML documents. The latest copy is
-available at http://projectreactor.io/docs/core/release/reference/docs/index.html
+== Latest Version & Copyright Notice
+The Reactor reference guide is available as HTML documents. The latest copy is available
+at http://projectreactor.io/docs/core/release/reference/docs/index.html
 
-Copies of this document may be made for your own use and for distribution to
-others, provided that you do not charge any fee for such copies and further
-provided that each copy contains this Copyright Notice, whether distributed in
-print or electronically.
+Copies of this document may be made for your own use and for distribution to others,
+provided that you do not charge any fee for such copies and further provided that each
+copy contains this Copyright Notice, whether distributed in print or electronically.
 
 == Contributing to the Documentation
-The reference guide is written in http://asciidoctor.org/docs/asciidoc-writers-guide/[Asciidoc]
-format and sources can be found at https://github.com/reactor/reactor-core/tree/master/src/docs/asciidoc.
+The reference guide is written in
+http://asciidoctor.org/docs/asciidoc-writers-guide/[Asciidoc]
+format and sources can be found at
+https://github.com/reactor/reactor-core/tree/master/src/docs/asciidoc.
 
-If you have an improvement, we will be happy to get a pull-request from you!
+If you have an improvement, we will be happy to get a pull request from you!
 
 We recommend that you check out a local copy of the repository, so that you can
 generate the documentation using the `asciidoctor` gradle task and check the
@@ -25,44 +26,43 @@ rendering. Some of the sections rely on included files, so GitHub rendering is
 not always complete.
 
 ifeval::["{backend}" != "html5"]
-TIP: To facilitate documentation edits, most sections have a link at the end
-that opens an edit UI directly on GitHub, for the main source file for that
-section. These links are only present in the HTML5 version of this reference
-guide.
+TIP: To facilitate documentation edits, most sections have a link at the end that opens
+an edit UI directly on GitHub, for the main source file for that section. These links are
+only present in the HTML5 version of this reference guide.
 
 They look like this:
-https://github.com/reactor/reactor-core/edit/master/src/docs/asciidoc/aboutDoc.adoc[Suggest Edit^, role="fa fa-edit"].
+https://github.com/reactor/reactor-core/edit/master/src/docs/asciidoc/aboutDoc.adoc[Suggest
+Edit^, role="fa fa-edit"].
 endif::[]
 
-== Getting help
+== Getting Help
 There are several ways to reach out for help with Reactor.
 
 * Get in touch with the community on https://gitter.im/reactor/reactor[Gitter].
-* Ask a question on stackoverflow.com at http://stackoverflow.com/tags/project-reactor[`project-reactor`].
-* Report bugs (or ask questions) in Github issues. The following repositories
-are most closely monitored:
+* Ask a question on stackoverflow.com at
+http://stackoverflow.com/tags/project-reactor[`project-reactor`].
+* Report bugs in Github issues. The following repositories are closely monitored:
 http://github.com/reactor/reactor-core/issues[reactor-core] (which covers the
-essential features) and
-http://github.com/reactor/reactor-addons/issues[reactor-addons]
+essential features) and http://github.com/reactor/reactor-addons/issues[reactor-addons]
 (which covers reactor-test and adapters issues).
 
 NOTE: All of Reactor is open source,
-https://github.com/reactor/reactor-core/tree/master/src/docs/asciidoc[including this documentation].
-If you find problems with the docs or if you just want to improve them, please
-https://github.com/reactor/reactor-core/blob/master/CONTRIBUTING.md[get involved].
+https://github.com/reactor/reactor-core/tree/master/src/docs/asciidoc[including this
+documentation]. If you find problems with the docs or if you just want to improve them,
+please https://github.com/reactor/reactor-core/blob/master/CONTRIBUTING.md[get involved].
 
-== Where to go from here
+== Where to Go from Here
 * Head to <<getting-started>> if you feel like jumping straight into the code.
-* If you are new to _Reactive Programming_ though, you should probably better
-start with the <<intro-reactive>>.
+* If you are new to _Reactive Programming_, though, you should probably start with the
+<<intro-reactive>>.
 * If you are familiar with Reactor concepts and are just looking for the right tool
 for the job but cannot think of a relevant operator, try the <<which-operator>> Appendix.
-* In order to dig deeper into the core features of Reactor, head to <<core-features>>:
-** Learn more about Reactor's reactive types in the "<<flux>>" and "<<mono>>"
+* In order to dig deeper into the core features of Reactor, head to <<core-features>>, to
+learn:
+** More about Reactor's reactive types in the "<<flux>>" and "<<mono>>"
 sections.
-** Switch threading contexts using <<schedulers,a Scheduler>>.
-** Learn how to handle errors in the <<error.handling>> section.
-* Unit testing? Yes it is possible with the `reactor-test` project! See
-<<testing>>.
-* <<producing>> is possible for more advanced creation of reactive sources.
-* More advanced topics are covered in <<advanced>>.
+** How to Switch threading contexts using <<schedulers,a Scheduler>>.
+** How to handle errors in the <<error.handling>> section.
+* Unit testing? Yes it is possible with the `reactor-test` project! See <<testing>>.
+* <<producing>> offers a more advanced way of creating of reactive sources.
+* Other advanced topics are covered in <<advanced>>.

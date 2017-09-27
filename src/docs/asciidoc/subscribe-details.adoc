@@ -1,7 +1,7 @@
 === `subscribe` Method Examples
 
-This section contains minimal examples of each of the five signatures for the
-`subscribe` method. Here is an example of the basic method with no arguments:
+This section contains minimal examples of each of the five signatures for the `subscribe`
+method. The following code shows an example of the basic method with no arguments:
 
 [source,java]
 ----
@@ -12,9 +12,9 @@ ints.subscribe(); <2>
 <1> Set up a `Flux` that produces three values when a subscriber attaches.
 <2> Subscribe in the simplest way.
 
-The preceding code produces no visible output, but it does work. The `Flux`
-produces three values. If we provide a lambda, we can make
-the values visible. The next example for the `subscribe` method shows how:
+The preceding code produces no visible output, but it does work. The `Flux` produces
+three values. If we provide a lambda, we can make the values visible. The next example
+for the `subscribe` method shows one way to make the values appear:
 
 [source,java]
 ----
@@ -34,7 +34,7 @@ The preceding code produces the following output:
 ----
 
 To demonstrate the next signature, we intentionally introduce an error, as
-shown here:
+shown in the following example:
 
 [source, java]
 ----
@@ -64,7 +64,7 @@ Error: java.lang.RuntimeException: Got to 4
 ----
 
 The next signature of the `subscribe` method includes both an error handler and
-a handler for completion events, as shown here:
+a handler for completion events, as shown in the following example:
 
 [source,java]
 ----
@@ -74,12 +74,12 @@ ints.subscribe(i -> System.out.println(i),
     () -> {System.out.println("Done");}); <2>
 ----
 
-<1> Set up a Flux that produces four values when a subscriber attaches.
+<1> Set up a Flux that produces four values when a Subscriber attaches.
 <2> Subscribe with a Subscriber that includes a handler for completion events.
 
-Error signals and completion signals are both terminal events, one excluding
-the other. To make the completion consumer work, we had to take care not to
-trigger and error.
+Error signals and completion signals are both terminal events and are exclusive of one
+another (you never get both). To make the completion consumer work, we must take care not
+to trigger an error.
 
 The completion matcher is a pair of empty parentheses because it matches the `run`
 method in the `Runnable` interface, which has no parameters. The preceding code
@@ -93,9 +93,9 @@ produces the following output:
 Done
 ----
 
-The last signature of the `subscribe` method includes a custom `Subscriber`,
-which we describe right after this bit of code, which shows how to attach a
-custom `Subscriber`:
+The last signature of the `subscribe` method includes a custom `Subscriber` (shown
+later in this section), which shows how to attach a custom `Subscriber`, as shown in the
+following example:
 
 [source,java]
 ----
@@ -108,9 +108,9 @@ ints.subscribe(i -> System.out.println(i),
 ints.subscribe(ss);
 ----
 
-As you can see, we provide a custom `Subscriber` as the last argument to the
-`subscribe` method. Here is that custom `Subscriber` object, which is the
-simplest possible implementation of a `Subscriber`:
+In the preceding example, we provide a custom `Subscriber` as the last argument to the
+`subscribe` method. The following example shows that custom `Subscriber` object, which is
+the simplest possible implementation of a `Subscriber`:
 
 [source,java]
 ----
@@ -134,17 +134,17 @@ public class SampleSubscriber<T> extends BaseSubscriber<T> {
 }
 ----
 
-The SampleSubscriber class extends `BaseSubscriber`, which is the recommended
-abstract class for user-defined `Subscribers` in Reactor. The class offers
-hooks that can be overridden to tune the subscriber's behavior. By default,
-it will trigger an unbounded request and behave exactly like `subscribe()`.
+The SampleSubscriber class extends `BaseSubscriber`, which is the recommended abstract
+class for user-defined `Subscribers` in Reactor. The class offers hooks that can be
+overridden to tune the subscriber's behavior. By default, it will trigger an unbounded
+request and behave exactly like `subscribe()`. However, extending `BaseSubscriber` is
+much more useful when you want a custom request amount.
 
-It is much more useful however when you want a custom request amount. To that
-effect, the bare minimum implementation is to implement both `hookOnSubscribe(Subscription subscription)`
-and `hookOnNext(T value)`. In this case, the `hookOnSubscribe` method prints a
-statement to standard out and makes the first request. Then the `hookOnNext`
-method prints a statement and processes each of the remaining requests, one
-request at a time.
+The bare minimum implementation is to implement both `hookOnSubscribe(Subscription
+subscription)` and `hookOnNext(T value)`. In this case, the `hookOnSubscribe` method
+prints a statement to standard out and makes the first request. Then the `hookOnNext`
+method prints a statement and processes each of the remaining requests, one request
+at a time.
 
 The `SampleSubscriber` class produces the following output:
 
@@ -156,9 +156,9 @@ Subscribed
 4
 ----
 
-NOTE: You almost certainly want to implement the `hookOnError`, `hookOnCancel`,
-and `hookOnComplete` methods. You may also want to implement the `hookFinally`
-method. `SampleSubscribe` is the absolute minimum implementation of a
-`Subscriber` that performs bounded requests.
+NOTE: You almost certainly want to implement the `hookOnError`, `hookOnCancel`, and
+`hookOnComplete` methods. You may also want to implement the `hookFinally` method.
+`SampleSubscribe` is the absolute minimum implementation of a `Subscriber` that performs
+bounded requests.
 
-We'll see `BaseSubscriber` again soon.
+We return to `BaseSubscriber` later in this guide.

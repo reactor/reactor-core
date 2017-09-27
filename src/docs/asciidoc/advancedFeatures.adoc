@@ -1,19 +1,31 @@
 [[advanced]]
-= Advanced features and concepts
+= Advanced Features and Concepts
 
-== Mutualizing operator usage
-From a clean-code perspective, code reuse is generally a good thing. Reactor
-offers a few patterns that will help you reuse and mutualize code, notably
-for operators or combination of operators that you might want to apply regularly
-in your codebase. If you think of a chain of operators as a recipe, you can
-create a cookbook of operator recipes.
+This chapter covers advanced features and concepts of Reactor, including the following:
 
-=== transform
-The `transform` operator lets you encapsulate a piece of an operator chain into
-a function. That function will be applied to an original operator chain at
-assembly time to augment it with the encapsulated operators. Doing so applies
-the same operations to all the subscribers of a sequence and is basically
-equivalent to chaining the operators directly. Here's an example:
+* <<advanced-mutualizing-operator-usage>>
+* <<reactor.hotCold>>
+* <<advanced-broadcast-multiple-subscribers-connectableflux>>
+* <<advanced-three-sorts-batching>>
+* <<advanced-parallelizing-parralelflux>>
+* <<scheduler-factory>>
+* <<hooks>>
+* <<context>>
+* <<null-safety>>
+
+[[advanced-mutualizing-operator-usage]]
+== Mutualizing Operator Usage
+From a clean-code perspective, code reuse is generally a good thing. Reactor offers a few
+patterns that can help you reuse and mutualize code, notably for operators or combination
+of operators that you might want to apply regularly in your codebase. If you think of a
+chain of operators as a recipe, you can create a cookbook of operator recipes.
+
+=== Using the `transform` Operator
+The `transform` operator lets you encapsulate a piece of an operator chain into a
+function. That function is applied to an original operator chain at assembly time to
+augment it with the encapsulated operators. Doing so applies the same operations to all
+the subscribers of a sequence and is basically equivalent to chaining the operators
+directly. The following code shows an example:
 
 [source,java]
 ----
@@ -28,7 +40,7 @@ Flux.fromIterable(Arrays.asList("blue", "green", "orange", "purple"))
 ----
 image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.7.RELEASE/src/docs/marble/gs-transform.png[Transform Operator : encapsulate flows]
 
-This produces:
+The preceding example produces the following output:
 
 ----
 blue
@@ -40,12 +52,12 @@ purple
 Subscriber to Transformed MapAndFilter: PURPLE
 ----
 
-=== compose
-The `compose` operator is very similar to `transform` and also lets you
-encapsulate operators in a function. The major difference is that this function
-is applied to the original sequence *on a per-subscriber basis*. It means that
-the function can actually produce a different operator chain for each
-subscription (by maintaining some state). Here's an example:
+=== Using the `compose` Operator
+The `compose` operator is similar to `transform` and also lets you encapsulate operators
+in a function. The major difference is that this function is applied to the original
+sequence *on a per-subscriber basis*. It means that the function can actually produce a
+different operator chain for each subscription (by maintaining the some state). The
+following code shows an example:
 
 [source,java]
 ----
@@ -69,7 +81,7 @@ composedFlux.subscribe(d -> System.out.println("Subscriber 2 to Composed MapAndF
 ----
 image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.7.RELEASE/src/docs/marble/gs-compose.png[Compose Operator : Per Subscriber transformation]
 
-This outputs:
+The preceding example produces the following output:
 
 ----
 blue
@@ -90,37 +102,35 @@ purple
 
 [[reactor.hotCold]]
 == Hot vs Cold
-So far we have considered that all `Flux` (and `Mono`) are the same: they all
-represent an asynchronous sequence of data, and nothing happens before you
+So far, we have considered that all `Flux` (and `Mono`) are the same: They all represent
+an asynchronous sequence of data, and nothing happens before you subscribe.
+
+Really, though, there are two broad families of publishers: *hot* and *cold*.
+
+The description above applies to the *cold* family of publishers. They generate data anew
+for each subscription. If no subscription is created, then data never gets generated.
+
+Think of an HTTP request: Each new subscriber will trigger an HTTP call, but no call is
+made if no one is interested in the result.
+
+*Hot* publishers, on the other hand, do not depend on any number of subscribers. They
+might start publishing data right away and would continue doing so whenever a new
+`Subscriber` comes in (in which case said subscriber would only see new elements emitted
+_after_ it subscribed). For hot publishers, _something_ does indeed happen before you
 subscribe.
 
-Really, though, there are two broad families of publishers: *cold* and *hot*.
+One example of the few hot operators in Reactor is `just`: It directly captures the value
+at assembly time and replays it to anybody subscribing to it later. To re-use the HTTP
+call analogy, if the captured data is the result of an HTTP call, then only one network
+call is made, when instantiating _just_.
 
-The description above applies to the *cold* family of publishers. They generate
-data anew for each subscription If no subscription is created, then data never
-gets generated.
-
-Think of an HTTP request: each new subscriber will trigger an HTTP call, but no
-call is made if no one is interested in the result.
-
-*Hot* publishers, on the other hand, don't depend on any number of
-subscribers. They might start publishing data right away and would continue
-doing so whenever a new `Subscriber` comes in (in which case said subscriber
-would only see new elements emitted _after_ it subscribed). For hot
-publishers, _something_ does indeed happen before you subscribe.
-
-One example of the few hot operators in Reactor is `just`: it directly captures
-the value at assembly time and will replay it to anybody subscribing to it
-later on. To re-use the HTTP call analogy, if the captured data is the result
-of an HTTP call then only one network call is made, when instantiating _just_.
-
-To transform `just` into a _cold_ publisher, you can use `defer`. It defers the
-HTTP request in our example to subscription time (and would result in a
-separate network call for each new subscription).
+To transform `just` into a _cold_ publisher, you can use `defer`. It defers the HTTP
+request in our example to subscription time (and would result in a separate network call
+for each new subscription).
 
 NOTE: Most other _hot_ publishers in Reactor extend `Processor`.
 
-Contrast these two other examples:
+Consider two other examples. The following code shows the first example:
 
 [source,java]
 ----
@@ -133,7 +143,7 @@ source.subscribe(d -> System.out.println("Subscriber 1: "+d));
 source.subscribe(d -> System.out.println("Subscriber 2: "+d));
 ----
 
-This first example produces:
+This first example produces the following output:
 
 ----
 blue
@@ -153,7 +163,7 @@ image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.7.RELEASE/src
 Both subscribers catch all four colors, because each subscriber causes the
 process defined by the operators on the `Flux` to run.
 
-Compare the first example to this second example:
+Compare the first example to the second example, shown in the following code:
 
 [source,java]
 ----
@@ -176,7 +186,7 @@ hotSource.onNext("purple");
 hotSource.onComplete();
 ----
 
-The second example produces:
+The second example produces the following output:
 ----
 Subscriber 1 to Hot Source: BLUE
 Subscriber 1 to Hot Source: GREEN
@@ -187,43 +197,41 @@ Subscriber 2 to Hot Source: PURPLE
 ----
 image::https://raw.githubusercontent.com/reactor/reactor-core/v3.0.7.RELEASE/src/docs/marble/gs-hot.png[Broadcasting a subscription]
 
-Subscriber 1 catches all four colors. Subscriber 2, having been created after
-the first two colors were produced, catches only the last two colors. This
-difference accounts for the doubling of "ORANGE" and "PURPLE" in the output.
-The process described by the operators on this Flux runs regardless of when
-subscriptions have been attached.
+Subscriber 1 catches all four colors. Subscriber 2, having been created after the first
+two colors were produced, catches only the last two colors. This difference accounts for
+the doubling of "ORANGE" and "PURPLE" in the output. The process described by the
+operators on this Flux runs regardless of when subscriptions have been attached.
 
-== Broadcast to multiple subscribers with `ConnectableFlux`
-Sometimes, you want to not only defer some processing to the subscription time
-of one subscriber, but you might actually want for several of them to
-_rendezvous_ and *then* trigger the subscription / data generation.
+[[advanced-broadcast-multiple-subscribers-connectableflux]]
+== Broadcasting to Multiple Subscribers with `ConnectableFlux`
+Sometimes, you want to not only defer some processing to the subscription time of one
+subscriber, but you might actually want for several of them to _rendezvous_ and *then*
+trigger the subscription and data generation.
 
-This is what `ConnectableFlux` is made for. Two main patterns are covered in the
-`Flux` API that return a `ConnectableFlux`: `publish` and `replay`.
+This is what `ConnectableFlux` is made for. Two main patterns are covered in the `Flux`
+API that return a `ConnectableFlux`: `publish` and `replay`.
 
-* `publish` dynamically tries to respect the demand from its various
-subscribers, in terms of backpressure, by forwarding these requests to the
-source. Most notably, if any subscriber has a pending demand of `0`, publish
-will *pause* its requesting to the source.
-* `replay` buffers data seen through the first subscription, up to
-configurable limits (in time and buffer size). It will replay the data to
-subsequent subscribers.
+* `publish` dynamically tries to respect the demand from its various subscribers, in
+terms of backpressure, by forwarding these requests to the source. Most notably, if any
+subscriber has a pending demand of `0`, publish *pauses* its requesting to the source.
+* `replay` buffers data seen through the first subscription, up to configurable limits
+(in time and buffer size). It replays the data to subsequent subscribers.
 
 A `ConnectableFlux` offers additional methods to manage subscriptions downstream
-vs subscription to the original source. For instance:
+versus subscriptions to the original source. These additional methods include the
+following:
 
-* `connect` can be called manually once you've reached enough subscriptions to
-the flux. That will trigger the subscription to the upstream source.
-* `autoConnect(n)` can do the same job automatically once `n` subscriptions
-have been made.
-* `refCount(n)` not only automatically tracks incoming subscriptions but also
-detects when these subscriptions are cancelled. If not enough subscribers are
-tracked, the source is "disconnected", causing a new subscription to the source
-later if additional subscribers appear.
-* `refCount(int, Duration)` adds a "grace period": once the number of tracked
-subscribers becomes too low, it waits for the `Duration` before disconnecting
-the source, potentially allowing for enough new subscribers to come in and cross
-the connection threshold again.
+* `connect` can be called manually once you reach enough subscriptions to the flux. That
+triggers the subscription to the upstream source.
+* `autoConnect(n)` can do the same job automatically once `n` subscriptions have been
+made.
+* `refCount(n)` not only automatically tracks incoming subscriptions but also detects
+when these subscriptions are cancelled. If not enough subscribers are tracked, the source
+is "disconnected", causing a new subscription to the source later if additional
+subscribers appear.
+* `refCount(int, Duration)` adds a "grace period": Once the number of tracked subscribers
+becomes too low, it waits for the `Duration` before disconnecting the source, potentially
+allowing for enough new subscribers to come in and cross the connection threshold again.
 
 Consider the following example:
 
@@ -244,7 +252,7 @@ System.out.println("will now connect");
 co.connect();
 ----
 
-This code produces:
+The preceding code produces the following output:
 ----
 done subscribing
 will now connect
@@ -273,7 +281,7 @@ System.out.println("subscribing second");
 autoCo.subscribe(System.out::println, e -> {}, () -> {});
 ----
 
-Which outputs:
+The preceding code produces the following output:
 ----
 subscribed first
 subscribing second
@@ -286,26 +294,24 @@ subscribed to source
 3
 ----
 
+[[advanced-three-sorts-batching]]
 == Three Sorts of Batching
-When you have lots of elements and you want to separate them into batches, you
-have three broad solutions in Reactor: grouping, windowing, and buffering.
-These three are conceptually close, because they redistribute a `Flux<T>` into
-an aggregate. Grouping and windowing create a `Flux<Flux<T>>`, while buffering
-aggregates into `Collection<T>`.
+When you have lots of elements and you want to separate them into batches, you have three
+broad solutions in Reactor: grouping, windowing, and buffering. These three are
+conceptually close, because they redistribute a `Flux<T>` into an aggregate. Grouping and
+windowing create a `Flux<Flux<T>>`, while buffering aggregates into a `Collection<T>`.
 
-=== Grouping: `Flux<GroupedFlux<T>>`
-Grouping is the act of splitting the source `Flux<T>` into multiple batches by
-a *key*.
+=== Grouping with `Flux<GroupedFlux<T>>`
+Grouping is the act of splitting the source `Flux<T>` into multiple batches by a *key*.
 
 The associated operator is `groupBy`.
 
-Each group is represented as a `GroupedFlux<T>`, which lets you retrieve the
-key via its `key()` method.
+Each group is represented as a `GroupedFlux<T>`, which lets you retrieve the key via its
+`key()` method.
 
-There is no necessary continuity in the content of the groups. Once a source
-element produces a new key, the group for this key is opened and elements that
-match the key end up in said group (several groups could be open at the same
-time).
+There is no necessary continuity in the content of the groups. Once a source element
+produces a new key, the group for this key is opened and elements that match the key end
+up in the group (several groups could be open at the same time).
 
 This means that groups:
 
@@ -327,34 +333,32 @@ StepVerifier.create(
 	.verifyComplete();
 ----
 
-WARNING: Grouping is best suited for when you have a medium to low number of
-groups. The groups must also imperatively be consumed (eg. in a `flatMap`) so
-that `groupBy` will continue fetching data from upstream and feeding more
-groups. Sometimes these two constraints multiply and lead to hangs, like when
-you have a high cardinality and the concurrency of the `flatMap` consuming the
-groups is too low.
+WARNING: Grouping is best suited for when you have a medium to low number of groups. The
+groups must also imperatively be consumed (such as by a `flatMap`) so that `groupBy`
+continues fetching data from upstream and feeding more groups. Sometimes, these two
+constraints multiply and lead to hangs, such as when you have a high cardinality and the
+concurrency of the `flatMap` consuming the groups is too low.
 
 // We should provide sample code that produces this problem, to illustrate the
 // anti-pattern.
 
-=== Windowing: `Flux<Flux<T>>`
-Windowing is the act of splitting the source `Flux<T>` into _windows_, by
-criteria of size, time, boundary-defining predicates, or boundary-defining
-`Publisher`.
+=== Windowing with `Flux<Flux<T>>`
+Windowing is the act of splitting the source `Flux<T>` into _windows_, by criteria of
+size, time, boundary-defining predicates, or boundary-defining `Publisher`.
 
-The associated operators are `window`, `windowTimeout`, `windowUntil`,
-`windowWhile` and `windowWhen`.
+The associated operators are `window`, `windowTimeout`, `windowUntil`, `windowWhile`, and
+`windowWhen`.
 
 A major difference with `groupBy` is that windows are always sequential. No
 more than 2 windows can be open at the same time.
 
-They *can* overlap though. For instance, there is a variant with a `maxSize`
-and `skip` parameters. The maxSize is the number of elements after which a
-window will close, and the skip parameter is the number of elements in the
-source after which a new window is opened. So if `maxSize > skip`, a new window
-will open before the previous one closes and the 2 windows will overlap.
+They *can* overlap, though. For instance, there is a variant with `maxSize` and `skip`
+parameters. The `maxSize` parameter is the number of elements after which a window
+closes, and the `skip` parameter is the number of elements in the source after which a
+new window is opened. So if `maxSize > skip`, a new window opens before the previous one
+closes and the two windows overlap.
 
-This example shows overlapping windows:
+The following example shows overlapping windows:
 
 [source,java]
 ----
@@ -371,11 +375,11 @@ StepVerifier.create(
 ----
 
 NOTE: With the reverse configuration (`maxSize` < `skip`), some elements from
-the source would be dropped and not be part of any window.
+the source are dropped and are not part of any window.
 
 In the case of predicate-based windowing via `windowUntil` and `windowWhile`,
-having subsequent source elements that don't match the predicate can also lead
-to _empty windows_, as demonstrated in this example:
+having subsequent source elements that do not match the predicate can also lead
+to _empty windows_, as demonstrated in the following example:
 
 [source,java]
 ----
@@ -391,20 +395,20 @@ StepVerifier.create(
 		.verifyComplete();
 ----
 
-=== Buffering: `Flux<List<T>>`
-Buffering is very close to the behavior of windowing, with a twist: instead of
-emitting _windows_ (which each are a `Flux<T>`), it emits _buffers_ (which are
-`Collection<T>` - by default `List<T>`).
+=== Buffering with `Flux<List<T>>`
+Buffering is similar to windowing, with the following twist: instead of emitting
+_windows_ (which are each a `Flux<T>`), it emits _buffers_ (which are `Collection<T>`
+- by default, `List<T>`).
 
-The operators for buffering mirror those for windowing: `buffer`,
-`bufferTimeout`, `bufferUntil`, `bufferWhile`, and `bufferWhen`.
+The operators for buffering mirror those for windowing: `buffer`, `bufferTimeout`,
+`bufferUntil`, `bufferWhile`, and `bufferWhen`.
 
-Where the corresponding windowing operator would open a window, a buffering
-operator would create a new collection and start adding elements to it. Where a
-window would close, the buffering operator would emit the collection.
+Where the corresponding windowing operator opens a window, a buffering operator creates a
+new collection and start adding elements to it. Where a window closes, the buffering
+operator emits the collection.
 
-Buffering can also lead to dropping source elements or having overlapping
-buffers, as shown here:
+Buffering can also lead to dropping source elements or having overlapping buffers, as
+shown here:
 
 [source,java]
 ----
@@ -419,8 +423,8 @@ StepVerifier.create(
 		.verifyComplete();
 ----
 
-Unlike in windowing, `bufferUntil` and `bufferWhile` don't emit an empty
-buffer, as shown here:
+Unlike in windowing, `bufferUntil` and `bufferWhile` do not emit an empty buffer, as
+shown in the following example:
 
 [source,java]
 ----
@@ -432,24 +436,22 @@ StepVerifier.create(
 	.expectNext(Collections.singletonList(12)) // triggered by 13
 	.verifyComplete();
 ----
-
-== Parallelize work with `ParallelFlux`
+[[advanced-parallelizing-parralelflux]]
+== Parallelizing Work with `ParallelFlux`
 
 With multi-core architectures being a commodity nowadays, being able to easily
-parallelize work is very important. Reactor helps with that by providing a
-special type, `ParallelFlux`, that exposes operators that are optimized for
-parallelized work.
+parallelize work is important. Reactor helps with that by providing a special type,
+`ParallelFlux`, that exposes operators that are optimized for parallelized work.
 
-To obtain a `ParallelFlux`, one can use the `parallel()` operator on any `Flux`.
-*This will not by itself parallelize the work* however, but rather will divide
-the workload into "rails" (by default as many rails as there are CPU cores).
+To obtain a `ParallelFlux`, you can use the `parallel()` operator on any `Flux`. *By
+itself, this method does not parallelize the work*. Rather, it divides
+the workload into "rails" (by default, as many rails as there are CPU cores).
 
-In order to tell the resulting ParallelFlux where to execute each rail (and
-by extension to execute rails in parallel) you have to use `runOn(Scheduler)`.
-Note that there is a recommended dedicated Scheduler for parallel work:
-`Schedulers.parallel()`.
+In order to tell the resulting ParallelFlux where to execute each rail (and, by
+extension, to execute rails in parallel) you have to use `runOn(Scheduler)`. Note that
+there is a recommended dedicated Scheduler for parallel work: `Schedulers.parallel()`.
 
-Compare the next two code examples:
+Compare the next two examples, the first of which is shown in the following code:
 
 [source,java]
 ----
@@ -459,7 +461,8 @@ Flux.range(1, 10)
 ----
 <1> We force a number of rails instead of relying on the number of CPU cores.
 
-with:
+The following code shows the second example:
+
 [source,java]
 ----
 Flux.range(1, 10)
@@ -468,7 +471,7 @@ Flux.range(1, 10)
     .subscribe(i -> System.out.println(Thread.currentThread().getName() + " -> " + i));
 ----
 
-The first code block produces:
+The first example produces the following output:
 ----
 main -> 1
 main -> 2
@@ -482,7 +485,7 @@ main -> 9
 main -> 10
 ----
 
-The second correctly parallelizes on two threads, as shown here:
+The second correctly parallelizes on two threads, as shown in the following output:
 ----
 parallel-1 -> 1
 parallel-2 -> 2
@@ -496,191 +499,195 @@ parallel-2 -> 8
 parallel-2 -> 10
 ----
 
-If, once you've processed your sequence in parallel, you want to revert back to a
-"normal" `Flux` and apply the rest of the operator chain in a sequential manner,
-you can use the `sequential()` method on `ParallelFlux`.
+If, once you process your sequence in parallel, you want to revert back to a "normal"
+`Flux` and apply the rest of the operator chain in a sequential manner, you can use the
+`sequential()` method on `ParallelFlux`.
 
 Note that `sequential()` is implicitly applied if you `subscribe` to the ParallelFlux
-with a `Subscriber`, but not when using the lambda-based variants of `subscribe`.
+with a `Subscriber` but not when using the lambda-based variants of `subscribe`.
 
 Note also that `subscribe(Subscriber<T>)` merges all the rails, while
-`subscribe(Consumer<T>)` runs all the rails. If the `subscribe()` method has a
-lambda, each lambda is executed as many times as there are rails.
+`subscribe(Consumer<T>)` runs all the rails. If the `subscribe()` method has a lambda,
+each lambda is executed as many times as there are rails.
 
-You can also access individual rails or "groups" as a `Flux<GroupedFlux<T>>` via
-the `groups()` method and apply additional operators to them via the
-`composeGroup()` method.
+You can also access individual rails or "groups" as a `Flux<GroupedFlux<T>>` through the
+`groups()` method and apply additional operators to them through the `composeGroup()`
+method.
 
 [[scheduler-factory]]
-== Replacing default `Schedulers`
-As we've seen in the <<schedulers>> section, Reactor Core comes with several `Scheduler`
-implementations. While you can always create new instances via `new*` factory methods,
-each `Scheduler` flavor also has a default singleton instance accessible through the
-direct factory method (eg. `Schedulers.elastic()` vs `Schedulers.newElastic()`).
+== Replacing Default `Schedulers`
+As we have seen in the <<schedulers>> section, Reactor Core comes with several
+`Scheduler` implementations. While you can always create new instances through the `new*`
+factory methods, each `Scheduler` flavor also has a default singleton instance that is
+accessible through the direct factory method (such as `Schedulers.elastic()` versus
+`Schedulers.newElastic()`).
 
-These default instances are the ones used by operators that need a `Scheduler` to work,
-when you don't explicitly specify one. For example, `Flux#delayElements(Duration)` uses
+These default instances are the ones used by operators that need a `Scheduler` to work
+when you do not explicitly specify one. For example, `Flux#delayElements(Duration)` uses
 the `Schedulers.parallel()` instance.
 
-In some cases however, you might need to change these default instances with something
+In some cases, however, you might need to change these default instances with something
 else in a cross-cutting way, without having to make sure every single operator you call
-has your specific `Scheduler` as a parameter. This could be for instrumentation purpose
-for example: measuring the time every single scheduled task takes by wrapping the real
+has your specific `Scheduler` as a parameter. This could be for instrumentation purposes.
+An example is measuring the time every single scheduled task takes by wrapping the real
 schedulers. In other words, you might want to *change the default `Schedulers`*.
 
-This is possible through the `Schedulers.Factory` class. By default a `Factory` creates
-all the standard `Scheduler` through similarly named methods. Each of these can be
-overridden with your custom implementation.
+Changing the default schedulers is possible through the `Schedulers.Factory` class. By
+default, a `Factory` creates all the standard `Scheduler` through similarly named
+methods. Each of these can be overridden with your custom implementation.
 
-Additionally, the `Factory` exposes one additional customization methods: `decorateExecutorService`.
-It is invoked during creation of every single reactor-core `Scheduler` that is backed by
-a `ScheduledExecutorService` (even non-default instances, eg. one created by a call to
-`Schedulers.newParallel()`).
+Additionally, the `Factory` exposes one additional customization method:
+`decorateExecutorService`. It is invoked during the creation of every reactor-core
+`Scheduler` that is backed by a `ScheduledExecutorService` (even non-default instances,
+such as those created by calls to `Schedulers.newParallel()`).
 
-This allows to tune the `ScheduledExecutorService` to be used: the default one is exposed
+This lets you tune the `ScheduledExecutorService` to be used: The default one is exposed
 as a `Supplier` and, depending on the type of `Scheduler` being configured, you can choose
 to entirely bypass that supplier and return your own instance or you can `get()` the
 default instance and wrap it.
 
-IMPORTANT: Once you've created a `Factory` that fits your needs, install it via
-`Schedulers.setFactory(Factory)`
+IMPORTANT: Once you create a `Factory` that fits your needs, you must install it via
+`Schedulers.setFactory(Factory)`.
 
 Finally, there is a last customizable hook in `Schedulers`: `onHandleError`. This hook is
 invoked whenever a `Runnable` task submitted to a `Scheduler` throws an `Exception` (note
 that if there is an `UncaughtExceptionHandler` set for the `Thread` that ran the task,
 both the handler and the hook will be invoked).
 
-
 [[hooks]]
-== Global Hooks
+== Using Global Hooks
 Reactor has another category of configurable callbacks that are invoked by Reactor
 operators in various situations. They are all set in the `Hooks` class, and fall into
 three categories:
 
+* <<hooks-dropping>>
+* <<hooks-internal>>
+* <<hooks-assembly>>
+
 [[hooks-dropping]]
 === Dropping Hooks
-These hooks are invoked when the source of an operator doesn't comply to the Reactive
-Streams specification. These kind of errors are outside of the normal execution path (ie
-they can't be propagated through `onError`).
+Dropping hooks are invoked when the source of an operator does not comply wit the
+Reactive Streams specification. These kind of errors are outside of the normal execution
+path (that is, they cannot be propagated through `onError`).
 
 Typically, a `Publisher` calls `onNext` on the operator despite having already called
-`onCompleted` on it previously. +
-In that case, the `onNext` value is _dropped_. Same goes for an extraneous `onError`
-signal.
+`onCompleted` on it previously. In that case, the `onNext` value is _dropped_. The same
+is true for an extraneous `onError` signal.
 
-The corresponding hooks, `onNextDropped` and `onErrorDropped`, allow you to provide a
-global `Consumer` for these drops. You can for example use it to log the drop and cleanup
-resources associated with a value if needed (as it will never make it to the rest of
-the reactive chain).
+The corresponding hooks, `onNextDropped` and `onErrorDropped`, let you provide a global
+`Consumer` for these drops. For example, you can use it to log the drop and cleanup
+resources associated with a value if needed (as it never makes it to the rest of the
+reactive chain).
 
-Setting the hooks twice in a row is additive: every consumer you provide is invoked.
-The hooks can be fully reset to default using `Hooks.resetOn*Dropped()` methods.
+Setting the hooks twice in a row is additive: every consumer you provide is invoked. The
+hooks can be fully reset to their defaults by using `Hooks.resetOn*Dropped()` methods.
 
 [[hooks-internal]]
 === Internal Error Hook
-There is one such hook, `onOperatorError`, which is invoked by operators when an unexpected
-`Exception` is thrown during the execution of their `onNext`, `onError` and `onComplete`
-methods.
+One hook, `onOperatorError`, is invoked by operators when an unexpected `Exception` is
+thrown during the execution of their `onNext`, `onError` and `onComplete` methods.
 
 Unlike the previous category, this is still within the normal execution path. A typical
-example is the `map` operator with a map function that throws an `Exception` (division by
-zero for instance). It is still possible at this point to go through the usual channel of
+example is the `map` operator with a map function that throws an `Exception` (such as
+division by zero). It is still possible at this point to go through the usual channel of
 `onError`, and that is what the operator does.
 
-But first, it passes the `Exception` through `onOperatorError`. The hook lets you inspect
-the error (and the incriminating value if relevant) and _change_ the `Exception`. Of course
-you can also do something on the side like logging and return the original Exception.
+First, it passes the `Exception` through `onOperatorError`. The hook lets you inspect the
+error (and the incriminating value, if relevant) and _change_ the `Exception`. Of course,
+you can also do something on the side, such as log and return the original Exception.
 
-Note that the `onOperatorError` hook can be set multiple times: you can provide a `String`
-identifier for a particular `BiFunction`, and subsequent calls with different keys
-concatenates the functions, which are all executed. On the other hand, reusing the same key
-twice allow you to replace a function you previously set.
+Note that the `onOperatorError` hook can be set multiple times: you can provide a
+`String` identifier for a particular `BiFunction`, and subsequent calls with different
+keys concatenates the functions, which are all executed. On the other hand, reusing the
+same key twice lets you replace a function you previously set.
 
 As a consequence, the default hook behavior can be both fully reset (using
-`Hooks.resetOnOperatorError()`) or partially reset for a specific `key` only
-(using `Hooks.resetOnOperatorError(String)`).
+`Hooks.resetOnOperatorError()`) or partially reset for a specific `key` only (by using
+`Hooks.resetOnOperatorError(String)`).
 
 [[hooks-assembly]]
 === Assembly Hooks
 These hooks tie in the lifecycle of operators. They are invoked when a chain of operators
-is assembled (ie. instantiated). `onEachOperator` allow you to dynamically change each
+is assembled (that is, instantiated). `onEachOperator` lets you dynamically change each
 operator as it is assembled in the chain, by returning a different `Publisher`.
-`onLastOperator` is similar, except it is only invoked on the last operator in the chain
-before the `subscribe`.
+`onLastOperator` is similar, except that it is only invoked on the last operator in the
+chain before the `subscribe` call.
 
-Like `onOperatorError`, these hooks are cumulative and can be identified with a key. As
-such they can be reset partially or totally.
+Like `onOperatorError`, these hooks are cumulative and can be identified with a key. They
+can also be reset partially or totally.
 
 === Hook Presets
-The `Hooks` utility class provides a couple of preset hooks. These are alternatives to the
-default behaviors that you can use simply by calling their corresponding method, rather
-than coming up with the hook yourself:
+The `Hooks` utility class provides a couple of preset hooks. These are alternatives to
+the default behaviors that you can use by calling their corresponding method, rather than
+coming up with the hook yourself:
 
- - `onNextDroppedFail()`: `onNextDropped` used to throw a `Exceptions.failWithCancel()`
- exception. It now defaults to logging the dropped value at DEBUG level. To go back to the
- old default behavior of throwing, use `onNextDroppedFail()`.
+* `onNextDroppedFail()`: `onNextDropped` used to throw a `Exceptions.failWithCancel()`
+exception. It now defaults to logging the dropped value at the DEBUG level. To go back to
+the old default behavior of throwing, use `onNextDroppedFail()`.
 
- - `onOperatorDebug()`: this activates <<debug-activate,debug mode>>. It ties into the
- `onOperatorError` hook, so calling `resetOnOperatorError()` will also reset it. It can be
- independently reset via `resetOnOperatorDebug()` as it uses a specific key internally.
+* `onOperatorDebug()`: This method activates <<debug-activate,debug mode>>. It ties into
+the `onOperatorError` hook, so calling `resetOnOperatorError()` also resets it. It can be
+independently reset via `resetOnOperatorDebug()` as it uses a specific key internally.
 
 [[context]]
 == Adding a Context to a Reactive Sequence
 One of the big technical challenges encountered when switching from an imperative
-programming perspective to a reactive programming mindset lies in how you deal with threading.
+programming perspective to a reactive programming mindset lies in how you deal with
+threading.
 
-Contrary to what you're used to, in reactive programming a `Thread` can (and will) be used
+Contrary to what you might be used to, in reactive programming, a `Thread` can be used
 to process several asynchronous sequences that run roughly at the same time (actually, in
-non-blocking locksteps). The execution can also very easily and very often jump from a
-thread to another.
+non-blocking locksteps). The execution can also easily and often jump from one thread to
+another.
 
-This is especially hard for developers that use features dependent on the threading model
-being more "stable", like `ThreadLocal`. As it allows you to associate data with a
-*thread*, it becomes tricky to use in a reactive context. As a result, libraries that rely
-on `ThreadLocal` will at least introduce new challenges when used with Reactor, if not
-work badly. Using the MDC of Logback to store and log correlation IDs is a prime example
-of such a situation.
+This arrangement is especially hard for developers that use features dependent on the
+threading model being more "stable", such as `ThreadLocal`. As it lets you associate
+data with a *thread*, it becomes tricky to use in a reactive context. As a result,
+libraries that rely on `ThreadLocal` at least introduce new challenges when used with
+Reactor, even if they do not work badly. Using the MDC of Logback to store and log
+correlation IDs is a prime example of such a situation.
 
-The usual workaround for `ThreadLocal` usage is to move the contextual data `C` along your
-business data `T` in the sequence, by using `Tuple2<T, C>` for instance. This doesn't look
-very good and leaks an orthogonal concern (the contextual data) into your method and `Flux`
-signatures.
+The usual workaround for `ThreadLocal` usage is to move the contextual data, `C`, along
+your business data, `T`, in the sequence, by using `Tuple2<T, C>` for instance. This does
+not look good and leaks an orthogonal concern (the contextual data) into your method and
+`Flux` signatures.
 
-=== The `Context`
-Since `3.1.0`, Reactor comes with an advanced feature that is somewhat comparable to
-`ThreadLocal`, but applied to a `Flux` or a `Mono` instead of a `Thread`: the `Context`.
+=== Understanding the `Context`
+Since version `3.1.0`, Reactor comes with an advanced feature that is somewhat comparable
+to `ThreadLocal` but applied to a `Flux` or a `Mono` instead of a `Thread`: the `Context`.
 
 IMPORTANT: This is an advanced feature that is more targeted at library developers. It
-requires good understanding of the lifecycle of a `Subscription`, and is intended for
+requires good understanding of the lifecycle of a `Subscription` and is intended for
 libraries that are responsible for the subscriptions.
 
-A `Context` is an interface reminiscent of `Map`: it stores key-value pairs and allows you
-to fetch a value you stored by its key. More specifically:
+A `Context` is an interface reminiscent of `Map`: it stores key-value pairs and lets you
+fetch a value you stored by its key. More specifically:
 
-  * both key and values are `Object`, so a `Context` can contain any number of highly
-  different values from different libraries and sources.
-  * a `Context` is *immutable*.
-  * use `put(Object key, Object value)` to store a key-value pair, returning a new `Context`
-  instance. You can also merge two contexts into a new one using `putAll(Context)`.
-  * you can check if the key is present with `hasKey(Object key)`.
-  * use `getOrDefault(Object key, T defaultValue)` to retrieve a value (cast to a `T`) or
-  fall back to a default one if the Context doesn't have that key.
-  * use `getOrEmpty(Object key)` to get an `Optional<T>` (the context will attempt to cast
-  the stored value to `T`).
-  * use `delete(Object key)` to remove the value associated to a key, returning a new
-  `Context`.
+* Both key and values are of type `Object`, so a `Context` can contain any number of
+highly divergent values from different libraries and sources.
+* A `Context` is *immutable*.
+* Use `put(Object key, Object value)` to store a key-value pair, returning a new
+`Context` instance. You can also merge two contexts into a new one by using
+`putAll(Context)`.
+* You can check if the key is present with `hasKey(Object key)`.
+* Use `getOrDefault(Object key, T defaultValue)` to retrieve a value (cast to a `T`) or
+fall back to a default one if the Context does not have that key.
+* Use `getOrEmpty(Object key)` to get an `Optional<T>` (the context attempts to cast the
+stored value to `T`).
+* Use `delete(Object key)` to remove the value associated to a key, returning a new
+`Context`.
 
-TIP: *Creating a* `Context`: You can create pre-valued contexts with up to five key-value
-pairs using the static `Context.of` methods. It takes 2, 4, 6, 8 or 10 `Object`, each
-couple of `Object` being a key-value pair to add to the `Context`. +
- +
-Alternatively you can also create a `Context.empty()`.
+TIP: When *creating a* `Context`, you can create pre-valued contexts with up to five
+key-value pairs by using the static `Context.of` methods. They take 2, 4, 6, 8 or 10
+`Object` instances, each couple of `Object` instances being a key-value pair to add to
+the `Context`.
 
+Alternatively you can also create an empty `Context` by using `Context.empty()`.
 
 === Tying the `Context` to a `Flux`
 To make the context useful, it must be tied to a specific sequence and be accessible by
-each operator in a chain.footnote:[as long as it is a Reactor native operator, as `Context`
-is specific to Reactor]
+each operator in a chain. Note that the operator must be  a Reactor native operator, as
+`Context` is specific to Reactor.
 
 Actually, a `Context` is tied to each `Subscriber` to a chain. It uses the `Subscription`
 propagation mechanism to make itself available to each operator, starting with the final
@@ -689,36 +696,38 @@ propagation mechanism to make itself available to each operator, starting with t
 In order to populate the `Context`, which can only be done at subscription time, you need
 to use the `subscriberContext` operator.
 
-Simply use `subscriberContext(Context)`, which merges the Context you provide and the
-Context from downstream (remember, the Context is propagated from the bottom of the chain
-towards the top). This is done via `putAll`, resulting in a new `Context` for upstream.
+Use `subscriberContext(Context)`, which merges the `Context` you provide and the
+`Context` from downstream (remember, the `Context` is propagated from the bottom of the
+chain towards the top). This is done through a call to `putAll`, resulting in a new
+`Context` for upstream.
 
 TIP: You can also use the more advanced `subscriberContext(Function<Context, Context>)`.
-It receives the state of the Context from downstream and lets you put or delete values as
-you see fit, returning the new `Context` to use. You can even decide to return a
-completely different instance, although it is really not recommended (this might impact
-libraries that depend on the `Context`).
+It receives the state of the `Context` from downstream and lets you put or delete values
+as you see fit, returning the new `Context` to use. You can even decide to return a
+completely different instance, although it is really not recommended (doing so might
+impact libraries that depend on the `Context`).
 
 === Using the Context
-Populating the `Context` is one aspect, but retrieving that data from it is of course just
-as important. Most of the time, the responsibility of putting information into the
-`Context` will be on the end user's side, while exploiting that information will be on the
-library's side, as the library is usually upstream of the client code.
+Populating the `Context` is one aspect, but retrieving that data from it is equally
+important. Most of the time, the responsibility of putting information into the `Context`
+is on the end user's side, while exploiting that information is on the library's side,
+as the library is usually upstream of the client code.
 
-The tool for reading data from the context is the static `Mono.subscriberContext()` method.
+The tool for reading data from the context is the static `Mono.subscriberContext()`
+method.
 
-Let's take an example of a library reading information from the `Context`: a reactive
-HTTP client that takes a `Mono<String>` as the source of data for a `PUT`, but also looks
+Consider an example of a library reading information from the `Context`: A reactive
+HTTP client that takes a `Mono<String>` as the source of data for a `PUT` but also looks
 for a particular Context key to add a correlation ID to the request's headers.
 
-From the user perspective, it is called like this:
+From the user perspective, it is called as follows:
 
 [source,java]
 ----
 doPut("www.example.com", Mono.just("Walter"))
 ----
 
-In order to propagate a correlation ID, it would be called like that:
+In order to propagate a correlation ID, it would be called as follows:
 
 [source,java]
 ----
@@ -732,8 +741,8 @@ a `Mono<Tuple2<Integer, String>>` (a simplistic representation of an HTTP respon
 returned by the HTTP client library. So it is effectively passing information from the
 user code to the library code.
 
-Here is the mock code from the library's perspective that reads the context and "augments
-the request" if it can find the correlation ID:
+The following example shows mock code from the library's perspective that reads the
+context and "augments the request" if it can find the correlation ID:
 
 [source,java]
 ----
@@ -757,20 +766,22 @@ Mono<Tuple2<Integer, String>> doPut(String url, Mono<String> data) {
 			.map(msg -> Tuples.of(200, msg));
 }
 ----
-<1> Materialize the `Context` through `Mono.subscriberContext()`
-<2> Extract value for a the correlation id key, as an `Optional`
-<3> If the key was present in the context, use the correlation id as a header
+<1> Materialize the `Context` through `Mono.subscriberContext()`.
+<2> Extract a value for a the correlation ID key, as an `Optional`.
+<3> If the key was present in the context, use the correlation ID as a header.
 
-In the library snippet, you can see how it zips the data `Mono` with `Mono.subscriberContext()`.
-This gives the library a `Tuple2<String, Context>` and that context will indeed contain
-the `HTTP_CORRELATION_ID` entry from downstream (as it is on the direct path to the
-subscriber).
+In the library snippet, you can see how it zips the data `Mono` with
+`Mono.subscriberContext()`. This gives the library a `Tuple2<String, Context>`, and that
+context contains the `HTTP_CORRELATION_ID` entry from downstream (as it is on the direct
+path to the subscriber).
 
-The library code then uses `map` to extract an `Optional<String>` for that key, and if the
-entry is present it will use the passed correlation id as a `X-Correlation-ID` header.
+The library code then uses `map` to extract an `Optional<String>` for that key, and, if
+the entry is present, it uses the passed correlation ID as a `X-Correlation-ID` header.
 That last part is simulated by the `handle` above.
 
-The whole test that validates the library code used the correlation ID can be written as:
+The whole test that validates the library code used the correlation ID can be written as
+follows:
+
 [source,java]
 ----
 @Test
@@ -789,41 +800,44 @@ public void contextForLibraryReactivePut() {
 [[null-safety]]
 == Null-safety
 
-Although Java does not allow to express null-safety with its type system, Reactor
+Although Java does not allow expressing null-safety with its type system, Reactor
 now provides annotations to declare nullability of APIs, similar to those provided by
 Spring Framework 5.
 
-Reactor leverages itself these annotations, but they can also be used in any Reactor based
+Reactor leverages these annotations, but they can also be used in any Reactor-based
 Java project to declare null-safe APIs. Nullability of types used inside method bodies
 is outside of the scope of this feature.
 
 These annotations are meta-annotated with https://jcp.org/en/jsr/detail?id=305[JSR 305]
-annotations (a dormant JSR but supported by tools like IntelliJ IDEA) to provide useful
-warnings to Java developers related to null-safety in order to avoid `NullPointerException`
-at runtime. JSR 305 meta-annotations allows tooling vendors to provide null-safety support
-in a generic way, without having to hard-code support for Reactor annotations.
+annotations (a dormant JSR that is supported by tools like IntelliJ IDEA) to provide
+useful warnings to Java developers related to null-safety in order to avoid
+`NullPointerException` at runtime. JSR 305 meta-annotations allows tooling vendors to
+provide null-safety support in a generic way, without having to hard-code support for Reactor annotations.
 
 [NOTE]
 ====
-It is not necessary with Kotlin 1.1.5+ nor recommanded to have JSR 305 dependency in user project classpath.
+It is not necessary nor recommended with Kotlin 1.1.5+ to have a dependency on JSR 305 in
+your project classpath.
 ====
 
-They are also used by Kotlin which supports natively
-https://kotlinlang.org/docs/reference/null-safety.html[null-safety], see
+They are also used by Kotlin which natively supports
+https://kotlinlang.org/docs/reference/null-safety.html[null-safety]. See
 <<kotlin-null-safety,this dedicated section>> for more details.
 
 The following annotations are provided in the `reactor.util.annotation` package:
 
- * https://projectreactor.io/docs/core/release/api/reactor/util/annotation/NonNull.html[`@NonNull`] annotation where specific parameter,
- return value or field cannot be `null`
- (not needed on parameter and return value where `@NonNullApi` applies) .
- * https://projectreactor.io/docs/core/release/api/reactor/util/annotation/Nullable.html[`@Nullable`] annotation where specific
- parameter, return value or field can be `null`.
- * https://projectreactor.io/docs/core/release/api/reactor/util/annotation/NonNullApi.html[`@NonNullApi`] annotation at package level
- declares non-null as the default behavior for parameters and return values.
+* https://projectreactor.io/docs/core/release/api/reactor/util/annotation/NonNull.html[`@NonNull`]
+indicates that a specific parameter, return value, or field cannot be `null`.
+(It is not needed on parameters and return value where `@NonNullApi` applies) .
+* https://projectreactor.io/docs/core/release/api/reactor/util/annotation/Nullable.html[`@Nullable`]
+indicates that a parameter, return value, or field can be `null`.
+* https://projectreactor.io/docs/core/release/api/reactor/util/annotation/NonNullApi.html[`@NonNullApi`]
+is a package level annotation that indicates non-null is the default behavior for
+parameters and return values.
 
 [NOTE]
 ====
-Generic type arguments, varargs and array elements nullability are not supported yet,
-see https://github.com/reactor/reactor-core/issues/878[issue #878] for up-to-date informations.
+Nullability for generic type arguments, varargs, and array elements is not supported yet.
+See https://github.com/reactor/reactor-core/issues/878[issue #878] for up-to-date
+information.
 ====

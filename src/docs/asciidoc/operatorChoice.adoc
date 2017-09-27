@@ -26,7 +26,7 @@ I want to deal with:
 * <<which.blocking>>
 
 [[which.create]]
-== Creating a new sequence...
+== Creating a New Sequence...
 * that emits a `T`, and I already have: `just`
 ** ...from an `Optional<T>`: `Mono#justOrEmpty(Optional<T>)`
 ** ...from a potentially `null` T: `Mono#justOrEmpty(T)`
@@ -52,7 +52,7 @@ I want to deal with:
 (`Mono#create` as well, without the multiple emission aspect)
 
 [[which.values]]
-== An existing sequence
+== Transforming an Existing Sequence
 * I want to transform existing data:
 ** on a 1-to-1 basis (eg. strings to their length): `map`
 *** ...by just casting it: `cast`
@@ -119,7 +119,7 @@ I want to deal with:
 ** ...expanding the graph depth first: `expandDeep(Function)`
 
 [[which.peeking]]
-== Peeking into a sequence
+== Peeking into a Sequence
 * Without modifying the final sequence, I want to:
 ** get notified of / execute additional behavior footnote:[sometimes referred to as "side-effects"] on:
 *** emissions: `doOnNext`
@@ -142,7 +142,7 @@ I want to deal with:
 ** as a line in a log: `log`
 
 [[which.filtering]]
-== Filtering a sequence
+== Filtering a Sequence
 * I want to filter a sequence:
 ** based on an arbitrary criteria: `filter`
 *** ...that is asynchronously computed: `filterWhen`
@@ -185,7 +185,7 @@ I want to deal with:
 
 
 [[which.errors]]
-== Errors
+== Handling Errors
 * I want to create an erroring sequence: `error`...
 ** ...to replace the completion of a successful `Flux`: `.concat(Flux.error(e))`
 ** ...to replace the *emission* of a successful `Mono`: `.then(Mono.error(e))`
@@ -215,7 +215,7 @@ I want to deal with:
 *** ...and applying a strategy when bounded buffer also overflows: `Flux#onBackpressureBuffer` with a `BufferOverflowStrategy`
 
 [[which.time]]
-== Time
+== Working with Time
 * I want to associate emissions with a timing (`Tuple2<Long, T>`) measured...
 ** since subscription: `elapsed`
 ** since the dawn of time (well, computer time): `timestamp`
@@ -260,7 +260,7 @@ I want to deal with:
 TIP: Note that this returns a `Flux<GroupedFlux<K, T>>`, each inner `GroupedFlux` shares the same `K` key accessible through `key()`.
 
 [[which.blocking]]
-== Going back to the Synchronous world
+== Going Back to the Synchronous World
 * I have a `Flux<T>` and I want to:
 ** block until I can get the first element: `Flux#blockFirst`
 *** ...with a timeout: `Flux#blockFirst(Duration)`

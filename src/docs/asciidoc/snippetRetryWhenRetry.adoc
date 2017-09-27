@@ -11,8 +11,8 @@ Flux.<String>error(new IllegalArgumentException())
     );
 ----
 <1> Trick one: use `zip` and a `range` of "number of acceptable retries + 1".
-<2> The `zip` function lets you count the retries while keeping track of
-the original error.
-<3> To allow for 3 retries, indexes before 4 return a value to emit...
-<4> ...but, in order to terminate the sequence in error, we throw the original
-exception after these 3 retries.
+<2> The `zip` function lets you count the retries while keeping track of the original
+error.
+<3> To allow for three retries, indexes before 4 return a value to emit.
+<4> In order to terminate the sequence in error, we throw the original exception after
+these three retries.
