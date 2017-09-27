@@ -34,7 +34,7 @@ import reactor.core.publisher.Flux;
 public abstract class JdkFlowAdapter {
 
 	/**
-	 * Return a {@link Flux} from a java {@code Flow.Publisher}
+	 * Return a java {@code Flow.Publisher} from a {@link Flux}
 	 * @param publisher the source Publisher to convert
 	 * @param <T> the type of the publisher
 	 * @return a java {@code Flow.Publisher} from the given {@link Publisher}
