@@ -25,16 +25,14 @@ generate the documentation using the `asciidoctor` gradle task and check the
 rendering. Some of the sections rely on included files, so GitHub rendering is
 not always complete.
 
-ifeval::["{backend}" != "html5"]
+ifeval::["{backend}" == "html5"]
 TIP: To facilitate documentation edits, most sections have a link at the end that opens
-an edit UI directly on GitHub, for the main source file for that section. These links are
-only present in the HTML5 version of this reference guide.
-
-They look like this:
+an edit UI directly on GitHub for the main source file for that section. These links are
+only present in the HTML5 version of this reference guide. They look like the following
+link:
 https://github.com/reactor/reactor-core/edit/master/src/docs/asciidoc/aboutDoc.adoc[Suggest
-Edit^, role="fa fa-edit"].
+Edit^, role="fa fa-edit"] to <<about-doc>>.
 endif::[]
-
 == Getting Help
 There are several ways to reach out for help with Reactor.
 
@@ -61,7 +59,7 @@ for the job but cannot think of a relevant operator, try the <<which-operator>> 
 learn:
 ** More about Reactor's reactive types in the "<<flux>>" and "<<mono>>"
 sections.
-** How to Switch threading contexts using <<schedulers,a Scheduler>>.
+** How to switch threading contexts using <<schedulers,a Scheduler>>.
 ** How to handle errors in the <<error.handling>> section.
 * Unit testing? Yes it is possible with the `reactor-test` project! See <<testing>>.
 * <<producing>> offers a more advanced way of creating of reactive sources.

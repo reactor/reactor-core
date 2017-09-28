@@ -528,9 +528,9 @@ the `Schedulers.parallel()` instance.
 
 In some cases, however, you might need to change these default instances with something
 else in a cross-cutting way, without having to make sure every single operator you call
-has your specific `Scheduler` as a parameter. This could be for instrumentation purposes.
-An example is measuring the time every single scheduled task takes by wrapping the real
-schedulers. In other words, you might want to *change the default `Schedulers`*.
+has your specific `Scheduler` as a parameter. An example is measuring the time every
+single scheduled task takes by wrapping the real schedulers, for instrumentation
+purposes. In other words, you might want to *change the default `Schedulers`*.
 
 Changing the default schedulers is possible through the `Schedulers.Factory` class. By
 default, a `Factory` creates all the standard `Scheduler` through similarly named
@@ -566,7 +566,7 @@ three categories:
 
 [[hooks-dropping]]
 === Dropping Hooks
-Dropping hooks are invoked when the source of an operator does not comply wit the
+Dropping hooks are invoked when the source of an operator does not comply with the
 Reactive Streams specification. These kind of errors are outside of the normal execution
 path (that is, they cannot be propagated through `onError`).
 
@@ -644,8 +644,9 @@ This arrangement is especially hard for developers that use features dependent o
 threading model being more "stable", such as `ThreadLocal`. As it lets you associate
 data with a *thread*, it becomes tricky to use in a reactive context. As a result,
 libraries that rely on `ThreadLocal` at least introduce new challenges when used with
-Reactor, even if they do not work badly. Using the MDC of Logback to store and log
-correlation IDs is a prime example of such a situation.
+Reactor. At best, they introduce new challenges, and, at worst, they work badly or even
+fail. Using the MDC of Logback to store and log correlation IDs is a prime example of
+such a situation.
 
 The usual workaround for `ThreadLocal` usage is to move the contextual data, `C`, along
 your business data, `T`, in the sequence, by using `Tuple2<T, C>` for instance. This does
@@ -680,8 +681,8 @@ stored value to `T`).
 TIP: When *creating a* `Context`, you can create pre-valued contexts with up to five
 key-value pairs by using the static `Context.of` methods. They take 2, 4, 6, 8 or 10
 `Object` instances, each couple of `Object` instances being a key-value pair to add to
-the `Context`.
-
+the `Context`. +
++
 Alternatively you can also create an empty `Context` by using `Context.empty()`.
 
 === Tying the `Context` to a `Flux`

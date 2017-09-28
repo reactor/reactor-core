@@ -88,7 +88,7 @@ is that it can have *at most one* `Subscriber`.
 
 A `UnicastProcessor` has a few more options, reflected by a few `create` static factory
 methods. For instance, by default it is _unbounded_: if you push any amount of
-data through it while its `Subscriber` has not yet requested date, it will buffer all of
+data through it while its `Subscriber` has not yet requested data, it will buffer all of
 the data.
 
 This can be changed by providing a custom `Queue` implementation for the internal
@@ -126,9 +126,10 @@ or elements from an upstream `Publisher` and replays them to late subscribers.
 It can be created in multiple configurations:
 
 * Caching a single element (`cacheLast`).
-* a limited history (`create(int)`), unbounded history (`create()`).
-* A time-based replay window (`createTimeout(Duration)`).
-* A combination of history size and time window (`createSizeOrTimeout(int, Duration)`).
+* Caching a limited history (`create(int)`), unbounded history (`create()`).
+* Caching time-based replay window (`createTimeout(Duration)`).
+* Caching combination of history size and time window
+(`createSizeOrTimeout(int, Duration)`).
 
 == TopicProcessor
 A `TopicProcessor` is an asynchronous processor capable of relaying elements from

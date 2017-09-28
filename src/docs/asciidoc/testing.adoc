@@ -100,7 +100,7 @@ when you want to apply a custom `assertion` on the content of the signal (for ex
 check that there is an `onNext` event and assert that the emitted item is a list of size
 5). For example, you might use `consumeNextWith(Consumer<T>)`.
 * Take _miscellaneous actions_ such as pausing or running arbitrary code. For example, if
-you want to manipulate a test-specific state or context. For example, you might use
+you want to manipulate a test-specific state or context. To that effect, you might use
 `thenAwait(Duration)` and `then(Runnable)`.
 
 For terminal events, the corresponding expectation methods (`expectComplete()` and
@@ -231,9 +231,9 @@ that lets you programmatically trigger various signals:
 
 A well behaved `TestPublisher` can be obtained through the `create` factory method. Also,
 a misbehaving `TestPublisher` can be created using the `createNonCompliant` factory
-method. The latter takes a value from the `TestPublisher.Violation` enum. The values
-define which parts of the specification the publisher can overlook. These enum values
-include:
+method. The latter takes a value or multiple values from the `TestPublisher.Violation`
+enum. The values define which parts of the specification the publisher can overlook.
+These enum values include:
 
 * `REQUEST_OVERFLOW`: Allows `next` calls to be made despite an insufficient request,
 without triggering an `IllegalStateException`.

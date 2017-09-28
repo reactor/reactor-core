@@ -222,8 +222,9 @@ method).
 . Finally, it is seen by an `elapsed` and a `transform`. Once again, `elapsed` is applied
 by the transformation function of that second transform.
 
-We deal a form of instrumentation here, and creating a stack trace is costly. That is why
-this debugging feature should only be activated in a controlled manner, as a last resort.
+We deal with a form of instrumentation here, and creating a stack trace is costly. That
+is why this debugging feature should only be activated in a controlled manner, as a last
+resort.
 
 === The `checkpoint()` Alternative
 The debug mode is global and affects every single operator assembled into a `Flux` or

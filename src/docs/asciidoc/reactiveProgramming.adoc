@@ -350,9 +350,9 @@ moves down the chain, transformed by each link. Eventually, a `Subscriber` finis
 process. Remember that nothing happens until a `Subscriber` subscribes to a `Publisher`,
 as we see shortly.
 
-TIP: Understanding operators can help you avoid a common mistake that would lead you to
-believe that an operator you used in your chain is not being applied. See this
-<<faq.chain,item>> in the FAQ.
+TIP: Understanding that operators create new instances can help you avoid a common
+mistake that would lead you to believe that an operator you used in your chain is not
+being applied. See this <<faq.chain,item>> in the FAQ.
 
 While the Reactive Streams specification does not specify operators at all, one of the
 best added values of reactive libraries such as Reactor is the rich vocabulary of
