@@ -18,7 +18,7 @@ import org.gradle.api.internal.plugins.osgi.OsgiHelper
  */
 
 buildscript {
-  ext.kotlinVersion = '1.1.4-3'
+  ext.kotlinVersion = '1.1.51'
   repositories {
 	maven { url "http://repo.spring.io/plugins-release" }
   }
@@ -155,12 +155,12 @@ configure(subprojects) { p ->
 
   compileKotlin {
 	kotlinOptions.jvmTarget = "1.8"
-	kotlinOptions.freeCompilerArgs = ["-Xjsr305-annotations=enable"]
+	kotlinOptions.freeCompilerArgs = ["-Xjsr305=strict"]
   }
 
   compileTestKotlin {
 	kotlinOptions.jvmTarget = "1.8"
-	kotlinOptions.freeCompilerArgs = ["-Xjsr305-annotations=enable"]
+	kotlinOptions.freeCompilerArgs = ["-Xjsr305=strict"]
   }
 
   if (JavaVersion.current().isJava8Compatible()) {
