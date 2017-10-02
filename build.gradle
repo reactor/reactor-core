@@ -194,6 +194,13 @@ configure(subprojects) { p ->
 	exclude '**/*Abstract*.*'
 	exclude '**/*OperatorTest*.*'
   }
+
+  //Workaround for https://youtrack.jetbrains.com/issue/KT-17564
+  // until kotlin-gradle-plugin 1.1.60 is out
+  sourcesJar {
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+  }
+
 }
 
 if (project.hasProperty('platformVersion')) {
