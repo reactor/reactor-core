@@ -18,7 +18,6 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import reactor.core.Scannable;
 
@@ -29,7 +28,7 @@ public class DelegateProcessorTest {
 
 	@Test
 	public void scanReturnsDownStreamForParentElseDelegates() {
-		Publisher<?> downstream = Mockito.mock(Publisher.class);
+		Publisher<?> downstream = Mockito.mock(FluxOperator.class);
 
 		IllegalStateException boom = new IllegalStateException("boom");
 		InnerConsumer<?> upstream = Mockito.mock(InnerConsumer.class);

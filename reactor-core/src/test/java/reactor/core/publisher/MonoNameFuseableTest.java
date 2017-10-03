@@ -36,7 +36,7 @@ public class MonoNameFuseableTest {
 		tags.add(tag1);
 		tags.add(tag2);
 
-		Mono<Integer> source = Mono.just(1);
+		Mono<Integer> source = Mono.just(1).map(i -> i);
 		MonoNameFuseable<Integer> test = new MonoNameFuseable<>(source, "foo", tags);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);

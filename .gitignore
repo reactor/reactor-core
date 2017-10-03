@@ -1,3 +1,7 @@
+#jenv local configuration
+.java-version
+
+.gradletasknamecache
 .DS_Store
 bin
 build

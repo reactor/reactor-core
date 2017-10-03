@@ -27,6 +27,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.test.MockUtils;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -249,7 +250,7 @@ public class FluxDistinctUntilChangedTest extends FluxOperatorTest<String, Strin
 	@Test
 	public void scanConditionalSubscriber() {
 		@SuppressWarnings("unchecked")
-		Fuseable.ConditionalSubscriber<String> actual = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+		Fuseable.ConditionalSubscriber<String> actual = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
 		FluxDistinctUntilChanged.DistinctUntilChangedConditionalSubscriber<String, Integer> test = new FluxDistinctUntilChanged.DistinctUntilChangedConditionalSubscriber<>(
 				actual, String::hashCode, Objects::equals);
 		Subscription parent = Operators.emptySubscription();

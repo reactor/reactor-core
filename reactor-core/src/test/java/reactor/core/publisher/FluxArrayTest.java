@@ -21,6 +21,7 @@ import org.mockito.Mockito;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.test.MockUtils;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -94,11 +95,10 @@ public class FluxArrayTest {
 		  .assertNotComplete();
 	}
 
-
 	@Test
 	public void scanConditionalSubscription() {
 		@SuppressWarnings("unchecked")
-		Fuseable.ConditionalSubscriber<? super Object> subscriber = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+		Fuseable.ConditionalSubscriber<? super Object> subscriber = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
 
 		FluxArray.ArrayConditionalSubscription<Object> test =
 				new FluxArray.ArrayConditionalSubscription<>(subscriber,
@@ -126,7 +126,7 @@ public class FluxArrayTest {
 	@Test
 	public void scanConditionalSubscriptionRequested() {
 		@SuppressWarnings("unchecked")
-		Fuseable.ConditionalSubscriber<? super Object> subscriber = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+		Fuseable.ConditionalSubscriber<? super Object> subscriber = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
 		//the mock will not drain the request, so it can be tested
 		Mockito.when(subscriber.tryOnNext(Mockito.any()))
 		       .thenReturn(false);
@@ -143,7 +143,7 @@ public class FluxArrayTest {
 	@Test
 	public void scanConditionalSubscriptionCancelled() {
 		@SuppressWarnings("unchecked")
-		Fuseable.ConditionalSubscriber<? super Object> subscriber = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+		Fuseable.ConditionalSubscriber<? super Object> subscriber = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
 
 		FluxArray.ArrayConditionalSubscription<Object> test =
 				new FluxArray.ArrayConditionalSubscription<>(subscriber, new Object[] {"foo", "bar", "baz"});
@@ -155,7 +155,7 @@ public class FluxArrayTest {
 
 	@Test
 	public void scanSubscription() {
-		@SuppressWarnings("unchecked") CoreSubscriber<String> subscriber = Mockito.mock(CoreSubscriber.class);
+		@SuppressWarnings("unchecked") InnerOperator<String, String> subscriber = Mockito.mock(InnerOperator.class);
 		FluxArray.ArraySubscription<String> test =
 				new FluxArray.ArraySubscription<>(subscriber, new String[] {"foo", "bar", "baz"});
 
@@ -179,7 +179,7 @@ public class FluxArrayTest {
 	@Test
 	public void scanSubscriptionCancelled() {
 		@SuppressWarnings("unchecked")
-		CoreSubscriber<String> subscriber = Mockito.mock(CoreSubscriber.class);
+		CoreSubscriber<String> subscriber = Mockito.mock(InnerOperator.class);
 		FluxArray.ArraySubscription<String> test =
 				new FluxArray.ArraySubscription<>(subscriber, new String[] {"foo", "bar", "baz"});
 

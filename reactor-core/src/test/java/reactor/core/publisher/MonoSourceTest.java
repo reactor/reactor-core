@@ -158,7 +158,7 @@ public class MonoSourceTest {
 
 	@Test
 	public void scanSubscriber() {
-		Flux<String> source = Flux.just("foo");
+		Flux<String> source = Flux.just("foo").map(i -> i);
 		Mono<String> test = Mono.fromDirect(source);
 
 		assertThat(Scannable.from(test).scan(Scannable.Attr.PARENT)).isSameAs(source);
@@ -177,7 +177,7 @@ public class MonoSourceTest {
 
 	@Test
 	public void scanSubscriberIgnore() {
-		Flux<String> source = Flux.just("foo");
+		Flux<String> source = Flux.just("foo").map(i -> i);
 		MonoIgnorePublisher<String> test = new MonoIgnorePublisher<>(source);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);
@@ -186,7 +186,7 @@ public class MonoSourceTest {
 
 	@Test
 	public void scanSubscriberFrom() {
-		Flux<String> source = Flux.just("foo");
+		Flux<String> source = Flux.just("foo").map(i -> i);
 		MonoFromPublisher<String> test = new MonoFromPublisher<>(source);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);

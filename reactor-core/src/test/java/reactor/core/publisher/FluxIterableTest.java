@@ -25,6 +25,7 @@ import org.mockito.Mockito;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.test.MockUtils;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 
@@ -151,7 +152,7 @@ public class FluxIterableTest {
 	@Test
 	public void scanConditionalSubscription() {
 		@SuppressWarnings("unchecked")
-		Fuseable.ConditionalSubscriber<? super String> actual = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+		Fuseable.ConditionalSubscriber<? super String> actual = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
         FluxIterable.IterableSubscriptionConditional<String> test =
 				new FluxIterable.IterableSubscriptionConditional<>(actual, Collections.singleton("test").iterator());
 

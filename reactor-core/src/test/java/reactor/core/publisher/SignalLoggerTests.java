@@ -99,7 +99,7 @@ public class SignalLoggerTests {
 
 	@Test
 	public void scanSignalLogger() {
-		Mono<String> source = Mono.empty();
+		Mono<String> source = Mono.just("").map(i -> i);
 		SignalLogger<String> sl = new SignalLogger<>(source, null, Level.INFO, false);
 
 		Assertions.assertThat(sl.scan(Scannable.Attr.PARENT)).isSameAs(source);

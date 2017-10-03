@@ -22,6 +22,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import reactor.core.Disposable;
 import reactor.core.Scannable;
+import reactor.test.MockUtils;
 import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -82,7 +83,7 @@ public class FluxAutoConnectTest {
 	@Test
 	public void scanMain() {
 		@SuppressWarnings("unchecked")
-		ConnectableFlux<String> source = Mockito.mock(ConnectableFlux.class);
+		ConnectableFlux<String> source = Mockito.mock(MockUtils.TestScannableConnectableFlux.class);
 		Mockito.when(source.getPrefetch()).thenReturn(888);
 		FluxAutoConnect<String> test = new FluxAutoConnect<>(source, 123, d -> { });
 

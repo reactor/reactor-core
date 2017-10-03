@@ -338,7 +338,8 @@ public class FluxFlattenIterableTest extends FluxOperatorTest<String, String> {
 
     @Test
     public void scanOperator() {
-        Flux<Integer> source = Flux.range(1, 10);
+        Flux<Integer> source = Flux.range(1, 10).map(i -> i - 1);
+
         FluxFlattenIterable<Integer, Integer> test = new FluxFlattenIterable<>(source, i -> new ArrayList<>(i), 35, Queues.one());
 
         assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);

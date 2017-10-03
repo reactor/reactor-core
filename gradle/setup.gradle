@@ -16,7 +16,7 @@
 
 task wrapper(type: Wrapper, description: "Create a Gradle self-download wrapper") {
 	group = 'Project Setup'
-	gradleVersion = 4.2
+	gradleVersion = "4.2.1"
 }
 
 configure(subprojects) { p ->

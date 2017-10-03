@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import java.util.function.Function;
 
 import org.junit.Assert;
@@ -954,7 +955,9 @@ public class FluxFlatMapTest {
 
 	@SuppressWarnings("unchecked")
 	void assertAfterOnSubscribeInnerState(InnerProducer s) {
-		assertThat(s.inners()).hasSize(1);
+		//workaround https://github.com/joel-costigliola/assertj-core/issues/1046
+		Stream inners = s.inners();
+		assertThat(inners).hasSize(1);
 	}
 
 	void assertBeforeOnSubscribeInnerState(InnerConsumer s) {

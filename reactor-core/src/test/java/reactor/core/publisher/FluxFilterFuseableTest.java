@@ -22,6 +22,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.test.MockUtils;
 import reactor.test.publisher.FluxOperatorTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,7 +47,7 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
     @Test
     public void scanConditionalSubscriber() {
         @SuppressWarnings("unchecked")
-        Fuseable.ConditionalSubscriber<String> actual = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+        Fuseable.ConditionalSubscriber<String> actual = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
         FluxFilterFuseable.FilterFuseableConditionalSubscriber<String> test = new FluxFilterFuseable.FilterFuseableConditionalSubscriber<>(actual, t -> true);
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);

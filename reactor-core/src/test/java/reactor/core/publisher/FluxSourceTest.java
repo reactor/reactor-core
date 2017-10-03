@@ -112,7 +112,7 @@ public class FluxSourceTest {
 
 	@Test
 	public void scanMain() {
-		Flux<Integer> parent = Flux.range(1,  10);
+		Flux<Integer> parent = Flux.range(1,  10).map(i -> i);
 		FluxSource<Integer> test = new FluxSource<>(parent);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
