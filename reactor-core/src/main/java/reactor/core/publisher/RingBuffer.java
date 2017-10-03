@@ -514,7 +514,7 @@ abstract class RingBuffer<E> implements LongSupplier {
 enum  UnsafeSupport {
 	;
 
-	private static final Logger logger = Loggers.getLogger(UnsafeSupport.class);
+	static final Logger logger = Loggers.getLogger(UnsafeSupport.class);
 
 	static {
 		String javaSpecVersion = System.getProperty("java.specification.version");
