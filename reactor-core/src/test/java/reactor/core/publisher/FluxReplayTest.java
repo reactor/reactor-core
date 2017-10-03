@@ -286,7 +286,7 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 
 	@Test
     public void scanMain() {
-        Flux<Integer> parent = Flux.just(1);
+        Flux<Integer> parent = Flux.just(1).map(i -> i);
         FluxReplay<Integer> test = new FluxReplay<>(parent, 25, 1000, Schedulers.single());
 
         Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);

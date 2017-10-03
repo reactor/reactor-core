@@ -32,7 +32,7 @@ buildscript {
 }
 
 plugins {
-  id 'org.asciidoctor.convert' version '1.5.2'
+  id 'org.asciidoctor.convert' version '1.5.6'
   id "me.champeau.gradle.jmh" version "0.4.4" apply false
   id "org.jetbrains.dokka" version "0.9.15"
   id "me.champeau.gradle.japicmp" version "0.2.5"
@@ -57,8 +57,8 @@ ext {
   logbackVersion = '1.1.2'
 
   // Testing
-  assertJVersion = '3.6.1'
-  mockitoVersion = '2.7.22'
+  assertJVersion = '3.8.0'
+  mockitoVersion = '2.10.0'
 
   javadocLinks = ["http://docs.oracle.com/javase/8/docs/api/",
 				  "http://docs.oracle.com/javaee/6/api/",
@@ -70,7 +70,6 @@ ext {
 						  'rx;resolution:=optional',
 						  'com.google;resolution:=optional',
 						  '*']
-
 }
 
 configure(subprojects) { p ->
@@ -111,7 +110,7 @@ configure(subprojects) { p ->
   }
 
   jacoco {
-	toolVersion = '0.7.7.201606060606'
+	toolVersion = '0.7.9'
   }
 
   jacocoTestReport {
@@ -288,6 +287,11 @@ project('reactor-core') {
 	options.tags = [ "apiNote:a:API Note:", "implSpec:a:Implementation Requirements:",
 					 "implNote:a:Implementation Note:" ]
 
+	// In Java 9, javadoc generator will complain if it finds invalid class files in the classpath
+	// And Kotlin produces such classes, plus kotlin plugin puts them in the main sourceSet
+	classpath = sourceSets.main.output.filter { !it.absolutePath.contains("kotlin") }
+	classpath += sourceSets.main.compileClasspath
+
 	maxMemory = "1024m"
 	destinationDir = new File(project.buildDir, "docs/javadoc")
   }
@@ -361,7 +365,8 @@ project('reactor-core') {
 	archives sourcesJar
 	archives javadocJar
 	archives docsZip
-	archives kdocZip
+	if (!JavaVersion.current().isJava9Compatible())
+	  archives kdocZip
   }
 
   jacocoTestReport.dependsOn testNG
@@ -423,6 +428,11 @@ project('reactor-test') {
 	options.tags = [ "apiNote:a:API Note:", "implSpec:a:Implementation Requirements:",
 					 "implNote:a:Implementation Note:" ]
 
+	// In Java 9, javadoc generator will complain if it finds invalid class files in the classpath
+	// And Kotlin produces such classes, plus kotlin plugin puts them in the main sourceSet
+	classpath = sourceSets.main.output.filter { !it.absolutePath.contains("kotlin") }
+	classpath += sourceSets.main.compileClasspath
+
 	maxMemory = "1024m"
 	destinationDir = new File(project.buildDir, "docs/javadoc")
   }
@@ -469,7 +479,8 @@ project('reactor-test') {
   }
 
   artifacts {
-	archives kdocZip
+	if (!JavaVersion.current().isJava9Compatible())
+	  archives kdocZip
   }
 
   jar.finalizedBy(japicmp)

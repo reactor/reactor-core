@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
+import java.util.stream.Stream;
 
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -266,10 +267,15 @@ public class EmitterProcessorTest {
 		assertThat(tp.getPending()).isEqualTo(0);
 		assertThat(tp.getBufferSize()).isEqualTo(Queues.SMALL_BUFFER_SIZE);
 		assertThat(tp.isCancelled()).isFalse();
-		assertThat(tp.inners()).isEmpty();
+
+		//workaround https://github.com/joel-costigliola/assertj-core/issues/1046
+		Stream inners = tp.inners();
+		assertThat(inners).isEmpty();
 
 		Disposable d1 = tp.subscribe();
-		assertThat(tp.inners()).hasSize(1);
+		//workaround https://github.com/joel-costigliola/assertj-core/issues/1046
+		inners = tp.inners();
+		assertThat(inners).hasSize(1);
 
 		FluxSink<Integer> s = tp.sink();
 

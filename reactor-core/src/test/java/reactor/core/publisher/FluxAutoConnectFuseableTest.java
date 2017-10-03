@@ -16,9 +16,13 @@
 
 package reactor.core.publisher;
 
+import java.util.function.Consumer;
+
 import org.junit.Test;
 import org.mockito.Mockito;
+import reactor.core.Disposable;
 import reactor.core.Scannable;
+import reactor.test.MockUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -27,7 +31,7 @@ public class FluxAutoConnectFuseableTest {
 	@Test
 	public void scanMain() {
 		@SuppressWarnings("unchecked")
-		ConnectableFlux<String> source = Mockito.mock(ConnectableFlux.class);
+		ConnectableFlux<String> source = Mockito.mock(MockUtils.TestScannableConnectableFlux.class);
 		Mockito.when(source.getPrefetch()).thenReturn(888);
 		FluxAutoConnectFuseable<String> test = new FluxAutoConnectFuseable<>(source, 123, d -> { });
 

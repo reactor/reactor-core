@@ -39,7 +39,7 @@ public class FluxErrorTest {
 
     @Test
     public void scanSubscription() {
-	    @SuppressWarnings("unchecked") CoreSubscriber<String> subscriber = Mockito.mock(CoreSubscriber.class);
+	    @SuppressWarnings("unchecked") CoreSubscriber<String> subscriber = Mockito.mock(InnerOperator.class);
         FluxErrorOnRequest.ErrorSubscription test =
                 new FluxErrorOnRequest.ErrorSubscription(subscriber, new IllegalStateException("boom"));
 

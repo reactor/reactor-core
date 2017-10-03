@@ -33,6 +33,7 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.MockUtils;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
@@ -847,7 +848,7 @@ public class FluxPeekFuseableTest {
     @Test
     public void scanFuseableConditionalSubscriber() {
 	    @SuppressWarnings("unchecked")
-	    Fuseable.ConditionalSubscriber<Integer> actual = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+	    Fuseable.ConditionalSubscriber<Integer> actual = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
         FluxPeek<Integer> peek = new FluxPeek<>(Flux.just(1), s -> {}, s -> {},
         		e -> {}, () -> {}, () -> {}, r -> {}, () -> {});
         FluxPeekFuseable.PeekFuseableConditionalSubscriber<Integer> test =

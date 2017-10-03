@@ -36,7 +36,7 @@ public class FluxNameFuseableTest {
 		tags.add(tag1);
 		tags.add(tag2);
 
-		Flux<Integer> source = Flux.range(1, 4);
+		Flux<Integer> source = Flux.range(1, 4).map(i -> i);
 		FluxNameFuseable<Integer> test = new FluxNameFuseable<>(source, "foo", tags);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);

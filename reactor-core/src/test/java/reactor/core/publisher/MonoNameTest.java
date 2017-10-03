@@ -36,7 +36,7 @@ public class MonoNameTest {
 		tags.add(tag1);
 		tags.add(tag2);
 
-		Mono<Integer> source = Mono.just(1);
+		Mono<Integer> source = Mono.just(1).map(i -> i);
 		MonoName<Integer> test = new MonoName<>(source, "foo", tags);
 
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(source);

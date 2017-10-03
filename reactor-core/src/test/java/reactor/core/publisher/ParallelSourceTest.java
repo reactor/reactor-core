@@ -35,7 +35,7 @@ public class ParallelSourceTest {
 
 	@Test
 	public void scanOperator() throws Exception {
-		Flux<String> source = Flux.empty();
+		Flux<String> source = Flux.just("").map(i -> i);
 		ParallelSource<String> test = new ParallelSource<>(source, 100, 123,
 				Queues.small());
 

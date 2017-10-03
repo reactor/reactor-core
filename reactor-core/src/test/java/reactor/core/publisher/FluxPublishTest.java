@@ -477,7 +477,7 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 
 	@Test
     public void scanMain() {
-        Flux<Integer> parent = Flux.just(1);
+        Flux<Integer> parent = Flux.just(1).map(i -> i);
         FluxPublish<Integer> test = new FluxPublish<>(parent, 123, Queues.unbounded());
 
         assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);

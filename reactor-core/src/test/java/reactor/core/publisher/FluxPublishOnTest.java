@@ -50,6 +50,7 @@ import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.MockUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
@@ -1281,7 +1282,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 	@Test
     public void scanConditionalSubscriber() {
 		@SuppressWarnings("unchecked")
-		Fuseable.ConditionalSubscriber<Integer> actual = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+		Fuseable.ConditionalSubscriber<Integer> actual = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
         FluxPublishOn.PublishOnConditionalSubscriber<Integer> test =
         		new FluxPublishOn.PublishOnConditionalSubscriber<>(actual, Schedulers.single(),
         				Schedulers.single().createWorker(), true, 123, Queues.unbounded());

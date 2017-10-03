@@ -31,6 +31,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.MockUtils;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.publisher.TestPublisher;
@@ -402,7 +403,7 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
     @Test
     public void scanConditionalSubscriber() {
 	    @SuppressWarnings("unchecked")
-	    Fuseable.ConditionalSubscriber<? super Object> subscriber = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+	    Fuseable.ConditionalSubscriber<? super Object> subscriber = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
         FluxHandle.HandleConditionalSubscriber<String, String> test =
         		new FluxHandle.HandleConditionalSubscriber<>(subscriber, (a, b) -> {});
         Subscription parent = Operators.emptySubscription();
@@ -439,7 +440,7 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
     @Test
     public void scanFuseableConditionalSubscriber() {
 	    @SuppressWarnings("unchecked")
-	    Fuseable.ConditionalSubscriber<? super Object> subscriber = Mockito.mock(Fuseable.ConditionalSubscriber.class);
+	    Fuseable.ConditionalSubscriber<? super Object> subscriber = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
 	    FluxHandleFuseable.HandleFuseableConditionalSubscriber<String, String> test =
         		new FluxHandleFuseable.HandleFuseableConditionalSubscriber<>(subscriber, (a, b) -> {});
         Subscription parent = Operators.emptySubscription();
