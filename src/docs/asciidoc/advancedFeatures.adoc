@@ -56,7 +56,7 @@ Subscriber to Transformed MapAndFilter: PURPLE
 The `compose` operator is similar to `transform` and also lets you encapsulate operators
 in a function. The major difference is that this function is applied to the original
 sequence *on a per-subscriber basis*. It means that the function can actually produce a
-different operator chain for each subscription (by maintaining the some state). The
+different operator chain for each subscription (by maintaining some state). The
 following code shows an example:
 
 [source,java]
@@ -644,9 +644,8 @@ This arrangement is especially hard for developers that use features dependent o
 threading model being more "stable", such as `ThreadLocal`. As it lets you associate
 data with a *thread*, it becomes tricky to use in a reactive context. As a result,
 libraries that rely on `ThreadLocal` at least introduce new challenges when used with
-Reactor. At best, they introduce new challenges, and, at worst, they work badly or even
-fail. Using the MDC of Logback to store and log correlation IDs is a prime example of
-such a situation.
+Reactor. At worst, they work badly or even fail. Using the MDC of Logback to store and
+log correlation IDs is a prime example of such a situation.
 
 The usual workaround for `ThreadLocal` usage is to move the contextual data, `C`, along
 your business data, `T`, in the sequence, by using `Tuple2<T, C>` for instance. This does
@@ -682,7 +681,7 @@ TIP: When *creating a* `Context`, you can create pre-valued contexts with up to 
 key-value pairs by using the static `Context.of` methods. They take 2, 4, 6, 8 or 10
 `Object` instances, each couple of `Object` instances being a key-value pair to add to
 the `Context`. +
-+
+ +
 Alternatively you can also create an empty `Context` by using `Context.empty()`.
 
 === Tying the `Context` to a `Flux`

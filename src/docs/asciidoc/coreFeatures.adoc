@@ -226,8 +226,7 @@ Some operators use a specific Scheduler from `Schedulers` by default (and usuall
 you the option of providing a different one). For instance, calling the factory method
 `Flux.interval(Duration.ofMillis(300))` produces a `Flux<Long>` that ticks every 300ms.
 By default, this is enabled by `Schedulers.parallel()`. The following line changes the
-Scheduler to a new instance similar to `Schedulers.single()`, as shown in the following
-example:
+Scheduler to a new instance similar to `Schedulers.single()`:
 
 [source,java]
 Flux.interval(Duration.ofMillis(300), Schedulers.newSingle("test"))

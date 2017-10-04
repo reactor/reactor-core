@@ -1,5 +1,6 @@
 [[about-doc]]
 = About the Documentation
+:linkattrs:
 This section provides a brief overview of Reactor reference documentation. You do not
 need to read this guide in a linear fashion. Each piece stands on its own, though they
 often refer to other pieces.
@@ -29,9 +30,7 @@ ifeval::["{backend}" == "html5"]
 TIP: To facilitate documentation edits, most sections have a link at the end that opens
 an edit UI directly on GitHub for the main source file for that section. These links are
 only present in the HTML5 version of this reference guide. They look like the following
-link:
-https://github.com/reactor/reactor-core/edit/master/src/docs/asciidoc/aboutDoc.adoc[Suggest
-Edit^] to <<about-doc>>.
+link:https://github.com/reactor/reactor-core/edit/master/src/docs/asciidoc/aboutDoc.adoc[Suggest Edit^, role="fa fa-edit"] to <<about-doc>>.
 endif::[]
 == Getting Help
 There are several ways to reach out for help with Reactor.
