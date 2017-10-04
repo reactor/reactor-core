@@ -25,6 +25,8 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
+import reactor.util.Logger;
+import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.concurrent.WaitStrategy;
@@ -489,50 +491,126 @@ abstract class RingBuffer<E> implements LongSupplier {
 	}
 }
 
-//
+// UnsafeSupport static initialization is derived from Netty's PlatformDependent0
+// static initialization, the original licence of which is included below, verbatim.
+// Modifications to the source material are:
+//   - a shorter amount of checks and fields (focusing on Unsafe and buffer address)
+//   - modifications to the logging messages and their level
+/*
+ * Copyright 2013 The Netty Project
+ *
+ * The Netty Project licenses this file to you under the Apache License,
+ * version 2.0 (the "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at:
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
 enum  UnsafeSupport {
 	;
-	static {
-		ByteBuffer direct = ByteBuffer.allocateDirect(1);
-		Field addressField;
-		try {
-			addressField = Buffer.class.getDeclaredField("address");
-			addressField.setAccessible(true);
-			if (addressField.getLong(ByteBuffer.allocate(1)) != 0) {
-				// A heap buffer must have 0 address.
-				addressField = null;
-			} else {
-				if (addressField.getLong(direct) == 0) {
-					// A direct buffer must have non-zero address.
-					addressField = null;
-				}
-			}
-		} catch (Throwable t) {
-			// Failed to access the address field.
-			addressField = null;
-		}
-		Unsafe unsafe;
-		if (addressField != null) {
-			try {
-				Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe");
-				unsafeField.setAccessible(true);
-				unsafe = (Unsafe) unsafeField.get(null);
 
-				// Ensure the unsafe supports all necessary methods to work around the mistake in the latest OpenJDK.
-				// https://github.com/netty/netty/issues/1061
-				// http://www.mail-archive.com/jdk6-dev@openjdk.java.net/msg00698.html
-				if (unsafe != null) {
-					unsafe.getClass().getDeclaredMethod(
-							"copyMemory", Object.class, long.class, Object.class, long.class, long.class);
+	static final Logger logger = Loggers.getLogger(UnsafeSupport.class);
+
+	static {
+		String javaSpecVersion = System.getProperty("java.specification.version");
+		logger.debug("Starting UnsafeSupport init in Java " + javaSpecVersion);
+
+		ByteBuffer direct = ByteBuffer.allocateDirect(1);
+		Unsafe unsafe;
+
+		// Get an Unsafe instance first, via the (still legit as of Java 9)
+		// deep reflection trick on theUnsafe Field
+		Object maybeUnsafe;
+		try {
+			final Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe");
+			unsafeField.setAccessible(true);
+			// the unsafe instance
+			maybeUnsafe = unsafeField.get(null);
+		} catch (NoSuchFieldException | SecurityException | IllegalAccessException e) {
+			maybeUnsafe = e;
+		}
+
+		// the conditional check here can not be replaced with checking that maybeUnsafe
+		// is an instanceof Unsafe and reversing the if and else blocks; this is because an
+		// instanceof check against Unsafe will trigger a class load and we might not have
+		// the runtime permission accessClassInPackage.sun.misc
+		if (maybeUnsafe instanceof Throwable) {
+			unsafe = null;
+			logger.debug("Unsafe unavailable - Could not get it via Field sun.misc.Unsafe.theUnsafe", (Throwable) maybeUnsafe);
+		} else {
+			unsafe = (Unsafe) maybeUnsafe;
+			logger.trace("sun.misc.Unsafe.theUnsafe ok");
+		}
+
+		// ensure the unsafe supports all necessary methods to work around the mistake in the latest OpenJDK
+		// https://github.com/netty/netty/issues/1061
+		// http://www.mail-archive.com/jdk6-dev@openjdk.java.net/msg00698.html
+		if (unsafe != null) {
+			final Unsafe finalUnsafe = unsafe;
+			Object maybeException;
+			try {
+				finalUnsafe.getClass().getDeclaredMethod(
+						"copyMemory", Object.class, long.class, Object.class, long.class, long.class);
+				maybeException = null;
+			} catch (NoSuchMethodException | SecurityException e) {
+				maybeException =  e;
+			}
+
+			if (maybeException == null) {
+				logger.trace("sun.misc.Unsafe.copyMemory ok");
+			} else {
+				unsafe = null;
+				logger.debug("Unsafe unavailable - failed on sun.misc.Unsafe.copyMemory", (Throwable) maybeException);
+			}
+		}
+
+		// finally check the Buffer#address
+		if (unsafe != null) {
+			final Unsafe finalUnsafe = unsafe;
+			Object maybeAddressField;
+			try {
+				final Field field = Buffer.class.getDeclaredField("address");
+
+				// Use Unsafe to read value of the address field.
+				// This way it will not fail on JDK9+ which forbids changing the
+				// access level via reflection.
+				final long offset = finalUnsafe.objectFieldOffset(field);
+				final long heapAddress = finalUnsafe.getLong(ByteBuffer.allocate(1), offset);
+				final long directAddress = finalUnsafe.getLong(direct, offset);
+
+				if (heapAddress != 0 && "1.8".equals(javaSpecVersion)) {
+					maybeAddressField = new IllegalStateException("A heap buffer must have 0 address in Java 8, got " + heapAddress);
 				}
-			} catch (Throwable cause) {
-				// Unsafe.copyMemory(Object, long, Object, long, long) unavailable.
+				else if (heapAddress == 0 && !"1.8".equals(javaSpecVersion)) {
+					maybeAddressField = new IllegalStateException("A heap buffer must have non-zero address in Java " + javaSpecVersion);
+				}
+				else if (directAddress == 0) {
+					maybeAddressField = new IllegalStateException("A direct buffer must have non-zero address");
+				}
+				else {
+					maybeAddressField = field;
+				}
+
+			} catch (NoSuchFieldException | SecurityException e) {
+				maybeAddressField = e;
+			}
+
+			if (maybeAddressField instanceof Throwable) {
+				logger.debug("Unsafe unavailable - failed on java.nio.Buffer.address", (Throwable) maybeAddressField);
+
+				// If we cannot access the address of a direct buffer, there's no point in using unsafe.
+				// Let's just pretend unsafe is unavailable for overall simplicity.
 				unsafe = null;
 			}
-		} else {
-			// If we cannot access the address of a direct buffer, there's no point of using unsafe.
-			// Let's just pretend unsafe is unavailable for overall simplicity.
-			unsafe = null;
+			else {
+				logger.trace("java.nio.Buffer.address ok");
+				logger.debug("Unsafe is available");
+			}
 		}
 
 		UNSAFE = unsafe;
