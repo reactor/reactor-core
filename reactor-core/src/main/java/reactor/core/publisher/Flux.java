@@ -4623,6 +4623,10 @@ public abstract class Flux<T> implements Publisher<T> {
 		return onAssembly(this.publishOn(Schedulers.immediate(), prefetchRate));
 	}
 
+	public final Flux<T> limitRequest(long requestCap) {
+		return onAssembly(new FluxLimitRequest<>(this, requestCap));
+	}
+
 	/**
 	 * Observe all Reactive Streams signals and trace them using {@link Logger} support.
 	 * Default will use {@link Level#INFO} and {@code java.util.logging}.
