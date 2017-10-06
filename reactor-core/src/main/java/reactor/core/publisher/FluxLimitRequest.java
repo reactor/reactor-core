@@ -57,8 +57,7 @@ final class FluxLimitRequest<T> extends FluxOperator<T, T> {
 		final CoreSubscriber<? super T> actual;
 
 		Subscription parent;
-
-		volatile long toProduce;
+		long toProduce;
 
 		volatile long requestRemaining;
 		static final AtomicLongFieldUpdater<FluxLimitRequestSubscriber> REQUEST_REMAINING =

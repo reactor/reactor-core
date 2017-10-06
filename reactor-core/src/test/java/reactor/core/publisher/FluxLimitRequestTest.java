@@ -199,6 +199,26 @@ public class FluxLimitRequestTest {
 	}
 
 	@Test
+	public void completeSignalDespiteAllProducedCancelNotPropagated() {
+		TestPublisher<Integer> tp = TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
+
+		StepVerifier.create(tp.flux().limitRequest(3))
+		            .then(() -> tp.emit(1, 2, 3))
+		            .expectNext(1, 2, 3)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void errorSignalDespiteAllProducedNotPropagated() {
+		TestPublisher<Integer> tp = TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
+
+		StepVerifier.create(tp.flux().limitRequest(3))
+		            .then(() -> tp.next(1, 2, 3).error(new IllegalStateException("boom")))
+		            .expectNext(1, 2, 3)
+		            .verifyComplete();
+	}
+
+	@Test
 	public void scanOperator() {
 		Flux<String> source = Flux.empty();
 		FluxLimitRequest<String> operator = new FluxLimitRequest<>(source, 123);
