@@ -39,6 +39,19 @@ final class FluxLimitRequest<T> extends FluxOperator<T, T> {
 		source.subscribe(new FluxLimitRequestSubscriber<>(actual, this.cap));
 	}
 
+	@Override
+	public int getPrefetch() {
+		return 0;
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return cap;
+
+		//FluxOperator defines PREFETCH and PARENT
+		return super.scanUnsafe(key);
+	}
+
 	static class FluxLimitRequestSubscriber<T> implements InnerOperator<T, T> {
 
 		final CoreSubscriber<? super T> actual;
@@ -80,6 +93,7 @@ final class FluxLimitRequest<T> extends FluxOperator<T, T> {
 		@Override
 		public void onError(Throwable throwable) {
 			if (toProduce != 0L) {
+				toProduce = 0L;
 				actual.onError(throwable);
 			}
 		}
@@ -87,6 +101,7 @@ final class FluxLimitRequest<T> extends FluxOperator<T, T> {
 		@Override
 		public void onComplete() {
 			if (toProduce != 0L) {
+				toProduce = 0L;
 				actual.onComplete();
 			}
 		}
@@ -120,7 +135,13 @@ final class FluxLimitRequest<T> extends FluxOperator<T, T> {
 			parent.cancel();
 		}
 
-		//TODO scan
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.PARENT) return parent;
+			if (key == Attr.TERMINATED) return toProduce == 0L;
+
+			//InnerOperator defines ACTUAL
+			return InnerOperator.super.scanUnsafe(key);
+		}
 	}
-		//TODO scan
 }

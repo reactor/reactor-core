@@ -4604,13 +4604,15 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
-	 * Ensure that backpressure signals from downstream subscribers are capped at the
-	 * provided {@code prefetchRate} when propagated upstream, effectively rate limiting
-	 * the upstream {@link Publisher}.
+	 * Ensure that backpressure signals from downstream subscribers are split into batches
+	 * capped at the provided {@code prefetchRate} when propagated upstream, effectively
+	 * rate limiting the upstream {@link Publisher}.
 	 * <p>
 	 * Typically used for scenarios where consumer(s) request a large amount of data
 	 * (eg. {@code Long.MAX_VALUE}) but the data source behaves better or can be optimized
-	 * with smaller requests (eg. database paging, etc...). All data is still processed.
+	 * with smaller requests (eg. database paging, etc...). All data is still processed,
+	 * unlike with {@link #limitRequest(long)} which will cap the grand total request
+	 * amount.
 	 * <p>
 	 * Equivalent to {@code flux.publishOn(Schedulers.immediate(), prefetchRate).subscribe() }
 	 *
@@ -4618,11 +4620,30 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} limiting downstream's backpressure
 	 * @see #publishOn(Scheduler, int)
+	 * @see #limitRequest(long)
 	 */
 	public final Flux<T> limitRate(int prefetchRate) {
 		return onAssembly(this.publishOn(Schedulers.immediate(), prefetchRate));
 	}
 
+	/**
+	 * Ensure that the total amount requested upstream is capped at {@code cap}.
+	 * Backpressure signals from downstream subscribers are smaller than the cap are
+	 * propagated as is, but if they would cause the total requested amount to go over the
+	 * cap, they are reduced to the minimum value that doesn't go over.
+	 * <p>
+	 * As a result, this operator never let the upstream produce more elements than the
+	 * cap, and it can be used as a stricter form of {@link #take(long)}. Typically useful
+	 * for cases where a race between request and cancellation can lead the upstream to
+	 * producing a lot of extraneous data, and such a production is undesirable (e.g.
+	 * a source that would send the extraneous data over the network).
+	 *
+	 * @param requestCap the global backpressure limit to apply to the sum of downstream's requests
+	 *
+	 * @return a {@link Flux} that requests AT MOST {@code cap} from upstream in total.
+	 * @see #limitRate(int)
+	 * @see #take(long)
+	 */
 	public final Flux<T> limitRequest(long requestCap) {
 		return onAssembly(new FluxLimitRequest<>(this, requestCap));
 	}
@@ -6692,12 +6713,20 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * If N is zero, the resulting {@link Flux} completes as soon as this {@link Flux}
 	 * signals its first value (which is not not relayed, though).
+	 * <p>
+	 * Note that this operator doesn't manipulate the backpressure requested amount.
+	 * Rather, it merely lets requests from downstream propagate as is and cancels once
+	 * N elements have been emitted. As a result, the source could produce a lot of
+	 * extraneous elements in the meantime. If that behavior is undesirable and you do
+	 * not own the request from downstream (e.g. prefetching operators), consider
+	 * using {@link #limitRequest(long)} instead.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/take0.png" alt="">
 	 * @param n the number of items to emit from this {@link Flux}
 	 *
 	 * @return a {@link Flux} limited to size N
+	 * @see #limitRequest(long)
 	 */
 	public final Flux<T> take(long n) {
 		if (this instanceof Fuseable) {
