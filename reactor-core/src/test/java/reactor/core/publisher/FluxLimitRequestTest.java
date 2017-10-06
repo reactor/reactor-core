@@ -199,7 +199,17 @@ public class FluxLimitRequestTest {
 	}
 
 	@Test
-	public void completeSignalDespiteAllProducedCancelNotPropagated() {
+	public void nextSignalDespiteAllProducedNotPropagated() {
+		TestPublisher<Integer> tp = TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
+
+		StepVerifier.create(tp.flux().limitRequest(3))
+		            .then(() -> tp.emit(1, 2, 3, 4))
+		            .expectNext(1, 2, 3)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void completeSignalDespiteAllProducedNotPropagated() {
 		TestPublisher<Integer> tp = TestPublisher.createNoncompliant(TestPublisher.Violation.CLEANUP_ON_TERMINATE);
 
 		StepVerifier.create(tp.flux().limitRequest(3))
