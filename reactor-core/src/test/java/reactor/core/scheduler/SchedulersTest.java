@@ -37,6 +37,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Mono;
@@ -730,10 +731,26 @@ public class SchedulersTest {
 	}
 
 	@Test
-	public void testScheduleDirectPeriodicallyCancellsSchedulerTask() throws Exception {
+	public void testDirectSchedulePeriodicallyCancelsSchedulerTask() throws Exception {
 		try(TaskCheckingScheduledExecutor executorService = new TaskCheckingScheduledExecutor()) {
 			CountDownLatch latch = new CountDownLatch(2);
 			Disposable disposable = Schedulers.directSchedulePeriodically(executorService, () -> {
+				latch.countDown();
+			}, 0, 10, TimeUnit.MILLISECONDS);
+			latch.await();
+
+			disposable.dispose();
+
+			assertThat(executorService.isAllTasksCancelled()).isTrue();
+		}
+	}
+
+	@Test
+	public void testWorkerSchedulePeriodicallyCancelsSchedulerTask() throws Exception {
+		try(TaskCheckingScheduledExecutor executorService = new TaskCheckingScheduledExecutor()) {
+			CountDownLatch latch = new CountDownLatch(2);
+			Disposable.Composite tasks = Disposables.composite();
+			Disposable disposable = Schedulers.workerSchedulePeriodically(executorService, tasks, () -> {
 				latch.countDown();
 			}, 0, 10, TimeUnit.MILLISECONDS);
 			latch.await();
