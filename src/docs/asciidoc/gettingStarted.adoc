@@ -1,51 +1,59 @@
 [[getting-started]]
-= Getting started
+= Getting Started
+
+This section contains information that should help you get going with Reactor. It
+includes the following information:
+
+* <<getting-started-introducing-reactor>>
+* <<prerequisites>>
+* <<getting-started-understanding-bom>>
+* <<getting>>
+
+[[getting-started-introducing-reactor]]
 == Introducing Reactor
 //TODO flesh out, reword. could also be updated on the website
-Reactor is a fully non-blocking reactive programming foundation for the JVM,
-with efficient demand management (in the form of managing "backpressure"). It
-integrates directly with the Java 8 functional APIs, notably
-`CompletableFuture`, `Stream` and `Duration`. It offers composable asynchronous
-sequence APIs `Flux` (for [N] elements) and `Mono` (for [0|1] elements),
-extensively implementing the Reactive Extensions specification.
+Reactor is a fully non-blocking reactive programming foundation for the JVM, with
+efficient demand management (in the form of managing "backpressure"). It integrates
+directly with the Java 8 functional APIs, notably `CompletableFuture`, `Stream`, and
+`Duration`. It offers composable asynchronous sequence APIs `Flux` (for [N] elements) and
+`Mono` (for [0|1] elements), extensively implementing the Reactive Extensions
+specification.
 
 Reactor also supports non-blocking inter-process communication (IPC) with the
-`reactor-ipc` components. Suited for Microservices Architecture, Reactor IPC
-offers backpressure-ready network engines for HTTP (including Websockets), TCP
-and UDP. Reactive Encoding and Decoding are fully supported.
+`reactor-ipc` components. Suited for Microservices Architecture, Reactor IPC offers
+backpressure-ready network engines for HTTP (including Websockets), TCP, and UDP.
+Reactive Encoding and Decoding are fully supported.
 
 [[prerequisites]]
-== Pre-requisites
+== Prerequisites
 Reactor Core runs on `Java 8` and above.
 
-It has a transitive dependency to `org.reactive-streams:reactive-streams:1.0.1`.
+It has a transitive dependency on `org.reactive-streams:reactive-streams:1.0.1`.
 
 [NOTE]
 ====
 *Android support*:
 
-- Reactor 3 does not officially support or target Android (consider using
-RxJava 2 if such support is a strong requirement).
-- However it should work fine with Android SDK 26 (Android O) and above.
-- We are open to evaluating changes that benefit Android O support in a
-best-effort fashion (not guaranteed - each decision will be made on a
-case-by-case basis).
+* Reactor 3 does not officially support or target Android (consider using RxJava 2 if
+such support is a strong requirement).
+* However, it should work fine with Android SDK 26 (Android O) and above.
+* We are open to evaluating changes that benefit Android support in a best-effort
+fashion. However, we cannot make guarantees. Each decision must be made on a
+case-by-case basis.
 ====
 
-
-== The BOM
-Reactor 3 uses a BOM (Bill of Materials - a standard Maven artifact)
-model since `reactor-core 3.0.4`, with the `Aluminium` release train.
+[[getting-started-understanding-bom]]
+== Understanding the BOM
+Reactor 3 uses a BOM (Bill of Materials - a standard Maven artifact) model (since
+`reactor-core 3.0.4`, with the `Aluminium` release train).
 
 //TODO re-state that this is a curated list of versions as opposed to generated?
 
-The BOM lets you group artifacts that are meant to work well together without
-having to wonder about the sometimes divergent versioning schemes of these
-artifacts.
+The BOM lets you group artifacts that are meant to work well together without having to
+wonder about the sometimes divergent versioning schemes of these artifacts.
 
-The BOM is a list of versioned artifacts that is itself versioned, using a
-release train scheme with a codename followed by a qualifier. Here is an
-example:
+The BOM is a list of versioned artifacts that is itself versioned, using a release train
+scheme with a codename followed by a qualifier. Here are a few examples:
 [verse]
 Aluminium-RELEASE
 Carbon-BUILD-SNAPSHOT
@@ -53,33 +61,31 @@ Aluminium-SR1
 Bismuth-RELEASE
 Carbon-SR32
 
-The codenames represent what would traditionally be the MAJOR.MINOR number.
-They (mostly) come from the
-https://en.wikipedia.org/wiki/Periodic_table#Overview[Periodic Table of Elements],
-in increasing alphabetical order.
+The codenames represent what would traditionally be the MAJOR.MINOR number. They (mostly)
+come from the https://en.wikipedia.org/wiki/Periodic_table#Overview[Periodic Table of
+Elements], in increasing alphabetical order.
 
 The qualifiers are (in chronological order):
 
- * `BUILD-SNAPSHOT`
- * `M1`..`N`: Milestones or developer previews
- * `RELEASE`: The first GA (General Availability) release in a codename series
- * `SR1`..`N`: The subsequent GA releases in a codename series (equivalent to
-   PATCH number, SR stands for "Service Release").
+* `BUILD-SNAPSHOT`
+* `M1`..`N`: Milestones or developer previews
+* `RELEASE`: The first GA (General Availability) release in a codename series
+* `SR1`..`N`: The subsequent GA releases in a codename series (equivalent to PATCH
+number, SR stands for "Service Release").
 
 [[getting]]
 == Getting Reactor
-As mentioned earlier, the easiest way to use Reactor in your core is to use
-the BOM and add the relevant dependencies to your project. Note that, when
-adding such a dependency, you must omit the version so that the version gets
-picked up from the BOM.
+As mentioned earlier, the easiest way to use Reactor in your core is to use the BOM and
+add the relevant dependencies to your project. Note that, when adding such a dependency,
+you must omit the version so that the version gets picked up from the BOM.
 
-However, if you want to force the use of a specific artifact's version, you can
-specify it when adding your dependency, as you usually would. You can also forgo
-the BOM entirely and specify dependencies by their artifact versions.
+However, if you want to force the use of a specific artifact's version, you can specify
+it when adding your dependency, as you usually would. You can also forgo the BOM entirely
+and specify dependencies by their artifact versions.
 
-=== Maven installation
-The BOM concept is natively supported by Maven. First, you need to import the
-BOM by adding the following snippet to your `pom.xml`. If the top section
+=== Maven Installation
+The BOM concept is natively supported by Maven. First, you need to import the BOM by
+adding the following snippet to your `pom.xml`. If the top section
 (`dependencyManagement`) already exists in your pom, add only the contents.
 
 [source,xml]
@@ -99,8 +105,8 @@ BOM by adding the following snippet to your `pom.xml`. If the top section
 <1> Notice the `dependencyManagement` tag. This is in addition to the regular
 `dependencies` section.
 
-Next, add your dependencies to the relevant reactor projects, as usual, except
-without a `<version>`, as shown here:
+Next, add your dependencies to the relevant reactor projects, as usual, except without a
+`<version>`, as shown here:
 
 [source,xml]
 ----
@@ -147,7 +153,7 @@ dependencyManagement {
 }
 ----
 
-Finally add a dependency to your project without a version number:
+Finally add a dependency to your project, without a version number:
 [source,groovy]
 ----
 dependencies {
