@@ -49,10 +49,13 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 
 	final int prefetch;
 
+	final int lowTide;
+
 	FluxPublishOn(Flux<? extends T> source,
 			Scheduler scheduler,
 			boolean delayError,
 			int prefetch,
+			int lowTide,
 			Supplier<? extends Queue<T>> queueSupplier) {
 		super(source);
 		if (prefetch <= 0) {
@@ -61,6 +64,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 		this.scheduler = Objects.requireNonNull(scheduler, "scheduler");
 		this.delayError = delayError;
 		this.prefetch = prefetch;
+		this.lowTide = lowTide;
 		this.queueSupplier = Objects.requireNonNull(queueSupplier, "queueSupplier");
 	}
 
@@ -90,6 +94,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 					worker,
 					delayError,
 					prefetch,
+					lowTide,
 					queueSupplier));
 			return;
 		}
@@ -98,6 +103,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 				worker,
 				delayError,
 				prefetch,
+				lowTide,
 				queueSupplier));
 	}
 
@@ -149,6 +155,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 				Worker worker,
 				boolean delayError,
 				int prefetch,
+				int lowTide,
 				Supplier<? extends Queue<T>> queueSupplier) {
 			this.actual = actual;
 			this.worker = worker;
@@ -156,7 +163,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 			this.delayError = delayError;
 			this.prefetch = prefetch;
 			this.queueSupplier = queueSupplier;
-			this.limit = Operators.unboundedOrLimit(prefetch);
+			this.limit = Operators.unboundedOrLimit(prefetch, lowTide);
 		}
 
 		@Override
@@ -616,6 +623,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 				Worker worker,
 				boolean delayError,
 				int prefetch,
+				int lowTide,
 				Supplier<? extends Queue<T>> queueSupplier) {
 			this.actual = actual;
 			this.worker = worker;
@@ -623,7 +631,7 @@ final class FluxPublishOn<T> extends FluxOperator<T, T> implements Fuseable {
 			this.delayError = delayError;
 			this.prefetch = prefetch;
 			this.queueSupplier = queueSupplier;
-			this.limit = Operators.unboundedOrLimit(prefetch);
+			this.limit = Operators.unboundedOrLimit(prefetch, lowTide);
 		}
 
 		@Override

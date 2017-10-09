@@ -4627,6 +4627,37 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Ensure that backpressure signals from downstream subscribers are split into batches
+	 * capped at the provided {@code highTide} first, then replenishing at the provided
+	 * {@code lowTide}, effectively rate limiting the upstream {@link Publisher}.
+	 * <p>
+	 * Typically used for scenarios where consumer(s) request a large amount of data
+	 * (eg. {@code Long.MAX_VALUE}) but the data source behaves better or can be optimized
+	 * with smaller requests (eg. database paging, etc...). All data is still processed,
+	 * unlike with {@link #limitRequest(long)} which will cap the grand total request
+	 * amount.
+	 * <p>
+	 * Similar to {@code flux.publishOn(Schedulers.immediate(), prefetchRate).subscribe() },
+	 * except with a customized "low tide" instead of the default 75%.
+	 * Note that the smaller the lowTide is, the higher the potential for concurrency
+	 * between request and data production. And thus the more extraneous replenishment
+	 * requests this operator could make. For example, for a global downstream
+	 * request of 14, with a highTide of 10 and a lowTide of 2, the operator would perform
+	 * 7 low tide requests, whereas with the default lowTide of 8 it would only perform one.
+	 *
+	 * @param highTide the initial request amount
+	 * @param lowTide the subsequent (or replenishing) request amount
+	 *
+	 * @return a {@link Flux} limiting downstream's backpressure and customizing the
+	 * replenishment request amount
+	 * @see #publishOn(Scheduler, int)
+	 * @see #limitRequest(long)
+	 */
+	public final Flux<T> limitRate(int highTide, int lowTide) {
+		return onAssembly(this.publishOn(Schedulers.immediate(), true, highTide, lowTide));
+	}
+
+	/**
 	 * Ensure that the total amount requested upstream is capped at {@code cap}.
 	 * Backpressure signals from downstream subscribers are smaller than the cap are
 	 * propagated as is, but if they would cause the total requested amount to go over the
@@ -5451,6 +5482,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} producing asynchronously
 	 */
 	public final Flux<T> publishOn(Scheduler scheduler, boolean delayError, int prefetch) {
+		return publishOn(scheduler, delayError, prefetch, prefetch);
+	}
+
+	final Flux<T> publishOn(Scheduler scheduler, boolean delayError, int prefetch, int lowTide) {
 		if (this instanceof Callable) {
 			if (this instanceof Fuseable.ScalarCallable) {
 				@SuppressWarnings("unchecked")
@@ -5467,7 +5502,7 @@ public abstract class Flux<T> implements Publisher<T> {
 			return onAssembly(new FluxSubscribeOnCallable<>(c, scheduler));
 		}
 
-		return onAssembly(new FluxPublishOn<>(this, scheduler, delayError, prefetch, Queues.get(prefetch)));
+		return onAssembly(new FluxPublishOn<>(this, scheduler, delayError, prefetch, lowTide, Queues.get(prefetch)));
 	}
 
 	/**

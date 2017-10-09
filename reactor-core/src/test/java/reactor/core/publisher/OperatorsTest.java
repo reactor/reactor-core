@@ -384,4 +384,48 @@ public class OperatorsTest {
 				.hasCause(original)
 				.hasSuppressedException(suppressed);
 	}
+
+	@Test
+	public void unboundedOrPrefetch() {
+		assertThat(Operators.unboundedOrPrefetch(10))
+				.as("bounded")
+				.isEqualTo(10L);
+		assertThat(Operators.unboundedOrPrefetch(Integer.MAX_VALUE))
+				.as("unbounded")
+				.isEqualTo(Long.MAX_VALUE);
+	}
+
+	@Test
+	public void unboundedOrLimit() {
+		assertThat(Operators.unboundedOrLimit(100))
+				.as("prefetch - (prefetch >> 2)")
+				.isEqualTo(75);
+
+		assertThat(Operators.unboundedOrLimit(Integer.MAX_VALUE))
+				.as("unbounded")
+				.isEqualTo(Integer.MAX_VALUE);
+	}
+
+	@Test
+	public void unboundedOrLimitLowTide() {
+		assertThat(Operators.unboundedOrLimit(100, 100))
+				.as("same lowTide")
+				.isEqualTo(75);
+
+		assertThat(Operators.unboundedOrLimit(100, 110))
+				.as("too big lowTide")
+				.isEqualTo(75);
+
+		assertThat(Operators.unboundedOrLimit(Integer.MAX_VALUE, Integer.MAX_VALUE))
+				.as("MAX_VALUE and same lowTide")
+				.isEqualTo(Integer.MAX_VALUE);
+
+		assertThat(Operators.unboundedOrLimit(100, 20))
+				.as("smaller lowTide")
+				.isEqualTo(20);
+
+		assertThat(Operators.unboundedOrLimit(Integer.MAX_VALUE, 110))
+				.as("smaller lowTide and MAX_VALUE")
+				.isEqualTo(Integer.MAX_VALUE);
+	}
 }
