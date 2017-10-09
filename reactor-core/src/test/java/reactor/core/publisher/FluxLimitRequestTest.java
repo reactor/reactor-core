@@ -122,6 +122,28 @@ public class FluxLimitRequestTest {
 	}
 
 	@Test
+	public void extraneousSmallRequestsNotPropagatedAsZero() {
+		List<Long> requests = new ArrayList<>();
+		final Flux<Integer> source = Flux.range(1, 100)
+		                                 .doOnRequest(requests::add);
+
+		Flux<Integer> test = new FluxLimitRequest<>(source, 11);
+
+		StepVerifier.create(test, 0)
+		            .thenRequest(8)
+		            .thenRequest(2)
+		            .thenRequest(2)
+		            .thenRequest(2)
+		            .thenRequest(2)
+		            .expectNextCount(11)
+		            .verifyComplete();
+
+		assertThat(requests)
+				.as("limitRequest should not propagate extraneous requests as zeros")
+				.containsExactly(8L, 2L, 1L);
+	}
+
+	@Test
 	public void largerSourceCancelled() {
 		AtomicBoolean cancelled = new AtomicBoolean();
 

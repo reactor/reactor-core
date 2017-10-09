@@ -123,7 +123,9 @@ final class FluxLimitRequest<T> extends FluxOperator<T, T> {
 				}
 				long u = r - newRequest;
 				if (REQUEST_REMAINING.compareAndSet(this, r, u)) {
-					parent.request(newRequest);
+					if (newRequest != 0) {
+						parent.request(newRequest);
+					}
 					break;
 				}
 			}
