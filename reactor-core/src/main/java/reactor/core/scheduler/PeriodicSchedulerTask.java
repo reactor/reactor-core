@@ -24,40 +24,20 @@ import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-/**
- * A runnable task for {@link Scheduler} Workers that are time-capable (implementing a
- * relevant schedule(delay) and schedulePeriodically(period) methods).
- *
- * Unlike the one in {@link DelegateServiceScheduler}, this runnable doesn't expose the
- * ability to cancel inner task when interrupted.
- *
- * @author Simon Baslé
- * @author David Karnok
- */
-final class WorkerTask implements Runnable, Disposable, Callable<Void> {
+final class PeriodicSchedulerTask implements Runnable, Disposable, Callable<Void> {
 
 	final Runnable task;
 
-	static final Composite DISPOSED = new EmptyCompositeDisposable();
-	static final Composite DONE     = new EmptyCompositeDisposable();
-
-
-	static final Future<Void> FINISHED = new FutureTask<>(() -> null);
 	static final Future<Void> CANCELLED = new FutureTask<>(() -> null);
 
 	volatile Future<?> future;
-	static final AtomicReferenceFieldUpdater<WorkerTask, Future> FUTURE =
-			AtomicReferenceFieldUpdater.newUpdater(WorkerTask.class, Future.class, "future");
-
-	volatile Composite parent;
-	static final AtomicReferenceFieldUpdater<WorkerTask, Composite> PARENT =
-			AtomicReferenceFieldUpdater.newUpdater(WorkerTask.class, Composite.class, "parent");
+	static final AtomicReferenceFieldUpdater<PeriodicSchedulerTask, Future> FUTURE =
+			AtomicReferenceFieldUpdater.newUpdater(PeriodicSchedulerTask.class, Future.class, "future");
 
 	Thread thread;
 
-	WorkerTask(Runnable task, Composite parent) {
+	PeriodicSchedulerTask(Runnable task) {
 		this.task = task;
-		PARENT.lazySet(this, parent);
 	}
 
 	@Override
@@ -74,18 +54,6 @@ final class WorkerTask implements Runnable, Disposable, Callable<Void> {
 		}
 		finally {
 			thread = null;
-			Composite o = parent;
-			if (o != DISPOSED && o != null && PARENT.compareAndSet(this, o, DONE)) {
-				o.remove(this);
-			}
-
-			Future f;
-			for (;;) {
-				f = future;
-				if (f == CANCELLED || FUTURE.compareAndSet(this, f, FINISHED)) {
-					break;
-				}
-			}
 		}
 		return null;
 	}
@@ -98,9 +66,6 @@ final class WorkerTask implements Runnable, Disposable, Callable<Void> {
 	void setFuture(Future<?> f) {
 		for (;;) {
 			Future o = future;
-			if (o == FINISHED) {
-				return;
-			}
 			if (o == CANCELLED) {
 				f.cancel(thread != Thread.currentThread());
 				return;
@@ -113,15 +78,14 @@ final class WorkerTask implements Runnable, Disposable, Callable<Void> {
 
 	@Override
 	public boolean isDisposed() {
-		Future<?> a = future;
-		return FINISHED == a || CANCELLED == a;
+		return future == CANCELLED;
 	}
 
 	@Override
 	public void dispose() {
 		for (;;) {
 			Future f = future;
-			if (f == FINISHED || f == CANCELLED) {
+			if (f == CANCELLED) {
 				break;
 			}
 			if (FUTURE.compareAndSet(this, f, CANCELLED)) {
@@ -131,17 +95,5 @@ final class WorkerTask implements Runnable, Disposable, Callable<Void> {
 				break;
 			}
 		}
-
-		for (;;) {
-			Composite o = parent;
-			if (o == DONE || o == DISPOSED || o == null) {
-				return;
-			}
-			if (PARENT.compareAndSet(this, o, DISPOSED)) {
-				o.remove(this);
-				return;
-			}
-		}
 	}
-
 }

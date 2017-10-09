@@ -675,7 +675,7 @@ public abstract class Schedulers {
 			long period,
 			TimeUnit unit) {
 
-		SchedulerTask sr = new SchedulerTask(task);
+		PeriodicSchedulerTask sr = new PeriodicSchedulerTask(task);
 
 		Future<?> f = exec.scheduleAtFixedRate(sr, initialDelay, period, unit);
 		sr.setFuture(f);
@@ -720,7 +720,7 @@ public abstract class Schedulers {
 			long period,
 			TimeUnit unit) {
 
-		WorkerTask sr = new WorkerTask(task, tasks);
+		PeriodicWorkerTask sr = new PeriodicWorkerTask(task, tasks);
 		if (!tasks.add(sr)) {
 			throw Exceptions.failWithRejected();
 		}
