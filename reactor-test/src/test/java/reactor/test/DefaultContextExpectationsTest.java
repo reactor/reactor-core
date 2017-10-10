@@ -83,7 +83,7 @@ public class DefaultContextExpectationsTest {
 	@Test
 	public void notContextAccessible() {
 		assertContextExpectationFails(s -> s, e -> e)
-				.withMessage("No propagated Context (does the sequence only contain a generator?)");
+				.withMessage("No propagated Context");
 	}
 
 	@Test
