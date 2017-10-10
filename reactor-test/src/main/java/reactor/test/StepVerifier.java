@@ -18,6 +18,7 @@ package reactor.test;
 
 import java.time.Duration;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -34,6 +35,7 @@ import reactor.core.publisher.Hooks;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 import reactor.util.function.Tuple2;
 
 /**
@@ -721,6 +723,25 @@ public interface StepVerifier {
 		Step<T> consumeSubscriptionWith(Consumer<? super Subscription> consumer);
 
 		/**
+		 * Expect that after the {@link Subscription} step, a {@link Context} has been
+		 * propagated. You can continue with assertions on said {@link Context}, and you
+		 * will need to use {@link ContextExpectations#then()} to switch back to verifying
+		 * the sequence itself.
+		 *
+		 * @return a {@link ContextExpectations} for further assertion of the propagated {@link Context}
+		 */
+		ContextExpectations<T> expectAccessibleContext();
+
+		/**
+		 * Expect that NO {@link Context} was propagated after the {@link Subscription}
+		 * phase, which usually indicates that the sequence under test doesn't contain
+		 * Reactor operators (i.e. external Publisher, just a scalar source...).
+		 *
+		 * @return this builder for further assertion of the sequence
+		 */
+		Step<T> expectNoAccessibleContext();
+
+		/**
 		 * Expect that no event has been observed by the verifier for the length of
 		 * the provided {@link Duration}. If virtual time is used, this duration is
 		 * verified using the virtual clock.
@@ -1081,4 +1102,117 @@ public interface StepVerifier {
 		Assertions tookMoreThan(Duration d);
 	}
 
+	/**
+	 * Allow to set expectations about the {@link Context} propagated during the {@link Subscription}
+	 * phase. You then need to resume to the {@link StepVerifier} assertion of the sequence
+	 * by using {@link #then()}.
+	 *
+	 * @param <T> the type of the sequence
+	 */
+	interface ContextExpectations<T> {
+
+		/**
+		 * Check that the propagated {@link Context} contains a value for the given key.
+		 *
+		 * @param key the key to check
+		 * @return this {@link ContextExpectations} for further Context checking
+		 */
+		ContextExpectations<T> hasKey(Object key);
+
+		/**
+		 * Check that the propagated {@link Context} is of the given size.
+		 *
+		 * @param size the expected size
+		 * @return this {@link ContextExpectations} for further Context checking
+		 */
+		ContextExpectations<T> hasSize(int size);
+
+		/**
+		 * Check that the propagated {@link Context} contains the given value associated
+		 * to the given key.
+		 *
+		 * @param key the key to check for
+		 * @param value the expected value for that key
+		 * @return this {@link ContextExpectations} for further Context checking
+		 */
+		ContextExpectations<T> contains(Object key, Object value);
+
+		/**
+		 * Check that the propagated {@link Context} contains all of the key-value pairs
+		 * of the given {@link Context}.
+		 *
+		 * @param other the other {@link Context} whose key-value pairs are expected to be
+		 * all contained by the propagated Context.
+		 * @return this {@link ContextExpectations} for further Context checking
+		 */
+		ContextExpectations<T> containsAllOf(Context other);
+
+		/**
+		 * Check that the propagated {@link Context} contains all of the key-value pairs
+		 * of the given {@link Map}.
+		 *
+		 * @param other the other {@link Map} whose key-value pairs are expected to be all
+		 * contained by the propagated {@link Context}.
+		 * @return this {@link ContextExpectations} for further Context checking
+		 */
+		ContextExpectations<T> containsAllOf(Map<?, ?> other);
+
+		/**
+		 * Check that the propagated {@link Context} contains all of the key-value pairs
+		 * of the given {@link Context}, and nothing else.
+		 *
+		 * @param other the {@link Context} representing the exact expected content of the
+		 * propagated Context.
+		 * @return this {@link ContextExpectations} for further Context checking
+		 */
+		ContextExpectations<T> containsOnly(Context other);
+
+		/**
+		 * Check that the propagated {@link Context} contains all of the key-value pairs
+		 * of the given {@link Map}, and nothing else.
+		 *
+		 * @param other the {@link Map} representing the exact expected content of the
+		 * propagated {@link Context}.
+		 * @return this {@link ContextExpectations} for further Context checking
+		 */
+		ContextExpectations<T> containsOnly(Map<?, ?> other);
+
+		/**
+		 * Apply custom assertions to the propagated {@link Context}.
+		 *
+		 * @param assertingConsumer a {@link Consumer} for the {@link Context} that applies
+		 * custom assertions.
+		 * @return this {@link ContextExpectations} for further Context checking
+		 */
+		ContextExpectations<T> assertThat(Consumer<Context> assertingConsumer);
+
+		/**
+		 * Check that the propagated {@link Context} matches a given {@link Predicate}.
+		 *
+		 * @param predicate a {@link Predicate} to test with the {@link Context}.
+		 * @return this {@link ContextExpectations} for further Context checking
+		 */
+		ContextExpectations<T> matches(Predicate<Context> predicate);
+
+		/**
+		 * Check that the propagated {@link Context} matches a given {@link Predicate}
+		 * that is given a description.
+		 *
+		 * @param predicate a {@link Predicate} to test with the {@link Context}
+		 * @param description the description for the Predicate, which will be part of
+		 * the {@link AssertionError} if the predicate fails.
+		 * @return this {@link ContextExpectations} for further Context checking
+		 */
+		ContextExpectations<T> matches(Predicate<Context> predicate, String description);
+
+		/**
+		 * Add the context checks set up by this {@link ContextExpectations} as a
+		 * {@link StepVerifier} expectation, and return the current {@link Step} in order
+		 * to build further sequence expectations and ultimately {@link StepVerifier#verify()
+		 * verify} the sequence.
+		 *
+		 * @return the {@link Step} for further building of expectations.
+		 */
+		Step<T> then();
+	}
 }

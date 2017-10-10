@@ -212,6 +212,42 @@ assert a few elements of state once the whole scenario has played out successful
 elements that have been dropped by some operator and assert them (see the section on
 <<hooks,Hooks>>).
 
+== Testing the `Context`
+For more information about the `Context`, see <<context>>.
+
+`StepVerifier` comes with a couple of expectations around the propagation of a `Context`:
+
+  - `expectAccessibleContext`: returns a `ContextExpectations` object that you can use
+  to set up expectations on the propagated `Context`. Be sure to call `then()` to return
+  to the set up of sequence expectations.
+
+  - `expectNoAccessibleContext`: set up an expectation that NO `Context` can be propagated
+  up the chain of operators under test. This most likely occurs when the `Publisher` under
+  test is not a Reactor one, or doesn't have any operator that can propagate the `Context`
+  (e.g. just a _generator_ source).
+
+Additionally, one can associate a test-specific initial `Context` to a `StepVerifier` by
+using `StepVerifierOptions` to create the verifier.
+
+These features are demonstrated in the following snippet:
+
+[source,java]
+----
+StepVerifier.create(Mono.just(1).map(i -> i + 10),
+				StepVerifierOptions.create().withInitialContext(Context.of("foo", "bar"))) // <1>
+		            .expectAccessibleContext() //<2>
+		            .contains("foo", "bar") // <3>
+		            .then() // <4>
+		            .expectNext(11)
+		            .verifyComplete(); // <5>
+----
+<1> Create the `StepVerifier` using `StepVerifierOptions` and pass in an initial `Context`
+<2> Start setting up expectations about `Context` propagation. This alone ensures that a
+`Context` *was* propagated.
+<3> An example of a `Context`-specific expectation: it must contain value "bar" for key "foo".
+<4> We `then()` switch back to setting up normal expectations on the data.
+<5> Let's not forget to `verify()` the whole set of expectations.
+
 == Manually Emitting with `TestPublisher`
 For more advanced test cases, it might be useful to have complete mastery over the source
 of data, in order to trigger finely chosen signals that closely match the particular

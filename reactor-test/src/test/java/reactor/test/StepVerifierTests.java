@@ -32,10 +32,10 @@ import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.UnicastProcessor;
-import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.scheduler.VirtualTimeScheduler;
+import reactor.util.context.Context;
 
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.*;
@@ -1752,21 +1752,32 @@ public class StepVerifierTests {
 		            .verifyComplete();
 	}
 
-	/*@Test
-	public void virtualTimeSchedulerVeryLongDeferred() {
-		Scheduler s = Schedulers.newSingle("test");
-		StepVerifier.withVirtualTime(() -> Flux.just(1)
-		                                       .hide()
-		                                       .delayElements(Duration.ofSeconds(2), s)
-		                                       .flatMap(d -> Flux.interval(Duration.ofMillis(
-				                                       1)))
-		                                       .map(tick -> new Date())
-		                                       .take(100000)
-		                                       .collectList()
-		)
-		            .thenAwait(Duration.ofHours(1000))
-		            .consumeNextWith(list -> Assert.assertTrue(list.size() == 100000))
+	@Test
+	public void withInitialContext() {
+		StepVerifier.create(Mono.subscriberContext(),
+				StepVerifierOptions.create().withInitialContext(Context.of("foo", "bar")))
+		            .assertNext(c -> Assertions.assertThat(c.getOrDefault("foo", "baz"))
+		                                       .isEqualTo("bar"))
 		            .verifyComplete();
-		s.dispose();
-	}*/
+	}
+
+	@Test
+	public void withInitialContextButNoPropagation() {
+		StepVerifier.create(Mono.just(1), //just(1) uses a ScalarSubscription which can't be resolved to a chain of parents
+				StepVerifierOptions.create().withInitialContext(Context.of("foo", "bar")))
+		            .expectNoAccessibleContext()
+		            .expectNext(1)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void withInitialContextAndContextAssertionsParents() {
+		StepVerifier.create(Mono.just(1).map(i -> i + 10), //this causes the subscription to be resolvable to a chain of parents
+				StepVerifierOptions.create().withInitialContext(Context.of("foo", "bar")))
+		            .expectAccessibleContext()
+		            .contains("foo", "bar")
+		            .then()
+		            .expectNext(11)
+		            .verifyComplete();
+	}
 }
