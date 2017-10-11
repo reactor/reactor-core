@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Function;
 
 import org.junit.Test;
 import org.reactivestreams.Subscription;
@@ -252,7 +253,7 @@ public class FluxLimitRequestTest {
 
 	@Test
 	public void scanOperator() {
-		Flux<String> source = Flux.empty();
+		Flux<String> source = Flux.just("foo").map(Function.identity());
 		FluxLimitRequest<String> operator = new FluxLimitRequest<>(source, 123);
 
 		assertThat(operator.scan(Scannable.Attr.PARENT)).isSameAs(source);
