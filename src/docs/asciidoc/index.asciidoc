@@ -75,6 +75,13 @@ https://github.com/reactor/reactor-core/edit/master/src/docs/asciidoc/faq.adoc[S
 to "<<faq>>"
 endif::[]
 
+[appendix]
+include::apdx-reactorExtra.adoc[leveloffset=1]
+ifeval::["{backend}" == "html5"]
+https://github.com/reactor/reactor-core/edit/master/src/docs/asciidoc/apdx-reactorExtra.adoc[Suggest Edit, title="Suggest an edit to the above section via github", role="fa fa-edit"]
+to "<<reactor-extra>>"
+endif::[]
+
 //TODO later add appendices about internals, writing operators, fusion
 //[appendix]
 //include::apdx-implem.adoc[]
