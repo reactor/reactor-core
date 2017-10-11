@@ -801,6 +801,13 @@ public abstract class Operators {
 		return prefetch == Integer.MAX_VALUE ? Integer.MAX_VALUE : (prefetch - (prefetch >>	2));
 	}
 
+	static int unboundedOrLimit(int prefetch, int lowTide) {
+		if (lowTide >= prefetch) {
+			return unboundedOrLimit(prefetch);
+		}
+		return prefetch == Integer.MAX_VALUE ? Integer.MAX_VALUE : lowTide;
+	}
+
 	Operators() {
 	}
 

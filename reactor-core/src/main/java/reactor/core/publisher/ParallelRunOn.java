@@ -80,12 +80,12 @@ final class ParallelRunOn<T> extends ParallelFlux<T> implements Scannable{
 				parents[i] = new FluxPublishOn.PublishOnConditionalSubscriber<>(
 						(Fuseable.ConditionalSubscriber<T>)subscribers[i],
 						scheduler, w, true,
-						prefetch, queueSupplier);
+						prefetch, prefetch, queueSupplier);
 			}
 			else {
 				parents[i] = new FluxPublishOn.PublishOnSubscriber<>(subscribers[i],
 						scheduler, w, true,
-						prefetch, queueSupplier);
+						prefetch, prefetch, queueSupplier);
 			}
 		}
 		

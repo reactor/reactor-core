@@ -17,7 +17,9 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -901,6 +903,42 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 				allOf(is(greaterThanOrEqualTo(400L)), is(lessThan(440L))));
 	}
 
+	@Test
+	public void limitRateWithCloseLowTide() {
+		List<Long> rebatchedRequest = Collections.synchronizedList(new ArrayList<>());
+
+		final Flux<Integer> test = Flux
+				.range(1, 14)
+				.hide()
+				.doOnRequest(rebatchedRequest::add)
+				.limitRate(10,8);
+
+		StepVerifier.create(test, 14)
+		            .expectNextCount(14)
+		            .verifyComplete();
+
+		Assertions.assertThat(rebatchedRequest)
+		          .containsExactly(10L, 8L);
+	}
+
+	@Test
+	public void limitRateWithVeryLowTide() {
+		List<Long> rebatchedRequest = Collections.synchronizedList(new ArrayList<>());
+
+		final Flux<Integer> test = Flux
+				.range(1, 14)
+				.hide()
+				.doOnRequest(rebatchedRequest::add)
+				.limitRate(10,2);
+
+		StepVerifier.create(test, 14)
+		            .expectNextCount(14)
+		            .verifyComplete();
+
+		Assertions.assertThat(rebatchedRequest)
+		          .containsExactly(10L, 2L, 2L, 2L, 2L, 2L, 2L, 2L);
+	}
+
 	@Test(timeout = 5000)
 	public void rejectedExecutionExceptionOnDataSignalExecutor()
 			throws InterruptedException {
@@ -1256,7 +1294,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
     public void scanSubscriber() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
         FluxPublishOn.PublishOnSubscriber<Integer> test = new FluxPublishOn.PublishOnSubscriber<>(actual,
-        		Schedulers.single(), Schedulers.single().createWorker(), true, 123, Queues.unbounded());
+        		Schedulers.single(), Schedulers.single().createWorker(), true, 123, 123, Queues.unbounded());
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -1285,7 +1323,7 @@ public class FluxPublishOnTest extends FluxOperatorTest<String, String> {
 		Fuseable.ConditionalSubscriber<Integer> actual = Mockito.mock(MockUtils.TestScannableConditionalSubscriber.class);
         FluxPublishOn.PublishOnConditionalSubscriber<Integer> test =
         		new FluxPublishOn.PublishOnConditionalSubscriber<>(actual, Schedulers.single(),
-        				Schedulers.single().createWorker(), true, 123, Queues.unbounded());
+        				Schedulers.single().createWorker(), true, 123, 123, Queues.unbounded());
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 

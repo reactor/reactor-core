@@ -153,10 +153,11 @@ I want to deal with:
 *** between subsequently emitted items (deduplication): `Flux#distinctUntilChanged`
 
 * I want to keep only a subset of the sequence:
-** by taking elements:
-*** at the beginning of the sequence: `Flux#take(int)`
+** by taking N elements:
+*** at the beginning of the sequence: `Flux#take(long)`
 **** ...based on a duration: `Flux#take(Duration)`
 **** ...only the first element, as a `Mono`: `Flux#next()`
+**** ...using `request(N)` rather than cancellation: `Flux#limitRequest(long)`
 *** at the end of the sequence: `Flux#takeLast`
 *** until a criteria is met (inclusive): `Flux#takeUntil` (predicate-based), `Flux#takeUntilOther` (companion publisher-based)
 *** while a criteria is met (exclusive): `Flux#takeWhile`
@@ -166,7 +167,7 @@ I want to deal with:
 **** ...and emit an error if empty: `Flux#last()`
 **** ...and emit a default value if empty: `Flux#last(T)`
 ** by skipping elements:
-*** at the beginning of the sequence: `Flux#skip(int)`
+*** at the beginning of the sequence: `Flux#skip(long)`
 **** ...based on a duration: `Flux#skip(Duration)`
 *** at the end of the sequence: `Flux#skipLast`
 *** until a criteria is met (inclusive): `Flux#skipUntil` (predicate-based), `Flux#skipUntilOther` (companion publisher-based)
