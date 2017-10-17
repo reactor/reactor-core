@@ -299,16 +299,15 @@ public class FluxLimitRequestTest {
 			);
 		}
 
-		System.out.println(requests);
-		assertThat(requests.subList(0, requests.size() - 2))
-				.as("all requests except last are even")
-				.allMatch(l -> l % 2 == 0);
-		assertThat(requests.get(requests.size() - 1))
-				.as("last request is odd")
-				.matches(l -> l % 2 == 1);
 		assertThat(requests.stream().mapToLong(l -> l).sum())
 				.as("total request should match the limitRequest")
 				.isEqualTo(81);
+		assertThat(requests.subList(0, requests.size() - 2))
+				.allMatch(l -> l % 2 == 0, "all requests except last two are even");
+		assertThat(requests)
+				.filteredOn(l -> l % 2 == 1)
+				.as("only one odd element toward end")
+				.hasSize(1);
 	}
 
 }
