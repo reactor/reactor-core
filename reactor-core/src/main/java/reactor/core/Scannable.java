@@ -46,30 +46,25 @@ public interface Scannable {
 	/**
 	 * Base class for {@link Scannable} attributes, which all can define a meaningful
 	 * default.
-	 * <p>
-	 * Note that some attributes define a object-to-T converter. These are identified by
-	 * their {@link #isConversionSafe()} method returning true, which means their
-	 * {@link #tryConvert(Object)} method can safely be used by {@link Scannable#scan(Attr)},
-	 * making them resilient to class cast exceptions. These attributes usually have a
-	 * {@link RawAttr} counterpart for which  {@link Scannable#scan(Attr)} will downcast
-	 * to {@link Object}, allowing to retrieve unsafe values that would have been discarded
-	 * by the conversion in the original attribute.
 	 *
 	 * @param <T> the type of data associated with an attribute
 	 */
 	class Attr<T> {
 
+		/* IMPLEMENTATION NOTE
+		Note that some attributes define a object-to-T converter, which means their
+		private {@link #tryConvert(Object)} method can safely be used by
+		{@link Scannable#scan(Attr)}, making them resilient to class cast exceptions.
+		 */
+
 		/**
 		 * The direct dependent component downstream reference if any. Operators in
 		 * Flux/Mono for instance delegate to a target Subscriber, which is going to be
 		 * the actual chain navigated with this reference key. Subscribers are not always
-		 * {@link Scannable}, but this attribute defines a {@link #isConversionSafe() safe converter}
-		 * so scanning will result in an {@link Scannable#isScanAvailable() unavailable scan}
-		 * object in this case.
+		 * {@link Scannable}, but this attribute will convert these raw results to an
+		 * {@link Scannable#isScanAvailable() unavailable scan} object in this case.
 		 * <p>
 		 *  A reference chain downstream can be navigated via {@link Scannable#actuals()}.
-		 *
-		 *  @see RawAttr#ACTUAL_RAW
 		 */
 		public static final Attr<Scannable> ACTUAL = new Attr<>(null,
 				Scannable::from);
@@ -141,12 +136,10 @@ public interface Scannable {
 		 * It can be a Publisher source to an operator, a Subscription to a Subscriber
 		 * (main flow if ambiguous with inner Subscriptions like flatMap), a Scheduler to
 		 * a Worker. These types are not always {@link Scannable}, but this attribute
-		 * defines a {@link #isConversionSafe() safe converter} so scanning will result
-		 * in an {@link Scannable#isScanAvailable() unavailable scan} object in this case.
+		 * will convert such raw results to an {@link Scannable#isScanAvailable() unavailable scan}
+		 * object in this case.
 		 * <p>
 		 * {@link Scannable#parents()} can be used to navigate the parent chain.
-		 *
-		 * @see RawAttr#PARENT_RAW
 		 */
 		public static final Attr<Scannable> PARENT = new Attr<>(null,
 				Scannable::from);
@@ -202,7 +195,7 @@ public interface Scannable {
 		 * @return true if the attribute can safely convert any object, false if it can
 		 * throw {@link ClassCastException}
 		 */
-		public boolean isConversionSafe() {
+		boolean isConversionSafe() {
 			return safeConverter != null;
 		}
 
@@ -217,7 +210,7 @@ public interface Scannable {
 		 * @return the converted instance
 		 */
 		@Nullable
-		public T tryConvert(@Nullable Object o) {
+		T tryConvert(@Nullable Object o) {
 			if (o == null) {
 				return null;
 			}
@@ -294,45 +287,6 @@ public interface Scannable {
 					return _c;
 				}
 			}, 0),false);
-		}
-	}
-
-	/**
-	 * An extension to {@link Attr} that offer counterparts to {@link #isConversionSafe()
-	 * safe-converting} attributes, as a mean to skip the safe conversion and obtain the
-	 * raw value.
-	 */
-	class RawAttr extends Attr<Object> {
-
-		/**
-		 * The direct dependent component downstream reference if any. Operators in
-		 * Flux/Mono for instance delegate to a target Subscriber. Most of the time this
-		 * should be a {@link Scannable}, on which the original {@link Attr#ACTUAL} would
-		 * make sense, but in some cases it could be e.g. a plain Subscriber (which is not
-		 * traversable). This raw attribute is offered as a mean to still access these
-		 * elements.
-		 */
-		public static final Attr<Object> ACTUAL_RAW = new RawAttr(ACTUAL);
-
-		/**
-		 * The direct dependent component downstream reference if any. Operators in
-		 * Flux/Mono for instance delegate to a target Subscriber. Most of the time this
-		 * should be a {@link Scannable}, on which the original {@link Attr#ACTUAL} would
-		 * make sense, but in some cases it could be e.g. a plain Subscriber (which is not
-		 * traversable). This raw attribute is offered as a mean to still access these
-		 * elements.
-		 */
-		public static final Attr<Object> PARENT_RAW = new RawAttr(PARENT);
-
-		final Attr<?> delegate;
-
-		public RawAttr(Attr<?> delegate) {
-			super(delegate.defaultValue());
-			this.delegate = delegate;
-		}
-
-		public Attr<?> getDelegate() {
-			return delegate;
 		}
 	}
 
@@ -460,19 +414,12 @@ public interface Scannable {
 	 */
 	@Nullable
 	default <T> T scan(Attr<T> key) {
-		if (key instanceof RawAttr) {
-			//this is an Object key anyway
-			//noinspection unchecked
-			return (T) scanUnsafe(((RawAttr) key).getDelegate());
-		}
-		else {
-			//note tryConvert will just plain cast most of the time
-			//except e.g. for Attr<Scannable>
-			T value = key.tryConvert(scanUnsafe(key));
-			if (value == null)
-				return key.defaultValue();
-			return value;
-		}
+		//note tryConvert will just plain cast most of the time
+		//except e.g. for Attr<Scannable>
+		T value = key.tryConvert(scanUnsafe(key));
+		if (value == null)
+			return key.defaultValue();
+		return value;
 	}
 
 	/**
@@ -487,16 +434,9 @@ public interface Scannable {
 	 */
 	default <T> T scanOrDefault(Attr<T> key, T defaultValue) {
 		T v;
-		if (key instanceof RawAttr) {
-			//this is an Object key anyway
-			//noinspection unchecked
-			v = (T) scanUnsafe(((RawAttr) key).getDelegate());
-		}
-		else {
-			//note tryConvert will just plain cast most of the time
-			//except e.g. for Attr<Scannable>
-			v = key.tryConvert(scanUnsafe(key));
-		}
+		//note tryConvert will just plain cast most of the time
+		//except e.g. for Attr<Scannable>
+		v = key.tryConvert(scanUnsafe(key));
 
 		if (v == null) {
 			return Objects.requireNonNull(defaultValue, "defaultValue");

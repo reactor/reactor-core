@@ -474,13 +474,19 @@ public class ScannableTest {
 	public void scanForRawParentOrActual() {
 		Scannable scannable = key -> "String";
 
-		assertThat(scannable.scan(Scannable.RawAttr.ACTUAL_RAW))
+		assertThat(scannable.scanUnsafe(Scannable.Attr.ACTUAL))
 				.isInstanceOf(String.class)
 				.isEqualTo("String");
 
-		assertThat(scannable.scan(Scannable.RawAttr.PARENT_RAW))
+		assertThat(scannable.scan(Scannable.Attr.ACTUAL))
+				.isSameAs(Scannable.Attr.UNAVAILABLE_SCAN);
+
+		assertThat(scannable.scanUnsafe(Scannable.Attr.PARENT))
 				.isInstanceOf(String.class)
 				.isEqualTo("String");
+
+		assertThat(scannable.scan(Scannable.Attr.PARENT))
+				.isSameAs(Scannable.Attr.UNAVAILABLE_SCAN);
 	}
 
 	@Test
