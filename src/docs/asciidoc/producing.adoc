@@ -250,7 +250,7 @@ action specific to cancellation prior to cleanup with `onDispose`.
 Flux<String> bridge = Flux.create(sink -> {
     sink.onRequest(n -> channel.poll(n))
         .onCancel(() -> channel.cancel()) // <1>
-        .onDipose(() -> channel.close())  // <2>
+        .onDispose(() -> channel.close())  // <2>
     });
 ----
 <1> `onCancel` is invoked for cancel signal.
