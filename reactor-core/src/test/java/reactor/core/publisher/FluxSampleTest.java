@@ -187,7 +187,7 @@ public class FluxSampleTest {
 	public void sampleIncludesLastItem() {
 		Flux<Integer> source = Flux.concat(
 				Flux.range(1, 5),
-				Mono.delay(Duration.ofMillis(260)).ignoreElement().map(Long::intValue),
+				Mono.delay(Duration.ofMillis(300)).ignoreElement().map(Long::intValue),
 				Flux.just(80, 90, 100)
 		).hide();
 
