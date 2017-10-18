@@ -173,7 +173,7 @@ final class ParallelSource<T> extends ParallelFlux<T> implements Scannable {
 					@SuppressWarnings("unchecked")
 					Fuseable.QueueSubscription<T> qs = (Fuseable.QueueSubscription<T>) s;
 					
-					int m = qs.requestFusion(Fuseable.ANY);
+					int m = qs.requestFusion(Fuseable.ANY | Fuseable.THREAD_BARRIER);
 					
 					if (m == Fuseable.SYNC) {
 						sourceMode = m;

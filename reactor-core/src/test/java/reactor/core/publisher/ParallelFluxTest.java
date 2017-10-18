@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -441,6 +442,41 @@ public class ParallelFluxTest {
 		Assertions.assertThatExceptionOfType(IllegalArgumentException.class)
 		          .isThrownBy(() -> ParallelFlux.from((Publisher[]) null))
 		          .withMessage("Zero publishers not supported");
+	}
+
+	@Test
+	public void fromFuseableUsesThreadBarrier() {
+		final Set<String> between = new HashSet<>();
+		final ConcurrentHashMap<String, String> processing = new ConcurrentHashMap<>();
+
+		Flux<Integer> test = Flux.range(1, 10)
+		                         .publishOn(Schedulers.single(), false, 1)
+		                         .doOnNext(v -> between.add(Thread.currentThread()
+		                                                          .getName()))
+		                         .parallel(2, 1)
+		                         .runOn(Schedulers.elastic(), 1)
+		                         .map(v -> {
+			                         processing.putIfAbsent(Thread.currentThread()
+			                                                      .getName(), "");
+			                         return v;
+		                         })
+		                         .sequential();
+
+		StepVerifier.create(test)
+		            .expectSubscription()
+		            .recordWith(() -> Collections.synchronizedList(new ArrayList<>(10)))
+		            .expectNextCount(10)
+		            .consumeRecordedWith(r -> assertThat(r).containsExactlyInAnyOrder(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
+		            .expectComplete()
+		            .verify(Duration.ofSeconds(5));
+
+		assertThat(between).hasSize(1);
+		assertThat(between).first()
+		                   .asString()
+		                   .startsWith("single-");
+
+		assertThat(processing.keySet())
+				.allSatisfy(k -> assertThat(k).startsWith("elastic-"));
 	}
 
 	@Test
