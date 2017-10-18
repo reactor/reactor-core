@@ -16,9 +16,13 @@
 
 package reactor.core.publisher
 
+import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Assert
 import org.junit.Test
+import org.reactivestreams.Publisher
 import reactor.test.StepVerifier
+import reactor.test.test
 import reactor.test.verifyError
 import java.io.IOException
 import java.util.concurrent.Callable
@@ -32,6 +36,40 @@ class MonoExtensionsTests {
                 .create("foo".toMono())
                 .expectNext("foo")
                 .verifyComplete()
+    }
+
+    @Test
+    fun publisherToMono() {
+        //fake naive publisher
+        val p: Publisher<String> = Publisher {
+            it.onSubscribe(Operators.emptySubscription())
+            it.onNext("a")
+            it.onNext("b")
+            it.onComplete()
+        }
+
+        val m = p.toMono()
+
+        assertThat(m).isNotSameAs(p)
+        m.test()
+                .expectNext("a")
+                .verifyComplete()
+    }
+    @Test
+    fun fluxToMono() {
+        val f = Flux.range(1, 2)
+        val m = f.toMono()
+
+        assertThat(m).isNotSameAs(f)
+        m.test()
+                .expectNext(1)
+                .verifyComplete()
+    }
+
+    @Test
+    fun monoToMono() {
+        val m = Mono.just(2)
+        assertThat(m.toMono()).isSameAs(m)
     }
 
     @Test

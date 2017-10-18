@@ -16,10 +16,22 @@
 
 package reactor.core.publisher
 
+import org.reactivestreams.Publisher
 import java.util.concurrent.Callable
 import java.util.concurrent.CompletableFuture
 import kotlin.reflect.KClass
 
+/**
+ * Extension to convert any [Publisher] of [T] to a [Mono] that only emits its first
+ * element.
+ *
+ * Note this extension doesn't make much sense on a [Mono] but it won't be converted so it
+ * doesn't hurt.
+ *
+ * @author Simon Baslé
+ * @since 3.1.1
+ */
+fun <T> Publisher<T>.toMono(): Mono<T> = Mono.from(this)
 
 /**
  * Extension for transforming an object to a [Mono].

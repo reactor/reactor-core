@@ -16,9 +16,12 @@
 
 package reactor.core.publisher
 
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Assert
 import org.junit.Test
+import org.reactivestreams.Publisher
 import reactor.test.StepVerifier
+import reactor.test.test
 import reactor.test.verifyError
 import java.io.IOException
 
@@ -171,6 +174,43 @@ class FluxExtensionsTests {
                     .toFlux<String>()
                     .onErrorReturn(IOException::class, "foo"))
                 .expectNext("foo")
+                .verifyComplete()
+    }
+
+    @Test
+    fun publisherToFlux() {
+        //fake naive publisher
+        val p: Publisher<String> = Publisher {
+            it.onSubscribe(Operators.emptySubscription())
+            it.onNext("a")
+            it.onNext("b")
+            it.onComplete()
+        }
+
+        val f = p.toFlux()
+
+        f.test()
+                .expectNext("a", "b")
+                .verifyComplete()
+
+        assertThat(f).isNotSameAs(p)
+    }
+
+    @Test
+    fun fluxToFlux() {
+        val f = Flux.range(1, 2)
+
+        assertThat(f.toFlux()).isSameAs(f)
+    }
+
+    @Test
+    fun monoToFlux() {
+        val m = Mono.just(2)
+        val f = m.toFlux()
+
+        assertThat(f).isNotSameAs(m)
+        f.test()
+                .expectNext(2)
                 .verifyComplete()
     }
 
