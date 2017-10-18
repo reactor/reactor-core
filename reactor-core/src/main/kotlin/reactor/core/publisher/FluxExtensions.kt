@@ -22,6 +22,17 @@ import kotlin.reflect.KClass
 
 
 /**
+ * Extension to convert any [Publisher] of [T] to a [Flux].
+ *
+ * Note this extension doesn't make much sense on a [Flux] but it won't be converted so it
+ * doesn't hurt.
+ *
+ * @author Simon Baslé
+ * @since 3.1.1
+ */
+fun <T> Publisher<T>.toFlux(): Flux<T> = Flux.from(this)
+
+/**
  * Extension for transforming an [Iterator] to a [Flux].
  *
  * @author Sebastien Deleuze
