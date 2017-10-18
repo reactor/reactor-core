@@ -18,8 +18,8 @@ package reactor.core;
 
 import java.util.Iterator;
 import java.util.Objects;
-import java.util.Set;
 import java.util.Spliterators;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -51,14 +51,23 @@ public interface Scannable {
 	 */
 	class Attr<T> {
 
+		/* IMPLEMENTATION NOTE
+		Note that some attributes define a object-to-T converter, which means their
+		private {@link #tryConvert(Object)} method can safely be used by
+		{@link Scannable#scan(Attr)}, making them resilient to class cast exceptions.
+		 */
+
 		/**
 		 * The direct dependent component downstream reference if any. Operators in
 		 * Flux/Mono for instance delegate to a target Subscriber, which is going to be
-		 * the actual chain navigated with this reference key.
+		 * the actual chain navigated with this reference key. Subscribers are not always
+		 * {@link Scannable}, but this attribute will convert these raw results to an
+		 * {@link Scannable#isScanAvailable() unavailable scan} object in this case.
 		 * <p>
 		 *  A reference chain downstream can be navigated via {@link Scannable#actuals()}.
 		 */
-		public static final Attr<Scannable> ACTUAL = new Attr<>(null);
+		public static final Attr<Scannable> ACTUAL = new Attr<>(null,
+				Scannable::from);
 
 		/**
 		 * A {@link Integer} attribute implemented by components with a backlog
@@ -126,11 +135,14 @@ public interface Scannable {
 		 * Parent key exposes the direct upstream relationship of the scanned component.
 		 * It can be a Publisher source to an operator, a Subscription to a Subscriber
 		 * (main flow if ambiguous with inner Subscriptions like flatMap), a Scheduler to
-		 * a Worker.
+		 * a Worker. These types are not always {@link Scannable}, but this attribute
+		 * will convert such raw results to an {@link Scannable#isScanAvailable() unavailable scan}
+		 * object in this case.
 		 * <p>
 		 * {@link Scannable#parents()} can be used to navigate the parent chain.
 		 */
-		public static final Attr<Scannable> PARENT = new Attr<>(null);
+		public static final Attr<Scannable> PARENT = new Attr<>(null,
+				Scannable::from);
 
 		/**
 		 * Prefetch is an {@link Integer} attribute defining the rate of processing in a
@@ -176,10 +188,50 @@ public interface Scannable {
 			return defaultValue;
 		}
 
-		final T defaultValue;
+		/**
+		 * Checks if this attribute is capable of safely converting any Object into
+		 * a {@code T} via {@link #tryConvert(Object)} (potentially returning {@code null}
+		 * or a Null Object for incompatible raw values).
+		 * @return true if the attribute can safely convert any object, false if it can
+		 * throw {@link ClassCastException}
+		 */
+		boolean isConversionSafe() {
+			return safeConverter != null;
+		}
+
+		/**
+		 * Attempt to convert any {@link Object} instance o into a {@code T}. By default
+		 * unsafe attributes will just try forcing a cast, which can lead to {@link ClassCastException}.
+		 * However, attributes for which {@link #isConversionSafe()} returns true are
+		 * required to not throw an exception (but rather return {@code null} or a Null
+		 * Object).
+		 *
+		 * @param o the instance to attempt conversion on
+		 * @return the converted instance
+		 */
+		@Nullable
+		T tryConvert(@Nullable Object o) {
+			if (o == null) {
+				return null;
+			}
+			if (safeConverter == null) {
+				//noinspection unchecked
+				return (T) o;
+			}
+			return safeConverter.apply(o);
+		}
+
+		final T                             defaultValue;
+		final Function<Object, ? extends T> safeConverter;
 
 		protected Attr(@Nullable T defaultValue){
+			this(defaultValue, null);
+		}
+
+		protected Attr(@Nullable T defaultValue,
+				@Nullable Function<Object, ? extends T> safeConverter) {
 			this.defaultValue = defaultValue;
+			this.safeConverter = safeConverter;
 		}
 
 		/**
@@ -362,8 +414,9 @@ public interface Scannable {
 	 */
 	@Nullable
 	default <T> T scan(Attr<T> key) {
-		@SuppressWarnings("unchecked")
-		T value = (T) scanUnsafe(key);
+		//note tryConvert will just plain cast most of the time
+		//except e.g. for Attr<Scannable>
+		T value = key.tryConvert(scanUnsafe(key));
 		if (value == null)
 			return key.defaultValue();
 		return value;
@@ -380,8 +433,11 @@ public interface Scannable {
 	 * @return a value associated to the key or the provided default if unmatched or unresolved
 	 */
 	default <T> T scanOrDefault(Attr<T> key, T defaultValue) {
-		@SuppressWarnings("unchecked")
-		T v = (T) scanUnsafe(key);
+		T v;
+		//note tryConvert will just plain cast most of the time
+		//except e.g. for Attr<Scannable>
+		v = key.tryConvert(scanUnsafe(key));
+
 		if (v == null) {
 			return Objects.requireNonNull(defaultValue, "defaultValue");
 		}

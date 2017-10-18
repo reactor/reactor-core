@@ -19,6 +19,7 @@ package reactor.core;
 import java.util.Collections;
 import java.util.List;
 
+import org.assertj.core.api.Condition;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -453,5 +454,56 @@ public class ScannableTest {
 				.containsExactlyInAnyOrder(Tuples.of("1", "One"), Tuples.of( "2", "Two"));
 	}
 
+	@Test
+	public void scanForParentIsSafe() {
+		Scannable scannable = key -> "String";
+
+		assertThat(scannable.scan(Scannable.Attr.PARENT))
+				.isSameAs(Scannable.Attr.UNAVAILABLE_SCAN);
+	}
+
+	@Test
+	public void scanForActualIsSafe() {
+		Scannable scannable = key -> "String";
+
+		assertThat(scannable.scan(Scannable.Attr.ACTUAL))
+				.isSameAs(Scannable.Attr.UNAVAILABLE_SCAN);
+	}
+
+	@Test
+	public void scanForRawParentOrActual() {
+		Scannable scannable = key -> "String";
+
+		assertThat(scannable.scanUnsafe(Scannable.Attr.ACTUAL))
+				.isInstanceOf(String.class)
+				.isEqualTo("String");
+
+		assertThat(scannable.scan(Scannable.Attr.ACTUAL))
+				.isSameAs(Scannable.Attr.UNAVAILABLE_SCAN);
+
+		assertThat(scannable.scanUnsafe(Scannable.Attr.PARENT))
+				.isInstanceOf(String.class)
+				.isEqualTo("String");
+
+		assertThat(scannable.scan(Scannable.Attr.PARENT))
+				.isSameAs(Scannable.Attr.UNAVAILABLE_SCAN);
+	}
+
+	@Test
+	public void attributeIsConversionSafe() {
+		assertThat(Scannable.Attr.ACTUAL.isConversionSafe()).as("ACTUAL").isTrue();
+		assertThat(Scannable.Attr.PARENT.isConversionSafe()).as("PARENT").isTrue();
+
+		assertThat(Scannable.Attr.BUFFERED.isConversionSafe()).as("BUFFERED").isFalse();
+		assertThat(Scannable.Attr.CAPACITY.isConversionSafe()).as("CAPACITY").isFalse();
+		assertThat(Scannable.Attr.CANCELLED.isConversionSafe()).as("CANCELLED").isFalse();
+		assertThat(Scannable.Attr.DELAY_ERROR.isConversionSafe()).as("DELAY_ERROR").isFalse();
+		assertThat(Scannable.Attr.ERROR.isConversionSafe()).as("ERROR").isFalse();
+		assertThat(Scannable.Attr.LARGE_BUFFERED.isConversionSafe()).as("LARGE_BUFFERED").isFalse();
+		assertThat(Scannable.Attr.NAME.isConversionSafe()).as("NAME").isFalse();
+		assertThat(Scannable.Attr.PREFETCH.isConversionSafe()).as("PREFETCH").isFalse();
+		assertThat(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM.isConversionSafe()).as("REQUESTED_FROM_DOWNSTREAM").isFalse();
+		assertThat(Scannable.Attr.TERMINATED.isConversionSafe()).as("TERMINATED").isFalse();
+	}
 
 }
