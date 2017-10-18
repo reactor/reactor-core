@@ -68,7 +68,6 @@ ext {
 
   bundleImportPackages = ['org.slf4j;resolution:=optional;version="[1.5.4,2)"',
 						  'kotlin.*;resolution:=optional',
-						  '!com.google',
 						  '!javax.annotation',
 						  '!javax.annotation.meta',
 						  '*']
