@@ -942,7 +942,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Create a {@link Flux} that emits long values starting with 0 and incrementing at
 	 * specified time intervals on the global timer. If demand is not produced in time,
-	 * an onError will be signalled. The {@link Flux} will never complete.
+	 * an onError will be signalled with an {@link Exceptions#isOverflow(Throwable) overflow}
+	 * {@code IllegalStateException} detailing the tick that couldn't be emitted.
+	 * In normal conditions, the {@link Flux} will never complete.
 	 * <p>
 	 * Runs on the {@link Schedulers#parallel()} Scheduler.
 	 * <p>
@@ -958,7 +960,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Create a {@link Flux} that emits long values starting with 0 and incrementing at
 	 * specified time intervals, after an initial delay, on the global timer. If demand is
-	 * not produced in time, an onError will be signalled. The {@link Flux} will never complete.
+	 * not produced in time, an onError will be signalled with an
+	 * {@link Exceptions#isOverflow(Throwable) overflow} {@code IllegalStateException}
+	 * detailing the tick that couldn't be emitted. In normal conditions, the {@link Flux}
+	 * will never complete.
 	 * <p>
 	 * Runs on the {@link Schedulers#parallel()} Scheduler.
 	 * <p>
@@ -975,8 +980,10 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Create a {@link Flux} that emits long values starting with 0 and incrementing at
-	 * specified time intervals, on the specified {@link Scheduler}. If demand is
-	 * not produced in time, an onError will be signalled. The {@link Flux} will never complete.
+	 * specified time intervals, on the specified {@link Scheduler}. If demand is not
+	 * produced in time, an onError will be signalled with an {@link Exceptions#isOverflow(Throwable) overflow}
+	 * {@code IllegalStateException} detailing the tick that couldn't be emitted.
+	 * In normal conditions, the {@link Flux} will never complete.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/interval.png" alt="">
 	 * <p>
@@ -992,7 +999,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * Create a {@link Flux} that emits long values starting with 0 and incrementing at
 	 * specified time intervals, after an initial delay, on the specified {@link Scheduler}.
-	 * If demand is not produced in time, an onError will be signalled. The {@link Flux}
+	 * If demand is not produced in time, an onError will be signalled with an
+	 * {@link Exceptions#isOverflow(Throwable) overflow} {@code IllegalStateException}
+	 * detailing the tick that couldn't be emitted. In normal conditions, the {@link Flux}
 	 * will never complete.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/intervald.png" alt="">

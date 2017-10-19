@@ -118,7 +118,8 @@ final class FluxInterval extends Flux<Long> {
 				} else {
 					cancel();
 					
-					actual.onError(Exceptions.failWithOverflow("Could not emit value " + count + " due to lack of requests"));
+					actual.onError(Exceptions.failWithOverflow("Could not emit tick " + count + " due to lack of requests" +
+							" (interval doesn't support small downstream requests that replenish slower than the ticks)"));
 				}
 			}
 		}
