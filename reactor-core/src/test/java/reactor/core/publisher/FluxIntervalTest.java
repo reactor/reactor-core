@@ -152,4 +152,14 @@ public class FluxIntervalTest {
         test.cancel();
         assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
+
+    @Test
+	public void tickOverflow() {
+		StepVerifier.withVirtualTime(() ->
+				Flux.interval(Duration.ofMillis(50))
+				    .delayUntil(i -> Mono.delay(Duration.ofMillis(250))))
+		            .thenAwait(Duration.ofMinutes(1))
+		            .expectNextCount(6)
+		            .verifyErrorMessage("Could not emit tick 32 due to lack of requests (interval doesn't support small downstream requests that replenish slower than the ticks)");
+    }
 }
