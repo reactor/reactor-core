@@ -34,7 +34,7 @@ import reactor.util.annotation.Nullable;
 /**
  * @author Stephane Maldini
  */
-final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends FluxOperator<T,
+final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOperator<T,
 		C> {
 
 	final int            batchSize;
@@ -42,7 +42,7 @@ final class FluxBufferTimeOrSize<T, C extends Collection<? super T>> extends Flu
 	final Scheduler      timer;
 	final long           timespan;
 
-	FluxBufferTimeOrSize(Flux<T> source,
+	FluxBufferTimeout(Flux<T> source,
 			int maxSize,
 			long timespan,
 			Scheduler timer,

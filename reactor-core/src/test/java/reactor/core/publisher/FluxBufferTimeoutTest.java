@@ -28,7 +28,7 @@ import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FluxBufferTimeOrSizeTest {
+public class FluxBufferTimeoutTest {
 
 	Flux<List<Integer>> scenario_bufferWithTimeoutAccumulateOnTimeOrSize() {
 		return Flux.range(1, 6)
@@ -66,7 +66,7 @@ public class FluxBufferTimeOrSizeTest {
 	public void scanSubscriber() {
 		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 
-		FluxBufferTimeOrSize.BufferTimeoutSubscriber<String, List<String>> test = new FluxBufferTimeOrSize.BufferTimeoutSubscriber<String, List<String>>(
+		FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>> test = new FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>>(
 						actual, 123, 1000, Schedulers.elastic().createWorker(), ArrayList::new);
 
 		Subscription subscription = Operators.emptySubscription();
@@ -95,7 +95,7 @@ public class FluxBufferTimeOrSizeTest {
 		CoreSubscriber<List<String>>
 				actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 
-		FluxBufferTimeOrSize.BufferTimeoutSubscriber<String, List<String>> test = new FluxBufferTimeOrSize.BufferTimeoutSubscriber<String, List<String>>(
+		FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>> test = new FluxBufferTimeout.BufferTimeoutSubscriber<String, List<String>>(
 						actual, 123, 1000, Schedulers.elastic().createWorker(), ArrayList::new);
 
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();

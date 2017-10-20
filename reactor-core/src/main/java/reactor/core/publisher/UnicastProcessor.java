@@ -28,6 +28,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.context.Context;
@@ -154,6 +155,12 @@ public final class UnicastProcessor<T>
 	@Override
 	public int getBufferSize() {
 		return Queues.capacity(this.queue);
+	}
+
+	@Override
+	public Object scanUnsafe(Attr key) {
+		if (Attr.BUFFERED == key) return queue.size();
+		return super.scanUnsafe(key);
 	}
 
 	void doTerminate() {
