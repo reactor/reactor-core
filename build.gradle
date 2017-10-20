@@ -1,6 +1,3 @@
-import me.champeau.gradle.japicmp.JapicmpTask
-import org.gradle.api.internal.plugins.osgi.OsgiHelper
-
 /*
  * Copyright (c) 2011-2017 Pivotal Software Inc, All Rights Reserved.
  *
@@ -16,6 +13,8 @@ import org.gradle.api.internal.plugins.osgi.OsgiHelper
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import me.champeau.gradle.japicmp.JapicmpTask
+import org.gradle.api.internal.plugins.osgi.OsgiHelper
 
 buildscript {
   ext.kotlinVersion = '1.1.51'
@@ -330,7 +329,7 @@ project('reactor-core') {
   }
 
   task kdocZip(type: Zip, dependsOn: dokka) {
-	//ends up similar to javadoc jar: reactor-core-3.1.0.RELEASE-kdoc.zip
+	//ends up similar to javadoc jar: reactor-core-xxxx.RELEASE-kdoc.zip
 	classifier = 'kdoc'
 	from("${project.buildDir}/docs/kdoc")
   }
@@ -474,7 +473,7 @@ project('reactor-test') {
   }
 
   task kdocZip(type: Zip, dependsOn: dokka) {
-	//ends up similar to javadoc jar: reactor-test-3.1.0.RELEASE-kdoc.zip
+	//ends up similar to javadoc jar: reactor-test-xxx.RELEASE-kdoc.zip
 	classifier = 'kdoc'
 	from("${project.buildDir}/docs/kdoc")
   }

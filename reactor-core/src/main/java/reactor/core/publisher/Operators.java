@@ -524,7 +524,7 @@ public abstract class Operators {
 	 * starve a calling thread if races are too important and {@link Subscriber} is slower.
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.0.RC1/src/docs/marble/serialize.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/serialize.png" alt="">
 	 *
 	 * @param <T> the relayed type
 	 * @param subscriber the subscriber to serialize

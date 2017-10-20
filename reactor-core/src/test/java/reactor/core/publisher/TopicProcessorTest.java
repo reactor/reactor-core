@@ -49,7 +49,7 @@ public class TopicProcessorTest {
 	@Test
 	public void createSmokeTest() {
 		//this build sequence has been reported as throwing an exception
-		// with JDK9 and 3.1.0.RELEASE (see https://github.com/reactor/reactor-core/issues/881)
+		// with JDK9 (see https://github.com/reactor/reactor-core/issues/881)
 		TopicProcessor.builder().share(true).build();
 	}
 

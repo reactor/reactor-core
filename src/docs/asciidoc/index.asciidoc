@@ -1,6 +1,6 @@
 = Reactor 3 Reference Guide
 Stephane Maldini <https://twitter.com/smaldini[@smaldini]>; Simon Baslé <https://twitter.com/simonbasle[@simonbasle]>
-:appversion: 3.1.0.M2
+:appversion: 3.1.1.RELEASE
 ifndef::host-github[:ext-relative: {outfilesuffix}]
 {appversion}
 :doctype: book

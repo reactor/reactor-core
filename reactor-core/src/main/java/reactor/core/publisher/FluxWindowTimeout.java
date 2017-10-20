@@ -35,9 +35,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.util.concurrent.Queues;
 
 /**
- * WindowTimeoutSubscriber is forwarding events on a steam until {@code maxSize} is reached,
- * after that streams collected events further, complete it and create a fresh new fluxion.
- * @author Stephane Maldini
+ * @author David Karnok
  */
 final class FluxWindowTimeout<T> extends FluxOperator<T, Flux<T>> {
 
