@@ -34,7 +34,7 @@ import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FluxWindowTimeOrSizeTest {
+public class FluxWindowTimeoutTest {
 
 	Flux<List<Integer>> scenario_windowWithTimeoutAccumulateOnTimeOrSize() {
 		return Flux.range(1, 6)
@@ -156,7 +156,21 @@ public class FluxWindowTimeOrSizeTest {
 
 		StepVerifier.create(Flux.range(1, 3).hide()
 		                        .windowTimeout(10, Duration.ofMillis(500), testScheduler))
+		            .expectNextCount(1)
 		            .verifyError(RejectedExecutionException.class);
+	}
+
+	@Test
+	public void testIssue912() {
+		StepVerifier.withVirtualTime(() -> Flux.concat(
+				Flux.just("#").delayElements(Duration.ofMillis(20)),
+				Flux.range(1, 10),
+				Flux.range(11, 5).delayElements(Duration.ofMillis(15))
+		)
+		    .windowTimeout(10, Duration.ofMillis(1)).concatMap(w -> w).log())
+		            .thenAwait(Duration.ofMillis(95))
+		            .expectNextCount(16)
+		.verifyComplete();
 	}
 
 	@Test
@@ -201,15 +215,14 @@ public class FluxWindowTimeOrSizeTest {
 		                        	return w.collectList();
 		                        })
 		)
-		            .assertNext(l -> assertThat(l).containsExactly(1, 2))
 		            .verifyError(RejectedExecutionException.class);
 	}
 
 	@Test
     public void scanMainSubscriber() {
         CoreSubscriber<Flux<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
-        FluxWindowTimeOrSize.WindowTimeoutSubscriber<Integer> test = new FluxWindowTimeOrSize.WindowTimeoutSubscriber<>(actual,
-        		123, 1000, Schedulers.single());
+        FluxWindowTimeout.WindowTimeoutSubscriber<Integer> test = new FluxWindowTimeout.WindowTimeoutSubscriber<>(actual,
+        		123, Long.MAX_VALUE, Schedulers.single());
         Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
 
@@ -218,8 +231,12 @@ public class FluxWindowTimeOrSizeTest {
 		Assertions.assertThat(test.scan(Scannable.Attr.CAPACITY)).isEqualTo(123);
 		test.requested = 35;
 		Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(35);
-		Assertions.assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(123);
-
+		Assertions.assertThat(test.scan(Scannable.Attr.BUFFERED)).isEqualTo(0);
+		test.onNext(1);
+		test.onNext(2);
+		Assertions.assertThat(test.inners().findFirst().get().scan(Scannable.Attr.BUFFERED)).isEqualTo(2);
+		Assertions.assertThat(test.inners().findFirst().get().scan(Scannable.Attr
+				.CANCELLED)).isEqualTo(false);
 		Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.onComplete();
 		Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();

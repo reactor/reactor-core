@@ -300,7 +300,7 @@ public class FluxWindowConsistencyTest {
 		generate(2, 3);
 		Thread.sleep(200);
 		generate(5, 10);
-		verifyMainCancel(true, Arrays.asList(0, 1, 2, 3, 4));
+		verifyMainCancel(true);
 	}
 
 	@Test
@@ -408,7 +408,7 @@ public class FluxWindowConsistencyTest {
 		mainSubscriber.cancel();
 		Thread.sleep(300);
 		generate(2, 1);
-		verifyMainCancelNoNewWindow(2, Arrays.asList(0), Arrays.asList(1));
+		verifyMainCancelNoNewWindow(1, Arrays.asList(0), Arrays.asList(1));
 	}
 
 	@Test

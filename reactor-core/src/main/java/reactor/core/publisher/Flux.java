@@ -2289,7 +2289,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final  <C extends Collection<? super T>> Flux<C> bufferTimeout(int maxSize, Duration timespan,
 			Scheduler timer, Supplier<C> bufferSupplier) {
-		return onAssembly(new FluxBufferTimeOrSize<>(this, maxSize, timespan.toMillis(), timer, bufferSupplier));
+		return onAssembly(new FluxBufferTimeout<>(this, maxSize, timespan.toMillis(), timer, bufferSupplier));
 	}
 
 	/**
@@ -7448,7 +7448,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a {@link Flux} of {@link Flux} windows based on element count and duration
 	 */
 	public final Flux<Flux<T>> windowTimeout(int maxSize, Duration timespan, Scheduler timer) {
-		return onAssembly(new FluxWindowTimeOrSize<>(this, maxSize, timespan.toMillis(), timer));
+		return onAssembly(new FluxWindowTimeout<>(this, maxSize, timespan.toMillis(), timer));
 	}
 
 	/**

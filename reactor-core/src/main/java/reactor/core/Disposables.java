@@ -434,7 +434,7 @@ public final class Disposables {
 				AtomicReferenceFieldUpdater.newUpdater(SwapDisposable.class, Disposable.class, "inner");
 
 		@Override
-		public boolean update(Disposable next) {
+		public boolean update(@Nullable Disposable next) {
 			return Disposables.set(INNER, this, next);
 		}
 
