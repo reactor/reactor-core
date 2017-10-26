@@ -1186,6 +1186,52 @@ public abstract class Mono<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Subscribe to this {@link Mono} and <strong>block indefinitely</strong> until a next signal is
+	 * received or the Mono completes empty. Returns an {@link Optional}, which can be used
+	 * to replace the empty case with an Exception via {@link Optional#orElseThrow(Supplier)}.
+	 * In case the Mono itself errors, the original exception is thrown (wrapped in a
+	 * {@link RuntimeException} if it was a checked exception).
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/block.png" alt="">
+	 * <p>
+	 * Note that each blockOptional() will trigger a new subscription: in other words, the result
+	 * might miss signal from hot publishers.
+	 *
+	 * @return T the result
+	 */
+	public Optional<T> blockOptional() {
+		BlockingOptionalMonoSubscriber<T> subscriber = new BlockingOptionalMonoSubscriber<>();
+		onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		return subscriber.blockingGet();
+	}
+
+	/**
+	 * Subscribe to this {@link Mono} and <strong>block</strong> until a next signal is
+	 * received, the Mono completes empty or a timeout expires. Returns an {@link Optional}
+	 * for the first two cases, which can be used to replace the empty case with an
+	 * Exception via {@link Optional#orElseThrow(Supplier)}.
+	 * In case the Mono itself errors, the original exception is thrown (wrapped in a
+	 * {@link RuntimeException} if it was a checked exception).
+	 * If the provided timeout expires, a {@link RuntimeException} is thrown.
+	 *
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/block.png" alt="">
+	 * <p>
+	 * Note that each block() will trigger a new subscription: in other words, the result
+	 * might miss signal from hot publishers.
+	 *
+	 * @param timeout maximum time period to wait for before raising a {@link RuntimeException}
+	 *
+	 * @return T the result
+	 */
+	public Optional<T> blockOptional(Duration timeout) {
+		BlockingOptionalMonoSubscriber<T> subscriber = new BlockingOptionalMonoSubscriber<>();
+		onLastAssembly(this).subscribe(Operators.toCoreSubscriber(subscriber));
+		return subscriber.blockingGet(timeout.toMillis(), TimeUnit.MILLISECONDS);
+	}
+
+	/**
 	 * Cast the current {@link Mono} produced type into a target produced type.
 	 *
 	 * <p>
