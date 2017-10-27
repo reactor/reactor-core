@@ -35,9 +35,15 @@ import reactor.util.annotation.Nullable;
 final class FluxIterable<T> extends Flux<T> implements Fuseable {
 
 	final Iterable<? extends T> iterable;
+	private final Runnable      onClose;
+
+	FluxIterable(Iterable<? extends T> iterable, Runnable onClose) {
+		this.iterable = Objects.requireNonNull(iterable, "iterable");
+		this.onClose = onClose;
+	}
 
 	FluxIterable(Iterable<? extends T> iterable) {
-		this.iterable = Objects.requireNonNull(iterable, "iterable");
+		this(iterable, null);
 	}
 
 	@Override
@@ -52,7 +58,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 			return;
 		}
 
-		subscribe(actual, it);
+		subscribe(actual, it, onClose);
 	}
 
 	/**
@@ -63,6 +69,21 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 	 */
 	@SuppressWarnings("unchecked")
 	static <T> void subscribe(CoreSubscriber<? super T> s, Iterator<? extends T> it) {
+		subscribe(s, it, null);
+	}
+
+	/**
+	 * Common method to take an Iterator as a source of values.
+	 *
+	 * @param s the subscriber to feed this iterator to
+	 * @param it the iterator to use as a source of values
+	 * @param onClose close handler to call once we're done with the iterator (provided it
+	 * is not null, this includes when the iteration errors or complete or the subscriber
+	 * is cancelled). Null to ignore.
+	 */
+	@SuppressWarnings("unchecked")
+	static <T> void subscribe(CoreSubscriber<? super T> s, Iterator<? extends T> it,
+			@Nullable Runnable onClose) {
 		//noinspection ConstantConditions
 		if (it == null) {
 			Operators.error(s, new NullPointerException("The iterator is null"));
@@ -76,19 +97,35 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 		}
 		catch (Throwable e) {
 			Operators.error(s, Operators.onOperatorError(e, s.currentContext()));
+			if (onClose != null) {
+				try {
+					onClose.run();
+				}
+				catch (Throwable t) {
+					Operators.onErrorDropped(t, s.currentContext());
+				}
+			}
 			return;
 		}
 		if (!b) {
 			Operators.complete(s);
+			if (onClose != null) {
+				try {
+					onClose.run();
+				}
+				catch (Throwable t) {
+					Operators.onErrorDropped(t, s.currentContext());
+				}
+			}
 			return;
 		}
 
 		if (s instanceof ConditionalSubscriber) {
 			s.onSubscribe(new IterableSubscriptionConditional<>((ConditionalSubscriber<? super T>) s,
-					it));
+					it, onClose));
 		}
 		else {
-			s.onSubscribe(new IterableSubscription<>(s, it));
+			s.onSubscribe(new IterableSubscription<>(s, it, onClose));
 		}
 	}
 
@@ -98,6 +135,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 		final CoreSubscriber<? super T> actual;
 
 		final Iterator<? extends T> iterator;
+		final Runnable              onClose;
 
 		volatile boolean cancelled;
 
@@ -130,9 +168,15 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 		T current;
 
 		IterableSubscription(CoreSubscriber<? super T> actual,
-				Iterator<? extends T> iterator) {
+				Iterator<? extends T> iterator, @Nullable Runnable onClose) {
 			this.actual = actual;
 			this.iterator = iterator;
+			this.onClose = onClose;
+		}
+
+		IterableSubscription(CoreSubscriber<? super T> actual,
+				Iterator<? extends T> iterator) {
+			this(actual, iterator, null);
 		}
 
 		@Override
@@ -145,6 +189,17 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 					else {
 						slowPath(n);
 					}
+				}
+			}
+		}
+
+		private void onCloseWithDropError() {
+			if (onClose != null) {
+				try {
+					onClose.run();
+				}
+				catch (Throwable t) {
+					Operators.onErrorDropped(t, actual.currentContext());
 				}
 			}
 		}
@@ -166,6 +221,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 					}
 					catch (Throwable ex) {
 						s.onError(ex);
+						onCloseWithDropError();
 						return;
 					}
 
@@ -186,6 +242,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 					}
 					catch (Throwable ex) {
 						s.onError(ex);
+						onCloseWithDropError();
 						return;
 					}
 
@@ -195,6 +252,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 
 					if (!b) {
 						s.onComplete();
+						onCloseWithDropError();
 						return;
 					}
 
@@ -231,6 +289,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 				}
 				catch (Exception ex) {
 					s.onError(ex);
+					onCloseWithDropError();
 					return;
 				}
 
@@ -251,6 +310,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 				}
 				catch (Exception ex) {
 					s.onError(ex);
+					onCloseWithDropError();
 					return;
 				}
 
@@ -260,6 +320,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 
 				if (!b) {
 					s.onComplete();
+					onCloseWithDropError();
 					return;
 				}
 			}
@@ -267,6 +328,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 
 		@Override
 		public void cancel() {
+			onCloseWithDropError();
 			cancelled = true;
 		}
 
@@ -320,8 +382,13 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 					current = null;
 				}
 				state = STATE_CALL_HAS_NEXT;
-				return Objects.requireNonNull(c, "iterator returned a null value");
+				if (c == null) {
+					onCloseWithDropError();
+					throw new NullPointerException("iterator returned a null value");
+				}
+				return c;
 			}
+			onCloseWithDropError();
 			return null;
 		}
 
@@ -340,6 +407,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 		final ConditionalSubscriber<? super T> actual;
 
 		final Iterator<? extends T> iterator;
+		final Runnable              onClose;
 
 		volatile boolean cancelled;
 
@@ -372,9 +440,15 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 		T current;
 
 		IterableSubscriptionConditional(ConditionalSubscriber<? super T> actual,
-				Iterator<? extends T> iterator) {
+				Iterator<? extends T> iterator, @Nullable Runnable onClose) {
 			this.actual = actual;
 			this.iterator = iterator;
+			this.onClose = onClose;
+		}
+
+		IterableSubscriptionConditional(ConditionalSubscriber<? super T> actual,
+				Iterator<? extends T> iterator) {
+			this(actual, iterator, null);
 		}
 
 		@Override
@@ -387,6 +461,17 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 					else {
 						slowPath(n);
 					}
+				}
+			}
+		}
+
+		private void onCloseWithDropError() {
+			if (onClose != null) {
+				try {
+					onClose.run();
+				}
+				catch (Throwable t) {
+					Operators.onErrorDropped(t, actual.currentContext());
 				}
 			}
 		}
@@ -408,6 +493,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 					}
 					catch (Throwable ex) {
 						s.onError(ex);
+						onCloseWithDropError();
 						return;
 					}
 
@@ -428,6 +514,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 					}
 					catch (Throwable ex) {
 						s.onError(ex);
+						onCloseWithDropError();
 						return;
 					}
 
@@ -437,6 +524,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 
 					if (!b) {
 						s.onComplete();
+						onCloseWithDropError();
 						return;
 					}
 
@@ -475,6 +563,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 				}
 				catch (Exception ex) {
 					s.onError(ex);
+					onCloseWithDropError();
 					return;
 				}
 
@@ -495,6 +584,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 				}
 				catch (Exception ex) {
 					s.onError(ex);
+					onCloseWithDropError();
 					return;
 				}
 
@@ -504,6 +594,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 
 				if (!b) {
 					s.onComplete();
+					onCloseWithDropError();
 					return;
 				}
 			}
@@ -511,6 +602,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 
 		@Override
 		public void cancel() {
+			onCloseWithDropError();
 			cancelled = true;
 		}
 
@@ -566,6 +658,7 @@ final class FluxIterable<T> extends Flux<T> implements Fuseable {
 				state = STATE_CALL_HAS_NEXT;
 				return c;
 			}
+			onCloseWithDropError();
 			return null;
 		}
 

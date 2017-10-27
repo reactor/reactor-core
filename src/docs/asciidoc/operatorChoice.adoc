@@ -37,6 +37,7 @@ I want to deal with:
 ** an array: `Flux#fromArray`
 ** a collection or iterable: `Flux#fromIterable`
 ** a range of integers: `Flux#range`
+** a `Stream` supplied for each Subscription: `Flux#fromStream(Supplier<Stream>)`
 * that emits from various single-valued sources such as:
 ** a `Supplier<T>`: `Mono#fromSupplier`
 ** a task: `Mono#fromCallable`, `Mono#fromRunnable`

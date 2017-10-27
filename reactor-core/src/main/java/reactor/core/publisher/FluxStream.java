@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.util.Iterator;
 import java.util.Objects;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import reactor.core.CoreSubscriber;
@@ -32,14 +33,24 @@ import reactor.core.Fuseable;
  */
 final class FluxStream<T> extends Flux<T> implements Fuseable {
 
-	final Stream<? extends T> stream;
+	final Supplier<? extends Stream<? extends T>> streamSupplier;
 
-	FluxStream(Stream<? extends T> iterable) {
-		this.stream = Objects.requireNonNull(iterable, "stream");
+	FluxStream(Supplier<? extends Stream<? extends T>> streamSupplier) {
+		this.streamSupplier = Objects.requireNonNull(streamSupplier, "streamSupplier");
 	}
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
+		Stream<? extends T> stream;
+		try {
+			stream = Objects.requireNonNull(streamSupplier.get(),
+					"The stream supplier returned a null Stream");
+		}
+		catch (Throwable e) {
+			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
+			return;
+		}
+
 		Iterator<? extends T> it;
 
 		try {
@@ -51,7 +62,9 @@ final class FluxStream<T> extends Flux<T> implements Fuseable {
 			return;
 		}
 
-		FluxIterable.subscribe(actual, it);
+		//although not required by AutoCloseable, Stream::close SHOULD be idempotent
+		//(at least the default AbstractPipeline implementation is)
+		FluxIterable.subscribe(actual, it, stream::close);
 	}
 
 }
