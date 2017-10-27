@@ -2666,7 +2666,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * it is different from {@code Integer.MAX_VALUE}).
 	 *
 	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/repeatwhen1.png" alt="">
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/repeatwhenempty.png" alt="">
 	 *
 	 * @param maxRepeat the maximum number of repeats (infinite if {@code Integer.MAX_VALUE})
 	 * @param repeatFactory the {@link Function} that returns the associated {@link Publisher}
