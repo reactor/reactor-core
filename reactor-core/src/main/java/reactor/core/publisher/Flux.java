@@ -865,7 +865,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Create a {@link Flux} that emits the items contained in the provided {@link Stream}.
 	 * Keep in mind that a {@link Stream} cannot be re-used, which can be problematic in
 	 * case of multiple subscriptions or re-subscription (like with {@link #repeat()} or
-	 * {@link #retry()}).
+	 * {@link #retry()}). The {@link Stream} is {@link Stream#close() closed} automatically
+	 * by the operator on cancellation, error or completion.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/fromstream.png" alt="">
 	 * <p>
@@ -875,7 +876,26 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a new {@link Flux}
 	 */
 	public static <T> Flux<T> fromStream(Stream<? extends T> s) {
-		return onAssembly(new FluxStream<>(s));
+		Objects.requireNonNull(s, "Stream s must be provided");
+		return onAssembly(new FluxStream<>(() -> s));
+	}
+
+	/**
+	 * Create a {@link Flux} that emits the items contained in a {@link Stream} created by
+	 * the provided {@link Supplier} for each subscription. The {@link Stream} is
+	 * {@link Stream#close() closed} automatically by the operator on cancellation, error
+	 * or completion.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/fromstream.png" alt="">
+	 * <p>
+	 * @param streamSupplier the {@link Supplier} that generates the {@link Stream} from
+	 * which to read data
+	 * @param <T> The type of values in the source {@link Stream} and resulting Flux
+	 *
+	 * @return a new {@link Flux}
+	 */
+	public static <T> Flux<T> fromStream(Supplier<Stream<? extends T>> streamSupplier) {
+		return onAssembly(new FluxStream<>(streamSupplier));
 	}
 
 	/**
