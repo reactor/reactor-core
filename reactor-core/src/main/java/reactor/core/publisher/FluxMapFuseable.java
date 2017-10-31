@@ -170,22 +170,24 @@ final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable
 		@Override
 		@Nullable
 		public R poll() {
-			T v = s.poll();
-			if (v != null) {
-				try {
-					return Objects.requireNonNull(mapper.apply(v));
-				}
-				catch (Throwable t) {
-					RuntimeException e_ = Operators.onNextPollFailure(v, t, currentContext());
-					if (e_ != null) {
-						throw e_;
+			for(;;) {
+				T v = s.poll();
+				if (v != null) {
+					try {
+						return Objects.requireNonNull(mapper.apply(v));
 					}
-					else {
-						return poll();
+					catch (Throwable t) {
+						RuntimeException e_ = Operators.onNextPollFailure(v, t, currentContext());
+						if (e_ != null) {
+							throw e_;
+						}
+						else {
+							continue;
+						}
 					}
 				}
+				return null;
 			}
-			return null;
 		}
 
 		@Override
@@ -352,22 +354,24 @@ final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable
 		@Override
 		@Nullable
 		public R poll() {
-			T v = s.poll();
-			if (v != null) {
-				try {
-					return Objects.requireNonNull(mapper.apply(v));
-				}
-				catch (Throwable t) {
-					RuntimeException e_ = Operators.onNextPollFailure(v, t, currentContext());
-					if (e_ != null) {
-						throw e_;
+			for(;;) {
+				T v = s.poll();
+				if (v != null) {
+					try {
+						return Objects.requireNonNull(mapper.apply(v));
 					}
-					else {
-						return poll();
+					catch (Throwable t) {
+						RuntimeException e_ = Operators.onNextPollFailure(v, t, currentContext());
+						if (e_ != null) {
+							throw e_;
+						}
+						else {
+							continue;
+						}
 					}
 				}
+				return null;
 			}
-			return null;
 		}
 
 		@Override
