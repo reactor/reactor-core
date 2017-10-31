@@ -205,9 +205,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 						if (e_ != null) {
 							throw e_;
 						}
-						else {
-							return poll();
-						}
+						//else continue
 					}
 				}
 			}
@@ -225,9 +223,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 						if (e_ != null) {
 							throw e_;
 						}
-						else {
-							return poll();
-						}
+						// else continue
 					}
 				}
 			}
@@ -412,9 +408,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 						if (e_ != null) {
 							throw e_;
 						}
-						else {
-							return poll();
-						}
+						// else continue
 					}
 				}
 			}
@@ -432,9 +426,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 						if (e_ != null) {
 							throw e_;
 						}
-						else {
-							return poll();
-						}
+						// else continue
 					}
 				}
 			}
