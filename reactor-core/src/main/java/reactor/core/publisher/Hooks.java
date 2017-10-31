@@ -299,18 +299,35 @@ public abstract class Hooks {
 	}
 
 	/**
-	 * Set the custom global error mode hook for operators that support {@link OnNextFailureStrategy}
-	 * during a failure in their {@link org.reactivestreams.Subscriber#onNext(Object)}.
-	 * @param onNextFailure the new {@link OnNextFailureStrategy} to use.
+	 * Set the custom global error mode hook for operators that support resuming
+	 * during an error in their {@link org.reactivestreams.Subscriber#onNext(Object)}.
+	 * <p>
+	 * The hook is a {@link BiFunction} of {@link Throwable} and potentially null {@link Object}.
+	 * If it is also a {@link java.util.function.BiPredicate}, its
+	 * {@link java.util.function.BiPredicate#test(Object, Object) test} method should be
+	 * used to determine if an error should be processed (matching predicate) or completely
+	 * skipped (non-matching predicate). Typical usage, as in {@link Operators}, is to
+	 * check if the predicate matches and fallback to {@link Operators#onOperatorError(Throwable, Context)}
+	 * if it doesn't.
+	 *
+	 * @param onNextError the new {@link BiFunction} to use.
 	 */
-	public static void onNextFailure(OnNextFailureStrategy onNextFailure) {
-		Objects.requireNonNull(onNextFailure, "onNextError");
+	public static void onNextError(BiFunction<? super Throwable, Object, ? extends Throwable> onNextError) {
+		Objects.requireNonNull(onNextError, "onNextError");
 		log.debug("Hooking new default : onNextError");
 
-		synchronized(log) {
-			onNextFailureHook = onNextFailure;
+		if (onNextError instanceof OnNextFailureStrategy) {
+			synchronized(log) {
+				onNextErrorHook = (OnNextFailureStrategy) onNextError;
+			}
+		}
+		else {
+			synchronized(log) {
+				onNextErrorHook = new OnNextFailureStrategy.LambdaOnNextErrorStrategy(onNextError);
+			}
 		}
 	}
+
 	/**
 	 * Add a custom error mapping, overriding the default one. Custom mapping can be an
 	 * accumulation of several sub-hooks each subsequently added via this method.
@@ -420,13 +437,13 @@ public abstract class Hooks {
 	}
 
 	/**
-	 * Reset global onNext failure handling strategy to terminating the sequence with
+	 * Reset global onNext error handling strategy to terminating the sequence with
 	 * an onError and cancelling upstream ({@link OnNextFailureStrategy#STOP}).
 	 */
-	public static void resetOnNextFailure() {
+	public static void resetOnNextError() {
 		log.debug("Reset to factory defaults : onNextError");
 		synchronized (log) {
-			onNextFailureHook = null;
+			onNextErrorHook = null;
 		}
 	}
 
@@ -471,7 +488,7 @@ public abstract class Hooks {
 	static volatile Consumer<Object>            onNextDroppedHook;
 
 	//Special hook that is between the two (strategy can be transformative, but not named)
-	static volatile OnNextFailureStrategy onNextFailureHook;
+	static volatile OnNextFailureStrategy onNextErrorHook;
 
 
 	//For transformative hooks, allow to name them, keep track in an internal Map that retains insertion order

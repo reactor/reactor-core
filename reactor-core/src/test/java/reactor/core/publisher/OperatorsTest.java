@@ -267,7 +267,7 @@ public class OperatorsTest {
 		List<Object> errorDropped = new ArrayList<>();
 		Hooks.onNextDropped(nextDropped::add);
 		Hooks.onErrorDropped(errorDropped::add);
-		Hooks.onNextFailure(OnNextFailureStrategy.STOP);
+		Hooks.onNextError(OnNextFailureStrategy.STOP);
 
 		Context c = Context.of(OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY, OnNextFailureStrategy.RESUME_DROP);
 		Exception error = new IllegalStateException("boom");
@@ -285,7 +285,7 @@ public class OperatorsTest {
 		finally {
 			Hooks.resetOnNextDropped();
 			Hooks.resetOnErrorDropped();
-			Hooks.resetOnNextFailure();
+			Hooks.resetOnNextError();
 		}
 	}
 
@@ -299,7 +299,7 @@ public class OperatorsTest {
 		Context c = Context.of(OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY, OnNextFailureStrategy.RESUME_DROP);
 		Exception error = new IllegalStateException("boom");
 		try {
-			assertThat(Hooks.onNextFailureHook).as("no global hook").isNull();
+			assertThat(Hooks.onNextErrorHook).as("no global hook").isNull();
 
 			RuntimeException e = Operators.onNextPollError("foo", error, c);
 			assertThat(e).isNull();
@@ -487,7 +487,7 @@ public class OperatorsTest {
 	public void onNextFailureWithStrategyMatchingDoesntCancel() {
 		Context context = Context.of(OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY, new OnNextFailureStrategy() {
 			@Override
-			public boolean canResume(Throwable error, @Nullable Object value) {
+			public boolean test(Throwable error, @Nullable Object value) {
 				return true;
 			}
 
@@ -510,7 +510,7 @@ public class OperatorsTest {
 	public void onNextFailureWithStrategyNotMatchingDoesCancel() {
 		Context context = Context.of(OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY, new OnNextFailureStrategy() {
 			@Override
-			public boolean canResume(Throwable error, @Nullable Object value) {
+			public boolean test(Throwable error, @Nullable Object value) {
 				return false;
 			}
 
@@ -536,7 +536,7 @@ public class OperatorsTest {
 	public void onNextFailureWithStrategyMatchingButNotNullDoesCancel() {
 		Context context = Context.of(OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY, new OnNextFailureStrategy() {
 			@Override
-			public boolean canResume(Throwable error, @Nullable Object value) {
+			public boolean test(Throwable error, @Nullable Object value) {
 				return true;
 			}
 

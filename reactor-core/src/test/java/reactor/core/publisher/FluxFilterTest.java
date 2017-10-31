@@ -282,7 +282,7 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
 
 	@Test
 	public void failureStrategyResume() {
-		Hooks.onNextFailure(OnNextFailureStrategy.RESUME_DROP);
+		Hooks.onNextError(OnNextFailureStrategy.RESUME_DROP);
 		try {
 			AtomicLong r = new AtomicLong();
 			StepVerifier.create(Flux.range(0, 2)
@@ -299,13 +299,13 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
 			assertThat(r.get()).as("amount requested").isEqualTo(2L);
 		}
 		finally {
-			Hooks.resetOnNextFailure();
+			Hooks.resetOnNextError();
 		}
 	}
 
 	@Test
 	public void failureStrategyResumeTryOnNext() {
-		Hooks.onNextFailure(OnNextFailureStrategy.RESUME_DROP);
+		Hooks.onNextError(OnNextFailureStrategy.RESUME_DROP);
 		try {
 			StepVerifier.create(Flux.range(0, 2)
 			                        .distinctUntilChanged()
@@ -318,13 +318,13 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
 			            .hasDroppedErrorWithMessage("/ by zero");
 		}
 		finally {
-			Hooks.resetOnNextFailure();
+			Hooks.resetOnNextError();
 		}
 	}
 
 	@Test
 	public void failureStrategyResumeConditional() {
-		Hooks.onNextFailure(OnNextFailureStrategy.RESUME_DROP);
+		Hooks.onNextError(OnNextFailureStrategy.RESUME_DROP);
 		try {
 			AtomicLong r = new AtomicLong();
 			StepVerifier.create(Flux.range(0, 2)
@@ -342,13 +342,13 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
 			assertThat(r.get()).as("amount requested").isEqualTo(2L);
 		}
 		finally {
-			Hooks.resetOnNextFailure();
+			Hooks.resetOnNextError();
 		}
 	}
 
 	@Test
 	public void failureStrategyResumeConditionalTryOnNext() {
-		Hooks.onNextFailure(OnNextFailureStrategy.RESUME_DROP);
+		Hooks.onNextError(OnNextFailureStrategy.RESUME_DROP);
 		try {
 			StepVerifier.create(Flux.range(0, 2)
 			                        .distinctUntilChanged()
@@ -362,7 +362,7 @@ public class FluxFilterTest extends FluxOperatorTest<String, String> {
 			            .hasDroppedErrorWithMessage("/ by zero");
 		}
 		finally {
-			Hooks.resetOnNextFailure();
+			Hooks.resetOnNextError();
 		}
 	}
 }

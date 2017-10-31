@@ -364,7 +364,7 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 
     @Test
 	public void mapFailureStrategyResume() {
-		Hooks.onNextFailure(OnNextFailureStrategy.RESUME_DROP);
+		Hooks.onNextError(OnNextFailureStrategy.RESUME_DROP);
 
 		try {
 			AtomicLong r = new AtomicLong();
@@ -382,7 +382,7 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 			assertThat(r.get()).as("amount requested").isEqualTo(2L);
 		}
 		finally {
-			Hooks.resetOnNextFailure();
+			Hooks.resetOnNextError();
 		}
     }
 
@@ -390,7 +390,7 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 	public void mapFailureStrategyCustomResume() {
 	    List<Object> valuesDropped = new ArrayList<>();
 	    List<Throwable> errorsDropped = new ArrayList<>();
-	    Hooks.onNextFailure(OnNextFailureStrategy.resume(
+	    Hooks.onNextError(OnNextFailureStrategy.resume(
 	    		errorsDropped::add,
 				valuesDropped::add));
 
@@ -417,13 +417,13 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 
 		}
 		finally {
-			Hooks.resetOnNextFailure();
+			Hooks.resetOnNextError();
 		}
     }
 
 	@Test
 	public void mapTryOnNextFailureStrategyResume() {
-		Hooks.onNextFailure(OnNextFailureStrategy.RESUME_DROP);
+		Hooks.onNextError(OnNextFailureStrategy.RESUME_DROP);
 
 		try {
 			StepVerifier.create(Flux.range(0, 2)
@@ -439,13 +439,13 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 			            .hasDroppedErrorWithMessage("/ by zero");
 		}
 		finally {
-			Hooks.resetOnNextFailure();
+			Hooks.resetOnNextError();
 		}
 	}
 
     @Test
 	public void mapFuseableFailureStrategyResume() {
-		Hooks.onNextFailure(OnNextFailureStrategy.RESUME_DROP);
+		Hooks.onNextError(OnNextFailureStrategy.RESUME_DROP);
 
 		try {
 			AtomicLong r = new AtomicLong();
@@ -462,13 +462,13 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 			assertThat(r.get()).as("async/no request").isEqualTo(0L);
 		}
 		finally {
-			Hooks.resetOnNextFailure();
+			Hooks.resetOnNextError();
 		}
     }
 
 	@Test
 	public void mapFuseableTryOnNextFailureStrategyResume() {
-		Hooks.onNextFailure(OnNextFailureStrategy.RESUME_DROP);
+		Hooks.onNextError(OnNextFailureStrategy.RESUME_DROP);
 
 		try {
 			StepVerifier.create(Flux.range(0, 2)
@@ -482,7 +482,7 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 			            .hasDroppedErrorWithMessage("/ by zero");
 		}
 		finally {
-			Hooks.resetOnNextFailure();
+			Hooks.resetOnNextError();
 		}
 	}
 }

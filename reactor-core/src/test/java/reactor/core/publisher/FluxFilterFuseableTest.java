@@ -63,7 +63,7 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
 
     @Test
     public void failureStrategyResumeSyncFused() {
-        Hooks.onNextFailure(OnNextFailureStrategy.RESUME_DROP);
+        Hooks.onNextError(OnNextFailureStrategy.RESUME_DROP);
         try {
             StepVerifier.create(Flux.range(0, 2)
                                     .filter(i -> 4 / i == 4))
@@ -75,13 +75,13 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
                         .hasDroppedErrorWithMessage("/ by zero");
         }
         finally {
-            Hooks.resetOnNextFailure();
+            Hooks.resetOnNextError();
         }
     }
 
     @Test
     public void failureStrategyResumeConditionalSyncFused() {
-        Hooks.onNextFailure(OnNextFailureStrategy.RESUME_DROP);
+        Hooks.onNextError(OnNextFailureStrategy.RESUME_DROP);
         try {
             StepVerifier.create(Flux.range(0, 2)
                                     .filter(i -> 4 / i == 4)
@@ -94,7 +94,7 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
                         .hasDroppedErrorWithMessage("/ by zero");
         }
         finally {
-            Hooks.resetOnNextFailure();
+            Hooks.resetOnNextError();
         }
     }
 }

@@ -377,11 +377,24 @@ public abstract class Operators {
 		return onRejectedExecution(original, null, null, null, context);
 	}
 
-	public static final OnNextFailureStrategy failureStrategy(Context context) {
-		OnNextFailureStrategy strategy = context.getOrDefault(OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY, null);
-		if (strategy == null) strategy = Hooks.onNextFailureHook;
+	static final OnNextFailureStrategy onNextErrorStrategy(Context context) {
+		OnNextFailureStrategy strategy = null;
+
+		BiFunction<? super Throwable, Object, ? extends Throwable> fn = context.getOrDefault(
+				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY, null);
+		if (fn instanceof OnNextFailureStrategy) {
+			strategy = (OnNextFailureStrategy) fn;
+		} else if (fn != null) {
+			strategy = new OnNextFailureStrategy.LambdaOnNextErrorStrategy(fn);
+		}
+
+		if (strategy == null) strategy = Hooks.onNextErrorHook;
 		if (strategy == null) strategy = OnNextFailureStrategy.STOP;
 		return strategy;
+	}
+
+	public static final BiFunction<? super Throwable, Object, ? extends Throwable> onNextErrorFunction(Context context) {
+		return onNextErrorStrategy(context);
 	}
 
 	/**
@@ -421,8 +434,8 @@ public abstract class Operators {
 	@Nullable
 	public static <T> Throwable onNextError(@Nullable T value, Throwable error, Context context,
 			Subscription subscriptionForCancel) {
-		OnNextFailureStrategy strategy = failureStrategy(context);
-		if (strategy.canResume(error, value)) {
+		OnNextFailureStrategy strategy = onNextErrorStrategy(context);
+		if (strategy.test(error, value)) {
 			//some strategies could still return an exception, eg. if the consumer throws
 			Throwable t = strategy.process(error, value, context);
 			if (t != null) {
@@ -454,8 +467,8 @@ public abstract class Operators {
 	 */
 	@Nullable
 	public static <T> RuntimeException onNextPollError(T value, Throwable error, Context context) {
-		OnNextFailureStrategy strategy = failureStrategy(context);
-		if (strategy.canResume(error, value)) {
+		OnNextFailureStrategy strategy = onNextErrorStrategy(context);
+		if (strategy.test(error, value)) {
 			//some strategies could still return an exception, eg. if the consumer throws
 			Throwable t = strategy.process(error, value, context);
 			if (t != null) return Exceptions.propagate(t);
