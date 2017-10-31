@@ -42,7 +42,7 @@ public class OnNextFailureStrategyTest {
 			String data = "foo";
 			Throwable exception = new NullPointerException("foo");
 
-			assertThat(strategy.canResume(exception, data)).isTrue();
+			assertThat(strategy.test(exception, data)).isTrue();
 			Throwable t = strategy.process(exception, data, Context.empty());
 
 			assertThat(t).isNull();
@@ -68,7 +68,7 @@ public class OnNextFailureStrategyTest {
 			String data = "foo";
 			Throwable exception = new NoSuchMethodError("foo");
 
-			assertThat(strategy.canResume(exception, data)).isTrue();
+			assertThat(strategy.test(exception, data)).isTrue();
 
 			assertThatExceptionOfType(NoSuchMethodError.class)
 					.isThrownBy(() -> strategy.process(exception, data, Context.empty()));
@@ -97,7 +97,7 @@ public class OnNextFailureStrategyTest {
 			String data = "foo";
 			Throwable exception = new NullPointerException("foo");
 
-			assertThat(strategy.canResume(exception, data)).isTrue();
+			assertThat(strategy.test(exception, data)).isTrue();
 			Throwable t = strategy.process(exception, data, Context.empty());
 
 			assertThat(t).isNull();
@@ -124,7 +124,7 @@ public class OnNextFailureStrategyTest {
 			String data = "foo";
 			Throwable exception = new NullPointerException("foo");
 
-			assertThat(strategy.canResume(exception, data)).isFalse();
+			assertThat(strategy.test(exception, data)).isFalse();
 			Throwable t = strategy.process(exception, data, Context.empty());
 
 			assertThat(t)
@@ -153,7 +153,7 @@ public class OnNextFailureStrategyTest {
 			String data = "foo";
 			Throwable exception = new NoSuchMethodError("foo");
 
-			assertThat(strategy.canResume(exception, data)).isTrue();
+			assertThat(strategy.test(exception, data)).isTrue();
 			Throwable t = strategy.process(exception, data, Context.empty());
 
 			assertThat(t).isNull();
@@ -182,7 +182,7 @@ public class OnNextFailureStrategyTest {
 			String data = "foo";
 			Throwable exception = new NoSuchMethodError("foo");
 
-			assertThat(strategy.canResume(exception, data)).isFalse();
+			assertThat(strategy.test(exception, data)).isFalse();
 
 			assertThatExceptionOfType(NoSuchMethodError.class)
 					.isThrownBy(() -> strategy.process(exception, data, Context.empty()));
@@ -213,7 +213,7 @@ public class OnNextFailureStrategyTest {
 			Throwable exception = new NullPointerException("foo");
 
 			assertThatExceptionOfType(IllegalStateException.class)
-					.isThrownBy(() -> strategy.canResume(exception, data))
+					.isThrownBy(() -> strategy.test(exception, data))
 					.withMessage("boomInPredicate");
 
 			assertThatExceptionOfType(IllegalStateException.class)
@@ -292,7 +292,7 @@ public class OnNextFailureStrategyTest {
 		String data = "foo";
 		Throwable exception = new NullPointerException("foo");
 
-		assertThat(strategy.canResume(exception, data)).isTrue();
+		assertThat(strategy.test(exception, data)).isTrue();
 		Throwable t = strategy.process(exception, data, Context.empty());
 
 		assertThat(t).isNull();
@@ -311,7 +311,7 @@ public class OnNextFailureStrategyTest {
 		String data = "foo";
 		Throwable exception = new NoSuchMethodError("foo");
 
-		assertThat(strategy.canResume(exception, data)).isTrue();
+		assertThat(strategy.test(exception, data)).isTrue();
 
 		assertThatExceptionOfType(NoSuchMethodError.class)
 				.isThrownBy(() -> strategy.process(exception, data, Context.empty()));
@@ -332,7 +332,7 @@ public class OnNextFailureStrategyTest {
 		String data = "foo";
 		Throwable exception = new NullPointerException("foo");
 
-		assertThat(strategy.canResume(exception, data)).isTrue();
+		assertThat(strategy.test(exception, data)).isTrue();
 		Throwable t = strategy.process(exception, data, Context.empty());
 
 		assertThat(t).isSameAs(failureError)
@@ -353,7 +353,7 @@ public class OnNextFailureStrategyTest {
 		String data = "foo";
 		Throwable exception = new NullPointerException("foo");
 
-		assertThat(strategy.canResume(exception, data)).isTrue();
+		assertThat(strategy.test(exception, data)).isTrue();
 		Throwable t = strategy.process(exception, data, Context.empty());
 
 		assertThat(t).isSameAs(failureValue)
@@ -374,7 +374,7 @@ public class OnNextFailureStrategyTest {
 		String data = "foo";
 		Throwable exception = new NullPointerException("foo");
 
-		assertThat(strategy.canResume(exception, data)).isTrue();
+		assertThat(strategy.test(exception, data)).isTrue();
 		Throwable t = strategy.process(exception, data, Context.empty());
 
 		assertThat(t).isNull();
@@ -394,7 +394,7 @@ public class OnNextFailureStrategyTest {
 		String data = "foo";
 		Throwable exception = new NullPointerException("foo");
 
-		assertThat(strategy.canResume(exception, data)).isFalse();
+		assertThat(strategy.test(exception, data)).isFalse();
 		Throwable t = strategy.process(exception, data, Context.empty());
 
 		assertThat(t)
@@ -416,7 +416,7 @@ public class OnNextFailureStrategyTest {
 		String data = "foo";
 		Throwable exception = new NoSuchMethodError("foo");
 
-		assertThat(strategy.canResume(exception, data)).isTrue();
+		assertThat(strategy.test(exception, data)).isTrue();
 		Throwable t = strategy.process(exception, data, Context.empty());
 
 		assertThat(t).isNull();
@@ -438,7 +438,7 @@ public class OnNextFailureStrategyTest {
 		String data = "foo";
 		Throwable exception = new NoSuchMethodError("foo");
 
-		assertThat(strategy.canResume(exception, data)).isFalse();
+		assertThat(strategy.test(exception, data)).isFalse();
 
 		assertThatExceptionOfType(NoSuchMethodError.class)
 				.isThrownBy(() -> strategy.process(exception, data, Context.empty()));
@@ -460,7 +460,7 @@ public class OnNextFailureStrategyTest {
 		String data = "foo";
 		Throwable exception = new NullPointerException("foo");
 
-		assertThat(strategy.canResume(exception, data)).isTrue();
+		assertThat(strategy.test(exception, data)).isTrue();
 		Throwable t = strategy.process(exception, data, Context.empty());
 
 		assertThat(t).isSameAs(failureValue)
@@ -482,7 +482,7 @@ public class OnNextFailureStrategyTest {
 		String data = "foo";
 		Throwable exception = new NullPointerException("foo");
 
-		assertThat(strategy.canResume(exception, data)).isTrue();
+		assertThat(strategy.test(exception, data)).isTrue();
 		Throwable t = strategy.process(exception, data, Context.empty());
 
 		assertThat(t).isSameAs(failureError)
@@ -505,7 +505,7 @@ public class OnNextFailureStrategyTest {
 		Throwable exception = new NullPointerException("foo");
 
 		assertThatExceptionOfType(IllegalStateException.class)
-				.isThrownBy(() -> strategy.canResume(exception, data))
+				.isThrownBy(() -> strategy.test(exception, data))
 				.withMessage("boomInPredicate");
 
 		assertThatExceptionOfType(IllegalStateException.class)
@@ -519,9 +519,9 @@ public class OnNextFailureStrategyTest {
 	@Test
 	public void stopCannotResume() {
 		OnNextFailureStrategy strategy = OnNextFailureStrategy.stop();
-		assertThat(strategy.canResume(new IllegalStateException(), null))
+		assertThat(strategy.test(new IllegalStateException(), null))
 				.isFalse();
-		assertThat(strategy.canResume(new NoSuchMethodError(), null))
+		assertThat(strategy.test(new NoSuchMethodError(), null))
 				.isFalse();
 	}
 
