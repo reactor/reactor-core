@@ -190,7 +190,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 						nextHook.accept(t);
 					}
 					catch (Throwable e) {
-						Throwable e_ = Operators.onNextFailure(t, e, actual.currentContext(), s);
+						Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
 						if (e_ == null) {
 							request(1);
 							return;
@@ -316,7 +316,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					nextHook.accept(v);
 				}
 				catch (Throwable e) {
-					Throwable e_ = Operators.onNextFailure(v, e, actual.currentContext(), s);
+					Throwable e_ = Operators.onNextError(v, e, actual.currentContext(), s);
 					if (e_ == null) {
 						return poll();
 					}
@@ -472,7 +472,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 						nextHook.accept(t);
 					}
 					catch (Throwable e) {
-						Throwable e_ = Operators.onNextFailure(t, e, actual.currentContext(), s);
+						Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
 						if (e_ == null) {
 							request(1);
 							return;
@@ -500,7 +500,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					nextHook.accept(t);
 				}
 				catch (Throwable e) {
-					Throwable e_ = Operators.onNextFailure(t, e, actual.currentContext(), s);
+					Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
 					if (e_ == null) {
 						return false;
 					}
@@ -623,7 +623,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					nextHook.accept(v);
 				}
 				catch (Throwable e) {
-					Throwable e_ = Operators.onNextFailure(v, e, actual.currentContext(), s);
+					Throwable e_ = Operators.onNextError(v, e, actual.currentContext(), s);
 					if (e_ == null) {
 						return poll();
 					}
@@ -812,7 +812,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					nextHook.accept(t);
 				}
 				catch (Throwable e) {
-					Throwable e_ = Operators.onNextFailure(t, e, actual.currentContext(), s);
+					Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
 					if (e_ == null) {
 						request(1);
 						return;
@@ -839,7 +839,7 @@ final class FluxPeekFuseable<T> extends FluxOperator<T, T>
 					nextHook.accept(t);
 				}
 				catch (Throwable e) {
-					Throwable e_ = Operators.onNextFailure(t, e, actual.currentContext(), s);
+					Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
 					if (e_ == null) {
 						return false;
 					}
