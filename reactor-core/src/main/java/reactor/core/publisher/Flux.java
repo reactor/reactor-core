@@ -7057,7 +7057,7 @@ public abstract class Flux<T> implements Publisher<T> {
 		final Function<T, Publisher<Long>> rest = o -> _timer;
 
 		if(fallback == null) {
-			return timeout(_timer, rest);
+			return timeout(_timer, rest, timeout.toMillis() + "ms");
 		}
 		return timeout(_timer, rest, fallback);
 	}
@@ -7102,7 +7102,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final <U, V> Flux<T> timeout(Publisher<U> firstTimeout,
 			Function<? super T, ? extends Publisher<V>> nextTimeoutFactory) {
-		return onAssembly(new FluxTimeout<>(this, firstTimeout, nextTimeoutFactory));
+		return timeout(firstTimeout, nextTimeoutFactory, "first signal from a Publisher");
+	}
+
+	private final <U, V> Flux<T> timeout(Publisher<U> firstTimeout,
+			Function<? super T, ? extends Publisher<V>> nextTimeoutFactory,
+			String timeoutDescription) {
+			return onAssembly(new FluxTimeout<>(this, firstTimeout, nextTimeoutFactory, timeoutDescription));
 	}
 
 	/**

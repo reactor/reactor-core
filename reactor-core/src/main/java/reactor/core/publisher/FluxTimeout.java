@@ -45,13 +45,17 @@ final class FluxTimeout<T, U, V> extends FluxOperator<T, T> {
 
 	final Publisher<? extends T> other;
 
+	final String timeoutDescription; //only useful when no `other`
+
 	FluxTimeout(Flux<? extends T> source,
 			Publisher<U> firstTimeout,
-			Function<? super T, ? extends Publisher<V>> itemTimeout) {
+			Function<? super T, ? extends Publisher<V>> itemTimeout,
+			String timeoutDescription) {
 		super(source);
 		this.firstTimeout = Objects.requireNonNull(firstTimeout, "firstTimeout");
 		this.itemTimeout = Objects.requireNonNull(itemTimeout, "itemTimeout");
 		this.other = null;
+		this.timeoutDescription = Objects.requireNonNull(timeoutDescription, "timeoutDescription is needed when no fallback");
 	}
 
 	FluxTimeout(Flux<? extends T> source,
@@ -62,6 +66,7 @@ final class FluxTimeout<T, U, V> extends FluxOperator<T, T> {
 		this.firstTimeout = Objects.requireNonNull(firstTimeout, "firstTimeout");
 		this.itemTimeout = Objects.requireNonNull(itemTimeout, "itemTimeout");
 		this.other = Objects.requireNonNull(other, "other");
+		this.timeoutDescription = null;
 	}
 
 	@Override
@@ -69,7 +74,7 @@ final class FluxTimeout<T, U, V> extends FluxOperator<T, T> {
 		CoreSubscriber<T> serial = Operators.serialize(actual);
 
 		TimeoutMainSubscriber<T, V> main =
-				new TimeoutMainSubscriber<>(serial, itemTimeout, other);
+				new TimeoutMainSubscriber<>(serial, itemTimeout, other, timeoutDescription);
 
 		serial.onSubscribe(main);
 
@@ -88,6 +93,7 @@ final class FluxTimeout<T, U, V> extends FluxOperator<T, T> {
 		final Function<? super T, ? extends Publisher<V>> itemTimeout;
 
 		final Publisher<? extends T> other;
+		final String timeoutDescription; //only useful/non-null when no `other`
 
 		Subscription s;
 
@@ -106,10 +112,12 @@ final class FluxTimeout<T, U, V> extends FluxOperator<T, T> {
 
 		TimeoutMainSubscriber(CoreSubscriber<? super T> actual,
 				Function<? super T, ? extends Publisher<V>> itemTimeout,
-				Publisher<? extends T> other) {
+				Publisher<? extends T> other,
+				String timeoutDescription) {
 			super(actual);
 			this.itemTimeout = itemTimeout;
 			this.other = other;
+			this.timeoutDescription = timeoutDescription;
 		}
 
 		@Override
@@ -257,8 +265,8 @@ final class FluxTimeout<T, U, V> extends FluxOperator<T, T> {
 		void handleTimeout() {
 			if (other == null) {
 				super.cancel();
-
-				actual.onError(new TimeoutException());
+				actual.onError(new TimeoutException("Did not observe any item or terminal signal within "
+						+ timeoutDescription + " (and no fallback has been configured)"));
 			}
 			else {
 				set(Operators.emptySubscription());
