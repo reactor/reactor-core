@@ -21,15 +21,14 @@ import java.util.function.Predicate;
 
 import org.reactivestreams.Subscription;
 import reactor.core.Exceptions;
-import reactor.util.annotation.NonNull;
 import reactor.util.annotation.Nullable;
 import reactor.util.context.Context;
 
 /**
  * A strategy to evaluate if errors that happens during an operator's onNext call can
  * be recovered from, allowing the sequence to continue. This opt-in strategy is
- * applied by compatible operators through the {@link Operators#onNextFailure(Object, Throwable, Context, Subscription)}
- * and {@link Operators#onNextPollFailure(Object, Throwable, Context)} methods.
+ * applied by compatible operators through the {@link Operators#onNextError(Object, Throwable, Context, Subscription)}
+ * and {@link Operators#onNextPollError(Object, Throwable, Context)} methods.
  * See {@link #stop()}, {@link #resumeDrop()}, {@link #resumeDropIf(Predicate)},
  * {@link #resume(Consumer, Consumer)} and {@link #resumeIf(Predicate, Consumer, Consumer)}
  * for the possible strategies.

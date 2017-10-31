@@ -96,7 +96,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 					b = predicate.test(t);
 				}
 				catch (Throwable e) {
-					Throwable e_ = Operators.onNextFailure(t, e, actual.currentContext(), s);
+					Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
 					if (e_ != null) {
 						onError(e_);
 					}
@@ -127,7 +127,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 				b = predicate.test(t);
 			}
 			catch (Throwable e) {
-				Throwable e_ = Operators.onNextFailure(t, e, actual.currentContext(), s);
+				Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
 				if (e_ != null) {
 					onError(e_);
 				}
@@ -201,7 +201,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 						dropped++;
 					}
 					catch (Throwable e) {
-						RuntimeException e_ = Operators.onNextPollFailure(v, e, currentContext());
+						RuntimeException e_ = Operators.onNextPollError(v, e, currentContext());
 						if (e_ != null) {
 							throw e_;
 						}
@@ -219,7 +219,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 						}
 					}
 					catch (Throwable e) {
-						RuntimeException e_ = Operators.onNextPollFailure(v, e, currentContext());
+						RuntimeException e_ = Operators.onNextPollError(v, e, currentContext());
 						if (e_ != null) {
 							throw e_;
 						}
@@ -304,7 +304,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 					b = predicate.test(t);
 				}
 				catch (Throwable e) {
-					Throwable e_ = Operators.onNextFailure(t, e, actual.currentContext(), s);
+					Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
 					if (e_ != null) {
 						onError(e_);
 					}
@@ -335,7 +335,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 				b = predicate.test(t);
 			}
 			catch (Throwable e) {
-				Throwable e_ = Operators.onNextFailure(t, e, actual.currentContext(), s);
+				Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
 				if (e_ != null) {
 					onError(e_);
 				}
@@ -404,7 +404,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 						dropped++;
 					}
 					catch (Throwable e) {
-						RuntimeException e_ = Operators.onNextPollFailure(v, e, currentContext());
+						RuntimeException e_ = Operators.onNextPollError(v, e, currentContext());
 						if (e_ != null) {
 							throw e_;
 						}
@@ -422,7 +422,7 @@ final class FluxFilterFuseable<T> extends FluxOperator<T, T> implements Fuseable
 						}
 					}
 					catch (Throwable e) {
-						RuntimeException e_ = Operators.onNextPollFailure(v, e, currentContext());
+						RuntimeException e_ = Operators.onNextPollError(v, e, currentContext());
 						if (e_ != null) {
 							throw e_;
 						}
