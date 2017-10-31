@@ -177,7 +177,7 @@ final class FluxPeek<T> extends FluxOperator<T, T> implements SignalPeek<T> {
 					nextHook.accept(t);
 				}
 				catch (Throwable e) {
-					Throwable e_ = Operators.onNextFailure(t, e, actual.currentContext(), s);
+					Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
 					if (e_ == null) {
 						request(1);
 						return;

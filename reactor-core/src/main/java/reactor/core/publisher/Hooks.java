@@ -304,8 +304,8 @@ public abstract class Hooks {
 	 * @param onNextFailure the new {@link OnNextFailureStrategy} to use.
 	 */
 	public static void onNextFailure(OnNextFailureStrategy onNextFailure) {
-		Objects.requireNonNull(onNextFailure, "onNextFailure");
-		log.debug("Hooking new default : onNextFailure");
+		Objects.requireNonNull(onNextFailure, "onNextError");
+		log.debug("Hooking new default : onNextError");
 
 		synchronized(log) {
 			onNextFailureHook = onNextFailure;
@@ -424,7 +424,7 @@ public abstract class Hooks {
 	 * an onError and cancelling upstream ({@link OnNextFailureStrategy#STOP}).
 	 */
 	public static void resetOnNextFailure() {
-		log.debug("Reset to factory defaults : onNextFailure");
+		log.debug("Reset to factory defaults : onNextError");
 		synchronized (log) {
 			onNextFailureHook = null;
 		}

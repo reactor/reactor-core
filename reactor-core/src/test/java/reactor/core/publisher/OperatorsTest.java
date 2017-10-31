@@ -276,7 +276,7 @@ public class OperatorsTest {
 		try {
 			assertThat(s.isCancelled()).as("s initially cancelled").isFalse();
 
-			Throwable e = Operators.onNextFailure("foo", error, c, s);
+			Throwable e = Operators.onNextError("foo", error, c, s);
 			assertThat(e).isNull();
 			assertThat(nextDropped).containsExactly("foo");
 			assertThat(errorDropped).containsExactly(error);
@@ -301,7 +301,7 @@ public class OperatorsTest {
 		try {
 			assertThat(Hooks.onNextFailureHook).as("no global hook").isNull();
 
-			RuntimeException e = Operators.onNextPollFailure("foo", error, c);
+			RuntimeException e = Operators.onNextPollError("foo", error, c);
 			assertThat(e).isNull();
 			assertThat(nextDropped).containsExactly("foo");
 			assertThat(errorDropped).containsExactly(error);
@@ -500,7 +500,7 @@ public class OperatorsTest {
 		});
 
 		Operators.DeferredSubscription s = new Operators.DeferredSubscription();
-		Throwable t = Operators.onNextFailure("foo", new NullPointerException("bar"), context, s);
+		Throwable t = Operators.onNextError("foo", new NullPointerException("bar"), context, s);
 
 		assertThat(t).as("exception processed").isNull();
 		assertThat(s.isCancelled()).as("subscription cancelled").isFalse();
@@ -522,7 +522,7 @@ public class OperatorsTest {
 		});
 
 		Operators.DeferredSubscription s = new Operators.DeferredSubscription();
-		Throwable t = Operators.onNextFailure("foo", new NullPointerException("bar"), context, s);
+		Throwable t = Operators.onNextError("foo", new NullPointerException("bar"), context, s);
 
 		assertThat(t).as("exception processed")
 		             .isNotNull()
@@ -548,7 +548,7 @@ public class OperatorsTest {
 		});
 
 		Operators.DeferredSubscription s = new Operators.DeferredSubscription();
-		Throwable t = Operators.onNextFailure("foo", new NullPointerException("bar"), context, s);
+		Throwable t = Operators.onNextError("foo", new NullPointerException("bar"), context, s);
 
 		assertThat(t).as("exception processed")
 		             .isNotNull()
