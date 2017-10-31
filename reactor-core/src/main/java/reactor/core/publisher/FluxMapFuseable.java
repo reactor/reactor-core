@@ -108,7 +108,7 @@ final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable
 							"The mapper returned a null value.");
 				}
 				catch (Throwable e) {
-					Throwable e_ = Operators.onNextFailure(t, e, actual.currentContext(), s);
+					Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
 					if (e_ != null) {
 						onError(e_);
 					}
@@ -177,7 +177,7 @@ final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable
 						return Objects.requireNonNull(mapper.apply(v));
 					}
 					catch (Throwable t) {
-						RuntimeException e_ = Operators.onNextPollFailure(v, t, currentContext());
+						RuntimeException e_ = Operators.onNextPollError(v, t, currentContext());
 						if (e_ != null) {
 							throw e_;
 						}
@@ -274,7 +274,7 @@ final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable
 							"The mapper returned a null value.");
 				}
 				catch (Throwable e) {
-					Throwable e_ = Operators.onNextFailure(t, e, actual.currentContext(), s);
+					Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
 					if (e_ != null) {
 						onError(e_);
 					}
@@ -303,7 +303,7 @@ final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable
 				return actual.tryOnNext(v);
 			}
 			catch (Throwable e) {
-				Throwable e_ = Operators.onNextFailure(t, e, actual.currentContext(), s);
+				Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
 				if (e_ != null) {
 					onError(e_);
 					return true;
@@ -361,7 +361,7 @@ final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable
 						return Objects.requireNonNull(mapper.apply(v));
 					}
 					catch (Throwable t) {
-						RuntimeException e_ = Operators.onNextPollFailure(v, t, currentContext());
+						RuntimeException e_ = Operators.onNextPollError(v, t, currentContext());
 						if (e_ != null) {
 							throw e_;
 						}

@@ -387,7 +387,7 @@ public abstract class Operators {
 	/**
 	 * Find the {@link OnNextFailureStrategy} to apply to the calling operator (which could be a local
 	 * error mode defined in the {@link Context}) and apply it. For poll(), prefer
-	 * {@link #onNextPollFailure(Object, Throwable, Context)} as it returns a {@link RuntimeException}.
+	 * {@link #onNextPollError(Object, Throwable, Context)} as it returns a {@link RuntimeException}.
 	 * <p>
 	 * Cancels the {@link Subscription} and return a {@link Throwable} if errors are
 	 * fatal for the error mode, in which case the operator should call onError with the
@@ -405,21 +405,21 @@ public abstract class Operators {
 	 *     return {@code false} to indicate value was not consumed and more must be
 	 *     tried.</li>
 	 *
-	 *     <li>{@code poll}: use {@link #onNextPollFailure(Object, Throwable, Context)} instead.</li>
+	 *     <li>{@code poll}: use {@link #onNextPollError(Object, Throwable, Context)} instead.</li>
 	 * </ul>
 	 *
 	 * @param value The onNext value that caused an error.
 	 * @param error The error.
 	 * @param context The most significant {@link Context} in which to look for an {@link OnNextFailureStrategy}.
 	 * @param subscriptionForCancel The {@link Subscription} that should be cancelled if the
-	 * strategy is terminal. Null to ignore (for poll, use {@link #onNextPollFailure(Object, Throwable, Context)}
+	 * strategy is terminal. Null to ignore (for poll, use {@link #onNextPollError(Object, Throwable, Context)}
 	 * rather than passing null).
 	 * @param <T> The type of the value causing the error.
 	 * @return a {@link Throwable} to propagate through onError if the strategy is
 	 * terminal and cancelled the subscription, null if not.
 	 */
 	@Nullable
-	public static <T> Throwable onNextFailure(@Nullable T value, Throwable error, Context context,
+	public static <T> Throwable onNextError(@Nullable T value, Throwable error, Context context,
 			Subscription subscriptionForCancel) {
 		OnNextFailureStrategy strategy = failureStrategy(context);
 		if (strategy.canResume(error, value)) {
@@ -453,7 +453,7 @@ public abstract class Operators {
 	 * terminal and cancelled the subscription, null if not.
 	 */
 	@Nullable
-	public static <T> RuntimeException onNextPollFailure(T value, Throwable error, Context context) {
+	public static <T> RuntimeException onNextPollError(T value, Throwable error, Context context) {
 		OnNextFailureStrategy strategy = failureStrategy(context);
 		if (strategy.canResume(error, value)) {
 			//some strategies could still return an exception, eg. if the consumer throws
