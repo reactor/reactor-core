@@ -43,6 +43,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
+import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
 
@@ -195,6 +196,66 @@ public class ParallelFluxTest {
 		ts.request(3);
 
 		ts.assertValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+	}
+
+	@Test
+	public void ordered() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
+
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
+		Flux.just(10, 9, 8, 7, 6, 5, 4, 3, 2, 1)
+			.parallel(4)
+			.flatMap(i -> i % 2 == 1 ? Mono.just(i)
+									.delayElement(Duration.ofSeconds(2), vts) :
+					Mono.just(i))
+			.ordered()
+			.subscribe(ts);
+
+		ts.assertNoValues();
+
+		ts.request(2);
+
+		ts.assertValues(10);
+
+		ts.request(5);
+
+		vts.advanceTimeBy(Duration.ofSeconds(5));
+
+		ts.assertValues(10, 9, 8, 7, 6, 5, 4);
+
+		ts.request(3);
+
+		ts.assertValues(10, 9, 8, 7, 6, 5, 4, 3, 2, 1);
+	}
+
+	@Test
+	public void sequentialWithDelayedValues() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
+
+		VirtualTimeScheduler vts = VirtualTimeScheduler.create();
+		Flux.just(10, 9, 8, 7, 6, 5, 4, 3, 2, 1)
+		    .parallel(4)
+		    .flatMap(i -> i % 2 == 1 ? Mono.just(i)
+		                                   .delayElement(Duration.ofSeconds(2), vts) :
+				    Mono.just(i))
+		    .sequential()
+		    .subscribe(ts);
+
+		ts.assertNoValues();
+
+		ts.request(2);
+
+		ts.assertValues(10, 8);
+
+		ts.request(5);
+
+		vts.advanceTimeBy(Duration.ofSeconds(5));
+
+		ts.assertValues(10, 8, 6, 4, 2, 9, 7);
+
+		ts.request(3);
+
+		ts.assertValues(10, 8, 6, 4, 2, 9, 7, 5, 3, 1);
 	}
 
 	@Test
