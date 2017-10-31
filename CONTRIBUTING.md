@@ -21,7 +21,7 @@ removing compiler warnings, etc.
 
 ### Sign the Individual Contributor License Agreement (ICLA)
 
-If you have not previously done so, please sign the [Spring CLA form][].
+If you have not previously done so, please sign the [Spring CLA form](https://cla.pivotal.io/sign/spring).
 
 It integrates with Github, just follow the steps. Actually, when you first submit a
 Pull Request a bot will comment on your PR if you haven't signed the CLA (and if you have,
