@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -35,29 +37,28 @@ import reactor.util.context.Context;
  *
  * @author Simon Baslé
  */
-public interface OnNextFailureStrategy {
+interface OnNextFailureStrategy extends BiFunction<Throwable, Object, Throwable>,
+                                        BiPredicate<Throwable, Object> {
 
 	/**
 	 * The key that can be used to store an {@link OnNextFailureStrategy} in a {@link Context}.
 	 */
 	String KEY_ON_NEXT_ERROR_STRATEGY = "reactor.onNextError.localStrategy";
 
-	/**
-	 * Returns whether or not this strategy allows resume of a particular error (and
-	 * optionally the value that caused it).
-	 *
-	 * @param error the error being potentially recovered from.
-	 * @param value the value causing the error, null if not applicable.
-	 * @return true if this strategy would allow resuming the sequence.
-	 * @see #process(Throwable, Object, Context)
-	 */
-	boolean canResume(Throwable error, @Nullable Object value);
+	@Override
+	@Nullable
+	default Throwable apply(Throwable throwable, @Nullable Object o) {
+		return process(throwable, o, Context.empty());
+	}
+
+	@Override
+	boolean test(Throwable throwable, @Nullable Object o);
 
 	/**
 	 * Process an error and the optional value that caused it (when applicable) in
 	 * preparation for sequence resume, so that the error is not completely swallowed.
 	 * <p>
-	 * If the strategy cannot resume this kind of error (ie. {@link #canResume(Throwable, Object)}
+	 * If the strategy cannot resume this kind of error (ie. {@link #test(Throwable, Object)}
 	 * returns false), return the original error. Any exception in the processing will be
 	 * caught and returned. If the strategy was able to process the error correctly,
 	 * returns null.
@@ -67,7 +68,7 @@ public interface OnNextFailureStrategy {
 	 * @param context the {@link Context} associated with the recovering sequence.
 	 * @return null if the error was processed for resume, a {@link Throwable} to propagate
 	 * otherwise.
-	 * @see #canResume(Throwable, Object)
+	 * @see #test(Throwable, Object)
 	 */
 	@Nullable
 	Throwable process(Throwable error, @Nullable Object value, Context context);
@@ -149,7 +150,7 @@ public interface OnNextFailureStrategy {
 	OnNextFailureStrategy STOP = new OnNextFailureStrategy() {
 
 		@Override
-		public boolean canResume(Throwable error, @Nullable Object value) {
+		public boolean test(Throwable error, @Nullable Object value) {
 			return false;
 		}
 
@@ -179,7 +180,7 @@ public interface OnNextFailureStrategy {
 		}
 
 		@Override
-		public boolean canResume(Throwable error, @Nullable Object value) {
+		public boolean test(Throwable error, @Nullable Object value) {
 			return errorPredicate == null || errorPredicate.test(error);
 		}
 
@@ -214,7 +215,7 @@ public interface OnNextFailureStrategy {
 		}
 
 		@Override
-		public boolean canResume(Throwable error, @Nullable Object value) {
+		public boolean test(Throwable error, @Nullable Object value) {
 			return errorPredicate == null || errorPredicate.test(error);
 		}
 
@@ -242,4 +243,32 @@ public interface OnNextFailureStrategy {
 		}
 	}
 
+	final class LambdaOnNextErrorStrategy implements OnNextFailureStrategy {
+
+		private final BiFunction<? super Throwable, Object, ? extends Throwable> delegateProcessor;
+		private final BiPredicate<? super Throwable, Object> delegatePredicate;
+
+		public LambdaOnNextErrorStrategy(
+				BiFunction<? super Throwable, Object, ? extends Throwable> delegateProcessor) {
+			this.delegateProcessor = delegateProcessor;
+			if (delegateProcessor instanceof BiPredicate) {
+				//noinspection unchecked
+				this.delegatePredicate = (BiPredicate<? super Throwable, Object>) delegateProcessor;
+			}
+			else {
+				this.delegatePredicate = (e, v) -> true;
+			}
+		}
+
+		@Override
+		public boolean test(Throwable error, @Nullable Object value) {
+			return delegatePredicate.test(error, value);
+		}
+
+		@Override
+		@Nullable
+		public Throwable process(Throwable error, @Nullable Object value, Context ignored) {
+			return delegateProcessor.apply(error, value);
+		}
+	}
 }
