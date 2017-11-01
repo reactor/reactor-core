@@ -19,6 +19,7 @@ package reactor.core.publisher
 import org.reactivestreams.Publisher
 import java.util.concurrent.Callable
 import java.util.concurrent.CompletableFuture
+import java.util.function.Supplier
 import kotlin.reflect.KClass
 
 /**
@@ -32,6 +33,13 @@ import kotlin.reflect.KClass
  * @since 3.1.1
  */
 fun <T> Publisher<T>.toMono(): Mono<T> = Mono.from(this)
+
+/**
+ * Extension to convert any [Supplier] of [T] to a [Mono] that emits supplied element.
+ *
+ * @author Sergio Dos Santos
+ */
+fun <T> (() -> T).toMono(): Mono<T> = Mono.fromSupplier(this)
 
 /**
  * Extension for transforming an object to a [Mono].

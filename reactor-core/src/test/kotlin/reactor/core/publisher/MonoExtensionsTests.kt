@@ -38,6 +38,17 @@ class MonoExtensionsTests {
     }
 
     @Test
+    fun supplierToMono() {
+        val supplier: () -> String = { "a" }
+
+        val m = supplier.toMono()
+
+        m.test()
+                .expectNext("a")
+                .verifyComplete()
+    }
+
+    @Test
     fun publisherToMono() {
         //fake naive publisher
         val p: Publisher<String> = Publisher {
