@@ -73,9 +73,9 @@ class MonoExtensionsTests {
 
     @Test
     fun completableFutureToMono() {
-        var future = CompletableFuture<String>()
+        val future = CompletableFuture<String>()
 
-        var verifier = StepVerifier.create(future.toMono())
+        val verifier = StepVerifier.create(future.toMono())
                 .expectNext("foo")
                 .expectComplete()
         future.complete("foo")
@@ -85,7 +85,7 @@ class MonoExtensionsTests {
     @Test
     fun callableToMono() {
         val callable = Callable { "foo" }
-        var verifier = StepVerifier.create(callable.toMono())
+        val verifier = StepVerifier.create(callable.toMono())
                 .expectNext("foo")
                 .expectComplete()
         verifier.verify()
