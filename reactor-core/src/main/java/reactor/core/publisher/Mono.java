@@ -3241,7 +3241,7 @@ public abstract class Mono<T> implements Publisher<T> {
 		final Mono<Long> _timer = Mono.delay(timeout, timer).onErrorReturn(0L);
 
 		if(fallback == null) {
-			return onAssembly(new MonoTimeout<>(this, _timer));
+			return onAssembly(new MonoTimeout<>(this, _timer, timeout.toMillis() + "ms"));
 		}
 		return onAssembly(new MonoTimeout<>(this, _timer, fallback));
 	}
@@ -3260,7 +3260,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 *
 	 */
 	public final <U> Mono<T> timeout(Publisher<U> firstTimeout) {
-		return onAssembly(new MonoTimeout<>(this, firstTimeout));
+		return onAssembly(new MonoTimeout<>(this, firstTimeout, "first signal from a Publisher"));
 	}
 
 	/**

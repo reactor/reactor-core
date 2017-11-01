@@ -122,4 +122,24 @@ public class MonoTimeoutTest {
 		            .thenAwait(Duration.ofMillis(500))
 		            .verifyError(TimeoutException.class);
 	}
+
+	@Test
+	public void timeoutDurationMessage() {
+		StepVerifier.withVirtualTime(() -> Mono.never()
+		                                       .timeout(Duration.ofHours(1)))
+		            .thenAwait(Duration.ofHours(2))
+		            .expectErrorMessage("Did not observe any item or terminal signal within " +
+				            "3600000ms (and no fallback has been configured)")
+		            .verify();
+	}
+
+
+	@Test
+	public void timeoutNotDurationMessage() {
+		StepVerifier.create(Mono.never()
+		                        .timeout(Mono.just("immediate")))
+		            .expectErrorMessage("Did not observe any item or terminal signal within " +
+				            "first signal from a Publisher (and no fallback has been configured)")
+		            .verify();
+	}
 }

@@ -18,12 +18,15 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxTimeoutTest {
 
@@ -347,5 +350,42 @@ public class FluxTimeoutTest {
 			            .expectComplete()
 			            .verify();
 		}
+	}
+
+	@Test
+	public void timeoutDurationMessage() {
+		StepVerifier.withVirtualTime(() -> Flux.never()
+		                                       .timeout(Duration.ofHours(1)))
+		            .thenAwait(Duration.ofHours(2))
+		            .expectErrorMessage("Did not observe any item or terminal signal within " +
+				            "3600000ms (and no fallback has been configured)")
+		            .verify();
+	}
+
+
+	@Test
+	public void timeoutNotDurationMessageFirstTimeout() {
+		StepVerifier.create(Flux.never()
+		                        .timeout(Mono.just("immediate")))
+		            .expectErrorMessage("Did not observe any item or terminal signal within " +
+				            "first signal from a Publisher (and no fallback has been configured)")
+		            .verify();
+	}
+
+	@Test
+	public void timeoutNotDurationMessageSecondTimeout() {
+		AtomicBoolean generatorUsed = new AtomicBoolean();
+		StepVerifier.create(Flux.concat(Mono.just("foo"), Mono.just("bar").delayElement(Duration.ofMillis(500)))
+		                        .timeout(Mono.delay(Duration.ofMillis(100)),
+				                        v -> {
+					                        generatorUsed.set(true);
+					                        return Mono.delay(Duration.ofMillis(100));
+				                        }))
+		            .expectNext("foo")
+		            .expectErrorMessage("Did not observe any item or terminal signal within " +
+				            "first signal from a Publisher (and no fallback has been configured)")
+		            .verify();
+
+		assertThat(generatorUsed.get()).as("generator used").isTrue();
 	}
 }

@@ -37,15 +37,18 @@ final class MonoTimeout<T, U, V> extends MonoOperator<T, T> {
 	final Publisher<U> firstTimeout;
 
 	final Publisher<? extends T> other;
+	final String timeoutDescription; //only useful when no `other`
 
 	@SuppressWarnings("rawtypes")
     final static Function NEVER = e -> Flux.never();
 
 	MonoTimeout(Mono<? extends T> source,
-			Publisher<U> firstTimeout) {
+			Publisher<U> firstTimeout,
+			String timeoutDescription) {
 		super(source);
 		this.firstTimeout = Objects.requireNonNull(firstTimeout, "firstTimeout");
 		this.other = null;
+		this.timeoutDescription = timeoutDescription;
 	}
 
 	MonoTimeout(Mono<? extends T> source,
@@ -54,6 +57,7 @@ final class MonoTimeout<T, U, V> extends MonoOperator<T, T> {
 		super(source);
 		this.firstTimeout = Objects.requireNonNull(firstTimeout, "firstTimeout");
 		this.other = Objects.requireNonNull(other, "other");
+		this.timeoutDescription = null;
 	}
 
 	@Override
@@ -63,7 +67,7 @@ final class MonoTimeout<T, U, V> extends MonoOperator<T, T> {
 		CoreSubscriber<T> serial = Operators.serialize(actual);
 
 		FluxTimeout.TimeoutMainSubscriber<T, V> main =
-				new FluxTimeout.TimeoutMainSubscriber<>(serial, NEVER, other);
+				new FluxTimeout.TimeoutMainSubscriber<>(serial, NEVER, other, timeoutDescription);
 
 		serial.onSubscribe(main);
 
