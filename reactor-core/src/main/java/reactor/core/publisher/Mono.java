@@ -1214,6 +1214,18 @@ public abstract class Mono<T> implements Publisher<T> {
 		return onAssembly(new MonoProcessor<>(this));
 	}
 
+	/**
+	 * Turn this {@link Mono} into a hot source and cache last emitted signals for further
+	 * {@link Subscriber}, with an expiry timeout.
+	 * <p>
+	 * Completion and Error will also be replayed until {@code ttl} triggers in which case
+	 * the next {@link Subscriber} will start over a new subscription.
+	 * <p>
+	 * <img width="500" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/cache1.png"
+	 * alt="">
+	 *
+	 * @return a replaying {@link Mono}
+	 */
 	public final Mono<T> cache(Duration ttl) {
 		return onAssembly(new MonoCacheTime<>(this, ttl, Schedulers.parallel()));
 	}
