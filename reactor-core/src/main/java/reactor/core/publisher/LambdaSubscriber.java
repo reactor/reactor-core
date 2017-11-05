@@ -32,7 +32,7 @@ import reactor.util.context.Context;
  *
  * @param <T> the value type
  */
-final class LambdaSubscriber<T>
+public final class LambdaSubscriber<T>
 		implements InnerConsumer<T>, Disposable {
 
 	final Consumer<? super T>            consumer;
