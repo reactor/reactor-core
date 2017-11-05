@@ -32,7 +32,7 @@ import reactor.util.context.Context;
  *
  * @param <T> the value type
  */
-final class LambdaSubscriber<T>
+public final class LambdaSubscriber<T>
 		implements InnerConsumer<T>, Disposable {
 
 	final Consumer<? super T>            consumer;
@@ -60,7 +60,7 @@ final class LambdaSubscriber<T>
 	 * @param subscriptionConsumer A {@link Consumer} called with the {@link Subscription}
 	 * to perform initial request, or null to request max
 	 */
-	LambdaSubscriber(
+	public LambdaSubscriber(
 			@Nullable Consumer<? super T> consumer,
 			@Nullable Consumer<? super Throwable> errorConsumer,
 			@Nullable Runnable completeConsumer,
