@@ -4530,6 +4530,15 @@ public abstract class Flux<T> implements Publisher<T> {
 		return new FluxHide<>(this);
 	}
 
+	public final Flux<Tuple2<Long, T>> indexed() {
+		return indexed((i, v) -> i);
+	}
+
+	public final <I> Flux<Tuple2<I, T>> indexed(
+			BiFunction<? super Long, ? super T, ? extends I> indexMapper) {
+		return onAssembly(new FluxIndexed<>(this, indexMapper));
+	}
+
 	/**
 	 * Ignores onNext signals (dropping them) and only propagate termination events.
 	 *
