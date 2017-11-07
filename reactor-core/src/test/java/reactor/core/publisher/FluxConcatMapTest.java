@@ -772,6 +772,58 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 				.isEqualTo(Long.MAX_VALUE);
 	}
 
+	//see https://github.com/reactor/reactor-core/issues/936
+	@Test
+	public void concatDelayErrorWithFluxError() {
+		StepVerifier.create(
+				Flux.concatDelayError(
+						Flux.just(
+								Flux.just(1, 2),
+								Flux.error(new Exception("test")),
+								Flux.just(3, 4))))
+		            .expectNext(1, 2, 3, 4)
+		            .verifyErrorMessage("test");
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/936
+	@Test
+	public void concatDelayErrorWithMonoError() {
+		StepVerifier.create(
+				Flux.concatDelayError(
+						Flux.just(
+								Flux.just(1, 2),
+								Mono.error(new Exception("test")),
+								Flux.just(3, 4))))
+		            .expectNext(1, 2, 3, 4)
+		            .verifyErrorMessage("test");
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/936
+	@Test
+	public void concatMapDelayErrorWithFluxError() {
+		StepVerifier.create(
+				Flux.just(
+						Flux.just(1, 2),
+						Flux.<Integer>error(new Exception("test")),
+						Flux.just(3, 4))
+				    .concatMapDelayError(f -> f, true, 32))
+		            .expectNext(1, 2, 3, 4)
+		            .verifyErrorMessage("test");
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/936
+	@Test
+	public void concatMapDelayErrorWithMonoError() {
+		StepVerifier.create(
+				Flux.just(
+						Flux.just(1, 2),
+						Mono.<Integer>error(new Exception("test")),
+						Flux.just(3, 4))
+				    .concatMapDelayError(f -> f, true, 32))
+		            .expectNext(1, 2, 3, 4)
+		            .verifyErrorMessage("test");
+	}
+
 	@Test
 	public void scanConcatMapDelayed() {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);

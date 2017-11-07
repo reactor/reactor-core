@@ -118,4 +118,29 @@ public class FluxMergeTest {
 		            .expectNext(1, 2, 3, 4)
 		            .verifyErrorSatisfies(e -> assertThat(e).isEqualTo(boom));
 	}
+
+	//see https://github.com/reactor/reactor-core/issues/936
+	@Test
+	public void delayErrorWithFluxError() {
+		StepVerifier.create(
+				Flux.mergeDelayError(32, Flux.just(1, 2),
+						Flux.error(new Exception("test")),
+						Flux.just(3, 4))
+		)
+		            .expectNext(1, 2, 3, 4)
+		            .verifyErrorMessage("test");
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/936
+	@Test
+	public void delayErrorWithMonoError() {
+		StepVerifier.create(
+				Flux.mergeDelayError(32,
+						Flux.just(1, 2),
+						Mono.error(new Exception("test")),
+						Flux.just(3, 4))
+				)
+		            .expectNext(1, 2, 3, 4)
+		            .verifyErrorMessage("test");
+	}
 }

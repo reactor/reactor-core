@@ -358,7 +358,9 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 					v = ((Callable<R>) p).call();
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+					if (!delayError || !Exceptions.addThrowable(ERROR, this, e)) {
+						onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+					}
 					return;
 				}
 				tryEmitScalar(v);

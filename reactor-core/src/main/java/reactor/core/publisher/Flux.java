@@ -2999,7 +2999,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * </ul>
 	 *
 	 * <p>
-	 * Errors will be delayed after all concatenated sources terminate.
+	 * Errors in the individual publishers will be delayed after the current concat backlog,
+	 * usually stopping the sequence at the source that triggered the error.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/concatmap.png" alt="">
@@ -3033,8 +3034,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * </ul>
 	 *
 	 * <p>
-	 * Errors will be delayed after all concatenated sources terminate. The prefetch argument
-	 * allows to give an arbitrary prefetch size to the inner {@link Publisher}.
+	 * Errors in the individual publishers will be delayed after the current concat backlog,
+	 * usually stopping the sequence at the source that triggered the error.
+	 * The prefetch argument allows to give an arbitrary prefetch size to the inner {@link Publisher}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/concatmap.png" alt="">
@@ -3071,9 +3073,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * </ul>
 	 *
 	 * <p>
-	 * Errors will be delayed after the current concat backlog if delayUntilEnd is
-	 * false or after all sources if delayUntilEnd is true. The prefetch argument
-	 * allows to give an arbitrary prefetch size to the inner {@link Publisher}.
+	 * Errors in the individual publishers will be delayed after the current concat
+	 * backlog if delayUntilEnd is false or after all sources if delayUntilEnd is true.
+	 * The prefetch argument allows to give an arbitrary prefetch size to the inner {@link Publisher}.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/concatmap.png" alt="">

@@ -233,6 +233,32 @@ public class FluxConcatArrayTest {
 		            .verifyComplete();
 	}
 
+	//see https://github.com/reactor/reactor-core/issues/936
+	@Test
+	public void concatArrayDelayErrorWithFluxError() {
+		StepVerifier.create(
+				Flux.concatDelayError(
+						Flux.just(1, 2),
+						Flux.error(new Exception("test")),
+						Flux.just(3, 4))
+		)
+		            .expectNext(1, 2, 3, 4)
+		            .verifyErrorMessage("test");
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/936
+	@Test
+	public void concatArrayDelayErrorWithMonoError() {
+		StepVerifier.create(
+				Flux.concatDelayError(
+								Flux.just(1, 2),
+								Mono.error(new Exception("test")),
+								Flux.just(3, 4))
+		)
+		            .expectNext(1, 2, 3, 4)
+		            .verifyErrorMessage("test");
+	}
+
 	@Test
 	public void scanDelayErrorSubscriber() {
 		CoreSubscriber<String> actual = new LambdaSubscriber<>(null, e -> {}, null, null);

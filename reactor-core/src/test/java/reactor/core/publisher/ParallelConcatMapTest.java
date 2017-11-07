@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import org.junit.Test;
 import reactor.core.Scannable;
+import reactor.test.StepVerifier;
 import reactor.util.concurrent.Queues;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -69,6 +70,36 @@ public class ParallelConcatMapTest {
 				FluxConcatMap.ErrorMode.END);
 
 		assertThat(test.scan(Scannable.Attr.DELAY_ERROR)).isTrue();
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/936
+	@Test
+	public void concatDelayErrorWithFluxError() {
+		StepVerifier.create(
+				Flux.just(
+						Flux.just(1, 2),
+						Flux.<Integer>error(new Exception("test")),
+						Flux.just(3, 4))
+				    .parallel()
+				    .concatMapDelayError(f -> f, true, 32)
+				    .sequential())
+		            .expectNext(1, 2, 3, 4)
+		            .verifyErrorMessage("test");
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/936
+	@Test
+	public void concatDelayErrorWithMonoError() {
+		StepVerifier.create(
+				Flux.just(
+						Flux.just(1, 2),
+						Mono.<Integer>error(new Exception("test")),
+						Flux.just(3, 4))
+				    .parallel()
+				    .concatMapDelayError(f -> f, true, 32)
+				    .sequential())
+		            .expectNext(1, 2, 3, 4)
+		            .verifyErrorMessage("test");
 	}
 
 }
