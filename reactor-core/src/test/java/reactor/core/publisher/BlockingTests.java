@@ -214,4 +214,14 @@ public class BlockingTests {
 
 		assertThat(cancelCount.get()).isEqualTo(0);
 	}
+
+	@Test
+	public void monoBlockOptionalDoesntCancel() {
+		AtomicLong cancelCount = new AtomicLong();
+		Mono.just("data")
+	        .doOnCancel(cancelCount::incrementAndGet)
+	        .blockOptional();
+
+		assertThat(cancelCount.get()).isEqualTo(0);
+	}
 }
