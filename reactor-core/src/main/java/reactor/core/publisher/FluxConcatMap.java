@@ -721,9 +721,14 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 									vr = supplier.call();
 								}
 								catch (Throwable e) {
-									actual.onError(Operators.onOperatorError(s, e, v,
-											actual.currentContext()));
-									return;
+									if (veryEnd && Exceptions.addThrowable(ERROR, this, e)) {
+										continue;
+									}
+									else {
+										actual.onError(Operators.onOperatorError(s, e, v,
+												actual.currentContext()));
+										return;
+									}
 								}
 
 								if (vr == null) {

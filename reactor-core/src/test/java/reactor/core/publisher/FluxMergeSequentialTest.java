@@ -711,6 +711,62 @@ public class FluxMergeSequentialTest {
 		            .verifyComplete();
 	}
 
+	//see https://github.com/reactor/reactor-core/issues/936
+	@Test
+	public void flatMapSequentialDelayErrorWithFluxError() {
+		StepVerifier.create(
+				Flux.just(
+						Flux.just(1, 2),
+						Flux.<Integer>error(new Exception("test")),
+						Flux.just(3, 4))
+				    .flatMapSequentialDelayError(f -> f, 4, 4))
+		            .expectNext(1, 2, 3, 4)
+		            .verifyErrorMessage("test");
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/936
+	@Test
+	public void flatMapSequentialDelayErrorWithMonoError() {
+		StepVerifier.create(
+				Flux.just(
+						Flux.just(1, 2),
+						Mono.<Integer>error(new Exception("test")),
+						Flux.just(3, 4))
+				    .flatMapSequentialDelayError(f -> f, 4, 4))
+		            .expectNext(1, 2, 3, 4)
+		            .verifyErrorMessage("test");
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/936
+	@Test
+	public void mergeSequentialDelayErrorWithFluxError() {
+		StepVerifier.create(
+				Flux.mergeSequentialDelayError(
+						Flux.just(
+								Flux.just(1, 2),
+								Flux.error(new Exception("test")),
+								Flux.just(3, 4))
+				, 4, 4)
+		)
+		            .expectNext(1, 2, 3, 4)
+		            .verifyErrorMessage("test");
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/936
+	@Test
+	public void mergeSequentialDelayErrorWithMonoError() {
+		StepVerifier.create(
+				Flux.mergeSequentialDelayError(
+						Flux.just(
+								Flux.just(1, 2),
+								Mono.error(new Exception("test")),
+								Flux.just(3, 4))
+				, 4, 4)
+		)
+		            .expectNext(1, 2, 3, 4)
+		            .verifyErrorMessage("test");
+	}
+
     @Test
     public void scanMain() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);

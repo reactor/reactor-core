@@ -1319,6 +1319,33 @@ public class FluxFlatMapTest {
 		assertThat(onNextSignals.get()).isEqualTo(10);
 	}
 
+
+	//see https://github.com/reactor/reactor-core/issues/936
+	@Test
+	public void delayErrorWithFluxError() {
+		StepVerifier.create(
+				Flux.just(
+						Flux.just(1, 2),
+						Flux.<Integer>error(new Exception("test")),
+						Flux.just(3, 4))
+				    .flatMapDelayError(f -> f, 4, 4))
+		            .expectNext(1, 2, 3, 4)
+		            .verifyErrorMessage("test");
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/936
+	@Test
+	public void delayErrorWithMonoError() {
+		StepVerifier.create(
+				Flux.just(
+						Flux.just(1, 2),
+						Mono.<Integer>error(new Exception("test")),
+						Flux.just(3, 4))
+				    .flatMapDelayError(f -> f, 4, 4))
+		            .expectNext(1, 2, 3, 4)
+		            .verifyErrorMessage("test");
+	}
+
     @Test
     public void scanMain() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
