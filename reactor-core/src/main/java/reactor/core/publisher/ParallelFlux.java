@@ -898,6 +898,31 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Merges the values from each 'rail' in the same ordered as they were produced and
+	 * exposes it as a regular Publisher sequence, running with a give prefetch value for
+	 * the rails.
+	 *
+	 * @return the new Flux instance
+	 */
+	public final Flux<T> ordered() {
+		return ordered(Queues.SMALL_BUFFER_SIZE);
+	}
+
+	/**
+	 * Merges the values from each 'rail' in the same ordered as they were produced and
+	 * exposes it as a regular Publisher sequence, running with a give prefetch value for
+	 * the rails.
+	 *
+	 * @param prefetch the prefetch amount to use for each rail
+	 * @return the new Flux instance
+	 */
+	public final Flux<T> ordered(int prefetch) {
+		return Flux.onAssembly(new ParallelMergeOrdered<>(this,
+				prefetch,
+				Queues.get(prefetch)));
+	}
+
+	/**
 	 * Subscribes an array of Subscribers to this {@link ParallelFlux} and triggers the
 	 * execution chain for all 'rails'.
 	 *
