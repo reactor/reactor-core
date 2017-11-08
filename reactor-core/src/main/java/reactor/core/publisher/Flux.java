@@ -4530,10 +4530,25 @@ public abstract class Flux<T> implements Publisher<T> {
 		return new FluxHide<>(this);
 	}
 
+	/**
+	 * Keep information about the order in which source values were received by
+	 * indexing them with a 0-based incrementing long, returning a {@link Flux}
+	 * of {@link Tuple2 Tuple<(index, value)>}.
+	 *
+	 * @return an indexed {@link Flux} with each source value combined with its 0-base index.
+	 */
 	public final Flux<Tuple2<Long, T>> indexed() {
 		return indexed((i, v) -> i);
 	}
 
+	/**
+	 * Keep information about the order in which source values were received by
+	 * indexing them internally with a 0-based incrementing long then mapping this to a
+	 * custom index {@code I} using the provided function, returning a {@link Flux}
+	 * of {@link Tuple2 Tuple<(mappedIndex, value)>}.
+	 *
+	 * @return an indexed {@link Flux} with each source value combined with its computed index.
+	 */
 	public final <I> Flux<Tuple2<I, T>> indexed(
 			BiFunction<? super Long, ? super T, ? extends I> indexMapper) {
 		if (this instanceof Fuseable) {

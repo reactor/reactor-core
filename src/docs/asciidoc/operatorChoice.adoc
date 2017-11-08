@@ -57,6 +57,7 @@ I want to deal with:
 * I want to transform existing data:
 ** on a 1-to-1 basis (eg. strings to their length): `map`
 *** ...by just casting it: `cast`
+*** ...in order to materialize each source value's index: `Flux#indexed`
 ** on a 1-to-n basis (eg. strings to their characters): `flatMap` + use a factory method
 ** on a 1-to-n basis with programmatic behavior for each source element and/or state: `handle`
 ** running an asynchronous task for each source item (eg. urls to http request): `flatMap` + an async `Publisher`-returning method
