@@ -31,13 +31,13 @@ import reactor.util.function.Tuples;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
-public class FluxIndexedTest extends FluxOperatorTest<Integer, Tuple2<Long, Integer>> {
+public class FluxIndexedFuseableTest extends FluxOperatorTest<Integer, Tuple2<Long, Integer>> {
 
 	@Override
 	protected Scenario<Integer, Tuple2<Long, Integer>> defaultScenarioOptions(
 			Scenario<Integer, Tuple2<Long, Integer>> defaultOptions) {
 		return super.defaultScenarioOptions(defaultOptions)
-		            .fusionMode(Fuseable.NONE)
+		            .fusionMode(Fuseable.ASYNC)
 		            .producer(10, i -> i)
 		            .receive(10, i -> Tuples.of((long) i, i));
 	}
@@ -61,14 +61,13 @@ public class FluxIndexedTest extends FluxOperatorTest<Integer, Tuple2<Long, Inte
 	}
 
 	@Test
-	public void defaultNormal() {
+	public void defaultFused() {
 		AtomicLong counter = new AtomicLong(2);
 		StepVerifier.create(
 				Flux.range(0, 1000)
-				    .hide()
-					.indexed()
+				    .indexed()
 		)
-		            .expectNoFusionSupport()
+		            .expectFusion()
 		            .expectNext(Tuples.of(0L, 0))
 		            .expectNextMatches(t -> t.getT1() == t.getT2().longValue())
 		            .thenConsumeWhile(t -> t.getT1() == t.getT2().longValue(),
@@ -80,15 +79,15 @@ public class FluxIndexedTest extends FluxOperatorTest<Integer, Tuple2<Long, Inte
 	}
 
 	@Test
-	public void defaultBackpressured() {
+	public void defaultFusedBackpressured() {
 		AtomicLong counter = new AtomicLong(4);
 
 		StepVerifier.create(
 				Flux.range(0, 1000)
-				    .hide()
-					.indexed()
-		, 0)
-		            .expectNoFusionSupport()
+				    .indexed()
+				, 0)
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMillis(100))
 		            .thenRequest(1)
 		            .expectNext(Tuples.of(0L, 0))
 		            .expectNoEvent(Duration.ofMillis(100))
@@ -105,15 +104,14 @@ public class FluxIndexedTest extends FluxOperatorTest<Integer, Tuple2<Long, Inte
 	}
 
 	@Test
-	public void defaultConditional() {
+	public void defaultFusedConditional() {
 		AtomicLong counter = new AtomicLong(2);
 		StepVerifier.create(
 				Flux.range(0, 1000)
-				    .hide()
 				    .indexed()
 				    .filter(it -> true)
 		)
-		            .expectNoFusionSupport()
+		            .expectFusion()
 		            .expectNext(Tuples.of(0L, 0))
 		            .expectNextMatches(t -> t.getT1() == t.getT2().longValue())
 		            .thenConsumeWhile(t -> t.getT1() == t.getT2().longValue(),
@@ -125,14 +123,13 @@ public class FluxIndexedTest extends FluxOperatorTest<Integer, Tuple2<Long, Inte
 	}
 
 	@Test
-	public void customNormal() {
+	public void customFused() {
 		AtomicLong counter = new AtomicLong(2);
 		StepVerifier.create(
 				Flux.range(0, 1000)
-				    .hide()
-					.indexed((i, v) -> "#" + (i + 1))
+				    .indexed((i, v) -> "#" + (i + 1))
 		)
-		            .expectNoFusionSupport()
+		            .expectFusion()
 		            .expectNext(Tuples.of("#1", 0))
 		            .expectNextMatches(t -> t.getT1().equals("#" + (t.getT2() + 1)))
 		            .thenConsumeWhile(t -> t.getT1().equals("#" + (t.getT2() + 1)),
@@ -144,15 +141,15 @@ public class FluxIndexedTest extends FluxOperatorTest<Integer, Tuple2<Long, Inte
 	}
 
 	@Test
-	public void customBackpressured() {
+	public void customFusedBackpressured() {
 		AtomicLong counter = new AtomicLong(4);
 
 		StepVerifier.create(
 				Flux.range(0, 1000)
-				    .hide()
 				    .indexed((i, v) -> "#" + (i + 1))
-		, 0)
-		            .expectNoFusionSupport()
+				, 0)
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMillis(100))
 		            .thenRequest(1)
 		            .expectNext(Tuples.of("#1", 0))
 		            .expectNoEvent(Duration.ofMillis(100))
@@ -169,15 +166,14 @@ public class FluxIndexedTest extends FluxOperatorTest<Integer, Tuple2<Long, Inte
 	}
 
 	@Test
-	public void customConditional() {
+	public void customFusedConditional() {
 		AtomicLong counter = new AtomicLong(2);
 		StepVerifier.create(
 				Flux.range(0, 1000)
-				    .hide()
-					.indexed((i, v) -> "#" + (i + 1))
-					.filter(it -> true)
+				    .indexed((i, v) -> "#" + (i + 1))
+				    .filter(it -> true)
 		)
-		            .expectNoFusionSupport()
+		            .expectFusion()
 		            .expectNext(Tuples.of("#1", 0))
 		            .expectNextMatches(t -> t.getT1().equals("#" + (t.getT2() + 1)))
 		            .thenConsumeWhile(t -> t.getT1().equals("#" + (t.getT2() + 1)),
@@ -192,7 +188,7 @@ public class FluxIndexedTest extends FluxOperatorTest<Integer, Tuple2<Long, Inte
 	public void sourceNull() {
 		//noinspection ConstantConditions
 		assertThatNullPointerException()
-				.isThrownBy(() -> new FluxIndexed<>(null, (i, v) -> i))
+				.isThrownBy(() -> new FluxIndexedFuseable<>(null, (i, v) -> i))
 				.withMessage(null);
 	}
 
@@ -201,14 +197,14 @@ public class FluxIndexedTest extends FluxOperatorTest<Integer, Tuple2<Long, Inte
 		Flux<String> source = Flux.just("foo", "bar");
 		//noinspection ConstantConditions
 		assertThatNullPointerException()
-				.isThrownBy(() -> new FluxIndexed<>(source, null))
+				.isThrownBy(() -> new FluxIndexedFuseable<>(source, null))
 				.withMessage("indexMapper must be non null");
 	}
 
 	@Test
 	public void indexMapperReturnsNull() {
 		Flux<String> source = Flux.just("foo", "bar");
-		Flux<Tuple2<Integer, String>> test = new FluxIndexed<>(source,
+		Flux<Tuple2<Integer, String>> test = new FluxIndexedFuseable<>(source,
 				(i, v) -> {
 					if (i == 0L) return 0;
 					return null;
@@ -222,7 +218,7 @@ public class FluxIndexedTest extends FluxOperatorTest<Integer, Tuple2<Long, Inte
 	@Test
 	public void indexMapperThrows() {
 		Flux<String> source = Flux.just("foo", "bar");
-		Flux<Tuple2<Integer, String>> test = new FluxIndexed<>(source,
+		Flux<Tuple2<Integer, String>> test = new FluxIndexedFuseable<>(source,
 				(i, v) -> {
 					if (i == 0L) return 0;
 					throw new IllegalStateException("boom-" + i);
@@ -234,4 +230,5 @@ public class FluxIndexedTest extends FluxOperatorTest<Integer, Tuple2<Long, Inte
 				            .isInstanceOf(IllegalStateException.class)
 				            .hasMessage("boom-1"));
 	}
+
 }

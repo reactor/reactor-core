@@ -4536,6 +4536,9 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	public final <I> Flux<Tuple2<I, T>> indexed(
 			BiFunction<? super Long, ? super T, ? extends I> indexMapper) {
+		if (this instanceof Fuseable) {
+			return onAssembly(new FluxIndexedFuseable<>(this, indexMapper));
+		}
 		return onAssembly(new FluxIndexed<>(this, indexMapper));
 	}
 
