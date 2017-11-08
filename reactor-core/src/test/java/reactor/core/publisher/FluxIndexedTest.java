@@ -17,10 +17,14 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
+import reactor.core.Fuseable;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.FluxOperatorTest;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
@@ -30,7 +34,34 @@ import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 /**
  * @author Simon Baslé
  */
-public class FluxIndexedTest {
+public class FluxIndexedTest extends FluxOperatorTest<Integer, Tuple2<Long, Integer>> {
+
+	@Override
+	protected Scenario<Integer, Tuple2<Long, Integer>> defaultScenarioOptions(
+			Scenario<Integer, Tuple2<Long, Integer>> defaultOptions) {
+		return super.defaultScenarioOptions(defaultOptions)
+		            .producer(10, i -> i)
+		            .receive(10, i -> Tuples.of((long) i, i));
+	}
+
+	@Override
+	protected List<Scenario<Integer, Tuple2<Long, Integer>>> scenarios_operatorError() {
+		return Arrays.asList(
+				scenario(f -> f.indexed((i, v) -> {
+					throw exception();
+				})),
+
+				scenario(f -> f.indexed((i, v) -> null))
+		);
+	}
+
+	@Override
+	protected List<Scenario<Integer, Tuple2<Long, Integer>>> scenarios_operatorSuccess() {
+		return Arrays.asList(
+				scenario(f -> f.indexed((i, v) -> i))
+		);
+	}
+
 
 	@Test
 	public void apiDefaultNormal() {
@@ -117,8 +148,17 @@ public class FluxIndexedTest {
 	}
 
 	@Test
+	public void sourceNull() {
+		//noinspection ConstantConditions
+		assertThatNullPointerException()
+				.isThrownBy(() -> new FluxIndexed<>(null, (i, v) -> i))
+				.withMessage(null);
+	}
+
+	@Test
 	public void indexMapperNull() {
 		Flux<String> source = Flux.just("foo", "bar");
+		//noinspection ConstantConditions
 		assertThatNullPointerException()
 				.isThrownBy(() -> new FluxIndexed<>(source, null))
 				.withMessage("indexMapper must be non null");
@@ -153,5 +193,4 @@ public class FluxIndexedTest {
 				            .isInstanceOf(IllegalStateException.class)
 				            .hasMessage("boom-1"));
 	}
-
 }
