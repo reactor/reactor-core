@@ -59,8 +59,8 @@ ext {
   assertJVersion = '3.8.0'
   mockitoVersion = '2.10.0'
 
-  javadocLinks = ["http://docs.oracle.com/javase/8/docs/api/",
-				  "http://docs.oracle.com/javaee/6/api/",
+  javadocLinks = ["https://docs.oracle.com/javase/8/docs/api/",
+				  "https://docs.oracle.com/javaee/6/api/",
 				  "http://www.reactive-streams.org/reactive-streams-1.0.1-javadoc/"] as
 		  String[]
 
