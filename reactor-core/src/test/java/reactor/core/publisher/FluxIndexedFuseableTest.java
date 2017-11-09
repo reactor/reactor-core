@@ -56,7 +56,8 @@ public class FluxIndexedFuseableTest extends FluxOperatorTest<Integer, Tuple2<Lo
 	@Override
 	protected List<Scenario<Integer, Tuple2<Long, Integer>>> scenarios_operatorSuccess() {
 		return Arrays.asList(
-				scenario(f -> f.indexed((i, v) -> i))
+				scenario(Flux::indexed),
+				scenario(f -> f.indexed(Tuples::of))
 		);
 	}
 
@@ -127,7 +128,7 @@ public class FluxIndexedFuseableTest extends FluxOperatorTest<Integer, Tuple2<Lo
 		AtomicLong counter = new AtomicLong(2);
 		StepVerifier.create(
 				Flux.range(0, 1000)
-				    .indexed((i, v) -> "#" + (i + 1))
+				    .indexed((i, v) -> Tuples.of("#" + (i + 1), v))
 		)
 		            .expectFusion()
 		            .expectNext(Tuples.of("#1", 0))
@@ -146,7 +147,7 @@ public class FluxIndexedFuseableTest extends FluxOperatorTest<Integer, Tuple2<Lo
 
 		StepVerifier.create(
 				Flux.range(0, 1000)
-				    .indexed((i, v) -> "#" + (i + 1))
+				    .indexed((i, v) -> Tuples.of("#" + (i + 1), v))
 				, 0)
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofMillis(100))
@@ -170,7 +171,7 @@ public class FluxIndexedFuseableTest extends FluxOperatorTest<Integer, Tuple2<Lo
 		AtomicLong counter = new AtomicLong(2);
 		StepVerifier.create(
 				Flux.range(0, 1000)
-				    .indexed((i, v) -> "#" + (i + 1))
+				    .indexed((i, v) -> Tuples.of("#" + (i + 1), v))
 				    .filter(it -> true)
 		)
 		            .expectFusion()
@@ -206,7 +207,7 @@ public class FluxIndexedFuseableTest extends FluxOperatorTest<Integer, Tuple2<Lo
 		Flux<String> source = Flux.just("foo", "bar");
 		Flux<Tuple2<Integer, String>> test = new FluxIndexedFuseable<>(source,
 				(i, v) -> {
-					if (i == 0L) return 0;
+					if (i == 0L) return Tuples.of(0, v);
 					return null;
 				});
 
@@ -220,7 +221,7 @@ public class FluxIndexedFuseableTest extends FluxOperatorTest<Integer, Tuple2<Lo
 		Flux<String> source = Flux.just("foo", "bar");
 		Flux<Tuple2<Integer, String>> test = new FluxIndexedFuseable<>(source,
 				(i, v) -> {
-					if (i == 0L) return 0;
+					if (i == 0L) return Tuples.of(0, v);
 					throw new IllegalStateException("boom-" + i);
 				});
 

@@ -38,10 +38,8 @@ import java.util.function.BiFunction;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
-import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
-import reactor.util.function.Tuples;
 
 /**
  * A {@link reactor.core.Fuseable} version of {@link FluxIndexed}, an
@@ -53,7 +51,7 @@ import reactor.util.function.Tuples;
  *
  * @author Simon Baslé
  */
-public class FluxIndexedFuseable<T, I> extends FluxOperator<T, Tuple2<I, T>>
+public class FluxIndexedFuseable<T, I> extends FluxOperator<T, I>
 		implements Fuseable {
 
 	private final BiFunction<? super Long, ? super T, ? extends I> indexMapper;
@@ -65,10 +63,10 @@ public class FluxIndexedFuseable<T, I> extends FluxOperator<T, Tuple2<I, T>>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super Tuple2<I, T>> actual) {
+	public void subscribe(CoreSubscriber<? super I> actual) {
 		if (actual instanceof ConditionalSubscriber) {
-			@SuppressWarnings("unchecked") ConditionalSubscriber<? super Tuple2<I, T>> cs =
-					(ConditionalSubscriber<? super Tuple2<I, T>>) actual;
+			@SuppressWarnings("unchecked") ConditionalSubscriber<? super I> cs =
+					(ConditionalSubscriber<? super I>) actual;
 			source.subscribe(new IndexedFuseableConditionalSubscriber<>(cs, indexMapper));
 		}
 		else {
@@ -76,10 +74,10 @@ public class FluxIndexedFuseable<T, I> extends FluxOperator<T, Tuple2<I, T>>
 		}
 	}
 
-	static final class IndexedFuseableSubscriber<I, T> implements InnerOperator<T, Tuple2<I, T>>,
-	                                                              QueueSubscription<Tuple2<I, T>> {
+	static final class IndexedFuseableSubscriber<I, T> implements InnerOperator<T, I>,
+	                                                              QueueSubscription<I> {
 
-		final CoreSubscriber<? super Tuple2<I, T>>             actual;
+		final CoreSubscriber<? super I>             actual;
 		final BiFunction<? super Long, ? super T, ? extends I> indexMapper;
 
 		boolean              done;
@@ -87,7 +85,7 @@ public class FluxIndexedFuseable<T, I> extends FluxOperator<T, Tuple2<I, T>>
 		QueueSubscription<T> s;
 		int                  sourceMode;
 
-		IndexedFuseableSubscriber(CoreSubscriber<? super Tuple2<I, T>> actual,
+		IndexedFuseableSubscriber(CoreSubscriber<? super I> actual,
 				BiFunction<? super Long, ? super T, ? extends I> indexMapper) {
 			this.actual = actual;
 			this.indexMapper = indexMapper;
@@ -105,15 +103,15 @@ public class FluxIndexedFuseable<T, I> extends FluxOperator<T, Tuple2<I, T>>
 
 		@Override
 		@Nullable
-		public Tuple2<I, T> poll() {
+		public I poll() {
 			T v = s.poll();
 			if (v != null) {
 				long i = this.index;
-				I index = Objects.requireNonNull(indexMapper.apply(i, v),
+				I indexed = Objects.requireNonNull(indexMapper.apply(i, v),
 						"indexMapper returned a null value at raw index " +
 								i + " for value " + v);
 				this.index = i + 1;
-				return Tuples.of(index, v);
+				return indexed;
 			}
 			return null;
 		}
@@ -131,11 +129,11 @@ public class FluxIndexedFuseable<T, I> extends FluxOperator<T, Tuple2<I, T>>
 
 				long i = this.index;
 				try {
-					I typedIndex = Objects.requireNonNull(indexMapper.apply(i, t),
+					I indexed = Objects.requireNonNull(indexMapper.apply(i, t),
 							"indexMapper returned a null value at raw index " + i +
 									" for value " + t);
 					this.index = i + 1L;
-					actual.onNext(Tuples.of(typedIndex, t));
+					actual.onNext(indexed);
 				}
 				catch (Throwable e) {
 					onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
@@ -166,7 +164,7 @@ public class FluxIndexedFuseable<T, I> extends FluxOperator<T, Tuple2<I, T>>
 		}
 
 		@Override
-		public CoreSubscriber<? super Tuple2<I, T>> actual() {
+		public CoreSubscriber<? super I> actual() {
 			return this.actual;
 		}
 
@@ -219,11 +217,11 @@ public class FluxIndexedFuseable<T, I> extends FluxOperator<T, Tuple2<I, T>>
 	}
 
 	static final class IndexedFuseableConditionalSubscriber<I, T>
-			implements InnerOperator<T, Tuple2<I, T>>,
+			implements InnerOperator<T, I>,
 			           ConditionalSubscriber<T>,
-			           QueueSubscription<Tuple2<I, T>> {
+			           QueueSubscription<I> {
 
-		final ConditionalSubscriber<? super Tuple2<I, T>>      actual;
+		final ConditionalSubscriber<? super I>      actual;
 		final BiFunction<? super Long, ? super T, ? extends I> indexMapper;
 
 		boolean              done;
@@ -232,7 +230,7 @@ public class FluxIndexedFuseable<T, I> extends FluxOperator<T, Tuple2<I, T>>
 		int                  sourceMode;
 
 		IndexedFuseableConditionalSubscriber(
-				ConditionalSubscriber<? super Tuple2<I,T>> cs,
+				ConditionalSubscriber<? super I> cs,
 				BiFunction<? super Long, ? super T, ? extends I> indexMapper) {
 			this.actual = cs;
 			this.indexMapper = indexMapper;
@@ -249,15 +247,15 @@ public class FluxIndexedFuseable<T, I> extends FluxOperator<T, Tuple2<I, T>>
 
 		@Override
 		@Nullable
-		public Tuple2<I, T> poll() {
+		public I poll() {
 			T v = s.poll();
 			if (v != null) {
 				long i = this.index;
-				I index = Objects.requireNonNull(indexMapper.apply(i, v),
+				I indexed = Objects.requireNonNull(indexMapper.apply(i, v),
 						"indexMapper returned a null value at raw index " +
 								i + " for value " + v);
 				this.index = i + 1;
-				return Tuples.of(index, v);
+				return indexed;
 			}
 			return null;
 		}
@@ -269,10 +267,10 @@ public class FluxIndexedFuseable<T, I> extends FluxOperator<T, Tuple2<I, T>>
 				return true;
 			}
 
-			I typedIndex;
+			I indexed;
 			long i = this.index;
 			try {
-				typedIndex = Objects.requireNonNull(indexMapper.apply(i, t),
+				indexed = Objects.requireNonNull(indexMapper.apply(i, t),
 						"indexMapper returned a null value at raw index " + i +
 								" for value " + t);
 				this.index = i + 1L;
@@ -282,7 +280,7 @@ public class FluxIndexedFuseable<T, I> extends FluxOperator<T, Tuple2<I, T>>
 				return true;
 			}
 
-			return actual.tryOnNext(Tuples.of(typedIndex, t));
+			return actual.tryOnNext(indexed);
 		}
 
 		@Override
@@ -298,11 +296,11 @@ public class FluxIndexedFuseable<T, I> extends FluxOperator<T, Tuple2<I, T>>
 
 				long i = this.index;
 				try {
-					I typedIndex = Objects.requireNonNull(indexMapper.apply(i, t),
+					I indexed = Objects.requireNonNull(indexMapper.apply(i, t),
 							"indexMapper returned a null value at raw index " + i +
 									" for value " + t);
 					this.index = i + 1L;
-					actual.onNext(Tuples.of(typedIndex, t));
+					actual.onNext(indexed);
 				}
 				catch (Throwable e) {
 					onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
@@ -333,7 +331,7 @@ public class FluxIndexedFuseable<T, I> extends FluxOperator<T, Tuple2<I, T>>
 		}
 
 		@Override
-		public CoreSubscriber<? super Tuple2<I, T>> actual() {
+		public CoreSubscriber<? super I> actual() {
 			return this.actual;
 		}
 

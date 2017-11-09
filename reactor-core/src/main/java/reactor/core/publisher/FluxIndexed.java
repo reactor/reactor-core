@@ -24,18 +24,17 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable.ConditionalSubscriber;
 import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
-import reactor.util.function.Tuples;
 
 /**
  * An operator that tags the values it passes through with their index in the original
- * sequence, either as their natural long index (0-based) or as a customized index
- * by way of a user-provided {@link BiFunction}. The resulting sequence is one of
- * {@link Tuple2}, t1 value being the index (as mapped by the user function) and t2 the
- * source value.
+ * sequence as their natural long index (0-based) and maps it to a container type
+ * by way of a user-provided {@link BiFunction}. Usually the container type would be
+ * a {@link Tuple2}, t1 value being the index (as mapped by the user function) and t2 the
+ * source value, but this is entirely up to the user function to decide.
  *
  * @author Simon Baslé
  */
-public class FluxIndexed<T, I> extends FluxOperator<T, Tuple2<I, T>> {
+public class FluxIndexed<T, I> extends FluxOperator<T, I> {
 
 	private final BiFunction<? super Long, ? super T, ? extends I> indexMapper;
 
@@ -46,10 +45,10 @@ public class FluxIndexed<T, I> extends FluxOperator<T, Tuple2<I, T>> {
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super Tuple2<I, T>> actual) {
+	public void subscribe(CoreSubscriber<? super I> actual) {
 		if (actual instanceof ConditionalSubscriber) {
-			@SuppressWarnings("unchecked") ConditionalSubscriber<? super Tuple2<I, T>> cs =
-					(ConditionalSubscriber<? super Tuple2<I, T>>) actual;
+			@SuppressWarnings("unchecked") ConditionalSubscriber<? super I> cs =
+					(ConditionalSubscriber<? super I>) actual;
 			source.subscribe(new IndexedConditionalSubscriber<>(cs, indexMapper));
 		}
 		else {
@@ -57,16 +56,16 @@ public class FluxIndexed<T, I> extends FluxOperator<T, Tuple2<I, T>> {
 		}
 	}
 
-	static final class IndexedSubscriber<I, T> implements InnerOperator<T, Tuple2<I, T>> {
+	static final class IndexedSubscriber<T, I> implements InnerOperator<T, I> {
 
-		final CoreSubscriber<? super Tuple2<I, T>>             actual;
+		final CoreSubscriber<? super I>                        actual;
 		final BiFunction<? super Long, ? super T, ? extends I> indexMapper;
 
 		boolean      done;
 		Subscription s;
 		long         index = 0;
 
-		IndexedSubscriber(CoreSubscriber<? super Tuple2<I, T>> actual,
+		IndexedSubscriber(CoreSubscriber<? super I> actual,
 				BiFunction<? super Long, ? super T, ? extends I> indexMapper) {
 			this.actual = actual;
 			this.indexMapper = indexMapper;
@@ -94,7 +93,7 @@ public class FluxIndexed<T, I> extends FluxOperator<T, Tuple2<I, T>> {
 						"indexMapper returned a null value at raw index " + i +
 								" for value " + t);
 				this.index = i + 1L;
-				actual.onNext(Tuples.of(typedIndex, t));
+				actual.onNext(typedIndex);
 			}
 			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
@@ -124,7 +123,7 @@ public class FluxIndexed<T, I> extends FluxOperator<T, Tuple2<I, T>> {
 		}
 
 		@Override
-		public CoreSubscriber<? super Tuple2<I, T>> actual() {
+		public CoreSubscriber<? super I> actual() {
 			return this.actual;
 		}
 
@@ -148,10 +147,10 @@ public class FluxIndexed<T, I> extends FluxOperator<T, Tuple2<I, T>> {
 		}
 	}
 
-	static final class IndexedConditionalSubscriber<I, T> implements InnerOperator<T, Tuple2<I, T>>,
+	static final class IndexedConditionalSubscriber<T, I> implements InnerOperator<T, I>,
 	                                                                 ConditionalSubscriber<T> {
 
-		final ConditionalSubscriber<? super Tuple2<I, T>>      actual;
+		final ConditionalSubscriber<? super I>      actual;
 		final BiFunction<? super Long, ? super T, ? extends I> indexMapper;
 
 		Subscription s;
@@ -159,7 +158,7 @@ public class FluxIndexed<T, I> extends FluxOperator<T, Tuple2<I, T>> {
 		long index;
 
 		IndexedConditionalSubscriber(
-				ConditionalSubscriber<? super Tuple2<I,T>> cs,
+				ConditionalSubscriber<? super I> cs,
 				BiFunction<? super Long, ? super T, ? extends I> indexMapper) {
 			this.actual = cs;
 			this.indexMapper = indexMapper;
@@ -193,7 +192,7 @@ public class FluxIndexed<T, I> extends FluxOperator<T, Tuple2<I, T>> {
 				return true;
 			}
 
-			return actual.tryOnNext(Tuples.of(typedIndex, t));
+			return actual.tryOnNext(typedIndex);
 		}
 
 		@Override
@@ -209,7 +208,7 @@ public class FluxIndexed<T, I> extends FluxOperator<T, Tuple2<I, T>> {
 						"indexMapper returned a null value at raw index " + i +
 								" for value " + t);
 				this.index = i + 1L;
-				actual.onNext(Tuples.of(typedIndex, t));
+				actual.onNext(typedIndex);
 			}
 			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
@@ -239,7 +238,7 @@ public class FluxIndexed<T, I> extends FluxOperator<T, Tuple2<I, T>> {
 		}
 
 		@Override
-		public CoreSubscriber<? super Tuple2<I, T>> actual() {
+		public CoreSubscriber<? super I> actual() {
 			return this.actual;
 		}
 
