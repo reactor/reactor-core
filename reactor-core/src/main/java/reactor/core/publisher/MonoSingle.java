@@ -60,6 +60,7 @@ final class MonoSingle<T> extends MonoFromFluxOperator<T, T>
 
 	static final class SingleSubscriber<T> extends Operators.MonoSubscriber<T, T>  {
 
+		@Nullable
 		final T       defaultValue;
 		final boolean completeOnEmpty;
 
@@ -79,7 +80,7 @@ final class MonoSingle<T> extends MonoFromFluxOperator<T, T>
 		}
 
 		SingleSubscriber(CoreSubscriber<? super T> actual,
-				T defaultValue,
+				@Nullable T defaultValue,
 				boolean completeOnEmpty) {
 			super(actual);
 			this.defaultValue = defaultValue;
