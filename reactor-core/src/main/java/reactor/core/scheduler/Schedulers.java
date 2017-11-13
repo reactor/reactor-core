@@ -116,7 +116,7 @@ public abstract class Schedulers {
 	 * <p>
 	 * This scheduler is not restartable.
 	 *
-	 * @return a new {@link Scheduler} that hosts a fixed pool of single-threaded
+	 * @return default instance of a {@link Scheduler} that hosts a fixed pool of single-threaded
 	 * ExecutorService-based workers and is suited for parallel work
 	 */
 	public static Scheduler elastic() {
@@ -333,7 +333,7 @@ public abstract class Schedulers {
 	 * {@link Scheduler} that hosts a fixed pool of single-threaded ExecutorService-based
 	 * workers and is suited for parallel work.
 	 *
-	 * @return a reusable {@link Scheduler} that hosts a fixed pool of single-threaded
+	 * @return default instance of a {@link Scheduler} that hosts a fixed pool of single-threaded
 	 * ExecutorService-based workers
 	 */
 	public static Scheduler parallel() {
@@ -391,7 +391,7 @@ public abstract class Schedulers {
 	 * {@link Scheduler} that hosts a single-threaded ExecutorService-based worker and is
 	 * suited for parallel work. Will cache the returned schedulers for subsequent calls until dispose.
 	 *
-	 * @return a cached {@link Scheduler} that hosts a single-threaded
+	 * @return default instance of a {@link Scheduler} that hosts a single-threaded
 	 * ExecutorService-based worker
 	 */
 	public static Scheduler single() {
