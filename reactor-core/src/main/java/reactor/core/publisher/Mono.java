@@ -17,6 +17,7 @@
 package reactor.core.publisher;
 
 import java.time.Duration;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -2832,6 +2833,42 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final Mono<T> retryWhen(Function<Flux<Throwable>, ? extends Publisher<?>> whenFactory) {
 		return onAssembly(new MonoRetryWhen<>(this, whenFactory));
+	}
+
+	/**
+	 * Expect exactly one item from this {@link Mono} source or signal
+	 * {@link java.util.NoSuchElementException} for an empty source.
+	 * <p>
+	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/single.png" alt="">
+	 * <p>
+	 * Note Mono doesn't need {@link Flux#single(Object)}, since it is equivalent to
+	 * {@link #defaultIfEmpty(Object)} in a {@link Mono}.
+	 *
+	 * @return a {@link Mono} with the single item or an error signal
+	 */
+	public final Mono<T> single() {
+		if (this instanceof Callable) {
+			if (this instanceof Fuseable.ScalarCallable) {
+				@SuppressWarnings("unchecked")
+				Fuseable.ScalarCallable<T> scalarCallable = (Fuseable.ScalarCallable<T>) this;
+
+				T v;
+				try {
+					v = scalarCallable.call();
+				}
+				catch (Exception e) {
+					return Mono.error(e);
+				}
+				if (v == null) {
+					return Mono.error(new NoSuchElementException("Source was a (constant) empty"));
+				}
+				return Mono.just(v);
+			}
+			@SuppressWarnings("unchecked")
+			Callable<T> thiz = (Callable<T>)this;
+			return Mono.onAssembly(new MonoCallable<>(thiz));
+		}
+		return Mono.onAssembly(new MonoSingleMono<>(this));
 	}
 
 	/**
