@@ -4531,6 +4531,39 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Keep information about the order in which source values were received by
+	 * indexing them with a 0-based incrementing long, returning a {@link Flux}
+	 * of {@link Tuple2 Tuple2<(index, value)>}.
+	 *
+	 * @return an indexed {@link Flux} with each source value combined with its 0-based index.
+	 */
+	public final Flux<Tuple2<Long, T>> index() {
+		//noinspection unchecked
+		return index(TUPLE2_BIFUNCTION);
+	}
+
+	/**
+	 * Keep information about the order in which source values were received by
+	 * indexing them internally with a 0-based incrementing long then combining this
+	 * information with the source value into a {@code I} using the provided {@link BiFunction},
+	 * returning a {@link Flux Flux&lt;I&gt;}.
+	 * <p>
+	 * Typical usage would be to produce a {@link Tuple2} similar to {@link #index()}, but
+	 * 1-based instead of 0-based:
+	 * <p>
+	 * {@code index((i, v) -> Tuples.of(i+1, v))}
+	 *
+	 * @param indexMapper the {@link BiFunction} to use to combine elements and their index.
+	 * @return an indexed {@link Flux} with each source value combined with its computed index.
+	 */
+	public final <I> Flux<I> index(BiFunction<? super Long, ? super T, ? extends I> indexMapper) {
+		if (this instanceof Fuseable) {
+			return onAssembly(new FluxIndexFuseable<>(this, indexMapper));
+		}
+		return onAssembly(new FluxIndex<>(this, indexMapper));
+	}
+
+	/**
 	 * Ignores onNext signals (dropping them) and only propagate termination events.
 	 *
 	 * <p>
