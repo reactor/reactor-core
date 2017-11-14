@@ -838,6 +838,7 @@ public class WorkQueueProcessorTest {
 		            })
 		            .expectNextMatches(d -> d == 2 || d == 3)
 		            .expectNextMatches(d -> d == 2 || d == 3)
+		            .thenAwait(Duration.ofMillis(10))
 		            .thenCancel()
 		            .verify();
 
