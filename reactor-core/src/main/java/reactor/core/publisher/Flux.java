@@ -4537,8 +4537,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return an indexed {@link Flux} with each source value combined with its 0-based index.
 	 */
-	public final Flux<Tuple2<Long, T>> indexed() {
-		return indexed(Tuples::of);
+	public final Flux<Tuple2<Long, T>> index() {
+		//noinspection unchecked
+		return index(TUPLE2_BIFUNCTION);
 	}
 
 	/**
@@ -4547,19 +4548,19 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * information with the source value into a {@code I} using the provided {@link BiFunction},
 	 * returning a {@link Flux Flux&lt;I&gt;}.
 	 * <p>
-	 * Typical usage would be to produce a {@link Tuple2} similar to {@link #indexed()}, but
+	 * Typical usage would be to produce a {@link Tuple2} similar to {@link #index()}, but
 	 * 1-based instead of 0-based:
 	 * <p>
-	 * {@code indexed((i, v) -> Tuples.of(i+1, v))}
+	 * {@code index((i, v) -> Tuples.of(i+1, v))}
 	 *
 	 * @param indexMapper the {@link BiFunction} to use to combine elements and their index.
 	 * @return an indexed {@link Flux} with each source value combined with its computed index.
 	 */
-	public final <I> Flux<I> indexed(BiFunction<? super Long, ? super T, ? extends I> indexMapper) {
+	public final <I> Flux<I> index(BiFunction<? super Long, ? super T, ? extends I> indexMapper) {
 		if (this instanceof Fuseable) {
-			return onAssembly(new FluxIndexedFuseable<>(this, indexMapper));
+			return onAssembly(new FluxIndexFuseable<>(this, indexMapper));
 		}
-		return onAssembly(new FluxIndexed<>(this, indexMapper));
+		return onAssembly(new FluxIndex<>(this, indexMapper));
 	}
 
 	/**

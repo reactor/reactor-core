@@ -34,11 +34,11 @@ import reactor.util.function.Tuple2;
  *
  * @author Simon Baslé
  */
-public class FluxIndexed<T, I> extends FluxOperator<T, I> {
+public class FluxIndex<T, I> extends FluxOperator<T, I> {
 
 	private final BiFunction<? super Long, ? super T, ? extends I> indexMapper;
 
-	FluxIndexed(Flux<T> source,
+	FluxIndex(Flux<T> source,
 			BiFunction<? super Long, ? super T, ? extends I> indexMapper) {
 		super(source);
 		this.indexMapper = Objects.requireNonNull(indexMapper, "indexMapper must be non null");
@@ -49,14 +49,14 @@ public class FluxIndexed<T, I> extends FluxOperator<T, I> {
 		if (actual instanceof ConditionalSubscriber) {
 			@SuppressWarnings("unchecked") ConditionalSubscriber<? super I> cs =
 					(ConditionalSubscriber<? super I>) actual;
-			source.subscribe(new IndexedConditionalSubscriber<>(cs, indexMapper));
+			source.subscribe(new IndexConditionalSubscriber<>(cs, indexMapper));
 		}
 		else {
-			source.subscribe(new IndexedSubscriber<>(actual, indexMapper));
+			source.subscribe(new IndexSubscriber<>(actual, indexMapper));
 		}
 	}
 
-	static final class IndexedSubscriber<T, I> implements InnerOperator<T, I> {
+	static final class IndexSubscriber<T, I> implements InnerOperator<T, I> {
 
 		final CoreSubscriber<? super I>                        actual;
 		final BiFunction<? super Long, ? super T, ? extends I> indexMapper;
@@ -65,7 +65,7 @@ public class FluxIndexed<T, I> extends FluxOperator<T, I> {
 		Subscription s;
 		long         index = 0;
 
-		IndexedSubscriber(CoreSubscriber<? super I> actual,
+		IndexSubscriber(CoreSubscriber<? super I> actual,
 				BiFunction<? super Long, ? super T, ? extends I> indexMapper) {
 			this.actual = actual;
 			this.indexMapper = indexMapper;
@@ -147,8 +147,8 @@ public class FluxIndexed<T, I> extends FluxOperator<T, I> {
 		}
 	}
 
-	static final class IndexedConditionalSubscriber<T, I> implements InnerOperator<T, I>,
-	                                                                 ConditionalSubscriber<T> {
+	static final class IndexConditionalSubscriber<T, I> implements InnerOperator<T, I>,
+	                                                               ConditionalSubscriber<T> {
 
 		final ConditionalSubscriber<? super I>      actual;
 		final BiFunction<? super Long, ? super T, ? extends I> indexMapper;
@@ -157,7 +157,7 @@ public class FluxIndexed<T, I> extends FluxOperator<T, I> {
 		boolean done;
 		long index;
 
-		IndexedConditionalSubscriber(
+		IndexConditionalSubscriber(
 				ConditionalSubscriber<? super I> cs,
 				BiFunction<? super Long, ? super T, ? extends I> indexMapper) {
 			this.actual = cs;
@@ -261,4 +261,5 @@ public class FluxIndexed<T, I> extends FluxOperator<T, I> {
 			return InnerOperator.super.scanUnsafe(key);
 		}
 	}
+
 }

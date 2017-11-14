@@ -31,7 +31,7 @@ import reactor.util.function.Tuples;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
-public class FluxIndexedTest extends FluxOperatorTest<Integer, Tuple2<Long, Integer>> {
+public class FluxIndexTest extends FluxOperatorTest<Integer, Tuple2<Long, Integer>> {
 
 	@Override
 	protected Scenario<Integer, Tuple2<Long, Integer>> defaultScenarioOptions(
@@ -45,19 +45,19 @@ public class FluxIndexedTest extends FluxOperatorTest<Integer, Tuple2<Long, Inte
 	@Override
 	protected List<Scenario<Integer, Tuple2<Long, Integer>>> scenarios_operatorError() {
 		return Arrays.asList(
-				scenario(f -> f.indexed((i, v) -> {
+				scenario(f -> f.index((i, v) -> {
 					throw exception();
 				})),
 
-				scenario(f -> f.indexed((i, v) -> null))
+				scenario(f -> f.index((i, v) -> null))
 		);
 	}
 
 	@Override
 	protected List<Scenario<Integer, Tuple2<Long, Integer>>> scenarios_operatorSuccess() {
 		return Arrays.asList(
-				scenario(Flux::indexed),
-				scenario(f -> f.indexed(Tuples::of))
+				scenario(Flux::index),
+				scenario(f -> f.index(Tuples::of))
 		);
 	}
 
@@ -67,7 +67,7 @@ public class FluxIndexedTest extends FluxOperatorTest<Integer, Tuple2<Long, Inte
 		StepVerifier.create(
 				Flux.range(0, 1000)
 				    .hide()
-					.indexed()
+					.index()
 		)
 		            .expectNoFusionSupport()
 		            .expectNext(Tuples.of(0L, 0))
@@ -87,7 +87,7 @@ public class FluxIndexedTest extends FluxOperatorTest<Integer, Tuple2<Long, Inte
 		StepVerifier.create(
 				Flux.range(0, 1000)
 				    .hide()
-					.indexed()
+					.index()
 		, 0)
 		            .expectNoFusionSupport()
 		            .thenRequest(1)
@@ -111,7 +111,7 @@ public class FluxIndexedTest extends FluxOperatorTest<Integer, Tuple2<Long, Inte
 		StepVerifier.create(
 				Flux.range(0, 1000)
 				    .hide()
-				    .indexed()
+				    .index()
 				    .filter(it -> true)
 		)
 		            .expectNoFusionSupport()
@@ -131,7 +131,7 @@ public class FluxIndexedTest extends FluxOperatorTest<Integer, Tuple2<Long, Inte
 		StepVerifier.create(
 				Flux.range(0, 1000)
 				    .hide()
-					.indexed((i, v) -> Tuples.of("#" + (i + 1), v))
+					.index((i, v) -> Tuples.of("#" + (i + 1), v))
 		)
 		            .expectNoFusionSupport()
 		            .expectNext(Tuples.of("#1", 0))
@@ -151,7 +151,7 @@ public class FluxIndexedTest extends FluxOperatorTest<Integer, Tuple2<Long, Inte
 		StepVerifier.create(
 				Flux.range(0, 1000)
 				    .hide()
-				    .indexed((i, v) -> Tuples.of("#" + (i + 1), v))
+				    .index((i, v) -> Tuples.of("#" + (i + 1), v))
 		, 0)
 		            .expectNoFusionSupport()
 		            .thenRequest(1)
@@ -175,7 +175,7 @@ public class FluxIndexedTest extends FluxOperatorTest<Integer, Tuple2<Long, Inte
 		StepVerifier.create(
 				Flux.range(0, 1000)
 				    .hide()
-					.indexed((i, v) -> Tuples.of("#" + (i + 1), v))
+					.index((i, v) -> Tuples.of("#" + (i + 1), v))
 					.filter(it -> true)
 		)
 		            .expectNoFusionSupport()
@@ -193,7 +193,7 @@ public class FluxIndexedTest extends FluxOperatorTest<Integer, Tuple2<Long, Inte
 	public void sourceNull() {
 		//noinspection ConstantConditions
 		assertThatNullPointerException()
-				.isThrownBy(() -> new FluxIndexed<>(null, (i, v) -> i))
+				.isThrownBy(() -> new FluxIndex<>(null, (i, v) -> i))
 				.withMessage(null);
 	}
 
@@ -202,14 +202,14 @@ public class FluxIndexedTest extends FluxOperatorTest<Integer, Tuple2<Long, Inte
 		Flux<String> source = Flux.just("foo", "bar");
 		//noinspection ConstantConditions
 		assertThatNullPointerException()
-				.isThrownBy(() -> new FluxIndexed<>(source, null))
+				.isThrownBy(() -> new FluxIndex<>(source, null))
 				.withMessage("indexMapper must be non null");
 	}
 
 	@Test
 	public void indexMapperReturnsNull() {
 		Flux<String> source = Flux.just("foo", "bar");
-		Flux<Tuple2<Integer, String>> test = new FluxIndexed<>(source,
+		Flux<Tuple2<Integer, String>> test = new FluxIndex<>(source,
 				(i, v) -> {
 					if (i == 0L) return Tuples.of(0, v);
 					return null;
@@ -223,7 +223,7 @@ public class FluxIndexedTest extends FluxOperatorTest<Integer, Tuple2<Long, Inte
 	@Test
 	public void indexMapperThrows() {
 		Flux<String> source = Flux.just("foo", "bar");
-		Flux<Tuple2<Integer, String>> test = new FluxIndexed<>(source,
+		Flux<Tuple2<Integer, String>> test = new FluxIndex<>(source,
 				(i, v) -> {
 					if (i == 0L) return Tuples.of(0, v);
 					throw new IllegalStateException("boom-" + i);

@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
+import org.mockito.Mockito;
+import org.mockito.stubbing.Answer;
 import reactor.core.Fuseable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
@@ -45,19 +47,19 @@ public class FluxIndexedFuseableTest extends FluxOperatorTest<Integer, Tuple2<Lo
 	@Override
 	protected List<Scenario<Integer, Tuple2<Long, Integer>>> scenarios_operatorError() {
 		return Arrays.asList(
-				scenario(f -> f.indexed((i, v) -> {
+				scenario(f -> f.index((i, v) -> {
 					throw exception();
 				})),
 
-				scenario(f -> f.indexed((i, v) -> null))
+				scenario(f -> f.index((i, v) -> null))
 		);
 	}
 
 	@Override
 	protected List<Scenario<Integer, Tuple2<Long, Integer>>> scenarios_operatorSuccess() {
 		return Arrays.asList(
-				scenario(Flux::indexed),
-				scenario(f -> f.indexed(Tuples::of))
+				scenario(f -> f.index(Tuples::of)),
+				scenario(Flux::index).fusionModeThreadBarrier(Fuseable.ASYNC) //default index compatible with THREAD_BARRIER
 		);
 	}
 
@@ -66,7 +68,7 @@ public class FluxIndexedFuseableTest extends FluxOperatorTest<Integer, Tuple2<Lo
 		AtomicLong counter = new AtomicLong(2);
 		StepVerifier.create(
 				Flux.range(0, 1000)
-				    .indexed()
+				    .index()
 		)
 		            .expectFusion()
 		            .expectNext(Tuples.of(0L, 0))
@@ -85,7 +87,7 @@ public class FluxIndexedFuseableTest extends FluxOperatorTest<Integer, Tuple2<Lo
 
 		StepVerifier.create(
 				Flux.range(0, 1000)
-				    .indexed()
+				    .index()
 				, 0)
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofMillis(100))
@@ -109,7 +111,7 @@ public class FluxIndexedFuseableTest extends FluxOperatorTest<Integer, Tuple2<Lo
 		AtomicLong counter = new AtomicLong(2);
 		StepVerifier.create(
 				Flux.range(0, 1000)
-				    .indexed()
+				    .index()
 				    .filter(it -> true)
 		)
 		            .expectFusion()
@@ -128,7 +130,7 @@ public class FluxIndexedFuseableTest extends FluxOperatorTest<Integer, Tuple2<Lo
 		AtomicLong counter = new AtomicLong(2);
 		StepVerifier.create(
 				Flux.range(0, 1000)
-				    .indexed((i, v) -> Tuples.of("#" + (i + 1), v))
+				    .index((i, v) -> Tuples.of("#" + (i + 1), v))
 		)
 		            .expectFusion()
 		            .expectNext(Tuples.of("#1", 0))
@@ -147,7 +149,7 @@ public class FluxIndexedFuseableTest extends FluxOperatorTest<Integer, Tuple2<Lo
 
 		StepVerifier.create(
 				Flux.range(0, 1000)
-				    .indexed((i, v) -> Tuples.of("#" + (i + 1), v))
+				    .index((i, v) -> Tuples.of("#" + (i + 1), v))
 				, 0)
 		            .expectSubscription()
 		            .expectNoEvent(Duration.ofMillis(100))
@@ -171,7 +173,7 @@ public class FluxIndexedFuseableTest extends FluxOperatorTest<Integer, Tuple2<Lo
 		AtomicLong counter = new AtomicLong(2);
 		StepVerifier.create(
 				Flux.range(0, 1000)
-				    .indexed((i, v) -> Tuples.of("#" + (i + 1), v))
+				    .index((i, v) -> Tuples.of("#" + (i + 1), v))
 				    .filter(it -> true)
 		)
 		            .expectFusion()
@@ -189,7 +191,7 @@ public class FluxIndexedFuseableTest extends FluxOperatorTest<Integer, Tuple2<Lo
 	public void sourceNull() {
 		//noinspection ConstantConditions
 		assertThatNullPointerException()
-				.isThrownBy(() -> new FluxIndexedFuseable<>(null, (i, v) -> i))
+				.isThrownBy(() -> new FluxIndexFuseable<>(null, (i, v) -> i))
 				.withMessage(null);
 	}
 
@@ -198,14 +200,14 @@ public class FluxIndexedFuseableTest extends FluxOperatorTest<Integer, Tuple2<Lo
 		Flux<String> source = Flux.just("foo", "bar");
 		//noinspection ConstantConditions
 		assertThatNullPointerException()
-				.isThrownBy(() -> new FluxIndexedFuseable<>(source, null))
+				.isThrownBy(() -> new FluxIndexFuseable<>(source, null))
 				.withMessage("indexMapper must be non null");
 	}
 
 	@Test
 	public void indexMapperReturnsNull() {
 		Flux<String> source = Flux.just("foo", "bar");
-		Flux<Tuple2<Integer, String>> test = new FluxIndexedFuseable<>(source,
+		Flux<Tuple2<Integer, String>> test = new FluxIndexFuseable<>(source,
 				(i, v) -> {
 					if (i == 0L) return Tuples.of(0, v);
 					return null;
@@ -219,7 +221,7 @@ public class FluxIndexedFuseableTest extends FluxOperatorTest<Integer, Tuple2<Lo
 	@Test
 	public void indexMapperThrows() {
 		Flux<String> source = Flux.just("foo", "bar");
-		Flux<Tuple2<Integer, String>> test = new FluxIndexedFuseable<>(source,
+		Flux<Tuple2<Integer, String>> test = new FluxIndexFuseable<>(source,
 				(i, v) -> {
 					if (i == 0L) return Tuples.of(0, v);
 					throw new IllegalStateException("boom-" + i);
@@ -230,6 +232,43 @@ public class FluxIndexedFuseableTest extends FluxOperatorTest<Integer, Tuple2<Lo
 		            .verifyErrorSatisfies(e -> assertThat(e)
 				            .isInstanceOf(IllegalStateException.class)
 				            .hasMessage("boom-1"));
+	}
+
+	@Test
+	public void fusionThreadBarrierDefaultMapperDoesFuse() {
+		StepVerifier.create(Flux.range(1, 10)
+		                        .index())
+		            .expectFusion(Fuseable.SYNC | Fuseable.THREAD_BARRIER,
+				            Fuseable.SYNC)
+		            .expectNextCount(10)
+		            .verifyComplete();
+	}
+
+	@Test
+	public void fusionThreadBarrierConditionalMapperDoesFuse() {
+		@SuppressWarnings("unchecked") Fuseable.ConditionalSubscriber<Tuple2<String, String>> cs =
+				Mockito.mock(Fuseable.ConditionalSubscriber.class);
+		@SuppressWarnings("unchecked") Fuseable.QueueSubscription<String> qs =
+				Mockito.mock(Fuseable.QueueSubscription.class);
+		Mockito.when(qs.requestFusion(Mockito.anyInt()))
+		       .thenAnswer((Answer<Integer>) mock -> {
+			       int requestedMode = mock.getArgument(0);
+			       if ((requestedMode & Fuseable.THREAD_BARRIER) != 0) {
+				       return requestedMode - Fuseable.THREAD_BARRIER;
+			       }
+			       return requestedMode;
+		       });
+
+		@SuppressWarnings("unchecked") FluxIndexFuseable.IndexFuseableConditionalSubscriber test =
+				new FluxIndexFuseable.IndexFuseableConditionalSubscriber<>(cs, Flux.TUPLE2_BIFUNCTION);
+
+		test.onSubscribe(qs);
+
+		int mode = test.requestFusion(Fuseable.SYNC | Fuseable.THREAD_BARRIER);
+		assertThat(mode).as("SYNC").isEqualTo(Fuseable.SYNC);
+
+		mode = test.requestFusion(Fuseable.ASYNC | Fuseable.THREAD_BARRIER);
+		assertThat(mode).as("ASYNC").isEqualTo(Fuseable.ASYNC);
 	}
 
 }

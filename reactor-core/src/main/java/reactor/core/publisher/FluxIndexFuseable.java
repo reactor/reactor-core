@@ -42,7 +42,7 @@ import reactor.util.annotation.Nullable;
 import reactor.util.function.Tuple2;
 
 /**
- * A {@link reactor.core.Fuseable} version of {@link FluxIndexed}, an
+ * A {@link reactor.core.Fuseable} version of {@link FluxIndex}, an
  * operator that tags the values it passes through with their index in the original
  * sequence, either as their natural long index (0-based) or as a customized index
  * by way of a user-provided {@link BiFunction}. The resulting sequence is one of
@@ -51,12 +51,12 @@ import reactor.util.function.Tuple2;
  *
  * @author Simon Baslé
  */
-public class FluxIndexedFuseable<T, I> extends FluxOperator<T, I>
+public class FluxIndexFuseable<T, I> extends FluxOperator<T, I>
 		implements Fuseable {
 
 	private final BiFunction<? super Long, ? super T, ? extends I> indexMapper;
 
-	FluxIndexedFuseable(Flux<T> source,
+	FluxIndexFuseable(Flux<T> source,
 			BiFunction<? super Long, ? super T, ? extends I> indexMapper) {
 		super(source);
 		this.indexMapper = Objects.requireNonNull(indexMapper, "indexMapper must be non null");
@@ -67,15 +67,15 @@ public class FluxIndexedFuseable<T, I> extends FluxOperator<T, I>
 		if (actual instanceof ConditionalSubscriber) {
 			@SuppressWarnings("unchecked") ConditionalSubscriber<? super I> cs =
 					(ConditionalSubscriber<? super I>) actual;
-			source.subscribe(new IndexedFuseableConditionalSubscriber<>(cs, indexMapper));
+			source.subscribe(new IndexFuseableConditionalSubscriber<>(cs, indexMapper));
 		}
 		else {
-			source.subscribe(new IndexedFuseableSubscriber<>(actual, indexMapper));
+			source.subscribe(new IndexFuseableSubscriber<>(actual, indexMapper));
 		}
 	}
 
-	static final class IndexedFuseableSubscriber<I, T> implements InnerOperator<T, I>,
-	                                                              QueueSubscription<I> {
+	static final class IndexFuseableSubscriber<I, T> implements InnerOperator<T, I>,
+	                                                            QueueSubscription<I> {
 
 		final CoreSubscriber<? super I>             actual;
 		final BiFunction<? super Long, ? super T, ? extends I> indexMapper;
@@ -85,7 +85,7 @@ public class FluxIndexedFuseable<T, I> extends FluxOperator<T, I>
 		QueueSubscription<T> s;
 		int                  sourceMode;
 
-		IndexedFuseableSubscriber(CoreSubscriber<? super I> actual,
+		IndexFuseableSubscriber(CoreSubscriber<? super I> actual,
 				BiFunction<? super Long, ? super T, ? extends I> indexMapper) {
 			this.actual = actual;
 			this.indexMapper = indexMapper;
@@ -191,7 +191,7 @@ public class FluxIndexedFuseable<T, I> extends FluxOperator<T, I>
 		@Override
 		public int requestFusion(int requestedMode) {
 			int m;
-			if ((requestedMode & Fuseable.THREAD_BARRIER) != 0) {
+			if (indexMapper != Flux.TUPLE2_BIFUNCTION && (requestedMode & Fuseable.THREAD_BARRIER) != 0) {
 				return Fuseable.NONE;
 			}
 			else {
@@ -216,7 +216,7 @@ public class FluxIndexedFuseable<T, I> extends FluxOperator<T, I>
 		}
 	}
 
-	static final class IndexedFuseableConditionalSubscriber<I, T>
+	static final class IndexFuseableConditionalSubscriber<I, T>
 			implements InnerOperator<T, I>,
 			           ConditionalSubscriber<T>,
 			           QueueSubscription<I> {
@@ -229,7 +229,7 @@ public class FluxIndexedFuseable<T, I> extends FluxOperator<T, I>
 		QueueSubscription<T> s;
 		int                  sourceMode;
 
-		IndexedFuseableConditionalSubscriber(
+		IndexFuseableConditionalSubscriber(
 				ConditionalSubscriber<? super I> cs,
 				BiFunction<? super Long, ? super T, ? extends I> indexMapper) {
 			this.actual = cs;
@@ -358,7 +358,7 @@ public class FluxIndexedFuseable<T, I> extends FluxOperator<T, I>
 		@Override
 		public int requestFusion(int requestedMode) {
 			int m;
-			if ((requestedMode & Fuseable.THREAD_BARRIER) != 0) {
+			if (indexMapper != Flux.TUPLE2_BIFUNCTION && (requestedMode & Fuseable.THREAD_BARRIER) != 0) {
 				return Fuseable.NONE;
 			}
 			else {
