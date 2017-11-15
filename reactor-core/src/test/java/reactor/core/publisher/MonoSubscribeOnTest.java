@@ -165,11 +165,11 @@ public class MonoSubscribeOnTest {
 			}
 			return 0;
 		})
-		    .timeout(Duration.ofMillis(200L), Mono.fromCallable(() -> 1))
+		    .timeout(Duration.ofMillis(100L), Mono.fromCallable(() -> 1))
 		    .subscribeOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool()))
 		    .subscribe(ts);
 
-		ts.await(Duration.ofSeconds(2))
+		ts.await(Duration.ofMillis(400))
 		  .assertValues(1)
 		  .assertNoError()
 		  .assertComplete();
