@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
@@ -151,6 +152,31 @@ public class MonoSubscribeOnTest {
 		  .assertComplete();
 	}
 
+
+
+	@Test
+	public void classicWithTimeout() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
+		Mono.fromCallable(() -> {
+			try {
+				TimeUnit.SECONDS.sleep(10L);
+			}
+			catch (InterruptedException ignore) {
+			}
+			return 0;
+		})
+		    .timeout(Duration.ofSeconds(1L), Mono.fromCallable(() -> 1))
+		    .subscribeOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool()))
+		    .subscribe(ts);
+
+		ts.request(1);
+
+		ts.await(Duration.ofSeconds(2))
+		  .assertValues(1)
+		  .assertNoError()
+		  .assertComplete();
+	}
+
 	@Test
 	public void callableEvaluatedTheRightTime() {
 
@@ -173,7 +199,7 @@ public class MonoSubscribeOnTest {
 		CoreSubscriber<String>
 				actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoSubscribeOn.SubscribeOnSubscriber<String> test = new MonoSubscribeOn.SubscribeOnSubscriber<>(
-				source, actual, Schedulers.single().createWorker());
+				source, actual, Schedulers.single().createWorker(), true);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 

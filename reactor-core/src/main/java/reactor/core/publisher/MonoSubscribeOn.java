@@ -37,10 +37,12 @@ import reactor.util.annotation.Nullable;
 final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 
 	final Scheduler scheduler;
+	final boolean requestOnSeparateThread;
 
-	MonoSubscribeOn(Mono<? extends T> source, Scheduler scheduler) {
+	MonoSubscribeOn(Mono<? extends T> source, Scheduler scheduler, boolean requestOnSeparateThread) {
 		super(source);
 		this.scheduler = scheduler;
+		this.requestOnSeparateThread = requestOnSeparateThread;
 	}
 
 	@Override
@@ -48,7 +50,7 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 		Scheduler.Worker worker = scheduler.createWorker();
 
 		SubscribeOnSubscriber<T> parent = new SubscribeOnSubscriber<>(source,
-				actual, worker);
+				actual, worker, requestOnSeparateThread);
 		actual.onSubscribe(parent);
 
 		try {
@@ -70,6 +72,7 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 		final Publisher<? extends T> parent;
 
 		final Scheduler.Worker worker;
+		final boolean requestOnSeparateThread;
 
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
@@ -84,12 +87,21 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 				AtomicLongFieldUpdater.newUpdater(SubscribeOnSubscriber.class,
 						"requested");
 
+		volatile Thread thread;
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<SubscribeOnSubscriber, Thread> THREAD =
+				AtomicReferenceFieldUpdater.newUpdater(SubscribeOnSubscriber.class,
+						Thread.class,
+						"thread");
+
 		SubscribeOnSubscriber(Publisher<? extends T> parent,
 				CoreSubscriber<? super T> actual,
-				Worker worker) {
+				Worker worker,
+				boolean requestOnSeparateThread) {
 			this.actual = actual;
 			this.parent = parent;
 			this.worker = worker;
+			this.requestOnSeparateThread = requestOnSeparateThread;
 		}
 
 		@Override
@@ -104,6 +116,7 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 
 		@Override
 		public void run() {
+			THREAD.lazySet(this, Thread.currentThread());
 			parent.subscribe(this);
 		}
 
@@ -134,6 +147,7 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 			}
 			finally {
 				worker.dispose();
+				THREAD.lazySet(this,null);
 			}
 		}
 
@@ -141,6 +155,7 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 		public void onComplete() {
 			actual.onComplete();
 			worker.dispose();
+			THREAD.lazySet(this,null);
 		}
 
 		@Override
@@ -163,14 +178,23 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 			}
 		}
 
-		void trySchedule(long n, Subscription s){
-			try {
-				worker.schedule(() -> s.request(n));
+		void trySchedule(long n, Subscription s) {
+			if (!requestOnSeparateThread || Thread.currentThread() == THREAD.get(this)) {
+				s.request(n);
 			}
-			catch (RejectedExecutionException ree) {
-				if (!worker.isDisposed()) {
-					actual.onError(Operators.onRejectedExecution(ree, this, null, null,
-							actual.currentContext()));
+			else {
+				try {
+					worker.schedule(() -> s.request(n));
+
+				}
+				catch (RejectedExecutionException ree) {
+					if (!worker.isDisposed()) {
+						actual.onError(Operators.onRejectedExecution(ree,
+								this,
+								null,
+								null,
+								actual.currentContext()));
+					}
 				}
 			}
 		}
