@@ -94,7 +94,7 @@ public class MonoSubscribeOnTest {
 		    .subscribeOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool()))
 		    .subscribe(ts);
 
-		ts.await(Duration.ofSeconds(5));
+		ts.await(Duration.ofSeconds(2));
 
 		ts.assertValues(1)
 		  .assertNoError()
