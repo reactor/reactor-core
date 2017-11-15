@@ -790,15 +790,18 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 		}
 
 		void innerError(FlatMapInner<R> inner, Throwable e) {
-			if (Exceptions.addThrowable(ERROR, this, e)) {
-				inner.done = true;
-				if (!delayError) {
-					done = true;
+			e = Operators.onNextInnerError(e, currentContext(), s);
+			if(e !=null) {
+				if (Exceptions.addThrowable(ERROR, this, e)) {
+					inner.done = true;
+					if (!delayError) {
+						done = true;
+					}
+					drain();
 				}
-				drain();
-			}
-			else {
-				Operators.onErrorDropped(e, actual.currentContext());
+				else {
+					Operators.onErrorDropped(e, actual.currentContext());
+				}
 			}
 		}
 
