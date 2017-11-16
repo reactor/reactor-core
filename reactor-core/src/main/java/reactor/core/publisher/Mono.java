@@ -3085,29 +3085,6 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * @see #publishOn(Scheduler)
 	 */
 	public final Mono<T> subscribeOn(Scheduler scheduler) {
-		return subscribeOn(scheduler, true);
-	}
-
-	/**
-	 * Run subscribe, onSubscribe and request on a specified {@link Scheduler}'s {@link Worker}.
-	 * As such, placing this operator anywhere in the chain will also impact the execution
-	 * context of onNext/onError/onComplete signals from the beginning of the chain up to
-	 * the next occurrence of a {@link #publishOn(Scheduler) publishOn}.
-	 * <p>
-	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/subscribeon1.png" alt="">
-	 *
-	 * <blockquote><pre>
-	 * {@code mono.subscribeOn(Schedulers.parallel()).subscribe()) }
-	 * </pre></blockquote>
-	 *
-	 * @param scheduler a {@link Scheduler} providing the {@link Worker} where to subscribe
-	 * @param requestOnSeparateThread flag that hint to schedule request from a
-	 *   downstream on a separate thread
-	 *
-	 * @return a {@link Flux} requesting asynchronously
-	 * @see #publishOn(Scheduler)
-	 */
-	public final Mono<T> subscribeOn(Scheduler scheduler, boolean requestOnSeparateThread) {
 		if(this instanceof Callable) {
 			if (this instanceof Fuseable.ScalarCallable) {
 				try {
@@ -3123,7 +3100,7 @@ public abstract class Mono<T> implements Publisher<T> {
 			return onAssembly(new MonoSubscribeOnCallable<>(c,
 					scheduler));
 		}
-		return onAssembly(new MonoSubscribeOn<>(this, scheduler, requestOnSeparateThread));
+		return onAssembly(new MonoSubscribeOn<>(this, scheduler));
 	}
 
 	/**

@@ -37,12 +37,10 @@ import reactor.util.annotation.Nullable;
 final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 
 	final Scheduler scheduler;
-	final boolean requestOnSeparateThread;
 
-	MonoSubscribeOn(Mono<? extends T> source, Scheduler scheduler, boolean requestOnSeparateThread) {
+	MonoSubscribeOn(Mono<? extends T> source, Scheduler scheduler) {
 		super(source);
 		this.scheduler = scheduler;
-		this.requestOnSeparateThread = requestOnSeparateThread;
 	}
 
 	@Override
@@ -50,7 +48,7 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 		Scheduler.Worker worker = scheduler.createWorker();
 
 		SubscribeOnSubscriber<T> parent = new SubscribeOnSubscriber<>(source,
-				actual, worker, requestOnSeparateThread);
+				actual, worker);
 		actual.onSubscribe(parent);
 
 		try {
@@ -72,7 +70,6 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 		final Publisher<? extends T> parent;
 
 		final Scheduler.Worker worker;
-		final boolean requestOnSeparateThread;
 
 		volatile Subscription s;
 		@SuppressWarnings("rawtypes")
@@ -96,12 +93,10 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 
 		SubscribeOnSubscriber(Publisher<? extends T> parent,
 				CoreSubscriber<? super T> actual,
-				Worker worker,
-				boolean requestOnSeparateThread) {
+				Worker worker) {
 			this.actual = actual;
 			this.parent = parent;
 			this.worker = worker;
-			this.requestOnSeparateThread = requestOnSeparateThread;
 		}
 
 		@Override
@@ -179,7 +174,7 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 		}
 
 		void trySchedule(long n, Subscription s) {
-			if (!requestOnSeparateThread || Thread.currentThread() == THREAD.get(this)) {
+			if (Thread.currentThread() == THREAD.get(this)) {
 				s.request(n);
 			}
 			else {

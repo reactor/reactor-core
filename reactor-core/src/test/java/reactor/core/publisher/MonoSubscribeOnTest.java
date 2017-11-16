@@ -77,7 +77,7 @@ public class MonoSubscribeOnTest {
 
 		ts.request(500);
 
-		Thread.sleep(1000);
+		Thread.sleep(2000);
 
 		ts.assertValueCount(1)
 		  .assertNoError()
@@ -94,7 +94,7 @@ public class MonoSubscribeOnTest {
 		    .subscribeOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool()))
 		    .subscribe(ts);
 
-		ts.await(Duration.ofSeconds(2));
+		ts.await(Duration.ofSeconds(5));
 
 		ts.assertValues(1)
 		  .assertNoError()
@@ -197,7 +197,7 @@ public class MonoSubscribeOnTest {
 		CoreSubscriber<String>
 				actual = new LambdaMonoSubscriber<>(null, e -> {}, null, null);
 		MonoSubscribeOn.SubscribeOnSubscriber<String> test = new MonoSubscribeOn.SubscribeOnSubscriber<>(
-				source, actual, Schedulers.single().createWorker(), true);
+				source, actual, Schedulers.single().createWorker());
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
