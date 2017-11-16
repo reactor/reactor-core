@@ -152,22 +152,23 @@ public class MonoSubscribeOnTest {
 		  .assertComplete();
 	}
 
-
-
 	@Test
 	public void classicWithTimeout() {
-		AssertSubscriber<Integer> ts = AssertSubscriber.create();
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
 		Mono.fromCallable(() -> {
 			try {
-				TimeUnit.SECONDS.sleep(10000L);
+				TimeUnit.SECONDS.sleep(2L);
 			}
 			catch (InterruptedException ignore) {
 			}
 			return 0;
 		})
-		    .timeout(Duration.ofMillis(100L), Mono.fromCallable(() -> 1))
-		    .subscribeOn(Schedulers.fromExecutorService(ForkJoinPool.commonPool()))
+		    .timeout(Duration.ofMillis(100L))
+		    .onErrorResume(t -> Mono.fromCallable(() -> 1))
+		    .subscribeOn(Schedulers.newElastic("timeout"))
 		    .subscribe(ts);
+
+		ts.request(1);
 
 		ts.await(Duration.ofMillis(400))
 		  .assertValues(1)
