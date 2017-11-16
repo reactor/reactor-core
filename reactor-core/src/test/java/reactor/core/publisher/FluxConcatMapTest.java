@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -897,6 +898,90 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 		test.onError(new IllegalStateException("boom2"));
 		assertThat(test.scan(Scannable.Attr.ERROR)).isSameAs(Exceptions.TERMINATED);
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+	}
+
+	@Test
+	public void errorModeContinueNullPublisher() {
+		Flux<Integer> test = Flux
+				.just(1, 2)
+				.hide()
+				.<Integer>concatMap(f -> null)
+				.onErrorContinue();
+
+		StepVerifier.create(test)
+				.expectNoFusionSupport()
+				.expectComplete()
+				.verifyThenAssertThat()
+				.hasDropped(1, 2)
+				.hasDroppedErrors(2);
+	}
+
+	@Test
+	public void errorModeContinueInternalError() {
+		Flux<Integer> test = Flux
+				.just(1, 2)
+				.hide()
+				.concatMap(f -> {
+					if(f == 1){
+						return Mono.error(new NullPointerException());
+					}
+					else {
+						return Mono.just(f);
+					}
+				})
+				.onErrorContinue();
+
+		StepVerifier.create(test)
+				.expectNoFusionSupport()
+				.expectNext(2)
+				.expectComplete()
+				.verifyThenAssertThat()
+				.hasDropped(1)
+				.hasDroppedErrors(1);
+	}
+
+	@Test
+	public void errorModeContinueInternalErrorHidden() {
+		Flux<Integer> test = Flux
+				.just(1, 2)
+				.hide()
+				.concatMap(f -> {
+					if(f == 1){
+						return Mono.<Integer>error(new NullPointerException()).hide();
+					}
+					else {
+						return Mono.just(f);
+					}
+				})
+				.onErrorContinue();
+
+		StepVerifier.create(test)
+				.expectNoFusionSupport()
+				.expectNext(2)
+				.expectComplete()
+				.verifyThenAssertThat()
+				.hasNotDroppedElements()
+				.hasDroppedErrors(1);
+	}
+
+	@Test
+	public void errorModeContinueWithCallable() {
+		Flux<Integer> test = Flux
+				.just(1, 2)
+				.hide()
+				.concatMap(f -> Mono.<Integer>fromRunnable(() -> {
+					if(f == 1) {
+						throw new ArithmeticException("boom");
+					}
+				}))
+				.onErrorContinue();
+
+		StepVerifier.create(test)
+				.expectNoFusionSupport()
+				.expectComplete()
+				.verifyThenAssertThat()
+				.hasDropped(1)
+				.hasDroppedErrors(1);
 	}
 
 }
