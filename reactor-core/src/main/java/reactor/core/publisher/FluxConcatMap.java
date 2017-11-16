@@ -287,18 +287,24 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 
 		@Override
 		public void innerError(Throwable e) {
-			if (Exceptions.addThrowable(ERROR, this, e)) {
-				s.cancel();
+			e = Operators.onNextInnerError(e, currentContext(), s);
+			if(e != null) {
+				if (Exceptions.addThrowable(ERROR, this, e)) {
+					s.cancel();
 
-				if (GUARD.getAndIncrement(this) == 0) {
-					e = Exceptions.terminate(ERROR, this);
-					if (e != TERMINATED) {
-						actual.onError(e);
+					if (GUARD.getAndIncrement(this) == 0) {
+						e = Exceptions.terminate(ERROR, this);
+						if (e != TERMINATED) {
+							actual.onError(e);
+						}
 					}
+				}
+				else {
+					Operators.onErrorDropped(e, actual.currentContext());
 				}
 			}
 			else {
-				Operators.onErrorDropped(e, actual.currentContext());
+				active = false;
 			}
 		}
 
@@ -358,9 +364,15 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 								"The mapper returned a null Publisher");
 							}
 							catch (Throwable e) {
-								actual.onError(Operators.onOperatorError(s, e, v,
-										actual.currentContext()));
-								return;
+								Throwable e_ = Operators.onNextError(v, e, actual.currentContext(), s);
+								if (e_ != null) {
+									actual.onError(Operators.onOperatorError(s, e, v,
+																			 actual.currentContext()));
+									return;
+								}
+								else {
+									continue;
+								}
 							}
 
 							if (sourceMode != Fuseable.SYNC) {
@@ -384,9 +396,15 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 									vr = callable.call();
 								}
 								catch (Throwable e) {
-									actual.onError(Operators.onOperatorError(s, e, v,
-											actual.currentContext()));
-									return;
+									Throwable e_ = Operators.onNextError(v, e, actual.currentContext(), s);
+									if (e_ != null) {
+										actual.onError(Operators.onOperatorError(s, e, v,
+																				 actual.currentContext()));
+										return;
+									}
+									else {
+										continue;
+									}
 								}
 
 								if (vr == null) {
@@ -612,16 +630,22 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 
 		@Override
 		public void innerError(Throwable e) {
-			if (Exceptions.addThrowable(ERROR, this, e)) {
-				if (!veryEnd) {
-					s.cancel();
-					done = true;
+			e = Operators.onNextInnerError(e, currentContext(), s);
+			if(e != null) {
+				if (Exceptions.addThrowable(ERROR, this, e)) {
+					if (!veryEnd) {
+						s.cancel();
+						done = true;
+					}
+					active = false;
+					drain();
 				}
-				active = false;
-				drain();
+				else {
+					Operators.onErrorDropped(e, actual.currentContext());
+				}
 			}
 			else {
-				Operators.onErrorDropped(e, actual.currentContext());
+				active = false;
 			}
 		}
 
@@ -695,9 +719,15 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 										"The mapper returned a null Publisher");
 							}
 							catch (Throwable e) {
-								actual.onError(Operators.onOperatorError(s, e, v,
-										actual.currentContext()));
-								return;
+								Throwable e_ = Operators.onNextError(v, e, actual.currentContext(), s);
+								if (e_ != null) {
+									actual.onError(Operators.onOperatorError(s, e, v,
+																			 actual.currentContext()));
+									return;
+								}
+								else {
+									continue;
+								}
 							}
 
 							if (sourceMode != Fuseable.SYNC) {
@@ -725,9 +755,15 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 										continue;
 									}
 									else {
-										actual.onError(Operators.onOperatorError(s, e, v,
-												actual.currentContext()));
-										return;
+										Throwable e_ = Operators.onNextError(v, e, actual.currentContext(), s);
+										if (e_ != null) {
+											actual.onError(Operators.onOperatorError(s, e, v,
+													actual.currentContext()));
+											return;
+										}
+										else {
+											continue;
+										}
 									}
 								}
 
