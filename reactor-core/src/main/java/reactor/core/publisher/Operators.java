@@ -450,6 +450,34 @@ public abstract class Operators {
 	}
 
 	/**
+	 * Find the {@link OnNextFailureStrategy} to apply to the calling operator (which could be a local
+	 * error mode defined in the {@link Context}) and apply it.
+	 *
+	 * @param error The error.
+	 * @param context The most significant {@link Context} in which to look for an {@link OnNextFailureStrategy}.
+	 * @param subscriptionForCancel The {@link Subscription} that should be cancelled if the
+	 * strategy is terminal. Null to ignore (for poll, use {@link #onNextPollError(Object, Throwable, Context)}
+	 * rather than passing null).
+	 * @param <T> The type of the value causing the error.
+	 * @return a {@link Throwable} to propagate through onError if the strategy is
+	 * terminal and cancelled the subscription, null if not.
+	 */
+	public static <T> Throwable onNextInnerError(Throwable error, Context context, Subscription subscriptionForCancel) {
+		OnNextFailureStrategy strategy = onNextErrorStrategy(context);
+		if (strategy.test(error, null)) {
+			//some strategies could still return an exception, eg. if the consumer throws
+			Throwable t = strategy.process(error, null, context);
+			if (t != null) {
+				subscriptionForCancel.cancel();
+			}
+			return t;
+		}
+		else {
+			return error;
+		}
+	}
+
+	/**
 	 * Find the {@link OnNextFailureStrategy} to apply to the calling async operator (which could be
 	 * a local error mode defined in the {@link Context}) and apply it.
 	 * <p>
