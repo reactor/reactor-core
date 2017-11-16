@@ -1440,7 +1440,7 @@ public class FluxFlatMapTest {
 	}
 
 	@Test
-	public void errorModeContinue() {
+	public void errorModeContinueNullPublisher() {
 		Flux<Integer> test = Flux
 				.just(1, 2)
 				.hide()
@@ -1455,22 +1455,74 @@ public class FluxFlatMapTest {
 		            .hasDroppedErrors(2);
 	}
 
+
+	@Test
+	public void errorModeContinueInternalError() {
+		Flux<Integer> test = Flux
+				.just(1, 2)
+				.hide()
+				.flatMap(f -> {
+					if(f == 1){
+						return Mono.error(new NullPointerException());
+					}
+					else {
+						return Mono.just(f);
+					}
+				})
+				.onErrorContinue();
+
+		StepVerifier.create(test)
+				.expectNoFusionSupport()
+				.expectNext(2)
+				.expectComplete()
+				.verifyThenAssertThat()
+				.hasDropped(1)
+				.hasDroppedErrors(1);
+	}
+
+
+	@Test
+	public void errorModeContinueInternalErrorHidden() {
+		Flux<Integer> test = Flux
+				.just(1, 2)
+				.hide()
+				.flatMap(f -> {
+					if(f == 1){
+						return Mono.<Integer>error(new NullPointerException()).hide();
+					}
+					else {
+						return Mono.just(f);
+					}
+				})
+				.onErrorContinue();
+
+		StepVerifier.create(test)
+				.expectNoFusionSupport()
+				.expectNext(2)
+				.expectComplete()
+				.verifyThenAssertThat()
+				.hasNotDroppedElements()
+				.hasDroppedErrors(1);
+	}
+
 	@Test
 	public void errorModeContinueWithCallable() {
 		Flux<Integer> test = Flux
 				.just(1, 2)
 				.hide()
 				.flatMap(f -> Mono.<Integer>fromRunnable(() -> {
-					throw new ArithmeticException("boom");
+					if(f == 1) {
+						throw new ArithmeticException("boom");
+					}
 				}))
 				.onErrorContinue();
 
 		StepVerifier.create(test)
-		            .expectNoFusionSupport()
-		            .expectComplete()
-		            .verifyThenAssertThat()
-		            .hasDropped(1, 2)
-		            .hasDroppedErrors(2);
+				.expectNoFusionSupport()
+				.expectComplete()
+				.verifyThenAssertThat()
+				.hasDropped(1)
+				.hasDroppedErrors(1);
 	}
 
 }
