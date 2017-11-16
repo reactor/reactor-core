@@ -47,7 +47,7 @@ public class ContextTests {
 		                                })
 		                                .log())
 		    .take(10)
-		    //ctx: test=baseSubscriber_range
+		    //ctx: test=baseSubscriber_take
 		    //return: test=baseSubscriber_take_range
 		    .subscriberContext(ctx -> ctx.put("test", ctx.get("test") + "_range"))
 		    //ctx: test=baseSubscriber
