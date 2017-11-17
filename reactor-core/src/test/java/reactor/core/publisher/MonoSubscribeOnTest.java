@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
@@ -76,7 +77,7 @@ public class MonoSubscribeOnTest {
 
 		ts.request(500);
 
-		Thread.sleep(1000);
+		Thread.sleep(2000);
 
 		ts.assertValueCount(1)
 		  .assertNoError()
@@ -147,6 +148,30 @@ public class MonoSubscribeOnTest {
 		ts.await(Duration.ofSeconds(5));
 
 		ts.assertNoValues()
+		  .assertNoError()
+		  .assertComplete();
+	}
+
+	@Test
+	public void classicWithTimeout() {
+		AssertSubscriber<Integer> ts = AssertSubscriber.create(0);
+		Mono.fromCallable(() -> {
+			try {
+				TimeUnit.SECONDS.sleep(2L);
+			}
+			catch (InterruptedException ignore) {
+			}
+			return 0;
+		})
+		    .timeout(Duration.ofMillis(100L))
+		    .onErrorResume(t -> Mono.fromCallable(() -> 1))
+		    .subscribeOn(Schedulers.newElastic("timeout"))
+		    .subscribe(ts);
+
+		ts.request(1);
+
+		ts.await(Duration.ofMillis(400))
+		  .assertValues(1)
 		  .assertNoError()
 		  .assertComplete();
 	}

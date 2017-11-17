@@ -84,6 +84,13 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 				AtomicLongFieldUpdater.newUpdater(SubscribeOnSubscriber.class,
 						"requested");
 
+		volatile Thread thread;
+		@SuppressWarnings("rawtypes")
+		static final AtomicReferenceFieldUpdater<SubscribeOnSubscriber, Thread> THREAD =
+				AtomicReferenceFieldUpdater.newUpdater(SubscribeOnSubscriber.class,
+						Thread.class,
+						"thread");
+
 		SubscribeOnSubscriber(Publisher<? extends T> parent,
 				CoreSubscriber<? super T> actual,
 				Worker worker) {
@@ -104,6 +111,7 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 
 		@Override
 		public void run() {
+			THREAD.lazySet(this, Thread.currentThread());
 			parent.subscribe(this);
 		}
 
@@ -134,6 +142,7 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 			}
 			finally {
 				worker.dispose();
+				THREAD.lazySet(this,null);
 			}
 		}
 
@@ -141,6 +150,7 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 		public void onComplete() {
 			actual.onComplete();
 			worker.dispose();
+			THREAD.lazySet(this,null);
 		}
 
 		@Override
@@ -163,14 +173,23 @@ final class MonoSubscribeOn<T> extends MonoOperator<T, T> {
 			}
 		}
 
-		void trySchedule(long n, Subscription s){
-			try {
-				worker.schedule(() -> s.request(n));
+		void trySchedule(long n, Subscription s) {
+			if (Thread.currentThread() == THREAD.get(this)) {
+				s.request(n);
 			}
-			catch (RejectedExecutionException ree) {
-				if (!worker.isDisposed()) {
-					actual.onError(Operators.onRejectedExecution(ree, this, null, null,
-							actual.currentContext()));
+			else {
+				try {
+					worker.schedule(() -> s.request(n));
+
+				}
+				catch (RejectedExecutionException ree) {
+					if (!worker.isDisposed()) {
+						actual.onError(Operators.onRejectedExecution(ree,
+								this,
+								null,
+								null,
+								actual.currentContext()));
+					}
 				}
 			}
 		}
