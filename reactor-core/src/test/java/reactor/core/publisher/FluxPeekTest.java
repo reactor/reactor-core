@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
@@ -36,7 +35,6 @@ import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
-import reactor.util.function.Tuples;
 
 import static java.lang.Thread.sleep;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -989,9 +987,12 @@ public class FluxPeekTest extends FluxOperatorTest<String, String> {
 			    v -> { throw nextError; },
 			    null, null, null, null, null)
 			    .hide()
-			    .onErrorContinue(resumedErrors::add, resumedValues::add);
+			    .errorStrategyContinue((t, s) -> {
+					resumedErrors.add(t);
+					resumedValues.add(s);
+				});
 
-	    StepVerifier.create(test)
+		StepVerifier.create(test)
 	                .expectNoFusionSupport()
 	                .expectComplete()
 	                .verifyThenAssertThat()

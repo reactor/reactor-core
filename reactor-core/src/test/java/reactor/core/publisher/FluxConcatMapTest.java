@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -854,7 +853,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 				.just(1, 2)
 				.hide()
 				.<Integer>concatMap(f -> null)
-				.onErrorContinue();
+				.errorStrategyContinue();
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
@@ -877,7 +876,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 						return Mono.just(f);
 					}
 				})
-				.onErrorContinue();
+				.errorStrategyContinue();
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
@@ -901,7 +900,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 						return Mono.just(f);
 					}
 				})
-				.onErrorContinue();
+				.errorStrategyContinue();
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
@@ -922,7 +921,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 						throw new ArithmeticException("boom");
 					}
 				}))
-				.onErrorContinue();
+				.errorStrategyContinue();
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()

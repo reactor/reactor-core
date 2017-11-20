@@ -1418,7 +1418,7 @@ public class FluxFlatMapTest {
 				.just(1, 2)
 				.hide()
 				.<Integer>flatMap(f -> null)
-				.onErrorContinue();
+				.errorStrategyContinue();
 
 		StepVerifier.create(test)
 		            .expectNoFusionSupport()
@@ -1442,7 +1442,7 @@ public class FluxFlatMapTest {
 						return Mono.just(f);
 					}
 				})
-				.onErrorContinue();
+				.errorStrategyContinue();
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
@@ -1467,7 +1467,8 @@ public class FluxFlatMapTest {
 						return Mono.just(f);
 					}
 				})
-				.onErrorContinue();
+				.doOnNext(i -> i++)
+				.errorStrategyContinue();
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
@@ -1488,7 +1489,7 @@ public class FluxFlatMapTest {
 						throw new ArithmeticException("boom");
 					}
 				}))
-				.onErrorContinue();
+				.errorStrategyContinue();
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()

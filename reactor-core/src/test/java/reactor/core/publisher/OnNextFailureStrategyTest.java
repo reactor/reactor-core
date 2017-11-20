@@ -26,6 +26,7 @@ import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.in;
 
 public class OnNextFailureStrategyTest {
 
@@ -287,7 +288,10 @@ public class OnNextFailureStrategyTest {
 		AtomicReference<Object> value = new AtomicReference<>();
 
 		OnNextFailureStrategy strategy = OnNextFailureStrategy.resume(
-				error::set, value::set);
+				(t, v) -> {
+					error.set(t);
+					value.set(v);
+				});
 
 		String data = "foo";
 		Throwable exception = new NullPointerException("foo");
@@ -306,7 +310,10 @@ public class OnNextFailureStrategyTest {
 		AtomicReference<Object> value = new AtomicReference<>();
 
 		OnNextFailureStrategy strategy = OnNextFailureStrategy.resume(
-				error::set, value::set);
+				(t, v) -> {
+					error.set(t);
+					value.set(v);
+				});
 
 		String data = "foo";
 		Throwable exception = new NoSuchMethodError("foo");
@@ -326,8 +333,10 @@ public class OnNextFailureStrategyTest {
 		IllegalStateException failureError = new IllegalStateException("boomInErrorConsumer");
 
 		OnNextFailureStrategy strategy = OnNextFailureStrategy.resume(
-				e -> { throw failureError; },
-				value::set);
+				(t, v) -> {
+					value.set(v);
+					throw failureError;
+				});
 
 		String data = "foo";
 		Throwable exception = new NullPointerException("foo");
@@ -342,34 +351,16 @@ public class OnNextFailureStrategyTest {
 	}
 
 	@Test
-	public void resumeValueConsumerFails() {
-		AtomicReference<Throwable> error = new AtomicReference<>();
-		IllegalStateException failureValue = new IllegalStateException("boomInValueConsumer");
-
-		OnNextFailureStrategy strategy = OnNextFailureStrategy.resume(
-				error::set,
-				v -> { throw failureValue; });
-
-		String data = "foo";
-		Throwable exception = new NullPointerException("foo");
-
-		assertThat(strategy.test(exception, data)).isTrue();
-		Throwable t = strategy.process(exception, data, Context.empty());
-
-		assertThat(t).isSameAs(failureValue)
-		             .hasSuppressedException(exception);
-
-		assertThat(error.get()).isNull();
-	}
-
-	@Test
 	public void resumeIfMatch() {
 		AtomicReference<Throwable> error = new AtomicReference<>();
 		AtomicReference<Object> value = new AtomicReference<>();
 
 		OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeIf(
 				e -> e instanceof NullPointerException,
-				error::set, value::set);
+				(t, v) -> {
+					error.set(t);
+					value.set(v);
+				});
 
 		String data = "foo";
 		Throwable exception = new NullPointerException("foo");
@@ -389,7 +380,10 @@ public class OnNextFailureStrategyTest {
 
 		OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeIf(
 				e -> e instanceof IllegalArgumentException,
-				error::set, value::set);
+				(t, v) -> {
+					error.set(t);
+					value.set(v);
+				});
 
 		String data = "foo";
 		Throwable exception = new NullPointerException("foo");
@@ -411,7 +405,10 @@ public class OnNextFailureStrategyTest {
 
 		OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeIf(
 				e -> e instanceof NoSuchMethodError,
-				error::set, value::set);
+				(t, v) -> {
+					error.set(t);
+					value.set(v);
+				});
 
 		String data = "foo";
 		Throwable exception = new NoSuchMethodError("foo");
@@ -433,7 +430,10 @@ public class OnNextFailureStrategyTest {
 
 		OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeIf(
 				e -> e instanceof IllegalArgumentException,
-				error::set, value::set);
+				(t, v) -> {
+					error.set(t);
+					value.set(v);
+				});
 
 		String data = "foo";
 		Throwable exception = new NoSuchMethodError("foo");
@@ -448,36 +448,16 @@ public class OnNextFailureStrategyTest {
 	}
 
 	@Test
-	public void resumeIfValueConsumerFails() {
-		AtomicReference<Throwable> error = new AtomicReference<>();
-		IllegalStateException failureValue = new IllegalStateException("boomInValueConsumer");
-
-		OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeIf(
-				e -> true,
-				error::set,
-				v -> { throw failureValue; });
-
-		String data = "foo";
-		Throwable exception = new NullPointerException("foo");
-
-		assertThat(strategy.test(exception, data)).isTrue();
-		Throwable t = strategy.process(exception, data, Context.empty());
-
-		assertThat(t).isSameAs(failureValue)
-		             .hasSuppressedException(exception);
-
-		assertThat(error.get()).isNull();
-	}
-
-	@Test
 	public void resumeIfErrorConsumerFails() {
 		AtomicReference<Object> value = new AtomicReference<>();
 		IllegalStateException failureError = new IllegalStateException("boomInErrorConsumer");
 
 		OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeIf(
 				e -> true,
-				e -> { throw failureError; },
-				value::set);
+				(t, v) -> {
+					value.set(v);
+					throw failureError;
+				});
 
 		String data = "foo";
 		Throwable exception = new NullPointerException("foo");
@@ -499,7 +479,10 @@ public class OnNextFailureStrategyTest {
 
 		OnNextFailureStrategy strategy = OnNextFailureStrategy.resumeIf(
 				e -> { throw failurePredicate; },
-				error::set, value::set);
+				(t, v) -> {
+					error.set(t);
+					value.set(v);
+				});
 
 		String data = "foo";
 		Throwable exception = new NullPointerException("foo");
@@ -553,7 +536,7 @@ public class OnNextFailureStrategyTest {
 	public void fluxApiErrorDrop() {
 		Flux<String> test = Flux.just("foo", "", "bar", "baz")
 		                        .filter(s -> 3 / s.length() == 1)
-		                        .onErrorContinue();
+		                        .errorStrategyContinue();
 
 		StepVerifier.create(test)
 		            .expectNext("foo", "bar", "baz")
@@ -567,7 +550,7 @@ public class OnNextFailureStrategyTest {
 	public void fluxApiErrorDropConditional() {
 		Flux<String> test = Flux.just("foo", "", "bar", "baz")
 		                        .filter(s -> 3 / s.length() == 1)
-		                        .onErrorContinue(t -> t instanceof ArithmeticException);
+		                        .errorStrategyContinue(t -> t instanceof ArithmeticException);
 
 		StepVerifier.create(test)
 		            .expectNext("foo", "bar", "baz")
@@ -580,12 +563,37 @@ public class OnNextFailureStrategyTest {
 	@Test
 	public void fluxApiErrorDropConditionalErrorNotMatching() {
 		Flux<String> test = Flux.just("foo", "", "bar", "baz")
-		                        .filter(s -> 3 / s.length() == 1)
-		                        .onErrorContinue(t -> t instanceof IllegalStateException);
+				.filter(s -> 3 / s.length() == 1)
+				.errorStrategyContinue(t -> t instanceof IllegalStateException);
 
 		StepVerifier.create(test)
-		            .expectNext("foo")
-		            .verifyError(ArithmeticException.class);
+				.expectNext("foo")
+				.verifyError(ArithmeticException.class);
+	}
+
+	@Test
+	public void fluxApiErrorDropConditionalByClass() {
+		Flux<String> test = Flux.just("foo", "", "bar", "baz")
+				.filter(s -> 3 / s.length() == 1)
+				.errorStrategyContinue(ArithmeticException.class);
+
+		StepVerifier.create(test)
+				.expectNext("foo", "bar", "baz")
+				.expectComplete()
+				.verifyThenAssertThat()
+				.hasDroppedExactly("")
+				.hasDroppedErrorWithMessage("/ by zero");
+	}
+
+	@Test
+	public void fluxApiErrorDropConditionalErrorByClassNotMatching() {
+		Flux<String> test = Flux.just("foo", "", "bar", "baz")
+				.filter(s -> 3 / s.length() == 1)
+				.errorStrategyContinue(StackOverflowError.class);
+
+		StepVerifier.create(test)
+				.expectNext("foo")
+				.verifyError(ArithmeticException.class);
 	}
 
 	@Test
@@ -594,7 +602,11 @@ public class OnNextFailureStrategyTest {
 		List<Throwable> errorDropped = new ArrayList<>();
 		Flux<String> test = Flux.just("foo", "", "bar", "baz")
 		                        .filter(s -> 3 / s.length() == 1)
-		                        .onErrorContinue(errorDropped::add, valueDropped::add);
+		                        .errorStrategyContinue((t, v) -> {
+									errorDropped.add(t);
+									valueDropped.add(v);
+								});
+
 
 		StepVerifier.create(test)
 		            .expectNext("foo", "bar", "baz")
@@ -615,9 +627,12 @@ public class OnNextFailureStrategyTest {
 		List<Throwable> errorDropped = new ArrayList<>();
 		Flux<String> test = Flux.just("foo", "", "bar", "baz")
 		                        .filter(s -> 3 / s.length() == 1)
-		                        .onErrorContinue(
+		                        .errorStrategyContinue(
 				                        t -> t instanceof ArithmeticException,
-				                        errorDropped::add, valueDropped::add);
+										(t, v) -> {
+											errorDropped.add(t);
+											valueDropped.add(v);
+										});
 
 		StepVerifier.create(test)
 		            .expectNext("foo", "bar", "baz")
@@ -638,10 +653,12 @@ public class OnNextFailureStrategyTest {
 		List<Throwable> errorDropped = new ArrayList<>();
 		Flux<String> test = Flux.just("foo", "", "bar", "baz")
 		                        .filter(s -> 3 / s.length() == 1)
-		                        .onErrorContinue(
+		                        .errorStrategyContinue(
 				                        t -> t instanceof IllegalStateException,
-					                        errorDropped::add,
-					                        valueDropped::add);
+										(t, v) -> {
+											errorDropped.add(t);
+											valueDropped.add(v);
+										});
 
 		StepVerifier.create(test)
 		            .expectNext("foo")
@@ -655,11 +672,59 @@ public class OnNextFailureStrategyTest {
 	}
 
 	@Test
+	public void fluxApiErrorContinueConditionalByClass() {
+		List<String> valueDropped = new ArrayList<>();
+		List<Throwable> errorDropped = new ArrayList<>();
+		Flux<String> test = Flux.just("foo", "", "bar", "baz")
+				.filter(s -> 3 / s.length() == 1)
+				.errorStrategyContinue(ArithmeticException.class,
+									   (t, v) -> {
+										   errorDropped.add(t);
+										   valueDropped.add(v);
+									   });
+
+		StepVerifier.create(test)
+				.expectNext("foo", "bar", "baz")
+				.expectComplete()
+				.verifyThenAssertThat()
+				.hasNotDroppedElements()
+				.hasNotDroppedErrors();
+
+		assertThat(valueDropped).containsExactly("");
+		assertThat(errorDropped)
+				.hasSize(1)
+				.allSatisfy(e -> assertThat(e).hasMessage("/ by zero"));
+	}
+
+	@Test
+	public void fluxApiErrorContinueConditionalByClassNotMatch() {
+		List<String> valueDropped = new ArrayList<>();
+		List<Throwable> errorDropped = new ArrayList<>();
+		Flux<String> test = Flux.just("foo", "", "bar", "baz")
+				.filter(s -> 3 / s.length() == 1)
+				.errorStrategyContinue(IllegalStateException.class,
+									   (t, v) -> {
+										   errorDropped.add(t);
+										   valueDropped.add(v);
+									   });
+
+		StepVerifier.create(test)
+				.expectNext("foo")
+				.expectErrorMessage("/ by zero")
+				.verifyThenAssertThat()
+				.hasNotDroppedElements()
+				.hasNotDroppedErrors();
+
+		assertThat(valueDropped).isEmpty();
+		assertThat(errorDropped).isEmpty();
+	}
+
+	@Test
 	public void fluxApiWithinFlatMap() {
 		Flux<Integer> test = Flux.just(1, 2, 3)
 		                         .flatMap(i -> Flux.range(0, i + 1)
 		                                           .map(v -> 30 / v))
-		                         .onErrorContinue();
+		                         .errorStrategyContinue();
 
 		StepVerifier.create(test)
 		            .expectNext(30, 30, 15, 30, 15, 10)
@@ -671,5 +736,69 @@ public class OnNextFailureStrategyTest {
 						            .hasSize(3)
 						            .allMatch(e -> e instanceof ArithmeticException));
 	}
+
+	@Test
+	public void monoApiWithinFlatMap() {
+		Flux<Integer> test = Flux.just(0, 1, 2, 3)
+				.flatMap(i -> Mono.just(i).map(v -> 30 / v))
+				.errorStrategyContinue();
+
+		StepVerifier.create(test)
+				.expectNext(30, 15, 10)
+				.expectComplete()
+				.verifyThenAssertThat()
+				.hasDroppedExactly(0)
+				.hasDroppedErrorsSatisfying(
+						errors -> assertThat(errors)
+								.hasSize(1)
+								.allMatch(e -> e instanceof ArithmeticException));
+	}
+
+	@Test
+	public void overrideInheritedErrorStrategyInFlatMap() {
+		Flux<Integer> test = Flux.just(1, 2, 3)
+				.flatMap(i -> Flux.range(0, i + 1)
+						.map(v -> 30 / v)
+						.onErrorReturn(100)
+						.errorStrategyStop())
+				.errorStrategyContinue();
+
+		StepVerifier.create(test)
+				.expectNext(100)
+				.expectComplete();
+	}
+
+	@Test
+	public void errorStrategyConfiguredInFlatMapDoesNotLeak() {
+		Flux<Integer> test = Flux.just(0, 1, 2)
+				.map(i -> i / 0)
+				.flatMap(i -> Flux.just(i).errorStrategyContinue());
+
+		StepVerifier.create(test)
+				.expectError(ArithmeticException.class)
+				.verifyThenAssertThat();
+	}
+
+	@Test
+	public void errorStrategySimpleScoping() {
+		Flux<Integer> test = Flux.just(0, 1, 2, 3)
+				.map(i -> {
+					if (i == 3) {
+						throw new IllegalStateException();
+					}
+					else {
+						return i;
+					}
+				})
+				.errorStrategyStop()
+				.map(i -> 10 / i)
+				.errorStrategyContinue();
+
+		StepVerifier.create(test)
+				.expectNext(10, 5)
+				.expectError(IllegalStateException.class)
+				.verifyThenAssertThat();
+	}
+
 
 }
