@@ -16,9 +16,13 @@
 
 package reactor.core.publisher;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
@@ -28,14 +32,39 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.context.Context;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 import static org.junit.Assert.fail;
 
 public class FluxDoOnEachTest {
 
-	@Test(expected = NullPointerException.class)
-	public void nullSource() {
-		new FluxDoOnEach<>(null, null);
+	@Test
+	public void nullSourceWithConsumer() {
+		Assertions.assertThatNullPointerException()
+		          .isThrownBy(() -> new FluxDoOnEach<>(null, s -> {}))
+		          .withMessage(null);
+	}
+
+	@Test
+	public void nullConsumer() {
+		Assertions.assertThatNullPointerException()
+		          .isThrownBy(() -> new FluxDoOnEach<>(Flux.just("foo"), (Consumer) null))
+		          .withMessage("onSignal");
+	}
+
+	@Test
+	public void nullSourceWithBiConsumer() {
+		Assertions.assertThatNullPointerException()
+		          .isThrownBy(() -> new FluxDoOnEach<>(null, (s,c) -> {}))
+		          .withMessage(null);
+	}
+	@Test
+	public void nullBiConsumer() {
+		Assertions.assertThatNullPointerException()
+		          .isThrownBy(() -> new FluxDoOnEach<>(Flux.just("foo"), (BiConsumer) null))
+		          .withMessage("onSignalAndContext");
 	}
 
 	@Test
@@ -256,7 +285,7 @@ public class FluxDoOnEachTest {
 		FluxDoOnEach<Integer> peek =
 				new FluxDoOnEach<>(Flux.just(1), s -> { });
 		FluxDoOnEach.DoOnEachSubscriber<Integer> test =
-				new FluxDoOnEach.DoOnEachSubscriber<>(actual, peek.onSignal);
+				new FluxDoOnEach.DoOnEachSubscriber<>(actual, peek.onSignalAndContext);
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
@@ -266,5 +295,47 @@ public class FluxDoOnEachTest {
         Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         test.onError(new IllegalStateException("boom"));
         Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+    }
+
+    @Test
+	public void nextCompleteWithContext() {
+	    List<Tuple2<Signal, Context>> signalsAndContext = new ArrayList<>();
+		Flux.just(1, 2)
+		    .doWithContext((s, c) -> signalsAndContext.add(Tuples.of(s, c)))
+		    .subscriberContext(Context.of("foo", "bar"))
+		    .subscribe();
+
+	    Assertions.assertThat(signalsAndContext)
+	              .allSatisfy(t2 -> {
+		              Assertions.assertThat(t2.getT1())
+		                        .isNotNull();
+		              Assertions.assertThat(t2.getT2().getOrDefault("foo", "baz"))
+		                        .isEqualTo("bar");
+	              });
+
+	    Assertions.assertThat(signalsAndContext.stream().map(t2 -> t2.getT1().getType()))
+	              .containsExactly(SignalType.ON_NEXT, SignalType.ON_NEXT, SignalType.ON_COMPLETE);
+    }
+
+    @Test
+	public void nextErrorWithContext() {
+	    List<Tuple2<Signal, Context>> signalsAndContext = new ArrayList<>();
+	    Flux.just(1, 0)
+	        .map(i -> 10 / i)
+	        .doWithContext((s,c) -> signalsAndContext.add(Tuples.of(s,c)))
+	        .subscriberContext(Context.of("foo", "bar"))
+	        .subscribe();
+
+	    Assertions.assertThat(signalsAndContext)
+	              .allSatisfy(t2 -> {
+		              Assertions.assertThat(t2.getT1())
+		                        .isNotNull();
+		              Assertions.assertThat(t2.getT2().getOrDefault("foo", "baz"))
+		                        .isEqualTo("bar");
+	              });
+
+	    Assertions.assertThat(signalsAndContext.stream()
+	                                           .map(t2 -> t2.getT1().getType()))
+	              .containsExactly(SignalType.ON_NEXT, SignalType.ON_ERROR);
     }
 }
