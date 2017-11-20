@@ -931,4 +931,55 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 				.hasDroppedErrors(1);
 	}
 
+	@Test
+	public void errorModeContinueDelayErrors() {
+		Flux<Integer> test = Flux
+				.just(1, 2)
+				.hide()
+				.concatMapDelayError(f -> {
+					if(f == 1){
+						return Mono.<Integer>error(new NullPointerException()).hide();
+					}
+					else {
+						return Mono.just(f);
+					}
+				})
+				.errorStrategyContinue();
+
+
+		StepVerifier.create(test)
+				.expectNoFusionSupport()
+				.expectNext(2)
+				.expectComplete()
+				.verifyThenAssertThat()
+				// When inner is not a Callable error value is not available.
+				.hasNotDroppedElements()
+				.hasDroppedErrors(1);
+	}
+
+	@Test
+	public void errorModeContinueDelayErrorsWithCallable() {
+		Flux<Integer> test = Flux
+				.just(1, 2)
+				.hide()
+				.concatMapDelayError(f -> {
+					if(f == 1){
+						return Mono.<Integer>error(new NullPointerException());
+					}
+					else {
+						return Mono.just(f);
+					}
+				})
+				.errorStrategyContinue();
+
+
+		StepVerifier.create(test)
+				.expectNoFusionSupport()
+				.expectNext(2)
+				.expectComplete()
+				.verifyThenAssertThat()
+				.hasDropped(1)
+				.hasDroppedErrors(1);
+	}
+
 }
