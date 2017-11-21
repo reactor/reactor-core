@@ -391,8 +391,10 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
 	    List<Object> valuesDropped = new ArrayList<>();
 	    List<Throwable> errorsDropped = new ArrayList<>();
 	    Hooks.onNextError(OnNextFailureStrategy.resume(
-	    		errorsDropped::add,
-				valuesDropped::add));
+				(t, s) -> {
+					errorsDropped.add(t);
+					valuesDropped.add(s);
+				}));
 
 		try {
 			AtomicLong r = new AtomicLong();
