@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
@@ -906,7 +905,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 				.just(1, 2)
 				.hide()
 				.<Integer>concatMap(f -> null)
-				.onErrorContinue();
+				.errorStrategyContinue();
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
@@ -929,7 +928,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 						return Mono.just(f);
 					}
 				})
-				.onErrorContinue();
+				.errorStrategyContinue();
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
@@ -953,7 +952,7 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 						return Mono.just(f);
 					}
 				})
-				.onErrorContinue();
+				.errorStrategyContinue();
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
@@ -974,10 +973,61 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 						throw new ArithmeticException("boom");
 					}
 				}))
-				.onErrorContinue();
+				.errorStrategyContinue();
 
 		StepVerifier.create(test)
 				.expectNoFusionSupport()
+				.expectComplete()
+				.verifyThenAssertThat()
+				.hasDropped(1)
+				.hasDroppedErrors(1);
+	}
+
+	@Test
+	public void errorModeContinueDelayErrors() {
+		Flux<Integer> test = Flux
+				.just(1, 2)
+				.hide()
+				.concatMapDelayError(f -> {
+					if(f == 1){
+						return Mono.<Integer>error(new NullPointerException()).hide();
+					}
+					else {
+						return Mono.just(f);
+					}
+				})
+				.errorStrategyContinue();
+
+
+		StepVerifier.create(test)
+				.expectNoFusionSupport()
+				.expectNext(2)
+				.expectComplete()
+				.verifyThenAssertThat()
+				// When inner is not a Callable error value is not available.
+				.hasNotDroppedElements()
+				.hasDroppedErrors(1);
+	}
+
+	@Test
+	public void errorModeContinueDelayErrorsWithCallable() {
+		Flux<Integer> test = Flux
+				.just(1, 2)
+				.hide()
+				.concatMapDelayError(f -> {
+					if(f == 1){
+						return Mono.<Integer>error(new NullPointerException());
+					}
+					else {
+						return Mono.just(f);
+					}
+				})
+				.errorStrategyContinue();
+
+
+		StepVerifier.create(test)
+				.expectNoFusionSupport()
+				.expectNext(2)
 				.expectComplete()
 				.verifyThenAssertThat()
 				.hasDropped(1)

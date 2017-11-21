@@ -1051,7 +1051,10 @@ public class FluxPeekFuseableTest {
 		List<Throwable> resumedErrors = new ArrayList<>();
 		List<Object> resumedValues = new ArrayList<>();
 		Context context = Context.of(OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
-				OnNextFailureStrategy.resume(resumedErrors::add, resumedValues::add));
+				OnNextFailureStrategy.resume((t, s) -> {
+					resumedErrors.add(t);
+					resumedValues.add(s);
+				}));
 
 		ConditionalAssertSubscriber<Integer> actual = new ConditionalAssertSubscriber<>(context);
 		SignalPeekThrowNext<Integer> peekParent = new SignalPeekThrowNext<>(nextError);
@@ -1082,7 +1085,10 @@ public class FluxPeekFuseableTest {
 		List<Throwable> resumedErrors = new ArrayList<>();
 		List<Object> resumedValues = new ArrayList<>();
 		Context context = Context.of(OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
-				OnNextFailureStrategy.resume(resumedErrors::add, resumedValues::add));
+									 OnNextFailureStrategy.resume((t, s) -> {
+										 resumedErrors.add(t);
+										 resumedValues.add(s);
+									 }));
 
 		AssertSubscriber<Integer> actual = new AssertSubscriber<>(context, 0);
 		SignalPeekThrowNext<Integer> peekParent = new SignalPeekThrowNext<>(nextError);
@@ -1115,7 +1121,10 @@ public class FluxPeekFuseableTest {
 		List<Throwable> resumedErrors = new ArrayList<>();
 		List<Object> resumedValues = new ArrayList<>();
 		Context context = Context.of(OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
-				OnNextFailureStrategy.resume(resumedErrors::add, resumedValues::add));
+									 OnNextFailureStrategy.resume((t, s) -> {
+										 resumedErrors.add(t);
+										 resumedValues.add(s);
+									 }));
 
 		ConditionalAssertSubscriber<Integer> actual = new ConditionalAssertSubscriber<>(context);
 		SignalPeekThrowNext<Integer> peekParent = new SignalPeekThrowNext<>(nextError);

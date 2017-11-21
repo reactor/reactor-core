@@ -16,6 +16,7 @@
 
 package reactor.core.publisher;
 
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
@@ -32,7 +33,7 @@ import reactor.util.context.Context;
  * applied by compatible operators through the {@link Operators#onNextError(Object, Throwable, Context, Subscription)}
  * and {@link Operators#onNextPollError(Object, Throwable, Context)} methods.
  * See {@link #stop()}, {@link #resumeDrop()}, {@link #resumeDropIf(Predicate)},
- * {@link #resume(Consumer, Consumer)} and {@link #resumeIf(Predicate, Consumer, Consumer)}
+ * {@link #resume(BiConsumer)} and {@link #resumeIf(Predicate, BiConsumer)}
  * for the possible strategies.
  *
  * @author Simon Baslé
@@ -112,15 +113,12 @@ interface OnNextFailureStrategy extends BiFunction<Throwable, Object, Throwable>
 	 * returned for propagation. If the original error is fatal then it is thrown
 	 * upon processing it (see {@link Exceptions#throwIfFatal(Throwable)}).
 	 *
-	 *
-	 * @param errorConsumer the {@link Consumer} to process the recovered errors with.
-	 * @param valueConsumer the {@link Consumer} to process the error-causing values with.
+	 * @param errorConsumer the {@link BiConsumer<Throwable, Object>} to process the recovered errors with.
 	 * It must deal with potential {@code null}s.
 	 * @return a new {@link OnNextFailureStrategy} that allows resuming the sequence.
 	 */
-	static OnNextFailureStrategy resume(Consumer<Throwable> errorConsumer,
-			Consumer<Object> valueConsumer) {
-		return new ResumeStrategy(null, errorConsumer, valueConsumer);
+	static OnNextFailureStrategy resume(BiConsumer<Throwable, Object> errorConsumer) {
+		return new ResumeStrategy(null, errorConsumer);
 	}
 
 	/**
@@ -134,16 +132,14 @@ interface OnNextFailureStrategy extends BiFunction<Throwable, Object, Throwable>
 	 *
 	 * @param causePredicate the {@link Predicate} to use to determine if a failure
 	 * should be recovered from.
-	 * @param errorConsumer the {@link Consumer} to process the recovered errors with.
-	 * @param valueConsumer the {@link Consumer} to process the error-causing values with.
+	 * @param errorConsumer the {@link BiConsumer<Throwable, Object>} to process the recovered errors with.
 	 * It must deal with potential {@code null}s.
 	 * @return a new {@link OnNextFailureStrategy} that allows resuming the sequence.
 	 */
 	static OnNextFailureStrategy resumeIf(
 			Predicate<Throwable> causePredicate,
-			Consumer<Throwable> errorConsumer,
-			Consumer<Object>  valueConsumer) {
-		return new ResumeStrategy(causePredicate, errorConsumer, valueConsumer);
+			BiConsumer<Throwable, Object> errorConsumer) {
+		return new ResumeStrategy(causePredicate, errorConsumer);
 	}
 
 	//==== IMPLEMENTATIONS ====
@@ -168,15 +164,12 @@ interface OnNextFailureStrategy extends BiFunction<Throwable, Object, Throwable>
 	final class ResumeStrategy implements OnNextFailureStrategy {
 
 		final Predicate<Throwable>  errorPredicate;
-		final Consumer<Throwable>   errorConsumer;
-		final Consumer<Object>      valueConsumer;
+		final BiConsumer<Throwable, Object>   errorConsumer;
 
 		ResumeStrategy(@Nullable Predicate<Throwable> errorPredicate,
-				Consumer<Throwable> errorConsumer,
-				Consumer<Object> valueConsumer) {
+					   BiConsumer<Throwable, Object> errorConsumer) {
 			this.errorPredicate = errorPredicate;
 			this.errorConsumer = errorConsumer;
-			this.valueConsumer = valueConsumer;
 		}
 
 		@Override
@@ -195,8 +188,7 @@ interface OnNextFailureStrategy extends BiFunction<Throwable, Object, Throwable>
 				return error;
 			}
 			try {
-				valueConsumer.accept(value);
-				errorConsumer.accept(error);
+				errorConsumer.accept(error, value);
 				return null;
 			}
 			catch (Throwable e) {
