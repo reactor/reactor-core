@@ -104,7 +104,10 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 				handler.accept(t, this);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+				Throwable e_ = Operators.onNextError(t, error, actual.currentContext(), s);
+				if (e_ != null) {
+					onError(e_);
+				}
 				return false;
 			}
 			R v = data;
@@ -114,8 +117,15 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 			}
 			if (done) {
 				if (error != null) {
-					actual.onError(Operators.onOperatorError(s, error, t,
-							actual.currentContext()));
+					Throwable e_ = Operators.onNextError(t, error, actual.currentContext(), s);
+					if (e_ != null) {
+						actual.onError(e_);
+					}
+					else {
+						done = false;
+						error = null;
+						s.request(1);
+					}
 				}
 				else {
 					s.cancel();
@@ -149,7 +159,13 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 					handler.accept(t, this);
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+					Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
+					if (e_ != null) {
+						onError(e_);
+					}
+					else {
+						s.request(1);
+					}
 					return;
 				}
 				R v = data;
@@ -160,8 +176,10 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 				if (done) {
 					s.cancel();
 					if (error != null) {
-						actual.onError(Operators.onOperatorError(null, error, t,
-								actual.currentContext()));
+						Throwable e_ = Operators.onNextError(t, error, actual.currentContext(), s);
+						if (e_ != null) {
+							actual.onError(e_);
+						}
 						return;
 					}
 					actual.onComplete();
@@ -231,14 +249,30 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 					T v = s.poll();
 					R u;
 					if (v != null) {
-						handler.accept(v, this);
+						try {
+							handler.accept(v, this);
+						}
+						catch (Throwable error){
+							Throwable e_ = Operators.onNextPollError(v, error, actual.currentContext());
+							if (e_ != null) {
+								throw Exceptions.propagate(e_);
+							}
+							else {
+								done = false;
+								error = null;
+								continue;
+							}
+						}
 						u = data;
 						data = null;
 						if (done) {
 							s.cancel();
 							if (error != null) {
-								throw Exceptions.propagate(Operators.onOperatorError
-										(null, error, v, actual.currentContext()));
+								Throwable e_ = Operators.onNextPollError(v, error, actual.currentContext());
+								if (e_ != null) {
+									throw Exceptions.propagate(e_);
+								}
+								//else continue
 							}
 							else {
 								actual.onComplete();
@@ -263,15 +297,35 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 				for (; ; ) {
 					T v = s.poll();
 					if (v != null) {
-						handler.accept(v, this);
+						try {
+							handler.accept(v, this);
+						}
+						catch (Throwable error){
+							Throwable e_ = Operators.onNextPollError(v, error, actual.currentContext());
+							if (e_ != null) {
+								throw Exceptions.propagate(e_);
+							}
+							else {
+								reset();
+								continue;
+							}
+						}
 						R u = data;
 						data = null;
 						if (done) {
 							if (error != null) {
-								throw Exceptions.propagate(Operators.onOperatorError
-										(null, error, v, actual.currentContext()));
+								Throwable e_ = Operators.onNextPollError(v, error, actual.currentContext());
+								if (e_ != null) {
+									throw Exceptions.propagate(e_);
+								}
+								else {
+									reset();
+									continue;
+								}
 							}
-							return u;
+							else {
+								return u;
+							}
 						}
 						if (u != null) {
 							return u;
@@ -282,6 +336,11 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 					}
 				}
 			}
+		}
+
+		private void reset() {
+			done = false;
+			error = null;
 		}
 
 		@Override
@@ -382,7 +441,14 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 					handler.accept(t, this);
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+					Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
+					if (e_ != null) {
+						onError(e_);
+					}
+					else {
+						reset();
+						s.request(1);
+					}
 					return;
 				}
 				R v = data;
@@ -393,9 +459,14 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 				if (done) {
 					s.cancel();
 					if (error != null) {
-						actual.onError(Operators.onOperatorError(null, error, v,
-								actual.currentContext()));
-						return;
+						Throwable e_ = Operators.onNextError(t, error, actual.currentContext(), s);
+						if (e_ != null) {
+							actual.onError(e_);
+						}
+						else {
+							reset();
+							s.request(1L);
+						}
 					}
 					actual.onComplete();
 				}
@@ -403,6 +474,11 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 					s.request(1L);
 				}
 			}
+		}
+
+		private void reset() {
+			done = false;
+			error = null;
 		}
 
 		@Override
@@ -416,7 +492,13 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 				handler.accept(t, this);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+				Throwable e_ = Operators.onNextError(t, error, actual.currentContext(), s);
+				if (e_ != null) {
+					onError(e_);
+				}
+				else {
+					reset();
+				}
 				return false;
 			}
 			R v = data;
@@ -428,8 +510,14 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 			if (done) {
 				s.cancel();
 				if (error != null) {
-					actual.onError(Operators.onOperatorError(null, error, v,
-							actual.currentContext()));
+					Throwable e_ = Operators.onNextError(t, error, actual.currentContext(), s);
+					if (e_ != null) {
+						actual.onError(e_);
+					}
+					else {
+						reset();
+					}
+					return false;
 				}
 				else {
 					actual.onComplete();
@@ -517,14 +605,33 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 					T v = s.poll();
 					R u;
 					if (v != null) {
-						handler.accept(v, this);
+						try {
+							handler.accept(v, this);
+						}
+						catch (Throwable error){
+							Throwable e_ = Operators.onNextPollError(v, error, actual.currentContext());
+							if (e_ != null) {
+								throw Exceptions.propagate(e_);
+							}
+							else {
+								done = false;
+								error = null;
+								continue;
+							}
+						}
 						u = data;
 						data = null;
 						if (done) {
 							s.cancel();
 							if (error != null) {
-								throw Exceptions.propagate(Operators.onOperatorError
-										(null, error, v, actual.currentContext()));
+								Throwable e_ = Operators.onNextError(v, error, actual.currentContext(), s);
+								if (e_ != null) {
+									throw Exceptions.propagate(e_);
+								}
+								else {
+									reset();
+									continue;
+								}
 							}
 							else {
 								actual.onComplete();
@@ -549,13 +656,32 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 				for (; ; ) {
 					T v = s.poll();
 					if (v != null) {
-						handler.accept(v, this);
+						try {
+							handler.accept(v, this);
+						}
+						catch (Throwable error){
+							Throwable e_ = Operators.onNextPollError(v, error, actual.currentContext());
+							if (e_ != null) {
+								throw Exceptions.propagate(e_);
+							}
+							else {
+								done = false;
+								error = null;
+								continue;
+							}
+						}
 						R u = data;
 						data = null;
 						if (done) {
 							if (error != null) {
-								throw Exceptions.propagate(Operators.onOperatorError
-										(null, error, v, actual.currentContext()));
+								Throwable e_ = Operators.onNextPollError(v, error, actual.currentContext());
+								if (e_ != null) {
+									throw Exceptions.propagate(e_);
+								}
+								else{
+									reset();
+									continue;
+								}
 							}
 							return u;
 						}
