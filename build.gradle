@@ -17,7 +17,7 @@ import me.champeau.gradle.japicmp.JapicmpTask
 import org.gradle.api.internal.plugins.osgi.OsgiHelper
 
 buildscript {
-  ext.kotlinVersion = '1.1.51'
+  ext.kotlinVersion = '1.1.60'
   repositories {
 	maven { url "http://repo.spring.io/plugins-release" }
   }
@@ -194,10 +194,10 @@ configure(subprojects) { p ->
 	exclude '**/*OperatorTest*.*'
   }
 
-  //Workaround for https://youtrack.jetbrains.com/issue/KT-17564
-  // until kotlin-gradle-plugin 1.1.60 is out
+  // now that kotlin-gradle-plugin 1.1.60 is out with fix for https://youtrack.jetbrains.com/issue/KT-17564
+  // be wary and fail if the issue of source file duplication in jar comes up again
   sourcesJar {
-	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+	duplicatesStrategy = DuplicatesStrategy.FAIL
   }
 
 }
