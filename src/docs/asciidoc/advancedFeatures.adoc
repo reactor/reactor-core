@@ -891,7 +891,7 @@ In the example above, the final emitted value is `"Hello World Reactor"` and not
 Reactor World", because the `subscriberContext` that writes "Reactor" does so as part of
 the inner sequence of the second `flatMap`. As a consequence, it is not visible / propagated
 through the main sequence and the first `flatMap` doesn't see it. Propagation + immutability
-isolate the `Context`s in operators that create intermediate inner sequences like `flatMap`.
+isolate the `Context` in operators that create intermediate inner sequences like `flatMap`.
 
 === Full Example
 Let's consider a more real life example of a library reading information from the `Context`:
