@@ -17,7 +17,7 @@ import me.champeau.gradle.japicmp.JapicmpTask
 import org.gradle.api.internal.plugins.osgi.OsgiHelper
 
 buildscript {
-  ext.kotlinVersion = '1.1.60'
+  ext.kotlinVersion = '1.1.61'
   repositories {
 	maven { url "http://repo.spring.io/plugins-release" }
   }
