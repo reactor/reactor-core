@@ -1833,6 +1833,11 @@ final class DefaultStepVerifierBuilder<T>
 		public String getDescription() {
 			return description;
 		}
+
+		@Override
+		public String toString() {
+			return description + "_" + getClass().getSimpleName();
+		}
 	}
 
 	static class SubscriptionEvent<T> extends AbstractEagerEvent<T> {
@@ -1892,6 +1897,11 @@ final class DefaultStepVerifierBuilder<T>
 
 		public String getDescription() {
 			return description;
+		}
+
+		@Override
+		public String toString() {
+			return description + "_" + getClass().getSimpleName();
 		}
 	}
 
