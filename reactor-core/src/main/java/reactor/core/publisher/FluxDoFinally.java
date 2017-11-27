@@ -125,8 +125,12 @@ final class FluxDoFinally<T> extends FluxOperator<T, T> {
 
 		@Override
 		public void onError(Throwable t) {
-			actual.onError(t);
-			runFinally(SignalType.ON_ERROR);
+			try {
+				actual.onError(t);
+			}
+			finally {
+				runFinally(SignalType.ON_ERROR);
+			}
 		}
 
 		@Override

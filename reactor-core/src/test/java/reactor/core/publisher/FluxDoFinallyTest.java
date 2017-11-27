@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Consumer;
@@ -392,4 +394,100 @@ public class FluxDoFinallyTest implements Consumer<SignalType> {
 	}
 
 	//TODO test multiple subscriptions?
+
+	@Test
+	//see https://github.com/reactor/reactor-core/issues/951
+	public void gh951_withoutConsumerInSubscribe() {
+		List<String> events = new ArrayList<>();
+		Mono.just(true)
+		    .map(this::throwError)
+		    .doOnError(e -> events.add("doOnError"))
+		    .doFinally(any -> events.add("doFinally " + any.toString()))
+		    .subscribe();
+
+		Assertions.assertThat(events)
+		          .as("subscribe without consumer: map_doOnError_doFinally")
+		          .containsExactly("doOnError", "doFinally onError");
+
+		events.clear();
+		Mono.just(true)
+		    .doFinally(any -> events.add("doFinally " + any.toString()))
+		    .map(this::throwError)
+		    .doOnError(e -> events.add("doOnError"))
+		    .subscribe();
+
+		Assertions.assertThat(events)
+		          .as("subscribe without consumer: doFinally_map_doOnError")
+		          .containsExactly("doFinally cancel", "doOnError");
+
+		events.clear();
+		Mono.just(true)
+		    .map(this::throwError)
+		    .doFinally(any -> events.add("doFinally " + any.toString()))
+		    .doOnError(e -> events.add("doOnError"))
+		    .subscribe();
+
+		Assertions.assertThat(events)
+		          .as("subscribe without consumer:  map_doFinally_doOnError")
+		          .containsExactly("doOnError", "doFinally onError");
+	}
+
+	@Test
+	//see https://github.com/reactor/reactor-core/issues/951
+	public void gh951_withConsumerInSubscribe() {
+		List<String> events = new ArrayList<>();
+
+		Mono.just(true)
+		    .map(this::throwError)
+		    .doOnError(e -> events.add("doOnError"))
+		    .doFinally(any -> events.add("doFinally " + any.toString()))
+		    .subscribe(v -> { }, e -> { });
+
+		Assertions.assertThat(events)
+		          .as("subscribe with consumer: map_doOnError_doFinally")
+		          .containsExactly("doOnError", "doFinally onError");
+
+		events.clear();
+		Mono.just(true)
+		    .doFinally(any -> events.add("doFinally " + any.toString()))
+		    .map(this::throwError)
+		    .doOnError(e -> events.add("doOnError"))
+		    .subscribe(v -> { }, e -> { });
+
+		Assertions.assertThat(events)
+		          .as("subscribe with consumer: doFinally_map_doOnError")
+		          .containsExactly("doFinally cancel", "doOnError");
+
+		events.clear();
+		Mono.just(true)
+		    .map(this::throwError)
+		    .doFinally(any -> events.add("doFinally " + any.toString()))
+		    .doOnError(e -> events.add("doOnError"))
+		    .subscribe(v -> { }, e -> { });
+
+		Assertions.assertThat(events)
+		          .as("subscribe with consumer: map_doFinally_doOnError")
+		          .containsExactly("doOnError", "doFinally onError");
+	}
+
+	@Test
+	//see https://github.com/reactor/reactor-core/issues/951
+	public void gh951_whithoutDoOnError() {
+		List<String> events = new ArrayList<>();
+
+		Assertions.assertThatExceptionOfType(UnsupportedOperationException.class)
+		          .isThrownBy(Mono.just(true)
+		                          .map(this::throwError)
+		                          .doFinally(any -> events.add("doFinally " + any.toString()))
+		                          ::subscribe)
+		          .withMessage("java.lang.IllegalStateException: boom");
+
+		Assertions.assertThat(events)
+		          .as("whithoutDoOnError")
+		          .containsExactly("doFinally onError");
+	}
+
+	private Boolean throwError(Boolean x) {
+		throw new IllegalStateException("boom");
+	}
 }
