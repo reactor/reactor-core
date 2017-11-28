@@ -97,7 +97,14 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 				handler.accept(t, this);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+				Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
+				if (e_ != null) {
+					onError(e_);
+				}
+				else {
+					reset();
+					s.request(1);
+				}
 				return;
 			}
 			R v = data;
@@ -106,17 +113,30 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 				actual.onNext(v);
 			}
 			if(stop){
-				s.cancel();
 				if(error != null){
-					onError(Operators.onOperatorError(null, error, t,
-							actual.currentContext()));
-					return;
+					Throwable e_ = Operators.onNextError(t, error, actual.currentContext(), s);
+					if (e_ != null) {
+						onError(e_);
+					}
+					else {
+						reset();
+						s.request(1L);
+					}
 				}
-				onComplete();
+				else {
+					s.cancel();
+					onComplete();
+				}
 			}
 			else if(v == null){
 				s.request(1L);
 			}
+		}
+
+		private void reset() {
+			done = false;
+			stop = false;
+			error = null;
 		}
 
 		@Override
@@ -130,8 +150,15 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 				handler.accept(t, this);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
-				return false;
+				Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
+				if (e_ != null) {
+					onError(e_);
+					return true;
+				}
+				else {
+					reset();
+					return false;
+				}
 			}
 			R v = data;
 			data = null;
@@ -139,12 +166,18 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 				actual.onNext(v);
 			}
 			if(stop){
-				s.cancel();
 				if(error != null){
-					onError(Operators.onOperatorError(null, error, t,
-							actual.currentContext()));
+					Throwable e_ = Operators.onNextError(t, error, actual.currentContext(), s);
+					if (e_ != null) {
+						onError(e_);
+					}
+					else {
+						reset();
+						return false;
+					}
 				}
 				else {
+					s.cancel();
 					onComplete();
 				}
 				return true;
@@ -261,7 +294,14 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 				handler.accept(t, this);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+				Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
+				if (e_ != null) {
+					onError(e_);
+				}
+				else {
+					error = null;
+					s.request(1);
+				}
 				return;
 			}
 			R v = data;
@@ -270,17 +310,29 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 				actual.onNext(v);
 			}
 			if(done){
-				s.cancel();
 				if(error != null){
-					actual.onError(Operators.onOperatorError(null, error, t,
-							actual.currentContext()));
-					return;
+					Throwable e_ = Operators.onNextError(t, error, actual.currentContext(), s);
+					if (e_ != null) {
+						actual.onError(e_);
+					}
+					else {
+						reset();
+						s.request(1L);
+					}
 				}
-				actual.onComplete();
+				else {
+					s.cancel();
+					actual.onComplete();
+				}
 			}
 			else if(v == null){
 				s.request(1L);
 			}
+		}
+
+		private void reset() {
+			done = false;
+			error = null;
 		}
 
 		@Override
@@ -294,8 +346,15 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 				handler.accept(t, this);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
-				return false;
+				Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
+				if (e_ != null) {
+					onError(e_);
+					return true;
+				}
+				else {
+					reset();
+					return false;
+				}
 			}
 			R v = data;
 			boolean emit = false;
@@ -304,12 +363,18 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 				emit = actual.tryOnNext(v);
 			}
 			if(done){
-				s.cancel();
 				if(error != null){
-					actual.onError(Operators.onOperatorError(null, error, t,
-							actual.currentContext()));
+					Throwable e_ = Operators.onNextError(t, error, actual.currentContext(), s);
+					if (e_ != null) {
+						actual.onError(e_);
+					}
+					else {
+						reset();
+						return false;
+					}
 				}
 				else {
+					s.cancel();
 					actual.onComplete();
 				}
 				return true;
