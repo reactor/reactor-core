@@ -122,7 +122,6 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 						reset();
 						s.request(1L);
 					}
-					return;
 				}
 				else {
 					s.cancel();
@@ -314,7 +313,6 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 					Throwable e_ = Operators.onNextError(t, error, actual.currentContext(), s);
 					if (e_ != null) {
 						actual.onError(e_);
-						return;
 					}
 					else {
 						reset();
