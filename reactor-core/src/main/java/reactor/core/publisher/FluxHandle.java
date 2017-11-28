@@ -124,7 +124,10 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 					}
 					return;
 				}
-				onComplete();
+				else {
+					s.cancel();
+					onComplete();
+				}
 			}
 			else if(v == null){
 				s.request(1L);
@@ -174,6 +177,7 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 					return false;
 				}
 				else {
+					s.cancel();
 					onComplete();
 				}
 				return true;
@@ -318,6 +322,7 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 					}
 				}
 				else {
+					s.cancel();
 					actual.onComplete();
 				}
 			}
@@ -369,6 +374,7 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 					return false;
 				}
 				else {
+					s.cancel();
 					actual.onComplete();
 				}
 				return true;

@@ -122,8 +122,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 						actual.onError(e_);
 					}
 					else {
-						done = false;
-						error = null;
+						reset();
 						return false;
 					}
 				}
@@ -174,7 +173,6 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 					actual.onNext(v);
 				}
 				if (done) {
-					s.cancel();
 					if (error != null) {
 						Throwable e_ = Operators.onNextError(t, error, actual.currentContext(), s);
 						if (e_ != null) {
@@ -182,7 +180,10 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 						}
 						return;
 					}
-					actual.onComplete();
+					else{
+						s.cancel();
+						actual.onComplete();
+					}
 				}
 				else if (v == null) {
 					s.request(1L);
@@ -265,7 +266,6 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 						u = data;
 						data = null;
 						if (done) {
-							s.cancel();
 							if (error != null) {
 								Throwable e_ = Operators.onNextPollError(v, error, actual.currentContext());
 								if (e_ != null) {
@@ -274,6 +274,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 								//else continue
 							}
 							else {
+								s.cancel();
 								actual.onComplete();
 							}
 							return u;
@@ -456,7 +457,6 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 					actual.onNext(v);
 				}
 				if (done) {
-					s.cancel();
 					if (error != null) {
 						Throwable e_ = Operators.onNextError(t, error, actual.currentContext(), s);
 						if (e_ != null) {
@@ -467,7 +467,10 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 							s.request(1L);
 						}
 					}
-					actual.onComplete();
+					else {
+						s.cancel();
+						actual.onComplete();
+					}
 				}
 				else if (v == null) {
 					s.request(1L);
@@ -507,7 +510,6 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 				emit = actual.tryOnNext(v);
 			}
 			if (done) {
-				s.cancel();
 				if (error != null) {
 					Throwable e_ = Operators.onNextError(t, error, actual.currentContext(), s);
 					if (e_ != null) {
@@ -519,6 +521,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 					return false;
 				}
 				else {
+					s.cancel();
 					actual.onComplete();
 				}
 				return true;
@@ -620,7 +623,6 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 						u = data;
 						data = null;
 						if (done) {
-							s.cancel();
 							if (error != null) {
 								Throwable e_ = Operators.onNextError(v, error, actual.currentContext(), s);
 								if (e_ != null) {
@@ -632,6 +634,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 								}
 							}
 							else {
+								s.cancel();
 								actual.onComplete();
 							}
 							return u;
