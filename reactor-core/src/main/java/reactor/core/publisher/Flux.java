@@ -4698,6 +4698,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param handler the handling {@link BiConsumer}
 	 * @param <R> the transformed type
 	 *
+	 * @reactor.errorMode This operator supports {@link #errorStrategyContinue() resuming on errors} (including when
+	 * fusion is enabled) when the {@link BiConsumer} throws an exception or if an error is signaled explicitly via
+	 * {@link SynchronousSink#error(Throwable)}.
+	 *
 	 * @return a transformed {@link Flux}
 	 */
 	public final <R> Flux<R> handle(BiConsumer<? super T, SynchronousSink<R>> handler) {
