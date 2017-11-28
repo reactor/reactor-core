@@ -434,10 +434,7 @@ public abstract class Operators {
 	@Nullable
 	public static <T> Throwable onNextError(@Nullable T value, Throwable error, Context context,
 			Subscription subscriptionForCancel) {
-		if(!Exceptions.isBubbling(error)){
-			// Unwrap propagated exceptions
-			error = Exceptions.unwrap(error);
-		}
+		error = unwrapOnNextError(error);
 		OnNextFailureStrategy strategy = onNextErrorStrategy(context);
 		if (strategy.test(error, value)) {
 			//some strategies could still return an exception, eg. if the consumer throws
@@ -467,6 +464,7 @@ public abstract class Operators {
 	 * terminal and cancelled the subscription, null if not.
 	 */
 	public static <T> Throwable onNextInnerError(Throwable error, Context context, Subscription subscriptionForCancel) {
+		error = unwrapOnNextError(error);
 		OnNextFailureStrategy strategy = onNextErrorStrategy(context);
 		if (strategy.test(error, null)) {
 			//some strategies could still return an exception, eg. if the consumer throws
@@ -499,6 +497,7 @@ public abstract class Operators {
 	 */
 	@Nullable
 	public static <T> RuntimeException onNextPollError(T value, Throwable error, Context context) {
+		error = unwrapOnNextError(error);
 		OnNextFailureStrategy strategy = onNextErrorStrategy(context);
 		if (strategy.test(error, value)) {
 			//some strategies could still return an exception, eg. if the consumer throws
@@ -510,6 +509,10 @@ public abstract class Operators {
 			Throwable t = onOperatorError(null, error, value, context);
 			return Exceptions.propagate(t);
 		}
+	}
+
+	private static Throwable unwrapOnNextError(Throwable error) {
+		return Exceptions.isBubbling(error) ? error : Exceptions.unwrap(error);
 	}
 
 	/**
