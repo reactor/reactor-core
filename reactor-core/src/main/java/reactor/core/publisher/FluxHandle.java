@@ -154,7 +154,6 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 				}
 				else {
 					reset();
-					s.request(1);
 				}
 				return false;
 			}

@@ -124,7 +124,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 					else {
 						done = false;
 						error = null;
-						s.request(1);
+						return false;
 					}
 				}
 				else {
@@ -258,8 +258,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 								throw Exceptions.propagate(e_);
 							}
 							else {
-								done = false;
-								error = null;
+								reset();
 								continue;
 							}
 						}
@@ -614,8 +613,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 								throw Exceptions.propagate(e_);
 							}
 							else {
-								done = false;
-								error = null;
+								reset();
 								continue;
 							}
 						}
@@ -665,8 +663,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 								throw Exceptions.propagate(e_);
 							}
 							else {
-								done = false;
-								error = null;
+								reset();
 								continue;
 							}
 						}

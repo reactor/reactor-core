@@ -764,8 +764,9 @@ public class OnNextFailureStrategyTest {
 				.errorStrategyContinue();
 
 		StepVerifier.create(test)
-				.expectNext(100)
-				.expectComplete();
+				.expectNext(100, 100, 100)
+				.expectComplete()
+				.verify();
 	}
 
 	@Test
@@ -776,7 +777,7 @@ public class OnNextFailureStrategyTest {
 
 		StepVerifier.create(test)
 				.expectError(ArithmeticException.class)
-				.verifyThenAssertThat();
+				.verify();
 	}
 
 	@Test
@@ -797,7 +798,9 @@ public class OnNextFailureStrategyTest {
 		StepVerifier.create(test)
 				.expectNext(10, 5)
 				.expectError(IllegalStateException.class)
-				.verifyThenAssertThat();
+				.verifyThenAssertThat()
+				.hasDropped(0)
+				.hasDroppedErrors(1);
 	}
 
 
