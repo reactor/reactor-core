@@ -425,15 +425,15 @@ public abstract class Operators {
 	 * @param error The error.
 	 * @param context The most significant {@link Context} in which to look for an {@link OnNextFailureStrategy}.
 	 * @param subscriptionForCancel The {@link Subscription} that should be cancelled if the
-	 * strategy is terminal. Null to ignore (for poll, use {@link #onNextPollError(Object, Throwable, Context)}
-	 * rather than passing null).
+	 * strategy is terminal. Not null, use {@link #onNextPollError(Object, Throwable, Context)}
+	 * when unsubscribing is undesirable (eg. for poll()).
 	 * @param <T> The type of the value causing the error.
 	 * @return a {@link Throwable} to propagate through onError if the strategy is
 	 * terminal and cancelled the subscription, null if not.
 	 */
 	@Nullable
 	public static <T> Throwable onNextError(@Nullable T value, Throwable error, Context context,
-			@Nullable Subscription subscriptionForCancel) {
+			Subscription subscriptionForCancel) {
 		if(!Exceptions.isBubbling(error)){
 			// Unwrap propagated exceptions
 			error = Exceptions.unwrap(error);
@@ -442,7 +442,7 @@ public abstract class Operators {
 		if (strategy.test(error, value)) {
 			//some strategies could still return an exception, eg. if the consumer throws
 			Throwable t = strategy.process(error, value, context);
-			if (t != null && subscriptionForCancel != null) {
+			if (t != null) {
 				subscriptionForCancel.cancel();
 			}
 			return t;
