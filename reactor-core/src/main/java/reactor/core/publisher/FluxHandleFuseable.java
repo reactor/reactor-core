@@ -107,8 +107,12 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 				Throwable e_ = Operators.onNextError(t, error, actual.currentContext(), s);
 				if (e_ != null) {
 					onError(e_);
+					return true;
 				}
-				return false;
+				else {
+					reset();
+					return false;
+				}
 			}
 			R v = data;
 			data = null;
@@ -123,8 +127,8 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 					}
 					else {
 						reset();
+						return false;
 					}
-					return false;
 				}
 				else {
 					s.cancel();
@@ -500,11 +504,12 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 				Throwable e_ = Operators.onNextError(t, error, actual.currentContext(), s);
 				if (e_ != null) {
 					onError(e_);
+					return true;
 				}
 				else {
 					reset();
+					return false;
 				}
-				return false;
 			}
 			R v = data;
 			data = null;
@@ -520,8 +525,8 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 					}
 					else {
 						reset();
+						return false;
 					}
-					return false;
 				}
 				else {
 					s.cancel();

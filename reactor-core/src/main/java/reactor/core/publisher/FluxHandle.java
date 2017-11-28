@@ -153,11 +153,12 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 				Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
 				if (e_ != null) {
 					onError(e_);
+					return true;
 				}
 				else {
 					reset();
+					return false;
 				}
-				return false;
 			}
 			R v = data;
 			data = null;
@@ -172,8 +173,8 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 					}
 					else {
 						reset();
+						return false;
 					}
-					return false;
 				}
 				else {
 					s.cancel();
@@ -348,11 +349,12 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 				Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
 				if (e_ != null) {
 					onError(e_);
+					return true;
 				}
 				else {
 					reset();
+					return false;
 				}
-				return false;
 			}
 			R v = data;
 			boolean emit = false;
@@ -368,8 +370,8 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 					}
 					else {
 						reset();
+						return false;
 					}
-					return false;
 				}
 				else {
 					s.cancel();
