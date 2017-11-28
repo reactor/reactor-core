@@ -433,7 +433,7 @@ public abstract class Operators {
 	 */
 	@Nullable
 	public static <T> Throwable onNextError(@Nullable T value, Throwable error, Context context,
-			Subscription subscriptionForCancel) {
+			@Nullable Subscription subscriptionForCancel) {
 		if(!Exceptions.isBubbling(error)){
 			// Unwrap propagated exceptions
 			error = Exceptions.unwrap(error);
@@ -442,7 +442,7 @@ public abstract class Operators {
 		if (strategy.test(error, value)) {
 			//some strategies could still return an exception, eg. if the consumer throws
 			Throwable t = strategy.process(error, value, context);
-			if (t != null) {
+			if (t != null && subscriptionForCancel != null) {
 				subscriptionForCancel.cancel();
 			}
 			return t;
