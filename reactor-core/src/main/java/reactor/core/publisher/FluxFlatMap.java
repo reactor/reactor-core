@@ -365,7 +365,7 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 				}
 				catch (Throwable e) {
 					//does the strategy apply? if so, short-circuit the delayError. In any case, don't cancel
-					Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), null);
+					Throwable e_ = Operators.onNextPollError(t, e, actual.currentContext());
 					if (e_ == null) {
 						return;
 					}
@@ -760,14 +760,8 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 				if (d && empty) {
 					Throwable e = error;
 					if (e != null && e != Exceptions.TERMINATED) {
-						Throwable e_ = Operators.onNextError(null, e, actual.currentContext(), null);
-						if (e_ != null) {
-							e = Exceptions.terminate(ERROR, this);
-							a.onError(e);
-						}
-						else {
-							a.onComplete();
-						}
+						e = Exceptions.terminate(ERROR, this);
+						a.onError(e);
 					}
 					else {
 						a.onComplete();
