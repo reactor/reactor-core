@@ -2,7 +2,7 @@ Processors are a special kind of `Publisher` that are also a `Subscriber`. That 
 that you can `subscribe` to a `Processor` (generally, they implement `Flux`), but you can
 also call methods to manually inject data into the sequence or terminate it.
 
-There are several kind of Processors, each with a few particular semantics, but before
+There are several kinds of Processors, each with a few particular semantics, but before
 you start looking into these, you need to ask yourself the following question:
 
 = Do I Need a Processor?
@@ -12,7 +12,7 @@ correctly and prone to some corner cases.
 If you think a `Processor` could be a good match for your use case, ask yourself if you
 have tried these two alternatives:
 
-. Could an operator or combination of operators fit the bill? (See <<which-operator>>.)
+. Could an operator or combination of operators fit the bill? (See <<which-operator>>)
 . Could a <<producing,"generator">> operator work instead? (Generally, these operators
 are made to bridge APIs that are not reactive, providing a "sink" that is similar in
 concept to a `Processor` in the sense that it lets you populate the sequence with data or
@@ -59,7 +59,7 @@ describes the three kinds of processors:
 
 * *direct* (`DirectProcessor` and `UnicastProcessor`): These processors can only push
 data through direct user action (calling their `Sink`'s methods directly).
-* *synchronous* (`EmitterProcessor` and `ReplayProcessor`): These processor can push data
+* *synchronous* (`EmitterProcessor` and `ReplayProcessor`): These processors can push data
 both through user action and by subscribing to an upstream `Publisher` and synchronously
 draining it.
 * *asynchronous* (`WorkQueueProcessor` and `TopicProcessor`): These processors can push
