@@ -75,6 +75,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 		final BiConsumer<? super T, SynchronousSink<R>> handler;
 
 		boolean   done;
+		boolean   stop;
 		Throwable error;
 		R         data;
 
@@ -112,7 +113,8 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 			if (v != null) {
 				actual.onNext(v);
 			}
-			if (done) {
+			if (stop) {
+				done = true; //set done because we throw or go through `actual` directly
 				if (error != null) {
 					actual.onError(Operators.onOperatorError(s, error, t,
 							actual.currentContext()));
@@ -157,7 +159,8 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 				if (v != null) {
 					actual.onNext(v);
 				}
-				if (done) {
+				if (stop) {
+					done = true; //set done because we throw or go through `actual` directly
 					s.cancel();
 					if (error != null) {
 						actual.onError(Operators.onOperatorError(null, error, t,
@@ -234,7 +237,8 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 						handler.accept(v, this);
 						u = data;
 						data = null;
-						if (done) {
+						if (stop) {
+							done = true; //set done because we throw or go through `actual` directly
 							s.cancel();
 							if (error != null) {
 								throw Exceptions.propagate(Operators.onOperatorError
@@ -266,7 +270,8 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 						handler.accept(v, this);
 						R u = data;
 						data = null;
-						if (done) {
+						if (stop) {
+							done = true; //set done because we throw or go through `actual` directly
 							if (error != null) {
 								throw Exceptions.propagate(Operators.onOperatorError
 										(null, error, v, actual.currentContext()));
@@ -314,19 +319,28 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 
 		@Override
 		public void complete() {
-			done = true;
+			if (stop) {
+				throw new IllegalStateException("Cannot complete after a complete or error");
+			}
+			stop = true;
 		}
 
 		@Override
 		public void error(Throwable e) {
+			if (stop) {
+				throw new IllegalStateException("Cannot error after a complete or error");
+			}
 			error = Objects.requireNonNull(e, "error");
-			done = true;
+			stop = true;
 		}
 
 		@Override
 		public void next(R o) {
 			if (data != null) {
 				throw new IllegalStateException("Cannot emit more than one data");
+			}
+			if (stop) {
+				throw new IllegalStateException("Cannot emit after a complete or error");
 			}
 			data = Objects.requireNonNull(o, "data");
 		}
@@ -340,6 +354,7 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 		final BiConsumer<? super T, SynchronousSink<R>> handler;
 
 		boolean   done;
+		boolean   stop;
 		Throwable error;
 		R         data;
 
@@ -390,7 +405,8 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 				if (v != null) {
 					actual.onNext(v);
 				}
-				if (done) {
+				if (stop) {
+					done = true; //set done because we throw or go through `actual` directly
 					s.cancel();
 					if (error != null) {
 						actual.onError(Operators.onOperatorError(null, error, v,
@@ -425,7 +441,8 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 			if (v != null) {
 				emit = actual.tryOnNext(v);
 			}
-			if (done) {
+			if (stop) {
+				done = true; //set done because we throw or go through `actual` directly
 				s.cancel();
 				if (error != null) {
 					actual.onError(Operators.onOperatorError(null, error, v,
@@ -463,19 +480,28 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 
 		@Override
 		public void complete() {
-			done = true;
+			if (stop) {
+				throw new IllegalStateException("Cannot complete after a complete or error");
+			}
+			stop = true;
 		}
 
 		@Override
 		public void error(Throwable e) {
+			if (stop) {
+				throw new IllegalStateException("Cannot error after a complete or error");
+			}
 			error = Objects.requireNonNull(e, "error");
-			done = true;
+			stop = true;
 		}
 
 		@Override
 		public void next(R o) {
 			if (data != null) {
 				throw new IllegalStateException("Cannot emit more than one data");
+			}
+			if (stop) {
+				throw new IllegalStateException("Cannot emit after a complete or error");
 			}
 			data = Objects.requireNonNull(o, "data");
 		}
@@ -520,7 +546,8 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 						handler.accept(v, this);
 						u = data;
 						data = null;
-						if (done) {
+						if (stop) {
+							done = true; //set done because we throw or go through `actual` directly
 							s.cancel();
 							if (error != null) {
 								throw Exceptions.propagate(Operators.onOperatorError
@@ -552,7 +579,8 @@ final class FluxHandleFuseable<T, R> extends FluxOperator<T, R> implements Fusea
 						handler.accept(v, this);
 						R u = data;
 						data = null;
-						if (done) {
+						if (stop) {
+							done = true; //set done because we throw or go through `actual` directly
 							if (error != null) {
 								throw Exceptions.propagate(Operators.onOperatorError
 										(null, error, v, actual.currentContext()));
