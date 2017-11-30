@@ -21,6 +21,7 @@ import java.util.logging.Level;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.reactivestreams.Subscription;
 import reactor.core.Fuseable;
 import reactor.core.Fuseable.SynchronousSubscription;
@@ -31,6 +32,7 @@ import reactor.util.Loggers;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.*;
 
 public class SignalLoggerTests {
 
@@ -103,6 +105,137 @@ public class SignalLoggerTests {
 		SignalLogger<String> sl = new SignalLogger<>(source, null, Level.INFO, false);
 
 		Assertions.assertThat(sl.scan(Scannable.Attr.PARENT)).isSameAs(source);
+	}
+
+	@Test
+	public void logErrorUsesErrorWhenInfo() {
+		Level level = Level.INFO;
+
+		Mono<String> source = Mono.error(new IllegalStateException("ignored"));
+		Logger mockLogger = Mockito.mock(Logger.class);
+		when(mockLogger.isErrorEnabled()).thenReturn(true);
+		when(mockLogger.isDebugEnabled()).thenReturn(true);
+		when(mockLogger.isTraceEnabled()).thenReturn(true);
+
+		SignalLogger<String> sl = new SignalLogger<>(source, null, level,
+				false, s -> mockLogger);
+
+		sl.onErrorCall().accept(new IllegalStateException("boom"));
+
+		verify(mockLogger, times(1)).isErrorEnabled();
+		verify(mockLogger, never()).isDebugEnabled();
+		verify(mockLogger, never()).isTraceEnabled();
+		verify(mockLogger, times(1)).error(Mockito.anyString(), (Object[]) Mockito.any());
+		verify(mockLogger, times(1)).error(Mockito.anyString(), (Throwable) Mockito.any());
+		verifyNoMoreInteractions(mockLogger);
+	}
+
+	@Test
+	public void logErrorUsesErrorWhenWarning() {
+		Level level = Level.WARNING;
+
+		Mono<String> source = Mono.error(new IllegalStateException("ignored"));
+		Logger mockLogger = Mockito.mock(Logger.class);
+		when(mockLogger.isErrorEnabled()).thenReturn(true);
+		when(mockLogger.isDebugEnabled()).thenReturn(true);
+		when(mockLogger.isTraceEnabled()).thenReturn(true);
+
+		SignalLogger<String> sl = new SignalLogger<>(source, null, level,
+				false, s -> mockLogger);
+
+		sl.onErrorCall().accept(new IllegalStateException("boom"));
+
+		verify(mockLogger, times(1)).isErrorEnabled();
+		verify(mockLogger, never()).isDebugEnabled();
+		verify(mockLogger, never()).isTraceEnabled();
+		verify(mockLogger, times(1)).error(Mockito.anyString(), (Object[]) Mockito.any());
+		verify(mockLogger, times(1)).error(Mockito.anyString(), (Throwable) Mockito.any());
+		verifyNoMoreInteractions(mockLogger);
+	}
+
+	@Test
+	public void logErrorUsesErrorWhenSevere() {
+		Level level = Level.SEVERE;
+
+		Mono<String> source = Mono.error(new IllegalStateException("ignored"));
+		Logger mockLogger = Mockito.mock(Logger.class);
+		when(mockLogger.isErrorEnabled()).thenReturn(true);
+		when(mockLogger.isDebugEnabled()).thenReturn(true);
+		when(mockLogger.isTraceEnabled()).thenReturn(true);
+
+		SignalLogger<String> sl = new SignalLogger<>(source, null, level,
+				false, s -> mockLogger);
+
+		sl.onErrorCall().accept(new IllegalStateException("boom"));
+
+		verify(mockLogger, times(1)).isErrorEnabled();
+		verify(mockLogger, never()).isDebugEnabled();
+		verify(mockLogger, never()).isTraceEnabled();
+		verify(mockLogger, times(1)).error(Mockito.anyString(), (Object[]) Mockito.any());
+		verify(mockLogger, times(1)).error(Mockito.anyString(), (Throwable) Mockito.any());
+		verifyNoMoreInteractions(mockLogger);
+	}
+
+	@Test
+	public void logErrorUsesDebugWhenFine() {
+		Level level = Level.FINE;
+
+		Mono<String> source = Mono.error(new IllegalStateException("ignored"));
+		Logger mockLogger = Mockito.mock(Logger.class);
+		when(mockLogger.isErrorEnabled()).thenReturn(true);
+		when(mockLogger.isDebugEnabled()).thenReturn(true);
+		when(mockLogger.isTraceEnabled()).thenReturn(true);
+
+		SignalLogger<String> sl = new SignalLogger<>(source, null, level,
+				false, s -> mockLogger);
+
+		sl.onErrorCall().accept(new IllegalStateException("boom"));
+
+		verify(mockLogger, never()).isErrorEnabled();
+		verify(mockLogger, times(1)).isDebugEnabled();
+		verify(mockLogger, never()).isTraceEnabled();
+		verify(mockLogger, times(1)).debug(Mockito.anyString(), (Object[]) Mockito.any());
+		verify(mockLogger, times(1)).debug(Mockito.anyString(), (Throwable) Mockito.any());
+		verifyNoMoreInteractions(mockLogger);
+	}
+
+	@Test
+	public void logErrorUsesTraceWhenFinest() {
+		Level level = Level.FINEST;
+		demonstrateLogError(); //added to the test suite so that sanity check can be done
+
+		Mono<String> source = Mono.error(new IllegalStateException("ignored"));
+		Logger mockLogger = Mockito.mock(Logger.class);
+		when(mockLogger.isErrorEnabled()).thenReturn(true);
+		when(mockLogger.isDebugEnabled()).thenReturn(true);
+		when(mockLogger.isTraceEnabled()).thenReturn(true);
+
+		SignalLogger<String> sl = new SignalLogger<>(source, null, level,
+				false, s -> mockLogger);
+
+		sl.onErrorCall().accept(new IllegalStateException("boom"));
+
+		verify(mockLogger, never()).isErrorEnabled();
+		verify(mockLogger, never()).isDebugEnabled();
+		verify(mockLogger, times(1)).isTraceEnabled();
+		verify(mockLogger, times(1)).trace(Mockito.anyString(), (Object[]) Mockito.any());
+		verify(mockLogger, times(1)).trace(Mockito.anyString(), (Throwable) Mockito.any());
+		verifyNoMoreInteractions(mockLogger);
+	}
+
+	private void demonstrateLogError() {
+		Loggers.getLogger("logError.default")
+		       .warn("The following logs should demonstrate similar error output, but respectively at ERROR, DEBUG and TRACE levels");
+		Mono<Object> error = Mono.error(new IllegalStateException("boom"));
+
+		error.log("logError.default")
+		     .subscribe(v -> {}, e -> {});
+
+		error.log("logError.fine", Level.FINE)
+		     .subscribe(v -> {}, e -> {});
+
+		error.log("logError.finest", Level.FINEST)
+		     .subscribe(v -> {}, e -> {});
 	}
 
 	//=========================================================
