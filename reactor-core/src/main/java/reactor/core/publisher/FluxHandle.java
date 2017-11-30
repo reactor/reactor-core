@@ -176,11 +176,17 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 
 		@Override
 		public void complete() {
+			if (stop) {
+				throw new IllegalStateException("Cannot complete after a complete or error");
+			}
 			stop = true;
 		}
 
 		@Override
 		public void error(Throwable e) {
+			if (stop) {
+				throw new IllegalStateException("Cannot error after a complete or error");
+			}
 			error = Objects.requireNonNull(e, "error");
 			stop = true;
 		}
@@ -189,6 +195,9 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 		public void next(R o) {
 			if(data != null){
 				throw new IllegalStateException("Cannot emit more than one data");
+			}
+			if (stop) {
+				throw new IllegalStateException("Cannot emit after a complete or error");
 			}
 			data = Objects.requireNonNull(o, "data");
 		}
@@ -226,6 +235,7 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 		final BiConsumer<? super T, SynchronousSink<R>> handler;
 
 		boolean done;
+		boolean stop;
 		Throwable error;
 		R data;
 
@@ -269,7 +279,8 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 			if (v != null) {
 				actual.onNext(v);
 			}
-			if(done){
+			if(stop){
+				done = true; //set done because we go through `actual` directly
 				s.cancel();
 				if(error != null){
 					actual.onError(Operators.onOperatorError(null, error, t,
@@ -303,7 +314,8 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 			if (v != null) {
 				emit = actual.tryOnNext(v);
 			}
-			if(done){
+			if(stop){
+				done = true; //set done because we go through `actual` directly
 				s.cancel();
 				if(error != null){
 					actual.onError(Operators.onOperatorError(null, error, t,
@@ -346,19 +358,28 @@ final class FluxHandle<T, R> extends FluxOperator<T, R> {
 
 		@Override
 		public void complete() {
-			done = true;
+			if (stop) {
+				throw new IllegalStateException("Cannot complete after a complete or error");
+			}
+			stop = true;
 		}
 
 		@Override
 		public void error(Throwable e) {
+			if (stop) {
+				throw new IllegalStateException("Cannot error after a complete or error");
+			}
 			error = Objects.requireNonNull(e, "error");
-			done = true;
+			stop = true;
 		}
 
 		@Override
 		public void next(R o) {
 			if(data != null){
 				throw new IllegalStateException("Cannot emit more than one data");
+			}
+			if (stop) {
+				throw new IllegalStateException("Cannot emit after a complete or error");
 			}
 			data = Objects.requireNonNull(o, "data");
 		}

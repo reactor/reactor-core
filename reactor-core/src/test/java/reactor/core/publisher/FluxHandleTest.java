@@ -260,7 +260,9 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
 
 		AssertSubscriber<Integer> ts = AssertSubscriber.create();
 
-		Flux.just(data).<Integer>handle((v, s) -> s.error(exception)).subscribe(ts);
+		Flux.just(data).
+				<Integer>handle((v, s) -> s.error(exception))
+				.subscribe(ts);
 
 		ts.await()
 		  .assertNoValues()
@@ -510,4 +512,252 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
 		            .expectNext(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 		            .verifyComplete();
 	}
+
+	@Test
+	public void nextAfterCompleteNormal() {
+		StepVerifier.create(Flux.just(1)
+		                        .hide()
+		                        .handle((v, sink) -> {
+			                        sink.complete();
+			                        sink.next(2);
+		                        }))
+		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		            .hasMessage("Cannot emit after a complete or error"));
+	}
+
+	@Test
+	public void nextAfterErrorNormal() {
+		StepVerifier.create(Flux.just(1)
+		                        .hide()
+		                        .handle((v, sink) -> {
+			                        sink.error(new NullPointerException("boom"));
+			                        sink.next(2);
+		                        }))
+		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		                                                    .hasMessage("Cannot emit after a complete or error"));
+	}
+
+
+	@Test
+	public void errorAfterCompleteNormal() {
+		StepVerifier.create(Flux.just(1)
+		                        .hide()
+		                        .handle((v, sink) -> {
+			                        sink.complete();
+			                        sink.error(new NullPointerException("boom"));
+		                        }))
+		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		                                                    .hasMessage("Cannot error after a complete or error"));
+	}
+
+
+	@Test
+	public void completeAfterErrorNormal() {
+		StepVerifier.create(Flux.just(1)
+		                        .hide()
+		                        .handle((v, sink) -> {
+			                        sink.error(new NullPointerException("boom"));
+			                        sink.complete();
+		                        }))
+		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		                                                    .hasMessage("Cannot complete after a complete or error"));
+	}
+
+	@Test
+	public void nextAfterNextNormal() {
+		StepVerifier.create(Flux.just(1)
+		                        .hide()
+		                        .handle((v, sink) -> {
+			                        sink.next(v);
+			                        sink.next(v + 1);
+		                        }))
+		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		                                                    .hasMessage("Cannot emit more than one data"));
+	}
+
+	@Test
+	public void nextAfterCompleteNormalConditional() {
+		StepVerifier.create(Flux.just(1)
+		                        .hide()
+		                        .filter(i -> true)
+		                        .handle((v, sink) -> {
+			                        sink.complete();
+			                        sink.next(2);
+		                        }))
+		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		            .hasMessage("Cannot emit after a complete or error"));
+	}
+
+	@Test
+	public void nextAfterErrorNormalConditional() {
+		StepVerifier.create(Flux.just(1)
+		                        .hide()
+		                        .filter(i -> true)
+		                        .handle((v, sink) -> {
+			                        sink.error(new NullPointerException("boom"));
+			                        sink.next(2);
+		                        }))
+		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		                                                    .hasMessage("Cannot emit after a complete or error"));
+	}
+
+
+	@Test
+	public void errorAfterCompleteNormalConditional() {
+		StepVerifier.create(Flux.just(1)
+		                        .hide()
+		                        .filter(i -> true)
+		                        .handle((v, sink) -> {
+			                        sink.complete();
+			                        sink.error(new NullPointerException("boom"));
+		                        }))
+		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		                                                    .hasMessage("Cannot error after a complete or error"));
+	}
+
+
+	@Test
+	public void completeAfterErrorNormalConditional() {
+		StepVerifier.create(Flux.just(1)
+		                        .hide()
+		                        .filter(i -> true)
+		                        .handle((v, sink) -> {
+			                        sink.error(new NullPointerException("boom"));
+			                        sink.complete();
+		                        }))
+		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		                                                    .hasMessage("Cannot complete after a complete or error"));
+	}
+
+	@Test
+	public void nextAfterNextNormalConditional() {
+		StepVerifier.create(Flux.just(1)
+		                        .hide()
+		                        .filter(i -> true)
+		                        .handle((v, sink) -> {
+			                        sink.next(v);
+			                        sink.next(v + 1);
+		                        }))
+		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		                                                    .hasMessage("Cannot emit more than one data"));
+	}
+
+	@Test
+	public void nextAfterCompleteFused() {
+		StepVerifier.create(Flux.just(1)
+		                        .handle((v, sink) -> {
+			                        sink.complete();
+			                        sink.next(2);
+		                        }))
+		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		            .hasMessage("Cannot emit after a complete or error"));
+	}
+
+	@Test
+	public void nextAfterErrorFused() {
+		StepVerifier.create(Flux.just(1)
+		                        .handle((v, sink) -> {
+			                        sink.error(new NullPointerException("boom"));
+			                        sink.next(2);
+		                        }))
+		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		                                                    .hasMessage("Cannot emit after a complete or error"));
+	}
+
+
+	@Test
+	public void errorAfterCompleteFused() {
+		StepVerifier.create(Flux.just(1)
+		                        .handle((v, sink) -> {
+			                        sink.complete();
+			                        sink.error(new NullPointerException("boom"));
+		                        }))
+		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		                                                    .hasMessage("Cannot error after a complete or error"));
+	}
+
+
+	@Test
+	public void completeAfterErrorFused() {
+		StepVerifier.create(Flux.just(1)
+		                        .handle((v, sink) -> {
+			                        sink.error(new NullPointerException("boom"));
+			                        sink.complete();
+		                        }))
+		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		                                                    .hasMessage("Cannot complete after a complete or error"));
+	}
+
+	@Test
+	public void nextAfterNextFused() {
+		StepVerifier.create(Flux.just(1)
+		                        .handle((v, sink) -> {
+			                        sink.next(v);
+			                        sink.next(v + 1);
+		                        }))
+		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		                                                    .hasMessage("Cannot emit more than one data"));
+	}
+
+	@Test
+	public void nextAfterCompleteFusedConditional() {
+		StepVerifier.create(Flux.just(1)
+		                        .filter(i -> true)
+		                        .handle((v, sink) -> {
+			                        sink.complete();
+			                        sink.next(2);
+		                        }))
+		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		            .hasMessage("Cannot emit after a complete or error"));
+	}
+
+	@Test
+	public void nextAfterErrorFusedConditional() {
+		StepVerifier.create(Flux.just(1)
+		                        .filter(i -> true)
+		                        .handle((v, sink) -> {
+			                        sink.error(new NullPointerException("boom"));
+			                        sink.next(2);
+		                        }))
+		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		                                                    .hasMessage("Cannot emit after a complete or error"));
+	}
+
+
+	@Test
+	public void errorAfterCompleteFusedConditional() {
+		StepVerifier.create(Flux.just(1)
+		                        .filter(i -> true)
+		                        .handle((v, sink) -> {
+			                        sink.complete();
+			                        sink.error(new NullPointerException("boom"));
+		                        }))
+		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		                                                    .hasMessage("Cannot error after a complete or error"));
+	}
+
+	@Test
+	public void completeAfterErrorFusedConditional() {
+		StepVerifier.create(Flux.just(1)
+		                        .filter(i -> true)
+		                        .handle((v, sink) -> {
+			                        sink.error(new NullPointerException("boom"));
+			                        sink.complete();
+		                        }))
+		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		                                                    .hasMessage("Cannot complete after a complete or error"));
+	}
+
+	@Test
+	public void nextAfterNextFusedConditional() {
+		StepVerifier.create(Flux.just(1)
+		                        .filter(i -> true)
+		                        .handle((v, sink) -> {
+			                        sink.next(v);
+			                        sink.next(v + 1);
+		                        }))
+		            .verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
+		                                                    .hasMessage("Cannot emit more than one data"));
+	}
+
 }
