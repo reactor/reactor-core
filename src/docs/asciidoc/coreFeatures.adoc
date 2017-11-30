@@ -101,11 +101,11 @@ subscribe(Consumer<? super T> consumer,
           Consumer<? super Throwable> errorConsumer); <3>
 
 subscribe(Consumer<? super T> consumer,
-			    Consumer<? super Throwable> errorConsumer,
+          Consumer<? super Throwable> errorConsumer,
           Runnable completeConsumer); <4>
 
 subscribe(Consumer<? super T> consumer,
-			    Consumer<? super Throwable> errorConsumer,
+          Consumer<? super Throwable> errorConsumer,
           Runnable completeConsumer,
           Consumer<? super Subscription> subscriptionConsumer); <5>
 ----
@@ -148,18 +148,18 @@ Flux<String> source = someStringSource();
 
 source.map(String::toUpperCase)
       .subscribe(new BaseSubscriber<String>() { // <1>
-	      @Override
-	      protected void hookOnSubscribe(Subscription subscription) {
-		      // <2>
-		      request(1); // <3>
-	      }
+          @Override
+          protected void hookOnSubscribe(Subscription subscription) {
+              // <2>
+              request(1); // <3>
+          }
 
-	      @Override
-	      protected void hookOnNext(String value) {
-		      request(1); // <4>
-	      }
+          @Override
+          protected void hookOnNext(String value) {
+              request(1); // <4>
+          }
 
-	      //<5>
+          //<5>
       });
 ----
 <1> The `BaseSubscriber` is an abstract class, so we create an anonymous implementation
@@ -316,7 +316,7 @@ Flux<String> s = Flux.range(1, 10)
     .map(v -> doSomethingDangerous(v)) // <1>
     .map(v -> doSecondTransform(v)); // <2>
 s.subscribe(value -> System.out.println("RECEIVED " + value), // <3>
-    error -> System.err.println("CAUGHT " + error) // <4>
+            error -> System.err.println("CAUGHT " + error) // <4>
 );
 ----
 <1> A transformation is performed that can throw an exception.
@@ -328,13 +328,13 @@ This is conceptually similar to the following try/catch block:
 [source,java]
 ----
 try {
-  for (int i = 1; i < 11; i++) {
-    String v1 = doSomethingDangerous(i); // <1>
-    String v2 = doSecondTransform(v1); // <2>
-    System.out.println("RECEIVED " + v2);
-  }
+    for (int i = 1; i < 11; i++) {
+        String v1 = doSomethingDangerous(i); // <1>
+        String v2 = doSecondTransform(v1); // <2>
+        System.out.println("RECEIVED " + v2);
+    }
 } catch (Throwable t) {
-  System.err.println("CAUGHT " + t); // <3>
+    System.err.println("CAUGHT " + t); // <3>
 }
 ----
 <1> If an exception is thrown here...
@@ -374,10 +374,8 @@ date but is more reliable, you could do the following:
 [source,java]
 ----
 Flux.just("key1", "key2")
-    .flatMap(k ->
-        callExternalService(k) // <1>
-          .onErrorResume(e -> getFromCache(k)) // <2>
-    );
+    .flatMap(k -> callExternalService(k)) // <1>
+    .onErrorResume(e -> getFromCache(k)); // <2>
 ----
 <1> For each key, we asynchronously call the external service.
 <2> If the external service call fails, we fallback to the cache for that key. Note that
@@ -390,17 +388,15 @@ depending on the error encountered:
 [source,java]
 ----
 Flux.just("timeout1", "unknown", "key2")
-    .flatMap(k ->
-        callExternalService(k)
-          .onErrorResume(error -> { // <1>
-            if (error instanceof TimeoutException) // <2>
-              return getFromCache(k);
-            else if (error instanceof UnknownKeyException)  // <3>
-              return registerNewEntry(k, "DEFAULT");
-            else
-              return Flux.error(error); // <4>
-          })
-    );
+    .flatMap(k -> callExternalService(k))
+    .onErrorResume(error -> { // <1>
+        if (error instanceof TimeoutException) // <2>
+            return getFromCache(k);
+        else if (error instanceof UnknownKeyException)  // <3>
+            return registerNewEntry(k, "DEFAULT");
+        else
+            return Flux.error(error); // <4>
+    });
 ----
 <1> The function allows dynamically choosing how to continue.
 <2> If the source times out, hit the local cache.
@@ -422,7 +418,7 @@ You need a tiny bit of boilerplate:
 [source,java]
 ----
 erroringFlux.onErrorResume(error -> Mono.just( // <1>
-	myWrapper.fromError(error) // <2>
+        myWrapper.fromError(error) // <2>
 ));
 ----
 <1> The boilerplate creates a `Mono` from `Mono.just` with `onErrorResume`.
@@ -436,10 +432,9 @@ to how item *(4)* (Catch, wrap to a `BusinessException`, and re-throw) could be 
 [source,java]
 ----
 Flux.just("timeout1")
-    .flatMap(k -> callExternalService(k)
-        .onErrorResume(original -> Flux.error(
-            new BusinessException("oops, SLA exceeded", original))
-        )
+    .flatMap(k -> callExternalService(k))
+    .onErrorResume(original -> Flux.error(
+        new BusinessException("oops, SLA exceeded", original)
     );
 ----
 
@@ -447,9 +442,8 @@ However, there is a more straightforward way of achieving the same with `onError
 [source,java]
 ----
 Flux.just("timeout1")
-    .flatMap(k -> callExternalService(k)
-		    .onErrorMap(original -> new BusinessException("oops, SLA exceeded", original))
-    );
+    .flatMap(k -> callExternalService(k))
+    .onErrorMap(original -> new BusinessException("oops, SLA exceeded", original));
 ----
 
 ==== Log or React on the Side
@@ -469,13 +463,12 @@ increment as an error side-effect.
 LongAdder failureStat = new LongAdder();
 Flux<String> flux =
 Flux.just("unknown")
-    .flatMap(k -> callExternalService(k) // <1>
-		    .doOnError(e -> {
-		    	failureStat.increment();
-		    	log("uh oh, falling back, service failed for key " + k); // <2>
-		    })
-        .onErrorResume(e -> getFromCache(k)) // <3>
-    );
+    .flatMap(k -> callExternalService(k)) // <1>
+    .doOnError(e -> {
+        failureStat.increment();
+        log("uh oh, falling back, service failed for key " + k); // <2>
+    })
+    .onErrorResume(e -> getFromCache(k)); // <3>
 ----
 <1> The external service call that can fail...
 <2> ...is decorated with a logging side-effect...
@@ -491,22 +484,22 @@ This is the equivalent of *(6)* (use the `finally` block to clean up resources o
 ----
 AtomicBoolean isDisposed = new AtomicBoolean();
 Disposable disposableInstance = new Disposable() {
-	@Override
-	public void dispose() {
-		isDisposed.set(true); // <4>
-	}
+    @Override
+    public void dispose() {
+        isDisposed.set(true); // <4>
+    }
 
-	@Override
-	public String toString() {
-		return "DISPOSABLE";
-	}
+    @Override
+    public String toString() {
+        return "DISPOSABLE";
+    }
 };
 
 Flux<String> flux =
 Flux.using(
-		() -> disposableInstance, // <1>
-		disposable -> Flux.just(disposable.toString()), // <2>
-		Disposable::dispose // <3>
+        () -> disposableInstance, // <1>
+        disposable -> Flux.just(disposable.toString()), // <2>
+        Disposable::dispose // <3>
 );
 ----
 <1> The first lambda generates the resource. Here we return our mock `Disposable`.
@@ -527,8 +520,8 @@ LongAdder statsCancel = new LongAdder(); // <1>
 Flux<String> flux =
 Flux.just("foo", "bar")
     .doFinally(type -> {
-      if (type == SignalType.CANCEL) // <2>
-        statsCancel.increment(); // <3>
+        if (type == SignalType.CANCEL) // <2>
+          statsCancel.increment(); // <3>
     })
     .take(1); // <4>
 ----
@@ -548,8 +541,8 @@ terminate when the error happens, we can use a more visual example with a
 Flux<String> flux =
 Flux.interval(Duration.ofMillis(250))
     .map(input -> {
-	    if (input < 3) return "tick " + input;
-	    throw new RuntimeException("boom");
+        if (input < 3) return "tick " + input;
+        throw new RuntimeException("boom");
     })
     .onErrorReturn("Uh oh");
 
@@ -590,8 +583,7 @@ Flux.interval(Duration.ofMillis(250))
     })
     .elapsed() // <1>
     .retry(1)
-    .subscribe(System.out::println,
-      System.err::println); // <2>
+    .subscribe(System.out::println, System.err::println); // <2>
 
 Thread.sleep(2100); // <3>
 ----
@@ -641,8 +633,8 @@ companion would effectively swallow an error. Consider the following way of emul
 
 [source,java]
 ----
-Flux<String> flux =
-Flux.<String>error(new IllegalArgumentException()) // <1>
+Flux<String> flux = Flux
+    .<String>error(new IllegalArgumentException()) // <1>
     .doOnError(System.out::println) // <2>
     .retryWhen(companion -> companion.take(3)); // <3>
 ----
@@ -723,10 +715,10 @@ Consider an example of a `map` that uses a conversion method that can throw an
 [source,java]
 ----
 public String convert(int i) throws IOException {
-  if (i > 3) {
-    throw new IOException("boom " + i);
-  }
-  return "OK " + i;
+    if (i > 3) {
+        throw new IOException("boom " + i);
+    }
+    return "OK " + i;
 }
 ----
 
@@ -740,8 +732,8 @@ map's `onError` method as a `RuntimeException`:
 Flux<String> converted = Flux
     .range(1, 10)
     .map(i -> {
-      try { return convert(i); }
-      catch (IOException e) { throw Exceptions.propagate(e); }
+        try { return convert(i); }
+        catch (IOException e) { throw Exceptions.propagate(e); }
     });
 ----
 
@@ -754,11 +746,11 @@ special for IOExceptions, as shown in the following example:
 converted.subscribe(
     v -> System.out.println("RECEIVED: " + v),
     e -> {
-      if (Exceptions.unwrap(e) instanceof IOException) {
-        System.out.println("Something bad happened with I/O");
-      } else {
-        System.out.println("Something bad happened");
-      }
+        if (Exceptions.unwrap(e) instanceof IOException) {
+            System.out.println("Something bad happened with I/O");
+        } else {
+            System.out.println("Something bad happened");
+        }
     }
 );
 ----
