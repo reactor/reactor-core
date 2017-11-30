@@ -242,16 +242,34 @@ final class SignalLogger<IN> implements SignalPeek<IN> {
 	@Override
 	@Nullable
 	public Consumer<? super Throwable> onErrorCall() {
-		if ((options & ON_ERROR) == ON_ERROR && log.isErrorEnabled()) {
+		boolean shouldLogAsDebug = level == Level.FINE && log.isDebugEnabled();
+		boolean shouldLogAsTrace = level == Level.FINEST && log.isTraceEnabled();
+		boolean shouldLogAsError = level != Level.FINE && level != Level.FINEST && log.isErrorEnabled();
+		if ((options & ON_ERROR) == ON_ERROR && (shouldLogAsError || shouldLogAsDebug ||
+				shouldLogAsTrace)) {
 			String line = fuseable ? LOG_TEMPLATE_FUSEABLE : LOG_TEMPLATE;
 			if (operatorLine != null) {
 				line = line + " " + operatorLine;
 			}
 			String s = line;
-			return e -> {
-				log.error(s, SignalType.ON_ERROR, e, source);
-				log.error("", e);
-			};
+			if (shouldLogAsTrace) {
+				return e -> {
+					log.trace(s, SignalType.ON_ERROR, e, source);
+					log.trace("", e);
+				};
+			}
+			else if (shouldLogAsDebug) {
+				return e -> {
+					log.debug(s, SignalType.ON_ERROR, e, source);
+					log.debug("", e);
+				};
+			}
+			else { //shouldLogAsError
+				return e -> {
+					log.error(s, SignalType.ON_ERROR, e, source);
+					log.error("", e);
+				};
+			}
 		}
 		return null;
 	}
