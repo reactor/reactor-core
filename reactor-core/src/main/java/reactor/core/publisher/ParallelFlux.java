@@ -290,7 +290,14 @@ public abstract class ParallelFlux<T> implements Publisher<T> {
 	 */
 	public final <U> ParallelFlux<U> composeGroup(Function<? super GroupedFlux<Integer, T>,
 			? extends Publisher<? extends U>> composer) {
-		return from(groups().flatMap(composer::apply));
+		if (getPrefetch() > -1) {
+			return from(groups().flatMap(composer::apply),
+				parallelism(), getPrefetch(),
+				Queues.small());
+		}
+		else {
+			return from(groups().flatMap(composer::apply), parallelism());
+		}
 	}
 
 	/**
