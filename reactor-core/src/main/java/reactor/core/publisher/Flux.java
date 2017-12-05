@@ -3781,7 +3781,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @return a {@link Flux} that attempts to continue processing on errors.
 	 */
-	public final Flux<T> errorStrategyContinue(BiConsumer<Throwable, ? extends T> errorConsumer) {
+	public final Flux<T> errorStrategyContinue(BiConsumer<Throwable, ? super T> errorConsumer) {
 		//this cast is ok as only T values will be propagated in this sequence
 		@SuppressWarnings("unchecked") BiConsumer<Throwable, Object> genericConsumer = (BiConsumer<Throwable, Object>) errorConsumer;
 		return subscriberContext(Context.of(
