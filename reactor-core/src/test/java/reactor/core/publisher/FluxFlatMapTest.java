@@ -1577,4 +1577,71 @@ public class FluxFlatMapTest {
 				.hasDroppedErrors(1);
 	}
 
+	@Test
+	public void errorModeContinueInternalErrorStopStrategy() {
+		Flux<Integer> test = Flux
+				.just(0, 1)
+				.hide()
+				.flatMap(f ->  Flux.range(f, 1).map(i -> 1/i).errorStrategyStop())
+				.errorStrategyContinue();
+
+		StepVerifier.create(test)
+				.expectNoFusionSupport()
+				.expectNext(1)
+				.expectComplete()
+				.verifyThenAssertThat()
+				.hasNotDroppedElements()
+				.hasDroppedErrors(1);
+	}
+
+	@Test
+	public void errorModeContinueInternalErrorStopStrategyAsync() {
+		Flux<Integer> test = Flux
+				.just(0, 1)
+				.hide()
+				.flatMap(f ->  Flux.range(f, 1).publishOn(Schedulers.parallel()).map(i -> 1/i).errorStrategyStop())
+				.errorStrategyContinue();
+
+		StepVerifier.create(test)
+				.expectNoFusionSupport()
+				.expectNext(1)
+				.expectComplete()
+				.verifyThenAssertThat()
+				.hasNotDroppedElements()
+				.hasDroppedErrors(1);
+	}
+
+	@Test
+	public void errorModeContinueInternalErrorMono() {
+		Flux<Integer> test = Flux
+				.just(0, 1)
+				.hide()
+				.flatMap(f ->  Mono.just(f).map(i -> 1/i))
+				.errorStrategyContinue();
+
+		StepVerifier.create(test)
+				.expectNoFusionSupport()
+				.expectNext(1)
+				.expectComplete()
+				.verifyThenAssertThat()
+				.hasDropped(0)
+				.hasDroppedErrors(1);
+	}
+
+	@Test
+	public void errorModeContinueInternalErrorMonoAsync() {
+		Flux<Integer> test = Flux
+				.just(0, 1)
+				.hide()
+				.flatMap(f ->  Mono.just(f).publishOn(Schedulers.parallel()).map(i -> 1/i))
+				.errorStrategyContinue();
+
+		StepVerifier.create(test)
+				.expectNoFusionSupport()
+				.expectNext(1)
+				.expectComplete()
+				.verifyThenAssertThat()
+				.hasDropped(0)
+				.hasDroppedErrors(1);
+	}
 }
