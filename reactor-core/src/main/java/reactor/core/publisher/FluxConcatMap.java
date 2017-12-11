@@ -305,6 +305,7 @@ final class FluxConcatMap<T, R> extends FluxOperator<T, R> {
 			}
 			else {
 				active = false;
+				drain();
 			}
 		}
 
