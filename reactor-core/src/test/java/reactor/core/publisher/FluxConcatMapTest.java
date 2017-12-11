@@ -28,6 +28,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
@@ -1031,6 +1032,74 @@ public class FluxConcatMapTest extends FluxOperatorTest<String, String> {
 				.expectComplete()
 				.verifyThenAssertThat()
 				.hasDropped(1)
+				.hasDroppedErrors(1);
+	}
+
+	@Test
+	public void errorModeContinueInternalErrorStopStrategy() {
+		Flux<Integer> test = Flux
+				.just(0, 1)
+				.hide()
+				.concatMap(f ->  Flux.range(f, 1).map(i -> 1/i).errorStrategyStop())
+				.errorStrategyContinue();
+
+		StepVerifier.create(test)
+				.expectNoFusionSupport()
+				.expectNext(1)
+				.expectComplete()
+				.verifyThenAssertThat()
+				.hasNotDroppedElements()
+				.hasDroppedErrors(1);
+	}
+
+	@Test
+	public void errorModeContinueInternalErrorStopStrategyAsync() {
+		Flux<Integer> test = Flux
+				.just(0, 1)
+				.hide()
+				.concatMap(f ->  Flux.range(f, 1).publishOn(Schedulers.parallel()).map(i -> 1 / i).errorStrategyStop())
+				.errorStrategyContinue();
+
+		StepVerifier.create(test)
+				.expectNoFusionSupport()
+				.expectNext(1)
+				.expectComplete()
+				.verifyThenAssertThat()
+				.hasNotDroppedElements()
+				.hasDroppedErrors(1);
+	}
+
+	@Test
+	public void errorModeContinueInternalErrorMono() {
+		Flux<Integer> test = Flux
+				.just(0, 1)
+				.hide()
+				.concatMap(f ->  Mono.just(f).map(i -> 1/i))
+				.errorStrategyContinue();
+
+		StepVerifier.create(test)
+				.expectNoFusionSupport()
+				.expectNext(1)
+				.expectComplete()
+				.verifyThenAssertThat()
+				.hasDropped(0)
+				.hasDroppedErrors(1);
+	}
+
+	@Test
+	public void errorModeContinueInternalErrorMonoAsync() {
+		Flux<Integer> test = Flux
+				.just(0, 1)
+				.hide()
+				.concatMap(f ->  Mono.just(f).publishOn(Schedulers.parallel()).map(i -> 1/i))
+				.errorStrategyContinue();
+
+		StepVerifier.create(test)
+				.expectNoFusionSupport()
+				.expectNext(1)
+				.expectComplete()
+				.verifyThenAssertThat()
+				.hasDropped(0)
 				.hasDroppedErrors(1);
 	}
 
