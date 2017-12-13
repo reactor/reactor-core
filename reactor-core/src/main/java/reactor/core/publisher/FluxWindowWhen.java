@@ -257,7 +257,14 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 				queue.offer(end);
 			}
 			drain();
-			windows.remove(end.window);
+			removeWindow(end.window);
+		}
+
+		void removeWindow(UnicastProcessor<T> window) {
+			Composite<UnicastProcessor<T>> w = windows;
+			if (w != null) {
+				w.remove(window);
+			}
 		}
 
 		void endError(Throwable e, WindowStartEndEnder<T, V> end) {
@@ -268,7 +275,7 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 			else {
 				Operators.onErrorDropped(e, actual.currentContext());
 			}
-			windows.remove(end.window);
+			removeWindow(end.window);
 		}
 
 		void closeMain(boolean cancel) {
