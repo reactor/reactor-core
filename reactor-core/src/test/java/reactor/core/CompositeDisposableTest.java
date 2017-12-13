@@ -16,6 +16,7 @@
 
 package reactor.core;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -247,6 +248,21 @@ public class CompositeDisposableTest {
 
 			RaceTestUtils.race(cd::size, cd::dispose, Schedulers.elastic());
 		}
+	}
+
+	@Test
+	public void forEachTyped() {
+		FakeDisposable fakeDisposable1 = new FakeDisposable();
+		FakeDisposable fakeDisposable2 = new FakeDisposable();
+
+		Disposable.Composite<FakeDisposable> composite = new CompositeDisposable<>(fakeDisposable1, fakeDisposable2);
+
+		List<FakeDisposable> content = new ArrayList<>(2);
+		composite.forEach(content::add);
+
+		System.out.println(content);
+
+		assertThat(content).containsExactlyInAnyOrder(fakeDisposable1, fakeDisposable2);
 	}
 
 }

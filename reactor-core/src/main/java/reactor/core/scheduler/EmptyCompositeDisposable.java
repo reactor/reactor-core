@@ -3,8 +3,9 @@ package reactor.core.scheduler;
 import reactor.core.Disposable;
 
 import java.util.Collection;
+import java.util.function.Consumer;
 
-final class EmptyCompositeDisposable implements Disposable.Composite {
+final class EmptyCompositeDisposable implements Disposable.Composite<Disposable> {
 
     @Override
     public boolean add(Disposable d) {
@@ -35,4 +36,8 @@ final class EmptyCompositeDisposable implements Disposable.Composite {
         return false;
     }
 
+    @Override
+    public void forEach(Consumer<? super Disposable> consumer) {
+        //NO-OP
+    }
 }
