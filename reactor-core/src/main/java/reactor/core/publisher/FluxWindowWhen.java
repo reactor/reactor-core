@@ -31,6 +31,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.util.annotation.Nullable;
 
@@ -135,7 +136,8 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 
 		Set<WindowStartEndEnder<T, V>> windowEnds;
 
-		Set<UnicastProcessor<T>> windows;
+		Disposable.Composite<UnicastProcessor<T>> windows = Disposables.composite();
+//		Set<UnicastProcessor<T>> windows;
 
 		volatile boolean done;
 
@@ -156,7 +158,7 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 			this.starter = new WindowStartEndStarter<>(this);
 			this.end = end;
 			this.windowEnds = new HashSet<>();
-			this.windows = new HashSet<>();
+//			this.windows = new HashSet<>();
 			this.processorQueueSupplier = processorQueueSupplier;
 			WINDOW_COUNT.lazySet(this, 1);
 		}
@@ -255,15 +257,18 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 				queue.offer(end);
 			}
 			drain();
+			windows.remove(end.window);
 		}
 
-		void endError(Throwable e) {
+		void endError(Throwable e, WindowStartEndEnder<T, V> end) {
+			remove(end);
 			if (Exceptions.addThrowable(ERROR, this, e)) {
 				drain();
 			}
 			else {
 				Operators.onErrorDropped(e, actual.currentContext());
 			}
+			windows.remove(end.window);
 		}
 
 		void closeMain(boolean cancel) {
@@ -340,17 +345,15 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 			for (; ; ) {
 
 				for (; ; ) {
-					Throwable e = error;
-					if (e != null) {
-						e = Exceptions.terminate(ERROR, this);
-						if (e != Exceptions.TERMINATED) {
+					Throwable e_ = error;
+					if (e_ != null) {
+						Throwable e = Exceptions.terminate(ERROR, this);
+						if (e != Exceptions.TERMINATED && e != null) {
 							Operators.terminate(S, this);
 							starter.cancel();
 							removeAll();
 
-							for (UnicastProcessor<T> w : windows) {
-								w.onError(e);
-							}
+							windows.forEach(w -> w.onError(e));
 							windows = null;
 
 							q.clear();
@@ -364,9 +367,7 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 					if (done || (windowCount == 0 && cancelled == 0)) {
 						removeAll();
 
-						for (UnicastProcessor<T> w : windows) {
-							w.onComplete();
-						}
+						windows.forEach(UnicastProcessor::onComplete);
 						windows = null;
 
 						a.onComplete();
@@ -445,9 +446,7 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 					else {
 						@SuppressWarnings("unchecked") T v = (T) o;
 
-						for (UnicastProcessor<T> w : windows) {
-							w.onNext(v);
-						}
+						windows.forEach(w -> w.onNext(v));
 					}
 				}
 
@@ -521,7 +520,7 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 
 		@Override
 		public void onError(Throwable t) {
-			main.endError(t);
+			main.endError(t, this);
 		}
 
 		@Override

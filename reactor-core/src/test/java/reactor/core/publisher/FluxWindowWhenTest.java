@@ -19,17 +19,26 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
 
 import org.assertj.core.api.Assertions;
+import org.assertj.core.api.Condition;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Disposable;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
 import reactor.util.concurrent.Queues;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuple3;
+import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -47,6 +56,83 @@ public class FluxWindowWhenTest {
 		         .get(index)).assertValues(values)
 		                     .assertComplete()
 		                     .assertNoError();
+	}
+
+	@Test
+	public void noWindowRetained_gh975() throws InterruptedException {
+		LongAdder created = new LongAdder();
+		LongAdder finalized = new LongAdder();
+		class Wrapper {
+
+			final int i;
+
+			Wrapper(int i) {
+				created.increment();
+				this.i = i;
+			}
+
+			@Override
+			public String toString() {
+				return "{i=" + i + '}';
+			}
+
+			@Override
+			protected void finalize() {
+				finalized.increment();
+			}
+		}
+
+		final CountDownLatch latch = new CountDownLatch(1);
+		final UnicastProcessor<Wrapper> processor = UnicastProcessor.create();
+
+		Flux<Integer> emitter = Flux.range(1, 800)
+		                            .delayElements(Duration.ofMillis(10))
+		                            .doOnNext(i -> processor.onNext(new Wrapper(i)))
+		                            .doOnComplete(processor::onComplete);
+
+		AtomicReference<FluxWindowWhen.WindowStartEndMainSubscriber> startEndMain = new AtomicReference<>();
+		AtomicReference<Disposable.Composite> windows = new AtomicReference<>();
+
+		Mono<List<Tuple3<Long, Integer, Long>>> buffers =
+				processor.window(Duration.ofMillis(1000), Duration.ofMillis(500))
+				         .doOnSubscribe(s -> {
+					         FluxWindowWhen.WindowStartEndMainSubscriber sem =
+							         (FluxWindowWhen.WindowStartEndMainSubscriber) s;
+				         	startEndMain.set(sem);
+				         	windows.set(sem.windows);
+				         })
+				         .flatMap(f -> f.take(2))
+				         .index()
+				         .doOnNext(it -> System.gc())
+				         //index, number of windows "in flight", finalized
+				         .map(t2 -> Tuples.of(t2.getT1(), windows.get().size(), finalized.longValue()))
+				         .doOnComplete(latch::countDown)
+				         .collectList();
+
+		emitter.subscribe();
+
+		List<Tuple3<Long, Integer, Long>> finalizeStats = buffers.block();
+
+		//at least 5 intermediate finalize
+		Condition<? super Tuple3<Long, Integer, Long>> hasFinalized = new Condition<>(
+				t3 -> t3.getT3() > 0, "has finalized");
+		assertThat(finalizeStats).areAtLeast(5, hasFinalized);
+
+		assertThat(finalizeStats).allMatch(t3 -> t3.getT2() <= 3, "max 3 windows in flight");
+
+		latch.await(10, TimeUnit.SECONDS);
+		System.gc();
+		Thread.sleep(500);
+
+		assertThat(windows.get().size())
+				.as("no window retained")
+				.isEqualTo(2);
+		assertThat(startEndMain.get().windows)
+				.as("last windows are disposed")
+				.isNull();
+		assertThat(finalized.longValue())
+				.as("final GC collects all")
+				.isEqualTo(created.longValue());
 	}
 
 	@Test
