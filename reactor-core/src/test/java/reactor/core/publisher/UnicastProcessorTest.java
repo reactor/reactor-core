@@ -23,9 +23,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 
-
 import org.junit.Test;
-
+import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
@@ -177,6 +176,33 @@ public class UnicastProcessorTest {
     	p.subscriberContext(ctx -> ctx.put("foo", "bar")).subscribe();
 
     	assertThat(p.sink().currentContext().get("foo").toString()).isEqualTo("bar");
+	}
 
+	@Test
+	public void subscriptionCancelNullifiesActual() {
+		UnicastProcessor<String> processor = UnicastProcessor.create();
+
+		assertThat(processor.downstreamCount())
+				.as("before subscribe")
+				.isZero();
+
+		LambdaSubscriber<String> subscriber = new LambdaSubscriber<>(null, null, null, null);
+		Disposable subscription = processor.subscribeWith(subscriber);
+
+		assertThat(processor.downstreamCount())
+				.as("after subscribe")
+				.isEqualTo(1);
+		assertThat(processor.actual())
+				.as("after subscribe")
+				.isSameAs(subscriber);
+
+		subscription.dispose();
+
+		assertThat(processor.downstreamCount())
+				.as("after subscription cancel")
+				.isZero();
+		assertThat(processor.actual())
+				.as("after subscription cancel")
+				.isNull();
 	}
 }

@@ -409,6 +409,7 @@ public final class UnicastProcessor<T>
 		if (!outputFused) {
 			if (WIP.getAndIncrement(this) == 0) {
 				queue.clear();
+				actual = null;
 			}
 		}
 	}
