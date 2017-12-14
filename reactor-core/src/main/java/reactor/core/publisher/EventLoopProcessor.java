@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import java.io.Serializable;
+import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -303,7 +304,7 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	 * @return if the underlying executor terminated and false if the timeout elapsed before termination
 	 */
 	public final boolean awaitAndShutdown() {
-		return awaitAndShutdown(-1, TimeUnit.SECONDS);
+		return awaitAndShutdown(Duration.ofSeconds(-1));
 	}
 
 	/**
@@ -311,11 +312,33 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	 * @param timeout the timeout value
 	 * @param timeUnit the unit for timeout
      * @return if the underlying executor terminated and false if the timeout elapsed before termination
+	 * @deprecated use {@link #awaitAndShutdown(Duration)} instead
 	 */
+	@Deprecated
 	public final boolean awaitAndShutdown(long timeout, TimeUnit timeUnit) {
 		try {
 			shutdown();
 			return executor.awaitTermination(timeout, timeUnit);
+		} catch (InterruptedException ie) {
+			Thread.currentThread().interrupt();
+			return false;
+		}
+	}
+
+	/**
+	 * Block until all submitted tasks have completed, then do a normal {@code EventLoopProcessor#dispose()}.
+	 * @param timeout the timeout value as a {@link java.time.Duration}. Note this is converted to a {@link Long}
+	 * of nanoseconds (which amounts to roughly 292 years maximum timeout).
+     * @return if the underlying executor terminated and false if the timeout elapsed before termination
+	 */
+	public final boolean awaitAndShutdown(Duration timeout) {
+		long nanos = -1;
+		if (!timeout.isNegative()) {
+			nanos = timeout.toNanos();
+		}
+		try {
+			shutdown();
+			return executor.awaitTermination(nanos, TimeUnit.NANOSECONDS);
 		} catch (InterruptedException ie) {
 			Thread.currentThread().interrupt();
 			return false;
