@@ -3556,7 +3556,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @reactor.errorMode This operator supports {@link #errorStrategyContinue() resuming on errors}
 	 * (including when fusion is enabled). Exceptions thrown by the consumer are passed to
-	 * the {@link #errorStrategyContinue(BiConsumer<Throwable, Object>)} error consumer (the value consumer
+	 * the {@link #errorStrategyContinue(BiConsumer)} error consumer (the value consumer
 	 * is not invoked, as the source element will be part of the sequence). The onNext
 	 * signal is then propagated as normal.
 	 *
@@ -3773,7 +3773,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Let compatible operators upstream recover from errors by dropping the
 	 * incriminating element from the sequence and continuing with subsequent elements.
 	 * Only errors matching the {@link Predicate} are recovered from.
-	 * The recovered error and associated value are notified via the provided {@link BiConsumer<Throwable, Object>}.
+	 * The recovered error and associated value are notified via the provided {@link BiConsumer}.
 	 * <p>
 	 * Note that this error handling mode is not necessarily implemented by all operators
 	 * (look for the {@code Error Mode Support} javadoc section to find operators that
@@ -3794,7 +3794,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Let compatible operators upstream recover from errors by dropping the
 	 * incriminating element from the sequence and continuing with subsequent elements.
 	 * Only errors matching the specified {@code type} are recovered from.
-	 * The recovered error and associated value are notified via the provided {@link BiConsumer<Throwable, Object>}.
+	 * The recovered error and associated value are notified via the provided {@link BiConsumer}.
 	 * <p>
 	 * Note that this error handling mode is not necessarily implemented by all operators
 	 * (look for the {@code Error Mode Support} javadoc section to find operators that
@@ -3811,7 +3811,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Let compatible operators upstream recover from errors by dropping the
 	 * incriminating element from the sequence and continuing with subsequent elements.
 	 * Only errors matching the {@link Predicate} are recovered from.
-	 * The recovered error and associated value are notified via the provided {@link BiConsumer<Throwable, Object>}.
+	 * The recovered error and associated value are notified via the provided {@link BiConsumer}.
 	 * <p>
 	 * Note that this error handling mode is not necessarily implemented by all operators
 	 * (look for the {@code Error Mode Support} javadoc section to find operators that
