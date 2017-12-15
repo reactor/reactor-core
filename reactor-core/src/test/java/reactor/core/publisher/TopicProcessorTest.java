@@ -15,6 +15,7 @@
  */
 package reactor.core.publisher;
 
+import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -70,11 +71,11 @@ public class TopicProcessorTest {
 
 		processor.shutdown();
 
-		assertFalse(processor.awaitAndShutdown(250, TimeUnit.MILLISECONDS));
+		assertFalse(processor.awaitAndShutdown(Duration.ofMillis(250)));
 
 		subscriber.request(4);
 
-		assertTrue(processor.awaitAndShutdown(250, TimeUnit.MILLISECONDS));
+		assertTrue(processor.awaitAndShutdown(Duration.ofMillis(250)));
 	}
 
 	@Test
@@ -92,7 +93,7 @@ public class TopicProcessorTest {
 
 		processor.forceShutdown();
 
-		assertTrue(processor.awaitAndShutdown(1, TimeUnit.SECONDS));
+		assertTrue(processor.awaitAndShutdown(Duration.ofSeconds(1)));
 	}
 
 	@Test
@@ -106,7 +107,7 @@ public class TopicProcessorTest {
 
 		processor.forceShutdown();
 
-		assertTrue(processor.awaitAndShutdown(5, TimeUnit.SECONDS));
+		assertTrue(processor.awaitAndShutdown(Duration.ofSeconds(5)));
 	}
 
 
@@ -164,7 +165,7 @@ public class TopicProcessorTest {
 
 		processor.forceShutdown();
 
-		assertTrue(processor.awaitAndShutdown(5, TimeUnit.SECONDS));
+		assertTrue(processor.awaitAndShutdown(Duration.ofSeconds(5)));
 	}
 
 	@Test
@@ -182,11 +183,11 @@ public class TopicProcessorTest {
 
 		processor.shutdown();
 
-		assertFalse(processor.awaitAndShutdown(400, TimeUnit.MILLISECONDS));
+		assertFalse(processor.awaitAndShutdown(Duration.ofMillis(400)));
 
 		processor.forceShutdown();
 
-		assertTrue(processor.awaitAndShutdown(400, TimeUnit.MILLISECONDS));
+		assertTrue(processor.awaitAndShutdown(Duration.ofMillis(400)));
 	}
 
 	@Test
