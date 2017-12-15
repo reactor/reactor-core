@@ -29,7 +29,7 @@ import reactor.core.publisher.WorkQueueProcessor;
 /**
  * @author Stephane Maldini
  */
-@org.testng.annotations.Test
+@org.testng.annotations.Test //FIXME
 public class FluxWithProcessorVerification extends AbstractProcessorVerification {
 
 	final AtomicLong cumulated = new AtomicLong(0);

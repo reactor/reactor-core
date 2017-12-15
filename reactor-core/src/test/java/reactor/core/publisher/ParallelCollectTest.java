@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.logging.Level;
 
 import org.junit.Test;
 import org.reactivestreams.Subscription;
@@ -45,7 +46,7 @@ public class ParallelCollectTest {
 		    .collect(as, (a, b) -> a.add(b))
 		    .sequential()
 		    .flatMapIterable(v -> v)
-		    .log()
+		    .log("ParallelCollectTest#collect", Level.FINE)
 		    .subscribe(ts);
 
 		ts.assertContainValues(new HashSet<>(Arrays.asList(1,

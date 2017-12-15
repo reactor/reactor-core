@@ -17,6 +17,7 @@ package reactor.core.publisher;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.logging.Level;
 
 import org.junit.Test;
 import reactor.core.CoreSubscriber;
@@ -45,7 +46,7 @@ public class FluxSubscribeOnValueTest {
 		StepVerifier.create(Flux.range(1, 100)
 		                        .flatMap(f -> Flux.just(f)
 		                                          .subscribeOn(Schedulers.parallel())
-		                                          .log()
+		                                          .log("testSubscribeOnValueFusion", Level.FINE)
 		                                          .map(this::slow)))
 		            .expectFusion(Fuseable.ASYNC, Fuseable.NONE)
 		            .expectNextCount(100)
