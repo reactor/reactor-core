@@ -354,6 +354,15 @@ project('reactor-core') {
 	}
   }
 
+  task testStaticInit(type: Test, group: 'verification') {
+	systemProperty 'reactor.trace.operatorStacktrace', 'true'
+	includes.clear()
+	include '**/*TestStaticInit.*'
+	doFirst {
+	  println "Additional tests from `testStaticInit` ($includes)"
+	}
+  }
+
   sourceSets.test.resources.srcDirs = ["src/test/resources", "src/test/java"]
 
   if (!JavaVersion.current().isJava9Compatible()) {
