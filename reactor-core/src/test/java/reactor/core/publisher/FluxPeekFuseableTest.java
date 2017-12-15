@@ -414,7 +414,7 @@ public class FluxPeekFuseableTest {
 
 	@Test
 	public void afterTerminateCallbackErrorAndErrorCallbackError() {
-		IllegalStateException err = new IllegalStateException("afterTerminate");
+		IllegalStateException err = new IllegalStateException("expected afterTerminate");
 		IllegalArgumentException err2 = new IllegalArgumentException("error");
 
 		FluxPeekFuseable<String> flux = new FluxPeekFuseable<>(
@@ -793,7 +793,6 @@ public class FluxPeekFuseableTest {
 			    })
 			    .blockLast();
 
-			System.out.println(rs);
 			assertEquals(10, count.get());
 		}
 	}

@@ -805,20 +805,20 @@ public class HooksTest {
 				}));
 
 		StepVerifier.create(Flux.just(1, 2, 3)
-		                        .log()
-		                        .log())
+		                        .log("log", Level.FINE)
+		                        .log("log", Level.FINE))
 		            .expectNext(2, 3, 4)
 		            .verifyComplete();
 
 		StepVerifier.create(Mono.just(1)
-		                        .log()
-		                        .log())
+		                        .log("log", Level.FINE)
+		                        .log("log", Level.FINE))
 		            .expectNext(2)
 		            .verifyComplete();
 
 		StepVerifier.create(ParallelFlux.from(Mono.just(1), Mono.just(1))
-		                        .log()
-		                        .log())
+		                        .log("log", Level.FINE)
+		                        .log("log", Level.FINE))
 		            .expectNext(2, 2)
 		            .verifyComplete();
 	}
@@ -852,40 +852,40 @@ public class HooksTest {
 
 		StepVerifier.create(Flux.just(1, 2, 3)
 		                        .tag("metric", "test")
-		                        .log()
-		                        .log())
+		                        .log("log", Level.FINE)
+		                        .log("log", Level.FINE))
 		            .expectNext(2, 3, 4)
 		            .verifyComplete();
 
 		StepVerifier.create(Mono.just(1)
 		                        .tag("metric", "test")
-		                        .log()
-		                        .log())
+		                        .log("log", Level.FINE)
+		                        .log("log", Level.FINE))
 		            .expectNext(2)
 		            .verifyComplete();
 
 		StepVerifier.create(ParallelFlux.from(Mono.just(1), Mono.just(1))
 		                                .tag("metric", "test")
-		                                .log()
-		                                .log())
+		                                .log("log", Level.FINE)
+		                                .log("log", Level.FINE))
 		            .expectNext(2, 2)
 		            .verifyComplete();
 
 		StepVerifier.create(Flux.just(1, 2, 3)
-		                        .log()
-		                        .log())
+		                        .log("log", Level.FINE)
+		                        .log("log", Level.FINE))
 		            .expectNext(1, 2, 3)
 		            .verifyComplete();
 
 		StepVerifier.create(Mono.just(1)
-		                        .log()
-		                        .log())
+		                        .log("log", Level.FINE)
+		                        .log("log", Level.FINE))
 		            .expectNext(1)
 		            .verifyComplete();
 
 		StepVerifier.create(ParallelFlux.from(Mono.just(1), Mono.just(1))
-		                                .log()
-		                                .log())
+		                                .log("log", Level.FINE)
+		                                .log("log", Level.FINE))
 		            .expectNext(1, 1)
 		            .verifyComplete();
 	}
@@ -916,20 +916,20 @@ public class HooksTest {
 				}));
 
 		StepVerifier.create(Flux.just(1, 2, 3)
-		                        .log()
-		                        .log())
+		                        .log("log", Level.FINE)
+		                        .log("log", Level.FINE))
 		            .expectNext(4, 5, 6)
 		            .verifyComplete();
 
 		StepVerifier.create(Mono.just(1)
-		                        .log()
-		                        .log())
+		                        .log("log", Level.FINE)
+		                        .log("log", Level.FINE))
 		            .expectNext(4)
 		            .verifyComplete();
 
 		StepVerifier.create(ParallelFlux.from(Mono.just(1), Mono.just(1))
-		                                .log()
-		                                .log())
+		                                .log("log", Level.FINE)
+		                                .log("log", Level.FINE))
 		            .expectNext(6, 6)
 		            .verifyComplete();
 	}

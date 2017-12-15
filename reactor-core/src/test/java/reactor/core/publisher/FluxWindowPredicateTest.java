@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
+import java.util.logging.Level;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
@@ -646,12 +647,12 @@ public class FluxWindowPredicateTest extends
 
 		Flux<Integer> source = Flux.range(1, 20)
 		                           .doOnRequest(req::addAndGet)
-		                           .log()
+		                           .log("source", Level.FINE)
 		                           .hide();
 
 		StepVerifier.create(source.windowUntil(i -> i % 5 == 0, false, prefetch)
 		                          .concatMap(w -> w, 1)
-				.log("downstream"),  0)
+				.log("downstream", Level.FINE),  0)
 		            .thenRequest(2)
 		            .expectNext(1, 2)
 		            .thenRequest(6)
@@ -670,12 +671,12 @@ public class FluxWindowPredicateTest extends
 
 		Flux<Integer> source = Flux.range(1, 20)
 		                           .doOnRequest(req::addAndGet)
-		                           .log("source")
+		                           .log("source", Level.FINE)
 		                           .hide();
 
 		StepVerifier.create(source.windowWhile(i -> i % 5 != 0, prefetch)
-		                          .concatMap(w -> w.log(), 1)
-		                          .log("downstream"),  0)
+		                          .concatMap(w -> w.log("window", Level.FINE), 1)
+		                          .log("downstream", Level.FINE),  0)
 		            .thenRequest(2)
 		            .expectNext(1, 2)
 		            .thenRequest(6)
@@ -696,13 +697,13 @@ public class FluxWindowPredicateTest extends
 		StepVerifier.create(
 				source
 				.doOnRequest(req::addAndGet)
-				.log("source")
+				.log("source", Level.FINE)
 				.windowWhile(s -> !"#".equals(s), 2)
-				.log("windowWhile")
+				.log("windowWhile", Level.FINE)
 				.concatMap(w -> w.collectList()
-				                 .log("window")
+				                 .log("window", Level.FINE)
 						, 1)
-				.log("downstream")
+				.log("downstream", Level.FINE)
 			, StepVerifierOptions.create().checkUnderRequesting(false).initialRequest(1))
 		            .expectNextMatches(List::isEmpty)
 		            .thenRequest(1)
@@ -726,13 +727,13 @@ public class FluxWindowPredicateTest extends
 		StepVerifier.create(
 		source
 				.doOnRequest(req::addAndGet)
-				.log("source")
+				.log("source", Level.FINE)
 				.windowWhile(s -> !"#".equals(s), 2)
-				.log("windowWhile")
+				.log("windowWhile", Level.FINE)
 				.concatMap(w -> w.collectList()
-				                 .log("window")
+				                 .log("window", Level.FINE)
 						, 1)
-				.log("downstream")
+				.log("downstream", Level.FINE)
 		)
 		            .expectNextMatches(List::isEmpty)
 		            .assertNext(l -> assertThat(l).containsExactly("1A", "1B", "1C"))
@@ -752,13 +753,13 @@ public class FluxWindowPredicateTest extends
 		StepVerifier.create(
 		source
 				.doOnRequest(req::addAndGet)
-				.log("source")
+				.log("source", Level.FINE)
 				.windowUntil(s -> "#".equals(s), false, 2)
-				.log("windowUntil")
+				.log("windowUntil", Level.FINE)
 				.concatMap(w -> w.collectList()
-								 .log("window")
+								 .log("window", Level.FINE)
 						, 1)
-				.log("downstream")
+				.log("downstream", Level.FINE)
 		)
 		            .assertNext(l -> assertThat(l).containsExactly("#"))
 		            .assertNext(l -> assertThat(l).containsExactly("1A", "1B", "1C", "#"))

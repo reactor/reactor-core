@@ -26,11 +26,15 @@ import reactor.core.Exceptions;
 import reactor.core.Fuseable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.util.Logger;
+import reactor.util.Loggers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 public class MonoPeekAfterTest {
+
+	private static final Logger LOG = Loggers.getLogger(MonoPeekAfterTest.class);
 
 	@Test
 	public void onSuccessNormal() {
@@ -726,7 +730,7 @@ public class MonoPeekAfterTest {
 			                      .subscribeOn(Schedulers.parallel())
 			                      .reduce((l, r) -> l + "_" + r)
 			                      .doOnSuccess(s -> {
-				                      System.out.println("success " + x + ": " + s);
+				                      LOG.debug("success " + x + ": " + s);
 				                      count.incrementAndGet();
 			                      }))
 			    .blockLast();

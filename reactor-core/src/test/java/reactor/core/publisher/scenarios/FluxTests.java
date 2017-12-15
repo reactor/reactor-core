@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -81,6 +82,8 @@ import static org.hamcrest.number.OrderingComparison.lessThan;
 import static org.junit.Assert.*;
 
 public class FluxTests extends AbstractReactorTest {
+
+	static final Logger LOG = Loggers.getLogger(FluxTests.class);
 
 	static final String2Integer STRING_2_INTEGER = new String2Integer();
 
@@ -246,7 +249,7 @@ public class FluxTests extends AbstractReactorTest {
 			                          @Override
 			                          public Integer apply(Integer i) {
 				                          if (i >= 5) {
-					                          throw new IllegalArgumentException();
+					                          throw new IllegalArgumentException("expected");
 				                          }
 				                          sum += i;
 				                          return sum;
@@ -843,8 +846,8 @@ public class FluxTests extends AbstractReactorTest {
 						                                         return s;
 			                                          }))
 			    .take(Duration.ofSeconds(2))
-			    .log("parallelStream")
-			    .subscribe(System.out::println);
+			    .log("parallelStream", Level.FINE)
+			    .subscribe(LOG::debug);
 		}
 
 		latch.await(15, TimeUnit.SECONDS);
@@ -882,13 +885,13 @@ public class FluxTests extends AbstractReactorTest {
 
 		CountDownLatch countDownLatch = new CountDownLatch(tasks.size());
 		Flux<Integer> worker = Flux.fromIterable(tasks)
-		                                 .log("before")
+		                                 .log("before", Level.FINE)
 		                                 .publishOn(asyncGroup);
 
-		/*Disposable tail = */worker.log("after")
+		/*Disposable tail = */worker.log("after", Level.FINE)
 		                          .parallel(2)
 		                          .groups()
-		                          .subscribe(s -> s.log("w"+s.key())
+		                          .subscribe(s -> s.log("w"+s.key(), Level.FINE)
 		                                    .publishOn(asyncGroup)
 		                                    .map(v -> v)
 		                                    .subscribe(v -> countDownLatch.countDown(), Throwable::printStackTrace));
@@ -1130,7 +1133,7 @@ public class FluxTests extends AbstractReactorTest {
 		CountDownLatch latch = new CountDownLatch(100);
 
 		Flux.range(1, 100)
-		       .log("testOn")
+		       .log("testOn", Level.FINE)
 		       .subscribeOn(ioGroup)
 		       .publishOn(asyncGroup)
 		        .limitRate(1)
