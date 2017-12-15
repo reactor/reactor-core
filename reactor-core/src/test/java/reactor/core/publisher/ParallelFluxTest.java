@@ -376,6 +376,48 @@ public class ParallelFluxTest {
 	}
 
 	@Test
+	public void composeGroupMaintainsParallelismAndPrefetch() {
+		ParallelFlux<Integer> parallelFlux = Flux.range(1, 10)
+		                                         .parallel(3)
+		                                         .runOn(Schedulers.parallel(), 123);
+
+		ParallelFlux<Integer> composed = parallelFlux.composeGroup(rail -> rail.map(i -> i + 2));
+
+		assertThat(composed.parallelism())
+				.as("maintains parallelism")
+				.isEqualTo(parallelFlux.parallelism())
+				.isEqualTo(3);
+
+		assertThat(composed.getPrefetch())
+				.as("maintains prefetch")
+				.isEqualTo(parallelFlux.getPrefetch())
+				.isEqualTo(123);
+	}
+
+	@Test
+	public void composeGroupMaintainsParallelism() {
+		ParallelFlux<Integer> parallelFlux = Flux.range(1, 10)
+		                                         .parallel(3)
+		                                         .map(i -> i + 2);
+
+		ParallelFlux<Integer> composed = parallelFlux.composeGroup(rail -> rail.map(i -> i + 2));
+
+		assertThat(composed.parallelism())
+				.as("maintains parallelism")
+				.isEqualTo(parallelFlux.parallelism())
+				.isEqualTo(3);
+
+		assertThat(parallelFlux.getPrefetch())
+				.as("parallel source no prefetch")
+				.isEqualTo(-1);
+
+		assertThat(composed.getPrefetch())
+				.as("reset prefetch to default")
+				.isNotEqualTo(parallelFlux.getPrefetch())
+				.isEqualTo(Queues.SMALL_BUFFER_SIZE);
+	}
+
+	@Test
 	public void fromSourceHasCpuParallelism() {
 		int cpus = Runtime.getRuntime()
 		                  .availableProcessors();
