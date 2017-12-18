@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
@@ -47,6 +48,8 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.core.Scannable;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Operators;
 import reactor.core.publisher.Signal;
@@ -54,6 +57,7 @@ import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
@@ -208,6 +212,28 @@ final class DefaultStepVerifierBuilder<T>
 					"consumeSubscriptionWith"));
 		}
 		return this;
+	}
+
+	@Override
+	public StepVerifier.ContextExpectations<T> expectAccessibleContext() {
+		return new DefaultContextExpectations<>(this);
+	}
+
+	@Override
+	public DefaultStepVerifierBuilder<T> expectNoAccessibleContext() {
+		return consumeSubscriptionWith(sub -> {
+					Scannable lowest = Scannable.from(sub);
+					Scannable verifierSubscriber = Scannable.from(lowest.scan(Scannable.Attr.ACTUAL));
+
+					Context c = Flux.fromStream(verifierSubscriber.parents())
+					                .ofType(CoreSubscriber.class)
+					                .map(CoreSubscriber::currentContext)
+					                .blockLast();
+
+					if (c != null) {
+						throw new AssertionError("Expected no accessible Context, got " + c);
+					}
+				});
 	}
 
 	@Override
@@ -690,6 +716,7 @@ final class DefaultStepVerifierBuilder<T>
 							this.requestedFusionMode,
 							this.expectedFusionMode,
 							this.debugEnabled,
+							this.parent.options.getInitialContext(),
 							vts);
 
 					publisher.subscribe(newVerifier);
@@ -735,6 +762,7 @@ final class DefaultStepVerifierBuilder<T>
 					this.requestedFusionMode,
 					this.expectedFusionMode,
 					this.debugEnabled,
+					this.parent.options.getInitialContext(),
 					vts);
 		}
 
@@ -742,7 +770,7 @@ final class DefaultStepVerifierBuilder<T>
 
 	final static class DefaultVerifySubscriber<T>
 			extends AtomicReference<Subscription>
-			implements StepVerifier, CoreSubscriber<T> {
+			implements StepVerifier, CoreSubscriber<T>, Scannable {
 
 		final CountDownLatch                completeLatch;
 		final Queue<Event<T>>               script;
@@ -750,6 +778,7 @@ final class DefaultStepVerifierBuilder<T>
 		final int                           requestedFusionMode;
 		final int                           expectedFusionMode;
 		final long                          initialRequest;
+		final Context                       initialContext;
 		final VirtualTimeScheduler          virtualTimeScheduler;
 
 		Logger                        logger;
@@ -781,6 +810,7 @@ final class DefaultStepVerifierBuilder<T>
 				int requestedFusionMode,
 				int expectedFusionMode,
 				boolean debugEnabled,
+				@Nullable Context initialContext,
 				@Nullable VirtualTimeScheduler vts) {
 			this.virtualTimeScheduler = vts;
 			this.requestedFusionMode = requestedFusionMode;
@@ -804,6 +834,7 @@ final class DefaultStepVerifierBuilder<T>
 			this.unasserted = 0L;
 			this.completeLatch = new CountDownLatch(1);
 			this.requested = initialRequest;
+			this.initialContext = initialContext == null ? Context.empty() : initialContext;
 		}
 
 		static <R> Queue<Event<R>> conflateScript(List<Event<R>> script, @Nullable Logger logger) {
@@ -853,6 +884,21 @@ final class DefaultStepVerifierBuilder<T>
 			//TODO simplified whole algo, remove DescriptionTasks
 
 			return conflated;
+		}
+
+		@Override
+		public Object scanUnsafe(Attr key) {
+			if (key == Attr.PARENT) {
+				Subscription s = this.get();
+				if (s instanceof Scannable) return s;
+			}
+
+			return null;
+		}
+
+		@Override
+		public Context currentContext() {
+			return initialContext;
 		}
 
 		/**
@@ -2206,6 +2252,152 @@ final class DefaultStepVerifierBuilder<T>
 				return Optional.empty();
 			}
 		}, desc);
+	}
+
+	static final class DefaultContextExpectations<T>
+			implements StepVerifier.ContextExpectations<T> {
+
+		private final StepVerifier.Step<T> step;
+		private Consumer<Context>          contextExpectations;
+
+		DefaultContextExpectations(StepVerifier.Step<T> step) {
+			this.step = step;
+			this.contextExpectations = c -> {
+				if (c == null) throw new AssertionError("No propagated Context");
+			};
+		}
+
+		@Override
+		public StepVerifier.Step<T> then() {
+			return step.consumeSubscriptionWith(s -> {
+				Scannable lowest = Scannable.from(s);
+				Scannable verifierSubscriber = Scannable.from(lowest.scan(Scannable.Attr.ACTUAL));
+
+				Context c = Flux.fromStream(verifierSubscriber.parents())
+						.ofType(CoreSubscriber.class)
+						.map(CoreSubscriber::currentContext)
+						.blockLast();
+
+				this.contextExpectations.accept(c);
+			});
+		}
+
+		@Override
+		public StepVerifier.ContextExpectations<T> hasKey(Object key) {
+			this.contextExpectations = this.contextExpectations.andThen(c -> {
+					if (!c.hasKey(key))
+						throw new AssertionError(String.format(
+								"Key %s not found in Context %s", key, c));
+			});
+			return this;
+		}
+
+		@Override
+		public StepVerifier.ContextExpectations<T> hasSize(int size) {
+			this.contextExpectations = this.contextExpectations.andThen(c -> {
+				long realSize = c.stream().count();
+				if (realSize != size)
+					throw new AssertionError(String.format(
+							"Expected Context of size %d, got %d for Context %s", size, realSize, c));
+			});
+			return this;
+		}
+
+		@Override
+		public StepVerifier.ContextExpectations<T> contains(Object key, Object value) {
+			this.contextExpectations = this.contextExpectations.andThen(c -> {
+				Object realValue = c.getOrDefault(key, null);
+				if (realValue == null)
+					throw new AssertionError(String.format(
+							"Expected value %s for key %s, key not present in Context %s", value, key, c));
+
+				if (!value.equals(realValue))
+					throw new AssertionError(String.format(
+							"Expected value %s for key %s, got %s in Context %s", value, key, realValue, c));
+			});
+			return this;
+		}
+
+		@Override
+		public StepVerifier.ContextExpectations<T> containsAllOf(Context other) {
+			this.contextExpectations = this.contextExpectations.andThen(c -> {
+				boolean all = other.stream().allMatch(e -> e.getValue().equals(c.getOrDefault(e.getKey(), null)));
+				if (!all) {
+					throw new AssertionError(String.format("Expected Context %s to contain all of %s", c, other));
+				}
+			});
+			return this;
+		}
+
+		@Override
+		public StepVerifier.ContextExpectations<T> containsAllOf(Map<?, ?> other) {
+			this.contextExpectations = this.contextExpectations.andThen(c -> {
+				boolean all = other.entrySet()
+				                   .stream()
+				                   .allMatch(e -> e.getValue().equals(c.getOrDefault(e.getKey(), null)));
+				if (!all) {
+					throw new AssertionError(String.format("Expected Context %s to contain all of %s", c, other));
+				}
+			});
+			return this;
+		}
+
+		@Override
+		public StepVerifier.ContextExpectations<T> containsOnly(Context other) {
+			this.contextExpectations = this.contextExpectations.andThen(c -> {
+				if (c.stream().count() != other.stream().count()) {
+					throw new AssertionError(String.format("Expected Context %s to contain same values as %s, but they differ in size", c, other));
+				}
+				boolean all = other.stream()
+				                   .allMatch(e -> e.getValue().equals(c.getOrDefault(e.getKey(), null)));
+				if (!all) {
+					throw new AssertionError(String.format("Expected Context %s to contain same values as %s, but they differ in content", c, other));
+				}
+			});
+			return this;
+		}
+
+		@Override
+		public StepVerifier.ContextExpectations<T> containsOnly(Map<?, ?> other) {
+			this.contextExpectations = this.contextExpectations.andThen(c -> {
+				if (c.stream().count() != other.size()) {
+					throw new AssertionError(String.format("Expected Context %s to contain same values as %s, but they differ in size", c, other));
+				}
+				boolean all = other.entrySet()
+				                   .stream()
+				                   .allMatch(e -> e.getValue().equals(c.getOrDefault(e.getKey(), null)));
+				if (!all) {
+					throw new AssertionError(String.format("Expected Context %s to contain same values as %s, but they differ in content", c, other));
+				}
+			});
+			return this;
+		}
+
+		@Override
+		public StepVerifier.ContextExpectations<T> assertThat(Consumer<Context> assertingConsumer) {
+			this.contextExpectations = this.contextExpectations.andThen(assertingConsumer);
+			return this;
+		}
+
+		@Override
+		public StepVerifier.ContextExpectations<T> matches(Predicate<Context> predicate) {
+			this.contextExpectations = this.contextExpectations.andThen(c -> {
+				if (!predicate.test(c)) {
+					throw new AssertionError(String.format("Context %s doesn't match predicate", c));
+				}
+			});
+			return this;
+		}
+
+		@Override
+		public StepVerifier.ContextExpectations<T> matches(Predicate<Context> predicate, String description) {
+			this.contextExpectations = this.contextExpectations.andThen(c -> {
+				if (!predicate.test(c)) {
+					throw new AssertionError(String.format("Context %s doesn't match predicate %s", c, description));
+				}
+			});
+			return this;
+		}
 	}
 
 	static final SignalEvent DEFAULT_ONSUBSCRIBE_STEP = newOnSubscribeStep("defaultOnSubscribe");
