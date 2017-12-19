@@ -3222,6 +3222,57 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	/**
+	 * Shift this {@link Flux} forward in time by a given {@link Duration}.
+	 * Unlike with {@link #delayElements(Duration)}, elements are shifted forward in time
+	 * as they are emitted, always resulting in the delay between two elements being
+	 * the same as in the source (only the first element is visibly delayed from the
+	 * previous event, that is the subscription).
+	 * Signals are delayed and continue on the {@link Schedulers#parallel() parallel}
+	 * {@link Scheduler}, but empty sequences or immediate error signals are not delayed.
+	 * <p>
+	 * With this operator, a source emitting at 10Hz with a delaySequence {@link Duration}
+	 * of 1s will still emit at 10Hz, with an initial "hiccup" of 1s.
+	 * On the other hand, {@link #delayElements(Duration)} would end up emitting
+	 * at 1Hz.
+	 * <p>
+	 * This is closer to {@link #delaySubscription(Duration)}, except the source
+	 * is subscribed to immediately.
+	 *
+	 * @param delay {@link Duration} to shift the sequence by
+	 * @return an shifted {@link Flux} emitting at the same frequency as the source
+	 */
+	//FIXME marble diagram
+	public final Flux<T> delaySequence(Duration delay) {
+		return delaySequence(delay, Schedulers.parallel());
+	}
+
+	/**
+	 * Shift this {@link Flux} forward in time by a given {@link Duration}.
+	 * Unlike with {@link #delayElements(Duration, Scheduler)}, elements are shifted forward in time
+	 * as they are emitted, always resulting in the delay between two elements being
+	 * the same as in the source (only the first element is visibly delayed from the
+	 * previous event, that is the subscription).
+	 * Signals are delayed and continue on an user-specified {@link Scheduler}, but empty
+	 * sequences or immediate error signals are not delayed.
+	 * <p>
+	 * With this operator, a source emitting at 10Hz with a delaySequence {@link Duration}
+	 * of 1s will still emit at 10Hz, with an initial "hiccup" of 1s.
+	 * On the other hand, {@link #delayElements(Duration, Scheduler)} would end up emitting
+	 * at 1Hz.
+	 * <p>
+	 * This is closer to {@link #delaySubscription(Duration, Scheduler)}, except the source
+	 * is subscribed to immediately.
+	 *
+	 * @param delay {@link Duration} to shift the sequence by
+	 * @param timer a time-capable {@link Scheduler} instance to delay signals on
+	 * @return an shifted {@link Flux} emitting at the same frequency as the source
+	 */
+	//FIXME marble diagram
+	public final Flux<T> delaySequence(Duration delay, Scheduler timer) {
+		return onAssembly(new FluxDelaySequence<>(this, delay, timer));
+	}
+
+	/**
 	 * Subscribe to this {@link Flux} and generate a {@link Publisher} from each of this
 	 * Flux elements, each acting as a trigger for relaying said element.
 	 * <p>
@@ -3244,7 +3295,6 @@ public abstract class Flux<T> implements Publisher<T> {
 		return concatMap(v -> Mono.just(v)
 		                          .delayUntil(triggerProvider));
 	}
-
 
 	/**
 	 * Delay the {@link Flux#subscribe(Subscriber) subscription} to this {@link Flux} source until the given
