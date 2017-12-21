@@ -16,6 +16,8 @@
 
 package reactor.core.publisher.tck;
 
+import java.util.logging.Level;
+
 import org.reactivestreams.Publisher;
 import org.reactivestreams.tck.PublisherVerification;
 import org.reactivestreams.tck.TestEnvironment;
@@ -47,7 +49,7 @@ public class FluxGenerateVerification extends PublisherVerification<Long> {
 
 				.map(data -> data * 10)
 				.map( data -> data / 10)
-				.log("log-test");
+				.log("log-test", Level.FINE);
 	}
 
 	@Override

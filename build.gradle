@@ -345,8 +345,6 @@ project('reactor-core') {
   task testNG(type: Test, group: 'verification') {
 	useTestNG()
 
-	//FIXME smaldini the testNG test randomly fail on local, fail on CI
-	exclude '**/*.*'
 	includes.clear()
 	include '**/*Verification.*'
 	doFirst {

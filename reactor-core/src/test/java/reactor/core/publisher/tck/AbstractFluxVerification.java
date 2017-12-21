@@ -37,7 +37,7 @@ public abstract class AbstractFluxVerification
 	final int batch = 1024;
 
 	AbstractFluxVerification() {
-		super(new TestEnvironment(true));
+		super(new TestEnvironment(false));
 	}
 
 	abstract Flux<Integer> transformFlux(Flux<Integer> f);
