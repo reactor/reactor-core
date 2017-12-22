@@ -535,6 +535,12 @@ final class DefaultStepVerifierBuilder<T>
 	}
 
 	@Override
+	public DefaultStepVerifier<T> awaitThenCancel() {
+		this.script.add(new SubscriptionTaskEvent<>(new SubscriptionEvent<>("awaitThenCancel")));
+		return build();
+	}
+
+	@Override
 	public Duration verifyError() {
 		return expectError().verify();
 	}

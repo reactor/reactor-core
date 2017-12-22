@@ -22,7 +22,9 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.locks.LockSupport;
 
 import org.assertj.core.api.Assertions;
 import org.junit.Assert;
@@ -450,6 +452,159 @@ public class StepVerifierTests {
 		            .thenCancel()
 		            .verify())
 	            .withMessage("expectation \"expectNext(foo)\" failed (expected value: foo; actual value: bar)");
+	}
+
+	@Test
+	public void awaitThenCancel_cancelsAfterFirst() {
+		TestPublisher<Long> publisher = TestPublisher.create();
+		AtomicBoolean downStreamCancelled = new AtomicBoolean();
+		AtomicBoolean asserted = new AtomicBoolean();
+		Flux<Long> source = publisher
+				.flux()
+				.doOnCancel(() -> downStreamCancelled.set(true));
+
+		Duration took = StepVerifier.create(source)
+		                            .then(() -> Schedulers.elastic().schedule(() -> publisher.next(0L)))
+		                            .assertNext(next -> {
+			                            LockSupport.parkNanos(Duration.ofSeconds(1).toNanos());
+			                            asserted.set(true);
+			                            assertThat(next).isEqualTo(0L);
+		                            })
+		                            .awaitThenCancel()
+		                            .verify(Duration.ofSeconds(5));
+
+		publisher.assertCancelled();
+
+		assertThat(asserted.get())
+				.as("expectation processed")
+				.isTrue();
+		assertThat(downStreamCancelled.get())
+				.as("is cancelled by awaitThenCancel")
+				.isTrue();
+		assertThat(took.toMillis())
+				.as("blocked on first assertNext")
+				.isGreaterThanOrEqualTo(1000L);
+	}
+
+	@Test
+	public void verifyThenCancel_cancelsAfterFirst() {
+		TestPublisher<Long> publisher = TestPublisher.create();
+		AtomicBoolean downStreamCancelled = new AtomicBoolean();
+		AtomicBoolean asserted = new AtomicBoolean();
+		Flux<Long> source = publisher
+				.flux()
+				.doOnCancel(() -> downStreamCancelled.set(true));
+
+		Duration took = StepVerifier.create(source)
+		                            .then(() -> Schedulers.elastic().schedule(() -> publisher.next(0L)))
+		                            .assertNext(next -> {
+			                            LockSupport.parkNanos(Duration.ofSeconds(1).toNanos());
+			                            asserted.set(true);
+			                            assertThat(next).isEqualTo(0L);
+		                            })
+		                            .verifyThenCancel(Duration.ofSeconds(5));
+
+		publisher.assertCancelled();
+
+		assertThat(asserted.get())
+				.as("expectation processed")
+				.isTrue();
+		assertThat(downStreamCancelled.get())
+				.as("is cancelled by verifyThenCancel")
+				.isTrue();
+		assertThat(took.toMillis())
+				.as("blocked on first assertNext")
+				.isGreaterThanOrEqualTo(1000L);
+	}
+
+	@Test
+	public void awaitThenCancel_blocksUntilTimeout() {
+		AtomicBoolean downStreamCancelled = new AtomicBoolean();
+		AtomicBoolean asserted = new AtomicBoolean();
+		Flux<Long> source = Flux.<Long>never()
+		                        .doOnCancel(() -> downStreamCancelled.set(true));
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> StepVerifier.create(source)
+				                              .assertNext(next -> {
+					                              asserted.set(true);
+					                              assertThat(next).isEqualTo(0L);
+				                              })
+				                              .awaitThenCancel()
+				                              .verify(Duration.ofMillis(500))
+				)
+				.withMessageStartingWith("VerifySubscriber timed out on");
+
+		assertThat(asserted.get())
+				.as("no expectation processed")
+				.isFalse();
+		assertThat(downStreamCancelled.get())
+				.as("timed out before cancel")
+				.isFalse();
+	}
+
+	@Test
+	public void thenCancel_shortCircuitsExpectation() {
+		TestPublisher<Long> publisher = TestPublisher.create();
+		AtomicBoolean downStreamCancelled = new AtomicBoolean();
+		AtomicBoolean asserted = new AtomicBoolean();
+		Flux<Long> source = publisher
+				.flux()
+				.doOnCancel(() -> downStreamCancelled.set(true));
+
+
+		Duration took = StepVerifier.create(source)
+		                            .then(() -> Schedulers.elastic().schedule(() -> publisher.next(0L)))
+		                            .assertNext(next -> {
+			                            LockSupport.parkNanos(Duration.ofSeconds(1).toNanos());
+			                            asserted.set(true);
+			                            assertThat(next).isEqualTo(0L);
+		                            })
+		                            .thenCancel()
+		                            .verify(Duration.ofSeconds(5));
+
+		publisher.assertCancelled();
+
+		assertThat(asserted.get())
+				.as("expectation not processed")
+				.isFalse();
+		assertThat(downStreamCancelled.get())
+				.as("is cancelled by thenCancel")
+				.isTrue();
+		assertThat(took.toMillis())
+				.as("didn't wait for 2nd onNext")
+				.isLessThan(600L);
+	}
+
+	@Test(timeout = 5000L)
+	public void cancelThenVerify_shortCircuitsExpectation() {
+		TestPublisher<Long> publisher = TestPublisher.create();
+		AtomicBoolean downStreamCancelled = new AtomicBoolean();
+		AtomicBoolean asserted = new AtomicBoolean();
+		Flux<Long> source = publisher
+				.flux()
+				.doOnCancel(() -> downStreamCancelled.set(true));
+
+		Duration took = StepVerifier.create(source)
+		                            .then(() -> Schedulers.elastic().schedule(() -> publisher.next(0L)))
+		                            .assertNext(next -> {
+			                            LockSupport.parkNanos(Duration.ofSeconds(1).toNanos());
+			                            asserted.set(true);
+			                            assertThat(next).isEqualTo(0L);
+		                            })
+		                            .cancelThenVerify();
+
+		publisher.assertCancelled();
+
+		assertThat(asserted.get())
+				.as("expectation not processed")
+				.isFalse();
+		assertThat(downStreamCancelled.get())
+				.as("is cancelled by cancelThenVerify")
+				.isTrue();
+		assertThat(took.toMillis())
+				.as("didn't wait for 2nd onNext")
+				.isLessThan(600L);
 	}
 
 	@Test
