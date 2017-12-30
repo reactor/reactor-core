@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
@@ -23,7 +25,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
-import org.assertj.core.api.Assertions;
+import javax.annotation.Nullable;
+
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -191,13 +194,13 @@ public class OperatorsTest {
 		DeferredSubscription test = new DeferredSubscription();
 		test.s = Operators.emptySubscription();
 
-		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(test.s);
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(test.s);
 		test.requested = 123;
-		Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(123);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(123);
 
-		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();
-		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 	@Test
@@ -211,16 +214,16 @@ public class OperatorsTest {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, null, null, null);
 		MonoSubscriber<Integer, Integer> test = new MonoSubscriber<>(actual);
 
-		Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
-		Assertions.assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.PREFETCH)).isEqualTo(Integer.MAX_VALUE);
 
-		Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.complete(4);
-		Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
 
-		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();
-		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 
 	}
 
@@ -234,14 +237,14 @@ public class OperatorsTest {
 		};
 		Subscription parent = Operators.emptySubscription();
         test.onSubscribe(parent);
-		Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
-		Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		test.request(34);
-		Assertions.assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(34);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(34);
 
-		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.cancel();
-		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 	@Test
@@ -249,13 +252,64 @@ public class OperatorsTest {
 		CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, null, null, null);
 		ScalarSubscription<Integer> test = new ScalarSubscription<>(actual, 5);
 
-		Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 
-		Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
-		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
 		test.poll();
-		Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
-		Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
+	}
+
+	@Test
+	public void onNextErrorModeLocalStrategy() {
+		List<Object> nextDropped = new ArrayList<>();
+		List<Object> errorDropped = new ArrayList<>();
+		Hooks.onNextDropped(nextDropped::add);
+		Hooks.onErrorDropped(errorDropped::add);
+		Hooks.onNextError(OnNextFailureStrategy.STOP);
+
+		Context c = Context.of(OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY, OnNextFailureStrategy.RESUME_DROP);
+		Exception error = new IllegalStateException("boom");
+		DeferredSubscription s = new Operators.DeferredSubscription();
+
+		try {
+			assertThat(s.isCancelled()).as("s initially cancelled").isFalse();
+
+			Throwable e = Operators.onNextError("foo", error, c, s);
+			assertThat(e).isNull();
+			assertThat(nextDropped).containsExactly("foo");
+			assertThat(errorDropped).containsExactly(error);
+			assertThat(s.isCancelled()).as("s cancelled").isFalse();
+		}
+		finally {
+			Hooks.resetOnNextDropped();
+			Hooks.resetOnErrorDropped();
+			Hooks.resetOnNextError();
+		}
+	}
+
+	@Test
+	public void pollErrorModeLocalStrategy() {
+		List<Object> nextDropped = new ArrayList<>();
+		List<Object> errorDropped = new ArrayList<>();
+		Hooks.onNextDropped(nextDropped::add);
+		Hooks.onErrorDropped(errorDropped::add);
+
+		Context c = Context.of(OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY, OnNextFailureStrategy.RESUME_DROP);
+		Exception error = new IllegalStateException("boom");
+		try {
+			assertThat(Hooks.onNextErrorHook).as("no global hook").isNull();
+
+			RuntimeException e = Operators.onNextPollError("foo", error, c);
+			assertThat(e).isNull();
+			assertThat(nextDropped).containsExactly("foo");
+			assertThat(errorDropped).containsExactly(error);
+		}
+		finally {
+			Hooks.resetOnNextDropped();
+			Hooks.resetOnErrorDropped();
+		}
 	}
 
 	@Test
@@ -427,5 +481,80 @@ public class OperatorsTest {
 		assertThat(Operators.unboundedOrLimit(Integer.MAX_VALUE, 110))
 				.as("smaller lowTide and MAX_VALUE")
 				.isEqualTo(Integer.MAX_VALUE);
+	}
+
+	@Test
+	public void onNextFailureWithStrategyMatchingDoesntCancel() {
+		Context context = Context.of(OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY, new OnNextFailureStrategy() {
+			@Override
+			public boolean test(Throwable error, @Nullable Object value) {
+				return true;
+			}
+
+			@Nullable
+			@Override
+			public Throwable process(Throwable error, @Nullable Object value,
+					Context context) {
+				return null;
+			}
+		});
+
+		Operators.DeferredSubscription s = new Operators.DeferredSubscription();
+		Throwable t = Operators.onNextError("foo", new NullPointerException("bar"), context, s);
+
+		assertThat(t).as("exception processed").isNull();
+		assertThat(s.isCancelled()).as("subscription cancelled").isFalse();
+	}
+
+	@Test
+	public void onNextFailureWithStrategyNotMatchingDoesCancel() {
+		Context context = Context.of(OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY, new OnNextFailureStrategy() {
+			@Override
+			public boolean test(Throwable error, @Nullable Object value) {
+				return false;
+			}
+
+			@Override
+			public Throwable process(Throwable error, @Nullable Object value,
+					Context context) {
+				return error;
+			}
+		});
+
+		Operators.DeferredSubscription s = new Operators.DeferredSubscription();
+		Throwable t = Operators.onNextError("foo", new NullPointerException("bar"), context, s);
+
+		assertThat(t).as("exception processed")
+		             .isNotNull()
+		             .isInstanceOf(NullPointerException.class)
+		             .hasNoSuppressedExceptions()
+		             .hasNoCause();
+		assertThat(s.isCancelled()).as("subscription cancelled").isTrue();
+	}
+
+	@Test
+	public void onNextFailureWithStrategyMatchingButNotNullDoesCancel() {
+		Context context = Context.of(OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY, new OnNextFailureStrategy() {
+			@Override
+			public boolean test(Throwable error, @Nullable Object value) {
+				return true;
+			}
+
+			@Override
+			public Throwable process(Throwable error, @Nullable Object value,
+					Context context) {
+				return error;
+			}
+		});
+
+		Operators.DeferredSubscription s = new Operators.DeferredSubscription();
+		Throwable t = Operators.onNextError("foo", new NullPointerException("bar"), context, s);
+
+		assertThat(t).as("exception processed")
+		             .isNotNull()
+		             .isInstanceOf(NullPointerException.class)
+		             .hasNoSuppressedExceptions()
+		             .hasNoCause();
+		assertThat(s.isCancelled()).as("subscription cancelled").isTrue();
 	}
 }

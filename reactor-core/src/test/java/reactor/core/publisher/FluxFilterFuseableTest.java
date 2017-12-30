@@ -23,6 +23,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
 import reactor.test.MockUtils;
+import reactor.test.StepVerifier;
 import reactor.test.publisher.FluxOperatorTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -58,5 +59,42 @@ public class FluxFilterFuseableTest extends FluxOperatorTest<String, String> {
         assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         test.onError(new IllegalStateException("boom"));
         assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+    }
+
+    @Test
+    public void failureStrategyResumeSyncFused() {
+        Hooks.onNextError(OnNextFailureStrategy.RESUME_DROP);
+        try {
+            StepVerifier.create(Flux.range(0, 2)
+                                    .filter(i -> 4 / i == 4))
+                        .expectFusion(Fuseable.ANY, Fuseable.SYNC)
+                        .expectNext(1)
+                        .expectComplete()
+                        .verifyThenAssertThat()
+                        .hasDroppedExactly(0)
+                        .hasDroppedErrorWithMessage("/ by zero");
+        }
+        finally {
+            Hooks.resetOnNextError();
+        }
+    }
+
+    @Test
+    public void failureStrategyResumeConditionalSyncFused() {
+        Hooks.onNextError(OnNextFailureStrategy.RESUME_DROP);
+        try {
+            StepVerifier.create(Flux.range(0, 2)
+                                    .filter(i -> 4 / i == 4)
+                                    .filter(i -> true))
+                        .expectFusion(Fuseable.ANY, Fuseable.SYNC)
+                        .expectNext(1)
+                        .expectComplete()
+                        .verifyThenAssertThat()
+                        .hasDroppedExactly(0)
+                        .hasDroppedErrorWithMessage("/ by zero");
+        }
+        finally {
+            Hooks.resetOnNextError();
+        }
     }
 }

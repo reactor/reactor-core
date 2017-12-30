@@ -108,7 +108,13 @@ final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable
 							"The mapper returned a null value.");
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+					Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
+					if (e_ != null) {
+						onError(e_);
+					}
+					else {
+						s.request(1);
+					}
 					return;
 				}
 
@@ -164,11 +170,24 @@ final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable
 		@Override
 		@Nullable
 		public R poll() {
-			T v = s.poll();
-			if (v != null) {
-				return Objects.requireNonNull(mapper.apply(v));
+			for(;;) {
+				T v = s.poll();
+				if (v != null) {
+					try {
+						return Objects.requireNonNull(mapper.apply(v));
+					}
+					catch (Throwable t) {
+						RuntimeException e_ = Operators.onNextPollError(v, t, currentContext());
+						if (e_ != null) {
+							throw e_;
+						}
+						else {
+							continue;
+						}
+					}
+				}
+				return null;
 			}
-			return null;
 		}
 
 		@Override
@@ -255,7 +274,13 @@ final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable
 							"The mapper returned a null value.");
 				}
 				catch (Throwable e) {
-					onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+					Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
+					if (e_ != null) {
+						onError(e_);
+					}
+					else {
+						s.request(1);
+					}
 					return;
 				}
 
@@ -275,13 +300,18 @@ final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable
 			try {
 				v = Objects.requireNonNull(mapper.apply(t),
 						"The mapper returned a null value.");
+				return actual.tryOnNext(v);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
-				return true;
+				Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
+				if (e_ != null) {
+					onError(e_);
+					return true;
+				}
+				else {
+					return false;
+				}
 			}
-
-			return actual.tryOnNext(v);
 		}
 
 		@Override
@@ -324,11 +354,24 @@ final class FluxMapFuseable<T, R> extends FluxOperator<T, R> implements Fuseable
 		@Override
 		@Nullable
 		public R poll() {
-			T v = s.poll();
-			if (v != null) {
-				return Objects.requireNonNull(mapper.apply(v));
+			for(;;) {
+				T v = s.poll();
+				if (v != null) {
+					try {
+						return Objects.requireNonNull(mapper.apply(v));
+					}
+					catch (Throwable t) {
+						RuntimeException e_ = Operators.onNextPollError(v, t, currentContext());
+						if (e_ != null) {
+							throw e_;
+						}
+						else {
+							continue;
+						}
+					}
+				}
+				return null;
 			}
-			return null;
 		}
 
 		@Override

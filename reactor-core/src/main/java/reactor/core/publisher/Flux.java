@@ -3554,6 +3554,12 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * @param onNext the callback to call on {@link Subscriber#onNext}
 	 *
+	 * @reactor.errorMode This operator supports {@link #errorStrategyContinue() resuming on errors}
+	 * (including when fusion is enabled). Exceptions thrown by the consumer are passed to
+	 * the {@link #errorStrategyContinue(BiConsumer)} error consumer (the value consumer
+	 * is not invoked, as the source element will be part of the sequence). The onNext
+	 * signal is then propagated as normal.
+	 *
 	 * @return an observed  {@link Flux}
 	 */
 	public final Flux<T> doOnNext(Consumer<? super T> onNext) {
@@ -3702,6 +3708,140 @@ public abstract class Flux<T> implements Publisher<T> {
 	 */
 	public final Mono<T> elementAt(int index, T defaultValue) {
 		return Mono.onAssembly(new MonoElementAt<>(this, index, defaultValue));
+	}
+
+	/**
+	 * Let compatible operators upstream recover from an error by dropping the incriminating
+	 * element from the sequence and continuing with subsequent elements.
+	 * <p>
+	 * Note that this error handling mode is not necessarily implemented by all operators
+	 * (look for the {@code Error Mode Support} javadoc section to find operators that
+	 * support it).
+	 * The error and associated root-cause element are dropped to {@link Operators#onErrorDropped(Throwable, Context)}
+	 * and {@link Operators#onNextDropped(Object, Context)} respectively.
+	 *
+	 * @return a {@link Flux} that attempts to continue processing on errors.
+	 */
+	public final Flux<T> errorStrategyContinue() {
+		return subscriberContext(Context.of(
+				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
+				OnNextFailureStrategy.resumeDrop()));
+	}
+
+	/**
+	 * Let compatible operators upstream recover from some errors by dropping the
+	 * incriminating element from the sequence and continuing with subsequent elements.
+	 * Only errors matching the specified {@code type} are recovered from.
+	 * <p>
+	 * Note that this error handling mode is not necessarily implemented by all operators
+	 * (look for the {@code Error Mode Support} javadoc section to find operators that
+	 * support it).
+	 * The error and associated root-cause element are dropped to {@link Operators#onErrorDropped(Throwable, Context)}
+	 * and {@link Operators#onNextDropped(Object, Context)} respectively.
+	 *
+	 * @param type the class of the exception type to handle.
+	 * @return a {@link Flux} that attempts to continue processing on some errors.
+	 */
+	public final Flux<T> errorStrategyContinue(Class<? extends Throwable> type) {
+		return subscriberContext(Context.of(
+				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
+				OnNextFailureStrategy.resumeDropIf(type::isInstance)
+		));
+	}
+
+	/**
+	 * Let compatible operators upstream recover from some errors by dropping the
+	 * incriminating element from the sequence and continuing with subsequent elements.
+	 * Only errors matching the {@link Predicate} are recovered from.
+	 * <p>
+	 * Note that this error handling mode is not necessarily implemented by all operators
+	 * (look for the {@code Error Mode Support} javadoc section to find operators that
+	 * support it).
+	 * The error and associated root-cause element are dropped to {@link Operators#onErrorDropped(Throwable, Context)}
+	 * and {@link Operators#onNextDropped(Object, Context)} respectively.
+	 *
+	 * @return a {@link Flux} that attempts to continue processing on some errors.
+	 */
+	public final Flux<T> errorStrategyContinue(Predicate<Throwable> errorPredicate) {
+		return subscriberContext(Context.of(
+				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
+				OnNextFailureStrategy.resumeDropIf(errorPredicate)
+		));
+	}
+
+	/**
+	 * Let compatible operators upstream recover from errors by dropping the
+	 * incriminating element from the sequence and continuing with subsequent elements.
+	 * Only errors matching the {@link Predicate} are recovered from.
+	 * The recovered error and associated value are notified via the provided {@link BiConsumer}.
+	 * <p>
+	 * Note that this error handling mode is not necessarily implemented by all operators
+	 * (look for the {@code Error Mode Support} javadoc section to find operators that
+	 * support it).
+	 *
+	 * @return a {@link Flux} that attempts to continue processing on errors.
+	 */
+	public final Flux<T> errorStrategyContinue(BiConsumer<Throwable, ? super T> errorConsumer) {
+		//this cast is ok as only T values will be propagated in this sequence
+		@SuppressWarnings("unchecked") BiConsumer<Throwable, Object> genericConsumer = (BiConsumer<Throwable, Object>) errorConsumer;
+		return subscriberContext(Context.of(
+				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
+				OnNextFailureStrategy.resume(genericConsumer)
+		));
+	}
+
+	/**
+	 * Let compatible operators upstream recover from errors by dropping the
+	 * incriminating element from the sequence and continuing with subsequent elements.
+	 * Only errors matching the specified {@code type} are recovered from.
+	 * The recovered error and associated value are notified via the provided {@link BiConsumer}.
+	 * <p>
+	 * Note that this error handling mode is not necessarily implemented by all operators
+	 * (look for the {@code Error Mode Support} javadoc section to find operators that
+	 * support it).
+	 *
+	 * @return a {@link Flux} that attempts to continue processing on some errors.
+	 */
+	public final <E extends Throwable> Flux<T> errorStrategyContinue(Class<E> type,
+																	 BiConsumer<Throwable, ? super T> errorConsumer) {
+		return errorStrategyContinue(type::isInstance, errorConsumer);
+	}
+
+	/**
+	 * Let compatible operators upstream recover from errors by dropping the
+	 * incriminating element from the sequence and continuing with subsequent elements.
+	 * Only errors matching the {@link Predicate} are recovered from.
+	 * The recovered error and associated value are notified via the provided {@link BiConsumer}.
+	 * <p>
+	 * Note that this error handling mode is not necessarily implemented by all operators
+	 * (look for the {@code Error Mode Support} javadoc section to find operators that
+	 * support it).
+	 *
+	 * @return a {@link Flux} that attempts to continue processing on some errors.
+	 */
+	public final <E extends Throwable> Flux<T> errorStrategyContinue(Predicate<E> errorPredicate,
+																	 BiConsumer<Throwable, ? super T> errorConsumer) {
+		//this cast is ok as only T values will be propagated in this sequence
+		@SuppressWarnings("unchecked")
+		Predicate<Throwable> genericPredicate = (Predicate<Throwable>) errorPredicate;
+		@SuppressWarnings("unchecked")
+		BiConsumer<Throwable, Object> genericErrorConsumer = (BiConsumer<Throwable, Object>) errorConsumer;
+		return subscriberContext(Context.of(
+				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
+				OnNextFailureStrategy.resumeIf(genericPredicate, genericErrorConsumer)
+		));
+	}
+
+	/**
+	 * Reset on next failure strategy to the default 'STOP' mode.  This can be used to perform simply scoping of the on
+	 * next failure strategy or to override the the inherited strategy in a sub-stream for example in a flatMap.
+	 *
+	 * @return a {@link Flux} that completes exceptionally on errors.
+	 */
+	public final Flux<T> errorStrategyStop() {
+		return subscriberContext(Context.of(
+				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY,
+				OnNextFailureStrategy.stop()));
 	}
 
 	/**
@@ -3867,6 +4007,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * @param p the {@link Predicate} to test values against
 	 *
+	 * @reactor.errorMode This operator supports {@link #errorStrategyContinue() resuming on errors}
+	 * (including when fusion is enabled). Exceptions thrown by the predicate are
+	 * considered as if the predicate returned false: they cause the source value to be
+	 * dropped and a new element ({@code request(1)}) being requested from upstream.
+	 *
 	 * @return a new {@link Flux} containing only values that pass the predicate test
 	 */
 	public final Flux<T> filter(Predicate<? super T> p) {
@@ -3939,6 +4084,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
 	 * @param <R> the merged output sequence type
 	 *
+	 * @reactor.errorMode This operator supports {@link #errorStrategyContinue() resuming on errors}
+	 * in the mapper {@link Function}. Exceptions thrown by the mapper then behave as if
+	 * it had mapped the value to an empty publisher. If the mapper does map to a scalar
+	 * publisher (an optimization in which the value can be resolved immediately without
+	 * subscribing to the publisher, e.g. a {@link Mono#fromCallable(Callable)}) but said
+	 * publisher throws, this can be resumed from in the same manner.
+	 *
 	 * @return a new {@link Flux}
 	 */
 	public final <R> Flux<R> flatMap(Function<? super T, ? extends Publisher<? extends R>> mapper) {
@@ -3970,6 +4122,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param mapper the {@link Function} to transform input sequence into N sequences {@link Publisher}
 	 * @param concurrency the maximum number of in-flight inner sequences
 	 * @param <V> the merged output sequence type
+	 *
+	 * @reactor.errorMode This operator supports {@link #errorStrategyContinue() resuming on errors}
+	 * in the mapper {@link Function}. Exceptions thrown by the mapper then behave as if
+	 * it had mapped the value to an empty publisher. If the mapper does map to a scalar
+	 * publisher (an optimization in which the value can be resolved immediately without
+	 * subscribing to the publisher, e.g. a {@link Mono#fromCallable(Callable)}) but said
+	 * publisher throws, this can be resumed from in the same manner.
 	 *
 	 * @return a new {@link Flux}
 	 */
@@ -4005,6 +4164,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param prefetch the maximum in-flight elements from each inner {@link Publisher} sequence
 	 * @param <V> the merged output sequence type
 	 *
+	 * @reactor.errorMode This operator supports {@link #errorStrategyContinue() resuming on errors}
+	 * in the mapper {@link Function}. Exceptions thrown by the mapper then behave as if
+	 * it had mapped the value to an empty publisher. If the mapper does map to a scalar
+	 * publisher (an optimization in which the value can be resolved immediately without
+	 * subscribing to the publisher, e.g. a {@link Mono#fromCallable(Callable)}) but said
+	 * publisher throws, this can be resumed from in the same manner.
+	 *
 	 * @return a merged {@link Flux}
 	 */
 	public final <V> Flux<V> flatMap(Function<? super T, ? extends Publisher<? extends V>> mapper, int
@@ -4039,6 +4205,13 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param concurrency the maximum number of in-flight inner sequences
 	 * @param prefetch the maximum in-flight elements from each inner {@link Publisher} sequence
 	 * @param <V> the merged output sequence type
+	 *
+	 * @reactor.errorMode This operator supports {@link #errorStrategyContinue() resuming on errors}
+	 * in the mapper {@link Function}. Exceptions thrown by the mapper then behave as if
+	 * it had mapped the value to an empty publisher. If the mapper does map to a scalar
+	 * publisher (an optimization in which the value can be resolved immediately without
+	 * subscribing to the publisher, e.g. a {@link Mono#fromCallable(Callable)}) but said
+	 * publisher throws, this can be resumed from in the same manner.
 	 *
 	 * @return a merged {@link Flux}
 	 */
@@ -4474,6 +4647,10 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @param handler the handling {@link BiConsumer}
 	 * @param <R> the transformed type
 	 *
+	 * @reactor.errorMode This operator supports {@link #errorStrategyContinue() resuming on errors} (including when
+	 * fusion is enabled) when the {@link BiConsumer} throws an exception or if an error is signaled explicitly via
+	 * {@link SynchronousSink#error(Throwable)}.
+	 *
 	 * @return a transformed {@link Flux}
 	 */
 	public final <R> Flux<R> handle(BiConsumer<? super T, SynchronousSink<R>> handler) {
@@ -4845,6 +5022,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * <p>
 	 * @param mapper the synchronous transforming {@link Function}
 	 * @param <V> the transformed type
+	 *
+	 * @reactor.errorMode This operator supports {@link #errorStrategyContinue() resuming on errors}
+	 * (including when fusion is enabled). Exceptions thrown by the mapper then cause the
+	 * source value to be dropped and a new element ({@code request(1)}) being requested
+	 * from upstream.
 	 *
 	 * @return a transformed {@link Flux}
 	 */
