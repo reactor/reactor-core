@@ -28,6 +28,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.annotation.Nullable;
 
@@ -168,7 +169,17 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 			}
 
 			if (flush) {
-				actual.onNext(v);
+				long r = requested;
+				if (r != 0L) {
+					actual.onNext(v);
+					if (r != Long.MAX_VALUE) {
+						REQUESTED.decrementAndGet(this);
+					}
+				}
+				else {
+					actual.onError(Exceptions.failWithOverflow(
+							"Could not emit buffer due to lack of requests"));
+				}
 			}
 		}
 

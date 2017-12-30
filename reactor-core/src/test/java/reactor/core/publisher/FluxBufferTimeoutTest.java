@@ -66,10 +66,7 @@ public class FluxBufferTimeoutTest {
 	Flux<List<Integer>> scenario_bufferWithTimeoutThrowingExceptionOnTimeOrSizeIfDownstreamDemandIsLow() {
 		return Flux.range(1, 6)
 		           .delayElements(Duration.ofMillis(300))
-		           .bufferTimeout(5, Duration.ofMillis(100))
-		           .timestamp()
-				.log()
-				.map(Tuple2::getT2);
+		           .bufferTimeout(5, Duration.ofMillis(100));
 	}
 
 	@Test
@@ -84,7 +81,7 @@ public class FluxBufferTimeoutTest {
 		            .verifyErrorSatisfies(e ->
 				            assertThat(e)
 						            .hasMessage("Could not emit buffer due to lack of requests")
-						            .isExactlyInstanceOf(IllegalStateException.class)
+						            .isInstanceOf(IllegalStateException.class)
 		            );
 	}
 
