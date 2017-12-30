@@ -145,7 +145,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 		}
 
 		void nextCallback(T value) {
-			synchronized (this) {
+			synchronized (this) { // TODO: think how to avoid synchronization (CAS loop??)
 				C v = values;
 				if(v == null) {
 					v = Objects.requireNonNull(bufferSupplier.get(),
@@ -159,7 +159,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 		void flushCallback(@Nullable T ev) { //TODO investigate ev not used
 			C v = values;
 			boolean flush = false;
-			synchronized (this) {
+			synchronized (this) { // TODO: think how to avoid synchronization (CAS loop??)
 				if (v != null && !v.isEmpty()) {
 					values = bufferSupplier.get();
 					flush = true;
@@ -243,6 +243,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
+				Operators.addCap(REQUESTED, this, n);
 				if (terminated != NOT_TERMINATED) {
 					return;
 				}
