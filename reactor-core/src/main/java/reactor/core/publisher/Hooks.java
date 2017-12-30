@@ -508,6 +508,36 @@ public abstract class Hooks {
 		return Collections.unmodifiableMap(onOperatorErrorHooks);
 	}
 
+	static final Logger log = Loggers.getLogger(Hooks.class);
+
+	/**
+	 * A key that can be used to store a sequence-specific {@link Hooks#onErrorDropped(Consumer)}
+	 * hook in a {@link Context}, as a {@link Consumer Consumer&lt;Throwable&gt;}.
+	 */
+	static final String KEY_ON_ERROR_DROPPED = "reactor.onErrorDropped.local";
+	/**
+	 * A key that can be used to store a sequence-specific {@link Hooks#onNextDropped(Consumer)}
+	 * hook in a {@link Context}, as a {@link Consumer Consumer&lt;Object&gt;}.
+	 */
+	static final String KEY_ON_NEXT_DROPPED = "reactor.onNextDropped.local";
+	/**
+	 * A key that can be used to store a sequence-specific {@link Hooks#onOperatorError(BiFunction)}
+	 * hook in a {@link Context}, as a {@link BiFunction BiFunction&lt;Throwable, Object, Throwable&gt;}.
+	 */
+	static final String KEY_ON_OPERATOR_ERROR = "reactor.onOperatorError.local";
+	/**
+	 * A key that can be used to store a sequence-specific {@link Hooks#onOperatorError(BiFunction)}
+	 * hook THAT IS ONLY APPLIED TO Operators{@link Operators#onRejectedExecution(Throwable, Context) onRejectedExecution}
+	 * in a {@link Context}, as a {@link BiFunction BiFunction&lt;Throwable, Object, Throwable&gt;}.
+	 */
+	static final String KEY_ON_REJECTED_EXECUTION = "reactor.onRejectedExecution.local";
+
+	/**
+	 * A key used by {@link #onOperatorDebug()} to hook the debug handler, augmenting
+	 * every single operator with an assembly traceback.
+	 */
+	static final String ON_OPERATOR_DEBUG_KEY = "onOperatorDebug";
+
 	static {
 		onEachOperatorHooks = new LinkedHashMap<>(1);
 		onLastOperatorHooks = new LinkedHashMap<>(1);
@@ -518,7 +548,7 @@ public abstract class Hooks {
 						"false"));
 
 		if (globalTrace) {
-			onEachOperator(OnOperatorDebug.instance());
+			onEachOperator(ON_OPERATOR_DEBUG_KEY, OnOperatorDebug.instance());
 		}
 	}
 
@@ -558,29 +588,4 @@ public abstract class Hooks {
 		}
 	}
 
-	static final Logger log = Loggers.getLogger(Hooks.class);
-
-	/**
-	 * A key that can be used to store a sequence-specific {@link Hooks#onErrorDropped(Consumer)}
-	 * hook in a {@link Context}, as a {@link Consumer Consumer&lt;Throwable&gt;}.
-	 */
-	static final String KEY_ON_ERROR_DROPPED = "reactor.onErrorDropped.local";
-	/**
-	 * A key that can be used to store a sequence-specific {@link Hooks#onNextDropped(Consumer)}
-	 * hook in a {@link Context}, as a {@link Consumer Consumer&lt;Object&gt;}.
-	 */
-	static final String KEY_ON_NEXT_DROPPED = "reactor.onNextDropped.local";
-	/**
-	 * A key that can be used to store a sequence-specific {@link Hooks#onOperatorError(BiFunction)}
-	 * hook in a {@link Context}, as a {@link BiFunction BiFunction&lt;Throwable, Object, Throwable&gt;}.
-	 */
-	static final String KEY_ON_OPERATOR_ERROR = "reactor.onOperatorError.local";
-	/**
-	 * A key that can be used to store a sequence-specific {@link Hooks#onOperatorError(BiFunction)}
-	 * hook THAT IS ONLY APPLIED TO Operators{@link Operators#onRejectedExecution(Throwable, Context) onRejectedExecution}
-	 * in a {@link Context}, as a {@link BiFunction BiFunction&lt;Throwable, Object, Throwable&gt;}.
-	 */
-	static final String KEY_ON_REJECTED_EXECUTION = "reactor.onRejectedExecution.local";
-
-	static final String ON_OPERATOR_DEBUG_KEY = "onOperatorDebug";
 }

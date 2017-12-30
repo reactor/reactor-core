@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Function;
+import java.util.logging.Level;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.Condition;
@@ -258,7 +259,7 @@ public class WorkQueueProcessorTest {
 		wq.onNext(2);
 		wq.onNext(3);
 		wq.onComplete();
-		StepVerifier.create(wq.log()
+		StepVerifier.create(wq.log("wq", Level.FINE)
 		                      .doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
 						(s1, sink) -> {
 							if (errors.decrementAndGet() > 0) {
@@ -286,7 +287,7 @@ public class WorkQueueProcessorTest {
 		StepVerifier.create(wq.doOnNext(e -> onNextSignals.incrementAndGet()).<Integer>handle(
 				(s1, sink) -> {
 					if (errors.decrementAndGet() > 0) {
-						sink.error(new RuntimeException());
+						sink.error(new RuntimeException("expected"));
 					}
 					else {
 						sink.next(s1);
@@ -616,7 +617,7 @@ public class WorkQueueProcessorTest {
 		WorkQueueProcessor<Integer> wq = WorkQueueProcessor.<Integer>builder().autoCancel(false).build();
 		AtomicInteger onNextSignals = new AtomicInteger();
 
-		StepVerifier.create(wq.log()
+		StepVerifier.create(wq.log("wq", Level.FINE)
 		                      .publishOn(Schedulers.parallel())
 		                      .publish()
 		                      .autoConnect()
@@ -629,7 +630,7 @@ public class WorkQueueProcessorTest {
 				                      return s1;
 			                      }
 		                      })
-		                      .log()
+		                      .log("afterMap", Level.FINE)
 		                      .retry())
 		            .then(() -> {
 			            wq.onNext(1);
@@ -994,10 +995,6 @@ public class WorkQueueProcessorTest {
 		customTaskExecutor.shutdownNow();
 		processor.forceShutdown();
 
-		for (Thread thread : threads) {
-			System.out.println(thread.getName());
-		}
-
 		Condition<Thread> customRequestTaskThread = new Condition<>(
 				thread -> expectedName.equals(thread.getName()),
 				"a thread named \"%s\"", expectedName);
@@ -1028,10 +1025,6 @@ public class WorkQueueProcessorTest {
 		//cleanup to avoid visibility in other tests
 		customTaskExecutor.shutdownNow();
 		processor.forceShutdown();
-
-		for (Thread thread : threads) {
-			System.out.println(thread.getName());
-		}
 
 		Condition<Thread> customRequestTaskThread = new Condition<>(
 				thread -> expectedName.equals(thread.getName()),

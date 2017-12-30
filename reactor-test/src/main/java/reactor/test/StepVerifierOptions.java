@@ -19,6 +19,7 @@ import java.util.function.Supplier;
 
 import reactor.test.scheduler.VirtualTimeScheduler;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Options for a {@link StepVerifier}, including the initial request amount,
@@ -31,6 +32,7 @@ public class StepVerifierOptions {
 	private boolean checkUnderRequesting = true;
 	private long initialRequest = Long.MAX_VALUE;
 	private Supplier<? extends VirtualTimeScheduler> vtsLookup = null;
+	private Context initialContext;
 
 	/**
 	 * Create a new default push of options for a {@link StepVerifier} that can be tuned
@@ -102,5 +104,25 @@ public class StepVerifierOptions {
 	@Nullable
 	public Supplier<? extends VirtualTimeScheduler> getVirtualTimeSchedulerSupplier() {
 		return vtsLookup;
+	}
+
+	/**
+	 * Set an initial {@link Context} to be propagated by the {@link StepVerifier} when it
+	 * subscribes to the sequence under test.
+	 *
+	 * @param context the {@link Context} to propagate.
+	 * @return this instance, to continue setting the options.
+	 */
+	public StepVerifierOptions withInitialContext(Context context) {
+		this.initialContext = context;
+		return this;
+	}
+
+	/**
+	 * @return the {@link Context} to be propagated initially by the {@link StepVerifier}.
+	 */
+	@Nullable
+	public Context getInitialContext() {
+		return this.initialContext;
 	}
 }
