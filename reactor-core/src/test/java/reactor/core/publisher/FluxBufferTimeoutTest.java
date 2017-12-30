@@ -80,7 +80,7 @@ public class FluxBufferTimeoutTest {
 		            .verifyErrorSatisfies(e ->
 				            assertThat(e)
 						            .hasMessage("Could not emit buffer due to lack of requests")
-						            .isExactlyInstanceOf(IllegalStateException.class)
+						            .isInstanceOf(IllegalStateException.class)
 		            );
 	}
 
