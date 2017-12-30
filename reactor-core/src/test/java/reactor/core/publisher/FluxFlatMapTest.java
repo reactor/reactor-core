@@ -1438,4 +1438,210 @@ public class FluxFlatMapTest {
 		            .thenCancel()
 		            .verify();
 	}
+
+	@Test
+	public void errorModeContinueNullPublisher() {
+		Flux<Integer> test = Flux
+				.just(1, 2)
+				.hide()
+				.<Integer>flatMap(f -> null)
+				.errorStrategyContinue();
+
+		StepVerifier.create(test)
+		            .expectNoFusionSupport()
+		            .expectComplete()
+		            .verifyThenAssertThat()
+		            .hasDropped(1, 2)
+		            .hasDroppedErrors(2);
+	}
+
+
+	@Test
+	public void errorModeContinueInternalError() {
+		Flux<Integer> test = Flux
+				.just(1, 2)
+				.hide()
+				.flatMap(f -> {
+					if(f == 1){
+						return Mono.error(new NullPointerException());
+					}
+					else {
+						return Mono.just(f);
+					}
+				})
+				.errorStrategyContinue();
+
+		StepVerifier.create(test)
+				.expectNoFusionSupport()
+				.expectNext(2)
+				.expectComplete()
+				.verifyThenAssertThat()
+				.hasDropped(1)
+				.hasDroppedErrors(1);
+	}
+
+
+	@Test
+	public void errorModeContinueInternalErrorHidden() {
+		Flux<Integer> test = Flux
+				.just(1, 2)
+				.hide()
+				.flatMap(f -> {
+					if(f == 1){
+						return Mono.<Integer>error(new NullPointerException()).hide();
+					}
+					else {
+						return Mono.just(f);
+					}
+				})
+				.doOnNext(i -> i++)
+				.errorStrategyContinue();
+
+		StepVerifier.create(test)
+				.expectNoFusionSupport()
+				.expectNext(2)
+				.expectComplete()
+				.verifyThenAssertThat()
+				.hasNotDroppedElements()
+				.hasDroppedErrors(1);
+	}
+
+	@Test
+	public void errorModeContinueWithCallable() {
+		Flux<Integer> test = Flux
+				.just(1, 2)
+				.hide()
+				.flatMap(f -> Mono.<Integer>fromRunnable(() -> {
+					if(f == 1) {
+						throw new ArithmeticException("boom");
+					}
+				}))
+				.errorStrategyContinue();
+
+		StepVerifier.create(test)
+				.expectNoFusionSupport()
+				.expectComplete()
+				.verifyThenAssertThat()
+				.hasDropped(1)
+				.hasDroppedErrors(1);
+	}
+
+	@Test
+	public void errorModeContinueDelayErrors() {
+		Flux<Integer> test = Flux
+				.just(1, 2)
+				.hide()
+				.flatMapDelayError(f -> {
+					if(f == 1){
+						return Mono.<Integer>error(new NullPointerException()).hide();
+					}
+					else {
+						return Mono.just(f);
+					}
+				}, Queues.SMALL_BUFFER_SIZE, Queues.XS_BUFFER_SIZE)
+				.errorStrategyContinue();
+
+
+		StepVerifier.create(test)
+				.expectNoFusionSupport()
+				.expectNext(2)
+				.expectComplete()
+				.verifyThenAssertThat()
+				// When inner is not a Callable error value is not available.
+				.hasNotDroppedElements()
+				.hasDroppedErrors(1);
+	}
+
+	@Test
+	public void errorModeContinueDelayErrorsWithCallable() {
+		Flux<Integer> test = Flux
+				.just(1, 2)
+				.hide()
+				.flatMapDelayError(f -> {
+					if(f == 1){
+						return Mono.<Integer>error(new NullPointerException());
+					}
+					else {
+						return Mono.just(f);
+					}
+				}, Queues.SMALL_BUFFER_SIZE, Queues.XS_BUFFER_SIZE)
+				.errorStrategyContinue();
+
+
+		StepVerifier.create(test)
+				.expectNoFusionSupport()
+				.expectNext(2)
+				.expectComplete()
+				.verifyThenAssertThat()
+				.hasDropped(1)
+				.hasDroppedErrors(1);
+	}
+
+	@Test
+	public void errorModeContinueInternalErrorStopStrategy() {
+		Flux<Integer> test = Flux
+				.just(0, 1)
+				.hide()
+				.flatMap(f ->  Flux.range(f, 1).map(i -> 1/i).errorStrategyStop())
+				.errorStrategyContinue();
+
+		StepVerifier.create(test)
+				.expectNoFusionSupport()
+				.expectNext(1)
+				.expectComplete()
+				.verifyThenAssertThat()
+				.hasNotDroppedElements()
+				.hasDroppedErrors(1);
+	}
+
+	@Test
+	public void errorModeContinueInternalErrorStopStrategyAsync() {
+		Flux<Integer> test = Flux
+				.just(0, 1)
+				.hide()
+				.flatMap(f ->  Flux.range(f, 1).publishOn(Schedulers.parallel()).map(i -> 1/i).errorStrategyStop())
+				.errorStrategyContinue();
+
+		StepVerifier.create(test)
+				.expectNoFusionSupport()
+				.expectNext(1)
+				.expectComplete()
+				.verifyThenAssertThat()
+				.hasNotDroppedElements()
+				.hasDroppedErrors(1);
+	}
+
+	@Test
+	public void errorModeContinueInternalErrorMono() {
+		Flux<Integer> test = Flux
+				.just(0, 1)
+				.hide()
+				.flatMap(f ->  Mono.just(f).map(i -> 1/i))
+				.errorStrategyContinue();
+
+		StepVerifier.create(test)
+				.expectNoFusionSupport()
+				.expectNext(1)
+				.expectComplete()
+				.verifyThenAssertThat()
+				.hasDropped(0)
+				.hasDroppedErrors(1);
+	}
+
+	@Test
+	public void errorModeContinueInternalErrorMonoAsync() {
+		Flux<Integer> test = Flux
+				.just(0, 1)
+				.hide()
+				.flatMap(f ->  Mono.just(f).publishOn(Schedulers.parallel()).map(i -> 1/i))
+				.errorStrategyContinue();
+
+		StepVerifier.create(test)
+				.expectNoFusionSupport()
+				.expectNext(1)
+				.expectComplete()
+				.verifyThenAssertThat()
+				.hasDropped(0)
+				.hasDroppedErrors(1);
+	}
 }
