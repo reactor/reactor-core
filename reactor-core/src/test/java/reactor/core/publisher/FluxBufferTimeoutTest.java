@@ -25,6 +25,7 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.util.function.Tuple2;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -60,6 +61,31 @@ public class FluxBufferTimeoutTest {
 		            .thenAwait(Duration.ofMillis(2000))
 		            .assertNext(s -> assertThat(s).containsExactly(6))
 		            .verifyComplete();
+	}
+
+	Flux<List<Integer>> scenario_bufferWithTimeoutThrowingExceptionOnTimeOrSizeIfDownstreamDemandIsLow() {
+		return Flux.range(1, 6)
+		           .delayElements(Duration.ofMillis(300))
+		           .bufferTimeout(5, Duration.ofMillis(100))
+		           .timestamp()
+				.log()
+				.map(Tuple2::getT2);
+	}
+
+	@Test
+	public void bufferWithTimeoutThrowingExceptionOnTimeOrSizeIfDownstreamDemandIsLow() {
+		StepVerifier.withVirtualTime(this::scenario_bufferWithTimeoutThrowingExceptionOnTimeOrSizeIfDownstreamDemandIsLow, 0)
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMillis(300))
+		            .thenRequest(1)
+		            .expectNoEvent(Duration.ofMillis(100))
+		            .assertNext(s -> assertThat(s).containsExactly(1))
+		            .expectNoEvent(Duration.ofMillis(300))
+		            .verifyErrorSatisfies(e ->
+				            assertThat(e)
+						            .hasMessage("Could not emit buffer due to lack of requests")
+						            .isExactlyInstanceOf(IllegalStateException.class)
+		            );
 	}
 
 	@Test
