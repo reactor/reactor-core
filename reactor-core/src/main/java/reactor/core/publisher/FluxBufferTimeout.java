@@ -28,6 +28,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Exceptions;
 import reactor.core.scheduler.Scheduler;
 import reactor.util.annotation.Nullable;
 
@@ -103,8 +104,9 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 
 		volatile int index = 0;
 
-		static final     AtomicIntegerFieldUpdater<BufferTimeoutSubscriber> INDEX =
+		static final AtomicIntegerFieldUpdater<BufferTimeoutSubscriber> INDEX =
 				AtomicIntegerFieldUpdater.newUpdater(BufferTimeoutSubscriber.class, "index");
+
 
 		volatile Disposable timespanRegistration;
 
@@ -167,7 +169,31 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 			}
 
 			if (flush) {
-				actual.onNext(v);
+				long r = requested;
+				if (r != 0L) {
+					if (r != Long.MAX_VALUE) {
+						long next;
+						for (;;) {
+							next = r - 1;
+							if (REQUESTED.compareAndSet(this, r, next)) {
+								actual.onNext(v);
+								return;
+							}
+
+							r = requested;
+							if (r <= 0L) {
+								break;
+							}
+						}
+					}
+					else {
+						actual.onNext(v);
+						return;
+					}
+				}
+
+				actual.onError(Exceptions.failWithOverflow(
+						"Could not emit buffer due to lack of requests"));
 			}
 		}
 
@@ -243,6 +269,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 		@Override
 		public void request(long n) {
 			if (Operators.validate(n)) {
+				Operators.addCap(REQUESTED, this, n);
 				if (terminated != NOT_TERMINATED) {
 					return;
 				}
