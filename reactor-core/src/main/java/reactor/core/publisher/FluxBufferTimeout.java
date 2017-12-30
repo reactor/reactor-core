@@ -103,8 +103,9 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 
 		volatile int index = 0;
 
-		static final     AtomicIntegerFieldUpdater<BufferTimeoutSubscriber> INDEX =
+		static final AtomicIntegerFieldUpdater<BufferTimeoutSubscriber> INDEX =
 				AtomicIntegerFieldUpdater.newUpdater(BufferTimeoutSubscriber.class, "index");
+
 
 		volatile Disposable timespanRegistration;
 
@@ -145,7 +146,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 		}
 
 		void nextCallback(T value) {
-			synchronized (this) { // TODO: think how to avoid synchronization (CAS loop??)
+			synchronized (this) {
 				C v = values;
 				if(v == null) {
 					v = Objects.requireNonNull(bufferSupplier.get(),
@@ -159,7 +160,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 		void flushCallback(@Nullable T ev) { //TODO investigate ev not used
 			C v = values;
 			boolean flush = false;
-			synchronized (this) { // TODO: think how to avoid synchronization (CAS loop??)
+			synchronized (this) {
 				if (v != null && !v.isEmpty()) {
 					values = bufferSupplier.get();
 					flush = true;
