@@ -171,15 +171,29 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends FluxOp
 			if (flush) {
 				long r = requested;
 				if (r != 0L) {
-					actual.onNext(v);
 					if (r != Long.MAX_VALUE) {
-						REQUESTED.decrementAndGet(this);
+						long next;
+						for (;;) {
+							next = r - 1;
+							if (REQUESTED.compareAndSet(this, r, next)) {
+								actual.onNext(v);
+								return;
+							}
+
+							r = requested;
+							if (r <= 0L) {
+								break;
+							}
+						}
+					}
+					else {
+						actual.onNext(v);
+						return;
 					}
 				}
-				else {
-					actual.onError(Exceptions.failWithOverflow(
-							"Could not emit buffer due to lack of requests"));
-				}
+
+				actual.onError(Exceptions.failWithOverflow(
+						"Could not emit buffer due to lack of requests"));
 			}
 		}
 
