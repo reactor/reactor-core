@@ -15,6 +15,8 @@
  */
 package reactor.core.publisher.tck;
 
+import java.util.logging.Level;
+
 import org.reactivestreams.Processor;
 import org.testng.SkipException;
 import reactor.core.publisher.EmitterProcessor;
@@ -29,7 +31,7 @@ public class EmitterProcessorVerification extends AbstractProcessorVerification 
 	@Override
 	public Processor<Long, Long> createIdentityProcessor(int bufferSize) {
 		FluxProcessor<Long, Long> p = EmitterProcessor.create(bufferSize);
-		return FluxProcessor.wrap(p, p.log());
+		return FluxProcessor.wrap(p, p.log("EmitterProcessorVerification", Level.FINE));
 	}
 
 	@Override

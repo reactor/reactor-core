@@ -343,14 +343,14 @@ project('reactor-core') {
   }
 
   task testNG(type: Test, group: 'verification') {
-	useTestNG()
 
-	//FIXME smaldini the testNG test randomly fail on local, fail on CI
-	exclude '**/*.*'
-	includes.clear()
-	include '**/*Verification.*'
-	doFirst {
-	  println "Additional tests from `testNG` ($includes)"
+	if (!version.endsWith('BUILD-SNAPSHOT')) {
+	  includes.clear()
+	  useTestNG()
+	  include '**/*Verification.*'
+	  doFirst {
+		println "Additional tests from `testNG` ($includes)"
+	  }
 	}
   }
 
@@ -389,6 +389,7 @@ project('reactor-core') {
 
   test.dependsOn testStaticInit
   jacocoTestReport.dependsOn testNG
+
   check.dependsOn jacocoTestReport
   jar.finalizedBy(japicmp)
 }

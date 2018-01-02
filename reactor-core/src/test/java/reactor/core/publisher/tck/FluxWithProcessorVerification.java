@@ -39,7 +39,7 @@ public class FluxWithProcessorVerification extends AbstractProcessorVerification
 	@Override
 	public Processor<Long, Long> createIdentityProcessor(int bufferSize) {
 		Flux<String> otherStream = Flux.just("test", "test2", "test3");
-		System.out.println("Providing new downstream");
+//		System.out.println("Providing new downstream");
 		FluxProcessor<Long, Long> p =
 				WorkQueueProcessor.<Long>builder().name("fluxion-raw-fork").bufferSize(bufferSize).build();
 

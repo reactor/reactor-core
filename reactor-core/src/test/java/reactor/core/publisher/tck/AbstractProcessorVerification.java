@@ -29,15 +29,16 @@ import static org.reactivestreams.tck.TestEnvironment.envDefaultNoSignalsTimeout
  */
 public abstract class AbstractProcessorVerification extends org.reactivestreams.tck.IdentityProcessorVerification<Long> {
 
-	final ExecutorService executorService = Executors.newCachedThreadPool();
+//	final ExecutorService executorService = Executors.newCachedThreadPool();
 
 	@Override
 	public ExecutorService publisherExecutorService() {
-		return executorService;
+//		return executorService;
+		return Executors.newCachedThreadPool();
 	}
 
 	AbstractProcessorVerification() {
-		super(new TestEnvironment(500, envDefaultNoSignalsTimeoutMillis(), true));
+		super(new TestEnvironment(500, envDefaultNoSignalsTimeoutMillis(), false));
 	}
 
 	@Override

@@ -467,8 +467,10 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 				nextSequence = sequence.getAsLong();
 				Slot<T> event = null;
 
+				final boolean unbounded = pendingRequest.getAsLong() == Long.MAX_VALUE;
+
 				if (!EventLoopProcessor.waitRequestOrTerminalEvent(pendingRequest, barrier, running, sequence,
-						waiter)) {
+						waiter) && replay(unbounded)) {
 					if(!running.get()){
 						return;
 					}
@@ -480,13 +482,6 @@ public final class WorkQueueProcessor<E> extends EventLoopProcessor<E> {
 						subscriber.onComplete();
 						return;
 					}
-				}
-
-				final boolean unbounded = pendingRequest.getAsLong() == Long.MAX_VALUE;
-
-				if (replay(unbounded)) {
-					running.set(false);
-					return;
 				}
 
 				while (true) {

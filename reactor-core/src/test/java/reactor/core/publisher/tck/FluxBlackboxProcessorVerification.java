@@ -19,8 +19,8 @@ package reactor.core.publisher.tck;
 import java.time.Duration;
 import java.util.function.BiFunction;
 
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -31,13 +31,12 @@ import reactor.core.scheduler.Schedulers;
 @org.testng.annotations.Test
 public class FluxBlackboxProcessorVerification extends AbstractFluxVerification {
 
-	static Scheduler sharedGroup;
+	private Scheduler sharedGroup;
 
 	@Override
 	Flux<Integer> transformFlux(Flux<Integer> f) {
-
 		Flux<String> otherStream = Flux.just("test", "test2", "test3");
-		System.out.println("Providing new downstream");
+//		System.out.println("Providing new downstream");
 
 		Scheduler asyncGroup = Schedulers.newParallel("flux-p-tck", 2);
 
@@ -61,17 +60,14 @@ public class FluxBlackboxProcessorVerification extends AbstractFluxVerification 
 		        .doOnError(Throwable::printStackTrace);
 	}
 
-
-
-	@BeforeClass
-	public static void setupGlobal(){
+	@BeforeMethod
+	public void init() {
 		sharedGroup = Schedulers.newParallel("fluxion-tck", 2);
 	}
 
-	@AfterClass
-	public static void tearDownGlobal(){
+	@AfterMethod
+	public void tearDown(){
 		sharedGroup.dispose();
 	}
-
 
 }
