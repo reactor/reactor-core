@@ -37,6 +37,7 @@ import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
 import reactor.util.concurrent.Queues;
 import reactor.util.concurrent.WaitStrategy;
+import reactor.util.context.Context;
 
 /**
  * A base processor used by executor backed processors to take care of their ExecutorService
@@ -411,9 +412,9 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 	final public void onComplete() {
 		if (TERMINATED.compareAndSet(this, 0, SHUTDOWN)) {
 			upstreamSubscription = null;
+			doComplete();
 			executor.shutdown();
 			readWait.signalAllWhenBlocking();
-			doComplete();
 		}
 	}
 
@@ -423,9 +424,12 @@ abstract class EventLoopProcessor<IN> extends FluxProcessor<IN, IN>
 		if (TERMINATED.compareAndSet(this, 0, SHUTDOWN)) {
 			error = t;
 			upstreamSubscription = null;
+			doError(t);
 			executor.shutdown();
 			readWait.signalAllWhenBlocking();
-			doError(t);
+		}
+		else {
+			Operators.onErrorDropped(t, Context.empty());
 		}
 	}
 
