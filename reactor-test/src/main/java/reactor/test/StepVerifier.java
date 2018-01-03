@@ -403,10 +403,8 @@ public interface StepVerifier {
 		StepVerifier expectComplete();
 
 		/**
-		 * Cancel the underlying subscription. This happens eagerly when the previous
-		 * step is an expectation, which could lead to short-circuiting said expectation
-		 * is some cases (like when the data is produced on another thread). In case you
-		 * need to be sure the last expectation step is processed, use {@link #awaitThenCancel()}.
+		 * Cancel the underlying subscription. This happens sequentially after the
+		 * previous step.
 		 * <p>
 		 * Note that time-manipulating operators like {@link Step#expectNoEvent(Duration)}
 		 * are detected and waited for before cancellation occurs.
@@ -414,54 +412,9 @@ public interface StepVerifier {
 		 * @return the built verification scenario, ready to be verified
 		 *
 		 * @see Subscription#cancel()
-		 * @see #awaitThenCancel()
-		 * @see #cancelThenVerify()
 		 */
 		StepVerifier thenCancel();
 
-		/**
-		 * Cancel the underlying subscription AFTER the previous step has completed.
-		 * Unlike with {@link #thenCancel()}, this includes onNext expectations.
-		 * It is recommended to {@link #verify(Duration) verify the scenario with a timeout}.
-		 * <p>
-		 * Note that as a result, a source that stops emitting just before the preceding
-		 * expectation will result in the test hanging (eg. one expects {@code 1L, 2L} and
-		 * {@code awaitThenCancel} but the source only emits {@code 1L} then never completes
-		 * => awaitThenCancel won't cancel and the test will hang).
-		 *
-		 * @return the built verification scenario, ready to be verified
-		 *
-		 * @see Subscription#cancel()
-		 * @see #thenCancel()
-		 * @see #verifyThenCancel(Duration)
-		 */
-		StepVerifier awaitThenCancel();
-
-		/**
-		 * Convenience shortcut to {@link #awaitThenCancel()} and {@link #verify(Duration)}.
-		 * Since awaitThenCancel is more subject to hanging, this method enforces the use
-		 * of a timeout on the verification.
-		 *
-		 * @param timeout the maximum allowed {@link Duration} for the test.
-		 * @return the actual {@link Duration} the verification took.
-		 * @see #awaitThenCancel()
-		 * @see #verify(Duration)
-		 * @see #cancelThenVerify()
-		 */
-		default Duration verifyThenCancel(Duration timeout) {
-			return awaitThenCancel().verify(timeout);
-		}
-
-		/**
-		 * Convenience shortcut to {@link #thenCancel()} and {@link #verify()}.
-		 *
-		 * @return the actual {@link Duration} the verification took.
-		 * @see #thenCancel()
-		 * @see #verifyThenCancel(Duration)
-		 */
-		default Duration cancelThenVerify() {
-			return thenCancel().verify();
-		}
 
 		/**
 		 * Trigger the {@link #verify() verification}, expecting an unspecified error
