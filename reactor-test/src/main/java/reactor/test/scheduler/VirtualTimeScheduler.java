@@ -262,6 +262,7 @@ public class VirtualTimeScheduler implements Scheduler {
 		}
 		queue.clear();
 		shutdown = true;
+		directWorker.dispose();
 		//TODO remove the below behavior?
 		VirtualTimeScheduler s = CURRENT.get();
 		if (s != null && s == this && CURRENT.compareAndSet(s, null)) {
