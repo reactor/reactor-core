@@ -186,7 +186,10 @@ public class VirtualTimeScheduler implements Scheduler {
 
 	volatile boolean shutdown;
 
+	final VirtualTimeWorker directWorker;
+
 	protected VirtualTimeScheduler() {
+		directWorker = createWorker();
 	}
 
 	/**
@@ -236,7 +239,7 @@ public class VirtualTimeScheduler implements Scheduler {
 		if (shutdown) {
 			throw Exceptions.failWithRejected();
 		}
-		return createWorker().schedule(task);
+		return directWorker.schedule(task);
 	}
 
 	@Override
@@ -244,7 +247,7 @@ public class VirtualTimeScheduler implements Scheduler {
 		if (shutdown) {
 			throw Exceptions.failWithRejected();
 		}
-		return createWorker().schedule(task, delay, unit);
+		return directWorker.schedule(task, delay, unit);
 	}
 
 	@Override
@@ -274,11 +277,9 @@ public class VirtualTimeScheduler implements Scheduler {
 			throw Exceptions.failWithRejected();
 		}
 
-		final Worker w = createWorker();
+		PeriodicDirectTask periodicTask = new PeriodicDirectTask(task);
 
-		PeriodicDirectTask periodicTask = new PeriodicDirectTask(task, w);
-
-		w.schedulePeriodically(periodicTask, initialDelay, period, unit);
+		directWorker.schedulePeriodically(periodicTask, initialDelay, period, unit);
 
 		return periodicTask;
 	}
@@ -379,7 +380,7 @@ public class VirtualTimeScheduler implements Scheduler {
 					run,
 					COUNTER.getAndIncrement(VirtualTimeScheduler.this));
 			queue.add(timedTask);
-
+			advanceTime();
 			return () -> queue.remove(timedTask);
 		}
 
@@ -397,7 +398,7 @@ public class VirtualTimeScheduler implements Scheduler {
 					periodInNanoseconds);
 
 			replace(periodicTask, schedule(periodicTask, initialDelay, unit));
-
+			advanceTime();
 			return periodicTask;
 		}
 
@@ -488,13 +489,10 @@ public class VirtualTimeScheduler implements Scheduler {
 
 		final Runnable run;
 
-		final Scheduler.Worker worker;
-
 		volatile boolean disposed;
 
-		PeriodicDirectTask(Runnable run, Worker worker) {
+		PeriodicDirectTask(Runnable run) {
 			this.run = run;
-			this.worker = worker;
 		}
 
 		@Override
@@ -505,7 +503,6 @@ public class VirtualTimeScheduler implements Scheduler {
 				}
 				catch (Throwable ex) {
 					Exceptions.throwIfFatal(ex);
-					worker.dispose();
 					throw Exceptions.propagate(ex);
 				}
 			}
@@ -514,7 +511,6 @@ public class VirtualTimeScheduler implements Scheduler {
 		@Override
 		public void dispose() {
 			disposed = true;
-			worker.dispose();
 		}
 	}
 
