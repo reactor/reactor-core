@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,6 +19,7 @@ package reactor.core.publisher;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import org.assertj.core.data.Offset;
 import org.junit.Ignore;
@@ -108,31 +109,28 @@ public class FluxDelaySequenceTest {
 
 	@Test
 	public void every50msThenErrorDelaysError() {
-		Flux<Long> source = Flux.concat(
-				Mono.delay(Duration.ofMillis(50)).then(Mono.just(0L)),
-				Mono.delay(Duration.ofMillis(50)).then(Mono.just(1L)),
-				Mono.delay(Duration.ofMillis(50)).then(Mono.just(2L)),
-				Mono.error(new IllegalStateException("boom"))
-		);
 
-		Flux<Long> test = source
-				.delaySequence(Duration.ofMillis(1000));
+		Supplier<Flux<Long>> test = () -> {
+			Flux<Long> source = Flux.concat(Mono.delay(Duration.ofMillis(50))
+			                                    .then(Mono.just(0L)),
+					Mono.delay(Duration.ofMillis(50))
+					    .then(Mono.just(1L)),
+					Mono.delay(Duration.ofMillis(50))
+					    .then(Mono.just(2L)),
+					Mono.error(new IllegalStateException("boom")));
+			return source.delaySequence(Duration.ofMillis(1000));
+		};
 
-		Duration took = StepVerifier.create(test)
-		                            .expectSubscription()
-		                            .expectNoEvent(Duration.ofMillis(1040))
-		                            .expectNext(0L)
-		                            .expectNoEvent(Duration.ofMillis(40))
-		                            .expectNext(1L)
-		                            .expectNoEvent(Duration.ofMillis(40))
-		                            .expectNext(2L)
-		                            .expectErrorMessage("boom")
-		                            .verify();
-
-		assertThat(took.toMillis())
-				.as("error delayed once emitted")
-				.isGreaterThanOrEqualTo(1150)
-				.isLessThan(1300);
+		StepVerifier.withVirtualTime(test)
+		            .expectSubscription()
+		            .expectNoEvent(Duration.ofMillis(50))
+		            .expectNoEvent(Duration.ofMillis(1000))
+		            .expectNext(0L)
+		            .expectNoEvent(Duration.ofMillis(50))
+		            .expectNext(1L)
+		            .expectNoEvent(Duration.ofMillis(50))
+		            .expectNext(2L)
+		            .verifyErrorMessage("boom");
 	}
 
 	@Test
