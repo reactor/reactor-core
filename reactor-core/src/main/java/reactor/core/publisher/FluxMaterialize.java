@@ -24,6 +24,7 @@ import java.util.function.BooleanSupplier;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * @author Stephane Maldini
@@ -182,6 +183,6 @@ final class FluxMaterialize<T> extends FluxOperator<T, Signal<T>> {
             return terminalSignal == null || terminalSignal == empty ? 0 : 1;
         }
 
-		static final Signal empty = new ImmutableSignal<>(SignalType.ON_NEXT, null, null, null);
+		static final Signal empty = new ImmutableSignal<>(Context.empty(), SignalType.ON_NEXT, null, null, null);
 	}
 }

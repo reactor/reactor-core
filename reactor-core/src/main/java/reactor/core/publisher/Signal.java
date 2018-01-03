@@ -22,6 +22,7 @@ import java.util.function.Supplier;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * A domain representation of a Reactive Stream signal.
@@ -36,6 +37,8 @@ public interface Signal<T> extends Supplier<T>, Consumer<Subscriber<? super T>> 
 
 	/**
 	 * Creates and returns a {@code Signal} of variety {@code Type.COMPLETE}.
+	 * <p>
+	 * Note that this variant associates an empty {@link Context} with the {@link Signal}.
 	 *
 	 * @param <T> the value type
 	 *
@@ -47,8 +50,27 @@ public interface Signal<T> extends Supplier<T>, Consumer<Subscriber<? super T>> 
 	}
 
 	/**
+	 * Creates and returns a {@code Signal} of variety {@code Type.COMPLETE}, associated
+	 * with a specific {@link Context}.
+	 *
+	 * @param <T> the value type
+	 * @param context the {@link Context} associated with the completing source.
+	 *
+	 * @return an {@code OnCompleted} variety of {@code Signal}
+	 */
+	static <T> Signal<T> complete(Context context) {
+		if (context.isEmpty()) {
+			//noinspection unchecked
+			return (Signal<T>) ImmutableSignal.ON_COMPLETE;
+		}
+		return new ImmutableSignal<>(context, SignalType.ON_COMPLETE, null, null, null);
+	}
+
+	/**
 	 * Creates and returns a {@code Signal} of variety {@code Type.FAILED}, which holds
 	 * the error.
+	 * <p>
+	 * Note that this variant associates an empty {@link Context} with the {@link Signal}.
 	 *
 	 * @param <T> the value type
 	 * @param e the error associated to the signal
@@ -56,12 +78,28 @@ public interface Signal<T> extends Supplier<T>, Consumer<Subscriber<? super T>> 
 	 * @return an {@code OnError} variety of {@code Signal}
 	 */
 	static <T> Signal<T> error(Throwable e) {
-		return new ImmutableSignal<>(SignalType.ON_ERROR, null, e, null);
+		return error(e, Context.empty());
+	}
+
+	/**
+	 * Creates and returns a {@code Signal} of variety {@code Type.FAILED}, which holds
+	 * the error and the {@link Context} associated with the erroring source.
+	 *
+	 * @param <T> the value type
+	 * @param e the error associated to the signal
+	 * @param context the {@link Context} associated with the erroring source
+	 *
+	 * @return an {@code OnError} variety of {@code Signal}
+	 */
+	static <T> Signal<T> error(Throwable e, Context context) {
+		return new ImmutableSignal<>(context, SignalType.ON_ERROR, null, e, null);
 	}
 
 	/**
 	 * Creates and returns a {@code Signal} of variety {@code Type.NEXT}, which holds
 	 * the value.
+	 * <p>
+	 * Note that this variant associates an empty {@link Context} with the {@link Signal}.
 	 *
 	 * @param <T> the value type
 	 * @param t the value item associated to the signal
@@ -69,7 +107,49 @@ public interface Signal<T> extends Supplier<T>, Consumer<Subscriber<? super T>> 
 	 * @return an {@code OnNext} variety of {@code Signal}
 	 */
 	static <T> Signal<T> next(T t) {
-		return new ImmutableSignal<>(SignalType.ON_NEXT, t, null, null);
+		return next(t, Context.empty());
+	}
+
+	/**
+	 * Creates and returns a {@code Signal} of variety {@code Type.NEXT}, which holds
+	 * the value and the {@link Context} associated with the emitting source.
+	 *
+	 * @param <T> the value type
+	 * @param t the value item associated to the signal
+	 * @param context the {@link Context} associated with the emitting source
+	 *
+	 * @return an {@code OnNext} variety of {@code Signal}
+	 */
+	static <T> Signal<T> next(T t, Context context) {
+		return new ImmutableSignal<>(context, SignalType.ON_NEXT, t, null, null);
+	}
+
+	/**
+	 * Creates and returns a {@code Signal} of variety {@code Type.ON_SUBSCRIBE}.
+	 * <p>
+	 * Note that this variant associates an empty {@link Context} with the {@link Signal}.
+	 *
+	 * @param <T> the value type
+	 * @param subscription the subscription
+	 *
+	 * @return an {@code OnSubscribe} variety of {@code Signal}
+	 */
+	static <T> Signal<T> subscribe(Subscription subscription) {
+		return subscribe(subscription, Context.empty());
+	}
+
+	/**
+	 * Creates and returns a {@code Signal} of variety {@code Type.ON_SUBSCRIBE}, that
+	 * holds the {@link Context} associated with the subscribed source.
+	 *
+	 * @param <T> the value type
+	 * @param subscription the subscription
+	 * @param context the {@link Context} associated with the subscribed source
+	 *
+	 * @return an {@code OnSubscribe} variety of {@code Signal}
+	 */
+	static <T> Signal<T> subscribe(Subscription subscription, Context context) {
+		return new ImmutableSignal<>(context, SignalType.ON_SUBSCRIBE, null, null, subscription);
 	}
 
 	/**
@@ -79,7 +159,8 @@ public interface Signal<T> extends Supplier<T>, Consumer<Subscriber<? super T>> 
 	 * @return true if object represents the completion signal
 	 */
 	static boolean isComplete(Object o) {
-		return o == ImmutableSignal.ON_COMPLETE;
+		return o == ImmutableSignal.ON_COMPLETE ||
+				(o instanceof Signal && ((Signal) o).getType() == SignalType.ON_COMPLETE);
 	}
 
 	/**
@@ -90,18 +171,6 @@ public interface Signal<T> extends Supplier<T>, Consumer<Subscriber<? super T>> 
 	 */
 	static boolean isError(Object o) {
 		return o instanceof Signal && ((Signal) o).getType() == SignalType.ON_ERROR;
-	}
-
-	/**
-	 * Creates and returns a {@code Signal} of variety {@code Type.ON_SUBSCRIBE}.
-	 *
-	 * @param <T> the value type
-	 * @param subscription the subscription
-	 *
-	 * @return an {@code OnSubscribe} variety of {@code Signal}
-	 */
-	static <T> Signal<T> subscribe(Subscription subscription) {
-		return new ImmutableSignal<>(SignalType.ON_SUBSCRIBE, null, null, subscription);
 	}
 
 	/**
@@ -158,6 +227,14 @@ public interface Signal<T> extends Supplier<T>, Consumer<Subscriber<? super T>> 
 	 * @return the type of the signal
 	 */
 	SignalType getType();
+
+	/**
+	 * Return the {@link Context} that is accessible by the time this {@link Signal} was
+	 * emitted.
+	 *
+	 * @return the {@link Context}, or an empty one if no context is available.
+	 */
+	Context getContext();
 
 	/**
 	 * Indicates whether this signal represents an {@code onError} event.

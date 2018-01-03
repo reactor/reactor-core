@@ -23,6 +23,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * Peek into the lifecycle events and signals of a sequence
@@ -122,7 +123,7 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 			done = true;
 			try {
 				//noinspection ConstantConditions
-				onSignal.accept(Signal.error(t));
+				onSignal.accept(Signal.error(t, actual.currentContext()));
 			}
 			catch (Throwable e) {
 				//this performs a throwIfFatal or suppresses t in e
@@ -147,8 +148,7 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 			}
 			done = true;
 			try {
-				//noinspection ConstantConditions
-				onSignal.accept(Signal.complete());
+				onSignal.accept(Signal.complete(actual.currentContext()));
 			}
 			catch (Throwable e) {
 				done = false;
@@ -183,8 +183,18 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 		}
 
 		@Override
+		public Context getContext() {
+			return actual.currentContext();
+		}
+
+		@Override
 		public SignalType getType() {
 			return SignalType.ON_NEXT;
+		}
+
+		@Override
+		public String toString() {
+			return "doOnEach_onNext(" + t + ")";
 		}
 	}
 }
