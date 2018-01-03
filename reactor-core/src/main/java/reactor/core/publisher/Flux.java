@@ -3526,7 +3526,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * Add behavior (side-effects) triggered when the {@link Flux} emits an item, fails with an error
 	 * or completes successfully. All these events are represented as a {@link Signal}
 	 * that is passed to the side-effect callback. Note that this is an advanced operator,
-	 * typically used for monitoring of a Flux.
+	 * typically used for monitoring of a Flux. These {@link Signal} have a {@link Context}
+	 * associated to them.
 	 *
 	 * @param signalConsumer the mandatory callback to call on
 	 *   {@link Subscriber#onNext(Object)}, {@link Subscriber#onError(Throwable)} and
@@ -4910,6 +4911,8 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * materializing these signals.
 	 * Since the error is materialized as a {@code Signal}, the propagation will be stopped and onComplete will be
 	 * emitted. Complete signal will first emit a {@code Signal.complete()} and then effectively complete the flux.
+	 * <p>
+	 * These {@link Signal} don't have a {@link Context} associated with them (empty {@link Context}).
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/materialize.png" alt="">

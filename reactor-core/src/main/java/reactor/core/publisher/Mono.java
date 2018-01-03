@@ -1673,6 +1673,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * or completes successfully. All these events are represented as a {@link Signal}
 	 * that is passed to the side-effect callback. Note that this is an advanced operator,
 	 * typically used for monitoring of a Mono.
+	 * These {@link Signal} have a {@link Context} associated to them.
 	 *
 	 * @param signalConsumer the mandatory callback to call on
 	 *   {@link Subscriber#onNext(Object)}, {@link Subscriber#onError(Throwable)} and
@@ -1685,11 +1686,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 */
 	public final Mono<T> doOnEach(Consumer<? super Signal<T>> signalConsumer) {
 		Objects.requireNonNull(signalConsumer, "signalConsumer");
-		return doOnSignal(this,
-				null,
-				v -> signalConsumer.accept(Signal.next(v)),
-				e -> signalConsumer.accept(Signal.error(e)),
-				() -> signalConsumer.accept(Signal.complete()), null, null);
+		return onAssembly(new MonoDoOnEach<>(this, signalConsumer));
+
 	}
 
 	/**
@@ -2320,7 +2318,8 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * materializing these signals.
 	 * Since the error is materialized as a {@code Signal}, the propagation will be stopped and onComplete will be
 	 * emitted. Complete signal will first emit a {@code Signal.complete()} and then effectively complete the flux.
-	 *
+	 * <p>
+	 * These {@link Signal} don't have a {@link Context} associated with them (empty {@link Context}).
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/materialize1.png" alt="">
 	 *

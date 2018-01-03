@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 import reactor.test.StepVerifier;
+import reactor.util.context.Context;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -28,6 +29,165 @@ public class SignalTest {
 
 	Exception e = new Exception("test");
 
+	@Test
+	public void completeWithoutContextIsSingleton() {
+		assertThat(Signal.complete()).isSameAs(Signal.complete());
+	}
+
+	@Test
+	public void completeWithContextCreatesNewInstances() {
+		Context context = Context.of("foo", "bar");
+		assertThat(Signal.complete(context))
+				.isNotSameAs(Signal.complete(context))
+				.isNotSameAs(Signal.complete())
+				.isEqualTo(Signal.complete())
+				.isEqualTo(Signal.complete(context));
+	}
+
+	@Test
+	public void completeStateWithContext(){
+		Context context = Context.of("foo", "bar");
+		Signal<Integer> s = Signal.complete(context);
+
+		assertThat(s.getContext().isEmpty()).as("has context").isFalse();
+
+		assertThat(s.isOnComplete()).isTrue();
+		assertThat(s.isOnSubscribe()).isFalse();
+		assertThat(s.hasError()).isFalse();
+		assertThat(s.hasValue()).isFalse();
+
+		assertThat(s).isEqualTo(Signal.complete());
+		assertThat(s).isNotEqualTo(Signal.error(e));
+		assertThat(s).isNotEqualTo(Signal.subscribe(Operators.emptySubscription()));
+		assertThat(s).isNotEqualTo(Signal.next(1));
+		assertThat(s.hashCode()).isEqualTo(Signal.complete().hashCode());
+		assertThat(s.hashCode()).isNotEqualTo(Signal.error(e).hashCode());
+		assertThat(s.hashCode()).isNotEqualTo(Signal.next(1).hashCode());
+		assertThat(s.hashCode()).isNotEqualTo(Signal.subscribe(Operators.emptySubscription()).hashCode());
+
+		assertThat(Signal.isComplete(s)).isTrue();
+		assertThat(Signal.isError(s)).isFalse();
+
+		assertThat(s.getType()).isEqualTo(SignalType.ON_COMPLETE);
+		assertThat(s.toString()).contains("onComplete");
+
+		StepVerifier.create(Flux.<Integer>from(sub -> {
+			sub.onSubscribe(Operators.emptySubscription());
+			s.accept(sub);
+		}))
+		            .verifyComplete();
+	}
+
+	@Test
+	public void errorStateWithContext(){
+		Context context = Context.of("foo", "bar");
+		Signal<Integer> s = Signal.error(e, context);
+
+		assertThat(s.getContext().isEmpty()).as("has context").isFalse();
+
+		assertThat(s.isOnComplete()).isFalse();
+		assertThat(s.isOnSubscribe()).isFalse();
+		assertThat(s.hasError()).isTrue();
+		assertThat(s.hasValue()).isFalse();
+
+		assertThat(s).isEqualTo(Signal.error(e));
+		assertThat(s).isNotEqualTo(Signal.error(new Exception("test2")));
+		assertThat(s).isNotEqualTo(Signal.complete());
+		assertThat(s).isNotEqualTo(Signal.subscribe(Operators.emptySubscription()));
+		assertThat(s).isNotEqualTo(Signal.next(1));
+		assertThat(s.hashCode()).isEqualTo(Signal.error(e).hashCode());
+		assertThat(s.hashCode()).isNotEqualTo(Signal.error(new Exception("test2")).hashCode());
+		assertThat(s.hashCode()).isNotEqualTo(Signal.complete().hashCode());
+		assertThat(s.hashCode()).isNotEqualTo(Signal.next(1).hashCode());
+		assertThat(s.hashCode()).isNotEqualTo(Signal.subscribe(Operators.emptySubscription()).hashCode());
+
+		assertThat(Signal.isComplete(s)).isFalse();
+		assertThat(Signal.isError(s)).isTrue();
+		assertThat(s.getThrowable()).isEqualTo(e);
+
+		assertThat(s.getType()).isEqualTo(SignalType.ON_ERROR);
+		assertThat(s.toString()).contains("onError");
+
+		StepVerifier.create(Flux.<Integer>from(sub -> {
+			sub.onSubscribe(Operators.emptySubscription());
+			s.accept(sub);
+		}))
+	                .verifyErrorMessage("test");
+	}
+
+	@Test
+	public void nextStateWithContext(){
+		Context context = Context.of("foo", "bar");
+		Signal<Integer> s = Signal.next(1, context);
+
+		assertThat(s.getContext().isEmpty()).as("has context").isFalse();
+
+		assertThat(s.isOnComplete()).isFalse();
+		assertThat(s.isOnSubscribe()).isFalse();
+		assertThat(s.hasError()).isFalse();
+		assertThat(s.hasValue()).isTrue();
+
+		assertThat(s).isEqualTo(Signal.next(1));
+		assertThat(s).isNotEqualTo(Signal.next(2));
+		assertThat(s).isNotEqualTo(Signal.error(e));
+		assertThat(s).isNotEqualTo(Signal.complete());
+		assertThat(s).isNotEqualTo(Signal.subscribe(Operators.emptySubscription()));
+		assertThat(s.hashCode()).isEqualTo(Signal.next(1).hashCode());
+		assertThat(s.hashCode()).isNotEqualTo(Signal.next(2).hashCode());
+		assertThat(s.hashCode()).isNotEqualTo(Signal.error(e).hashCode());
+		assertThat(s.hashCode()).isNotEqualTo(Signal.complete().hashCode());
+		assertThat(s.hashCode()).isNotEqualTo(Signal.subscribe(Operators.emptySubscription()).hashCode());
+
+		assertThat(Signal.isComplete(s)).isFalse();
+		assertThat(Signal.isError(s)).isFalse();
+		assertThat(s.get()).isEqualTo(1);
+
+		assertThat(s.getType()).isEqualTo(SignalType.ON_NEXT);
+		assertThat(s.toString()).contains("onNext(1)");
+
+		StepVerifier.create(Flux.<Integer>from(sub -> {
+			sub.onSubscribe(Operators.emptySubscription());
+			s.accept(sub);
+		}))
+		            .expectNext(1)
+		            .thenCancel()
+		            .verify();
+	}
+
+	@Test
+	public void subscribeStateWithContext(){
+		Context context = Context.of("foo", "bar");
+		Signal<Integer> s = Signal.subscribe(Operators.emptySubscription(), context);
+
+		assertThat(s.getContext().isEmpty()).as("has context").isFalse();
+
+		assertThat(s.isOnComplete()).isFalse();
+		assertThat(s.isOnSubscribe()).isTrue();
+		assertThat(s.hasError()).isFalse();
+		assertThat(s.hasValue()).isFalse();
+
+		assertThat(s).isEqualTo(Signal.subscribe(Operators.emptySubscription()));
+		assertThat(s).isNotEqualTo(Signal.subscribe(Operators.cancelledSubscription()));
+		assertThat(s).isNotEqualTo(Signal.next(1));
+		assertThat(s).isNotEqualTo(Signal.error(e));
+		assertThat(s).isNotEqualTo(Signal.complete());
+		assertThat(s.hashCode()).isEqualTo(Signal.subscribe(Operators.emptySubscription()).hashCode());
+		assertThat(s.hashCode()).isNotEqualTo(Signal.subscribe(Operators.cancelledSubscription()).hashCode());
+		assertThat(s.hashCode()).isNotEqualTo(Signal.next(1).hashCode());
+		assertThat(s.hashCode()).isNotEqualTo(Signal.error(e).hashCode());
+		assertThat(s.hashCode()).isNotEqualTo(Signal.complete().hashCode());
+
+		assertThat(Signal.isComplete(s)).isFalse();
+		assertThat(Signal.isError(s)).isFalse();
+		assertThat(s.getSubscription()).isEqualTo(Operators.emptySubscription());
+
+		assertThat(s.getType()).isEqualTo(SignalType.ON_SUBSCRIBE);
+		assertThat(s.toString()).contains("onSubscribe");
+		StepVerifier.create(Flux.<Integer>from(s::accept))
+		            .expectSubscription()
+		            .thenCancel()
+		            .verify();
+	}
 	@Test
 	public void completeState(){
 		Signal<Integer> s = Signal.complete();
@@ -184,9 +344,24 @@ public class SignalTest {
 			}
 
 			@Override
+			public Context getContext() {
+				return Context.empty();
+			}
+
+			@Override
 			public SignalType getType() {
 				return SignalType.AFTER_TERMINATE;
 			}
 		})).isFalse();
+	}
+
+	@Test
+	public void equalsIgnoresContext() {
+		Signal<String> next1 = Signal.next("foo");
+		Signal<String> next2 = Signal.next("foo", Context.of("bar", "baz"));
+
+		assertThat(next1.getContext().isEmpty()).as("next1 context empty").isTrue();
+		assertThat(next2.getContext().isEmpty()).as("next2 context not empty").isFalse();
+		assertThat(next1).isEqualTo(next2);
 	}
 }

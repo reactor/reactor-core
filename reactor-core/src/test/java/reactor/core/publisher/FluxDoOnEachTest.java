@@ -16,6 +16,8 @@
 
 package reactor.core.publisher;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
@@ -27,8 +29,12 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Scannable;
+import reactor.test.StepVerifier;
+import reactor.test.StepVerifierOptions;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.context.Context;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
 
 public class FluxDoOnEachTest {
@@ -251,6 +257,23 @@ public class FluxDoOnEachTest {
 	}
 
 	@Test
+	public void nextCompleteAndErrorHaveContext() {
+		Context context = Context.of("foo", "bar");
+		List<Signal> signals = new ArrayList<>();
+
+		StepVerifier.create(Flux.just("hello")
+		                        .doOnEach(signals::add),
+				StepVerifierOptions.create().withInitialContext(context))
+		            .expectNext("hello")
+		            .verifyComplete();
+
+		assertThat(signals)
+		          .allSatisfy(signal -> assertThat(signal.getContext().hasKey("foo"))
+				          .as("has Context value")
+				          .isTrue());
+	}
+
+	@Test
     public void scanSubscriber() {
         CoreSubscriber<Integer> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 		FluxDoOnEach<Integer> peek =
@@ -260,11 +283,11 @@ public class FluxDoOnEachTest {
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
-        Assertions.assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
-        Assertions.assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
+        assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
+        assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(actual);
 
-        Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+        assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
         test.onError(new IllegalStateException("boom"));
-        Assertions.assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+        assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
     }
 }

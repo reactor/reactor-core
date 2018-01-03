@@ -26,6 +26,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.util.Logger;
 import reactor.util.Loggers;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * An operator that caches the value from a source Mono with a TTL, after which the value
@@ -44,7 +45,7 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 	static final AtomicReferenceFieldUpdater<MonoCacheTime, Signal> STATE =
 			AtomicReferenceFieldUpdater.newUpdater(MonoCacheTime.class, Signal.class, "state");
 
-	static final Signal<?> EMPTY = new ImmutableSignal<>(SignalType.ON_NEXT, null, null, null);
+	static final Signal<?> EMPTY = new ImmutableSignal<>(Context.empty(), SignalType.ON_NEXT, null, null, null);
 
 	MonoCacheTime(Mono<? extends T> source, Duration ttl, Scheduler clock) {
 		super(source);
@@ -154,6 +155,15 @@ class MonoCacheTime<T> extends MonoOperator<T, T> implements Runnable {
 		@Override
 		public SignalType getType() {
 			throw new UnsupportedOperationException("illegal signal use");
+		}
+
+		/**
+		 * unused in this context as the {@link Signal} interface is only
+		 * implemented for use in the main's STATE compareAndSet.
+		 */
+		@Override
+		public Context getContext() {
+			throw new UnsupportedOperationException("illegal signal use: getContext");
 		}
 
 		final boolean add(Operators.MonoSubscriber<T, T> toAdd) {

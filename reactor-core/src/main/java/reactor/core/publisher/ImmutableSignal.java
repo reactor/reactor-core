@@ -21,6 +21,7 @@ import java.util.Objects;
 
 import org.reactivestreams.Subscription;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
  * The common implementation of a {@link Signal} (serializable and immutable).
@@ -33,6 +34,7 @@ final class ImmutableSignal<T> implements Signal<T>, Serializable {
 
 	private static final long serialVersionUID = -2004454746525418508L;
 
+	private final Context    context;
 	private final SignalType type;
 	private final Throwable  throwable;
 
@@ -40,7 +42,8 @@ final class ImmutableSignal<T> implements Signal<T>, Serializable {
 
 	private transient final Subscription subscription;
 
-	ImmutableSignal(SignalType type, @Nullable T value, @Nullable Throwable e, @Nullable Subscription subscription) {
+	ImmutableSignal(Context context, SignalType type, @Nullable T value, @Nullable Throwable e, @Nullable Subscription subscription) {
+		this.context = context;
 		this.value = value;
 		this.subscription = subscription;
 		this.throwable = e;
@@ -68,6 +71,11 @@ final class ImmutableSignal<T> implements Signal<T>, Serializable {
 	@Override
 	public SignalType getType() {
 		return type;
+	}
+
+	@Override
+	public Context getContext() {
+		return context;
 	}
 
 	@Override
@@ -133,6 +141,10 @@ final class ImmutableSignal<T> implements Signal<T>, Serializable {
 		}
 	}
 
+	/**
+	 * @deprecated as Signal is now associated with {@link Context}, prefer using per-subscription instances.
+	 */
+	@Deprecated
 	static final Signal<Void> ON_COMPLETE =
-			new ImmutableSignal<>(SignalType.ON_COMPLETE, null, null, null);
+			new ImmutableSignal<>(Context.empty(), SignalType.ON_COMPLETE, null, null, null);
 }
