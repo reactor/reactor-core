@@ -1230,11 +1230,15 @@ final class DefaultStepVerifierBuilder<T>
 			try {
 				Event<T> event = this.script.peek();
 				if (event == null) {
+					waitTaskEvent();
+					if (isCancelled()) {
+						return;
+					}
 					setFailure(null, actualSignal, "did not expect: %s", actualSignal);
 					return;
 				}
-
 				onTaskEvent();
+
 				if (event instanceof DefaultStepVerifierBuilder.SignalConsumeWhileEvent) {
 					if (consumeWhile(actualSignal, (SignalConsumeWhileEvent<T>) event)) {
 						return;
@@ -1470,38 +1474,34 @@ final class DefaultStepVerifierBuilder<T>
 			this.completeLatch.countDown();
 		}
 
+		void waitTaskEvent() {
+			Event<T> event;
+			while ((event = taskEvents.poll()) != null) {
+				try {
+					if (event instanceof SubscriptionTaskEvent) {
+						updateRequested(event);
+					}
+					((TaskEvent<T>) event).run(this);
+				}
+				catch (Throwable t) {
+					Exceptions.throwIfFatal(t);
+					cancel();
+					if (t instanceof AssertionError) {
+						throw (AssertionError) t;
+					}
+					throw Exceptions.propagate(t);
+				}
+			}
+		}
+
 		@SuppressWarnings("unchecked")
 		final void pollTaskEventOrComplete(Duration timeout) throws InterruptedException {
 			Objects.requireNonNull(timeout, "timeout");
-			Event<T> event;
 			Instant stop = Instant.now()
 			                      .plus(timeout);
 
-			boolean skip = true;
 			for (; ; ) {
-				while ((event = taskEvents.poll()) != null) {
-					try {
-						skip = false;
-						if (event instanceof SubscriptionTaskEvent) {
-							updateRequested(event);
-						}
-						((TaskEvent<T>) event).run(this);
-					}
-					catch (Throwable t) {
-						Exceptions.throwIfFatal(t);
-						cancel();
-						if(t instanceof AssertionError){
-							throw (AssertionError)t;
-						}
-						throw Exceptions.propagate(t);
-					}
-				}
-				if (!skip) {
-					event = script.peek();
-					if (event instanceof SubscriptionEvent) {
-						serializeDrainAndSubscriptionEvent();
-					}
-				}
+				waitTaskEvent();
 				if (this.completeLatch.await(10, TimeUnit.NANOSECONDS)) {
 					break;
 				}

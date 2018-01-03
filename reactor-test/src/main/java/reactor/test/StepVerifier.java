@@ -403,13 +403,18 @@ public interface StepVerifier {
 		StepVerifier expectComplete();
 
 		/**
-		 * Cancel the underlying subscription.
+		 * Cancel the underlying subscription. This happens sequentially after the
+		 * previous step.
+		 * <p>
+		 * Note that time-manipulating operators like {@link Step#expectNoEvent(Duration)}
+		 * are detected and waited for before cancellation occurs.
 		 *
 		 * @return the built verification scenario, ready to be verified
 		 *
 		 * @see Subscription#cancel()
 		 */
 		StepVerifier thenCancel();
+
 
 		/**
 		 * Trigger the {@link #verify() verification}, expecting an unspecified error
