@@ -381,7 +381,6 @@ public class VirtualTimeScheduler implements Scheduler {
 					run,
 					COUNTER.getAndIncrement(VirtualTimeScheduler.this));
 			queue.add(timedTask);
-			advanceTime();
 			return () -> queue.remove(timedTask);
 		}
 
@@ -399,7 +398,6 @@ public class VirtualTimeScheduler implements Scheduler {
 					periodInNanoseconds);
 
 			replace(periodicTask, schedule(periodicTask, initialDelay, unit));
-			advanceTime();
 			return periodicTask;
 		}
 
