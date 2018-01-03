@@ -3527,6 +3527,9 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * or completes successfully. All these events are represented as a {@link Signal}
 	 * that is passed to the side-effect callback. Note that this is an advanced operator,
 	 * typically used for monitoring of a Flux.
+	 * <p>
+	 * A version with a {@link BiConsumer} that is additionally provided with the current
+	 * {@link Context} is also available ({@link #doWithContext(BiConsumer)}).
 	 *
 	 * @param signalConsumer the mandatory callback to call on
 	 *   {@link Subscriber#onNext(Object)}, {@link Subscriber#onError(Throwable)} and
@@ -3537,6 +3540,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @see #doOnComplete(Runnable)
 	 * @see #materialize()
 	 * @see Signal
+	 * @see #doWithContext(BiConsumer)
 	 */
 	public final Flux<T> doOnEach(Consumer<? super Signal<T>> signalConsumer) {
 		return onAssembly(new FluxDoOnEach<>(this, signalConsumer));
@@ -3688,6 +3692,23 @@ public abstract class Flux<T> implements Publisher<T> {
 			return onAssembly(new FluxDoFinallyFuseable<>(this, onFinally));
 		}
 		return onAssembly(new FluxDoFinally<>(this, onFinally));
+	}
+
+	/**
+	 * Add behavior (side-effects) triggered when the {@link Flux} emits an item, fails
+	 * with an error or completes successfully. All these events are represented as a
+	 * {@link Signal} that is passed to the side-effect callback. Additionally, the callback
+	 * is provided with the current {@link Context}.
+	 *
+	 * @param signalAndContextConsumer the mandatory callback to call on
+	 *   {@link Subscriber#onNext(Object)}, {@link Subscriber#onError(Throwable)} and
+	 *   {@link Subscriber#onComplete()}, consuming a {@link Signal} and a {@link Context}.
+	 * @return an observed {@link Flux}
+	 * @see Signal
+	 * @see #doOnEach(Consumer)
+	 */
+	public final Flux<T> doWithContext(BiConsumer<? super Signal<T>, ? super Context> signalAndContextConsumer) {
+		return onAssembly(new FluxDoOnEach<>(this, signalAndContextConsumer));
 	}
 
 	/**

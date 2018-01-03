@@ -1823,6 +1823,24 @@ public abstract class Mono<T> implements Publisher<T> {
 				null);
 	}
 
+
+	/**
+	 * Add behavior triggered when the {@link Mono} emits an item, fails with an error
+	 * or completes successfully. All these events are represented as a {@link Signal}
+	 * that is passed to the side-effect callback. Additionally, the callback consumes
+	 * the current {@link Context}.
+	 *
+	 * @param signalAndContextConsumer the mandatory callback to call on
+	 *   {@link Subscriber#onNext(Object)}, {@link Subscriber#onError(Throwable)} and
+	 *   {@link Subscriber#onComplete()}, consuming a {@link Signal} and a {@link Context}.
+	 * @return an observed {@link Mono}
+	 * @see Signal
+	 * @see #doOnEach(Consumer)
+	 */
+	public final Mono<T> doWithContext(BiConsumer<? super Signal<T>, ? super Context> signalAndContextConsumer) {
+		return onAssembly(new MonoDoOnEachWithContext<>(this, signalAndContextConsumer));
+	}
+
 	/**
 	 * Map this {@link Mono} into {@link reactor.util.function.Tuple2 Tuple2&lt;Long, T&gt;}
 	 * of timemillis and source data. The timemillis corresponds to the elapsed time between

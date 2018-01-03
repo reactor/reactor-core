@@ -17,15 +17,18 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.util.annotation.Nullable;
+import reactor.util.context.Context;
 
 /**
- * Peek into the lifecycle events and signals of a sequence
+ * Peek into the lifecycle events and signals of a sequence. Also get notified of the
+ * currently accessible {@link Context} if any.
  *
  * @param <T> the value type
  *
@@ -33,25 +36,34 @@ import reactor.util.annotation.Nullable;
  */
 final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 
-	final Consumer<? super Signal<T>> onSignal;
+	final BiConsumer<? super Signal<T>, ? super Context> onSignalAndContext;
 
+	//kept for early notification of a null consumer
 	FluxDoOnEach(Flux<? extends T> source, Consumer<? super Signal<T>> onSignal) {
 		super(source);
-		this.onSignal = Objects.requireNonNull(onSignal, "onSignal");
+		Objects.requireNonNull(onSignal, "onSignal");
+		this.onSignalAndContext = (s, c) -> onSignal.accept(s);
+	}
+
+	FluxDoOnEach(Flux<? extends T> source,
+			BiConsumer<? super Signal<T>, ? super Context> onSignalAndContext) {
+		super(source);
+		this.onSignalAndContext = Objects.requireNonNull(onSignalAndContext, "onSignalAndContext");
 	}
 
 	@Override
 	public void subscribe(CoreSubscriber<? super T> actual) {
 		//TODO fuseable version?
 		//TODO conditional version?
-		source.subscribe(new DoOnEachSubscriber<>(actual, onSignal));
+		source.subscribe(new DoOnEachSubscriber<>(actual, onSignalAndContext));
 	}
 
-	static final class DoOnEachSubscriber<T> implements InnerOperator<T, T>, Signal<T> {
+	static final class DoOnEachSubscriber<T>
+			implements InnerOperator<T, T>, Signal<T> {
 
 		final CoreSubscriber<? super T> actual;
 
-		final Consumer<? super Signal<T>> onSignal;
+		final BiConsumer<? super Signal<T>, ? super Context> onSignalAndContext;
 
 		T t;
 
@@ -60,9 +72,9 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 		boolean done;
 
 		DoOnEachSubscriber(CoreSubscriber<? super T> actual,
-				Consumer<? super Signal<T>> onSignal) {
+				BiConsumer<? super Signal<T>, ? super Context> onSignalAndContext) {
 			this.actual = actual;
-			this.onSignal = onSignal;
+			this.onSignalAndContext = onSignalAndContext;
 		}
 
 		@Override
@@ -102,8 +114,7 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 			}
 			try {
 				this.t = t;
-				//noinspection ConstantConditions
-				onSignal.accept(this);
+				onSignalAndContext.accept(this, this.currentContext());
 			}
 			catch (Throwable e) {
 				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
@@ -121,8 +132,7 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 			}
 			done = true;
 			try {
-				//noinspection ConstantConditions
-				onSignal.accept(Signal.error(t));
+				onSignalAndContext.accept(Signal.error(t), this.currentContext());
 			}
 			catch (Throwable e) {
 				//this performs a throwIfFatal or suppresses t in e
@@ -147,8 +157,7 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 			}
 			done = true;
 			try {
-				//noinspection ConstantConditions
-				onSignal.accept(Signal.complete());
+				onSignalAndContext.accept(Signal.complete(), this.currentContext());
 			}
 			catch (Throwable e) {
 				done = false;
