@@ -123,8 +123,7 @@ public class FluxDelaySequenceTest {
 
 		StepVerifier.withVirtualTime(test)
 		            .expectSubscription()
-		            .expectNoEvent(Duration.ofMillis(50))
-		            .expectNoEvent(Duration.ofMillis(1000))
+		            .expectNoEvent(Duration.ofMillis(1050))
 		            .expectNext(0L)
 		            .expectNoEvent(Duration.ofMillis(50))
 		            .expectNext(1L)
