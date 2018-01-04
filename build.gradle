@@ -169,27 +169,28 @@ configure(subprojects) { p ->
 	}
   }
 
+  //includes for base test task (see below for additional common configurations)
   test {
+	include '**/*Tests.*'
+	include '**/*Test.*'
+	include '**/*Spec.*'
+
+  }
+
+  //all test tasks will show FAILED/PASSED for each test method,
+  // common exclusions, no scanning
+  p.tasks.withType(Test).all {
 	testLogging {
 	  events "passed", "failed"
 	  showExceptions true
 	  exceptionFormat "full"
 	  maxGranularity 3
 	}
-  }
-
-  p.tasks.withType(Test).all {
 	systemProperty("java.awt.headless", "true")
 	systemProperty("reactor.trace.cancel", "true")
 	systemProperty("reactor.trace.nocapacity", "true")
 	systemProperty("testGroups", p.properties.get("testGroups"))
 	scanForTestClasses = false
-	include '**/*Tests.*'
-	include '**/*Test.*'
-	include '**/*Spec.*'
-	if (!version.contains("SNAPSHOT")) {
-	  include '**/*Loop.*'
-	}
 	exclude '**/*Abstract*.*'
 	exclude '**/*OperatorTest*.*'
   }
@@ -334,8 +335,16 @@ project('reactor-core') {
 	from("${project.buildDir}/docs/kdoc")
   }
 
+  task testStaticInit(type: Test, group: 'verification') {
+	systemProperty 'reactor.trace.operatorStacktrace', 'true'
+	include '**/*TestStaticInit.*'
+	doFirst {
+	  println "Additional tests from `testStaticInit` ($includes)"
+	}
+  }
+
   task loops(type: Test, group: 'verification') {
-	includes.clear()
+	mustRunAfter testStaticInit
 	include '**/*Loop.*'
 	doFirst {
 	  println "Additional tests from `loops` ($includes)"
@@ -343,23 +352,24 @@ project('reactor-core') {
   }
 
   task testNG(type: Test, group: 'verification') {
-
-	if (!version.endsWith('BUILD-SNAPSHOT')) {
-	  includes.clear()
-	  useTestNG()
-	  include '**/*Verification.*'
-	  doFirst {
-		println "Additional tests from `testNG` ($includes)"
-	  }
+	mustRunAfter testStaticInit
+	useTestNG()
+	include '**/*Verification.*'
+	doFirst {
+	  println "Additional tests from `testNG` ($includes)"
 	}
   }
 
-  task testStaticInit(type: Test, group: 'verification') {
-	systemProperty 'reactor.trace.operatorStacktrace', 'true'
-	includes.clear()
-	include '**/*TestStaticInit.*'
-	doFirst {
-	  println "Additional tests from `testStaticInit` ($includes)"
+  //inherit basic test task + common configuration in root
+  //always depend on testStaticInit, skip testNG on Travis, skip loops when not releasing
+  //note that this way the tasks can be run individually
+  test {
+	dependsOn testStaticInit
+	if (System.env.TRAVIS != "true") {
+	  dependsOn testNG
+	}
+	if (!version.endsWith('BUILD-SNAPSHOT')) {
+	  dependsOn loops
 	}
   }
 
@@ -387,9 +397,7 @@ project('reactor-core') {
 	  archives kdocZip
   }
 
-  test.dependsOn testStaticInit
-  jacocoTestReport.dependsOn testNG
-
+  jacocoTestReport.dependsOn test
   check.dependsOn jacocoTestReport
   jar.finalizedBy(japicmp)
 }
