@@ -26,6 +26,8 @@ import reactor.util.context.Context;
 /**
  * The common implementation of a {@link Signal} (serializable and immutable).
  * Use Signal factory methods to create an instance.
+ * <p>
+ * Associated {@link Context} are not serialized.
  *
  * @author Stephane Maldini
  * @author Simon Baslé
@@ -34,7 +36,8 @@ final class ImmutableSignal<T> implements Signal<T>, Serializable {
 
 	private static final long serialVersionUID = -2004454746525418508L;
 
-	private final Context    context;
+	private final transient Context context;
+
 	private final SignalType type;
 	private final Throwable  throwable;
 

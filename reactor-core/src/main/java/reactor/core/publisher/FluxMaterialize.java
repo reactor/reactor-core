@@ -45,6 +45,7 @@ final class FluxMaterialize<T> extends FluxOperator<T, Signal<T>> {
 			implements InnerOperator<T, Signal<T>>, BooleanSupplier {
 	    
 	    final CoreSubscriber<? super Signal<T>> actual;
+	    final Context                           cachedContext;
 
 	    Signal<T> terminalSignal;
 	    
@@ -61,6 +62,12 @@ final class FluxMaterialize<T> extends FluxOperator<T, Signal<T>> {
 	    
 		MaterializeSubscriber(CoreSubscriber<? super Signal<T>> subscriber) {
 		    this.actual = subscriber;
+		    this.cachedContext = actual.currentContext();
+		}
+
+		@Override
+		public Context currentContext() {
+			return cachedContext;
 		}
 
 		@Override
@@ -93,20 +100,20 @@ final class FluxMaterialize<T> extends FluxOperator<T, Signal<T>> {
 		@Override
 		public void onNext(T ev) {
 			if(terminalSignal != null){
-				Operators.onNextDropped(ev, actual.currentContext());
+				Operators.onNextDropped(ev, this.cachedContext);
 				return;
 			}
 		    produced++;
-			actual.onNext(Signal.next(ev));
+			actual.onNext(Signal.next(ev, this.cachedContext));
 		}
 
 		@Override
 		public void onError(Throwable ev) {
 			if(terminalSignal != null){
-				Operators.onErrorDropped(ev, actual.currentContext());
+				Operators.onErrorDropped(ev, this.cachedContext);
 				return;
 			}
-			terminalSignal = Signal.error(ev);
+			terminalSignal = Signal.error(ev, this.cachedContext);
             long p = produced;
             if (p != 0L) {
 	            Operators.addCap(REQUESTED, this, -p);
@@ -119,7 +126,7 @@ final class FluxMaterialize<T> extends FluxOperator<T, Signal<T>> {
 			if(terminalSignal != null){
 				return;
 			}
-			terminalSignal = Signal.complete();
+			terminalSignal = Signal.complete(this.cachedContext);
             long p = produced;
             if (p != 0L) {
 	            Operators.addCap(REQUESTED, this, -p);
