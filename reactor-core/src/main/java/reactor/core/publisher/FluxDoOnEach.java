@@ -50,8 +50,8 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 
 	static final class DoOnEachSubscriber<T> implements InnerOperator<T, T>, Signal<T> {
 
-		final CoreSubscriber<? super T> actual;
-
+		final CoreSubscriber<? super T>   actual;
+		final Context                     cachedContext;
 		final Consumer<? super Signal<T>> onSignal;
 
 		T t;
@@ -63,6 +63,7 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 		DoOnEachSubscriber(CoreSubscriber<? super T> actual,
 				Consumer<? super Signal<T>> onSignal) {
 			this.actual = actual;
+			this.cachedContext = actual.currentContext();
 			this.onSignal = onSignal;
 		}
 
@@ -83,6 +84,11 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 		}
 
 		@Override
+		public Context currentContext() {
+			return cachedContext;
+		}
+
+		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) {
@@ -98,7 +104,7 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 		@Override
 		public void onNext(T t) {
 			if (done) {
-				Operators.onNextDropped(t, actual.currentContext());
+				Operators.onNextDropped(t, cachedContext);
 				return;
 			}
 			try {
@@ -107,7 +113,7 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 				onSignal.accept(this);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+				onError(Operators.onOperatorError(s, e, t, cachedContext));
 				return;
 			}
 
@@ -117,17 +123,17 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 		@Override
 		public void onError(Throwable t) {
 			if (done) {
-				Operators.onErrorDropped(t, actual.currentContext());
+				Operators.onErrorDropped(t, cachedContext);
 				return;
 			}
 			done = true;
 			try {
 				//noinspection ConstantConditions
-				onSignal.accept(Signal.error(t, actual.currentContext()));
+				onSignal.accept(Signal.error(t, cachedContext));
 			}
 			catch (Throwable e) {
 				//this performs a throwIfFatal or suppresses t in e
-				t = Operators.onOperatorError(null, e, t, actual.currentContext());
+				t = Operators.onOperatorError(null, e, t, cachedContext);
 			}
 
 			try {
@@ -148,11 +154,11 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 			}
 			done = true;
 			try {
-				onSignal.accept(Signal.complete(actual.currentContext()));
+				onSignal.accept(Signal.complete(cachedContext));
 			}
 			catch (Throwable e) {
 				done = false;
-				onError(Operators.onOperatorError(s, e, actual.currentContext()));
+				onError(Operators.onOperatorError(s, e, cachedContext));
 				return;
 			}
 
@@ -184,7 +190,7 @@ final class FluxDoOnEach<T> extends FluxOperator<T, T> {
 
 		@Override
 		public Context getContext() {
-			return actual.currentContext();
+			return cachedContext;
 		}
 
 		@Override

@@ -2318,8 +2318,7 @@ public abstract class Mono<T> implements Publisher<T> {
 	 * materializing these signals.
 	 * Since the error is materialized as a {@code Signal}, the propagation will be stopped and onComplete will be
 	 * emitted. Complete signal will first emit a {@code Signal.complete()} and then effectively complete the flux.
-	 * <p>
-	 * These {@link Signal} don't have a {@link Context} associated with them (empty {@link Context}).
+	 * All these {@link Signal} have a {@link Context} associated to them.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/materialize1.png" alt="">
 	 *
