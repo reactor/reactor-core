@@ -83,11 +83,11 @@ public class MpscLinkedQueue<E> extends AbstractQueue<E> implements BiPredicate<
 	 * {@link java.util.Queue#offer} which allows atomically offer two elements at once.
 	 * <p>
 	 * IMPLEMENTATION NOTES:<br>
-	 * Offer is allowed from multiple threads.<br>
-	 * Offer allocates a new node and:
+	 * Offer over {@link #test} is allowed from multiple threads.<br>
+	 * Offer over {@link #test} allocates a two new nodes and:
 	 * <ol>
-	 * <li>Swaps it atomically with current producer node (only one producer 'wins')
-	 * <li>Sets the new node as the node following from the swapped producer node
+	 * <li>Swaps them atomically with current producer node (only one producer 'wins')
+	 * <li>Sets the new nodes as the node following from the swapped producer node
 	 * </ol>
 	 * This works because each producer is guaranteed to 'plant' a new node and link the old node. No 2
 	 * producers can get the same producer node as part of XCHG guarantee.
