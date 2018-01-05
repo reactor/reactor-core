@@ -22,7 +22,9 @@ package reactor.util.concurrent;
 
 import java.util.AbstractQueue;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.BiPredicate;
 
 import reactor.util.annotation.Nullable;
 
@@ -30,8 +32,9 @@ import reactor.util.annotation.Nullable;
  * A multi-producer single consumer unbounded queue.
  * @param <E> the contained value type
  */
-public class MpscLinkedQueue<E> extends AbstractQueue<E> {
+public class MpscLinkedQueue<E> extends AbstractQueue<E> implements BiPredicate<E, E> {
 	private volatile LinkedQueueNode<E> producerNode;
+
 	private final static AtomicReferenceFieldUpdater<MpscLinkedQueue, LinkedQueueNode> PRODUCER_NODE_UPDATER
 			= AtomicReferenceFieldUpdater.newUpdater(MpscLinkedQueue.class, LinkedQueueNode.class, "producerNode");
 
@@ -64,17 +67,33 @@ public class MpscLinkedQueue<E> extends AbstractQueue<E> {
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
-	public final boolean offer(final E e)
-	{
-		if (null == e)
-		{
-			throw new NullPointerException();
-		}
+	public final boolean offer(@Nullable final E e) {
+		Objects.requireNonNull(e);
+
 		final LinkedQueueNode<E> nextNode = new LinkedQueueNode<>(e);
 		final LinkedQueueNode<E> prevProducerNode = PRODUCER_NODE_UPDATER.getAndSet(this, nextNode);
 		// Should a producer thread get interrupted here the chain WILL be broken until that thread is resumed
 		// and completes the store in prev.next.
 		prevProducerNode.soNext(nextNode); // StoreStore
+		return true;
+	}
+
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public boolean test(@Nullable E e, @Nullable E e2) {
+		Objects.requireNonNull(e);
+		Objects.requireNonNull(e2);
+
+		final LinkedQueueNode<E> nextNode = new LinkedQueueNode<>(e);
+		final LinkedQueueNode<E> nextNextNode = new LinkedQueueNode<>(e2);
+
+		final LinkedQueueNode<E> prevProducerNode = PRODUCER_NODE_UPDATER.getAndSet(this, nextNextNode);
+		// Should a producer thread get interrupted here the chain WILL be broken until that thread is resumed
+		// and completes the store in prev.next.
+		nextNode.soNext(nextNextNode);
+		prevProducerNode.soNext(nextNode); // StoreStore
+
 		return true;
 	}
 
