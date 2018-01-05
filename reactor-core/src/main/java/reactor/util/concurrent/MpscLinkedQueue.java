@@ -68,7 +68,7 @@ public class MpscLinkedQueue<E> extends AbstractQueue<E> implements BiPredicate<
 	@Override
 	@SuppressWarnings("unchecked")
 	public final boolean offer(final E e) {
-		Objects.requireNonNull(e);
+		Objects.requireNonNull(e, "The offered value 'e' must be non-null");
 
 		final LinkedQueueNode<E> nextNode = new LinkedQueueNode<>(e);
 		final LinkedQueueNode<E> prevProducerNode = PRODUCER_NODE_UPDATER.getAndSet(this, nextNode);
@@ -78,14 +78,34 @@ public class MpscLinkedQueue<E> extends AbstractQueue<E> implements BiPredicate<
 		return true;
 	}
 
-
+	/**
+	 * This is an additional {@link java.util.Queue} extension for
+	 * {@link java.util.Queue#offer} which allows atomically offer two elements at once.
+	 * <p>
+	 * IMPLEMENTATION NOTES:<br>
+	 * Offer is allowed from multiple threads.<br>
+	 * Offer allocates a new node and:
+	 * <ol>
+	 * <li>Swaps it atomically with current producer node (only one producer 'wins')
+	 * <li>Sets the new node as the node following from the swapped producer node
+	 * </ol>
+	 * This works because each producer is guaranteed to 'plant' a new node and link the old node. No 2
+	 * producers can get the same producer node as part of XCHG guarantee.
+	 *
+	 * @see java.util.Queue#offer(java.lang.Object)
+	 *
+	 * @param e1 first element to offer
+	 * @param e2 second element to offer
+	 *
+	 * @return indicate whether elements has been successfully offered
+	 */
 	@Override
 	@SuppressWarnings("unchecked")
-	public boolean test(E e, E e2) {
-		Objects.requireNonNull(e);
-		Objects.requireNonNull(e2);
+	public boolean test(E e1, E e2) {
+		Objects.requireNonNull(e1, "The offered value 'e1' must be non-null");
+		Objects.requireNonNull(e2, "The offered value 'e2' must be non-null");
 
-		final LinkedQueueNode<E> nextNode = new LinkedQueueNode<>(e);
+		final LinkedQueueNode<E> nextNode = new LinkedQueueNode<>(e1);
 		final LinkedQueueNode<E> nextNextNode = new LinkedQueueNode<>(e2);
 
 		final LinkedQueueNode<E> prevProducerNode = PRODUCER_NODE_UPDATER.getAndSet(this, nextNextNode);
