@@ -268,14 +268,10 @@ public class EmitterProcessorTest {
 		assertThat(tp.getBufferSize()).isEqualTo(Queues.SMALL_BUFFER_SIZE);
 		assertThat(tp.isCancelled()).isFalse();
 
-		//workaround https://github.com/joel-costigliola/assertj-core/issues/1046
-		Stream inners = tp.inners();
-		assertThat(inners).isEmpty();
+		assertThat(tp.inners()).isEmpty();
 
 		Disposable d1 = tp.subscribe();
-		//workaround https://github.com/joel-costigliola/assertj-core/issues/1046
-		inners = tp.inners();
-		assertThat(inners).hasSize(1);
+		assertThat(tp.inners()).hasSize(1);
 
 		FluxSink<Integer> s = tp.sink();
 

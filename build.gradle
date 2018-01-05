@@ -56,7 +56,7 @@ ext {
   logbackVersion = '1.1.2'
 
   // Testing
-  assertJVersion = '3.8.0'
+  assertJVersion = '3.9.0'
   mockitoVersion = '2.10.0'
 
   javadocLinks = ["https://docs.oracle.com/javase/8/docs/api/",

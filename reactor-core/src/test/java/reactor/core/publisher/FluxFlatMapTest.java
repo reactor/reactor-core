@@ -955,9 +955,7 @@ public class FluxFlatMapTest {
 
 	@SuppressWarnings("unchecked")
 	void assertAfterOnSubscribeInnerState(InnerProducer s) {
-		//workaround https://github.com/joel-costigliola/assertj-core/issues/1046
-		Stream inners = s.inners();
-		assertThat(inners).hasSize(1);
+		assertThat(s.inners()).hasSize(1);
 	}
 
 	void assertBeforeOnSubscribeInnerState(InnerConsumer s) {
