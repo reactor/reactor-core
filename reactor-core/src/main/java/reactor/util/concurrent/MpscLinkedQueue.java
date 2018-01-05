@@ -67,7 +67,7 @@ public class MpscLinkedQueue<E> extends AbstractQueue<E> implements BiPredicate<
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
-	public final boolean offer(@Nullable final E e) {
+	public final boolean offer(final E e) {
 		Objects.requireNonNull(e);
 
 		final LinkedQueueNode<E> nextNode = new LinkedQueueNode<>(e);
@@ -81,7 +81,7 @@ public class MpscLinkedQueue<E> extends AbstractQueue<E> implements BiPredicate<
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public boolean test(@Nullable E e, @Nullable E e2) {
+	public boolean test(E e, E e2) {
 		Objects.requireNonNull(e);
 		Objects.requireNonNull(e2);
 
