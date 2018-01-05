@@ -52,6 +52,9 @@ public final class Queues {
 		else if (q instanceof SpscArrayQueue) {
 			return ((SpscArrayQueue) q).length();
 		}
+		else if(q instanceof MpscLinkedQueue) {
+			return Integer.MAX_VALUE;
+		}
 		else if (q instanceof BlockingQueue) {
 			return ((BlockingQueue) q).remainingCapacity();
 		}

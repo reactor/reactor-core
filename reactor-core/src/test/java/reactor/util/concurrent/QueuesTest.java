@@ -70,6 +70,13 @@ public class QueuesTest {
 	}
 
 	@Test
+	public void capacityUnboundedMpscLinkedQueue() {
+		Queue q = new MpscLinkedQueue();
+
+		assertThat(Queues.capacity(q)).isEqualTo(Integer.MAX_VALUE);
+	}
+
+	@Test
 	public void capacityOtherQueue() {
 		Queue q = new PriorityQueue<>(10);
 
