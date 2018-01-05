@@ -17,6 +17,7 @@
 package reactor.core;
 
 import java.util.Arrays;
+import java.util.function.Consumer;
 
 import org.junit.Test;
 import reactor.test.FakeDisposable;
@@ -59,6 +60,11 @@ public class DisposableTest {
 			@Override
 			public boolean isDisposed() {
 				return disposed;
+			}
+
+			@Override
+			public void forEach(Consumer consumer) {
+				//NO-OP
 			}
 		};
 
@@ -106,6 +112,11 @@ public class DisposableTest {
 			@Override
 			public boolean isDisposed() {
 				return disposed;
+			}
+
+			@Override
+			public void forEach(Consumer consumer) {
+				//NO-OP
 			}
 		};
 
@@ -161,6 +172,11 @@ public class DisposableTest {
 			@Override
 			public boolean isDisposed() {
 				return disposed;
+			}
+
+			@Override
+			public void forEach(Consumer consumer) {
+				//NO-OP
 			}
 		};
 

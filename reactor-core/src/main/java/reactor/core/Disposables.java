@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import reactor.util.annotation.Nullable;
@@ -45,8 +46,8 @@ public final class Disposables {
 	 *
 	 * @return an empty atomic {@link Disposable.Composite}
 	 */
-	public static Disposable.Composite composite() {
-		return new CompositeDisposable();
+	public static <T extends Disposable> Disposable.Composite<T> composite() {
+		return new CompositeDisposable<>();
 	}
 
 	/**
@@ -118,7 +119,7 @@ public final class Disposables {
 	 * @author Stephane Maldini
 	 * @author David Karnok
 	 */
-	static final class CompositeDisposable implements Disposable.Composite, Scannable {
+	static final class CompositeDisposable<T extends Disposable> implements Disposable.Composite<T>, Scannable {
 
 		static final int   DEFAULT_CAPACITY    = 16;
 		static final float DEFAULT_LOAD_FACTOR = 0.75f;
@@ -146,7 +147,8 @@ public final class Disposables {
 		 * Creates a {@link CompositeDisposable} with the given array of initial elements.
 		 * @param disposables the array of {@link Disposable} to start with
 		 */
-		CompositeDisposable(Disposable... disposables) {
+		@SafeVarargs
+		CompositeDisposable(T... disposables) {
 			Objects.requireNonNull(disposables, "disposables is null");
 
 			int capacity = disposables.length + 1;
@@ -156,7 +158,7 @@ public final class Disposables {
 			this.maxSize = (int) (loadFactor * c);
 			this.disposables = new Disposable[c];
 
-			for (Disposable d : disposables) {
+			for (T d : disposables) {
 				Objects.requireNonNull(d, "Disposable item is null");
 				addEntry(d);
 			}
@@ -167,7 +169,7 @@ public final class Disposables {
 		 * initial elements.
 		 * @param disposables the Iterable sequence of {@link Disposable} to start with
 		 */
-		CompositeDisposable(Iterable<? extends Disposable> disposables) {
+		CompositeDisposable(Iterable<? extends T> disposables) {
 			Objects.requireNonNull(disposables, "disposables is null");
 			this.loadFactor = DEFAULT_LOAD_FACTOR;
 			int c = DEFAULT_CAPACITY;
@@ -219,12 +221,48 @@ public final class Disposables {
 		}
 
 		@Override
+		public void forEach(Consumer<? super T> consumer) {
+			if (disposed) {
+				return;
+			}
+			Disposable[] set;
+			synchronized (this) {
+				if (disposed) {
+					return;
+				}
+				set = disposables;
+			}
+
+			List<Throwable> errors = null;
+			for (Object o : set) {
+				if (o instanceof Disposable) {
+					try {
+						//noinspection unchecked
+						consumer.accept((T) o);
+					} catch (Throwable ex) {
+						Exceptions.throwIfFatal(ex);
+						if (errors == null) {
+							errors = new ArrayList<>();
+						}
+						errors.add(ex);
+					}
+				}
+			}
+			if (errors != null) {
+				if (errors.size() == 1) {
+					throw Exceptions.propagate(errors.get(0));
+				}
+				throw Exceptions.multiple(errors);
+			}
+		}
+
+		@Override
 		public boolean isDisposed() {
 			return disposed;
 		}
 
 		@Override
-		public boolean add(Disposable d) {
+		public boolean add(T d) {
 			Objects.requireNonNull(d, "d is null");
 			if (!disposed) {
 				synchronized (this) {
@@ -239,7 +277,7 @@ public final class Disposables {
 		}
 
 		@Override
-		public boolean addAll(Collection<? extends Disposable> ds) {
+		public boolean addAll(Collection<? extends T> ds) {
 			Objects.requireNonNull(ds, "ds is null");
 			if (!disposed) {
 				synchronized (this) {
@@ -259,7 +297,7 @@ public final class Disposables {
 		}
 
 		@Override
-		public boolean remove(Disposable d) {
+		public boolean remove(T d) {
 			Objects.requireNonNull(d, "Disposable item is null");
 			if (disposed) {
 				return false;

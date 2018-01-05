@@ -17,6 +17,7 @@
 package reactor.core;
 
 import java.util.Collection;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import reactor.util.annotation.Nullable;
@@ -88,7 +89,7 @@ public interface Disposable {
 	 *
 	 * @author Simon Baslé
 	 */
-	interface Composite extends Disposable {
+	interface Composite<T extends Disposable> extends Disposable {
 
 		/**
 		 * Add a {@link Disposable} to this container, if it is not {@link #isDisposed() disposed}.
@@ -97,7 +98,7 @@ public interface Disposable {
 		 * @param d the {@link Disposable} to add.
 		 * @return true if the disposable could be added, false otherwise.
 		 */
-		boolean add(Disposable d);
+		boolean add(T d);
 
 		/**
 		 * Adds the given collection of Disposables to the container or disposes them
@@ -110,9 +111,9 @@ public interface Disposable {
 		 * @param ds the collection of Disposables
 		 * @return true if the operation was successful, false if the container has been disposed
 		 */
-		default boolean addAll(Collection<? extends Disposable> ds) {
+		default boolean addAll(Collection<? extends T> ds) {
 			boolean abort = isDisposed();
-			for (Disposable d : ds) {
+			for (T d : ds) {
 				if (abort) {
 					//multi-add aborted,
 					d.dispose();
@@ -137,6 +138,17 @@ public interface Disposable {
 		void dispose();
 
 		/**
+		 * In a best effort fashion, apply an operation to each {@link Disposable} in this
+		 * {@link Composite}. Note that the order in which this operation is applied to
+		 * each Disposable is not guaranteed.
+		 *
+		 * @param consumer the operation to apply
+		 */
+		default void forEach(Consumer<? super T> consumer) {
+			throw new UnsupportedOperationException("forEach default");
+		}
+
+		/**
 		 * Indicates if the container has already been disposed.
 		 * <p>Note that if that is the case, attempts to add new disposable to it via
 		 * {@link #add(Disposable)} and {@link #addAll(Collection)} will be rejected.
@@ -157,7 +169,7 @@ public interface Disposable {
 		 * @param d the {@link Disposable} to remove.
 		 * @return true if the disposable was successfully deleted, false otherwise.
 		 */
-		boolean remove(Disposable d);
+		boolean remove(T d);
 
 		/**
 		 * Returns the number of currently held Disposables.
