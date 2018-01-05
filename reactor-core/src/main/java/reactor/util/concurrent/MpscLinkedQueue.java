@@ -78,6 +78,22 @@ public class MpscLinkedQueue<E> extends AbstractQueue<E> {
 		return true;
 	}
 
+	/**
+	 * {@inheritDoc} <br>
+	 * <p>
+	 * IMPLEMENTATION NOTES:<br>
+	 * Poll is allowed from a SINGLE thread.<br>
+	 * Poll reads the next node from the consumerNode and:
+	 * <ol>
+	 * <li>If it is null, the queue is assumed empty (though it might not be).
+	 * <li>If it is not null set it as the consumer node and return it's now evacuated value.
+	 * </ol>
+	 * This means the consumerNode.value is always null, which is also the starting point for the queue.
+	 * Because null values are not allowed to be offered this is the only node with it's value set to null at
+	 * any one time.
+	 *
+	 * @see java.util.Queue#poll()
+	 */
 	@Nullable
 	@Override
 	public E poll() {
@@ -205,6 +221,7 @@ public class MpscLinkedQueue<E> extends AbstractQueue<E> {
 		 *
 		 * @return value
 		 */
+		@Nullable
 		public E getAndNullValue()
 		{
 			E temp = lpValue();
@@ -212,6 +229,7 @@ public class MpscLinkedQueue<E> extends AbstractQueue<E> {
 			return temp;
 		}
 
+		@Nullable
 		public E lpValue()
 		{
 			return value;
@@ -222,7 +240,7 @@ public class MpscLinkedQueue<E> extends AbstractQueue<E> {
 			value = newValue;
 		}
 
-		public void soNext(LinkedQueueNode<E> n)
+		public void soNext(@Nullable LinkedQueueNode<E> n)
 		{
 			NEXT_UPDATER.lazySet(this, n);
 		}
