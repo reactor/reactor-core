@@ -7713,7 +7713,6 @@ public abstract class Flux<T> implements Publisher<T> {
 		return onAssembly(new FluxWindowWhen<>(this,
 				bucketOpening,
 				closeSelector,
-				Queues.unbounded(Queues.XS_BUFFER_SIZE),
 				Queues.unbounded(Queues.XS_BUFFER_SIZE)));
 	}
 
