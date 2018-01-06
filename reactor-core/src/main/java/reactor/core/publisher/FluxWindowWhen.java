@@ -16,11 +16,10 @@
 
 package reactor.core.publisher;
 
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
@@ -31,8 +30,10 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.util.annotation.Nullable;
+import reactor.util.concurrent.MpscLinkedQueue;
 
 /**
  * Splits the source sequence into potentially overlapping windowEnds controlled by items
@@ -50,20 +51,15 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 
 	final Function<? super U, ? extends Publisher<V>> end;
 
-	final Supplier<? extends Queue<Object>> drainQueueSupplier;
-
 	final Supplier<? extends Queue<T>> processorQueueSupplier;
 
 	FluxWindowWhen(Flux<? extends T> source,
 			Publisher<U> start,
 			Function<? super U, ? extends Publisher<V>> end,
-			Supplier<? extends Queue<Object>> drainQueueSupplier,
 			Supplier<? extends Queue<T>> processorQueueSupplier) {
 		super(source);
 		this.start = Objects.requireNonNull(start, "start");
 		this.end = Objects.requireNonNull(end, "end");
-		this.drainQueueSupplier =
-				Objects.requireNonNull(drainQueueSupplier, "drainQueueSupplier");
 		this.processorQueueSupplier =
 				Objects.requireNonNull(processorQueueSupplier, "processorQueueSupplier");
 	}
@@ -75,127 +71,99 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 
 	@Override
 	public void subscribe(CoreSubscriber<? super Flux<T>> actual) {
-
-		Queue<Object> q = drainQueueSupplier.get();
-
-		WindowStartEndMainSubscriber<T, U, V> main =
-				new WindowStartEndMainSubscriber<>(actual, q, end, processorQueueSupplier);
-
+		WindowWhenMainSubscriber<T, U, V> main = new WindowWhenMainSubscriber<>(actual,
+				start, end, processorQueueSupplier);
 		actual.onSubscribe(main);
 
-		start.subscribe(main.starter);
+		if (main.cancelled) {
+			return;
+		}
+		WindowWhenOpenSubscriber<T, U> os = new WindowWhenOpenSubscriber<>(main);
 
-		source.subscribe(main);
+		if (WindowWhenMainSubscriber.BOUNDARY.compareAndSet(main,null, os)) {
+			WindowWhenMainSubscriber.OPEN_WINDOW_COUNT.incrementAndGet(main);
+			start.subscribe(os);
+			source.subscribe(main);
+		}
 	}
 
-	static final class WindowStartEndMainSubscriber<T, U, V>
-			implements InnerOperator<T, Flux<T>>, Disposable {
+	static final class WindowWhenMainSubscriber<T, U, V>
+			extends QueueDrainSubscriber<T, Object, Flux<T>> {
 
-		final CoreSubscriber<? super Flux<T>> actual;
-
-		final Queue<Object> queue;
-
-		final WindowStartEndStarter<T, U, V> starter;
-
-		final Function<? super U, ? extends Publisher<V>> end;
-
+		final Publisher<U> open;
+		final Function<? super U, ? extends Publisher<V>> close;
 		final Supplier<? extends Queue<T>> processorQueueSupplier;
+		final Disposable.Composite resources;
 
-		volatile long requested;
-		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<WindowStartEndMainSubscriber> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(WindowStartEndMainSubscriber.class,
-						"requested");
+		Subscription s;
 
-		volatile int wip;
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<WindowStartEndMainSubscriber> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(WindowStartEndMainSubscriber.class,
-						"wip");
+		volatile Disposable boundary;
+		static final AtomicReferenceFieldUpdater<WindowWhenMainSubscriber, Disposable> BOUNDARY =
+				AtomicReferenceFieldUpdater.newUpdater(WindowWhenMainSubscriber.class, Disposable.class, "boundary");
 
-		volatile Subscription s;
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<WindowStartEndMainSubscriber, Subscription>
-				S =
-				AtomicReferenceFieldUpdater.newUpdater(WindowStartEndMainSubscriber.class,
-						Subscription.class,
-						"s");
+		final List<UnicastProcessor<T>> windows;
 
-		volatile int cancelled;
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<WindowStartEndMainSubscriber> CANCELLED =
-				AtomicIntegerFieldUpdater.newUpdater(WindowStartEndMainSubscriber.class,
-						"cancelled");
+		volatile long openWindowCount;
+		static final AtomicLongFieldUpdater<WindowWhenMainSubscriber> OPEN_WINDOW_COUNT =
+				AtomicLongFieldUpdater.newUpdater(WindowWhenMainSubscriber.class, "openWindowCount");
 
-		volatile int windowCount;
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<WindowStartEndMainSubscriber> WINDOW_COUNT =
-				AtomicIntegerFieldUpdater.newUpdater(WindowStartEndMainSubscriber.class,
-						"windowCount");
-
-		Set<WindowStartEndEnder<T, V>> windowEnds;
-
-		Set<UnicastProcessor<T>> windows;
-
-		volatile boolean done;
-
-		volatile Throwable error;
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<WindowStartEndMainSubscriber, Throwable>
-				ERROR = AtomicReferenceFieldUpdater.newUpdater(
-				WindowStartEndMainSubscriber.class,
-				Throwable.class,
-				"error");
-
-		WindowStartEndMainSubscriber(CoreSubscriber<? super Flux<T>> actual,
-				Queue<Object> queue,
-				Function<? super U, ? extends Publisher<V>> end,
+		WindowWhenMainSubscriber(CoreSubscriber<? super Flux<T>> actual,
+				Publisher<U> open, Function<? super U, ? extends Publisher<V>> close,
 				Supplier<? extends Queue<T>> processorQueueSupplier) {
-			this.actual = actual;
-			this.queue = queue;
-			this.starter = new WindowStartEndStarter<>(this);
-			this.end = end;
-			this.windowEnds = new HashSet<>();
-			this.windows = new HashSet<>();
+			super(actual, new MpscLinkedQueue<>());
+			this.open = open;
+			this.close = close;
 			this.processorQueueSupplier = processorQueueSupplier;
-			WINDOW_COUNT.lazySet(this, 1);
-		}
-
-		@Override
-		@Nullable
-		public Object scanUnsafe(Attr key) {
-			if (key == Attr.TERMINATED) return done;
-
-			return InnerOperator.super.scanUnsafe(key);
-		}
-
-		@Override
-		public CoreSubscriber<? super Flux<T>> actual() {
-			return actual;
+			this.resources = Disposables.composite();
+			this.windows = new ArrayList<>();
+			OPEN_WINDOW_COUNT.lazySet(this, 1);
 		}
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (Operators.setOnce(S, this, s)) {
+			if (Operators.validate(this.s, s)) {
+				this.s = s;
 				s.request(Long.MAX_VALUE);
 			}
 		}
 
 		@Override
 		public void onNext(T t) {
-			synchronized (this) {
-				queue.offer(t);
+			if (done) {
+				Operators.onNextDropped(t, actual.currentContext());
+				return;
 			}
-			drain();
+			if (fastEnter()) {
+				for (UnicastProcessor<T> w : windows) {
+					w.onNext(t);
+				}
+				if (leave(-1) == 0) {
+					return;
+				}
+			} else {
+				queue.offer(t);
+				if (!enter()) {
+					return;
+				}
+			}
+			drainLoop();
 		}
 
 		@Override
 		public void onError(Throwable t) {
-			if (Exceptions.addThrowable(ERROR, this, t)) {
-				drain();
-			}
-			else {
+			if (done) {
 				Operators.onErrorDropped(t, actual.currentContext());
+				return;
+			}
+			error = t;
+			done = true;
+
+			if (enter()) {
+				drainLoop();
+			}
+
+			if (OPEN_WINDOW_COUNT.decrementAndGet(this) == 0) {
+				resources.dispose();
 			}
 		}
 
@@ -204,339 +172,294 @@ final class FluxWindowWhen<T, U, V> extends FluxOperator<T, Flux<T>> {
 			if (done) {
 				return;
 			}
-			closeMain(false);
-			starter.cancel();
 			done = true;
 
-			drain();
+			if (enter()) {
+				drainLoop();
+			}
+
+			if (OPEN_WINDOW_COUNT.decrementAndGet(this) == 0) {
+				resources.dispose();
+			}
+		}
+
+		void error(Throwable t) {
+			s.cancel();
+			resources.dispose();
+			OperatorDisposables.dispose(BOUNDARY, this);
+
+			actual.onError(t);
 		}
 
 		@Override
 		public void request(long n) {
-			if (Operators.validate(n)) {
-				Operators.addCap(REQUESTED, this, n);
-			}
+			requested(n);
 		}
 
 		@Override
 		public void cancel() {
-			starter.cancel();
-			closeMain(true);
+			cancelled = true;
 		}
 
-		void starterNext(U u) {
-			NewWindow<U> nw = new NewWindow<>(u);
-			synchronized (this) {
-				queue.offer(nw);
-			}
-			drain();
+		void dispose() {
+			resources.dispose();
+			OperatorDisposables.dispose(BOUNDARY, this);
 		}
 
-		void starterError(Throwable e) {
-			if (Exceptions.addThrowable(ERROR, this, e)) {
-				drain();
-			}
-			else {
-				Operators.onErrorDropped(e, actual.currentContext());
-			}
-		}
-
-		void starterComplete() {
-			if (done) {
-				return;
-			}
-			closeMain(false);
-			drain();
-		}
-
-		void endSignal(WindowStartEndEnder<T, V> end) {
-			remove(end);
-			synchronized (this) {
-				queue.offer(end);
-			}
-			drain();
-		}
-
-		void endError(Throwable e) {
-			if (Exceptions.addThrowable(ERROR, this, e)) {
-				drain();
-			}
-			else {
-				Operators.onErrorDropped(e, actual.currentContext());
-			}
-		}
-
-		void closeMain(boolean cancel) {
-			if (cancel) {
-				if (CANCELLED.compareAndSet(this, 0, 1)) {
-					dispose();
-				}
-			} else {
-				dispose();
-			}
-		}
-
-		@Override
-		public void dispose() {
-			if (WINDOW_COUNT.decrementAndGet(this) == 0) {
-				if (cancelled == 0)
-					Operators.terminate(S, this);
-				else
-					s.cancel();
-			}
-		}
-
-		@Override
-		public boolean isDisposed() {
-			return cancelled == 1 || done;
-		}
-
-		boolean add(WindowStartEndEnder<T, V> ender) {
-			synchronized (starter) {
-				Set<WindowStartEndEnder<T, V>> set = windowEnds;
-				if (set != null) {
-					set.add(ender);
-					return true;
-				}
-			}
-			ender.cancel();
-			return false;
-		}
-
-		void remove(WindowStartEndEnder<T, V> ender) {
-			synchronized (starter) {
-				Set<WindowStartEndEnder<T, V>> set = windowEnds;
-				if (set != null) {
-					set.remove(ender);
-				}
-			}
-		}
-
-		void removeAll() {
-			Set<WindowStartEndEnder<T, V>> set;
-			synchronized (starter) {
-				set = windowEnds;
-				if (set == null) {
-					return;
-				}
-				windowEnds = null;
-			}
-
-			for (Subscription s : set) {
-				s.cancel();
-			}
-		}
-
-		void drain() {
-			if (WIP.getAndIncrement(this) != 0) {
-				return;
-			}
-
-			final Subscriber<? super UnicastProcessor<T>> a = actual;
+		void drainLoop() {
 			final Queue<Object> q = queue;
-
+			final Subscriber<? super Flux<T>> a = actual;
+			final List<UnicastProcessor<T>> ws = this.windows;
 			int missed = 1;
 
-			for (; ; ) {
+			for (;;) {
 
-				for (; ; ) {
-					Throwable e = error;
-					if (e != null) {
-						e = Exceptions.terminate(ERROR, this);
-						if (e != Exceptions.TERMINATED) {
-							Operators.terminate(S, this);
-							starter.cancel();
-							removeAll();
-
-							for (UnicastProcessor<T> w : windows) {
-								w.onError(e);
-							}
-							windows = null;
-
-							q.clear();
-
-							a.onError(e);
-						}
-
-						return;
-					}
-
-					if (done || (windowCount == 0 && cancelled == 0)) {
-						removeAll();
-
-						for (UnicastProcessor<T> w : windows) {
-							w.onComplete();
-						}
-						windows = null;
-
-						a.onComplete();
-						return;
-					}
-					else if (windowCount == 0) {
-						removeAll();
-						dispose();
-						return;
-					}
-
+				for (;;) {
+					boolean d = done;
 					Object o = q.poll();
 
-					if (o == null) {
+					boolean empty = o == null;
+
+					if (d && empty) {
+						dispose();
+						Throwable e = error;
+						if (e != null) {
+							actual.onError(e);
+							for (UnicastProcessor<T> w : ws) {
+								w.onError(e);
+							}
+						} else {
+							actual.onComplete();
+							for (UnicastProcessor<T> w : ws) {
+								w.onComplete();
+							}
+						}
+						ws.clear();
+						return;
+					}
+
+					if (empty) {
 						break;
 					}
 
-					if (o instanceof NewWindow) {
-						if (cancelled == 0 && windowCount != 0 && !done) {
-							@SuppressWarnings("unchecked") NewWindow<U> newWindow =
-									(NewWindow<U>) o;
+					if (o instanceof WindowOperation) {
+						@SuppressWarnings("unchecked")
+						WindowOperation<T, U> wo = (WindowOperation<T, U>) o;
 
-							Queue<T> pq = processorQueueSupplier.get();
+						UnicastProcessor<T> w = wo.w;
+						if (w != null) {
+							if (ws.remove(wo.w)) {
+								wo.w.onComplete();
 
-							Publisher<V> p;
-
-							try {
-								p = Objects.requireNonNull(end.apply(newWindow.value),
-										"The end returned a null publisher");
-							}
-							catch (Throwable ex) {
-								Exceptions.addThrowable(ERROR,
-										this,
-										Operators.onOperatorError(s,
-												ex,
-												newWindow.value, actual.currentContext()));
-								continue;
-							}
-
-							WINDOW_COUNT.getAndIncrement(this);
-
-							UnicastProcessor<T> w = new UnicastProcessor<>(pq, this);
-
-							WindowStartEndEnder<T, V> end =
-									new WindowStartEndEnder<>(this, w);
-
-							windows.add(w);
-
-							if (add(end)) {
-
-								long r = requested;
-								if (r != 0L) {
-									a.onNext(w);
-									if (r != Long.MAX_VALUE) {
-										REQUESTED.decrementAndGet(this);
-									}
+								if (OPEN_WINDOW_COUNT.decrementAndGet(this) == 0) {
+									dispose();
+									return;
 								}
-								else {
-									Exceptions.addThrowable(ERROR,
-											this,
-											Exceptions.failWithOverflow(
-													"Could not emit window due to lack of requests"));
-									continue;
-								}
-
-								p.subscribe(end);
 							}
+							continue;
 						}
-					}
-					else if (o instanceof WindowStartEndEnder) {
-						@SuppressWarnings("unchecked") WindowStartEndEnder<T, V> end =
-								(WindowStartEndEnder<T, V>) o;
 
-						end.window.onComplete();
-					}
-					else {
-						@SuppressWarnings("unchecked") T v = (T) o;
-
-						for (UnicastProcessor<T> w : windows) {
-							w.onNext(v);
+						if (cancelled) {
+							continue;
 						}
+
+
+						w = UnicastProcessor.create(processorQueueSupplier.get());
+
+						long r = requested();
+						if (r != 0L) {
+							ws.add(w);
+							a.onNext(w);
+							if (r != Long.MAX_VALUE) {
+								produced(1);
+							}
+						} else {
+							cancelled = true;
+							a.onError(Exceptions.failWithOverflow("Could not deliver new window due to lack of requests"));
+							continue;
+						}
+
+						Publisher<V> p;
+
+						try {
+							p = Objects.requireNonNull(close.apply(wo.open), "The publisher supplied is null");
+						} catch (Throwable e) {
+							cancelled = true;
+							a.onError(e);
+							continue;
+						}
+
+						WindowWhenCloseSubscriber<T, V> cl = new WindowWhenCloseSubscriber<T, V>(this, w);
+
+						if (resources.add(cl)) {
+							OPEN_WINDOW_COUNT.getAndIncrement(this);
+
+							p.subscribe(cl);
+						}
+
+						continue;
+					}
+
+					for (UnicastProcessor<T> w : ws) {
+						//noinspection unchecked
+						w.onNext((T) o);
 					}
 				}
 
-				missed = WIP.addAndGet(this, -missed);
+				missed = leave(-missed);
 				if (missed == 0) {
 					break;
 				}
 			}
 		}
+
+		void open(U b) {
+			queue.offer(new WindowOperation<T, U>(null, b));
+			if (enter()) {
+				drainLoop();
+			}
+		}
+
+		void close(WindowWhenCloseSubscriber<T, V> w) {
+			resources.remove(w);
+			queue.offer(new WindowOperation<T, U>(w.w, null));
+			if (enter()) {
+				drainLoop();
+			}
+		}
 	}
 
-	static final class WindowStartEndStarter<T, U, V>
-			extends Operators.DeferredSubscription implements CoreSubscriber<U> {
+	static final class WindowOperation<T, U> {
+		final UnicastProcessor<T> w;
+		final U open;
+		WindowOperation(@Nullable UnicastProcessor<T> w, @Nullable U open) {
+			this.w = w;
+			this.open = open;
+		}
+	}
 
-		final WindowStartEndMainSubscriber<T, U, V> main;
+	static final class WindowWhenOpenSubscriber<T, U>
+			implements Disposable, Subscriber<U> {
 
-		WindowStartEndStarter(WindowStartEndMainSubscriber<T, U, V> main) {
-			this.main = main;
+		volatile Subscription subscription;
+		static final AtomicReferenceFieldUpdater<WindowWhenOpenSubscriber, Subscription> SUBSCRIPTION =
+				AtomicReferenceFieldUpdater.newUpdater(WindowWhenOpenSubscriber.class, Subscription.class, "subscription");
+
+		final WindowWhenMainSubscriber<T, U, ?> parent;
+
+		boolean done;
+
+		WindowWhenOpenSubscriber(WindowWhenMainSubscriber<T, U, ?> parent) {
+			this.parent = parent;
 		}
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (set(s)) {
-				s.request(Long.MAX_VALUE);
+			if (Operators.setOnce(SUBSCRIPTION, this, s)) {
+				subscription.request(Long.MAX_VALUE);
 			}
+		}
+
+		@Override
+		public void dispose() {
+			Operators.terminate(SUBSCRIPTION, this);
+		}
+
+		@Override
+		public boolean isDisposed() {
+			return subscription == Operators.cancelledSubscription();
 		}
 
 		@Override
 		public void onNext(U t) {
-			main.starterNext(t);
+			if (done) {
+				return;
+			}
+			parent.open(t);
 		}
 
 		@Override
 		public void onError(Throwable t) {
-			main.starterError(t);
+			if (done) {
+				Operators.onErrorDropped(t, parent.actual.currentContext());
+				return;
+			}
+			done = true;
+			parent.error(t);
 		}
 
 		@Override
 		public void onComplete() {
-			main.starterComplete();
+			if (done) {
+				return;
+			}
+			done = true;
+			parent.onComplete();
 		}
-
 	}
 
-	static final class WindowStartEndEnder<T, V> extends Operators.DeferredSubscription
-			implements CoreSubscriber<V> {
+	static final class WindowWhenCloseSubscriber<T, V>
+			implements Disposable, Subscriber<V> {
 
-		final WindowStartEndMainSubscriber<T, ?, V> main;
+		volatile Subscription subscription;
+		static final AtomicReferenceFieldUpdater<WindowWhenCloseSubscriber, Subscription> SUBSCRIPTION =
+				AtomicReferenceFieldUpdater.newUpdater(WindowWhenCloseSubscriber.class, Subscription.class, "subscription");
 
-		final UnicastProcessor<T> window;
+		final WindowWhenMainSubscriber<T, ?, V> parent;
+		final UnicastProcessor<T>               w;
 
-		WindowStartEndEnder(WindowStartEndMainSubscriber<T, ?, V> main,
-				UnicastProcessor<T> window) {
-			this.main = main;
-			this.window = window;
+		boolean done;
+
+		WindowWhenCloseSubscriber(WindowWhenMainSubscriber<T, ?, V> parent, UnicastProcessor<T> w) {
+			this.parent = parent;
+			this.w = w;
 		}
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (set(s)) {
-				s.request(Long.MAX_VALUE);
+			if (Operators.setOnce(SUBSCRIPTION, this, s)) {
+				subscription.request(Long.MAX_VALUE);
 			}
 		}
 
 		@Override
-		public void onNext(V t) {
-			cancel();
+		public void dispose() {
+			Operators.terminate(SUBSCRIPTION, this);
+		}
 
-			main.endSignal(this);
+		@Override
+		public boolean isDisposed() {
+			return subscription == Operators.cancelledSubscription();
+		}
+
+		@Override
+		public void onNext(V t) {
+			if (done) {
+				return;
+			}
+			done = true;
+			dispose();
+			parent.close(this);
 		}
 
 		@Override
 		public void onError(Throwable t) {
-			main.endError(t);
+			if (done) {
+				Operators.onErrorDropped(t, parent.actual.currentContext());
+				return;
+			}
+			done = true;
+			parent.error(t);
 		}
 
 		@Override
 		public void onComplete() {
-			main.endSignal(this);
-		}
-
-	}
-
-	static final class NewWindow<U> {
-
-		final U value;
-
-		public NewWindow(U value) {
-			this.value = value;
+			if (done) {
+				return;
+			}
+			done = true;
+			parent.close(this);
 		}
 	}
+
 }

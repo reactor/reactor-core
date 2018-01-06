@@ -253,7 +253,8 @@ project('reactor-core') {
 	testCompile "org.hamcrest:hamcrest-library:1.3",
 			"org.testng:testng:6.8.5",
 			"org.assertj:assertj-core:$assertJVersion",
-			"org.mockito:mockito-core:$mockitoVersion"
+			"org.mockito:mockito-core:$mockitoVersion",
+			"org.openjdk.jol:jol-core:0.9"
 
 	baseline("io.projectreactor:reactor-core:$compatibleVersion") {
 	  transitive = false
