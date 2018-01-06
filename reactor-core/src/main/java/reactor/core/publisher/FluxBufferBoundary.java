@@ -172,7 +172,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 
 		@Override
 		public void onError(Throwable t) {
-			if(Operators.setTerminated(S, this)) {
+			if(Operators.terminate(S, this)) {
 				synchronized (this) {
 					buffer = null;
 				}
@@ -186,7 +186,7 @@ final class FluxBufferBoundary<T, U, C extends Collection<? super T>>
 
 		@Override
 		public void onComplete() {
-			if(Operators.setTerminated(S, this)) {
+			if(Operators.terminate(S, this)) {
 				C b;
 				synchronized (this) {
 					b = buffer;
