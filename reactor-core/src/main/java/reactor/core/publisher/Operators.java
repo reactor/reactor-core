@@ -679,29 +679,6 @@ public abstract class Operators {
 	}
 
 	/**
-	 * Atomically terminates the subscription if it is not already a
-	 * {@link #cancelledSubscription()}, cancelling the subscription and setting the field
-	 * to the singleton {@link #cancelledSubscription()}.
-	 *
-	 * @param <F> the instance type containing the field
-	 * @param field the field accessor
-	 * @param instance the parent instance
-	 * @return true if terminated or null, false if the subscription was already
-	 * terminated
-	 */
-	static <F> boolean setTerminated(AtomicReferenceFieldUpdater<F, Subscription> field,
-			F instance) {
-		Subscription a = field.get(instance);
-		if (a != CancelledSubscription.INSTANCE) {
-			a = field.getAndSet(instance, CancelledSubscription.INSTANCE);
-			if (a == null || a != CancelledSubscription.INSTANCE) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	/**
 	 * If the actual {@link Subscriber} is not a {@link CoreSubscriber}, it will apply
 	 * safe strict wrapping to apply all reactive streams rules including the ones
 	 * relaxed by internal operators based on {@link CoreSubscriber}.

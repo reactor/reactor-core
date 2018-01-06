@@ -481,7 +481,7 @@ final class FluxExpand<T> extends FluxOperator<T, T> {
 		}
 
 		void dispose() {
-			Operators.setTerminated(S, this);
+			Operators.terminate(S, this);
 		}
 
 		@Nullable
