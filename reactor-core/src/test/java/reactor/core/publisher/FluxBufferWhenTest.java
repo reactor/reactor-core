@@ -21,7 +21,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.LongAdder;
 
+import org.assertj.core.api.Condition;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
@@ -29,11 +33,83 @@ import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.subscriber.AssertSubscriber;
+import reactor.util.Logger;
+import reactor.util.Loggers;
 import reactor.util.concurrent.Queues;
+import reactor.util.function.Tuple3;
+import reactor.util.function.Tuples;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FluxBufferWhenTest {
+
+	private static final Logger LOGGER = Loggers.getLogger(FluxBufferWhenTest.class);
+
+	@Test
+	public void gh969_timedOutBuffersDontLeak() throws InterruptedException {
+		LongAdder created = new LongAdder();
+		LongAdder finalized = new LongAdder();
+		class Wrapper {
+
+			final int i;
+
+			Wrapper(int i) {
+				created.increment();
+				this.i = i;
+			}
+
+			@Override
+			public String toString() {
+				return "{i=" + i + '}';
+			}
+
+			@Override
+			protected void finalize() {
+				finalized.increment();
+			}
+		}
+
+		final CountDownLatch latch = new CountDownLatch(1);
+		final UnicastProcessor<Wrapper> processor = UnicastProcessor.create();
+
+		Flux<Integer> emitter = Flux.range(1, 400)
+		                            .delayElements(Duration.ofMillis(10))
+		                            .doOnNext(i -> processor.onNext(new Wrapper(i)))
+		                            .doOnError(processor::onError)
+		                            .doOnComplete(processor::onComplete);
+
+		Mono<List<Tuple3<Long, String, Long>>> buffers =
+				processor.buffer(Duration.ofMillis(1000), Duration.ofMillis(500))
+				         .filter(b -> b.size() > 0)
+				         .index()
+				         .doOnNext(it -> System.gc())
+				         //index, bounds of buffer, finalized
+				         .map(t2 -> Tuples.of(t2.getT1(),
+						         String.format("from %s to %s", t2.getT2().get(0),
+								         t2.getT2().get(t2.getT2().size() - 1)),
+						         finalized.longValue()))
+				         .doOnNext(v -> LOGGER.info(v.toString()))
+				         .doOnComplete(latch::countDown)
+				         .collectList();
+
+		emitter.subscribe();
+		List<Tuple3<Long, String, Long>> finalizeStats = buffers.block(Duration.ofSeconds(10));
+
+		Condition<? super Tuple3<Long, String, Long>> hasFinalized = new Condition<>(
+				t3 -> t3.getT3() > 0, "has finalized");
+
+		//at least 5 intermediate finalize
+		assertThat(finalizeStats).areAtLeast(5, hasFinalized);
+
+		latch.await(10, TimeUnit.SECONDS);
+		LOGGER.debug("final GC");
+		System.gc();
+		Thread.sleep(500);
+
+		assertThat(finalized.longValue())
+				.as("final GC collects all")
+				.isEqualTo(created.longValue());
+	}
 
 	@Test
 	public void normal() {
@@ -96,41 +172,41 @@ public class FluxBufferWhenTest {
 	public void startCompletes() {
 		AssertSubscriber<List<Integer>> ts = AssertSubscriber.create();
 
-		DirectProcessor<Integer> sp1 = DirectProcessor.create();
-		DirectProcessor<Integer> sp2 = DirectProcessor.create();
-		DirectProcessor<Integer> sp3 = DirectProcessor.create();
+		DirectProcessor<Integer> source = DirectProcessor.create();
+		DirectProcessor<Integer> open = DirectProcessor.create();
+		DirectProcessor<Integer> close = DirectProcessor.create();
 
-		sp1.bufferWhen(sp2, v -> sp3)
+		source.bufferWhen(open, v -> close)
 		   .subscribe(ts);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp1.onNext(1);
+		source.onNext(1);
 
 		ts.assertNoValues()
 		  .assertNoError()
 		  .assertNotComplete();
 
-		sp2.onNext(1);
-		sp2.onComplete();
+		open.onNext(1);
+		open.onComplete();
 
-		Assert.assertTrue("sp3 has no subscribers?", sp3.hasDownstreams());
+		Assert.assertTrue("close has no subscribers?", close.hasDownstreams());
 
-		sp1.onNext(2);
-		sp1.onNext(3);
-		sp1.onNext(4);
+		source.onNext(2);
+		source.onNext(3);
+		source.onNext(4);
 
-		sp3.onComplete();
+		close.onComplete();
 
 		ts.assertValues(Arrays.asList(2, 3, 4))
 		  .assertNoError()
 		  .assertComplete();
 
-		Assert.assertFalse("sp1 has subscribers?", sp1.hasDownstreams());
-		Assert.assertFalse("sp2 has subscribers?", sp2.hasDownstreams());
-		Assert.assertFalse("sp3 has subscribers?", sp3.hasDownstreams());
+//		Assert.assertFalse("source has subscribers?", source.hasDownstreams()); //FIXME
+		Assert.assertFalse("open has subscribers?", open.hasDownstreams());
+		Assert.assertFalse("close has subscribers?", close.hasDownstreams());
 
 	}
 
@@ -236,8 +312,9 @@ public class FluxBufferWhenTest {
 	public void scanStartEndMain() {
 		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 
-		FluxBufferWhen.BufferStartEndMainSubscriber<String, Integer, Long, List<String>> test = new FluxBufferWhen.BufferStartEndMainSubscriber<>(
-				actual, ArrayList::new, Queues.<List<String>>one().get(), u -> Mono.just(1L));
+		FluxBufferWhen.BufferWhenMainSubscriber<String, Integer, Long, List<String>> test =
+				new FluxBufferWhen.BufferWhenMainSubscriber<String, Integer, Long, List<String>>(
+						actual, ArrayList::new, u -> Mono.just(1L));
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 		test.request(100L);
@@ -258,25 +335,42 @@ public class FluxBufferWhenTest {
 	public void scanStartEndMainCancelled() {
 		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
 
-		FluxBufferWhen.BufferStartEndMainSubscriber<String, Integer, Long, List<String>> test = new FluxBufferWhen.BufferStartEndMainSubscriber<>(
-				actual, ArrayList::new, Queues.<List<String>>one().get(), u -> Mono.just(1L));
+		FluxBufferWhen.BufferWhenMainSubscriber<String, Integer, Long, List<String>> test =
+				new FluxBufferWhen.BufferWhenMainSubscriber<String, Integer, Long, List<String>>(
+				actual, ArrayList::new, u -> Mono.just(1L));
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 		test.cancel();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
+	@Test
+	public void scanStartEndMainCompleted() {
+		CoreSubscriber<List<String>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+
+		FluxBufferWhen.BufferWhenMainSubscriber<String, Integer, Long, List<String>> test =
+				new FluxBufferWhen.BufferWhenMainSubscriber<String, Integer, Long, List<String>>(
+				actual, ArrayList::new, u -> Mono.just(1L));
+		Subscription parent = Operators.emptySubscription();
+		test.onSubscribe(parent);
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
+
+		test.complete();
+		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+	}
+
 
 	@Test
-	public void scanStartEndEnder() {
+	public void scanWhenCloseSubscriber() {
 		//noinspection ConstantConditions
-		FluxBufferWhen.BufferStartEndMainSubscriber<String, Integer, Long, List<String>> main = new FluxBufferWhen.BufferStartEndMainSubscriber<>(
-				null, ArrayList::new, Queues.<List<String>>one().get(), u -> Mono.just(1L));
+		FluxBufferWhen.BufferWhenMainSubscriber<String, Integer, Long, List<String>> main =
+				new FluxBufferWhen.BufferWhenMainSubscriber<>(null,
+						ArrayList::new,
+						u -> Mono.just(1L));
 
-		FluxBufferWhen.BufferStartEndEnder test = new FluxBufferWhen.BufferStartEndEnder<>(main, Arrays.asList("foo", "bar"), 1);
+		FluxBufferWhen.BufferWhenCloseSubscriber test = new FluxBufferWhen.BufferWhenCloseSubscriber<>(Arrays.asList("foo", "bar"), main);
 
-		test.request(4); //request is forwarded directly to parent, no parent = we track it
-		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(4L);
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(Long.MAX_VALUE);
 
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
@@ -284,38 +378,31 @@ public class FluxBufferWhenTest {
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
-		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
 
-		test.request(2); //request is forwarded directly to parent
-		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
-
-		test.cancel();
+		test.dispose();
+		assertThat(test.isDisposed()).isTrue();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 
 	@Test
-	public void scanStartEndStarter() {
+	public void scanWhenOpenSubscriber() {
 		//noinspection ConstantConditions
-		FluxBufferWhen.BufferStartEndMainSubscriber<String, Integer, Long, List<String>> main = new FluxBufferWhen.BufferStartEndMainSubscriber<>(
-				null, ArrayList::new, Queues.<List<String>>one().get(), u -> Mono.just(1L));
+		FluxBufferWhen.BufferWhenMainSubscriber<String, Integer, Long, List<String>> main = new FluxBufferWhen.BufferWhenMainSubscriber<>(
+				null, ArrayList::new, u -> Mono.just(1L));
 
-		FluxBufferWhen.BufferStartEndStarter test = new FluxBufferWhen.BufferStartEndStarter<>(main);
+		FluxBufferWhen.BufferWhenOpenSubscriber test = new FluxBufferWhen.BufferWhenOpenSubscriber<>(main);
 
-		test.request(4); //request is forwarded directly to parent, no parent = we track it
-		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(4L);
 
 		Subscription parent = Operators.emptySubscription();
 		test.onSubscribe(parent);
 
+		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(Long.MAX_VALUE);
 		assertThat(test.scan(Scannable.Attr.ACTUAL)).isSameAs(main);
 		assertThat(test.scan(Scannable.Attr.PARENT)).isSameAs(parent);
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isFalse();
-		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
 
-		test.request(2); //request is forwarded directly to parent
-		assertThat(test.scan(Scannable.Attr.REQUESTED_FROM_DOWNSTREAM)).isEqualTo(0L);
-
-		test.cancel();
+		test.dispose();
+		assertThat(test.isDisposed()).isTrue();
 		assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
 	}
 }
