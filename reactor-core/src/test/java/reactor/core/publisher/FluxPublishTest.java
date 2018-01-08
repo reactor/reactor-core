@@ -18,6 +18,7 @@ package reactor.core.publisher;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -53,6 +54,50 @@ public class FluxPublishTest extends FluxOperatorTest<String, String> {
 	public void failPrefetch(){
 		Flux.never()
 		    .publish( -1);
+	}
+
+	@Test
+	public void prematureOnComplete() {
+		EmitterProcessor<Flux<String>> incomingProcessor = EmitterProcessor.create(false);
+
+		Flux.just("ALPHA", "BRAVO", "CHARLIE", "DELTA", "ALPHA", "BRAVO", "CHARLIE", "DELTA", "ALPHA", "BRAVO", "CHARLIE", "DELTA")
+		    .log("stream.incoming")
+		    .windowWhile(s -> !"DELTA".equals(s),1 )
+		    .subscribe(incomingProcessor);
+
+		AtomicInteger windowIndex = new AtomicInteger(0);
+		AtomicInteger nextIndex = new AtomicInteger(0);
+
+		System.out.println("ZERO");
+		incomingProcessor
+				.next()
+				.flatMapMany(flux -> flux
+						.takeWhile(s -> !"CHARLIE".equals(s))
+						.log(String.format("stream.window.%d", windowIndex.getAndIncrement())))
+				.log(String.format("stream.next.%d", nextIndex.getAndIncrement()))
+				.as(StepVerifier::create)
+				.expectNextCount(2)
+				.verifyComplete();
+
+		System.out.println("ONE");
+		incomingProcessor.next()
+		                 .flatMapMany(flux -> flux
+				                 .takeWhile(s -> !"CHARLIE".equals(s))
+				                 .log(String.format("stream.window.%d", windowIndex.getAndIncrement())))
+		                 .log(String.format("stream.next.%d", nextIndex.getAndIncrement()))
+		                 .as(StepVerifier::create)
+		                 .expectNextCount(2)
+		                 .verifyComplete();
+
+		System.out.println("TWO");
+		incomingProcessor.next()
+		                 .flatMapMany(flux -> flux
+				                 .takeWhile(s -> !"CHARLIE".equals(s))
+				                 .log(String.format("stream.window.%d", windowIndex.getAndIncrement())))
+		                 .log(String.format("stream.next.%d", nextIndex.getAndIncrement()))
+		                 .as(StepVerifier::create)
+		                 .expectNextCount(2)
+		                 .verifyComplete();
 	}
 
 	/*@Test
