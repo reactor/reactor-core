@@ -16,15 +16,14 @@
 
 package reactor.core.publisher;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
-import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -33,37 +32,40 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
+import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.Exceptions;
+import reactor.core.Scannable;
 import reactor.util.annotation.Nullable;
-import reactor.util.context.Context;
+import reactor.util.concurrent.MpscLinkedQueue;
 
 /**
  * buffers elements into possibly overlapping buffers whose boundaries are determined
  * by a start Publisher's element and a signal of a derived Publisher
  *
  * @param <T> the source value type
- * @param <U> the value type of the publisher opening the buffers
- * @param <V> the value type of the publisher closing the individual buffers
- * @param <C> the collection type that holds the buffered values
+ * @param <OPEN> the value type of the publisher opening the buffers
+ * @param <CLOSE> the value type of the publisher closing the individual buffers
+ * @param <BUFFER> the collection type that holds the buffered values
  *
  * @see <a href="https://github.com/reactor/reactive-streams-commons">Reactive-Streams-Commons</a>
  */
-final class FluxBufferWhen<T, U, V, C extends Collection<? super T>>
-		extends FluxOperator<T, C> {
+final class FluxBufferWhen<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
+		extends FluxOperator<T, BUFFER> {
 
-	final Publisher<U> start;
+	final Publisher<OPEN> start;
 
-	final Function<? super U, ? extends Publisher<V>> end;
+	final Function<? super OPEN, ? extends Publisher<CLOSE>> end;
 
-	final Supplier<C> bufferSupplier;
+	final Supplier<BUFFER> bufferSupplier;
 
-	final Supplier<? extends Queue<C>> queueSupplier;
+	final Supplier<? extends Queue<BUFFER>> queueSupplier;
 
 	FluxBufferWhen(Flux<? extends T> source,
-			Publisher<U> start,
-			Function<? super U, ? extends Publisher<V>> end,
-			Supplier<C> bufferSupplier,
-			Supplier<? extends Queue<C>> queueSupplier) {
+			Publisher<OPEN> start,
+			Function<? super OPEN, ? extends Publisher<CLOSE>> end,
+			Supplier<BUFFER> bufferSupplier,
+			Supplier<? extends Queue<BUFFER>> queueSupplier) {
 		super(source);
 		this.start = Objects.requireNonNull(start, "start");
 		this.end = Objects.requireNonNull(end, "end");
@@ -77,525 +79,358 @@ final class FluxBufferWhen<T, U, V, C extends Collection<? super T>>
 	}
 
 	@Override
-	public void subscribe(CoreSubscriber<? super C> actual) {
+	public void subscribe(CoreSubscriber<? super BUFFER> actual) {
+		BufferWhenMainSubscriber<T, OPEN, CLOSE, BUFFER> main =
+				new BufferWhenMainSubscriber<>(actual, bufferSupplier, end);
 
-		Queue<C> q = queueSupplier.get();
+		actual.onSubscribe(main);
 
-		BufferStartEndMainSubscriber<T, U, V, C> parent =
-				new BufferStartEndMainSubscriber<>(actual, bufferSupplier, q, end);
+		BufferWhenOpenSubscriber<T, OPEN, CLOSE, BUFFER> bos =
+				new BufferWhenOpenSubscriber<>(main);
+		if (main.resources.add(bos)) {
+			main.bos = bos; //keep reference to remove and dispose it if source early onCompletes
 
-		actual.onSubscribe(parent);
+			BufferWhenMainSubscriber.WINDOWS.lazySet(main, 1);
+			start.subscribe(bos);
 
-		start.subscribe(parent.starter);
-
-		source.subscribe(parent);
+			source.subscribe(main);
+		}
 	}
 
-	static final class BufferStartEndMainSubscriber<T, U, V, C extends Collection<? super T>>
-			implements InnerOperator<T, C> {
-		final Supplier<C> bufferSupplier;
+	static final class BufferWhenMainSubscriber<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
+			extends QueueDrainSubscriber<T, BUFFER, BUFFER>
+			implements Disposable {
+		final Function<? super OPEN, ? extends Publisher<? extends CLOSE>> bufferClose;
+		final Supplier<BUFFER>                                             bufferSupplier;
+		final Composite                                                    resources;
 
-		final Queue<C> queue;
+		Subscription s;
 
-		final Function<? super U, ? extends Publisher<V>> end;
-		final CoreSubscriber<? super C>                   actual;
+		final List<BUFFER> buffers;
 
-		Set<Subscription> endSubscriptions;
+		volatile int windows;
+		static final AtomicIntegerFieldUpdater<BufferWhenMainSubscriber> WINDOWS =
+				AtomicIntegerFieldUpdater.newUpdater(BufferWhenMainSubscriber.class, "windows");
 
-		final BufferStartEndStarter<U> starter;
+		BufferWhenOpenSubscriber<T, OPEN, CLOSE, BUFFER> bos;
 
-		Map<Long, C> buffers;
-
-		volatile Subscription s;
-
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<BufferStartEndMainSubscriber, Subscription>
-				S =
-				AtomicReferenceFieldUpdater.newUpdater(BufferStartEndMainSubscriber.class,
-						Subscription.class,
-						"s");
-
-		volatile long requested;
-		@SuppressWarnings("rawtypes")
-		static final AtomicLongFieldUpdater<BufferStartEndMainSubscriber> REQUESTED =
-				AtomicLongFieldUpdater.newUpdater(BufferStartEndMainSubscriber.class,
-						"requested");
-
-		long index;
-
-		volatile int wip;
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<BufferStartEndMainSubscriber> WIP =
-				AtomicIntegerFieldUpdater.newUpdater(BufferStartEndMainSubscriber.class,
-						"wip");
-
-		volatile Throwable error;
-		@SuppressWarnings("rawtypes")
-		static final AtomicReferenceFieldUpdater<BufferStartEndMainSubscriber, Throwable>
-				ERROR = AtomicReferenceFieldUpdater.newUpdater(
-				BufferStartEndMainSubscriber.class,
-				Throwable.class,
-				"error");
-
-		volatile boolean done;
-
-		volatile boolean cancelled;
-
-		volatile int open;
-		@SuppressWarnings("rawtypes")
-		static final AtomicIntegerFieldUpdater<BufferStartEndMainSubscriber> OPEN =
-				AtomicIntegerFieldUpdater.newUpdater(BufferStartEndMainSubscriber.class,
-						"open");
-
-		BufferStartEndMainSubscriber(CoreSubscriber<? super C> actual,
-				Supplier<C> bufferSupplier,
-				Queue<C> queue,
-				Function<? super U, ? extends Publisher<V>> end) {
-			this.actual = actual;
+		BufferWhenMainSubscriber(CoreSubscriber<? super BUFFER> actual,
+				Supplier<BUFFER> bufferSupplier,
+				Function<? super OPEN, ? extends Publisher<? extends CLOSE>> bufferClose) {
+			super(actual, new MpscLinkedQueue<>());
+			this.bufferClose = bufferClose;
 			this.bufferSupplier = bufferSupplier;
-			this.buffers = new HashMap<>();
-			this.endSubscriptions = new HashSet<>();
-			this.queue = queue;
-			this.end = end;
-			this.open = 1;
-			this.starter = new BufferStartEndStarter<>(this);
+			this.buffers = new LinkedList<>();
+			this.resources = Disposables.composite();
 		}
-
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (Operators.setOnce(S, this, s)) {
+			if (Operators.validate(this.s, s)) {
+				this.s = s;
 				s.request(Long.MAX_VALUE);
 			}
 		}
 
 		@Override
-		public final CoreSubscriber<? super C> actual() {
-			return actual;
-		}
-
-		@Override
 		public void onNext(T t) {
 			synchronized (this) {
-				Map<Long, C> set = buffers;
-				if (set != null) {
-					for (C b : set.values()) {
-						b.add(t);
-					}
-					return;
+				for (BUFFER b : buffers) {
+					b.add(t);
 				}
 			}
-
-			Operators.onNextDropped(t, actual.currentContext());
 		}
 
 		@Override
 		public void onError(Throwable t) {
-			boolean report;
+			error = t;
+			done = true;
+			cancel();
+			cancelled = true;
 			synchronized (this) {
-				Map<Long, C> set = buffers;
-				if (set != null) {
-					buffers = null;
-					report = true;
-				}
-				else {
-					report = false;
-				}
+				buffers.clear();
 			}
-
-			if (report) {
-				anyError(t);
-			}
-			else {
-				Operators.onErrorDropped(t, actual.currentContext());
-			}
+			actual.onError(t);
 		}
 
 		@Override
 		public void onComplete() {
-			Map<Long, C> set;
+			done = true;
+			resources.remove(bos);
+			bos.dispose();
+			if (WINDOWS.decrementAndGet(this) == 0) {
+				complete();
+			}
+		}
 
+		void complete() {
+			List<BUFFER> list;
 			synchronized (this) {
-				set = buffers;
-				if (set == null) {
-					return;
-				}
+				list = new ArrayList<>(buffers);
+				buffers.clear();
 			}
 
-			cancelStart();
-			cancelEnds();
-
-			for (C b : set.values()) {
-				queue.offer(b);
+			Queue<BUFFER> q = queue;
+			for (BUFFER u : list) {
+				q.offer(u);
 			}
 			done = true;
-			drain();
+			if (enter()) {
+				drainMaxLoop(q, actual, false, this, this);
+			}
 		}
 
 		@Override
 		public void request(long n) {
-			if (Operators.validate(n)) {
-				Operators.addCap(REQUESTED, this, n);
-			}
+			requested(n);
 		}
 
-		void cancelMain() {
-			Operators.terminate(S, this);
+		@Override
+		public void dispose() {
+			resources.dispose();
 		}
 
-		void cancelStart() {
-			starter.cancel();
-		}
-
-		void cancelEnds() {
-			Set<Subscription> set;
-			synchronized (starter) {
-				set = endSubscriptions;
-
-				if (set == null) {
-					return;
-				}
-				endSubscriptions = null;
-			}
-
-			for (Subscription s : set) {
-				s.cancel();
-			}
-		}
-
-		boolean addEndSubscription(Subscription s) {
-			synchronized (starter) {
-				Set<Subscription> set = endSubscriptions;
-
-				if (set != null) {
-					set.add(s);
-					return true;
-				}
-			}
-			s.cancel();
-			return false;
+		@Override
+		public boolean isDisposed() {
+			return resources.isDisposed();
 		}
 
 		@Override
 		public void cancel() {
 			if (!cancelled) {
 				cancelled = true;
-
-				cancelMain();
-
-				cancelStart();
-
-				cancelEnds();
+				dispose();
 			}
 		}
 
-		boolean emit(C b) {
-			long r = requested;
-			if (r != 0L) {
-				actual.onNext(b);
-				if (r != Long.MAX_VALUE) {
-					REQUESTED.decrementAndGet(this);
-				}
-				return true;
-			}
-			else {
-
-				actual.onError(Exceptions.failWithOverflow(
-						"Could not emit buffer due to lack of requests"));
-
-				return false;
-			}
+		@Override
+		public boolean accept(Subscriber<? super BUFFER> a, BUFFER v) {
+			a.onNext(v);
+			return true;
 		}
 
-		void anyError(Throwable t) {
-			if (Exceptions.addThrowable(ERROR, this, t)) {
-				done = true;
-				drain();
-			}
-			else {
-				Operators.onErrorDropped(t, actual.currentContext());
-			}
-		}
-
-		void startNext(U u) {
-
-			long idx = index;
-			index = idx + 1;
-
-			C b;
-
-			try {
-				b = Objects.requireNonNull(bufferSupplier.get(),
-				"The bufferSupplier returned a null buffer");
-			}
-			catch (Throwable e) {
-				anyError(Operators.onOperatorError(starter, e, u, actual.currentContext()));
-				return;
-			}
-
-			synchronized (this) {
-				Map<Long, C> set = buffers;
-				if (set == null) {
-					return;
-				}
-
-				set.put(idx, b);
-			}
-
-			Publisher<V> p;
-
-			try {
-				p = Objects.requireNonNull(end.apply(u),
-				"The end returned a null publisher");
-			}
-			catch (Throwable e) {
-				anyError(Operators.onOperatorError(starter, e, u, actual.currentContext()));
-				return;
-			}
-
-			BufferStartEndEnder<T, V, C> end = new BufferStartEndEnder<>(this, b, idx);
-
-			if (addEndSubscription(end)) {
-				OPEN.getAndIncrement(this);
-
-				p.subscribe(end);
-			}
-		}
-
-		void startError(Throwable e) {
-			anyError(e);
-		}
-
-		void startComplete() {
-			if (OPEN.decrementAndGet(this) == 0) {
-				cancelAll();
-				done = true;
-				drain();
-			}
-		}
-
-		void cancelAll() {
-			cancelMain();
-
-			cancelStart();
-
-			cancelEnds();
-		}
-
-		void endSignal(BufferStartEndEnder<T, V, C> ender) {
-			synchronized (this) {
-				Map<Long, C> set = buffers;
-
-				if (set == null) {
-					return;
-				}
-
-				if (set.remove(ender.index) == null) {
-					return;
-				}
-
-				queue.offer(ender.buffer);
-			}
-			if (OPEN.decrementAndGet(this) == 0) {
-				cancelAll();
-				done = true;
-			}
-			drain();
-		}
-
-		void endError(Throwable e) {
-			anyError(e);
-		}
-
-		void drain() {
-			if (WIP.getAndIncrement(this) != 0) {
-				return;
-			}
-
-			final Subscriber<? super C> a = actual;
-			final Queue<C> q = queue;
-
-			int missed = 1;
-
-			for (; ; ) {
-
-				for (; ; ) {
-					boolean d = done;
-
-					C b = q.poll();
-
-					boolean empty = b == null;
-
-					if (checkTerminated(d, empty, a, q)) {
-						return;
-					}
-
-					if (empty) {
-						break;
-					}
-
-					long r = requested;
-					if (r != 0L) {
-						actual.onNext(b);
-						if (r != Long.MAX_VALUE) {
-							REQUESTED.decrementAndGet(this);
-						}
-					}
-					else {
-						anyError(Exceptions.failWithOverflow(
-								"Could not emit buffer due to lack of requests"));
-					}
-				}
-
-				missed = WIP.addAndGet(this, -missed);
-				if (missed == 0) {
-					break;
-				}
-			}
-		}
-
-		boolean checkTerminated(boolean d, boolean empty, Subscriber<?> a, Queue<?> q) {
+		void open(OPEN window) {
 			if (cancelled) {
-				queue.clear();
-				return true;
+				return;
 			}
 
-			if (d) {
-				Throwable e = Exceptions.terminate(ERROR, this);
-				if (e != null && e != Exceptions.TERMINATED) {
-					cancel();
-					queue.clear();
-					a.onError(e);
-					return true;
+			BUFFER b;
+
+			try {
+				b = Objects.requireNonNull(bufferSupplier.get(), "The buffer supplied is null");
+			} catch (Throwable e) {
+				Exceptions.throwIfFatal(e);
+				onError(e);
+				return;
+			}
+
+			Publisher<? extends CLOSE> p;
+
+			try {
+				p = Objects.requireNonNull(bufferClose.apply(window), "The buffer closing publisher is null");
+			} catch (Throwable e) {
+				Exceptions.throwIfFatal(e);
+				onError(e);
+				return;
+			}
+
+			if (cancelled) {
+				return;
+			}
+
+			synchronized (this) {
+				if (cancelled) {
+					return;
 				}
-				else if (empty) {
-					a.onComplete();
-					return true;
+				buffers.add(b);
+			}
+
+			BufferWhenCloseSubscriber<T, OPEN, CLOSE, BUFFER> bcs =
+					new BufferWhenCloseSubscriber<>(b, this);
+			resources.add(bcs);
+
+			WINDOWS.getAndIncrement(this);
+
+			p.subscribe(bcs);
+		}
+
+		void openFinished(Disposable d) {
+			if (resources.remove(d)) {
+				if (WINDOWS.decrementAndGet(this) == 0) {
+					complete();
 				}
 			}
-			return false;
+		}
+
+		void close(BUFFER b, Disposable d) {
+			boolean e;
+			synchronized (this) {
+				e = buffers.remove(b);
+			}
+
+			if (e) {
+				fastPathOrderedEmitMax(b, false, this);
+			}
+
+			if (resources.remove(d)) {
+				if (WINDOWS.decrementAndGet(this) == 0) {
+					complete();
+				}
+			}
 		}
 
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.PARENT) return s;
-			if (key == Attr.TERMINATED) return done;
-			if (key == Attr.CANCELLED) return cancelled;
 			if (key == Attr.PREFETCH) return Integer.MAX_VALUE;
-			if (key == Attr.BUFFERED) return buffers.values()
-			                                           .stream()
-			                                           .mapToInt(Collection::size)
-			                                           .sum();
-			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return requested;
+			if (key == Attr.BUFFERED) return buffers.stream()
+			                                        .mapToInt(Collection::size)
+			                                        .sum();
 
-			return InnerOperator.super.scanUnsafe(key);
+			return super.scanUnsafe(key);
 		}
 	}
 
-	static final class BufferStartEndStarter<U> extends Operators.DeferredSubscription
-			implements InnerConsumer<U> {
+	static final class BufferWhenOpenSubscriber<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
+			implements Disposable, InnerConsumer<OPEN> {
 
-		final BufferStartEndMainSubscriber<?, U, ?, ?> main;
+		volatile Subscription subscription;
+		static final AtomicReferenceFieldUpdater<BufferWhenOpenSubscriber, Subscription> SUBSCRIPTION =
+				AtomicReferenceFieldUpdater.newUpdater(BufferWhenOpenSubscriber.class, Subscription.class, "subscription");
 
-		BufferStartEndStarter(BufferStartEndMainSubscriber<?, U, ?, ?> main) {
-			this.main = main;
+		final BufferWhenMainSubscriber<T, OPEN, CLOSE, BUFFER> parent;
+		boolean done;
+
+		BufferWhenOpenSubscriber(BufferWhenMainSubscriber<T, OPEN, CLOSE, BUFFER> parent) {
+			this.parent = parent;
 		}
 
 		@Override
 		public void onSubscribe(Subscription s) {
-			if (set(s)) {
-				s.request(Long.MAX_VALUE);
+			if (Operators.setOnce(SUBSCRIPTION, this, s)) {
+				subscription.request(Long.MAX_VALUE);
 			}
 		}
 
 		@Override
-		public void onNext(U t) {
-			main.startNext(t);
+		public void dispose() {
+			Operators.terminate(SUBSCRIPTION, this);
+		}
+
+		@Override
+		public boolean isDisposed() {
+			return subscription == Operators.cancelledSubscription();
+		}
+
+		@Override
+		public void onNext(OPEN t) {
+			if (done) {
+				return;
+			}
+			parent.open(t);
 		}
 
 		@Override
 		public void onError(Throwable t) {
-			main.startError(t);
+			if (done) {
+				Operators.onErrorDropped(t, parent.actual.currentContext());
+				return;
+			}
+			done = true;
+			parent.onError(t);
 		}
 
 		@Override
 		public void onComplete() {
-			main.startComplete();
-		}
-
-		@Override
-		public Context currentContext() {
-			return main.currentContext();
+			if (done) {
+				return;
+			}
+			done = true;
+			parent.openFinished(this);
 		}
 
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.ACTUAL) {
-				return main;
+				return parent;
 			}
-			return super.scanUnsafe(key);
+			if (key == Attr.PARENT) return subscription;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return Long.MAX_VALUE;
+			if (key == Attr.CANCELLED) return isDisposed();
+
+			return null;
 		}
 	}
 
-	static final class BufferStartEndEnder<T, V, C extends Collection<? super T>>
-			extends Operators.DeferredSubscription implements InnerConsumer<V> {
+	static final class BufferWhenCloseSubscriber<T, OPEN, CLOSE, BUFFER extends Collection<? super T>>
+			implements Disposable, InnerConsumer<CLOSE> {
 
-		final BufferStartEndMainSubscriber<T, ?, V, C> main;
+		volatile Subscription subscription;
+		static final AtomicReferenceFieldUpdater<BufferWhenCloseSubscriber, Subscription> SUBSCRIPTION =
+				AtomicReferenceFieldUpdater.newUpdater(BufferWhenCloseSubscriber.class, Subscription.class, "subscription");
 
-		final C buffer;
+		final BufferWhenMainSubscriber<T, OPEN, CLOSE, BUFFER> parent;
+		final BUFFER                                           value;
+		boolean done;
 
-		final long index;
 
-		BufferStartEndEnder(BufferStartEndMainSubscriber<T, ?, V, C> main,
-				C buffer,
-				long index) {
-			this.main = main;
-			this.buffer = buffer;
-			this.index = index;
+		BufferWhenCloseSubscriber(BUFFER value, BufferWhenMainSubscriber<T, OPEN, CLOSE, BUFFER> parent) {
+			this.parent = parent;
+			this.value = value;
 		}
 
 		@Override
-		public Context currentContext() {
-			return main.currentContext();
+		public void onSubscribe(Subscription s) {
+			if (Operators.setOnce(SUBSCRIPTION, this, s)) {
+				subscription.request(Long.MAX_VALUE);
+			}
+		}
+
+		@Override
+		public void dispose() {
+			Operators.terminate(SUBSCRIPTION, this);
+		}
+
+		@Override
+		public boolean isDisposed() {
+			return subscription == Operators.cancelledSubscription();
+		}
+
+		@Override
+		public void onNext(CLOSE t) {
+			onComplete();
+		}
+
+		@Override
+		public void onError(Throwable t) {
+			if (done) {
+				Operators.onErrorDropped(t, parent.actual.currentContext());
+				return;
+			}
+			parent.onError(t);
+		}
+
+		@Override
+		public void onComplete() {
+			if (done) {
+				return;
+			}
+			done = true;
+			parent.close(value, this);
 		}
 
 		@Override
 		@Nullable
 		public Object scanUnsafe(Attr key) {
 			if (key == Attr.ACTUAL) {
-				return main;
+				return parent;
 			}
-			return super.scanUnsafe(key);
+			if (key == Attr.PARENT) return subscription;
+			if (key == Attr.REQUESTED_FROM_DOWNSTREAM) return Long.MAX_VALUE;
+			if (key == Attr.CANCELLED) return isDisposed();
+
+			return null;
 		}
-
-		@Override
-		public void onSubscribe(Subscription s) {
-			if (set(s)) {
-				s.request(Long.MAX_VALUE);
-			}
-		}
-
-		@Override
-		public void onNext(V t) {
-			if (!isCancelled()) {
-				cancel();
-
-				main.endSignal(this);
-			}
-		}
-
-		@Override
-		public void onError(Throwable t) {
-			main.endError(t);
-		}
-
-		@Override
-		public void onComplete() {
-			if (!isCancelled()) {
-				main.endSignal(this);
-			}
-		}
-
 	}
 }
