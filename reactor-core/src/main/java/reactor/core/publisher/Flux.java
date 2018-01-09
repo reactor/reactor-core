@@ -1166,7 +1166,7 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Merge data from {@link Publisher} sequences contained in an array / vararg
-	 * into an interleaved merged sequence. Unlike {@link #concat(Publisher) concat}, inner
+	 * into an interleaved merged sequence. Unlike {@link #concat(Publisher) concat},
 	 * sources are subscribed to eagerly.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/merge.png" alt="">
@@ -1188,7 +1188,7 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Merge data from {@link Publisher} sequences contained in an array / vararg
-	 * into an interleaved merged sequence. Unlike {@link #concat(Publisher) concat}, inner
+	 * into an interleaved merged sequence. Unlike {@link #concat(Publisher) concat},
 	 * sources are subscribed to eagerly.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/merge.png" alt="">
@@ -1211,7 +1211,7 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Merge data from {@link Publisher} sequences contained in an array / vararg
-	 * into an interleaved merged sequence. Unlike {@link #concat(Publisher) concat}, inner
+	 * into an interleaved merged sequence. Unlike {@link #concat(Publisher) concat},
 	 * sources are subscribed to eagerly.
 	 * This variant will delay any error until after the rest of the merge backlog has been processed.
 	 * <p>
@@ -1294,7 +1294,7 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Merge data from {@link Publisher} sequences provided in an array/vararg
-	 * into an ordered merged sequence. Unlike concat, the inner publishers are subscribed to
+	 * into an ordered merged sequence. Unlike concat, sources are subscribed to
 	 * eagerly. Unlike merge, their emitted values are merged into the final sequence in subscription order.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/mergesequential.png" alt="">
@@ -1311,7 +1311,7 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Merge data from {@link Publisher} sequences provided in an array/vararg
-	 * into an ordered merged sequence. Unlike concat, the inner publishers are subscribed to
+	 * into an ordered merged sequence. Unlike concat, sources are subscribed to
 	 * eagerly. Unlike merge, their emitted values are merged into the final sequence in subscription order.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/mergesequential.png" alt="">
@@ -1329,7 +1329,7 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Merge data from {@link Publisher} sequences provided in an array/vararg
-	 * into an ordered merged sequence. Unlike concat, the inner publishers are subscribed to
+	 * into an ordered merged sequence. Unlike concat, sources are subscribed to
 	 * eagerly. Unlike merge, their emitted values are merged into the final sequence in subscription order.
 	 * This variant will delay any error until after the rest of the mergeSequential backlog
 	 * has been processed.
@@ -1349,7 +1349,7 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Merge data from {@link Publisher} sequences provided in an {@link Iterable}
-	 * into an ordered merged sequence. Unlike concat, the inner publishers are subscribed to
+	 * into an ordered merged sequence. Unlike concat, sources are subscribed to
 	 * eagerly. Unlike merge, their emitted values are merged into the final sequence in subscription order.
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/mergesequential.png" alt="">
@@ -1366,7 +1366,7 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Merge data from {@link Publisher} sequences provided in an {@link Iterable}
-	 * into an ordered merged sequence. Unlike concat, the inner publishers are subscribed to
+	 * into an ordered merged sequence. Unlike concat, sources are subscribed to
 	 * eagerly (but at most {@code maxConcurrency} sources at a time). Unlike merge, their
 	 * emitted values are merged into the final sequence in subscription order.
 	 * <p>
@@ -1386,7 +1386,7 @@ public abstract class Flux<T> implements Publisher<T> {
 
 	/**
 	 * Merge data from {@link Publisher} sequences provided in an {@link Iterable}
-	 * into an ordered merged sequence. Unlike concat, the inner publishers are subscribed to
+	 * into an ordered merged sequence. Unlike concat, sources are subscribed to
 	 * eagerly (but at most {@code maxConcurrency} sources at a time). Unlike merge, their
 	 * emitted values are merged into the final sequence in subscription order.
 	 * This variant will delay any error until after the rest of the mergeSequential backlog
