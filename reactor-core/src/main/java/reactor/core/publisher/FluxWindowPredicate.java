@@ -564,13 +564,6 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 			}
 		}
 
-		void propagateCancel() {
-			WindowPredicateMain<T> r = parent;
-			if (r != null && PARENT.compareAndSet(this, r, null)) {
-				r.cancel();
-			}
-		}
-
 		void drainRegular(Subscriber<? super T> a) {
 			int missed = 1;
 
@@ -766,13 +759,24 @@ final class FluxWindowPredicate<T> extends FluxOperator<T, Flux<T>>
 			}
 			cancelled = true;
 
-			propagateCancel();
+			WindowPredicateMain<T> r = parent;
+			if (r != null &&
+					PARENT.compareAndSet(this, r, null)) {
+
+				if (WindowPredicateMain.WINDOW_COUNT.decrementAndGet(r) == 0) {
+					r.cancel();
+				}
+				else {
+					r.s.request(1);
+				}
+			}
 
 			if (!enableOperatorFusion) {
 				if (WIP.getAndIncrement(this) == 0) {
 					queue.clear();
 				}
 			}
+
 		}
 
 		@Override

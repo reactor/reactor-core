@@ -685,7 +685,8 @@ public class FluxWindowPredicateTest extends
 		            .thenCancel()
 		            .verify();
 
-		assertThat(req.get()).isEqualTo(10 + prefetch); //9 forwarded elements, 2 delimiters
+		assertThat(req.get()).isEqualTo(12 + prefetch); //9 forwarded elements, 2
+		// delimiters, 1 cancel and prefetch
 	}
 
 	// see https://github.com/reactor/reactor-core/issues/477
