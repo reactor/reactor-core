@@ -299,6 +299,36 @@ public abstract class Hooks {
 	}
 
 	/**
+	 * Set the custom global error mode hook for operators that support resuming
+	 * during an error in their {@link org.reactivestreams.Subscriber#onNext(Object)}.
+	 * <p>
+	 * The hook is a {@link BiFunction} of {@link Throwable} and potentially null {@link Object}.
+	 * If it is also a {@link java.util.function.BiPredicate}, its
+	 * {@link java.util.function.BiPredicate#test(Object, Object) test} method should be
+	 * used to determine if an error should be processed (matching predicate) or completely
+	 * skipped (non-matching predicate). Typical usage, as in {@link Operators}, is to
+	 * check if the predicate matches and fallback to {@link Operators#onOperatorError(Throwable, Context)}
+	 * if it doesn't.
+	 *
+	 * @param onNextError the new {@link BiFunction} to use.
+	 */
+	public static void onNextError(BiFunction<? super Throwable, Object, ? extends Throwable> onNextError) {
+		Objects.requireNonNull(onNextError, "onNextError");
+		log.debug("Hooking new default : onNextError");
+
+		if (onNextError instanceof OnNextFailureStrategy) {
+			synchronized(log) {
+				onNextErrorHook = (OnNextFailureStrategy) onNextError;
+			}
+		}
+		else {
+			synchronized(log) {
+				onNextErrorHook = new OnNextFailureStrategy.LambdaOnNextErrorStrategy(onNextError);
+			}
+		}
+	}
+
+	/**
 	 * Add a custom error mapping, overriding the default one. Custom mapping can be an
 	 * accumulation of several sub-hooks each subsequently added via this method.
 	 * <p>
@@ -406,6 +436,17 @@ public abstract class Hooks {
 		}
 	}
 
+	/**
+	 * Reset global onNext error handling strategy to terminating the sequence with
+	 * an onError and cancelling upstream ({@link OnNextFailureStrategy#STOP}).
+	 */
+	public static void resetOnNextError() {
+		log.debug("Reset to factory defaults : onNextError");
+		synchronized (log) {
+			onNextErrorHook = null;
+		}
+	}
+
 	@Nullable
 	@SuppressWarnings("unchecked")
 	static Function<Publisher, Publisher> createOrUpdateOpHook(Collection<Function<? super Publisher<Object>, ? extends Publisher<Object>>> hooks) {
@@ -446,13 +487,17 @@ public abstract class Hooks {
 	static volatile Consumer<? super Throwable> onErrorDroppedHook;
 	static volatile Consumer<Object>            onNextDroppedHook;
 
+	//Special hook that is between the two (strategy can be transformative, but not named)
+	static volatile OnNextFailureStrategy onNextErrorHook;
+
+
 	//For transformative hooks, allow to name them, keep track in an internal Map that retains insertion order
 	//internal use only as it relies on external synchronization
 	private static final LinkedHashMap<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> onEachOperatorHooks;
 	private static final LinkedHashMap<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> onLastOperatorHooks;
 	private static final LinkedHashMap<String, BiFunction<? super Throwable, Object, ? extends Throwable>> onOperatorErrorHooks;
 
-	//Immutable views on shook trackers, for testing purpose
+	//Immutable views on hook trackers, for testing purpose
 	static final Map<String, Function<? super Publisher<Object>, ? extends Publisher<Object>>> getOnEachOperatorHooks() {
 		return Collections.unmodifiableMap(onEachOperatorHooks);
 	}

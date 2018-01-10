@@ -348,7 +348,13 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 				"The mapper returned a null Publisher");
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+				Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
+				if (e_ != null) {
+					onError(e_);
+				}
+				else {
+					tryEmitScalar(null);
+				}
 				return;
 			}
 
@@ -358,9 +364,16 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 					v = ((Callable<R>) p).call();
 				}
 				catch (Throwable e) {
+					//does the strategy apply? if so, short-circuit the delayError. In any case, don't cancel
+					Throwable e_ = Operators.onNextPollError(t, e, actual.currentContext());
+					if (e_ == null) {
+						return;
+					}
+					//now if error mode strategy doesn't apply, let delayError play
 					if (!delayError || !Exceptions.addThrowable(ERROR, this, e)) {
 						onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
 					}
+
 					return;
 				}
 				tryEmitScalar(v);
@@ -780,15 +793,21 @@ final class FluxFlatMap<T, R> extends FluxOperator<T, R> {
 		}
 
 		void innerError(FlatMapInner<R> inner, Throwable e) {
-			if (Exceptions.addThrowable(ERROR, this, e)) {
-				inner.done = true;
-				if (!delayError) {
-					done = true;
+			e = Operators.onNextInnerError(e, currentContext(), s);
+			if(e != null) {
+				if (Exceptions.addThrowable(ERROR, this, e)) {
+					inner.done = true;
+					if (!delayError) {
+						done = true;
+					}
+					drain();
 				}
-				drain();
+				else {
+					Operators.onErrorDropped(e, actual.currentContext());
+				}
 			}
 			else {
-				Operators.onErrorDropped(e, actual.currentContext());
+				drain();
 			}
 		}
 

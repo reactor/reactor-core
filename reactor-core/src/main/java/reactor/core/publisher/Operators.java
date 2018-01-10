@@ -16,6 +16,7 @@
 package reactor.core.publisher;
 
 import java.util.Objects;
+import java.util.Queue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
@@ -374,6 +375,144 @@ public abstract class Operators {
 	 */
 	public static RuntimeException onRejectedExecution(Throwable original, Context context) {
 		return onRejectedExecution(original, null, null, null, context);
+	}
+
+	static final OnNextFailureStrategy onNextErrorStrategy(Context context) {
+		OnNextFailureStrategy strategy = null;
+
+		BiFunction<? super Throwable, Object, ? extends Throwable> fn = context.getOrDefault(
+				OnNextFailureStrategy.KEY_ON_NEXT_ERROR_STRATEGY, null);
+		if (fn instanceof OnNextFailureStrategy) {
+			strategy = (OnNextFailureStrategy) fn;
+		} else if (fn != null) {
+			strategy = new OnNextFailureStrategy.LambdaOnNextErrorStrategy(fn);
+		}
+
+		if (strategy == null) strategy = Hooks.onNextErrorHook;
+		if (strategy == null) strategy = OnNextFailureStrategy.STOP;
+		return strategy;
+	}
+
+	public static final BiFunction<? super Throwable, Object, ? extends Throwable> onNextErrorFunction(Context context) {
+		return onNextErrorStrategy(context);
+	}
+
+	/**
+	 * Find the {@link OnNextFailureStrategy} to apply to the calling operator (which could be a local
+	 * error mode defined in the {@link Context}) and apply it. For poll(), prefer
+	 * {@link #onNextPollError(Object, Throwable, Context)} as it returns a {@link RuntimeException}.
+	 * <p>
+	 * Cancels the {@link Subscription} and return a {@link Throwable} if errors are
+	 * fatal for the error mode, in which case the operator should call onError with the
+	 * returned error. On the contrary, if the error mode allows the sequence to
+	 * continue, does not cancel the Subscription and returns {@code null}.
+	 * <p>
+	 * Typical usage pattern differs depending on the calling method:
+	 * <ul>
+	 *     <li>{@code onNext}: check for a throwable return value and call
+	 *     {@link Subscriber#onError(Throwable)} if not null, otherwise perform a direct
+	 *     {@link Subscription#request(long) request(1)} on the upstream.</li>
+	 *
+	 *     <li>{@code tryOnNext}: check for a throwable return value and call
+	 *     {@link Subscriber#onError(Throwable)} if not null, otherwise
+	 *     return {@code false} to indicate value was not consumed and more must be
+	 *     tried.</li>
+	 *
+	 *     <li>{@code poll}: use {@link #onNextPollError(Object, Throwable, Context)} instead.</li>
+	 * </ul>
+	 *
+	 * @param value The onNext value that caused an error.
+	 * @param error The error.
+	 * @param context The most significant {@link Context} in which to look for an {@link OnNextFailureStrategy}.
+	 * @param subscriptionForCancel The {@link Subscription} that should be cancelled if the
+	 * strategy is terminal. Not null, use {@link #onNextPollError(Object, Throwable, Context)}
+	 * when unsubscribing is undesirable (eg. for poll()).
+	 * @param <T> The type of the value causing the error.
+	 * @return a {@link Throwable} to propagate through onError if the strategy is
+	 * terminal and cancelled the subscription, null if not.
+	 */
+	@Nullable
+	public static <T> Throwable onNextError(@Nullable T value, Throwable error, Context context,
+			Subscription subscriptionForCancel) {
+		error = unwrapOnNextError(error);
+		OnNextFailureStrategy strategy = onNextErrorStrategy(context);
+		if (strategy.test(error, value)) {
+			//some strategies could still return an exception, eg. if the consumer throws
+			Throwable t = strategy.process(error, value, context);
+			if (t != null) {
+				subscriptionForCancel.cancel();
+			}
+			return t;
+		}
+		else {
+			//falls back to operator errors
+			return onOperatorError(subscriptionForCancel, error, value, context);
+		}
+	}
+
+	/**
+	 * Find the {@link OnNextFailureStrategy} to apply to the calling operator (which could be a local
+	 * error mode defined in the {@link Context}) and apply it.
+	 *
+	 * @param error The error.
+	 * @param context The most significant {@link Context} in which to look for an {@link OnNextFailureStrategy}.
+	 * @param subscriptionForCancel The {@link Subscription} that should be cancelled if the
+	 * strategy is terminal. Null to ignore (for poll, use {@link #onNextPollError(Object, Throwable, Context)}
+	 * rather than passing null).
+	 * @param <T> The type of the value causing the error.
+	 * @return a {@link Throwable} to propagate through onError if the strategy is
+	 * terminal and cancelled the subscription, null if not.
+	 */
+	public static <T> Throwable onNextInnerError(Throwable error, Context context, Subscription subscriptionForCancel) {
+		error = unwrapOnNextError(error);
+		OnNextFailureStrategy strategy = onNextErrorStrategy(context);
+		if (strategy.test(error, null)) {
+			//some strategies could still return an exception, eg. if the consumer throws
+			Throwable t = strategy.process(error, null, context);
+			if (t != null) {
+				subscriptionForCancel.cancel();
+			}
+			return t;
+		}
+		else {
+			return error;
+		}
+	}
+
+	/**
+	 * Find the {@link OnNextFailureStrategy} to apply to the calling async operator (which could be
+	 * a local error mode defined in the {@link Context}) and apply it.
+	 * <p>
+	 * Returns a {@link RuntimeException} if errors are fatal for the error mode, in which
+	 * case the operator poll should throw the returned error. On the contrary if the
+	 * error mode allows the sequence to continue, returns {@code null} in which case
+	 * the operator should retry the {@link Queue#poll() poll()}.
+	 *
+	 * @param value The onNext value that caused an error.
+	 * @param error The error.
+	 * @param context The most significant {@link Context} in which to look for an {@link OnNextFailureStrategy}.
+	 * @param <T> The type of the value causing the error.
+	 * @return a {@link Throwable} to propagate through onError if the strategy is
+	 * terminal and cancelled the subscription, null if not.
+	 */
+	@Nullable
+	public static <T> RuntimeException onNextPollError(T value, Throwable error, Context context) {
+		error = unwrapOnNextError(error);
+		OnNextFailureStrategy strategy = onNextErrorStrategy(context);
+		if (strategy.test(error, value)) {
+			//some strategies could still return an exception, eg. if the consumer throws
+			Throwable t = strategy.process(error, value, context);
+			if (t != null) return Exceptions.propagate(t);
+			return null;
+		}
+		else {
+			Throwable t = onOperatorError(null, error, value, context);
+			return Exceptions.propagate(t);
+		}
+	}
+
+	private static Throwable unwrapOnNextError(Throwable error) {
+		return Exceptions.isBubbling(error) ? error : Exceptions.unwrap(error);
 	}
 
 	/**
