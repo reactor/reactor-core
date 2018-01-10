@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
@@ -760,4 +761,297 @@ public class FluxHandleTest extends FluxOperatorTest<String, String> {
 		                                                    .hasMessage("Cannot emit more than one data"));
 	}
 
+	@Test
+	public void failureStrategyResumeExceptionThrown() {
+		Hooks.onNextError(OnNextFailureStrategy.RESUME_DROP);
+		try {
+			AtomicLong r = new AtomicLong();
+			StepVerifier.create(Flux.range(0, 2)
+			                        .doOnRequest(r::addAndGet)
+			                        .hide()
+			                        .handle((i, sink) -> sink.next(4 / i)), 1)
+			            .expectNoFusionSupport()
+			            .expectNext(4)
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasDroppedExactly(0)
+			            .hasDroppedErrorWithMessage("/ by zero");
+
+			assertThat(r.get()).as("amount requested").isEqualTo(2L);
+		}
+		finally {
+			Hooks.resetOnNextError();
+		}
+	}
+
+	@Test
+	public void failureStrategyResumeExceptionSignalled() {
+		Throwable error = new Throwable();
+		Hooks.onNextError(OnNextFailureStrategy.RESUME_DROP);
+		try {
+			AtomicLong r = new AtomicLong();
+			StepVerifier.create(Flux.range(0, 2)
+			                        .doOnRequest(r::addAndGet)
+			                        .hide()
+			                        .handle((i, sink) -> {
+				                        if (i == 0) {
+					                        sink.error(error);
+				                        }
+				                        else {
+					                        sink.next(4 / i);
+				                        }
+			                        }), 1)
+			            .expectNoFusionSupport()
+			            .expectNext(4)
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasDroppedExactly(0)
+			            .hasDroppedErrorMatching(throwable -> error == throwable);
+
+			assertThat(r.get()).as("amount requested").isEqualTo(2L);
+		}
+		finally {
+			Hooks.resetOnNextError();
+		}
+	}
+
+	@Test
+	public void failureStrategyResumeTryOnNextExceptionThrown() {
+		Hooks.onNextError(OnNextFailureStrategy.RESUME_DROP);
+		try {
+			StepVerifier.create(Flux.range(0, 2)
+			                        .distinctUntilChanged()
+			                        .handle((i, sink) -> sink.next(4 / i)), 1)
+			            .expectNoFusionSupport()
+			            .expectNext(4)
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasDroppedExactly(0)
+			            .hasDroppedErrorWithMessage("/ by zero");
+		}
+		finally {
+			Hooks.resetOnNextError();
+		}
+	}
+
+	@Test
+	public void failureStrategyResumeTryOnNextExceptionSignalled() {
+		Throwable error = new Throwable();
+		Hooks.onNextError(OnNextFailureStrategy.RESUME_DROP);
+		try {
+			StepVerifier.create(Flux.range(0, 2)
+			                        .distinctUntilChanged()
+			                        .handle((i, sink) -> {
+				                        if (i == 0) {
+					                        sink.error(error);
+				                        }
+				                        else {
+					                        sink.next(4 / i);
+				                        }
+			                        }), 1)
+			            .expectNoFusionSupport()
+			            .expectNext(4)
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasDroppedExactly(0)
+			            .hasDroppedErrorMatching(throwable -> error == throwable);
+		}
+		finally {
+			Hooks.resetOnNextError();
+		}
+	}
+
+	@Test
+	public void failureStrategyResumeConditionalExceptionThrown() {
+		Hooks.onNextError(OnNextFailureStrategy.RESUME_DROP);
+		try {
+			AtomicLong r = new AtomicLong();
+			StepVerifier.create(Flux.range(0, 2)
+			                        .doOnRequest(r::addAndGet)
+			                        .hide()
+			                        .handle((i, sink) -> sink.next(4 / i))
+			                        .filter(i -> true), 1)
+			            .expectNoFusionSupport()
+			            .expectNext(4)
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasDroppedExactly(0)
+			            .hasDroppedErrorWithMessage("/ by zero");
+
+			assertThat(r.get()).as("amount requested").isEqualTo(2L);
+		}
+		finally {
+			Hooks.resetOnNextError();
+		}
+	}
+
+	@Test
+	public void failureStrategyResumeConditionalExceptionSignalled() {
+		Throwable error = new Throwable();
+		Hooks.onNextError(OnNextFailureStrategy.RESUME_DROP);
+		try {
+			AtomicLong r = new AtomicLong();
+			StepVerifier.create(Flux.range(0, 2)
+			                        .doOnRequest(r::addAndGet)
+			                        .hide()
+			                        .handle((i, sink) -> {
+				                        if (i == 0) {
+					                        sink.error(error);
+				                        }
+				                        else {
+					                        sink.next(4 / i);
+				                        }
+			                        })
+			                        .filter(i -> true), 1)
+			            .expectNoFusionSupport()
+			            .expectNext(4)
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasDroppedExactly(0)
+			            .hasDroppedErrorMatching(throwable -> error == throwable);
+
+			assertThat(r.get()).as("amount requested").isEqualTo(2L);
+		}
+		finally {
+			Hooks.resetOnNextError();
+		}
+	}
+
+	@Test
+	public void failureStrategyResumeConditionalTryOnNextExceptionThrown() {
+		Hooks.onNextError(OnNextFailureStrategy.RESUME_DROP);
+		try {
+			StepVerifier.create(Flux.range(0, 2)
+			                        .distinctUntilChanged()
+			                        .handle((i, sink) -> sink.next(4 / i))
+			                        .filter(i -> true))
+			            .expectNoFusionSupport()
+			            .expectNext(4)
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasDroppedExactly(0)
+			            .hasDroppedErrorWithMessage("/ by zero");
+		}
+		finally {
+			Hooks.resetOnNextError();
+		}
+	}
+
+	@Test
+	public void failureStrategyResumeConditionalTryOnNextExceptionSignalled() {
+		Throwable error = new Throwable();
+		Hooks.onNextError(OnNextFailureStrategy.RESUME_DROP);
+		try {
+			StepVerifier.create(Flux.range(0, 2)
+			                        .distinctUntilChanged()
+			                        .handle((i, sink) -> {
+				                        if (i == 0) {
+					                        sink.error(error);
+				                        }
+				                        else {
+					                        sink.next(4 / i);
+				                        }
+			                        })
+			                        .filter(i -> true))
+			            .expectNoFusionSupport()
+			            .expectNext(4)
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasDroppedExactly(0)
+			            .hasDroppedErrorMatching(throwable -> error == throwable);
+		}
+		finally {
+			Hooks.resetOnNextError();
+		}
+	}
+
+	@Test
+	public void failureStrategyResumeExceptionThrownFuseable() {
+		Hooks.onNextError(OnNextFailureStrategy.RESUME_DROP);
+		try {
+			StepVerifier.create(Flux.range(0, 2)
+			                        .handle((i, sink) -> sink.next(4 / i)), 1)
+			            .expectFusion()
+			            .expectNext(4)
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasDroppedExactly(0)
+			            .hasDroppedErrorWithMessage("/ by zero");
+		}
+		finally {
+			Hooks.resetOnNextError();
+		}
+	}
+
+	@Test
+	public void failureStrategyResumeExceptionSignalledFuesable() {
+		Throwable error = new Throwable();
+		Hooks.onNextError(OnNextFailureStrategy.RESUME_DROP);
+		try {
+			StepVerifier.create(Flux.range(0, 2)
+			                        .handle((i, sink) -> {
+				                        if (i == 0) {
+					                        sink.error(error);
+				                        }
+				                        else {
+					                        sink.next(4 / i);
+				                        }
+			                        }), 1)
+			            .expectFusion()
+			            .expectNext(4)
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasDroppedExactly(0)
+			            .hasDroppedErrorMatching(throwable -> error == throwable);
+		}
+		finally {
+			Hooks.resetOnNextError();
+		}
+	}
+
+	@Test
+	public void failureStrategyResumeConditionalExceptionThrownFuseable() {
+		Hooks.onNextError(OnNextFailureStrategy.RESUME_DROP);
+		try {
+			StepVerifier.create(Flux.range(0, 2)
+			                        .handle((i, sink) -> sink.next(4 / i))
+			                        .filter(i -> true), 1)
+			            .expectFusion()
+			            .expectNext(4)
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasDroppedExactly(0)
+			            .hasDroppedErrorWithMessage("/ by zero");
+		}
+		finally {
+			Hooks.resetOnNextError();
+		}
+	}
+
+	@Test
+	public void failureStrategyResumeConditionalExceptionSignalledFuseable() {
+		Throwable error = new Throwable();
+		Hooks.onNextError(OnNextFailureStrategy.RESUME_DROP);
+		try {
+			StepVerifier.create(Flux.range(0, 2)
+			                        .handle((i, sink) -> {
+				                        if (i == 0) {
+					                        sink.error(error);
+				                        }
+				                        else {
+					                        sink.next(4 / i);
+				                        }
+			                        })
+			                        .filter(i -> true), 1)
+			            .expectFusion()
+			            .expectNext(4)
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasDroppedExactly(0)
+			            .hasDroppedErrorMatching(throwable -> error == throwable);
+		}
+		finally {
+			Hooks.resetOnNextError();
+		}
+	}
 }

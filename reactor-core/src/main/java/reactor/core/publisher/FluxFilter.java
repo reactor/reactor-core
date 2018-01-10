@@ -90,7 +90,13 @@ final class FluxFilter<T> extends FluxOperator<T, T> {
 				b = predicate.test(t);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+				Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
+				if (e_ != null) {
+					onError(e_);
+				}
+				else {
+					s.request(1);
+				}
 				return;
 			}
 			if (b) {
@@ -114,7 +120,10 @@ final class FluxFilter<T> extends FluxOperator<T, T> {
 				b = predicate.test(t);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+				Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
+				if (e_ != null) {
+					onError(e_);
+				}
 				return false;
 			}
 			if (b) {
@@ -206,7 +215,13 @@ final class FluxFilter<T> extends FluxOperator<T, T> {
 				b = predicate.test(t);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+				Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
+				if (e_ != null) {
+					onError(e_);
+				}
+				else {
+					s.request(1);
+				}
 				return;
 			}
 			if (b) {
@@ -230,7 +245,10 @@ final class FluxFilter<T> extends FluxOperator<T, T> {
 				b = predicate.test(t);
 			}
 			catch (Throwable e) {
-				onError(Operators.onOperatorError(s, e, t, actual.currentContext()));
+				Throwable e_ = Operators.onNextError(t, e, actual.currentContext(), s);
+				if (e_ != null) {
+					onError(e_);
+				}
 				return false;
 			}
 			return b && actual.tryOnNext(t);

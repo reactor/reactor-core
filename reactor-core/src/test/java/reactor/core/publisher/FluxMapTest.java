@@ -16,9 +16,11 @@
 
 package reactor.core.publisher;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -26,6 +28,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.test.StepVerifier;
 import reactor.test.MockUtils;
 import reactor.test.publisher.FluxOperatorTest;
 import reactor.test.subscriber.AssertSubscriber;
@@ -358,4 +361,130 @@ public class FluxMapTest extends FluxOperatorTest<String, String> {
         test.onError(new IllegalStateException("boom"));
         assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
     }
+
+    @Test
+	public void mapFailureStrategyResume() {
+		Hooks.onNextError(OnNextFailureStrategy.RESUME_DROP);
+
+		try {
+			AtomicLong r = new AtomicLong();
+			StepVerifier.create(Flux.just(0, 2)
+			                        .doOnRequest(r::addAndGet)
+			                        .hide()
+			                        .map(i -> 4 / i), 1)
+			            .expectNoFusionSupport()
+			            .expectNext(2)
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasDroppedExactly(0)
+			            .hasDroppedErrorWithMessage("/ by zero");
+
+			assertThat(r.get()).as("amount requested").isEqualTo(2L);
+		}
+		finally {
+			Hooks.resetOnNextError();
+		}
+    }
+
+    @Test
+	public void mapFailureStrategyCustomResume() {
+	    List<Object> valuesDropped = new ArrayList<>();
+	    List<Throwable> errorsDropped = new ArrayList<>();
+	    Hooks.onNextError(OnNextFailureStrategy.resume(
+				(t, s) -> {
+					errorsDropped.add(t);
+					valuesDropped.add(s);
+				}));
+
+		try {
+			AtomicLong r = new AtomicLong();
+			StepVerifier.create(Flux.just(0, 2)
+			                        .doOnRequest(r::addAndGet)
+			                        .hide()
+			                        .map(i -> 4 / i), 1)
+			            .expectNoFusionSupport()
+			            .expectNext(2)
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasNotDroppedElements()
+			            .hasNotDroppedErrors();
+
+			assertThat(valuesDropped).containsExactly(0);
+			assertThat(errorsDropped)
+					.hasSize(1)
+					.allSatisfy(e -> assertThat(e)
+							.isInstanceOf(ArithmeticException.class)
+							.hasMessage("/ by zero"));
+			assertThat(r.get()).as("amount requested").isEqualTo(2L);
+
+		}
+		finally {
+			Hooks.resetOnNextError();
+		}
+    }
+
+	@Test
+	public void mapTryOnNextFailureStrategyResume() {
+		Hooks.onNextError(OnNextFailureStrategy.RESUME_DROP);
+
+		try {
+			StepVerifier.create(Flux.range(0, 2)
+			                        //distinctUntilChanged is conditional but not fuseable
+			                        .distinctUntilChanged()
+			                        .map(i -> 4 / i)
+			                        .filter(i -> true))
+			            .expectNoFusionSupport()
+			            .expectNext(4)
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasDroppedExactly(0)
+			            .hasDroppedErrorWithMessage("/ by zero");
+		}
+		finally {
+			Hooks.resetOnNextError();
+		}
+	}
+
+    @Test
+	public void mapFuseableFailureStrategyResume() {
+		Hooks.onNextError(OnNextFailureStrategy.RESUME_DROP);
+
+		try {
+			AtomicLong r = new AtomicLong();
+			StepVerifier.create(Flux.just(0, 2)
+			                        .doOnRequest(r::addAndGet)
+			                        .map(i -> 4 / i), 1)
+			            .expectFusion()
+			            .expectNext(2)
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasDropped(0)
+			            .hasDroppedErrorWithMessage("/ by zero");
+
+			assertThat(r.get()).as("async/no request").isEqualTo(0L);
+		}
+		finally {
+			Hooks.resetOnNextError();
+		}
+    }
+
+	@Test
+	public void mapFuseableTryOnNextFailureStrategyResume() {
+		Hooks.onNextError(OnNextFailureStrategy.RESUME_DROP);
+
+		try {
+			StepVerifier.create(Flux.range(0, 2)
+			                        .map(i -> 4 / i)
+			                        .filter(i -> true))
+			            .expectFusion()
+			            .expectNext(4)
+			            .expectComplete()
+			            .verifyThenAssertThat()
+			            .hasDroppedExactly(0)
+			            .hasDroppedErrorWithMessage("/ by zero");
+		}
+		finally {
+			Hooks.resetOnNextError();
+		}
+	}
 }

@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import javax.annotation.Nonnull;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -38,6 +39,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.Fuseable;
 import reactor.core.publisher.Operators;
+import reactor.util.context.Context;
 
 /**
  * A Subscriber implementation that hosts assertion tests for its state and allows
@@ -98,6 +100,7 @@ public class AssertSubscriber<T>
     private static final AtomicReferenceFieldUpdater<AssertSubscriber, Subscription> S =
 			AtomicReferenceFieldUpdater.newUpdater(AssertSubscriber.class, Subscription.class, "s");
 
+	private final Context context;
 
 	private final List<Throwable> errors = new LinkedList<>();
 
@@ -227,13 +230,22 @@ public class AssertSubscriber<T>
 //	 ==============================================================================================================
 
 	public AssertSubscriber() {
-		 this(Long.MAX_VALUE);
+		 this(Context.empty(), Long.MAX_VALUE);
 	}
 
 	public AssertSubscriber(long n) {
+		 this(Context.empty(), n);
+	}
+
+	public AssertSubscriber(Context context) {
+		this(context, Long.MAX_VALUE);
+	}
+
+	public AssertSubscriber(Context context, long n) {
 		if (n < 0) {
 			throw new IllegalArgumentException("initialRequest >= required but it was " + n);
 		}
+		this.context = context;
 		REQUESTED.lazySet(this, n);
 	}
 
@@ -939,6 +951,12 @@ public class AssertSubscriber<T>
 				normalRequest(n);
 			}
 		}
+	}
+
+	@Override
+	@Nonnull
+	public Context currentContext() {
+		return context;
 	}
 
 	/**
