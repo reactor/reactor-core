@@ -19,16 +19,16 @@ With Gradle from repo.spring.io or Maven Central repositories (stable releases o
 
 ```groovy
     repositories {
-      //maven { url 'http://repo.spring.io/snapshot' }
-      //maven { url 'http://repo.spring.io/milestone' }
+//      maven { url 'http://repo.spring.io/snapshot' }
+      maven { url 'http://repo.spring.io/milestone' }
       mavenCentral()
     }
 
     dependencies {
-      //compile "io.projectreactor:reactor-core:3.1.3.BUILD-SNAPSHOT"
-      //testCompile("io.projectreactor:reactor-test:3.1.3.BUILD-SNAPSHOT")
-      compile "io.projectreactor:reactor-core:3.1.2.RELEASE"
-      testCompile("io.projectreactor:reactor-test:3.1.2.RELEASE")
+      //compile "io.projectreactor:reactor-core:3.1.2.RELEASE"
+      //testCompile("io.projectreactor:reactor-test:3.1.2.RELEASE")
+      compile "io.projectreactor:reactor-core:3.2.0.M1"
+      testCompile("io.projectreactor:reactor-test:3.2.0.M1")
     }
 ```
 
