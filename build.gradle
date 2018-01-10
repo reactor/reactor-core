@@ -256,13 +256,16 @@ project('reactor-core') {
 			"org.mockito:mockito-core:$mockitoVersion",
 			"org.openjdk.jol:jol-core:0.9"
 
-	baseline("io.projectreactor:reactor-core:$compatibleVersion") {
-	  transitive = false
-	  force = true
+	if ("$compatibleVersion" != "SKIP") {
+	  baseline("io.projectreactor:reactor-core:$compatibleVersion") {
+		transitive = false
+		force = true
+	  }
 	}
   }
 
   task japicmp(type: JapicmpTask) {
+	onlyIf { "$compatibleVersion" != "SKIP" }
 	oldClasspath = configurations.baseline
 	newClasspath = files(jar.archivePath)
 	onlyBinaryIncompatibleModified = true
@@ -428,13 +431,16 @@ project('reactor-test') {
 			"org.assertj:assertj-core:$assertJVersion",
 			"org.mockito:mockito-core:$mockitoVersion"
 
-	baseline("io.projectreactor:reactor-test:$compatibleVersion") {
-	  transitive = false
-	  force = true
+	if ("$compatibleVersion" != "SKIP") {
+	  baseline("io.projectreactor:reactor-test:$compatibleVersion") {
+		transitive = false
+		force = true
+	  }
 	}
   }
 
   task japicmp(type: JapicmpTask) {
+	onlyIf { "$compatibleVersion" != "SKIP" }
 	oldClasspath = configurations.baseline
 	newClasspath = files(jar.archivePath)
 	onlyBinaryIncompatibleModified = true
