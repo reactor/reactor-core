@@ -270,6 +270,7 @@ project('reactor-core') {
 	newClasspath = files(jar.archivePath)
 	onlyBinaryIncompatibleModified = true
 	failOnModification = true
+	failOnSourceIncompatibility = true
 	txtOutputFile = file("${project.buildDir}/reports/japi.txt")
 	ignoreMissingClasses = true
 	includeSynthetic = true
@@ -445,6 +446,7 @@ project('reactor-test') {
 	newClasspath = files(jar.archivePath)
 	onlyBinaryIncompatibleModified = true
 	failOnModification = true
+	failOnSourceIncompatibility = true
 	txtOutputFile = file("${project.buildDir}/reports/japi.txt")
 	ignoreMissingClasses = true
 	includeSynthetic = true
