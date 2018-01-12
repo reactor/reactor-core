@@ -287,7 +287,7 @@ project('reactor-core') {
 	options.stylesheetFile = file("$rootDir/src/api/stylesheet.css")
 	options.links(rootProject.ext.javadocLinks )
 	options.tags = [ "apiNote:a:API Note:", "implSpec:a:Implementation Requirements:",
-					 "implNote:a:Implementation Note:" ]
+					 "implNote:a:Implementation Note:", "reactor.errorMode:m:Error Mode Support" ]
 
 	// In Java 9, javadoc generator will complain if it finds invalid class files in the classpath
 	// And Kotlin produces such classes, plus kotlin plugin puts them in the main sourceSet
