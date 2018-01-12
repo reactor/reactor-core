@@ -16,6 +16,7 @@
 
 package reactor.core.scheduler;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -40,10 +41,11 @@ import reactor.core.Disposable;
 import reactor.core.Disposables;
 import reactor.core.Exceptions;
 import reactor.core.publisher.DirectProcessor;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.*;
 import static org.junit.Assert.fail;
 
 public class SchedulersTest {
@@ -81,6 +83,128 @@ public class SchedulersTest {
 	@After
 	public void resetSchedulers() {
 		Schedulers.resetFactory();
+	}
+
+	@Test
+	public void handleErrorWithJvmFatalForwardsToUncaughtHandlerFusedCallable() {
+		AtomicBoolean handlerCaught = new AtomicBoolean();
+		Scheduler scheduler = Schedulers.fromExecutorService(Executors.newSingleThreadExecutor(r -> {
+			Thread thread = new Thread(r);
+			thread.setUncaughtExceptionHandler((t, ex) -> {
+				handlerCaught.set(true);
+				System.err.println("from uncaught handler: " + ex.toString());
+			});
+			return thread;
+		}));
+
+		final StepVerifier stepVerifier =
+				StepVerifier.create(Mono.<String>fromCallable(() -> {
+					throw new StackOverflowError("boom");
+				}).subscribeOn(scheduler))
+				            .expectFusion()
+				            .expectErrorMessage("boom");
+
+		//the exception is still fatal, so the StepVerifier should time out.
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> stepVerifier.verify(Duration.ofMillis(100)))
+				.withMessageStartingWith("VerifySubscriber timed out on ");
+
+		//nonetheless, the uncaught exception handler should have been invoked
+		assertThat(handlerCaught).as("uncaughtExceptionHandler used").isTrue();
+	}
+
+	@Test
+	public void handleErrorWithJvmFatalForwardsToUncaughtHandlerSyncCallable() {
+		AtomicBoolean handlerCaught = new AtomicBoolean();
+		Scheduler scheduler = Schedulers.fromExecutorService(Executors.newSingleThreadExecutor(r -> {
+			Thread thread = new Thread(r);
+			thread.setUncaughtExceptionHandler((t, ex) -> {
+				handlerCaught.set(true);
+				System.err.println("from uncaught handler: " + ex.toString());
+			});
+			return thread;
+		}));
+
+		final StepVerifier stepVerifier =
+				StepVerifier.create(Mono.<String>fromCallable(() -> {
+					throw new StackOverflowError("boom");
+				}).hide()
+				  .subscribeOn(scheduler))
+				            .expectNoFusionSupport()
+				            .expectErrorMessage("boom"); //ignored
+
+		//the exception is still fatal, so the StepVerifier should time out.
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> stepVerifier.verify(Duration.ofMillis(100)))
+				.withMessageStartingWith("VerifySubscriber timed out on ");
+
+		//nonetheless, the uncaught exception handler should have been invoked
+		assertThat(handlerCaught).as("uncaughtExceptionHandler used").isTrue();
+	}
+
+	@Test
+	public void handleErrorWithJvmFatalForwardsToUncaughtHandlerSyncInnerCallable() {
+		AtomicBoolean handlerCaught = new AtomicBoolean();
+		Scheduler scheduler = Schedulers.fromExecutorService(Executors.newSingleThreadExecutor(r -> {
+			Thread thread = new Thread(r);
+			thread.setUncaughtExceptionHandler((t, ex) -> {
+				handlerCaught.set(true);
+				System.err.println("from uncaught handler: " + ex.toString());
+			});
+			return thread;
+		}));
+
+		final StepVerifier stepVerifier =
+				StepVerifier.create(
+						Flux.just("hi")
+						    .flatMap(item -> Mono.<String>fromCallable(() -> {
+							    throw new StackOverflowError("boom");
+						    })
+								    .hide()
+								    .subscribeOn(scheduler))
+				)
+				            .expectNoFusionSupport()
+				            .expectErrorMessage("boom"); //ignored
+
+		//the exception is still fatal, so the StepVerifier should time out.
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> stepVerifier.verify(Duration.ofMillis(100)))
+				.withMessageStartingWith("VerifySubscriber timed out on ");
+
+		//nonetheless, the uncaught exception handler should have been invoked
+		assertThat(handlerCaught).as("uncaughtExceptionHandler used").isTrue();
+	}
+
+	@Test
+	public void handleErrorWithJvmFatalForwardsToUncaughtHandlerFusedInnerCallable() {
+		AtomicBoolean handlerCaught = new AtomicBoolean();
+		Scheduler scheduler = Schedulers.fromExecutorService(Executors.newSingleThreadExecutor(r -> {
+			Thread thread = new Thread(r);
+			thread.setUncaughtExceptionHandler((t, ex) -> {
+				handlerCaught.set(true);
+				System.err.println("from uncaught handler: " + ex.toString());
+			});
+			return thread;
+		}));
+
+		final StepVerifier stepVerifier =
+				StepVerifier.create(
+						Flux.just("hi")
+						    .flatMap(item -> Mono.<String>fromCallable(() -> {
+							    throw new StackOverflowError("boom");
+						    })
+								    .subscribeOn(scheduler))
+				)
+				            .expectFusion()
+				            .expectErrorMessage("boom"); //ignored
+
+		//the exception is still fatal, so the StepVerifier should time out.
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(() -> stepVerifier.verify(Duration.ofMillis(100)))
+				.withMessageStartingWith("VerifySubscriber timed out on ");
+
+		//nonetheless, the uncaught exception handler should have been invoked
+		assertThat(handlerCaught).as("uncaughtExceptionHandler used").isTrue();
 	}
 
 	@Test
@@ -155,31 +279,27 @@ public class SchedulersTest {
 	}
 
 	@Test
-	public void testUncaughtHookNotCalledWhenThreadDeath() {
-		AtomicBoolean handled = new AtomicBoolean(false);
-		AtomicReference<String> failure = new AtomicReference<>(null);
-		Thread.setDefaultUncaughtExceptionHandler((t, e) -> failure.set("unexpected call to default" +
-				" UncaughtExceptionHandler from " + t.getName() + ": " + e));
-		Schedulers.onHandleError((t, e) -> {
-			handled.set(true);
-			failure.set("Fatal JVM error was unexpectedly handled in " + t.getName() + ": " + e);
-		});
+	public void testUncaughtHooksCalledWhenThreadDeath() {
+		AtomicReference<Throwable> onHandleErrorInvoked = new AtomicReference<>();
+		AtomicReference<Throwable> globalUncaughtInvoked = new AtomicReference<>();
+
+		Schedulers.onHandleError((t, e) -> onHandleErrorInvoked.set(e));
+		Thread.setDefaultUncaughtExceptionHandler((t, e) -> globalUncaughtInvoked.set(e));
+
 		ThreadDeath fatal = new ThreadDeath();
 
-		try {
-			Schedulers.handleError(fatal);
-			fail("expected fatal ThreadDeath exception");
-		}
-		catch (ThreadDeath e) {
-			Assert.assertSame(e, fatal);
-		}
-		finally {
-			Schedulers.resetOnHandleError();
-		}
-		Assert.assertFalse("threadDeath not silenced", handled.get());
-		if (failure.get() != null) {
-			fail(failure.get());
-		}
+		//written that way so that we can always reset the hook
+		Throwable thrown = catchThrowable(() -> Schedulers.handleError(fatal));
+		Schedulers.resetOnHandleError();
+
+		assertThat(thrown)
+				.as("fatal exceptions not thrown")
+				.isNull();
+
+		assertThat(onHandleErrorInvoked).as("onHandleError invoked")
+		                                .hasValue(fatal);
+		assertThat(globalUncaughtInvoked).as("global uncaught handler invoked")
+		                                 .hasValue(fatal);
 	}
 
 	@Test
