@@ -34,6 +34,7 @@ import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.UnicastProcessor;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.scheduler.VirtualTimeScheduler;
@@ -1859,5 +1860,36 @@ public class StepVerifierTests {
 		            .then()
 		            .expectNext(11)
 		            .verifyComplete();
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/959
+	@Test
+	public void assertNextWithSubscribeOnDirectProcessor() {
+		Scheduler scheduler = Schedulers.newElastic("test");
+		DirectProcessor<Integer> processor = DirectProcessor.create();
+		Mono<Integer> doAction = Mono.fromSupplier(() -> 22)
+		                             .doOnNext(processor::onNext)
+		                             .subscribeOn(scheduler);
+
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(
+						StepVerifier.create(processor)
+						            .then(doAction::subscribe)
+						            .assertNext(v -> assertThat(v).isEqualTo(23))
+						            .thenCancel()
+								::verify);
+	}
+
+	//see https://github.com/reactor/reactor-core/issues/959
+	@Test
+	public void assertNextWithSubscribeOnJust() {
+		assertThatExceptionOfType(AssertionError.class)
+				.isThrownBy(
+						StepVerifier.create(Flux.just(1)
+						                        .subscribeOn(Schedulers.newSingle("test")))
+						            .then(() -> System.out.println("foo"))
+						            .assertNext(v -> assertThat(v).isNull())
+						            .thenCancel()
+								::verify);
 	}
 }
