@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.LongAdder;
 
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -471,5 +472,113 @@ public class FluxDistinctTest extends FluxOperatorTest<String, String> {
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isFalse();
 		test.onError(new IllegalStateException("boom"));
 		assertThat(test.scan(Scannable.Attr.TERMINATED)).isTrue();
+	}
+
+	@Test
+	public void distinctDefaulWithHashcodeCollisions() {
+		Object foo = new Object() {
+			@Override
+			public int hashCode() {
+				return 1;
+			}
+		};
+		Object bar = new Object() {
+			@Override
+			public int hashCode() {
+				return 1;
+			}
+		};
+
+		assertThat(foo).isNotEqualTo(bar)
+		               .hasSameHashCodeAs(bar);
+
+		StepVerifier.create(Flux.just(foo, bar).distinct())
+		            .expectNext(foo, bar)
+		            .verifyComplete();
+	}
+
+	static class Foo {
+
+		static final LongAdder finalized = new LongAdder();
+		private final int i;
+
+		public Foo(int i) {
+			this.i = i;
+		}
+
+		@Override
+		public int hashCode() {
+			return i % 3;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			return obj instanceof Foo && ((Foo) obj).i == i;
+		}
+
+		@Override
+		protected void finalize() throws Throwable {
+			finalized.increment();
+		}
+	}
+
+	@Test
+	public void distinctDefaultDoesntRetainObjects() throws InterruptedException {
+		Foo.finalized.reset();
+		Flux<Foo> test = Flux.range(1, 100)
+		                     .map(i -> new Foo(i))
+		                     .distinct();
+
+		StepVerifier.create(test)
+		            .expectNextCount(100)
+		            .verifyComplete();
+
+		System.gc();
+		Thread.sleep(100);
+
+		assertThat(Foo.finalized.longValue())
+				.as("none retained")
+				.isEqualTo(100);
+	}
+
+	@Test
+	public void distinctDefaultErrorDoesntRetainObjects() throws InterruptedException {
+		Foo.finalized.reset();
+		Flux<Foo> test = Flux.range(1, 100)
+		                     .map(i -> new Foo(i))
+		                     .concatWith(Mono.error(new IllegalStateException("boom")))
+		                     .distinct();
+
+		StepVerifier.create(test)
+		            .expectNextCount(100)
+		            .verifyErrorMessage("boom");
+
+		System.gc();
+		Thread.sleep(100);
+
+		assertThat(Foo.finalized.longValue())
+				.as("none retained after error")
+				.isEqualTo(100);
+	}
+
+	@Test
+	public void distinctDefaultCancelDoesntRetainObjects() throws InterruptedException {
+		Foo.finalized.reset();
+		Flux<Foo> test = Flux.range(1, 100)
+		                     .map(i -> new Foo(i))
+		                     .concatWith(Mono.error(new IllegalStateException("boom")))
+		                     .distinct()
+		                     .take(50);
+
+		StepVerifier.create(test)
+		            .expectNextCount(50)
+		            .verifyComplete();
+
+		System.gc();
+		Thread.sleep(100);
+
+		assertThat(Foo.finalized.longValue())
+				.as("none retained after cancel")
+				.isEqualTo(50);
 	}
 }

@@ -3369,6 +3369,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * For each {@link Subscriber}, track elements from this {@link Flux} that have been
 	 * seen and filter out duplicates.
+	 * <p>
+	 * The values themselves are recorded into a {@link HashSet} for distinct detection.
+	 * Use {@code distinct(Object::hashcode)} if you want a more lightweight approach that
+	 * doesn't retain all the objects, but is more susceptible to falsely considering two
+	 * elements as distinct due to a hashcode collision.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/distinct.png" alt="">
@@ -3376,7 +3381,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a filtering {@link Flux} only emitting distinct values
 	 */
 	public final Flux<T> distinct() {
-		return distinct(hashcodeSupplier());
+		return distinct(identityFunction());
 	}
 
 	/**
