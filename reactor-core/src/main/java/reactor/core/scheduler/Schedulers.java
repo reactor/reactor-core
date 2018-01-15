@@ -571,7 +571,6 @@ public abstract class Schedulers {
 	static void handleError(Throwable ex) {
 		Thread thread = Thread.currentThread();
 		Throwable t = unwrap(ex);
-		Exceptions.throwIfJvmFatal(t);
 		Thread.UncaughtExceptionHandler x = thread.getUncaughtExceptionHandler();
 		if (x != null) {
 			x.uncaughtException(thread, t);
