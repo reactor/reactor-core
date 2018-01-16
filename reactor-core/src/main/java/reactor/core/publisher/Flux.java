@@ -3369,6 +3369,11 @@ public abstract class Flux<T> implements Publisher<T> {
 	/**
 	 * For each {@link Subscriber}, track elements from this {@link Flux} that have been
 	 * seen and filter out duplicates.
+	 * <p>
+	 * The values themselves are recorded into a {@link HashSet} for distinct detection.
+	 * Use {@code distinct(Object::hashcode)} if you want a more lightweight approach that
+	 * doesn't retain all the objects, but is more susceptible to falsely considering two
+	 * elements as distinct due to a hashcode collision.
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/distinct.png" alt="">
@@ -3376,7 +3381,7 @@ public abstract class Flux<T> implements Publisher<T> {
 	 * @return a filtering {@link Flux} only emitting distinct values
 	 */
 	public final Flux<T> distinct() {
-		return distinct(hashcodeSupplier());
+		return distinct(identityFunction());
 	}
 
 	/**
@@ -3430,12 +3435,17 @@ public abstract class Flux<T> implements Publisher<T> {
 	 *
 	 * <p>
 	 * <img class="marble" src="https://raw.githubusercontent.com/reactor/reactor-core/v3.1.1.RELEASE/src/docs/marble/distinctuntilchanged.png" alt="">
+	 * <p>
+	 * The values themselves are recorded into a {@link HashSet} for distinct detection.
+	 * Use {@code distinctUntilChanged(Object::hashcode)} if you want a more lightweight approach that
+	 * doesn't retain all the objects, but is more susceptible to falsely considering two
+	 * elements as distinct due to a hashcode collision.
 	 *
 	 * @return a filtering {@link Flux} with only one occurrence in a row of each element
 	 * (yet elements can repeat in the overall sequence)
 	 */
 	public final Flux<T> distinctUntilChanged() {
-		return distinctUntilChanged(hashcodeSupplier());
+		return distinctUntilChanged(identityFunction());
 	}
 
 	/**
@@ -8108,11 +8118,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	}
 
 	@SuppressWarnings("unchecked")
-	static <U, V> Function<U, V> hashcodeSupplier() {
-		return HASHCODE_EXTRACTOR;
-	}
-
-	@SuppressWarnings("unchecked")
 	static <U, V> BiPredicate<U, V> equalPredicate() {
 		return OBJECT_EQUAL;
 	}
@@ -8155,8 +8160,6 @@ public abstract class Flux<T> implements Publisher<T> {
 	@SuppressWarnings("rawtypes")
 	static final Supplier        SET_SUPPLIER            = HashSet::new;
 	static final BooleanSupplier ALWAYS_BOOLEAN_SUPPLIER = () -> true;
-	@SuppressWarnings("rawtypes")
-	static final Function        HASHCODE_EXTRACTOR      = Object::hashCode;
 	static final BiPredicate     OBJECT_EQUAL            = Object::equals;
 	@SuppressWarnings("rawtypes")
 	static final Function        IDENTITY_FUNCTION       = Function.identity();
